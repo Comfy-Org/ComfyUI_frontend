@@ -1,4 +1,4 @@
-import type { Point } from './types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 
 /**
  * Evaluates a Catmull-Rom spline at parameter t between p1 and p2

@@ -28,10 +28,10 @@ import {
   createTestSubgraphNode,
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import type { ComfyApp } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'

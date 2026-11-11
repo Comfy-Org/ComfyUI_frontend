@@ -207,7 +207,12 @@ const commonParserOptions = {
   extraFileExtensions
 } as const
 
-// Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
+const layerClassRestriction = {
+  pattern: '^(?:.*:)?!?-?z-(?:[0-9]{3,}|\\[.*\\]|\\(.*\\))!?$',
+  message:
+    'Use a named layer for cross-component ordering; keep local stacking inside an isolated owner.'
+}
+
 const tailwindConfigs = defineConfig([
   betterTailwindcss.configs.recommended,
   {
@@ -245,6 +250,16 @@ const tailwindConfigs = defineConfig([
     }
   },
   {
+    name: 'design-system/owned-layers',
+    files: ['src/**/*.{ts,vue}'],
+    rules: {
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        { restrict: [layerClassRestriction] }
+      ]
+    }
+  },
+  {
     name: 'design-system/core-ui-theme-tokens',
     files: [
       'src/components/ui/**/*.{ts,vue}',
@@ -255,6 +270,7 @@ const tailwindConfigs = defineConfig([
         'error',
         {
           restrict: [
+            layerClassRestriction,
             {
               pattern: specializedThemeClassPattern,
               message:
@@ -351,13 +367,16 @@ export default defineConfig([
         files: [
           'src/**/*.vue',
           'apps/billing-web/**/*.vue',
-          'packages/account-ui/**/*.vue'
+          'packages/account-ui/**/*.vue',
+          'packages/layer-editor-ui/**/*.vue',
+          'packages/mask-editor/src/ui/**/*.vue'
         ],
         plugins: { 'template-classes': templateClasses },
         rules: {
           'template-classes/no-default-utilities': 'error',
           'template-classes/no-redundant-component-classes': 'error',
-          'template-classes/no-inherited-utilities': 'error'
+          'template-classes/no-inherited-utilities': 'error',
+          'template-classes/prefer-design-system-button': 'error'
         }
       },
       // Disables ESLint rules that conflict with formatters
@@ -383,6 +402,8 @@ export default defineConfig([
           'vue/multi-word-component-names': 'off', // TODO: fix
           'vue/no-template-shadow': 'off', // TODO: fix
           'vue/match-component-import-name': 'error',
+          'vue/no-content-outside-block': 'error',
+          'vue/no-props-shadow': 'error',
           'vue/no-unused-properties': 'error',
           'vue/no-unused-refs': 'error',
           'vue/no-useless-mustaches': 'error',
@@ -502,6 +523,7 @@ export default defineConfig([
   ...(
     [
       ['src', settings],
+      ['packages/mask-editor/src/ui', settings],
       ['apps/billing-web', billingWebI18nSettings]
     ] as const
   ).map(([root, treeSettings]) => ({
@@ -543,6 +565,40 @@ export default defineConfig([
             "CallExpression[callee.property.name=/^(split|lastIndexOf)$/]:matches([arguments.0.value='.'], [arguments.0.value='/'], [arguments.0.value='\\\\'])",
           message:
             'Use the platform filename utilities (getFilenameDetails, getPathDetails).'
+        }
+      ]
+    }
+  },
+  {
+    name: 'comfy/mask-editor-package-direction',
+    files: ['packages/mask-editor/src/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts'],
+    plugins: { 'import-x': importX },
+    settings,
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/*'],
+              message:
+                'Keep application integration in the mask-editor host adapters.'
+            }
+          ]
+        }
+      ],
+      'import-x/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './packages/mask-editor/src',
+              from: './src',
+              message:
+                'Keep application integration in the mask-editor host adapters.'
+            }
+          ]
         }
       ]
     }

@@ -2,15 +2,17 @@ import type {
   AutoReloadSettings,
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
+  BillingCapabilityDenials,
   BillingEventsResponse,
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatus,
-  BillingStatusResponse,
+  BillingStatusResponse as GeneratedBillingStatusResponse,
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   CreateTopupCheckoutRequest,
   CreateTopupCheckoutResponse,
+  CreateTopupQuoteRequest,
   CreateTopupRequest,
   CreateTopupResponse,
   HostedTopupCheckout,
@@ -36,7 +38,8 @@ import type {
   SubscriptionDuration,
   SubscriptionTier,
   TeamCreditStops,
-  TeamCreditStopSummary
+  TeamCreditStopSummary,
+  TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 import {
   zRetentionAcceptance,
@@ -84,7 +87,11 @@ export type BillingSubscriptionStatus = NonNullable<
 >
 
 export type { BillingStatus }
-export type { BillingStatusResponse }
+export type BillingStatusResponse = Omit<
+  GeneratedBillingStatusResponse,
+  'ended_at' | 'next_charge'
+> &
+  Partial<Pick<GeneratedBillingStatusResponse, 'ended_at' | 'next_charge'>>
 export type { RenewalInvoice }
 export type { ScheduledPlanChange }
 
@@ -94,8 +101,38 @@ export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
 export type BillingCapabilitiesRead = Omit<
   BillingCapabilitiesResponse,
-  'denied_reasons'
-> & { denied_reasons?: Readonly<Partial<Record<string, string>>> }
+  'denied_reasons' | 'auto_top_up_enabled'
+> &
+  Partial<Pick<BillingCapabilitiesResponse, 'auto_top_up_enabled'>> & {
+    denied_reasons?: Readonly<Partial<Record<string, string>>>
+  }
+export type BillingTopUpDenial = NonNullable<
+  BillingCapabilityDenials['can_top_up']
+>
+const SERVED_TOP_UP_DENIALS: Record<BillingTopUpDenial, true> = {
+  not_a_member: true,
+  not_workspace_owner: true,
+  creator_only_provisioning: true,
+  payment_past_due: true,
+  tier_not_self_serve: true,
+  subscription_status_unrecognized: true,
+  topup_purchases_paused: true,
+  free_plan: true,
+  no_subscription: true,
+  subscription_ended: true
+}
+
+function isBillingTopUpDenial(reason: string): reason is BillingTopUpDenial {
+  return Object.hasOwn(SERVED_TOP_UP_DENIALS, reason)
+}
+
+export function parseBillingTopUpDenial(
+  reason: string | undefined
+): BillingTopUpDenial | undefined {
+  return reason !== undefined && isBillingTopUpDenial(reason)
+    ? reason
+    : undefined
+}
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }
@@ -438,6 +475,22 @@ export function createBillingApi({
         return response.data
       } catch (err) {
         handleAxiosError(err, 'createTopupCheckout')
+      }
+    },
+    async quoteTopup(
+      amountCents: number,
+      signal?: AbortSignal
+    ): Promise<TopupQuoteResponse> {
+      const auth = await requestAuth()
+      try {
+        const response = await client.post<TopupQuoteResponse>(
+          resolveUrl('/billing/topup/quote'),
+          { amount_cents: amountCents } satisfies CreateTopupQuoteRequest,
+          { ...auth, signal }
+        )
+        return response.data
+      } catch (err) {
+        handleAxiosError(err, 'quoteTopup')
       }
     },
     async listTopupCheckouts(): Promise<HostedTopupCheckoutList> {

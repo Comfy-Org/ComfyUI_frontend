@@ -62,7 +62,7 @@ import {
   regionTag
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import type { Region } from '@/composables/boundingBoxes/boundingBoxesUtil'
-import { textOnColor } from '@/utils/colorUtil'
+import { textOnColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 const { regions, activeIndex, maxColors } = defineProps<{
   regions: readonly Region[]

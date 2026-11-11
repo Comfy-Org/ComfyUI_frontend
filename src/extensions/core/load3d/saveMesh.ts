@@ -1,7 +1,7 @@
 import { nextTick } from 'vue'
 
 import { useLoad3d } from '@/extensions/core/load3d/composables/useLoad3d'
-import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
+import { createNodeExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
@@ -9,15 +9,14 @@ import type {
   NodeExecutionOutput,
   NodeOutputWith,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import type { ComfyExtension } from '@/types/comfy'
 
 type SaveMeshOutput = NodeOutputWith<{
   '3d'?: ResultItem[]
 }>
 import { app } from '@/scripts/app'
-import { useLoad3dService } from '@/extensions/core/load3d/services/load3dService'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 function applySaveGLBOutput(node: LGraphNode, fileInfo: ResultItem): void {
@@ -65,15 +64,9 @@ export const saveMeshExtension: ComfyExtension = {
   },
 
   getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
-    // Only show menu items for SaveGLB nodes
     if (node.constructor.comfyClass !== 'SaveGLB') return []
 
-    const load3d = useLoad3dService().getLoad3d(node)
-    if (!load3d) return []
-
-    if (load3d.isSplatModel()) return []
-
-    return createExportMenuItems(load3d)
+    return createNodeExportMenuItems(node)
   },
 
   async nodeCreated(node: LGraphNode) {

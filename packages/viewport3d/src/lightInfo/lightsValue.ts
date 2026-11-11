@@ -1,7 +1,8 @@
 import { clamp } from 'es-toolkit'
 
 import { LIGHT_TYPES, createDefaultLight } from './types'
-import type { LightInfoEntry, LightInfoType, Vec3 } from './types'
+import type { LightInfoEntry, LightInfoType } from './types'
+import type { Vector3 as Vec3 } from '@comfyorg/shared-frontend-utils/geometry'
 
 const MIN_OUTER_CONE_ANGLE = 1
 const MAX_CONE_ANGLE = 90

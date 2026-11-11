@@ -101,9 +101,7 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await comfyPage.clipboard.paste()
       await comfyPage.nextFrame()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
     })
 
     test('duplicate via More Options menu', async ({ comfyPage }) => {
@@ -118,9 +116,7 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await menu.getByText('Duplicate', { exact: true }).click()
       await comfyPage.nextFrame()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
     })
 
     test('refresh button is hidden for a node without refreshable widgets', async ({

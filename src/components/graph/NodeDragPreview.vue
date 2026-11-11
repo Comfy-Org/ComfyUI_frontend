@@ -19,6 +19,8 @@
 </template>
 
 <script setup lang="ts">
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { useMouse, useRafFn } from '@vueuse/core'
 import { computed, shallowRef, watch } from 'vue'
 
@@ -30,7 +32,7 @@ const { isDragging, draggedNode, pendingWidgetValues } = useNodeDragToCanvas()
 const { x, y, sourceType } = useMouse({ type: 'client' })
 
 const showGhost = computed(() => Boolean(isDragging.value && draggedNode.value))
-const rafPosition = shallowRef<{ x: number; y: number }>()
+const rafPosition = shallowRef<Point2D>()
 
 const { pause, resume } = useRafFn(
   () => {

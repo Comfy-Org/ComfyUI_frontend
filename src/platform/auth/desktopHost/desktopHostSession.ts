@@ -1,4 +1,4 @@
-import { computed, shallowRef } from 'vue'
+import { computed, readonly, ref, shallowRef } from 'vue'
 
 import type {
   DesktopHostAuthBridge,
@@ -8,6 +8,7 @@ import type {
 interface DesktopHostUser {
   id: string
   email?: string
+  name?: string
   workspaceId?: string
 }
 
@@ -19,15 +20,21 @@ type DesktopHostSession =
 
 const session = shallowRef<DesktopHostSession>({ status: 'inactive' })
 let bridge: DesktopHostAuthBridge | undefined
+let bridgeReportsSignInFailures = false
 let unsubscribe: (() => void) | undefined
 /** Bumped on every session change, so a reply that raced one is dropped. */
 let revision = 0
+let lastTokenReadFailed = false
+const recoveredTokenReads = ref(0)
+
+/** Counts credential reads that succeeded right after a failed one. */
+export const desktopHostTokenRecoveries = readonly(recoveredTokenReads)
 
 function toSession(state: DesktopHostAuthState): DesktopHostSession {
   if (state.status === 'disabled') return { status: 'inactive' }
   if (state.status === 'signed_out') return { status: 'signed_out' }
-  const { userId, email, workspaceId } = state
-  return { status: 'signed_in', user: { id: userId, email, workspaceId } }
+  const { userId, email, name, workspaceId } = state
+  return { status: 'signed_in', user: { id: userId, email, name, workspaceId } }
 }
 
 function apply(state: DesktopHostAuthState): void {
@@ -36,7 +43,13 @@ function apply(state: DesktopHostAuthState): void {
     stopDesktopHostSession()
     return
   }
-  revision++
+  const current = session.value
+  const sameAccount =
+    next.status === 'signed_in' &&
+    current.status === 'signed_in' &&
+    next.user.id === current.user.id &&
+    next.user.workspaceId === current.user.workspaceId
+  if (!sameAccount) revision++
   session.value = next
 }
 
@@ -61,10 +74,12 @@ export function isDesktopHostSignedIn(): boolean {
  * answers `disabled` or the bridge fails.
  */
 export async function startDesktopHostSession(
-  hostBridge: DesktopHostAuthBridge
+  hostBridge: DesktopHostAuthBridge,
+  { reportsSignInFailures = false }: { reportsSignInFailures?: boolean } = {}
 ): Promise<void> {
   stopDesktopHostSession()
   bridge = hostBridge
+  bridgeReportsSignInFailures = reportsSignInFailures
   try {
     unsubscribe = hostBridge.onChanged(apply)
     const before = revision
@@ -75,8 +90,15 @@ export async function startDesktopHostSession(
   }
 }
 
+/** True when the session tells the person itself why a sign-in did not finish. */
+export function desktopHostReportsSignInFailures(): boolean {
+  return bridgeReportsSignInFailures
+}
+
 export function stopDesktopHostSession(): void {
   unsubscribe?.()
+  bridgeReportsSignInFailures = false
+  lastTokenReadFailed = false
   unsubscribe = undefined
   bridge = undefined
   revision++
@@ -100,7 +122,10 @@ async function fetchToken(
   if (!current || session.value.status !== 'signed_in') return undefined
   const before = revision
   const token = await read(current).catch(() => null)
-  return revision === before ? (token ?? undefined) : undefined
+  if (revision !== before) return undefined
+  if (token && lastTokenReadFailed) recoveredTokenReads.value++
+  lastTokenReadFailed = !token
+  return token ?? undefined
 }
 
 /** Runs Desktop's browser sign-in. Resolves true when it ends signed in. */

@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import type { RetentionFlowResponse } from '@comfyorg/ingest-types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
@@ -6,9 +5,8 @@ import { computed } from 'vue'
 import type { BillingType } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { BillingRail } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -24,12 +22,10 @@ const mocks = vi.hoisted(
     billingType: { value: BillingType }
     activeWorkspaceId: string | null
     isPersonal: boolean
-    billingRail: BillingRail | null
   } => ({
     billingType: { value: 'workspace' },
     activeWorkspaceId: 'workspace-1',
-    isPersonal: true,
-    billingRail: 'stripe'
+    isPersonal: true
   })
 )
 
@@ -74,7 +70,6 @@ beforeEach(() => {
   mocks.billingType.value = 'workspace'
   mocks.activeWorkspaceId = 'workspace-1'
   mocks.isPersonal = true
-  mocks.billingRail = 'stripe'
   remoteConfig.value = { cancellation_survey_id: 'survey-1' }
 
   vi.spyOn(
@@ -87,11 +82,6 @@ beforeEach(() => {
     'isInPersonalWorkspace',
     'get'
   ).mockImplementation(() => mocks.isPersonal)
-  vi.spyOn(
-    useWorkspaceBillingStateStore(),
-    'activeWorkspaceBillingRail',
-    'get'
-  ).mockImplementation(() => mocks.billingRail)
 })
 
 afterEach(() => {
@@ -101,29 +91,20 @@ afterEach(() => {
 describe('launchCancellationFlow', () => {
   it.for([
     {
-      name: 'legacy billing',
-      billingType: 'legacy',
-      isPersonal: true,
-      billingRail: 'stripe'
-    },
-    {
-      name: 'Metronome billing',
-      billingType: 'workspace',
-      isPersonal: true,
-      billingRail: 'metronome'
+      name: 'unresolved billing',
+      billingType: 'unknown',
+      isPersonal: true
     },
     {
       name: 'a team workspace',
       billingType: 'workspace',
-      isPersonal: false,
-      billingRail: 'stripe'
+      isPersonal: false
     }
   ] as const)(
     'opens the flow without a retention session for $name',
-    async ({ billingType, isPersonal, billingRail }) => {
+    async ({ billingType, isPersonal }) => {
       mocks.billingType.value = billingType
       mocks.isPersonal = isPersonal
-      mocks.billingRail = billingRail
       const { shown, showFlow } = captureFlow()
 
       await launchCancellationFlow({ cancelAt: '2026-11-12', showFlow })
@@ -141,8 +122,29 @@ describe('launchCancellationFlow', () => {
     }
   )
 
-  it('keeps legacy cancellation available while workspace state initializes', async () => {
-    mocks.billingType.value = 'legacy'
+  it('prepares a retention session for a loaded personal workspace', async () => {
+    vi.mocked(billingApi.prepareRetentionFlow).mockResolvedValue(
+      retentionFlow()
+    )
+    const { shown, showFlow } = captureFlow()
+
+    await launchCancellationFlow({ showFlow })
+
+    expect(billingApi.prepareRetentionFlow).toHaveBeenCalledOnce()
+    expect(shown[0].flow).toEqual(retentionFlow())
+  })
+
+  it('does not prepare a retention session for a launch captured before the workspace loaded', async () => {
+    const { shown, showFlow } = captureFlow()
+
+    await launchCancellationFlow({ launchWorkspaceId: null, showFlow })
+
+    expect(billingApi.prepareRetentionFlow).not.toHaveBeenCalled()
+    expect(shown[0].flow).toBeNull()
+  })
+
+  it('keeps cancellation available while workspace state initializes', async () => {
+    mocks.billingType.value = 'unknown'
     mocks.activeWorkspaceId = null
     const { shown, showFlow } = captureFlow()
 

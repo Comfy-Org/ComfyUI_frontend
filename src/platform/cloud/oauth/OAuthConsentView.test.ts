@@ -2,7 +2,12 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import { computed } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
+
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import {
@@ -12,6 +17,9 @@ import {
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
 vi.mock(import('@/platform/cloud/oauth/oauthApi'), { spy: true })
+vi.mock(import('@/composables/auth/useAuthActions'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockSubmitOAuthConsentDecision = vi.mocked(submitOAuthConsentDecision)
 
 const SCOPE_BROADENING =
@@ -26,6 +34,11 @@ const i18n = createI18n({
     en: {
       g: {
         singleSelectDropdown: 'Select an option'
+      },
+      auth: {
+        login: {
+          userAvatar: 'User avatar'
+        }
       },
       oauth: {
         consent: {
@@ -53,7 +66,10 @@ const i18n = createI18n({
           errorScopeBroadening: SCOPE_BROADENING,
           errorOriginRefused: ORIGIN_REFUSED,
           errorUnavailable: "This feature isn't available right now.",
-          sessionError: 'Failed to establish session. Please try again.'
+          sessionError: 'Failed to establish session. Please try again.',
+          signedInAs: 'Signed in as',
+          notYou: 'Not you?',
+          switchAccount: 'Switch account'
         },
         scopes: {
           'mcp:tools:read': {
@@ -335,5 +351,114 @@ describe('OAuthConsentView', () => {
         screen.getByText("This feature isn't available right now.")
       ).toBeVisible()
     })
+  })
+})
+
+describe('OAuthConsentView signed-in account', () => {
+  const signInAs = (email?: string, displayName?: string) =>
+    Object.assign(useCurrentUser(), {
+      userEmail: computed(() => email),
+      userDisplayName: computed(() => displayName)
+    })
+  const sessionUser = { user_email: 'a@example.com' }
+  const consentControlNames = ['Continue', 'Cancel', 'Switch account']
+  const enabledConsentControls = () =>
+    consentControlNames.filter(
+      (name) => !screen.getByRole('button', { name }).hasAttribute('disabled')
+    )
+
+  beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).oauthConsentSwitchAccountEnabled = true
+    sessionStorage.setItem('Comfy.OAuthRequestId', challenge.oauth_request_id)
+  })
+
+  it('shows the session user from the challenge over the client user', () => {
+    signInAs('a@example.com', 'Account A')
+    renderConsent({
+      user_email: 'b@example.com',
+      user_display_name: 'Account B'
+    })
+
+    const account = screen.getByRole('region', { name: 'Signed in as' })
+    expect(account).toHaveTextContent('Account B')
+    expect(account).toHaveTextContent('b@example.com')
+    expect(account).not.toHaveTextContent('a@example.com')
+  })
+
+  it.for([
+    { case: 'the challenge omits the session user', flag: true },
+    { case: 'the feature flag is off', flag: false }
+  ])('renders no account row when $case', ({ flag }) => {
+    vi.mocked(useFeatureFlags().flags).oauthConsentSwitchAccountEnabled = flag
+    signInAs('a@example.com', 'Account A')
+    renderConsent(flag ? {} : sessionUser)
+
+    expect(
+      screen.queryByRole('region', { name: 'Signed in as' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Switch account' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Comfy Desktop wants access')).toBeVisible()
+  })
+
+  it('signs out and keeps the consent disabled while leaving for sign-in with the same request', async () => {
+    const user = userEvent.setup()
+    renderConsent({ ...sessionUser, workspaces: [challenge.workspaces[0]] })
+
+    await user.click(screen.getByRole('button', { name: 'Switch account' }))
+
+    expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
+      signInPath: `/cloud/login?switchAccount=true&oauth_request_id=${challenge.oauth_request_id}`
+    })
+    expect(enabledConsentControls()).toEqual([])
+    expect(mockSubmitOAuthConsentDecision).not.toHaveBeenCalled()
+  })
+
+  it('reloads instead of restoring the consent when the sign-out fails', async () => {
+    vi.mocked(useAuthActions().logout).mockResolvedValueOnce(undefined)
+    const reload = vi
+      .spyOn(window.location, 'reload')
+      .mockImplementation(() => {})
+    const user = userEvent.setup()
+    renderConsent({ ...sessionUser, workspaces: [challenge.workspaces[0]] })
+
+    await user.click(screen.getByRole('button', { name: 'Switch account' }))
+
+    expect(reload).toHaveBeenCalledOnce()
+    expect(enabledConsentControls()).toEqual([])
+  })
+
+  it('never puts an unvalidated request id into the sign-in path', async () => {
+    const user = userEvent.setup()
+    renderConsent({ ...sessionUser, oauth_request_id: '//evil.example/' })
+
+    await user.click(screen.getByRole('button', { name: 'Switch account' }))
+
+    expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
+      signInPath: '/cloud/login?switchAccount=true'
+    })
+  })
+
+  it('stays on the same request when the sign-out is cancelled', async () => {
+    vi.mocked(useAuthActions().logout).mockResolvedValueOnce(false)
+    const user = userEvent.setup()
+    renderConsent({ ...sessionUser, workspaces: [challenge.workspaces[0]] })
+
+    await user.click(screen.getByRole('button', { name: 'Switch account' }))
+
+    expect(useAuthActions().logout).toHaveBeenCalledOnce()
+    expect(screen.getByRole('button', { name: 'Switch account' })).toBeEnabled()
+    expect(sessionStorage.getItem('Comfy.OAuthRequestId')).toBe(
+      challenge.oauth_request_id
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(mockSubmitOAuthConsentDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        oauthRequestId: challenge.oauth_request_id,
+        decision: 'allow'
+      })
+    )
   })
 })

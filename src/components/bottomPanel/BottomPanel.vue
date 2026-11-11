@@ -27,7 +27,7 @@
             size="sm"
             @click="openKeybindingSettings"
           >
-            <i class="pi pi-cog" />
+            <i class="icon-[lucide--settings]" />
             {{ $t('shortcuts.manageShortcuts') }}
           </Button>
           <Button
@@ -37,7 +37,7 @@
             :aria-label="t('g.close')"
             @click="closeBottomPanel"
           >
-            <i class="pi pi-times" />
+            <i class="icon-[lucide--x]" />
           </Button>
         </div>
       </div>

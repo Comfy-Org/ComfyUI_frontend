@@ -114,16 +114,14 @@ afterEach(() => stopDesktopHostSession())
 
 function desktopHostBridge(signInResult: DesktopHostAuthState) {
   return {
-    getState: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({
-        status: 'signed_out'
-      })
-    ),
+    getState: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     getWorkspaceToken: vi.fn(async () => null),
     requestSignIn: vi.fn(async () => signInResult),
-    signOut: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
-    ),
+    signOut: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     onChanged: vi.fn(() => () => {})
   }
 }
@@ -314,34 +312,39 @@ describe('SignInContent', () => {
     {
       name: 'closes once Desktop signs in',
       result: { status: 'signed_in', userId: 'sso-user' } as const,
+      reportsSignInFailures: false,
       succeeded: true,
-      toasts: [
-        {
-          duration: 6000,
-          kind: 'info',
-          title: 'Finish signing in in your browser'
-        }
-      ]
+      toasts: []
     },
     {
       name: 'stays open when the sign-in does not finish',
       result: { status: 'signed_out' } as const,
+      reportsSignInFailures: false,
       succeeded: false,
       toasts: [
-        {
-          duration: 6000,
-          kind: 'info',
-          title: 'Finish signing in in your browser'
-        },
         { duration: 6000, kind: 'error', title: 'Sign-in did not finish' }
       ]
+    },
+    {
+      name: 'leaves a failure to a session that reports its own',
+      result: { status: 'signed_out' } as const,
+      reportsSignInFailures: true,
+      succeeded: false,
+      toasts: []
+    },
+    {
+      name: 'closes once a session that reports its own failures signs in',
+      result: { status: 'signed_in', userId: 'sso-user' } as const,
+      reportsSignInFailures: true,
+      succeeded: true,
+      toasts: []
     }
   ])(
-    'SSO through Comfy Desktop $name',
-    async ({ result, succeeded, toasts }) => {
+    'SSO through the host session $name',
+    async ({ result, reportsSignInFailures, succeeded, toasts }) => {
       const user = userEvent.setup()
       const bridge = desktopHostBridge(result)
-      await startDesktopHostSession(bridge)
+      await startDesktopHostSession(bridge, { reportsSignInFailures })
       const onSuccess = vi.fn()
       renderSignInContent(onSuccess)
 

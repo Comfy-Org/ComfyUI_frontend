@@ -10,7 +10,7 @@
         :aria-label="$t('load3d.exportModel')"
         @click="toggleExportFormats"
       >
-        <i class="pi pi-download text-lg text-foreground" />
+        <i class="icon-[lucide--download] size-4.5 text-foreground" />
       </Button>
       <div
         v-show="showExportFormats"

@@ -12,13 +12,9 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import {
   EMPTY_BILLING_BALANCE,
   EMPTY_BILLING_PLANS,
-  LEGACY_PERSONAL_BILLING_STATUS
+  PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import {
-  UNSUBSCRIBED,
-  ZERO_BALANCE
-} from '@e2e/fixtures/data/subscriptionFixtures'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
@@ -288,6 +284,33 @@ export class ComfyPage {
     this.assets = new AssetsHelper(page)
     this.modelLibrary = new ModelLibraryHelper(page)
     this.cloudAuth = new CloudAuthHelper(page)
+  }
+
+  async expectNodeCount(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBe(count)
+  }
+
+  async expectNodeCountMinimum(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBeGreaterThanOrEqual(count)
+  }
+
+  async expectNodeCountMaximum(
+    count: number,
+    options?: Parameters<typeof comfyExpect.poll>[1]
+  ): Promise<void> {
+    await comfyExpect
+      .poll(() => this.nodeOps.getGraphNodesCount(), options)
+      .toBeLessThanOrEqual(count)
   }
 
   async setupUser(username: string) {
@@ -677,7 +700,13 @@ export const comfyPageFixture = base.extend<{
           route.fulfill({ status: 204 })
         )
         await context.route('**/api/billing/status', (route) =>
-          route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+          route.fulfill({
+            json: {
+              ...PERSONAL_BILLING_STATUS,
+              is_active: true,
+              subscription_status: undefined
+            }
+          })
         )
         await context.route('**/api/billing/capabilities', (route) =>
           route.fulfill({ json: createBillingCapabilities('ws-personal') })
@@ -687,12 +716,6 @@ export const comfyPageFixture = base.extend<{
         )
         await context.route('**/api/billing/plans', (route) =>
           route.fulfill({ json: EMPTY_BILLING_PLANS })
-        )
-        await context.route('**/customers/cloud-subscription-status', (route) =>
-          route.fulfill({ json: UNSUBSCRIBED })
-        )
-        await context.route('**/customers/balance', (route) =>
-          route.fulfill({ json: ZERO_BALANCE })
         )
         await mockWorkspace(context, workspace('personal', 'owner'), [])
       }
@@ -720,9 +743,7 @@ export const comfyPageFixture = base.extend<{
       }
 
       if (isCustomNodes) {
-        await comfyExpect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBe(0)
+        await comfyPage.expectNodeCount(0)
       }
 
       if (testInfo.tags.includes('@cloud')) {
@@ -752,6 +773,13 @@ export const comfyPageFixture = base.extend<{
     const comfyFiles = new ComfyFiles(comfyPage)
     await use(comfyFiles)
     await comfyFiles.teardown()
+  }
+})
+
+export const mockCloudComfyPageFixture = comfyPageFixture.extend({
+  comfyPage: async ({ page, request }, use, testInfo) => {
+    testInfo.setTimeout(Math.max(testInfo.timeout, 45_000))
+    await use(new ComfyPage(page, request))
   }
 })
 

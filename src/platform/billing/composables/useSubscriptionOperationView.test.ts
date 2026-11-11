@@ -17,7 +17,7 @@ import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPo
 vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const mockCreateBillingSdk = vi.hoisted(() => vi.fn<() => BillingSdk>())
 vi.mock(import('@comfyorg/billing-core/sdk'), () => ({

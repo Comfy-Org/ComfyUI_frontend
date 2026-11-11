@@ -2,7 +2,7 @@ import type {
   ComfyWorkflow,
   WorkflowChangeTracker
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 interface ChangeTrackerClass {
   new (
@@ -10,6 +10,10 @@ interface ChangeTrackerClass {
     initialState: ComfyWorkflowJSON
   ): WorkflowChangeTracker
   readonly isLoadingGraph: boolean
+  graphEqual(
+    a: ComfyWorkflowJSON | null | undefined,
+    b: ComfyWorkflowJSON | null | undefined
+  ): boolean
 }
 
 /** `ChangeTracker` for the stores it imports, which cannot import it back. */

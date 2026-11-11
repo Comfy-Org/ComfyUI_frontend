@@ -10,7 +10,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowStep {
@@ -34,6 +34,29 @@ if (!commentStep?.run || !commentStep.env) {
 }
 const { run: commentRun, env: commentEnv } = commentStep
 
+const forceRerunExpression =
+  /^\$\{\{ github\.event_name == '([a-z_]+)' && inputs\.force_rerun \|\| 'false' \}\}$/.exec(
+    commentEnv.FORCE_RERUN
+  )
+if (!forceRerunExpression) {
+  throw new Error(
+    `unexpected FORCE_RERUN expression in pr-backport.yaml: ${commentEnv.FORCE_RERUN}`
+  )
+}
+const forceRerunEvent = forceRerunExpression[1]
+const evaluateForceRerun = (eventName: string, forceRerunInput: boolean) =>
+  eventName === forceRerunEvent && forceRerunInput ? 'true' : 'false'
+
+beforeAll(() => {
+  const missing = ['envsubst', 'jq'].filter(
+    (tool) => spawnSync('bash', ['-c', `command -v ${tool}`]).status !== 0
+  )
+  if (missing.length > 0)
+    throw new Error(
+      `backport conflict comment tests need ${missing.join(' and ')} on PATH (envsubst ships in gettext-base)`
+    )
+})
+
 const botLogin = 'comfy-backport-bot'
 const firstMergeCommit = 'a'.repeat(40)
 const secondMergeCommit = 'b'.repeat(40)
@@ -42,8 +65,17 @@ const secondTargetHead = 'd'.repeat(40)
 const coreConflict = 'core/1.56:conflicts:src/a.ts,src/b.ts'
 const cloudConflict = 'cloud/1.56:conflicts:src/a.ts'
 
+const sharedToken = 'shared-token'
+const jobToken = 'job-token'
+
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
+if [[ "$1" == api && "$2" != graphql &&
+  " \${FAKE_SPENT_TOKENS:-} " == *" \${GH_TOKEN:-} "* ]]; then
+  echo '{"message":"API rate limit exceeded for user ID 1."}'
+  echo 'gh: API rate limit exceeded for user ID 1.' >&2
+  exit 1
+fi
 record() {
   jq -cn --arg login "\${FAKE_LOGIN}" --arg title "$1" --arg body "$2" \\
     '{user: {login: $login}, title: (if $title == "" then null else $title end), body: $body}'
@@ -51,6 +83,10 @@ record() {
 case "$1 $2" in
   "api user")
     [[ -n "\${FAKE_LOGIN}" ]] || { echo 'gh: HTTP 403' >&2; exit 1; }
+    echo "\${FAKE_LOGIN}"
+    ;;
+  "api graphql")
+    [[ "$*" == *"viewer"* && -n "\${FAKE_LOGIN}" ]] || { echo 'gh: HTTP 403' >&2; exit 1; }
     echo "\${FAKE_LOGIN}"
     ;;
   "api --paginate")
@@ -67,6 +103,11 @@ case "$1 $2" in
     ;;
   "issue create")
     record "$4" "$6" >> "\${FAKE_DIR}/issues.jsonl"
+    ;;
+  "pr view")
+    [[ "$3" == "\${FAKE_PR_NUMBER}" && "$4 $5" == "--json author,mergeCommit" ]] || {
+      echo "unexpected gh pr view invocation: $*" >&2; exit 64; }
+    jq -cn --arg oid "\${FAKE_MERGE_COMMIT}" '{author: {login: "pr-view-author"}, mergeCommit: {oid: $oid}}'
     ;;
   "pr list") ;;
   *) echo "unexpected gh invocation: $*" >&2; exit 64 ;;
@@ -92,56 +133,72 @@ function createSandbox() {
 }
 
 interface Run {
+  event?: 'pull_request_target' | 'workflow_dispatch'
   mergeCommit?: string
   targetHead?: string
   failed?: string
+  alreadyApplied?: string
   forceRerun?: boolean
   commentsRead?: 'ok' | 'error'
   login?: string
   prLocked?: boolean
+  spentRestTokens?: string[]
 }
 
 function reportConflict(
   sandbox: string,
   {
+    event = 'pull_request_target',
     mergeCommit = firstMergeCommit,
     targetHead = firstTargetHead,
     failed = coreConflict,
+    alreadyApplied = '',
     forceRerun = false,
     commentsRead = 'ok',
     login = botLogin,
-    prLocked = false
+    prLocked = false,
+    spentRestTokens = []
   }: Run = {}
 ) {
-  const event = join(sandbox, 'event.json')
+  const eventPath = join(sandbox, 'event.json')
   writeFileSync(
-    event,
-    JSON.stringify({
-      pull_request: {
-        number: 21078,
-        user: { login: 'author' },
-        merge_commit_sha: mergeCommit
-      }
-    })
+    eventPath,
+    JSON.stringify(
+      event === 'workflow_dispatch'
+        ? { inputs: { pr_number: '21078', force_rerun: String(forceRerun) } }
+        : {
+            pull_request: {
+              number: 21078,
+              user: { login: 'author' },
+              merge_commit_sha: mergeCommit
+            }
+          }
+    )
   )
   const script = commentRun
-    .replaceAll('${{ github.event_name }}', 'pull_request_target')
+    .replaceAll('${{ github.event_name }}', event)
     .replaceAll('${{ inputs.pr_number }}', '21078')
-    .replaceAll('${{ steps.backport.outputs.failed }}', failed)
 
   const result = spawnSync('bash', ['-e', '-c', script], {
     encoding: 'utf8',
     env: {
       ...process.env,
+      ALREADY_APPLIED_TARGETS: alreadyApplied,
       BACKPORT_AGENT_PROMPT_TEMPLATE: commentEnv.BACKPORT_AGENT_PROMPT_TEMPLATE,
       COMMENT_BODY_TEMPLATE: commentEnv.COMMENT_BODY_TEMPLATE,
       FAKE_DIR: sandbox,
+      FAKE_MERGE_COMMIT: mergeCommit,
+      FAKE_PR_NUMBER: '21078',
       FAKE_LOGIN: login,
       FAKE_PR_LOCKED: String(prLocked),
       FAKE_READ: commentsRead,
+      FAKE_SPENT_TOKENS: spentRestTokens.join(' '),
+      GH_TOKEN: sharedToken,
+      JOB_TOKEN: jobToken,
       FAKE_TARGET_HEAD: targetHead,
-      FORCE_RERUN: String(forceRerun),
-      GITHUB_EVENT_PATH: event,
+      FAILED_TARGETS: failed,
+      FORCE_RERUN: evaluateForceRerun(event, forceRerun),
+      GITHUB_EVENT_PATH: eventPath,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
       GITHUB_SERVER_URL: 'https://github.com',
       PATH: `${sandbox}:${process.env.PATH}`
@@ -167,6 +224,50 @@ const postedReports = (sandbox: string) =>
     .filter((body) => body.includes('Backport to `'))
 
 describe('backport conflict comment', () => {
+  it('titles the tracking issue as not needed when a locked PR already has the changes on its target', () => {
+    const sandbox = createSandbox()
+
+    reportConflict(sandbox, {
+      failed: '',
+      alreadyApplied: 'core/1.56 ',
+      prLocked: true
+    })
+
+    expect(
+      readFileSync(join(sandbox, 'issues.jsonl'), 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => (JSON.parse(line) as { title: string }).title)
+    ).toEqual(['Backport of #21078 to core/1.56 not needed'])
+  })
+
+  it('reads existing reports with the job token, which has its own quota', () => {
+    expect(commentEnv.JOB_TOKEN).toBe('${{ github.token }}')
+  })
+
+  it('reads the target lists from the backport step outputs', () => {
+    expect(commentEnv).toMatchObject({
+      FAILED_TARGETS: '${{ steps.backport.outputs.failed }}',
+      ALREADY_APPLIED_TARGETS: '${{ steps.backport.outputs.already-applied }}'
+    })
+  })
+
+  it('tells the author when a target already has the changes, without a conflict report', () => {
+    const sandbox = createSandbox()
+
+    reportConflict(sandbox, { failed: '', alreadyApplied: 'core/1.56 ' })
+
+    const bodies = readRecords(sandbox, 'comments.jsonl').map(
+      ({ body }) => body
+    )
+    expect(postedReports(sandbox)).toHaveLength(0)
+    expect(bodies).toEqual([
+      expect.stringContaining(
+        `\`core/1.56\` already has the changes from \`${firstMergeCommit}\`, so no backport PR was opened.`
+      )
+    ])
+  })
+
   it('marks the conflict comment with its target, merge commit and target head', () => {
     const sandbox = createSandbox()
 
@@ -203,13 +304,40 @@ describe('backport conflict comment', () => {
       expected: 2
     },
     {
-      scenario: 'a manual force rerun',
-      second: { forceRerun: true },
+      scenario: 'a manual dispatch with force_rerun',
+      second: { event: 'workflow_dispatch', forceRerun: true },
       expected: 2
+    },
+    {
+      scenario: 'a manual dispatch without force_rerun',
+      second: { event: 'workflow_dispatch' },
+      expected: 1
+    },
+    {
+      scenario: 'force_rerun set outside a manual dispatch',
+      second: { forceRerun: true },
+      expected: 1
     },
     {
       scenario: 'a failed read of the existing comments',
       second: { commentsRead: 'error' },
+      expected: 2
+    },
+    {
+      scenario:
+        'a later labeled event while the shared token is out of REST quota',
+      second: { spentRestTokens: [sharedToken] },
+      expected: 1
+    },
+    {
+      scenario:
+        'a later labeled event while the job token is out of REST quota',
+      second: { spentRestTokens: [jobToken] },
+      expected: 1
+    },
+    {
+      scenario: 'a later labeled event while both tokens are out of REST quota',
+      second: { spentRestTokens: [sharedToken, jobToken] },
       expected: 2
     },
     {
@@ -234,6 +362,23 @@ describe('backport conflict comment', () => {
       expect(postedReports(sandbox)).toHaveLength(expected)
     }
   )
+
+  it('reads the author and merge commit from the PR on a manual dispatch', () => {
+    const sandbox = createSandbox()
+
+    reportConflict(sandbox, {
+      event: 'workflow_dispatch',
+      forceRerun: true,
+      mergeCommit: secondMergeCommit
+    })
+
+    const reports = postedReports(sandbox)
+    expect(reports).toHaveLength(1)
+    expect(reports[0]).toContain(
+      `<!-- backport-conflict:core/1.56:${secondMergeCommit}:${firstTargetHead} -->`
+    )
+    expect(reports[0]).toContain('cc @pr-view-author')
+  })
 
   it('reports the same merge commit once per target', () => {
     const sandbox = createSandbox()

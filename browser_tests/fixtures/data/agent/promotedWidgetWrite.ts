@@ -2,7 +2,7 @@ import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 

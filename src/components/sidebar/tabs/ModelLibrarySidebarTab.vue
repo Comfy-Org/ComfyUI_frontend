@@ -29,7 +29,11 @@
           ref="searchBoxRef"
           v-model:model-value="searchQuery"
           :clear-label="$t('g.clear')"
-          :accessible-label="$t('g.search')"
+          :accessible-label="
+            $t('g.searchPlaceholder', {
+              subject: $t('sideToolbar.labels.models')
+            })
+          "
           :placeholder="
             $t('g.searchPlaceholder', {
               subject: $t('sideToolbar.labels.models')
@@ -206,14 +210,14 @@ const renderedRoot = computed<TreeExplorerNode<ComfyModelDef>>(() => {
       data: model,
       getIcon() {
         if (model) {
-          return model.image ? 'pi pi-image' : 'pi pi-file'
+          return model.image ? 'icon-[lucide--image]' : 'icon-[lucide--file]'
         }
         if (folder) {
           return folder.state === ResourceState.Loading
-            ? 'pi pi-spin pi-spinner'
-            : 'pi pi-folder'
+            ? 'animate-spin motion-reduce:animate-none icon-[lucide--loader-circle]'
+            : 'icon-[lucide--folder]'
         }
-        return 'pi pi-folder'
+        return 'icon-[lucide--folder]'
       },
       getIconImage() {
         return (model && getModelPreviewUrl(model)) || undefined

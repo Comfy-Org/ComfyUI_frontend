@@ -10,6 +10,7 @@ import type { BalanceInfo } from '@/platform/billing/composables/types'
 import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserButton from './CurrentUserButton.vue'
@@ -33,7 +34,8 @@ vi.mock(
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/account/composables/useWorkspaceDialogs'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 // Mock the WorkspaceProfilePic component
 vi.mock<unknown>(
@@ -114,6 +116,7 @@ describe('CurrentUserButton', () => {
         plugins: [i18n],
         stubs: {
           CurrentUserPopoverWorkspace: workspacePopover,
+          ProfileMenuWorkspace: { template: '<div>New Profile Menu</div>' },
           WorkspaceSwitcherPopover: true,
           SubscribeButton: true,
           DeploymentSwitcher: true
@@ -258,4 +261,29 @@ describe('CurrentUserButton', () => {
     expect(screen.getByText('Workspace Popover Content')).toBeInTheDocument()
     expect(screen.queryByText('Popover Content')).not.toBeInTheDocument()
   })
+
+  it.for([
+    {
+      flag: true,
+      shown: 'New Profile Menu',
+      hidden: 'Workspace Popover Content'
+    },
+    {
+      flag: false,
+      shown: 'Workspace Popover Content',
+      hidden: 'New Profile Menu'
+    }
+  ])(
+    'opens the profile menu billing_new_ux_enabled=$flag picks',
+    async ({ flag, shown, hidden }) => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = flag
+      useTeamWorkspaceStore().initState = 'ready'
+      const { user } = renderComponent()
+
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      expect(screen.getByText(shown)).toBeInTheDocument()
+      expect(screen.queryByText(hidden)).not.toBeInTheDocument()
+    }
+  )
 })

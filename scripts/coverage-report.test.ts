@@ -15,11 +15,13 @@ const TRACEFILE = Array.from(
     `SF:src/components/Component${index}.vue\nDA:1,1\nDA:2,0\nLF:2\nLH:1\nend_of_record\n`
 ).join('')
 
-/** A string is written verbatim, so cases can supply unparseable metadata. */
-function render(metadata: Record<string, unknown> | string | null): string {
+function render(
+  metadata: Record<string, unknown> | string | null,
+  tracefile = TRACEFILE
+): string {
   const dir = mkdtempSync(join(tmpdir(), 'coverage-report-'))
   const lcov = join(dir, 'coverage.lcov')
-  writeFileSync(lcov, TRACEFILE)
+  writeFileSync(lcov, tracefile)
   if (metadata !== null) {
     writeFileSync(
       join(dir, 'coverage-metadata.json'),
@@ -49,7 +51,7 @@ describe('coverage-report shard banner', () => {
     expect(output).not.toContain('[!WARNING]')
     expect(output).not.toContain('[!NOTE]')
     expect(output).toContain('| Lines | 3 | 6 | 50.0%')
-    expect(output.split('<details>')[0]).toContain('Line coverage: **50.0%**')
+    expect(output.split('\n')[0]).toBe('## 🔬 E2E Coverage: 🟡 50.0% of lines')
     expect(output.split('<details>')[0]).not.toContain('| Metric |')
     expect(output).toMatch(
       /<summary>Coverage totals<\/summary>\n\n\| Metric[\s\S]*\| Lines \| 3 \| 6 \| 50.0%[\s\S]*\n\n<\/details>/
@@ -91,5 +93,15 @@ describe('coverage-report shard banner', () => {
     ['an unverified merge', { complete: false }]
   ] as const)('still reports the totals with %s', ([, metadata]) => {
     expect(render(metadata)).toContain('| Lines | 3 | 6 | 50.0%')
+  })
+})
+
+describe('coverage-report line totals', () => {
+  it('warns instead of showing a percentage when no lines were recorded', () => {
+    const output = render({ complete: true }, '')
+
+    expect(output.split('\n')[0]).toBe(
+      '## 🔬 E2E Coverage: ⚠️ No line coverage recorded'
+    )
   })
 })

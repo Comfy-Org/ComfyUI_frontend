@@ -21,9 +21,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
 
     await comfyPage.page.keyboard.press('Enter')
     await expect(searchBoxV2.input).toBeHidden()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount + 1)
+    await comfyPage.expectNodeCount(initialCount + 1)
   })
 
   test('Opens fully inside the viewport', async ({ comfyPage }) => {
@@ -44,9 +42,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
 
     await comfyPage.page.keyboard.press('Enter')
     await expect(searchBoxV2.input).toBeHidden()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount + 1)
+    await comfyPage.expectNodeCount(initialCount + 1)
   })
 
   test.describe('Category navigation', () => {
@@ -151,9 +147,7 @@ test.describe('Node search box V2', { tag: '@node' }, () => {
       await test.step('Enter selects and adds the node', async () => {
         await comfyPage.page.keyboard.press('Enter')
         await expect(searchBoxV2.input).toBeHidden()
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-          .toBe(initialCount + 1)
+        await comfyPage.expectNodeCount(initialCount + 1)
       })
     })
   })

@@ -20,7 +20,7 @@ import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSet
 setupInlinePromptEditorDom()
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 
 const DESCRIPTION_DELAY_MS = 250

@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type {
   PageViewMetadata,
   TelemetryProvider
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 const IMPACT_SCRIPT_URL =
   'https://utt.impactcdn.com/A6951770-3747-434a-9ac7-4e582e67d91f1.js'

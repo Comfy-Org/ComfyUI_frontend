@@ -9,7 +9,7 @@
       :aria-label="$t('g.close')"
       @click="onClose"
     >
-      <i class="pi pi-times text-xl" />
+      <i class="icon-[lucide--x] size-5" />
     </Button>
 
     <div
@@ -43,6 +43,11 @@
         </i18n-t>
       </DialogTitle>
     </div>
+
+    <CreditsLockedNotice
+      v-if="creditsLocked && checkoutStep === 'pricing'"
+      class="text-center"
+    />
 
     <div
       v-if="reason === 'out_of_credits'"
@@ -94,7 +99,6 @@
       :preview-data="previewData"
       :is-loading="isSubscribing || isPolling"
       :action-url="activeCheckoutActionUrl"
-      :force-reactivation="reactivationRequired"
       :authentication-state
       :payment-cancelable
       :canceling-payment="isCancelingPayment"
@@ -120,10 +124,11 @@ import { onMounted } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import type { SubscriptionCheckoutSelection } from '@/platform/billing/composables/types'
 import { useSubscriptionCheckout } from '@/platform/billing/composables/useSubscriptionCheckout'
 
+import CreditsLockedNotice from './CreditsLockedNotice.vue'
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
@@ -133,12 +138,14 @@ const {
   onClose,
   reason,
   paymentIntentSource,
+  creditsLocked,
   isPersonal = false,
   initialCheckout
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
   paymentIntentSource: PaymentIntentSource | undefined
+  creditsLocked?: boolean
   isPersonal?: boolean
   initialCheckout?: SubscriptionCheckoutSelection
 }>()
@@ -154,7 +161,6 @@ const {
   isSubscribing,
   isResubscribing,
   previewData,
-  reactivationRequired,
   selectedTierKey,
   selectedBillingCycle,
   activeCheckoutActionUrl,

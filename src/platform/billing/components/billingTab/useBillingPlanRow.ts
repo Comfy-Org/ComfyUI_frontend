@@ -6,7 +6,8 @@ import { useFreeTierQuota } from '@/platform/billing/subscription/composables/us
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import type { SubscriptionTier } from '@comfyorg/billing-core'
 import { resolveSubscriptionTierKey } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
-import { derivePlanRow } from '@/platform/billing/components/billingTab/planRow'
+import { derivePlanRow } from '@comfyorg/account-core/billing'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 
 export function useBillingPlanRow() {
@@ -20,6 +21,7 @@ export function useBillingPlanRow() {
   } = useBillingContext()
   const { quotaEnabled, available, maxAvailable } = useFreeTierQuota()
   const scheduled = useScheduledPlanChange()
+  const { planKind } = useBillingCapabilities()
 
   function planNameFor(tier: SubscriptionTier | null): string | null {
     if (tier === null || isSalesManagedTier(tier)) return null
@@ -41,12 +43,24 @@ export function useBillingPlanRow() {
       : null
   )
 
-  const subscriptionFacts = computed(() => ({
-    duration: subscription.value?.duration ?? null,
-    planName: planNameFor(subscription.value?.tier ?? null),
-    renewalDate: subscription.value?.renewalDate ?? null,
-    endDate: subscription.value?.endDate ?? null
-  }))
+  const subscriptionFacts = computed(() => {
+    const current = subscription.value
+    if (!current) {
+      return {
+        duration: null,
+        planName: null,
+        renewalDate: null,
+        endDate: null
+      }
+    }
+    return {
+      duration: current.duration,
+      planName: planNameFor(current.tier),
+      renewalDate: current.renewalDate,
+      endDate: current.endDate,
+      endedAt: current.endedAt
+    }
+  })
 
   const state = computed(() =>
     derivePlanRow({
@@ -55,7 +69,8 @@ export function useBillingPlanRow() {
       subscriptionState: subscriptionState.value,
       billingStatus: billingStatus.value,
       scheduledChange: scheduledChange.value,
-      freeRuns: freeRuns.value
+      freeRuns: freeRuns.value,
+      planKind: planKind.value
     })
   )
 

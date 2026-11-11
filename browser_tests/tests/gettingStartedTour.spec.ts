@@ -19,6 +19,7 @@ import { onboardingFixture } from '@e2e/fixtures/tourFixture'
 import type { Position } from '@e2e/fixtures/types'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -53,8 +54,10 @@ const ACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
   renewal_date: '2099-01-01',
@@ -65,8 +68,10 @@ const INACTIVE_SUBSCRIPTION: BillingStatusResponse = {
   is_active: false,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_tier: 'FREE',
   subscription_duration: 'MONTHLY',
   has_funds: false
@@ -347,6 +352,7 @@ test.describe(
 
     test.describe('without a subscription', () => {
       test.beforeEach(async ({ page }) => {
+        await keepPricingTableInApp(page)
         await mockBilling(page)
         await page.route('**/api/billing/status', (route) =>
           route.fulfill(jsonRoute(INACTIVE_SUBSCRIPTION))

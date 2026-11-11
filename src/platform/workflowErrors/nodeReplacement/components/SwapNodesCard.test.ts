@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import type { SwapNodeGroup } from '@/platform/workflowErrors/panel/useErrorGroups'
 
 vi.mock<unknown>(import('./SwapNodeGroupRow.vue'), () => ({
   default: {

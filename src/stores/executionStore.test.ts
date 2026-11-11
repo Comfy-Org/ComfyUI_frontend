@@ -8,8 +8,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import '@/scripts/changeTracker'
@@ -20,9 +20,9 @@ import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplace
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
+import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
 
 const apiEvents: EventTarget = api
 
@@ -33,13 +33,13 @@ const defaultWorkflowExecutionIntent = {
 vi.mock(import('@/composables/useAppMode'))
 
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 // Remove any previous global types
 declare global {

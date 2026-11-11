@@ -26,6 +26,7 @@ import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
+import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { clearDeletedAssetWidgetValues } from '@/platform/assets/utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNodePreviewCacheForValues'
@@ -47,7 +48,7 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 }))
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
@@ -566,6 +567,77 @@ describe('useMediaAssetActions', () => {
         expect.objectContaining({ description: 'boom' })
       )
     })
+
+    it.for([
+      {
+        name: 'single',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openWorkflow(asset)
+      },
+      {
+        name: 'bulk',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openMultipleWorkflows([asset])
+      }
+    ])(
+      'does not show another toast for a handled $name API-prompt failure',
+      async ({ open }) => {
+        mockExtractWorkflowFromAsset.mockResolvedValue({
+          workflow: null,
+          filename: 'open.json'
+        })
+        mockExtractApiPromptFromAsset.mockResolvedValue(apiPrompt)
+        mockLoadApiJson.mockRejectedValueOnce(
+          markGraphLoadFailurePresented(new Error('boom'))
+        )
+        const actions = useMediaAssetActions()
+
+        await open(actions, createMockAsset())
+
+        expect(useToast().warning).not.toHaveBeenCalled()
+        expect(useToast().success).not.toHaveBeenCalled()
+        expect(mockReportError).toHaveBeenCalledOnce()
+      }
+    )
+
+    it.for([
+      {
+        name: 'single',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openWorkflow(asset)
+      },
+      {
+        name: 'bulk',
+        open: (
+          actions: ReturnType<typeof useMediaAssetActions>,
+          asset: AssetItem
+        ) => actions.openMultipleWorkflows([asset])
+      }
+    ])(
+      'does not show another toast for a handled $name full-workflow failure',
+      async ({ open }) => {
+        mockExtractWorkflowFromAsset.mockResolvedValue({
+          workflow: { version: 0.4 },
+          filename: 'open.json'
+        })
+        mockOpenWorkflowAction.mockResolvedValue({
+          success: false,
+          errorPresentation: 'handled'
+        })
+        const actions = useMediaAssetActions()
+
+        await open(actions, createMockAsset())
+
+        expect(useToast().warning).not.toHaveBeenCalled()
+        expect(useToast().success).not.toHaveBeenCalled()
+      }
+    )
 
     it('warns when fetching the stored API graph fails', async () => {
       mockExtractWorkflowFromAsset.mockResolvedValue({
@@ -2547,7 +2619,7 @@ describe('useMediaAssetActions', () => {
           'tag temp',
           insertAsNode,
           () => tempAsset,
-          'previews/ComfyUI_temp_00001_.png [temp]'
+          'previews/aa7ecf08.png [temp]'
         ],
         [
           'inserted as a node',
@@ -2561,7 +2633,7 @@ describe('useMediaAssetActions', () => {
           'tag temp',
           dropOnLoadImage,
           () => atRoot(tempAsset),
-          'ComfyUI_temp_00001_.png [temp]'
+          'aa7ecf08.png [temp]'
         ],
         [
           'dropped on Load Image',
@@ -2575,7 +2647,7 @@ describe('useMediaAssetActions', () => {
           'tag temp in a subfolder',
           dropOnLoadImage,
           () => tempAsset,
-          'previews/ComfyUI_temp_00001_.png [temp]'
+          'previews/aa7ecf08.png [temp]'
         ],
         [
           'dropped on Load Image',
@@ -2585,7 +2657,7 @@ describe('useMediaAssetActions', () => {
           'previews/ComfyUI_temp_00003_.png [temp]'
         ]
       ] as const)(
-        'writes the temp root for a child %s from an asset with %s, so deleting the child clears it',
+        'writes the temp root and stored filename for a child %s from an asset with %s, so deleting the child clears it',
         async ([, , writeReference, source, written]) => {
           const child = await expandedChildOf(source())
           const { actions, node } = await writeReference(child)
@@ -2597,6 +2669,76 @@ describe('useMediaAssetActions', () => {
           expect(referenceState(node)).toEqual(cleared(written))
         }
       )
+
+      describe('of a job with several outputs', () => {
+        const firstOutput = createMockAsset({
+          job_id: 'job-3',
+          created_at: '2026-01-01T00:00:00Z',
+          id: 'first-output',
+          name: 'ComfyUI_00001_.png',
+          hash: '1a2b3c4d.png',
+          tags: ['output'],
+          user_metadata: { jobId: 'job-3', subfolder: '' }
+        })
+        const coverOutput = createMockAsset({
+          job_id: 'job-3',
+          created_at: '2026-01-01T00:00:01Z',
+          id: 'cover-output',
+          name: 'ComfyUI_00002_.png',
+          hash: '5e6f7a8b.png',
+          tags: ['output'],
+          user_metadata: { jobId: 'job-3', subfolder: '' }
+        })
+
+        async function expandedFirstOutput() {
+          mockResolveOutputAssetItems.mockRestore()
+          vi.mocked(api.getJobAssets).mockResolvedValue({
+            assets: [firstOutput, coverOutput].map((output) =>
+              fromPartial({ id: output.id, name: output.name })
+            ),
+            complete: true
+          })
+          const [group] = unflattenOutputAssets([firstOutput, coverOutput])
+          const groupMetadata = getOutputAssetMetadata(group.user_metadata)
+          assert.exists(groupMetadata)
+          const children = await resolveOutputAssetItems(groupMetadata)
+          const child = children.find(({ id }) => id === firstOutput.id)
+          assert.exists(child)
+          return child
+        }
+
+        it.for([
+          ['inserted as a node', insertAsNode],
+          ['dropped on Load Image', dropOnLoadImage]
+        ] as const)(
+          'writes a non-cover output %s by its own hash',
+          async ([, writeReference]) => {
+            const { node } = await writeReference(await expandedFirstOutput())
+
+            expect(serializedImageValue(node)).toBe('1a2b3c4d.png [output]')
+          }
+        )
+
+        it('drags a non-cover output with its hash as the attachment reference', async () => {
+          const dataTransfer = new DataTransfer()
+          const event = new DragEvent('dragstart')
+          Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+
+          startAssetDrag(event, await expandedFirstOutput())
+
+          expect(parseAssetInfo(dataTransfer)?.attachment_ref).toBe(
+            '1a2b3c4d.png'
+          )
+        })
+
+        it('drops the cover card as the cover output by its hash', async () => {
+          const [group] = unflattenOutputAssets([firstOutput, coverOutput])
+
+          const { node } = await dropOnLoadImage(group)
+
+          expect(serializedImageValue(node)).toBe('5e6f7a8b.png [output]')
+        })
+      })
     })
 
     it('ignores stored identity fields supplied in server metadata', async () => {

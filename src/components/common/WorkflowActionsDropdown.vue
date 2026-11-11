@@ -14,11 +14,11 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useCommandStore } from '@/stores/commandStore'
-import type { ViewMode } from '@/utils/appMode'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import type { ViewMode } from '@comfyorg/graph-model/appMode'
 
 interface ViewModeSegment {
   mode: ViewMode
