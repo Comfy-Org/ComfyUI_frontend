@@ -45,8 +45,9 @@ const workingId = useId()
 const describedBy = computed(
   () =>
     [
-      date === undefined ? undefined : detailsId,
-      working ? workingId : undefined,
+      // The working label sits inside the details line on result rows and
+      // stands alone on plain rows, so exactly one of them describes it.
+      date === undefined ? (working ? workingId : undefined) : detailsId,
       failed ? errorId : undefined
     ]
       .filter(Boolean)
@@ -95,7 +96,14 @@ const titleParts = computed(() =>
           :date
           :workflow-name
           :current
+          :working
         />
+        <span
+          v-else-if="working"
+          :id="workingId"
+          class="text-xs text-primary"
+          >{{ t('agent.historyWorking') }}</span
+        >
       </span>
       <i
         v-if="loading"
@@ -103,9 +111,6 @@ const titleParts = computed(() =>
         class="icon-[lucide--loader-circle] animate-spin"
       />
     </Button>
-    <span v-if="working" :id="workingId" class="sr-only">{{
-      t('agent.historyWorking')
-    }}</span>
     <span v-if="loading" role="status" class="sr-only">{{
       t('g.loading')
     }}</span>

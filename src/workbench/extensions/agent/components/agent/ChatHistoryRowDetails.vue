@@ -6,12 +6,13 @@ import ChatHistoryHighlight from './ChatHistoryHighlight.vue'
 
 import type { ChatRowPlan } from '@/workbench/extensions/agent/utils/chatHistoryRowText'
 
-const { plan, date, workflowName, current } = defineProps<{
+const { plan, date, workflowName, current, working } = defineProps<{
   id: string
   plan: ChatRowPlan
   date: string
   workflowName?: string
   current: boolean
+  working: boolean
 }>()
 const { t } = useI18n()
 
@@ -38,6 +39,9 @@ const matchLabel = computed(() => {
       <span class="shrink-0">{{ date }}</span>
       <span v-if="current" class="shrink-0 rounded-sm bg-muted px-1">{{
         t('agent.historyCurrentChat')
+      }}</span>
+      <span v-if="working" class="shrink-0 text-primary">{{
+        t('agent.historyWorking')
       }}</span>
       <span
         v-if="plan.workflowParts"

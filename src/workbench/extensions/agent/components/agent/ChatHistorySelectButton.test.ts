@@ -68,6 +68,9 @@ describe('ChatHistorySelectButton', () => {
     await rerender({ working: true })
 
     expect(screen.getByText('Portrait chat')).toHaveClass('agent-shimmer-text')
+    expect(
+      screen.getByText(i18n.global.t('agent.historyWorking'))
+    ).not.toHaveClass('sr-only')
     expect(button).toHaveAccessibleDescription(
       i18n.global.t('agent.historyWorking')
     )
@@ -76,6 +79,24 @@ describe('ChatHistorySelectButton', () => {
 
     expect(screen.getByText('Portrait chat')).not.toHaveClass(
       'agent-shimmer-text'
+    )
+    expect(
+      screen.queryByText(i18n.global.t('agent.historyWorking'))
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the working label once, in the date line, on a result row', () => {
+    render(ChatHistorySelectButton, {
+      props: { title: 'Weekly plan', date: 'Sep 9', working: true },
+      global: { plugins: [i18n] }
+    })
+    const button = screen.getByRole('button', { name: 'Weekly plan' })
+
+    expect(
+      screen.getAllByText(i18n.global.t('agent.historyWorking'))
+    ).toHaveLength(1)
+    expect(button).toHaveAccessibleDescription(
+      new RegExp(`Sep 9.*${i18n.global.t('agent.historyWorking')}`)
     )
   })
 
