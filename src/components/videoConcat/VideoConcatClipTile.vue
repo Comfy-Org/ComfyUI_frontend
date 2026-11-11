@@ -6,11 +6,7 @@
     :class="
       cn(
         'relative aspect-video w-24 shrink-0 touch-none overflow-hidden rounded-md border-2 bg-input outline-none select-none focus-visible:ring-2 focus-visible:ring-ring',
-        active
-          ? 'border-primary'
-          : mismatchedSize
-            ? 'border-warning'
-            : 'border-transparent',
+        active ? 'border-primary' : 'border-transparent',
         dragging
           ? 'cursor-grabbing border-dashed border-foreground opacity-40'
           : 'cursor-grab'
@@ -38,13 +34,6 @@
       {{ position }}
     </span>
     <span
-      v-if="mismatchedSize"
-      data-testid="video-concat-clip-size-warning"
-      class="pointer-events-none absolute top-1 right-1 flex rounded-sm bg-black/60 p-0.5"
-    >
-      <i class="icon-[lucide--triangle-alert] text-warning" />
-    </span>
-    <span
       v-if="duration"
       class="pointer-events-none absolute right-1 bottom-1 rounded-sm bg-black/60 px-1 text-xs text-white tabular-nums"
     >
@@ -67,15 +56,13 @@ const {
   url,
   position,
   active = false,
-  dragging = false,
-  mismatchedSize = false
+  dragging = false
 } = defineProps<{
   name: string
   url?: string
   position: number
   active?: boolean
   dragging?: boolean
-  mismatchedSize?: boolean
 }>()
 
 const emit = defineEmits<{

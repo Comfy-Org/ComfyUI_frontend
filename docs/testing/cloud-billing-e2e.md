@@ -14,7 +14,10 @@ continues to select the old Plans fallback while the new UX is enabled.
 
 The locked-credit Subscribe to Run entry already shipped in Cloud 1.60 and stays
 independent of this flag. SDK payment-rail flags remain independent.
-SDK rule extraction does not change which behavior the flag selects.
+With the flag off, the Billing settings tab is the 1.60 tab, restored as
+`BillingTabLegacy.vue` with its rules under `src/platform/billing/legacy160/`.
+Its root carries `data-billing-release="1.60"`. With the flag on, the tab renders
+through the SDK rule packages. Delete both together with the flag.
 
 Mocked browser tests opt in through the `billingNewUx` fixture option. Set it to
 false to exercise the default 1.60 path; do not enable the flag in that case's
