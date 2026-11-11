@@ -170,6 +170,30 @@ jobs:
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      # pnpm publish rewrites each workspace: dependency to the version in the
+      # checked-out manifest, so that exact version must already be on npm.
+      # It may still be publishing from an earlier dispatch or another merge.
+      - name: Wait for workspace dependencies on npm
+        env:
+          DIRECTORY: ${{ steps.resolve.outputs.directory }}
+          NAME: ${{ steps.pkg.outputs.name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPS=$(jq -r '[.dependencies // {}, .peerDependencies // {}] | add | to_entries[] | select(.value | startswith("workspace:")) | .key' "$DIRECTORY/package.json")
+          for DEP in $DEPS; do
+            DEP_VERSION=$(jq -r .version "packages/${DEP#@comfyorg/}/package.json")
+            for _ in $(seq 1 60); do
+              if [ -n "$(npm view "$DEP@$DEP_VERSION" version 2>/dev/null || true)" ]; then
+                echo "$DEP@$DEP_VERSION is on npm."
+                continue 2
+              fi
+              sleep 30
+            done
+            echo "::error title=Dependency not published::$DEP@$DEP_VERSION is not on npm after 30 minutes; not publishing $NAME."
+            exit 1
+          done
+
       - name: Build package
         env:
           NAME: ${{ steps.pkg.outputs.name }}

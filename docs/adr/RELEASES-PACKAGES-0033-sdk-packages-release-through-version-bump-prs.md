@@ -258,10 +258,13 @@ and an exact pin is the lockfile conflict this ADR rejects below.
 > changed. The
 > bumps land in one `Release`-labelled PR on `sdk-release/auto`, refreshed on
 > every push, so a release is still a reviewed merge. The on-merge publish now
-> runs its matrix one package at a time in dependency order (`ingest-types`
-> first) and stops at the first failure, so one PR can carry a package and a
-> dependent that needs it. Platform's own direct imports of `ingest-types`
-> are outside the gate.
+> dispatches the packages from one job, one at a time in dependency order
+> (`ingest-types` first), waits for each run, and stops at the first failure,
+> so one PR can carry a package and a dependent that needs it. Before it
+> builds, `publish-package.yaml` waits until every `workspace:` dependency in
+> its checked-out manifest is on npm at that exact version, which also covers
+> a dependency still publishing from another merge. Platform's own direct
+> imports of `ingest-types` are outside the gate.
 
 - **Picking the `ingest-types` increment stays a human judgement.** The
   planner always proposes `patch` for a regeneration; a reviewer raises it on

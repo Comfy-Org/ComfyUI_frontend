@@ -84,67 +84,38 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
   publish:
-    name: Publish ${{ matrix.package }} to npm
+    name: Publish to npm
     needs: resolve
     if: needs.resolve.outputs.released != '0'
-    # One at a time, in resolve order, so a dependent never publishes before
-    # (or without) the release it resolves.
-    strategy:
-      fail-fast: true
-      max-parallel: 1
-      matrix: ${{ fromJson(needs.resolve.outputs.matrix) }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
       actions: write
     steps:
-      - name: Checkout merge commit
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
-          persist-credentials: false
-
-      # max-parallel orders this run only. A dependency released by another
-      # merge's run may still be publishing, so wait for it on the registry.
-      - name: Wait for workspace dependencies on npm
-        env:
-          PACKAGE: ${{ matrix.package }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          DEPS=$(jq -r '[.dependencies // {}, .peerDependencies // {}] | add | to_entries[] | select(.value | startswith("workspace:")) | .key' "packages/$PACKAGE/package.json")
-          for DEP in $DEPS; do
-            DEP_VERSION=$(jq -r .version "packages/${DEP#@comfyorg/}/package.json")
-            for _ in $(seq 1 60); do
-              if [ -n "$(npm view "$DEP@$DEP_VERSION" version 2>/dev/null || true)" ]; then
-                echo "$DEP@$DEP_VERSION is on npm."
-                continue 2
-              fi
-              sleep 30
-            done
-            echo "::error title=Dependency not published::$DEP@$DEP_VERSION is not on npm after 30 minutes; not publishing $PACKAGE."
-            exit 1
-          done
-
-      - name: Dispatch the trusted publish workflow and wait for it
+      # A matrix does not guarantee job order even at max-parallel 1, so one
+      # job walks the resolved list in dependency order and stops at the
+      # first failure.
+      - name: Dispatch the trusted publish workflow for each package in order
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          PACKAGE: ${{ matrix.package }}
-          VERSION: ${{ matrix.version }}
-          DIST_TAG: ${{ matrix.dist_tag }}
+          MATRIX: ${{ needs.resolve.outputs.matrix }}
         shell: bash
         run: |
           set -euo pipefail
-          RUN_ID=$(gh api --method POST \
-            "repos/$REPO/actions/workflows/publish-package.yaml/dispatches" \
-            -f ref=main \
-            -F return_run_details=true \
-            -f "inputs[package]=$PACKAGE" \
-            -f "inputs[version]=$VERSION" \
-            -f "inputs[dist_tag]=$DIST_TAG" \
-            --jq '.workflow_run_id')
-          gh run watch "$RUN_ID" --repo "$REPO" --exit-status --interval 15
+          jq -r '.include[] | [.package, .version, .dist_tag] | @tsv' <<<"$MATRIX" |
+            while IFS=$'\t' read -r PACKAGE VERSION DIST_TAG; do
+              echo "Publishing @comfyorg/$PACKAGE@$VERSION ($DIST_TAG)"
+              RUN_ID=$(gh api --method POST \
+                "repos/$REPO/actions/workflows/publish-package.yaml/dispatches" \
+                -f ref=main \
+                -F return_run_details=true \
+                -f "inputs[package]=$PACKAGE" \
+                -f "inputs[version]=$VERSION" \
+                -f "inputs[dist_tag]=$DIST_TAG" \
+                --jq '.workflow_run_id')
+              gh run watch "$RUN_ID" --repo "$REPO" --exit-status --interval 15 </dev/null
+            done
 
   # The release links are written to an artifact here and posted by
   # pr-publish-report.yaml, a workflow_run consumer, so this pull_request-
