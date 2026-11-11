@@ -209,7 +209,7 @@ jobs:
           matrix.proof_row != '9'
         env:
           PROOF_ROW: ${{ matrix.proof_row }}
-        run: pnpm exec tsx tools/ci/src/cicd/custom-node-proof.ts mutate-source
+        run: pnpm exec tsx "$(git ls-files -- tools/ci/src/cicd/custom-node-proof.ts scripts/cicd/custom-node-proof.ts)" mutate-source
 
       - name: Build frontend
         env:
@@ -286,7 +286,7 @@ jobs:
 
       - name: Prepare manifest custom node sources
         id: prepare
-        run: pnpm exec tsx tools/ci/src/cicd/custom-node-install.ts --prepare
+        run: pnpm exec tsx "$(git ls-files -- tools/ci/src/cicd/custom-node-install.ts scripts/cicd/custom-node-install.ts)" --prepare
 
       # Persist pinned source before pack-controlled requirements execute.
       - name: Save manifest pack cache
@@ -302,14 +302,14 @@ jobs:
 
       - name: Install manifest custom node requirements
         id: install
-        run: pnpm exec tsx tools/ci/src/cicd/custom-node-install.ts --requirements
+        run: pnpm exec tsx "$(git ls-files -- tools/ci/src/cicd/custom-node-install.ts scripts/cicd/custom-node-install.ts)" --requirements
 
       - name: Apply Detection Proof execution break
         id: execution-mutation
         if: matrix.proof_row == '9'
         env:
           PROOF_ROW: ${{ matrix.proof_row }}
-        run: pnpm exec tsx tools/ci/src/cicd/custom-node-proof.ts mutate-execution
+        run: pnpm exec tsx "$(git ls-files -- tools/ci/src/cicd/custom-node-proof.ts scripts/cicd/custom-node-proof.ts)" mutate-execution
 
       - name: Bind Detection Proof identity
         if: matrix.proof_row != '0'
@@ -317,7 +317,7 @@ jobs:
           MUTATION_DIGEST: ${{ steps.source-mutation.outputs.digest || steps.execution-mutation.outputs.digest }}
           MUTATION_PATH: ${{ steps.source-mutation.outputs.path || steps.execution-mutation.outputs.path }}
           PROOF_ROW: ${{ matrix.proof_row }}
-        run: pnpm exec tsx tools/ci/src/cicd/custom-node-proof.ts identity
+        run: pnpm exec tsx "$(git ls-files -- tools/ci/src/cicd/custom-node-proof.ts scripts/cicd/custom-node-proof.ts)" identity
 
       - name: Stage deterministic inputs
         shell: bash
@@ -404,14 +404,14 @@ jobs:
         env:
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
           GREP_FILTER: ${{ inputs.grep }}
-        run: pnpm exec tsx tools/ci/src/cicd/custom-node-results.ts ordinary
+        run: pnpm exec tsx "$(git ls-files -- tools/ci/src/cicd/custom-node-results.ts scripts/cicd/custom-node-results.ts)" ordinary
 
       - name: Assert deliberate failure independence
         if: always() && matrix.proof_row != '0'
         env:
           PROOF_ROW: ${{ matrix.proof_row }}
           SUITE_OUTCOME: ${{ steps.suite.outcome }}
-        run: pnpm exec tsx tools/ci/src/cicd/custom-node-results.ts proof
+        run: pnpm exec tsx "$(git ls-files -- tools/ci/src/cicd/custom-node-results.ts scripts/cicd/custom-node-results.ts)" proof
 
       - name: Publish results table
         if: always()
@@ -420,7 +420,7 @@ jobs:
           BRANCH_TESTED: ${{ inputs.branch || github.ref_name }}
           COMFYUI_REF_USED: ${{ inputs.comfyui_ref || env.COMFYUI_PIN }}
           GREP_FILTER: ${{ inputs.grep }}
-        run: python3 tools/ci/src/cicd/custom-nodes-summary.py
+        run: python3 "$(git ls-files -- tools/ci/src/cicd/custom-nodes-summary.py scripts/cicd/custom-nodes-summary.py)"
 
       - name: Upload Playwright report and raw diagnostics
         if: always()
