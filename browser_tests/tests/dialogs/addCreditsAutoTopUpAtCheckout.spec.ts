@@ -4,19 +4,30 @@ import type {
   AutoReloadSettings,
   BillingBalanceResponse,
   CreateTopupCheckoutResponse,
-  HostedTopupCheckout
+  HostedTopupCheckout,
+  ListSavedPaymentMethodsResponse,
+  TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+
+import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import { installSeededServerFlags } from '@e2e/fixtures/helpers/FeatureFlagHelper'
-import { TestIds } from '@e2e/fixtures/selectors'
+import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
-import { workspaceRailAuthFixture as test } from '@e2e/fixtures/workspaceRailAuthFixture'
 
 const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_test_front3912'
 const SESSION_ID = 'cs_test_front3912'
-const PERSONAL_WORKSPACE_ID = workspace('personal', 'owner').id
+const PERSONAL_WORKSPACE = workspace('personal', 'owner')
+
+const DEFAULT_VISA: ListSavedPaymentMethodsResponse[number] = {
+  id: 'pm_visa',
+  type: 'card',
+  brand: 'visa',
+  last4: '4242',
+  is_default: true
+}
 
 const AUTO_TOP_UP_OFF: AutoReloadSettings = {
   card_expiry: null,
@@ -53,19 +64,41 @@ function balance(amountMicros: number): BillingBalanceResponse {
 
 async function mockAutoTopUpPurchase(
   page: Page,
-  activation: HostedTopupCheckout
+  {
+    activation,
+    atCheckout
+  }: { activation: HostedTopupCheckout; atCheckout: boolean }
 ): Promise<Request[]> {
   const checkoutRequests: Request[] = []
-  await page.route('**/api/billing/capabilities', (route) =>
+  // The saved-cards read rides the unified Cloud session, which only the cloud build mints.
+  await setupCloudApp(page, {
+    workspace: PERSONAL_WORKSPACE,
+    features: {
+      unified_cloud_auth: true,
+      billing_new_ux_enabled: true,
+      billing_auto_top_up_at_checkout_enabled: atCheckout
+    } satisfies RemoteConfig,
+    billingCapabilities: {
+      ...createBillingCapabilities(PERSONAL_WORKSPACE.id, {
+        can_manage_auto_top_up: true,
+        can_view_auto_top_up: true
+      }),
+      auto_top_up_enabled: true,
+      auto_top_up_setup: { state: 'ready' }
+    }
+  })
+  await page.route('**/api/billing/payment-methods', (route) =>
+    route.fulfill({
+      json: [DEFAULT_VISA] satisfies ListSavedPaymentMethodsResponse
+    })
+  )
+  await page.route('**/api/billing/topup/quote', (route) =>
     route.fulfill({
       json: {
-        ...createBillingCapabilities(PERSONAL_WORKSPACE_ID, {
-          can_manage_auto_top_up: true,
-          can_view_auto_top_up: true
-        }),
-        auto_top_up_enabled: true,
-        auto_top_up_setup: { state: 'ready' }
-      }
+        amount_cents: 5000,
+        credits: 10_550,
+        expires_at: '2099-01-01T00:00:00Z'
+      } satisfies TopupQuoteResponse
     })
   )
   await page.route('**/api/billing/auto-reload', (route) =>
@@ -93,13 +126,8 @@ async function mockAutoTopUpPurchase(
 
 async function openAddCredits(page: Page) {
   const dialog = new TopUpCreditsDialog(page)
-  await page.getByTestId(TestIds.user.currentUserButton).click()
-  await page
-    .getByTestId(TestIds.user.currentUserPopover)
-    .getByTestId('credits-menu-item')
-    .hover()
-  await page.getByTestId('add-credits-button').click()
-  await expect(dialog.heading).toBeVisible()
+  await page.goto(`${APP_URL}/?topup=1`)
+  await expect(dialog.heading).toBeVisible({ timeout: 45_000 })
   return dialog
 }
 
@@ -127,25 +155,24 @@ const ACTIVATED: HostedTopupCheckout = {
   }
 }
 
-test.describe('Add credits auto top-up at checkout', { tag: '@ui' }, () => {
-  // shortcut: the open card pushes Continue below a 720px viewport with no scroll (PR 23189); drop once the dialog scrolls.
-  test.use({ viewport: { width: 1280, height: 1000 } })
+test.describe('Add credits auto top-up at checkout', { tag: '@cloud' }, () => {
+  test.use({ viewport: { width: 1280, height: 720 } })
 
   test('turns auto top-up on with the purchase when billing_auto_top_up_at_checkout_enabled is on', async ({
-    comfyPage
+    page
   }) => {
-    const page = comfyPage.page
-    await page.addInitScript(installSeededServerFlags, {
-      billing_auto_top_up_at_checkout_enabled: true
+    const checkoutRequests = await mockAutoTopUpPurchase(page, {
+      activation: ACTIVATED,
+      atCheckout: true
     })
-    const checkoutRequests = await mockAutoTopUpPurchase(page, ACTIVATED)
-    await comfyPage.goto()
-    await comfyPage.waitForAppReady()
     const dialog = await openAddCredits(page)
 
     await dialog.root
       .getByRole('checkbox', { name: /Turn on auto top-up/ })
       .click()
+    await expect(dialog.root).toContainText(
+      'Top-ups are charged to your default card, visa ···· 4242'
+    )
     await payAndReturn(page, dialog)
 
     await test.step('the purchase carries the checked settings', async () => {
@@ -166,12 +193,12 @@ test.describe('Add credits auto top-up at checkout', { tag: '@ui' }, () => {
   })
 
   test('offers no checkbox and sends no settings when billing_auto_top_up_at_checkout_enabled is off', async ({
-    comfyPage
+    page
   }) => {
-    const page = comfyPage.page
-    const checkoutRequests = await mockAutoTopUpPurchase(page, ACTIVATED)
-    await comfyPage.goto()
-    await comfyPage.waitForAppReady()
+    const checkoutRequests = await mockAutoTopUpPurchase(page, {
+      activation: ACTIVATED,
+      atCheckout: false
+    })
     const dialog = await openAddCredits(page)
 
     await expect(

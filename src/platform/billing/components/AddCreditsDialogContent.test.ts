@@ -18,6 +18,7 @@ import {
   canManageAutoTopUpFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -136,6 +137,10 @@ function renderDialog({ atCheckout }: { atCheckout: boolean }) {
   capabilities.canManageAutoTopUp = canManageAutoTopUpFact(true)
   capabilities.autoTopUpSetup = computed(() => ({ state: 'ready' }))
   autoTopUpCardState.value = loadedAutoTopUp('off')
+  vi.mocked(useBillingSdkStore().readPaymentMethods).mockResolvedValue({
+    status: 'ok',
+    value: []
+  })
   mockBillingContext()
   render(AddCreditsDialogContent, {
     global: { plugins: [i18n] }
@@ -152,7 +157,9 @@ async function payWithAutoTopUp(served: Partial<HostedTopupCheckout>) {
   vi.mocked(billingApi.getTopupCheckout).mockResolvedValue(
     servedCheckout(served)
   )
-  await user.click(checkbox()!)
+  await user.click(
+    await screen.findByRole('checkbox', { name: /Turn on auto top-up/ })
+  )
   await user.click(continueButton())
   await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
   await hoisted.balanceIncreased!()
