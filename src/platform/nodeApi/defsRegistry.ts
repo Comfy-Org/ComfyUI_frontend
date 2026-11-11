@@ -624,6 +624,7 @@ interface Registration {
    */
   readonly handleFor: (nodeId: string) => NodeHandle
   readonly handleForNode: (node: LGraphNode) => NodeHandle
+  readonly teardown: (() => void)[]
 }
 
 function whenDefined<T>(value: T | undefined, use: (value: T) => void): void {
@@ -1286,6 +1287,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       handleFor,
       handleForNode,
       active: true,
+      teardown: [],
       apply: (builder) => applyNodeDefinition(builder, definition)
     }
     registrations.add(registration)
@@ -1391,12 +1393,15 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           apply,
           handleFor,
           handleForNode,
-          active: true
+          active: true,
+          teardown: []
         }
         registrations.add(registration)
         return () => {
+          if (!registration.active) return
           registration.active = false
           registrations.delete(registration)
+          for (const undo of registration.teardown.splice(0)) undo()
         }
       }
     }),
@@ -1452,6 +1457,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       const executionState: {
         frontendOnly: boolean
         resolver?: Resolver
+        owner?: Registration
       } = {
         frontendOnly: false,
         resolver: undefined
@@ -1534,6 +1540,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             },
             setExecution: (execution, resolve) => {
               executionState.frontendOnly = execution === 'frontend'
+              executionState.owner = registration
               if (resolve) {
                 executionState.resolver = (view) =>
                   isActive() ? resolve(view) : Object.freeze({})
@@ -1597,13 +1604,22 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       const commitDefinition = () => {
         known.set(def.type, def)
         if (executionState.frontendOnly) {
+          const { isVirtualNode, resolutionOwned } = nodeType.prototype
+          const { resolver, owner } = executionState
           nodeType.prototype.isVirtualNode = true
-          if (executionState.resolver) {
-            frontendResolvers.set(def.type, executionState.resolver)
+          if (resolver) {
+            frontendResolvers.set(def.type, resolver)
             nodeType.prototype.resolutionOwned = true
           } else {
             frontendResolvers.delete(def.type)
           }
+          owner?.teardown.push(() => {
+            nodeType.prototype.isVirtualNode = isVirtualNode
+            nodeType.prototype.resolutionOwned = resolutionOwned
+            if (frontendResolvers.get(def.type) === resolver) {
+              frontendResolvers.delete(def.type)
+            }
+          })
         } else {
           frontendResolvers.delete(def.type)
         }

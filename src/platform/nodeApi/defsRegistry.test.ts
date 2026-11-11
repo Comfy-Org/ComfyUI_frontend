@@ -1897,6 +1897,23 @@ describe('marking an existing type frontend-only', () => {
 
     expect(frontendResolverMap().has('Passthrough')).toBe(false)
   })
+
+  it('returns an applied type to the backend when the extension is disposed', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    const stop = defs.extend('Passthrough', (builder) =>
+      builder.setExecution('frontend', () => ({ '0': { omit: true } }))
+    )
+    const nodeType: { prototype: Partial<LGraphNode> } = { prototype: {} }
+    registry.applyTo(nodeType, { name: 'Passthrough' })
+    expect(nodeType.prototype.isVirtualNode).toBe(true)
+
+    stop()
+
+    expect(nodeType.prototype.isVirtualNode).toBeUndefined()
+    expect(nodeType.prototype.resolutionOwned).toBeUndefined()
+    expect(frontendResolverMap().has('Passthrough')).toBe(false)
+  })
 })
 
 describe('selecting definitions by shape', () => {
