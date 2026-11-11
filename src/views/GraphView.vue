@@ -219,8 +219,8 @@ function startTemplateInputDownloadTracking() {
 }
 
 onBeforeUnmount(() => {
-  stopTemplateInputDownloadTracking()
   stopModelDownloadTracking()
+  stopTemplateInputDownloadTracking()
   templateInputGraphSync.dispose()
   templateInputDownloadStore.clear()
 })

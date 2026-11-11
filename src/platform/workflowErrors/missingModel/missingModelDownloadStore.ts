@@ -101,7 +101,7 @@ function acceptsEvent(
 ): boolean {
   if (!current) return true
   if (progress.id === undefined) {
-    if (current.jobEnded && !isHostTerminal(progress.status)) return false
+    if (current.jobEnded && progress.status !== 'pending') return false
   } else if (current.endedJobs.has(progress.id)) {
     return false
   }
@@ -120,6 +120,7 @@ export const useMissingModelDownloadStore = defineStore(
     const downloads = shallowReactive(new Map<string, HostDownload>())
     let refreshPending = false
     let tracking = false
+    let trackingGeneration = 0
     let nextRequest = 0
 
     function stateFor(model: ModelWithUrl): MissingModelDownloadState {
@@ -181,8 +182,8 @@ export const useMissingModelDownloadStore = defineStore(
       const jobId = progress.id ?? current?.jobId
       const jobEnded = isHostTerminal(progress.status)
       const endedJobs =
-        jobEnded && jobId !== undefined
-          ? new Set([...(current?.endedJobs ?? []), jobId])
+        jobEnded && progress.id !== undefined
+          ? new Set([...(current?.endedJobs ?? []), progress.id])
           : (current?.endedJobs ?? new Set<string>())
       const isMissing = !!missingModelStore.missingModelCandidates?.some(
         (candidate) =>
@@ -211,12 +212,18 @@ export const useMissingModelDownloadStore = defineStore(
 
     function startTracking(): () => void {
       if (!hostReportsModelDownloadProgress()) return () => undefined
-      const stop =
-        window.__comfyDesktop2?.onDownloadProgress?.(applyHostProgress)
-      if (typeof stop !== 'function') return () => undefined
+      const subscription = ++trackingGeneration
+      const stop = window.__comfyDesktop2?.onDownloadProgress?.((progress) => {
+        if (subscription === trackingGeneration) applyHostProgress(progress)
+      })
+      if (typeof stop !== 'function') {
+        trackingGeneration++
+        return () => undefined
+      }
       tracking = true
       return () => {
         tracking = false
+        trackingGeneration++
         try {
           stop()
         } catch (error) {

@@ -463,4 +463,45 @@ describe(useMissingModelDownloadStore, () => {
 
     expect(store.stateFor(model).status).toBe('idle')
   })
+  it('follows a new job without an id that starts after an earlier one ended', () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    emitHostProgress('error', { id: undefined })
+    emitHostProgress('pending', { id: undefined })
+
+    expect(store.stateFor(model).status).toBe('pending')
+  })
+
+  it('keeps following a running job after an event without an id ends another attempt', () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    emitHostProgress('downloading', { id: 'job-1' })
+    emitHostProgress('error', { id: undefined })
+    emitHostProgress('downloading', { id: 'job-1' })
+
+    expect(store.stateFor(model).status).toBe('downloading')
+  })
+
+  it('stops applying host progress after tracking stops even if unsubscribing fails', () => {
+    installDesktopHost()
+    window.__comfyDesktop2 = {
+      ...window.__comfyDesktop2,
+      onDownloadProgress: (listener) => {
+        progressListeners.push(listener)
+        return () => {
+          throw new Error('unsubscribe failed')
+        }
+      }
+    }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()()
+
+    emitHostProgress('downloading')
+
+    expect(store.stateFor(model).status).toBe('idle')
+  })
 })
