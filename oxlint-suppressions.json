@@ -1130,11 +1130,6 @@
       "count": 3
     }
   },
-  "packages/graph-model/src/compositor.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
   "packages/graph-model/src/interfaces.ts": {
     "typescript/no-restricted-types": {
       "count": 4
@@ -1205,6 +1200,21 @@
       "count": 1
     }
   },
+  "packages/layer-editor-ui/src/LayerEditorCanvas.vue": {
+    "typescript/no-restricted-types": {
+      "count": 4
+    }
+  },
+  "packages/layer-editor-ui/src/LayerEditorToolbar.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "packages/layer-editor-ui/src/LayerPanel.vue": {
+    "typescript/no-restricted-types": {
+      "count": 6
+    }
+  },
   "packages/layer-editor/src/commands/selection.ts": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -1265,6 +1275,11 @@
       "count": 1
     }
   },
+  "packages/layer-editor/src/export/psdExport.ts": {
+    "typescript/no-restricted-types": {
+      "count": 5
+    }
+  },
   "packages/layer-editor/src/fill.ts": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -1293,6 +1308,16 @@
   "packages/layer-editor/src/nodeKind.ts": {
     "typescript/no-restricted-types": {
       "count": 4
+    }
+  },
+  "packages/layer-editor/src/persistence/compositorLayerState.ts": {
+    "typescript/no-restricted-types": {
+      "count": 12
+    }
+  },
+  "packages/layer-editor/src/persistence/compositorTypes.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "packages/layer-editor/src/render/bake.ts": {
@@ -1343,6 +1368,31 @@
   "packages/layer-editor/src/tools/transformTool.ts": {
     "typescript/no-restricted-types": {
       "count": 5
+    }
+  },
+  "packages/layer-editor/src/viewport/panZoom.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "packages/layer-editor/src/viewport/panZoom.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "packages/layer-editor/src/vue/layerPanelDnd.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "packages/layer-editor/src/vue/useLayerEditorSession.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 5
+    }
+  },
+  "packages/layer-editor/src/vue/useLayerEditorSession.ts": {
+    "typescript/no-restricted-types": {
+      "count": 17
     }
   },
   "packages/mask-editor/src/gpu/GPUBrushRenderer.ts": {
@@ -1493,7 +1543,7 @@
   },
   "packages/telemetry/src/types.ts": {
     "typescript/no-restricted-types": {
-      "count": 20
+      "count": 22
     }
   },
   "packages/viewport3d/src/cameraAngle/CameraAngleViewport.test.ts": {
@@ -2786,7 +2836,7 @@
   },
   "src/composables/useUrlActionLoaders.ts": {
     "typescript/no-restricted-types": {
-      "count": 11
+      "count": 12
     }
   },
   "src/composables/useWaveAudioPlayer.test.ts": {
@@ -4182,6 +4232,26 @@
       "count": 2
     }
   },
+  "src/platform/billing/components/TopUpAmountFields.vue": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "src/platform/billing/components/TopUpAutoTopUpCard.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 5
+    }
+  },
+  "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue": {
+    "typescript/no-restricted-types": {
+      "count": 10
+    }
+  },
   "src/platform/billing/components/UnifiedPricingTable.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -5473,6 +5543,11 @@
       "count": 1
     }
   },
+  "src/platform/workflow/management/composables/useWorkflowLinkUrlLoader.ts": {
+    "typescript/no-restricted-types": {
+      "count": 6
+    }
+  },
   "src/platform/workflow/management/stores/comfyWorkflow.ts": {
     "comfy/no-new-error-throw": {
       "count": 1
@@ -6363,31 +6438,6 @@
       "count": 3
     }
   },
-  "src/renderer/extensions/compositor/components/WidgetCompositor.vue": {
-    "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/compositor/composables/compositorLayerState.ts": {
-    "typescript/no-restricted-types": {
-      "count": 12
-    }
-  },
-  "src/renderer/extensions/compositor/composables/compositorWidgets.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/compositor/composables/useCompositorLayers.ts": {
-    "typescript/no-restricted-types": {
-      "count": 3
-    }
-  },
-  "src/renderer/extensions/compositor/composables/useCompositorPsdDownload.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/firstRunTour/gettingStarted/GettingStartedScreen.test.ts": {
     "typescript/no-restricted-types": {
       "count": 2
@@ -6439,11 +6489,6 @@
       "count": 1
     }
   },
-  "src/renderer/extensions/layerEditor/components/LayerEditorCanvas.vue": {
-    "typescript/no-restricted-types": {
-      "count": 4
-    }
-  },
   "src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -6457,54 +6502,29 @@
       "count": 1
     }
   },
-  "src/renderer/extensions/layerEditor/components/LayerEditorToolbar.vue": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/components/LayerPanel.vue": {
-    "typescript/no-restricted-types": {
-      "count": 6
-    }
-  },
-  "src/renderer/extensions/layerEditor/composables/layerPanelDnd.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/layerEditor/composables/useLayerEditor.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
   },
-  "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.test.ts": {
+  "src/renderer/extensions/layerEditor/compositor/WidgetCompositor.vue": {
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 2
     }
   },
-  "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.ts": {
-    "typescript/no-restricted-types": {
-      "count": 17
-    }
-  },
-  "src/renderer/extensions/layerEditor/panZoom.test.ts": {
+  "src/renderer/extensions/layerEditor/compositor/compositorWidgets.ts": {
     "typescript/no-restricted-types": {
       "count": 1
     }
   },
-  "src/renderer/extensions/layerEditor/panZoom.ts": {
+  "src/renderer/extensions/layerEditor/compositor/useCompositorLayers.ts": {
     "typescript/no-restricted-types": {
-      "count": 1
+      "count": 3
     }
   },
-  "src/renderer/extensions/layerEditor/psdExport.ts": {
+  "src/renderer/extensions/layerEditor/compositor/useCompositorPsdDownload.ts": {
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 1
     }
   },
   "src/renderer/extensions/linearMode/DropZone.vue": {
