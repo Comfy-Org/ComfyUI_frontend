@@ -13,7 +13,9 @@ import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import Message from '@comfyorg/design-system/message/Message'
-import { applyDarkPaletteTheme } from '@/utils/colorPaletteTheme'
+import { DEFAULT_DARK_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
+import { resolveTheme } from '@comfyorg/theme-core/resolveTheme'
+import { applyTheme } from '@/platform/theme/applyTheme'
 import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
 import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'
 
@@ -185,7 +187,11 @@ function choose(action: 'accept' | 'reject'): void {
 }
 
 onMounted(() => {
-  if (containerRef.value) applyDarkPaletteTheme(containerRef.value.style)
+  if (containerRef.value) {
+    applyTheme(resolveTheme(DEFAULT_DARK_THEME_PRESET), {
+      style: containerRef.value.style
+    })
+  }
 })
 </script>
 
