@@ -67,7 +67,7 @@ import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { ensureNonZeroUuid } from '@/utils/uuid'
-import { insertPngTextChunk } from '@/utils/pngEncodeUtil'
+import { insertPngTextChunk } from '@comfyorg/mask-editor/pngEncodeUtil'
 
 export function readWorkflowDraftLineage(path: string) {
   return useWorkflowDraftStoreV2().getDraft(path)?.lineage ?? null

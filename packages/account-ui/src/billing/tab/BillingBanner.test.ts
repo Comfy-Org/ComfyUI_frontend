@@ -88,7 +88,7 @@ describe('BillingBanner', () => {
       },
       controls: ['BUTTON:Dismiss', 'BUTTON:Add credits'],
       icon: 'text-muted-foreground',
-      shell: ['rounded-2xl', 'p-4']
+      shell: ['rounded-xl', 'p-4']
     },
     {
       case: 'a parked payment',
@@ -100,14 +100,14 @@ describe('BillingBanner', () => {
       },
       controls: ['A:Contact support'],
       icon: 'text-warning',
-      shell: ['rounded-2xl', 'p-4']
+      shell: ['rounded-xl', 'p-4']
     },
     {
       case: 'a plan status',
       view: { kind: 'planStatus', ...text, action: null, href: null },
       controls: [],
       icon: 'text-muted-foreground',
-      shell: ['rounded-2xl', 'p-4']
+      shell: ['rounded-xl', 'p-4']
     },
     {
       case: 'auto top-up failed',
