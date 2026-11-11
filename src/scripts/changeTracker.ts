@@ -11,6 +11,7 @@ import type {
   WorkflowChangeTracker
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { reportWorkflowStateAnomaly } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { currentDocumentId } from '@/platform/nodeApi/appReady'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { isChangeCaptureSuppressed } from '@/services/changeCaptureSuppression'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -624,6 +625,9 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
+    const restoreDocumentId = isActiveTracker(this)
+      ? currentDocumentId()
+      : undefined
     const restore = async () => {
       if (this._restoringState || source.length === 0) return
       const prevState = source.pop()
@@ -644,7 +648,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
             this.workflow,
             {
               checkForRerouteMigration: false,
-              silentAssetErrors: true
+              silentAssetErrors: true,
+              restoreDocumentId
             }
           )
           restored = result !== false && result !== undefined

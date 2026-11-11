@@ -16,7 +16,7 @@ import type { Unsubscribe } from './widgetHandle'
 let ready = false
 const waiting = new Set<() => void>()
 
-/** Called by the host once, at the point legacy `setup()` extensions ran. */
+/** Called once after setup and attachment of the canvas and graph. */
 export function markAppReady(): void {
   if (ready) return
   ready = true

@@ -102,6 +102,7 @@ import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionC
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import {
+  currentDocumentId,
   onWorkflowLoaded,
   resetAppReadyForTest
 } from '@/platform/nodeApi/appReady'
@@ -964,6 +965,138 @@ describe('ComfyApp', () => {
         'onGraphLoadError',
         expect.objectContaining({ name: 'AbortError' })
       )
+    })
+
+    it('preserves document identity through Undo and Redo but replaces it on reload', async () => {
+      onTestFinished(attachLegacyUI(app))
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      vi.spyOn(appInstance, 'useApp').mockReturnValue(app)
+      const saved = createWorkflowGraphData()
+      saved.extra = { marker: 'saved' }
+      const changed = structuredClone(saved)
+      changed.extra = { marker: 'changed' }
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/history.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const tracker = markRaw(new ChangeTracker(workflow, saved))
+      workflow.changeTracker = tracker
+      useWorkflowStore().activeWorkflow = workflow
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(
+        async (_, state) => tracker.reset(state)
+      )
+      const workflowLoaded = vi.fn()
+      onTestFinished(onWorkflowLoaded(workflowLoaded))
+
+      await app.loadGraphData(changed, false, false, workflow)
+      const documentId = currentDocumentId()
+      expect(documentId).toBeDefined()
+      tracker.undoQueue.push(saved)
+
+      await tracker.undo()
+
+      expect(app.rootGraph.extra.marker).toBe('saved')
+      expect(currentDocumentId()).toBe(documentId)
+
+      await tracker.redo()
+
+      expect(app.rootGraph.extra.marker).toBe('changed')
+      expect(currentDocumentId()).toBe(documentId)
+      expect(workflowLoaded).toHaveBeenCalledTimes(1)
+
+      await app.loadGraphData(changed, false, false, workflow)
+
+      expect(currentDocumentId()).not.toBe(documentId)
+      expect(workflowLoaded).toHaveBeenCalledTimes(2)
+    })
+
+    it('announces history restores when another workflow overtakes them or is already active', async () => {
+      onTestFinished(attachLegacyUI(app))
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      vi.spyOn(appInstance, 'useApp').mockReturnValue(app)
+      const saved = createWorkflowGraphData()
+      saved.extra = { marker: 'saved' }
+      const changed = structuredClone(saved)
+      changed.extra = { marker: 'changed' }
+      const other = structuredClone(saved)
+      other.extra = { marker: 'other' }
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/history.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const otherWorkflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/other.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const tracker = markRaw(new ChangeTracker(workflow, saved))
+      workflow.changeTracker = tracker
+      const workflows = new Map([
+        [workflow.path, workflow],
+        [otherWorkflow.path, otherWorkflow]
+      ])
+      mockWorkflowService.afterLoadNewGraph.mockImplementation(
+        async (value, state) => {
+          assert(value instanceof ComfyWorkflow)
+          const loaded = workflows.get(value.path)
+          assert.exists(loaded)
+          loaded.changeTracker.reset(state)
+          useWorkflowStore().activeWorkflow = loaded
+        }
+      )
+      const loads: {
+        marker: unknown
+        documentId: ReturnType<typeof currentDocumentId>
+      }[] = []
+      onTestFinished(
+        onWorkflowLoaded(() => {
+          loads.push({
+            marker: app.rootGraph.extra.marker,
+            documentId: currentDocumentId()
+          })
+        })
+      )
+      await app.loadGraphData(changed, false, false, workflow)
+      tracker.undoQueue.push(saved)
+
+      const undo = tracker.undo()
+      const loadOther = app.loadGraphData(other, false, false, otherWorkflow)
+      await Promise.all([undo, loadOther])
+
+      expect(app.rootGraph.extra.marker).toBe('saved')
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(workflow.path)
+      expect(loads.map(({ marker }) => marker)).toEqual([
+        'changed',
+        'other',
+        'saved'
+      ])
+      expect(new Set(loads.map(({ documentId }) => documentId)).size).toBe(3)
+
+      await app.loadGraphData(other, false, false, otherWorkflow)
+      const otherDocumentId = currentDocumentId()
+
+      await tracker.redo()
+
+      expect(app.rootGraph.extra.marker).toBe('changed')
+      expect(useWorkflowStore().activeWorkflow?.path).toBe(workflow.path)
+      expect(currentDocumentId()).not.toBe(otherDocumentId)
+      expect(loads.map(({ marker }) => marker)).toEqual([
+        'changed',
+        'other',
+        'saved',
+        'other',
+        'changed'
+      ])
     })
 
     it('keeps a replacement started by a workflow-loaded listener', async () => {
