@@ -3220,7 +3220,7 @@
       "appliedBadge": "Applied",
       "pricePerMonth": "{price}/mo",
       "savings": "You'll save {savings} on this payment. | You'll save {savings} across these {months} payments.",
-      "renewsAt": "Renews at {regular} on {date}.",
+      "renewsAfterOffer": "After the offer ends, your plan renews at {regular}/mo.",
       "failedTitle": "We couldn't apply your discount",
       "failedBody": "Something went wrong on our end, and your {plan} plan hasn't changed. Try again, or continue cancelling.",
       "declinedBody": "Your {plan} plan hasn't changed. You can keep it at its current price or continue cancelling.",
