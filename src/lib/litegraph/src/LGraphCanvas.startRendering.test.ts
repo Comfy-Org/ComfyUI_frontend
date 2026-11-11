@@ -260,24 +260,25 @@ describe('LGraphCanvas.startRendering', () => {
   it('draws updated state before presenting it', () => {
     captureFrames()
     stubCanvasGetContext()
-    const element = createTestCanvasElement({
-      ctx: createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
-    })
+    const ctx = createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+    const element = createTestCanvasElement({ ctx })
     const canvas = new LGraphCanvas(element, new LGraph(), {
       skip_events: true,
       skip_render: true
     })
     canvas.maximumFps = 10
-    let drawnText = ''
-    canvas.onDrawForeground = () => {
-      drawnText = canvas.info_text ?? ''
-    }
-    const presentations: { drawnText: string; interval: number }[] = []
+    const presentations: {
+      drawnText: string | undefined
+      interval: number
+    }[] = []
     onCanvasFrame(canvas.canvas, 'update', () => {
       canvas.info_text = 'updated'
     })
     const stopPresenting = onCanvasFrame(canvas.canvas, 'present', (interval) =>
-      presentations.push({ drawnText, interval })
+      presentations.push({
+        drawnText: vi.mocked(ctx.fillText).mock.calls.at(-1)?.[0],
+        interval
+      })
     )
 
     canvas.startRendering()
