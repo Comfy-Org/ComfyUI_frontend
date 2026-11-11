@@ -2407,6 +2407,39 @@ describe('useWorkflowService', () => {
     })
   })
 
+  describe('openWorkflow when the stored file cannot be fetched', () => {
+    it('reports the failed read without the file name', async () => {
+      const workflow = new ComfyWorkflowClass({
+        path: 'workflows/Customer Jane Doe.json',
+        modified: Date.now(),
+        size: 4
+      })
+      vi.spyOn(api, 'getUserData').mockResolvedValue(
+        new Response(null, {
+          status: 500,
+          statusText: 'Internal Server Error'
+        })
+      )
+
+      await expect(useWorkflowService().openWorkflow(workflow)).rejects.toThrow(
+        '500 Internal Server Error'
+      )
+
+      expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
+        errorType: 'workflow_load_failure'
+      })
+      const delivered = reportErrorMock.mock.calls.flatMap(([error]) => [
+        String(error?.message),
+        String(error?.stack)
+      ])
+      expect(delivered).not.toContainEqual(
+        expect.stringContaining('Customer Jane Doe')
+      )
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+    })
+  })
+
   describe('insertWorkflow', () => {
     it('inserts into the canvas with its requested position when nothing changes while loading', async () => {
       const canvas = app.canvas
