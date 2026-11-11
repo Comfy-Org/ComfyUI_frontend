@@ -48,11 +48,16 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     ).toHaveCount(0)
 
     const profileMenu = page.locator('.current-user-popover')
-    const panelBox = await panel.boundingBox()
-    const profileBox = await profileMenu.boundingBox()
-    expect(panelBox).not.toBeNull()
-    expect(profileBox).not.toBeNull()
-    expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
+    await expect
+      .poll(async () => {
+        const [panelBox, profileBox] = await Promise.all([
+          panel.boundingBox(),
+          profileMenu.boundingBox()
+        ])
+        if (!panelBox || !profileBox) return Number.POSITIVE_INFINITY
+        return panelBox.x + panelBox.width - profileBox.x
+      })
+      .toBeLessThanOrEqual(0)
   })
 
   test.describe('on a phone-width viewport', () => {
