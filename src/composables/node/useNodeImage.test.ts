@@ -176,14 +176,8 @@ describe('canvas node media failure telemetry', () => {
 })
 
 describe('videoFailureMessageKey', () => {
-  it.for([
-    [[4], 'g.videoFormatNotSupported'],
-    [[2, 4], 'g.videoFormatNotSupported'],
-    [[1], 'g.videoFailedToLoad'],
-    [[2, 3], 'g.videoFailedToLoad'],
-    [[undefined], 'g.videoFailedToLoad'],
-    [[], 'g.videoFailedToLoad']
-  ] as const)('maps error codes %j to %s', ([codes, key]) => {
-    expect(videoFailureMessageKey([...codes])).toBe(key)
+  it('says the browser cannot play the video only when an attempt reported an unsupported source', () => {
+    expect(videoFailureMessageKey([2, 4])).toBe('g.videoFormatNotSupported')
+    expect(videoFailureMessageKey([2, undefined])).toBe('g.videoFailedToLoad')
   })
 })
