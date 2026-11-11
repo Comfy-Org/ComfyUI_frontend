@@ -64,7 +64,12 @@ function settleRefresh() {
 }
 
 function installDesktopHost() {
-  hostDownloadModel.mockReset().mockResolvedValue(true)
+  hostDownloadModel.mockReset().mockImplementation(async () => {
+    emitHostProgress('pending', {
+      id: `host-job-${hostDownloadModel.mock.calls.length}`
+    })
+    return true
+  })
   window.__comfyDesktop2 = {
     isRemote: () => false,
     downloadModel: hostDownloadModel,
@@ -247,7 +252,24 @@ describe(useMissingModelDownloadStore, () => {
     await refusal
     await nextTick()
 
-    expect(store.stateFor(model).status).toBe('requested')
+    expect(store.stateFor(model).status).toBe('pending')
+  })
+
+  it('re-checks a model the host accepts without reporting progress because the file is already present', async () => {
+    installDesktopHost()
+    seedMissingModel()
+    const refreshMissingModels = vi
+      .spyOn(useMissingModelStore(), 'refreshMissingModels')
+      .mockResolvedValue(undefined)
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    hostDownloadModel.mockResolvedValueOnce(true)
+
+    store.download(model)
+    await vi.waitFor(() => expect(store.stateFor(model).status).toBe('done'))
+
+    expect(refreshMissingModels).toHaveBeenCalledOnce()
   })
 
   it('ignores a status the host does not document', () => {
@@ -429,6 +451,7 @@ describe(useMissingModelDownloadStore, () => {
   })
   it('follows a running job from another source once a request joins it', () => {
     installDesktopHost()
+    hostDownloadModel.mockResolvedValueOnce(true)
     const store = useMissingModelDownloadStore()
     store.startTracking()
 

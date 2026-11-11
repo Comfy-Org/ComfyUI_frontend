@@ -758,7 +758,13 @@ describe('MissingModelRow', () => {
     beforeEach(() => {
       mockIsCloud.value = false
       progressListeners.length = 0
-      hostDownloadModel.mockReset().mockResolvedValue(true)
+      hostDownloadModel.mockReset().mockImplementation(async () => {
+        emitHostProgress({
+          id: `host-job-${hostDownloadModel.mock.calls.length}`,
+          status: 'pending'
+        })
+        return true
+      })
       window.__comfyDesktop2 = {
         isRemote: () => false,
         downloadModel: hostDownloadModel,

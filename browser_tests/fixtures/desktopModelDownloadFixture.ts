@@ -55,6 +55,15 @@ export const desktopModelDownloadFixture = desktopFixture.extend<{
           directory: string
         ) => {
           state.downloads.push({ url, filename, directory })
+          const pending: ComfyDownloadProgress = {
+            id: `host-job-${state.downloads.length}`,
+            url,
+            filename,
+            directory,
+            progress: 0,
+            status: 'pending'
+          }
+          for (const listener of state.listeners) listener(pending)
           return true
         },
         onDownloadProgress: (

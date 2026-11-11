@@ -121,7 +121,7 @@ function isBusy(download: HostDownload | undefined): boolean {
 
 function isMissingCandidate(
   candidates: readonly MissingModelCandidate[] | null,
-  progress: ComfyDownloadProgress
+  progress: Pick<ComfyDownloadProgress, 'filename' | 'directory'>
 ): boolean {
   return !!candidates?.some(
     (candidate) =>
@@ -267,15 +267,36 @@ export const useMissingModelDownloadStore = defineStore(
       }
     }
 
+    function unreportedRequest(model: ModelWithUrl, request: number) {
+      const current = downloads.get(getModelFileKey(model))
+      return current?.request === request &&
+        current.state.status === 'requested'
+        ? current
+        : undefined
+    }
+
     function failRequest(model: ModelWithUrl, request: number) {
-      const key = getModelFileKey(model)
-      const current = downloads.get(key)
-      if (current?.request !== request || current.state.status !== 'requested')
-        return
-      downloads.set(key, {
+      const current = unreportedRequest(model, request)
+      if (!current) return
+      downloads.set(getModelFileKey(model), {
         ...current,
         state: { status: 'failed' }
       })
+    }
+
+    function finishUnreportedRequest(model: ModelWithUrl, request: number) {
+      const current = unreportedRequest(model, request)
+      if (!current) return
+      const isMissing = isMissingCandidate(
+        missingModelStore.missingModelCandidates,
+        { filename: model.name, directory: model.directory }
+      )
+      downloads.set(getModelFileKey(model), {
+        ...current,
+        state: isMissing ? { status: 'done' } : IDLE,
+        jobEnded: true
+      })
+      requestRefresh(isMissing)
     }
 
     function reportStartFailure(error: unknown) {
@@ -318,7 +339,8 @@ export const useMissingModelDownloadStore = defineStore(
       }
       void outcome.hostResult.then(
         (accepted) => {
-          if (!accepted) failRequest(model, request)
+          if (accepted) finishUnreportedRequest(model, request)
+          else failRequest(model, request)
         },
         (error: unknown) => {
           reportStartFailure(error)
