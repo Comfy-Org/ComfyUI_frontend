@@ -17,8 +17,7 @@ const PLAYABLE = 'video-preview-square.webm'
 const UNDECODABLE = 'save-video-prores.mov'
 const SLOW = 'slow.webm'
 const IMAGE = 'ok.png'
-const CANT_PLAY_MESSAGE =
-  "Your browser can't play this video. Download it to view it in another app."
+const CANT_PLAY_MESSAGE = "This video can't be played in the browser."
 
 async function addNode(comfyPage: ComfyPage, type: string) {
   const node = await comfyPage.nodeOps.addNode(type, undefined, {

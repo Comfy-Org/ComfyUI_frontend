@@ -72,7 +72,7 @@
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
-    "videoFormatNotSupported": "Your browser can't play this video. Download it to view it in another app.",
+    "videoFormatNotSupported": "This video can't be played in the browser.",
     "audioFailedToLoad": "Audio failed to load",
     "textFailedToLoad": "Text failed to load",
     "liveSamplingPreview": "Live sampling preview",
