@@ -15,6 +15,7 @@ import {
   SUPPORTED_MAJORS,
   createComfyApi
 } from './comfyApi'
+import { beginDocument } from './appReady'
 import { ComfyUnsupportedError } from './errors'
 
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
@@ -202,6 +203,42 @@ describe('comfy API root', () => {
   })
 
   describe('graph ownership', () => {
+    it('retires a kept handle when another document is loaded into the graph', () => {
+      const first = new LGraphNode('first document')
+      first.addWidget('number', 'amount', 1, () => {})
+      graph.add(first)
+      const comfy = createComfyApi(() => graph)
+      const kept = comfy.graph.node(String(first.id))!
+      const keptWidgets = kept.widgets
+
+      graph.clear()
+      beginDocument()
+      const second = new LGraphNode('second document')
+      second.addWidget('number', 'amount', 2, () => {})
+      graph.add(second)
+
+      expect(second.id).toBe(first.id)
+      expect(kept.isDeleted).toBe(true)
+      expect(() => kept.setTitle('retargeted')).toThrow()
+      expect(keptWidgets.get('amount')).toBeUndefined()
+      expect(second.title).toBe('second document')
+      expect(comfy.graph.node(String(second.id))!.getTitle()).toBe(
+        'second document'
+      )
+    })
+
+    it('keeps a handle minted while the new document loads', () => {
+      const comfy = createComfyApi(() => graph)
+      graph.clear()
+      beginDocument()
+      const loaded = new LGraphNode('loaded')
+      graph.add(loaded)
+      const mintedDuringLoad = comfy.graph.node(String(loaded.id))!
+
+      expect(mintedDuringLoad.isDeleted).toBe(false)
+      expect(mintedDuringLoad.getTitle()).toBe('loaded')
+    })
+
     it('keeps a retained handle bound to the graph that minted it', () => {
       const first = new LGraph()
       const second = new LGraph()

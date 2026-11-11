@@ -32,6 +32,7 @@ import type {
   OutputSlotHandle,
   SlotCollection
 } from './slotHandle'
+import { currentDocumentGeneration } from './appReady'
 import { createWidgetCollection, createWidgetHandles } from './widgetHandle'
 import type { WidgetCollection } from './widgetHandle'
 
@@ -436,21 +437,31 @@ export function createGraphApi(
     namespace,
     getResolvers
   )
-  const ownedHandles = new WeakMap<LGraph, OwnedNodeHandles>()
+  const ownedHandles = new WeakMap<
+    LGraph,
+    { readonly generation: number; readonly handles: OwnedNodeHandles }
+  >()
   const nodeHandles = (): OwnedNodeHandles => {
     const graph = getGraph()
     if (!graph) return detachedHandles
+    const generation = currentDocumentGeneration()
     let owned = ownedHandles.get(graph)
-    if (!owned) {
+    if (owned?.generation !== generation) {
       const owner = new WeakRef(graph)
-      owned = createOwnedNodeHandles(
-        () => owner.deref(),
-        namespace,
-        getResolvers
-      )
+      owned = {
+        generation,
+        handles: createOwnedNodeHandles(
+          () =>
+            currentDocumentGeneration() === generation
+              ? owner.deref()
+              : undefined,
+          namespace,
+          getResolvers
+        )
+      }
       ownedHandles.set(graph, owned)
     }
-    return owned
+    return owned.handles
   }
 
   const handleFor = (nodeId: string) =>
