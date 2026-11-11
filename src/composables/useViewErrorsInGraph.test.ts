@@ -7,6 +7,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useViewErrorsInGraph } from './useViewErrorsInGraph'
 
@@ -60,6 +61,22 @@ describe('useViewErrorsInGraph', () => {
       'execution:out_of_memory'
     ])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
+  })
+
+  it('leaves the agent full screen so the errors are on screen', () => {
+    const panel = useAgentPanelStore()
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+    panel.enabled = true
+    panel.isOpen = true
+    panel.experience = 'redesign'
+    panel.toggleMaximize()
+    expect(panel.isFullscreen).toBe(true)
+
+    useViewErrorsInGraph().viewErrorsInGraph([])
+
+    expect(panel.isFullscreen).toBe(false)
+    expect(useRightSidePanelStore().activeTab).toBe('errors')
   })
 
   it('opens graph errors when the canvas is not initialized', () => {

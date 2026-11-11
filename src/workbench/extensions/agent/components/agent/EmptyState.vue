@@ -9,8 +9,13 @@ import { isCloud } from '@/platform/distribution/types'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
-const { userName, hasSelection = false } = defineProps<{
+const {
+  userName,
+  section = 'all',
+  hasSelection = false
+} = defineProps<{
   userName?: string
+  section?: 'all' | 'greeting' | 'prompts'
   hasSelection?: boolean
 }>()
 const emit = defineEmits<{
@@ -83,10 +88,34 @@ function onPromptClick(text: string, index: number): void {
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8">
-    <div class="my-auto flex shrink-0 flex-col items-center gap-8 text-center">
+  <div
+    :class="
+      cn(
+        'flex flex-col overflow-x-hidden px-4',
+        section === 'all' && 'h-full overflow-y-auto py-8',
+        section === 'greeting' && 'pb-3',
+        section === 'prompts' && 'pt-1 pb-4'
+      )
+    "
+  >
+    <div
+      :class="
+        cn(
+          'flex shrink-0 flex-col items-center gap-8 text-center',
+          section === 'all' && 'my-auto'
+        )
+      "
+    >
       <div
-        class="flex max-w-sm flex-col items-center pt-12 text-base/snug font-semibold tracking-tight @min-[570px]:text-2xl/snug"
+        v-if="section !== 'prompts'"
+        :class="
+          cn(
+            'flex max-w-sm flex-col items-center text-base/snug font-semibold tracking-tight @min-[570px]:text-2xl/snug',
+            section === 'all'
+              ? 'pt-12'
+              : '@min-[1024px]:max-w-2xl @min-[1024px]:text-4xl/tight'
+          )
+        "
       >
         <p class="my-0">
           {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
@@ -96,6 +125,7 @@ function onPromptClick(text: string, index: number): void {
         </p>
       </div>
       <div
+        v-if="section !== 'greeting'"
         ref="promptList"
         data-testid="suggested-prompts"
         class="mx-auto flex w-full max-w-[608px] shrink-0 flex-wrap gap-2 @min-[460px]:justify-center"

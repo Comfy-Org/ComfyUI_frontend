@@ -3,7 +3,10 @@
     <WorkspaceHeaderMenu />
     <BillingStatusBanner :section class="mb-4" />
 
-    <PlanCreditsPanelContent v-if="section === 'planCredits'" />
+    <PlanCreditsPanelContent
+      v-if="section === 'planCredits'"
+      :initial-view="planCreditsView"
+    />
     <WorkspaceMembersPanelContent v-else-if="section === 'members'" />
     <PartnerNodeAccessPanel v-else />
   </div>
@@ -15,8 +18,10 @@ import PartnerNodeAccessPanel from '@/platform/workspace/components/dialogs/sett
 import PlanCreditsPanelContent from '@/platform/account/components/dialogs/settings/PlanCreditsPanelContent.vue'
 import WorkspaceHeaderMenu from '@/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue'
 import WorkspaceMembersPanelContent from '@/platform/account/components/dialogs/settings/WorkspaceMembersPanelContent.vue'
+import type { PlanCreditsView } from '@comfyorg/settings-core/types'
 
-const { section } = defineProps<{
+const { section, planCreditsView } = defineProps<{
   section: 'planCredits' | 'members' | 'allowlist'
+  planCreditsView?: PlanCreditsView
 }>()
 </script>

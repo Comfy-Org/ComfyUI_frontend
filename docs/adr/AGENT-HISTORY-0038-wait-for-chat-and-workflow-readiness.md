@@ -84,3 +84,30 @@ panel must not use thread-ID changes alone as proof of navigation success.
 Absence from the Cloud listing is the only proof that a workflow is gone: a
 listing truncated by a broken cursor is treated as complete, and a listing
 superseded by a newer refresh counts as a failure.
+
+## Amendment (2026-10-02): The full-screen sidebar
+
+Full screen (ADR-AGENT-FULLSCREEN-0054) shows the chat list in a sidebar next
+to the conversation instead of in place of it, so two rules above change there.
+The docked history screen keeps them as written.
+
+The open chat is highlighted where it already sits. It does not move under a
+Current heading, because a list that reorders on every selection is hard to
+scan when it stays on screen. Pinned chats get their own group above the dated
+ones; a pinned chat that the first page of the server list no longer includes
+is still listed from its stored snapshot.
+
+The selected row is no longer the only feedback. While a chat and its workflow
+open, the row shows loading and the main area says which chat is opening
+instead of showing the previous conversation. A failure stays on the row with
+its retry, and the main area offers the same retry plus a way back to the
+previous chat. The conversation is still revealed only after both the
+transcript and the workflow are ready.
+
+Both surfaces read one navigation state, a pure reducer in
+`agentChatNavigation.ts` held by the panel store. Leaving full screen during an
+unfinished selection keeps it, and the docked history screen shows the same
+loading row.
+
+Deleting a chat asks for confirmation in the redesign. Pin, rename and delete
+stay browser-local until the server has endpoints for them.

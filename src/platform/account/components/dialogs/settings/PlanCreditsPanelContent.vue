@@ -63,8 +63,13 @@ import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/account/components/SubscriptionPanelContentWorkspace.vue'
 import WorkspaceInvoicesContent from '@/platform/billing/components/settings/WorkspaceInvoicesContent.vue'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
+import type { PlanCreditsView } from '@comfyorg/settings-core/types'
 
 type View = 'overview' | 'activity' | 'invoices'
+
+const { initialView = 'overview' } = defineProps<{
+  initialView?: PlanCreditsView
+}>()
 
 const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
   useSettingsHeaderCollapse()
@@ -91,7 +96,7 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
     : [])
 ])
 
-const activeView = ref<View>('overview')
+const activeView = ref<View>(initialView)
 
 // Switching workspaces can drop the billing-manager role while the dialog
 // stays open; leaving Invoices selected would keep the panel rendered after

@@ -73,6 +73,50 @@ describe('UserAvatar', () => {
     expect(screen.getByTestId('avatar-icon')).toBeInTheDocument()
   })
 
+  it('shows initials in place of the icon when there is no photo', () => {
+    renderComponent({ initials: 'MM' })
+
+    expect(screen.getByRole('img', { name: 'User Avatar' })).toHaveTextContent(
+      'MM'
+    )
+    expect(screen.queryByTestId('avatar-icon')).not.toBeInTheDocument()
+  })
+
+  it('shows the photo instead of initials when a photo is available', () => {
+    renderComponent({
+      photoUrl: 'https://example.com/avatar.jpg',
+      initials: 'MM'
+    })
+
+    expect(screen.getByRole('img')).toHaveAttribute(
+      'src',
+      'https://example.com/avatar.jpg'
+    )
+    expect(screen.queryByText('MM')).not.toBeInTheDocument()
+  })
+
+  it('shows initials after the photo fails to load', async () => {
+    renderComponent({
+      photoUrl: 'https://example.com/broken-image.jpg',
+      initials: 'MM',
+      label: 'Marwan Mostafa'
+    })
+
+    await fireEvent.error(screen.getByRole('img'))
+
+    expect(
+      screen.getByRole('img', { name: 'Marwan Mostafa' })
+    ).toHaveTextContent('MM')
+    expect(screen.queryByTestId('avatar-icon')).not.toBeInTheDocument()
+  })
+
+  it('renders the default icon when initials are empty', () => {
+    renderComponent({ initials: '' })
+
+    expect(screen.getByTestId('avatar-icon')).toBeInTheDocument()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
   it('uses provided label', () => {
     renderComponent({
       photoUrl: 'https://example.com/avatar.jpg',

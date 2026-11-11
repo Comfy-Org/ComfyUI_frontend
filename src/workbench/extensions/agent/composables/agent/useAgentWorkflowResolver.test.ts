@@ -84,6 +84,26 @@ describe('Agent workflow resolution', () => {
     localStorage.clear()
   })
 
+  it('names a chat workflow from its bound tab, then from the cloud index', async () => {
+    const tab = workflow('workflows/portrait.json', 'portrait')
+    const { resolver, bindings } = setup(
+      [tab],
+      [
+        { id: 'cloud-portrait', name: 'Portrait (cloud)' },
+        { id: 'cloud-upscale', name: 'upscale_4k' }
+      ]
+    )
+    bindings.bind('cloud-portrait', tab.path)
+    expect(resolver.displayNameFor('cloud-upscale')).toBeUndefined()
+
+    await resolver.refreshCloudWorkflowIds()
+
+    expect(resolver.displayNameFor('cloud-portrait')).toBe('portrait')
+    expect(resolver.displayNameFor('cloud-upscale')).toBe('upscale_4k')
+    expect(resolver.displayNameFor('cloud-unknown')).toBeUndefined()
+    expect(bindings.tabPathFor('cloud-portrait')).toBe(tab.path)
+  })
+
   it.for(['cold', 'closed', 'forgotten'])(
     'does not use cached open resolution for a %s target despite its binding',
     async (state) => {

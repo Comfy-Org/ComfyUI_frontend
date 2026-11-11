@@ -5,6 +5,7 @@ import {
   onMounted,
   onUnmounted,
   ref,
+  useSlots,
   useTemplateRef,
   watch
 } from 'vue'
@@ -51,6 +52,7 @@ const {
   submitting = false,
   canAttach = false,
   canOpenAssets = false,
+  layout = 'classic',
   selectionTags = [],
   nodeReferenceDisabledReason,
   availableWorkflows = [],
@@ -65,6 +67,7 @@ const {
   submitting?: boolean
   canAttach?: boolean
   canOpenAssets?: boolean
+  layout?: 'classic' | 'redesign'
   selectionTags?: SelectedNode[]
   nodeReferenceDisabledReason?: string
   availableWorkflows?: WorkflowReferenceOption[]
@@ -165,6 +168,12 @@ const showPlaceholderHint = computed(
 const highlightedAssetIds = ref<string[]>([])
 const uploadingAttachmentCount = computed(
   () => composer.attachments.value.filter((item) => item.uploading).length
+)
+const uploadStatusClass = computed(() =>
+  cn(
+    'flex shrink-0 items-center gap-1 text-xs text-muted-foreground',
+    uploadingAttachmentCount.value > 0 && 'px-3 pb-2'
+  )
 )
 
 const { eligibleWorkflows, selectWorkflow } = useWorkflowReferencePicker({
@@ -391,6 +400,30 @@ function openReferenceMenu(): void {
   syncMention()
 }
 
+const redesigned = computed(() => layout === 'redesign')
+const slots = useSlots()
+const showHeaderSlot = computed(() => !redesigned.value && !!slots.header)
+const containerClass = computed(() =>
+  cn(
+    'relative flex min-w-0 flex-col',
+    redesigned.value
+      ? 'gap-2'
+      : 'rounded-lg border border-border/50 bg-background'
+  )
+)
+const mentionMenuClass = computed(() =>
+  cn(
+    'absolute inset-x-0 bottom-full z-1 max-h-64 overflow-y-auto rounded-lg border border-border/50 bg-secondary p-1 font-inter shadow-md',
+    redesigned.value ? 'mb-1' : '-mb-8.75'
+  )
+)
+const inputCardClass = computed(() =>
+  cn(
+    'relative flex max-h-[50dvh] min-h-28 min-w-0 flex-col border border-border/50 bg-secondary transition-colors focus-within:border-muted-foreground',
+    redesigned.value ? 'rounded-2xl' : '-m-px rounded-lg'
+  )
+)
+
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
@@ -513,6 +546,7 @@ function removeAttachment(id: string): void {
 defineExpose({
   insert,
   replaceDraft,
+  focus: () => editorRef.value?.focus(),
   addAttachment: composer.addAttachment,
   updateAttachment: composer.updateAttachment,
   removeAttachment: composer.removeAttachment
@@ -524,7 +558,7 @@ defineExpose({
     id="agent-composer"
     ref="composerContainerRef"
     data-testid="agent-composer"
-    class="relative flex min-w-0 flex-col rounded-lg border border-border/50 bg-background"
+    :class="containerClass"
   >
     <div
       v-if="mentionVisible"
@@ -533,7 +567,7 @@ defineExpose({
       data-testid="agent-reference-menu"
       role="menu"
       :aria-label="mentionMenuLabel"
-      class="absolute inset-x-0 bottom-full z-1 -mb-8.75 max-h-64 overflow-y-auto rounded-lg border border-border/50 bg-secondary p-1 font-inter shadow-md"
+      :class="mentionMenuClass"
       @mousedown.prevent
       @mouseleave="leaveDescription"
     >
@@ -571,7 +605,7 @@ defineExpose({
     </div>
 
     <div
-      v-if="$slots.header"
+      v-if="showHeaderSlot"
       class="flex h-11 shrink-0 items-center rounded-t-lg bg-background px-2"
     >
       <slot name="header" />
@@ -579,10 +613,7 @@ defineExpose({
 
     <slot name="aboveInput" />
 
-    <div
-      data-testid="composer-input-box"
-      class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border/50 bg-secondary transition-colors focus-within:border-muted-foreground"
-    >
+    <div data-testid="composer-input-box" :class="inputCardClass">
       <slot name="insideInput" />
       <AssetTray
         v-if="composer.attachments.value.length"
@@ -595,12 +626,7 @@ defineExpose({
         data-testid="composer-upload-status"
         aria-live="polite"
         aria-atomic="true"
-        :class="
-          cn(
-            'flex shrink-0 items-center gap-1 text-xs text-muted-foreground',
-            uploadingAttachmentCount > 0 && 'px-3 pb-2'
-          )
-        "
+        :class="uploadStatusClass"
       >
         <template v-if="uploadingAttachmentCount > 0">
           <i
@@ -678,6 +704,7 @@ defineExpose({
           <ComposerAddMenu
             :can-attach
             :can-open-assets
+            :layout
             :node-reference-disabled-reason
             :workflows="eligibleWorkflows"
             :workflow-selecting
@@ -700,7 +727,7 @@ defineExpose({
         </div>
 
         <div class="flex items-center gap-1">
-          <RunModePopover />
+          <RunModePopover v-if="!redesigned" />
           <Button
             :tooltip="primaryActionTooltip"
             type="button"
@@ -725,5 +752,7 @@ defineExpose({
         </div>
       </div>
     </div>
+
+    <slot name="meta" :anchor="composerContainerRef" />
   </div>
 </template>

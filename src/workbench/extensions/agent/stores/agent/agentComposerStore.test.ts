@@ -274,6 +274,45 @@ describe('composer reference ownership', () => {
     expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:shared')
   })
 
+  it('refuses a file that is already in the draft', () => {
+    const store = useAgentComposerStore()
+    const output = { id: 'asset:fox.png', name: 'fox.png', ref: 'fox.png' }
+
+    expect(store.addAttachment(output)).toBe(true)
+    expect(store.addAttachment(output)).toBe(false)
+    expect(store.attachments).toEqual([output])
+  })
+
+  it('attaches a file again after its chip was removed', () => {
+    const store = useAgentComposerStore()
+    const output = { id: 'asset:fox.png', name: 'fox.png', ref: 'fox.png' }
+    store.addAttachment(output)
+    store.removeAttachment(output.id)
+    expect(store.attachments).toEqual([])
+
+    expect(store.addAttachment(output)).toBe(true)
+    expect(store.attachments).toEqual([output])
+  })
+
+  it('attaches a file again after it was sent, and keeps it through editor updates', () => {
+    const store = useAgentComposerStore()
+    const output = { id: 'asset:fox.png', name: 'fox.png', ref: 'fox.png' }
+    store.addAttachment(output)
+    const id = store.startSubmission({
+      prompt: store.prompt,
+      attachments: store.attachments,
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    store.settleSubmission(id, true)
+    expect(store.attachments).toEqual([])
+
+    expect(store.addAttachment(output)).toBe(true)
+    store.applyEditorPrompt(store.prompt)
+
+    expect(store.attachments).toEqual([output])
+  })
+
   it('rejects node history from a different target even when node IDs collide', () => {
     const store = useAgentComposerStore()
     store.setNodeScope('workflow-A')

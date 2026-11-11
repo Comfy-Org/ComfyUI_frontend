@@ -279,10 +279,13 @@ export type SettingPanelType =
   | 'workspace-allowlist'
   | 'workspace-members'
 
+export type PlanCreditsView = 'overview' | 'activity'
+
 export interface SettingDialogProps {
   onClose: () => void
   defaultPanel?: SettingPanelType
   scrollToSettingId?: string
   /** Increments once per explicit navigation request. */
   navigationRequestId?: number
+  planCreditsView?: PlanCreditsView
 }

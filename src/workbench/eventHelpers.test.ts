@@ -6,6 +6,7 @@ import {
   hasTextSelection,
   shouldIgnoreCopyPaste
 } from '@/workbench/eventHelpers'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 function mount<T extends HTMLElement>(element: T): T {
   document.body.append(element)
@@ -72,6 +73,22 @@ describe('shouldIgnoreCopyPaste', () => {
   it('ignores events while text is selected anywhere', () => {
     const canvas = mount(document.createElement('canvas'))
     selectTextOf(mount(textBlock('agent reply')))
+
+    expect(shouldIgnoreCopyPaste(canvas)).toBe(true)
+  })
+
+  it('ignores events while the agent chat covers the graph', () => {
+    const canvas = mount(document.createElement('canvas'))
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.isOpen = true
+    panel.experience = 'redesign'
+    panel.setPanelMounted(true)
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+    expect(shouldIgnoreCopyPaste(canvas)).toBe(false)
+
+    panel.toggleMaximize()
 
     expect(shouldIgnoreCopyPaste(canvas)).toBe(true)
   })

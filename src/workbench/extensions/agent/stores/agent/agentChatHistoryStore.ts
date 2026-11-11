@@ -18,6 +18,7 @@ export interface ChatSession {
 }
 
 export interface HistoryGroups {
+  pinned?: ChatSession[]
   current: ChatSession[]
   today: ChatSession[]
   yesterday: ChatSession[]
@@ -33,7 +34,8 @@ function startOfLocalDay(now: number): number {
 export function groupSessionsByRecency(
   sessions: ChatSession[],
   activeId: string | null,
-  now: number
+  now: number,
+  pinnedIds?: ReadonlySet<string>
 ): HistoryGroups {
   const startToday = startOfLocalDay(now)
   const startYesterday = startOfLocalDay(startToday - 1)
@@ -43,9 +45,12 @@ export function groupSessionsByRecency(
     yesterday: [],
     earlier: []
   }
+  const pinned: ChatSession[] = []
+  if (pinnedIds) groups.pinned = pinned
   const ordered = [...sessions].sort((a, b) => b.updatedAt - a.updatedAt)
   for (const session of ordered) {
     if (session.id === activeId) groups.current.push(session)
+    else if (pinnedIds?.has(session.id)) pinned.push(session)
     else if (session.updatedAt >= startToday) groups.today.push(session)
     else if (session.updatedAt >= startYesterday) groups.yesterday.push(session)
     else groups.earlier.push(session)
@@ -73,11 +78,33 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     []
   )
 
-  const titled = computed(() =>
-    sessions.value.map((session) => {
-      const custom = customTitles.value[session.id]
-      return custom === undefined ? session : { ...session, title: custom }
-    })
+  const pinnedSessions = useLocalStorage<Partial<Record<string, ChatSession>>>(
+    StorageKeys.agentPinnedThreads(workspaceId),
+    {}
+  )
+  const pinnedIds = computed(
+    (): ReadonlySet<string> => new Set(Object.keys(pinnedSessions.value))
+  )
+
+  function withCustomTitle(session: ChatSession): ChatSession {
+    const custom = customTitles.value[session.id]
+    return custom === undefined ? session : { ...session, title: custom }
+  }
+
+  const titled = computed(() => sessions.value.map(withCustomTitle))
+
+  const listed = computed(() => {
+    const loaded = new Set(sessions.value.map(({ id }) => id))
+    const pinnedOnly = Object.values(pinnedSessions.value).flatMap((session) =>
+      session === undefined || loaded.has(session.id)
+        ? []
+        : [withCustomTitle(session)]
+    )
+    return [...titled.value, ...pinnedOnly]
+  })
+
+  const groupedInPlace = computed(() =>
+    groupSessionsByRecency(listed.value, null, now.value, pinnedIds.value)
   )
 
   const grouped = computed(() =>
@@ -101,6 +128,23 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     if (!deletedIds.value.includes(id))
       deletedIds.value = [...deletedIds.value, id]
     if (activeId.value === id) activeId.value = null
+    unpin(id)
+  }
+
+  function unpin(id: string): void {
+    if (!(id in pinnedSessions.value)) return
+    const { [id]: _unpinned, ...rest } = pinnedSessions.value
+    pinnedSessions.value = rest
+  }
+
+  function togglePin(id: string): void {
+    if (id in pinnedSessions.value) {
+      unpin(id)
+      return
+    }
+    const session = sessions.value.find((item) => item.id === id)
+    if (session)
+      pinnedSessions.value = { ...pinnedSessions.value, [id]: { ...session } }
   }
 
   function replaceAll(next: ChatSession[]): void {
@@ -117,6 +161,9 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     sessions,
     activeId,
     grouped,
+    groupedInPlace,
+    pinnedIds,
+    togglePin,
     titleFor,
     rename,
     remove,

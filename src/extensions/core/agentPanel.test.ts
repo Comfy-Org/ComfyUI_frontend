@@ -35,6 +35,7 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -2191,6 +2192,199 @@ describe('AgentPanel extension flag gate', () => {
     await nextTick()
 
     expect(consentStore.load).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the classic experience until the redesign flag arrives', async () => {
+    const { remoteConfig, remoteConfigRevision } =
+      await import('@/platform/remoteConfig/remoteConfig')
+    const previousConfig = remoteConfig.value
+    await loadEntryAndSetup()
+    expect(agentStore.experience).toBe('classic')
+
+    remoteConfig.value = { 'agent-chat-redesign': true }
+    remoteConfigRevision.value++
+    await nextTick()
+    expect(agentStore.experience).toBe('redesign')
+
+    remoteConfig.value = previousConfig
+    remoteConfigRevision.value++
+    await nextTick()
+    expect(agentStore.experience).toBe('classic')
+  })
+
+  describe('full screen command', () => {
+    const COMMAND = 'Comfy.Agent.ToggleFullScreen'
+
+    it('is not registered while the experience is classic', async () => {
+      await loadEntryAndSetup()
+
+      expect(useCommandStore().isRegistered(COMMAND)).toBe(false)
+    })
+
+    it('opens the panel in full screen, then returns it to the dock', async () => {
+      const { remoteConfig } =
+        await import('@/platform/remoteConfig/remoteConfig')
+      const previousConfig = remoteConfig.value
+      remoteConfig.value = { 'agent-chat-redesign': true }
+      onTestFinished(() => {
+        remoteConfig.value = previousConfig
+      })
+      setAgentReady(true)
+      window.innerWidth = 1920
+      window.dispatchEvent(new Event('resize'))
+      Object.assign(consentStore, { accepted: true })
+      agentStore.isOpen = false
+      await loadEntryAndSetup()
+      await flush()
+      agentStore.isOpen = false
+
+      await useCommandStore().execute(COMMAND)
+
+      expect(agentStore.isOpen).toBe(true)
+      expect(agentStore.prefersFullscreen).toBe(true)
+
+      await useCommandStore().execute(COMMAND)
+
+      expect(agentStore.isOpen).toBe(true)
+      expect(agentStore.prefersFullscreen).toBe(false)
+    })
+  })
+
+  describe('remembering full screen', () => {
+    const SIZE_KEY = 'Comfy.AgentPanel.size'
+    const stored = (owner: string) =>
+      JSON.stringify({ mode: 'fullscreen', owner })
+
+    async function setupWithRedesign(): Promise<void> {
+      const { remoteConfig } =
+        await import('@/platform/remoteConfig/remoteConfig')
+      const previousConfig = remoteConfig.value
+      remoteConfig.value = { 'agent-chat-redesign': true }
+      onTestFinished(() => {
+        remoteConfig.value = previousConfig
+      })
+      setAgentReady(true)
+      window.innerWidth = 1920
+      window.dispatchEvent(new Event('resize'))
+      await loadEntryAndSetup()
+      await flush()
+    }
+
+    it('reopens in full screen for the user who left it on', async () => {
+      localStorage.setItem(SIZE_KEY, stored('account-a'))
+
+      await setupWithRedesign()
+
+      expect(agentStore.isFullscreen).toBe(true)
+    })
+
+    it.for([
+      {
+        name: 'another user left it on',
+        arrange: () => localStorage.setItem(SIZE_KEY, stored('account-b'))
+      },
+      {
+        name: 'nothing was stored',
+        arrange: () => {}
+      },
+      {
+        name: 'the panel was closed',
+        arrange: () => {
+          localStorage.setItem(SIZE_KEY, stored('account-a'))
+          agentStore.isOpen = false
+        }
+      },
+      {
+        name: 'a first-run screen is up',
+        arrange: () => {
+          localStorage.setItem(SIZE_KEY, stored('account-a'))
+          showFirstRunScreen()
+        }
+      },
+      {
+        name: 'a dialog is open',
+        arrange: () => {
+          localStorage.setItem(SIZE_KEY, stored('account-a'))
+          openDialog()
+        }
+      }
+    ])('starts docked when $name', async ({ arrange }) => {
+      arrange()
+
+      await setupWithRedesign()
+
+      expect(agentStore.isFullscreen).toBe(false)
+    })
+
+    it('starts docked when the URL opens a template', async () => {
+      localStorage.setItem(SIZE_KEY, stored('account-a'))
+      window.history.replaceState(null, '', '?template=portrait')
+      onTestFinished(() =>
+        window.history.replaceState(null, '', window.location.pathname)
+      )
+
+      await setupWithRedesign()
+
+      expect(agentStore.isFullscreen).toBe(false)
+    })
+
+    it('stores full screen when it is entered and clears it when it is left', async () => {
+      await setupWithRedesign()
+      expect(localStorage.getItem(SIZE_KEY)).toBeNull()
+
+      agentStore.toggleMaximize()
+      await nextTick()
+      expect(localStorage.getItem(SIZE_KEY)).toBe(stored('account-a'))
+
+      agentStore.toggleMaximize()
+      await nextTick()
+      expect(localStorage.getItem(SIZE_KEY)).toBeNull()
+    })
+
+    it('leaves full screen when a first-run screen takes over', async () => {
+      await setupWithRedesign()
+      agentStore.toggleMaximize()
+      expect(agentStore.isFullscreen).toBe(true)
+
+      showFirstRunScreen()
+      await nextTick()
+
+      expect(agentStore.isFullscreen).toBe(false)
+    })
+
+    it('leaves full screen when a different user signs in', async () => {
+      await setupWithRedesign()
+      agentStore.toggleMaximize()
+
+      currentUser.value = { id: 'account-b' }
+      await nextTick()
+
+      expect(agentStore.isFullscreen).toBe(false)
+    })
+  })
+
+  it('blocks graph shortcuts only while the chat covers the graph', async () => {
+    const { isKeybindingAllowed } =
+      await import('@/platform/keybindings/keybindingGate')
+    setAgentReady(true)
+    await loadEntryAndSetup()
+    expect(isKeybindingAllowed('Comfy.Undo')).toBe(true)
+
+    agentStore.experience = 'redesign'
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+    agentStore.setPanelMounted(true)
+    agentStore.toggleMaximize()
+    expect(agentStore.coversWorkspace).toBe(true)
+
+    expect(isKeybindingAllowed('Comfy.Undo')).toBe(false)
+    expect(isKeybindingAllowed('Comfy.QueuePrompt')).toBe(false)
+    expect(isKeybindingAllowed('Comfy.ShowSettingsDialog')).toBe(true)
+    expect(isKeybindingAllowed('Comfy.Agent.ToggleFullScreen')).toBe(true)
+
+    agentStore.toggleMaximize()
+    agentStore.setPanelMounted(false)
+    expect(isKeybindingAllowed('Comfy.Undo')).toBe(true)
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {

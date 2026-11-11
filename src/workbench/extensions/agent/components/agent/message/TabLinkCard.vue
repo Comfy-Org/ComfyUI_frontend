@@ -63,6 +63,7 @@ useEventListener(
 async function open(): Promise<void> {
   const target = tab.value
   if (!target) return
+  useAgentPanelStore().exitFullscreen('graph_reveal')
   if (locatorId === undefined) await workflowService.openWorkflow(target)
   else {
     try {

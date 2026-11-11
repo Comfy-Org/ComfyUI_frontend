@@ -1,40 +1,33 @@
 <template>
-  <Teleport to="body" :disabled="!isOverlay">
+  <Teleport to="body" :disabled="!detached">
     <div
       v-if="docked"
+      ref="panelElement"
       data-testid="docked-agent-panel"
+      :data-presentation="presentation.kind"
       role="complementary"
       aria-labelledby="agent-panel-title"
-      :class="
-        cn(
-          'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]',
-          isOverlay
-            ? 'fixed inset-y-0 right-0 z-panel max-w-full bg-background shadow-lg'
-            : 'relative h-full'
-        )
-      "
-      :style="{ width: `${panelWidth}px` }"
+      :class="panelClass"
+      :style="panelStyle"
     >
       <div
-        v-if="!isOverlay"
+        v-if="!detached"
         data-testid="agent-panel-resize-handle"
         class="absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize transition-colors delay-300 duration-200 hover:bg-primary data-[resizing=true]:bg-primary"
         :data-resizing="isResizing"
         @pointerdown="onResizeStart"
         @lostpointercapture="isResizing = false"
       />
-      <div
-        data-testid="docked-agent-panel-shell"
-        :class="
-          cn(
-            'size-full p-2',
-            hasOpaqueNeighbor && 'border-l border-border bg-background'
-          )
-        "
-      >
-        <div class="size-full overflow-hidden rounded-lg border">
+      <div data-testid="docked-agent-panel-shell" :class="shellClass">
+        <div :class="frameClass">
           <AgentPanelLoadError v-if="mountFailed" :on-retry="retryMount" />
           <AgentPanelRoot v-else :key="mountAttempt" />
+        </div>
+        <div
+          v-if="isFullscreen"
+          class="pointer-events-none absolute inset-x-0 top-14 z-10 px-4"
+        >
+          <ErrorOverlay />
         </div>
       </div>
     </div>
@@ -51,13 +44,18 @@ import {
   defineAsyncComponent,
   defineComponent,
   h,
+  nextTick,
   onBeforeUnmount,
   onErrorCaptured,
-  ref
+  onMounted,
+  ref,
+  useTemplateRef,
+  watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
+import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
 import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentPanelRenderStore } from '@/workbench/extensions/agent/stores/agent/agentPanelRenderStore'
@@ -110,6 +108,7 @@ const AgentPanelRoot = defineAsyncComponent({
       surface: 'agent',
       errorType: 'agent_panel_load_failure'
     })
+    useAgentPanelStore().exitFullscreen('load_failed')
     fail()
   }
 })
@@ -142,8 +141,40 @@ const {
   isVisible: docked,
   width,
   requestedWidth,
-  isOverlay
+  isOverlay,
+  isFullscreen,
+  presentation
 } = storeToRefs(agentPanelStore)
+const detached = computed(() => isOverlay.value || isFullscreen.value)
+
+function presentationClass(): string {
+  if (isFullscreen.value) return 'fixed inset-0 z-panel bg-background'
+  return isOverlay.value
+    ? '[anchor-name:--docked-agent-panel] fixed inset-y-0 right-0 z-panel max-w-full bg-background shadow-lg'
+    : '[anchor-name:--docked-agent-panel] relative h-full'
+}
+
+const panelClass = computed(() =>
+  cn(
+    'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden',
+    presentationClass()
+  )
+)
+const panelStyle = computed(() =>
+  isFullscreen.value ? undefined : { width: `${panelWidth.value}px` }
+)
+const shellClass = computed(() =>
+  cn(
+    'size-full',
+    !isFullscreen.value && 'p-2',
+    hasOpaqueNeighbor &&
+      !isFullscreen.value &&
+      'border-l border-border bg-background'
+  )
+)
+const frameClass = computed(() =>
+  cn('size-full overflow-hidden', !isFullscreen.value && 'rounded-lg border')
+)
 const { width: viewportWidth } = useWindowSize()
 const panelWidth = computed(() =>
   Math.min(
@@ -152,7 +183,25 @@ const panelWidth = computed(() =>
   )
 )
 useWorkspaceInsetRight(() =>
-  docked.value && !isOverlay.value ? width.value : 0
+  docked.value && !detached.value ? width.value : 0
+)
+
+onMounted(() => agentPanelStore.setPanelMounted(true))
+onBeforeUnmount(() => agentPanelStore.setPanelMounted(false))
+
+const panelElement = useTemplateRef<HTMLElement>('panelElement')
+watch(
+  isFullscreen,
+  async () => {
+    const scrolled = Array.from(
+      panelElement.value?.querySelectorAll<HTMLElement>('*') ?? []
+    )
+      .filter((element) => element.scrollTop > 0)
+      .map((element) => ({ element, top: element.scrollTop }))
+    await nextTick()
+    for (const { element, top } of scrolled) element.scrollTop = top
+  },
+  { flush: 'pre' }
 )
 const agentRunModeStore = useAgentRunModeStore()
 

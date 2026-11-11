@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
-import { computed, watchEffect } from 'vue'
+import { computed, inject, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCreditUsageSummary } from '@/workbench/extensions/agent/experiments/creditUsageSummary'
@@ -14,6 +14,11 @@ import {
   askIdOf,
   isOpenAskPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import {
+  isRunInFlight,
+  runOwnedCallIds,
+  runSlotsOf
+} from '@/workbench/extensions/agent/services/agent/agentRunSlots'
 import { htmlReplyAssets } from '@/workbench/extensions/agent/utils/replyAssets'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
@@ -21,6 +26,7 @@ import AgentMessageGroup from './AgentMessageGroup.vue'
 import MessageFeedback from './MessageFeedback.vue'
 import type { AgentMessageGroup as Group } from './agentMessageGroup'
 import { groupMessageParts } from './agentMessageGroup'
+import { agentRunCardsKey } from './agentRunCards'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
@@ -55,9 +61,34 @@ const activityParts = computed<readonly ActivityPart[]>(() =>
   )
 )
 
-const groups = computed<Group[]>(() => groupMessageParts(message.parts))
+const foldRuns = inject(agentRunCardsKey, ref(false))
+
+const ownedByRun = computed(() =>
+  foldRuns.value ? runOwnedCallIds(message.parts) : new Set<string>()
+)
+
+const traceParts = computed<readonly ActivityPart[]>(() => {
+  if (!foldRuns.value) return activityParts.value
+  return activityParts.value.filter(
+    (part) => part.type !== 'tool' || !ownedByRun.value.has(part.callId)
+  )
+})
+
+const runInFlight = computed(() => {
+  if (!foldRuns.value) return false
+  const lastSlot = runSlotsOf(message).at(-1)
+  return lastSlot !== undefined && isRunInFlight(lastSlot)
+})
+
+const groups = computed<Group[]>(() =>
+  groupMessageParts(message.parts, {
+    foldRuns: foldRuns.value,
+    streaming: message.streaming
+  })
+)
 
 function groupKey(group: Group, index: number): string {
+  if (group.kind === 'run') return `run:${group.slot.callId}`
   const askId = 'part' in group ? askIdOf(group.part) : undefined
   return askId === undefined ? `group:${index}` : `ask:${askId}`
 }
@@ -109,7 +140,10 @@ const composing = computed(
     message.parts.length > 0 &&
     message.parts.every(
       (part) =>
-        !isOpenAskPart(part) && (!('state' in part) || part.state === 'done')
+        !isOpenAskPart(part) &&
+        (!('state' in part) ||
+          part.state === 'done' ||
+          (part.type === 'tool' && ownedByRun.value.has(part.callId)))
     )
 )
 
@@ -125,7 +159,7 @@ const status = computed(() => {
       icon: 'icon-[lucide--brain]',
       text: message.thinkingText || t('agent.thinking')
     }
-  if (composing.value)
+  if (composing.value && !runInFlight.value)
     return {
       icon: 'text-muted-foreground icon-[lucide--loader-circle] animate-spin',
       text: t('agent.working')
@@ -140,7 +174,7 @@ const status = computed(() => {
       <AgentMessageGroup
         :group
         :streaming="message.streaming"
-        :activity-parts="activityParts"
+        :activity-parts="traceParts"
         :answering-ask-ids="answeringAskIds"
         :paywall-presentation="paywallPresentation"
         @answer="(askId, answer) => emit('answerAsk', askId, answer)"

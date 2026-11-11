@@ -2,13 +2,11 @@
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useTimeout, useTimeoutFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
-import Input from '@comfyorg/design-system/input/Input'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
@@ -33,19 +31,31 @@ import type {
 import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { reduceChatNavigation } from '@/workbench/extensions/agent/stores/agent/agentChatNavigation'
+import type {
+  AgentPanelView,
+  ChatNavigationEvent
+} from '@/workbench/extensions/agent/stores/agent/agentChatNavigation'
+import { useAgentOutputsTrayStore } from '@/workbench/extensions/agent/stores/agent/agentOutputsTrayStore'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
+import { AGENT_COLUMN_CLASS } from './agentLayout'
+import AgentPanelLowerStage from './AgentPanelLowerStage.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
+import ChatTitleMenu from './ChatTitleMenu.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
 import FreeUseNotice from './FreeUseNotice.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
+import ComposerMetaRow from './composer/ComposerMetaRow.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
+import ChatOpeningPane from './sidebar/ChatOpeningPane.vue'
+
 import AgentPaywallCard from './message/AgentPaywallCard.vue'
 
 const {
@@ -81,6 +91,8 @@ const {
   openingWorkflowName,
   historyGroups,
   selectHistory = async () => false,
+  confirmDelete,
+  chatPinned = false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
@@ -126,6 +138,8 @@ const {
   openingWorkflowName?: string
   historyGroups: HistoryGroups
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
+  confirmDelete?: (id: string) => Promise<boolean>
+  chatPinned?: boolean
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
@@ -160,6 +174,7 @@ const emit = defineEmits<{
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
+  togglePinChat: []
   answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
@@ -187,19 +202,96 @@ const showChatLoading = computed(
   () => openingChat.value && loadingDelayReady.value
 )
 
-const targetNotice = computed(() => {
-  if (openingChat.value) return undefined
-  if (canvasEmptyAfterTurn) return 'emptyCanvas'
-  if (targetUnavailable) return 'unavailable'
+function workflowTargetNotice() {
   if (workflowDetached || activeTab === null) return undefined
   if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
     return 'mismatch'
   return followsVisibleWorkflow ? 'following' : undefined
+}
+
+const targetNotice = computed(() => {
+  if (openingChat.value) return undefined
+  if (canvasEmptyAfterTurn) return 'emptyCanvas'
+  if (targetUnavailable) return 'unavailable'
+  if (isFullscreen.value) return undefined
+  return workflowTargetNotice()
 })
 
 const panelStore = useAgentPanelStore()
-const { view } = storeToRefs(panelStore)
-const showHistory = computed(() => view.value.screen === 'history')
+const { experience, isFullscreen, sidebarMode, view } = storeToRefs(panelStore)
+const brandInSidebar = computed(
+  () => isFullscreen.value && sidebarMode.value !== 'rail'
+)
+const showHistory = computed(
+  () => view.value.screen === 'history' && !isFullscreen.value
+)
+const openingSidebarChat = computed(() => {
+  const current = view.value
+  if (
+    !isFullscreen.value ||
+    current.screen !== 'history' ||
+    current.selection.status === 'idle'
+  )
+    return null
+  const { id, status } = current.selection
+  const session = Object.values(historyGroups)
+    .flat()
+    .find((item) => item.id === id)
+  return { id, status, title: session?.title ?? t('agent.newChatTitle') }
+})
+const showConversation = computed(
+  () => !showHistory.value && openingSidebarChat.value === null
+)
+const emptyRedesign = computed(
+  () => experience.value === 'redesign' && entries.length === 0
+)
+const heroStage = computed(() => emptyRedesign.value && isFullscreen.value)
+const dockedEmptyStage = computed(
+  () => emptyRedesign.value && !isFullscreen.value
+)
+const outputsTray = useAgentOutputsTrayStore()
+const outputsOpen = computed(
+  () => experience.value === 'redesign' && canOpenAssets && outputsTray.isOpen
+)
+const titleInHeader = computed(
+  () => isFullscreen.value && showConversation.value
+)
+const contentClass = computed(() =>
+  cn(
+    'relative min-h-0 flex-1',
+    heroStage.value && 'flex flex-[2_1_0%] flex-col justify-end',
+    dockedEmptyStage.value &&
+      'grid grid-cols-1 grid-rows-[1fr_max-content_1fr] overflow-y-auto'
+  )
+)
+const emptySection = computed(() => (emptyRedesign.value ? 'greeting' : 'all'))
+const emptyStateClass = computed(() =>
+  cn(dockedEmptyStage.value && 'row-start-2')
+)
+const showDockedPrompts = computed(
+  () => dockedEmptyStage.value && !outputsOpen.value
+)
+const footerInert = computed(() => openingChat.value || blocked)
+const noticeWorkflowName = computed(() =>
+  workflowDetached ? undefined : activeTab?.name
+)
+const composerWorkflowSelecting = computed(
+  () => selectingTabPath !== null || savingReference
+)
+const workflowSelector = computed(() => ({
+  activeTab,
+  tabs: workflowTabs,
+  visibleTabPath,
+  selectingTabPath,
+  selectTab,
+  detached: workflowDetached,
+  disabled: streaming || submitting || savingReference
+}))
+
+function onOpenAssets(): void {
+  if (experience.value === 'redesign') outputsTray.dispatch({ type: 'opened' })
+  else emit('openAssets')
+}
 const loadingHistoryId = computed(() =>
   view.value.screen === 'history' && view.value.selection.status === 'loading'
     ? view.value.selection.id
@@ -220,40 +312,38 @@ watch(
   { immediate: true }
 )
 
+function navigate(event: ChatNavigationEvent): AgentPanelView {
+  view.value = reduceChatNavigation(view.value, event)
+  return view.value
+}
+
 function onNewChat(
   source: 'new_chat_button' | 'history_back' = 'new_chat_button'
 ): void {
-  view.value = { screen: 'chat' }
+  navigate({ type: 'conversationShown' })
   emit('newChat', source)
 }
 function onOpenHistory(): void {
-  view.value = {
-    screen: 'history',
-    previousThreadId: sessionId,
-    selection: { status: 'idle' }
-  }
+  navigate({ type: 'listOpened', threadId: sessionId })
   emit('openHistory')
 }
 async function openHistoryChat(
   id: string,
   onFailure: 'stay' | 'leave'
 ): Promise<void> {
-  if (view.value.screen !== 'history' || loadingHistoryId.value === id) return
-  const opening: AgentPanelView = {
-    ...view.value,
-    selection: { status: 'loading', id }
-  }
-  view.value = opening
+  if (loadingHistoryId.value === id) return
+  const opening = navigate({ type: 'chatSelected', id, threadId: sessionId })
   const isCurrent = () => view.value === opening
   let opened = false
   try {
     opened = await selectHistory(id, isCurrent)
   } finally {
     if (isCurrent())
-      view.value =
-        opened || onFailure === 'leave'
-          ? { screen: 'chat' }
-          : { ...opening, selection: { status: 'failed', id } }
+      navigate(
+        opened || onFailure === 'stay'
+          ? { type: 'selectionResolved', opened }
+          : { type: 'conversationShown' }
+      )
   }
 }
 
@@ -267,41 +357,16 @@ function onBackFromHistory(): void {
     sessionId === view.value.previousThreadId &&
     (view.value.selection.status === 'idle' || currentChatReady)
   )
-    view.value = { screen: 'chat' }
+    navigate({ type: 'conversationShown' })
   else if (view.value.previousThreadId === null) onNewChat('history_back')
   else void openHistoryChat(view.value.previousThreadId, 'leave')
 }
 
-function onDeleteHistory(id: string): void {
-  if (
-    view.value.screen === 'history' &&
-    (view.value.previousThreadId === id ||
-      (view.value.selection.status !== 'idle' &&
-        view.value.selection.id === id))
-  )
-    view.value = {
-      ...view.value,
-      previousThreadId:
-        view.value.previousThreadId === id ? null : view.value.previousThreadId,
-      selection: { status: 'idle' }
-    }
+async function onDeleteHistory(id: string): Promise<void> {
+  if (confirmDelete && !(await confirmDelete(id))) return
+  navigate({ type: 'chatDeleted', id })
   emit('deleteHistory', id)
 }
-
-const chatMenuItems = computed<MenuItem[]>(() => [
-  {
-    label: t('g.rename'),
-    icon: 'icon-[lucide--pencil]',
-    command: startRename
-  },
-  { separator: true },
-  {
-    label: t('g.delete'),
-    icon: 'icon-[lucide--trash-2]',
-    variant: 'destructive',
-    command: onDeleteChat
-  }
-])
 
 function onClose(): void {
   panelStore.interruptHistorySelection()
@@ -334,51 +399,19 @@ function onWorkflowTargetRequired(): void {
 const { t } = useI18n()
 
 const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
-const displayTitle = computed(
-  () => sessionTitle.value || t('agent.newChatTitle')
-)
+const hasChat = computed(() => sessionId !== null)
 
-const renaming = ref(false)
-const renameDraft = ref('')
-const renameInput = ref<InstanceType<typeof Input>>()
-const titleButton = ref<InstanceType<typeof Button>>()
-
-async function startRename(): Promise<void> {
-  renameDraft.value = sessionTitle.value ?? ''
-  renaming.value = true
-  await nextTick()
-  renameInput.value?.focus()
-  renameInput.value?.select()
+async function onDeleteChat(): Promise<void> {
+  if (sessionId === null) return
+  if (confirmDelete && !(await confirmDelete(sessionId))) return
+  emit('deleteHistory', sessionId)
 }
 
-async function exitRename(): Promise<void> {
-  renaming.value = false
-  await nextTick()
-  const button: unknown = titleButton.value?.$el
-  if (button instanceof HTMLButtonElement) button.focus()
-}
-
-function onRenameKeydown(event: KeyboardEvent): void {
-  // A CJK composition confirms and cancels with these same keys.
-  if (event.isComposing) return
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    commitRename()
-  } else if (event.key === 'Escape') {
-    event.preventDefault()
-    void exitRename()
-  }
-}
-
-function commitRename(): void {
-  if (!renaming.value) return
-  void exitRename()
-  const title = renameDraft.value.trim()
-  if (title !== '' && title !== sessionTitle.value) emit('renameChat', title)
-}
-
-function onDeleteChat(): void {
-  if (sessionId !== null) emit('deleteHistory', sessionId)
+function insertStarterPrompt(
+  text: string,
+  prompt: AgentStarterPromptAttribution
+): void {
+  composerRef.value?.insert(text, prompt)
 }
 
 function addAttachment(attachment: ComposerAttachment): boolean {
@@ -405,7 +438,14 @@ function onComposerSend(
   else emit('send', text, attachments)
 }
 
-defineExpose({ addAttachment, updateAttachment, removeAttachment })
+defineExpose({
+  addAttachment,
+  updateAttachment,
+  removeAttachment,
+  selectChat: onSelectHistory,
+  startNewChat: onNewChat,
+  deleteChat: onDeleteHistory
+})
 </script>
 
 <template>
@@ -414,11 +454,26 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
   >
     <PanelHeader
       :is-maximized
+      :show-brand="!brandInSidebar"
+      :show-new-chat="!isFullscreen"
       @new-chat="onNewChat"
       @start-tour="emit('startTour')"
       @toggle-size="emit('toggleSize')"
       @close="onClose"
-    />
+    >
+      <template v-if="titleInHeader" #lead>
+        <ChatTitleMenu
+          :title="sessionTitle"
+          :has-chat
+          :disabled="!hasChat"
+          can-pin
+          :pinned="chatPinned"
+          @rename="emit('renameChat', $event)"
+          @delete="onDeleteChat"
+          @toggle-pin="emit('togglePinChat')"
+        />
+      </template>
+    </PanelHeader>
 
     <slot name="panelNotice" />
 
@@ -444,8 +499,17 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       />
     </template>
 
+    <ChatOpeningPane
+      v-else-if="openingSidebarChat"
+      :status="openingSidebarChat.status"
+      :title="openingSidebarChat.title"
+      @retry="onSelectHistory(openingSidebarChat.id)"
+      @back="onBackFromHistory"
+    />
+
     <template v-else>
       <div
+        v-if="!isFullscreen"
         data-testid="agent-panel-chat-controls"
         :inert="blocked"
         class="flex h-10 shrink-0 items-center px-2"
@@ -463,73 +527,37 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         >
           <i aria-hidden="true" class="icon-[lucide--history]" />
         </Button>
-        <template v-if="renaming">
-          <Input
-            ref="renameInput"
-            v-model="renameDraft"
-            type="text"
-            :aria-label="t('g.rename')"
-            class="h-6 flex-1 px-2 py-1 text-xs"
-            @keydown="onRenameKeydown"
-            @blur="commitRename"
-          />
-        </template>
-        <div
-          v-else
-          role="group"
-          :aria-label="t('agent.chatOptions')"
-          class="flex w-fit max-w-full min-w-0 items-center"
-        >
-          <Button
-            ref="titleButton"
-            type="button"
-            variant="muted-textonly"
-            size="sm"
-            class="min-w-0 justify-start text-left"
-            @click="startRename"
-          >
-            <span class="min-w-0 truncate">{{ displayTitle }}</span>
-          </Button>
-          <Menu
-            v-if="sessionId"
-            :items="chatMenuItems"
-            side="bottom"
-            align="start"
-            :side-offset="4"
-            class="agent-scope"
-          >
-            <template #trigger>
-              <Button
-                :tooltip="t('agent.chatOptions')"
-                tooltip-side="bottom"
-                variant="muted-textonly"
-                size="icon-sm"
-                :aria-label="t('agent.chatOptions')"
-                class="size-6 shrink-0"
-              >
-                <i
-                  aria-hidden="true"
-                  class="icon-[lucide--chevron-down] size-3"
-                />
-              </Button>
-            </template>
-          </Menu>
-        </div>
+        <ChatTitleMenu
+          :title="sessionTitle"
+          :has-chat
+          @rename="emit('renameChat', $event)"
+          @delete="onDeleteChat"
+        />
       </div>
 
-      <div :inert="blocked" class="relative min-h-0 flex-1">
-        <EmptyState
-          v-if="!entries.length"
-          :aria-busy="openingChat"
-          :inert="openingChat"
-          :user-name
-          :has-selection="hasNodeSelectionModeAddition"
-          @insert="
-            (text, prompt) => {
-              composerRef?.insert(text, prompt)
-            }
-          "
-        />
+      <div :inert="blocked" :class="contentClass">
+        <template v-if="!entries.length">
+          <EmptyState
+            :aria-busy="openingChat"
+            :inert="openingChat"
+            :user-name
+            :has-selection="hasNodeSelectionModeAddition"
+            :section="emptySection"
+            :class="emptyStateClass"
+            @insert="insertStarterPrompt"
+          />
+          <div
+            v-if="showDockedPrompts"
+            data-testid="agent-starter-prompts"
+            class="row-start-3 self-end"
+          >
+            <EmptyState
+              section="prompts"
+              :has-selection="hasNodeSelectionModeAddition"
+              @insert="insertStarterPrompt"
+            />
+          </div>
+        </template>
         <ConversationView
           v-else
           :aria-busy="openingChat"
@@ -583,15 +611,18 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           }}
         </div>
       </div>
+    </template>
+
+    <template v-if="showConversation">
       <slot name="instrument" />
       <footer
         data-testid="agent-panel-footer"
-        :inert="openingChat || blocked"
+        :inert="footerInert"
         class="shrink-0 py-3 inert:opacity-50"
       >
         <div
           data-testid="agent-composer-stack"
-          class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
+          :class="cn(AGENT_COLUMN_CLASS, 'flex flex-col gap-4 px-4')"
         >
           <AgentSyncRetryAlert
             :visible="syncRetryAvailable"
@@ -606,7 +637,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           />
           <RunNoticeBanner
             :expanded="isMaximized"
-            :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :workflow-name="noticeWorkflowName"
             :context="targetNotice"
             :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"
@@ -623,13 +654,14 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :opening-chat
             :can-attach
             :can-open-assets
+            :layout="experience"
             :selection-tags
             :node-reference-disabled-reason
             :select-workflow-reference
             :available-workflows
             :editable-workflow-id
             :has-workflow-target="!workflowDetached"
-            :workflow-selecting="selectingTabPath !== null || savingReference"
+            :workflow-selecting="composerWorkflowSelecting"
             :get-mention-nodes
             @focusin="onComposerFocus"
             @send="onComposerSend"
@@ -637,7 +669,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @attach="emit('attach')"
             @attach-files="emit('attachFiles', $event)"
             @remove-attachment="emit('removeAttachment', $event)"
-            @open-assets="emit('openAssets')"
+            @open-assets="onOpenAssets"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"
             @mention-pick="emit('mentionPick', $event)"
@@ -649,17 +681,23 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             "
             @workflow-target-required="onWorkflowTargetRequired"
           >
-            <template #header>
+            <template v-if="experience === 'classic'" #header>
               <WorkflowSelectorChip
                 ref="workflowSelectorRef"
-                :active-tab
-                :tabs="workflowTabs"
-                :visible-tab-path
-                :selecting-tab-path
-                :select-tab
-                :detached="workflowDetached"
-                :disabled="streaming || submitting || savingReference"
+                v-bind="workflowSelector"
               />
+            </template>
+            <template v-else #meta="{ anchor }">
+              <ComposerMetaRow :can-open-outputs="canOpenAssets">
+                <template #target>
+                  <WorkflowSelectorChip
+                    ref="workflowSelectorRef"
+                    inline
+                    :menu-anchor="anchor"
+                    v-bind="workflowSelector"
+                  />
+                </template>
+              </ComposerMetaRow>
             </template>
             <template #aboveInput>
               <FreeUseNotice
@@ -676,9 +714,16 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               />
             </template>
           </Composer>
-          <AgentFeedbackCaption />
+          <AgentFeedbackCaption v-if="experience === 'classic'" />
         </div>
       </footer>
+      <AgentPanelLowerStage
+        :outputs-open
+        :hero-stage
+        :has-selection="hasNodeSelectionModeAddition"
+        @attached="composerRef?.focus()"
+        @insert="insertStarterPrompt"
+      />
     </template>
   </section>
 </template>

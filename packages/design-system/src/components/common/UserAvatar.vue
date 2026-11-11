@@ -15,6 +15,19 @@
       class="size-full object-cover"
       @error="handleImageError"
     />
+    <span
+      v-else-if="initials"
+      role="img"
+      :aria-label="label"
+      :class="
+        cn(
+          'leading-none font-semibold text-foreground select-none',
+          size === 'large' ? 'text-base' : 'text-xs'
+        )
+      "
+    >
+      <span aria-hidden="true">{{ initials }}</span>
+    </span>
     <i
       v-else
       data-testid="avatar-icon"
@@ -31,11 +44,13 @@ import { computed, ref, watch } from 'vue'
 const {
   photoUrl,
   label,
+  initials,
   iconClass = 'size-4',
   size = 'normal'
 } = defineProps<{
   photoUrl?: string | null
   label: string
+  initials?: string
   iconClass?: string
   size?: 'normal' | 'large'
 }>()

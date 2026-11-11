@@ -3,7 +3,11 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { registerKeybindingGate } from '@/platform/keybindings/keybindingGate'
+import { getPreservedQueryParam } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { remoteConfigRevision } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -17,8 +21,14 @@ import {
   CONSENT_DIALOG_KEY,
   useAgentConsent
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import { resolveAgentExperience } from '@/workbench/extensions/agent/experiments/chatRedesign'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import {
+  parsePersistedAgentPanelSize,
+  serializeAgentPanelSize,
+  shouldRestoreFullscreen
+} from '@/workbench/extensions/agent/stores/agent/agentPanelSize'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import {
@@ -36,11 +46,53 @@ import {
 } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
 const AUTOMATIC_ACTIVATION_VISITS = 2
+
+const PANEL_SIZE_STORAGE_KEY = 'Comfy.AgentPanel.size'
+
+const TOGGLE_FULLSCREEN_COMMAND = 'Comfy.Agent.ToggleFullScreen'
+
+const GRAPH_URL_INTENTS = [
+  [PRESERVED_QUERY_NAMESPACES.TEMPLATE, 'template'],
+  [PRESERVED_QUERY_NAMESPACES.SHARE, 'share'],
+  [PRESERVED_QUERY_NAMESPACES.ASSETS, 'assets']
+] as const
+
+function startupUrlClaimsGraph(): boolean {
+  const queries = [
+    new URLSearchParams(window.location.search),
+    new URLSearchParams(window.location.hash.split('?')[1] ?? '')
+  ]
+  return GRAPH_URL_INTENTS.some(
+    ([namespace, key]) =>
+      queries.some((query) => query.has(key)) ||
+      getPreservedQueryParam(namespace, key) !== undefined
+  )
+}
+
+function readPersistedPanelSize() {
+  try {
+    return parsePersistedAgentPanelSize(
+      localStorage.getItem(PANEL_SIZE_STORAGE_KEY)
+    )
+  } catch {
+    return null
+  }
+}
+
+function writePersistedPanelSize(value: string | null): void {
+  try {
+    if (value === null) localStorage.removeItem(PANEL_SIZE_STORAGE_KEY)
+    else localStorage.setItem(PANEL_SIZE_STORAGE_KEY, value)
+  } catch {
+    return
+  }
+}
 
 function claimAutomaticActivationVisit(): boolean {
   try {
@@ -134,6 +186,55 @@ export function registerAgentPanelExtension(): void {
       const screenHolder = (): AgentConsentNotOfferedReason | null =>
         firstRunHoldsScreen.value ? 'first_run_screen' : screenBusyReason()
       const screenIsClear = computed(() => screenHolder() === null)
+
+      const panelWasOpen = agentPanelStore.isOpen
+      const urlClaimsGraph = startupUrlClaimsGraph()
+      whenStartupDecided()
+        .then((startupDecided) => {
+          if (
+            shouldRestoreFullscreen({
+              persisted: readPersistedPanelSize(),
+              userId: resolvedUserInfo.value?.id,
+              redesign: agentPanelStore.experience === 'redesign',
+              panelVisible: panelWasOpen && agentPanelStore.isVisible,
+              startupDecided,
+              screenHeld: screenHolder() !== null,
+              urlClaimsGraph
+            })
+          )
+            agentPanelStore.restoreFullscreen()
+        })
+        .catch((error: unknown) => {
+          reportError(error, {
+            surface: 'agent',
+            errorType: 'agent_fullscreen_restore_failure'
+          })
+        })
+      watch(
+        () => agentPanelStore.prefersFullscreen,
+        (fullscreen) => {
+          writePersistedPanelSize(
+            serializeAgentPanelSize(
+              { mode: fullscreen ? 'fullscreen' : 'docked' },
+              resolvedUserInfo.value?.id
+            )
+          )
+        }
+      )
+      watch(
+        () =>
+          firstRunHoldsScreen.value || onboardingTourStore.activeTour !== null,
+        (graphNeeded) => {
+          if (graphNeeded) agentPanelStore.exitFullscreen('tour')
+        }
+      )
+      watch(
+        () => resolvedUserInfo.value?.id,
+        (userId, previousUserId) => {
+          if (previousUserId !== undefined && userId !== previousUserId)
+            agentPanelStore.exitFullscreen('user_changed')
+        }
+      )
 
       const reportedWithheld = new Set<string>()
       const withholdOffer = (reason: AgentConsentNotOfferedReason): void => {
@@ -404,14 +505,26 @@ export function registerAgentPanelExtension(): void {
   registered = true
 }
 
+const COMMANDS_ALLOWED_OVER_COVERED_GRAPH = new Set([
+  'Comfy.ShowSettingsDialog'
+])
+
 function setupFlagGate(
   loadConsentIfEligible: () => void,
   openWhenStartupDecided: () => void
 ): void {
   const agentPanelStore = useAgentPanelStore()
+  const commandStore = useCommandStore()
   const devForcedOn =
     import.meta.env.MODE === 'development' &&
     import.meta.env.VITE_AGENT_STANDALONE === 'true'
+
+  registerKeybindingGate(
+    (commandId) =>
+      !agentPanelStore.coversWorkspace ||
+      COMMANDS_ALLOWED_OVER_COVERED_GRAPH.has(commandId) ||
+      commandId.startsWith('Comfy.Agent.')
+  )
 
   watch(
     () =>
@@ -427,6 +540,31 @@ function setupFlagGate(
     },
     { immediate: true }
   )
+
+  watch(
+    () => [remoteConfigRevision.value, resolveAgentExperience()] as const,
+    ([, experience]) => {
+      agentPanelStore.experience = experience
+      if (experience === 'classic') {
+        agentPanelStore.exitFullscreen('flag_off')
+        return
+      }
+      if (commandStore.isRegistered(TOGGLE_FULLSCREEN_COMMAND)) return
+      commandStore.registerCommand({
+        id: TOGGLE_FULLSCREEN_COMMAND,
+        icon: 'icon-[lucide--maximize-2]',
+        label: 'Toggle Agent Full Screen',
+        function: () => {
+          if (!agentPanelStore.enabled) return
+          if (agentPanelStore.experience !== 'redesign') return
+          if (!agentPanelStore.isOpen) agentPanelStore.open('command')
+          agentPanelStore.toggleMaximize()
+        }
+      })
+    },
+    { immediate: true }
+  )
+
   watch(
     () => devForcedOn || agentPanelStore.flagsSettled,
     (settled) => {

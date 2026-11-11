@@ -10,6 +10,8 @@ import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 
+import { isKeybindingAllowed } from './keybindingGate'
+
 function isExcludedFromDistribution(keybinding: { commandId: string }) {
   return (
     isCloud &&
@@ -36,6 +38,7 @@ export function useKeybindingService() {
 
     const keybinding = getExecutableKeybinding(KeyComboImpl.fromEvent(event))
     if (keybinding?.targetElementId !== 'graph-canvas-container') return false
+    if (!isKeybindingAllowed(keybinding.commandId)) return false
 
     void commandStore.execute(keybinding.commandId)
     event.preventDefault()
@@ -92,6 +95,8 @@ export function useKeybindingService() {
         if (!event.defaultPrevented) event.preventDefault()
         return
       }
+
+      if (!isKeybindingAllowed(keybinding.commandId)) return
 
       event.preventDefault()
       if (

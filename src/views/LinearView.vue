@@ -36,9 +36,11 @@ import {
 } from '@/constants/splitterConstants'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const settingStore = useSettingStore()
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
+const { isFullscreen: agentFullscreen } = storeToRefs(useAgentPanelStore())
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode, isArrangeMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -255,7 +257,7 @@ function dragDrop(e: DragEvent) {
       <!-- App mode hides the canvas, so the panel never meets bare graph. -->
       <component
         :is="DockedAgentPanel"
-        v-if="agentDocked"
+        v-if="agentDocked && !agentFullscreen"
         :has-opaque-neighbor="true"
       />
     </div>

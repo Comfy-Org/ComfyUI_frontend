@@ -125,6 +125,7 @@ function onProseClick(event: MouseEvent): void {
 const proseClass = cn(
   'text-sm wrap-break-word text-foreground',
   '[&_img]:mt-2 [&_img]:block [&_img]:h-auto [&_img]:max-w-full [&_img]:cursor-pointer [&_img]:object-contain',
+  '@min-[1024px]:[&_img]:max-h-128 @min-[1024px]:[&_img]:w-auto',
   '[&_a]:cursor-pointer [&_a]:text-primary [&_a]:underline',
   '[&_p]:my-0 [&_p]:pt-4 [&_p:first-child]:pt-0 [&_strong]:font-semibold',
   '[&_h1]:mt-0 [&_h1]:pt-4 [&_h1]:pb-2 [&_h1]:text-2xl [&_h1]:font-semibold',

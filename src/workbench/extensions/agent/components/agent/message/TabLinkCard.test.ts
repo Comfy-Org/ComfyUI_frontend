@@ -93,6 +93,28 @@ describe('TabLinkCard', () => {
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(tab)
   })
 
+  it('leaves full screen before opening the workflow, so the graph is visible', async () => {
+    const tab = createMockLoadedWorkflow({
+      path: 'flows/portrait.json',
+      filename: 'portrait'
+    })
+    openTabs(tab)
+    useAgentWorkflowTabBindingStore().bind('wf-1', tab.path)
+    const panel = useAgentPanelStore()
+    window.innerWidth = 1920
+    window.dispatchEvent(new Event('resize'))
+    panel.isOpen = true
+    panel.experience = 'redesign'
+    panel.toggleMaximize()
+    expect(panel.isFullscreen).toBe(true)
+    mount('wf-1', 'Portrait upscale')
+
+    await userEvent.click(screen.getByRole('button'))
+
+    expect(panel.isFullscreen).toBe(false)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(tab)
+  })
+
   it('falls back to the local tab name when no backend name is present', () => {
     const tab = createMockLoadedWorkflow({
       path: 'flows/portrait.json',
