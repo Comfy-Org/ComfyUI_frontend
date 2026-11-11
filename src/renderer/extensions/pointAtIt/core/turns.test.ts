@@ -44,10 +44,12 @@ const run: GuidanceStep = {
   problems: []
 }
 
+const SENT_AT = Date.UTC(2026, 10, 11, 14, 30)
 const unsentOnly: Conversation = { turns: [], unsent: [first, second] }
 const oneTurn = reduceConversation(unsentOnly, {
   type: 'answered',
   turnId: 'turn-1',
+  sentAt: SENT_AT,
   steps: [widen, run],
   thinking: 'Checking the width.'
 })
@@ -105,6 +107,7 @@ describe('reduceConversation', () => {
       turns: [
         {
           id: 'turn-1',
+          sentAt: SENT_AT,
           comments: [first, second],
           steps: [
             { ...widen, result: null, valueBefore: null },
@@ -173,6 +176,7 @@ describe('reduceConversation', () => {
         reduceConversation(oneTurn, {
           type: 'answered',
           turnId: 'turn-2',
+          sentAt: SENT_AT,
           steps: [run],
           thinking: ''
         }),

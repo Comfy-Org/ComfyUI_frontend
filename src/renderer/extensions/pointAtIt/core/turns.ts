@@ -38,6 +38,7 @@ interface FollowUp {
 /** One Send and the agent's reply to it. Its comments are locked. */
 export interface Turn {
   id: string
+  sentAt: number
   comments: Annotation[]
   steps: AnsweredStep[]
   thinking: string
@@ -76,6 +77,7 @@ export type ConversationEvent =
   | {
       type: 'answered'
       turnId: string
+      sentAt: number
       steps: GuidanceStep[]
       thinking: string
     }
@@ -166,6 +168,7 @@ function answer(
   if (state.unsent.length === 0) return state
   const turn: Turn = {
     id: event.turnId,
+    sentAt: event.sentAt,
     comments: [...state.unsent],
     steps: event.steps.map(unacted),
     thinking: event.thinking,

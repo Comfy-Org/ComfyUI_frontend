@@ -160,3 +160,103 @@ describe('PointLayer: asking, sending and following up', () => {
     ).toHaveValue('')
   })
 })
+
+describe('PointLayer: the strip of turns', () => {
+  async function renderAnsweredTurn() {
+    document.body.innerHTML = TOP_BAR
+    const host = createFakePointHost()
+    host.selection = [host.nodes[1].id]
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(PointLayer, {
+      props: {
+        host,
+        config: {
+          ...config,
+          scripted: { replyDelayMs: 500, wrongTarget: false }
+        }
+      }
+    })
+    await user.click(annotate())
+    await user.click(
+      screen.getByRole('textbox', { name: messages.commentLabel })
+    )
+    await user.keyboard('make this wider{Control>}{Enter}{/Control}')
+    await vi.advanceTimersByTimeAsync(600)
+    return user
+  }
+
+  it('TS-26: shows nothing before the first answered turn', async () => {
+    const { user } = renderLayer(TOP_BAR)
+    await user.click(annotate())
+
+    expect(
+      screen.queryByTestId('point-at-it-turn-strip')
+    ).not.toBeInTheDocument()
+  })
+
+  it('TS-27: after the first answer the strip shows that turn and the current dot, with the panel closed, and the answer on screen is marked', async () => {
+    await renderAnsweredTurn()
+
+    const strip = within(screen.getByTestId('point-at-it-turn-strip'))
+    expect(screen.queryByTestId('point-at-it-panel')).not.toBeInTheDocument()
+    expect(
+      strip.getByRole('button', {
+        name: messages.turnDotLabel(1, 1, 'make this wider')
+      })
+    ).toHaveAttribute('aria-current', 'true')
+    expect(
+      strip.getByRole('button', { name: messages.nextTurnLabel(0) })
+    ).toBeInTheDocument()
+  })
+
+  it('TS-28: belongs to the layer, so Ask mode can never pick it', async () => {
+    await renderAnsweredTurn()
+
+    const dot = screen.getByRole('button', {
+      name: messages.turnDotLabel(1, 1, 'make this wider')
+    })
+
+    expect(isOwnElement(screen.getByTestId('point-at-it-turn-strip'))).toBe(
+      true
+    )
+    expect(isOwnElement(dot)).toBe(true)
+  })
+
+  it('TS-29: pressing a dot after closing the answer opens that turn’s thread again', async () => {
+    const user = await renderAnsweredTurn()
+    await user.click(
+      within(screen.getByTestId('point-at-it-bubble')).getByRole('button', {
+        name: messages.close
+      })
+    )
+    expect(screen.queryByTestId('point-at-it-bubble')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', {
+        name: messages.turnDotLabel(1, 1, 'make this wider')
+      })
+    ).not.toHaveAttribute('aria-current')
+
+    await user.click(
+      screen.getByRole('button', {
+        name: messages.turnDotLabel(1, 1, 'make this wider')
+      })
+    )
+
+    const bubble = within(screen.getByTestId('point-at-it-bubble'))
+    expect(bubble.getByText(messages.replayHint)).toBeVisible()
+    expect(
+      bubble.getByText(answers.sizeLead('width', 1536, true))
+    ).toBeVisible()
+  })
+
+  it('TS-30: the strip stays when the panel opens, and the panel no longer lists earlier turns', async () => {
+    const user = await renderAnsweredTurn()
+
+    await user.click(screen.getByRole('button', { name: messages.showPanel }))
+
+    const panel = within(screen.getByTestId('point-at-it-panel'))
+    expect(screen.getByTestId('point-at-it-turn-strip')).toBeInTheDocument()
+    expect(panel.queryByText('make this wider')).not.toBeInTheDocument()
+    expect(panel.queryByText(/^Turn 1/)).not.toBeInTheDocument()
+  })
+})

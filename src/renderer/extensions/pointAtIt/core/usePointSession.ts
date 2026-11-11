@@ -698,13 +698,16 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
       send({ type: 'requestFailed', requestId, failure: MALFORMED })
       return
     }
-    const isWaitedFor =
+    const waited =
       state.value.phase === 'waiting' && state.value.requestId === requestId
+        ? state.value
+        : null
     const turnId = request === askedRequest ? null : nextId('turn')
-    if (isWaitedFor && turnId)
+    if (waited && turnId)
       converse({
         type: 'answered',
         turnId,
+        sentAt: waited.startedAt,
         steps,
         thinking: thinking.value?.text ?? ''
       })

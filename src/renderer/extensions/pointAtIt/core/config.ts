@@ -34,6 +34,7 @@ export interface PointConfig {
   showEarlierPins: boolean
   /** What Clear removes: the comments not sent yet, or every turn as well. */
   clearRemoves: 'unsent' | 'everything'
+  turnStrip: { visibleDots: number; barSize: number }
 }
 
 /**
@@ -52,5 +53,6 @@ export const pointConfig: PointConfig = {
   },
   strokeEntry: false,
   showEarlierPins: true,
-  clearRemoves: 'unsent'
+  clearRemoves: 'unsent',
+  turnStrip: { visibleDots: 8, barSize: 5 }
 }

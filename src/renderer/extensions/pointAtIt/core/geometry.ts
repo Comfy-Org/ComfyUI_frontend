@@ -243,6 +243,30 @@ export function placePanel(
   }
 }
 
+export function placeStrip(
+  canvas: Rect,
+  size: Size,
+  viewport: Size,
+  avoid: Rect | null
+): Point {
+  const area =
+    canvas.width > 0
+      ? canvas
+      : { x: 0, y: 0, width: viewport.width, height: viewport.height }
+  const centred = {
+    x: area.x + area.width - VIEWPORT_MARGIN - size.width,
+    y: Math.max(
+      area.y + VIEWPORT_MARGIN,
+      area.y + (area.height - size.height) / 2
+    )
+  }
+  if (!avoid || !covers(centred, size, avoid)) return centred
+  return {
+    x: Math.max(VIEWPORT_MARGIN, avoid.x - PANEL_GAP - size.width),
+    y: centred.y
+  }
+}
+
 /** A clip path for a full-window element that leaves `hole` out of it. */
 export function clipAround(hole: Rect | null): string | undefined {
   if (!hole) return undefined

@@ -67,11 +67,21 @@ export const messages = {
   notOnScreen: 'not on screen right now',
   targetGoneNote: 'What this question points to is no longer in the workflow.',
   targetHiddenNote: 'What this question points to is not on screen right now.',
-  turnLabel: (number: number, count: number) =>
-    `Turn ${number} · ${count === 1 ? '1 question' : `${count} questions`}`,
-  thisTurn: 'This turn',
-  showTurn: (number: number) => `Show turn ${number}`,
-  hideTurn: (number: number) => `Hide turn ${number}`,
+  turnStripLabel: 'Turns',
+  turnDotLabel: (number: number, total: number, question: string) =>
+    `Turn ${number} of ${total}: ${question}`,
+  turnBarLabel: (first: number, last: number, title: string) =>
+    `Turns ${first} to ${last}: ${title}`,
+  nextTurnLabel: (unsent: number) =>
+    unsent === 0
+      ? 'Next turn: no questions yet'
+      : `Next turn: ${unsent === 1 ? '1 unsent question' : `${unsent} unsent questions`}`,
+  turnPosition: (number: number, total: number) => `turn ${number} of ${total}`,
+  moreQuestions: (count: number) =>
+    count === 1 ? '+1 more question' : `+${count} more questions`,
+  turnCount: (count: number) => (count === 1 ? '1 turn' : `${count} turns`),
+  turnQuestions: 'Questions of this turn',
+  turnsOfBar: 'Turns in this group',
   startOver: 'Start over',
   startOverQuestion: 'Remove every turn and its answers?',
   startOverConfirm: 'Yes, start over',

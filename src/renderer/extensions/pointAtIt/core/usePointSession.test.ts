@@ -774,6 +774,19 @@ describe('usePointSession: turns', () => {
     ])
   })
 
+  it('TS-01: a turn keeps the time its Send was made, not the time the reply came', () => {
+    const { session } = startSession({
+      config: { scripted: { replyDelayMs: 500, wrongTarget: false } }
+    })
+    comment(session, SAVE_NODE, WIDER)
+    const sentAt = Date.now()
+
+    session.sendBatch()
+    vi.advanceTimersByTime(900)
+
+    expect(session.conversation.value.turns).toMatchObject([{ sentAt }])
+  })
+
   it('TU-04, TU-05: the second Send carries only the new comment, with the first turn as history and what the person did', () => {
     const model = fakeModel()
     const { host, session } = startSession({

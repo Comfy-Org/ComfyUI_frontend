@@ -28,6 +28,7 @@ const secondTurn: Conversation = {
   turns: [
     {
       id: 'turn-1',
+      sentAt: Date.UTC(2026, 10, 11, 14, 30),
       comments: [...unsentOnly.unsent],
       steps: [],
       thinking: 'Checking which node sets the width.',
@@ -77,20 +78,17 @@ describe('CommentPanel', () => {
     expect(screen.getAllByText(messages.notOnScreen)).toHaveLength(1)
   })
 
-  it('TU-03: groups comments by turn, earlier turns collapsed, the current turn open, numbers continuing', async () => {
+  it('TU-03: lists only the current turn’s questions, with numbers continuing, and leaves earlier turns to the strip', async () => {
     const user = userEvent.setup()
     const { emitted } = renderPanel({ conversation: secondTurn })
 
     expect(screen.queryByText('make this wider')).not.toBeInTheDocument()
-    expect(screen.getByText('a bit more than that')).toBeVisible()
+    expect(screen.queryByText(/^Turn 1/)).not.toBeInTheDocument()
     expect(screen.getByText('3')).toBeVisible()
 
-    await user.click(screen.getByRole('button', { name: messages.showTurn(1) }))
-    await user.click(screen.getByText('make this wider'))
+    await user.click(screen.getByText('a bit more than that'))
 
-    expect(screen.getByText('Turn 1 · 2 questions')).toBeVisible()
-    expect(screen.getAllByText(messages.followUpCount(1))).toHaveLength(1)
-    expect(emitted('open')).toEqual([['comment-1']])
+    expect(emitted('open')).toEqual([['comment-3']])
   })
 
   it('TU-04, TU-07: Send and Clear count only the current turn’s unsent comments', () => {
@@ -107,8 +105,7 @@ describe('CommentPanel', () => {
     })
   })
 
-  it('TH-05: says why Send is unavailable while a follow-up waits, and opens no other thread', async () => {
-    const user = userEvent.setup()
+  it('TH-05: says why Send is unavailable while a follow-up waits, and opens no other thread', () => {
     renderPanel({
       conversation: secondTurn,
       phase: 'guiding',
@@ -124,9 +121,8 @@ describe('CommentPanel', () => {
       screen.getByRole('button', { name: messages.startOver })
     ).toBeDisabled()
 
-    await user.click(screen.getByRole('button', { name: messages.showTurn(1) }))
     expect(
-      screen.getByRole('button', { name: /make this wider/ })
+      screen.getByRole('button', { name: /a bit more than that/ })
     ).toBeDisabled()
   })
 
@@ -153,17 +149,6 @@ describe('CommentPanel', () => {
     expect(
       screen.queryByRole('button', { name: messages.startOver })
     ).not.toBeInTheDocument()
-  })
-
-  it('TU-10: an earlier turn keeps its thinking in its group', async () => {
-    const user = userEvent.setup()
-    renderPanel({ conversation: secondTurn })
-
-    await user.click(screen.getByRole('button', { name: messages.showTurn(1) }))
-
-    expect(
-      screen.getByText('Checking which node sets the width.')
-    ).toBeInTheDocument()
   })
 
   it('T-01, T-02: shows the end of the thinking while waiting, and the whole of it in place when expanded', async () => {

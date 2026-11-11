@@ -16,54 +16,12 @@
       </Button>
     </div>
     <p v-if="hint" class="m-0 text-muted-foreground">{{ hint }}</p>
-    <div v-if="comments.length > 0" class="flex flex-col gap-1">
-      <template v-for="(turn, index) in conversation.turns" :key="turn.id">
-        <Button
-          variant="textonly"
-          size="unset"
-          class="justify-start gap-1 self-start rounded-sm px-1 text-muted-foreground"
-          :aria-label="
-            openTurns.has(turn.id)
-              ? messages.hideTurn(index + 1)
-              : messages.showTurn(index + 1)
-          "
-          :aria-expanded="openTurns.has(turn.id)"
-          @click="toggleTurn(turn.id)"
-        >
-          <i :class="chevron(openTurns.has(turn.id))" aria-hidden="true" />
-          {{ messages.turnLabel(index + 1, turn.comments.length) }}
-        </Button>
-        <template v-if="openTurns.has(turn.id)">
-          <TrayComments
-            :comments="commentsOf(turn.id)"
-            :pins
-            :disabled="!canReplay"
-            locked
-            @open="(id) => emit('open', id)"
-          />
-          <details v-if="turn.thinking" class="px-1 text-muted-foreground">
-            <summary class="cursor-pointer">{{ messages.thinking }}</summary>
-            <p
-              class="m-0 max-h-32 overflow-y-auto rounded-md bg-secondary p-2 whitespace-pre-wrap"
-            >
-              {{ turn.thinking }}
-            </p>
-          </details>
-        </template>
-      </template>
-      <p
-        v-if="conversation.turns.length > 0 && conversation.unsent.length > 0"
-        class="m-0 px-1 text-muted-foreground"
-      >
-        {{ messages.thisTurn }}
-      </p>
-      <TrayComments
-        :comments="commentsOf(null)"
-        :pins
-        :disabled="!canEdit"
-        @open="(id) => emit('open', id)"
-      />
-    </div>
+    <TrayComments
+      :comments="unsentComments"
+      :pins
+      :disabled="!canEdit"
+      @open="(id) => emit('open', id)"
+    />
     <div
       v-if="phase === 'waiting'"
       role="status"
@@ -225,14 +183,12 @@ const emit = defineEmits<{
 const now = useTimestamp({ interval: 500 })
 const thinkingOpen = ref(false)
 const confirmsStartOver = ref(false)
-const openTurns = ref(new Set<string>())
 
-const comments = computed(() => numberedComments(conversation))
+const unsentComments = computed(() =>
+  numberedComments(conversation).filter((comment) => comment.turn === null)
+)
 const canEdit = computed(
   () => phase === 'idle' || phase === 'annotating' || phase === 'failed'
-)
-const canReplay = computed(
-  () => (canEdit.value || phase === 'guiding') && !held
 )
 const elapsedSeconds = computed(() =>
   waitingSince === null
@@ -241,7 +197,9 @@ const elapsedSeconds = computed(() =>
 )
 const hint = computed(() => {
   if (phase === 'annotating') return messages.annotateHint
-  return comments.value.length === 0 && phase === 'idle'
+  return conversation.turns.length === 0 &&
+    conversation.unsent.length === 0 &&
+    phase === 'idle'
     ? messages.noCommentsYet
     : ''
 })
@@ -255,18 +213,6 @@ function chevron(open: boolean): string {
     'size-3',
     open ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-right]'
   )
-}
-
-function commentsOf(turnId: string | null) {
-  return comments.value.filter(
-    (comment) => (comment.turn?.id ?? null) === turnId
-  )
-}
-
-function toggleTurn(turnId: string) {
-  const next = new Set(openTurns.value)
-  if (!next.delete(turnId)) next.add(turnId)
-  openTurns.value = next
 }
 
 function startOver() {

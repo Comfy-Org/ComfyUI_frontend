@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { clipAround, placeAttached, placeBeside, placePanel } from './geometry'
+import {
+  clipAround,
+  placeAttached,
+  placeBeside,
+  placePanel,
+  placeStrip
+} from './geometry'
 import type { Rect, Side } from './geometry'
 
 const WINDOW = { width: 1000, height: 800 }
@@ -125,6 +131,45 @@ describe('placePanel', () => {
     const sliver = { x: 0, y: 40, width: 100, height: 760 }
 
     expect(placePanel({ ...TRIGGER, x: 250 }, 320, sliver, narrow).x).toBe(8)
+  })
+})
+
+describe('placeStrip', () => {
+  const CANVAS = { x: 0, y: 40, width: 1280, height: 760 }
+  const STRIP = { width: 16, height: 200 }
+
+  it('TS-24: sits against the right edge of the canvas, vertically centred', () => {
+    expect(placeStrip(CANVAS, STRIP, WIDE, null)).toEqual({ x: 1256, y: 320 })
+  })
+
+  it('TS-24: follows the canvas edge when the docked Agent panel narrows it', () => {
+    const besideAgentPanel = { ...CANVAS, width: 880 }
+
+    expect(placeStrip(besideAgentPanel, STRIP, WIDE, null).x).toBe(856)
+  })
+
+  it('TS-25: stays where it is while the open panel is clear of it', () => {
+    const panel = { x: 960, y: 44, width: 320, height: 180 }
+
+    expect(placeStrip(CANVAS, STRIP, WIDE, panel)).toEqual({ x: 1256, y: 320 })
+  })
+
+  it('TS-25: moves just left of the open panel when they would overlap', () => {
+    const tallPanel = { x: 960, y: 44, width: 320, height: 500 }
+
+    expect(placeStrip(CANVAS, STRIP, WIDE, tallPanel)).toEqual({
+      x: 936,
+      y: 320
+    })
+  })
+
+  it('TS-24: is placed in the window until the canvas has been measured', () => {
+    const unmeasured = { x: 0, y: 0, width: 0, height: 0 }
+
+    expect(placeStrip(unmeasured, STRIP, WIDE, null)).toEqual({
+      x: 1256,
+      y: 300
+    })
   })
 })
 

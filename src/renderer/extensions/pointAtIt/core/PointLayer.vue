@@ -185,6 +185,17 @@
         {{ messages.retry }}
       </Button>
     </div>
+    <TurnStrip
+      v-if="turnItems.length > 0"
+      ref="turnStrip"
+      class="pointer-events-auto absolute"
+      :style="{ left: `${turnStripPlace.x}px`, top: `${turnStripPlace.y}px` }"
+      :items="turnItems"
+      :shown-turn-id="answeredTurnId"
+      :disabled="!canReplay"
+      @open="session.openPin"
+      @open-panel="session.openPanel"
+    />
     <CommentPanel
       v-if="panelOpen"
       ref="panel"
@@ -232,7 +243,7 @@ import CommentBox from './CommentBox.vue'
 import CommentPanel from './CommentPanel.vue'
 import type { PointConfig } from './config'
 import { keepDocked } from './dockSlot'
-import { clipAround, placePanel } from './geometry'
+import { clipAround, placePanel, placeStrip } from './geometry'
 import type { Rect } from './geometry'
 import GuidanceOverlay from './GuidanceOverlay.vue'
 import { describeFailure, messages } from './messages'
@@ -240,6 +251,8 @@ import type { PointHost } from './pointHost'
 import { waitsOnFollowUp } from './pointState'
 import { addressKey } from './targetAddress'
 import TriggerButton from './TriggerButton.vue'
+import TurnStrip from './TurnStrip.vue'
+import { turnOfAnswer, turnStripItems } from './turnGrouping'
 import { messagesBefore, numberedComments, threadOf } from './turns'
 import { usePointSession } from './usePointSession'
 
@@ -277,6 +290,10 @@ const triggerRect = shallowRef<Rect | null>(null)
 const canvasRect = shallowRef<Rect>({ x: 0, y: 0, width: 0, height: 0 })
 const panel = useTemplateRef('panel')
 const panelSize = useElementSize(() => panel.value?.$el, undefined, {
+  box: 'border-box'
+})
+const turnStrip = useTemplateRef('turnStrip')
+const turnStripSize = useElementSize(() => turnStrip.value?.$el, undefined, {
   box: 'border-box'
 })
 
@@ -332,6 +349,20 @@ const panelRect = computed<Rect | null>(() =>
       }
     : null
 )
+const turnItems = computed(() =>
+  turnStripItems(conversation.value, config.turnStrip)
+)
+const answeredTurnId = computed(() =>
+  turnOfAnswer(conversation.value, answeredId.value)
+)
+const turnStripPlace = computed(() =>
+  placeStrip(
+    canvasRect.value,
+    { width: turnStripSize.width.value, height: turnStripSize.height.value },
+    { width: windowSize.width.value, height: windowSize.height.value },
+    panelRect.value
+  )
+)
 const stripText = computed(() => {
   if (panelOpen.value) return ''
   if (state.value.phase === 'failed')
@@ -341,7 +372,11 @@ const stripText = computed(() => {
   return tail ? `${messages.thinking} · …${tail}` : messages.askWaiting
 })
 const needsMeasuring = computed(
-  () => panelOpen.value || stripText.value !== '' || blocksPage.value
+  () =>
+    panelOpen.value ||
+    stripText.value !== '' ||
+    blocksPage.value ||
+    turnItems.value.length > 0
 )
 
 function sameRect(a: Rect | null, b: Rect): boolean {

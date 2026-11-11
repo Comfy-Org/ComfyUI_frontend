@@ -9,14 +9,7 @@
         @click="emit('open', comment.annotation.id)"
       >
         <span
-          :class="
-            cn(
-              'flex size-5 shrink-0 items-center justify-center rounded-full',
-              locked
-                ? 'border border-solid border-border bg-secondary'
-                : 'bg-primary'
-            )
-          "
+          class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary"
         >
           {{ comment.number }}
         </span>
@@ -42,23 +35,15 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { messages } from './messages'
 import type { NumberedComment } from './turns'
 import type { PinView } from './usePointSession'
 
-const {
-  comments,
-  pins,
-  disabled,
-  locked = false
-} = defineProps<{
+const { pins } = defineProps<{
   comments: NumberedComment[]
   pins: PinView[]
   disabled: boolean
-  /** True for the comments of an answered turn. */
-  locked?: boolean
 }>()
 
 const emit = defineEmits<{ open: [annotationId: string] }>()
