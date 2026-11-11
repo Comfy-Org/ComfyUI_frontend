@@ -2,10 +2,15 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 const { WORKFLOW_A, WORKFLOW_B } = vi.hoisted(() => ({
   WORKFLOW_A: 'workflows/a.json',
@@ -23,6 +28,9 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
 }))
 
 vi.mock(import('@/scripts/app'))
+
+const KEPT_SUBGRAPH = '11111111-1111-4111-8111-111111111111'
+const OTHER_SUBGRAPH = '22222222-2222-4222-8222-222222222222'
 
 const createMockNode = (id: number): LGraphNode =>
   fromAny<LGraphNode, unknown>({ id: toNodeId(id), type: 'KSampler' })
@@ -175,6 +183,68 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     expect(revokeObjectURL).toHaveBeenCalledWith(stashedUrl)
     expect(revokeObjectURL).not.toHaveBeenCalledWith(arrivedUrl)
     expect(revokeObjectURL).not.toHaveBeenCalledWith(otherUrl)
+  })
+
+  describe('restoring into a graph without the preview subgraph', () => {
+    // A frame for a subgraph node can be resolved against another workflow's
+    // graph while that graph is briefly on the canvas, so it lands under a
+    // subgraph id the restored workflow does not have.
+    beforeEach(() => {
+      vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(
+        fromPartial<LGraph>({
+          subgraphs: new Map([[KEPT_SUBGRAPH, fromPartial<Subgraph>({})]])
+        })
+      )
+    })
+
+    it('drops and revokes the preview while restoring root and in-graph subgraph previews', () => {
+      const store = useNodeOutputStore()
+      const rootUrl = createBlobUrl()
+      const keptUrl = createBlobUrl()
+      const otherUrl = createBlobUrl()
+      const keptLocator = createNodeLocatorId(KEPT_SUBGRAPH, 6)
+      const otherLocator = createNodeLocatorId(OTHER_SUBGRAPH, 6)
+
+      store.setNodePreviewsByNodeId(createMockNode(5).id, [rootUrl])
+      store.setNodePreviewsByLocatorId(keptLocator, [keptUrl])
+      store.setNodePreviewsByLocatorId(otherLocator, [otherUrl])
+      switchToWorkflow(WORKFLOW_B)
+      switchToWorkflow(WORKFLOW_A)
+
+      expect(store.nodePreviewImages).toEqual({
+        '5': [rootUrl],
+        [keptLocator]: [keptUrl]
+      })
+      expect(app.nodePreviewImages).toEqual(store.nodePreviewImages)
+      expect(revokeObjectURL).toHaveBeenCalledWith(otherUrl)
+      expect(revokeObjectURL).not.toHaveBeenCalledWith(rootUrl)
+      expect(revokeObjectURL).not.toHaveBeenCalledWith(keptUrl)
+    })
+
+    it('does not revoke a dropped preview URL that a restored preview still shows', () => {
+      const store = useNodeOutputStore()
+      const sharedUrl = createBlobUrl()
+      const keptLocator = createNodeLocatorId(KEPT_SUBGRAPH, 6)
+      const otherLocator = createNodeLocatorId(OTHER_SUBGRAPH, 6)
+
+      // One frame fans out to the subgraph node and its container on the root.
+      store.setNodePreviewsByNodeId(createMockNode(5).id, [sharedUrl])
+      store.setNodePreviewsByLocatorId(otherLocator, [sharedUrl])
+      store.setNodePreviewsByLocatorId(keptLocator, [sharedUrl])
+      switchToWorkflow(WORKFLOW_B)
+      switchToWorkflow(WORKFLOW_A)
+
+      expect(store.nodePreviewImages).toEqual({
+        '5': [sharedUrl],
+        [keptLocator]: [sharedUrl]
+      })
+      expect(revokeObjectURL).not.toHaveBeenCalledWith(sharedUrl)
+
+      store.revokePreviewsByLocatorId(keptLocator)
+      store.revokePreviewsByLocatorId(createNodeLocatorId(null, 5))
+
+      expect(revokeObjectURL).toHaveBeenCalledWith(sharedUrl)
+    })
   })
 
   it('restores previews when the same workflow is reloaded in place', () => {
