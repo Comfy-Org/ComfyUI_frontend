@@ -194,7 +194,6 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   let stopWatch: (() => void) | undefined
   let disposed = false
   let offeredWithPurchase = false
-  let activationRequested = false
 
   function armPaymentWatch() {
     if (stopWatch) return
@@ -210,10 +209,6 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
       : null
   }
 
-  function unreportedActivation(): AutoTopUpActivationOutcome | undefined {
-    return activationRequested ? { status: 'failed' } : undefined
-  }
-
   function setupUrlAfterPaying(
     activation: AutoTopUpActivationOutcome | undefined
   ): Promise<string | null> {
@@ -221,8 +216,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     return asks ? setupUrl() : Promise.resolve(null)
   }
 
-  async function land(reported?: AutoTopUpActivationOutcome) {
-    const activation = reported ?? unreportedActivation()
+  async function land(activation?: AutoTopUpActivationOutcome) {
     const url =
       activation?.status === 'on' ? null : await setupUrlAfterPaying(activation)
     if (disposed) return
@@ -233,7 +227,6 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   async function openCheckout(amountCents: number) {
     const request = autoTopUpRequest()
     offeredWithPurchase = request.kind !== 'not_offered'
-    activationRequested = request.kind === 'checked'
     const tab = ports.reserveTab()
     dispatch({
       type: 'checkout_requested',
