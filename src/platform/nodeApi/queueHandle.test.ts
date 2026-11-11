@@ -381,6 +381,54 @@ describe('comfy.queue', () => {
     expect(cleanup).toHaveBeenCalledTimes(1)
   })
 
+  it.for([
+    { order: 'the order they started', ended: [1, 2] },
+    { order: 'reverse order', ended: [2, 1] }
+  ])(
+    'runs each overlapping attempt cleanup for its own attempt, ended in $order',
+    ({ ended }) => {
+      const comfy = createComfyApi(() => graphWith('A'))
+      const cleaned: number[] = []
+      let attempt = 0
+      track(
+        comfy.queue.onBeforeRun(() => {
+          const started = ++attempt
+          return () => cleaned.push(started)
+        })
+      )
+
+      api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
+      api.dispatchCustomEvent('promptQueueing', { requestId: 2, batchCount: 1 })
+      for (const requestId of ended) {
+        api.dispatchCustomEvent('promptQueueAttemptEnded', {
+          requestId,
+          queued: 1,
+          rejected: 0
+        })
+      }
+
+      expect(cleaned).toEqual(ended)
+    }
+  )
+
+  it('finishes an outstanding cleanup when unsubscribed mid-attempt', () => {
+    const comfy = createComfyApi(() => graphWith('A'))
+    const cleanup = vi.fn()
+    const stop = comfy.queue.onBeforeRun(() => cleanup)
+
+    api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
+    stop()
+    expect(cleanup).toHaveBeenCalledOnce()
+
+    api.dispatchCustomEvent('promptQueueAttemptEnded', {
+      requestId: 1,
+      queued: 1,
+      rejected: 0
+    })
+    stop()
+    expect(cleanup).toHaveBeenCalledOnce()
+  })
+
   it('keeps onAfterRun meaning a run that actually started', () => {
     // Four packs converted widget.afterQueued onto this. A batch counter that
     // also counted refused submissions would advance the batch when nothing

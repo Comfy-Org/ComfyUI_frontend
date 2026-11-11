@@ -97,22 +97,12 @@ export interface QueueHandle {
    */
   run(options?: RunOptions): Promise<boolean>
   /**
-   * A run is about to be submitted.
+   * A run is about to be submitted. Keep the listener synchronous: the prompt
+   * build does not wait for it.
    *
-   * This is `beforeQueuing`. For a last write before the prompt is built —
-   * syncing a value the pack keeps outside the widget. Keep it synchronous:
-   * the prompt build does not wait, so work started here can lose the race.
-   */
-  /**
-   * Return a function to have it run when the attempt is over — whether the
-   * run started, was refused, or threw.
-   *
-   * For a pack that changes the graph to build the prompt and must put it back:
-   * unmute a branch, let the prompt be built, re-mute it. Pairing it with the
-   * setup rather than publishing a second top-level event is deliberate — you
-   * cannot receive the cleanup without having run the setup, and there is no
-   * second "after" member to confuse with {@link onAfterRun}, which means
-   * something different and narrower.
+   * Return a function to have it run when that attempt is over, whether the
+   * run started, was refused, or threw. Attempts can overlap: each cleanup
+   * runs once, for its own attempt. Unsubscribing runs any still outstanding.
    */
   onBeforeRun(listener: () => (() => void) | void): Unsubscribe
   /**
@@ -343,22 +333,24 @@ export function createQueueApi(
     },
 
     onBeforeRun(listener: () => (() => void) | void) {
-      let cleanUp: (() => void) | void
-      const started = () => {
-        cleanUp = listener()
+      const cleanUps = new Map<number, () => void>()
+      const started = (event: CustomEvent<{ requestId: number }>) => {
+        const cleanUp = listener()
+        if (cleanUp) cleanUps.set(event.detail.requestId, cleanUp)
       }
-      // One-shot per attempt: the end always follows a start, and re-running a
-      // stale cleanup would undo a mutation the next attempt had just made.
-      const ended = () => {
-        const run = cleanUp
-        cleanUp = undefined
-        run?.()
+      const ended = (event: CustomEvent<{ requestId: number }>) => {
+        const cleanUp = cleanUps.get(event.detail.requestId)
+        cleanUps.delete(event.detail.requestId)
+        cleanUp?.()
       }
       api.addEventListener('promptQueueing', started)
       api.addEventListener('promptQueueAttemptEnded', ended)
       return () => {
         api.removeEventListener('promptQueueing', started)
         api.removeEventListener('promptQueueAttemptEnded', ended)
+        const outstanding = [...cleanUps.values()]
+        cleanUps.clear()
+        for (const cleanUp of outstanding) cleanUp()
       }
     },
     onAfterRun(listener: (event: RunSubmittedEvent) => void) {
