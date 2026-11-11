@@ -6,7 +6,7 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
@@ -143,15 +143,30 @@ const mediaLightboxStub = {
   template: `<div data-testid="lightbox-url" :data-display-name="String(allGalleryItems[activeIndex]?.filenameIsDisplayName)">{{ allGalleryItems[activeIndex]?.url }}</div>`
 }
 
-function renderTab({ realTemplate = false } = {}) {
+function renderTab({ realTemplate = false, realList = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
       stubs: {
         ...(realTemplate ? {} : { SidebarTabTemplate: sidebarTabTemplateStub }),
         AssetsSidebarGridView: assetsGridStub,
-        AssetsSidebarListView: true,
-        MediaAssetFilterBar: true,
+        AssetsSidebarListView: !realList,
+        MediaAssetFilterBar: realList
+          ? {
+              emits: ['update:viewMode'],
+              template:
+                "<button @click=\"$emit('update:viewMode', 'list')\">List view</button>"
+            }
+          : true,
+        VirtualGrid: {
+          props: ['items', 'canLoadMore', 'onLoadMore'],
+          template: `
+            <div>
+              <slot v-for="item in items" :key="item.key" name="item" :item="item" />
+              <button :disabled="!canLoadMore" @click="onLoadMore()">Load more</button>
+            </div>
+          `
+        },
         MediaAssetSelectionBar: true,
         MediaLightbox: mediaLightboxStub
       }
@@ -175,6 +190,30 @@ it('keeps pagination mounted when more assets can be loaded', () => {
 })
 
 describe('AssetsSidebarTab folder navigation', () => {
+  it('does not page global history from a completed folder list and resumes paging after leaving', async () => {
+    onTestFinished(() =>
+      localStorage.removeItem('Comfy.Assets.Sidebar.ViewMode')
+    )
+    mockOutputAssets.hasMore = true
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
+    renderTab({ realList: true })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'List view' }))
+
+    expect(await screen.findByText('multi-output.png')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(mockOutputAssets.loadMore).not.toHaveBeenCalled()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to all assets' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(mockOutputAssets.loadMore).toHaveBeenCalledOnce()
+  })
+
   it('places accessible folder actions beside the job ID', async () => {
     vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
     renderTab()

@@ -270,6 +270,18 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('missing value fallback', () => {
+    it('retains a selected media value removed by kind filtering', () => {
+      storeAssets.input = [makeAsset('legacy', 'legacy.tga', { metadata: {} })]
+      const { dropdownItems, selectedSet } = useWidgetSelectItems(
+        createDefaultOptions({ modelValue: 'legacy.tga' })
+      )
+
+      expect(pagedItems(dropdownItems.value)).toMatchObject([
+        { id: 'missing-legacy.tga', name: 'legacy.tga' }
+      ])
+      expect([...selectedSet.value]).toEqual(['missing-legacy.tga'])
+    })
+
     it('adds a fallback item when modelValue is absent from base assets', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({ modelValue: ref('template_image.png') })
@@ -354,6 +366,39 @@ describe('useWidgetSelectItems', () => {
       assets: computed(() => items),
       isLoading: computed(() => false),
       error: computed(() => null)
+    })
+
+    it.for([
+      {
+        filter: 'ownership',
+        ownershipSelected: 'my-models' as const,
+        baseModelSelected: new Set<string>()
+      },
+      {
+        filter: 'base model',
+        ownershipSelected: 'all' as const,
+        baseModelSelected: new Set(['SDXL'])
+      }
+    ])('retains selected model display after $filter filtering', (filters) => {
+      const { dropdownItems, selectedSet } = useWidgetSelectItems(
+        createDefaultOptions({
+          modelValue: 'model.safetensors',
+          assetKind: 'model',
+          isAssetMode: true,
+          assetData: assetDataFor([
+            makeAsset('public-model', 'model.safetensors', {
+              is_immutable: true,
+              metadata: { base_model: 'SD1.5' }
+            })
+          ]),
+          ...filters
+        })
+      )
+
+      expect(pagedItems(dropdownItems.value)).toMatchObject([
+        { id: 'missing-model.safetensors', name: 'model.safetensors' }
+      ])
+      expect([...selectedSet.value]).toEqual(['missing-model.safetensors'])
     })
 
     it('shows only available cloud assets', () => {
@@ -453,6 +498,39 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('missing-media placeholder suppression', () => {
+    it.for([
+      { value: 'same.png', kept: 'same.png [output]' },
+      { value: 'same.png [output]', kept: 'same.png' }
+    ])(
+      'excludes loaded confirmed-missing $value without hiding another root',
+      ({ value, kept }) => {
+        storeAssets.input = [makeInput('input', 'same.png')]
+        storeAssets.flatOutput = [makeOutput('output', 'same.png')]
+        const { dropdownItems, selectedSet } = useWidgetSelectItems(
+          createDefaultOptions({ modelValue: value })
+        )
+        expect(
+          pagedItems(dropdownItems.value).map((item) => item.name)
+        ).toEqual(['same.png', 'same.png [output]'])
+
+        useMissingMediaStore().setMissingMedia([
+          {
+            nodeId: '7',
+            nodeType: 'LoadImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            name: value,
+            isMissing: true
+          }
+        ])
+
+        expect(
+          pagedItems(dropdownItems.value).map((item) => item.name)
+        ).toEqual([kept])
+        expect([...selectedSet.value]).toEqual([])
+      }
+    )
+
     it('does not surface a missing-value placeholder when the modelValue is confirmed missing', async () => {
       const modelValue = ref<string | undefined>('gone.png [output]')
 

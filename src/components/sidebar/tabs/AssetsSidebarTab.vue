@@ -100,7 +100,9 @@
         >
           <AssetsSidebarListView
             v-if="isListView"
-            :asset-items="pagedListViewAssets"
+            :asset-items="
+              isInFolderView ? listViewAssetItems : pagedListViewAssets
+            "
             :is-selected
             :selectable-assets="listViewSelectableAssets"
             :is-stack-expanded="isListViewStackExpanded"

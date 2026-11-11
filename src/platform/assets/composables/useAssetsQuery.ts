@@ -203,3 +203,9 @@ export async function invalidateAll() {
     [...sharedState.cache.values()].map((e) => e.list.invalidate())
   )
 }
+
+export async function loadNewAll() {
+  await Promise.all(
+    [...sharedState.cache.values()].map((e) => e.list.loadNew())
+  )
+}

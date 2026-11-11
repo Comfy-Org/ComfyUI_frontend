@@ -147,31 +147,15 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const kind = toValue(options.assetKind)
 
     if (missingMediaValues.value.has(currentValue)) return undefined
-
-    if (toValue(options.isAssetMode) && assetData) {
-      const existsInAssets = assetData.assets.value.some(
-        (asset) => itemNameFor(asset) === currentValue
-      )
-      if (existsInAssets) return undefined
-
-      return {
-        id: `missing-${currentValue}`,
-        preview_url: '',
-        name: currentValue,
-        label: getDisplayLabel(currentValue, labelFn)
-      }
-    }
-
-    if (
-      pagedItems(baseAssets.value).some(
-        (asset) => itemNameFor(asset) === currentValue
-      )
-    )
+    if (availableItems.value.some((item) => item.name === currentValue))
       return undefined
 
     return {
       id: `missing-${currentValue}`,
-      preview_url: getAnnotatedValueMediaUrl(currentValue, kind),
+      preview_url:
+        toValue(options.isAssetMode) && assetData
+          ? ''
+          : getAnnotatedValueMediaUrl(currentValue, kind),
       name: currentValue,
       label: getDisplayLabel(currentValue, labelFn)
     }
@@ -221,13 +205,11 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     )
   )
 
-  const missingItems = computed<FormDropdownItem[]>(() =>
-    missingValueItem.value ? [missingValueItem.value] : []
-  )
-
-  const dropdownItems = computed<MaybePaged<FormDropdownItem>>(() => {
+  const availableItems = computed<FormDropdownItem[]>(() => {
     if (toValue(options.isAssetMode) && assetData) {
-      return [...missingItems.value, ...filteredAssetItems.value]
+      return filteredAssetItems.value.filter(
+        (item) => !missingMediaValues.value.has(item.name)
+      )
     }
     const targetKind = toValue(options.assetKind)
     const targetMediaType = targetKind === 'mesh' ? '3D' : targetKind
@@ -236,9 +218,19 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       (targetKind === 'image' && isHdrImageFilename(asset.name)) ||
       getMediaTypeFromFilename(asset.name) === targetMediaType
 
+    return pagedItems(baseAssets.value)
+      .filter(kindFilter)
+      .map(assetToForm)
+      .filter((item) => !missingMediaValues.value.has(item.name))
+  })
+
+  const dropdownItems = computed<MaybePaged<FormDropdownItem>>(() => {
+    const missingItem = missingValueItem.value
+    const mapped = missingItem
+      ? [missingItem, ...availableItems.value]
+      : availableItems.value
+    if (toValue(options.isAssetMode) && assetData) return mapped
     const base = baseAssets.value
-    const baseItems = pagedItems(base).filter(kindFilter).map(assetToForm)
-    const mapped = [...missingItems.value, ...baseItems]
     return isPaged(base) ? new WrappedList(base, () => mapped) : mapped
   })
 

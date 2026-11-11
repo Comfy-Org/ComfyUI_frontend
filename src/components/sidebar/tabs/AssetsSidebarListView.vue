@@ -6,8 +6,8 @@
       :grid-style="listGridStyle"
       :max-columns="1"
       :default-item-height="48"
-      :on-load-more="() => assetItems.loadMore()"
-      :can-load-more="toValue(assetItems.hasMore)"
+      :on-load-more="loadMore"
+      :can-load-more="isPaged(assetItems) && toValue(assetItems.hasMore)"
     >
       <template #item="{ item }">
         <div class="relative">
@@ -91,7 +91,8 @@ import {
   truncateFilename
 } from '@/utils/formatUtil'
 import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
-import type { PagedList } from '@/utils/pagedList'
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -101,7 +102,7 @@ const {
   isStackExpanded,
   toggleStack
 } = defineProps<{
-  assetItems: PagedList<OutputStackListItem>
+  assetItems: MaybePaged<OutputStackListItem>
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
@@ -120,8 +121,12 @@ const { t } = useI18n()
 const hoveredAssetId = ref<string | null>(null)
 
 const virtualItems = computed(() =>
-  toValue(assetItems.items).map((item) => ({ ...item, key: item.id }))
+  pagedItems(assetItems).map((item) => ({ ...item, key: item.id }))
 )
+
+function loadMore() {
+  return isPaged(assetItems) ? assetItems.loadMore() : undefined
+}
 
 const listGridStyle = {
   display: 'grid',
