@@ -88,9 +88,7 @@ import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/t
 import { isCloud } from '@/platform/distribution/types'
 import MissingModelRow from '@/platform/workflowErrors/missingModel/components/MissingModelRow.vue'
 import Button from '@comfyorg/design-system/button/Button'
-import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
 import { useDownloadAllMissingModels } from '@/platform/workflowErrors/missingModel/composables/useDownloadAllMissingModels'
-import { isTrustedHuggingFaceUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 
 interface MissingModelRowEntry {
   key: string
@@ -125,9 +123,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const gatedHintId = useId()
-const { gatedRepoUrlFor } = useMissingModelDownload()
-const { downloadableModels, downloadAllLabel, downloadAllModels } =
-  useDownloadAllMissingModels(() => missingModelGroups)
+const {
+  downloadableModels,
+  gatedModelCount,
+  downloadAllLabel,
+  downloadAllModels
+} = useDownloadAllMissingModels(() => missingModelGroups)
 
 const sortedModelRows = computed(() =>
   missingModelGroups
@@ -154,13 +155,6 @@ const unsupportedModelRows = computed(() =>
     : []
 )
 
-const gatedModelCount = computed(
-  () =>
-    downloadableModels.value.filter((model) => {
-      const repoUrl = gatedRepoUrlFor(model.url)
-      return !!repoUrl && isTrustedHuggingFaceUrl(repoUrl)
-    }).length
-)
 const showGatedModelsHint = computed(() => gatedModelCount.value > 0)
 const gatedModelsAnnouncement = ref('')
 

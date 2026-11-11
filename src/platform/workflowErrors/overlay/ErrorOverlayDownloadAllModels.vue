@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-if="downloadableModels.length > 0"
+    v-if="downloadableModels.length > 0 && gatedModelCount === 0"
     variant="secondary"
     size="sm"
     class="min-w-0"
@@ -23,8 +23,12 @@ const { missingModelGroups } = defineProps<{
 
 const emit = defineEmits<{ downloaded: [] }>()
 
-const { downloadableModels, downloadAllLabel, downloadAllModels } =
-  useDownloadAllMissingModels(() => missingModelGroups)
+const {
+  downloadableModels,
+  gatedModelCount,
+  downloadAllLabel,
+  downloadAllModels
+} = useDownloadAllMissingModels(() => missingModelGroups)
 
 function downloadAll() {
   downloadAllModels()

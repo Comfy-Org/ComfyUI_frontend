@@ -508,6 +508,32 @@ describe('MissingModelCard (OSS)', () => {
     )
   })
 
+  it.for([
+    { knownSizes: 2, label: /^Download all \(\d/ },
+    { knownSizes: 1, label: /^Download all$/ }
+  ])(
+    'shows a Download all total only when $knownSizes of 2 sizes are known',
+    async ({ knownSizes, label }) => {
+      const names = ['first.safetensors', 'second.safetensors']
+      mountCard({
+        missingModelGroups: [
+          makeGroup({ withDownloadUrls: true, modelNames: names })
+        ]
+      })
+
+      for (const name of names.slice(0, knownSizes)) {
+        useMissingModelStore().fileSizes[
+          `https://huggingface.co/comfy/test/resolve/main/${name}`
+        ] = 2 * 1024 * 1024
+      }
+      await nextTick()
+
+      expect(
+        screen.getByTestId('missing-model-download-all')
+      ).toHaveTextContent(label)
+    }
+  )
+
   it('hides Download all when no model is downloadable', () => {
     mountCard()
 

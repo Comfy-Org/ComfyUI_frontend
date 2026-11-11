@@ -15,6 +15,7 @@ import '@/scripts/changeTracker'
 import type { NodeError } from '@comfyorg/api-client/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { downloadModel } from '@/platform/workflowErrors/missingModel/missingModelDownload'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 
 import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
 import type { AskAgentPort } from '@/platform/workflowErrors/askAgentPort'
@@ -238,6 +239,27 @@ describe('ErrorOverlay', () => {
     renderOverlay()
 
     expect(screen.getByRole('status')).toBeVisible()
+    expect(
+      screen.queryByTestId('error-overlay-download-all-models')
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers no download from the toast when a missing model is gated', async () => {
+    mockAllErrorGroups.value = [missingModelErrorGroup(1)]
+    mockErrorGroups.missingModelGroups.value = [
+      downloadableMissingModelGroup(['a.safetensors'])
+    ]
+    useExecutionErrorStore().showErrorOverlay()
+    renderOverlay()
+    expect(
+      screen.getByTestId('error-overlay-download-all-models')
+    ).toBeVisible()
+
+    useMissingModelStore().gatedRepoUrls[
+      'https://huggingface.co/comfy/test/resolve/main/a.safetensors'
+    ] = 'https://huggingface.co/comfy/test'
+    await nextTick()
+
     expect(
       screen.queryByTestId('error-overlay-download-all-models')
     ).not.toBeInTheDocument()
