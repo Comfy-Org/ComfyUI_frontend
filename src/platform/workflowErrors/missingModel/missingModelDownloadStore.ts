@@ -11,6 +11,7 @@ import {
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 
 export type MissingModelDownloadState =
   | { status: 'idle' }
@@ -112,6 +113,50 @@ function acceptsEvent(
   )
 }
 
+function isBusy(download: HostDownload | undefined): boolean {
+  return (
+    !!download && (isActive(download.state) || download.state.status === 'done')
+  )
+}
+
+function isMissingCandidate(
+  candidates: readonly MissingModelCandidate[] | null,
+  progress: ComfyDownloadProgress
+): boolean {
+  return !!candidates?.some(
+    (candidate) =>
+      candidate.name === progress.filename &&
+      (progress.directory === undefined ||
+        candidate.directory === progress.directory)
+  )
+}
+
+function endedJobsAfter(
+  current: HostDownload | undefined,
+  progress: ComfyDownloadProgress
+): ReadonlySet<string> {
+  const ended = current?.endedJobs ?? new Set<string>()
+  return isHostTerminal(progress.status) && progress.id !== undefined
+    ? new Set([...ended, progress.id])
+    : ended
+}
+
+function nextHostDownload(
+  current: HostDownload | undefined,
+  progress: ComfyDownloadProgress,
+  state: MissingModelDownloadState,
+  isMissing: boolean
+): HostDownload {
+  return {
+    name: progress.filename,
+    url: progress.url,
+    state: state.status === 'done' && !isMissing ? IDLE : state,
+    jobId: progress.id ?? current?.jobId,
+    jobEnded: isHostTerminal(progress.status),
+    endedJobs: endedJobsAfter(current, progress)
+  }
+}
+
 /** Desktop 2 model downloads, mirrored by destination wherever they started. */
 export const useMissingModelDownloadStore = defineStore(
   'missingModelDownload',
@@ -179,35 +224,20 @@ export const useMissingModelDownloadStore = defineStore(
       const current = downloads.get(key)
       if (!acceptsEvent(current, progress)) return
 
-      const jobId = progress.id ?? current?.jobId
-      const jobEnded = isHostTerminal(progress.status)
-      const endedJobs =
-        jobEnded && progress.id !== undefined
-          ? new Set([...(current?.endedJobs ?? []), progress.id])
-          : (current?.endedJobs ?? new Set<string>())
-      const isMissing = !!missingModelStore.missingModelCandidates?.some(
-        (candidate) =>
-          candidate.name === progress.filename &&
-          (progress.directory === undefined ||
-            candidate.directory === progress.directory)
+      const isMissing = isMissingCandidate(
+        missingModelStore.missingModelCandidates,
+        progress
       )
-      downloads.set(key, {
-        name: progress.filename,
-        url: progress.url,
-        state: state.status === 'done' && !isMissing ? IDLE : state,
-        jobId,
-        jobEnded,
-        endedJobs
-      })
-
-      if (
-        state.status === 'done' &&
-        current?.state.status !== 'done' &&
-        isMissing
-      ) {
-        refreshPending = true
-        flushRefresh()
+      downloads.set(key, nextHostDownload(current, progress, state, isMissing))
+      if (state.status === 'done' && current?.state.status !== 'done') {
+        requestRefresh(isMissing)
       }
+    }
+
+    function requestRefresh(isMissing: boolean) {
+      if (!isMissing) return
+      refreshPending = true
+      flushRefresh()
     }
 
     function startTracking(): () => void {
@@ -263,11 +293,7 @@ export const useMissingModelDownloadStore = defineStore(
       }
       const key = getModelFileKey(model)
       const current = downloads.get(key)
-      if (
-        current &&
-        (isActive(current.state) || current.state.status === 'done')
-      )
-        return
+      if (isBusy(current)) return
 
       const request = ++nextRequest
       downloads.set(key, {
@@ -278,6 +304,10 @@ export const useMissingModelDownloadStore = defineStore(
         request,
         endedJobs: current?.endedJobs ?? new Set<string>()
       })
+      dispatchRequest(model, request)
+    }
+
+    function dispatchRequest(model: ModelWithUrl, request: number) {
       const outcome = dispatchModelDownload(model, {})
       if (outcome.status === 'dispatch-failed') {
         reportStartFailure(outcome.error)
