@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Button from '@comfyorg/design-system/button/Button'
+import Button from '@comfyorg/design-system/button/Button.vue'
 </script>
 
 <template>

@@ -15,9 +15,9 @@
 </template>
 
 <script setup lang="ts">
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip.vue'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger.vue'
 
 defineProps<{
   text: string
