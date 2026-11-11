@@ -2,19 +2,16 @@ import { shallowRef, watch } from 'vue'
 
 import { HANDOFF_STORAGE_KEY } from '@/handoff/captureHandoffToken'
 import type {
-  ExchangeTokenResponse,
+  BillingHandoffExchangeResponse,
   WorkspaceSummary
 } from '@comfyorg/ingest-types'
 import {
   zBillingHandoffExchangeResponse,
-  zExchangeTokenResponse,
   zWorkspaceSummary
 } from '@comfyorg/ingest-types/zod'
 
-/** The receiver route a billing handoff entry URL opens. */
 export const HANDOFF_PATH = '/handoff'
 
-/** `/handoff` with or without a trailing slash. */
 export function isHandoffPath(path: string): boolean {
   return /^\/handoff\/?$/.test(path)
 }
@@ -29,8 +26,7 @@ export type HandoffEnding =
   | 'session_ended'
 
 const zHandoffExchange = zBillingHandoffExchangeResponse.extend({
-  workspace: zWorkspaceSummary,
-  role: zExchangeTokenResponse.shape.role
+  workspace: zWorkspaceSummary
 })
 
 export interface HandoffSession {
@@ -39,7 +35,7 @@ export interface HandoffSession {
   readonly userId: string
   readonly email: string
   readonly workspace: WorkspaceSummary
-  readonly role: ExchangeTokenResponse['role']
+  readonly role: BillingHandoffExchangeResponse['role']
 }
 
 export type HandoffState =
@@ -56,7 +52,6 @@ const ENDINGS: readonly HandoffEnding[] = [
   'session_ended'
 ]
 
-/** Reads an exchange answer, as received or as stored; anything else is no session. */
 export function handoffSessionFrom(body: unknown): HandoffSession | undefined {
   const parsed = zHandoffExchange.safeParse(body)
   if (!parsed.success) return undefined
@@ -85,7 +80,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-/** A tab-scoped record that the tab holds a handoff, kept outside storage so a blocked storage cannot hide it. */
 export interface TabMarker {
   readonly read: () => string
   readonly write: (value: string) => void
@@ -100,7 +94,6 @@ export const windowNameMarker: TabMarker = {
   }
 }
 
-/** `live` while a session may still be in use, else how the handoff ended. */
 export function readTabMarker(
   marker: TabMarker
 ): HandoffEnding | 'live' | undefined {
@@ -116,7 +109,6 @@ export function writeTabMarker(marker: TabMarker, state: HandoffState): void {
   )
 }
 
-/** Reads a stored state; `unreadable` when the storage itself refused the read. */
 export function readHandoffState(
   storage: TabStorage
 ): HandoffState | 'unreadable' | undefined {
@@ -144,7 +136,6 @@ export function readHandoffState(
   }
 }
 
-/** False when the tab's storage refused the write. */
 export function writeHandoffState(
   storage: TabStorage,
   state: HandoffState
@@ -164,13 +155,8 @@ export function writeHandoffState(
   }
 }
 
-/**
- * This tab's handoff, set by the bootstrap before the app loads. Undefined
- * means the tab is not a handoff tab and billing-web runs its own sign-in.
- */
 export const handoffTab = shallowRef<HandoffState>()
 
-/** Ends the tab's handoff; the ending survives a reload, through the tab marker when storage refuses it. */
 export function endHandoff(
   storage: TabStorage,
   ending: HandoffEnding,
@@ -189,14 +175,12 @@ export function liveHandoffSession(now: number): HandoffSession | undefined {
     : undefined
 }
 
-/** Tab storage that reports a blocked `sessionStorage` as failed calls instead of throwing on access. */
 export const sessionTabStorage: TabStorage = {
   getItem: (key) => globalThis.sessionStorage.getItem(key),
   setItem: (key, value) => globalThis.sessionStorage.setItem(key, value),
   removeItem: (key) => globalThis.sessionStorage.removeItem(key)
 }
 
-/** Ends the tab's handoff when its session expires, even while nothing calls billing. */
 export function endHandoffAtExpiry(
   storage: TabStorage,
   now: () => number = () => Date.now()
