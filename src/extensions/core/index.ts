@@ -206,6 +206,7 @@ async function registerInOrder() {
     )
     if (feedbackButton) register(feedbackButton)
   }
+  await (await import('@/renderer/extensions/pointAtIt/plug')).plug(register)
 }
 
 /**
