@@ -313,6 +313,39 @@ describe('comfy API root', () => {
       }
     })
 
+    it('hands onRemoved the node in its owning graph', () => {
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      const comfy = createComfyApi(() => root)
+      const removed: [string | undefined, string | undefined][] = []
+      comfy.defs.extend('RemovedProbe', (builder) =>
+        builder.onRemoved((node) =>
+          removed.push([node.graphId, node.getTitle()])
+        )
+      )
+      const dispose = comfy.defs.define({ type: 'RemovedProbe' })
+
+      try {
+        const outer = LiteGraph.createNode('RemovedProbe')!
+        outer.title = 'outer'
+        root.add(outer)
+        const inner = LiteGraph.createNode('RemovedProbe')!
+        inner.title = 'inner'
+        subgraph.add(inner)
+
+        subgraph.remove(inner)
+        root.remove(outer)
+
+        expect(removed).toEqual([
+          [subgraph.id, 'inner'],
+          [root.id, 'outer']
+        ])
+      } finally {
+        dispose()
+      }
+    })
+
     it('configures a clone once it joins a graph, and never while detached', () => {
       const comfy = createComfyApi(() => graph)
       const delivered: [string, string, unknown][] = []

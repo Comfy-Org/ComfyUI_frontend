@@ -2069,9 +2069,12 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
 
         if (removed.length) {
           install('onRemoved', (node) => {
-            const id = String(node.id)
-            for (const { run, handleFor, isActive } of removed) {
-              if (isActive()) invoke('onRemoved', () => run(handleFor(id)))
+            for (const { run, handleForNode, isActive } of removed) {
+              if (isActive()) {
+                invokeAttached('onRemoved', node, () =>
+                  run(handleForNode(node))
+                )
+              }
             }
           })
         }
