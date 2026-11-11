@@ -501,29 +501,23 @@ export const useWorkflowService = () => {
    * @returns false when the graph load failed, the stored file is unreadable
    * or the open was skipped mid-close; true otherwise
    */
-  /**
-   * A failed replacement load leaves the shared root graph cleaned or
-   * partially configured while the previous workflow stays selected
-   * (16075 review). Repaint the retained workflow from its just-saved
-   * state so selection, canvas, and change tracking agree again. No
-   * retry loop: a failure here leaves the first failure's dialog
-   * standing.
-   */
   const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
     const retained = getActiveWorkflow()
     if (!retained || retained.path === failed.path || !retained.isLoaded) return
 
-    await useApp().loadGraphData(
-      toRaw(retained.activeState) as ComfyWorkflowJSON,
-      /* clean=*/ true,
-      /* restore_view=*/ true,
-      retained,
-      {
-        checkForRerouteMigration: false,
-        deferWarnings: true,
-        skipAssetScans: true
-      }
-    )
+    const load = () =>
+      useApp().loadGraphData(
+        toRaw(retained.activeState) as ComfyWorkflowJSON,
+        true,
+        true,
+        retained,
+        {
+          checkForRerouteMigration: false,
+          deferWarnings: true,
+          skipAssetScans: true
+        }
+      )
+    await (retained.isModified ? keepingSavedBaseline(retained, load) : load())
   }
 
   function getActiveWorkflow(): ComfyWorkflow | null {
