@@ -51,7 +51,9 @@ const links = comfy.graph.links()
 
 Every list is a frozen snapshot. `LinkInfo` is inert data with source and target
 node IDs, slot IDs, types, and endpoint indexes at snapshot time. Indexes are
-volatile; do not store them across slot mutations.
+volatile; do not store them across slot mutations. Inside a subgraph, links to
+the subgraph's own inputs and outputs are listed too; their node ID is the
+boundary's, and no node handle exists for it.
 
 Use `node.inputs` and `node.outputs` to edit connectivity. `graph.links()` is for
 inspection, not mutation.
@@ -130,6 +132,8 @@ const pointer = comfy.graph.pointerPosition()
 ```
 
 Selection and viewport methods address the visible graph and active editor.
+`select()` and `centerOn()` skip a handle from another graph, such as a
+subgraph that is not open.
 `pointerPosition()` is in graph coordinates and can return `undefined` when no
 canvas is available. `centerOn()` does not change zoom.
 
@@ -156,14 +160,17 @@ for (const group of comfy.graph.groups()) {
 
 `GroupHandle` provides:
 
+- `isDeleted`;
 - `getTitle()` / `setTitle()`;
 - `getColor()` / `setColor()`;
 - `nodes()` for the nodes geometrically contained by the group;
 - `getBounds()` in graph space;
-- `centerOn()` for the visible view.
+- `centerOn()`, which pans only while the group's graph is on screen.
 
 Groups are derived rectangles, not parents that own a stored child list. Ask
-`nodes()` again after layout changes. A subgraph scope's `groups()` reads groups
+`nodes()` again after layout changes. A kept group handle follows its group
+through undo and redo, and reads as deleted once the group is removed or
+another workflow loads. A subgraph scope's `groups()` reads groups
 inside that definition.
 
 ## Structural version token

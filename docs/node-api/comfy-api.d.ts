@@ -100,6 +100,13 @@ interface Comfy {
   readonly version: string
   /** Breaking-change generation. Incremented only when something is removed. */
   readonly major: number
+  /** `[major, minor, patch]` of the API this pack was handed. */
+  getApiVersion(): readonly [major: number, minor: number, patch: number]
+  /**
+   * True if the API is `version` or newer. `version` is written `v2.0.0`;
+   * throws a `TypeError` for anything else.
+   */
+  isApiVersionAtLeast(version: string): boolean
   /** Cheap, never throws. The supported way to branch. */
   supports(capability: string): boolean
   /** Asserts a capability, with an actionable error naming it. */
@@ -1117,7 +1124,7 @@ interface GraphScopeHandle {
 
 // ─── groupHandle.ts ──────────────────────────────────────────────
 
-interface GroupHandle {
+interface GroupHandle extends HandleCommon {
   readonly id: string
   getTitle(): string
   setTitle(title: string): void
@@ -1896,6 +1903,10 @@ interface SettingsHandle {
 
 // ─── slotHandle.ts ───────────────────────────────────────────────
 
+/**
+ * Inside a subgraph, a link to the subgraph's own input or output has that
+ * boundary's id as its node id, and no node handle exists for it.
+ */
 interface LinkInfo {
   readonly id: string
   readonly sourceNodeId: string
@@ -2612,7 +2623,11 @@ interface WidgetHandle extends HandleCommon {
   ): Unsubscribe
 }
 
-/** Where a value is being written, and the chance to change it. */
+/**
+ * Where a value is being written, and the chance to change it.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
 interface WidgetSerializeEvent {
   readonly context: 'workflow' | 'prompt' | 'embedded'
   /** What would be written if no handler intervened. */

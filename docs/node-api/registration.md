@@ -37,6 +37,7 @@ These legacy globals and modules are not part of this contract:
 ```js
 console.info(comfy.version) // API version, currently '2.0'
 console.info(comfy.major) // currently 2
+console.info(comfy.getApiVersion()) // currently [2, 0, 0]
 
 if (comfy.supports('slots.dynamic')) {
   installDynamicInputs()
@@ -47,7 +48,9 @@ comfy.require('workflow.open')
 
 Use `supports()` for optional behavior and `require()` for a feature without
 which the extension cannot work. Do not compare application versions, parse
-`comfy.version`, or probe an internal member.
+`comfy.version`, or probe an internal member. To test the API version itself,
+call `comfy.isApiVersionAtLeast('v2.0.0')`: the array `getApiVersion()`
+returns cannot be compared with `>=`.
 
 `comfy.capabilities()` returns a frozen list of everything the host provides.
 `comfy.forMajor(major)` pins a public major when a pack deliberately maintains

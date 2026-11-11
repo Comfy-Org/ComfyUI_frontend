@@ -28,16 +28,18 @@ See [Registration, lifecycle, and globals](./registration.md).
 
 ### Contract and identity
 
-| Member                 | Returns                   | Purpose                                                  |
-| ---------------------- | ------------------------- | -------------------------------------------------------- |
-| `version`              | `string`                  | Current API `major.minor`.                               |
-| `major`                | `number`                  | Breaking-change generation.                              |
-| `supports(capability)` | `boolean`                 | Test a named capability.                                 |
-| `require(capability)`  | `void`                    | Throw an actionable error if unavailable.                |
-| `capabilities()`       | `readonly string[]`       | All capabilities supplied by the host.                   |
-| `forMajor(major)`      | `Comfy`                   | Pin to a supported public major.                         |
-| `sameEntity(a, b)`     | `boolean`                 | Compare handles across scopes, majors, or API instances. |
-| `adopt(handle)`        | `NodeHandle \| undefined` | Re-resolve a foreign node handle into this instance.     |
+| Member                         | Returns                             | Purpose                                                  |
+| ------------------------------ | ----------------------------------- | -------------------------------------------------------- |
+| `version`                      | `string`                            | Current API `major.minor`.                               |
+| `major`                        | `number`                            | Breaking-change generation.                              |
+| `getApiVersion()`              | `readonly [number, number, number]` | `[major, minor, patch]`.                                 |
+| `isApiVersionAtLeast(version)` | `boolean`                           | Compare with a version written `v2.0.0`.                 |
+| `supports(capability)`         | `boolean`                           | Test a named capability.                                 |
+| `require(capability)`          | `void`                              | Throw an actionable error if unavailable.                |
+| `capabilities()`               | `readonly string[]`                 | All capabilities supplied by the host.                   |
+| `forMajor(major)`              | `Comfy`                             | Pin to a supported public major.                         |
+| `sameEntity(a, b)`             | `boolean`                           | Compare handles across scopes, majors, or API instances. |
+| `adopt(handle)`                | `NodeHandle \| undefined`           | Re-resolve a foreign node handle into this instance.     |
 
 ### Domain roots
 
@@ -235,8 +237,9 @@ Read-only graph scope with `id`, optional `name`, `nodes()`, `node(id)`,
 
 ### `GroupHandle`
 
-Provides `id`, title and color getter/setters, `nodes()`, `getBounds()`, and
-`centerOn()`.
+Provides `id`, `isDeleted`, title and color getter/setters, `nodes()`,
+`getBounds()`, and `centerOn()`. Writing to a deleted group throws
+`ComfyDeletedError`.
 
 `NodeInit` accepts optional `title` and `position`. `Point` is `{ x, y }`,
 `Size` is `{ width, height }`, and `Bounds` is `{ x, y, width, height }`.
