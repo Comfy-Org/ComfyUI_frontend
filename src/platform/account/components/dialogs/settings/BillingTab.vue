@@ -140,7 +140,7 @@
       <BillingAutoTopUpMemberBlock
         v-else-if="autoTopUpSection.kind === 'memberBlock'"
         :copy="autoTopUpMemberCopy"
-        :view="flags.billingNewUxEnabled ? capabilities.autoTopUpMemberView.value : null"
+        :view="autoTopUpMemberView"
         :locale
       />
     </section>
@@ -365,6 +365,9 @@ const {
   () => load.value === 'ready' && autoTopUpSection.value.kind === 'card'
 )
 const autoTopUpMemberCopy = useAutoTopUpMemberBlockCopy()
+const autoTopUpMemberView = computed(() =>
+  flags.billingNewUxEnabled ? capabilities.autoTopUpMemberView.value : null
+)
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:

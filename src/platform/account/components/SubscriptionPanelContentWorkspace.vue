@@ -604,13 +604,25 @@ const isNonCatalogPlan = computed(() =>
   isSalesManagedTier(subscription.value?.tier)
 )
 
-const isEndedEnterprise = computed(
-  () => planKind.value === 'sales_managed' && isSubscriptionEnded.value
+const isEnterprisePlan = computed(() =>
+  pendingServerFact('BE-25244', subscription.value?.tier === 'ENTERPRISE')
 )
 
-const hasScheduledEnterpriseEnd = computed(
-  () => endingNoticeStartsAt.value !== null
+const isEndedEnterprise = computed(
+  () =>
+    (flags.billingNewUxEnabled
+      ? planKind.value === 'sales_managed'
+      : isEnterprisePlan.value) && isSubscriptionEnded.value
 )
+
+const hasScheduledEnterpriseEnd = computed(() => {
+  if (flags.billingNewUxEnabled) return endingNoticeStartsAt.value !== null
+  const endDate = subscription.value?.endDate
+  return pendingServerFact(
+    'BE-25244',
+    isEnterprisePlan.value && !!endDate && !Number.isNaN(Date.parse(endDate))
+  )
+})
 
 const now = useTimestamp({ interval: 60_000 })
 

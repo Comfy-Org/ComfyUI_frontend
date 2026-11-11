@@ -636,15 +636,22 @@ describe('SubscriptionPanelContentWorkspace', () => {
       })
 
       it.for([
-        { enabled: true, showsEndDate: false },
-        { enabled: false, showsEndDate: true }
+        { enabled: true, startsInFuture: true, showsEndDate: false },
+        { enabled: false, startsInFuture: true, showsEndDate: true },
+        { enabled: true, startsInFuture: false, showsEndDate: true },
+        { enabled: false, startsInFuture: false, showsEndDate: true }
       ])(
-        'uses the served notice start only when the new UX is enabled ($enabled)',
-        ({ enabled, showsEndDate }) => {
+        'selects notice timing with new UX $enabled and future start $startsInFuture',
+        ({ enabled, startsInFuture, showsEndDate }) => {
           vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
           const iso = endInDays(10)
           useBillingCapabilities().endingNoticeStartsAt = computed(() =>
-            receiveServerFact('ending_notice_starts_at', null)
+            receiveServerFact(
+              'ending_notice_starts_at',
+              startsInFuture
+                ? new Date(NOW.getTime() + DAY).toISOString()
+                : null
+            )
           )
 
           renderComponent()
@@ -747,20 +754,27 @@ describe('SubscriptionPanelContentWorkspace', () => {
         ).not.toBeInTheDocument()
       })
 
-      it('keeps the stock cancelled treatment when no ending notice start is served', () => {
-        endInDays(30)
-        useBillingCapabilities().endingNoticeStartsAt =
-          endingNoticeStartsAtFact(null)
-        renderComponent()
+      it.for([
+        { enabled: true, showsCancelled: true },
+        { enabled: false, showsCancelled: false }
+      ])(
+        'selects Enterprise treatment with new UX $enabled when no notice start is served',
+        ({ enabled, showsCancelled }) => {
+          vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
+          const iso = endInDays(30)
+          useBillingCapabilities().endingNoticeStartsAt =
+            endingNoticeStartsAtFact(null)
+          renderComponent()
 
-        expect(screen.getByText('Canceled')).toBeInTheDocument()
-        expect(
-          screen.getByTestId('subscription-state-card')
-        ).toBeInTheDocument()
-        expect(
-          screen.getByText(`Ends on ${formatPanelDate(mockEndDate.value!)}`)
-        ).toBeInTheDocument()
-      })
+          expect(screen.queryByText('Canceled') !== null).toBe(showsCancelled)
+          expect(screen.queryByTestId('subscription-state-card') !== null).toBe(
+            showsCancelled
+          )
+          expect(
+            screen.queryByText(`Ends on ${formatPanelDate(iso)}`) !== null
+          ).toBe(showsCancelled)
+        }
+      )
     })
 
     it('renders an unrecognized tier as Current plan without catalog content', () => {
