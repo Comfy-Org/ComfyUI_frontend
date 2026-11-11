@@ -404,14 +404,17 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import {
   hasEndingNoticeStarted,
+  isWithinEnterpriseEndingNotice,
   isSalesManagedTier
 } from '@/platform/billing/subscription/constants/tierPricing'
+import type { IngestSubscriptionTier } from '@/platform/billing/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/billing/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/billing/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
@@ -450,11 +453,13 @@ const {
   canChangeSeats,
   canSubscribeSelfServe,
   runDeniedPaymentPastDue,
-  endingNoticeStartsAt
+  endingNoticeStartsAt,
+  planKind
 } = useBillingCapabilities()
 const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
+const { flags } = useFeatureFlags()
 
 const { isSettingUp, subscriptionActionUrl } = useSubscriptionOperationView()
 
@@ -604,20 +609,19 @@ const isEnterprisePlan = computed(() =>
 )
 
 const isEndedEnterprise = computed(
-  () => isEnterprisePlan.value && isSubscriptionEnded.value
+  () =>
+    (flags.billingNewUxEnabled
+      ? planKind.value === 'sales_managed'
+      : isEnterprisePlan.value) && isSubscriptionEnded.value
 )
 
-// An Enterprise end date is an agreed ending — operator pilot term or
-// sales-mediated cancellation, deliberately not distinguished (see
-// deriveBillingBanner; decision on FE-2035) — often set months ahead. Only
-// its presence moves the plan onto the quiet path: no amber card or Canceled
-// badge at any point, and no "Ends on" line until the notice window.
-// Cancelled with no end date — or an unreadable one — falls back to the
-// stock treatment.
 const hasScheduledEnterpriseEnd = computed(() => {
+  if (flags.billingNewUxEnabled) return endingNoticeStartsAt.value !== null
   const endDate = subscription.value?.endDate
-  if (!isEnterprisePlan.value || !endDate) return false
-  return !Number.isNaN(Date.parse(endDate))
+  return pendingServerFact(
+    'BE-25244',
+    isEnterprisePlan.value && !!endDate && !Number.isNaN(Date.parse(endDate))
+  )
 })
 
 const now = useTimestamp({ interval: 60_000 })
@@ -625,7 +629,12 @@ const now = useTimestamp({ interval: 60_000 })
 const isQuietEnterpriseEnding = computed(
   () =>
     hasScheduledEnterpriseEnd.value &&
-    !hasEndingNoticeStarted(endingNoticeStartsAt.value, now.value)
+    !(flags.billingNewUxEnabled
+      ? hasEndingNoticeStarted(endingNoticeStartsAt.value, now.value)
+      : pendingServerFact(
+          'BE-25244',
+          isWithinEnterpriseEndingNotice(subscription.value?.endDate, now.value)
+        ))
 )
 
 const { kind: billingBannerKind } = useBillingBanner()
@@ -696,9 +705,24 @@ const subscriptionTierName = computed(() => {
     : baseName
 })
 
+const SALES_MANAGED_TIER_NAME_KEYS: Partial<
+  Record<IngestSubscriptionTier, string>
+> = { ENTERPRISE: 'subscription.tiers.enterprise.name' }
+
+function salesManagedTierNameKey(
+  tier: IngestSubscriptionTier | null | undefined
+): string | undefined {
+  return tier && Object.hasOwn(SALES_MANAGED_TIER_NAME_KEYS, tier)
+    ? SALES_MANAGED_TIER_NAME_KEYS[tier]
+    : undefined
+}
+
 const planDisplayName = computed(() => {
-  if (isEnterprisePlan.value) return t('subscription.tiers.enterprise.name')
-  if (isNonCatalogPlan.value) return t('subscription.unknownTierName')
+  if (isNonCatalogPlan.value)
+    return t(
+      salesManagedTierNameKey(subscription.value?.tier) ??
+        'subscription.unknownTierName'
+    )
   return isTeamPlan.value
     ? t('subscription.teamPlanName')
     : subscriptionTierName.value

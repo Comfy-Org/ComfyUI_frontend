@@ -32,10 +32,10 @@ const textMap: Record<ControlOptions, string | null> = {
     :aria-label="t('widgets.valueControl.' + mode)"
     :class="
       cn(
-        'flex shrink-0 cursor-pointer items-center justify-center border-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none',
+        'flex shrink-0 cursor-pointer items-center justify-center border-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none',
         'h-5 w-9 rounded-full',
         mode !== 'fixed'
-          ? 'bg-primary/30 hover:bg-primary/27'
+          ? 'bg-foreground/10 hover:bg-foreground/20'
           : 'bg-transparent'
       )
     "
@@ -47,11 +47,11 @@ const textMap: Record<ControlOptions, string | null> = {
         cn(
           iconMap[mode] ?? '',
           'size-3.5',
-          mode === 'fixed' ? 'text-muted-foreground' : 'text-primary'
+          mode === 'fixed' ? 'text-muted-foreground' : 'text-foreground'
         )
       "
     />
-    <span v-else-if="textMap[mode]" class="text-xs font-normal text-primary">
+    <span v-else-if="textMap[mode]" class="text-xs font-normal text-foreground">
       {{ textMap[mode] }}
     </span>
   </button>
