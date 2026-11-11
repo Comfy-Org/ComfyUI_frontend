@@ -116,4 +116,30 @@ describe('createPlansReader', () => {
       }
     ])
   })
+
+  it.for([
+    {
+      served: { billing_op_id: 'op-signup', reason: 'payment_required' },
+      kept: { billing_op_id: 'op-signup', reason: 'payment_required' }
+    },
+    {
+      served: { billing_op_id: 'op-signup', reason: 'future_reason' },
+      kept: undefined
+    },
+    { served: undefined, kept: undefined }
+  ])(
+    'keeps only a recognized signup payment recovery ($served.reason) without rejecting the catalog',
+    async ({ served, kept }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk({ ...CATALOG, subscription_payment_recovery: served })
+      ])
+
+      const result = await createPlansReader({ transport, scopeSource }).read()
+
+      assert(result.status === 'ok')
+      expect(result.value.data.plans[0].slug).toBe('creator_monthly')
+      expect(result.value.data.subscription_payment_recovery).toEqual(kept)
+    }
+  )
 })

@@ -1,0 +1,333 @@
+import userEvent from '@testing-library/user-event'
+import { screen, within } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+import { renderWithTooltipProvider } from '#/testing/renderWithTooltipProvider'
+import ImageLayerSettingsPanel from './ImageLayerSettingsPanel.vue'
+import type { useToolManager } from '#/useToolManager'
+import { MaskBlendMode } from '#/types'
+import { useMaskEditorStore } from '#/maskEditorStore'
+
+type ToolManager = Pick<ReturnType<typeof useToolManager>, 'setActiveLayer'>
+
+function rowButton(testId: string) {
+  return within(screen.getByTestId(testId)).getByRole('button')
+}
+
+let mockStore: ReturnType<typeof useMaskEditorStore>
+const mockUpdateMaskColor = vi.fn().mockResolvedValue(undefined)
+const mockReportError = vi.hoisted(() => vi.fn())
+const mockSetActiveLayer = vi.fn()
+
+vi.mock<unknown>(import('#/useCanvasManager'), () => ({
+  useCanvasManager: () => ({ updateMaskColor: mockUpdateMaskColor })
+}))
+
+vi.mock<unknown>(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
+vi.mock<unknown>(import('@comfyorg/design-system/slider/Slider'), () => ({
+  default: {
+    name: 'SliderStub',
+    props: ['modelValue', 'disabled', 'ariaLabelledby'],
+    emits: ['update:modelValue'],
+    template: `<button data-slider="true" :disabled="disabled" :aria-labelledby="ariaLabelledby" @click="$emit('update:modelValue', [30])">{{ modelValue?.[0] }}</button>`
+  }
+}))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      maskEditor: {
+        layers: 'Layers',
+        maskOpacity: 'Mask Opacity',
+        maskBlending: 'Mask blending',
+        black: 'Black',
+        white: 'White',
+        negative: 'Negative',
+        maskLayer: 'Mask Layer',
+        paintLayer: 'Paint Layer',
+        baseImageLayer: 'Base Image Layer',
+        baseLayerPreview: 'Base layer preview'
+      }
+    }
+  }
+})
+
+const renderPanel = (props?: Record<string, unknown>) =>
+  renderWithTooltipProvider(ImageLayerSettingsPanel, {
+    global: { plugins: [i18n] },
+    props
+  })
+
+const makeCanvas = (): HTMLCanvasElement => document.createElement('canvas')
+
+describe('ImageLayerSettingsPanel', () => {
+  beforeEach(() => {
+    mockStore = useMaskEditorStore()
+    mockStore.image = new Image()
+    mockStore.image.src = 'https://example.com/base.png'
+    mockStore.maskBlendMode = MaskBlendMode.Black
+    mockStore.maskOpacity = 1
+  })
+
+  describe('mask opacity slider', () => {
+    it('should convert a percent into mask opacity and the canvas style', () => {
+      const canvas = makeCanvas()
+      mockStore.maskCanvas = canvas
+      renderPanel()
+      const input = screen.getByRole<HTMLInputElement>('spinbutton', {
+        name: 'Mask Opacity'
+      })
+
+      input.value = '30'
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+
+      expect(mockStore.setMaskOpacity).toHaveBeenCalledWith(0.3)
+      expect(canvas.style.opacity).toBe('0.3')
+    })
+
+    it('should leave the canvas alone when no maskCanvas is set', () => {
+      renderPanel()
+      const input = screen.getByRole<HTMLInputElement>('spinbutton', {
+        name: 'Mask Opacity'
+      })
+
+      input.value = '30'
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+
+      expect(mockStore.setMaskOpacity).toHaveBeenCalledWith(0.3)
+    })
+
+    it('should not override the forced opacity while Negative blend is active', () => {
+      const canvas = makeCanvas()
+      canvas.style.opacity = '1'
+      mockStore.maskCanvas = canvas
+      mockStore.maskBlendMode = MaskBlendMode.Negative
+      renderPanel()
+      const input = screen.getByRole<HTMLInputElement>('spinbutton', {
+        name: 'Mask Opacity'
+      })
+
+      input.value = '30'
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+
+      expect(mockStore.setMaskOpacity).toHaveBeenCalledWith(0.3)
+      expect(canvas.style.opacity).toBe('1')
+    })
+
+    it('should disable the opacity slider in Negative blend mode', () => {
+      mockStore.maskBlendMode = MaskBlendMode.Negative
+      renderPanel()
+
+      expect(
+        screen.getByRole('button', { name: 'Mask Opacity' })
+      ).toBeDisabled()
+    })
+  })
+
+  describe('blend mode menu', () => {
+    it.for([
+      ['Black', MaskBlendMode.Black],
+      ['White', MaskBlendMode.White],
+      ['Negative', MaskBlendMode.Negative]
+    ] as const)('should select %s', async ([label, expected]) => {
+      const user = userEvent.setup()
+      mockStore.maskBlendMode = MaskBlendMode.White
+      renderPanel()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Mask blending White' })
+      )
+      await user.click(screen.getByRole('menuitemcheckbox', { name: label }))
+
+      expect(mockStore.maskBlendMode).toBe(expected)
+      expect(mockUpdateMaskColor).toHaveBeenCalled()
+    })
+
+    it('should report a failed mask color update and still sync opacity', async () => {
+      const user = userEvent.setup()
+      const canvas = makeCanvas()
+      mockStore.maskCanvas = canvas
+      mockStore.maskOpacity = 0.5
+      mockStore.maskBlendMode = MaskBlendMode.White
+      mockUpdateMaskColor.mockRejectedValueOnce(new Error('update failed'))
+      renderPanel()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Mask blending White' })
+      )
+      await user.click(
+        screen.getByRole('menuitemcheckbox', { name: 'Negative' })
+      )
+
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'error_updating_mask_color',
+        surface: 'graph'
+      })
+      expect(canvas.style.opacity).toBe('1')
+    })
+  })
+
+  describe('layer visibility checkboxes', () => {
+    it('should toggle mask canvas opacity without changing the active layer', async () => {
+      const user = userEvent.setup()
+      const canvas = makeCanvas()
+      mockStore.maskCanvas = canvas
+      mockStore.maskOpacity = 0.5
+      mockStore.activeLayer = 'rgb'
+
+      renderPanel({
+        toolManager: { setActiveLayer: mockSetActiveLayer }
+      })
+
+      await user.click(screen.getByRole('checkbox', { name: 'Mask Layer' }))
+      expect(canvas.style.opacity).toBe('0')
+
+      await user.click(screen.getByRole('checkbox', { name: 'Mask Layer' }))
+      expect(canvas.style.opacity).toBe('0.5')
+      expect(mockSetActiveLayer).not.toHaveBeenCalled()
+    })
+
+    it('should toggle mask canvas visibility in Negative blend mode', async () => {
+      const user = userEvent.setup()
+      const canvas = makeCanvas()
+      mockStore.maskCanvas = canvas
+      mockStore.maskBlendMode = MaskBlendMode.Negative
+
+      renderPanel({
+        toolManager: { setActiveLayer: mockSetActiveLayer }
+      })
+
+      await user.click(screen.getByRole('checkbox', { name: 'Mask Layer' }))
+      expect(canvas.style.opacity).toBe('0')
+
+      await user.click(screen.getByRole('checkbox', { name: 'Mask Layer' }))
+      expect(canvas.style.opacity).toBe('1')
+    })
+
+    it('should toggle paint canvas opacity between 0 and 1', async () => {
+      const user = userEvent.setup()
+      const canvas = makeCanvas()
+      mockStore.rgbCanvas = canvas
+      renderPanel()
+
+      await user.click(screen.getByRole('checkbox', { name: 'Paint Layer' }))
+      expect(canvas.style.opacity).toBe('0')
+
+      await user.click(screen.getByRole('checkbox', { name: 'Paint Layer' }))
+      expect(canvas.style.opacity).toBe('1')
+    })
+
+    it('should toggle the base image canvas opacity', async () => {
+      const user = userEvent.setup()
+      const canvas = makeCanvas()
+      mockStore.imgCanvas = canvas
+      renderPanel()
+
+      await user.click(
+        screen.getByRole('checkbox', { name: 'Base Image Layer' })
+      )
+
+      expect(canvas.style.opacity).toBe('0')
+    })
+
+    it.for(['Mask Layer', 'Paint Layer', 'Base Image Layer'])(
+      'should uncheck %s when its canvas is missing',
+      async (name) => {
+        const user = userEvent.setup()
+        renderPanel()
+
+        await user.click(screen.getByRole('checkbox', { name }))
+
+        expect(screen.getByRole('checkbox', { name })).not.toBeChecked()
+      }
+    )
+  })
+
+  describe('layer rows', () => {
+    it('should mark the active layer button as pressed', () => {
+      mockStore.activeLayer = 'mask'
+      renderPanel()
+
+      expect(rowButton('mask-layer-row')).toHaveAttribute(
+        'aria-pressed',
+        'true'
+      )
+      expect(rowButton('paint-layer-row')).toHaveAttribute(
+        'aria-pressed',
+        'false'
+      )
+    })
+
+    it.for([
+      { row: 'mask-layer-row', activeLayer: 'rgb', expected: 'mask' },
+      { row: 'paint-layer-row', activeLayer: 'mask', expected: 'rgb' }
+    ] as const)(
+      'activates the $expected layer from the $row button',
+      async ({ row, activeLayer, expected }) => {
+        const user = userEvent.setup()
+        mockStore.activeLayer = activeLayer
+        renderPanel({
+          toolManager: {
+            setActiveLayer: mockSetActiveLayer
+          } as unknown as ToolManager
+        })
+
+        await user.click(rowButton(row))
+
+        expect(mockSetActiveLayer).toHaveBeenCalledWith(expected)
+      }
+    )
+
+    it('activates the mask layer with Enter', async () => {
+      const user = userEvent.setup()
+      mockStore.activeLayer = 'rgb'
+      renderPanel({
+        toolManager: { setActiveLayer: mockSetActiveLayer }
+      })
+
+      rowButton('mask-layer-row').focus()
+      await user.keyboard('{Enter}')
+
+      expect(mockSetActiveLayer).toHaveBeenCalledWith('mask')
+    })
+
+    it('does not throw when toolManager is omitted', async () => {
+      const user = userEvent.setup()
+      renderPanel()
+
+      await expect(
+        user.click(rowButton('mask-layer-row'))
+      ).resolves.not.toThrow()
+    })
+  })
+
+  describe('base image preview', () => {
+    it('should render the base image src from the store', () => {
+      mockStore.image = new Image()
+      mockStore.image.src = 'https://example.com/img.png'
+      renderPanel()
+
+      expect(screen.getByAltText('Base layer preview')).toHaveAttribute(
+        'src',
+        'https://example.com/img.png'
+      )
+    })
+
+    it('should render an empty src when there is no image', () => {
+      mockStore.image = null
+      renderPanel()
+
+      expect(
+        screen.getByAltText('Base layer preview').getAttribute('src')
+      ).toBe('')
+    })
+  })
+})

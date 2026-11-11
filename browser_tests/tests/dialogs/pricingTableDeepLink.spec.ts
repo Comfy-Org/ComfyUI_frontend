@@ -27,6 +27,7 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import {
   member,
   mockWorkspace,
@@ -451,6 +452,7 @@ async function setupCloudApp(
     billingCapabilities: createWorkspaceBillingCapabilities(ws)
   })
   await mockWorkspace(page, ws, members)
+  await keepPricingTableInApp(page)
   await bootCloud(page)
 }
 
@@ -1057,7 +1059,7 @@ test.describe('Recovered 3DS subscription', { tag: '@cloud' }, () => {
     await page.goto(APP_URL)
     await waitForCloudApp(page)
     await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('manage-plan-menu-item').click()
+    await page.getByTestId('credits-menu-item').click()
     await expect.poll(() => statusRequests.length).toBeGreaterThan(0)
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
 
@@ -1143,8 +1145,7 @@ test.describe(
         await expect(successHeading).toBeVisible()
 
         await successView.getByRole('button', { name: 'Close' }).click()
-        await page.getByRole('button', { name: 'Current user' }).click()
-        await page.getByTestId('plans-pricing-menu-item').click()
+        await page.goto(`${APP_URL}/?pricing=1`)
 
         await expect(pricingHeading(page)).toBeVisible()
         await expect(

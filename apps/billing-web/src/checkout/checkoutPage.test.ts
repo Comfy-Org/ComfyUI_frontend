@@ -1180,6 +1180,21 @@ describe('reduceCheckoutPage endings', () => {
     { name: 'Try again on capture', from: collect('ready'), event: tryAgain },
     { name: 'Try again while resolving', from: RESOLVING, event: tryAgain },
     {
+      name: "another poll of this tab's own refused challenge over its not-verified card",
+      from: replay([
+        ...live,
+        submitted,
+        changed(
+          { ...refusedChallenge(), awaitedHere: true },
+          { kind: 'not_verified', operationId: 'op_3ds' }
+        )
+      ]),
+      event: changed(
+        { ...refusedChallenge(), awaitedHere: true },
+        { kind: 'not_verified', operationId: 'op_3ds' }
+      )
+    },
+    {
       name: 'a late unknown plan after capture',
       from: collect('ready'),
       event: planUnavailable
