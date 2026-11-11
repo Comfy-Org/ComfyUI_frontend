@@ -5,6 +5,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { RectTuple } from '@comfyorg/shared-frontend-utils/geometry'
+import { addGroup } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import {
   LGraph,
   LGraphGroup,
@@ -408,6 +410,40 @@ describe('supply-side resolution', () => {
     expect(selfGroups.map((g) => g.title)).toEqual(['Sampling'])
     expect(candidateGroups.map((g) => g.title)).toEqual(['Sampling'])
   })
+
+  it.for([
+    { name: 'the outer group was added first', titles: ['Outer', 'Inner'] },
+    { name: 'the inner group was added first', titles: ['Inner', 'Outer'] }
+  ])(
+    "lists a candidate's groups innermost first when $name",
+    ({ titles: [first, second] }) => {
+      const bounds: Record<string, RectTuple> = {
+        Outer: [0, 0, 400, 400],
+        Inner: [20, 20, 300, 300]
+      }
+      const sink = spawn('Sink')
+      sink.pos = [60, 60]
+      sink.updateArea()
+      spawn('Broadcaster')
+      addGroup(graph, first, bounds[first])
+      addGroup(graph, second, bounds[second])
+      let candidateGroups: readonly { title: string }[] = []
+
+      supply(
+        new Map<string, Supplier>([
+          [
+            'Broadcaster',
+            (view) => {
+              candidateGroups = view.unconnectedInputs()[0]?.nodeGroups ?? []
+              return []
+            }
+          ]
+        ])
+      )
+
+      expect(candidateGroups.map((g) => g.title)).toEqual(['Inner', 'Outer'])
+    }
+  )
 
   it('lets a supplier read the type plugged into its own input', () => {
     // The whole broadcast pattern is "send whatever is plugged into me to
