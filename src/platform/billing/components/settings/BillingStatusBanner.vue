@@ -94,9 +94,9 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
 import type {
-  BillingBannerAudience,
-  BillingBannerKind
-} from '@/platform/billing/composables/useBillingBanner'
+  BillingStatusBannerAudience,
+  BillingStatusBannerKind
+} from '@comfyorg/account-core/billing'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
@@ -206,11 +206,11 @@ const audienceCopy = {
     endingTitle: `${bs}.ending.personalTitle`,
     endingBody: `${bs}.ending.personalBody`
   }
-} satisfies Record<BillingBannerAudience, Record<string, string>>
+} satisfies Record<BillingStatusBannerAudience, Record<string, string>>
 
 const copy = computed(() => audienceCopy[audience.value ?? 'team'])
 
-const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingBannerKind> = new Set([
+const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingStatusBannerKind> = new Set([
   'planEnded',
   'ending',
   'planChange'
@@ -403,7 +403,7 @@ const planChangeView = (): BannerView | null =>
       }
     : null
 
-const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
+const bannerViews: Record<BillingStatusBannerKind, () => BannerView | null> = {
   paused: pausedView,
   planEnded: planEndedView,
   outOfCredits: outOfCreditsView,

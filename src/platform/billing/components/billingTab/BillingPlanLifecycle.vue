@@ -113,9 +113,12 @@ function dispatch(event: PlanConfirmEvent) {
 function copyFor(intent: PlanLifecycleIntent) {
   const key = 'workspacePanel.billingTab.plan'
   if (intent.kind === 'stay') {
+    const date = formatPlanDate(intent.effectiveAt, locale.value, null)
     return {
       title: t(`${key}.stayConfirm.title`, { plan: intent.targetPlanName }),
-      body: t(`${key}.stayConfirm.bodyNoAmount`, { current: intent.planName }),
+      body: date
+        ? t(`${key}.stayConfirm.body`, { current: intent.planName, date })
+        : t(`${key}.stayConfirm.bodyNoAmount`, { current: intent.planName }),
       confirm: t(`${key}.actions.stay`, { plan: intent.planName })
     }
   }

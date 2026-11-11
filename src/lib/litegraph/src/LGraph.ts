@@ -3421,7 +3421,6 @@ export class Subgraph
   }
 
   /** Clones and registers the subgraph under a new ID. */
-  // fallow-ignore-next-line unused-class-member
   clone(): Subgraph {
     const exported = this.asSerialisable()
     exported.id = createUuidv4()

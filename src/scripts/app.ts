@@ -1198,8 +1198,16 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
-    return this.enqueueGraphLoad(() =>
-      this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
+    return this.enqueueGraphLoad(async () =>
+      options.isCurrent?.() === false
+        ? false
+        : this.loadGraphDataNow(
+            graphData,
+            clean,
+            restore_view,
+            workflow,
+            options
+          )
     )
   }
 
@@ -1220,7 +1228,8 @@ export class ComfyApp implements IComfyApp {
       deferWarnings = false,
       skipAssetScans = false,
       silentAssetErrors = false,
-      workflowNavigationId
+      workflowNavigationId,
+      isCurrent
     } = options
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     let reset_invalid_values = false
@@ -1408,6 +1417,21 @@ export class ComfyApp implements IComfyApp {
       return false
     }
 
+    const cancelReplacedLoad = () =>
+      useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new DOMException('Workflow load was replaced', 'AbortError')
+      )
+    if (isCurrent?.() === false) {
+      ChangeTracker.isLoadingGraph = false
+      await cancelReplacedLoad()
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
+      return false
+    }
+
     const fitView = () => {
       const savedCameraState = normalizeCameraState(graphData.extra?.ds, {
         minScale: this.canvas.ds.min_scale,
@@ -1504,11 +1528,6 @@ export class ComfyApp implements IComfyApp {
       const configuredGraphState = this.rootGraph.state
       const isCurrentGraphLoad = () =>
         configuredGraphState === this.rootGraph.state
-      const cancelReplacedLoad = () =>
-        useExtensionService().invokeExtensionsAsync(
-          'onGraphLoadError',
-          new DOMException('Workflow load was replaced', 'AbortError')
-        )
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
         : 0
@@ -1578,6 +1597,10 @@ export class ComfyApp implements IComfyApp {
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
         return undefined
+      }
+      if (isCurrent?.() === false) {
+        await cancelReplacedLoad()
+        return false
       }
 
       const effectiveShareId =

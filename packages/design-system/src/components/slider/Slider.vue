@@ -65,7 +65,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
         data-slot="slider-range"
         :class="
           cn(
-            'absolute bg-muted-foreground data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full',
+            'absolute bg-foreground data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full',
             props.rangeClass
           )
         "
@@ -78,7 +78,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
       data-slot="slider-thumb"
       :class="
         cn(
-          'block size-3.5 shrink-0 rounded-full bg-muted-foreground shadow-sm ring-foreground transition-[color,box-shadow]',
+          'block size-3.5 shrink-0 rounded-full bg-foreground shadow-sm ring-foreground transition-[color,box-shadow]',
           'cursor-grab',
           'before:absolute before:-inset-1 before:block before:rounded-full before:bg-transparent',
           'hover:ring-2 focus-visible:ring-2 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50',
