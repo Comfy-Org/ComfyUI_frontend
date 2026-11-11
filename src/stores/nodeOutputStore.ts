@@ -470,6 +470,28 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     useApp().nodePreviewImages = {}
   }
 
+  function addLivePreviewsToStash(workflowPath: string) {
+    const stashed = stashedPreviews.get(workflowPath)
+    if (!stashed) {
+      stashPreviewsForWorkflow(workflowPath)
+      return
+    }
+
+    const superseded: Record<string, string[]> = {}
+    for (const [nodeLocatorId, urls] of Object.entries(
+      nodePreviewImages.value
+    )) {
+      if (!urls) continue
+
+      const replaced = stashed[nodeLocatorId]
+      if (replaced) superseded[nodeLocatorId] = replaced
+      stashed[nodeLocatorId] = urls
+    }
+    releasePreviewUrls(superseded)
+    nodePreviewImages.value = {}
+    useApp().nodePreviewImages = {}
+  }
+
   function restorePreviewsForWorkflow(workflowPath: string | undefined) {
     if (!workflowPath) return
 
@@ -625,6 +647,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokeAllPreviews,
     revokeSubgraphPreviews,
     stashPreviewsForWorkflow,
+    addLivePreviewsToStash,
     restorePreviewsForWorkflow,
     discardPreviewsForWorkflow,
     removeNodeOutputs,

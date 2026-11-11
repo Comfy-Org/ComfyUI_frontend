@@ -153,6 +153,30 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     expect(revokeObjectURL).not.toHaveBeenCalledWith(arrivedUrl)
   })
 
+  it('adds a frame that arrived while the workflow was off the canvas to its stash', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode(5)
+    const otherNode = createMockNode(6)
+    const stashedUrl = createBlobUrl()
+    const otherUrl = createBlobUrl()
+    const arrivedUrl = createBlobUrl()
+
+    store.setNodePreviewsByNodeId(node.id, [stashedUrl])
+    store.setNodePreviewsByNodeId(otherNode.id, [otherUrl])
+    store.stashPreviewsForWorkflow(WORKFLOW_A)
+    store.resetAllOutputsAndPreviews()
+    store.setNodePreviewsByNodeId(node.id, [arrivedUrl])
+    store.addLivePreviewsToStash(WORKFLOW_A)
+    store.resetAllOutputsAndPreviews()
+    store.restorePreviewsForWorkflow(WORKFLOW_A)
+
+    expect(store.getNodePreviews(node)).toEqual([arrivedUrl])
+    expect(store.getNodePreviews(otherNode)).toEqual([otherUrl])
+    expect(revokeObjectURL).toHaveBeenCalledWith(stashedUrl)
+    expect(revokeObjectURL).not.toHaveBeenCalledWith(arrivedUrl)
+    expect(revokeObjectURL).not.toHaveBeenCalledWith(otherUrl)
+  })
+
   it('restores previews when the same workflow is reloaded in place', () => {
     const store = useNodeOutputStore()
     const node = createMockNode(5)

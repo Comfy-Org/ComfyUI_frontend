@@ -938,6 +938,8 @@ export const useWorkflowService = () => {
           activeWorkflow,
           workflowStore.activeSubgraph || useApp().canvasOrUndefined?.graph
         )
+      } else {
+        useNodeOutputStore().addLivePreviewsToStash(activeWorkflow.path)
       }
       domWidgetStore.clear()
 
