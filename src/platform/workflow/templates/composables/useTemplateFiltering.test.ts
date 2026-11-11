@@ -191,6 +191,21 @@ describe('useTemplateFiltering', () => {
     expect(sortSelection.value).toBe('newest')
   })
 
+  it('keeps the category sort when filters are reset', async () => {
+    const { sortSelection, categorySort, searchQuery, resetFilters } =
+      useTemplateFiltering(ref<TemplateInfo[]>([]))
+    categorySort.value = 'popular'
+    searchQuery.value = 'flux'
+    await nextTick()
+    sortSelection.value = 'newest'
+
+    resetFilters()
+    await nextTick()
+
+    expect(categorySort.value).toBe('popular')
+    expect(sortSelection.value).toBe('popular')
+  })
+
   it('clears the category sort when the user picks a sort', () => {
     const { sortBy, sortSelection, categorySort } = useTemplateFiltering(
       ref<TemplateInfo[]>([])

@@ -719,15 +719,11 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
   const isPopularNav = selectedNavItem.value === 'popular'
 
   if (source === 'nav') {
-    // The Popular category implies a popularity sort, applied as a
-    // non-persisted override so the user's saved sort is restored on leaving.
     categorySort.value = isPopularNav ? 'popular' : null
     return
   }
 
   if (hasActiveQuery.value) return
-  // When sort is changed away from 'Popular' while in the 'Popular' category,
-  // reset the category to 'All Templates' to avoid a confusing state.
   if (isPopularNav && sortSelection.value !== 'popular') {
     selectedNavItem.value = 'all'
   }

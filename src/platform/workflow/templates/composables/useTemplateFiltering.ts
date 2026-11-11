@@ -177,11 +177,6 @@ export function useTemplateFiltering<T extends TemplateInfo>(
   watch(hasActiveQuery, (searching) => {
     if (searching) searchSort.value = SEARCH_DEFAULT_SORT
   })
-  /**
-   * Sort implied by the selected category (e.g. Popular). Overrides the browse
-   * sort while set but is never persisted, so visiting a category does not
-   * overwrite the user's saved sort preference.
-   */
   const categorySort = ref<TemplateBrowseSort | null>(null)
   const activeSort = computed(() =>
     hasActiveQuery.value
@@ -192,7 +187,6 @@ export function useTemplateFiltering<T extends TemplateInfo>(
   const sortSelection = computed<TemplateSortMode>({
     get: () => activeSort.value,
     set: (value) => {
-      // relevance is search-only; a browse sort chosen mid-search stays ephemeral.
       if (value === 'relevance' || hasActiveQuery.value) {
         searchSort.value = value
         return
@@ -336,7 +330,6 @@ export function useTemplateFiltering<T extends TemplateInfo>(
     selectedUseCases.value = []
     selectedRunsOn.value = []
     sortBy.value = BROWSE_DEFAULT_SORT
-    categorySort.value = null
     searchSort.value = SEARCH_DEFAULT_SORT
   }
 
