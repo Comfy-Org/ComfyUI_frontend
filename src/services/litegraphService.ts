@@ -85,7 +85,7 @@ import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
-import { getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -677,7 +677,7 @@ export const useLitegraphService = () => {
         {
           content: 'Copy Image',
           callback: markCoreMediaMenuCallback(async () => {
-            const url = new URL(img.src)
+            const url = new URL(fullResolutionSrc(img), img.baseURI)
             url.searchParams.delete('preview')
 
             try {

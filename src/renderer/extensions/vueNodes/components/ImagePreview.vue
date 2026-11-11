@@ -34,6 +34,8 @@
             :src="url"
             :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
             draggable="false"
+            decoding="async"
+            loading="lazy"
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
             @error="failedHdrPreviews[index] = true"
@@ -113,13 +115,16 @@
       </button>
       <!-- Main Image -->
       <img
-        v-if="!imageError && !isHdrPlaceholder(currentIndex)"
+        v-if="!imageError && !isHdrPlaceholder(currentIndex) && mainImageSrc"
         :key="currentImageUrl"
         data-testid="main-image"
-        :src="currentHdrPreviewUrl ?? currentImageUrl"
+        :src="mainImageSrc"
         :data-file-url="currentHdrPreviewUrl ? currentImageUrl : undefined"
+        :data-full-src="isDownscaled ? currentImageUrl : undefined"
         :alt="imageAltText"
         draggable="false"
+        decoding="async"
+        loading="lazy"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
@@ -247,7 +252,7 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize, useTimeoutFn } from '@vueuse/core'
+import { computedAsync, useElementSize, useTimeoutFn } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -274,7 +279,13 @@ import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import {
+  canDownscaleImages,
+  getDisplayImage
+} from '@/renderer/extensions/vueNodes/utils/downscaledImage'
 import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
+
+const DISPLAY_MAX_EDGE = 1024
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -327,6 +338,28 @@ const isHdrPlaceholder = (index: number) =>
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
 const currentHdrPreviewUrl = computed(() =>
   getHdrPreviewUrl(currentImageUrl.value)
+)
+const displayImage = computedAsync(async () => {
+  const source = currentImageUrl.value
+  if (!source || currentHdrPreviewUrl.value || !canDownscaleImages())
+    return undefined
+  return getDisplayImage(source, DISPLAY_MAX_EDGE)
+})
+const currentDisplayImage = computed(() =>
+  displayImage.value?.source === currentImageUrl.value
+    ? displayImage.value
+    : undefined
+)
+const mainImageSrc = computed(
+  () =>
+    currentHdrPreviewUrl.value ??
+    (canDownscaleImages()
+      ? currentDisplayImage.value?.url
+      : currentImageUrl.value)
+)
+const isDownscaled = computed(
+  () =>
+    !!currentDisplayImage.value && mainImageSrc.value !== currentImageUrl.value
 )
 const gridImageUrls = computed(() =>
   imageUrls.map((url) => getHdrPreviewUrl(url) ?? getGridThumbnailUrl(url))
@@ -384,9 +417,11 @@ function handleImageLoad(event: Event) {
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = false
-  if (img.naturalWidth && img.naturalHeight) {
-    actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
+  const { width, height } = currentDisplayImage.value?.originalSize ?? {
+    width: img.naturalWidth,
+    height: img.naturalHeight
   }
+  if (width && height) actualDimensions.value = `${width} x ${height}`
 
   if (nodeId && !isUnmounted) {
     nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)

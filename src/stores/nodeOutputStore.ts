@@ -1,7 +1,7 @@
 import { useTimeoutFn } from '@vueuse/core'
 import { mapKeys } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, toRaw } from 'vue'
 
 import type {
   LGraph,
@@ -157,13 +157,25 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return isImageOutputs(node, outputs) ? useApp().getPreviewFormatParam() : ''
   }
 
+  const randParamByOutputs = new WeakMap<object, string>()
+
+  function randParamFor(outputs: ExecutedWsMessage['output']): string {
+    const key = toRaw(outputs)
+    let rand = randParamByOutputs.get(key)
+    if (rand === undefined) {
+      rand = useApp().getRandParam()
+      randParamByOutputs.set(key, rand)
+    }
+    return rand
+  }
+
   function buildImageUrls(
     node: LGraphNode,
     outputs: ExecutedWsMessage['output'] | undefined
   ): string[] | undefined {
     if (!outputs?.images?.length) return
 
-    const rand = useApp().getRandParam()
+    const rand = randParamFor(outputs)
     const previewParam = getPreviewParam(node, outputs)
 
     return outputs.images.filter(isResultItem).map((image) => {

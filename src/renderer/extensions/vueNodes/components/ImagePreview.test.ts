@@ -30,6 +30,17 @@ vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
+const displayImages = vi.hoisted(() => ({ supported: false }))
+
+vi.mock(import('@/renderer/extensions/vueNodes/utils/downscaledImage'), () => ({
+  canDownscaleImages: () => displayImages.supported,
+  getDisplayImage: async (source: string) => ({
+    source,
+    url: 'blob:display-copy',
+    originalSize: { width: 4096, height: 4096 }
+  })
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -89,6 +100,24 @@ describe('ImagePreview', () => {
     await user.click(thumbnails[0])
     await nextTick()
   }
+
+  it('shows a downscaled copy while keeping the full-resolution source', async () => {
+    displayImages.supported = true
+    try {
+      renderImagePreview({
+        imageUrls: ['/api/view?filename=large.png&type=output']
+      })
+
+      const image = await screen.findByTestId('main-image')
+      expect(image).toHaveAttribute('src', 'blob:display-copy')
+      expect(image).toHaveAttribute(
+        'data-full-src',
+        '/api/view?filename=large.png&type=output'
+      )
+    } finally {
+      displayImages.supported = false
+    }
+  })
 
   it('does not render when no imageUrls provided', () => {
     const { container } = renderImagePreview({ imageUrls: [] })

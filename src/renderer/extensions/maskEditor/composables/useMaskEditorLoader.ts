@@ -10,6 +10,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
+import { fullResolutionSrc } from '@/utils/hdrFormatUtil'
 import {
   extractWidgetStringValue,
   parseImageWidgetValue
@@ -259,7 +260,7 @@ export function useMaskEditorLoader() {
 
     if (node.imgs?.length) {
       const index = node.imageIndex ?? 0
-      const imgSrc = node.imgs[index].src
+      const imgSrc = fullResolutionSrc(node.imgs[index])
 
       if (imgSrc && !imgSrc.startsWith('data:')) {
         return imgSrc

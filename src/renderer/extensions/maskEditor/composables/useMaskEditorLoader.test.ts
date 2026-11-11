@@ -62,7 +62,12 @@ function createLoadImageNode(
   return fromAny<LGraphNode, unknown>({
     id: nodeId,
     type: 'LoadImage',
-    imgs: [{ src: 'http://localhost:8188/api/view?filename=whatever.png' }],
+    imgs: [
+      {
+        src: 'http://localhost:8188/api/view?filename=whatever.png',
+        dataset: {}
+      }
+    ],
     images,
     graph: { rootGraph: { id: GRAPH_ID } }
   })
