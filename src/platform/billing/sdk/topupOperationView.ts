@@ -186,10 +186,17 @@ export function projectTopupResult(
   }
 }
 
-/** The hosted Checkout URL, or the failure as the error the dialog handles. */
+export interface HostedCheckoutSession {
+  readonly url: string
+  readonly sessionId?: string
+}
+
+/** The hosted Checkout session, or the failure as the error the dialog handles. */
 export function projectHostedTopupCheckoutResult(
   result: HostedTopupCheckoutResult
-): string {
-  if (result.status === 'ok') return result.url
-  throw topupFailureError(result)
+): HostedCheckoutSession {
+  if (result.status !== 'ok') throw topupFailureError(result)
+  return result.sessionId === undefined
+    ? { url: result.url }
+    : { url: result.url, sessionId: result.sessionId }
 }

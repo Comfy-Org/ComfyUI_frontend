@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 import type { BillingClient } from '@comfyorg/account-core/billing'
 import type { CreateTopupResponse } from '@comfyorg/billing-core'
+import type { TopupAutoTopUpSettings } from '@comfyorg/ingest-types'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -10,6 +11,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import type { HostedCheckoutSession } from '@/platform/billing/sdk/topupOperationView'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 const RETRYABLE_CHECKOUT_REFUSALS: ReadonlyArray<readonly [number, string]> = [
@@ -61,33 +63,45 @@ export function useTopupOperation() {
   async function createHostedCheckout(
     amountCents: number,
     returnUrl: string,
-    signal?: AbortSignal
-  ): Promise<string> {
+    signal?: AbortSignal,
+    autoTopUp?: TopupAutoTopUpSettings
+  ): Promise<HostedCheckoutSession> {
+    const mint = () =>
+      mintHostedCheckout(amountCents, returnUrl, signal, autoTopUp)
     for (const retryDelayMs of CHECKOUT_RETRY_DELAYS_MS) {
       try {
-        return await mintHostedCheckout(amountCents, returnUrl, signal)
+        return await mint()
       } catch (error) {
         if (!isRetryableCheckoutRefusal(error)) throw error
         await delay(retryDelayMs, { signal })
       }
     }
-    return mintHostedCheckout(amountCents, returnUrl, signal)
+    return mint()
   }
 
   async function mintHostedCheckout(
     amountCents: number,
     returnUrl: string,
-    signal: AbortSignal | undefined
-  ): Promise<string> {
+    signal: AbortSignal | undefined,
+    autoTopUp: TopupAutoTopUpSettings | undefined
+  ): Promise<HostedCheckoutSession> {
     if (sdkStore) {
-      return sdkStore.createHostedTopupCheckout(amountCents, returnUrl, signal)
+      return sdkStore.createHostedTopupCheckout(
+        amountCents,
+        returnUrl,
+        signal,
+        autoTopUp
+      )
     }
-    const { checkout_url } = await billingApi.createTopupCheckout(
+    const { checkout_url, session_id } = await billingApi.createTopupCheckout(
       amountCents,
       returnUrl,
-      signal
+      signal,
+      autoTopUp
     )
-    return checkout_url
+    return session_id === undefined
+      ? { url: checkout_url }
+      : { url: checkout_url, sessionId: session_id }
   }
 
   async function quoteTopup(

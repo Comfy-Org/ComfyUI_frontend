@@ -39,6 +39,7 @@ import type {
   SubscriptionTier,
   TeamCreditStops,
   TeamCreditStopSummary,
+  TopupAutoTopUpSettings,
   TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 import {
@@ -458,7 +459,8 @@ export function createBillingApi({
     async createTopupCheckout(
       amountCents: number,
       returnUrl: string,
-      signal?: AbortSignal
+      signal?: AbortSignal,
+      autoTopUp?: TopupAutoTopUpSettings
     ): Promise<CreateTopupCheckoutResponse> {
       const auth = await requestAuth()
       signal?.throwIfAborted()
@@ -468,7 +470,8 @@ export function createBillingApi({
           {
             amount_cents: amountCents,
             return_url: returnUrl,
-            idempotency_key: crypto.randomUUID()
+            idempotency_key: crypto.randomUUID(),
+            ...(autoTopUp === undefined ? {} : { auto_top_up: autoTopUp })
           } satisfies CreateTopupCheckoutRequest,
           { ...auth, signal }
         )

@@ -41,10 +41,13 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 import { centsToCredits } from '@/base/credits/comfyCredits'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   addCreditsPendingTopup,
   topupCheckoutFailure
 } from '@/platform/billing/addCredits/addCreditsFacts'
+import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
@@ -84,6 +87,7 @@ const translate: AddCreditsTranslate = (key, params = {}) =>
   t(`addCreditsDialog.${key}`, params)
 
 const dialogStore = useDialogStore()
+const { flags } = useFeatureFlags()
 const telemetry = useTelemetry()
 const workspaceIdentity = useWorkspaceIdentity()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
@@ -107,13 +111,17 @@ const pendingTopup = computed(() =>
 )
 
 let paymentWatched = false
+let activationSessionId: string | undefined
 
 const ports: AddCreditsPorts = {
   async quote(amountCents, signal) {
     const credits = await quoteTopup(amountCents, signal)
     return credits === null ? { status: 'error' } : { status: 'ok', credits }
   },
-  async createCheckout(amountCents, signal) {
+  get activatesAutoTopUp() {
+    return flags.billingAutoTopUpAtCheckoutEnabled
+  },
+  async createCheckout(amountCents, signal, autoTopUp) {
     telemetry?.trackBillingEvent({
       operation: 'topup',
       stage: 'intent',
@@ -126,7 +134,13 @@ const ports: AddCreditsPorts = {
     }
     try {
       if (!balance.value) await Promise.allSettled([fetchBalance()])
-      const url = await createHostedCheckout(amountCents, returnUrl, signal)
+      const { url, sessionId } = await createHostedCheckout(
+        amountCents,
+        returnUrl,
+        signal,
+        autoTopUp
+      )
+      activationSessionId = autoTopUp && sessionId
       return { status: 'ok', url }
     } catch (error) {
       return {
@@ -139,8 +153,17 @@ const ports: AddCreditsPorts = {
   watchPayment(landed) {
     paymentWatched = true
     usePendingTopup().startPendingTopup()
-    return watchForTopupBalanceUpdate({
-      onBalanceIncreased: async () => landed(),
+    const scope = new AbortController()
+    const stop = watchForTopupBalanceUpdate({
+      onBalanceIncreased: async () => {
+        const sessionId = activationSessionId
+        if (sessionId === undefined) return landed()
+        const activation = await readAutoTopUpActivation(
+          () => billingApi.getTopupCheckout(sessionId),
+          scope.signal
+        ).catch(() => null)
+        if (activation !== null) landed(activation)
+      },
       source: {
         current: () => balance.value?.amountMicros ?? null,
         fetch: async () => {
@@ -154,6 +177,10 @@ const ports: AddCreditsPorts = {
         }
       }
     })
+    return () => {
+      scope.abort()
+      stop()
+    }
   },
   autoTopUpSetupUrl: autoTopUpOffer.setupUrl
 }

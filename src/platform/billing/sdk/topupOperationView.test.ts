@@ -180,13 +180,17 @@ describe('projectTopupResult', () => {
 })
 
 describe('projectHostedTopupCheckoutResult', () => {
-  it('hands the dialog the hosted Checkout URL', () => {
+  it('hands the dialog the hosted Checkout URL and session id', () => {
     expect(
       projectHostedTopupCheckoutResult({
         status: 'ok',
-        url: 'https://checkout.stripe.com/c/pay/cs_1'
+        url: 'https://checkout.stripe.com/c/pay/cs_1',
+        sessionId: 'cs_1'
       })
-    ).toBe('https://checkout.stripe.com/c/pay/cs_1')
+    ).toEqual({
+      url: 'https://checkout.stripe.com/c/pay/cs_1',
+      sessionId: 'cs_1'
+    })
   })
 
   it.for([

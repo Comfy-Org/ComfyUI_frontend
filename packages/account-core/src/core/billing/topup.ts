@@ -10,7 +10,10 @@
  * own vocabulary, and the terminal operation is embedded whenever one was
  * observed so a host reads the coded decline and recovery action from it.
  */
-import type { InteractiveTopupRequest } from '@comfyorg/ingest-types'
+import type {
+  InteractiveTopupRequest,
+  TopupAutoTopUpSettings
+} from '@comfyorg/ingest-types'
 import {
   zCreateTopupCheckoutRequest,
   zCreateTopupCheckoutResponse,
@@ -190,6 +193,8 @@ export interface CreateHostedTopupCheckoutInput {
   readonly amountCents: number
   /** Where the provider returns the customer; the backend allowlists its origin. */
   readonly returnUrl: string
+  /** Turns auto top-up on once this purchase is paid; the checkout read reports the outcome. */
+  readonly autoTopUp?: TopupAutoTopUpSettings
   readonly signal?: AbortSignal
 }
 
@@ -261,13 +266,20 @@ const NOT_AVAILABLE = {
   code: 'NOT_AVAILABLE'
 } as const satisfies TopupNotAvailable
 
+function hostedCheckoutBody(input: CreateHostedTopupCheckoutInput) {
+  return {
+    amount_cents: input.amountCents,
+    return_url: input.returnUrl,
+    ...(input.autoTopUp === undefined ? {} : { auto_top_up: input.autoTopUp })
+  }
+}
+
 function validateHostedCheckoutInput(
   input: CreateHostedTopupCheckoutInput
 ): TopupInvalidAmount | TopupInvalidReturnUrl | undefined {
-  const parsed = zCreateTopupCheckoutRequest.safeParse({
-    amount_cents: input.amountCents,
-    return_url: input.returnUrl
-  })
+  const parsed = zCreateTopupCheckoutRequest.safeParse(
+    hostedCheckoutBody(input)
+  )
   if (parsed.success) return undefined
   const fields = new Set(parsed.error.issues.map((issue) => issue.path[0]))
   return fields.has('amount_cents') ? INVALID_AMOUNT : INVALID_RETURN_URL
@@ -434,8 +446,7 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     input: CreateHostedTopupCheckoutInput
   ): Promise<BillingResult<Pick<HostedTopupCheckout, 'url' | 'sessionId'>>> {
     const body = {
-      amount_cents: input.amountCents,
-      return_url: input.returnUrl,
+      ...hostedCheckoutBody(input),
       idempotency_key: idempotencyKey()
     }
     const response = await readValidatedBillingResponse(
