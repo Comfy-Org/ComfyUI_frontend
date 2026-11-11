@@ -190,6 +190,13 @@ export interface Comfy {
   readonly version: string
   /** Breaking-change generation. Incremented only when something is removed. */
   readonly major: number
+  /** `[major, minor, patch]` of the API this pack was handed. */
+  getApiVersion(): readonly [major: number, minor: number, patch: number]
+  /**
+   * True if the API is `version` or newer. `version` is written `v2.0.0`;
+   * throws a `TypeError` for anything else.
+   */
+  isApiVersionAtLeast(version: string): boolean
   /** Cheap, never throws. The supported way to branch. */
   supports(capability: string): boolean
   /** Asserts a capability, with an actionable error naming it. */
@@ -346,6 +353,24 @@ export interface Comfy {
 }
 
 /** Per-major instances, memoised per graph provider. */
+function parseVersion(text: string): number[] {
+  const parts = text.replace(/^v/, '').split('.')
+  if (!parts.every((part) => /^\d+$/.test(part))) {
+    throw new TypeError(`Invalid API version '${text}'. Write it as v2.0.0.`)
+  }
+  return parts.map(Number)
+}
+
+function isAtLeast(
+  have: readonly number[],
+  wanted: readonly number[]
+): boolean {
+  for (let i = 0; i < Math.min(have.length, wanted.length); i++) {
+    if (have[i] !== wanted[i]) return have[i] > wanted[i]
+  }
+  return have.length >= wanted.length
+}
+
 function buildMajor(
   major: number,
   getGraph: () => LGraph | null | undefined,
@@ -425,9 +450,16 @@ function buildMajor(
     return nodeIn(node.graph.id, String(node.id))
   }
 
+  const version = major === LATEST_MAJOR ? NODE_API_VERSION : `${major}.0`
+  const [, minor = 0] = parseVersion(version)
+  const apiVersion = Object.freeze<[number, number, number]>([major, minor, 0])
+
   return Object.freeze({
-    version: major === LATEST_MAJOR ? NODE_API_VERSION : `${major}.0`,
+    version,
     major,
+    getApiVersion: () => apiVersion,
+    isApiVersionAtLeast: (wanted: unknown) =>
+      isAtLeast(apiVersion, parseVersion(String(wanted))),
     supports: (capability: string) => capabilities.has(capability),
     require(capability: string) {
       if (capabilities.has(capability)) return

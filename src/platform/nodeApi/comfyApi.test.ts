@@ -62,6 +62,34 @@ describe('comfy API root', () => {
     expect(String(api().major)).toBe(NODE_API_VERSION.split('.')[0])
   })
 
+  it('reports its version as major, minor and patch', () => {
+    const version = api().getApiVersion()
+
+    expect(version.slice(0, 2).join('.')).toBe(NODE_API_VERSION)
+    expect(version[2]).toBe(0)
+    expect(Object.isFrozen(version)).toBe(true)
+  })
+
+  it('compares its version with one written the way a pack writes it', () => {
+    const [major, minor, patch] = api().getApiVersion()
+    const at = (text: string) => api().isApiVersionAtLeast(text)
+
+    expect(at(`v${major}.${minor}.${patch}`)).toBe(true)
+    expect(at(`${major}.${minor}.${patch}`)).toBe(true)
+    expect(at(`v${major}`)).toBe(true)
+    expect(at(`v${major - 1}.9.9`)).toBe(true)
+    expect(at(`v${major}.${minor}.${patch + 1}`)).toBe(false)
+    expect(at(`v${major}.${minor + 1}.0`)).toBe(false)
+    expect(at(`v${major + 1}.0.0`)).toBe(false)
+  })
+
+  it.for(['', 'v', 'v2.x', 'v2.0.', 'latest'])(
+    'refuses the version %j',
+    (text) => {
+      expect(() => api().isApiVersionAtLeast(text)).toThrow(TypeError)
+    }
+  )
+
   describe('capability probing', () => {
     it('reports shipped capabilities', () => {
       expect(api().supports('widgets.reorder')).toBe(true)
