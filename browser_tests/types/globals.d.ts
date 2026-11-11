@@ -58,6 +58,7 @@ declare global {
     changeCount?: number
     widgetValue?: unknown
     __commandExecutionCounts?: Record<string, number>
+    __seededServerFlags?: Record<string, unknown>
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
     __captureHostTelemetry?: (captured: {

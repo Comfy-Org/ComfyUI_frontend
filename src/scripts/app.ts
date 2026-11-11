@@ -836,7 +836,8 @@ export class ComfyApp implements IComfyApp {
       })
       if (precondition) {
         void useAccountPreconditionDialog().open(precondition, {
-          nodeType: detail.node_type
+          nodeType: detail.node_type,
+          runRefused: true
         })
       }
       this.canvas.draw(true, true)
@@ -1304,6 +1305,7 @@ export class ComfyApp implements IComfyApp {
     loaded: LoadedComfyWorkflow | boolean | undefined
     surfaceWarnings?: () => Promise<void>
   }> {
+    if (options.isCurrent?.() === false) return { loaded: false }
     if (!clean && workflow instanceof ComfyWorkflow && !workflow.graph) {
       return { loaded: false }
     }
@@ -1315,7 +1317,8 @@ export class ComfyApp implements IComfyApp {
       deferWarnings = false,
       skipAssetScans = false,
       silentAssetErrors = false,
-      workflowNavigationId
+      workflowNavigationId,
+      isCurrent
     } = options
     const backgroundRestore =
       !clean &&
@@ -1502,6 +1505,21 @@ export class ComfyApp implements IComfyApp {
         return { loaded: false }
       }
 
+      const cancelReplacedLoad = () =>
+        useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          new DOMException('Workflow load was replaced', 'AbortError')
+        )
+      if (isCurrent?.() === false) {
+        ChangeTracker.isLoadingGraph = false
+        await cancelReplacedLoad()
+        void useSubgraphNavigationStore().updateHash(
+          'workflow-load',
+          workflowNavigationId
+        )
+        return { loaded: false }
+      }
+
       const workflowCameraState = graphData.extra?.ds
       const fitView = () => {
         const savedCameraState = normalizeCameraState(workflowCameraState, {
@@ -1648,6 +1666,10 @@ export class ComfyApp implements IComfyApp {
             missingNodeTypes
           )
         )
+        if (isCurrent?.() === false) {
+          await cancelReplacedLoad()
+          return { loaded: false }
+        }
         const configuredGraphData =
           graph.serialize() as unknown as ComfyWorkflowJSON
 
@@ -2058,6 +2080,7 @@ export class ComfyApp implements IComfyApp {
               const opened = await useAccountPreconditionDialog().open(
                 promptPrecondition,
                 {
+                  runRefused: true,
                   creditsLocked: promptErrorHasLockedCredits(
                     error instanceof PromptExecutionError
                       ? error.response.error
