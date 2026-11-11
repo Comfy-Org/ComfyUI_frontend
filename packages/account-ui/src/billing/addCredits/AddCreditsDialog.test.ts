@@ -857,23 +857,20 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     )
   })
 
-  it("says auto top-up didn't turn on when a checked purchase lands without an outcome", async () => {
+  it('a checked purchase that lands without an outcome closes without claiming a failure', async () => {
     const { user, ports, emitted } = renderOffered()
-    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    const setupUrl = vi.fn(() => Promise.resolve(AUTO_TOP_UP_SETUP_URL))
+    ports.autoTopUpSetupUrl = setupUrl
     await user.click(checkbox())
     await user.click(continueButton())
 
     ports.landed?.()
 
+    await vi.waitFor(() => expect(emitted().close).toHaveLength(1))
     expect(
-      await screen.findByRole('heading', { name: "Auto top-up didn't turn on" })
-    ).toBeVisible()
-    expect(
-      screen.getByText(
-        'Your credits were added. Set up auto top-up in Billing to try again.'
-      )
-    ).toBeVisible()
-    expect(emitted().close).toBeUndefined()
+      screen.queryByRole('heading', { name: "Auto top-up didn't turn on" })
+    ).toBeNull()
+    expect(setupUrl).not.toHaveBeenCalled()
   })
 
   it('says auto top-up is on with a Manage link when it already is', () => {
