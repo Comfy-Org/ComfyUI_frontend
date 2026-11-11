@@ -9,7 +9,7 @@ import type { ProxyRequest } from './modelProxy'
 const SECRET = 'sk-or-test-not-a-real-key'
 const config = { apiKey: SECRET, model: 'anthropic/claude-sonnet-5.5' }
 const chat = buildChatBody(
-  { requestId: 'request-1', annotations: [] },
+  { requestId: 'request-1', annotations: [], history: [] },
   textToImageNodes(),
   pointConfig.model
 )

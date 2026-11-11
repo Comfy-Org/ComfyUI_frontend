@@ -81,6 +81,10 @@ interface FailedState {
 export interface GuidingState {
   phase: 'guiding'
   requestId: string
+  /** The turn this guidance answers, when it answers one. */
+  turnId: string | null
+  /** True when an earlier answer is shown again, for reading. */
+  replay: boolean
   steps: GuidanceStep[]
   index: number
   origin: Point
@@ -109,7 +113,18 @@ export type PointEvent =
   | { type: 'draftOpened'; draft: Draft }
   | { type: 'draftClosed' }
   | { type: 'batchSent'; requestId: string; at: number; origin: Point }
-  | { type: 'replyArrived'; requestId: string; steps: GuidanceStep[] }
+  | {
+      type: 'replyArrived'
+      requestId: string
+      turnId: string | null
+      steps: GuidanceStep[]
+    }
+  | {
+      type: 'replayOpened'
+      commentId: string
+      steps: GuidanceStep[]
+      origin: Point
+    }
   | { type: 'requestFailed'; requestId: string; failure: RequestFailure }
   | { type: 'valueChanged' }
   | { type: 'editApplied' }
@@ -156,6 +171,28 @@ function openDraft(state: PointState, draft: Draft): PointState {
     state.phase === 'failed' ||
     (state.phase === 'annotating' && !state.draft)
   return canOpen ? { phase: 'annotating', draft } : state
+}
+
+function openReplay(
+  state: PointState,
+  event: Extract<PointEvent, { type: 'replayOpened' }>
+): PointState {
+  const canOpen =
+    state.phase === 'idle' ||
+    state.phase === 'failed' ||
+    state.phase === 'guiding' ||
+    (state.phase === 'annotating' && !state.draft)
+  if (!canOpen || event.steps.length === 0) return state
+  return {
+    phase: 'guiding',
+    requestId: `replay:${event.commentId}`,
+    turnId: null,
+    replay: true,
+    steps: event.steps,
+    index: 0,
+    origin: event.origin,
+    editFailed: false
+  }
 }
 
 function sendBatch(
@@ -209,6 +246,8 @@ function reduceWaiting(state: WaitingState, event: PointEvent): PointState {
   return {
     phase: 'guiding',
     requestId: event.requestId,
+    turnId: event.turnId,
+    replay: false,
     steps: event.steps,
     index: 0,
     origin: state.origin,
@@ -292,6 +331,8 @@ export function reducePointState(
       return openDraft(state, event.draft)
     case 'batchSent':
       return sendBatch(state, event)
+    case 'replayOpened':
+      return openReplay(state, event)
     default:
       return reducePhase(state, event)
   }

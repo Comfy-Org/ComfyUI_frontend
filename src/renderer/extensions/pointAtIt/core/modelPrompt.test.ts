@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { AGENT_INSTRUCTIONS } from './agentPrompt'
-import type { AgentRequest } from './agentReply'
+import type { AgentRequest, HistoryTurn } from './agentReply'
 import { pointConfig } from './config'
 import { hostNode, textToImageNodes } from './fakePointHost'
-import { buildChatBody, describeWorkflow } from './modelPrompt'
+import { buildChatBody, describeHistory, describeWorkflow } from './modelPrompt'
 import { chatBodySchema } from './modelWire'
 import type { HostNode } from './pointHost'
 
@@ -33,7 +33,8 @@ const request: AgentRequest = {
       comment: 'what is this?',
       targets: [runButton]
     }
-  ]
+  ],
+  history: []
 }
 
 function manyNodes(count: number, description: string): HostNode[] {
@@ -81,6 +82,8 @@ describe('buildChatBody', () => {
           comment: 'what is this?'
         }
       ],
+      earlierTurns: [],
+      earlierTurnsLeftOut: 0,
       workflow: {
         nodes: [
           {
@@ -156,6 +159,86 @@ describe('buildChatBody', () => {
     })
     expect(body.messages[0].content).toBe(AGENT_INSTRUCTIONS)
     expect(chatBodySchema.safeParse(body).success).toBe(true)
+  })
+})
+
+describe('describeHistory', () => {
+  const width = { kind: 'setting' as const, nodeId: '5', setting: 'width' }
+
+  function turn(comment: string, text: string): HistoryTurn {
+    return {
+      comments: [
+        { id: `id-${comment}`, label: 'Save Image', comment, targets: [] }
+      ],
+      answer: [
+        {
+          annotationId: `id-${comment}`,
+          text,
+          target: width,
+          offered: { target: width, value: 1280 },
+          result: 'accepted',
+          valueBefore: 1024
+        }
+      ]
+    }
+  }
+
+  it('TU-04: gives every earlier turn, oldest first, with its comments, answer steps, offers and results', () => {
+    const history = [turn('make this wider', 'Change width to 1280.')]
+
+    expect(describeHistory(history)).toEqual({
+      turns: [
+        {
+          turn: 1,
+          comments: [
+            {
+              id: 'id-make this wider',
+              pinnedOn: [],
+              label: 'Save Image',
+              comment: 'make this wider'
+            }
+          ],
+          answer: history[0].answer
+        }
+      ],
+      leftOut: 0
+    })
+  })
+
+  it('TU-04: reaches the model as earlierTurns next to the current comments', () => {
+    const body = buildChatBody(
+      { ...request, history: [turn('make this wider', 'Change width.')] },
+      nodes,
+      pointConfig.model
+    )
+
+    expect(sent(body)).toMatchObject({
+      comments: [{ id: 'comment-1' }, { id: 'comment-2' }],
+      earlierTurns: [{ turn: 1, comments: [{ comment: 'make this wider' }] }],
+      earlierTurnsLeftOut: 0
+    })
+  })
+
+  it('TU-04: when the history is too long, leaves out the oldest turns and says how many', () => {
+    const history = Array.from({ length: 6 }, (_, index) =>
+      turn(`comment ${index}`, 'x'.repeat(400))
+    )
+
+    const described = describeHistory(history, 1500)
+
+    expect(described).toMatchObject({
+      turns: [{ turn: 5 }, { turn: 6 }],
+      leftOut: 4
+    })
+  })
+
+  it('TU-04: always keeps the newest turn, even when it alone is over the cap', () => {
+    const history = [turn('old', 'x'.repeat(400)), turn('new', 'y'.repeat(400))]
+
+    expect(describeHistory(history, 100)).toMatchObject({
+      turns: [{ turn: 2 }],
+      leftOut: 1
+    })
   })
 })
 

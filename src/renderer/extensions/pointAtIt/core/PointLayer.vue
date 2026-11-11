@@ -1,4 +1,25 @@
 <template>
+  <Teleport :to="slot" :disabled="!isDocked">
+    <div
+      ref="triggerBox"
+      :class="
+        cn(
+          'flex shrink-0 items-center font-inter text-xs text-foreground',
+          !isDocked && 'fixed top-2 right-2 z-tour'
+        )
+      "
+    >
+      <TriggerButton
+        :active="state.phase === 'annotating'"
+        :disabled="!canToggle"
+        :panel-open="panelOpen"
+        :unsent="conversation.unsent.length"
+        :waiting-since="waitingSince"
+        @toggle="session.pressTrigger"
+        @caret="session.pressCaret"
+      />
+    </div>
+  </Teleport>
   <div
     data-point-at-it-layer
     data-testid="point-at-it-layer"
@@ -19,6 +40,7 @@
           (canDraw || isPicking) && 'cursor-crosshair'
         )
       "
+      :style="{ clipPath: clipAround(triggerRect) }"
       @mousedown.prevent
       @pointerdown="onPointerDown"
       @pointermove="onPointerMove"
@@ -69,12 +91,21 @@
     <template v-for="pin in shownPins" :key="pin.id">
       <Button
         v-if="pin.rect"
-        variant="primary"
+        :variant="pin.locked ? 'secondary' : 'primary'"
         size="unset"
-        class="pointer-events-auto absolute size-6 -translate-1/2 rounded-full text-xs shadow-md"
+        :class="
+          cn(
+            'pointer-events-auto absolute size-6 -translate-1/2 rounded-full text-xs shadow-md',
+            pin.locked && 'border border-solid border-border opacity-70'
+          )
+        "
         :style="{ left: `${pin.rect.x}px`, top: `${pin.rect.y}px` }"
-        :disabled="!canEditPins"
-        :aria-label="messages.pinLabel(pin.number, labelOf(pin.id))"
+        :disabled="pin.locked ? !canReplay : !canEditPins"
+        :aria-label="
+          pin.locked
+            ? messages.answeredPinLabel(pin.number, labelOf(pin.id))
+            : messages.pinLabel(pin.number, labelOf(pin.id))
+        "
         @click="session.openPin(pin.id)"
       >
         {{ pin.number }}
@@ -85,6 +116,7 @@
       :key="draftKey"
       :anchor="draftAnchor ?? windowCentre"
       :draft
+      :avoid="panelRect"
       :target-note="draftTargetNote"
       @save="session.saveDraft"
       @remove="session.deleteDraft"
@@ -110,24 +142,53 @@
       :total="state.steps.length"
       :edit-failed="state.editFailed"
       :answers="answeredComment"
+      :replay="state.replay"
+      :avoid="panelRect"
       :view
       @apply-edit="session.applyOfferedEdit"
       @next="session.next"
       @done="session.finish"
       @close="session.dismiss"
     />
-    <AnnotationTray
-      class="pointer-events-auto absolute bottom-4 left-16 w-72"
-      :annotations
+    <Button
+      v-if="stripText"
+      data-testid="point-at-it-strip"
+      variant="base"
+      size="unset"
+      :class="
+        cn(
+          'pointer-events-auto absolute w-80 justify-start gap-2 rounded-lg border border-solid border-border px-2 py-1 text-left text-xs shadow-md',
+          state.phase === 'failed'
+            ? 'text-destructive'
+            : 'text-muted-foreground'
+        )
+      "
+      :style="{ left: `${panelPlace.x}px`, top: `${panelPlace.y}px` }"
+      :aria-label="messages.showPanel"
+      @click="session.openPanel"
+    >
+      <span role="status" class="truncate">{{ stripText }}</span>
+    </Button>
+    <CommentPanel
+      v-if="panelOpen"
+      ref="panel"
+      class="pointer-events-auto absolute w-80"
+      :style="{
+        left: `${panelPlace.x}px`,
+        top: `${panelPlace.y}px`,
+        maxHeight: `${panelPlace.maxHeight}px`
+      }"
+      :conversation
       :pins
       :thinking
       :phase="state.phase"
-      :waiting-since="state.phase === 'waiting' ? state.startedAt : null"
+      :waiting-since="waitingSince"
       :failure="state.phase === 'failed' ? state.failure : null"
-      @toggle="session.toggleAnnotate"
+      @collapse="session.collapsePanel"
       @open="session.openPin"
       @send="session.sendBatch"
-      @clear="session.clearAnnotations"
+      @clear="session.clearUnsent"
+      @start-over="session.startOver"
       @cancel="session.dismiss"
       @retry="session.retry"
     />
@@ -135,21 +196,32 @@
 </template>
 
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core'
-import { computed } from 'vue'
+import { useElementSize, useRafFn, useWindowSize } from '@vueuse/core'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  shallowRef,
+  useTemplateRef,
+  watch
+} from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import AnnotationTray from './AnnotationTray.vue'
 import AskBox from './AskBox.vue'
 import CommentBox from './CommentBox.vue'
+import CommentPanel from './CommentPanel.vue'
 import type { PointConfig } from './config'
+import { keepDocked } from './dockSlot'
+import { clipAround, placePanel } from './geometry'
 import type { Rect } from './geometry'
 import GuidanceOverlay from './GuidanceOverlay.vue'
-import { messages } from './messages'
+import { describeFailure, messages } from './messages'
 import type { PointHost } from './pointHost'
 import { addressKey } from './targetAddress'
+import TriggerButton from './TriggerButton.vue'
+import { numberedComments } from './turns'
 import { usePointSession } from './usePointSession'
 
 const { host, config } = defineProps<{
@@ -157,9 +229,35 @@ const { host, config } = defineProps<{
   config: PointConfig
 }>()
 
+const PANEL_WIDTH = 320
+const STRIP_TAIL_CHARS = 60
+const LAYER_ATTRIBUTE = 'data-point-at-it-layer'
+
 const session = usePointSession(host, { config })
-const { state, annotations, thinking, view, pins, hover, draftAnchor } = session
+const {
+  state,
+  conversation,
+  thinking,
+  view,
+  pins,
+  hover,
+  draftAnchor,
+  panelOpen
+} = session
+const comments = computed(() => numberedComments(conversation.value))
 const windowSize = useWindowSize()
+
+const slot = document.createElement('div')
+slot.setAttribute(LAYER_ATTRIBUTE, '')
+slot.className = 'flex shrink-0 items-center'
+const isDocked = shallowRef(false)
+const triggerBox = useTemplateRef('triggerBox')
+const triggerRect = shallowRef<Rect | null>(null)
+const canvasRect = shallowRef<Rect>({ x: 0, y: 0, width: 0, height: 0 })
+const panel = useTemplateRef('panel')
+const panelSize = useElementSize(() => panel.value?.$el, undefined, {
+  box: 'border-box'
+})
 
 const canDraw = computed(
   () => state.value.phase === 'armed' || state.value.phase === 'marking'
@@ -176,6 +274,98 @@ const blocksPage = computed(
     state.value.phase === 'asking' ||
     state.value.phase === 'annotating'
 )
+const waitingSince = computed(() =>
+  state.value.phase === 'waiting' ? state.value.startedAt : null
+)
+const canToggle = computed(
+  () =>
+    state.value.phase === 'idle' ||
+    state.value.phase === 'annotating' ||
+    state.value.phase === 'failed' ||
+    state.value.phase === 'guiding'
+)
+const panelPlace = computed(() =>
+  placePanel(
+    triggerRect.value ?? {
+      x: windowSize.width.value - PANEL_WIDTH,
+      y: 0,
+      width: PANEL_WIDTH,
+      height: 40
+    },
+    PANEL_WIDTH,
+    canvasRect.value,
+    { width: windowSize.width.value, height: windowSize.height.value }
+  )
+)
+const panelRect = computed<Rect | null>(() =>
+  panelOpen.value
+    ? {
+        x: panelPlace.value.x,
+        y: panelPlace.value.y,
+        width: PANEL_WIDTH,
+        height: panelSize.height.value
+      }
+    : null
+)
+const stripText = computed(() => {
+  if (panelOpen.value) return ''
+  if (state.value.phase === 'failed')
+    return describeFailure(state.value.failure)
+  if (state.value.phase !== 'waiting') return ''
+  const tail = thinking.value?.text.trim().slice(-STRIP_TAIL_CHARS) ?? ''
+  return tail ? `${messages.thinking} · …${tail}` : messages.askWaiting
+})
+const needsMeasuring = computed(
+  () => panelOpen.value || stripText.value !== '' || blocksPage.value
+)
+
+function sameRect(a: Rect | null, b: Rect): boolean {
+  return (
+    a !== null &&
+    a.x === b.x &&
+    a.y === b.y &&
+    a.width === b.width &&
+    a.height === b.height
+  )
+}
+
+function measure(): void {
+  const box = triggerBox.value?.getBoundingClientRect()
+  if (box) {
+    const rect = {
+      x: box.left,
+      y: box.top,
+      width: box.width,
+      height: box.height
+    }
+    if (!sameRect(triggerRect.value, rect)) triggerRect.value = rect
+  }
+  const canvas = host.viewport()
+  if (!sameRect(canvasRect.value, canvas)) canvasRect.value = canvas
+}
+
+const measuring = useRafFn(measure, { immediate: false })
+watch(
+  needsMeasuring,
+  (needed) => {
+    if (needed) measuring.resume()
+    else measuring.pause()
+  },
+  { immediate: true }
+)
+
+let undock: (() => void) | undefined
+onMounted(() => {
+  undock = keepDocked(
+    slot,
+    () => host.topBarPlace(slot),
+    (docked) => {
+      isDocked.value = docked
+    }
+  )
+})
+onBeforeUnmount(() => undock?.())
+
 const canEditPins = computed(
   () =>
     state.value.phase === 'idle' ||
@@ -211,22 +401,32 @@ const answeredId = computed(() =>
     : null
 )
 const shownPins = computed(() =>
-  pins.value.filter((pin) => pin.id !== answeredId.value)
+  pins.value.filter(
+    (pin) =>
+      pin.id !== answeredId.value && (!pin.locked || config.showEarlierPins)
+  )
+)
+const canReplay = computed(
+  () =>
+    state.value.phase === 'idle' ||
+    state.value.phase === 'failed' ||
+    state.value.phase === 'guiding' ||
+    isPicking.value
 )
 const answeredComment = computed(() => {
   const annotationId = answeredId.value
-  const index = annotations.value.findIndex(
-    (annotation) => annotation.id === annotationId
+  const answered = comments.value.find(
+    (comment) => comment.annotation.id === annotationId
   )
-  return index < 0
-    ? null
-    : { number: index + 1, label: annotations.value[index].label }
+  return answered
+    ? { number: answered.number, label: answered.annotation.label }
+    : null
 })
 
 function labelOf(annotationId: string): string {
   return (
-    annotations.value.find((annotation) => annotation.id === annotationId)
-      ?.label ?? ''
+    comments.value.find((comment) => comment.annotation.id === annotationId)
+      ?.annotation.label ?? ''
   )
 }
 

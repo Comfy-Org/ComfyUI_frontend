@@ -30,6 +30,10 @@ export interface PointConfig {
   }
   /** The hidden hold-and-drag entry; `?pointAtItStroke=on` also turns it on. */
   strokeEntry: boolean
+  /** Whether the pins of answered turns stay on the canvas, dimmed. */
+  showEarlierPins: boolean
+  /** What Clear removes: the comments not sent yet, or every turn as well. */
+  clearRemoves: 'unsent' | 'everything'
 }
 
 /**
@@ -46,5 +50,7 @@ export const pointConfig: PointConfig = {
     replyTokens: 4096,
     silenceTimeoutMs: 60_000
   },
-  strokeEntry: false
+  strokeEntry: false,
+  showEarlierPins: true,
+  clearRemoves: 'unsent'
 }

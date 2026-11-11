@@ -29,7 +29,8 @@ const request: AgentRequest = {
       comment: 'what is this?',
       targets: [{ kind: 'setting', nodeId: nodes[0].id, setting: 'steps' }]
     }
-  ]
+  ],
+  history: []
 }
 
 function readInPieces(stream: string, pieceSize: number): StreamProgress {

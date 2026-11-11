@@ -18,7 +18,8 @@ const request: AgentRequest = {
       comment: 'make this wider',
       targets: [{ kind: 'node', nodeId: nodes[2].id }]
     }
-  ]
+  ],
+  history: []
 }
 
 function streamOf(pieces: string[]): ReadableStream<Uint8Array> {

@@ -1,11 +1,9 @@
 import { useEventListener, useRafFn } from '@vueuse/core'
-import { onScopeDispose, shallowRef } from 'vue'
+import { computed, onScopeDispose, shallowRef } from 'vue'
 
 import { modelBackend, scriptedBackend } from './agentBackends'
 import type { AgentBackend } from './agentBackends'
-import type { AgentRequest, AnnotationNote } from './agentReply'
-import { reduceAnnotations } from './annotationList'
-import type { Annotation, AnnotationEvent } from './annotationList'
+import type { AgentRequest } from './agentReply'
 import { pointConfig } from './config'
 import type { PointConfig } from './config'
 import {
@@ -18,7 +16,7 @@ import {
 import type { Point, Rect } from './geometry'
 import { draftForSelection, matchMark, targetAtPoint } from './markMatching'
 import type { PickedTarget } from './markMatching'
-import { MARK_KEY } from './messages'
+import { MARK_KEY, messages } from './messages'
 import {
   describeElement,
   findElement,
@@ -28,19 +26,31 @@ import {
   topElementAt,
   visibleRect
 } from './pageElements'
+import { reducePanel } from './panelState'
+import type { PanelEvent, PanelState } from './panelState'
 import type { HostNode, PointHost, TargetReading } from './pointHost'
 import { idleState, reducePointState } from './pointState'
 import type { Draft, GuidingState, PointEvent, PointState } from './pointState'
 import { checkReply } from './replyValidation'
-import type { StepWait } from './replyValidation'
+import type { GuidanceStep, StepWait } from './replyValidation'
 import type {
   AnnotationTarget,
   ElementAddress,
+  SettingValue,
   TargetAddress
 } from './targetAddress'
 import { isTextEntry } from './textEntry'
 import { reduceThinking } from './thinkingLog'
 import type { ThinkingEvent, ThinkingLog } from './thinkingLog'
+import {
+  emptyConversation,
+  historyOf,
+  noteOf,
+  numberedComments,
+  reduceConversation,
+  replaySteps
+} from './turns'
+import type { Conversation, ConversationEvent } from './turns'
 import { hasSettled, observeValue, startWatch } from './valueWatch'
 import type { ValueWatch } from './valueWatch'
 
@@ -67,6 +77,8 @@ export interface PinView {
   number: number
   rect: Rect | null
   missing: boolean
+  /** True for a comment of an answered turn: it replays its answer. */
+  locked: boolean
 }
 
 interface StepRun {
@@ -121,22 +133,15 @@ function isInLayer(target: EventTarget | null): boolean {
   return target instanceof Element && isOwnElement(target)
 }
 
-function noteOf(annotation: Annotation): AnnotationNote {
-  return {
-    id: annotation.id,
-    label: annotation.label,
-    comment: annotation.comment,
-    targets: annotation.targets
-  }
-}
-
 /** Owns the layer's states and every command that changes them. */
 export function usePointSession(host: PointHost, options: SessionOptions = {}) {
   const config = options.config ?? pointConfig
   const elementAt = options.elementAt ?? topElementAt
   const state = shallowRef<PointState>(idleState)
-  const annotations = shallowRef<readonly Annotation[]>([])
+  const conversation = shallowRef<Conversation>(emptyConversation)
   const thinking = shallowRef<ThinkingLog | null>(null)
+  const panelState = shallowRef<PanelState>('closed')
+  const panelOpen = computed(() => panelState.value === 'open')
   const view = shallowRef<GuidanceView | null>(null)
   const pins = shallowRef<PinView[]>([])
   const hover = shallowRef<PickedTarget | null>(null)
@@ -222,13 +227,28 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     const needed =
       phase === 'guiding' ||
       phase === 'annotating' ||
-      annotations.value.length > 0
+      conversation.value.turns.length > 0 ||
+      conversation.value.unsent.length > 0
     if (needed) frames.resume()
     else frames.pause()
   }
 
   function think(event: ThinkingEvent): void {
     thinking.value = reduceThinking(thinking.value, event)
+  }
+
+  function panel(event: PanelEvent): void {
+    panelState.value = reducePanel(panelState.value, event)
+  }
+
+  function hasSomethingToShow(): boolean {
+    const { turns, unsent } = conversation.value
+    return (
+      state.value.phase !== 'idle' ||
+      turns.length > 0 ||
+      unsent.length > 0 ||
+      thinking.value !== null
+    )
   }
 
   function send(event: PointEvent): void {
@@ -238,6 +258,8 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     if (next === previous) return
     state.value = next
     if (previous.phase === 'waiting') inFlight?.abort()
+    if (previous.phase === 'annotating' && next.phase !== 'annotating')
+      panel({ type: 'modeLeft', hasContent: hasSomethingToShow() })
     if (previous.phase === 'waiting' && next.phase === 'idle')
       think({ type: 'cleared' })
     if (next.phase === 'annotating') {
@@ -249,14 +271,18 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     if (next.phase !== 'guiding') {
       stepRun = null
       view.value = null
-    } else if (previous.phase !== 'guiding' || previous.index !== next.index) {
+    } else if (
+      previous.phase !== 'guiding' ||
+      previous.index !== next.index ||
+      previous.requestId !== next.requestId
+    ) {
       beginStep(next)
     }
     syncFrames()
   }
 
-  function change(event: AnnotationEvent): void {
-    annotations.value = reduceAnnotations(annotations.value, event)
+  function converse(event: ConversationEvent): void {
+    conversation.value = reduceConversation(conversation.value, event)
     refreshPins()
     syncFrames()
   }
@@ -299,6 +325,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
       return
     }
     if (outcome === 'settled') {
+      recordResult(guiding, 'changed', stepRun.watch?.baseline)
       send({ type: 'valueChanged' })
       return
     }
@@ -313,13 +340,31 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
   }
 
   function refreshPins(): void {
-    const next = annotations.value.map((annotation, index) => ({
-      id: annotation.id,
-      number: index + 1,
-      rect: rectOf(annotation.targets),
-      missing: annotation.targets.every((target) => read(target) === null)
-    }))
+    const next = numberedComments(conversation.value).map(
+      ({ annotation, number, turn }) => ({
+        id: annotation.id,
+        number,
+        rect: rectOf(annotation.targets),
+        missing: annotation.targets.every((target) => read(target) === null),
+        locked: turn !== null
+      })
+    )
     if (!sameJson(pins.value, next)) pins.value = next
+  }
+
+  function recordResult(
+    guiding: GuidingState,
+    result: 'accepted' | 'changed',
+    valueBefore: SettingValue | undefined
+  ): void {
+    if (!guiding.turnId) return
+    converse({
+      type: 'actedOn',
+      turnId: guiding.turnId,
+      stepIndex: guiding.index,
+      result,
+      valueBefore: valueBefore ?? null
+    })
   }
 
   function freshScene(now: number): HostNode[] {
@@ -398,6 +443,25 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
       type: 'annotateToggled',
       selection: entering ? readSelectionDraft() : null
     })
+  }
+
+  function pressTrigger(): void {
+    const wasOff = state.value.phase !== 'annotating'
+    toggleAnnotate()
+    if (wasOff && state.value.phase === 'annotating')
+      panel({ type: 'modeEnteredFromTrigger' })
+  }
+
+  function pressCaret(): void {
+    panel({ type: 'caretPressed' })
+  }
+
+  function collapsePanel(): void {
+    panel({ type: 'collapsePressed' })
+  }
+
+  function openPanel(): void {
+    panel({ type: 'stripPressed' })
   }
 
   function onKeyDown(event: KeyboardEvent): void {
@@ -524,11 +588,33 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     sceneAt = Number.NEGATIVE_INFINITY
   }
 
-  function openPin(annotationId: string): void {
-    const annotation = annotations.value.find(
-      (candidate) => candidate.id === annotationId
+  function withGoneTargetsSaid(steps: GuidanceStep[]): GuidanceStep[] {
+    return steps.map((step) =>
+      step.target && read(step.target) === null
+        ? {
+            ...step,
+            target: null,
+            problems: [...step.problems, messages.replayTargetGone]
+          }
+        : step
     )
-    if (!annotation) return
+  }
+
+  function openPin(annotationId: string): void {
+    const comment = numberedComments(conversation.value).find(
+      (candidate) => candidate.annotation.id === annotationId
+    )
+    if (!comment) return
+    const { annotation, turn } = comment
+    if (turn) {
+      send({
+        type: 'replayOpened',
+        commentId: annotationId,
+        steps: withGoneTargetsSaid(replaySteps(turn, annotationId)),
+        origin: pinPoint(annotationId) ?? rectCenter(host.viewport())
+      })
+      return
+    }
     const before = state.value
     send({
       type: 'draftOpened',
@@ -547,7 +633,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     if (annotating.phase !== 'annotating' || !annotating.draft) return
     if (!comment.trim()) return
     const { annotationId, targets, label } = annotating.draft
-    change({
+    converse({
       type: 'saved',
       id: annotationId ?? nextId('comment'),
       targets,
@@ -561,23 +647,40 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     const annotating = state.value
     if (annotating.phase !== 'annotating' || !annotating.draft) return
     const { annotationId } = annotating.draft
-    if (annotationId) change({ type: 'removed', id: annotationId })
+    if (annotationId) converse({ type: 'removed', id: annotationId })
     send({ type: 'draftClosed' })
   }
 
-  function clearAnnotations(): void {
-    const { phase } = state.value
-    if (phase === 'waiting' || phase === 'guiding') return
-    change({ type: 'cleared' })
+  function startOver(): void {
+    if (state.value.phase === 'waiting') return
+    send({ type: 'dismissed' })
+    converse({ type: 'startedOver' })
     think({ type: 'cleared' })
     elements.clear()
     elementSearchedAt.clear()
   }
 
+  function clearUnsent(): void {
+    const { phase } = state.value
+    if (phase === 'waiting' || phase === 'guiding') return
+    if (config.clearRemoves === 'everything') startOver()
+    else converse({ type: 'unsentCleared' })
+  }
+
   function deliver(request: AgentRequest, reply: unknown): void {
     const { requestId } = request
     const steps = checkReply(reply, request, host.readNodes())
-    if (steps) send({ type: 'replyArrived', requestId, steps })
+    const isWaitedFor =
+      state.value.phase === 'waiting' && state.value.requestId === requestId
+    const turnId = request === askedRequest ? null : nextId('turn')
+    if (steps && isWaitedFor && turnId)
+      converse({
+        type: 'answered',
+        turnId,
+        steps,
+        thinking: thinking.value?.text ?? ''
+      })
+    if (steps) send({ type: 'replyArrived', requestId, turnId, steps })
     else
       send({
         type: 'requestFailed',
@@ -608,10 +711,11 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     const { phase } = state.value
     const canSend =
       phase === 'idle' || phase === 'annotating' || phase === 'failed'
-    if (!canSend || annotations.value.length === 0) return
+    if (!canSend || conversation.value.unsent.length === 0) return
     const request: AgentRequest = {
       requestId: nextId('request'),
-      annotations: annotations.value.map(noteOf)
+      annotations: conversation.value.unsent.map(noteOf),
+      history: historyOf(conversation.value)
     }
     askedRequest = null
     send({
@@ -637,7 +741,8 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
             chip.target.kind === 'control' ? [] : [chip.target]
           )
         }
-      ]
+      ],
+      history: historyOf(conversation.value)
     }
     askedRequest = request
     send({
@@ -657,6 +762,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
       return
     }
     const request = { ...askedRequest, requestId: nextId('request') }
+    askedRequest = request
     send({
       type: 'batchSent',
       requestId: request.requestId,
@@ -671,9 +777,10 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     if (guiding.phase !== 'guiding') return
     const edit = guiding.steps[guiding.index].offerEdit
     if (!edit) return
-    send({
-      type: host.write(edit.target, edit.value) ? 'editApplied' : 'editFailed'
-    })
+    const valueBefore = host.readTarget(edit.target)?.value
+    const written = host.write(edit.target, edit.value)
+    if (written) recordResult(guiding, 'accepted', valueBefore)
+    send({ type: written ? 'editApplied' : 'editFailed' })
   }
 
   function removeChip(chipId: string): void {
@@ -715,12 +822,17 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
 
   return {
     state,
-    annotations,
+    conversation,
     thinking,
     view,
     pins,
     hover,
     draftAnchor,
+    panelOpen,
+    pressTrigger,
+    pressCaret,
+    collapsePanel,
+    openPanel,
     toggleAnnotate,
     pressPointer,
     movePointer,
@@ -731,7 +843,8 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     openPin,
     saveDraft,
     deleteDraft,
-    clearAnnotations,
+    clearUnsent,
+    startOver,
     sendBatch,
     ask,
     retry,

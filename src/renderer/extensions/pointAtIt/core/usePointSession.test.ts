@@ -2,11 +2,12 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import type { AgentBackend } from './agentBackends'
+import type { AgentRequest } from './agentReply'
 import { pointConfig } from './config'
 import type { PointConfig } from './config'
 import { createFakePointHost, settingAddress } from './fakePointHost'
 import type { Point } from './geometry'
-import { MARK_KEY, problems } from './messages'
+import { MARK_KEY, messages, problems } from './messages'
 import type { AgentOutcome } from './modelReply'
 import { SURFACE_ATTRIBUTE, usePointSession } from './usePointSession'
 import { SETTLE_MS } from './valueWatch'
@@ -42,13 +43,14 @@ function startSession(setup: SessionSetup = {}) {
 
 function fakeModel() {
   const calls: {
+    request: AgentRequest
     signal: AbortSignal
     think: (text: string) => void
     answer: (outcome: AgentOutcome) => void
   }[] = []
   const backend: AgentBackend = {
-    ask(_request, _nodes, { signal, onThinking, onOutcome }) {
-      calls.push({ signal, think: onThinking, answer: onOutcome })
+    ask(request, _nodes, { signal, onThinking, onOutcome }) {
+      calls.push({ request, signal, think: onThinking, answer: onOutcome })
     }
   }
   return { backend, calls }
@@ -209,7 +211,7 @@ describe('usePointSession: annotation mode', () => {
     comment(session, SAVE_NODE, 'what is this?')
 
     expect(session.state.value).toEqual({ phase: 'annotating', draft: null })
-    expect(session.annotations.value).toMatchObject([
+    expect(session.conversation.value.unsent).toMatchObject([
       {
         targets: [settingAddress(host.nodes[1].id, 'width')],
         label: 'Empty Latent Image › width',
@@ -228,7 +230,7 @@ describe('usePointSession: annotation mode', () => {
 
     comment(session, WIDTH_ROW, '   ')
 
-    expect(session.annotations.value).toEqual([])
+    expect(session.conversation.value.unsent).toEqual([])
     expect(session.state.value).toMatchObject({
       draft: { label: 'Empty Latent Image › width' }
     })
@@ -245,7 +247,7 @@ describe('usePointSession: annotation mode', () => {
     press('Escape')
     expect(session.state.value.phase).toBe('idle')
     expect(first.defaultPrevented).toBe(true)
-    expect(session.annotations.value).toHaveLength(1)
+    expect(session.conversation.value.unsent).toHaveLength(1)
     expect(press('Escape').defaultPrevented).toBe(false)
   })
 
@@ -254,7 +256,7 @@ describe('usePointSession: annotation mode', () => {
     comment(session, WIDTH_ROW, 'make this wider')
     comment(session, SAVE_NODE, 'what is this?')
     session.toggleAnnotate()
-    const [first, second] = session.annotations.value
+    const [first, second] = session.conversation.value.unsent
 
     session.openPin(second.id)
     expect(session.state.value).toMatchObject({
@@ -266,7 +268,7 @@ describe('usePointSession: annotation mode', () => {
     session.openPin(first.id)
     session.deleteDraft()
 
-    expect(session.annotations.value).toMatchObject([
+    expect(session.conversation.value.unsent).toMatchObject([
       { id: second.id, comment: 'what does this do?' }
     ])
     expect(session.pins.value).toMatchObject([{ id: second.id, number: 1 }])
@@ -279,7 +281,7 @@ describe('usePointSession: annotation mode', () => {
     tap(MARK_KEY)
     session.saveDraft('why are these connected?')
 
-    expect(session.annotations.value).toMatchObject([
+    expect(session.conversation.value.unsent).toMatchObject([
       {
         targets: [
           { kind: 'node', nodeId: host.nodes[1].id },
@@ -313,7 +315,7 @@ describe('usePointSession: annotation mode', () => {
     const { host, session } = startSession()
     comment(session, SAVE_NODE, 'make this wider')
     comment(session, WIDTH_ROW, 'what is this?')
-    const [first, second] = session.annotations.value
+    const [first, second] = session.conversation.value.unsent
 
     session.sendBatch()
     expect(session.state.value).toMatchObject({ phase: 'waiting', asked: null })
@@ -343,13 +345,13 @@ describe('usePointSession: annotation mode', () => {
     expect(session.state.value.phase).toBe('annotating')
   })
 
-  it('AN-14: Clear removes every comment and pin', () => {
+  it('TU-07: Clear removes the unsent comments and their pins', () => {
     const { session } = startSession()
     comment(session, WIDTH_ROW, 'make this wider')
 
-    session.clearAnnotations()
+    session.clearUnsent()
 
-    expect(session.annotations.value).toEqual([])
+    expect(session.conversation.value.unsent).toEqual([])
     expect(session.pins.value).toEqual([])
   })
 
@@ -359,25 +361,33 @@ describe('usePointSession: annotation mode', () => {
     session.sendBatch()
 
     session.toggleAnnotate()
-    session.clearAnnotations()
-    session.openPin(session.annotations.value[0].id)
+    session.clearUnsent()
+    session.openPin(session.conversation.value.unsent[0].id)
     expect(session.state.value.phase).toBe('waiting')
 
     session.dismiss()
     vi.advanceTimersByTime(2000)
 
     expect(session.state.value.phase).toBe('idle')
-    expect(session.annotations.value).toHaveLength(1)
+    expect(session.conversation.value.unsent).toHaveLength(1)
   })
 
-  it('AN-17: when guidance ends the comments are still there to send again', () => {
+  it('TU-01: once answered, the comments are locked into a turn and cannot be sent or edited again', () => {
     const { session } = startGuidance('what is this?')
+    const [turn] = session.conversation.value.turns
 
     session.finish()
     session.sendBatch()
+    session.openPin(turn.comments[0].id)
 
-    expect(session.annotations.value).toHaveLength(1)
-    expect(session.state.value.phase).toBe('waiting')
+    expect(session.conversation.value).toMatchObject({
+      turns: [{ comments: [{ comment: 'what is this?' }] }],
+      unsent: []
+    })
+    expect(session.state.value).toMatchObject({
+      phase: 'guiding',
+      replay: true
+    })
   })
 
   it('L-02: a step whose node was deleted while waiting is shown without a target and says so', () => {
@@ -408,7 +418,7 @@ describe('usePointSession: showing what a comment points to', () => {
     const { host, session } = startSession()
     comment(session, WIDTH_ROW, 'make this wider')
 
-    session.openPin(session.annotations.value[0].id)
+    session.openPin(session.conversation.value.unsent[0].id)
 
     expect(session.draftAnchor.value).toEqual({
       x: 260,
@@ -424,7 +434,7 @@ describe('usePointSession: showing what a comment points to', () => {
     comment(session, WIDTH_ROW, 'make this wider')
     host.nodes[1].settings[0].rect = { x: 3000, y: 384, width: 180, height: 18 }
 
-    session.openPin(session.annotations.value[0].id)
+    session.openPin(session.conversation.value.unsent[0].id)
 
     expect(host.revealed).toEqual([settingAddress(host.nodes[1].id, 'width')])
   })
@@ -434,7 +444,7 @@ describe('usePointSession: showing what a comment points to', () => {
     comment(session, WIDTH_ROW, 'make this wider')
     host.removeNode(host.nodes[1].id)
 
-    session.openPin(session.annotations.value[0].id)
+    session.openPin(session.conversation.value.unsent[0].id)
     vi.advanceTimersByTime(FRAME_MS)
 
     expect(session.state.value).toMatchObject({
@@ -649,18 +659,22 @@ describe('usePointSession: the real model', () => {
     expect(session.state.value).toMatchObject({ phase: 'guiding', index: 0 })
   })
 
-  it('T-03: the thinking stays after the reply and goes with Clear', () => {
+  it('T-03, TU-10: the thinking stays with its turn through Clear and goes with Start over', () => {
     const { session, calls } = startWithModel()
     calls[0].think('Checking the width.')
     calls[0].answer({ kind: 'reply', reply })
     session.finish()
+    session.clearUnsent()
 
     expect(session.thinking.value).toMatchObject({
       text: 'Checking the width.',
       done: true
     })
+    expect(session.conversation.value.turns).toMatchObject([
+      { thinking: 'Checking the width.' }
+    ])
 
-    session.clearAnnotations()
+    session.startOver()
     expect(session.thinking.value).toBeNull()
   })
 
@@ -711,7 +725,7 @@ describe('usePointSession: the real model', () => {
       calls[0].answer(outcome)
 
       expect(session.state.value.phase).toBe('failed')
-      expect(session.annotations.value).toHaveLength(1)
+      expect(session.conversation.value.unsent).toHaveLength(1)
 
       session.retry()
 
@@ -730,7 +744,264 @@ describe('usePointSession: the real model', () => {
     expect(calls[0].signal.aborted).toBe(true)
     expect(session.state.value.phase).toBe('idle')
     expect(session.thinking.value).toBeNull()
-    expect(session.annotations.value).toHaveLength(1)
+    expect(session.conversation.value.unsent).toHaveLength(1)
+  })
+})
+
+describe('usePointSession: turns', () => {
+  const WIDER = 'how do I make this wider?'
+
+  function answeredTurn(host = createFakePointHost()) {
+    const started = startGuidance(WIDER, host)
+    const width = settingAddress(started.host.nodes[1].id, 'width')
+    return { ...started, width }
+  }
+
+  it('TU-02, TU-03: the next comment starts the next turn; earlier pins stay, marked as locked, and numbers continue', () => {
+    const { session } = answeredTurn()
+    session.finish()
+
+    comment(session, WIDTH_ROW, 'a bit more than that')
+
+    expect(session.conversation.value).toMatchObject({
+      turns: [{ comments: [{ comment: WIDER }] }],
+      unsent: [{ comment: 'a bit more than that' }]
+    })
+    expect(session.pins.value).toMatchObject([
+      { number: 1, locked: true, rect: { x: 700, y: 295 } },
+      { number: 2, locked: false, rect: { x: 260, y: 384 } }
+    ])
+  })
+
+  it('TU-04, TU-05: the second Send carries only the new comment, with the first turn as history and what the person did', () => {
+    const model = fakeModel()
+    const { host, session } = startSession({
+      config: { agent: 'model' },
+      model: model.backend
+    })
+    const width = settingAddress(host.nodes[1].id, 'width')
+    comment(session, SAVE_NODE, WIDER)
+    session.sendBatch()
+    model.calls[0].answer({
+      kind: 'reply',
+      reply: {
+        steps: [
+          {
+            annotationId: session.conversation.value.unsent[0].id,
+            text: 'Change width to 1280.',
+            target: width,
+            waitFor: { for: 'valueChange', of: width, direction: 'increase' },
+            offerEdit: { target: width, value: 1280 }
+          }
+        ]
+      }
+    })
+    session.applyOfferedEdit()
+
+    comment(session, WIDTH_ROW, 'a bit more than that')
+    session.sendBatch()
+
+    expect(model.calls[1].request).toMatchObject({
+      annotations: [{ comment: 'a bit more than that' }],
+      history: [
+        {
+          comments: [{ comment: WIDER }],
+          answer: [
+            {
+              text: 'Change width to 1280.',
+              target: width,
+              offered: { target: width, value: 1280 },
+              result: 'accepted',
+              valueBefore: 1024
+            }
+          ]
+        }
+      ]
+    })
+    expect(model.calls[1].request.annotations).toHaveLength(1)
+  })
+
+  it('TU-05: records that the person changed the value themselves, and from what', () => {
+    const { host, session, width } = answeredTurn()
+
+    host.setValue(width, 1280)
+    vi.advanceTimersByTime(SETTLE_MS + FRAME_MS * 4)
+
+    expect(session.conversation.value.turns[0].steps[0]).toMatchObject({
+      result: 'changed',
+      valueBefore: 1024
+    })
+  })
+
+  it('TU-06: a locked comment shows its answer again for reading, bringing the target into view', () => {
+    const { host, session, width } = answeredTurn()
+    session.finish()
+    host.nodes[1].settings[0].rect = { x: 3000, y: 384, width: 180, height: 18 }
+
+    session.openPin(session.conversation.value.turns[0].comments[0].id)
+    host.setValue(width, 2048)
+    vi.advanceTimersByTime(SETTLE_MS + FRAME_MS * 4)
+
+    expect(session.state.value).toMatchObject({
+      phase: 'guiding',
+      replay: true,
+      index: 0,
+      steps: [{ target: width, waitFor: null, offerEdit: null }]
+    })
+    expect(host.revealed).toEqual([width])
+    expect(session.conversation.value.turns[0].steps[0].result).toBeNull()
+  })
+
+  it('TU-06: says so when what the earlier answer pointed at is gone', () => {
+    const { host, session } = answeredTurn()
+    session.finish()
+    host.removeNode(host.nodes[1].id)
+
+    session.openPin(session.conversation.value.turns[0].comments[0].id)
+
+    expect(session.state.value).toMatchObject({
+      replay: true,
+      steps: [{ target: null, problems: [messages.replayTargetGone] }]
+    })
+  })
+
+  it('TU-07, TU-08: Clear keeps earlier turns; Start over removes everything', () => {
+    const { session } = answeredTurn()
+    session.finish()
+    comment(session, WIDTH_ROW, 'a bit more than that')
+
+    session.clearUnsent()
+    expect(session.conversation.value).toMatchObject({
+      turns: [{ comments: [{ comment: WIDER }] }],
+      unsent: []
+    })
+    expect(session.pins.value).toHaveLength(1)
+
+    session.startOver()
+    expect(session.conversation.value).toEqual({ turns: [], unsent: [] })
+    expect(session.pins.value).toEqual([])
+  })
+
+  it('TU-09: a failed Send leaves the turn open and its comments editable', () => {
+    const model = fakeModel()
+    const { session } = startSession({
+      config: { agent: 'model' },
+      model: model.backend
+    })
+    comment(session, SAVE_NODE, WIDER)
+    session.sendBatch()
+
+    model.calls[0].answer({
+      kind: 'failure',
+      failure: { kind: 'proxyDown', detail: '' }
+    })
+    session.openPin(session.conversation.value.unsent[0].id)
+    session.saveDraft('make this taller')
+
+    expect(session.conversation.value).toMatchObject({
+      turns: [],
+      unsent: [{ comment: 'make this taller' }]
+    })
+  })
+
+  it('TU-11: the scripted agent answers a second turn', () => {
+    const { session } = answeredTurn()
+    session.finish()
+    comment(session, WIDTH_ROW, 'what is this?')
+
+    session.sendBatch()
+    vi.advanceTimersByTime(FRAME_MS)
+
+    expect(session.conversation.value.turns).toHaveLength(2)
+    expect(session.state.value).toMatchObject({
+      phase: 'guiding',
+      replay: false,
+      steps: [
+        { annotationId: session.conversation.value.turns[1].comments[0].id }
+      ]
+    })
+  })
+})
+
+describe('usePointSession: the trigger and its panel', () => {
+  it('P-04, P-05: the trigger turns the mode on and opens the panel; turning it off with nothing to show closes the panel', () => {
+    const { session } = startSession()
+
+    session.pressTrigger()
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'annotating',
+      true
+    ])
+
+    session.pressTrigger()
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'idle',
+      false
+    ])
+  })
+
+  it('P-05: leaving the mode keeps the panel while there are comments to show', () => {
+    const { session } = startSession()
+    session.pressTrigger()
+    comment(session, WIDTH_ROW, 'make this wider')
+
+    press('Escape')
+
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'idle',
+      true
+    ])
+  })
+
+  it('P-06, P-08: the caret and the collapse control change the panel and never the mode', () => {
+    const { session } = startSession()
+
+    session.pressCaret()
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'idle',
+      true
+    ])
+
+    session.pressTrigger()
+    session.collapsePanel()
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'annotating',
+      false
+    ])
+  })
+
+  it('P-07: the key turns the mode on and leaves a closed panel closed', () => {
+    const { session } = startSession()
+
+    tap(MARK_KEY)
+
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'annotating',
+      false
+    ])
+  })
+
+  it('P-09: picking, which is a press outside the panel, leaves it open', () => {
+    const { session } = startSession()
+    session.pressTrigger()
+
+    session.pickAt(WIDTH_ROW)
+    session.saveDraft('make this wider')
+
+    expect(session.panelOpen.value).toBe(true)
+  })
+
+  it('P-11: the strip under the trigger opens the panel while a Send is waiting', () => {
+    const { session } = startSession()
+    comment(session, WIDTH_ROW, 'make this wider')
+    session.sendBatch()
+
+    session.openPanel()
+
+    expect([session.state.value.phase, session.panelOpen.value]).toEqual([
+      'waiting',
+      true
+    ])
   })
 })
 

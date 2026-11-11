@@ -123,21 +123,49 @@ function pullInside(position: Point, size: Size, viewport: Size): Point {
   }
 }
 
+function covers(position: Point, size: Size, other: Rect | null): boolean {
+  return (
+    other !== null &&
+    position.x < other.x + other.width &&
+    position.x + size.width > other.x &&
+    position.y < other.y + other.height &&
+    position.y + size.height > other.y
+  )
+}
+
+function firstFree<T extends { position: Point }>(
+  candidates: readonly T[],
+  size: Size,
+  viewport: Size,
+  avoid: Rect | null
+): T {
+  const fitting = candidates.filter((candidate) =>
+    fits(candidate.position, size, viewport)
+  )
+  return (
+    fitting.find((candidate) => !covers(candidate.position, size, avoid)) ??
+    fitting.at(0) ??
+    candidates[0]
+  )
+}
+
 /**
  * Top-left corner for a box placed next to `anchor`: the first side in
- * `order` where it fits the window, otherwise the first side pulled inside.
+ * `order` where it fits the window and stays clear of `avoid`, otherwise the
+ * first side where it fits, otherwise the first side pulled inside.
  */
 export function placeBeside(
   anchor: Rect,
   size: Size,
   viewport: Size,
-  order: readonly Side[]
+  order: readonly Side[],
+  avoid: Rect | null = null
 ): Point {
-  const candidates = order.map((side) => sidePosition(anchor, size, side))
-  const chosen =
-    candidates.find((candidate) => fits(candidate, size, viewport)) ??
-    candidates[0]
-  return pullInside(chosen, size, viewport)
+  const candidates = order.map((side) => ({
+    position: sidePosition(anchor, size, side)
+  }))
+  const chosen = firstFree(candidates, size, viewport, avoid)
+  return pullInside(chosen.position, size, viewport)
 }
 
 export interface Attachment {
@@ -170,15 +198,14 @@ export function placeAttached(
   anchor: Rect,
   size: Size,
   viewport: Size,
-  order: readonly Side[]
+  order: readonly Side[],
+  avoid: Rect | null = null
 ): Attachment {
   const candidates = order.map((side) => ({
     side,
     position: attachedPosition(anchor, size, side)
   }))
-  const chosen =
-    candidates.find((candidate) => fits(candidate.position, size, viewport)) ??
-    candidates[0]
+  const chosen = firstFree(candidates, size, viewport, avoid)
   const position = pullInside(chosen.position, size, viewport)
   const centre = rectCenter(anchor)
   const alongX = chosen.side === 'above' || chosen.side === 'below'
@@ -189,6 +216,41 @@ export function placeAttached(
     side: chosen.side,
     tail: clamp(reach, TAIL_INSET, extent - TAIL_INSET)
   }
+}
+
+const PANEL_GAP = 8
+const PANEL_MIN_HEIGHT = 160
+
+/**
+ * Where the panel sits under its trigger: right edges aligned, pulled left
+ * so that it stays over `canvas`, and always inside the window.
+ */
+export function placePanel(
+  trigger: Rect,
+  width: number,
+  canvas: Rect,
+  viewport: Size
+): { x: number; y: number; maxHeight: number } {
+  const windowRight = viewport.width - VIEWPORT_MARGIN
+  const canvasRight =
+    canvas.width > 0 ? canvas.x + canvas.width - VIEWPORT_MARGIN : windowRight
+  const right = Math.min(trigger.x + trigger.width, canvasRight, windowRight)
+  const y = trigger.y + trigger.height + PANEL_GAP
+  return {
+    x: Math.max(VIEWPORT_MARGIN, right - width),
+    y,
+    maxHeight: Math.max(PANEL_MIN_HEIGHT, viewport.height - y - VIEWPORT_MARGIN)
+  }
+}
+
+/** A clip path for a full-window element that leaves `hole` out of it. */
+export function clipAround(hole: Rect | null): string | undefined {
+  if (!hole) return undefined
+  const left = `${hole.x}px`
+  const top = `${hole.y}px`
+  const right = `${hole.x + hole.width}px`
+  const bottom = `${hole.y + hole.height}px`
+  return `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${left} ${top}, ${left} ${bottom}, ${right} ${bottom}, ${right} ${top}, ${left} ${top})`
 }
 
 export const FLIGHT_MS = 450

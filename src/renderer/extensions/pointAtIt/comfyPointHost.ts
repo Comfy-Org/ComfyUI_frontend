@@ -18,6 +18,8 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { collectAllNodes, getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
+import { placeAfterMarker } from './core/dockSlot'
+import type { DockPlace } from './core/dockSlot'
 import type { Rect } from './core/geometry'
 import type {
   HostLink,
@@ -35,6 +37,8 @@ import type {
 const NODE_ELEMENTS = '[data-testid="transform-pane"] [data-node-id]'
 const RUN_BUTTON = '[data-testid="queue-button"]'
 const GRAPH_ELEMENTS = '[data-testid="transform-pane"]'
+const TOP_BAR_ACTIONS = '[data-testid="integrated-tab-bar-actions"]'
+const AGENT_ENTRY_SEPARATOR = '[data-testid="agent-entry-separator"]'
 const CLASSIC_ROW_MARGIN = 6
 const EMPTY_VIEWPORT: Rect = { x: 0, y: 0, width: 0, height: 0 }
 
@@ -190,6 +194,10 @@ function isGraphElement(element: Element): boolean {
   )
 }
 
+function topBarPlace(own: Element): DockPlace | null {
+  return placeAfterMarker(own, TOP_BAR_ACTIONS, AGENT_ENTRY_SEPARATOR)
+}
+
 /** The app side of the layer: the one file that imports app modules. */
 export function createComfyPointHost(): PointHost {
   const canvasStore = useCanvasStore()
@@ -305,6 +313,7 @@ export function createComfyPointHost(): PointHost {
     write,
     onRunQueued,
     forwardWheel: forwardEventToCanvas,
-    isGraphElement
+    isGraphElement,
+    topBarPlace
   }
 }

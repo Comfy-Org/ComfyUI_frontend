@@ -165,6 +165,7 @@ export function createFakePointHost(
       host.forwardedWheels.push(event)
     },
     isGraphElement: (element) => element.hasAttribute('data-fake-graph'),
+    topBarPlace: () => null,
     queueRun() {
       runListeners.forEach((listener) => listener())
     },

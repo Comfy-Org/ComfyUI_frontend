@@ -12,6 +12,14 @@ const request: AgentRequest = {
   requestId: 'request-1',
   annotations: [
     { id: 'comment-1', label: 'Save Image', comment: 'wider', targets: [] }
+  ],
+  history: [
+    {
+      comments: [
+        { id: 'comment-0', label: 'KSampler', comment: 'faster', targets: [] }
+      ],
+      answer: []
+    }
   ]
 }
 
@@ -32,7 +40,8 @@ const elementRequest: AgentRequest = {
       comment: 'what is this?',
       targets: [runButton]
     }
-  ]
+  ],
+  history: []
 }
 
 function step(overrides: Partial<ReplyStep>): ReplyStep {
@@ -148,6 +157,16 @@ describe('checkReply', () => {
 
     expect(checkReply(reply, elementRequest, nodes)).toMatchObject([
       { target: null, problems: [problems.unknownElement('element-7')] }
+    ])
+  })
+
+  it('TU-12: keeps a step tied to an earlier turn’s comment, as answering no comment, and says so', () => {
+    expect(check(step({ annotationId: 'comment-0' }))).toMatchObject([
+      {
+        annotationId: null,
+        target: width,
+        problems: [problems.earlierComment]
+      }
     ])
   })
 

@@ -25,31 +25,46 @@ export const messages = {
   stepOf: (index: number, total: number) =>
     `${index} of ${total} · Esc to stop`,
   answersComment: (label: string) => `Answers comment · ${label}`,
-  trayTitle: 'Point at it · POC',
+  trayTitle: 'Comments for the agent',
+  annotateTooltip: `Annotate: comment on the canvas for the agent (${keyLabel})`,
+  showPanel: 'Show comments and answers',
+  hidePanel: 'Hide comments and answers',
+  unsentCount: (count: number) =>
+    count === 1 ? '1 unsent comment' : `${count} unsent comments`,
+  waitingShort: (seconds: number) => `${seconds} s`,
+  noCommentsYet: `No comments yet. Press Annotate or ${keyLabel}, then click what you want to comment on.`,
   annotate: 'Annotate',
-  annotateKey: keyLabel,
   annotateHint:
     'Click a node, a setting or a part of the interface to comment on it. Esc to leave.',
-  annotateIdle: `Press Annotate or ${keyLabel}, then click what you want to comment on.`,
   commentPlaceholder: 'Your comment',
   commentLabel: 'Comment',
   commentHint: 'Enter to save · Shift+Enter for a new line · Esc to close',
   save: 'Save',
   remove: 'Delete',
   pinLabel: (number: number, label: string) => `Comment ${number} on ${label}`,
+  answeredPinLabel: (number: number, label: string) =>
+    `Answered comment ${number} on ${label}: show the answer again`,
   targetMissing: 'target no longer in the workflow',
   send: (count: number) => `Send ${count}`,
   clear: 'Clear',
   cancel: 'Cancel',
   retry: 'Retry',
   waiting: (seconds: number) => `Waiting for the agent · ${seconds} s`,
-  commentCount: (count: number) =>
-    count === 1 ? '1 comment' : `${count} comments`,
-  showComments: 'Show comments',
-  hideComments: 'Hide comments',
   notOnScreen: 'not on screen right now',
   targetGoneNote: 'What this comment points to is no longer in the workflow.',
   targetHiddenNote: 'What this comment points to is not on screen right now.',
+  turnLabel: (number: number, count: number) =>
+    `Turn ${number} · ${count === 1 ? '1 comment' : `${count} comments`}`,
+  thisTurn: 'This turn',
+  showTurn: (number: number) => `Show turn ${number}`,
+  hideTurn: (number: number) => `Hide turn ${number}`,
+  startOver: 'Start over',
+  startOverQuestion: 'Remove every turn and its answers?',
+  startOverConfirm: 'Yes, start over',
+  startOverKeep: 'Keep',
+  noAnswerForComment: 'The agent gave no step for this comment.',
+  replayTargetGone: 'What this answer pointed at is no longer in the workflow.',
+  replayHint: 'An earlier answer, shown again for reading.',
   thinking: 'Thinking',
   showThinking: 'Show the thinking',
   hideThinking: 'Hide the thinking',
@@ -77,6 +92,8 @@ export function describeFailure(failure: {
 export const problems = {
   unknownNode: (nodeId: string) =>
     `The agent named node "${nodeId}", which is not in this workflow.`,
+  earlierComment:
+    'The agent tied this step to a comment from an earlier turn; only this turn’s comments were sent to be answered.',
   unknownElement: (elementId: string) =>
     `The agent named interface element "${elementId}", which no comment in this batch is pinned on.`,
   unknownSetting: ({ nodeId, setting }: ReplySettingAddress) =>

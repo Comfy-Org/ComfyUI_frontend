@@ -59,6 +59,9 @@
         {{ messages.answersComment(answers.label) }}
       </p>
     </div>
+    <p v-if="replay" class="m-0 text-xs text-muted-foreground">
+      {{ messages.replayHint }}
+    </p>
     <div class="flex items-start gap-2">
       <p class="m-0 flex-1 whitespace-pre-line">{{ step.text }}</p>
       <Button
@@ -110,7 +113,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { placeAttached } from './geometry'
-import type { Side } from './geometry'
+import type { Rect, Side } from './geometry'
 import { messages } from './messages'
 import type { GuidanceStep } from './replyValidation'
 import type { GuidanceView } from './usePointSession'
@@ -119,13 +122,25 @@ const RING_OUTSET = 3
 const BESIDE_TARGET: Side[] = ['right', 'left', 'below', 'above']
 const UNDER_CONTROL: Side[] = ['below', 'left', 'above', 'right']
 
-const { step, index, total, editFailed, view, answers } = defineProps<{
+const {
+  step,
+  index,
+  total,
+  editFailed,
+  view,
+  answers,
+  replay = false,
+  avoid = null
+} = defineProps<{
   step: GuidanceStep
   index: number
   total: number
   editFailed: boolean
   view: GuidanceView
   answers: { number: number; label: string } | null
+  replay?: boolean
+  /** A rect the bubble should not sit under, when another side is free. */
+  avoid?: Rect | null
 }>()
 
 const emit = defineEmits<{
@@ -146,7 +161,8 @@ const placement = computed(() =>
     view.ring ?? { ...view.pointer, width: 0, height: 0 },
     { width: bubbleSize.width.value, height: bubbleSize.height.value },
     { width: windowSize.width.value, height: windowSize.height.value },
-    step.target?.kind === 'control' ? UNDER_CONTROL : BESIDE_TARGET
+    step.target?.kind === 'control' ? UNDER_CONTROL : BESIDE_TARGET,
+    avoid
   )
 )
 

@@ -140,9 +140,15 @@ function checkStep(
   const answersKnownComment = request.annotations.some(
     (annotation) => annotation.id === step.annotationId
   )
-  const removed = [target.problem, wait.problem, offer.problem].filter(
-    (problem) => problem !== null
+  const answersEarlierTurn = request.history.some((turn) =>
+    turn.comments.some((comment) => comment.id === step.annotationId)
   )
+  const removed = [
+    target.problem,
+    wait.problem,
+    offer.problem,
+    answersEarlierTurn ? problems.earlierComment : null
+  ].filter((problem) => problem !== null)
   return {
     annotationId: answersKnownComment ? step.annotationId : null,
     text: step.text,

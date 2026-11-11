@@ -1,5 +1,6 @@
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
+import type { DockPlace } from './dockSlot'
 import type { Rect } from './geometry'
 import type { HostAddress, SettingAddress, SettingValue } from './targetAddress'
 
@@ -52,4 +53,9 @@ export interface PointHost {
   forwardWheel(event: WheelEvent): void
   /** True for the canvas and what is drawn on it, which is picked by node and setting. */
   isGraphElement(element: Element): boolean
+  /**
+   * Where the layer's trigger belongs in the app's top bar, given the layer's
+   * own element `own`; null when that part of the bar is not on screen.
+   */
+  topBarPlace(own: Element): DockPlace | null
 }

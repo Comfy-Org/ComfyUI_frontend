@@ -29,7 +29,11 @@ function answer(
   workflow = nodes,
   wrongTarget = false
 ) {
-  const request: AgentRequest = { requestId: 'request-7', annotations }
+  const request: AgentRequest = {
+    requestId: 'request-7',
+    annotations,
+    history: []
+  }
   return answerRequest(request, workflow, { wrongTarget }).steps
 }
 

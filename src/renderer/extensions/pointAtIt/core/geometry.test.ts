@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { placeAttached, placeBeside } from './geometry'
+import { clipAround, placeAttached, placeBeside, placePanel } from './geometry'
 import type { Rect, Side } from './geometry'
 
 const WINDOW = { width: 1000, height: 800 }
@@ -72,5 +72,67 @@ describe('placeBeside', () => {
       x: ROW.x + ROW.width + 12,
       y: ROW.y
     })
+  })
+})
+
+const WIDE = { width: 1280, height: 800 }
+
+describe('keeping clear of the open panel', () => {
+  const PANEL = { x: 820, y: 48, width: 320, height: 400 }
+  const NEAR_PANEL = { x: 600, y: 200, width: 180, height: 18 }
+
+  it('P-14: a bubble takes the next side when its first side would sit under the panel', () => {
+    expect(placeAttached(NEAR_PANEL, BUBBLE, WIDE, ORDER, PANEL).side).not.toBe(
+      placeAttached(NEAR_PANEL, BUBBLE, WIDE, ORDER).side
+    )
+  })
+
+  it('P-14: a comment box takes the next side when its first side would sit under the panel', () => {
+    const free = placeBeside(NEAR_PANEL, BUBBLE, WIDE, ORDER, PANEL)
+
+    expect(free.x + BUBBLE.width).toBeLessThanOrEqual(PANEL.x)
+  })
+
+  it('P-14: is placed as before when no side is clear of the panel', () => {
+    const everywhere = { x: 0, y: 0, width: 1280, height: 800 }
+
+    expect(placeAttached(NEAR_PANEL, BUBBLE, WIDE, ORDER, everywhere)).toEqual(
+      placeAttached(NEAR_PANEL, BUBBLE, WIDE, ORDER)
+    )
+  })
+})
+
+describe('placePanel', () => {
+  const TRIGGER = { x: 1000, y: 8, width: 110, height: 28 }
+  const CANVAS = { x: 0, y: 40, width: 1280, height: 760 }
+
+  it('P-12: sits under the trigger with right edges aligned and room to scroll', () => {
+    expect(placePanel(TRIGGER, 320, CANVAS, WIDE)).toEqual({
+      x: 790,
+      y: 44,
+      maxHeight: 748
+    })
+  })
+
+  it('P-13: moves left to stay over the canvas when the docked Agent panel is open', () => {
+    const besideAgentPanel = { ...CANVAS, width: 880 }
+
+    expect(placePanel(TRIGGER, 320, besideAgentPanel, WIDE).x).toBe(552)
+  })
+
+  it('P-13: stays inside a window too narrow for both', () => {
+    const narrow = { width: 400, height: 800 }
+    const sliver = { x: 0, y: 40, width: 100, height: 760 }
+
+    expect(placePanel({ ...TRIGGER, x: 250 }, 320, sliver, narrow).x).toBe(8)
+  })
+})
+
+describe('clipAround', () => {
+  it('P-15: leaves the trigger out of the surface that takes the pointer', () => {
+    expect(clipAround({ x: 1000, y: 8, width: 110, height: 28 })).toBe(
+      'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 1000px 8px, 1000px 36px, 1110px 36px, 1110px 8px, 1000px 8px)'
+    )
+    expect(clipAround(null)).toBeUndefined()
   })
 })

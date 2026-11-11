@@ -89,8 +89,30 @@ export interface AnnotationNote {
   targets: NoteTarget[]
 }
 
-/** What the layer sends: every comment of the batch in one request. */
+/** One step of an earlier answer, as the agent is reminded of it. */
+export interface HistoryStep {
+  annotationId: string | null
+  text: string
+  target: ReplyAddress | null
+  offered: ReplyStep['offerEdit']
+  /** The person took the offered value, changed the setting themselves, or neither. */
+  result: 'accepted' | 'changed' | null
+  /** What the setting held before the person acted; null when they did not. */
+  valueBefore: string | number | boolean | null
+}
+
+/** An earlier turn: its comments and the answer they got. */
+export interface HistoryTurn {
+  comments: AnnotationNote[]
+  answer: HistoryStep[]
+}
+
+/**
+ * What the layer sends: the comments of the current turn, to be answered,
+ * and the earlier turns, oldest first, for context only.
+ */
 export interface AgentRequest {
   requestId: string
   annotations: AnnotationNote[]
+  history: HistoryTurn[]
 }

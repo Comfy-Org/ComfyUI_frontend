@@ -108,6 +108,8 @@ function guiding(steps: GuidanceStep[], index = 0): PointState {
   return {
     phase: 'guiding',
     requestId: 'request-1',
+    turnId: 'turn-1',
+    replay: false,
     steps,
     index,
     origin: centre,
@@ -118,7 +120,14 @@ function guiding(steps: GuidanceStep[], index = 0): PointState {
 const reply = {
   type: 'replyArrived',
   requestId: 'request-1',
+  turnId: 'turn-1',
   steps: [editStep, runStep]
+} satisfies PointEvent
+const replay = {
+  type: 'replayOpened',
+  commentId: 'comment-1',
+  steps: [plainStep],
+  origin
 } satisfies PointEvent
 const failure: PointEvent = {
   type: 'requestFailed',
@@ -145,6 +154,7 @@ const everyEvent: PointEvent[] = [
   { type: 'draftClosed' },
   batchSent,
   reply,
+  replay,
   failure,
   { type: 'valueChanged' },
   { type: 'editApplied' },
@@ -274,6 +284,32 @@ describe('reducePointState: annotation mode', () => {
   ])('A-05, L-09: a reply or a failure for $name is dropped', ({ state }) => {
     expect(reducePointState(state, reply)).toBe(state)
     expect(reducePointState(state, failure)).toBe(state)
+  })
+})
+
+describe('reducePointState: showing an earlier answer again', () => {
+  it.for([
+    { name: 'idle', state: idleState },
+    { name: 'a failed request', state: failed },
+    { name: 'the mode with no box open', state: picking },
+    { name: 'other guidance', state: guiding([editStep, runStep]) }
+  ])('TU-06: opens the earlier answer for reading from $name', ({ state }) => {
+    expect(reducePointState(state, replay)).toEqual({
+      phase: 'guiding',
+      requestId: 'replay:comment-1',
+      turnId: null,
+      replay: true,
+      steps: [plainStep],
+      index: 0,
+      origin,
+      editFailed: false
+    })
+  })
+
+  it('TU-06: does nothing when there is no step to show', () => {
+    expect(reducePointState(idleState, { ...replay, steps: [] })).toBe(
+      idleState
+    )
   })
 })
 
@@ -427,7 +463,8 @@ describe('reducePointState: events that mean nothing', () => {
         'keyPressed',
         'annotateToggled',
         'draftOpened',
-        'batchSent'
+        'batchSent',
+        'replayOpened'
       )
     },
     {
@@ -448,6 +485,7 @@ describe('reducePointState: events that mean nothing', () => {
         'annotateToggled',
         'draftOpened',
         'batchSent',
+        'replayOpened',
         'dismissed'
       )
     },
@@ -470,6 +508,7 @@ describe('reducePointState: events that mean nothing', () => {
         'annotateToggled',
         'draftOpened',
         'batchSent',
+        'replayOpened',
         'dismissed'
       )
     },
@@ -477,6 +516,7 @@ describe('reducePointState: events that mean nothing', () => {
       state: guiding([editStep, runStep]),
       ignored: eventsOtherThan(
         'annotateToggled',
+        'replayOpened',
         'valueChanged',
         'editApplied',
         'editFailed',
@@ -489,6 +529,7 @@ describe('reducePointState: events that mean nothing', () => {
       state: guiding([plainStep, runStep]),
       ignored: eventsOtherThan(
         'annotateToggled',
+        'replayOpened',
         'nextRequested',
         'targetRemoved',
         'dismissed'

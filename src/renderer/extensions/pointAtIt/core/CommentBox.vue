@@ -63,10 +63,13 @@ import type { Draft } from './pointState'
 const {
   anchor,
   draft,
+  avoid = null,
   targetNote = ''
 } = defineProps<{
   anchor: Rect
   draft: Draft
+  /** A rect the box should not sit under, when another side is free. */
+  avoid?: Rect | null
   /** Says why the target cannot be shown, when it cannot. */
   targetNote?: string
 }>()
@@ -88,7 +91,8 @@ const position = computed(() =>
     anchor,
     { width: boxSize.width.value, height: boxSize.height.value },
     { width: windowSize.width.value, height: windowSize.height.value },
-    ['right', 'left', 'below', 'above']
+    ['right', 'left', 'below', 'above'],
+    avoid
   )
 )
 

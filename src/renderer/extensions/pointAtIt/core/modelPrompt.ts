@@ -3,13 +3,14 @@ import { z } from 'zod'
 
 import { AGENT_INSTRUCTIONS } from './agentPrompt'
 import { agentReplySchema } from './agentReply'
-import type { AgentRequest } from './agentReply'
+import type { AgentRequest, AnnotationNote, HistoryTurn } from './agentReply'
 import type { PointConfig } from './config'
 import type { ChatBody } from './modelWire'
 import type { HostLink, HostNode, HostSetting } from './pointHost'
 import type { SettingValue } from './targetAddress'
 
 const MAX_WORKFLOW_CHARS = 48_000
+const MAX_HISTORY_CHARS = 12_000
 const MAX_DESCRIPTION_CHARS = 200
 const MAX_TEXT_VALUE_CHARS = 300
 const MAX_OPTIONS = 30
@@ -152,6 +153,42 @@ export function describeWorkflow(
   }
 }
 
+function compactComment(note: AnnotationNote) {
+  return {
+    id: note.id,
+    pinnedOn: note.targets,
+    label: note.label,
+    comment: note.comment
+  }
+}
+
+function compactTurn(turn: HistoryTurn, index: number) {
+  return {
+    turn: index + 1,
+    comments: turn.comments.map(compactComment),
+    answer: turn.answer
+  }
+}
+
+/**
+ * The earlier turns for the model, oldest first. When they do not fit
+ * `budget` the oldest are left out; the newest turn is always kept.
+ */
+export function describeHistory(
+  history: readonly HistoryTurn[],
+  budget = MAX_HISTORY_CHARS
+): { turns: unknown[]; leftOut: number } {
+  const compact = history.map(compactTurn)
+  let used = 0
+  let firstKept = compact.length
+  while (firstKept > 0) {
+    used += JSON.stringify(compact[firstKept - 1]).length
+    if (used > budget && firstKept < compact.length) break
+    firstKept -= 1
+  }
+  return { turns: compact.slice(firstKept), leftOut: firstKept }
+}
+
 /** The reply format as the JSON Schema the provider enforces. */
 function replyJsonSchema(): Record<string, unknown> {
   return omit(z.toJSONSchema(agentReplySchema), ['$schema'])
@@ -175,6 +212,7 @@ export function buildChatBody(
   model: PointConfig['model']
 ): ChatBody {
   const workflow = describeWorkflow(nodes, request)
+  const history = describeHistory(request.history)
   const schema = replyJsonSchema()
   return {
     messages: [
@@ -187,12 +225,9 @@ export function buildChatBody(
       {
         role: 'user',
         content: JSON.stringify({
-          comments: request.annotations.map((note) => ({
-            id: note.id,
-            pinnedOn: note.targets,
-            label: note.label,
-            comment: note.comment
-          })),
+          comments: request.annotations.map(compactComment),
+          earlierTurns: history.turns,
+          earlierTurnsLeftOut: history.leftOut,
           workflow: { nodes: workflow.nodes, leftOut: workflow.cut }
         })
       }
