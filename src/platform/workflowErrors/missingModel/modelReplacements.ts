@@ -3,19 +3,19 @@ const MAX_REPLACEMENTS = 3
 const QUANTIZATION_TAG = new RegExp(
   String.raw`(?<![a-z0-9])(?:` +
     [
-      String.raw`(?:nv|mx)?fp\d+(?:[_-]?e\d+m\d+(?:fn)?(?:uz)?)?(?:mixed|scaled)?`,
+      String.raw`(?:nv|mx)?fp\d+(?:[_-]?e\d+m\d+(?:fn)?(?:uz)?)?`,
       String.raw`e\d+m\d+(?:fn)?(?:uz)?`,
       String.raw`bf16`,
       String.raw`f(?:16|32)`,
-      String.raw`u?int\d+(?:mixed|scaled)?`,
+      String.raw`u?int\d+`,
       String.raw`\d+bit`,
       String.raw`nf4`,
       String.raw`w\d+a\d+`,
       String.raw`a\d+w\d+`,
       String.raw`[it]?q\d+(?:[_-](?:k|\d|xxs|xs|nl|s|m|l))*`,
-      String.raw`gptq|awq|bnb|svdq|convrot|scaled|mixed|quant(?:ized)?`
+      String.raw`gptq|awq|bnb|svdq|convrot`
     ].join('|') +
-    String.raw`)(?![a-z0-9])`,
+    String.raw`)(?:[_-]?(?:mixed|scaled|quant(?:ized)?))*(?![a-z0-9])`,
   'g'
 )
 
