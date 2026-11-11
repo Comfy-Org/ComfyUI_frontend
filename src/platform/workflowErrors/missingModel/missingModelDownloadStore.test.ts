@@ -692,5 +692,6 @@ describe(useMissingModelDownloadStore, () => {
     store.cancel(model)
 
     expect(cancelDownload).toHaveBeenCalledWith(model.url)
+    expect(store.stateFor(model).status).toBe('idle')
   })
 })

@@ -1,5 +1,6 @@
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick } from 'vue'
 
 import {
   toTemplateModelDownloadState,
@@ -95,6 +96,32 @@ describe(useTemplateModelDownloads, () => {
     downloads.request(model)
 
     expect(useTemplateModelRowDownloads).toHaveBeenCalledOnce()
+  })
+
+  it('requests nothing after the dialog is disposed', () => {
+    installDesktopHost()
+    const stopTracking = useMissingModelDownloadStore().startTracking()
+    const downloads = useTemplateModelDownloads({ folderPaths: {} })
+    downloads.dispose()
+    stopTracking()
+
+    downloads.request(model)
+
+    expect(useTemplateModelRowDownloads).not.toHaveBeenCalled()
+    expect(hostDownloadModel).not.toHaveBeenCalled()
+  })
+
+  it('reports host tracking reactively', async () => {
+    installDesktopHost()
+    const store = useMissingModelDownloadStore()
+    const tracked = computed(() => store.tracksHostProgress())
+    const stopTracking = store.startTracking()
+    expect(tracked.value).toBe(true)
+
+    stopTracking()
+    await nextTick()
+
+    expect(tracked.value).toBe(false)
   })
 
   it('reopens a finished download the dialog finds missing', () => {

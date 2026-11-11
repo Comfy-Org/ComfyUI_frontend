@@ -46,17 +46,29 @@ export function useTemplateModelDownloads(
   }
   store.reopenFinished(missingModels)
   let fallback: TemplateModelRowDownloads | undefined
-  const dialogTracker = () =>
-    (fallback ??= useTemplateModelRowDownloads(options))
+  let disposed = false
+  const dialogTracker = () => {
+    if (!fallback && !disposed && !store.tracksHostProgress()) {
+      fallback = useTemplateModelRowDownloads(options)
+    }
+    return fallback
+  }
   return {
-    stateFor: (model) =>
-      store.tracksHostProgress()
-        ? toTemplateModelDownloadState(store.stateFor(model))
-        : dialogTracker().stateFor(model),
-    request: (model) =>
-      store.tracksHostProgress()
-        ? store.download(model)
-        : dialogTracker().request(model),
-    dispose: () => fallback?.dispose()
+    stateFor: (model) => {
+      const tracker = dialogTracker()
+      return tracker
+        ? tracker.stateFor(model)
+        : toTemplateModelDownloadState(store.stateFor(model))
+    },
+    request: (model) => {
+      if (disposed) return
+      const tracker = dialogTracker()
+      if (tracker) tracker.request(model)
+      else store.download(model)
+    },
+    dispose: () => {
+      disposed = true
+      fallback?.dispose()
+    }
   }
 }

@@ -1,7 +1,7 @@
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { defineStore } from 'pinia'
-import { shallowReactive, watch } from 'vue'
+import { ref, shallowReactive, watch } from 'vue'
 
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
 import {
@@ -168,7 +168,7 @@ export const useMissingModelDownloadStore = defineStore(
     const missingModelStore = useMissingModelStore()
     const downloads = shallowReactive(new Map<string, HostDownload>())
     let refreshPending = false
-    let tracking = false
+    const tracking = ref(false)
     let trackingGeneration = 0
     let nextRequest = 0
 
@@ -286,9 +286,9 @@ export const useMissingModelDownloadStore = defineStore(
         trackingGeneration++
         return () => undefined
       }
-      tracking = true
+      tracking.value = true
       return () => {
-        tracking = false
+        tracking.value = false
         trackingGeneration++
         try {
           stop()
@@ -344,7 +344,7 @@ export const useMissingModelDownloadStore = defineStore(
     }
 
     function download(model: ModelWithUrl): void {
-      if (!tracking || !hostReportsModelDownloadProgress()) {
+      if (!tracking.value || !hostReportsModelDownloadProgress()) {
         downloadModel(model, missingModelStore.folderPaths)
         return
       }
@@ -401,7 +401,7 @@ export const useMissingModelDownloadStore = defineStore(
 
     function canControl(model: ModelWithUrl, action: DownloadControl): boolean {
       return (
-        tracking &&
+        tracking.value &&
         typeof window.__comfyDesktop2?.[action] === 'function' &&
         controlRef(model) !== undefined
       )
@@ -415,11 +415,19 @@ export const useMissingModelDownloadStore = defineStore(
       })
     }
 
+    function withdrawUnreportedRequest(model: ModelWithUrl) {
+      const key = getModelFileKey(model)
+      const download = downloads.get(key)
+      if (download?.state.status !== 'requested') return
+      downloads.set(key, { ...download, state: IDLE })
+    }
+
     function control(model: ModelWithUrl, action: DownloadControl) {
-      const ref = controlRef(model)
-      if (ref === undefined) return
+      const target = controlRef(model)
+      if (target === undefined) return
+      if (action === 'cancelDownload') withdrawUnreportedRequest(model)
       try {
-        void Promise.resolve(window.__comfyDesktop2?.[action]?.(ref)).catch(
+        void Promise.resolve(window.__comfyDesktop2?.[action]?.(target)).catch(
           (error: unknown) => reportControlFailure(error, action)
         )
       } catch (error) {
@@ -431,7 +439,7 @@ export const useMissingModelDownloadStore = defineStore(
       stateFor,
       download,
       startTracking,
-      tracksHostProgress: () => tracking,
+      tracksHostProgress: () => tracking.value,
       reopenFinished,
       canControl,
       pause: (model: ModelWithUrl) => control(model, 'pauseDownload'),
