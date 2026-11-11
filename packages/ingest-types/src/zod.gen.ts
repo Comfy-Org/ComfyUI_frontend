@@ -2268,6 +2268,60 @@ export const zDesktopLoginCodeCreateResponse = z.object({
 })
 
 /**
+ * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
+ */
+export const zBillingHandoffCreateRequest = z.object({
+  workspace_id: z.string().min(1),
+  receiver: z.enum(['billing_web', 'platform']),
+  surface: z.enum(['local_web', 'desktop']),
+  client_version: z.string().max(64)
+})
+
+/**
+ * An issued handoff. The token is single use and expires within 60 seconds.
+ */
+export const zBillingHandoffCreateResponse = z.object({
+  entry_url: z.string(),
+  expires_at: z.iso.datetime(),
+  request_id: z.string()
+})
+
+/**
+ * The handoff token a receiver read from its URL fragment.
+ */
+export const zBillingHandoffExchangeRequest = z.object({
+  token: z.string().min(1).max(128)
+})
+
+/**
+ * The user a scoped billing session acts as.
+ */
+export const zBillingHandoffUser = z.object({
+  id: z.string(),
+  email: z.string()
+})
+
+/**
+ * The workspace a scoped billing session is bound to.
+ */
+export const zBillingHandoffWorkspace = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.string()
+})
+
+/**
+ * A scoped billing session for the handoff's user and workspace.
+ */
+export const zBillingHandoffExchangeResponse = z.object({
+  session_token: z.string(),
+  expires_at: z.iso.datetime(),
+  user: zBillingHandoffUser,
+  workspace: zBillingHandoffWorkspace,
+  role: z.string()
+})
+
+/**
  * Request to exchange a redeemed login code for a custom token.
  */
 export const zDesktopLoginCodeExchangeRequest = z.object({
@@ -6092,6 +6146,20 @@ export const zCreateDesktopLoginCodeBody = zDesktopLoginCodeCreateRequest
 export const zCreateDesktopLoginCodeResponse = zDesktopLoginCodeCreateResponse
 
 export const zExchangeDesktopLoginCodeBody = zDesktopLoginCodeExchangeRequest
+
+export const zCreateBillingHandoffBody = zBillingHandoffCreateRequest
+
+/**
+ * Handoff issued
+ */
+export const zCreateBillingHandoffResponse = zBillingHandoffCreateResponse
+
+export const zExchangeBillingHandoffBody = zBillingHandoffExchangeRequest
+
+/**
+ * Scoped session created
+ */
+export const zExchangeBillingHandoffResponse = zBillingHandoffExchangeResponse
 
 /**
  * Pending (not yet redeemed) or complete with a custom token

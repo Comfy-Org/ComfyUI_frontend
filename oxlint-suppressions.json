@@ -86,7 +86,7 @@
   },
   "apps/billing-web/src/views/CheckoutView.vue": {
     "typescript/no-restricted-types": {
-      "count": 5
+      "count": 4
     }
   },
   "apps/billing-web/src/views/FullPageCheckoutView.test.ts": {
@@ -582,9 +582,24 @@
       "count": 1
     }
   },
+  "packages/account-core/src/core/billing/billingTab/autoTopUpBanner.ts": {
+    "typescript/no-restricted-types": {
+      "count": 3
+    }
+  },
   "packages/account-core/src/core/billing/billingTab/autoTopUpCard.ts": {
     "typescript/no-restricted-types": {
       "count": 4
+    }
+  },
+  "packages/account-core/src/core/billing/billingTab/billingStatusBanner.ts": {
+    "typescript/no-restricted-types": {
+      "count": 10
+    }
+  },
+  "packages/account-core/src/core/billing/billingTab/creditBanner.ts": {
+    "typescript/no-restricted-types": {
+      "count": 3
     }
   },
   "packages/account-core/src/core/billing/billingTab/creditsCard.ts": {
@@ -829,7 +844,7 @@
   },
   "packages/account-ui/src/billing/checkout/CheckoutTransitionConfirm.vue": {
     "typescript/no-restricted-types": {
-      "count": 7
+      "count": 6
     }
   },
   "packages/account-ui/src/billing/checkout/checkoutRecovery.ts": {
@@ -843,6 +858,11 @@
     }
   },
   "packages/account-ui/src/billing/tab/AddCreditsAction.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "packages/account-ui/src/billing/tab/BillingAutoTopUpCard.vue": {
     "typescript/no-restricted-types": {
       "count": 1
     }
@@ -1400,9 +1420,29 @@
       "count": 9
     }
   },
+  "packages/mask-editor/src/imageOutput.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
   "packages/mask-editor/src/maskEditorStore.ts": {
     "typescript/no-restricted-types": {
       "count": 14
+    }
+  },
+  "packages/mask-editor/src/ui/EditorCanvas.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
+    }
+  },
+  "packages/mask-editor/src/ui/EditorCanvas.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
+  "packages/mask-editor/src/ui/components/BrushSettingsPanel.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "packages/mask-editor/src/useBrushAdjustment.ts": {
@@ -1432,7 +1472,7 @@
   },
   "packages/mask-editor/src/useCanvasManager.ts": {
     "typescript/no-restricted-types": {
-      "count": 1
+      "count": 2
     }
   },
   "packages/mask-editor/src/useCanvasTools.ts": {
@@ -1887,6 +1927,11 @@
   "scripts/cicd/extract-playwright-counts.ts": {
     "typescript/no-restricted-types": {
       "count": 5
+    }
+  },
+  "scripts/cicd/find-workflow-run.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "scripts/cicd/reconcile-latest-release.test.ts": {
@@ -3285,6 +3330,11 @@
       "count": 19
     }
   },
+  "src/extensions/core/load3d/composables/useLoad3dDrag.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "src/extensions/core/load3d/composables/useLoad3dViewer.ts": {
     "typescript/no-restricted-types": {
       "count": 7
@@ -3363,11 +3413,6 @@
   "src/extensions/core/load3d/services/load3dService.ts": {
     "typescript/no-restricted-types": {
       "count": 5
-    }
-  },
-  "src/extensions/core/maskeditor.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 4
     }
   },
   "src/extensions/core/nodeTemplates.ts": {
@@ -3491,7 +3536,7 @@
       "count": 13
     },
     "typescript/no-restricted-types": {
-      "count": 78
+      "count": 79
     }
   },
   "src/lib/litegraph/src/LGraphGroup.ts": {
@@ -3836,9 +3881,19 @@
       "count": 2
     }
   },
+  "src/platform/account/components/ProfileMenuWorkspace.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "src/platform/account/components/SubscriptionPanelContentWorkspace.test.ts": {
     "typescript/no-restricted-types": {
       "count": 10
+    }
+  },
+  "src/platform/account/components/SubscriptionPanelContentWorkspace.vue": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/platform/account/components/WorkspaceSwitcherPopover.test.ts": {
@@ -3869,6 +3924,11 @@
   "src/platform/account/components/dialogs/settings/MembersPanelContent.test.ts": {
     "typescript/no-restricted-types": {
       "count": 4
+    }
+  },
+  "src/platform/account/components/profileMenuPlanLine.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
     }
   },
   "src/platform/account/composables/useDeleteWorkspaceGate.test.ts": {
@@ -4265,81 +4325,6 @@
       "count": 3
     }
   },
-  "src/platform/billing/components/billingTab/BillingAutoTopUpCard.parity.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 4
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingAutoTopUpCard.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingAutoTopUpCard.vue": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingAutoTopUpMemberCard.parity.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingBanner.parity.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingCreditsCard.parity.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 3
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingCreditsCard.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 8
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingCreditsCard.vue": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingLocalCreditBanner.parity.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 4
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingLocalCreditBanner.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 5
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingLocalCreditBanner.vue": {
-    "typescript/no-restricted-types": {
-      "count": 3
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingPlanCheckoutBanner.vue": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingPlanRow.parity.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 4
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingPlanRow.vue": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/platform/billing/components/billingTab/BillingTopupCheckoutBanner.vue": {
-    "typescript/no-restricted-types": {
-      "count": 2
-    }
-  },
   "src/platform/billing/components/billingTab/useBillingPlanRow.ts": {
     "typescript/no-restricted-types": {
       "count": 2
@@ -4405,16 +4390,6 @@
       "count": 3
     }
   },
-  "src/platform/billing/composables/deriveAutoTopUpBanner.ts": {
-    "typescript/no-restricted-types": {
-      "count": 3
-    }
-  },
-  "src/platform/billing/composables/deriveLocalCreditBanner.ts": {
-    "typescript/no-restricted-types": {
-      "count": 3
-    }
-  },
   "src/platform/billing/composables/topupBalanceRefresh.test.ts": {
     "typescript/no-restricted-types": {
       "count": 2
@@ -4433,6 +4408,11 @@
   "src/platform/billing/composables/useAutoTopUpBannerKind.test.ts": {
     "typescript/no-restricted-types": {
       "count": 1
+    }
+  },
+  "src/platform/billing/composables/useAutoTopUpCardSection.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 2
     }
   },
   "src/platform/billing/composables/useAutoTopUpSetupOffer.test.ts": {
@@ -4457,7 +4437,7 @@
   },
   "src/platform/billing/composables/useBillingBanner.ts": {
     "typescript/no-restricted-types": {
-      "count": 17
+      "count": 9
     }
   },
   "src/platform/billing/composables/useBillingCapabilities.crossUser.test.ts": {
@@ -4501,6 +4481,21 @@
   "src/platform/billing/composables/useCheckoutCopy.ts": {
     "typescript/no-restricted-types": {
       "count": 2
+    }
+  },
+  "src/platform/billing/composables/useCreditBanner.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 5
+    }
+  },
+  "src/platform/billing/composables/useCreditBanner.ts": {
+    "typescript/no-restricted-types": {
+      "count": 3
+    }
+  },
+  "src/platform/billing/composables/useCreditsCardCopy.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 8
     }
   },
   "src/platform/billing/composables/useDowngradeToPersonal.test.ts": {
@@ -4547,6 +4542,11 @@
   "src/platform/billing/composables/usePlanCheckoutBanner.ts": {
     "typescript/no-restricted-types": {
       "count": 2
+    }
+  },
+  "src/platform/billing/composables/usePlanRowCopy.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 4
     }
   },
   "src/platform/billing/composables/useProcessingTopupPayment.test.ts": {
@@ -4684,6 +4684,11 @@
       "count": 16
     }
   },
+  "src/platform/billing/stores/localBillingWebFlagStore.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 1
+    }
+  },
   "src/platform/billing/stores/workspaceBillingStateStore.test.ts": {
     "typescript/no-restricted-types": {
       "count": 1
@@ -4788,7 +4793,7 @@
       "count": 2
     },
     "typescript/no-restricted-types": {
-      "count": 7
+      "count": 8
     }
   },
   "src/platform/billing/subscription/launchCancellationFlow.test.ts": {
@@ -5763,7 +5768,7 @@
   },
   "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.detail.test.ts": {
     "typescript/no-restricted-types": {
-      "count": 3
+      "count": 4
     }
   },
   "src/platform/workflow/templates/components/WorkflowTemplateSelectorDialog.vue": {
@@ -5799,11 +5804,6 @@
   "src/platform/workflow/templates/repositories/workflowTemplatesStore.ts": {
     "typescript/no-restricted-types": {
       "count": 2
-    }
-  },
-  "src/platform/workflow/templates/services/templateInputService.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
     }
   },
   "src/platform/workflow/templates/stores/templateInputDownloadStore.ts": {
@@ -6572,39 +6572,9 @@
       "count": 2
     }
   },
-  "src/renderer/extensions/maskEditor/components/BrushSettingsPanel.vue": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/MaskEditorContent.test.ts": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/MaskEditorContent.vue": {
-    "typescript/no-restricted-types": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/PointerZone.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/ToolPanel.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/maskEditor/composables/useBrushPersistence.ts": {
     "typescript/no-restricted-types": {
       "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/composables/useImageLoader.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/renderer/extensions/maskEditor/composables/useMaskEditor.ts": {
@@ -6633,6 +6603,11 @@
   "src/renderer/extensions/maskEditor/composables/useMaskEditorSaver.ts": {
     "comfy/no-new-error-throw": {
       "count": 5
+    }
+  },
+  "src/renderer/extensions/maskEditor/extension.test.ts": {
+    "typescript/no-restricted-types": {
+      "count": 4
     }
   },
   "src/renderer/extensions/maskEditor/stores/maskEditorDataStore.ts": {
@@ -6882,7 +6857,7 @@
       "count": 1
     },
     "typescript/no-restricted-types": {
-      "count": 3
+      "count": 2
     }
   },
   "src/renderer/extensions/vueNodes/layout/useNodeDrag.ts": {

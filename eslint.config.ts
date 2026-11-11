@@ -368,7 +368,8 @@ export default defineConfig([
           'src/**/*.vue',
           'apps/billing-web/**/*.vue',
           'packages/account-ui/**/*.vue',
-          'packages/layer-editor-ui/**/*.vue'
+          'packages/layer-editor-ui/**/*.vue',
+          'packages/mask-editor/src/ui/**/*.vue'
         ],
         plugins: { 'template-classes': templateClasses },
         rules: {
@@ -522,6 +523,7 @@ export default defineConfig([
   ...(
     [
       ['src', settings],
+      ['packages/mask-editor/src/ui', settings],
       ['apps/billing-web', billingWebI18nSettings]
     ] as const
   ).map(([root, treeSettings]) => ({
@@ -563,6 +565,40 @@ export default defineConfig([
             "CallExpression[callee.property.name=/^(split|lastIndexOf)$/]:matches([arguments.0.value='.'], [arguments.0.value='/'], [arguments.0.value='\\\\'])",
           message:
             'Use the platform filename utilities (getFilenameDetails, getPathDetails).'
+        }
+      ]
+    }
+  },
+  {
+    name: 'comfy/mask-editor-package-direction',
+    files: ['packages/mask-editor/src/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts'],
+    plugins: { 'import-x': importX },
+    settings,
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/*'],
+              message:
+                'Keep application integration in the mask-editor host adapters.'
+            }
+          ]
+        }
+      ],
+      'import-x/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './packages/mask-editor/src',
+              from: './src',
+              message:
+                'Keep application integration in the mask-editor host adapters.'
+            }
+          ]
         }
       ]
     }

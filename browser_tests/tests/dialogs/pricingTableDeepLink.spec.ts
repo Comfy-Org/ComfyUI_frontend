@@ -1059,7 +1059,7 @@ test.describe('Recovered 3DS subscription', { tag: '@cloud' }, () => {
     await page.goto(APP_URL)
     await waitForCloudApp(page)
     await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('manage-plan-menu-item').click()
+    await page.getByTestId('credits-menu-item').click()
     await expect.poll(() => statusRequests.length).toBeGreaterThan(0)
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
 
@@ -1145,8 +1145,7 @@ test.describe(
         await expect(successHeading).toBeVisible()
 
         await successView.getByRole('button', { name: 'Close' }).click()
-        await page.getByRole('button', { name: 'Current user' }).click()
-        await page.getByTestId('plans-pricing-menu-item').click()
+        await page.goto(`${APP_URL}/?pricing=1`)
 
         await expect(pricingHeading(page)).toBeVisible()
         await expect(
