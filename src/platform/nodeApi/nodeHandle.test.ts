@@ -173,6 +173,14 @@ describe('NodeHandle', () => {
       expect(widget.value).toBe(7)
     })
 
+    it('refuses a property name that would replace the properties prototype', () => {
+      expect(() =>
+        handle().setProperty('__proto__', { injected: true })
+      ).toThrow(TypeError)
+      expect(Object.getPrototypeOf(node.properties)).toBe(Object.prototype)
+      expect('injected' in node.properties).toBe(false)
+    })
+
     it('maps public mode strings back to the internal enum', () => {
       handle().setMode('never')
       expect(node.mode).toBe(LGraphEventMode.NEVER)

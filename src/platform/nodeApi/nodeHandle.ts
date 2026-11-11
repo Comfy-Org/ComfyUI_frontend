@@ -442,6 +442,9 @@ export function createNodeHandles(
         getProperties: (n) => Object.freeze({ ...n.properties }),
         setProperty: (n, ...args) => {
           const name = String(args[0])
+          if (name === '__proto__') {
+            throw new TypeError(`Invalid property name '${name}'.`)
+          }
           const previous = n.properties[name]
           n.setProperty(name, args[1])
           if (n.properties[name] !== previous) markChanged(n)
