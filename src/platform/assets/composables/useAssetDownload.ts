@@ -3,13 +3,13 @@ import { useI18n } from 'vue-i18n'
 import { downloadFile, downloadFileAsBlob } from '@/base/common/downloadUtil'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { AssetDownload } from '@/platform/assets/types/assetDownload'
+import type { AssetFileDownload } from '@/platform/assets/types/assetDownload'
 
 export function useAssetDownload() {
   const { t } = useI18n()
   const toast = useToast()
 
-  async function downloadFiles(files: AssetDownload[]): Promise<void> {
+  async function downloadFiles(files: AssetFileDownload[]): Promise<void> {
     const pending = files.map((file) => {
       try {
         if (file.mode === 'direct') {

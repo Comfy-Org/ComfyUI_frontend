@@ -32,6 +32,7 @@
     "src/platform/assets/composables/useAssetsUrlLoader.ts",
     "src/platform/assets/composables/useMediaAssetActions.ts",
     "src/platform/assets/composables/useModelUpload.ts",
+    "src/platform/assets/constants/assetDrag.ts",
     "src/platform/assets/constants/assetEvents.ts",
     "src/platform/assets/integration/assetDrop.ts",
     "src/platform/assets/integration/createAssetWidget.ts",

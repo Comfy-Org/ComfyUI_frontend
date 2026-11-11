@@ -2,7 +2,7 @@ import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
-import { MIME_ASSET_INFO } from '@/platform/assets/integration/assetDrop'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import type { MediaKind } from '@comfyorg/assets-core/media'
 import type { parseAssetInfo } from '@/platform/assets/integration/assetDrop'
 

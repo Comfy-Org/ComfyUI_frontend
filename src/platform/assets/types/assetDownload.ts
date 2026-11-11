@@ -12,4 +12,4 @@ export interface FetchedAssetDownload {
   preferResponseFilename?: boolean
 }
 
-export type AssetDownload = DirectAssetDownload | FetchedAssetDownload
+export type AssetFileDownload = DirectAssetDownload | FetchedAssetDownload

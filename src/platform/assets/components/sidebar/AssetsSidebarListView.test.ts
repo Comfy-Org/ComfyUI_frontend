@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
-import { MIME_ASSET_INFO } from '@/platform/assets/integration/assetDrop'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 
 import AssetsSidebarListView from '@/platform/assets/components/sidebar/AssetsSidebarListView.vue'
 

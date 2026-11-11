@@ -17,7 +17,7 @@ import {
 } from '@/platform/assets/adapters/outputAssetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/types/outputAssetMetadata'
 import type { AssetItem } from '@comfyorg/assets-core/schema'
-import { MIME_ASSET_INFO } from '@/platform/assets/integration/assetDrop'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import {
   getAssetUrlFilename,
   getOutputSubfolder

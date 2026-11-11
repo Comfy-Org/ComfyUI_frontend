@@ -3,14 +3,13 @@ import { z } from 'zod'
 import { zResultItem } from '@comfyorg/api-client/executionTypes'
 import type { MediaKind } from '@comfyorg/assets-core/media'
 import { zMediaKindSchema } from '@comfyorg/assets-core/media'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 import type { DroppedFile } from '@/utils/eventUtils'
 import {
   fetchDroppedFile,
   getDroppedFiles,
   getDroppedUri
 } from '@/utils/eventUtils'
-
-export const MIME_ASSET_INFO = 'application/x-comfy-asset-info'
 
 const zDraggedAssetInfo = zResultItem.and(
   z.object({

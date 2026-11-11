@@ -39,7 +39,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useAssetsStore } from '@/platform/assets/stores/assetsStore'
 
 import { useAssetDownload } from './useAssetDownload'
-import type { AssetDownload } from '@/platform/assets/types/assetDownload'
+import type { AssetFileDownload } from '@/platform/assets/types/assetDownload'
 import { useAssetZipExport } from './useAssetZipExport'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
@@ -80,7 +80,7 @@ export function useMediaAssetActions() {
     void downloadFiles(targetAssets.map(createAssetDownload))
   }
 
-  function createAssetDownload(asset: AssetItem): AssetDownload {
+  function createAssetDownload(asset: AssetItem): AssetFileDownload {
     const url = getAssetFileUrl(asset)
     const filename = getAssetDisplayName(asset)
     if (!isCloud) return { mode: 'direct', url, filename }

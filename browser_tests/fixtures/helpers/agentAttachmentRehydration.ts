@@ -8,7 +8,7 @@ import type {
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { MediaKind } from '@comfyorg/assets-core/media'
-import { MIME_ASSET_INFO } from '@/platform/assets/integration/assetDrop'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
 
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'

@@ -42,10 +42,8 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
-import {
-  MIME_ASSET_INFO,
-  getDroppedAsset
-} from '@/platform/assets/integration/assetDrop'
+import { MIME_ASSET_INFO } from '@/platform/assets/constants/assetDrag'
+import { getDroppedAsset } from '@/platform/assets/integration/assetDrop'
 import { findServerPreviewUrl } from '@/platform/assets/utils/assetPreviewUtil'
 import type { DroppedAsset } from '@/platform/assets/integration/assetDrop'
 import { fetchDroppedFile } from '@/utils/eventUtils'
