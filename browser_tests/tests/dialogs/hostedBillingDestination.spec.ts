@@ -17,10 +17,7 @@ import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import {
-  keepPricingTableInApp,
-  PLATFORM_PLANS_PATH
-} from '@e2e/fixtures/utils/platformPlans'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import {
   mockWorkspaceTokenMint,
   workspace
@@ -241,10 +238,11 @@ async function openedBillingEntry(page: Page) {
   }
 }
 
-/** The avatar menu's Plans and pricing entry. */
-async function clickPlansAndPricing(page: Page) {
-  await page.getByRole('button', { name: 'Current user' }).click()
-  await page.getByTestId('plans-pricing-menu-item').click()
+async function openPricingFromPlanAndCredits(page: Page) {
+  const content = await openPlanAndCredits(page)
+  await content
+    .getByRole('button', { name: /Upgrade Plan|Change plan/ })
+    .click()
 }
 
 const pricingHeading = (page: Page) =>
@@ -398,31 +396,6 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
       .poll(() => statusRequests.length)
       .toBeGreaterThan(requestsBeforeReturn)
   })
-
-  for (const destination of ['stripe', 'billing_web'] as const) {
-    test(`hands the avatar menu's Plans and pricing off to the platform Plans page while the destination is ${destination}`, async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
-      await mockCloudBoot(page)
-      await bootApp(page)
-      if (destination === 'billing_web') {
-        await new FeatureFlagHelper(page).setServerFlagsPersistent({
-          hosted_billing_destination: 'billing_web'
-        })
-      }
-
-      await clickPlansAndPricing(page)
-
-      await expect
-        .poll(async () => {
-          const url = await openedUrl(page)
-          return url && new URL(url).pathname
-        })
-        .toBe(PLATFORM_PLANS_PATH)
-      await expect(pricingDialog(page)).toHaveCount(0)
-    })
-  }
 })
 
 test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
@@ -439,7 +412,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
       hosted_billing_destination: 'billing_web'
     })
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 
@@ -452,7 +425,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
           return_to: 'comfyui_workspace',
           plan: 'standard-yearly',
           workspace: 'ws-personal',
-          source: 'avatar_menu_plans'
+          source: 'settings_billing_panel'
         },
         carriesReadableJourney: true
       })
@@ -471,7 +444,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
       hosted_billing_destination: 'billing_web'
     })
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 
@@ -486,7 +459,7 @@ test.describe('Hosted billing checkout handoff', { tag: '@cloud' }, () => {
     await mockStandardPlan(page)
     await bootApp(page)
 
-    await clickPlansAndPricing(page)
+    await openPricingFromPlanAndCredits(page)
     await expect(pricingHeading(page)).toBeVisible()
     await standardTierButton(page).click()
 

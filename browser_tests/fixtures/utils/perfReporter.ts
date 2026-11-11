@@ -36,7 +36,7 @@ const FIELD_FORMATTERS: Partial<
 export function logMeasurement(
   label: string,
   m: PerfMeasurement,
-  fields: MeasurementField[]
+  fields: readonly MeasurementField[]
 ) {
   const parts = fields.map((f) => {
     const formatter = FIELD_FORMATTERS[f]
