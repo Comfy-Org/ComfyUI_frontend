@@ -14,11 +14,13 @@ const iconMap: Record<ControlOptions, string | null> = {
   fixed: 'icon-[lucide--pencil-off]',
   randomize: 'icon-[lucide--shuffle]',
   increment: null,
+  'increment-wrap': null,
   decrement: null
 }
 
 const textMap: Record<ControlOptions, string | null> = {
   increment: '+1',
+  'increment-wrap': '+1↻',
   decrement: '-1',
   fixed: null,
   randomize: null
@@ -29,7 +31,11 @@ const textMap: Record<ControlOptions, string | null> = {
   <button
     data-testid="value-control"
     type="button"
-    :aria-label="t('widgets.valueControl.' + mode)"
+    :aria-label="
+      mode === 'increment-wrap'
+        ? t('widgets.valueControl.increment-wrap')
+        : t('widgets.valueControl.' + mode)
+    "
     :class="
       cn(
         'flex shrink-0 cursor-pointer items-center justify-center border-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:outline-none',

@@ -5,7 +5,7 @@ import { _for_testing } from '@/renderer/extensions/vueNodes/widgets/composables
 
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/core/graph/widgets/valueControlWidgets'), () => ({
-  addValueControlWidgets: vi.fn()
+  addValueControlWidget: vi.fn()
 }))
 
 const { onFloatValueChange } = _for_testing

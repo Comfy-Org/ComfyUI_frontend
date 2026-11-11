@@ -725,12 +725,21 @@ describe('useWidgetValueStore', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 1))
       store.registerWidget(seedB, state('number', 2))
+      store.registerWidgetControl(seedA, { mode: 'increment', filter: 'a' })
+      store.registerWidgetControl(seedB, { mode: 'decrement', filter: 'b' })
+      store.updateWidgetControl(seedB, { hasExecuted: true })
 
       store.clearGraph(graphA)
 
       expect(store.getWidget(seedA)).toBeUndefined()
       expect(store.getWidgetRenderState(seedA)).toBeUndefined()
       expect(store.getWidgetVisibility(seedA)).toBeUndefined()
+      expect(store.getWidgetControls(graphA)).toEqual([])
+      expect(store.getWidgetControl(seedB)).toEqual({
+        mode: 'decrement',
+        filter: 'b',
+        hasExecuted: true
+      })
       expect(store.getWidget(seedB)?.value).toBe(2)
     })
 

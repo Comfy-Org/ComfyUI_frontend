@@ -44,6 +44,7 @@ import type { GraphOperation } from './graphOperations'
 import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
 import { readDocSlotNames, readDocWidgetValue } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
+import { wireWidgets } from './wireWidgets'
 
 class TestSource extends LGraphNode {
   constructor() {
@@ -2989,7 +2990,7 @@ describe('attachDocOpMinter', () => {
     function seedGroup() {
       const node = new TestDynamicGroup()
       function widget(name: string) {
-        const found = node.widgets?.find((w) => w.name === name)
+        const found = wireWidgets(node).find((w) => w.name === name)
         if (!found) throw new Error(`Missing widget ${name}`)
         return found
       }

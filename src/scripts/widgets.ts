@@ -34,11 +34,6 @@ import type { ComfyWidgetConstructor } from '@/types/comfy'
 
 import './domWidget'
 
-/**
- * Transforms a V2 widget constructor to a V1 widget constructor.
- * @param widgetConstructorV2 The V2 widget constructor to transform.
- * @returns The transformed V1 widget constructor.
- */
 const transformWidgetConstructorV2ToV1 = (
   widgetConstructorV2: ComfyWidgetConstructorV2
 ): ComfyWidgetConstructor => {

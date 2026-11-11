@@ -7,7 +7,6 @@ import { isFloatInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSc
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { addValueControlWidget } from '@/core/graph/widgets/valueControlWidgets'
-import { transformInputSpecV2ToV1 } from '@comfyorg/object-info-parser/migration'
 
 function onFloatValueChange(this: INumericWidget, v: number) {
   const round = this.options.round
@@ -82,15 +81,7 @@ export const useFloatWidget = () => {
     )
 
     if (inputSpec.control_after_generate) {
-      const controlWidget = addValueControlWidget(
-        node,
-        widget,
-        'fixed',
-        undefined,
-        undefined,
-        transformInputSpecV2ToV1(inputSpec)
-      )
-      widget.linkedWidgets = [controlWidget]
+      addValueControlWidget(widget, 'fixed')
     }
 
     return widget

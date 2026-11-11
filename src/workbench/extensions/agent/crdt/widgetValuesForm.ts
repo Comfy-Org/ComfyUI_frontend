@@ -31,6 +31,8 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
+import { wireWidgets } from './wireWidgets'
+
 /** The post-hook halves of a serialized node this module reads. */
 type SerializedWidgetValues = Pick<ISerialisedNode, 'widgets_values_named'>
 
@@ -208,11 +210,12 @@ export function valueWidgetsOnly(
   const filtered: Record<string, unknown> = Object.create(null)
   const rootGraphId = node.graph?.rootGraph.id
   const widgetValueStore = useWidgetValueStore()
+  const widgets = wireWidgets(node)
   for (const [name, value] of Object.entries(named)) {
     const stored = rootGraphId
       ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, name))
       : undefined
-    const carriesValue = node.widgets?.some(
+    const carriesValue = widgets.some(
       (candidate) => candidate.name === name && isValueWidget(candidate, stored)
     )
     if (carriesValue)
@@ -243,7 +246,7 @@ function formProof(
   values: Record<string, unknown>,
   _serialized: SerializedWidgetValues
 ): FormProof {
-  const live = node.widgets ?? []
+  const live = wireWidgets(node)
   const rootGraphId = node.graph?.rootGraph.id
   const widgetValueStore = useWidgetValueStore()
   const valueWidgetNames = live

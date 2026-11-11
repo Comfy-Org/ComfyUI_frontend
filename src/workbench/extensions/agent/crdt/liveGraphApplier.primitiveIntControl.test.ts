@@ -9,6 +9,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type { InputSpec } from '@comfyorg/object-info-parser'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
@@ -83,9 +84,12 @@ function setup() {
 function liveWidgets(graph: LGraph): Record<string, unknown> {
   const node = graph.getNodeById(toNodeId(143))
   if (!node) throw new Error('node 143 was not created')
-  return Object.fromEntries(
-    (node.widgets ?? []).map((widget) => [widget.name, widget.value])
-  )
+  expect(node.widgets?.map((widget) => widget.name)).toEqual(['value'])
+  const target = node.widgets?.[0]
+  const control = target?.widgetId
+    ? useWidgetValueStore().getWidgetControl(target.widgetId)
+    : undefined
+  return { value: target?.value, control_after_generate: control?.mode }
 }
 
 beforeEach(() => {

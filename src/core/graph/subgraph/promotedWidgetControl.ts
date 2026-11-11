@@ -1,109 +1,48 @@
-import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import {
-  isValueControlWidget,
-  nextValueForLinkedTarget
-} from '@/core/graph/widgets/valueControl'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
-/**
- * A promoted subgraph host widget whose interior source widget is driven by a
- * `control_after_generate` widget. The host owns the value (store-backed), while
- * the interior linked widgets supply the control mode and filter (ADR-SUBGRAPH-PROMOTION-0009).
- */
-interface PromotedControlTarget {
-  hostWidget: IBaseWidget
-  linkedWidgets: IBaseWidget[]
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+
+export function getSerializablePromotedInputs(
+  inputs: readonly INodeInputSlot[]
+) {
+  const store = useWidgetValueStore()
+  return inputs.filter(
+    (input): input is INodeInputSlot & { widgetId: WidgetId } =>
+      input.widgetId !== undefined &&
+      store.getWidget(input.widgetId)?.serialize !== false
+  )
 }
 
-function collectPromotedControlTargets(
-  node: LGraphNode
-): PromotedControlTarget[] {
-  if (!node.isSubgraphNode()) return []
-
-  const targets: PromotedControlTarget[] = []
-  for (const [index, input] of node.inputs.entries()) {
-    // Promoted inputs are store-backed and addressed by widgetId.
-    if (!input.widgetId) continue
-
-    // An incoming link means the value is fed externally (or by an outer
-    // subgraph boundary in the nested case), so the host store is not the
-    // authoritative source and control must not run here.
-    if (node.isInputConnected(index)) continue
-
-    const source = promotedInputSource(node, input)
-    if (!source) continue
-
-    const resolution = resolveConcretePromotedWidget(
-      node,
-      source.nodeId,
-      source.widgetName
-    )
-    if (resolution.status !== 'resolved') continue
-
-    const { linkedWidgets } = resolution.resolved.widget
-    if (!linkedWidgets?.some(isValueControlWidget)) continue
-
-    const hostWidget = node.getWidgetFromSlot(input)
-    if (!hostWidget) continue
-
-    targets.push({ hostWidget, linkedWidgets })
-  }
-  return targets
-}
-
-function applyTarget(target: PromotedControlTarget, nodeId: unknown): void {
-  const next = nextValueForLinkedTarget({
-    target: target.hostWidget,
-    linkedWidgets: target.linkedWidgets,
-    nodeId
-  })
-  if (next === undefined) return
-
-  target.hostWidget.value = next
-  target.hostWidget.callback?.(next)
-}
-
-function controlValueRunBefore(): boolean {
-  return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
-}
-
-/**
- * Host widgets that have run control at least once, so `before` mode can skip
- * the first execution (mirroring the interior control widget's HAS_EXECUTED).
- *
- * Keyed by the widget instance so entries are released when the graph is
- * cleared and its widgets are recreated, avoiding stale state across reloads.
- */
-const executedWidgets = new WeakSet<IBaseWidget>()
-
-/**
- * Applies `control_after_generate` to a subgraph host node's promoted widgets.
- *
- * The interior control widget short-circuits for promoted inputs because the
- * interior widget is link-fed by the subgraph boundary, so its value is dead.
- * The authoritative value lives on the host node (store-backed), and this
- * applies the next controlled value there.
- */
-export function applyPromotedWidgetControl(
-  node: LGraphNode,
-  phase: 'beforeQueued' | 'afterQueued'
+export function copyPromotedWidgetControl(
+  sourceWidget: Readonly<IBaseWidget>,
+  targetId: WidgetId
 ): void {
-  const runBefore = controlValueRunBefore()
-  if (phase === 'beforeQueued' && !runBefore) return
-  if (phase === 'afterQueued' && runBefore) return
+  if (!sourceWidget.widgetId) return
+  const store = useWidgetValueStore()
+  const sourceControl = store.getWidgetControl(sourceWidget.widgetId)
+  if (!sourceControl) {
+    store.deleteWidgetControl(targetId)
+    return
+  }
+  const existing = store.getWidgetControl(targetId)
+  store.registerWidgetControl(targetId, {
+    mode: sourceControl.mode,
+    filter:
+      sourceControl.filter === undefined
+        ? undefined
+        : (existing?.filter ?? sourceControl.filter)
+  })
+}
 
-  for (const target of collectPromotedControlTargets(node)) {
-    if (phase === 'afterQueued') {
-      applyTarget(target, node.id)
-      continue
-    }
-
-    if (executedWidgets.has(target.hostWidget)) {
-      applyTarget(target, node.id)
-    }
-    executedWidgets.add(target.hostWidget)
+export function clearPromotedWidget(
+  input: INodeInputSlot,
+  { retainControl = false }: { retainControl?: boolean } = {}
+): void {
+  input._widget?.onRemove?.()
+  input._widget = undefined
+  if (input.widgetId && !retainControl) {
+    useWidgetValueStore().deleteWidgetControl(input.widgetId)
   }
 }

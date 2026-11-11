@@ -14,7 +14,7 @@ const CONTROL_LABELS = {
   increment: 'Increment Value',
   decrement: 'Decrement Value',
   randomize: 'Randomize Value'
-} as const satisfies Record<ControlOptions, string>
+} as const satisfies Record<Exclude<ControlOptions, 'increment-wrap'>, string>
 
 const i18n = createI18n({
   legacy: false,

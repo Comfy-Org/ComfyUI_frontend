@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec, IntInputSpec } from '@comfyorg/object-info-parser'
-import { CONTROL_OPTIONS } from '@/types/simplifiedWidget'
 import {
   addValueControlWidget,
   addValueControlWidgets
@@ -92,12 +91,12 @@ describe('value control widget naming', () => {
     expect(control.value).toBe('randomize')
   })
 
-  it('keeps a default mode an extension passes that is not a known mode', () => {
+  it('keeps an unrecognised extension mode inactive', () => {
     const { node, target } = intNode()
 
     const [control] = addValueControlWidgets(node, target, 'Fixed')
 
-    expect(control.value).toBe('Fixed')
+    expect(control.value).toBe('fixed')
   })
 
   it('treats a blank name override as absent', () => {
@@ -137,10 +136,18 @@ describe('value control widget naming', () => {
       intSpec({ control_after_generate: 'fixed' })
     )
 
-    expect(intControl.options.values).toEqual(CONTROL_OPTIONS)
+    expect(intControl.options.values).toEqual([
+      'fixed',
+      'increment',
+      'decrement',
+      'randomize'
+    ])
     expect(comboControl.options.values).toEqual([
-      ...CONTROL_OPTIONS,
-      'increment-wrap'
+      'fixed',
+      'increment',
+      'increment-wrap',
+      'decrement',
+      'randomize'
     ])
   })
 

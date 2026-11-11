@@ -1,4 +1,5 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import { getWidgetControlView } from '@/core/graph/widgets/control/widgetControl'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -32,7 +33,6 @@ import type {
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
-import { getControlWidget } from '@/types/simplifiedWidget'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import type {
@@ -302,9 +302,9 @@ function resolveLiveWidgetContext(
         }
       : undefined
   const controlWidget =
-    getControlWidget(liveWidget) ??
+    getWidgetControlView(liveWidget) ??
     (promotedSource?.sourceWidget
-      ? getControlWidget(promotedSource.sourceWidget)
+      ? getWidgetControlView(promotedSource.sourceWidget)
       : undefined)
 
   return {

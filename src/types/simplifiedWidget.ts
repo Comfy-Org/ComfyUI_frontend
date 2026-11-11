@@ -2,46 +2,30 @@
  * Simplified widget interface for Vue-based node rendering
  * Removes all DOM manipulation and positioning concerns
  */
+import {
+  COMBO_CONTROL_MODES,
+  isValueControlMode
+} from '@/core/graph/widgets/control/valueControl'
+import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
-import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 export type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
-export const CONTROL_OPTIONS = [
-  'fixed',
-  'increment',
-  'decrement',
-  'randomize'
-] as const
-export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
+export const CONTROL_OPTIONS = COMBO_CONTROL_MODES
+export type ControlOptions = ValueControlMode
 
-export function isControlOption(value: unknown): value is ControlOptions {
-  return CONTROL_OPTIONS.some((option) => option === value)
-}
-
-function normalizeControlOption(val: WidgetValue): ControlOptions {
-  if (isControlOption(val)) return val
+export function normalizeControlOption(val: WidgetValue): ControlOptions {
+  if (isValueControlMode(val)) return val
   return 'randomize'
 }
 
 export type SafeControlWidget = {
   value: ControlOptions
   update: (value: WidgetValue) => void
-}
-
-export function getControlWidget(
-  widget: IBaseWidget
-): SafeControlWidget | undefined {
-  const controlWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
-  if (!controlWidget) return
-  return {
-    value: normalizeControlOption(controlWidget.value),
-    update: (value) => (controlWidget.value = normalizeControlOption(value))
-  }
 }
 
 export interface LinkedUpstreamInfo {

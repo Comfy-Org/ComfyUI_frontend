@@ -2,21 +2,11 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { cleanup, fireEvent, render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
-import {
-  assert,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { Toast } from '@/components/ui/toast/toastStore'
-import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -639,67 +629,6 @@ describe('GraphCanvas execution progress updates', () => {
     expect(harness.progressWrites).toBe(0)
     expect(mocks.setDirty).not.toHaveBeenCalled()
     expect(harness.workflowStore.nodeToNodeLocatorId).not.toHaveBeenCalled()
-  })
-})
-
-describe('GraphCanvas widget control mode watcher', () => {
-  async function cycleWidgetControlMode() {
-    const settingStore = useSettingStore()
-    settingStore.settingValues['Comfy.WidgetControlMode'] = 'before'
-    await nextTick()
-    settingStore.settingValues['Comfy.WidgetControlMode'] = 'after'
-    await nextTick()
-  }
-
-  function addControlWidgetNode() {
-    const controlWidget = {
-      name: 'control_after_generate',
-      label: undefined as string | undefined,
-      [IS_CONTROL_WIDGET]: true
-    }
-    const node = new LGraphNode('Test node')
-    node.id = toNodeId(1)
-    node.widgets = [controlWidget as unknown as IBaseWidget]
-
-    const graph = new LGraph()
-    graph._nodes.push(node)
-
-    return { graph, controlWidget }
-  }
-
-  // Defensive: the app only writes `canvasStore.canvas` after `setup()` has
-  // installed the root graph, so this state is not reachable in production. The
-  // guard keeps the watcher consistent with its siblings that read the graph.
-  it('defensively skips the control-widget sync when the root graph is not ready', async () => {
-    await mountGraphCanvas()
-
-    useCanvasStore().canvas = app.canvas
-    expect(app.rootGraphOrUndefined).toBeUndefined()
-
-    await expect(cycleWidgetControlMode()).resolves.toBeUndefined()
-  })
-
-  it('still syncs control-widget labels once the root graph is ready', async () => {
-    await mountGraphCanvas()
-
-    useCanvasStore().canvas = app.canvas
-    const { graph, controlWidget } = addControlWidgetNode()
-
-    await expect(cycleWidgetControlMode()).resolves.toBeUndefined()
-    expect(controlWidget.label).toBeUndefined()
-
-    setRootGraph(graph)
-
-    const settingStore = useSettingStore()
-    settingStore.settingValues['Comfy.WidgetControlMode'] = 'before'
-    await nextTick()
-    const labelBeforeMode = controlWidget.label
-    expect(labelBeforeMode).toBeTruthy()
-
-    settingStore.settingValues['Comfy.WidgetControlMode'] = 'after'
-    await nextTick()
-    expect(controlWidget.label).toBeTruthy()
-    expect(controlWidget.label).not.toBe(labelBeforeMode)
   })
 })
 
