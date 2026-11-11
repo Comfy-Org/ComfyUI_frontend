@@ -785,6 +785,9 @@ describe('MissingModelRow', () => {
           name: 'Downloading model.safetensors'
         })
       ).toHaveAttribute('aria-valuetext', '512 MB / 1 GB')
+      expect(
+        screen.getByTestId('missing-model-download-progress')
+      ).toHaveTextContent(/^50%$/)
       expect(screen.queryByTestId('missing-model-download')).toBeNull()
     })
 

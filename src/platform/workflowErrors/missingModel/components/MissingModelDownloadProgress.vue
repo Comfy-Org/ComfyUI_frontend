@@ -1,7 +1,8 @@
 <template>
   <div
     data-testid="missing-model-download-progress"
-    class="flex min-w-0 items-center gap-2 pl-5"
+    class="flex min-w-0 items-center gap-2"
+    :title="progressText"
   >
     <span
       role="progressbar"
@@ -32,8 +33,10 @@
         "
       />
     </span>
-    <span class="shrink-0 text-2xs/tight text-muted-foreground">
-      {{ progressText }}
+    <span
+      class="w-14 shrink-0 truncate text-right text-2xs/tight text-muted-foreground tabular-nums"
+    >
+      {{ progressLabel }}
     </span>
   </div>
 </template>
@@ -60,7 +63,8 @@ const { state, modelName } = defineProps<{
 const { t } = useI18n()
 
 const progressPercent = computed(() => {
-  if (state.status !== 'downloading' || state.fraction === null) return
+  if (state.status !== 'downloading' || state.fraction === null)
+    return undefined
   return Math.round(Math.min(1, Math.max(0, state.fraction)) * 100)
 })
 
@@ -92,5 +96,15 @@ const progressText = computed(() => {
       : t('rightSidePanel.missingModels.downloadPaused')
   }
   return bytes ?? `${progressPercent.value ?? 0}%`
+})
+
+const progressLabel = computed(() => {
+  if (state.status !== 'downloading') return progressText.value
+  if (state.activity === 'paused') {
+    return t('rightSidePanel.missingModels.downloadPaused')
+  }
+  return progressPercent.value === undefined
+    ? progressText.value
+    : `${progressPercent.value}%`
 })
 </script>

@@ -223,6 +223,7 @@
       v-if="showDownloadAction && activeHostDownload"
       :state="activeHostDownload"
       :model-name="model.name"
+      :class="hasMultipleReferences && 'pl-5'"
     />
 
     <div
