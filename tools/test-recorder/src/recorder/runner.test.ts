@@ -18,16 +18,14 @@ const {
   generateRecordingTemplate: vi.fn(),
   recordingTarget: vi.fn((): 'cloud' => 'cloud'),
   removeLegacyCustomStorageState: vi.fn(),
-  runCommand: vi.fn(
-    (): SpawnSyncReturns<Buffer> => ({
-      pid: 1,
-      output: [],
-      stdout: Buffer.alloc(0),
-      stderr: Buffer.alloc(0),
-      status: 1,
-      signal: null
-    })
-  ),
+  runCommand: vi.fn((): SpawnSyncReturns<Buffer> => ({
+    pid: 1,
+    output: [],
+    stdout: Buffer.alloc(0),
+    stderr: Buffer.alloc(0),
+    status: 1,
+    signal: null
+  })),
   storageStateKey: vi.fn(() => 'custom-key'),
   storageStatePath: vi.fn((key: string) => `/state/storage-state.${key}.json`)
 }))

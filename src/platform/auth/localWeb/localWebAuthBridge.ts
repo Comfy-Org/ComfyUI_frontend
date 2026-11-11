@@ -11,7 +11,8 @@ import {
   exchangeAuthorizationCode,
   localRedirectUri,
   readAuthorizationResponse,
-  refreshAccessToken
+  refreshAccessToken,
+  revokeRefreshToken
 } from '@comfyorg/account-core/oauthPkce'
 
 import type {
@@ -29,6 +30,9 @@ const REFRESH_MARGIN_MS = 60_000
 const CALLBACK_PATH = '/oauth/local-callback.html'
 const CALLBACK_MESSAGE_TYPE = 'comfy-local-web-sign-in'
 const POPUP_POLL_MS = 500
+const UNREACHABLE_TOKEN_RETRY_DELAYS_MS = [
+  5_000, 10_000, 20_000, 40_000, 60_000, 60_000, 60_000, 60_000
+]
 const TAB_WORKSPACE_KEY = 'Comfy.LocalWebSignIn.TabWorkspace'
 const CALLBACK_PARAMS = [
   'code',
@@ -109,6 +113,11 @@ export function createLocalWebAuthBridge(
 ): LocalWebAuthBridge {
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   let refreshing: Promise<OAuthTokens | undefined> | undefined
+  let tokenUnreachable = false
+  let unreachableTokenRetry:
+    | { round: number; timer: ReturnType<typeof setTimeout> | undefined }
+    | undefined
+  let unreachableTokenRetryRound = 0
   let signingIn:
     | {
         popup: LocalWebPopup
@@ -206,7 +215,8 @@ export function createLocalWebAuthBridge(
     const incoming = readAccessTokenIdentity(tokens.accessToken)?.userId
     const kept = activeTokens() ?? env.tokens.read()
     const previous = kept && readAccessTokenIdentity(kept.accessToken)?.userId
-    if (previous && incoming && previous !== incoming) env.tokens.clear()
+    if (previous && incoming && previous !== incoming)
+      revokeSignIns(env.tokens.clear())
   }
 
   function abandonSignIn(): void {
@@ -217,10 +227,16 @@ export function createLocalWebAuthBridge(
 
   function signOutLocally(): DesktopHostAuthState {
     abandonSignIn()
-    env.tokens.clear()
+    revokeSignIns(env.tokens.clear())
     pinTab(undefined)
     emit()
     return currentState()
+  }
+
+  function revokeSignIns(tokens: OAuthTokens[]): void {
+    new Set(tokens.map((t) => t.refreshToken)).forEach(
+      (refreshToken) => void revokeRefreshToken(refreshToken, tokenOptions())
+    )
   }
 
   function isFresh(tokens: OAuthTokens): boolean {
@@ -276,6 +292,53 @@ export function createLocalWebAuthBridge(
       refreshing = undefined
     })
     return refreshing
+  }
+
+  function stopUnreachableTokenRetry(): void {
+    clearTimeout(unreachableTokenRetry?.timer)
+    unreachableTokenRetry = undefined
+  }
+
+  function markTokenReachable(): void {
+    stopUnreachableTokenRetry()
+    if (!tokenUnreachable) return
+    tokenUnreachable = false
+    emit()
+  }
+
+  function markTokenUnreachable(): void {
+    tokenUnreachable = true
+    if (unreachableTokenRetry) return
+    unreachableTokenRetry = {
+      round: ++unreachableTokenRetryRound,
+      timer: undefined
+    }
+    retryUnreachableToken(unreachableTokenRetry.round, 0)
+  }
+
+  function retryUnreachableToken(round: number, attempt: number): void {
+    if (unreachableTokenRetry?.round !== round) return
+    if (attempt >= UNREACHABLE_TOKEN_RETRY_DELAYS_MS.length) {
+      stopUnreachableTokenRetry()
+      return
+    }
+    unreachableTokenRetry.timer = setTimeout(() => {
+      void freshTokens()
+        .catch(() => undefined)
+        .then((tokens) => {
+          if (unreachableTokenRetry?.round !== round) return
+          if (tokens) {
+            markTokenReachable()
+            return
+          }
+          if (!activeTokens()) {
+            tokenUnreachable = false
+            stopUnreachableTokenRetry()
+            return
+          }
+          retryUnreachableToken(round, attempt + 1)
+        })
+    }, UNREACHABLE_TOKEN_RETRY_DELAYS_MS[attempt])
   }
 
   env.tokens.subscribe(emit)
@@ -422,7 +485,16 @@ export function createLocalWebAuthBridge(
 
     async getWorkspaceToken(workspaceId) {
       const tokens = await freshTokens()
-      if (!tokens) return null
+      if (!tokens) {
+        if (activeTokens()) {
+          markTokenUnreachable()
+        } else {
+          tokenUnreachable = false
+          stopUnreachableTokenRetry()
+        }
+        return null
+      }
+      markTokenReachable()
       const identity = readAccessTokenIdentity(tokens.accessToken)
       return identity?.workspaceId === workspaceId ? tokens.accessToken : null
     },

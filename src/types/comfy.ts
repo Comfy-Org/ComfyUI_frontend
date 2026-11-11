@@ -30,7 +30,7 @@ import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
@@ -86,6 +86,7 @@ export interface LoadGraphDataOptions {
   skipAssetScans?: boolean
   silentAssetErrors?: boolean
   workflowNavigationId?: number
+  isCurrent?: () => boolean
 }
 
 /**
@@ -201,7 +202,7 @@ export interface ComfyApp {
       deferWarnings?: boolean
       onNodeCreated?: (node: LGraphNode) => void
     }
-  ): Promise<void>
+  ): Promise<void | false>
   handleFileList(fileList: File[]): Promise<void>
   handleAudioFileList(fileList: File[]): Promise<void>
   handleVideoFileList(fileList: File[]): Promise<void>
@@ -212,7 +213,7 @@ export interface ComfyApp {
     apiData: ComfyApiWorkflow,
     fileName: string,
     options?: { deferWarnings?: boolean }
-  ): Promise<void>
+  ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[]

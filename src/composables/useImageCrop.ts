@@ -3,13 +3,14 @@ import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import { locateWidgetNode } from '@/composables/widgetHistoryScope'
+import type { LocatedWidget } from '@/composables/widgetHistoryScope'
+import { resolveWidgetInputSource } from '@/composables/widgetInputSource'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
-import { resolveNode } from '@/utils/litegraphUtil'
 
 type ResizeDirection =
   | 'top'
@@ -63,6 +64,7 @@ export const ASPECT_RATIOS = {
 } as const
 
 interface UseImageCropOptions {
+  widget: LocatedWidget
   imageEl: Ref<HTMLImageElement | null>
   containerEl: Ref<HTMLDivElement | null>
   modelValue: Ref<Bounds>
@@ -79,10 +81,13 @@ function imageInputSlot(node: LGraphNode): number {
 }
 
 export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
-  const { imageEl, containerEl, modelValue, onEditEnd } = options
+  const { widget, imageEl, containerEl, modelValue, onEditEnd } = options
   const nodeOutputStore = useNodeOutputStore()
 
-  const node = useLiveGraphNode(() => resolveNode(nodeId))
+  const node = useLiveGraphNode(() => {
+    const location = locateWidgetNode(widget, nodeId)
+    return location?.graph.getNodeById(location.nodeId)
+  })
 
   const imageUrl = ref<string | null>(null)
   const isLoading = ref(false)
@@ -198,9 +203,10 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     const cropNode = node.value
     if (!cropNode) return null
 
-    const sourceNode = resolveInputSourceNode(
+    const sourceNode = resolveWidgetInputSource(
       cropNode,
-      imageInputSlot(cropNode)
+      imageInputSlot(cropNode),
+      nodeId
     )
     if (!sourceNode) return null
 

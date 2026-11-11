@@ -25,6 +25,7 @@ import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
+import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -35,10 +36,14 @@ import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import type { AgentMessages } from './schemas/agentApiSchema'
 import { zAgentMessages } from './schemas/agentApiSchema'
 import { createAgentEventSource } from './services/agent/agentEventSource'
+import { destroyAgentPageSession } from './agentPageSession'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { registerWorkflowTabActivityTracker } from './services/agent/workflowTabActivityTracker'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
@@ -281,6 +286,7 @@ beforeEach(() => {
   api.socket = fromPartial<WebSocket>({ readyState: 1, send: vi.fn() })
   agentSocket = createFakeAgentSocket()
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
+  destroyAgentPageSession()
   vi.mocked(resolveAgentIdentity).mockReturnValue({
     state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),
     reset: vi.fn(),
@@ -306,9 +312,11 @@ beforeEach(() => {
         fromPartial({ hasFunds: true, agentHasFunds: true })
       ),
       tier: computed(() => 'STANDARD' as const),
-      type: computed(() => 'legacy' as const),
+      type: computed(() => 'workspace' as const),
       billingStatus: computed(() => 'paid' as const),
       canAccessSubscriptionFeatures: computed(() => true),
+      isInitialized: computed(() => true),
+      subscriptionState: computed(() => 'active' as const),
       fetchStatus: vi.fn(async () => {})
     })
   )
@@ -355,6 +363,289 @@ beforeEach(() => {
 
 afterEach(() => {
   stopTracker()
+})
+
+describe('AgentPanelRoot Ask agent about errors', () => {
+  const errorContext: AgentErrorContext = {
+    scope: 'card',
+    count: 1,
+    label: 'Execution failed',
+    severity: 'error',
+    problems: [{ category: 'execution_failure', message: 'boom' }]
+  }
+
+  function respondWithChats(
+    threads: { id: string; title: string; workflowId: string }[]
+  ): void {
+    respondToFetch(/\/workflows(?:\?|$)/, () =>
+      json(200, {
+        data: [
+          { id: 'wf-42', name: 'current' },
+          { id: 'wf-other', name: 'other' }
+        ],
+        pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+      })
+    )
+    respondToFetch(/\/agent\/threads(?:\?|$)/, () =>
+      json(200, {
+        ...threadList,
+        threads: threads.map(({ id, title, workflowId }) => ({
+          ...agentThread(id, title),
+          workflow_id: workflowId
+        })),
+        pagination: {
+          has_more: false,
+          limit: threads.length,
+          offset: 0,
+          total: threads.length
+        }
+      })
+    )
+  }
+
+  it('opens the latest chat of the errored workflow before attaching the chip', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    respondToFetch('/api/agent/threads/th-2/messages', () =>
+      json(200, liveOtherThread('wf-other'))
+    )
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = errorContext
+
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-2')
+    )
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).toEqual(errorContext)
+    )
+    expect(useAgentPanelStore().pendingErrorContext).toBeNull()
+  })
+
+  it('keeps a draft and does not attach when the chat it belongs to is for another workflow', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+    useAgentComposerStore().setText('keep this draft')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: otherTab
+    }
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'Send or clear your current message first, then ask the agent about these errors.'
+      )
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
+    expect(useAgentComposerStore().draft).toBe('keep this draft')
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('does not attach diagnostics from a workflow that is no longer active', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: runningTab
+    }
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these errors is no longer open, so nothing was attached.'
+      )
+    )
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('keeps an attached chip with its workflow when the user switches tabs before sending', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: runningTab
+    }
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).not.toBeNull()
+    )
+
+    await useWorkflowService().openWorkflow(other)
+
+    await vi.waitFor(() =>
+      expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
+    expect(useAgentComposerStore().errorContext).not.toBeNull()
+  })
+
+  it('starts a new chat on the errored workflow when it has none', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = errorContext
+
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).toEqual(errorContext)
+    )
+    expect(useAgentConversationStore().threadId).toBeNull()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+  })
+
+  function deferFollowOf(workflowId: string): () => Promise<void> {
+    let release!: () => void
+    const held = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let answered: Promise<Response> | undefined
+    respondToFetch(
+      new RegExp(`/agent/threads\\?workflow_id=${workflowId}`),
+      () => {
+        answered = held.then(() =>
+          json(200, {
+            ...threadList,
+            threads: [
+              { ...agentThread('th-2', 'Other chat'), workflow_id: workflowId }
+            ],
+            pagination: { has_more: false, limit: 1, offset: 0, total: 1 }
+          })
+        )
+        return answered
+      },
+      { times: 1 }
+    )
+    return async () => {
+      release()
+      await answered
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      await nextTick()
+    }
+  }
+
+  async function waitForFollowOf(workflowId: string): Promise<void> {
+    await vi.waitFor(() =>
+      expect(
+        fetchRequests(new RegExp(`/agent/threads\\?workflow_id=${workflowId}`))
+      ).toHaveLength(1)
+    )
+  }
+
+  it('attaches nothing when the user returns to the first tab while the follow is still loading', async () => {
+    const running = workflowStore.activeWorkflow!
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    respondToFetch('/api/agent/threads/th-2/messages', () =>
+      json(200, liveOtherThread('wf-other'))
+    )
+    const releaseFollow = deferFollowOf('wf-other')
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: otherTab
+    }
+    await waitForFollowOf('wf-other')
+
+    await useWorkflowService().openWorkflow(running)
+    await releaseFollow()
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these errors is no longer open, so nothing was attached.'
+      )
+    )
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('keeps a fresh chat and its chip on the errored workflow when the user switches tabs afterwards', async () => {
+    const running = workflowStore.activeWorkflow!
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = errorContext
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).toEqual(errorContext)
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+
+    await useWorkflowService().openWorkflow(running)
+    await vi.waitFor(() =>
+      expect(workflowStore.activeWorkflow?.path).toBe(runningTab)
+    )
+    await nextTick()
+
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+    expect(useAgentComposerStore().errorContext).toEqual(errorContext)
+  })
+
+  it('does not let an attachment left over from a closed panel replace a newer one', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    respondToFetch('/api/agent/threads/th-2/messages', () =>
+      json(200, liveOtherThread('wf-other'))
+    )
+    const releaseFollow = deferFollowOf('wf-other')
+    const closed = renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      label: 'Obsolete failure'
+    }
+    await waitForFollowOf('wf-other')
+
+    closed.unmount()
+    renderPanel()
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      label: 'Newer failure'
+    }
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext?.label).toBe('Newer failure')
+    )
+
+    await releaseFollow()
+
+    expect(useAgentComposerStore().errorContext?.label).toBe('Newer failure')
+  })
 })
 
 describe('AgentPanelRoot tab activity across chats', () => {
@@ -701,7 +992,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
 
     emitAskUser()
     await nextTick()
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(true)
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
 
     agentSocket.receive('agent_ask_resolved', {
       thread_id: 'th-1',
@@ -711,14 +1002,36 @@ describe('AgentPanelRoot tab activity across chats', () => {
       selected: ['allow']
     })
     await nextTick()
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(false)
+    expect(useBrowserTabTitleStore().prefix).toBe('')
 
     emitRunApproval()
     await nextTick()
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(true)
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
 
     unmount()
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(false)
+    expect(useBrowserTabTitleStore().prefix).toBe('')
+  })
+
+  it('re-translates the page-wide prefix when the locale changes while an answer is pending', async () => {
+    const locale = i18n.global.locale.value
+    i18n.global.mergeLocaleMessage('x-test', {
+      g: { agentInputNeededShort: 'Answer needed' }
+    })
+    try {
+      i18n.global.locale.value = 'en'
+      renderPanel()
+      await send('install the video nodes')
+
+      emitAskUser()
+      await nextTick()
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+      i18n.global.locale.value = 'x-test' as typeof locale
+      await nextTick()
+      expect(useBrowserTabTitleStore().prefix).toBe('[Answer needed] ')
+    } finally {
+      i18n.global.locale.value = locale
+    }
   })
 
   it('keeps the page-wide approval flag when the asking turn has no open tab', async () => {
@@ -732,7 +1045,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
     await nextTick()
 
     expect(useWorkflowTabActivityStore().awaitingApprovalPaths.size).toBe(0)
-    expect(useWorkflowTabActivityStore().agentAwaitingApproval).toBe(true)
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
   })
 
   it('follows the tab when it is renamed mid-turn', async () => {

@@ -40,6 +40,14 @@ import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
+import {
+  autoTopUpCardState,
+  loadedAutoTopUp
+} from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
+import {
+  autoTopUpEnabledFact,
+  canManageAutoTopUpFact
+} from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
@@ -67,6 +75,8 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+
+vi.mock(import('@/platform/billing/composables/useBillingAutoTopUpCard'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
@@ -449,7 +459,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
     expect(phases.filter((phase) => phase === 'entered')).toHaveLength(1)
 
-    // One denominator: every phase of a top-up must carry the same journey.
     const journeyIds = new Set(
       (
         vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
@@ -475,8 +484,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       )
     )
 
-    // A different journey takes the slot while the request is pending, so the
-    // response must not bind to whatever happens to be active when it lands.
     clearCheckoutJourney()
     const replacement = resolveCheckoutJourney({
       actorUid: 'user-1',
@@ -746,6 +753,93 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(
       screen.queryByText(/This top-up covers that first/)
     ).not.toBeInTheDocument()
+  })
+
+  const SERVED_MINIMUM: Partial<BalanceInfo> = {
+    minTopupCents: 2_500,
+    minTopupCredits: 5_275
+  }
+  const SERVED_MAXIMUM: Partial<BalanceInfo> = {
+    maxTopupCents: 5_000,
+    maxTopupCredits: 10_550
+  }
+
+  it.for<{
+    name: string
+    balance: Partial<BalanceInfo>
+    preset: string
+    message: RegExp
+  }>([
+    {
+      name: 'below the served minimum',
+      balance: SERVED_MINIMUM,
+      preset: '$10',
+      message: /5,275 credits minimum/
+    },
+    {
+      name: 'above the served maximum',
+      balance: SERVED_MAXIMUM,
+      preset: '$100',
+      message: /10,550 credits maximum/
+    }
+  ])(
+    'blocks an amount $name and names the bound',
+    async ({ balance, preset, message }) => {
+      renderWithBalance(balance)
+
+      await userEvent.click(screen.getByRole('button', { name: preset }))
+
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeDisabled()
+      expect(screen.getByText(message)).toBeVisible()
+    }
+  )
+
+  it.for<{ name: string; balance: Partial<BalanceInfo>; preset: string }>([
+    { name: 'at the served minimum', balance: SERVED_MINIMUM, preset: '$25' },
+    { name: 'above $5 when no minimum is served', balance: {}, preset: '$10' },
+    {
+      name: 'above $5 when the minimum has no served credits',
+      balance: { minTopupCents: 2_500 },
+      preset: '$10'
+    },
+    { name: 'at the served maximum', balance: SERVED_MAXIMUM, preset: '$50' },
+    {
+      name: 'under $10,000 when no maximum is served',
+      balance: {},
+      preset: '$100'
+    },
+    {
+      name: 'under $10,000 when the maximum has no served credits',
+      balance: { maxTopupCents: 5_000 },
+      preset: '$100'
+    }
+  ])('allows an amount $name', async ({ balance, preset }) => {
+    renderWithBalance(balance)
+
+    await userEvent.click(screen.getByRole('button', { name: preset }))
+
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+    expect(screen.queryByText(/credits minimum/)).not.toBeInTheDocument()
+  })
+
+  it.for<{ name: string; balance: Partial<BalanceInfo>; cap: string }>([
+    {
+      name: 'the served maximum credits',
+      balance: SERVED_MAXIMUM,
+      cap: '10550'
+    },
+    {
+      name: '$10,000 in credits when no maximum is served',
+      balance: {},
+      cap: '2110000'
+    }
+  ])('caps the credits input at $name', ({ balance, cap }) => {
+    renderWithBalance(balance)
+
+    expect(screen.getByRole('spinbutton', { name: 'Credits' })).toHaveAttribute(
+      'aria-valuemax',
+      cap
+    )
   })
 
   describe('without a default payment method', () => {
@@ -1756,6 +1850,40 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     open.mockRestore()
   })
 
+  it('says when to verify by while the top-up serves its authentication deadline', () => {
+    setTopupActionOperation({
+      opId: 'op-deadline',
+      status: 'pending',
+      actionUrl: 'https://verify.example/token',
+      authenticationDeadline: '2026-10-30T15:40:00Z'
+    })
+
+    renderDialog()
+
+    expect(
+      screen.getByText(
+        'Your bank is waiting for you to confirm it. Verify it by October 30, 3:40 PM to finish this top-up.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the open-ended verification copy when no deadline is served', () => {
+    setTopupActionOperation({
+      opId: 'op-no-deadline',
+      status: 'pending',
+      actionUrl: 'https://verify.example/token'
+    })
+
+    renderDialog()
+
+    expect(
+      screen.getByText(
+        'Your bank requires additional verification to complete this payment.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/Verify by/)).not.toBeInTheDocument()
+  })
+
   it('reopens in verification while the action URL is loading', () => {
     setIsAddingCredits(true)
     setTopupActionOperation({
@@ -1773,9 +1901,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
   })
 
-  // The server holds the invoice open and refuses a replacement purchase while
-  // it is, so a restart here would be rejected. Say what is true instead, and
-  // never offer an action the server will turn down.
   it('explains a top-up parked with no link instead of offering a restart', async () => {
     setIsAddingCredits(true)
     setTopupActionOperation({
@@ -1809,8 +1934,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(useBillingOperationStore().dismissOperation).not.toHaveBeenCalled()
   })
 
-  // Reachable whenever a purchase is submitted while the previous operation is
-  // still open — after Start over on a failed challenge, or from a second tab.
   it('names the still-open purchase when the server refuses a replacement', async () => {
     vi.mocked(mockBillingContext().topup).mockRejectedValue(
       new WorkspaceApiError('conflict', 409, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
@@ -2107,10 +2230,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
-  // Asserting the whole projected collection rather than one stage: a source
-  // dropped from any single emit site leaves the others green, and a funnel
-  // whose terminal events are attributed while its `started` is not reads as
-  // a conversion cliff rather than a gap.
   it.for([
     { outcome: 'completed', stages: ['intent', 'started', 'succeeded'] },
     { outcome: 'failed', stages: ['intent', 'started', 'failed'] },
@@ -2140,8 +2259,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     }
   )
 
-  // A real payment usually settles on the poller, not synchronously, so this
-  // hand-off is what carries the source onto the poller's own terminal events.
   it('hands the opening surface to the poller for a pending top-up', async () => {
     vi.mocked(mockBillingContext().topup).mockResolvedValue(
       topupResponse('pending')
@@ -2161,9 +2278,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
   })
 
-  // Completing out of band is the expected outcome here — the copy sends the
-  // customer to their bank — and the marker is what refreshes the balance when
-  // they come back, so neither exit may discard it.
   it.for([{ control: 'OK' }, { control: 'Close' }])(
     'keeps the pending top-up marker when leaving a parked purchase via $control',
     async ({ control }) => {
@@ -2509,6 +2623,52 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       state: 'payment_processing'
     })
   }
+
+  describe('the auto top-up card', () => {
+    const AUTO_TOP_UP_PROMPT = 'Running low on credits? Turn on auto top-up.'
+
+    beforeEach(() => {
+      const capabilities = useBillingCapabilities()
+      capabilities.autoTopUpEnabled = autoTopUpEnabledFact(true)
+      capabilities.canManageAutoTopUp = canManageAutoTopUpFact(true)
+      capabilities.autoTopUpSetup = computed(() => ({
+        state: 'ready' as const
+      }))
+      autoTopUpCardState.value = loadedAutoTopUp('off')
+    })
+
+    it('sits above Add credits on the amount step', () => {
+      renderDialog()
+
+      const setUp = screen.getByRole('link', { name: 'Set up' })
+      expect(screen.getByText(AUTO_TOP_UP_PROMPT)).toBeInTheDocument()
+      expect(
+        setUp.compareDocumentPosition(
+          screen.getByRole('button', { name: 'Add credits' })
+        ) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+    })
+
+    it('is gone on the payment step', async () => {
+      renderDialog()
+
+      await clickAddCredits()
+
+      expect(
+        screen.getByRole('button', { name: 'Pay $50.00' })
+      ).toBeInTheDocument()
+      expect(screen.queryByText(AUTO_TOP_UP_PROMPT)).not.toBeInTheDocument()
+    })
+
+    it('gives way to the payment processing notice', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(2500)
+      renderDialog()
+
+      await screen.findByRole('status')
+      expect(screen.queryByText(AUTO_TOP_UP_PROMPT)).not.toBeInTheDocument()
+    })
+  })
 
   describe('a top-up payment still processing', () => {
     it('keeps add credits available and names the served amount', async () => {

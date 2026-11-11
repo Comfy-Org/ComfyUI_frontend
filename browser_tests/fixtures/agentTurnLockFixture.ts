@@ -18,6 +18,7 @@ import { escapeRegExp } from 'es-toolkit'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type {
   AgentWsEvent,
   zTurnInProgressError
@@ -69,7 +70,8 @@ const TURN_IN_PROGRESS: TurnInProgressBody = {
   turn_id: TURN_ID
 }
 
-const TURN_THINKING_TEXT = 'Wiring the audio output node.'
+export const TURN_THINKING_TEXT = 'Wiring the audio output node.'
+export const LATE_THINKING_TEXT = 'Back online, so I can finish the wiring.'
 export const POST_RECONNECT_TEXT = 'Reconnected, and the graph is ready.'
 export const PERSISTED_BEFORE_TOOL_TEXT = 'Prepared the graph. '
 export const PERSISTED_AFTER_TOOL_TEXT = 'Audio output connected.'
@@ -89,6 +91,11 @@ const TURN_TOOL_EVENT: AgentWsEvent = {
     message_id: TURN_ID,
     thread_id: THREAD_ID
   }
+}
+
+export const LATE_THINKING_EVENT: AgentWsEvent = {
+  type: 'agent_thinking',
+  data: { delta: LATE_THINKING_TEXT, message_id: TURN_ID, thread_id: THREAD_ID }
 }
 
 export const POST_RECONNECT_EVENT: AgentWsEvent = {
@@ -210,6 +217,7 @@ class TurnLockServer {
   private foreignPrompt: string | undefined
   private rejected = 0
   private posts = 0
+  private transcriptReads = 0
   private readonly answered: string[][] = []
   private pendingAsk: z.infer<typeof zAgentPendingAsk> | undefined
   private heldTranscript:
@@ -233,6 +241,14 @@ class TurnLockServer {
   /** Every post the server answered, accepted or rejected. */
   get postAttempts(): number {
     return this.posts
+  }
+
+  get transcriptReadCount(): number {
+    return this.transcriptReads
+  }
+
+  countTranscriptRead(): void {
+    this.transcriptReads++
   }
 
   countPost(): void {
@@ -356,6 +372,10 @@ class TurnLockServer {
                 tool_name: 'add_node',
                 status: 'success'
               }
+            ],
+            thinking: [
+              { text: TURN_THINKING_TEXT, tool_call_id: 'call-add-node' },
+              { text: LATE_THINKING_TEXT }
             ]
           }
         },
@@ -473,6 +493,7 @@ async function routeTurnLock(
       const path = new URL(route.request().url()).pathname.split('/')
       const threadId = decodeURIComponent(path.at(-2) ?? '')
       await server.waitForTranscriptRelease(threadId)
+      server.countTranscriptRead()
       return route.fulfill(jsonRoute(server.transcript(threadId)))
     }
     server.countPost()
@@ -542,9 +563,9 @@ export class AgentTurnLockHarness {
   public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
   public readonly turnInProgressNotice: Locator
+  public readonly agentPanel: AgentPanel
   private readonly entryButton: Locator
   private readonly dock: Locator
-  private readonly agentPanel: AgentPanel
 
   constructor(
     private readonly page: Page,
@@ -616,6 +637,13 @@ export class AgentTurnLockHarness {
 
   postAttempts(): number {
     return this.server.postAttempts
+  }
+
+  async waitForRecoveryExhausted(): Promise<void> {
+    const hydrationRead = 1
+    await expect
+      .poll(() => this.server.transcriptReadCount, { timeout: 90_000 })
+      .toBeGreaterThanOrEqual(TURN_RECOVERY_DELAYS_MS.length + hydrationRead)
   }
 
   /** Opens the panel on a blank workflow and points the composer at that tab. */

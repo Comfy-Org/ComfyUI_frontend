@@ -11,11 +11,13 @@ import {
   zGetExtensionsResponse,
   zPostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
+import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
+import { combineAbortSignals } from './abortSignal'
 import defaultClientFeatureFlags from './clientFeatureFlags.json' with { type: 'json' }
 import type { ApiAuthProvider } from './apiAuthProvider'
 import { anonymousApiAuthProvider } from './apiAuthProvider'
@@ -71,6 +73,7 @@ import type { JobAssetsResult, JobDetail, JobListItem } from './jobTypes'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { AuthCredential, AuthScheme } from './authTypes'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { getFetchRouteTemplate } from './fetchRouteTemplate'
 import { retryingSend } from './fetchWithRetry'
 import { NO_RETRY_POLICY } from './retryPolicy'
@@ -88,6 +91,7 @@ interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
+  workflow_metadata?: Pick<PromptWorkflowMetadata, 'workflow_id'>
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -212,6 +216,7 @@ interface BackendApiCalls {
     displayNodeId: string
     realNodeId: string
     jobId: string
+    workflowId?: string
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
@@ -695,7 +700,10 @@ export class ComfyApi extends EventTarget {
       : undefined
     const signal =
       requestOptions.signal && timeout
-        ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
+        ? combineAbortSignals([
+            requestOptions.signal,
+            timeout.controller.signal
+          ])
         : (requestOptions.signal ?? timeout?.controller.signal)
 
     let retryTimeoutId: ReturnType<typeof setTimeout> | undefined
@@ -729,7 +737,10 @@ export class ComfyApi extends EventTarget {
             }, timeout.duration)
 
             return requestOptions.signal
-              ? AbortSignal.any([requestOptions.signal, retryController.signal])
+              ? combineAbortSignals([
+                  requestOptions.signal,
+                  retryController.signal
+                ])
               : retryController.signal
           }
         }
@@ -1098,7 +1109,8 @@ export class ComfyApi extends EventTarget {
                 displayNodeId: metadata.display_node_id,
                 parentNodeId: metadata.parent_node_id,
                 realNodeId: metadata.real_node_id,
-                jobId: metadata.prompt_id
+                jobId: metadata.prompt_id,
+                workflowId: metadata.workflow_id
               })
 
               this.dispatchCustomEvent('b_preview', imageBlob4)
@@ -1337,6 +1349,10 @@ export class ComfyApi extends EventTarget {
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
       }),
+      ...(workflow.id &&
+        workflow.id !== zeroUuid && {
+          workflow_metadata: { workflow_id: workflow.id }
+        }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,

@@ -26,7 +26,8 @@ import { useAgentConsent } from './useAgentConsent'
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/config/comfyApi'), () => ({
-  getComfyApiBaseUrl: () => 'https://api.comfy.test'
+  getComfyApiBaseUrl: () => 'https://api.comfy.test',
+  getComfyCloudBaseUrl: () => 'https://cloud.comfy.test'
 }))
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
@@ -334,6 +335,37 @@ describe('useAgentConsent', () => {
     expect(telemetry.trackAgentConsentOfferExited).not.toHaveBeenCalled()
   })
 
+  it.for([
+    {
+      close: 'the user closes the card',
+      reported: 'a dismissal',
+      exits: [['dismissed']],
+      closeCard: (dialog: { dialogComponentProps: { onClose?: unknown } }) =>
+        (dialog.dialogComponentProps.onClose as () => void)()
+    },
+    {
+      close: 'its workspace changes',
+      reported: 'nothing',
+      exits: [],
+      closeCard: () => {
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: 'workspace-b'
+        })
+      }
+    }
+  ])('tells the caller $reported when $close', async ({ exits, closeCard }) => {
+    const onExit = vi.fn()
+    const request = useAgentConsent().withConsent('button_click', vi.fn(), {
+      onExit
+    })
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+    closeCard(dialog)
+    await request
+
+    expect(onExit.mock.calls).toEqual(exits)
+  })
+
   it('separates giving up after a failed save from walking away', async () => {
     fetchWithUnifiedRemint
       .mockResolvedValueOnce(settingResponse(false))
@@ -638,7 +670,7 @@ describe('useAgentConsent', () => {
 
     await vi.waitFor(() => {
       expect(fetchWithUnifiedRemint).toHaveBeenLastCalledWith(
-        'https://api.comfy.test/api/global-settings',
+        'https://cloud.comfy.test/api/global-settings',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -849,7 +881,7 @@ describe('useAgentConsent', () => {
     expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-      'https://api.comfy.test/api/global-settings',
+      'https://cloud.comfy.test/api/global-settings',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ key: stored.key, value: true })
