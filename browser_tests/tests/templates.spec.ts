@@ -117,30 +117,33 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       .toBe('popular')
   })
 
-  test('visiting the Popular category does not overwrite the saved sort', async ({
-    comfyPage
-  }) => {
-    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', true)
-    await comfyPage.settings.setSetting(
-      'Comfy.Templates.SortBy',
-      'alphabetical'
-    )
+  test.describe('with a saved sort preference', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.TutorialCompleted': true,
+        'Comfy.Templates.SortBy': 'alphabetical'
+      }
+    })
 
-    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
-    await expect(comfyPage.templates.content).toBeVisible()
+    test('visiting the Popular category does not overwrite the saved sort', async ({
+      comfyPage
+    }) => {
+      await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+      await expect(comfyPage.templates.content).toBeVisible()
 
-    const dialog = comfyPage.templatesDialog
-    await dialog.openFilters()
-    await expect(dialog.sortSelect).toHaveText('A → Z')
+      const dialog = comfyPage.templatesDialog
+      await dialog.openFilters()
+      await expect(dialog.sortSelect).toHaveText('A → Z')
 
-    await dialog.navItem('Popular').click()
-    await expect(dialog.sortSelect).toHaveText('Popular')
+      await dialog.navItem('Popular').click()
+      await expect(dialog.sortSelect).toHaveText('Popular')
 
-    await dialog.navItem('All Templates').click()
-    await expect(dialog.sortSelect).toHaveText('A → Z')
-    await expect
-      .poll(() => comfyPage.settings.getSetting('Comfy.Templates.SortBy'))
-      .toBe('alphabetical')
+      await dialog.navItem('All Templates').click()
+      await expect(dialog.sortSelect).toHaveText('A → Z')
+      await expect
+        .poll(() => comfyPage.settings.getSetting('Comfy.Templates.SortBy'))
+        .toBe('alphabetical')
+    })
   })
 
   test('dialog should not be shown when first-time user opens a shared workflow link', async ({
