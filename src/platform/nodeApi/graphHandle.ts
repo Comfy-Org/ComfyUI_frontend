@@ -5,13 +5,20 @@
  * This is the only module that knows how the pieces fit together; everything
  * below it is independently testable.
  */
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphCanvas,
+  LiteGraph,
+  isSubgraphInput,
+  isSubgraphOutput
+} from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
+import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
-import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type {
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { ComfyApiError } from './errors'
@@ -250,30 +257,29 @@ function weakCache<T extends object>(make: (nodeId: string) => T) {
 interface ReplacementSource {
   readonly name: string
   readonly index: number
-  readonly origin: LGraphNode
+  readonly origin: LGraphNode | SubgraphInput
   readonly originSlot: number
 }
 
 interface ReplacementTarget {
   readonly name: string
   readonly index: number
-  readonly target: LGraphNode
+  readonly target: LGraphNode | SubgraphOutput
   readonly targetSlot: number
 }
 
 function replacementSources(
   graph: LGraph,
   node: LGraphNode
-): readonly (ReplacementSource | undefined)[] {
-  const store = useLinkStore()
-  const scope = graphScopeOf(graph)
-  return node.inputs.map((input, index) => {
-    const topology = store.getInputSlotLink(scope, node.id, index)
-    const link = topology === undefined ? undefined : graph.getLink(topology.id)
-    const origin = link ? graph.getNodeById(link.origin_id) : undefined
-    return origin && link
-      ? { name: input.name, index, origin, originSlot: link.origin_slot }
-      : undefined
+): readonly ReplacementSource[] {
+  return node.inputs.flatMap((input, index) => {
+    const link = inputLink(graph, node.id, index)
+    if (!link) return []
+    const { outputNode, output, subgraphInput } = link.resolve(graph)
+    const origin = subgraphInput ?? (output ? outputNode : undefined)
+    return origin
+      ? [{ name: input.name, index, origin, originSlot: link.origin_slot }]
+      : []
   })
 }
 
@@ -283,7 +289,8 @@ function replacementTargets(
 ): readonly ReplacementTarget[] {
   return node.outputs.flatMap((output, index) =>
     outputLinks(graph, node.id, index).flatMap((link) => {
-      const target = graph.getNodeById(link.target_id)
+      const { inputNode, input, subgraphOutput } = link.resolve(graph)
+      const target = subgraphOutput ?? (input ? inputNode : undefined)
       return target
         ? [{ name: output.name, index, target, targetSlot: link.target_slot }]
         : []
@@ -322,34 +329,57 @@ function replacementSlot(
   side: 'input' | 'output',
   name: string,
   index: number
-): string | number {
+): number {
   const found =
     side === 'input' ? node.findInputSlot(name) : node.findOutputSlot(name)
-  return found === -1 ? index : name
+  return found === -1 ? index : found
+}
+
+function reconnectSource(
+  replacement: LGraphNode,
+  { name, index, origin, originSlot }: ReplacementSource
+): boolean {
+  const slot = replacementSlot(replacement, 'input', name, index)
+  if (!isSubgraphInput(origin)) {
+    return origin.connect(originSlot, replacement, slot) !== null
+  }
+  const input = replacement.inputs.at(slot)
+  return (
+    input !== undefined &&
+    LiteGraph.isValidConnection(origin.type, input.type) &&
+    origin.connect(input, replacement) !== undefined
+  )
+}
+
+function reconnectTarget(
+  replacement: LGraphNode,
+  { name, index, target, targetSlot }: ReplacementTarget
+): boolean {
+  const slot = replacementSlot(replacement, 'output', name, index)
+  if (!isSubgraphOutput(target)) {
+    return replacement.connect(slot, target, targetSlot) !== null
+  }
+  const output = replacement.outputs.at(slot)
+  return (
+    output !== undefined && target.connect(output, replacement) !== undefined
+  )
 }
 
 function reconnectReplacement(
   replacement: LGraphNode,
-  sources: readonly (ReplacementSource | undefined)[],
+  sources: readonly ReplacementSource[],
   targets: readonly ReplacementTarget[]
 ): readonly string[] {
   const dropped: string[] = []
   for (const source of sources) {
-    if (!source) continue
-    const made = source.origin.connect(
-      source.originSlot,
-      replacement,
-      replacementSlot(replacement, 'input', source.name, source.index)
-    )
-    if (!made) dropped.push(`input '${source.name}'`)
+    if (!reconnectSource(replacement, source)) {
+      dropped.push(`input '${source.name}'`)
+    }
   }
   for (const target of targets) {
-    const made = replacement.connect(
-      replacementSlot(replacement, 'output', target.name, target.index),
-      target.target,
-      target.targetSlot
-    )
-    if (!made) dropped.push(`output '${target.name}'`)
+    if (!reconnectTarget(replacement, target)) {
+      dropped.push(`output '${target.name}'`)
+    }
   }
   return dropped
 }
@@ -545,15 +575,14 @@ export function createGraphApi(
       const graph = getGraph()
       const old = nodeById(id)
       if (!graph || !old) return undefined
+      const sources = replacementSources(graph, old)
+      const targets = replacementTargets(graph, old)
       const replacement = LiteGraph.createNode(type)
       if (!replacement) {
         throw new ComfyApiError(
           `Cannot replace with '${type}': no such node type is registered.`
         )
       }
-
-      const sources = replacementSources(graph, old)
-      const targets = replacementTargets(graph, old)
 
       return runAsBatch(() => {
         graph.add(replacement)

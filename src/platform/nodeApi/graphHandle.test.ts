@@ -8,6 +8,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerialisedLLinkArray } from '@comfyorg/graph-model/serialisation'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -554,6 +555,89 @@ describe('replacing a node', () => {
 
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("output 'model'"))
     warn.mockRestore()
+  })
+
+  function smallInsideSubgraph() {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [
+        { name: 'seed', type: 'INT' },
+        { name: 'ctx', type: 'CTX' }
+      ],
+      outputs: [
+        { name: 'mask', type: 'MASK' },
+        { name: 'ctx', type: 'CTX' }
+      ]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const node = LiteGraph.createNode('Small')!
+    subgraph.add(node)
+    subgraph.inputNode.slots[1].connect(node.inputs[0], node)
+    subgraph.outputNode.slots[1].connect(node.outputs[0], node)
+    return { subgraph, node, inner: createGraphApi(() => subgraph) }
+  }
+
+  it("keeps the links to the subgraph's own input and output", () => {
+    const { subgraph, node, inner } = smallInsideSubgraph()
+
+    const rebuilt = inner.replace(String(node.id), 'Small')!
+    const input = rebuilt.inputs.byName('ctx')!
+    const output = rebuilt.outputs.byName('ctx')!
+
+    expect(input.source()).toEqual({
+      nodeId: String(SUBGRAPH_INPUT_ID),
+      outputIndex: 1
+    })
+    expect(output.targets()).toEqual([
+      { nodeId: String(SUBGRAPH_OUTPUT_ID), inputIndex: 1 }
+    ])
+    expect(subgraph.inputs[1].linkIds.map(String)).toEqual([input.link()!.id])
+    expect(subgraph.outputs[1].linkIds.map(String)).toEqual([
+      output.links()[0].id
+    ])
+  })
+
+  it('drops and warns about a subgraph boundary link the new type cannot take', () => {
+    class Retyped extends LGraphNode {
+      constructor() {
+        super('Retyped', 'Retyped')
+        this.addInput('ctx', 'MODEL')
+        this.addOutput('ctx', 'MODEL')
+      }
+    }
+    LiteGraph.registerNodeType('Retyped', Retyped)
+    const warn = vi.mocked(console.warn)
+    const { subgraph, node, inner } = smallInsideSubgraph()
+
+    const swapped = inner.replace(String(node.id), 'Retyped')!
+
+    expect(swapped.inputs.byName('ctx')!.isConnected).toBe(false)
+    expect(swapped.outputs.byName('ctx')!.isConnected).toBe(false)
+    expect(subgraph.inputs[1].linkIds).toEqual([])
+    expect(subgraph.outputs[1].linkIds).toEqual([])
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("input 'ctx', output 'ctx'")
+    )
+  })
+
+  it.for([
+    {
+      side: 'input',
+      link: (id: string): SerialisedLLinkArray => [9, 99, 0, id, 0, 'CTX']
+    },
+    {
+      side: 'output',
+      link: (id: string): SerialisedLLinkArray => [9, id, 0, 99, 0, 'CTX']
+    }
+  ])('still replaces a node whose $side link has no other end', ({ link }) => {
+    const broken = small()
+    const saved = graph.serialize()
+    saved.links = [link(broken.id)]
+    graph.configure(saved)
+    expect(graph.links.size).toBe(1)
+
+    expect(api.replace(broken.id, 'Big')?.type).toBe('Big')
+    expect(api.node(broken.id)?.type).not.toBe('Small')
   })
 
   it('is one undo step', () => {
