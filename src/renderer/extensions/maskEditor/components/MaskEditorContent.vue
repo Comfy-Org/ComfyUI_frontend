@@ -5,8 +5,17 @@
     :mask-image="dataStore.inputData.maskLayer.image"
     :paint-image="dataStore.inputData.paintLayer?.image"
     :brush-adjustment="brushAdjustment"
+    :extension-tools
+    :overlay-points="extensionPoints"
     @error="handleError"
-  />
+  >
+    <template #extension-tools>
+      <ExtensionToolButtons :extension-tools />
+    </template>
+    <template v-if="activeExtension" #extension-settings>
+      <ExtensionToolPanel :runtime="activeExtension.runtime" />
+    </template>
+  </EditorCanvas>
   <LoadingOverlay v-else loading size="sm" />
 </template>
 
@@ -21,6 +30,9 @@ import { useBrushPersistence } from '@/renderer/extensions/maskEditor/composable
 import { useMaskEditorLoader } from '@/renderer/extensions/maskEditor/composables/useMaskEditorLoader'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useMaskEditorExtensionTools } from '@/renderer/extensions/maskEditor/composables/useMaskEditorExtensionTools'
+import ExtensionToolButtons from './ExtensionToolButtons.vue'
+import ExtensionToolPanel from './ExtensionToolPanel.vue'
 
 const { node } = defineProps<{ node: LGraphNode }>()
 const dataStore = useMaskEditorDataStore()
@@ -30,6 +42,8 @@ const settings = useSettingStore()
 const brushPersistence = useBrushPersistence()
 const loadController = new AbortController()
 const loaded = ref(false)
+const extensionTools = useMaskEditorExtensionTools()
+const { points: extensionPoints, active: activeExtension } = extensionTools
 const brushAdjustment = {
   useDominantAxis: settings.get('Comfy.MaskEditor.UseDominantAxis'),
   brushAdjustmentSpeed: settings.get('Comfy.MaskEditor.BrushAdjustmentSpeed')
@@ -50,6 +64,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   loadController.abort()
+  extensionTools.deactivate()
   brushPersistence.save()
   dataStore.reset()
 })
