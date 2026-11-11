@@ -21,7 +21,7 @@
     "packages/mask-editor/src/useCanvasTransform.ts",
     "packages/mask-editor/src/ui/EditorCanvas.vue",
     "packages/mask-editor/src/ui/EditorToolbar.vue",
-    "packages/mask-editor/src/testing/decodePng.ts"
+    "packages/mask-editor/src/ui/style.css"
   ],
   "characterizationScenarios": [
     {

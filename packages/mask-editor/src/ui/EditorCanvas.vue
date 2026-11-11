@@ -46,11 +46,7 @@
       class="relative isolate flex min-h-0 flex-1 flex-col"
     >
       <div class="flex min-h-0 flex-1 overflow-hidden">
-        <ToolPanel
-          v-if="initialized"
-          ref="toolPanelRef"
-          :tool-manager="toolManager!"
-        />
+        <ToolPanel v-if="initialized" :tool-manager="toolManager!" />
 
         <PointerZone
           v-if="initialized"
@@ -58,11 +54,7 @@
           :pan-zoom="panZoom!"
         />
 
-        <SidePanel
-          v-if="initialized"
-          ref="sidePanelRef"
-          :tool-manager="toolManager!"
-        />
+        <SidePanel v-if="initialized" :tool-manager="toolManager!" />
       </div>
     </div>
 
@@ -108,9 +100,6 @@ const maskCanvasRef = ref<HTMLCanvasElement>()
 const rgbCanvasRef = ref<HTMLCanvasElement>()
 const gpuCanvasRef = ref<HTMLCanvasElement>()
 const canvasBackgroundRef = ref<HTMLDivElement>()
-
-const toolPanelRef = ref<InstanceType<typeof ToolPanel>>()
-const sidePanelRef = ref<InstanceType<typeof SidePanel>>()
 
 const initialized = ref(false)
 
@@ -161,23 +150,16 @@ const initUI = async () => {
       paintImage
     )
 
-    await panZoom.initializeCanvasPanZoom(
-      image,
-      containerRef.value,
-      toolPanelRef.value?.$el as HTMLElement | undefined,
-      sidePanelRef.value?.$el as HTMLElement | undefined
-    )
+    await panZoom.initializeCanvasPanZoom(image, containerRef.value)
 
     store.canvasHistory.saveInitialState()
 
-    if (toolManager.brushDrawing) {
-      await toolManager.brushDrawing.initGPUResources()
-      if (gpuCanvasRef.value && toolManager.brushDrawing.initPreviewCanvas) {
-        gpuCanvasRef.value.width = maskCanvasRef.value.width
-        gpuCanvasRef.value.height = maskCanvasRef.value.height
+    await toolManager.brushDrawing.initGPUResources()
+    if (gpuCanvasRef.value) {
+      gpuCanvasRef.value.width = maskCanvasRef.value.width
+      gpuCanvasRef.value.height = maskCanvasRef.value.height
 
-        toolManager.brushDrawing.initPreviewCanvas(gpuCanvasRef.value)
-      }
+      toolManager.brushDrawing.initPreviewCanvas(gpuCanvasRef.value)
     }
 
     initialized.value = true
