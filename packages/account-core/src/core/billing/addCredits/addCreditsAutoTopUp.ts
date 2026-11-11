@@ -2,13 +2,10 @@ import type { AutoReloadSettings, AutoTopUpSetup } from '@comfyorg/ingest-types'
 
 import { canSetUpAutoTopUp } from '#/core/billing/billingTab/autoTopUpCard'
 
-/** Credits bought per US dollar. */
 export const CREDITS_PER_USD = 211
 
-/** The threshold the auto top-up fields open with. */
 export const AUTO_TOP_UP_STARTING_THRESHOLD_CREDITS = 1_000
 
-/** The monthly limit the fields offer when the limit is switched on. */
 export const AUTO_TOP_UP_STARTING_LIMIT_CENTS = 1_000_000
 
 export interface AutoTopUpFormInput {
@@ -47,7 +44,6 @@ export type AutoTopUpErrors = Partial<
   Record<AutoTopUpField, AutoTopUpFieldError>
 >
 
-/** The settings a top-up request carries to turn auto top-up on after it is paid (BE-25836). */
 export interface AutoTopUpActivation {
   readonly threshold_credits: number
   readonly target_credits: number
@@ -58,7 +54,8 @@ const stripped = (raw: string) => raw.replace(/[,\s$]/g, '')
 
 function parseWhole(raw: string): number | null {
   const text = stripped(raw)
-  return /^\d+$/.test(text) ? Number(text) : null
+  const value = Number(text)
+  return /^\d+$/.test(text) && Number.isSafeInteger(value) ? value : null
 }
 
 function parseCents(raw: string): number | null {
@@ -211,7 +208,6 @@ export interface AutoTopUpDefaultCard {
   readonly last4: string
 }
 
-/** What the Add credits dialog offers for auto top-up, from served facts only. */
 export type AddCreditsAutoTopUpOffer =
   | { readonly kind: 'hidden' }
   | { readonly kind: 'on' }

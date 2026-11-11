@@ -114,6 +114,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import AddCreditsAutoTopUpField from './AddCreditsAutoTopUpField.vue'
 import type { AddCreditsFormat, AddCreditsUi } from './addCreditsPresentation'
+import type { AutoTopUpEdit } from './useAddCreditsAutoTopUp'
 import {
   BILLING_TOKEN,
   autoTopUpConsentParts,
@@ -147,7 +148,7 @@ const {
 const checked = defineModel<boolean>('checked', { required: true })
 
 const emit = defineEmits<{
-  edit: [field: keyof AutoTopUpFormInput, value: string | boolean]
+  edit: AutoTopUpEdit
 }>()
 
 const checkboxId = useId()

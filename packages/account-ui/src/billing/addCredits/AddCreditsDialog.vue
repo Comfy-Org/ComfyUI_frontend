@@ -269,7 +269,6 @@ useResizeObserver(root, ([entry]) => {
   height.value = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height
   defaultHeight.value ??= height.value
 })
-// A transform anchors the top without spending the height the host caps.
 const growth = computed(() => {
   if (defaultHeight.value === undefined) return 0
   const room = viewportHeight.value - 2 * VIEWPORT_GUTTER_PX - height.value

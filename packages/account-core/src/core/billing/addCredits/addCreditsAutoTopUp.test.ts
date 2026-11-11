@@ -56,6 +56,11 @@ describe('validateAutoTopUp', () => {
       errors: { threshold: 'notWhole' }
     },
     {
+      name: 'a threshold too large to hold exactly',
+      input: { threshold: '9'.repeat(400) },
+      errors: { threshold: 'notWhole' }
+    },
+    {
       name: 'a zero threshold',
       input: { threshold: '0' },
       errors: { threshold: 'belowMinimum' }
@@ -74,6 +79,11 @@ describe('validateAutoTopUp', () => {
       name: 'a target over the auto top-up maximum',
       input: { target: '12661001' },
       errors: { target: 'aboveTarget' }
+    },
+    {
+      name: 'a limit that exactly covers the maximum reload',
+      input: { target: '12661000', limitOn: true, limit: '60000' },
+      errors: {}
     },
     {
       name: 'a limit above the served ceiling',
@@ -108,7 +118,7 @@ describe('smallestTopUpCents', () => {
 
 describe('eachTopUpAtLeastCents', () => {
   it('rounds target minus threshold down to the cent', () => {
-    expect(eachTopUpAtLeastCents(form({}))).toBe(5000)
+    expect(eachTopUpAtLeastCents(form({ target: '11551' }))).toBe(5000)
   })
 })
 

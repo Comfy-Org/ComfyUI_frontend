@@ -194,6 +194,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   let stopWatch: (() => void) | undefined
   let disposed = false
   let offeredWithPurchase = false
+  let acceptedRequest: AddCreditsAutoTopUpRequest = { kind: 'not_offered' }
 
   function armPaymentWatch() {
     if (stopWatch) return
@@ -224,8 +225,10 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     if (state.value.step === 'landed') options.onLanded?.()
   }
 
-  async function openCheckout(amountCents: number) {
-    const request = autoTopUpRequest()
+  async function openCheckout(
+    amountCents: number,
+    request: AddCreditsAutoTopUpRequest
+  ) {
     offeredWithPurchase = request.kind !== 'not_offered'
     const tab = ports.reserveTab()
     dispatch({
@@ -263,14 +266,15 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   function continueToCheckout() {
     const view = amountView.value
     if (!view?.canContinue || view.amountCents === undefined) return
-    return openCheckout(view.amountCents)
+    acceptedRequest = autoTopUpRequest()
+    return openCheckout(view.amountCents, acceptedRequest)
   }
 
   function reopenCheckout() {
     const current = state.value
     if (current.step !== 'checkout_opened' || !toValue(options.facts).canTopUp)
       return
-    return openCheckout(current.amountCents)
+    return openCheckout(current.amountCents, acceptedRequest)
   }
 
   onScopeDispose(() => {

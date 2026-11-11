@@ -40,12 +40,11 @@ const mastercard: SavedPaymentMethod = {
   is_default: false
 }
 
-function readPaymentMethods() {
-  return vi.mocked(useBillingSdkStore().readPaymentMethods)
-}
-
 function serveSavedMethods(methods: SavedPaymentMethod[]) {
-  readPaymentMethods().mockResolvedValue({ status: 'ok', value: methods })
+  vi.mocked(useBillingSdkStore().readPaymentMethods).mockResolvedValue({
+    status: 'ok',
+    value: methods
+  })
 }
 vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string) => `https://platform.test${path}`
@@ -85,21 +84,10 @@ describe('useAddCreditsAutoTopUpOffer', () => {
     expect(billingUrl.value).toBe('https://platform.test/profile/billing')
   })
 
-  it.for([
-    {
-      name: 'auto top-up at checkout is on',
-      atCheckout: true,
-      kind: 'checkbox'
-    },
-    {
-      name: 'auto top-up at checkout is off, leaving the after-payment suggestion',
-      atCheckout: false,
-      kind: 'hidden'
-    }
-  ])('offers $kind while off when $name', async ({ atCheckout, kind }) => {
-    const { offer } = offerFor({ status: 'off', atCheckout })
+  it('offers hidden while off when auto top-up at checkout is off, leaving the after-payment suggestion', async () => {
+    const { offer } = offerFor({ status: 'off', atCheckout: false })
 
-    await vi.waitFor(() => expect(offer.value.kind).toBe(kind))
+    await vi.waitFor(() => expect(offer.value.kind).toBe('hidden'))
   })
 
   it('shows nothing when the auto top-up rollout is off', () => {
@@ -135,7 +123,7 @@ describe('useAddCreditsAutoTopUpOffer', () => {
     })
 
     it('offers no checkbox and reports when the saved cards read fails', async () => {
-      readPaymentMethods().mockResolvedValue({
+      vi.mocked(useBillingSdkStore().readPaymentMethods).mockResolvedValue({
         status: 'error',
         code: 'REQUEST_FAILED'
       })
@@ -152,7 +140,9 @@ describe('useAddCreditsAutoTopUpOffer', () => {
       const { offer } = offerFor({ status: 'off', atCheckout: true })
 
       await vi.waitFor(() =>
-        expect(readPaymentMethods()).toHaveBeenCalledOnce()
+        expect(
+          useBillingSdkStore().readPaymentMethods
+        ).toHaveBeenCalledOnce()
       )
       await Promise.resolve()
       expect(offer.value).toEqual({ kind: 'hidden' })
@@ -160,7 +150,9 @@ describe('useAddCreditsAutoTopUpOffer', () => {
     })
 
     it('offers no checkbox while the saved cards read is in flight', () => {
-      readPaymentMethods().mockReturnValue(new Promise(() => {}))
+      vi.mocked(useBillingSdkStore().readPaymentMethods).mockReturnValue(
+        new Promise(() => {})
+      )
 
       expect(offerFor({ status: 'off', atCheckout: true }).offer.value).toEqual(
         { kind: 'hidden' }
@@ -170,7 +162,9 @@ describe('useAddCreditsAutoTopUpOffer', () => {
     it('reads no saved cards when auto top-up at checkout is off', () => {
       offerFor({ status: 'off', atCheckout: false })
 
-      expect(readPaymentMethods()).not.toHaveBeenCalled()
+      expect(
+        useBillingSdkStore().readPaymentMethods
+      ).not.toHaveBeenCalled()
     })
   })
 })

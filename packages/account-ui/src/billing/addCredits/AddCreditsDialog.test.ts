@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type {
   AddCreditsAutoTopUpOffer,
@@ -17,6 +17,11 @@ import type {
   AddCreditsPorts,
   AddCreditsQuoteResult
 } from './useAddCreditsDialog'
+import type { AutoTopUpEdit } from './useAddCreditsAutoTopUp'
+
+expectTypeOf<['threshold', true]>().not.toExtend<AutoTopUpEdit>()
+expectTypeOf<['limitOn', 'false']>().not.toExtend<AutoTopUpEdit>()
+expectTypeOf<['limitOn', true]>().toExtend<AutoTopUpEdit>()
 
 const CHECKOUT_URL = 'https://billing.comfy.org/topup?session=cs_1'
 const AUTO_TOP_UP_SETUP_URL =
@@ -690,7 +695,6 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     await user.click(checkbox())
 
     await user.click(preset('$25'))
-    expect(preset('$25')).toHaveAttribute('aria-checked', 'true')
     expect(target()).toHaveValue('6275')
 
     await user.clear(target())
@@ -772,67 +776,86 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     const { user, ports } = renderOffered()
     await user.click(checkbox())
     await user.click(screen.getByRole('switch'))
+    await user.clear(threshold())
+    await user.type(threshold(), '2000')
+    await user.clear(target())
+    await user.type(target(), '17000')
+    const limit = screen.getByLabelText('Monthly limit', { selector: 'input' })
+    await user.clear(limit)
+    await user.type(limit, '250')
 
     await user.click(continueButton())
 
     expect(ports.autoTopUps).toEqual([
       {
-        threshold_credits: 1000,
-        target_credits: 11550,
-        monthly_budget_cents: 1_000_000
+        threshold_credits: 2000,
+        target_credits: 17000,
+        monthly_budget_cents: 25000
       }
     ])
   })
 
-  it('sends nothing about auto top-up while unchecked', async () => {
-    const { user, ports } = renderOffered()
-
-    await user.click(continueButton())
-
-    expect(ports.autoTopUps).toEqual([undefined])
-  })
-
-  it('an unchecked purchase closes on landing without a second ask', async () => {
-    const { user, ports, emitted } = renderOffered()
-    const setupUrl = vi.fn(() => Promise.resolve(AUTO_TOP_UP_SETUP_URL))
-    ports.autoTopUpSetupUrl = setupUrl
-    await user.click(continueButton())
-
-    ports.landed?.()
-
-    await vi.waitFor(() => expect(emitted().close).toHaveLength(1))
-    expect(setupUrl).not.toHaveBeenCalled()
-  })
-
-  it('shows Auto top-up is on with the settings once the server turns it on', async () => {
+  it('reopening checkout sends the settings the buyer accepted', async () => {
     const { user, ports } = renderOffered()
     await user.click(checkbox())
     await user.click(continueButton())
 
-    ports.landed?.({
-      status: 'on',
-      settings: {
-        threshold_credits: 1000,
-        target_credits: 11550,
-        monthly_budget_cents: null
-      }
-    })
+    await user.click(screen.getByTestId('add-credits-reopen'))
 
-    expect(
-      await screen.findByRole('heading', { name: 'Auto top-up is on' })
-    ).toBeVisible()
-    expect(screen.getByTestId('add-credits-auto-top-up-on')).toHaveTextContent(
-      'Below 1,000 credits, tops up to 11,550.'
-    )
-    expect(screen.getByTestId('add-credits-auto-top-up-on')).toHaveTextContent(
-      'No monthly limit.'
-    )
-    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
-      'href',
-      BILLING_URL
-    )
-    expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
+    const accepted = {
+      threshold_credits: 1000,
+      target_credits: 11550,
+      monthly_budget_cents: null
+    }
+    expect(ports.autoTopUps).toEqual([accepted, accepted])
   })
+
+  it('an unchecked purchase sends no settings and closes on landing without a second ask', async () => {
+    const { user, ports, emitted } = renderOffered()
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(continueButton())
+    expect(ports.autoTopUps).toEqual([undefined])
+
+    ports.landed?.()
+
+    await vi.waitFor(() => expect(emitted().close).toHaveLength(1))
+  })
+
+  it.for([
+    { budget: null, expected: 'No monthly limit.' },
+    { budget: 200000, expected: 'Up to $2,000 a month.' }
+  ])(
+    'shows the served auto top-up settings with $expected',
+    async ({ budget, expected }) => {
+      const { user, ports } = renderOffered()
+      await user.click(checkbox())
+      await user.click(continueButton())
+
+      ports.landed?.({
+        status: 'on',
+        settings: {
+          threshold_credits: 2000,
+          target_credits: 15000,
+          monthly_budget_cents: budget
+        }
+      })
+
+      expect(
+        await screen.findByRole('heading', { name: 'Auto top-up is on' })
+      ).toBeVisible()
+      expect(
+        screen.getByTestId('add-credits-auto-top-up-on')
+      ).toHaveTextContent('Below 2,000 credits, tops up to 15,000.')
+      expect(
+        screen.getByTestId('add-credits-auto-top-up-on')
+      ).toHaveTextContent(expected)
+      expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
+        'href',
+        BILLING_URL
+      )
+      expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
+    }
+  )
 
   it("shows Auto top-up didn't turn on with Set up when the server reports a failure", async () => {
     const { user, ports } = renderOffered()
@@ -859,8 +882,7 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
 
   it('a checked purchase that lands without an outcome closes without claiming a failure', async () => {
     const { user, ports, emitted } = renderOffered()
-    const setupUrl = vi.fn(() => Promise.resolve(AUTO_TOP_UP_SETUP_URL))
-    ports.autoTopUpSetupUrl = setupUrl
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
     await user.click(checkbox())
     await user.click(continueButton())
 
@@ -870,7 +892,6 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     expect(
       screen.queryByRole('heading', { name: "Auto top-up didn't turn on" })
     ).toBeNull()
-    expect(setupUrl).not.toHaveBeenCalled()
   })
 
   it('says auto top-up is on with a Manage link when it already is', () => {

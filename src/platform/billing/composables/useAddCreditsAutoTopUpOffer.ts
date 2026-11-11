@@ -34,7 +34,6 @@ async function readDefaultCard(): Promise<DefaultCardRead> {
   const method = result.value.find((saved) => saved.is_default)
   if (!method) return { kind: 'loaded', card: null }
   const { brand, last4 } = method
-  // A default the server does not name as a card cannot be named in the consent.
   return brand && last4
     ? { kind: 'loaded', card: { brand, last4 } }
     : { kind: 'unknown' }
@@ -77,7 +76,6 @@ export function useAddCreditsAutoTopUpOffer() {
       settings: read.kind === 'loaded' ? read.settings : null,
       defaultCard: card.kind === 'loaded' ? card.card : null
     })
-    // The consent names the card it charges, so no checkbox until that is known.
     return served.kind === 'checkbox' &&
       (!flags.billingAutoTopUpAtCheckoutEnabled || card.kind !== 'loaded')
       ? { kind: 'hidden' }
