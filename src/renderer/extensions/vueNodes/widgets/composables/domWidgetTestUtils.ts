@@ -2,6 +2,7 @@ import { beforeEach } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import '@/scripts/domWidget'
 
 type NodeOverrides = Partial<
   Pick<LGraphNode, 'id' | 'type' | 'size' | 'imgs' | 'graph'>
