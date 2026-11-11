@@ -11,6 +11,22 @@
       </p>
     </div>
     <template v-else>
+      <ToggleGroup
+        v-if="resultUrl"
+        type="single"
+        data-testid="video-concat-preview-mode"
+        :model-value="showingResult ? 'result' : 'clips'"
+        class="w-full min-w-0 rounded-md bg-input p-1"
+        @update:model-value="selectMode"
+      >
+        <ToggleGroupItem value="clips" size="sm" class="flex-1 px-2">
+          {{ t('videoConcat.previewClips') }}
+        </ToggleGroupItem>
+        <ToggleGroupItem value="result" size="sm" class="flex-1 px-2">
+          {{ t('videoConcat.previewResult') }}
+        </ToggleGroupItem>
+      </ToggleGroup>
+
       <div class="overflow-hidden rounded-lg bg-node">
         <div class="relative w-full" :style="aspectRatioStyle">
           <video
@@ -42,22 +58,12 @@
 
       <VideoConcatClipStrip
         :clips
-        :active-name="currentClip?.name"
+        :active-name="showingResult ? undefined : currentClip?.name"
         :metadata
-        :mismatched-names="mismatchedSizes.map((size) => size.name)"
         @reorder="(from, to) => emit('reorder', from, to)"
-        @select="seekToClip"
+        @select="selectClip"
         @metadata="storeMetadata"
       />
-
-      <p
-        v-if="hasMixedSizes"
-        data-testid="video-concat-size-warning"
-        class="m-0 flex items-start gap-1.5 text-xs text-warning"
-      >
-        <i class="mt-0.5 icon-[lucide--triangle-alert]" />
-        {{ sizeWarning }}
-      </p>
 
       <div
         class="grid grid-cols-[minmax(80px,min-content)_minmax(125px,1fr)] gap-y-0.5 border-t border-node-border py-2"
@@ -80,11 +86,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import VideoConcatClipStrip from '@/components/videoConcat/VideoConcatClipStrip.vue'
 import VideoConcatPlaybackBar from '@/components/videoConcat/VideoConcatPlaybackBar.vue'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useSequencePlayback } from '@/composables/videoConcat/useSequencePlayback'
 import type {
   ClipMetadata,
@@ -93,8 +101,9 @@ import type {
 import { useVideoEditFormats } from '@/composables/video/useVideoEditFormats'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { clips } = defineProps<{
+const { clips, resultUrl } = defineProps<{
   clips: ConcatClip[]
+  resultUrl?: string
 }>()
 
 const emit = defineEmits<{
@@ -113,7 +122,7 @@ function storeMetadata(url: string, value: ClipMetadata) {
 }
 
 watch(
-  () => clips.map((clip) => clip.url),
+  () => [...clips.map((clip) => clip.url), resultUrl],
   (displayedUrls) => {
     metadata.value = Object.fromEntries(
       Object.entries(metadata.value).filter(([url]) =>
@@ -123,12 +132,20 @@ watch(
   }
 )
 
+const preferResult = ref(false)
+const showingResult = computed(() => preferResult.value && Boolean(resultUrl))
+const playbackClips = computed(() =>
+  showingResult.value ? [{ name: 'result', url: resultUrl }] : clips
+)
+
 const clipMetadata = computed(() =>
   clips.map((clip) => (clip.url ? metadata.value[clip.url] : undefined))
 )
-const playable = computed(() => clips.map((clip) => Boolean(clip.url)))
+const playable = computed(() =>
+  playbackClips.value.map((clip) => Boolean(clip.url))
+)
 const durations = computed(() =>
-  clips.map((clip) =>
+  playbackClips.value.map((clip) =>
     clip.url ? (metadata.value[clip.url]?.duration ?? 0) : 0
   )
 )
@@ -146,9 +163,25 @@ const {
   handleEnded
 } = useSequencePlayback(videoRef, durations, playable)
 
-const currentClip = computed(() => clips[index.value])
+const currentClip = computed(() => playbackClips.value[index.value])
 
-watch(() => clips.map((clip) => `${clip.name}=${clip.url}`).join('|'), reset)
+watch(
+  () => playbackClips.value.map((clip) => `${clip.name}=${clip.url}`).join('|'),
+  reset
+)
+
+function selectMode(mode: unknown) {
+  if (mode !== 'clips' && mode !== 'result') return
+  preferResult.value = mode === 'result'
+}
+
+async function selectClip(clipIndex: number) {
+  if (showingResult.value) {
+    preferResult.value = false
+    await nextTick()
+  }
+  seekToClip(clipIndex)
+}
 
 function handlePreviewError() {
   if (isPlaying.value) handleEnded()
@@ -169,37 +202,19 @@ function handlePreviewMetadata(event: Event) {
 }
 
 const knownSizes = computed(() =>
-  clips.flatMap((clip, index) => {
-    const value = clipMetadata.value[index]
-    return value && value.width > 0 && value.height > 0
-      ? [
-          {
-            name: clip.name,
-            position: index + 1,
-            width: value.width,
-            height: value.height
-          }
-        ]
+  clipMetadata.value.flatMap((value) =>
+    value && value.width > 0 && value.height > 0
+      ? [{ width: value.width, height: value.height }]
       : []
-  })
+  )
 )
 
-const mismatchedSizes = computed(() => {
-  const [reference, ...others] = knownSizes.value
-  return others.filter(
-    (size) => size.width !== reference.width || size.height !== reference.height
+const hasMixedSizes = computed(() =>
+  knownSizes.value.some(
+    (size) =>
+      size.width !== knownSizes.value[0].width ||
+      size.height !== knownSizes.value[0].height
   )
-})
-
-const hasMixedSizes = computed(() => mismatchedSizes.value.length > 0)
-
-const sizeWarning = computed(() =>
-  t('videoConcat.mixedDimensionsWarning', {
-    ...knownSizes.value[0],
-    clips: mismatchedSizes.value
-      .map((size) => t('videoConcat.clipSize', size))
-      .join(', ')
-  })
 )
 
 const aspectRatioStyle = computed(() => {
