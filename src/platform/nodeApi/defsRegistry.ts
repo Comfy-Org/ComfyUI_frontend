@@ -1914,6 +1914,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             for (const { run, handleForNode, isActive } of dropped) {
               if (
                 isActive() &&
+                this.graph &&
                 (await invokeAsync('onDrop', () =>
                   run(handleForNode(this), event)
                 )) === true

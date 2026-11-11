@@ -1649,6 +1649,29 @@ describe('connection veto and menu items', () => {
     expect(skipped).not.toHaveBeenCalled()
   })
 
+  it('skips later drop listeners once an earlier one removes the node', async () => {
+    const registry = createDefRegistry()
+    const later = vi.fn(async () => true)
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) => {
+        b.onDrop(async () => {
+          graph.remove(node)
+          return false
+        })
+        b.onDrop(later)
+      })
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    graph.add(node)
+
+    await expect(
+      node.onDragDrop?.(new Event('drop') as DragEvent)
+    ).resolves.toBe(false)
+    expect(later).not.toHaveBeenCalled()
+  })
+
   it('does not replay a drop the host already handled', async () => {
     const registry = createDefRegistry()
     const extension = vi.fn(async () => true)
