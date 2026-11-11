@@ -4170,6 +4170,18 @@
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
     "failedToSwitch": "Failed to switch workspace"
   },
+  "profileMenu": {
+    "switchWorkspace": "Switch workspace",
+    "credits": "Credits",
+    "balanceUnavailable": "Couldn't load your balance.",
+    "billingSettings": "Billing settings",
+    "planStatus": {
+      "noPlan": "No plan",
+      "paused": "Paused",
+      "paymentDue": "Payment due",
+      "ended": "Plan ended"
+    }
+  },
   "deploymentSwitcher": {
     "runOn": "Run on",
     "runningOn": "Running on",
