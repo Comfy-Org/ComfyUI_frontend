@@ -69,15 +69,31 @@ describe('usePointSession', () => {
     })
   })
 
-  it('M-08: the key typed in a text field is left alone', () => {
+  it.for([
+    { name: 'an input', markup: '<input />' },
+    { name: 'a textarea', markup: '<textarea></textarea>' },
+    { name: 'editable text', markup: '<p contenteditable="true"></p>' }
+  ])('M-08: the key typed in $name is left alone', ({ markup }) => {
     const { session } = startSession()
-    const field = document.createElement('input')
-    document.body.append(field)
+    document.body.innerHTML = markup
+    const field = document.body.firstElementChild
+    if (!field) throw new Error('The text field was not created')
 
     const typed = press(MARK_KEY, field)
 
     expect(session.state.value.phase).toBe('idle')
     expect(typed.defaultPrevented).toBe(false)
+  })
+
+  it('still starts marking when a checkbox has focus', () => {
+    const { session } = startSession()
+    document.body.innerHTML = '<input type="checkbox" />'
+    const checkbox = document.body.firstElementChild
+    if (!checkbox) throw new Error('The checkbox was not created')
+
+    press(MARK_KEY, checkbox)
+
+    expect(session.state.value.phase).toBe('armed')
   })
 
   it('does not type the held key into the box that opens under it', () => {
