@@ -365,6 +365,9 @@ function reportDroppedReplacementLinks(
   )
 }
 
+const isAsyncFunction = (callback: unknown): boolean =>
+  Object.prototype.toString.call(callback) === '[object AsyncFunction]'
+
 type OwnedNodeHandles = ReturnType<typeof createNodeHandles>
 
 function createOwnedNodeHandles(
@@ -405,6 +408,9 @@ export function createGraphApi(
   // surface is a frozen literal and `const { replace } = comfy.graph` is
   // ordinary use, which would otherwise throw.
   const runAsBatch: GraphHandle['batch'] = (mutations) => {
+    if (isAsyncFunction(mutations)) {
+      throw new ComfyApiError('graph.batch() requires a synchronous callback.')
+    }
     const graph = getGraph()
     const run = () => {
       graph?.beforeChange()
