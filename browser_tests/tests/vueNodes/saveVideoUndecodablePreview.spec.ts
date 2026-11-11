@@ -1,60 +1,29 @@
 import { mergeTests } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import {
   comfyExpect as expect,
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import {
+  CANT_PLAY_MESSAGE,
+  IMAGE,
+  PLAYABLE,
+  PORTRAIT,
+  SLOW,
+  UNDECODABLE,
+  WIDE,
+  addNode,
+  canvasPreviewVideo,
+  filenameOf,
+  output,
+  waitForServed
+} from '@e2e/fixtures/helpers/nodeOutputPreview'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
-
-const PLAYABLE = 'video-preview-square.webm'
-const WIDE = 'video-preview-wide.webm'
-const PORTRAIT = 'video-preview-portrait.webm'
-const UNDECODABLE = 'save-video-prores.mov'
-const SLOW = 'slow.webm'
-const IMAGE = 'ok.png'
-const CANT_PLAY_MESSAGE = "This video can't be played in the browser."
-
-async function addNode(comfyPage: ComfyPage, type: string) {
-  const node = await comfyPage.nodeOps.addNode(type, undefined, {
-    x: 300,
-    y: 150
-  })
-  return node.id
-}
-
-const filenameOf = (url: string | URL) =>
-  new URL(url).searchParams.get('filename')
-
-const waitForServed = (page: Page, filename: string) =>
-  page.waitForResponse(
-    (response) => response.ok() && filenameOf(response.url()) === filename
-  )
-
-const output = (filename: string, animated = true) => ({
-  images: [{ filename, subfolder: '', type: 'output' }],
-  animated: [animated]
-})
-
-function canvasPreviewVideo(page: Page) {
-  return page.evaluate(() => {
-    window.app!.canvas.setDirty(true, true)
-    const video = document.querySelector<HTMLVideoElement>(
-      '.comfy-img-preview video'
-    )
-    if (!video) return null
-    return {
-      file: new URL(video.src).searchParams.get('filename'),
-      decoded: video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
-    }
-  })
-}
 
 test.describe('Save Video preview of an undecodable output', () => {
   test.beforeEach(async ({ comfyPage }) => {
