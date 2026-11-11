@@ -13,7 +13,6 @@ import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHist
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
-import type { PagedList } from '@/utils/pagedList'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
@@ -68,10 +67,10 @@ function makeResult(
   }
 }
 
-let mockOutputAssets!: PagedList<AssetItem>
 beforeEach(() => {
-  mockOutputAssets = mockPagedList({ loadMore: vi.fn() })
-  Object.assign(useAssetsStore(), { outputAssets: mockOutputAssets })
+  Object.assign(useAssetsStore(), {
+    outputAssets: mockPagedList<AssetItem>({ loadMore: vi.fn() })
+  })
   vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
     () => undefined
   )
@@ -82,7 +81,6 @@ beforeEach(() => {
 
 describe(useOutputHistory, () => {
   beforeEach(() => {
-    mockOutputAssets.items = []
     useLinearOutputStore().pendingResolve = new Set()
     useLinearOutputStore().inProgressItems = []
     Object.assign(useLinearOutputStore(), { activeWorkflowInProgressItems: [] })
@@ -104,7 +102,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json'],
         ['job-2', 'workflows/other.json']
       ])
-      mockOutputAssets.items = [
+      useAssetsStore().outputAssets.items = [
         makeAsset('a1', 'job-1'),
         makeAsset('a2', 'job-2')
       ]
@@ -120,7 +118,7 @@ describe(useOutputHistory, () => {
       useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json']
       ])
-      mockOutputAssets.items = [makeAsset('a1', 'job-1')]
+      useAssetsStore().outputAssets.items = [makeAsset('a1', 'job-1')]
 
       const { outputs } = useOutputHistory()
 
@@ -132,7 +130,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/a.json'],
         ['job-2', 'workflows/b.json']
       ])
-      mockOutputAssets.items = [
+      useAssetsStore().outputAssets.items = [
         makeAsset('a1', 'job-1'),
         makeAsset('a2', 'job-2')
       ]
@@ -304,7 +302,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json']
       ])
       useLinearOutputStore().pendingResolve = new Set(['job-1'])
-      mockOutputAssets.items = [asset]
+      useAssetsStore().outputAssets.items = [asset]
       useLinearOutputStore().selectedId = null
 
       useOutputHistory()
@@ -330,7 +328,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json']
       ])
       useLinearOutputStore().pendingResolve = new Set(['job-1'])
-      mockOutputAssets.items = [asset]
+      useAssetsStore().outputAssets.items = [asset]
       useLinearOutputStore().selectedId = 'history:existing:0'
 
       useOutputHistory()
@@ -345,7 +343,6 @@ describe(useOutputHistory, () => {
 
     it('skips jobs with no matching asset in media', async () => {
       useLinearOutputStore().pendingResolve = new Set(['job-missing'])
-      mockOutputAssets.items = []
 
       useOutputHistory()
       await nextTick()
@@ -359,7 +356,7 @@ describe(useOutputHistory, () => {
       useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json']
       ])
-      mockOutputAssets.items = [makeAsset('a1', 'job-1')]
+      useAssetsStore().outputAssets.items = [makeAsset('a1', 'job-1')]
 
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()

@@ -7,7 +7,7 @@
     <div :style="mergedGridStyle">
       <div
         v-for="(item, i) in renderedItems"
-        :key="item.key"
+        :key="item.key ?? item.id"
         data-virtual-grid-item
       >
         <slot name="item" :item :index="state.start + i" />
@@ -44,7 +44,8 @@ const {
   onLoadMore,
   canLoadMore = false
 } = defineProps<{
-  items: (T & { key: string })[]
+  items: readonly (T &
+    ({ key: string; id?: string } | { key?: string; id: string }))[]
   gridStyle: CSSProperties
   bufferRows?: number
   resizeDebounce?: number

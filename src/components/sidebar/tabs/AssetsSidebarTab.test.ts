@@ -14,26 +14,23 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
 import { pagedItems } from '@/utils/pagedList'
-import type { PagedList } from '@/utils/pagedList'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
-let mockOutputAssets: PagedList<AssetItem>
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 beforeEach(() => {
+  distribution.isCloud = false
   const store = useAssetsStore()
-  mockOutputAssets = {
-    items: [],
-    hasMore: false,
-    isLoading: false,
-    loadMore: vi.fn(async () => false),
-    loadNew: vi.fn(async () => {}),
-    invalidate: vi.fn(async () => {})
-  }
-  Object.assign(store, { outputAssets: mockOutputAssets })
+  Object.assign(store, {
+    outputAssets: mockPagedList<AssetItem>({
+      items: [folderAsset],
+      loadMore: vi.fn(async () => false)
+    })
+  })
   vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
   vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
 })
@@ -174,15 +171,10 @@ function renderTab({ realTemplate = false, realList = false } = {}) {
   })
 }
 
-beforeEach(() => {
-  distribution.isCloud = false
-  mockOutputAssets.items = [folderAsset]
-  mockOutputAssets.hasMore = false
-})
-
 it('keeps pagination mounted when more assets can be loaded', () => {
-  mockOutputAssets.items = []
-  mockOutputAssets.hasMore = true
+  const { outputAssets } = useAssetsStore()
+  outputAssets.items = []
+  outputAssets.hasMore = true
 
   renderTab()
 
@@ -194,7 +186,8 @@ describe('AssetsSidebarTab folder navigation', () => {
     onTestFinished(() =>
       localStorage.removeItem('Comfy.Assets.Sidebar.ViewMode')
     )
-    mockOutputAssets.hasMore = true
+    const { outputAssets } = useAssetsStore()
+    outputAssets.hasMore = true
     vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
     renderTab({ realList: true })
 
@@ -205,13 +198,13 @@ describe('AssetsSidebarTab folder navigation', () => {
 
     expect(await screen.findByText('multi-output.png')).toBeVisible()
     await userEvent.click(screen.getByRole('button', { name: 'Load more' }))
-    expect(mockOutputAssets.loadMore).not.toHaveBeenCalled()
+    expect(outputAssets.loadMore).not.toHaveBeenCalled()
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Back to all assets' })
     )
     await userEvent.click(screen.getByRole('button', { name: 'Load more' }))
-    expect(mockOutputAssets.loadMore).toHaveBeenCalledOnce()
+    expect(outputAssets.loadMore).toHaveBeenCalledOnce()
   })
 
   it('places accessible folder actions beside the job ID', async () => {
@@ -284,7 +277,7 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
 
 describe('AssetsSidebarTab context menu', () => {
   it('inspects an HDR output in the HDR viewer', async () => {
-    mockOutputAssets.items = [
+    useAssetsStore().outputAssets.items = [
       {
         ...folderAsset,
         name: 'sky.exr',
@@ -312,7 +305,7 @@ describe('AssetsSidebarTab context menu', () => {
 
   it('inserts a loadable image as a node', async () => {
     const asset = { ...folderAsset, name: 'image.png' }
-    mockOutputAssets.items = [asset]
+    useAssetsStore().outputAssets.items = [asset]
     renderTab()
 
     await fireEvent.contextMenu(
@@ -328,7 +321,9 @@ describe('AssetsSidebarTab context menu', () => {
   })
 
   it('does not offer insertion for an unloadable file', async () => {
-    mockOutputAssets.items = [{ ...folderAsset, name: 'result.txt' }]
+    useAssetsStore().outputAssets.items = [
+      { ...folderAsset, name: 'result.txt' }
+    ]
     renderTab()
 
     await fireEvent.contextMenu(

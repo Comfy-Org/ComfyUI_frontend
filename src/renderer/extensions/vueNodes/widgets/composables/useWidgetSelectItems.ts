@@ -38,7 +38,7 @@ import {
   isHdrImageUrl
 } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
-import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
+import { pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
 function getDisplayLabel(value: string, getLabel?: (v: string) => string) {
@@ -128,7 +128,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     return availableBaseModels.value
   })
 
-  const baseAssets = computed<MaybePaged<AssetItem>>(() => {
+  const baseAssets = computed(() => {
     const assetsStore = useAssetsStore()
     switch (toValue(options.filterSelected)) {
       case 'inputs':
@@ -231,7 +231,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
       : availableItems.value
     if (toValue(options.isAssetMode) && assetData) return mapped
     const base = baseAssets.value
-    return isPaged(base) ? new WrappedList(base, () => mapped) : mapped
+    return new WrappedList(base, () => mapped)
   })
 
   const selectedSet = computed<Set<string>>(() => {

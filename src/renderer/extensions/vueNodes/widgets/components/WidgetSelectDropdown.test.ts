@@ -3,6 +3,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { computed, nextTick } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -149,7 +150,11 @@ describe('WidgetSelectDropdown', () => {
     expect(screen.getByText('img_001.png')).toBeDefined()
   })
 
-  it('allows EXR files for image uploads', () => {
+  it('allows EXR files for image uploads', async () => {
+    const user = userEvent.setup()
+    const file = new File(['hdr pixels'], 'environment.exr', {
+      type: 'application/octet-stream'
+    })
     const widget = createMockWidget<string | undefined>({
       value: undefined,
       name: 'test_image',
@@ -162,10 +167,9 @@ describe('WidgetSelectDropdown', () => {
       allowUpload: true
     })
 
-    expect(screen.getByLabelText('g.upload')).toHaveAttribute(
-      'accept',
-      'image/*,.exr'
-    )
+    await user.upload(screen.getByLabelText('g.upload'), file)
+
+    expect(mockHandleFilesUpdate).toHaveBeenCalledWith([file])
   })
 
   it('renders in cloud asset mode', () => {

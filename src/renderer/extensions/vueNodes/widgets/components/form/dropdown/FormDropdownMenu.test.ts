@@ -1,21 +1,23 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { useElementSize } from '@vueuse/core'
+import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
-import { isPaged, pagedItems } from '@/utils/pagedList'
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import type { FormDropdownItem, LayoutMode } from './types'
 
-const VirtualGridStub = {
-  name: 'VirtualGrid',
-  props: ['items', 'maxColumns', 'itemHeight', 'scrollerHeight'],
-  methods: { isPaged, pagedItems },
-  template: `<div data-testid="virtual-grid" :data-max-columns="maxColumns">
-    <slot v-if="isPaged(items) && items.isLoading" name="loading" />
-    <slot v-else-if="!pagedItems(items).length" name="placeholder" />
-  </div>`
-}
+vi.mock(import('@vueuse/core'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(useElementSize).mockReturnValue({
+    width: ref(400),
+    height: ref(200),
+    stop: vi.fn()
+  })
+})
 
 function createItem(id: string, name: string): FormDropdownItem {
   return {
@@ -36,10 +38,12 @@ describe('FormDropdownMenu', () => {
   }
 
   const globalConfig = {
+    plugins: [
+      createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+    ],
     stubs: {
       FormDropdownMenuFilter: true,
-      FormDropdownMenuActions: true,
-      VirtualGrid: VirtualGridStub
+      FormDropdownMenuActions: true
     },
     mocks: {
       $t: (key: string) => key
@@ -47,7 +51,7 @@ describe('FormDropdownMenu', () => {
   }
 
   it('renders empty state when no items', () => {
-    const { container } = render(FormDropdownMenu, {
+    render(FormDropdownMenu, {
       props: {
         ...defaultProps,
         items: []
@@ -55,43 +59,94 @@ describe('FormDropdownMenu', () => {
       global: globalConfig
     })
 
-    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-    const emptyIcon = container.querySelector('[class*="lucide--circle-off"]')
-    expect(emptyIcon).not.toBeNull()
+    expect(screen.getByLabelText('g.noItems')).toBeVisible()
   })
 
-  it('renders VirtualGrid when items exist', () => {
-    render(FormDropdownMenu, {
-      props: defaultProps,
-      global: globalConfig
-    })
+  it.for(['grid', 'list', 'list-small'] satisfies LayoutMode[])(
+    'selects a rendered item in %s layout',
+    async (layoutMode) => {
+      const { emitted } = render(FormDropdownMenu, {
+        props: { ...defaultProps, layoutMode },
+        global: globalConfig
+      })
 
-    expect(screen.getByTestId('virtual-grid')).toBeTruthy()
-  })
+      await userEvent.click(screen.getByText('Item 2'))
+      expect(emitted('item-click')).toEqual([[defaultProps.items[1], 1]])
+    }
+  )
 
-  it('uses single column layout for list modes', () => {
+  it('renders later pages loaded by the real grid', async () => {
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class extends IntersectionObserver {
+        constructor(private callback: IntersectionObserverCallback) {
+          super(callback)
+        }
+
+        override observe(target: Element) {
+          this.callback(
+            [
+              {
+                target,
+                time: 0,
+                isIntersecting: true,
+                intersectionRatio: 1,
+                boundingClientRect: new DOMRect(),
+                intersectionRect: new DOMRect(),
+                rootBounds: null
+              }
+            ],
+            this
+          )
+        }
+      }
+    )
+    const items = ref<FormDropdownItem[]>([])
+    const hasMore = ref(true)
     render(FormDropdownMenu, {
       props: {
         ...defaultProps,
-        layoutMode: 'list' as LayoutMode
+        items: mockPagedList({
+          items,
+          hasMore,
+          loadMore: async () => {
+            items.value = [createItem('later', 'Later page')]
+            hasMore.value = false
+            return true
+          }
+        })
       },
       global: globalConfig
     })
 
-    const virtualGrid = screen.getByTestId('virtual-grid')
-    expect(virtualGrid.getAttribute('data-max-columns')).toBe('1')
+    await waitFor(() => expect(screen.getByText('Later page')).toBeVisible())
   })
 
   it('shows the loading-more row only while the paged list is loading', async () => {
     const { rerender } = render(FormDropdownMenu, {
       props: {
         ...defaultProps,
-        items: mockPagedList<FormDropdownItem>({ isLoading: true })
+        items: mockPagedList<FormDropdownItem>({
+          isLoading: true,
+          hasMore: true
+        })
       },
       global: globalConfig
     })
 
     expect(screen.getByTestId('form-dropdown-loading-more')).toBeTruthy()
+
+    await rerender({
+      ...defaultProps,
+      items: mockPagedList({
+        isLoading: true,
+        hasMore: true,
+        items: defaultProps.items
+      })
+    })
+
+    expect(screen.getByText('Item 2')).toBeVisible()
+    expect(screen.getByTestId('form-dropdown-loading-more')).toBeVisible()
 
     await rerender({
       ...defaultProps,
@@ -154,10 +209,10 @@ describe('FormDropdownMenu', () => {
         filterOptions: [{ name: 'All', value: 'all' }]
       },
       global: {
+        plugins: globalConfig.plugins,
         stubs: {
           FormDropdownMenuFilter: FormDropdownMenuFilterStub,
-          FormDropdownMenuActions: true,
-          VirtualGrid: VirtualGridStub
+          FormDropdownMenuActions: true
         },
         mocks: { $t: (key: string) => key }
       }
@@ -174,10 +229,10 @@ describe('FormDropdownMenu', () => {
         filterOptions: [{ name: 'All', value: 'all' }]
       },
       global: {
+        plugins: globalConfig.plugins,
         stubs: {
           FormDropdownMenuFilter: FormDropdownMenuFilterStub,
-          FormDropdownMenuActions: true,
-          VirtualGrid: VirtualGridStub
+          FormDropdownMenuActions: true
         },
         mocks: { $t: (key: string) => key }
       }

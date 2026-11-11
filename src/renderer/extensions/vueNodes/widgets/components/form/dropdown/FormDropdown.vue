@@ -35,7 +35,6 @@ import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 interface Props {
   inputId?: string
   items: MaybePaged<FormDropdownItem>
-  displayItems?: readonly FormDropdownItem[]
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -52,9 +51,6 @@ interface Props {
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
-  loadingMore?: boolean
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
   isSelected?: (
     selected: Set<string>,
     item: FormDropdownItem,
@@ -83,7 +79,6 @@ const {
   ownershipOptions,
   showBaseModelFilter,
   baseModelOptions,
-  loadingMore = false,
   isSelected = (selected, item, _index) => selected.has(item.id),
   searcher = defaultSearcher,
   items
@@ -334,9 +329,7 @@ const dropdownItems = computed(() =>
         :files
         :is-open
         :placeholder="placeholderText"
-        :selected-items="
-          (displayItems ?? pagedItems(items)).filter(internalIsSelected)
-        "
+        :selected-items="pagedItems(items).filter(internalIsSelected)"
         :max-selectable
         :uploadable
         :disabled
@@ -376,9 +369,6 @@ const dropdownItems = computed(() =>
           :candidate-label
           :is-selected="internalIsSelected"
           :max-selectable
-          :loading-more
-          :on-load-more
-          :can-load-more
           @close="closeDropdown"
           @search-enter="handleSearchEnter"
           @item-click="handleSelection"

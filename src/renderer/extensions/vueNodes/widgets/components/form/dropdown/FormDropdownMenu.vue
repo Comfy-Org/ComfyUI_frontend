@@ -29,9 +29,6 @@ interface Props {
   baseModelOptions?: FilterOption[]
   candidateIndex?: number
   candidateLabel?: string
-  loadingMore?: boolean
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
 }
 
 const {
@@ -45,10 +42,7 @@ const {
   showBaseModelFilter,
   baseModelOptions,
   candidateIndex = -1,
-  candidateLabel,
-  onLoadMore,
-  canLoadMore = false,
-  loadingMore = false
+  candidateLabel
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
@@ -102,22 +96,12 @@ const gridStyle = computed<CSSProperties>(() => ({
   width: '100%'
 }))
 
-type VirtualDropdownItem = FormDropdownItem & { key: string }
-const virtualItems = computed<VirtualDropdownItem[]>(() =>
-  pagedItems(items).map((item) => ({
-    ...item,
-    key: item.id
-  }))
-)
-const hasMore = computed(() =>
-  isPaged(items) ? toValue(items.hasMore) : canLoadMore
-)
-const isLoadingMore = computed(() =>
-  isPaged(items) ? toValue(items.isLoading) : loadingMore
-)
+const menuItems = computed(() => pagedItems(items))
+const hasMore = computed(() => isPaged(items) && toValue(items.hasMore))
+const isLoadingMore = computed(() => isPaged(items) && toValue(items.isLoading))
 
 function loadMore() {
-  return isPaged(items) ? items.loadMore() : onLoadMore?.()
+  return isPaged(items) ? items.loadMore() : undefined
 }
 
 const onWheel = (event: WheelEvent) => {
@@ -154,7 +138,7 @@ const onWheel = (event: WheelEvent) => {
       @search-enter="emit('search-enter')"
     />
     <div
-      v-if="virtualItems.length === 0 && !hasMore"
+      v-if="menuItems.length === 0 && !hasMore"
       class="flex h-50 items-center justify-center"
     >
       <i
@@ -166,7 +150,7 @@ const onWheel = (event: WheelEvent) => {
     <VirtualGrid
       v-else
       :key="layoutMode"
-      :items="virtualItems"
+      :items="menuItems"
       :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"

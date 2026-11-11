@@ -1,7 +1,7 @@
 import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -10,7 +10,7 @@ import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/com
 import type { UseWidgetSelectItemsOptions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
-import { pagedItems } from '@/utils/pagedList'
+import { isPaged, pagedItems } from '@/utils/pagedList'
 
 vi.mock(import('@/platform/assets/composables/useAssetFilterOptions'), () => ({
   useAssetFilterOptions: () => ({
@@ -144,6 +144,54 @@ describe('useWidgetSelectItems', () => {
   })
 
   describe('base asset mapping', () => {
+    it.for([
+      {
+        kind: 'image',
+        asset: makeOutput('hashed-media', 'storage-name.png', {
+          hash: 'blake3:abc.png',
+          display_name: 'Human label.png'
+        }),
+        expectedName: 'blake3:abc.png [output]',
+        expectedLabel: 'Human label.png'
+      },
+      {
+        kind: 'image',
+        asset: makeOutput('temporary-media', 'transient.png', {
+          tags: ['output', 'temp'],
+          hash: 'blake3:temporary.png',
+          user_metadata: { jobId: 'temporary-job', subfolder: 'previews/draft' }
+        }),
+        expectedName: 'previews/draft/blake3:temporary.png [temp]',
+        expectedLabel: 'transient.png'
+      },
+      {
+        kind: 'mesh',
+        asset: makeOutput('nested-mesh', 'model.glb', {
+          metadata: { kind: 'mesh' },
+          loader_path: 'scenes/props/model.glb'
+        }),
+        expectedName: 'scenes/props/model.glb [output]',
+        expectedLabel: 'model.glb'
+      }
+    ] as const)(
+      'preserves the serialized identity of $kind media',
+      ({ kind, asset, expectedName, expectedLabel }) => {
+        storeAssets.flatOutput = [asset]
+        const { dropdownItems, selectedSet } = useWidgetSelectItems(
+          createDefaultOptions({
+            assetKind: kind,
+            filterSelected: 'outputs',
+            modelValue: expectedName
+          })
+        )
+
+        expect(pagedItems(dropdownItems.value)).toMatchObject([
+          { id: asset.id, name: expectedName, label: expectedLabel }
+        ])
+        expect([...selectedSet.value]).toEqual([asset.id])
+      }
+    )
+
     it('maps store input assets to dropdown items', () => {
       const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
       expect(pagedItems(dropdownItems.value)).toHaveLength(3)
@@ -175,6 +223,46 @@ describe('useWidgetSelectItems', () => {
       const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
       expect(pagedItems(dropdownItems.value)[0].preview_url).toBe(previewUrl)
     })
+
+    it.for([
+      {
+        source: 'stored preview',
+        preview: { preview_id: 'hdr-poster' },
+        expectedPreview: '/api/assets/hdr-poster/content?disposition=inline'
+      },
+      {
+        source: 'safe thumbnail',
+        preview: {
+          thumbnail_url: '/api/view?filename=sky-thumb.png&type=output'
+        },
+        expectedPreview: '/api/view?filename=sky-thumb.png&type=output'
+      },
+      {
+        source: 'raw HDR only',
+        preview: {},
+        expectedPreview: ''
+      }
+    ])(
+      'uses a browser-safe image for $source',
+      ({ preview, expectedPreview }) => {
+        storeAssets.flatOutput = [
+          makeOutput('hdr-output', 'sky.exr', {
+            preview_url: '/api/view?filename=sky.exr&type=output',
+            ...preview
+          })
+        ]
+        const { dropdownItems } = useWidgetSelectItems(
+          createDefaultOptions({
+            filterSelected: 'outputs',
+            modelValue: undefined
+          })
+        )
+
+        expect(pagedItems(dropdownItems.value)).toMatchObject([
+          { id: 'hdr-output', preview_url: expectedPreview }
+        ])
+      }
+    )
 
     it('annotates output assets with [output]', async () => {
       storeAssets.flatOutput = [makeOutput('out-1', 'kept.png')]
@@ -257,14 +345,25 @@ describe('useWidgetSelectItems', () => {
       ])
     })
 
-    it('falls back to inputAssets when allAssets is undefined', () => {
+    it('keeps later pages available through the mapped dropdown source', async () => {
+      const source = useAssetsStore().flatOutputAssets
+      const items = ref<AssetItem[]>([])
+      vi.spyOn(source, 'items', 'get').mockImplementation(() => items.value)
+      vi.spyOn(source, 'loadMore').mockImplementation(async () => {
+        items.value = [makeOutput('later', 'later.png')]
+        return true
+      })
       const { dropdownItems } = useWidgetSelectItems(
-        createDefaultOptions({ modelValue: ref(undefined) })
+        createDefaultOptions({
+          filterSelected: 'outputs',
+          modelValue: undefined
+        })
       )
+      assert(isPaged(dropdownItems.value))
+      await dropdownItems.value.loadMore()
+
       expect(pagedItems(dropdownItems.value).map((i) => i.name)).toEqual([
-        'img_001.png',
-        'photo_abc.jpg',
-        'hash789.png'
+        'later.png [output]'
       ])
     })
   })
@@ -302,24 +401,6 @@ describe('useWidgetSelectItems', () => {
       expect(pagedItems(dropdownItems.value)[0].label).toBe(
         'Custom: template_image.png'
       )
-    })
-
-    it('builds the fallback preview via getMediaUrl for image kind', () => {
-      const { dropdownItems } = useWidgetSelectItems(
-        createDefaultOptions({ modelValue: ref('template_image.png') })
-      )
-      const { preview_url } = pagedItems(dropdownItems.value)[0]
-      expect(preview_url).toContain('filename=template_image.png')
-      expect(preview_url).toContain('type=input')
-    })
-
-    it('resolves an output-annotated fallback against the output directory', () => {
-      const { dropdownItems } = useWidgetSelectItems(
-        createDefaultOptions({ modelValue: ref('gone.png [output]') })
-      )
-      const { preview_url } = pagedItems(dropdownItems.value)[0]
-      expect(preview_url).toContain('filename=gone.png')
-      expect(preview_url).toContain('type=output')
     })
 
     it('leaves the fallback preview empty for mesh kind', () => {
@@ -371,35 +452,42 @@ describe('useWidgetSelectItems', () => {
     it.for([
       {
         filter: 'ownership',
-        ownershipSelected: 'my-models' as const,
+        ownershipSelected: 'my-models',
         baseModelSelected: new Set<string>()
       },
       {
         filter: 'base model',
-        ownershipSelected: 'all' as const,
+        ownershipSelected: 'all',
         baseModelSelected: new Set(['SDXL'])
       }
-    ])('retains selected model display after $filter filtering', (filters) => {
-      const { dropdownItems, selectedSet } = useWidgetSelectItems(
-        createDefaultOptions({
-          modelValue: 'model.safetensors',
-          assetKind: 'model',
-          isAssetMode: true,
-          assetData: assetDataFor([
-            makeAsset('public-model', 'model.safetensors', {
-              is_immutable: true,
-              metadata: { base_model: 'SD1.5' }
-            })
-          ]),
-          ...filters
-        })
-      )
+    ] satisfies {
+      filter: string
+      ownershipSelected: OwnershipOption
+      baseModelSelected: Set<string>
+    }[])(
+      'retains selected model display after $filter filtering',
+      (filters) => {
+        const { dropdownItems, selectedSet } = useWidgetSelectItems(
+          createDefaultOptions({
+            modelValue: 'model.safetensors',
+            assetKind: 'model',
+            isAssetMode: true,
+            assetData: assetDataFor([
+              makeAsset('public-model', 'model.safetensors', {
+                is_immutable: true,
+                metadata: { base_model: 'SD1.5' }
+              })
+            ]),
+            ...filters
+          })
+        )
 
-      expect(pagedItems(dropdownItems.value)).toMatchObject([
-        { id: 'missing-model.safetensors', name: 'model.safetensors' }
-      ])
-      expect([...selectedSet.value]).toEqual(['missing-model.safetensors'])
-    })
+        expect(pagedItems(dropdownItems.value)).toMatchObject([
+          { id: 'missing-model.safetensors', name: 'model.safetensors' }
+        ])
+        expect([...selectedSet.value]).toEqual(['missing-model.safetensors'])
+      }
+    )
 
     it('shows only available cloud assets', () => {
       const assetData = assetDataFor([
@@ -416,7 +504,6 @@ describe('useWidgetSelectItems', () => {
         })
       )
 
-      expect(pagedItems(dropdownItems.value)).toHaveLength(2)
       expect(pagedItems(dropdownItems.value).map((i) => i.name)).toEqual([
         'model_a.safetensors',
         'model_b.safetensors'

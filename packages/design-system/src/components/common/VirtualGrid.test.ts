@@ -1,3 +1,4 @@
+import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -36,6 +37,51 @@ describe('VirtualGrid', () => {
     gridTemplateColumns: 'repeat(4, 1fr)',
     gap: '1rem'
   }
+
+  it.for([
+    {
+      identity: 'id fallback',
+      first: { id: 'alpha', name: 'Alpha' },
+      second: { id: 'beta', name: 'Beta' },
+      updatedFirst: { id: 'alpha', name: 'Alpha' }
+    },
+    {
+      identity: 'explicit key before id',
+      first: { key: 'alpha', id: 'shared', name: 'Alpha' },
+      second: { key: 'beta', id: 'shared', name: 'Beta' },
+      updatedFirst: { key: 'alpha', id: 'shared', name: 'Alpha' }
+    },
+    {
+      identity: 'empty explicit key',
+      first: { key: '', id: 'old-alpha', name: 'Alpha' },
+      second: { key: 'beta', id: 'beta', name: 'Beta' },
+      updatedFirst: { key: '', id: 'new-alpha', name: 'Alpha' }
+    }
+  ])(
+    'retains edited row state after reordering with $identity',
+    async ({ first, second, updatedFirst }) => {
+      const { rerender } = render(VirtualGrid, {
+        props: {
+          items: [first, second],
+          gridStyle: defaultGridStyle
+        },
+        slots: {
+          item: '<template #item="{ item }"><input :aria-label="item.name" /></template>'
+        }
+      })
+
+      await userEvent.type(
+        screen.getByRole('textbox', { name: 'Alpha' }),
+        'Edited Alpha'
+      )
+      await rerender({ items: [second, updatedFirst] })
+
+      expect(screen.getByRole('textbox', { name: 'Alpha' })).toHaveValue(
+        'Edited Alpha'
+      )
+      expect(screen.getByRole('textbox', { name: 'Beta' })).toHaveValue('')
+    }
+  )
 
   it('renders items within the visible range', async () => {
     const items = createItems(100)

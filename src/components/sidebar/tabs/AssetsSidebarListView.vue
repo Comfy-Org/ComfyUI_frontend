@@ -2,7 +2,7 @@
   <div class="flex h-full flex-col">
     <VirtualGrid
       class="flex-1"
-      :items="virtualItems"
+      :items="pagedItems(assetItems)"
       :grid-style="listGridStyle"
       :max-columns="1"
       :default-item-height="48"
@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, toValue } from 'vue'
+import { ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
@@ -119,10 +119,6 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const hoveredAssetId = ref<string | null>(null)
-
-const virtualItems = computed(() =>
-  pagedItems(assetItems).map((item) => ({ ...item, key: item.id }))
-)
 
 function loadMore() {
   return isPaged(assetItems) ? assetItems.loadMore() : undefined

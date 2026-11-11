@@ -2,12 +2,12 @@
   <div class="flex h-full flex-col">
     <VirtualGrid
       class="flex-1"
-      :items="assetItems"
+      :items="pagedItems(assets)"
       :grid-style
       :on-load-more="loadMore"
       :can-load-more="isPaged(assets) && toValue(assets.hasMore)"
     >
-      <template #item="{ item: { asset } }">
+      <template #item="{ item: asset }">
         <MediaAssetCard
           :asset
           :selected="isSelected(asset.id)"
@@ -57,10 +57,6 @@ const emit = defineEmits<{
   (e: 'zoom', asset: AssetItem): void
   (e: 'output-count-click', asset: AssetItem): void
 }>()
-
-const assetItems = computed(() =>
-  pagedItems(assets).map((asset) => ({ asset, key: `asset-${asset.id}` }))
-)
 
 function loadMore() {
   return isPaged(assets) ? assets.loadMore() : undefined
