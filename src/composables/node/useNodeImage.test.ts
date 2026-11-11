@@ -9,6 +9,7 @@ import { LGraph } from '@/lib/litegraph/src/litegraph'
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
 
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/telemetry/imageFailureDiagnostics'), () => ({
