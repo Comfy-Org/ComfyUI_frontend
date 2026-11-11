@@ -63,8 +63,8 @@
             }}
           </Button>
           <ErrorOverlayDownloadAllModels
-            :missing-model-groups="missingModelGroups"
-            @downloaded="dismiss"
+            :missing-model-groups="downloadableMissingModelGroups"
+            @downloaded="emit('viewErrors', overlayGroupKeys)"
           />
           <Button
             v-if="canAskAgent && askAgentContext"
@@ -114,7 +114,7 @@ const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 const {
   hasError,
   hasMissingNodes,
-  missingModelGroups,
+  downloadableMissingModelGroups,
   isVisible,
   overlayMessage,
   overlayTitle,

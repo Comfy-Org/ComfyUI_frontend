@@ -169,47 +169,78 @@ describe('ErrorOverlay', () => {
     expect(screen.getByRole('status')).toContainElement(screen.getByText(label))
   })
 
-  it('downloads every missing model from the toast and dismisses it', async () => {
-    vi.mocked(downloadModel).mockImplementation(() => {})
-    mockAllErrorGroups.value = [
-      {
-        type: 'missing_model',
-        severity: 'missing',
-        groupKey: 'missing_model',
-        displayTitle: 'Missing models',
-        count: 2,
-        priority: 0,
-        blockedLastRun: false
-      }
-    ]
-    mockErrorGroups.missingModelGroups.value = [
-      {
-        directory: 'checkpoints',
-        isAssetSupported: false,
-        models: ['a.safetensors', 'b.safetensors'].map((name) => ({
+  function missingModelErrorGroup(count: number): ErrorGroup {
+    return {
+      type: 'missing_model',
+      severity: 'missing',
+      groupKey: 'missing_model',
+      displayTitle: 'Missing models',
+      count,
+      priority: 0,
+      blockedLastRun: false
+    }
+  }
+
+  function downloadableMissingModelGroup(names: string[]): MissingModelGroup {
+    return {
+      directory: 'checkpoints',
+      isAssetSupported: false,
+      models: names.map((name) => ({
+        name,
+        referencingNodes: [],
+        representative: {
           name,
-          referencingNodes: [],
-          representative: {
-            name,
-            nodeType: 'CheckpointLoaderSimple',
-            widgetName: 'ckpt_name',
-            isAssetSupported: false,
-            isMissing: true,
-            directory: 'checkpoints',
-            url: `https://huggingface.co/comfy/test/resolve/main/${name}`
-          }
-        }))
-      }
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          isAssetSupported: false,
+          isMissing: true,
+          directory: 'checkpoints',
+          url: `https://huggingface.co/comfy/test/resolve/main/${name}`
+        }
+      }))
+    }
+  }
+
+  it('downloads every missing model from the toast and opens its errors', async () => {
+    vi.mocked(downloadModel).mockImplementation(() => {})
+    mockAllErrorGroups.value = [missingModelErrorGroup(2)]
+    mockErrorGroups.missingModelGroups.value = [
+      downloadableMissingModelGroup(['a.safetensors', 'b.safetensors'])
     ]
     useExecutionErrorStore().showErrorOverlay()
-    renderOverlay()
+    const { emitted } = renderOverlay()
 
     await userEvent.click(
       screen.getByTestId('error-overlay-download-all-models')
     )
 
     expect(downloadModel).toHaveBeenCalledTimes(2)
-    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
+    expect(emitted('viewErrors')).toEqual([[['missing_model']]])
+  })
+
+  it('offers no download from the toast when other issues accompany missing models', () => {
+    mockAllErrorGroups.value = [
+      missingModelErrorGroup(1),
+      {
+        type: 'missing_media',
+        severity: 'missing',
+        groupKey: 'missing_media',
+        displayTitle: 'Missing media',
+        count: 1,
+        priority: 0,
+        blockedLastRun: false
+      }
+    ]
+    mockErrorGroups.missingModelGroups.value = [
+      downloadableMissingModelGroup(['a.safetensors'])
+    ]
+    useExecutionErrorStore().showErrorOverlay()
+    renderOverlay()
+
+    expect(screen.getByRole('status')).toBeVisible()
+    expect(
+      screen.queryByTestId('error-overlay-download-all-models')
+    ).not.toBeInTheDocument()
   })
 
   it('renders a single overlay message without list markup', async () => {
