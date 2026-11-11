@@ -39,11 +39,20 @@ import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  createBoundaryLinkedSubgraph,
+  createTestRootGraph,
+  createTestSubgraph
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isValidUuid } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
+import {
+  createSharedObjectUrl,
+  releaseSharedObjectUrl
+} from '@/utils/objectUrlUtil'
+import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
 import { t } from '@/i18n'
 import { api } from '@/scripts/api'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -976,6 +985,87 @@ describe('useWorkflowService', () => {
         '1': ['/api/view?filename=newer.png'],
         '2': ['/api/view?filename=other.png']
       })
+    })
+
+    it('does not keep a subgraph preview resolved against a superseded open', async () => {
+      const createSubgraphWorkflowGraph = () => {
+        const fixture = createBoundaryLinkedSubgraph({
+          rootGraph: createTestRootGraph(),
+          hostId: 5,
+          interiorId: 6
+        })
+        fixture.rootGraph.subgraphs.set(fixture.subgraph.id, fixture.subgraph)
+        return fixture
+      }
+      const currentGraph = createSubgraphWorkflowGraph()
+      const linkedGraph = createSubgraphWorkflowGraph()
+      let blobCount = 0
+      vi.spyOn(URL, 'createObjectURL').mockImplementation(
+        () => `blob:superseded-subgraph/${++blobCount}`
+      )
+      const revokeObjectURL = vi
+        .spyOn(URL, 'revokeObjectURL')
+        .mockImplementation(() => {})
+      const nodeOutputs = useNodeOutputStore()
+      const receivePreviewFrame = () => {
+        const url = createSharedObjectUrl(new Blob(['frame']))
+        for (const executionId of getAncestorExecutionIds('5:6')) {
+          nodeOutputs.setNodePreviewsByExecutionId(executionId, [url])
+        }
+        releaseSharedObjectUrl(url)
+        return url
+      }
+      const workflows = useWorkflowStore()
+      const current = createModeTestWorkflow({ path: 'workflows/current.json' })
+      current.changeTracker = new ChangeTracker(current, makeWorkflowData())
+      workflows.activeWorkflow = current
+      let canvasGraph = currentGraph.rootGraph
+      vi.spyOn(app, 'rootGraph', 'get').mockImplementation(() => canvasGraph)
+      vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockImplementation(
+        () => canvasGraph
+      )
+      const loading = createModeTestWorkflow({ path: 'workflows/linked.json' })
+      let currentRequest = true
+      let arrivedUrl: string | undefined
+      vi.mocked(app.loadGraphData).mockImplementation(
+        async (data, _clean, _restore, workflow, options) => {
+          if (options?.isCurrent?.() === false) return false
+          useWorkflowService().beforeLoadNewGraph()
+          nodeOutputs.resetAllOutputsAndPreviews()
+          if (workflow === loading) {
+            canvasGraph = linkedGraph.rootGraph
+            arrivedUrl = receivePreviewFrame()
+            currentRequest = false
+          } else {
+            canvasGraph = currentGraph.rootGraph
+          }
+          if (options?.isCurrent?.() === false) return false
+          assert.exists(data)
+          await useWorkflowService().afterLoadNewGraph(
+            workflow as ComfyWorkflow,
+            data
+          )
+          return true
+        }
+      )
+
+      await useWorkflowService().openWorkflow(loading, {
+        isCurrent: () => currentRequest
+      })
+
+      expect(workflows.activeWorkflow.path).toBe(current.path)
+      expect(nodeOutputs.nodePreviewImages).not.toHaveProperty(
+        `${linkedGraph.subgraph.id}:6`
+      )
+      expect(nodeOutputs.nodePreviewImages['5']).toEqual([arrivedUrl])
+
+      const laterUrl = receivePreviewFrame()
+
+      expect(nodeOutputs.nodePreviewImages).toEqual({
+        '5': [laterUrl],
+        [`${currentGraph.subgraph.id}:6`]: [laterUrl]
+      })
+      expect(revokeObjectURL).toHaveBeenCalledWith(arrivedUrl)
     })
 
     it('leaves a saved workflow clean after a superseded load applied its draft', async () => {
