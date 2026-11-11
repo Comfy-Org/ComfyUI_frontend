@@ -347,10 +347,6 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid !== uid
   }
 
-  /**
-   * Unified Cloud JWT header, falling back to the Firebase token, or the stored
-   * API key when not signed in. See getAuthHeader for the full priority order.
-   */
   const getUnifiedAuthHeader = async (): Promise<AuthHeader | null> => {
     if (await awaitUnifiedMint()) return null
     const token = useWorkspaceAuthStore().getUnifiedToken()
