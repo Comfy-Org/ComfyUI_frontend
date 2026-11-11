@@ -14,6 +14,7 @@
  */
 import { watch } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
@@ -290,6 +291,17 @@ function normalizeRejection(
   })
 }
 
+function runQueueCleanup(cleanUp: () => void): void {
+  try {
+    cleanUp()
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_cleaning_queue_attempt',
+      surface: 'graph'
+    })
+  }
+}
+
 export function createQueueApi(
   getGraph: () => LGraph | null | undefined
 ): QueueHandle {
@@ -309,23 +321,28 @@ export function createQueueApi(
 
     onBeforeRun(listener: () => (() => void) | void) {
       const cleanUps = new Map<number, () => void>()
+      let active = true
       const started = (event: CustomEvent<{ requestId: number }>) => {
         const cleanUp = listener()
-        if (cleanUp) cleanUps.set(event.detail.requestId, cleanUp)
+        if (!cleanUp) return
+        if (active) cleanUps.set(event.detail.requestId, cleanUp)
+        else runQueueCleanup(cleanUp)
       }
       const ended = (event: CustomEvent<{ requestId: number }>) => {
         const cleanUp = cleanUps.get(event.detail.requestId)
         cleanUps.delete(event.detail.requestId)
-        cleanUp?.()
+        if (cleanUp) runQueueCleanup(cleanUp)
       }
       api.addEventListener('promptQueueing', started)
       api.addEventListener('promptQueueAttemptEnded', ended)
       return () => {
+        if (!active) return
+        active = false
         api.removeEventListener('promptQueueing', started)
         api.removeEventListener('promptQueueAttemptEnded', ended)
         const outstanding = [...cleanUps.values()]
         cleanUps.clear()
-        for (const cleanUp of outstanding) cleanUp()
+        for (const cleanUp of outstanding) runQueueCleanup(cleanUp)
       }
     },
     onAfterRun(listener: (event: RunSubmittedEvent) => void) {
