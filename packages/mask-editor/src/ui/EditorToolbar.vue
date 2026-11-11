@@ -151,7 +151,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
+import Button from '@comfyorg/design-system/button/Button.vue'
 import { useCanvasTools } from '#/useCanvasTools'
 import { useCanvasTransform } from '#/useCanvasTransform'
 import { useMaskEditorStore } from '#/maskEditorStore'

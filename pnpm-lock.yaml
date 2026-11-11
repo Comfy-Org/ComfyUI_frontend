@@ -425,7 +425,6 @@ overrides:
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': 8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15
-  '@volar/typescript@2.4.28': f5042bf270f3efa7ce740797345cadb600d3da471200abae354a7ac1d96c0ec8
 
 importers:
 
@@ -12187,7 +12186,7 @@ snapshots:
 
   '@volar/source-map@2.4.30': {}
 
-  '@volar/typescript@2.4.28(patch_hash=f5042bf270f3efa7ce740797345cadb600d3da471200abae354a7ac1d96c0ec8)(typescript@6.0.3)':
+  '@volar/typescript@2.4.28(typescript@6.0.3)':
     dependencies:
       '@volar/language-core': 2.4.28
       path-browserify: 1.0.1
@@ -16366,7 +16365,7 @@ snapshots:
 
   vue-tsc@3.3.11(typescript@6.0.3):
     dependencies:
-      '@volar/typescript': 2.4.28(patch_hash=f5042bf270f3efa7ce740797345cadb600d3da471200abae354a7ac1d96c0ec8)(typescript@6.0.3)
+      '@volar/typescript': 2.4.28(typescript@6.0.3)
       '@vue/language-core': 3.3.11
       typescript: 6.0.3
 

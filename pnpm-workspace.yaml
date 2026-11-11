@@ -189,4 +189,3 @@ minimumReleaseAgeExclude:
 
 patchedDependencies:
   '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch
-  '@volar/typescript@2.4.28': patches/@volar__typescript@2.4.28.patch
