@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { RenderShape } from '@comfyorg/graph-model/globalEnums'
@@ -15,6 +19,7 @@ import type {
   OutputSlotHandle,
   SlotCollection
 } from './slotHandle'
+import { slotIdOf } from './slotRef'
 
 describe('slot handles', () => {
   let graph: LGraph
@@ -408,6 +413,51 @@ describe('slot handles', () => {
 
       const handle = interiorInputs.byName('seed')!
       expect(handle.connectedType).toBe('INT')
+    })
+
+    it('reports links at the subgraph boundary by the boundary id and slot', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [
+          { name: 'seed', type: 'INT' },
+          { name: 'image', type: 'IMAGE' }
+        ],
+        outputs: [
+          { name: 'mask', type: 'MASK' },
+          { name: 'image', type: 'IMAGE' }
+        ]
+      })
+      const relay = new LGraphNode('Relay', 'RelayNode')
+      relay.addInput('in', 'IMAGE')
+      relay.addOutput('out', 'IMAGE')
+      subgraph.add(relay)
+      subgraph.inputNode.slots[1].connect(relay.inputs[0], relay)
+      subgraph.outputNode.slots[1].connect(relay.outputs[0], relay)
+      const getRelay = () => subgraph.getNodeById(relay.id) ?? undefined
+      const input = createInputCollection(() => subgraph, getRelay).at(0)!
+      const output = createOutputCollection(() => subgraph, getRelay).at(0)!
+
+      expect(input.link()).toEqual({
+        id: expect.any(String),
+        sourceNodeId: String(SUBGRAPH_INPUT_ID),
+        sourceSlotId: slotIdOf(subgraph.inputs[1]),
+        targetNodeId: String(relay.id),
+        targetSlotId: input.id,
+        type: 'IMAGE',
+        sourceIndex: 1,
+        targetIndex: 0
+      })
+      expect(output.links()).toEqual([
+        {
+          id: expect.any(String),
+          sourceNodeId: String(relay.id),
+          sourceSlotId: output.id,
+          targetNodeId: String(SUBGRAPH_OUTPUT_ID),
+          targetSlotId: slotIdOf(subgraph.outputs[1]),
+          type: 'IMAGE',
+          sourceIndex: 0,
+          targetIndex: 1
+        }
+      ])
     })
 
     it('resolves the source through frontend nodes without changing the graph', () => {

@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -32,6 +33,7 @@ import type {
   UnplacedLinkEvent
 } from './defsRegistry'
 import type { NodeHandle } from './nodeHandle'
+import type { SuppliedEdge } from './resolution'
 
 const RAW_DEF = {
   name: 'KSampler',
@@ -171,15 +173,18 @@ describe('defs.extend', () => {
 
     it('is frozen, so an extension cannot mutate what the next one sees', () => {
       const registry = createDefRegistry()
+      const seen: NodeDefBuilder['def'][] = []
       registry
         .forMajor(() => comfy.graph.node('1')!)
-        .extend('KSampler', ({ def }) => {
-          expect(() => {
-            // @ts-expect-error -- the point of the test
-            def.title = 'hijacked'
-          }).toThrow()
-        })
+        .extend('KSampler', ({ def }) => seen.push(def))
       registry.applyTo(nodeClass('KSampler'), RAW_DEF)
+
+      expect(seen).toHaveLength(1)
+      expect(() => {
+        // @ts-expect-error -- the point of the test
+        seen[0].title = 'hijacked'
+      }).toThrow(TypeError)
+      expect(seen[0].title).toBe(RAW_DEF.display_name)
     })
   })
 
@@ -779,6 +784,45 @@ describe('a defined node type', () => {
       stop()
     }
   })
+
+  it('leaves a later definition in place when an earlier disposer runs again', () => {
+    const api = createComfyApi(() => new LGraph())
+    const relay = {
+      type: 'ReusedRelay',
+      execution: 'frontend',
+      inputs: [{ name: 'in', type: 'IMAGE' }],
+      outputs: [{ name: 'out', type: 'IMAGE' }],
+      resolve: () => ({})
+    } as const
+    const disposeFirst = api.defs.define(relay)
+    disposeFirst()
+    const disposeSecond = api.defs.define(relay)
+
+    try {
+      disposeFirst()
+
+      expect(LiteGraph.createNode('ReusedRelay')).not.toBeNull()
+      expect(api.defs.has('ReusedRelay')).toBe(true)
+      expect(frontendResolverMap().has('ReusedRelay')).toBe(true)
+    } finally {
+      disposeSecond()
+    }
+  })
+
+  it('leaves a class registered over the definition in place when disposed', () => {
+    const api = createComfyApi(() => new LGraph())
+    const dispose = api.defs.define({ type: 'RegisteredOver' })
+    class Replacement extends LGraphNode {}
+    LiteGraph.registerNodeType('RegisteredOver', Replacement)
+
+    try {
+      dispose()
+
+      expect(LiteGraph.registered_node_types.RegisteredOver).toBe(Replacement)
+    } finally {
+      LiteGraph.unregisterNodeType('RegisteredOver')
+    }
+  })
 })
 
 describe('how a node arrived', () => {
@@ -994,17 +1038,24 @@ describe('setSupply', () => {
 
   it('composes suppliers registered by different extensions', async () => {
     const registry = createDefRegistry()
-    const first = vi.fn(() => [])
-    const second = vi.fn(() => [])
+    const fromFirst: SuppliedEdge = {
+      to: { nodeId: '2', input: 0 },
+      from: { output: 0 }
+    }
+    const fromSecond: SuppliedEdge = {
+      to: { nodeId: '3', input: 1 },
+      from: { literal: 7 }
+    }
     const api = registry.forMajor((id) => comfy.graph.node(id)!)
-    api.extend('KSampler', (b) => b.setSupply(first))
-    api.extend('KSampler', (b) => b.setSupply(second))
+    api.extend('KSampler', (b) => b.setSupply(() => [fromFirst]))
+    api.extend('KSampler', (b) => b.setSupply(() => [fromSecond]))
     registry.applyTo(nodeClass('KSampler'), RAW_DEF)
 
-    await frontendSupplierMap().get('KSampler')!(undefined as never)
+    const edges = await frontendSupplierMap().get('KSampler')!(
+      undefined as never
+    )
 
-    expect(first).toHaveBeenCalledOnce()
-    expect(second).toHaveBeenCalledOnce()
+    expect(edges).toEqual([fromFirst, fromSecond])
   })
 
   it('clears a supplier when the definition is reapplied', () => {
@@ -1619,6 +1670,29 @@ describe('connection veto and menu items', () => {
     expect(skipped).not.toHaveBeenCalled()
   })
 
+  it('skips later drop listeners once an earlier one removes the node', async () => {
+    const registry = createDefRegistry()
+    const later = vi.fn(async () => true)
+    registry
+      .forMajor((id) => comfy.graph.node(id)!)
+      .extend('KSampler', (b) => {
+        b.onDrop(async () => {
+          graph.remove(node)
+          return false
+        })
+        b.onDrop(later)
+      })
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    graph.add(node)
+
+    await expect(
+      node.onDragDrop?.(new Event('drop') as DragEvent)
+    ).resolves.toBe(false)
+    expect(later).not.toHaveBeenCalled()
+  })
+
   it('does not replay a drop the host already handled', async () => {
     const registry = createDefRegistry()
     const extension = vi.fn(async () => true)
@@ -1868,6 +1942,23 @@ describe('marking an existing type frontend-only', () => {
 
     expect(frontendResolverMap().has('Passthrough')).toBe(false)
   })
+
+  it('returns an applied type to the backend when the extension is disposed', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    const stop = defs.extend('Passthrough', (builder) =>
+      builder.setExecution('frontend', () => ({ '0': { omit: true } }))
+    )
+    const nodeType: { prototype: Partial<LGraphNode> } = { prototype: {} }
+    registry.applyTo(nodeType, { name: 'Passthrough' })
+    expect(nodeType.prototype.isVirtualNode).toBe(true)
+
+    stop()
+
+    expect(nodeType.prototype.isVirtualNode).toBeUndefined()
+    expect(nodeType.prototype.resolutionOwned).toBeUndefined()
+    expect(frontendResolverMap().has('Passthrough')).toBe(false)
+  })
 })
 
 describe('selecting definitions by shape', () => {
@@ -1891,5 +1982,31 @@ describe('selecting definitions by shape', () => {
     )
 
     expect(seen).toEqual(['VAEDecode'])
+  })
+
+  it('treats a selector that throws as not matching, and applies the rest', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    const seen: string[] = []
+    registry.applyTo({ prototype: {} }, { name: 'KnownFirst' })
+    const broken = new Error('broken selector')
+
+    defs.extend(
+      () => {
+        throw broken
+      },
+      (b) => seen.push(`broken ${b.def.type}`)
+    )
+    defs.extend('VAEDecode', (b) => seen.push(b.def.type))
+    registry.applyTo({ prototype: {} }, { name: 'VAEDecode' })
+
+    expect(seen).toEqual(['VAEDecode'])
+    expect(reportError).toHaveBeenCalledWith(
+      broken,
+      expect.objectContaining({
+        errorType: 'node_api_def_selector_failure',
+        tags: { node_type: 'VAEDecode' }
+      })
+    )
   })
 })

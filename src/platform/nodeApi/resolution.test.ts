@@ -5,6 +5,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { RectTuple } from '@comfyorg/shared-frontend-utils/geometry'
+import { addGroup } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
 import {
   LGraph,
   LGraphGroup,
@@ -409,14 +411,44 @@ describe('supply-side resolution', () => {
     expect(candidateGroups.map((g) => g.title)).toEqual(['Sampling'])
   })
 
+  it.for([
+    { name: 'the outer group was added first', titles: ['Outer', 'Inner'] },
+    { name: 'the inner group was added first', titles: ['Inner', 'Outer'] }
+  ])(
+    "lists a candidate's groups innermost first when $name",
+    ({ titles: [first, second] }) => {
+      const bounds: Record<string, RectTuple> = {
+        Outer: [0, 0, 400, 400],
+        Inner: [20, 20, 300, 300]
+      }
+      const sink = spawn('Sink')
+      sink.pos = [60, 60]
+      sink.updateArea()
+      spawn('Broadcaster')
+      addGroup(graph, first, bounds[first])
+      addGroup(graph, second, bounds[second])
+      let candidateGroups: readonly { title: string }[] = []
+
+      supply(
+        new Map<string, Supplier>([
+          [
+            'Broadcaster',
+            (view) => {
+              candidateGroups = view.unconnectedInputs()[0]?.nodeGroups ?? []
+              return []
+            }
+          ]
+        ])
+      )
+
+      expect(candidateGroups.map((g) => g.title)).toEqual(['Inner', 'Outer'])
+    }
+  )
+
   it('lets a supplier read the type plugged into its own input', () => {
-    // The whole broadcast pattern is "send whatever is plugged into me to
-    // every unconnected input of the same type". Without this a supplier is
-    // type-blind and would feed a CLIP into a MODEL slot in silence.
     const source = spawn('Sink')
     source.addOutput('model', 'MODEL')
     const broadcaster = spawn('Broadcaster')
-    // The real broadcast node takes a value in and rebroadcasts it.
     broadcaster.addInput('anything', '*')
     source.connect(0, broadcaster, 0)
 
@@ -442,7 +474,7 @@ describe('supply-side resolution', () => {
       connected: true,
       sourceNodeId: String(source.id)
     })
-    expect(own[0].connectedType).toBeDefined()
+    expect(own[0].connectedType).toBe('MODEL')
   })
 
   it('reads the type arriving from a subgraph input panel', () => {
@@ -665,6 +697,37 @@ describe('supply-side resolution', () => {
     expect(model?.nodeProperties.ue_connectable).toBe(true)
     expect(model?.label).toBe('model')
     expect(model?.isWidgetInput).toBe(false)
+  })
+
+  it('keeps one supplier from changing the candidates another supplier sees', () => {
+    class Meddler extends LGraphNode {
+      constructor() {
+        super('Meddler')
+      }
+    }
+    LiteGraph.registerNodeType('Meddler', Meddler)
+    cleanups.push(() => LiteGraph.unregisterNodeType('Meddler'))
+    spawn('Meddler')
+    const source = spawn('Broadcaster')
+    const sink = spawn('Sink')
+    const retype: Supplier = (view) => {
+      const model = view.unconnectedInputs().find((i) => i.type === 'MODEL')!
+      Reflect.set(model, 'type', 'CLIP')
+      return []
+    }
+
+    const supplied = supply(
+      new Map<string, Supplier>([
+        ['Meddler', retype],
+        ['Broadcaster', broadcastModel]
+      ])
+    )
+
+    expect(supplied.get(`${sink.id}:0`)).toEqual({
+      kind: 'output',
+      nodeId: String(source.id),
+      output: 0
+    })
   })
 
   it('does nothing at all when no pack registered a supplier', () => {

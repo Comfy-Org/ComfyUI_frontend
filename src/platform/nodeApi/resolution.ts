@@ -113,18 +113,17 @@ export type ResolvedSource =
 
 const key = (nodeId: string, output: number) => `${nodeId}:${output}`
 
-/**
- * The groups a node sits inside.
- *
- * Membership is geometric — a group holds whatever its rectangle overlaps —
- * so it is recomputed rather than read from anything stored. Computed once per
- * resolution pass and shared, because recomputing per node is quadratic on a
- * graph with many groups.
- */
 function groupsByNodeId(graph: LGraph): ReadonlyMap<string, GroupMembership[]> {
+  const groups = [...graph._groups]
+  for (const group of groups) group.recomputeInsideNodes()
+  const innermostFirst = groups
+    .map((group) => ({
+      group,
+      enclosedBy: groups.filter((outer) => outer.children.has(group)).length
+    }))
+    .sort((a, b) => b.enclosedBy - a.enclosedBy)
   const byNode = new Map<string, GroupMembership[]>()
-  for (const group of graph._groups) {
-    group.recomputeInsideNodes()
+  for (const { group } of innermostFirst) {
     const membership: GroupMembership = Object.freeze({
       id: String(group.id),
       title: group.title
@@ -891,7 +890,7 @@ function unconnectedInputOf(
   properties: Readonly<Record<string, unknown>>,
   groups: ReadonlyMap<string, GroupMembership[]>
 ): UnconnectedInput {
-  return {
+  return Object.freeze({
     nodeId: String(node.id),
     nodeType: extensionValue(node.type) ?? '',
     input: index,
@@ -904,7 +903,7 @@ function unconnectedInputOf(
     nodeColor: node.color,
     nodeProperties: properties,
     nodeGroups: Object.freeze(groups.get(String(node.id)) ?? [])
-  }
+  })
 }
 
 function unconnectedInputsOf(
