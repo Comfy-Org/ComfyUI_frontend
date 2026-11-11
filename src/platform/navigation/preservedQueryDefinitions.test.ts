@@ -24,7 +24,8 @@ describe('PRESERVED_QUERY_DEFINITIONS', () => {
     [PRESERVED_QUERY_NAMESPACES.WORKSPACE, 'workspace'],
     [PRESERVED_QUERY_NAMESPACES.DEPLOYMENT, 'deployment'],
     [PRESERVED_QUERY_NAMESPACES.WORKFLOWS, 'workflows'],
-    [PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF, 'from_local']
+    [PRESERVED_QUERY_NAMESPACES.LOCAL_HANDOFF, 'from_local'],
+    [PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID, 'workflowId']
   ])('captures %s so a redirect cannot lose it', ([namespace, key]) => {
     expect(registered.get(namespace)).toContain(key)
   })
