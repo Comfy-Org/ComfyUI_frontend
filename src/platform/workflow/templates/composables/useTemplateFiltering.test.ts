@@ -157,6 +157,66 @@ describe('useTemplateFiltering', () => {
     ])
   })
 
+  it('resets the browse sort to newest', async () => {
+    const { sortBy, resetFilters } = useTemplateFiltering(
+      ref<TemplateInfo[]>([])
+    )
+    sortBy.value = 'popular'
+
+    resetFilters()
+
+    expect(sortBy.value).toBe('newest')
+  })
+
+  it('applies a category sort without persisting it', async () => {
+    const { sortBy, sortSelection, categorySort } = useTemplateFiltering(
+      ref<TemplateInfo[]>([])
+    )
+    sortBy.value = 'newest'
+    await vi.runOnlyPendingTimersAsync()
+    vi.mocked(defaultSettingStore.set).mockClear()
+
+    categorySort.value = 'popular'
+    await nextTick()
+    await vi.runOnlyPendingTimersAsync()
+
+    expect(sortSelection.value).toBe('popular')
+    expect(sortBy.value).toBe('newest')
+    expect(defaultSettingStore.set).not.toHaveBeenCalledWith(
+      'Comfy.Templates.SortBy',
+      expect.anything()
+    )
+
+    categorySort.value = null
+    expect(sortSelection.value).toBe('newest')
+  })
+
+  it('clears the category sort when the user picks a sort', () => {
+    const { sortBy, sortSelection, categorySort } = useTemplateFiltering(
+      ref<TemplateInfo[]>([])
+    )
+    categorySort.value = 'popular'
+
+    sortSelection.value = 'alphabetical'
+
+    expect(categorySort.value).toBeNull()
+    expect(sortBy.value).toBe('alphabetical')
+  })
+
+  it('does not track filter changes when returning to the default sort', async () => {
+    const { sortBy } = useTemplateFiltering(ref<TemplateInfo[]>([]))
+    sortBy.value = 'popular'
+    await nextTick()
+    await vi.runOnlyPendingTimersAsync()
+    vi.mocked(useTelemetry()!.trackTemplateFilterChanged).mockClear()
+
+    sortBy.value = 'newest'
+    await nextTick()
+    await vi.runOnlyPendingTimersAsync()
+
+    expect(useTelemetry()?.trackTemplateFilterChanged).not.toHaveBeenCalled()
+  })
+
   it('supports alphabetical, newest, and size-based sorting options', async () => {
     const templates = ref<TemplateInfo[]>([
       {
