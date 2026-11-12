@@ -48,6 +48,10 @@ export abstract class SubgraphIONodeBase<
   static minWidth = 100
   static roundedRadius = 14 // Matches NODE_SLOT_HEIGHT * 0.7 for slot alignment
 
+  static get socketInset(): number {
+    return SubgraphIONodeBase.roundedRadius + LiteGraph.NODE_SLOT_HEIGHT / 2
+  }
+
   private readonly _boundingRect: Rectangle = new Rectangle()
 
   abstract readonly id: NodeId
@@ -59,8 +63,7 @@ export abstract class SubgraphIONodeBase<
     )
     if (!measured) return this._boundingRect
     const [x, y, width] = this._boundingRect
-    const socketInset =
-      SubgraphIONodeBase.roundedRadius + LiteGraph.NODE_SLOT_HEIGHT / 2
+    const { socketInset } = SubgraphIONodeBase
     return new Rectangle(
       x + width - socketInset - measured.width,
       y,

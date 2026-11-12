@@ -28,8 +28,8 @@ export function useSubgraphInputLayout(
   const { height: headerHeight } = useElementSize(header, undefined, {
     box: 'border-box'
   })
-  const socketInset =
-    SubgraphIONodeBase.roundedRadius + LiteGraph.NODE_SLOT_HEIGHT / 2
+  const { socketInset } = SubgraphIONodeBase
+  const slotTop = () => (headerHeight.value || LiteGraph.NODE_TITLE_HEIGHT) + 4
   const size = computedWithControl(
     () => context.graph,
     () => {
@@ -61,7 +61,7 @@ export function useSubgraphInputLayout(
       layout.report(graph.id, nodeId, {
         width: width.value || size.value.width,
         height: height.value || size.value.height,
-        slotTop: (headerHeight.value || LiteGraph.NODE_TITLE_HEIGHT) + 4
+        slotTop: slotTop()
       })
       canvasStore.canvas?.setDirty(true, true)
       onCleanup(() => {
@@ -103,7 +103,7 @@ export function useSubgraphInputLayout(
     layout.report(graph.id, node.id, {
       width: next.width,
       height: next.height,
-      slotTop: headerHeight.value + 4
+      slotTop: slotTop()
     })
   })
 
