@@ -589,6 +589,19 @@ describe('AddCreditsDialog auto top-up suggestion', () => {
     await vi.waitFor(() => expect(emitted().close).toHaveLength(1))
     expect(screen.queryByText(OFFER)).not.toBeInTheDocument()
   })
+
+  it('withdraws a shown suggestion and closes once its setup link is hidden', async () => {
+    const { emitted, rerender } = await landPayment(() =>
+      Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    )
+    await screen.findByText(OFFER)
+
+    await rerender({ autoTopUpSetupHidden: true })
+
+    expect(screen.queryByRole('link', { name: 'Set up' })).toBeNull()
+    expect(emitted().close).toHaveLength(1)
+    expect(emitted().declineAutoTopUp).toBeUndefined()
+  })
 })
 
 describe('AddCreditsDialog auto top-up with the purchase', () => {
@@ -879,6 +892,22 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(emitted().close).toHaveLength(1)
+  })
+
+  it("keeps Auto top-up didn't turn on but drops Set up once its setup link is hidden", async () => {
+    const { user, ports, rerender } = renderOffered()
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(checkbox())
+    await user.click(continueButton())
+    ports.landed?.({ status: 'failed' })
+    await screen.findByRole('link', { name: 'Set up' })
+
+    await rerender({ autoTopUpSetupHidden: true })
+
+    expect(
+      screen.getByRole('heading', { name: "Auto top-up didn't turn on" })
+    ).toBeVisible()
+    expect(screen.queryByRole('link', { name: 'Set up' })).toBeNull()
   })
 
   it('a checked purchase that lands without an outcome closes without claiming a failure', async () => {

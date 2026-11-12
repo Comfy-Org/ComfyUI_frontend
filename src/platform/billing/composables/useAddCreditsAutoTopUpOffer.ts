@@ -84,5 +84,5 @@ export function useAddCreditsAutoTopUpOffer() {
 
   const billingUrl = computed(() => (available.value ? href.value : undefined))
 
-  return { offer, billingUrl }
+  return { offer, billingUrl, platformAvailable: available }
 }

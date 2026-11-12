@@ -11,6 +11,7 @@
     :plan-line="planLine"
     :auto-top-up="autoTopUpChoice.offer.value"
     :billing-url="autoTopUpChoice.billingUrl.value"
+    :auto-top-up-setup-hidden="!autoTopUpChoice.platformAvailable.value"
     :opens-in="handsPopupsToSystemBrowser() ? 'browser' : 'tab'"
     :support-url="billingSupportUrl"
     :locale

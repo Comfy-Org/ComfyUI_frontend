@@ -121,14 +121,14 @@
     />
     <AddCreditsAutoTopUpResultStep
       v-else-if="state.step === 'auto_top_up_failed'"
-      :link-url="state.setupUrl"
+      :link-url="autoTopUpSetupHidden ? undefined : state.setupUrl"
       :translate
       :format
       :ui
       @close="emit('close')"
     />
     <AddCreditsAutoTopUpOfferStep
-      v-else-if="state.step === 'auto_top_up_offer'"
+      v-else-if="state.step === 'auto_top_up_offer' && !autoTopUpSetupHidden"
       :setup-url="state.setupUrl"
       :translate
       :ui
@@ -139,7 +139,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { Component } from 'vue'
 import { useResizeObserver, useWindowSize } from '@vueuse/core'
 
@@ -185,6 +185,7 @@ const {
   planLine,
   autoTopUp = { kind: 'hidden' },
   billingUrl,
+  autoTopUpSetupHidden = false,
   opensIn = 'tab',
   supportUrl,
   locale,
@@ -203,6 +204,8 @@ const {
   planLine?: AddCreditsPlanLine
   autoTopUp?: AddCreditsAutoTopUpOffer
   billingUrl?: string
+  /** Withdraws a setup link the dialog already holds, e.g. once Platform links stop being offered. */
+  autoTopUpSetupHidden?: boolean
   opensIn?: 'tab' | 'browser'
   supportUrl: string
   locale: string
@@ -257,6 +260,14 @@ const dialog = useAddCreditsDialog({
   onLanded: () => emit('close')
 })
 const state = dialog.state
+
+// Without its setup link the offer has nothing to offer: close as a landing without one does.
+watch(
+  () => state.value.step === 'auto_top_up_offer' && autoTopUpSetupHidden,
+  (withdrawn) => {
+    if (withdrawn) emit('close')
+  }
+)
 
 const format = computed(() => addCreditsFormat(locale))
 
