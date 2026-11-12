@@ -580,4 +580,22 @@ describe('BillingOpStatusSchema auto_top_up', () => {
     })
     expect(parsed.auto_top_up_activation).toBe('on')
   })
+
+  it.for(['threshold_credits', 'target_credits', 'monthly_budget_cents'])(
+    'rejects an unsafe %s',
+    (field) => {
+      const parsed = BillingOpStatusSchema.safeParse(
+        status({
+          auto_top_up: {
+            threshold_credits: 1000,
+            target_credits: 5000,
+            monthly_budget_cents: 2000,
+            monthly_budget_is_default: false,
+            [field]: 2 ** 53
+          }
+        })
+      )
+      expect(parsed.success).toBe(false)
+    }
+  )
 })

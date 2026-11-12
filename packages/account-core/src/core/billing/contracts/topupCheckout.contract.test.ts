@@ -1,6 +1,8 @@
 import {
   zCreateTopupCheckoutRequest,
-  zCreateTopupCheckoutResponse
+  zCreateTopupCheckoutResponse,
+  zHostedTopupCheckout,
+  zInteractiveTopupRequest
 } from '@comfyorg/ingest-types/zod'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
@@ -122,5 +124,63 @@ describe('hosted topup checkout contract', () => {
     const parsed = zCreateTopupCheckoutResponse.safeParse(checkoutResponse())
 
     expect(parsed.success && parsed.data.session_id).toBeUndefined()
+  })
+})
+
+describe('auto top-up settings on the topup contracts', () => {
+  it.for([
+    {
+      route: 'hosted',
+      parse: (body: object) => zCreateTopupCheckoutRequest.parse(body),
+      body: { amount_cents: 5000, return_url: RETURN_URL }
+    },
+    {
+      route: 'interactive',
+      parse: (body: object) => zInteractiveTopupRequest.parse(body),
+      body: { amount_cents: 5000, idempotency_key: 'key-1' }
+    }
+  ])('keeps the $route request settings', ({ parse, body }) => {
+    const parsed = parse({
+      ...body,
+      auto_top_up: {
+        threshold_credits: 1200,
+        target_credits: 9800,
+        monthly_budget_cents: 4500
+      }
+    })
+
+    expect(parsed.auto_top_up).toEqual({
+      threshold_credits: 1200n,
+      target_credits: 9800n,
+      monthly_budget_cents: 4500n
+    })
+  })
+
+  it('keeps the accepted settings and a failed activation on the hosted read', () => {
+    const parsed = zHostedTopupCheckout.parse({
+      session_id: 'cs_1',
+      amount_cents: 5000,
+      payment_amount_cents: 5000,
+      state: 'fulfilled',
+      auto_top_up: {
+        threshold_credits: 1200,
+        target_credits: 9800,
+        monthly_budget_cents: 4500,
+        monthly_budget_is_default: false
+      },
+      auto_top_up_activation: 'failed',
+      auto_top_up_activation_reason: 'activation_error'
+    })
+
+    expect(parsed).toMatchObject({
+      auto_top_up: {
+        threshold_credits: 1200n,
+        target_credits: 9800n,
+        monthly_budget_cents: 4500n,
+        monthly_budget_is_default: false
+      },
+      auto_top_up_activation: 'failed',
+      auto_top_up_activation_reason: 'activation_error'
+    })
   })
 })
