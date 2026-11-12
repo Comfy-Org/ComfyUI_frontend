@@ -1202,7 +1202,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Templates.SortBy',
     name: 'Template library - Sort preference',
     type: 'hidden',
-    defaultValue: 'default'
+    defaultValue: 'newest'
   },
 
   /**

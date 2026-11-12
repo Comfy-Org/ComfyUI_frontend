@@ -678,6 +678,7 @@ const {
   selectedUseCases,
   selectedRunsOn,
   sortSelection,
+  categorySort,
   hasActiveQuery,
   activeModels,
   activeUseCases,
@@ -715,23 +716,16 @@ watch(searchQuery, (value) => {
  * @param source The origin of the change ('nav' or 'sort').
  */
 const coordinateNavAndSort = (source: 'nav' | 'sort') => {
-  if (hasActiveQuery.value) return
-
   const isPopularNav = selectedNavItem.value === 'popular'
-  const isPopularSort = sortSelection.value === 'popular'
 
   if (source === 'nav') {
-    if (isPopularNav && !isPopularSort) {
-      sortSelection.value = 'popular'
-    } else if (!isPopularNav && isPopularSort) {
-      sortSelection.value = 'default'
-    }
-  } else if (source === 'sort') {
-    // When sort is changed away from 'Popular' while in the 'Popular' category,
-    // reset the category to 'All Templates' to avoid a confusing state.
-    if (isPopularNav && !isPopularSort) {
-      selectedNavItem.value = 'all'
-    }
+    categorySort.value = isPopularNav ? 'popular' : null
+    return
+  }
+
+  if (hasActiveQuery.value) return
+  if (isPopularNav && sortSelection.value !== 'popular') {
+    selectedNavItem.value = 'all'
   }
 }
 
