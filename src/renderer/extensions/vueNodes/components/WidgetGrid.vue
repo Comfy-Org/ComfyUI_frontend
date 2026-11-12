@@ -21,7 +21,7 @@
           :class="
             cn(
               'group col-span-full grid grid-cols-subgrid items-stretch',
-              row.rowClass,
+              row.showsControl && 'lg-node-widget',
               row.socketOnly && '-mb-(--node-widget-gap)',
               row.inHoveredGroup && 'rounded-sm ring-1 ring-primary'
             )
@@ -58,14 +58,7 @@
           >
             <Tooltip :disabled="!row.widget.tooltipText">
               <TooltipTrigger as-child>
-                <div
-                  :class="
-                    cn(
-                      'grid min-w-0 grid-cols-1',
-                      row.rowSize === 'min-content' && 'self-center'
-                    )
-                  "
-                >
+                <div :class="row.controlClass">
                   <component
                     :is="row.widget.vueComponent"
                     :model-value="row.widget.simplified.value"
@@ -170,14 +163,12 @@ function isInHoveredGroup(name: string) {
 
 const socketRow = {
   showsControl: false,
-  rowClass: undefined,
   testId: undefined,
   slotClass: 'col-span-full'
 }
 const rowKinds = {
   control: {
     showsControl: true,
-    rowClass: 'lg-node-widget',
     standalone: false,
     testId: 'node-widget',
     slotClass:
@@ -204,18 +195,23 @@ const renderedRows = computed(() =>
     const autogrowGroup = revealedAutogrowGroup(widget)
     const kind = rowKind(widget, autogrowGroup)
     if (!kind) return []
+    const rowSize =
+      rowKinds[kind].showsControl &&
+      (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
+        ? 'auto'
+        : 'min-content'
     return [
       {
         ...rowKinds[kind],
         widget,
+        rowSize,
+        controlClass: cn(
+          'grid min-w-0 grid-cols-1',
+          rowSize === 'min-content' && 'self-center'
+        ),
         autogrowGroup,
         inHoveredGroup: isInHoveredGroup(widget.simplified.name),
-        socketOnly: widget.inputRole === 'socket',
-        rowSize:
-          rowKinds[kind].showsControl &&
-          (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
-            ? 'auto'
-            : 'min-content'
+        socketOnly: widget.inputRole === 'socket'
       }
     ]
   })

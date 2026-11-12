@@ -6,11 +6,11 @@ import type {
 } from '@comfyorg/graph-model/entityRegistry'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
 import { hostInputOf } from '@/lib/litegraph/src/subgraph/hostInput'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'

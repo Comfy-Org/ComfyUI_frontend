@@ -717,6 +717,7 @@ function reconcileAutogrowGroup(
     assignments
   )
   if (!result.ok) return
+  node.graph?.setDirtyCanvas(true, true)
 
   notifyRelinked(node, moved)
   const removedNames = new Set(removed.map((input) => input.widget?.name))
@@ -724,6 +725,28 @@ function reconcileAutogrowGroup(
     node.removeWidget(widget)
   syncNodeWidgetOrder(node)
   refitHeight(node)
+}
+
+function restoreAutogrowGroup(
+  groupName: string,
+  node: AutogrowNode,
+  info: ISerialisedNode
+) {
+  const { min, max } = node.comfyDynamic.autogrow[groupName]
+  const requiredOrdinals = (info.inputs ?? []).flatMap((input) => {
+    if (!input.name.startsWith(`${groupName}.`)) return []
+    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
+    if (ordinal === undefined) return []
+    return [input.link == null ? ordinal : ordinal + 1]
+  })
+  const last = Math.min(Math.max(min, ...requiredOrdinals), max - 1)
+  for (let ordinal = 0; ordinal <= last; ordinal++)
+    addAutogrowGroup(ordinal, groupName, node)
+}
+
+function trimAutogrowGroups(node: AutogrowNode) {
+  for (const [groupName, { max }] of Object.entries(node.comfyDynamic.autogrow))
+    reconcileAutogrowGroup(groupName, node, { compactFrom: max })
 }
 
 function isAutogrowGroupConnected(node: LGraphNode, groupName: string) {
@@ -782,28 +805,6 @@ function forgetDynamicChildren(node: LGraphNode, groupName: string) {
       if (nested.startsWith(`${groupName}.`)) delete registry[nested]
 }
 
-function restoreAutogrowGroup(
-  groupName: string,
-  node: AutogrowNode,
-  info: ISerialisedNode
-) {
-  const { min, max } = node.comfyDynamic.autogrow[groupName]
-  const requiredOrdinals = (info.inputs ?? []).flatMap((input) => {
-    if (!input.name.startsWith(`${groupName}.`)) return []
-    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
-    if (ordinal === undefined) return []
-    return [input.link == null ? ordinal : ordinal + 1]
-  })
-  const last = Math.min(Math.max(min, ...requiredOrdinals), max - 1)
-  for (let ordinal = 0; ordinal <= last; ordinal++)
-    addAutogrowGroup(ordinal, groupName, node)
-}
-
-function trimAutogrowGroups(node: AutogrowNode) {
-  for (const [groupName, { max }] of Object.entries(node.comfyDynamic.autogrow))
-    reconcileAutogrowGroup(groupName, node, { compactFrom: max })
-}
-
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   if (node.comfyDynamic?.autogrow) return
   node.comfyDynamic ??= {}
@@ -851,10 +852,12 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     node.onConnectionsChange,
     function (this: AutogrowNode, contype: ISlotType, slot: number, iscon) {
       const input = this.inputs.at(slot)
-      if (contype !== LiteGraph.INPUT || !input || useApp().configuringGraph)
+      if (contype !== LiteGraph.INPUT || !input) return
+      if (Object.hasOwn(this.comfyDynamic.autogrow, input.name)) {
+        if (!useApp().configuringGraph) syncAutogrowGroup(this, input.name)
         return
-      if (Object.hasOwn(this.comfyDynamic.autogrow, input.name))
-        return syncAutogrowGroup(this, input.name)
+      }
+      if (useApp().configuringGraph) return
       const groupName = liveAutogrowGroupOf(this, input.name)
       if (groupName === undefined) return
       if (iscon) return reconcileAutogrowGroup(groupName, this)
