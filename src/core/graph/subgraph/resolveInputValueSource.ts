@@ -35,6 +35,48 @@ const primitiveTypes = new Set([
   'PrimitiveNode'
 ])
 
+type SourceStep = InputValueSource | { kind: 'upstream'; link: LinkTopology }
+
+function resolvePrimitiveSource(
+  graph: ValueSourceGraph,
+  node: NodeState
+): SourceStep {
+  const id = graph
+    .widgetIds(node)
+    .find(
+      (id) =>
+        node.type === 'PrimitiveNode' || graph.widget(id)?.name === 'value'
+    )
+  const widget = id ? graph.widget(id) : undefined
+  if (!widget || !id) return { kind: 'unavailable' }
+  const index = node.inputs.findIndex(
+    (entry) => entry.widget?.name === widget.name
+  )
+  const upstream = index < 0 ? undefined : graph.inputLink(node, index)
+  return upstream
+    ? { kind: 'upstream', link: upstream }
+    : { kind: 'editable', node, widgetId: id }
+}
+
+function resolveNodeSource(
+  graph: ValueSourceGraph,
+  node: NodeState,
+  link: LinkTopology
+): SourceStep {
+  if (node.mode !== LGraphEventMode.ALWAYS || link.originSlot !== 0) {
+    return { kind: 'linked', node }
+  }
+  if (node.type === 'Reroute') {
+    const upstream = graph.inputLink(node, 0)
+    return upstream
+      ? { kind: 'upstream', link: upstream }
+      : { kind: 'unavailable' }
+  }
+  return primitiveTypes.has(node.type)
+    ? resolvePrimitiveSource(graph, node)
+    : { kind: 'linked', node }
+}
+
 export function resolveInputValueSource(
   graph: ValueSourceGraph,
   host: NodeState,
@@ -55,31 +97,8 @@ export function resolveInputValueSource(
       return { kind: 'unavailable' }
     }
     seen.add(node)
-    if (node.mode !== LGraphEventMode.ALWAYS || link.originSlot !== 0) {
-      return { kind: 'linked', node }
-    }
-    if (node.type === 'Reroute') {
-      link = graph.inputLink(node, 0)
-      if (!link) return { kind: 'unavailable' }
-      continue
-    }
-    if (!primitiveTypes.has(node.type)) return { kind: 'linked', node }
-    const id = graph
-      .widgetIds(node)
-      .find(
-        (id) =>
-          node.type === 'PrimitiveNode' || graph.widget(id)?.name === 'value'
-      )
-    const widget = id ? graph.widget(id) : undefined
-    if (!widget || !id) return { kind: 'unavailable' }
-    const index = node.inputs.findIndex(
-      (entry) => entry.widget?.name === widget.name
-    )
-    const upstream = index < 0 ? undefined : graph.inputLink(node, index)
-    if (upstream) {
-      link = upstream
-      continue
-    }
-    return { kind: 'editable', node, widgetId: id }
+    const step = resolveNodeSource(graph, node, link)
+    if (step.kind !== 'upstream') return step
+    link = step.link
   }
 }
