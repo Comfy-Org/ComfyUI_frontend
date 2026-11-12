@@ -91,6 +91,7 @@ import { useDeploymentCompatibility } from '@/platform/workspace/composables/use
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -462,7 +463,8 @@ const onGraphReady = () => {
       telemetry.trackShellLayout(
         getShellLayoutSnapshot({
           view_mode: mode.value,
-          is_app_mode: isAppMode.value
+          is_app_mode: isAppMode.value,
+          right_side_panel_open: useRightSidePanelStore().isOpen
         })
       )
     }
