@@ -147,53 +147,7 @@
     </section>
 
     <div class="flex flex-col gap-6">
-      <section
-        v-if="handoffAvailable"
-        class="flex flex-col gap-3"
-        data-testid="billing-handoff"
-      >
-        <h2 class="m-0 text-base font-medium text-foreground">
-          {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
-        </h2>
-        <div
-          class="flex items-center gap-4 rounded-xl border border-border px-5 py-4"
-          data-testid="billing-handoff-card"
-        >
-          <i18n-t
-            v-if="handoffAudience === 'owner'"
-            keypath="workspacePanel.billingTab.handoff.owner.line"
-            tag="p"
-            class="m-0 text-sm text-muted-foreground"
-          >
-            <template #platform>
-              <a
-                :href="handoffHref"
-                target="_blank"
-                rel="noopener"
-                class="text-muted-foreground underline hover:text-foreground"
-                @click="trackHandoff"
-              >
-                {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}
-              </a>
-            </template>
-          </i18n-t>
-          <Button
-            as="a"
-            :href="handoffHref"
-            target="_blank"
-            rel="noopener"
-            variant="secondary"
-            size="md"
-            class="ml-auto shrink-0 no-underline"
-            @click="trackHandoff"
-          >
-            {{
-              $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`)
-            }}
-            <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
-          </Button>
-        </div>
-      </section>
+      <BillingPlatformHandoffCard :audience="handoffAudience" />
 
       <footer class="flex items-center gap-4" data-testid="billing-footer">
         <Button
@@ -269,6 +223,7 @@ import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpP
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import BillingPlatformHandoffCard from '@/platform/billing/components/settings/BillingPlatformHandoffCard.vue'
 import { usePlanRowCopy } from '@/platform/billing/composables/usePlanRowCopy'
 import { useCreditsCardCopy } from '@/platform/billing/composables/useCreditsCardCopy'
 import { useAutoTopUpCardSection } from '@/platform/billing/composables/useAutoTopUpCardSection'
@@ -320,11 +275,6 @@ const { buildDocsUrl, docsPaths } = useExternalLink()
 const partnerNodesPricingHref = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
 )
-
-const HANDOFF = {
-  owner: { path: '/profile/billing', target: 'open_billing' },
-  member: { path: '/profile/usage', target: 'usage' }
-} as const
 
 const handoffAudience = computed(() =>
   capabilities.canManageBilling.value ? 'owner' : 'member'
@@ -399,15 +349,6 @@ const creditBannerAddCreditsVariant = computed(() =>
 
 const salesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
-)
-
-const {
-  href: handoffHref,
-  track: trackHandoff,
-  available: handoffAvailable
-} = usePlatformHandoff(
-  () => HANDOFF[handoffAudience.value].path,
-  () => ({ target: HANDOFF[handoffAudience.value].target })
 )
 
 const {

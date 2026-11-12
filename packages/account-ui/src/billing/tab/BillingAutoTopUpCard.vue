@@ -68,20 +68,10 @@
             {{ copy.status[view.status] }}
           </span>
         </h3>
-        <p
-          v-for="line in view.lines"
-          :key="line.text"
-          :class="
-            cn(
-              'm-0 flex items-center gap-1 text-sm text-muted-foreground',
-              classes?.line
-            )
-          "
-          data-testid="billing-auto-top-up-line"
-        >
-          {{ line.text }}
-          <BillingInfoTip v-if="line.tooltip" :text="line.tooltip" />
-        </p>
+        <BillingAutoTopUpLines
+          :lines="view.lines"
+          :line-class="classes?.line"
+        />
       </div>
       <slot
         v-if="!actionHidden"
@@ -121,7 +111,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import CheckoutButton from '#/billing/checkout/CheckoutButton.vue'
 import BillingBannerActionButton from './BillingBannerActionButton.vue'
-import BillingInfoTip from './BillingInfoTip.vue'
+import BillingAutoTopUpLines from './BillingAutoTopUpLines.vue'
 import { autoTopUpCardView } from './autoTopUpCardView'
 import type { AutoTopUpCardCopy, AutoTopUpViewKey } from './autoTopUpCardView'
 
