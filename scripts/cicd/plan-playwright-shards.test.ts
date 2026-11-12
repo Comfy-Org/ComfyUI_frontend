@@ -17,6 +17,7 @@ import { assert, describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 import { z } from 'zod'
 
+import { reportTimings } from './load-playwright-timings'
 import { planShards } from './plan-playwright-shards'
 
 const tests = [
@@ -28,6 +29,17 @@ const tests = [
 ]
 
 describe('whole-file duration sharding', () => {
+  it('keeps every test when no historical timings are available', () => {
+    expect(planShards(tests, {}, 2)).toEqual([
+      {
+        files: ['a.spec.ts', 'd.spec.ts'],
+        testIds: ['a1', 'a2', 'd'],
+        estimatedMs: 3
+      },
+      { files: ['b.spec.ts', 'c.spec.ts'], testIds: ['b', 'c'], estimatedMs: 2 }
+    ])
+  })
+
   it('balances time rather than test count without splitting or losing files', () => {
     expect(
       planShards(
@@ -107,6 +119,67 @@ describe('whole-file duration sharding', () => {
   )
 })
 
+it('uses project-specific first attempts from nested reports without counting retries or skips', () => {
+  const report = {
+    errors: [],
+    stats: { unexpected: 0 },
+    suites: [
+      {
+        suites: [
+          {
+            specs: [
+              {
+                file: 'a.spec.ts',
+                tests: [
+                  {
+                    projectName: 'cloud',
+                    results: [
+                      { retry: 0, duration: 10, status: 'failed' },
+                      { retry: 1, duration: 90, status: 'passed' }
+                    ]
+                  },
+                  {
+                    projectName: 'cloud',
+                    results: [{ retry: 0, duration: 30, status: 'passed' }]
+                  },
+                  {
+                    projectName: 'cloud',
+                    results: [{ retry: 0, duration: 0, status: 'skipped' }]
+                  },
+                  {
+                    projectName: 'chromium',
+                    results: [{ retry: 0, duration: 500, status: 'passed' }]
+                  }
+                ]
+              },
+              {
+                file: 'b.spec.ts',
+                tests: [
+                  {
+                    projectName: 'cloud',
+                    results: [{ retry: 0, duration: 7, status: 'passed' }]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+  expect(reportTimings(report, 'cloud')).toEqual({
+    'a.spec.ts': 20,
+    'b.spec.ts': 7
+  })
+})
+
+it.for([
+  { errors: ['incomplete report'], stats: { unexpected: 0 }, suites: [] },
+  { errors: [], stats: { unexpected: 1 }, suites: [] }
+])('rejects unsuccessful reports: %j', (report) => {
+  expect(() => reportTimings(report, 'cloud')).toThrow()
+})
+
 function workflowSteps(root: string, project: 'cloud' | 'chromium') {
   const workflow = z
     .object({
@@ -159,6 +232,11 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
 `
   )
   mkdirSync(join(directory, 'tests/goldens'), { recursive: true })
+  mkdirSync(join(directory, 'playwright-shard-timings'))
+  writeFileSync(
+    join(directory, 'playwright-shard-timings', `${project}.json`),
+    JSON.stringify({ millisecondsPerTest: {} })
+  )
   writeFileSync(join(directory, 'tests/goldens/stale.txt'), 'old')
   const specs = {
     a: `test.describe.configure({mode: 'serial'}); let state = 0; test('first @${project}', () => { state = 1 }); test('second @${project}', () => expect(state).toBe(1))`,

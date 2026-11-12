@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 
 import type {
@@ -10,11 +10,6 @@ import type {
   TestCase
 } from '@playwright/test/reporter'
 import { z } from 'zod'
-
-import chromiumBaseline from './chromium-shard-timings.json' with { type: 'json' }
-import cloudBaseline from './cloud-shard-timings.json' with { type: 'json' }
-
-const baselines = { chromium: chromiumBaseline, cloud: cloudBaseline }
 
 type CollectedTest = Pick<TestCase, 'id'> & { file: string; group?: string }
 
@@ -28,8 +23,7 @@ export function planShards(
     .parse(millisecondsPerTest)
   z.number().int().positive().parse(shardCount)
   const samples = Object.values(timings).sort((a, b) => a - b)
-  assert(samples.length > 0, 'Timing baseline must not be empty')
-  const fallback = samples[Math.floor(samples.length / 2)]
+  const fallback = samples[Math.floor(samples.length / 2)] ?? 1
   assert.equal(new Set(tests.map((test) => test.id)).size, tests.length)
 
   const groups = new Map<string, CollectedTest[]>()
@@ -166,8 +160,22 @@ export default class ShardPlanner implements Reporter {
         ),
         'Group balancing requires projects without dependencies or teardown'
       )
-      const baseline = baselines[project]
-      assert.equal(baseline.project, project)
+      const timingsDirectory = z
+        .string()
+        .min(1)
+        .parse(process.env.PLAYWRIGHT_SHARD_TIMINGS_DIR)
+      const baseline = z
+        .object({
+          millisecondsPerTest: z.record(
+            z.string(),
+            z.number().finite().positive()
+          )
+        })
+        .parse(
+          JSON.parse(
+            readFileSync(path.join(timingsDirectory, `${project}.json`), 'utf8')
+          )
+        )
       const directory = z
         .string()
         .min(1)
