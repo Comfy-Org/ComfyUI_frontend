@@ -1759,7 +1759,10 @@ export class LiveGraphApplier {
         continue
       if (isDynamicGroupController(widget))
         this.applyDynamicGroupRowCount(node, widget, value)
-      else this.setWidgetValue(node, widget, value)
+      else
+        applyRemoteDynamicGroupRowCount(node, () =>
+          this.setWidgetValue(node, widget, value)
+        )
       resolved = true
     }
     return { resolved, unresolved }

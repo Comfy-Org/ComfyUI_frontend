@@ -1,5 +1,5 @@
 import { nodesMap } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -555,9 +555,23 @@ describe('remote DynamicGroup counts outside a row-count write', () => {
     )
     apply()
     expect(write({ mode: 'off' })).toBe(0)
-    refuseInputChanges()
+    const links = useLinkStore()
+    const updateEndpoints = vi
+      .mocked(links.updateEndpoints)
+      .getMockImplementation()
+    assert.exists(updateEndpoints)
+    vi.spyOn(links, 'updateEndpoints').mockImplementation((...args) => {
+      if (widget('mode.rows.0.text')) {
+        return {
+          ok: false,
+          error: { code: 'unowned-topology', message: 'Rejected' }
+        }
+      }
+      return updateEndpoints(...args)
+    })
 
     expect(write({ mode: 'on' })).toBe(0)
+    expect(widget('mode')?.value).toBe('on')
     expect(widget('mode.rows')?.value).toBe(0)
     expect(write({ mode: 'on' })).toBe(0)
     expect(vi.mocked(reportError).mock.calls).toEqual([
