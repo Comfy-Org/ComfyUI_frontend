@@ -68,7 +68,6 @@ function fixture(
     ])
   )
   return {
-    scope,
     nodes: new Map(nodes.map((node) => [node.id, node])),
     inputLink: (node, index) =>
       links.find(

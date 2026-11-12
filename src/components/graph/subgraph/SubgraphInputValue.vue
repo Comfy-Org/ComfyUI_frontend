@@ -1,25 +1,45 @@
 <script setup lang="ts">
+import { omit } from 'es-toolkit'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSubgraphInputWidget } from './useSubgraphInputWidget'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
+import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
+import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import Button from '@comfyorg/design-system/button/Button'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { label, resolve, host } = defineProps<{
+const { label, source, host } = defineProps<{
   label: string
-  resolve: () => InputValueSource
+  source: InputValueSource
   host: NodeState
 }>()
 const emit = defineEmits<{ locate: [node: NodeState] }>()
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const { source, upstream, owner, widgets, expands } = useSubgraphInputWidget(
-  resolve,
-  () => host
+const upstream = computed(() =>
+  source.kind !== 'unavailable' && source.node !== host
+    ? source.node
+    : undefined
+)
+const owner = computed(() => (source.kind === 'editable' ? source : undefined))
+const { processedWidgets } = useProcessedWidgets(
+  () => owner.value?.node,
+  () => (owner.value ? [owner.value.widgetId] : [])
+)
+const widgets = computed<WidgetGridItem[]>(() =>
+  processedWidgets.value.map((item) =>
+    omit(item, ['slotMetadata', 'handleContextMenu'])
+  )
+)
+const expands = computed(() =>
+  widgets.value.some(
+    (item) => shouldExpand(item.simplified.type) || item.hasLayoutSize
+  )
 )
 </script>
 

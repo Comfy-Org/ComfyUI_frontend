@@ -49,26 +49,21 @@ export const useSubgraphInputValuesStore = defineStore(
       }
     )
 
-    const candidates = computed(() => {
+    const selected = computed(() => {
       const current = graph.value
-      if (!current) return []
+      if (!current) return undefined
       const root = current.rootGraph
-      return [root.id, ...root.subgraphs.keys()].flatMap((graphId) =>
+      const instancesIn = (graphId: UUID) =>
         nodeDataStore
           .getGraphNodesFor(root.id, graphId)
           .filter((node) => node.type === current.id)
-      )
-    })
-    const selected = computed(() => {
-      const current = graph.value
-      const host = current && enteredHosts.value.get(current.id)
-      return host
-        ? candidates.value.find(
-            (node) => node.graphId === host.graphId && node.id === host.nodeId
-          )
-        : candidates.value.length === 1
-          ? candidates.value[0]
-          : undefined
+      const entered = enteredHosts.value.get(current.id)
+      if (entered)
+        return instancesIn(entered.graphId).find(
+          (node) => node.id === entered.nodeId
+        )
+      const instances = [root.id, ...root.subgraphs.keys()].flatMap(instancesIn)
+      return instances.length === 1 ? instances[0] : undefined
     })
     return { graph, selected }
   }

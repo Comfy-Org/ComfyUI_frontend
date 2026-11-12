@@ -1,4 +1,3 @@
-import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -7,7 +6,6 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 
 export interface ValueSourceGraph {
-  readonly scope: GraphScope
   readonly nodes: ReadonlyMap<NodeId, NodeState>
   readonly inputLink: (
     node: NodeState,
@@ -104,9 +102,7 @@ export function resolveInputValueSource(
   let shared = false
   for (;;) {
     const node = graph.nodes.get(link.originNodeId)
-    if (!node || node.graphId !== graph.scope.owningGraphId || seen.has(node)) {
-      return { kind: 'unavailable' }
-    }
+    if (!node || seen.has(node)) return { kind: 'unavailable' }
     seen.add(node)
     shared ||= graph.outputLinkCount(node, link.originSlot) > 1
     const step = resolveNodeSource(graph, node, link)
