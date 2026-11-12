@@ -35,6 +35,26 @@ export function provideWebSessionCloudRead(
   webSessionCloudRead = source
 }
 
+let handoffCheckoutUiRead: () => Promise<CheckoutUiVariant | undefined> = () =>
+  Promise.resolve(undefined)
+
+/** Set by the auth module: a handoff tab's read of the variant from billing capabilities. */
+export function provideHandoffCheckoutUiRead(
+  read: () => Promise<CheckoutUiVariant | undefined>
+): void {
+  handoffCheckoutUiRead = read
+}
+
+let handoffVariant: Promise<CheckoutUiVariant> | undefined
+
+function awaitHandoffCheckoutUi(): Promise<CheckoutUiVariant> {
+  handoffVariant ??= handoffCheckoutUiRead().then(
+    (variant) => variant ?? FAIL_CLOSED,
+    () => FAIL_CLOSED
+  )
+  return handoffVariant
+}
+
 /** `settled` is terminal, so a mounted checkout can never become the other one. */
 export function settleCheckoutUi(
   state: CheckoutUiState,
@@ -162,6 +182,7 @@ async function awaitFlag<T>(
 
 /** Never rejects. An anonymous visitor is answered without memoizing, so a later signed-in mount still asks. */
 export function awaitCheckoutUiVariant(): Promise<CheckoutUiVariant> {
+  if (handoffTab.value !== undefined) return awaitHandoffCheckoutUi()
   return awaitFlag(FLAG_KEY, parseCheckoutUiVariant, FAIL_CLOSED)
 }
 
