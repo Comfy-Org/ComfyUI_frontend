@@ -21,6 +21,8 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import '@/scripts/changeTracker'
 
 const mockApp = vi.hoisted(() => ({
   isGraphReady: true,
@@ -220,6 +222,49 @@ describe('RightSidePanel active tab fallback', () => {
     expect(screen.getByTestId('panel-tab-errors')).toBeInTheDocument()
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(openPanel).not.toHaveBeenCalled()
+  })
+})
+
+describe('RightSidePanel errors tab icon', () => {
+  beforeEach(() => {
+    mockApp.rootGraph = null
+  })
+
+  it('marks missing resources on the selected node as setup required', async () => {
+    const { executionId } = renderPanel('parameters')
+
+    useMissingModelStore().addMissingModels([
+      {
+        nodeId: executionId,
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'missing.safetensors',
+        directory: 'checkpoints',
+        isMissing: true
+      }
+    ])
+    await nextTick()
+
+    expect(screen.getByTestId('panel-tab-icon')).toHaveAccessibleName(
+      'Setup required'
+    )
+  })
+
+  it('marks a validation error on the selected node as blocking', async () => {
+    renderPanel('parameters')
+
+    useExecutionErrorStore().recordNodeErrors({
+      '1': nodeError(
+        [validationError('value_not_in_list', 'ckpt_name')],
+        'CheckpointLoaderSimple'
+      )
+    })
+    await nextTick()
+
+    expect(screen.getByTestId('panel-tab-icon')).toHaveAccessibleName(
+      'Blocking errors'
+    )
   })
 })
 
