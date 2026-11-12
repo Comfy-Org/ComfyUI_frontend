@@ -22,7 +22,11 @@ export function resultItemUrl(item: AugmentedResultItem): string {
 
 export function resultItemPreviewUrl(
   item: AugmentedResultItem,
-  options: { fullRes?: boolean } = {}
+  options: {
+    fullRes?: boolean
+    previewFormat?: string
+    rand?: string
+  } = {}
 ): string {
   if (isHdrImageFilename(item.filename))
     return (
@@ -31,10 +35,11 @@ export function resultItemPreviewUrl(
     )
   if (options.fullRes) return resultItemUrl(item)
   if (item.previewUrl !== undefined) return item.previewUrl
-  if (!isImageResult(item)) return resultItemUrl(item)
+  if (item.url !== undefined) return item.url
   const params = resultItemUrlParams(item)
-  appendCloudResParam(params, item.filename)
-  return api.apiURL('/view?' + params)
+  if (isImageResult(item)) appendCloudResParam(params, item.filename)
+  const url = item.filename ? api.apiURL('/view?' + params) : ''
+  return url + (options.previewFormat ?? '') + (options.rand ?? '')
 }
 
 export function resultItemVhsAdvancedPreviewUrl(
