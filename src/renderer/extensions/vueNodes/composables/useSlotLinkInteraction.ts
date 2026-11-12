@@ -26,7 +26,6 @@ import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkCon
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
-  isCanvasDropTarget,
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
@@ -647,7 +646,11 @@ export function useSlotLinkInteraction({
     )
     const hasConnected = connectByPriority(dropTarget, snappedCandidate)
 
-    if (!hasConnected && isCanvasDropTarget(dropTarget, app.canvas.canvas)) {
+    const isCanvasSurface =
+      dropTarget === app.canvas.canvas ||
+      (dropTarget instanceof Element &&
+        dropTarget.closest('[data-subgraph-io]') !== null)
+    if (!hasConnected && isCanvasSurface) {
       activeAdapter?.dropOnCanvas(canvasEvent)
     }
 

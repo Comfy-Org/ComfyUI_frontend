@@ -152,13 +152,3 @@ export const resolveNodeSurfaceSlotCandidate = (
 
   return { layout, compatible: true }
 }
-
-export function isCanvasDropTarget(
-  target: EventTarget | null,
-  canvas: HTMLCanvasElement
-): boolean {
-  return (
-    target === canvas ||
-    (target instanceof Element && target.closest('[data-subgraph-io]') !== null)
-  )
-}
