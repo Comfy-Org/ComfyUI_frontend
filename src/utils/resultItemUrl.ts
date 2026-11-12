@@ -20,13 +20,15 @@ export function resultItemUrl(item: AugmentedResultItem): string {
   return api.apiURL('/view?' + resultItemUrlParams(item))
 }
 
+interface ResultItemPreviewUrlOptions {
+  fullRes?: boolean
+  previewFormat?: string
+  rand?: string
+}
+
 export function resultItemPreviewUrl(
   item: AugmentedResultItem,
-  options: {
-    fullRes?: boolean
-    previewFormat?: string
-    rand?: string
-  } = {}
+  options: ResultItemPreviewUrlOptions = {}
 ): string {
   if (isHdrImageFilename(item.filename))
     return (
