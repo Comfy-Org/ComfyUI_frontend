@@ -1,5 +1,5 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -1125,25 +1125,458 @@ describe('defs.onRefreshed', () => {
 })
 
 describe('extend after define', () => {
-  it('rejects a registration after definition processing starts', () => {
-    const api = createComfyApi(() => new LGraph())
-    api.defs.define({ type: 'LateExtended' })
+  let graph: LGraph
+  let comfy: Comfy
 
-    expect(() =>
-      api.defs.extend('LateExtended', (b) => b.onCreated(() => {}))
-    ).toThrow(/already registered/)
+  beforeEach(() => {
+    graph = new LGraph()
+    comfy = createComfyApi(() => graph)
   })
 
-  it('rejects a registration after a backend type was applied', () => {
-    const graph = new LGraph()
-    const comfy = createComfyApi(() => graph)
-    const registry = createDefRegistry()
-    const api = registry.forMajor((id) => comfy.graph.node(id)!)
-    registry.applyTo(nodeClass('KSampler'), RAW_DEF)
+  const defineOrdered = (order: string[]) =>
+    onTestFinished(
+      comfy.defs.define({
+        type: 'OrderedType',
+        onCreated: () => {
+          order.push('define')
+        }
+      })
+    )
+  const extendOrdered = (order: string[], label: string) =>
+    comfy.defs.extend('OrderedType', (b) =>
+      b.onCreated(() => order.push(label))
+    )
 
-    expect(() =>
-      api.extend('KSampler', (builder) => builder.onCreated(() => {}))
-    ).toThrow(/already registered/)
+  it.for([
+    {
+      name: 'a pack defines a type and then extends it',
+      register: (order: string[]) => {
+        defineOrdered(order)
+        extendOrdered(order, 'first')
+        extendOrdered(order, 'second')
+      },
+      expected: ['define', 'first', 'second']
+    },
+    {
+      name: 'a type is defined between two extensions',
+      register: (order: string[]) => {
+        extendOrdered(order, 'first')
+        defineOrdered(order)
+        extendOrdered(order, 'second')
+      },
+      expected: ['first', 'define', 'second']
+    }
+  ])(
+    'runs each callback once, in registration order, when $name',
+    ({ register, expected }) => {
+      const order: string[] = []
+      register(order)
+
+      graph.add(LiteGraph.createNode('OrderedType'))
+
+      expect(order).toEqual(expected)
+    }
+  )
+
+  it('runs an earlier and a later extension of a backend type once each', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor((id) => comfy.graph.node(id)!)
+    const order: string[] = []
+    defs.extend('KSampler', (b) => b.onCreated(() => order.push('early')))
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    defs.extend('KSampler', (b) => b.onCreated(() => order.push('late')))
+
+    graph.add(new Generated())
+
+    expect(order).toEqual(['early', 'late'])
+  })
+
+  it('applies a broad selector to types defined before and after it', () => {
+    onTestFinished(comfy.defs.define({ type: 'DefinedBefore' }))
+    const seen: string[] = []
+
+    comfy.defs.extend(/./, (b) => b.onCreated(() => seen.push(b.def.type)))
+    onTestFinished(comfy.defs.define({ type: 'DefinedAfter' }))
+    graph.add(LiteGraph.createNode('DefinedBefore'))
+    graph.add(LiteGraph.createNode('DefinedAfter'))
+
+    expect(seen).toEqual(['DefinedBefore', 'DefinedAfter'])
+  })
+
+  it('runs an extension once when it registers while its type is being applied', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor((id) => comfy.graph.node(id)!)
+    const nested = vi.fn()
+    defs.extend('KSampler', () => {
+      defs.extend('KSampler', (b) => b.onCreated(nested))
+    })
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+
+    graph.add(new Generated())
+
+    expect(nested).toHaveBeenCalledOnce()
+  })
+
+  const unplacedDrop = Object.freeze({
+    side: 'output' as const,
+    peerNodeId: '99',
+    peerIndex: 0,
+    type: 'CONTEXT',
+    replaceExisting: false
+  })
+
+  const lateHooks: {
+    name: string
+    listen: (builder: NodeDefBuilder, mark: () => void) => unknown
+    fire: (node: LGraphNode) => unknown
+  }[] = [
+    {
+      name: 'onCreated',
+      listen: (b, mark) => b.onCreated(mark),
+      fire: () => undefined
+    },
+    {
+      name: 'onExecuted',
+      listen: (b, mark) => b.onExecuted(mark),
+      fire: (node) => node.onExecuted?.({})
+    },
+    {
+      name: 'onConfigured',
+      listen: (b, mark) => b.onConfigured(mark),
+      fire: (node) => node.configure(node.serialize())
+    },
+    {
+      name: 'onRemoved',
+      listen: (b, mark) => b.onRemoved(mark),
+      fire: (node) => graph.remove(node)
+    },
+    {
+      name: 'onPropertyChanged',
+      listen: (b, mark) => b.onPropertyChanged(mark),
+      fire: (node) => node.setProperty('strength', 1)
+    },
+    {
+      name: 'onResized',
+      listen: (b, mark) => b.onResized(mark),
+      fire: (node) => node.onResize?.([320, 180])
+    },
+    {
+      name: 'onHover',
+      listen: (b, mark) => b.onHover(mark),
+      fire: (node) => node.onMouseEnter?.(undefined as never)
+    },
+    {
+      name: 'onDoubleClick',
+      listen: (b, mark) => b.onDoubleClick(mark),
+      fire: (node) =>
+        node.onDblClick?.(undefined as never, [0, 0], undefined as never)
+    },
+    {
+      name: 'onDragOver',
+      listen: (b, mark) => b.onDragOver(mark),
+      fire: (node) => node.onDragOver?.(new Event('dragover') as DragEvent)
+    },
+    {
+      name: 'onDrop',
+      listen: (b, mark) => b.onDrop(mark),
+      fire: (node) => node.onDragDrop?.(new Event('drop') as DragEvent)
+    },
+    {
+      name: 'onConnectionsChanged',
+      listen: (b, mark) => b.onConnectionsChanged(mark),
+      fire: (node) =>
+        node.onConnectionsChange?.(1, 0, true, undefined, {} as INodeInputSlot)
+    },
+    {
+      name: 'onSerialize',
+      listen: (b, mark) =>
+        b.onSerialize(() => {
+          mark()
+          return {}
+        }),
+      fire: (node) => node.serialize()
+    },
+    {
+      name: 'onPromptSerialize',
+      listen: (b, mark) =>
+        b.onPromptSerialize(() => {
+          mark()
+          return { omitInputs: [] }
+        }),
+      fire: (node) => projectedPromptInputOmissions('KSampler', String(node.id))
+    },
+    {
+      name: 'onBeforeConnect',
+      listen: (b, mark) => b.onBeforeConnect(mark),
+      fire: (node) => {
+        const peer = new LGraphNode('Peer')
+        return node.onConnectInput?.(
+          0,
+          'IMAGE',
+          peer.addOutput('out', 'IMAGE'),
+          peer,
+          0
+        )
+      }
+    },
+    {
+      name: 'onUnplacedLink',
+      listen: (b, mark) => b.onUnplacedLink(mark),
+      fire: (node) =>
+        offerUnplacedLink(String(node.id), 'KSampler', unplacedDrop)
+    },
+    {
+      name: 'onPreview',
+      listen: (b, mark) => b.onPreview(mark),
+      fire: (node) =>
+        deliverPreview(String(node.id), 'KSampler', {
+          blob: new Blob(),
+          url: 'blob:x'
+        })
+    },
+    {
+      name: 'addMenuItem',
+      listen: (b, mark) =>
+        b.addMenuItem({
+          label: () => {
+            mark()
+            return 'Entry'
+          },
+          run: () => {}
+        }),
+      fire: (node) => node.getExtraMenuOptions?.(undefined as never, [])
+    },
+    {
+      name: 'setSupply',
+      listen: (b, mark) =>
+        b.setSupply(() => {
+          mark()
+          return []
+        }),
+      fire: () => frontendSupplierMap().get('KSampler')?.(undefined as never)
+    }
+  ]
+
+  it.for(lateHooks)(
+    'reaches two extensions that registered $name after the type was applied',
+    async ({ listen, fire }) => {
+      const registry = createDefRegistry()
+      const defs = registry.forMajor((id) => comfy.graph.node(id)!)
+      const Generated = nodeClass('KSampler')
+      registry.applyTo(Generated, RAW_DEF)
+      const order: string[] = []
+      defs.extend('KSampler', (b) => listen(b, () => order.push('first')))
+      defs.extend('KSampler', (b) => listen(b, () => order.push('second')))
+      const node = new Generated()
+      graph.add(node)
+
+      await fire(node)
+
+      expect(order).toEqual(['first', 'second'])
+    }
+  )
+
+  it('reports a restored node created before configured when onCreated registers late', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor((id) => comfy.graph.node(id)!)
+    const order: string[] = []
+    defs.extend('KSampler', (b) =>
+      b.onConfigured(() => order.push('configured'))
+    )
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    defs.extend('KSampler', (b) => b.onCreated(() => order.push('created')))
+    const node = new Generated()
+    node.configure(new Generated().serialize())
+
+    graph.add(node)
+
+    expect(order).toEqual(['created', 'configured'])
+  })
+
+  it('adds a widget declared after the type was applied', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor((id) => comfy.graph.node(id)!)
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    defs.extend('KSampler', (b) =>
+      b.addWidget({ type: 'string', name: 'readout', value: 'hello' })
+    )
+
+    const node = new Generated()
+    graph.add(node)
+
+    expect(
+      comfy.graph.node(String(node.id))!.widgets.get('readout')?.getValue()
+    ).toBe('hello')
+  })
+
+  it('hides a widget named after the type was defined', () => {
+    onTestFinished(
+      comfy.defs.define({
+        type: 'LateHidden',
+        widgets: [{ type: 'string', name: 'key', value: 'kept' }]
+      })
+    )
+    comfy.defs.extend('LateHidden', (b) => b.hideWidget('key'))
+
+    const node = LiteGraph.createNode('LateHidden')!
+    graph.add(node)
+
+    expect(
+      comfy.graph.node(String(node.id))!.widgets.get('key')?.isHidden()
+    ).toBe(true)
+  })
+
+  it('reflects a late rename in the catalogue and leaves the raw def alone', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor((id) => comfy.graph.node(id)!)
+    const raw = { name: 'LateRenamed', display_name: 'Original title' }
+    registry.applyTo(nodeClass('LateRenamed'), raw)
+
+    defs.extend('LateRenamed', (b) => b.setTitle('Renamed'))
+
+    expect(defs.get('LateRenamed')?.title).toBe('Renamed')
+    expect(raw.display_name).toBe('Original title')
+  })
+
+  it('makes an applied type frontend-only until the extension is disposed', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    const nodeType: { prototype: Partial<LGraphNode> } = { prototype: {} }
+    registry.applyTo(nodeType, { name: 'Passthrough' })
+    const resolve = vi.fn(() => ({ '0': { omit: true } }) as never)
+
+    const stop = defs.extend('Passthrough', (b) =>
+      b.setExecution('frontend', resolve)
+    )
+    void frontendResolverMap().get('Passthrough')?.(undefined as never)
+
+    expect(resolve).toHaveBeenCalledOnce()
+    expect(nodeType.prototype.isVirtualNode).toBe(true)
+    expect(nodeType.prototype.resolutionOwned).toBe(true)
+
+    stop()
+
+    expect(nodeType.prototype.isVirtualNode).toBeUndefined()
+    expect(nodeType.prototype.resolutionOwned).toBeUndefined()
+    expect(frontendResolverMap().has('Passthrough')).toBe(false)
+  })
+
+  it('returns a type to the backend after a later extension was applied to it', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    const stop = defs.extend('Passthrough', (b) =>
+      b.setExecution('frontend', () => ({ '0': { omit: true } }))
+    )
+    const nodeType: { prototype: Partial<LGraphNode> } = { prototype: {} }
+    registry.applyTo(nodeType, { name: 'Passthrough' })
+    defs.extend('Passthrough', (b) => b.onCreated(() => {}))
+    expect(nodeType.prototype.isVirtualNode).toBe(true)
+
+    stop()
+
+    expect(nodeType.prototype.isVirtualNode).toBeUndefined()
+    expect(nodeType.prototype.resolutionOwned).toBeUndefined()
+    expect(frontendResolverMap().has('Passthrough')).toBe(false)
+  })
+
+  it('does not revive a disposed execution change when the type is extended later', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    const stop = defs.extend('Passthrough', (b) =>
+      b.setExecution('frontend', () => ({ '0': { omit: true } }))
+    )
+    const nodeType: { prototype: Partial<LGraphNode> } = { prototype: {} }
+    registry.applyTo(nodeType, { name: 'Passthrough' })
+    expect(nodeType.prototype.isVirtualNode).toBe(true)
+    stop()
+
+    defs.extend('Passthrough', (b) => b.onCreated(() => {}))
+
+    expect(nodeType.prototype.isVirtualNode).toBeUndefined()
+    expect(frontendResolverMap().has('Passthrough')).toBe(false)
+  })
+
+  it('keeps a late execution change when an earlier one is disposed', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor(() => ({}) as never)
+    const stopEarly = defs.extend('Passthrough', (b) =>
+      b.setExecution('frontend')
+    )
+    const nodeType: { prototype: Partial<LGraphNode> } = { prototype: {} }
+    registry.applyTo(nodeType, { name: 'Passthrough' })
+    const stopLate = defs.extend('Passthrough', (b) =>
+      b.setExecution('frontend', () => ({ '0': { omit: true } }))
+    )
+
+    stopEarly()
+
+    expect(nodeType.prototype.isVirtualNode).toBe(true)
+    expect(frontendResolverMap().has('Passthrough')).toBe(true)
+
+    stopLate()
+
+    expect(nodeType.prototype.isVirtualNode).toBeUndefined()
+    expect(nodeType.prototype.resolutionOwned).toBeUndefined()
+    expect(frontendResolverMap().has('Passthrough')).toBe(false)
+  })
+
+  it('stops a disposed late extension while an earlier one keeps running', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor((id) => comfy.graph.node(id)!)
+    const early = vi.fn()
+    const late = vi.fn()
+    defs.extend('KSampler', (b) => b.onCreated(early))
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    const stop = defs.extend('KSampler', (b) => b.onCreated(late))
+    graph.add(new Generated())
+
+    stop()
+    graph.add(new Generated())
+
+    expect(late).toHaveBeenCalledOnce()
+    expect(early).toHaveBeenCalledTimes(2)
+  })
+
+  it('applies each registration once to a type disposed and defined again', () => {
+    const order: string[] = []
+    const dispose = comfy.defs.define({ type: 'Redefined' })
+    comfy.defs.extend('Redefined', (b) =>
+      b.onCreated(() => order.push('before disposal'))
+    )
+    dispose()
+    comfy.defs.extend('Redefined', (b) =>
+      b.onCreated(() => order.push('after disposal'))
+    )
+    const knownWhileDisposed = comfy.defs.has('Redefined')
+    onTestFinished(comfy.defs.define({ type: 'Redefined' }))
+
+    graph.add(LiteGraph.createNode('Redefined'))
+
+    expect(knownWhileDisposed).toBe(false)
+    expect(order).toEqual(['before disposal', 'after disposal'])
+  })
+
+  it('extends only the current class of a type that was applied again', () => {
+    const registry = createDefRegistry()
+    const defs = registry.forMajor((id) => comfy.graph.node(id)!)
+    const order: string[] = []
+    const Replaced = nodeClass('KSampler')
+    registry.applyTo(Replaced, RAW_DEF)
+    defs.extend('KSampler', (b) => b.onCreated(() => order.push('first')))
+    const Current = nodeClass('KSampler')
+    registry.applyTo(Current, RAW_DEF)
+    defs.extend('KSampler', (b) => b.onCreated(() => order.push('second')))
+
+    graph.add(new Current())
+    order.push('replaced class:')
+    graph.add(new Replaced())
+
+    expect(order).toEqual(['first', 'second', 'replaced class:', 'first'])
   })
 
   it('lets a pack extend a type another pack has not defined', () => {
