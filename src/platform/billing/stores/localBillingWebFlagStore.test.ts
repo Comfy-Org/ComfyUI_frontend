@@ -11,7 +11,7 @@ import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useLocalBillingWebFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
+import { useLocalBillingWebFlagStore as defineFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -75,6 +75,14 @@ function pendingResponse() {
 
 const settle = () => vi.advanceTimersByTimeAsync(0)
 
+const createdStores: ReturnType<typeof defineFlagStore>[] = []
+
+function useLocalBillingWebFlagStore() {
+  const store = defineFlagStore()
+  createdStores.push(store)
+  return store
+}
+
 async function signInAndRead(state = signedIn('user-1', 'ws-1')) {
   const host = fakeBridge(state)
   await startDesktopHostSession(host.bridge)
@@ -89,7 +97,10 @@ describe('useLocalBillingWebFlagStore', () => {
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue()
   })
 
-  afterEach(() => stopDesktopHostSession())
+  afterEach(() => {
+    stopDesktopHostSession()
+    createdStores.splice(0).forEach((store) => store.$dispose())
+  })
 
   it('reads the flag on sign-in with the account credential', async () => {
     serveFlags({ local_billing_web: true })
@@ -203,6 +214,20 @@ describe('useLocalBillingWebFlagStore', () => {
 
     expect(fetchRequests(FEATURES)).toHaveLength(2)
     expect(store.enabled).toBe(true)
+  })
+
+  it('drops a read a disposed store started once a new store is created', async () => {
+    const { promise: answer, resolve } = pendingResponse()
+    respondToFetch(FEATURES, () => answer, { times: 1 })
+    const { store: previous } = await signInAndRead()
+    previous.$dispose()
+    stopDesktopHostSession()
+
+    const current = useLocalBillingWebFlagStore()
+    resolve(Response.json({ local_billing_web: true }))
+    await settle()
+
+    expect(current.enabled).toBe(false)
   })
 
   it('clears the value before re-reading on a workspace switch', async () => {

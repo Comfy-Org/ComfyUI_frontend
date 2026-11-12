@@ -7,7 +7,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { isReactive, isReadonly, nextTick } from 'vue'
+import { computed, isReactive, isReadonly, nextTick } from 'vue'
 
 import {
   startFeatureFlagTelemetry,
@@ -518,6 +518,17 @@ describe('useFeatureFlags', () => {
       expect(useFeatureFlags().flags.unifiedBillingSettingsEnabled).toBe(
         expected
       )
+    })
+
+    it('follows the flag as it changes on local web', () => {
+      const { flags } = useFeatureFlags()
+      const shown = computed(() => flags.unifiedBillingSettingsEnabled)
+
+      expect(shown.value).toBe(false)
+      setLocalBillingWebEnabled(true)
+      expect(shown.value).toBe(true)
+      setLocalBillingWebEnabled(false)
+      expect(shown.value).toBe(false)
     })
   })
 
