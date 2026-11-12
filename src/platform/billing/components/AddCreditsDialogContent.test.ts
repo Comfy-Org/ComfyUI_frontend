@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -182,17 +182,21 @@ function switchWorkspaceInThisTab() {
   const switching = workspaces
     .switchWorkspace('ws-other')
     .catch((error: unknown) => error)
-  onTestFinished(async () => {
-    closeList(listClosed)
-    expect(await switching).toBe(listClosed)
-  })
   expect(workspaces.identityGeneration).toBe(identity)
   expect(workspaces.workspaceTransitionGeneration).toBe(transition + 1)
+  return async function releaseSwitch() {
+    closeList(listClosed)
+    expect(await switching).toBe(listClosed)
+  }
 }
 
-const checkbox = () =>
-  screen.queryByRole('checkbox', { name: /Turn on auto top-up/ })
-const continueButton = () => screen.getByRole('button', { name: 'Continue' })
+function checkbox() {
+  return screen.queryByRole('checkbox', { name: /Turn on auto top-up/ })
+}
+
+function continueButton() {
+  return screen.getByRole('button', { name: 'Continue' })
+}
 
 async function payWithAutoTopUp(served: Partial<HostedTopupCheckout>) {
   const rendered = renderDialog({ atCheckout: true })
@@ -318,12 +322,16 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
       expect(billingApi.getTopupCheckout).toHaveBeenCalledOnce()
     )
 
-    switchWorkspaceInThisTab()
-    serve(servedCheckout(ACTIVATED_CHECKOUT))
-    await landing
+    const releaseSwitch = switchWorkspaceInThisTab()
+    try {
+      serve(servedCheckout(ACTIVATED_CHECKOUT))
+      await landing
 
-    expect(screen.queryByTestId('add-credits-auto-top-up-on')).toBeNull()
-    expect(billingApi.getTopupCheckout).toHaveBeenCalledOnce()
+      expect(screen.queryByTestId('add-credits-auto-top-up-on')).toBeNull()
+      expect(billingApi.getTopupCheckout).toHaveBeenCalledOnce()
+    } finally {
+      await releaseSwitch()
+    }
   })
 
   it('drops a failed activation once this tab switches workspace while its setup link is read', async () => {
@@ -337,11 +345,16 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
     await hoisted.balanceIncreased!()
     await waitFor(() => expect(hoisted.setupUrl).toHaveBeenCalledOnce())
 
-    switchWorkspaceInThisTab()
-    serveLink('https://platform.test/profile/billing?auto_top_up=setup')
-    await new Promise((resolve) => setTimeout(resolve))
+    const releaseSwitch = switchWorkspaceInThisTab()
+    try {
+      serveLink('https://platform.test/profile/billing?auto_top_up=setup')
+      await vi.advanceTimersByTimeAsync(0)
+      await nextTick()
 
-    expect(screen.queryByTestId('add-credits-auto-top-up-failed')).toBeNull()
+      expect(screen.queryByTestId('add-credits-auto-top-up-failed')).toBeNull()
+    } finally {
+      await releaseSwitch()
+    }
   })
 
   it('publishes no activation when the identity resets after the read settles', async () => {
@@ -383,10 +396,14 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
       expect(hoisted.createHostedCheckout).toHaveBeenCalledOnce()
     )
 
-    switchWorkspaceInThisTab()
-    mint({ url: CHECKOUT_URL, sessionId: 'cs_1' })
+    const releaseSwitch = switchWorkspaceInThisTab()
+    try {
+      mint({ url: CHECKOUT_URL, sessionId: 'cs_1' })
 
-    expect(await screen.findByText("Couldn't open checkout")).toBeVisible()
-    expect(hoisted.balanceIncreased).toBeUndefined()
+      expect(await screen.findByText("Couldn't open checkout")).toBeVisible()
+      expect(hoisted.balanceIncreased).toBeUndefined()
+    } finally {
+      await releaseSwitch()
+    }
   })
 })

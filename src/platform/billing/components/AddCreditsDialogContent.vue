@@ -118,10 +118,13 @@ interface OwnedCheckout {
   readonly activationSessionId?: string
 }
 let ownedCheckout: OwnedCheckout | undefined
-const ownsCheckout = (
+function ownsCheckout(
   checkout: OwnedCheckout | undefined
-): checkout is OwnedCheckout =>
-  checkout?.generation === workspaceIdentity.workspaceTransitionGeneration
+): checkout is OwnedCheckout {
+  return (
+    checkout?.generation === workspaceIdentity.workspaceTransitionGeneration
+  )
+}
 
 const ports: AddCreditsPorts = {
   async quote(amountCents, signal) {
