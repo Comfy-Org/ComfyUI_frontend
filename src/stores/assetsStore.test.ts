@@ -4,7 +4,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, toValue, watch } from 'vue'
 
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -127,20 +127,22 @@ describe('assetsStore - OSS history pagination', () => {
       resolveFirstPage = resolve
     })
     vi.mocked(api.getHistory)
+      .mockResolvedValueOnce(createHistoryPage(0))
       .mockImplementationOnce(() => firstPage)
       .mockResolvedValueOnce([])
     const store = useAssetsStore()
+    await store.outputAssets.loadMore()
 
     const refresh = store.outputAssets.invalidate()
     const pagination = store.outputAssets.loadMore()
-    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledTimes(2))
 
     resolveFirstPage(createHistoryPage(0))
     await Promise.all([refresh, pagination])
 
     expect(
       vi.mocked(api.getHistory).mock.calls.map(([, options]) => options?.offset)
-    ).toEqual([0, 200])
+    ).toEqual([0, 0, 200])
   })
 
   it('loads history pages until it finds the requested output asset', async () => {
@@ -1754,6 +1756,7 @@ describe('assetsStore - reset() on identity change', () => {
   it('aborts the previous identity history request and loads the new one', async () => {
     let previousSignal: AbortSignal | undefined
     vi.mocked(api.getHistory)
+      .mockResolvedValueOnce([])
       .mockImplementationOnce(
         (_max, options) =>
           new Promise<JobListItem[]>((resolve) => {
@@ -1765,8 +1768,9 @@ describe('assetsStore - reset() on identity change', () => {
       )
       .mockResolvedValueOnce(createHistoryPage(1000))
     const store = useAssetsStore()
+    await store.outputAssets.loadMore()
     const previousRefresh = store.outputAssets.invalidate()
-    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledOnce())
+    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledTimes(2))
 
     store.reset()
     await store.outputAssets.invalidate()
@@ -1793,7 +1797,7 @@ describe('assetsStore - reset() on identity change', () => {
   })
 
   it('clears loaded input assets', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(
+    vi.mocked(fetch).mockImplementation(async () =>
       inputFilesResponse(['account-a.png'])
     )
     const store = useAssetsStore()
@@ -1910,6 +1914,63 @@ describe('assetsStore - reset() on identity change', () => {
 describe('assetsStore - assets.seed.completed', () => {
   const seed = { created: 0, elapsed: 0, enriched: 0, skipped: 0, total: 0 }
   const invalidated = { invalidate: 1, loadNew: 0 }
+
+  it.for([
+    { phase: 'full', initialAll: ['older-all'] },
+    { phase: 'fast', initialAll: [] }
+  ] as const)(
+    'refreshes independent All results during $phase seeding',
+    async ({ phase, initialAll }) => {
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+      let seeded = false
+      vi.mocked(api.fetchApi).mockImplementation(async (url) => {
+        const tags = new URL(url, 'http://test').searchParams.get('tags_any')
+        const ids = seeded
+          ? ['seeded-output']
+          : tags === 'input'
+            ? ['older-input']
+            : tags === 'output,temp'
+              ? ['older-output']
+              : initialAll
+        const assets: AssetItem[] = ids.map((id) => ({
+          id,
+          name: `${id}.png`,
+          tags: ['output'],
+          created_at: '2026-10-01T12:00:00Z',
+          updated_at: '2026-10-01T12:00:00Z',
+          is_immutable: false
+        }))
+        return new Response(
+          JSON.stringify({ assets, total: assets.length, has_more: false })
+        )
+      })
+      const store = useAssetsStore()
+      await vi.waitFor(() =>
+        expect([
+          toValue(store.inputAssets.isLoading),
+          toValue(store.outputAssets.isLoading),
+          toValue(store.allAssets.isLoading)
+        ]).toEqual([false, false, false])
+      )
+      seeded = true
+      vi.mocked(api.fetchApi).mockClear()
+      const handler = vi
+        .mocked(api.addEventListener)
+        .mock.calls.findLast(([type]) => type === 'assets.seed.completed')?.[1]
+      assert(typeof handler === 'function')
+
+      await handler(
+        new CustomEvent('assets.seed.completed', {
+          detail: { ...seed, phase, created: 1 }
+        })
+      )
+
+      expect(toValue(store.allAssets.items).map(({ id }) => id)).toEqual([
+        'seeded-output'
+      ])
+      expect(api.fetchApi).toHaveBeenCalledTimes(3)
+    }
+  )
 
   it.for([
     {

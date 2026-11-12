@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-export const PLATFORM_PLANS_PATH = '/profile/billing/plans'
+const PLATFORM_PLANS_PATH = '/profile/billing/plans'
 
 /** Serves the platform Plans page locally, runs `open`, and returns the tab it opened. */
 export async function expectPlatformPlansOpened(

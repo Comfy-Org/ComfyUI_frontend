@@ -56,6 +56,7 @@ export function createMockCanvasRenderingContext2D(
     rect: vi.fn(),
     clip: vi.fn(),
     clearRect: vi.fn(),
+    drawImage: vi.fn(),
     setTransform: vi.fn(),
     resetTransform: vi.fn(),
     roundRect: vi.fn(),

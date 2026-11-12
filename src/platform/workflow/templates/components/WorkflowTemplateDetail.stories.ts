@@ -98,13 +98,11 @@ export const OpenNow: Story = {
         '6.77 GB'
       )
     ],
-    // Reachable only as an unmet requirement nothing can start automatically.
-    modelSetup: undefined
+    assetSetup: undefined
   },
   render: withPreview
 }
 
-/** Metadata is still resolving, so Download models & open is shown disabled. */
 export const Resolving: Story = {
   args: {
     ...base,
@@ -120,7 +118,7 @@ export const Resolving: Story = {
         { ...unsizedVae, status: installed }
       ])
     ],
-    modelSetup: { state: 'resolving' }
+    assetSetup: { state: 'resolving' }
   },
   render: withPreview
 }
@@ -144,8 +142,7 @@ export const DownloadableRow: Story = {
         '6.77 GB'
       )
     ],
-    // The checkpoint alone, so this differs from the group's 6.77 GB.
-    modelSetup: { state: 'startable', remainingSize: '6.46 GB' }
+    assetSetup: { state: 'startable', remainingSize: '6.46 GB' }
   },
   render: withPreview
 }

@@ -115,7 +115,7 @@
 /**
  * The confirm step of a change to an existing subscription: what it switches
  * to and when, what is charged today, and — for a subscription set to end —
- * the reactivation the change implies, which a large enough charge has to be
+ * the reactivation the change implies, which the server may require
  * acknowledged before the confirm unlocks. A host following a payment it did
  * not quote here replaces the plan and charge through the `summary` slot and
  * `summaryReplaced`.
@@ -126,7 +126,6 @@ import type {
   BillingAuthenticationState,
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
-import { pendingServerFact } from '@comfyorg/account-core/billing'
 
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPaymentNotices from './CheckoutPaymentNotices.vue'
@@ -159,11 +158,8 @@ const {
   copy,
   locale,
   subscriptionLoaded,
-  subscriptionCancelled = false,
-  subscriptionEndDate = null,
   isLoading = false,
   actionUrl = null,
-  forceReactivation = false,
   authenticationState = null,
   authenticationError = null,
   reconciliationOperationId = null,
@@ -185,13 +181,8 @@ const {
   /** False until the subscription status has loaded once; the confirm stays
    *  disabled until then. */
   subscriptionLoaded: boolean
-  subscriptionCancelled?: boolean
-  subscriptionEndDate?: string | Date | null
   isLoading?: boolean
   actionUrl?: string | null
-  /** Server-authoritative fallback for legacy status reads that omit a
-   * scheduled cancellation until subscribe enforces the consent gate. */
-  forceReactivation?: boolean
   authenticationState?: BillingAuthenticationState | null
   authenticationError?: string | null
   reconciliationOperationId?: string | null
@@ -208,7 +199,7 @@ const {
 
 const emit = defineEmits<{
   /** True only once the reactivation banner was shown and confirmed (checkbox
-   *  ticked above the charge threshold, since the button is gated on it). */
+   *  ticked when the server requires charge consent). */
   confirm: [confirmReactivation: boolean]
   back: []
   applyPromotionCode: [code: string]
@@ -245,18 +236,10 @@ const newIsYearly = computed(() =>
   isAnnualDuration(previewData.new_plan.duration)
 )
 
-const isCancelled = computed(
-  () => forceReactivation || (!embeddedCheckoutEnabled && subscriptionCancelled)
-)
-
-const servedChargeConsent = computed(
-  () => previewData.requires_reactivation_charge_confirmation
-)
-
 const reactivationVariant = computed<
   'upgrade' | 'downgrade' | 'duration_change' | null
 >(() => {
-  if (!isCancelled.value && servedChargeConsent.value !== true) return null
+  if (previewData.requires_reactivation_confirmation !== true) return null
   switch (previewData.transition_type) {
     case 'upgrade':
       return 'upgrade'
@@ -268,41 +251,17 @@ const reactivationVariant = computed<
       return null
   }
 })
-// The banner and threshold math read the end date and the current plan;
-// without them the banner would render broken copy or force the checkbox on
-// a bogus $0 threshold.
-const cancelAt = computed(
-  () => subscriptionEndDate ?? previewData.current_plan?.period_end
-)
+const cancelAt = computed(() => previewData.cancel_at)
 
 const isReactivating = computed(
-  () =>
-    servedChargeConsent.value === true ||
-    (isCancelled.value &&
-      reactivationVariant.value !== null &&
-      !!cancelAt.value &&
-      !!previewData.current_plan)
+  () => reactivationVariant.value !== null && !!cancelAt.value
 )
-
-const currentMonthlyPriceCents = computed(() => {
-  const current = previewData.current_plan
-  if (!current) return 0
-  const totalCents = current.seat_summary.total_cost_cents
-  return isAnnualDuration(current.duration) ? totalCents / 12 : totalCents
-})
 
 const chargeCents = computed(
   () => previewData.amount_due_cents ?? previewData.cost_today_cents
 )
 const requiresChargeConsent = computed(
-  () =>
-    servedChargeConsent.value ??
-    pendingServerFact(
-      'BE-25331',
-      isReactivating.value &&
-        reactivationVariant.value !== 'downgrade' &&
-        chargeCents.value > currentMonthlyPriceCents.value
-    )
+  () => previewData.requires_reactivation_charge_confirmation === true
 )
 const chargeDisplay = computed(
   () => `$${formatUsdFromCents(chargeCents.value)}`
