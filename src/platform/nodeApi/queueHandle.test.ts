@@ -165,9 +165,9 @@ describe('comfy.queue', () => {
     const settings = useQueueSettingsStore()
     settings.mode = 'change'
 
-    expect(() => comfy.queue.setAutoQueueMode('bogus' as never)).toThrow(
-      ComfyApiError
-    )
+    expect(() =>
+      Reflect.apply(comfy.queue.setAutoQueueMode, comfy.queue, ['bogus'])
+    ).toThrow(ComfyApiError)
     expect(settings.mode).toBe('change')
   })
 
@@ -283,7 +283,7 @@ describe('comfy.queue', () => {
     ])
   })
 
-  it.for(['', undefined])(
+  it.for(['', undefined, 'positive input must be connected'])(
     'publishes a frozen rejection when node details are %j',
     (details) => {
       const comfy = createComfyApi(() => graphWith('A'))
@@ -389,11 +389,16 @@ describe('comfy.queue', () => {
   })
 
   it.for([
-    { order: 'the order they started', ended: [1, 2] },
-    { order: 'reverse order', ended: [2, 1] }
+    {
+      order: 'the order they started',
+      firstEnded: 1,
+      secondEnded: 2,
+      ended: [1, 2]
+    },
+    { order: 'reverse order', firstEnded: 2, secondEnded: 1, ended: [2, 1] }
   ])(
     'runs each overlapping attempt cleanup for its own attempt, ended in $order',
-    ({ ended }) => {
+    ({ firstEnded, secondEnded, ended }) => {
       const comfy = createComfyApi(() => graphWith('A'))
       const cleaned: number[] = []
       let attempt = 0
@@ -406,13 +411,16 @@ describe('comfy.queue', () => {
 
       api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
       api.dispatchCustomEvent('promptQueueing', { requestId: 2, batchCount: 1 })
-      for (const requestId of ended) {
-        api.dispatchCustomEvent('promptQueueAttemptEnded', {
-          requestId,
-          queued: 1,
-          rejected: 0
-        })
-      }
+      api.dispatchCustomEvent('promptQueueAttemptEnded', {
+        requestId: firstEnded,
+        queued: 1,
+        rejected: 0
+      })
+      api.dispatchCustomEvent('promptQueueAttemptEnded', {
+        requestId: secondEnded,
+        queued: 1,
+        rejected: 0
+      })
 
       expect(cleaned).toEqual(ended)
     }

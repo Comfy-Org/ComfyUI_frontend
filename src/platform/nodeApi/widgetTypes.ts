@@ -156,13 +156,14 @@ function declaredWidgetOptions(inputData: unknown): Record<string, unknown> {
 }
 
 function connectWidgetTypeListeners(
-  widget: IBaseWidget,
+  widget: IBaseWidget<WidgetTypeData> & { value: WidgetTypeData },
   listeners: ReadonlySet<(value: WidgetTypeData) => void>
 ): void {
   const previous = widget.callback
   widget.callback = function (this: unknown, value, ...rest) {
-    previous?.apply(this as never, [value, ...rest] as never)
-    for (const listener of listeners) listener(value as WidgetTypeData)
+    previous?.apply(this, [value, ...rest])
+    if (value === undefined) return
+    for (const listener of listeners) listener(value)
   }
 }
 

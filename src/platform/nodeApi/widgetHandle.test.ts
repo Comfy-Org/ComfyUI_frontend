@@ -6,6 +6,7 @@ import '@/scripts/domWidget'
 import { graphToPrompt } from '@/utils/executionUtil'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
+import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { ComfyApiError, ComfyReadonlyError } from './errors'
 import { createGraphApi } from './graphHandle'
@@ -809,18 +810,7 @@ describe('mounted and canvas widgets', () => {
   })
 
   describe('canvas', () => {
-    beforeEach(() => {
-      // happy-dom has no 2D context; the drawing itself is the pack's, so a
-      // recording stub is enough to prove the wiring.
-      const context = {
-        setTransform: vi.fn(),
-        clearRect: vi.fn(),
-        fillRect: vi.fn()
-      }
-      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
-        () => context as never
-      )
-    })
+    beforeEach(stubCanvasGetContext)
 
     it('draws on mount and hands back the 2d context', () => {
       const draw = vi.fn()
@@ -852,28 +842,11 @@ describe('mounted and canvas widgets', () => {
     }
 
     it('lays out at the height it reserved, whatever the pixel ratio', () => {
-      // The backing store is scaled by devicePixelRatio so the drawing is
-      // sharp. A <canvas> with no CSS height lays out at its height ATTRIBUTE,
-      // so scaling that alone makes the widget render `ratio` times too tall —
-      // 600px of chrome for a 300px comparer on any retina display. Worse, the
-      // omitted-height path then reads that back through clientHeight and the
-      // ResizeObserver drives it up again on every pass.
-      const original = globalThis.devicePixelRatio
-      Object.defineProperty(globalThis, 'devicePixelRatio', {
-        value: 2,
-        configurable: true
-      })
-      try {
-        const canvas = mountedCanvas({ height: 300 })
+      vi.stubGlobal('devicePixelRatio', 2)
+      const canvas = mountedCanvas({ height: 300 })
 
-        expect(canvas.style.height).toBe('300px')
-        expect(canvas.height).toBe(600)
-      } finally {
-        Object.defineProperty(globalThis, 'devicePixelRatio', {
-          value: original,
-          configurable: true
-        })
-      }
+      expect(canvas.style.height).toBe('300px')
+      expect(canvas.height).toBe(600)
     })
 
     it('takes its height from its container, never from the element it just resized', () => {
@@ -899,12 +872,12 @@ describe('mounted and canvas widgets', () => {
     })
 
     it('lets a widget claim the right-click, and only if it asks', () => {
-      // Right-click is left alone by default so the node's own menu keeps
-      // working over a widget. A lora row that wants Move Up / Remove has to be
-      // able to take it — and taking it must stop both the browser menu and the
-      // node's, which are suppressed by different calls.
       const onContextMenu = vi.fn()
       const canvas = mountedCanvas({ onContextMenu })
+      const parent = document.createElement('div')
+      const onParentContextMenu = vi.fn()
+      parent.addEventListener('contextmenu', onParentContextMenu)
+      parent.appendChild(canvas)
       const claimed = new MouseEvent('contextmenu', {
         bubbles: true,
         cancelable: true
@@ -913,6 +886,7 @@ describe('mounted and canvas widgets', () => {
 
       expect(onContextMenu).toHaveBeenCalledOnce()
       expect(claimed.defaultPrevented).toBe(true)
+      expect(onParentContextMenu).not.toHaveBeenCalled()
     })
 
     it('leaves the right-click alone when the widget does not want it', () => {
@@ -1140,28 +1114,12 @@ describe('beforeSerialize', () => {
     ])
   })
 
-  it('omits a value from the prompt when a handler supplies undefined', () => {
-    // One pack wrote undefined unless an input was linked. The legacy
-    // serializeValue returning undefined left the key set to undefined, which
-    // JSON.stringify drops — so "replace with undefined" IS omission, and the
-    // wire is identical to what the unconverted pack sent.
+  it('returns undefined from the prompt serializer when a handler supplies it', async () => {
     widgets.get('seed')!.on('beforeSerialize', (e) => {
       if (e.context === 'prompt') e.setSerializedValue(undefined)
     })
 
-    return (async () => {
-      const widget = node.widgets![0]
-      // Exactly what executionUtil does to build one input.
-      const value = widget.serializeValue
-        ? await widget.serializeValue(node, 0)
-        : widget.value
-      const inputs: Record<string, unknown> = { seed: value }
-
-      expect(value).toBeUndefined()
-      // The key exists but JSON drops it, which is how the legacy path omitted.
-      expect('seed' in inputs).toBe(true)
-      expect(JSON.parse(JSON.stringify(inputs))).toEqual({})
-    })()
+    expect(await queued()).toBeUndefined()
   })
 
   it('tells the embedded copy apart from the saved file', () => {
@@ -1293,6 +1251,6 @@ describe('keeping a widget value out of one destination', () => {
     )
 
     expect(result.sent).toEqual({ text: 'derived', next: 'kept' })
-    expect(result.saved).not.toContain('derived')
+    expect(result.saved).toEqual(['kept'])
   })
 })
