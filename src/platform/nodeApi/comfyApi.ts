@@ -29,7 +29,10 @@ import {
 import type { NodeMoveEvent } from './interaction'
 import { watch } from 'vue'
 
+import { parseSelectableKey } from '@/core/selection/selectionState'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import { currentDocumentId, onAppReady, onWorkflowLoaded } from './appReady'
 import { createNodeChangeObserver } from './nodeChanges'
@@ -286,6 +289,13 @@ export interface Comfy {
    */
   onViewportChanged(listener: () => void): Unsubscribe
   /**
+   * The selected nodes changed. Passes the complete node selection in the
+   * graph on screen; groups and reroutes are left out.
+   */
+  onSelectionChanged(
+    listener: (nodes: readonly NodeHandle[]) => void
+  ): Unsubscribe
+  /**
    * A node changed — its mode, title, colour or shape.
    *
    * For observing nodes the pack does not own. rgthree's relay polls every
@@ -350,6 +360,14 @@ export interface Comfy {
    * the document needs — `onReady` fires once and misses every later open.
    */
   onWorkflowLoaded(listener: () => void): Unsubscribe
+}
+
+function selectedNodeIds(visible: LGraph | null | undefined): string[] {
+  if (!visible) return []
+  return useSelectionStore()
+    .selectedKeys(graphScopeOf(visible))
+    .map(parseSelectableKey)
+    .flatMap(({ kind, id }) => (kind === 'node' ? [id] : []))
 }
 
 /** Per-major instances, memoised per graph provider. */
@@ -494,6 +512,16 @@ function buildMajor(
     onNodeMoved: createNodeMoveObserver((id) => graph.node(id)),
     onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
     onViewportChanged: createViewportObserver(),
+    onSelectionChanged: (listener: (nodes: readonly NodeHandle[]) => void) =>
+      watch(
+        () => selectedNodeIds(getGraph()).join('\u0000'),
+        () =>
+          listener(
+            Object.freeze(
+              selectedNodeIds(getGraph()).flatMap((id) => graph.node(id) ?? [])
+            )
+          )
+      ),
     onNodeChanged: createNodeChangeObserver(nodeIn),
     onReady: onAppReady,
     queue: createQueueApi(getGraph),

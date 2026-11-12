@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import {
   LGraph,
   LGraphCanvas,
+  LGraphGroup,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
@@ -639,6 +640,69 @@ describe('comfy API root', () => {
 
       stale()
       widget.setValue(2)
+
+      expect(listener).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('selection changes', () => {
+    it('reports the selected nodes each time they change, and not for groups', async () => {
+      const first = new LGraphNode('first')
+      const second = new LGraphNode('second')
+      graph.add(first)
+      graph.add(second)
+      const group = new LGraphGroup('group')
+      graph.add(group)
+      const previousCanvas = LGraphCanvas.active_canvas
+      onTestFinished(() => {
+        LGraphCanvas.active_canvas = previousCanvas
+      })
+      const canvas = createTestCanvas(
+        graph,
+        createMockCanvasRenderingContext2D()
+      )
+      LGraphCanvas.active_canvas = canvas
+      const comfy = createComfyApi(() => graph)
+      const seen: string[][] = []
+      onTestFinished(
+        comfy.onSelectionChanged((nodes) =>
+          seen.push(nodes.map((node) => node.getTitle()))
+        )
+      )
+
+      canvas.selectItems([first, second])
+      await nextTick()
+      canvas.select(group)
+      await nextTick()
+      canvas.deselect(second)
+      await nextTick()
+      canvas.deselectAll()
+      await nextTick()
+
+      expect(seen).toEqual([['first', 'second'], ['first'], []])
+    })
+
+    it('stops reporting once unsubscribed', async () => {
+      const node = new LGraphNode('n')
+      graph.add(node)
+      const previousCanvas = LGraphCanvas.active_canvas
+      onTestFinished(() => {
+        LGraphCanvas.active_canvas = previousCanvas
+      })
+      const canvas = createTestCanvas(
+        graph,
+        createMockCanvasRenderingContext2D()
+      )
+      LGraphCanvas.active_canvas = canvas
+      const comfy = createComfyApi(() => graph)
+      const listener = vi.fn()
+      const stop = comfy.onSelectionChanged(listener)
+
+      canvas.select(node)
+      await nextTick()
+      stop()
+      canvas.deselectAll()
+      await nextTick()
 
       expect(listener).toHaveBeenCalledOnce()
     })
