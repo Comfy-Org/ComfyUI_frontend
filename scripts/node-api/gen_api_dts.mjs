@@ -12,6 +12,21 @@ function sourceDirectory() {
   return fileURLToPath(new URL('../../src/platform/nodeApi/', import.meta.url))
 }
 
+function tupleElementUnion(type, tuples) {
+  if (
+    !ts.isIndexedAccessTypeNode(type) ||
+    type.indexType.kind !== ts.SyntaxKind.NumberKeyword
+  )
+    return undefined
+  const object = ts.isParenthesizedTypeNode(type.objectType)
+    ? type.objectType.type
+    : type.objectType
+  if (!ts.isTypeQueryNode(object) || !ts.isIdentifier(object.exprName)) {
+    return undefined
+  }
+  return tuples.get(object.exprName.text)
+}
+
 /** Exported interfaces and type aliases, with their doc comments. */
 export function declarations(source) {
   const sourceFile = ts.createSourceFile(
@@ -56,26 +71,14 @@ export function declarations(source) {
     )
     if (!kind || !exported) return []
     let text = statement.getFullText(sourceFile)
-    if (
-      ts.isTypeAliasDeclaration(statement) &&
-      ts.isIndexedAccessTypeNode(statement.type)
-    ) {
-      const type = statement.type
-      const object = ts.isParenthesizedTypeNode(type.objectType)
-        ? type.objectType.type
-        : type.objectType
-      if (
-        type.indexType.kind === ts.SyntaxKind.NumberKeyword &&
-        ts.isTypeQueryNode(object) &&
-        ts.isIdentifier(object.exprName)
-      ) {
-        const union = tuples.get(object.exprName.text)
-        if (union) {
-          const start = type.getStart(sourceFile) - statement.getFullStart()
-          const end = type.end - statement.getFullStart()
-          text = text.slice(0, start) + union + text.slice(end)
-        }
-      }
+    const union = ts.isTypeAliasDeclaration(statement)
+      ? tupleElementUnion(statement.type, tuples)
+      : undefined
+    if (union) {
+      const start =
+        statement.type.getStart(sourceFile) - statement.getFullStart()
+      const end = statement.type.end - statement.getFullStart()
+      text = text.slice(0, start) + union + text.slice(end)
     }
 
     return [
