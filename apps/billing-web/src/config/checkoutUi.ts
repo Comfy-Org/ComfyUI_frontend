@@ -4,6 +4,7 @@
  * rather than risk showing the customer the other checkout.
  */
 import { CLOUD_BASE_URL } from '@/config/env'
+import { handoffTab } from '@/handoff/handoffTab'
 import { billingWebSessionClient } from '@/session/billingWebSession'
 
 export type CheckoutUiVariant = 'embedded' | 'full_page'
@@ -152,6 +153,7 @@ async function awaitFlag<T>(
   parse: (value: unknown) => T | undefined,
   failClosed: T
 ): Promise<T> {
+  if (handoffTab.value !== undefined) return failClosed
   const override = readDevOverride(key, parse)
   if (override !== undefined) return override
   const features = await awaitCloudFeatures()
