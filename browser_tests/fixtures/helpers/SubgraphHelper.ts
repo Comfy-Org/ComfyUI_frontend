@@ -256,9 +256,10 @@ export class SubgraphHelper {
     return await this.comfyPage.page.evaluate(() => {
       const graph = app!.canvas.graph as Subgraph
       const inputNode = graph.inputNode
-      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(inputNode.pos)
-      const width = inputNode.size[0] * app!.canvas.ds.scale
-      const height = inputNode.size[1] * app!.canvas.ds.scale
+      const { pos, size } = inputNode.boundingRect
+      const [x, y] = app!.canvas.ds.convertOffsetToCanvas(pos)
+      const width = size[0] * app!.canvas.ds.scale
+      const height = size[1] * app!.canvas.ds.scale
       return { x, y, width, height }
     })
   }
