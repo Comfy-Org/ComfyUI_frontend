@@ -1,49 +1,89 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
-import { ref } from 'vue'
+import { computed, ref, watch } from 'vue'
+
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetSelectDefault from './WidgetSelectDefault.vue'
 
-const meta = {
+const meta: Meta<{
+  value: string
+  width: number
+  advanced: boolean
+  disabled: boolean
+  filenameSummary: boolean
+  options: string[]
+  onChange: ReturnType<typeof fn>
+}> = {
   title: 'Widgets/WidgetSelectDefault',
-  component: WidgetSelectDefault,
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
   args: {
+    value: 'None',
+    width: 320,
+    advanced: false,
+    disabled: false,
     filenameSummary: true,
-    modelValue: 'None',
-    widget: {
-      name: 'ckpt_name',
-      type: 'combo',
-      value: 'None',
-      options: {
-        values: [
-          'None',
-          'studio/models/portrait.safetensors',
-          'studio/models/landscape.safetensors',
-          'archive/portrait.safetensors'
-        ]
-      }
-    },
-    'onUpdate:modelValue': fn()
+    options: [
+      'None',
+      'studio/models/portrait.safetensors',
+      'studio/models/landscape.safetensors',
+      'archive/portrait.safetensors'
+    ],
+    onChange: fn()
   },
   render: (args) => ({
     components: { WidgetSelectDefault },
     setup() {
-      const value = ref(args.modelValue)
-      return { args, value }
+      const value = ref(args.value)
+      watch(
+        () => args.value,
+        (next) => {
+          value.value = next
+        }
+      )
+      const widget = computed<SimplifiedWidget<string>>(() => ({
+        name: 'ckpt_name',
+        type: 'COMBO',
+        value: value.value,
+        borderStyle: args.advanced ? 'ring ring-primary' : undefined,
+        options: {
+          values: args.options,
+          disabled: args.disabled
+        }
+      }))
+      return { args, widget, value }
     },
     template: `
-      <div class="flex w-80 flex-col gap-4 rounded-lg bg-node p-4">
-        <output aria-label="Selected model" class="text-xs break-all text-muted-foreground">{{ value }}</output>
-        <WidgetSelectDefault v-bind="args" v-model="value" />
+      <div class="flex flex-col gap-4 rounded-lg bg-node p-4 text-xs" :style="{ width: args.width + 'px' }">
+        <output aria-label="Selected model" class="break-all text-muted-foreground">{{ value }}</output>
+        <WidgetSelectDefault v-model="value" :widget :filename-summary="args.filenameSummary" @update:model-value="args.onChange" />
       </div>
     `
   })
-} satisfies Meta<typeof WidgetSelectDefault>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
+
+export const Default: Story = {
+  args: {
+    value: 'portrait.safetensors',
+    width: 300,
+    filenameSummary: false,
+    options: ['portrait.safetensors', 'landscape.safetensors']
+  }
+}
+
+export const MissingModel: Story = {
+  args: { ...Default.args, value: 'missing-model.safetensors' },
+  play: async ({ canvas, userEvent }) => {
+    const trigger = canvas.getByRole('combobox', { name: 'ckpt_name' })
+    await expect(trigger).toHaveAttribute('aria-invalid', 'true')
+    await userEvent.tab()
+    await expect(trigger).toHaveFocus()
+  }
+}
 
 export const Folders: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
@@ -113,16 +153,11 @@ export const EmptySearch: Story = {
 
 export const WindowsPaths: Story = {
   args: {
-    widget: {
-      ...meta.args.widget,
-      options: {
-        values: [
-          'None',
-          'studio\\models\\portrait.safetensors',
-          'studio\\models\\landscape.safetensors'
-        ]
-      }
-    }
+    options: [
+      'None',
+      'studio\\models\\portrait.safetensors',
+      'studio\\models\\landscape.safetensors'
+    ]
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     const popup = within(canvasElement.ownerDocument.body)
@@ -167,18 +202,12 @@ export const DeepSearch: Story = {
 
 export const SelectedFolder: Story = {
   args: {
-    modelValue: 'studio/models/model_0999.safetensors',
-    widget: {
-      ...meta.args.widget,
-      value: 'studio/models/model_0999.safetensors',
-      options: {
-        values: Array.from(
-          { length: 1000 },
-          (_, index) =>
-            `studio/models/model_${String(index).padStart(4, '0')}.safetensors`
-        )
-      }
-    }
+    value: 'studio/models/model_0999.safetensors',
+    options: Array.from(
+      { length: 1000 },
+      (_, index) =>
+        `studio/models/model_${String(index).padStart(4, '0')}.safetensors`
+    )
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('combobox', { name: 'ckpt_name' }))
@@ -199,17 +228,11 @@ export const SelectedFolder: Story = {
 export const ManyOptions: Story = {
   parameters: { layout: 'fullscreen' },
   args: {
-    modelValue: 'model_00.safetensors',
-    widget: {
-      ...meta.args.widget,
-      value: 'model_00.safetensors',
-      options: {
-        values: Array.from(
-          { length: 40 },
-          (_, index) => `model_${String(index).padStart(2, '0')}.safetensors`
-        )
-      }
-    }
+    value: 'model_00.safetensors',
+    options: Array.from(
+      { length: 40 },
+      (_, index) => `model_${String(index).padStart(2, '0')}.safetensors`
+    )
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(canvas.getByRole('combobox', { name: 'ckpt_name' }))

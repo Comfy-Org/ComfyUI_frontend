@@ -408,12 +408,23 @@ describe('GraphView - reconnect wiring', () => {
     const { unmount } = render(GraphView, { global: { plugins: [i18n] } })
 
     expect(screen.getByTestId('graph-canvas-stub')).toBeInTheDocument()
-    expect(reportError).toHaveBeenCalledOnce()
-    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-      surface: 'graph',
-      errorType: 'workflow_template_input_tracking_failed',
-      level: 'warning'
-    })
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, context]) =>
+            context.errorType === 'workflow_template_input_tracking_failed'
+        )
+    ).toEqual([
+      [
+        expect.any(Error),
+        {
+          surface: 'graph',
+          errorType: 'workflow_template_input_tracking_failed',
+          level: 'warning'
+        }
+      ]
+    ])
     expect(templateInputMock.updateProgress).not.toHaveBeenCalled()
 
     unmount()

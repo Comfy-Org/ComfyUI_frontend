@@ -348,6 +348,26 @@ describe('jobOutputCache', () => {
 
       expect(result).toBeUndefined()
     })
+
+    it('shares pending detail requests and retries after a failure', async () => {
+      const jobId = uniqueId('pending-detail')
+      const detail: JobDetail = {
+        id: jobId,
+        status: 'completed',
+        create_time: 123,
+        priority: 0,
+        outputs: {}
+      }
+      vi.mocked(api.getJobDetail)
+        .mockRejectedValueOnce(new Error('Offline'))
+        .mockResolvedValueOnce(detail)
+
+      expect(
+        await Promise.all([getJobDetail(jobId), getJobDetail(jobId)])
+      ).toEqual([undefined, undefined])
+      expect(await getJobDetail(jobId)).toEqual(detail)
+      expect(api.getJobDetail).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe('getJobAssets', () => {

@@ -3,7 +3,12 @@
     :widget
     :input-id
     :value-text="selectedSummary"
-    :root-class="cn(!disabled && 'cursor-pointer')"
+    :root-class="
+      cn(
+        !disabled && 'cursor-pointer',
+        isInvalid && 'ring-1 ring-destructive focus-within:ring-destructive'
+      )
+    "
   >
     <template #leading>
       <Button
@@ -43,8 +48,7 @@
               WidgetInputBaseClass,
               'flex w-full min-w-0 items-center overflow-hidden not-disabled:bg-transparent',
               useWidgetHeight(),
-              disabled && 'opacity-50',
-              isInvalid && 'ring-1 ring-destructive'
+              disabled && 'opacity-50'
             )
           "
         >

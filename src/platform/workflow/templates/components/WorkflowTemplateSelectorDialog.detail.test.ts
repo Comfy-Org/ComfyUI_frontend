@@ -181,6 +181,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(
   import('@/platform/workflowErrors/missingModel/missingModelDownload'),
   () => ({
+    hostReportsModelDownloadProgress: () => false,
     isModelDownloadable: mocks.isModelDownloadable,
     modelDownloadNeedsFolderPaths: mocks.modelDownloadNeedsFolderPaths
   })
@@ -235,7 +236,8 @@ vi.mock(
       (_options: Parameters<typeof useTemplateModelRowDownloads>[0]) => ({
         dispose: mocks.rowDownloadDispose,
         request: mocks.rowDownloadRequest,
-        stateFor: mocks.rowDownloadStateFor
+        stateFor: mocks.rowDownloadStateFor,
+        canResume: () => false
       })
     )
   })
