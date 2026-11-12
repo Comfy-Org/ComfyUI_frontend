@@ -1,5 +1,7 @@
 import { shallowRef, watch } from 'vue'
 
+import { createOperationPointerStore } from '@comfyorg/account-core/billing'
+
 import { HANDOFF_STORAGE_KEY } from '@/handoff/captureHandoffToken'
 import type {
   BillingHandoffExchangeResponse,
@@ -24,6 +26,7 @@ export type HandoffEnding =
   | 'storage_unavailable'
   | 'refused'
   | 'session_ended'
+  | 'payment_pending'
 
 const zHandoffExchange = zBillingHandoffExchangeResponse.extend({
   workspace: zWorkspaceSummary
@@ -40,7 +43,12 @@ export interface HandoffSession {
 
 export type HandoffState =
   | { readonly kind: 'session'; readonly session: HandoffSession }
-  | { readonly kind: 'ended'; readonly ending: HandoffEnding }
+  | {
+      readonly kind: 'ended'
+      readonly ending: HandoffEnding
+      /** The operation still settling when a `payment_pending` session ended. */
+      readonly reference?: string
+    }
 
 export type TabStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
@@ -49,7 +57,8 @@ const ENDINGS: readonly HandoffEnding[] = [
   'exchange_lost',
   'storage_unavailable',
   'refused',
-  'session_ended'
+  'session_ended',
+  'payment_pending'
 ]
 
 export function handoffSessionFrom(body: unknown): HandoffSession | undefined {
@@ -124,7 +133,9 @@ export function readHandoffState(
     if (!isRecord(parsed)) return undefined
     if (parsed.kind === 'ended') {
       const ending = ENDINGS.find((e) => e === parsed.ending)
-      return ending && { kind: 'ended', ending }
+      const reference =
+        typeof parsed.reference === 'string' ? parsed.reference : undefined
+      return ending && { kind: 'ended', ending, reference }
     }
     const session =
       parsed.kind === 'session'
@@ -157,12 +168,33 @@ export function writeHandoffState(
 
 export const handoffTab = shallowRef<HandoffState>()
 
-export function endHandoff(
+export function sessionEnding(
   storage: TabStorage,
-  ending: HandoffEnding,
+  session: HandoffSession,
+  now: () => number
+): HandoffState {
+  const pointer = createOperationPointerStore(storage, now).read({
+    userId: session.userId,
+    workspaceId: session.workspace.id,
+    role: session.role
+  })
+  return pointer && pointer.kind !== 'cancel' && pointer.settled !== 'succeeded'
+    ? {
+        kind: 'ended',
+        ending: 'payment_pending',
+        reference: pointer.operationId
+      }
+    : { kind: 'ended', ending: 'session_ended' }
+}
+
+export function endHandoffSession(
+  storage: TabStorage,
+  now: () => number = () => Date.now(),
   marker: TabMarker = windowNameMarker
 ): void {
-  const state: HandoffState = { kind: 'ended', ending }
+  const current = handoffTab.value
+  if (current?.kind !== 'session') return
+  const state = sessionEnding(storage, current.session, now)
   writeHandoffState(storage, state)
   writeTabMarker(marker, state)
   handoffTab.value = state
@@ -192,7 +224,7 @@ export function endHandoffAtExpiry(
       clearTimeout(timer)
       if (state?.kind !== 'session') return
       timer = setTimeout(
-        () => endHandoff(storage, 'session_ended'),
+        () => endHandoffSession(storage, now),
         Math.max(0, state.session.expiresAt - now())
       )
     },
