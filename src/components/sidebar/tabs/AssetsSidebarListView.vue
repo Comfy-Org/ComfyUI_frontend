@@ -2,12 +2,12 @@
   <div class="flex h-full flex-col">
     <VirtualGrid
       class="flex-1"
-      :items="assetItems"
+      :items="pagedItems(assetItems)"
       :grid-style="listGridStyle"
       :max-columns="1"
       :default-item-height="48"
-      :on-load-more
-      :can-load-more
+      :on-load-more="loadMore"
+      :can-load-more="isPaged(assetItems) && toValue(assetItems.hasMore)"
     >
       <template #item="{ item }">
         <div class="relative">
@@ -69,7 +69,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
@@ -91,6 +91,8 @@ import {
   truncateFilename
 } from '@/utils/formatUtil'
 import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -100,13 +102,11 @@ const {
   isStackExpanded,
   toggleStack
 } = defineProps<{
-  assetItems: OutputStackListItem[]
+  assetItems: MaybePaged<OutputStackListItem>
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
 }>()
 
 const assetsStore = useAssetsStore()
@@ -119,6 +119,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const hoveredAssetId = ref<string | null>(null)
+
+function loadMore() {
+  return isPaged(assetItems) ? assetItems.loadMore() : undefined
+}
 
 const listGridStyle = {
   display: 'grid',

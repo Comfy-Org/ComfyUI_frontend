@@ -17,7 +17,7 @@ type HelpMenuItemKey =
   | 'update-comfyui'
   | 'more'
 
-class HelpCenterHelper {
+export class HelpCenterHelper {
   public readonly button: Locator
   public readonly popup: Locator
   public readonly backdrop: Locator

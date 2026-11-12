@@ -8,8 +8,6 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 
-const test = mergeTests(comfyPageFixture, jobsRouteFixture)
-
 const videoJob = createRouteMockJob({
   id: 'video-job',
   preview_output: {
@@ -32,21 +30,17 @@ async function mockInputFiles(page: Page) {
   })
 }
 
-test.beforeEach(async ({ jobsRoutes, page }) => {
-  await jobsRoutes.mockJobsQueue([])
-  await jobsRoutes.mockJobsHistory([videoJob])
-  await mockInputFiles(page)
-  await mockViewFiles(page, {})
-})
-
-test(
-  'retries a gallery video after a failed load',
-  { tag: '@ui' },
-  async ({ comfyPage }) => {
-    let mediaRequests = 0
-    await comfyPage.page.route(
-      /\/api\/view\?.*filename=clip\.mp4/,
-      async (route) => {
+const videoRetryFixture = jobsRouteFixture.extend<{
+  mediaRequests: () => number
+}>({
+  mediaRequests: [
+    async ({ jobsRoutes, page }, use) => {
+      await jobsRoutes.mockJobsQueue([])
+      await jobsRoutes.mockJobsHistory([videoJob])
+      await mockInputFiles(page)
+      await mockViewFiles(page, {})
+      let mediaRequests = 0
+      await page.route(/\/api\/view\?.*filename=clip\.mp4/, async (route) => {
         if (route.request().resourceType() !== 'media') {
           await route.fallback()
           return
@@ -63,17 +57,25 @@ test(
           contentType: 'video/mp4',
           body: Buffer.alloc(0)
         })
-      }
-    )
+      })
+      await use(() => mediaRequests)
+    },
+    { auto: true }
+  ]
+})
 
+const test = mergeTests(comfyPageFixture, videoRetryFixture)
+
+test(
+  'retries a gallery video after a failed load',
+  { tag: '@ui' },
+  async ({ comfyPage, mediaRequests }) => {
     const tab = comfyPage.menu.assetsTab
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
     await comfyPage.menu.assetsTab.open()
 
     await expect(tab.getAssetCardByName('clip')).toBeVisible()
     await expect
-      .poll(() => mediaRequests, { timeout: 5_000 })
+      .poll(mediaRequests, { timeout: 5_000 })
       .toBeGreaterThanOrEqual(2)
   }
 )
