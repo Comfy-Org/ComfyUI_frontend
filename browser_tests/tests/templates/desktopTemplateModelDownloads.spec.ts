@@ -1,10 +1,11 @@
-import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { expect, mergeTests } from '@playwright/test'
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import {
+  canvasDownload,
+  twoMissingModelsTemplate as template
+} from '@e2e/fixtures/data/desktopModelDownloads'
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import { desktopModelDownloadFixture } from '@e2e/fixtures/desktopModelDownloadFixture'
-import type { ModelDownloadHost } from '@e2e/fixtures/desktopModelDownloadFixture'
 import {
   cleanupFakeModel,
   loadWorkflowAndOpenErrorsTab
@@ -13,43 +14,6 @@ import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
 
 const test = mergeTests(desktopModelDownloadFixture, templateApiFixture)
-
-const TEMPLATE = 'two-missing-models'
-const WORKFLOW = 'missing/missing_models_distinct'
-const MODEL_URL = 'http://localhost:8188/api/devtools/fake_model.safetensors'
-const MODEL_A = 'fake_model_a.safetensors'
-const MODEL_B = 'fake_model_b.safetensors'
-
-function runningDownload(filename: string): ComfyDownloadProgress {
-  return {
-    id: `canvas-${filename}`,
-    url: MODEL_URL,
-    filename,
-    directory: 'checkpoints',
-    status: 'downloading',
-    progress: 0.25,
-    receivedBytes: 256 * 1024 * 1024,
-    totalBytes: 1024 * 1024 * 1024
-  }
-}
-
-async function startOnCanvas(
-  comfyPage: ComfyPage,
-  modelDownloadHost: ModelDownloadHost,
-  downloads: readonly ComfyDownloadProgress[]
-) {
-  await loadWorkflowAndOpenErrorsTab(comfyPage, WORKFLOW)
-  for (const download of downloads) {
-    await modelDownloadHost.emitProgress(download)
-  }
-}
-
-async function openTemplateDetail(comfyPage: ComfyPage) {
-  await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
-  await expect(comfyPage.templates.content).toBeVisible()
-  await comfyPage.templates.selectTemplate(TEMPLATE)
-  return comfyPage.page.getByRole('article', { name: TEMPLATE })
-}
 
 test.describe(
   'Desktop template model downloads started elsewhere',
@@ -62,31 +26,39 @@ test.describe(
     test.beforeEach(async ({ comfyPage, templateApi }) => {
       await cleanupFakeModel(comfyPage)
       templateApi.configure(
-        withTemplates([makeTemplate({ name: TEMPLATE, title: TEMPLATE })])
+        withTemplates([
+          makeTemplate({ name: template.name, title: template.name })
+        ])
       )
       await templateApi.mock()
       await templateApi.mockWorkflow(
-        TEMPLATE,
-        `browser_tests/assets/${WORKFLOW}.json`
+        template.name,
+        `browser_tests/assets/${template.workflow}.json`
       )
+      await loadWorkflowAndOpenErrorsTab(comfyPage, template.workflow)
     })
 
     test('shows progress and offers only opening when every model is already downloading', async ({
       comfyPage,
-      modelDownloadHost
+      modelDownloadHost,
+      templateApi
     }) => {
-      await startOnCanvas(comfyPage, modelDownloadHost, [
-        runningDownload(MODEL_A),
-        runningDownload(MODEL_B)
-      ])
+      await modelDownloadHost.emitProgress(canvasDownload(template.modelA))
+      await modelDownloadHost.emitProgress(canvasDownload(template.modelB))
 
-      const detail = await openTemplateDetail(comfyPage)
+      await templateApi.load(template.name)
+      const detail = comfyPage.templates.detail(template.name)
 
-      for (const filename of [MODEL_A, MODEL_B]) {
-        await expect(
-          detail.getByRole('progressbar', { name: `Downloading ${filename}` })
-        ).toBeVisible()
-      }
+      await expect(
+        detail.getByRole('progressbar', {
+          name: `Downloading ${template.modelA}`
+        })
+      ).toBeVisible()
+      await expect(
+        detail.getByRole('progressbar', {
+          name: `Downloading ${template.modelB}`
+        })
+      ).toBeVisible()
       await expect(
         detail.getByRole('button', { name: /^Download assets & open/ })
       ).toBeHidden()
@@ -101,16 +73,18 @@ test.describe(
 
     test('requests only the model not yet downloading', async ({
       comfyPage,
-      modelDownloadHost
+      modelDownloadHost,
+      templateApi
     }) => {
-      await startOnCanvas(comfyPage, modelDownloadHost, [
-        runningDownload(MODEL_A)
-      ])
+      await modelDownloadHost.emitProgress(canvasDownload(template.modelA))
 
-      const detail = await openTemplateDetail(comfyPage)
+      await templateApi.load(template.name)
+      const detail = comfyPage.templates.detail(template.name)
 
       await expect(
-        detail.getByRole('progressbar', { name: `Downloading ${MODEL_A}` })
+        detail.getByRole('progressbar', {
+          name: `Downloading ${template.modelA}`
+        })
       ).toBeVisible()
       await expect(
         detail.getByRole('button', { name: 'Just open', exact: true })
@@ -122,24 +96,30 @@ test.describe(
       await expect
         .poll(() => modelDownloadHost.downloads())
         .toEqual([
-          { url: MODEL_URL, filename: MODEL_B, directory: 'checkpoints' }
+          {
+            url: template.modelUrl,
+            filename: template.modelB,
+            directory: 'checkpoints'
+          }
         ])
       await expect(detail).toBeHidden()
       await expect
         .poll(() => comfyPage.workflow.getActiveWorkflowPath())
-        .toContain(TEMPLATE)
+        .toContain(template.name)
     })
 
     test('resumes a paused model instead of requesting it again', async ({
       comfyPage,
-      modelDownloadHost
+      modelDownloadHost,
+      templateApi
     }) => {
-      await startOnCanvas(comfyPage, modelDownloadHost, [
-        { ...runningDownload(MODEL_A), status: 'paused' },
-        runningDownload(MODEL_B)
-      ])
+      await modelDownloadHost.emitProgress(
+        canvasDownload(template.modelA, { status: 'paused' })
+      )
+      await modelDownloadHost.emitProgress(canvasDownload(template.modelB))
 
-      const detail = await openTemplateDetail(comfyPage)
+      await templateApi.load(template.name)
+      const detail = comfyPage.templates.detail(template.name)
 
       await expect(
         detail.getByRole('button', { name: 'Just open', exact: true })
@@ -150,7 +130,7 @@ test.describe(
 
       await expect
         .poll(() => modelDownloadHost.controls())
-        .toEqual([{ action: 'resume', ref: `canvas-${MODEL_A}` }])
+        .toEqual([{ action: 'resume', ref: `canvas-${template.modelA}` }])
       expect(await modelDownloadHost.downloads()).toEqual([])
     })
   }
