@@ -3,7 +3,7 @@ import { computed, reactive, ref, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
@@ -119,6 +119,8 @@ const advancedLabel = computed(() => {
   >
     <CollapseToggleButton
       v-model="isAllCollapsed"
+      :expand-label="$t('g.expandAll')"
+      :collapse-label="$t('g.collapseAll')"
       :show="
         !isSearching &&
         widgetsSectionDataList.length + advancedWidgetsSectionDataList.length >

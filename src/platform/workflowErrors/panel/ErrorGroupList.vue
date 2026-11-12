@@ -10,6 +10,8 @@
       />
       <CollapseToggleButton
         v-model="isAllCollapsed"
+        :expand-label="$t('g.expandAll')"
+        :collapse-label="$t('g.collapseAll')"
         :show="!isSearching && allErrorGroups.length > 1"
       />
     </div>
@@ -424,7 +426,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { useErrorsTabRequestStore } from './errorsTabRequestStore'
 import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 
-import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import ErrorCardSection from './ErrorCardSection.vue'

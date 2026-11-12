@@ -11,7 +11,7 @@ import {
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import {
@@ -148,6 +148,8 @@ const label = computed(() => {
   <PanelSearchHeader v-model="searchQuery" :searcher :update-key="widgetsList">
     <CollapseToggleButton
       v-model="isAllCollapsed"
+      :expand-label="$t('g.expandAll')"
+      :collapse-label="$t('g.collapseAll')"
       :show="!isSearching && advancedInputsWidgets.length > 0"
     />
   </PanelSearchHeader>
