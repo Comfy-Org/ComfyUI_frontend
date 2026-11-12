@@ -1043,6 +1043,26 @@ describe('nodeOutputStore image url cache busting', () => {
     }
   )
 
+  it.for([
+    { bucket: 'video', filename: 'movie.webm', url: 'blob:movie' },
+    {
+      bucket: 'audio',
+      filename: 'sound.flac',
+      url: 'https://example.com/sound.flac'
+    }
+  ])(
+    'uses an explicit $bucket URL without a separate preview',
+    ({ bucket, filename, url }) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 7 })
+      store.nodeOutputs['7'] = { [bucket]: [{ filename, url }] }
+
+      expect(store.getNodeOutputItems(node)).toEqual([
+        expect.objectContaining({ url, previewUrl: url })
+      ])
+    }
+  )
+
   it('reuses one url for the same outputs and a fresh one for new outputs', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 7 })

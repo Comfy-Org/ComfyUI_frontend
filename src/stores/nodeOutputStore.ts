@@ -196,9 +196,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
           result.previewUrl ??
           (isHdrImageFilename(result.filename)
             ? resultItemPreviewUrl(result)
-            : resultItemPreviewUrl(result) +
-              getPreviewParam(node, outputs) +
-              rand)
+            : (result.url ??
+              resultItemPreviewUrl(result) +
+                getPreviewParam(node, outputs) +
+                rand))
       }
     })
   }
