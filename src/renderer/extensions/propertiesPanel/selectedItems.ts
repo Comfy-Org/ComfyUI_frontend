@@ -21,17 +21,7 @@ type FlatItemsContext = {
   parentGroup?: LGraphGroup
 }
 
-/**
- * The selected items may contain "Group" nodes, which can include child nodes.
- * This function flattens such structures and categorizes items into:
- * - all: all categorizable nodes (does not include nodes in "others")
- * - nodes: node items
- * - groups: group items
- * - others: items not currently supported
- * - nodeToParentGroup: a map from each node to its direct parent group (if any)
- * @param items The selected items to flatten and categorize
- * @returns An object containing arrays: all, nodes, groups, others, and nodeToParentGroup map
- */
+/** Flattens selected groups into their contents and splits the result into nodes, groups, and unsupported items. */
 export function flatAndCategorizeSelectedItems(
   items: Positionable[]
 ): FlatAndCategorizeSelectedItemsResult {
@@ -111,8 +101,6 @@ function flatItems(
         ctx.nodeToParentGroup.set(item, ctx.parentGroup)
       }
     } else {
-      // Other types of items are not supported yet
-      // Do not add to all
       others.push(item)
     }
   }

@@ -14,15 +14,11 @@ interface WidgetSearchItem {
   searchableValue: string
 }
 
-/**
- * Searches widgets in a list using fuzzy search and returns search results.
- * Uses Fuse.js for better matching with typo tolerance and relevance ranking.
- * Filters by name, localized label, type, and user-input value.
- */
-export function searchWidgets<T extends { widget: IBaseWidget }[]>(
-  list: T,
+/** Returns the entries whose widget name, label, type, or value matches the query, in input order. */
+export function searchWidgets<T extends { widget: IBaseWidget }>(
+  list: T[],
   query: string
-): T {
+): T[] {
   if (query.trim() === '') {
     return list
   }
@@ -56,7 +52,7 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
 
   const matchedItems = new Set(results.map((result) => list[result.item.index]))
 
-  return list.filter((item) => matchedItems.has(item)) as T
+  return list.filter((item) => matchedItems.has(item))
 }
 
 type NodeSearchItem = {
@@ -64,12 +60,7 @@ type NodeSearchItem = {
   searchableTitle: string
 }
 
-/**
- * Searches widgets and nodes in a list using fuzzy search and returns search results.
- * Uses Fuse.js for node title matching with typo tolerance and relevance ranking.
- * First checks if the node title matches the query (if so, keeps entire node).
- * Otherwise, filters widgets using searchWidgets.
- */
+/** Returns whole nodes whose title matches the query, and other nodes trimmed to their matching widgets, in input order. */
 export function searchWidgetsAndNodes(
   list: NodeWidgetsListList,
   query: string
