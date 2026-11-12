@@ -7,7 +7,6 @@ type ImageLoadWindow = Window & {
   __restoreImageSrc?: () => void
 }
 
-/** Tracks image `src` loads and downscale worker requests, and whether each has been handled. */
 export async function trackHandledImageLoads(page: Page) {
   await page.evaluate(() => {
     const w = window as ImageLoadWindow
@@ -67,7 +66,6 @@ export async function trackHandledImageLoads(page: Page) {
   })
 }
 
-/** Counts tracked loads whose source contains `urlPart`, and how many have been handled. */
 export function imageLoadProgress(page: Page, urlPart: string) {
   return page.evaluate((part) => {
     const images = [

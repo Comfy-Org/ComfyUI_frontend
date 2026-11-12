@@ -36,8 +36,12 @@ async function downscale({
   }
 }
 
-self.onmessage = async (event: MessageEvent<DownscaleRequest>) => {
-  const result = await downscale(event.data).catch(() => undefined)
-  const message: DownscaleResponse = { id: event.data.id, result }
-  self.postMessage(message)
+let queue = Promise.resolve()
+
+self.onmessage = (event: MessageEvent<DownscaleRequest>) => {
+  queue = queue.then(async () => {
+    const result = await downscale(event.data).catch(() => undefined)
+    const message: DownscaleResponse = { id: event.data.id, result }
+    self.postMessage(message)
+  })
 }

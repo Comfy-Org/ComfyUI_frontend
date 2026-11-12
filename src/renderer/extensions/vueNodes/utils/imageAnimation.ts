@@ -17,7 +17,6 @@ function isAnimatedWebp(bytes: Uint8Array): boolean {
   return ascii(bytes, 12, 4) === 'VP8X' && (bytes[20] & 0x02) !== 0
 }
 
-/** Whether encoded GIF, PNG, WebP or AVIF bytes hold more than one frame. */
 function isAvifSequence(bytes: Uint8Array): boolean {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
   const boxEnd = Math.min(view.getUint32(0), bytes.length)

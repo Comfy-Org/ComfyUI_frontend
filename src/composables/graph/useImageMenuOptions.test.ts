@@ -1,10 +1,15 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import {
+  createMockCanvasRenderingContext2D,
+  stubCanvasGetContext
+} from '@/utils/__tests__/canvasTestUtils'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
 
@@ -167,6 +172,80 @@ describe('useImageMenuOptions', () => {
       expect(labels).toContain('Open Image')
       expect(labels).toContain('Save Image')
       expect(labels).not.toContain('Paste Image')
+    })
+  })
+
+  describe('Copy Image action', () => {
+    let original: HTMLImageElement
+    let bounds: number[]
+    let context: CanvasRenderingContext2D
+    const png = new Blob(['original pixels'], { type: 'image/png' })
+
+    beforeEach(() => {
+      original = document.createElement('img')
+      Object.defineProperties(original, {
+        naturalWidth: { value: 4096 },
+        naturalHeight: { value: 2048 }
+      })
+      original.decode = vi.fn().mockResolvedValue(undefined)
+      vi.spyOn(globalThis, 'Image').mockImplementation(function () {
+        return original
+      })
+      bounds = []
+      context = createMockCanvasRenderingContext2D()
+      stubCanvasGetContext(context)
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
+        function (this: HTMLCanvasElement, callback) {
+          bounds = [this.width, this.height]
+          callback(png)
+        }
+      )
+      vi.spyOn(navigator.clipboard, 'write').mockResolvedValue(undefined)
+    })
+
+    it('copies the decoded original with its full asymmetric bounds', async () => {
+      const display = document.createElement('img')
+      display.src = 'blob:display-copy'
+      display.dataset.fullSrc = 'http://localhost/original.png'
+      Object.defineProperties(display, {
+        naturalWidth: { value: 1024 },
+        naturalHeight: { value: 512 }
+      })
+      const node = createMockLGraphNode({ imgs: [display], imageIndex: 0 })
+      const { getImageMenuOptions } = mountComposable()
+      const copy = getImageMenuOptions(node).find(
+        (option) => option.label === 'Copy Image'
+      )
+      assert.exists(copy?.action)
+
+      await copy.action()
+
+      expect(original.src).toBe('http://localhost/original.png')
+      expect(bounds).toEqual([4096, 2048])
+      expect(context.drawImage).toHaveBeenCalledWith(original, 0, 0)
+      const writes = vi.mocked(navigator.clipboard.write).mock.calls
+      expect(writes).toHaveLength(1)
+      expect(await writes[0][0][0].getType('image/png')).toBe(png)
+    })
+
+    it('warns without changing the clipboard when the original cannot decode', async () => {
+      vi.mocked(original.decode).mockRejectedValue(new Error('decode refused'))
+      const display = document.createElement('img')
+      display.src = 'blob:display-copy'
+      display.dataset.fullSrc = 'http://localhost/original.png'
+      const node = createMockLGraphNode({ imgs: [display], imageIndex: 0 })
+      const { getImageMenuOptions } = mountComposable()
+      const copy = getImageMenuOptions(node).find(
+        (option) => option.label === 'Copy Image'
+      )
+      assert.exists(copy?.action)
+
+      await copy.action()
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'warning' })
+      ])
+      expect(navigator.clipboard.write).not.toHaveBeenCalled()
     })
   })
 

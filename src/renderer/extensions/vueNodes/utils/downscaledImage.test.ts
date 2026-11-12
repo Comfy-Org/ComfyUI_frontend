@@ -38,23 +38,20 @@ describe('getDisplayImage', () => {
     vi.stubGlobal('Worker', FakeWorker)
     vi.stubGlobal('createImageBitmap', vi.fn())
     vi.stubGlobal('OffscreenCanvas', class {})
-    vi.spyOn(URL, 'createObjectURL').mockImplementation(
-      () => `blob:copy-${Math.random()}`
-    )
-    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
   })
 
   it('falls back to the original when a worker fails to load', async () => {
     behavior = (worker) => worker.onerror?.(new ErrorEvent('error'))
     const { getDisplayImage } = await loadModule()
 
-    await expect(getDisplayImage('/view?a.png', 1024)).resolves.toEqual({
-      source: '/view?a.png',
-      url: '/view?a.png'
-    })
-    await expect(getDisplayImage('/view?b.png', 1024)).resolves.toEqual({
-      source: '/view?b.png',
-      url: '/view?b.png'
+    await expect(
+      Promise.all([
+        getDisplayImage('/view?a.png', 1024),
+        getDisplayImage('/view?b.png', 1024)
+      ])
+    ).resolves.toEqual([{ source: '/view?a.png' }, { source: '/view?b.png' }])
+    await expect(getDisplayImage('/view?later.png', 1024)).resolves.toEqual({
+      source: '/view?later.png'
     })
   })
 
@@ -63,28 +60,110 @@ describe('getDisplayImage', () => {
     const { getDisplayImage } = await loadModule()
 
     await expect(getDisplayImage('blob:live-preview', 1024)).resolves.toEqual({
-      source: 'blob:live-preview',
-      url: 'blob:live-preview'
+      source: 'blob:live-preview'
     })
     expect(postMessage).not.toHaveBeenCalled()
   })
 
-  it('revokes only the copies it created when evicting', async () => {
+  it('keeps returned copies usable when a burst exceeds cache capacity', async () => {
+    const copy = new Blob(['display pixels'])
     behavior = (worker, request) =>
       respond(worker, request, {
-        originalSize: { width: 10, height: 10 },
-        blob: request.source.includes('small') ? undefined : new Blob()
+        originalSize: { width: 4096, height: 2048 },
+        blob: copy
       })
     const { getDisplayImage } = await loadModule()
 
-    const borrowed = await getDisplayImage('/view?small-original.png', 1024)
-    const created = await getDisplayImage('/view?large.png', 1024)
-    for (let i = 0; i < 128; i++) await getDisplayImage(`/view?${i}.png`, 1024)
-
-    expect(borrowed.url).toBe('/view?small-original.png')
-    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith(
-      '/view?small-original.png'
+    const results = await Promise.all(
+      Array.from({ length: 256 }, (_, i) =>
+        getDisplayImage(`/view?${i}.png`, 1024)
+      )
     )
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith(created.url)
+
+    expect(results[0]).toEqual({
+      source: '/view?0.png',
+      blob: copy,
+      originalSize: { width: 4096, height: 2048 }
+    })
+    await expect(results[0].blob?.text()).resolves.toBe('display pixels')
+  })
+
+  it('reuses pending and completed copies of the same source', async () => {
+    const requests: { worker: FakeWorker; request: DownscaleRequest }[] = []
+    behavior = (worker, request) => requests.push({ worker, request })
+    const { getDisplayImage } = await loadModule()
+
+    const first = getDisplayImage('/view?shared.png', 1024)
+    const second = getDisplayImage('/view?shared.png', 1024)
+    await vi.waitFor(() => expect(requests).toHaveLength(1))
+    const copy = new Blob(['shared copy'])
+    respond(requests[0].worker, requests[0].request, {
+      blob: copy,
+      originalSize: { width: 4096, height: 2048 }
+    })
+
+    const results = await Promise.all([first, second])
+    expect(results[0]).toEqual(results[1])
+    expect(results[0].blob).toBe(copy)
+    await expect(getDisplayImage('/view?shared.png', 1024)).resolves.toEqual(
+      results[0]
+    )
+    expect(requests).toHaveLength(1)
+  })
+
+  it('keeps a replacement cached when an evicted older request fails', async () => {
+    const requests: { worker: FakeWorker; request: DownscaleRequest }[] = []
+    behavior = (worker, request) => requests.push({ worker, request })
+    const { getDisplayImage } = await loadModule()
+
+    const old = getDisplayImage('/view?replacement.png', 1024)
+    const pressure = Array.from({ length: 256 }, (_, i) =>
+      getDisplayImage(`/view?${i}.png`, 1024)
+    )
+    const replacement = getDisplayImage('/view?replacement.png', 1024)
+    await vi.waitFor(() => expect(requests).toHaveLength(258))
+    respond(requests[0].worker, requests[0].request, undefined)
+    requests
+      .slice(1, -1)
+      .forEach(({ worker, request }) => respond(worker, request, undefined))
+    const latest = requests[257]
+    const copy = new Blob(['replacement pixels'])
+    respond(latest.worker, latest.request, {
+      blob: copy,
+      originalSize: { width: 4096, height: 2048 }
+    })
+    await Promise.all([old, ...pressure])
+    const image = await replacement
+
+    await expect(
+      getDisplayImage('/view?replacement.png', 1024)
+    ).resolves.toEqual(image)
+    expect(image.blob).toBe(copy)
+    expect(requests).toHaveLength(258)
+  })
+
+  it('cleans up a partially created pool and falls back on later requests', async () => {
+    vi.stubGlobal('navigator', { hardwareConcurrency: 8 })
+    const created: FakeWorker[] = []
+    vi.stubGlobal(
+      'Worker',
+      class extends FakeWorker {
+        constructor() {
+          super()
+          if (created.length === 1) throw new DOMException('Worker unavailable')
+          created.push(this)
+        }
+      }
+    )
+    const { getDisplayImage } = await loadModule()
+
+    await expect(getDisplayImage('/view?a.png', 1024)).resolves.toEqual({
+      source: '/view?a.png'
+    })
+    await expect(getDisplayImage('/view?b.png', 1024)).resolves.toEqual({
+      source: '/view?b.png'
+    })
+    expect(created).toHaveLength(1)
+    expect(created[0].terminate).toHaveBeenCalledOnce()
   })
 })

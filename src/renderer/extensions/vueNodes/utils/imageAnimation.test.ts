@@ -63,6 +63,11 @@ describe('isAnimatedImage', () => {
       animated: true
     },
     {
+      name: 'an AVIF sequence identified by a compatible brand',
+      image: bytes([0, 0, 0, 20], 'ftyp', 'avif', [0, 0, 0, 0], 'avis'),
+      animated: true
+    },
+    {
       name: 'a still AVIF',
       image: bytes([0, 0, 0, 20], 'ftyp', 'avif', [0, 0, 0, 0], 'mif1'),
       animated: false

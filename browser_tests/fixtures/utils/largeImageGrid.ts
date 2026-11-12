@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { createLargePng } from '@e2e/fixtures/utils/largePng'
+import { createLargePng } from '@e2e/fixtures/data/largePng'
 
 const GRID_NODE_COUNT = 12
 
@@ -39,25 +39,35 @@ export async function uploadGridImages(comfyPage: ComfyPage, size: number) {
   }
 }
 
-export async function waitForGridImagesDecoded(comfyPage: ComfyPage) {
+export async function waitForGridImagesDecoded(
+  comfyPage: ComfyPage,
+  displaySize: number
+) {
   await expect(comfyPage.page.getByTestId('main-image')).toHaveCount(
     GRID_NODE_COUNT,
     { timeout: 30_000 }
   )
   await comfyPage.page.waitForFunction(
-    async (count) => {
+    async ({ count, displaySize }) => {
       const imgs = [
         ...document.querySelectorAll<HTMLImageElement>(
           '[data-testid="main-image"]'
         )
       ]
       if (imgs.length !== count) return false
-      if (!imgs.every((img) => img.complete && img.naturalWidth > 0))
+      if (
+        !imgs.every(
+          (img) =>
+            img.complete &&
+            img.naturalWidth === displaySize &&
+            img.naturalHeight === displaySize
+        )
+      )
         return false
       await Promise.all(imgs.map((img) => img.decode()))
       return true
     },
-    GRID_NODE_COUNT,
+    { count: GRID_NODE_COUNT, displaySize },
     { timeout: 30_000, polling: 100 }
   )
 }

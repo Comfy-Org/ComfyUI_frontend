@@ -185,14 +185,11 @@ describe('useMaskEditorLoader', () => {
 
   it('loads the full-resolution file behind a downscaled preview', async () => {
     const node = createLoadImageNode('$35-0', [{ type: 'output' }])
-    node.imgs = [
-      fromAny<HTMLImageElement, unknown>({
-        src: 'blob:http://localhost:8188/display-copy',
-        dataset: {
-          fullSrc: 'http://localhost:8188/api/view?filename=original.png'
-        }
-      })
-    ]
+    const image = document.createElement('img')
+    image.src = 'blob:http://localhost:8188/display-copy'
+    image.dataset.fullSrc =
+      'http://localhost:8188/api/view?filename=original.png'
+    node.imgs = [image]
 
     await useMaskEditorLoader().loadFromNode(node)
 

@@ -250,7 +250,12 @@
 </template>
 
 <script setup lang="ts">
-import { computedAsync, useElementSize, useTimeoutFn } from '@vueuse/core'
+import {
+  computedAsync,
+  useElementSize,
+  useObjectUrl,
+  useTimeoutFn
+} from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -277,10 +282,7 @@ import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import {
-  canDownscaleImages,
-  getDisplayImage
-} from '@/renderer/extensions/vueNodes/utils/downscaledImage'
+import { getDisplayImage } from '@/renderer/extensions/vueNodes/utils/downscaledImage'
 import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
 
 const DISPLAY_MAX_EDGE = 1024
@@ -339,8 +341,7 @@ const currentHdrPreviewUrl = computed(() =>
 )
 const displayImage = computedAsync(async () => {
   const source = currentImageUrl.value
-  if (!source || currentHdrPreviewUrl.value || !canDownscaleImages())
-    return undefined
+  if (!source || currentHdrPreviewUrl.value) return undefined
   return getDisplayImage(source, DISPLAY_MAX_EDGE)
 })
 const currentDisplayImage = computed(() =>
@@ -348,17 +349,15 @@ const currentDisplayImage = computed(() =>
     ? displayImage.value
     : undefined
 )
+const displayImageUrl = useObjectUrl(() => currentDisplayImage.value?.blob)
 const mainImageSrc = computed(
   () =>
     currentHdrPreviewUrl.value ??
-    (canDownscaleImages()
-      ? currentDisplayImage.value?.url
-      : currentImageUrl.value)
+    (currentDisplayImage.value?.blob
+      ? displayImageUrl.value
+      : currentDisplayImage.value?.source)
 )
-const isDownscaled = computed(
-  () =>
-    !!currentDisplayImage.value && mainImageSrc.value !== currentImageUrl.value
-)
+const isDownscaled = computed(() => !!currentDisplayImage.value?.blob)
 const gridImageUrls = computed(() =>
   imageUrls.map((url) => getHdrPreviewUrl(url) ?? getGridThumbnailUrl(url))
 )

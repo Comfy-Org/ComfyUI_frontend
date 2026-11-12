@@ -5,7 +5,7 @@ import type {
 
 export interface DisplayImage {
   readonly source: string
-  readonly url: string
+  readonly blob?: Blob
   readonly originalSize?: { readonly width: number; readonly height: number }
 }
 
@@ -18,7 +18,7 @@ let workers: Worker[] | undefined
 let workersFailed = false
 let nextId = 0
 
-export function canDownscaleImages(): boolean {
+function canDownscaleImages(): boolean {
   return (
     typeof Worker === 'function' &&
     typeof createImageBitmap === 'function' &&
@@ -26,19 +26,26 @@ export function canDownscaleImages(): boolean {
   )
 }
 
-function workerPool(): Worker[] {
-  workers ??= Array.from({ length: POOL_SIZE }, () => {
-    const worker = new Worker(
-      new URL('./downscaleImage.worker.ts', import.meta.url),
-      { type: 'module' }
-    )
-    worker.onmessage = (event: MessageEvent<DownscaleResponse>) => {
-      pending.get(event.data.id)?.(event.data)
-      pending.delete(event.data.id)
+function workerPool(): Worker[] | undefined {
+  if (workers) return workers
+  workers = []
+  for (let i = 0; i < POOL_SIZE; i++) {
+    try {
+      const worker = new Worker(
+        new URL('./downscaleImage.worker.ts', import.meta.url),
+        { type: 'module' }
+      )
+      workers.push(worker)
+      worker.onmessage = (event: MessageEvent<DownscaleResponse>) => {
+        pending.get(event.data.id)?.(event.data)
+        pending.delete(event.data.id)
+      }
+      worker.onerror = abandonWorkers
+    } catch {
+      abandonWorkers()
+      return undefined
     }
-    worker.onerror = abandonWorkers
-    return worker
-  })
+  }
   return workers
 }
 
@@ -56,6 +63,7 @@ function requestDownscale(
   const id = nextId++
   if (workersFailed) return Promise.resolve({ id, result: undefined })
   const pool = workerPool()
+  if (!pool) return Promise.resolve({ id, result: undefined })
   return new Promise((resolve) => {
     pending.set(id, resolve)
     const request: DownscaleRequest = { id, source, maxEdge }
@@ -72,8 +80,7 @@ async function downscale(
     maxEdge
   )
   if (!result) return undefined
-  const url = result.blob ? URL.createObjectURL(result.blob) : source
-  return { source, url, originalSize: result.originalSize }
+  return { source, ...result }
 }
 
 /**
@@ -84,7 +91,7 @@ export async function getDisplayImage(
   source: string,
   maxEdge: number
 ): Promise<DisplayImage> {
-  const original = { source, url: source }
+  const original = { source }
   if (!canDownscaleImages() || source.startsWith('blob:')) return original
   const key = `${maxEdge}:${source}`
   const cached = cache.get(key)
@@ -97,7 +104,7 @@ export async function getDisplayImage(
     .catch(() => undefined)
     .then((image) => {
       if (image) return image
-      cache.delete(key)
+      if (cache.get(key) === entry) cache.delete(key)
       return original
     })
   cache.set(key, entry)
@@ -106,11 +113,8 @@ export async function getDisplayImage(
 }
 
 function evictOldest() {
-  for (const [key, entry] of cache) {
+  for (const key of cache.keys()) {
     if (cache.size <= MAX_CACHED_IMAGES) return
     cache.delete(key)
-    void entry.then(({ source, url }) => {
-      if (url !== source) URL.revokeObjectURL(url)
-    })
   }
 }
