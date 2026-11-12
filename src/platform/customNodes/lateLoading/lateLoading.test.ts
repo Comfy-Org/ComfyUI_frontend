@@ -1,14 +1,26 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import * as workflowService from '@/platform/workflow/core/services/workflowService'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -18,12 +30,10 @@ import { app } from '@/scripts/app'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
-import {
-  createMockChangeTracker,
-  createMockLoadedWorkflow
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 
 import {
   importNoticingFetchFailure,
@@ -37,14 +47,16 @@ vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/billing/api/billingApi'))
-vi.mock(import('@/platform/workflow/core/services/workflowService'))
+vi.mock(import('@vueuse/router'), async () => {
+  const { ref } = await import('vue')
+  return { useRouteHash: () => ref('') }
+})
 vi.mock(import('@/extensions/core/index'), () => ({
   registerCoreExtensions: async () => {}
 }))
 
 const WAIT_MS = 2_000
 const SAVED_STATE = createMockChangeTracker().initialState
-const REBUILT_STATE = { ...SAVED_STATE, last_node_id: 7 }
 const nodeDef = (name: string) => fromPartial<ComfyNodeDef>({ name })
 
 let log: string[] = []
@@ -200,19 +212,19 @@ describe('late custom node loading', () => {
       log.push('reloadNodeDefs')
       return true
     })
-    vi.mocked(useWorkflowService().reloadCurrentWorkflow).mockImplementation(
-      async () => {
-        log.push(
-          nodeTypesMayStillArrive()
-            ? 'reloadCurrentWorkflow while types may still arrive'
-            : 'reloadCurrentWorkflow'
-        )
-        const workflow = useWorkflowStore().activeWorkflow
-        if (!workflow) return
-        workflow.changeTracker.initialState = REBUILT_STATE
-        workflow.isModified = false
-      }
-    )
+    vi.spyOn(
+      useSubgraphNavigationStore(),
+      'endWorkflowNavigation'
+    ).mockImplementation(() => {})
+    const service = workflowService.useWorkflowService()
+    vi.spyOn(workflowService, 'useWorkflowService').mockReturnValue(service)
+    vi.spyOn(service, 'reloadCurrentWorkflow').mockImplementation(async () => {
+      log.push(
+        nodeTypesMayStillArrive()
+          ? 'reloadCurrentWorkflow while types may still arrive'
+          : 'reloadCurrentWorkflow'
+      )
+    })
   })
 
   it('waits for every script, as today, with the switch off', async () => {
@@ -321,20 +333,156 @@ describe('late custom node loading', () => {
     expect(log).toContain('A:setup')
   })
 
-  it('keeps the unsaved mark and the saved baseline through the rebuild', async () => {
-    const workflow = createMockLoadedWorkflow({
-      isModified: true,
-      changeTracker: createMockChangeTracker({ initialState: SAVED_STATE })
-    })
-    useWorkflowStore().activeWorkflow = workflow
+  it('reconfigures a background tab on its next switch after late types arrive', async () => {
+    const store = useWorkflowStore()
+    const background = store.createNewTemporary('background.json', SAVED_STATE)
+    const visible = store.createNewTemporary('visible.json', SAVED_STATE)
+    const backgroundGraph = new LGraph()
+    background.adoptGraph(backgroundGraph)
+    visible.adoptGraph(new LGraph())
+    store.attachWorkflow(background, 0)
+    store.attachWorkflow(visible, 1)
+    await background.load()
+    store.activeWorkflow = await visible.load()
+    background.isModified = true
+    const backgroundState = background.activeState
+    const tracker = background.changeTracker
+    vi.mocked(app.loadGraphData).mockResolvedValue(true)
     serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
 
     await startEditor()
     await vi.advanceTimersByTimeAsync(1_000)
 
-    expect(log).toContain('reloadCurrentWorkflow')
-    expect(workflow.isModified).toBe(true)
-    expect(workflow.changeTracker.initialState).toBe(SAVED_STATE)
+    expect(background.graph).toBe(backgroundGraph)
+    expect(background.changeTracker).toBe(tracker)
+    expect(background.activeState).toBe(backgroundState)
+    expect(background.isModified).toBe(true)
+
+    await workflowService.useWorkflowService().openWorkflow(background)
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      backgroundState,
+      true,
+      true,
+      background,
+      expect.objectContaining({ skipAssetScans: true })
+    )
+  })
+
+  it('waits for queued graph work and reconfigures a tab that became inactive before late types arrived', async () => {
+    const store = useWorkflowStore()
+    const first = store.createNewTemporary('first.json', SAVED_STATE)
+    const second = store.createNewTemporary('second.json', SAVED_STATE)
+    const firstGraph = new LGraph()
+    const secondGraph = new LGraph()
+    first.adoptGraph(firstGraph)
+    second.adoptGraph(secondGraph)
+    store.attachWorkflow(first, 0)
+    store.attachWorkflow(second, 1)
+    store.activeWorkflow = await first.load()
+    let finishGraphWork = () => {}
+    const graphWork = new Promise<void>((resolve) => {
+      finishGraphWork = resolve
+    })
+    vi.mocked(app.enqueueGraphLoad).mockImplementation(async (operation) => {
+      await graphWork
+      return operation()
+    })
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+
+    expect(first.graph).toBe(firstGraph)
+    expect(second.graph).toBe(secondGraph)
+
+    store.activeWorkflow = await second.load()
+    finishGraphWork()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(first.graph).toBe(firstGraph)
+    expect(second.graph).toBe(secondGraph)
+
+    await workflowService.useWorkflowService().openWorkflow(first)
+
+    expect(app.loadGraphData).toHaveBeenCalledWith(
+      first.activeState,
+      true,
+      true,
+      first,
+      expect.objectContaining({ skipAssetScans: true })
+    )
+  })
+
+  it('rebuilds the previously visible tab after late types arrive during a remote tab fetch', async () => {
+    const service = workflowService.useWorkflowService()
+    vi.mocked(service.reloadCurrentWorkflow).mockRestore()
+    vi.spyOn(
+      useSubgraphNavigationStore(),
+      'saveCurrentViewport'
+    ).mockImplementation(() => {})
+    vi.spyOn(useSubgraphNavigationStore(), 'updateHash').mockResolvedValue()
+    const store = useWorkflowStore()
+    const previous = store.createNewTemporary('previous.json', SAVED_STATE)
+    const next = new ComfyWorkflow({
+      path: 'workflows/next.json',
+      modified: 0,
+      size: JSON.stringify(SAVED_STATE).length
+    })
+    const previousGraph = new LGraph()
+    previous.adoptGraph(previousGraph)
+    app.activateRootGraph(previousGraph)
+    store.attachWorkflow(previous, 0)
+    store.attachWorkflow(next, 1)
+    store.activeWorkflow = await previous.load()
+    let graphLoadTail = Promise.resolve()
+    vi.mocked(app.enqueueGraphLoad).mockImplementation((operation) => {
+      const result = graphLoadTail.then(operation)
+      graphLoadTail = result.then(() => {})
+      return result
+    })
+    let finishFetch = (_response: Response) => {}
+    const fetched = new Promise<Response>((resolve) => {
+      finishFetch = resolve
+    })
+    let beginFetch = () => {}
+    const fetching = new Promise<void>((resolve) => {
+      beginFetch = resolve
+    })
+    vi.spyOn(api, 'getUserData').mockImplementationOnce(() => {
+      beginFetch()
+      return fetched
+    })
+    vi.mocked(app.loadGraphData).mockImplementation(
+      async (_data, _clean, _restoreView, workflow) =>
+        app.enqueueGraphLoad(async () => {
+          assert(workflow instanceof ComfyWorkflow)
+          const graph = new LGraph()
+          workflow.adoptGraph(graph)
+          app.activateRootGraph(graph)
+          await store.openWorkflow(workflow)
+          return true
+        })
+    )
+    serve({ '/extensions/a/main.js': { ms: 3_000, extension: 'A' } })
+    const opening = service.openWorkflow(next)
+    await fetching
+    expect(next.isLoaded).toBe(false)
+    expect(store.activeWorkflow.path).toBe(previous.path)
+
+    await startEditor()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(isRegistered('A')).toBe(true)
+    expect(next.isLoaded).toBe(false)
+    finishFetch(Response.json(SAVED_STATE))
+    await opening
+    await vi.advanceTimersByTimeAsync(0)
+    expect(store.activeWorkflow.path).toBe(next.path)
+    await service.openWorkflow(previous)
+
+    expect(store.activeWorkflow.path).toBe(previous.path)
+    expect(previous.graph).not.toBe(previousGraph)
+    expect(app.rootGraph).toBe(previous.graph)
   })
 
   it('reports a late script that failed', async () => {

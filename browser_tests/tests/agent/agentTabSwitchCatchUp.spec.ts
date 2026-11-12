@@ -200,7 +200,9 @@ test.describe(
 
       await test.step('second workflow opens in its own tab', async () => {
         await page.evaluate(
-          ({ json, name }) => window.app!.loadGraphData(json, true, true, name),
+          async ({ json, name }) => {
+            await window.app!.loadGraphData(json, true, true, name)
+          },
           { json: TAB_B, name: TAB_B_NAME }
         )
         await expect(tabs).toHaveCount(2)

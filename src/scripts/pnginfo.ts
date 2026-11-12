@@ -47,10 +47,11 @@ export type A1111ImportOutcome =
   | 'core-nodes-unavailable'
 
 export async function importA1111(
-  graph: LGraph,
+  initialGraph: LGraph,
   parameters: string,
-  beforeGraphClear?: () => void | Promise<void>
+  beforeGraphClear?: () => void | LGraph | Promise<void | LGraph>
 ): Promise<A1111ImportOutcome> {
+  let graph = initialGraph
   const normalizedParameters = normalizeA1111Parameters(parameters)
   const p = normalizedParameters.lastIndexOf('\nSteps:')
   if (p > -1) {
@@ -209,7 +210,7 @@ export async function importA1111(
           return { embeddings: [], embeddingsLoaded: false }
         })
 
-      await beforeGraphClear?.()
+      graph = (await beforeGraphClear?.()) ?? graph
       withGraphIntentSource('load', () => {
         graph.clear()
         graph.add(ckptNode)

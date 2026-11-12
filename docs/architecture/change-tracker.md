@@ -7,7 +7,7 @@ history by comparing serialized graph snapshots.
 
 `captureCanvasState()` is the core method. It:
 
-1. Serializes the current graph via `app.rootGraph.serialize()`
+1. Serializes its own workflow's graph via `workflow.graph.serialize()`
 2. Deep-compares the result against the last known `activeState`
 3. If different, pushes `activeState` onto `undoQueue` and replaces it
 
@@ -17,6 +17,13 @@ links, etc.) are only captured when `captureCanvasState()` is explicitly trigger
 **INVARIANT:** `captureCanvasState()` asserts that it is called on the active
 workflow's tracker. Calling it on an inactive tracker logs a warning and
 returns early, preventing cross-workflow data corruption.
+
+**INVARIANT:** `captureCanvasState()` and `squashState()` serialize the
+workflow's own `LGraph`, not whichever graph `app.rootGraph` currently shows.
+Until the workflow has adopted a graph (`adoptGraph()` runs at the end of its
+first load) there is nothing to serialize and both return without capturing.
+The node-history helpers read `app.rootGraph`, so they assume the tracker's
+workflow is the one on screen.
 
 ## Automatic Triggers
 
