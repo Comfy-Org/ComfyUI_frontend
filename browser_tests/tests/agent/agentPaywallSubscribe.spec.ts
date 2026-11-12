@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import type { BillingPlansResponse } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -8,17 +9,20 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
-// Regression e2e coverage for the fix in dialogService.showSubscriptionRequiredDialog:
+// Regression e2e coverage for useBillingDialogs.showSubscriptionRequiredDialog:
 // clicking the agent panel paywall's "Subscribe" action must always open the
-// subscription dialog (or at least report a failure), never silently no-op.
-// The unit test (dialogService.subscriptionRequired.test.ts) proves the exact
-// timing race deterministically (a config fetch still `unloaded` at click
-// time); this file drives the real chat panel end to end, through a real
-// no-funds turn rejection surfacing the paywall card, and a real click.
+// pricing dialog (or at least report a failure), never silently no-op.
+// The unit test (useBillingDialogs.subscriptionRequired.test.ts) pins the
+// bounded config retry; it is a guard, not a confirmed production cause.
+// This file drives the real chat panel end to end, through a real no-funds
+// turn rejection surfacing the paywall card, and a real click.
 
 const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
   error: {
@@ -29,7 +33,15 @@ const NO_FUNDS_ERROR = zAgentAdmissionError.parse({
   }
 })
 
-const DIALOG_SELECTOR = '[aria-labelledby="subscription-required"]'
+const DIALOG_SELECTOR = '[data-dialog-key="subscription-required"]'
+
+const CREATOR_YEARLY_PLAN = createPlan({
+  slug: 'creator-annual',
+  tier: 'CREATOR',
+  duration: 'ANNUAL',
+  priceCents: 33_600,
+  monthlyCredits: 7_400
+})
 
 /**
  * Re-mocks `/features` (the subscription gate) and `/billing/capabilities`
@@ -84,7 +96,7 @@ async function sendMessageExpectingPaywall(page: Page) {
 
   await mockNoFundsOnNextTurn(page)
 
-  const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+  const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   const sendButton = panel.getByRole('button', {
     name: enMessages.agent.send
   })
@@ -106,8 +118,18 @@ agentTest.describe(
   'Agent paywall Subscribe action',
   { tag: ['@cloud', '@ui'] },
   () => {
+    agentTest.beforeEach(async ({ page }) => {
+      await page.route('**/api/billing/plans', (route) =>
+        route.fulfill(
+          jsonRoute({
+            plans: [CREATOR_YEARLY_PLAN]
+          } satisfies BillingPlansResponse)
+        )
+      )
+    })
+
     agentTest(
-      'opens the subscription dialog once the config gate is open',
+      'opens the platform Plans page once the config gate is open',
       async ({ page, agentPanel }, testInfo) => {
         await reconfigureBilling(page, { subscriptionRequired: true })
 
@@ -120,15 +142,7 @@ agentTest.describe(
           contentType: 'image/png'
         })
 
-        await subscribeButton.click()
-
-        const dialog = page.locator(DIALOG_SELECTOR)
-        await expect(dialog).toBeVisible()
-
-        await testInfo.attach('subscription-dialog-opened', {
-          body: await page.screenshot({ animations: 'disabled' }),
-          contentType: 'image/png'
-        })
+        await expectPlatformPlansOpened(page, () => subscribeButton.click())
       }
     )
 

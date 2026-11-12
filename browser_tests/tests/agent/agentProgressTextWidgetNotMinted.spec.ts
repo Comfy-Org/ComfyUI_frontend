@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import {
   AgentNonValueWidgetRig,
@@ -19,7 +19,6 @@ const NODE_ID = 501
 const WORKFLOW_ID = 'c4e2d5b3-0000-4000-8000-000000000060'
 const MESSAGE_ID = 'c4e2d5b3-0000-4000-8000-000000000061'
 const THREAD_ID = 'c4e2d5b3-0000-4000-8000-000000000062'
-const SOCKET_SID = 'c4e2d5b3-0000-4000-8000-000000000063'
 
 const PREVIEW_WIDGET = '$$node-text-preview'
 const SEED_VALUE = 111111
@@ -78,7 +77,6 @@ const rigConfig = {
   nodeDefs: { [NODE_TYPE]: nodeDef },
   samplerNodeId: NODE_ID,
   seed,
-  socketSid: SOCKET_SID,
   threadId: THREAD_ID,
   visibleNodeId: NODE_ID,
   workflowId: WORKFLOW_ID

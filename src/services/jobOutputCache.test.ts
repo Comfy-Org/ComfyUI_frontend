@@ -2,13 +2,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import { api } from '@/scripts/api'
-import type {
-  JobDetail,
-  JobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
   findActiveIndex,
   getJobAssets,
@@ -20,17 +17,9 @@ import {
 import { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), { spy: true })
+vi.mock(import('@comfyorg/api-client/fetchJobs'), { spy: true })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getJobDetail: vi.fn(),
-    getJobAssets: vi.fn(),
-    apiURL: vi.fn((path: string) => `/api${path}`),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function createResultItem(
   url: string,
@@ -358,6 +347,26 @@ describe('jobOutputCache', () => {
       const result = await getJobDetail(jobId)
 
       expect(result).toBeUndefined()
+    })
+
+    it('shares pending detail requests and retries after a failure', async () => {
+      const jobId = uniqueId('pending-detail')
+      const detail: JobDetail = {
+        id: jobId,
+        status: 'completed',
+        create_time: 123,
+        priority: 0,
+        outputs: {}
+      }
+      vi.mocked(api.getJobDetail)
+        .mockRejectedValueOnce(new Error('Offline'))
+        .mockResolvedValueOnce(detail)
+
+      expect(
+        await Promise.all([getJobDetail(jobId), getJobDetail(jobId)])
+      ).toEqual([undefined, undefined])
+      expect(await getJobDetail(jobId)).toEqual(detail)
+      expect(api.getJobDetail).toHaveBeenCalledTimes(2)
     })
   })
 

@@ -303,6 +303,52 @@ describe('useAssetsQuery recovery after a failed page', () => {
   })
 })
 
+describe('useAssetsQuery refresh propagation', () => {
+  it.for([
+    { operation: 'loadNew', sourceIds: [] },
+    { operation: 'loadNew', sourceIds: ['source-only'] },
+    { operation: 'invalidate', sourceIds: [] },
+    { operation: 'invalidate', sourceIds: ['source-only'] }
+  ] as const)(
+    'refreshes disjoint queries after $operation with source $sourceIds',
+    async ({ operation, sourceIds }) => {
+      let added = false
+      vi.mocked(api.fetchApi).mockImplementation(async (url) => {
+        const tags = new URL(url, 'http://localhost').searchParams.get(
+          'tags_any'
+        )
+        const previous = tags === 'input' ? [...sourceIds] : ['other-root']
+        return response(added ? ['new-input', ...previous] : previous, {
+          hasMore: tags !== 'input' && sourceIds.length > 0,
+          nextCursor: 'older'
+        })
+      })
+      const scope = effectScope()
+      onTestFinished(() => scope.stop())
+      const lists = scope.run(() => ({
+        source: useAssetsQuery({ tags_any: ['input'] }),
+        all: useAssetsQuery({ tags_any: ['input', 'output', 'temp'] })
+      }))!
+      await vi.waitFor(() => {
+        expect(toValue(lists.source.isLoading)).toBe(false)
+        expect(toValue(lists.all.isLoading)).toBe(false)
+      })
+
+      added = true
+      await lists.source[operation]()
+
+      expect(toValue(lists.source.items).map(({ id }) => id)).toEqual([
+        'new-input',
+        ...sourceIds
+      ])
+      expect(toValue(lists.all.items).map(({ id }) => id)).toEqual([
+        'new-input',
+        'other-root'
+      ])
+    }
+  )
+})
+
 describe('useAssetsQuery stale invalidation', () => {
   it('preserves concurrent invalidations across an in-flight page', async () => {
     const list = await createList(

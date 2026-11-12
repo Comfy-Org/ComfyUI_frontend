@@ -3,11 +3,15 @@ import { readFileSync } from 'fs'
 import { expect } from '@playwright/test'
 import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
-import type { AppMode } from '@/utils/appMode'
+import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
+import {
+  zComfyWorkflow,
+  zComfyWorkflow1
+} from '@comfyorg/graph-model/workflowSchema'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -69,6 +73,33 @@ export class WorkflowHelper {
     )
   }
 
+  async getDraftWorkflows(): Promise<ComfyWorkflowJSON[]> {
+    const workflows = await this.comfyPage.page.evaluate(() => {
+      const workflows: unknown[] = []
+      for (const key of Object.keys(localStorage)) {
+        if (!key.startsWith('Comfy.Workflow.Draft.v2:')) continue
+        const rawPayload = localStorage.getItem(key)
+        if (rawPayload === null) continue
+
+        const payload: unknown = JSON.parse(rawPayload)
+        if (
+          typeof payload !== 'object' ||
+          payload === null ||
+          !('data' in payload) ||
+          typeof payload.data !== 'string'
+        ) {
+          throw new Error('Draft payload has no workflow JSON')
+        }
+        const workflow: unknown = JSON.parse(payload.data)
+        workflows.push(workflow)
+      }
+      return workflows
+    })
+    return workflows.map((workflow) =>
+      zComfyWorkflow.or(zComfyWorkflow1).parse(workflow)
+    )
+  }
+
   /** Waits for V2 draft index recency, not payload content freshness. */
   async waitForDraftIndexUpdatedSince(updatedSince: number) {
     await this.comfyPage.page.waitForFunction((indexUpdatedSince) => {
@@ -119,6 +150,13 @@ export class WorkflowHelper {
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()
     }
+  }
+
+  async loadWorkflowData(workflowName: string) {
+    const workflow = zComfyWorkflow.parse(
+      JSON.parse(readFileSync(assetPath(`${workflowName}.json`), 'utf-8'))
+    )
+    await this.loadGraphData(workflow)
   }
 
   async loadWorkflow(workflowName: string) {
@@ -255,6 +293,16 @@ export class WorkflowHelper {
   async switchToTab(tabName: string): Promise<void> {
     await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
     await this.waitForWorkflowIdle()
+  }
+
+  /** A saved workflow's tab, opened and confirmed unmodified with no `*` title. */
+  async expectTabOpensAsSaved(tabName: string): Promise<void> {
+    await this.switchToTab(tabName)
+    await expect
+      .poll(() => this.comfyPage.menu.topbar.getActiveTabName())
+      .toBe(tabName)
+    await expect.poll(() => this.isCurrentWorkflowModified()).toBe(false)
+    await expect.poll(() => this.comfyPage.page.title()).not.toMatch(/^\*/)
   }
 
   /** Node ids on the live graph, read from LiteGraph rather than the DOM. */

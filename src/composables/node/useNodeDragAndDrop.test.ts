@@ -111,6 +111,28 @@ describe('useNodeDragAndDrop', () => {
     expect(onDrop).toHaveBeenCalledWith([keep])
   })
 
+  it('onDragDrop passes an untyped HDR file to an image filter as an image', async () => {
+    const onDrop = vi.fn().mockResolvedValue([])
+    const node = createNode()
+
+    useNodeDragAndDrop(node, {
+      onDrop,
+      fileFilter: (file) => file.type.startsWith('image/')
+    })
+
+    const result = await node.onDragDrop?.(
+      createDragEvent({
+        files: [createFile('sky.exr', '')],
+        items: [{ kind: 'file' }]
+      })
+    )
+
+    expect(result).toBe(true)
+    expect(onDrop).toHaveBeenCalledWith([
+      expect.objectContaining({ name: 'sky.exr', type: 'image/x-exr' })
+    ])
+  })
+
   it('onDragDrop returns false for invalid drops', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
     const node = createNode()
@@ -170,7 +192,11 @@ describe('useNodeDragAndDrop', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('onDragDrop handles same-origin uri drops', async () => {
+  it('onDragDrop handles same-origin uri drops without URL.parse', async () => {
+    vi.stubGlobal(
+      'URL',
+      Object.assign(class extends URL {}, { parse: undefined })
+    )
     const onDrop = vi.fn().mockResolvedValue([])
     vi.mocked(fetch).mockResolvedValue(
       fromAny<Response, unknown>({
@@ -196,31 +222,65 @@ describe('useNodeDragAndDrop', () => {
     expect(onDrop.mock.calls[0][0][0].name).toBe('uri.png')
   })
 
-  it('onDragDrop names a fetched asset-card file after its asset-info filename', async () => {
-    const onDrop = vi.fn().mockResolvedValue([])
-    vi.mocked(fetch).mockResolvedValue(
-      fromAny<Response, unknown>({
-        ok: true,
-        blob: vi
-          .fn()
-          .mockResolvedValue(new Blob(['uri'], { type: 'audio/wav' }))
-      })
-    )
+  it.for([
+    { assetInfo: { filename: 'clip.wav' }, name: 'clip.wav' },
+    {
+      assetInfo: { filename: 'aa7ecf08.wav', display_name: 'clip.wav' },
+      name: 'clip.wav'
+    },
+    {
+      assetInfo: { filename: 'clip.wav', display_name: 'renders/clip.wav' },
+      name: 'clip.wav'
+    },
+    {
+      assetInfo: { filename: 'aa7ecf08.wav', display_name: 'My clip' },
+      name: 'aa7ecf08.wav'
+    },
+    {
+      assetInfo: { filename: 'aa7ecf08.wav', display_name: 'clip.mp3' },
+      name: 'aa7ecf08.wav'
+    },
+    { assetInfo: { filename: 'clip.wav', display_name: '' }, name: 'clip.wav' },
+    {
+      assetInfo: { filename: 'aa7ecf08.wav', display_name: 'Take.WAV' },
+      name: 'Take.WAV'
+    },
+    {
+      assetInfo: { filename: 'aa7ecf08.wav', display_name: '..\\clip.wav' },
+      name: 'aa7ecf08.wav'
+    },
+    {
+      assetInfo: { filename: 'aa7ecf08.wav', display_name: 'Take 1: clip.wav' },
+      name: 'aa7ecf08.wav'
+    }
+  ])(
+    'onDragDrop names a fetched asset-card file $name from asset info $assetInfo',
+    async ({ assetInfo, name }) => {
+      const onDrop = vi.fn().mockResolvedValue([])
+      vi.mocked(fetch).mockResolvedValue(
+        fromAny<Response, unknown>({
+          ok: true,
+          blob: vi
+            .fn()
+            .mockResolvedValue(new Blob(['uri'], { type: 'audio/wav' }))
+        })
+      )
 
-    const node = createNode()
-    useNodeDragAndDrop(node, { onDrop })
+      const node = createNode()
+      useNodeDragAndDrop(node, { onDrop })
 
-    const result = await node.onDragDrop?.(
-      createDragEvent({
-        uri: `${location.origin}/api/assets/asset-1/content`,
-        types: ['text/uri-list', MIME_ASSET_INFO],
-        assetInfo: JSON.stringify({ filename: 'clip.wav' })
-      })
-    )
+      const result = await node.onDragDrop?.(
+        createDragEvent({
+          uri: `${location.origin}/api/assets/asset-1/content`,
+          types: ['text/uri-list', MIME_ASSET_INFO],
+          assetInfo: JSON.stringify(assetInfo)
+        })
+      )
 
-    expect(result).toBe(true)
-    expect(onDrop.mock.calls[0][0][0].name).toBe('clip.wav')
-  })
+      expect(result).toBe(true)
+      expect(onDrop.mock.calls[0][0][0].name).toBe(name)
+    }
+  )
 
   it('onDragDrop returns false for cross-origin uri drops', async () => {
     const node = createNode()

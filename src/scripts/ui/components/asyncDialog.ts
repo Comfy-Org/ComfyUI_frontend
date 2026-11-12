@@ -1,5 +1,5 @@
-import { $el } from '../utils'
-import { ComfyDialog } from '../dialog'
+import { $el } from '@/scripts/ui/utils'
+import { ComfyDialog } from '@/scripts/ui/dialog'
 
 type DialogAction<T> = string | { value?: T; text: string }
 

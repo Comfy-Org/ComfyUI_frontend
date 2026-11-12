@@ -11,24 +11,27 @@ const Layout = defineComponent({
   }
 })
 
-const root = () => document.documentElement.classList
+const rootStyle = () => document.documentElement.style
 
 describe('useDocumentDarkTheme', () => {
-  afterEach(() => root().remove('dark-theme'))
-
-  it('darkens the document while the layout is mounted', () => {
-    const { unmount } = render(Layout)
-    expect(root().contains('dark-theme')).toBe(true)
-
-    unmount()
-    expect(root().contains('dark-theme')).toBe(false)
+  afterEach(() => {
+    rootStyle().cssText = ''
   })
 
-  it('leaves a dark theme the app already set', () => {
-    root().add('dark-theme')
+  it('applies the dark palette over a light one while mounted and restores it after', () => {
+    rootStyle().setProperty('--background', '#ffffff')
+    rootStyle().colorScheme = 'light'
 
-    render(Layout).unmount()
+    const { unmount } = render(Layout)
+    expect([
+      rootStyle().getPropertyValue('--background'),
+      rootStyle().colorScheme
+    ]).toEqual(['#171718', 'dark'])
 
-    expect(root().contains('dark-theme')).toBe(true)
+    unmount()
+    expect([
+      rootStyle().getPropertyValue('--background'),
+      rootStyle().colorScheme
+    ]).toEqual(['#ffffff', 'light'])
   })
 })

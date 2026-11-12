@@ -2,7 +2,7 @@ import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 
 import nodeFrequencies from '../../public/assets/sorted-custom-node-map.json' with { type: 'json' }
-import { useNodeFrequencyStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 
 describe('useNodeFrequencyStore', () => {
   it('loads independent rankings for both Save Image node definitions', async () => {

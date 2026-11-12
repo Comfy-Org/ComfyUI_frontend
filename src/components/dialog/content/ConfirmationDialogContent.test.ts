@@ -148,5 +148,18 @@ describe('ConfirmationDialogContent', () => {
 
       expect(onConfirm).toHaveBeenCalledWith(true)
     })
+
+    it('uses the provided confirmLabel for the save button', async () => {
+      const onConfirm = vi.fn()
+      const { user } = renderComponent({
+        type: 'dirtyClose',
+        confirmLabel: 'Save and switch',
+        onConfirm
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Save and switch' }))
+
+      expect(onConfirm).toHaveBeenCalledWith(true)
+    })
   })
 })

@@ -23,10 +23,6 @@ test.describe(
       await expect(comfyPage.vueNodes.nodes).toHaveCount(3)
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('plain title click replaces the previous node selection', async ({
       comfyPage
     }) => {
@@ -34,16 +30,16 @@ test.describe(
       const b = await comfyPage.vueNodes.getFixtureByTitle('Node B')
 
       await a.title.click()
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveAttribute(
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveAttribute(
         'data-node-id',
         '1'
       )
       await b.title.click()
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveAttribute(
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveAttribute(
         'data-node-id',
         '2'
       )
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(1)
     })
 
     test('shift-click adds a node and shows the multi-selection toolbox', async ({
@@ -55,9 +51,9 @@ test.describe(
       await a.title.click()
       await b.title.click({ modifiers: ['Shift'] })
 
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
-      await expect(a.root).toHaveClass(/outline-node-component-outline/)
-      await expect(b.root).toHaveClass(/outline-node-component-outline/)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
+      await expect(a.root).toHaveAttribute('data-emphasized', 'true')
+      await expect(b.root).toHaveAttribute('data-emphasized', 'true')
       await expect(comfyPage.selectionToolbox).toBeVisible()
     })
 
@@ -69,11 +65,11 @@ test.describe(
 
       await a.title.click()
       await b.title.click({ modifiers: ['Shift'] })
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
       await a.title.click({ modifiers: ['Control'] })
 
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveAttribute(
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(1)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveAttribute(
         'data-node-id',
         '2'
       )
@@ -83,12 +79,12 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.keyboard.selectAll()
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(3)
       await expect(comfyPage.selectionToolbox).toBeVisible()
 
       await comfyPage.canvasOps.click({ x: 100, y: 100 })
 
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(0)
       await expect(comfyPage.selectionToolbox).toBeHidden()
     })
 
@@ -97,13 +93,13 @@ test.describe(
     }) => {
       const a = await comfyPage.vueNodes.getFixtureByTitle('Node A')
       await a.title.click()
-      await expect(a.root).toHaveClass(/outline-node-component-outline/)
+      await expect(a.root).toHaveAttribute('data-emphasized', 'true')
       await expect(comfyPage.selectionToolbox).toBeVisible()
 
       await comfyPage.page.evaluate(() => window.app!.canvas.selectItems([]))
 
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
-      await expect(a.root).not.toHaveClass(/outline-node-component-outline/)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(0)
+      await expect(a.root).not.toHaveAttribute('data-emphasized', 'true')
       await expect(comfyPage.selectionToolbox).toBeHidden()
     })
 
@@ -115,8 +111,8 @@ test.describe(
 
       await a.title.click()
       await marqueeAround(comfyPage, pair)
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
-      await expect(a.root).not.toHaveClass(/outline-node-component-outline/)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
+      await expect(a.root).not.toHaveAttribute('data-emphasized', 'true')
       await expect(comfyPage.selectionToolbox).toBeVisible()
     })
 
@@ -127,14 +123,14 @@ test.describe(
       const pair = comfyPage.vueNodes.getNodeByTitle(/^Node [BC]$/)
 
       await a.title.click()
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(1)
 
       await comfyPage.canvas.focus()
       await using shift = await comfyPage.keyboard.hold('Shift')
       await marqueeAround(comfyPage, pair)
       await shift.disposeAsync()
 
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(3)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(3)
     })
 
     test('dragging an unselected node replaces selection and moves only that node', async ({
@@ -146,7 +142,7 @@ test.describe(
       const c = await comfyPage.vueNodes.getFixtureByTitle('Node C')
       await a.title.click()
       await c.title.click({ modifiers: ['Shift'] })
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
       const aBefore = await a.boundingBox()
       const bBefore = await b.boundingBox()
       const cBefore = await c.boundingBox()
@@ -155,8 +151,8 @@ test.describe(
 
       await comfyMouse.dragElementBy(b.title, { x: 80, y: 40 })
 
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveAttribute(
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(1)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveAttribute(
         'data-node-id',
         '2'
       )
@@ -177,7 +173,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       await expect(comfyPage.selectionToolbox).toBeVisible()
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(0)
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() =>
@@ -203,10 +199,10 @@ test.describe(
         const title = await getGroupTitlePosition(comfyPage, 'Pair')
         await comfyPage.page.mouse.click(title.x, title.y)
         await comfyPage.nextFrame()
-        await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
-        await expect(comfyPage.vueNodes.getNodeLocator('1')).not.toHaveClass(
-          /outline-node-component-outline/
-        )
+        await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
+        await expect(
+          comfyPage.vueNodes.getNodeLocator('1')
+        ).not.toHaveAttribute('data-emphasized', 'true')
         await expect(comfyPage.selectionToolbox).toBeVisible()
 
         await comfyPage.canvas.focus()
@@ -215,11 +211,7 @@ test.describe(
         await comfyPage.nextFrame()
         await shift.disposeAsync()
 
-        test.fail(
-          true,
-          'FE-2040 / #7454: toggling a group off leaves its cascaded children selected'
-        )
-        await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+        await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(0)
         await expect(comfyPage.selectionToolbox).toBeHidden()
       })
 
@@ -227,7 +219,7 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.vueNodes.selectNodes(['2', '3'])
-        await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
+        await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
         const title = await getGroupTitlePosition(comfyPage, 'Pair')
         await comfyPage.page.mouse.click(title.x, title.y, { button: 'right' })
         await comfyPage.nextFrame()
@@ -237,7 +229,7 @@ test.describe(
           comfyPage.contextMenu.menuItem('Fit Group To Nodes')
         ).toBeVisible()
         await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
-        await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+        await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(0)
         await expect
           .poll(() =>
             comfyPage.page.evaluate(() =>
@@ -261,7 +253,7 @@ test.describe(
       await comfyPage.workflow.switchToTab('Unsaved Workflow')
 
       await expect(a.root.getByTestId('node-title')).toBeHidden()
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(0)
       await expect(comfyPage.selectionToolbox).toBeHidden()
     })
 
@@ -278,7 +270,7 @@ test.describe(
         await comfyPage.vueNodes.enterSubgraph('11')
         const inner = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
         await inner.title.click()
-        await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(1)
+        await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(1)
         await expect(comfyPage.selectionToolbox).toBeVisible()
 
         await comfyPage.page.getByTestId(TestIds.breadcrumb.back).click()
@@ -286,7 +278,7 @@ test.describe(
         await expect(
           comfyPage.vueNodes.getNodeByTitle('New Subgraph')
         ).toBeVisible()
-        await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+        await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(0)
         await expect(comfyPage.selectionToolbox).toBeHidden()
       })
     })

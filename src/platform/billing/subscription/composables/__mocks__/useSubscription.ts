@@ -1,0 +1,36 @@
+import { onTestFinished, vi } from 'vitest'
+import { computed, ref } from 'vue'
+
+import type { useSubscription as realUseSubscription } from '@/platform/billing/subscription/composables/useSubscription'
+
+function reactiveDefaults() {
+  return {
+    canAccessSubscriptionFeatures: computed(() => true),
+    isInitialized: ref(true),
+    isCancelled: computed(() => false),
+    formattedRenewalDate: computed(() => ''),
+    formattedEndDate: computed(() => ''),
+    subscriptionTier: computed(() => null),
+    isFreeTier: computed(() => false),
+    subscriptionDuration: computed(() => null),
+    isYearlySubscription: computed(() => false),
+    subscriptionTierName: computed(() => ''),
+    subscriptionStatus: ref(null)
+  }
+}
+
+const subscription: ReturnType<typeof realUseSubscription> = {
+  ...reactiveDefaults(),
+  isSubscriptionEnabled: vi.fn(() => false),
+  fetchStatus: vi.fn(async () => undefined),
+  fetchStatusDirect: vi.fn(async () => null),
+  handleViewUsageHistory: vi.fn(),
+  handleLearnMore: vi.fn()
+}
+
+export const useSubscription = vi.fn(() => {
+  onTestFinished(() => {
+    Object.assign(subscription, reactiveDefaults())
+  })
+  return subscription
+})

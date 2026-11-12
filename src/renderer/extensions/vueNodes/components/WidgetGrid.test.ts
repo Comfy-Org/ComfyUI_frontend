@@ -1,7 +1,15 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { computed, defineComponent, h, markRaw, ref } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  defineComponent,
+  h,
+  markRaw,
+  nextTick,
+  ref
+} from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -14,36 +22,32 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-const observers = vi.hoisted(() => {
-  const observers: TestResizeObserver[] = []
-  class TestResizeObserver implements ResizeObserver {
-    elements = new Set<Element>()
-    constructor(readonly callback: ResizeObserverCallback) {
-      observers.push(this)
-    }
-    observe(element: Element) {
-      this.elements.add(element)
-    }
-    unobserve(element: Element) {
-      this.elements.delete(element)
-    }
-    disconnect() {
-      this.elements.clear()
-    }
-    resize(element: Element) {
-      if (this.elements.has(element)) {
-        this.callback(
-          [fromPartial<ResizeObserverEntry>({ target: element })],
-          this
-        )
-      }
+const observers: TestResizeObserver[] = []
+class TestResizeObserver implements ResizeObserver {
+  elements = new Set<Element>()
+  constructor(readonly callback: ResizeObserverCallback) {
+    observers.push(this)
+  }
+  observe(element: Element) {
+    this.elements.add(element)
+  }
+  unobserve(element: Element) {
+    this.elements.delete(element)
+  }
+  disconnect() {
+    this.elements.clear()
+  }
+  resize(element: Element) {
+    if (this.elements.has(element)) {
+      this.callback(
+        [fromPartial<ResizeObserverEntry>({ target: element })],
+        this
+      )
     }
   }
-  vi.stubGlobal('ResizeObserver', TestResizeObserver)
-  return observers
-})
+}
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'),
@@ -64,6 +68,11 @@ const WidgetStub = markRaw(
   })
 )
 
+const AttrsDroppingWidgetStub = defineComponent({
+  inheritAttrs: false,
+  template: '<div><input data-testid="widget-control" /></div>'
+})
+
 const InputSlotStub = defineComponent({
   props: {
     index: { type: Number, required: true },
@@ -78,8 +87,10 @@ const AppInputStub = defineComponent({
   props: {
     name: { type: String, required: true }
   },
-  template:
-    '<div data-testid="app-input" :data-widget-name="name"><slot /></div>'
+  template: `
+    <div data-testid="app-input" :data-widget-name="name"><slot /></div>
+    <span data-testid="app-input-sibling" />
+  `
 })
 
 function widget(name: string, type: string, index: number): WidgetGridItem {
@@ -113,7 +124,6 @@ function renderGrid(processedWidgets: WidgetGridItem[], syncLayout = true) {
           messages: { en: { g: { inputTooltip: 'Input: {name}' } } }
         })
       ],
-      directives: { tooltip: {} },
       stubs: { AppInput: AppInputStub }
     }
   })
@@ -139,6 +149,10 @@ function renderLayoutGrid(syncLayout = true) {
   const resizeGrid = () => {
     for (const observer of observers) observer.resize(grid)
   }
+  const resizeRow = () => {
+    const row = screen.getByTestId('node-widget')
+    for (const observer of observers) observer.resize(row)
+  }
   const stored = () =>
     layoutStore.getSlotOffset(
       'widget-grid-graph',
@@ -147,12 +161,13 @@ function renderLayoutGrid(syncLayout = true) {
       'input',
       'expanded'
     )
-  return { rerender, stored, moveSocket, resizeGrid }
+  return { rerender, stored, moveSocket, resizeGrid, resizeRow }
 }
 
 describe('WidgetGrid', () => {
   beforeEach(() => {
-    for (const observer of observers) observer.disconnect()
+    observers.length = 0
+    vi.stubGlobal('ResizeObserver', TestResizeObserver)
     useCanvasStore().canvas = fromPartial({
       canvas: document.createElement('canvas'),
       graph: fromPartial({ rootGraph: { id: 'widget-grid-graph' } }),
@@ -177,6 +192,18 @@ describe('WidgetGrid', () => {
         }
       ]
     })
+
+    expect(stored()).toEqual({ x: 0, y: 74 })
+  })
+
+  it('resyncs slot offsets when a row resizes inside a grid that keeps its size', async () => {
+    const { stored, moveSocket, resizeGrid, resizeRow } = renderLayoutGrid()
+    await nextTick()
+    resizeGrid()
+    expect(stored()).toEqual({ x: 0, y: 114 })
+
+    moveSocket(100)
+    resizeRow()
 
     expect(stored()).toEqual({ x: 0, y: 74 })
   })
@@ -299,7 +326,6 @@ describe('WidgetGrid', () => {
       render(Host, {
         global: {
           plugins: [testI18n],
-          directives: { tooltip: {} },
           stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
         }
       })
@@ -347,7 +373,6 @@ describe('WidgetGrid', () => {
         ]
       },
       global: {
-        directives: { tooltip: {} },
         stubs: {
           AppInput: AppInputStub,
           InputSlot: InputSlotStub
@@ -372,6 +397,38 @@ describe('WidgetGrid', () => {
     expect(screen.getAllByTestId('widget-control')).toHaveLength(2)
   })
 
+  it('anchors widget tooltips to async widgets that drop attrs inside fragment-root AppInputs', async () => {
+    const user = userEvent.setup()
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        processedWidgets: [
+          {
+            ...widget('seed', 'number', 0),
+            tooltipText: 'Widget value',
+            vueComponent: markRaw(
+              defineAsyncComponent(async () => AttrsDroppingWidgetStub)
+            )
+          }
+        ]
+      },
+      global: {
+        stubs: {
+          AppInput: AppInputStub,
+          InputSlot: InputSlotStub
+        }
+      }
+    })
+
+    await user.hover(await screen.findByTestId('widget-control'))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Widget value')
+    await waitFor(() =>
+      expect(screen.getByTestId('tooltip-content').style.animation).toBe('')
+    )
+  })
+
   it('passes execution errors to the widget control API', () => {
     render(WidgetGrid, {
       props: {
@@ -380,7 +437,6 @@ describe('WidgetGrid', () => {
         processedWidgets: [{ ...widget('seed', 'string', 0), hasError: true }]
       },
       global: {
-        directives: { tooltip: {} },
         stubs: { AppInput: AppInputStub, InputSlot: InputSlotStub }
       }
     })

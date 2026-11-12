@@ -3,7 +3,7 @@
  * Used by both AssetBrowser and FormDropdown
  */
 
-import type { AssetSortOption } from '../types/filterTypes'
+import type { AssetSortOption } from '@/platform/assets/types/filterTypes'
 
 /**
  * Minimal interface for sortable items

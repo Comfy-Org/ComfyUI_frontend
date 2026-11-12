@@ -1,9 +1,5 @@
-import type {
-  BillingFailed,
-  BillingStarted,
-  BillingSucceeded
-} from './stages.js'
-import type { BillingTierKey, PaymentIntentSource } from './vocabulary.js'
+import type { BillingFailed, BillingStarted, BillingSucceeded } from './stages'
+import type { BillingTierKey, PaymentIntentSource } from './vocabulary'
 
 export type DowngradeToPersonalBillingEvent = {
   operation: 'downgrade_to_personal'

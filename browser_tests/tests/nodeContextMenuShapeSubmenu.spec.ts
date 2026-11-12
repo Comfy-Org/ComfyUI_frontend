@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -21,9 +21,10 @@ test.describe(
     })
 
     async function expectShapeSubmenuVisible(comfyPage: ComfyPage) {
-      const submenu = comfyPage.page
-        .getByRole('menu')
-        .filter({ hasText: 'Default' })
+      const submenu = comfyPage.page.getByRole('menu', {
+        name: 'Shape',
+        exact: true
+      })
       await expect(submenu).toBeVisible()
       await expect(submenu).toContainText('Box')
       await expect(submenu).toContainText('Card')
@@ -91,7 +92,12 @@ test.describe(
     }) => {
       await openMoreOptionsMenu(comfyPage, 'KSampler')
 
-      await comfyPage.page.getByTestId('more-options-button').click()
+      await comfyPage.selectionToolbox
+        .getByRole('button', {
+          name: 'More Options',
+          exact: true
+        })
+        .click()
 
       await expect(comfyPage.contextMenu.ariaMenu).toBeHidden()
     })

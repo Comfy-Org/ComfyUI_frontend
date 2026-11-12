@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { NodeSearchService } from '@/services/nodeSearchService'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const EXAMPLE_NODE_DEFS: ComfyNodeDefImpl[] = (
   [

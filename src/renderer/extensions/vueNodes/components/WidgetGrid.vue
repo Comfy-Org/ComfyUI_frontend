@@ -2,7 +2,7 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3"
+    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] gap-y-(--node-widget-gap) pr-3 text-xs text-node-foreground"
     :style="{
       'grid-template-rows': gridTemplateRows,
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
@@ -53,25 +53,38 @@
               canSelectInputs && !row.widget.simplified.options?.disabled
             "
           >
-            <component
-              :is="row.widget.vueComponent"
-              v-tooltip.left="row.widget.tooltipConfig ?? EMPTY_TOOLTIP"
-              :model-value="row.widget.simplified.value"
-              :widget="row.widget.simplified"
-              :node-id
-              :node-type
-              :invalid="row.widget.hasError"
-              :aria-invalid="row.widget.hasError || undefined"
-              :class="
-                cn(
-                  'col-span-2',
-                  row.widget.hasError && 'font-bold text-node-stroke-error'
-                )
-              "
-              @update:model-value="row.widget.updateHandler"
-              @contextmenu="row.widget.handleContextMenu"
-              @removed="restoreRowFocus"
-            />
+            <Tooltip :disabled="!row.widget.tooltipText">
+              <TooltipTrigger as-child>
+                <div
+                  :class="
+                    cn(
+                      'grid min-w-0 grid-cols-1',
+                      row.rowSize === 'min-content' && 'self-center'
+                    )
+                  "
+                >
+                  <component
+                    :is="row.widget.vueComponent"
+                    :model-value="row.widget.simplified.value"
+                    :widget="row.widget.simplified"
+                    :node-id
+                    :node-type
+                    :node-title
+                    :invalid="row.widget.hasError"
+                    :aria-invalid="row.widget.hasError || undefined"
+                    :class="
+                      cn('col-span-full', row.widget.hasError && 'font-bold')
+                    "
+                    @update:model-value="row.widget.updateHandler"
+                    @contextmenu="row.widget.handleContextMenu"
+                    @removed="restoreRowFocus"
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="left">{{
+                row.widget.tooltipText
+              }}</TooltipContent>
+            </Tooltip>
           </AppInput>
         </div>
       </template>
@@ -80,21 +93,31 @@
 </template>
 
 <script setup lang="ts">
-import type { TooltipOptions } from 'primevue'
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  shallowRef,
+  useTemplateRef,
+  watch
+} from 'vue'
 
+import { useResizeObserver } from '@vueuse/core'
+
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
-const EMPTY_TOOLTIP: TooltipOptions = {}
 const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>
@@ -105,12 +128,14 @@ const {
   nodeType,
   canSelectInputs = false,
   nodeId,
+  nodeTitle,
   syncLayout = true
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
   canSelectInputs?: boolean
   nodeId?: NodeId
+  nodeTitle?: string
   syncLayout?: boolean
 }>()
 
@@ -234,13 +259,29 @@ const layoutKey = computed(() =>
     .join('|')
 )
 
+function syncOffsets() {
+  const rootGraphId = canvasStore.rootGraphId
+  if (syncLayout && grid.value && rootGraphId && nodeId) {
+    syncSlotOffsets(grid.value, rootGraphId, nodeId)
+  }
+}
+
+const rows = shallowRef<HTMLElement[]>([])
+useResizeObserver(rows, syncOffsets)
+
+function trackRows() {
+  rows.value =
+    syncLayout && nodeId && grid.value
+      ? [...grid.value.querySelectorAll<HTMLElement>('[data-widget-name]')]
+      : []
+}
+
+onMounted(trackRows)
 watch(
   layoutKey,
   () => {
-    const rootGraphId = canvasStore.rootGraphId
-    if (syncLayout && grid.value && rootGraphId && nodeId) {
-      syncSlotOffsets(grid.value, rootGraphId, nodeId)
-    }
+    trackRows()
+    syncOffsets()
   },
   { flush: 'post' }
 )

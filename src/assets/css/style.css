@@ -1,7 +1,17 @@
 @import '@comfyorg/design-system/css/style.css';
+@import '@comfyorg/mask-editor/ui/style.css';
+
+@source '../../../packages/layer-editor-ui/src';
+@source '../../../packages/mask-editor/src/ui';
 
 @theme {
   --comfy-canvas-gutter: calc(var(--spacing) * 2);
+}
+
+@layer base {
+  .pi {
+    font-size: 1rem;
+  }
 }
 
 /* The agent entry button sits in the topbar, outside the agent panel, so its
@@ -33,7 +43,7 @@
   background: linear-gradient(
     115deg,
     transparent 42%,
-    var(--color-base-foreground) 50%,
+    var(--color-foreground) 50%,
     transparent 58%
   );
   background-size: 200% auto;

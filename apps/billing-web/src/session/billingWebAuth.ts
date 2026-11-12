@@ -21,10 +21,18 @@ import { CLOUD_BASE_URL } from '@/config/env'
 import { resolveBillingWebIdentity } from '@/config/firebase'
 import { readBillingWebUnifiedWebSession } from '@/config/unifiedWebSession'
 import { bindEntryWorkspace, boundWorkspaceId } from '@/entry/workspaceBinding'
+import { createHandoffBillingSession } from '@/handoff/handoffBillingSession'
+import {
+  endHandoff,
+  handoffTab,
+  liveHandoffSession,
+  sessionTabStorage
+} from '@/handoff/handoffTab'
 import type { BillingWebSessionPhase } from '@/router'
 import type { BillingWebClient } from '@/session/billingWebClient'
 import {
   createBillingWebClient,
+  createHandoffBillingClient,
   createWebSessionBillingClient
 } from '@/session/billingWebClient'
 import {
@@ -48,6 +56,22 @@ interface BilledScope {
 const mode = shallowRef<WebSessionMode>()
 let decision: Promise<WebSessionMode> | undefined
 let unified: UnifiedBillingSession | undefined
+
+const isHandoffTab = () => handoffTab.value !== undefined
+
+const handoffScope = computed<BilledScope | undefined>(() => {
+  const session = liveHandoffSession(Date.now())
+  return (
+    session && {
+      uid: session.userId,
+      workspace: { id: session.workspace.id, name: session.workspace.name }
+    }
+  )
+})
+
+const handoffPhase = computed<BillingWebSessionPhase>(() =>
+  handoffScope.value ? 'authenticated' : 'signed-out'
+)
 
 function unifiedSession(): UnifiedBillingSession {
   unified ??= createUnifiedBillingSession({
@@ -78,6 +102,7 @@ function decideMode(): Promise<WebSessionMode> {
 export function billingWebPhase():
   | BillingWebSessionPhase
   | Promise<BillingWebSessionPhase> {
+  if (isHandoffTab()) return handoffPhase.value
   void decideMode()
   if (mode.value === 'web-session') return unifiedSession().settledPhase()
   return mode.value === 'session-client' ? billingWebSessionPhase() : 'pending'
@@ -108,6 +133,7 @@ function sessionClientState(): ReturnType<typeof useBillingWebSession> {
 
 /** Undefined until the mode is decided; `App` keys the billing shell by it. */
 export const billedScope = computed<BilledScope | undefined>(() => {
+  if (isHandoffTab()) return handoffScope.value
   if (mode.value === 'web-session') return unifiedSession().billedScope.value
   if (mode.value === undefined) return undefined
   return sessionClientState().session.value
@@ -116,6 +142,7 @@ export const billedScope = computed<BilledScope | undefined>(() => {
 /** The decided side's phase, for refusals that land after the page rendered. */
 export const billingWebLivePhase = computed<BillingWebSessionPhase | undefined>(
   () => {
+    if (isHandoffTab()) return handoffPhase.value
     if (mode.value === 'web-session') return unifiedSession().livePhase.value
     if (mode.value === undefined) return undefined
     return sessionClientState().phase.value
@@ -124,6 +151,7 @@ export const billingWebLivePhase = computed<BillingWebSessionPhase | undefined>(
 
 /** For views inside the billing shell, which only mounts once decided. */
 export function useBilledScope(): ComputedRef<BilledScope | undefined> {
+  if (isHandoffTab()) return handoffScope
   return mode.value === 'web-session'
     ? unifiedSession().billedScope
     : useBillingWebSession().session
@@ -177,6 +205,11 @@ provideWebSessionCloudRead(() => {
 })
 
 export function createModeBillingClient(): BillingWebClient {
+  if (isHandoffTab())
+    return createHandoffBillingClient(
+      createHandoffBillingSession(sessionTabStorage),
+      () => endHandoff(sessionTabStorage, 'session_ended')
+    )
   return mode.value === 'web-session'
     ? createWebSessionBillingClient(unifiedSession())
     : createBillingWebClient(billingWebSessionClient())

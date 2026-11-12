@@ -47,6 +47,7 @@ export const TestIds = {
     zoomPercentageInput: 'zoom-percentage-input'
   },
   dialogs: {
+    creditsLockedNotice: 'credits-locked-notice',
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
@@ -54,6 +55,7 @@ export const TestIds = {
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',
     errorOverlayMessages: 'error-overlay-messages',
+    errorOverlayDownloadAll: 'error-overlay-download-all-models',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
     missingNodePackExpand: 'missing-node-pack-expand',
@@ -94,7 +96,6 @@ export const TestIds = {
     cloudNotification: 'cloud-notification-dialog',
     openSharedWorkflow: 'open-shared-workflow-dialog',
     openSharedWorkflowTitle: 'open-shared-workflow-title',
-    openSharedWorkflowClose: 'open-shared-workflow-close',
     openSharedWorkflowErrorClose: 'open-shared-workflow-error-close',
     openSharedWorkflowCancel: 'open-shared-workflow-cancel',
     openSharedWorkflowOpenWithoutImporting:
@@ -177,12 +178,9 @@ export const TestIds = {
   },
   selectionToolbox: {
     root: 'selection-toolbox',
-    colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red',
-    convertSubgraph: 'convert-to-subgraph-button',
-    bypass: 'bypass-button'
+    colorRed: 'red'
   },
   helpCenter: {
     button: 'help-center-button',
@@ -194,6 +192,8 @@ export const TestIds = {
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
+    legacyCanvas: 'legacy-widget-canvas',
+    numberRow: 'widget-number-row',
     layoutFieldLabel: 'widget-layout-field-label',
     formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',
@@ -345,6 +345,7 @@ export const TestIds = {
   searchBoxV2: {
     resultItem: 'result-item',
     filterOption: 'filter-option',
+    typeFilterPopover: 'type-filter-popover',
     filterChip: 'filter-chip',
     chipDelete: 'chip-delete',
     noResults: 'no-results',

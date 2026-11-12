@@ -1,0 +1,179 @@
+import _ from 'es-toolkit/compat'
+import { once } from 'es-toolkit'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
+import { app, ComfyApp } from '@/scripts/app'
+import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
+import { useCanvasTransform } from '@comfyorg/mask-editor/useCanvasTransform'
+import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { isImageNode } from '@/utils/litegraphUtil'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import type { ComfyExtension } from '@/types/comfy'
+
+function openMaskEditor(node: LGraphNode): void {
+  if (!node.imgs?.length && node.previewMediaType !== 'image') {
+    console.error('[MaskEditor] Node has no images')
+    return
+  }
+
+  useMaskEditor().openMaskEditor(node)
+}
+
+// Open mask editor from clipspace (for plugin compatibility)
+// This is called when ComfyApp.open_maskeditor() is invoked without arguments
+function openMaskEditorFromClipspace(): void {
+  const node = ComfyApp.clipspace_return_node
+  if (!node) {
+    console.error('[MaskEditor] No clipspace_return_node found')
+    return
+  }
+
+  openMaskEditor(node)
+}
+
+const warnOpenMaskEditorDeprecated = once(() =>
+  console.warn(
+    '[MaskEditor] ComfyApp.open_maskeditor is deprecated. ' +
+      'Plugins should migrate to using the command system or direct node context menu integration.'
+  )
+)
+
+// Check if the dialog is already opened
+function isOpened(): boolean {
+  return useDialogStore().isDialogOpen('global-mask-editor')
+}
+
+const changeBrushSize = async (sizeChanger: (oldSize: number) => number) => {
+  if (!isOpened()) return
+
+  const store = useMaskEditorStore()
+  const oldBrushSize = store.brushSettings.size
+  const newBrushSize = sizeChanger(oldBrushSize)
+  store.setBrushSize(newBrushSize)
+}
+
+export const maskEditorExtension: ComfyExtension = {
+  name: 'Comfy.MaskEditor',
+  settings: [
+    {
+      id: 'Comfy.MaskEditor.BrushAdjustmentSpeed',
+      category: ['Mask Editor', 'BrushAdjustment', 'Sensitivity'],
+      name: 'Brush adjustment speed multiplier',
+      tooltip:
+        'Controls how quickly the brush size and hardness change when adjusting. Higher values mean faster changes.',
+      type: 'slider',
+      attrs: {
+        min: 0.1,
+        max: 2.0,
+        step: 0.1
+      },
+      defaultValue: 1.0,
+      versionAdded: '1.0.0'
+    },
+    {
+      id: 'Comfy.MaskEditor.UseDominantAxis',
+      category: ['Mask Editor', 'BrushAdjustment', 'UseDominantAxis'],
+      name: 'Lock brush adjustment to dominant axis',
+      tooltip:
+        'When enabled, brush adjustments will only affect size OR hardness based on which direction you move more',
+      type: 'boolean',
+      defaultValue: true
+    }
+  ],
+  commands: [
+    {
+      id: 'Comfy.MaskEditor.OpenMaskEditor',
+      icon: 'icon-[lucide--pencil]',
+      label: 'Open Mask Editor for Selected Node',
+      function: () => {
+        const selectedNodes = selectedCanvasNodes(app.canvas)
+        if (selectedNodes.length !== 1) return
+
+        const [selectedNode] = selectedNodes
+        openMaskEditor(selectedNode)
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.BrushSize.Increase',
+      icon: 'icon-[lucide--circle-plus]',
+      label: 'Increase Brush Size in MaskEditor',
+      function: () => changeBrushSize((old) => _.clamp(old + 2, 1, 250))
+    },
+    {
+      id: 'Comfy.MaskEditor.BrushSize.Decrease',
+      icon: 'icon-[lucide--circle-minus]',
+      label: 'Decrease Brush Size in MaskEditor',
+      function: () => changeBrushSize((old) => _.clamp(old - 2, 1, 250))
+    },
+    {
+      id: 'Comfy.MaskEditor.ColorPicker',
+      icon: 'icon-[lucide--palette]',
+      label: 'Open Color Picker in MaskEditor',
+      function: () => {
+        if (!isOpened()) return
+
+        const store = useMaskEditorStore()
+        store.colorInput?.click()
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.Rotate.Right',
+      icon: 'icon-[lucide--rotate-cw]',
+      label: 'Rotate Right in MaskEditor',
+      function: async () => {
+        if (!isOpened()) return
+        await useCanvasTransform().rotateClockwise()
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.Rotate.Left',
+      icon: 'icon-[lucide--undo-2]',
+      label: 'Rotate Left in MaskEditor',
+      function: async () => {
+        if (!isOpened()) return
+        await useCanvasTransform().rotateCounterclockwise()
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.Mirror.Horizontal',
+      icon: 'icon-[lucide--move-horizontal]',
+      label: 'Mirror Horizontal in MaskEditor',
+      function: async () => {
+        if (!isOpened()) return
+        await useCanvasTransform().mirrorHorizontal()
+      }
+    },
+    {
+      id: 'Comfy.MaskEditor.Mirror.Vertical',
+      icon: 'icon-[lucide--move-vertical]',
+      label: 'Mirror Vertical in MaskEditor',
+      function: async () => {
+        if (!isOpened()) return
+        await useCanvasTransform().mirrorVertical()
+      }
+    }
+  ],
+  beforeRegisterNodeDef(nodeType: typeof LGraphNode) {
+    const original = nodeType.prototype.getExtraMenuOptions
+    nodeType.prototype.getExtraMenuOptions = function (canvas, options) {
+      const extra = original?.call(this, canvas, options) ?? []
+      if (ComfyApp.clipspace_return_node || !isImageNode(this)) return extra
+
+      options.push({
+        content: 'Open in MaskEditor | Image Canvas',
+        callback: markCoreMediaMenuCallback(() => {
+          useMaskEditor().openMaskEditor(this)
+        }, 'preview')
+      })
+      return extra
+    }
+  },
+  init() {
+    ComfyApp.open_maskeditor = () => {
+      warnOpenMaskEditorDeprecated()
+      openMaskEditorFromClipspace()
+    }
+  }
+}

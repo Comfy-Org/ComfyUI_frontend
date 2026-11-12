@@ -1,19 +1,18 @@
+import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
-import { normalizeHostedBillingDestination } from '@/config/billingWeb'
+import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
-  cachedBillingControlEnabled,
-  cachedLegacyBillingMigrationEnabled,
-  cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig,
   sessionAgentGrant,
-  sessionAgentGrantValidUntil
+  sessionAgentGrantValidUntil,
+  useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -131,10 +130,18 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
     },
     get maxUploadSize() {
-      return api.getServerFeature(ServerFeatureFlag.MAX_UPLOAD_SIZE)
+      return api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
+        ServerFeatureFlag.MAX_UPLOAD_SIZE
+      )
     },
     get supportsManagerV4() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
+    },
+    /** ComfyUI's `agent` server feature; callers validate `state`. */
+    get agent() {
+      return api.getServerFeature<{ state?: unknown } | null | undefined>(
+        ServerFeatureFlag.AGENT
+      )
     },
     get modelUploadButtonEnabled() {
       return resolveFlag(
@@ -164,13 +171,6 @@ export function useFeatureFlags() {
         false
       )
     },
-    get linearToggleEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.LINEAR_TOGGLE_ENABLED,
-        remoteConfig.value.linear_toggle_enabled,
-        isNightly
-      )
-    },
     get partnerNodeGovernanceEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
@@ -185,6 +185,18 @@ export function useFeatureFlags() {
         true
       )
     },
+    get deploymentStartEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.DEPLOYMENT_START_ENABLED,
+        remoteConfig.value.deployment_start_enabled
+      )
+    },
+    get partnerNodeTokenEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.PARTNER_NODE_TOKEN,
+        remoteConfig.value.partner_node_token
+      )
+    },
     get userSecretsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.USER_SECRETS_ENABLED,
@@ -194,6 +206,16 @@ export function useFeatureFlags() {
     },
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+    },
+    get openOnCloudEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
+        remoteConfig.value.open_on_cloud_enabled,
+        import.meta.env.DEV
+      )
+    },
+    get deployToCloud() {
+      return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
     },
     get nodeLibraryEssentialsEnabled() {
       return resolveFlag(
@@ -213,6 +235,35 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
         remoteConfig.value.comfyhub_profile_gate_enabled,
+        false
+      )
+    },
+    get deploymentCompatibilityMarksEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED,
+        remoteConfig.value.deployment_compatibility_marks_enabled,
+        false
+      )
+    },
+    get runtimeLibraryModelsEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.RUNTIME_LIBRARY_MODELS_ENABLED,
+        remoteConfig.value.runtime_library_models_enabled,
+        false
+      )
+    },
+    /** The model folders an uploaded model file may go into; empty when uploads are off. */
+    get modelUploadFolders(): readonly string[] {
+      return resolveFlag<readonly string[]>(
+        ServerFeatureFlag.MODEL_UPLOAD_FOLDERS,
+        remoteConfig.value.model_upload_folders,
+        []
+      )
+    },
+    get lateCustomNodesEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.LATE_CUSTOM_NODES_ENABLED,
+        remoteConfig.value.late_custom_nodes_enabled,
         false
       )
     },
@@ -257,11 +308,20 @@ export function useFeatureFlags() {
         remoteConfig.value.sso_enabled
       )
     },
+    /** Browser sign-in for a local ComfyUI that Desktop does not host. */
+    get localWebSsoEnabled() {
+      if (isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.LOCAL_WEB_SSO,
+        remoteConfig.value.local_web_sso
+      )
+    },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig.value.billing_control_enabled,
-        cachedBillingControlEnabled
+        useRemoteConfigCache().cachedBillingControlEnabled
       )
     },
     get memberCreditLimitsEnabled() {
@@ -270,17 +330,16 @@ export function useFeatureFlags() {
         remoteConfig.value.member_credit_limits_enabled
       )
     },
-    get legacyBillingMigrationEnabled() {
-      return resolveAuthGatedFlag(
-        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
-        remoteConfig.value.legacy_billing_migration_enabled,
-        cachedLegacyBillingMigrationEnabled
+    get billingNewUxEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.BILLING_NEW_UX_ENABLED,
+        remoteConfig.value.billing_new_ux_enabled
       )
     },
-    get embeddedCheckoutEnabled() {
+    get billingAutoTopUpAtCheckoutEnabled() {
       return resolveStrictBooleanFlag(
-        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED,
-        remoteConfig.value.embedded_checked_enabled
+        ServerFeatureFlag.BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED,
+        remoteConfig.value.billing_auto_top_up_at_checkout_enabled
       )
     },
     get billingSdkTopupEnabled() {
@@ -302,21 +361,30 @@ export function useFeatureFlags() {
     get billingSdkSubscriptionRailEnabled() {
       return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
     },
+    get unifiedBillingSettingsEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
+        remoteConfig.value.unified_billing_settings
+      )
+    },
+    get pricingTableFallback() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.PRICING_TABLE_FALLBACK,
+        remoteConfig.value.pricing_table_fallback
+      )
+    },
+    get oauthConsentSwitchAccountEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED,
+        remoteConfig.value.oauth_consent_switch_account_enabled,
+        false
+      )
+    },
     get v1PaymentRecovery() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
         remoteConfig.value.v1_payment_recovery,
-        cachedV1PaymentRecovery
-      )
-    },
-    get freeTierJobAllowanceEnabled() {
-      const config = remoteConfig.value as typeof remoteConfig.value & {
-        free_tier_job_allowance_enabled?: boolean
-      }
-      return resolveFlag(
-        ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED,
-        config.free_tier_job_allowance_enabled,
-        false
+        useRemoteConfigCache().cachedV1PaymentRecovery
       )
     },
     get signupTurnstileMode() {
@@ -330,13 +398,6 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
         remoteConfig.value.supports_model_type_tags,
-        false
-      )
-    },
-    get onboardingTourEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.ONBOARDING_TOUR_ENABLED,
-        remoteConfig.value.onboarding_tour_enabled,
         false
       )
     },
@@ -377,11 +438,11 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,
-      [ServerFeatureFlag.LINEAR_TOGGLE_ENABLED]: flags.linearToggleEnabled,
       [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
         flags.partnerNodeGovernanceEnabled,
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
+      [ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED]: flags.openOnCloudEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
@@ -391,24 +452,26 @@ export function startFeatureFlagTelemetry() {
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
+      [ServerFeatureFlag.UNIFIED_WEB_SESSION]: flags.unifiedWebSessionEnabled,
       [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,
-      [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
-        flags.legacyBillingMigrationEnabled,
-      [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:
-        flags.embeddedCheckoutEnabled,
+      [ServerFeatureFlag.BILLING_NEW_UX_ENABLED]: flags.billingNewUxEnabled,
+      [ServerFeatureFlag.BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED]:
+        flags.billingAutoTopUpAtCheckoutEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
         flags.billingSdkSubscriptionEnabled,
+      [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
+        flags.unifiedBillingSettingsEnabled,
+      [ServerFeatureFlag.PRICING_TABLE_FALLBACK]: flags.pricingTableFallback,
+      [ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED]:
+        flags.oauthConsentSwitchAccountEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
-      [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
-        flags.freeTierJobAllowanceEnabled,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
-      [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,
       [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
         flags.agentInAppExperienceEnabled,
       assets: flags.assetsEnabled

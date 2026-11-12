@@ -1,4 +1,4 @@
-import type { NodeReplacementResponse } from '@/platform/nodeReplacement/types'
+import type { NodeReplacementResponse } from '@/platform/workflowErrors/nodeReplacement/types'
 
 /**
  * Mock node replacement mappings for e2e tests.
@@ -37,6 +37,50 @@ export const mockNodeReplacements: NodeReplacementResponse = {
         { new_id: 'scale_by', old_id: 'scale_by' }
       ],
       output_mapping: [{ new_idx: 0, old_idx: 0 }]
+    }
+  ]
+}
+
+/**
+ * Mirrors ComfyUI's built-in replacements whose targets use Autogrow and
+ * DynamicCombo inputs, or that omit `old_widget_ids`.
+ */
+export const mockDynamicInputReplacements: NodeReplacementResponse = {
+  E2E_OldImageBatch: [
+    {
+      new_node_id: 'BatchImagesNode',
+      old_node_id: 'E2E_OldImageBatch',
+      old_widget_ids: null,
+      input_mapping: [
+        { new_id: 'images.image0', old_id: 'image1' },
+        { new_id: 'images.image1', old_id: 'image2' }
+      ],
+      output_mapping: null
+    }
+  ],
+  E2E_OldImageScaleBy: [
+    {
+      new_node_id: 'ResizeImageMaskNode',
+      old_node_id: 'E2E_OldImageScaleBy',
+      old_widget_ids: ['upscale_method', 'scale_by'],
+      input_mapping: [
+        { new_id: 'input', old_id: 'image' },
+        { new_id: 'resize_type', set_value: 'scale by multiplier' },
+        { new_id: 'resize_type.multiplier', old_id: 'scale_by' },
+        { new_id: 'scale_method', old_id: 'upscale_method' }
+      ],
+      output_mapping: null
+    }
+  ],
+  E2E_OldAdapterLoader: [
+    {
+      new_node_id: 'ControlNetLoader',
+      old_node_id: 'E2E_OldAdapterLoader',
+      old_widget_ids: null,
+      input_mapping: [
+        { new_id: 'control_net_name', old_id: 't2i_adapter_name' }
+      ],
+      output_mapping: null
     }
   ]
 }

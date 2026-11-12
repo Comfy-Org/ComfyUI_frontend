@@ -8,6 +8,7 @@ import type { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { pagedItems } from '@/utils/pagedList'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
@@ -54,8 +55,9 @@ function renderTab() {
       stubs: {
         AssetsSidebarGridView: {
           props: ['assets'],
+          methods: { pagedItems },
           template:
-            '<ul data-testid="assets-grid"><li v-for="a in assets" :key="a.id">{{ a.name }}</li></ul>'
+            '<ul data-testid="assets-grid"><li v-for="a in pagedItems(assets)" :key="a.id">{{ a.name }}</li></ul>'
         },
         AssetsSidebarListView: true,
         MediaAssetFilterBar: true,

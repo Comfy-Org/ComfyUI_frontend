@@ -7,15 +7,14 @@ import { defineComponent } from 'vue'
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFeatureUsageTracker } from '@/platform/surveys/useFeatureUsageTracker'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-
-vi.mock(import('@/platform/telemetry/reportError'))
+import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 
 function deferred<T>() {
   let resolve: (value: T | PromiseLike<T>) => void = () => {}
@@ -29,19 +28,19 @@ async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
-// Mock the API
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false),
-    internalURL: vi.fn((path) => `mock-internal-url${path}`),
-    fileURL: vi.fn((path) => `mock-file-url${path}`),
-    apiURL: vi.fn((path) => `mock-api-url${path}`),
-    fetchApi: vi.fn(async () =>
-      Response.json({ name: 'kitten_cop.mp4', type: 'input' })
-    )
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+  vi.mocked(api.internalURL).mockImplementation(
+    (path) => `mock-internal-url${path}`
+  )
+  vi.mocked(api.fileURL).mockImplementation((path) => `mock-file-url${path}`)
+  vi.mocked(api.apiURL).mockImplementation((path) => `mock-api-url${path}`)
+  vi.mocked(api.fetchApi).mockImplementation(async () =>
+    Response.json({ name: 'kitten_cop.mp4', type: 'input' })
+  )
+})
 
 // loadGraphData resolves to the workflow it activated; the education card
 // binds to that, so the mock returns a per-test workflow object.
@@ -81,7 +80,7 @@ const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
   mockTrackTemplate: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+vi.mock<unknown>(import('@comfyorg/telemetry'), () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
 }))
@@ -102,17 +101,33 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-const { mockInputAssets } = vi.hoisted(() => ({
-  mockInputAssets: {
-    resolveTemplateInputAssets: vi.fn(async () => []),
-    startMissingTemplateInputDownloads: vi.fn()
-  }
-}))
-
-vi.mock(
-  import('@/platform/workflow/templates/utils/templateInputAssets'),
-  () => mockInputAssets
-)
+function createDesktopBridge() {
+  return {
+    isRemote: () => false,
+    getTemplateInputAssets: vi.fn<
+      NonNullable<ComfyDesktop2Bridge['getTemplateInputAssets']>
+    >(async () => [
+      {
+        assetId: 'kitten-video',
+        filename: 'kitten_cop.mp4',
+        mediaType: 'video',
+        previewUrl: 'https://example.com/kitten_cop.mp4',
+        availability: 'missing'
+      }
+    ]),
+    downloadTemplateInputAsset: vi.fn<
+      NonNullable<ComfyDesktop2Bridge['downloadTemplateInputAsset']>
+    >(async () => ({
+      status: 'accepted',
+      download: {
+        downloadId: 'kitten-download',
+        filename: 'kitten_cop.mp4',
+        progress: 0,
+        status: 'pending'
+      }
+    }))
+  } satisfies ComfyDesktop2Bridge
+}
 
 const { mockGraphSync } = vi.hoisted(() => ({
   mockGraphSync: { syncCompletedTemplateInputsWithCurrentGraph: vi.fn() }
@@ -407,38 +422,32 @@ describe('useTemplateWorkflows', () => {
     expect(loadingTemplateId.value).toBe(null) // Should reset after loading
   })
 
-  // 'all' is a category label, not a source: it resolves to the template's
-  // real sourceModule, so only the resolved value decides authorization.
   it.for([
     { sourceModule: 'default', expectedCalls: 1 },
     { sourceModule: 'some-extension', expectedCalls: 0 }
   ])(
-    'asks the host for input assets $expectedCalls times for $sourceModule',
+    'starts $expectedCalls native input downloads for $sourceModule',
     async ({ sourceModule, expectedCalls }) => {
-      mockDistributionIsDesktop.value = true
-      const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
+      const bridge = createDesktopBridge()
+      vi.stubGlobal('__comfyDesktop2', bridge)
+      const { loader } = mountTemplateWorkflows()
       mockWorkflowTemplatesStore.isLoaded = true
+      const prepared = await loader.prepareWorkflowTemplate(
+        'template1',
+        sourceModule
+      )
+      assert.exists(prepared)
 
-      await loadWorkflowTemplate('template1', sourceModule)
+      await loader.openPreparedWorkflowTemplate(prepared, {
+        downloadAssets: true
+      })
       await flushPromises()
 
-      // Only first-party templates may ask the host to fetch files.
-      expect(mockInputAssets.resolveTemplateInputAssets).toHaveBeenCalledTimes(
+      expect(bridge.downloadTemplateInputAsset).toHaveBeenCalledTimes(
         expectedCalls
       )
     }
   )
-
-  it('leaves input downloads to the host outside Desktop', async () => {
-    mockDistributionIsDesktop.value = false
-    const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
-    mockWorkflowTemplatesStore.isLoaded = true
-
-    await loadWorkflowTemplate('template1', 'default')
-    await flushPromises()
-
-    expect(mockInputAssets.resolveTemplateInputAssets).not.toHaveBeenCalled()
-  })
 
   it('rebinds completed inputs against the graph it just loaded', async () => {
     const { loadWorkflowTemplate } = mountTemplateWorkflows().loader
@@ -788,6 +797,225 @@ describe('useTemplateWorkflows', () => {
     return graph
   }
 
+  it('does not download or upload native Desktop samples before choosing how to open', async () => {
+    const bridge = createDesktopBridge()
+    vi.stubGlobal('__comfyDesktop2', bridge)
+    addVideoTemplate()
+    const { loader } = mountTemplateWorkflows()
+
+    const prepared = await loader.prepareWorkflowTemplate('video', 'default')
+    assert.exists(prepared)
+
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(bridge.getTemplateInputAssets).not.toHaveBeenCalled()
+    expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+    expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { name: 'native Desktop', legacyDesktop: false },
+    { name: 'legacy Desktop', legacyDesktop: true }
+  ])(
+    'opens direct URL and Getting Started templates without downloads on $name',
+    async ({ legacyDesktop }) => {
+      mockDistributionIsDesktop.value = legacyDesktop
+      const bridge = createDesktopBridge()
+      vi.stubGlobal('__comfyDesktop2', legacyDesktop ? undefined : bridge)
+      const graph = addVideoTemplate()
+      const { loader } = mountTemplateWorkflows()
+
+      expect(await loader.loadWorkflowTemplate('video', 'default')).toBe(
+        'loaded'
+      )
+
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(bridge.getTemplateInputAssets).not.toHaveBeenCalled()
+      expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        graph,
+        true,
+        true,
+        'video',
+        { openSource: 'template' }
+      )
+    }
+  )
+
+  it.for([
+    { name: 'malformed', isRemote: false },
+    {
+      name: 'throwing',
+      isRemote: () => {
+        throw new Error('Host detection failed')
+      }
+    }
+  ])(
+    'releases a direct template load after $name host detection and allows retry',
+    async ({ isRemote }) => {
+      const bridge = createDesktopBridge()
+      vi.stubGlobal('__comfyDesktop2', { ...bridge, isRemote })
+      addVideoTemplate()
+      const { loader } = mountTemplateWorkflows()
+
+      await expect(
+        loader.loadWorkflowTemplate('video', 'default')
+      ).resolves.toBe('not-started')
+
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(bridge.getTemplateInputAssets).not.toHaveBeenCalled()
+      expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
+        errorType: 'error_loading_template'
+      })
+
+      vi.stubGlobal('__comfyDesktop2', bridge)
+      await expect(
+        loader.loadWorkflowTemplate('video', 'default')
+      ).resolves.toBe('loaded')
+
+      expect(loader.loadingTemplateId.value).toBeNull()
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    {
+      name: 'local web',
+      nativeHost: false,
+      remote: undefined,
+      remoteFlag: undefined
+    },
+    {
+      name: 'remote Desktop',
+      nativeHost: true,
+      remote: () => true,
+      remoteFlag: undefined
+    },
+    {
+      name: 'older remote Desktop',
+      nativeHost: true,
+      remote: undefined,
+      remoteFlag: true
+    }
+  ])(
+    'preserves automatic sample preparation without native downloads on $name',
+    async ({ nativeHost, remote, remoteFlag }) => {
+      const bridge = { ...createDesktopBridge(), isRemote: remote }
+      vi.stubGlobal('__comfyDesktop2', nativeHost ? bridge : undefined)
+      vi.stubGlobal('__comfyDesktop2Remote', remoteFlag)
+      const graph = addVideoTemplate()
+      vi.mocked(fetch).mockImplementation(async (url) => {
+        if (String(url).startsWith('mock-internal-url'))
+          return Response.json([])
+        if (String(url).endsWith('.mp4')) return new Response('video')
+        return Response.json(graph)
+      })
+
+      expect(
+        await mountTemplateWorkflows().loader.loadWorkflowTemplate(
+          'video',
+          'default'
+        )
+      ).toBe('loaded')
+
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/upload/image',
+        expect.objectContaining({ method: 'POST' })
+      )
+      expect(bridge.getTemplateInputAssets).not.toHaveBeenCalled()
+      expect(bridge.downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('prepares native Desktop samples and starts input downloads only after opting in', async () => {
+    const bridge = createDesktopBridge()
+    vi.stubGlobal('__comfyDesktop2', bridge)
+    const graph = addVideoTemplate()
+    vi.mocked(fetch).mockImplementation(async (url) => {
+      if (String(url).startsWith('mock-internal-url')) return Response.json([])
+      if (String(url).endsWith('.mp4')) return new Response('video')
+      return Response.json(graph)
+    })
+    const { loader } = mountTemplateWorkflows()
+    const prepared = await loader.prepareWorkflowTemplate('video', 'default')
+    assert.exists(prepared)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+
+    expect(
+      await loader.openPreparedWorkflowTemplate(prepared, {
+        downloadAssets: true
+      })
+    ).toBe('loaded')
+    expect(api.fetchApi).toHaveBeenCalledWith(
+      '/upload/image',
+      expect.objectContaining({ method: 'POST' })
+    )
+    await vi.waitFor(() =>
+      expect(bridge.downloadTemplateInputAsset).toHaveBeenCalledWith(
+        'video',
+        'kitten-video'
+      )
+    )
+    expect(app.loadGraphData).toHaveBeenCalledOnce()
+  })
+
+  it('opens with present samples unchanged while downloading another missing native input', async () => {
+    const bridge = createDesktopBridge()
+    const inputAssets: NonNullable<
+      Awaited<ReturnType<typeof bridge.getTemplateInputAssets>>
+    > = [
+      {
+        assetId: 'kitten-video',
+        filename: 'kitten_cop.mp4',
+        mediaType: 'video',
+        previewUrl: 'https://example.com/kitten_cop.mp4',
+        availability: 'present'
+      },
+      {
+        assetId: 'other-video',
+        filename: 'other.mp4',
+        mediaType: 'video',
+        previewUrl: 'https://example.com/other.mp4',
+        availability: 'missing'
+      }
+    ]
+    bridge.getTemplateInputAssets.mockResolvedValue(inputAssets)
+    vi.stubGlobal('__comfyDesktop2', bridge)
+    const graph = addVideoTemplate()
+    const { loader } = mountTemplateWorkflows()
+    const prepared = await loader.prepareWorkflowTemplate('video', 'default')
+    assert.exists(prepared)
+
+    expect(
+      await loader.openPreparedWorkflowTemplate(prepared, {
+        downloadAssets: true,
+        inputAssets
+      })
+    ).toBe('loaded')
+
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(app.loadGraphData).toHaveBeenCalledWith(graph, true, true, 'video', {
+      openSource: 'template'
+    })
+    await vi.waitFor(() =>
+      expect(bridge.downloadTemplateInputAsset).toHaveBeenCalledExactlyOnceWith(
+        'video',
+        'other-video'
+      )
+    )
+  })
+
   it.for([
     { restoreNamed: false, positional: 'kitten_cop.mp4', named: 'stale.mp4' },
     { restoreNamed: true, positional: 'stale.mp4', named: 'kitten_cop.mp4' }
@@ -849,7 +1077,7 @@ describe('useTemplateWorkflows', () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       Response.json({ name: 'kitten_cop (1).mp4', type: 'input' })
     )
-    const refreshed = deferred<void>()
+    const refreshed = deferred<boolean>()
     vi.mocked(app.reloadNodeDefs).mockImplementation(() => refreshed.promise)
     const { loader } = mountTemplateWorkflows()
     const result = loader.loadWorkflowTemplate('video', 'default')
@@ -859,7 +1087,7 @@ describe('useTemplateWorkflows', () => {
     download.resolve(new Response('video'))
     await vi.waitFor(() => expect(app.reloadNodeDefs).toHaveBeenCalled())
     expect(app.loadGraphData).not.toHaveBeenCalled()
-    refreshed.resolve()
+    refreshed.resolve(true)
     expect(await result).toBe('loaded')
     expect(app.loadGraphData).toHaveBeenCalledWith(
       expect.objectContaining({

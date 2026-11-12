@@ -8,28 +8,32 @@
 
 import QuickLRU from '@alloc/quick-lru'
 
-import type {
-  JobDetail,
-  JobOutputAsset
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail, JobOutputAsset } from '@comfyorg/api-client/jobTypes'
 import {
   extractApiPrompt,
   extractWorkflow
-} from '@/platform/remote/comfyui/jobs/fetchJobs'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/fetchJobs'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { TaskOutput } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
-import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { findResultIndexByUrl } from '@/utils/resultItemUrl'
 import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
 
+/** The part of `TaskItemImpl` this cache reads; `queueStore` imports this module. */
+interface OutputsTask {
+  readonly jobId: string
+  readonly outputsCount: number | undefined
+  readonly previewableOutputs: readonly AugmentedResultItem[]
+  loadFullOutputs(): Promise<OutputsTask>
+}
+
 const MAX_TASK_CACHE_SIZE = 50
 const MAX_JOB_DETAIL_CACHE_SIZE = 50
 const MAX_JOB_ASSETS_CACHE_SIZE = 50
 
-const taskCache = new QuickLRU<string, TaskItemImpl>({
+const taskCache = new QuickLRU<string, OutputsTask>({
   maxSize: MAX_TASK_CACHE_SIZE
 })
 const jobDetailCache = new QuickLRU<string, JobDetail>({
@@ -38,6 +42,7 @@ const jobDetailCache = new QuickLRU<string, JobDetail>({
 const jobAssetsCache = new QuickLRU<string, JobOutputAsset[]>({
   maxSize: MAX_JOB_ASSETS_CACHE_SIZE
 })
+const inFlightJobDetails = new Map<string, Promise<JobDetail | undefined>>()
 const inFlightJobAssets = new Map<string, Promise<JobOutputAsset[]>>()
 
 // Track latest request to dedupe stale responses
@@ -57,7 +62,7 @@ export function findActiveIndex(
  * Returns null if a newer request superseded this one while loading.
  */
 export async function getOutputsForTask(
-  task: TaskItemImpl
+  task: OutputsTask
 ): Promise<AugmentedResultItem[] | null> {
   const requestId = task.jobId
   latestTaskRequestId = requestId
@@ -85,6 +90,7 @@ export async function getOutputsForTask(
     taskCache.set(requestId, loadedTask)
     return [...loadedTask.previewableOutputs]
   } catch (error) {
+    if (latestTaskRequestId !== requestId) return null
     console.warn('Failed to load full outputs, using preview:', error)
     return [...task.previewableOutputs]
   }
@@ -109,16 +115,22 @@ export async function getJobDetail(
   const cached = jobDetailCache.get(jobId)
   if (cached) return cached
 
-  try {
-    const detail = await api.getJobDetail(jobId)
-    if (detail) {
-      jobDetailCache.set(jobId, detail)
-    }
-    return detail
-  } catch (error) {
-    console.warn('Failed to fetch job detail:', error)
-    return undefined
-  }
+  const inFlight = inFlightJobDetails.get(jobId)
+  if (inFlight) return inFlight
+
+  const request = api
+    .getJobDetail(jobId)
+    .then((detail) => {
+      if (detail) jobDetailCache.set(jobId, detail)
+      return detail
+    })
+    .catch((error) => {
+      console.warn('Failed to fetch job detail:', error)
+      return undefined
+    })
+    .finally(() => inFlightJobDetails.delete(jobId))
+  inFlightJobDetails.set(jobId, request)
+  return request
 }
 
 /**

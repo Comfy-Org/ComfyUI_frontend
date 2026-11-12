@@ -24,6 +24,7 @@ import { pricingTableUrl } from '@/checkout/cloudLinks'
 import { awaitCheckoutUiVariant } from '@/config/checkoutUi'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
+import { HANDOFF_PATH, handoffTab, isHandoffPath } from '@/handoff/handoffTab'
 import {
   billingWebLivePhase,
   billingWebPhase,
@@ -36,7 +37,9 @@ import {
 } from '@/telemetry/webEntryTelemetry'
 import BillingHomeView from '@/views/BillingHomeView.vue'
 import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
+import TopupReturnView from '@/views/TopupReturnView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
+import HandoffEndedView from '@/views/HandoffEndedView.vue'
 import InvoicesView from '@/views/InvoicesView.vue'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
 import ResultView from '@/views/ResultView.vue'
@@ -48,6 +51,16 @@ import TopupRouteView from '@/views/TopupRouteView.vue'
 const APP_ENTRY_PATH = '/'
 
 export const SIGN_IN_PATH = '/sign-in'
+
+/** Where hosted top-up checkouts from Desktop and local builds land; shipped builds keep this URL. */
+export const TOPUP_RETURN_PATH = '/return/topup'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    /** Opens signed out, outside the entry contract and the billing shell. */
+    readonly public?: true
+  }
+}
 
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: EntryErrorView,
@@ -69,6 +82,17 @@ const routes: RouteRecordRaw[] = [
     path: SIGN_IN_PATH,
     name: 'sign-in',
     component: SignInView
+  },
+  {
+    path: HANDOFF_PATH,
+    name: 'handoff',
+    component: HandoffEndedView
+  },
+  {
+    path: TOPUP_RETURN_PATH,
+    name: 'topup-return',
+    component: TopupReturnView,
+    meta: { public: true }
   },
   ...BILLING_INTENTS.map((intent) => ({
     path: billingIntentPath(intent),
@@ -176,8 +200,9 @@ function leaveForHost(href: string): void {
 }
 
 /**
- * Billing is never public: every route but the sign-in page needs a live
- * workspace session, and `pending` is not one — a restored identity that
+ * Billing is never public beyond its `public` return pages, which read
+ * neither the entry nor the session: every other route but the sign-in page
+ * needs a live workspace session, and `pending` is not one — a restored identity that
  * mints afterwards is carried back by the sign-in page's own redirect.
  *
  * The entry is read before the guard runs, so a link we cannot read explains
@@ -227,7 +252,8 @@ export function createBillingRouter(
         reason: 'return_target_rewritten',
         to: entry.returnTo
       })
-    if (entry.workspaceId !== undefined) onEntryWorkspace(entry.workspaceId)
+    if (entry.workspaceId !== undefined && handoffTab.value === undefined)
+      onEntryWorkspace(entry.workspaceId)
     return true
   }
 
@@ -273,8 +299,28 @@ export function createBillingRouter(
     return admitEntry(arrival)
   }
 
+  async function guardHandoffTab(to: {
+    path: string
+    fullPath: string
+  }): Promise<boolean | string> {
+    const authenticated = (await readPhase()) === 'authenticated'
+    if (isHandoffPath(to.path)) {
+      recordBillingEntry(undefined)
+      return authenticated ? APP_ENTRY_PATH : true
+    }
+    if (to.path === SIGN_IN_PATH) return HANDOFF_PATH
+    if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
+    else if (!(await readEntry(to.fullPath))) return false
+    return authenticated || HANDOFF_PATH
+  }
+
   router.beforeEach(async (to) => {
     latestNavigation += 1
+    if (to.meta.public) {
+      recordBillingEntry(undefined)
+      return true
+    }
+    if (handoffTab.value !== undefined) return guardHandoffTab(to)
     if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
     else if (to.path !== SIGN_IN_PATH && !(await readEntry(to.fullPath)))
       return false

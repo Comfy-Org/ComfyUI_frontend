@@ -26,7 +26,7 @@
         >
           {{ t('auth.login.passwordLabel') }}
         </FieldLabel>
-        <PasswordInput
+        <AppPasswordInput
           v-bind="componentField"
           id="cloud-sign-in-password"
           autocomplete="current-password"
@@ -63,18 +63,17 @@
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
 import { Field as VeeField, useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Field from '@/components/ui/field/Field.vue'
-import FieldError from '@/components/ui/field/FieldError.vue'
-import FieldLabel from '@/components/ui/field/FieldLabel.vue'
-import Input from '@/components/ui/input/Input.vue'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Input from '@comfyorg/design-system/input/Input'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
+import Message from '@comfyorg/design-system/message/Message'
 import {
   CLOUD_AUTH_FIELD_CLASS,
   CLOUD_AUTH_LABEL_CLASS
@@ -100,7 +99,7 @@ const emit = defineEmits<{
 const emailInputId = 'cloud-sign-in-email'
 
 const { handleSubmit, meta } = useForm({
-  validationSchema: toTypedSchema(signInSchema),
+  validationSchema: signInSchema,
   initialValues: { email: '', password: '' }
 })
 

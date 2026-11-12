@@ -3,6 +3,7 @@ import { expect, test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 
 import { HERO_SLIDES } from '@/platform/cloud/onboarding/constants/heroSlides'
+import { installSeededServerFlags } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import { installLiveCloudBillingRouting } from '@e2e/fixtures/utils/liveCloudBillingContext'
@@ -13,6 +14,7 @@ import {
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { mockDeploymentRolloutRefusal } from '@e2e/fixtures/utils/workspaceMocks'
 
 dotenvConfig()
 
@@ -58,13 +60,21 @@ function guardApiRequests(
 
 export const networkIsolationFixture = base.extend<{
   liveCloudBillingConfig: LiveCloudBillingConfig | undefined
+  liveNetworkOrigins: string[]
+  billingNewUx: boolean
   networkPolicy: NetworkPolicy
   toast: ToastHelper
 }>({
   serviceWorkers: 'block',
   liveCloudBillingConfig: [undefined, { option: true }],
+  liveNetworkOrigins: [[], { option: true }],
+  billingNewUx: [true, { option: true }],
   networkPolicy: [
-    async ({ baseURL, liveCloudBillingConfig }, use, testInfo) => {
+    async (
+      { baseURL, liveCloudBillingConfig, liveNetworkOrigins },
+      use,
+      testInfo
+    ) => {
       const frontend =
         process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
       const origins = liveCloudBillingConfig
@@ -81,7 +91,8 @@ export const networkIsolationFixture = base.extend<{
               frontend,
               baseURL,
               process.env.PLAYWRIGHT_SETUP_API_URL,
-              process.env.DEV_SERVER_COMFYUI_URL
+              process.env.DEV_SERVER_COMFYUI_URL,
+              ...liveNetworkOrigins
             ].flatMap((url) => (url ? [new URL(url).origin] : []))
           )
       const unexpected = new Set<string>()
@@ -97,7 +108,9 @@ export const networkIsolationFixture = base.extend<{
         liveCloudBillingConfig ? blocked.filter(isReportedViolation) : blocked,
         liveCloudBillingConfig
           ? 'Forbidden live Cloud requests'
-          : 'Unexpected external requests. Add a local mock.'
+          : liveNetworkOrigins.length > 0
+            ? 'Unexpected external requests during a live test'
+            : 'Unexpected external requests. Add a local mock.'
       ).toEqual([])
     },
     { auto: true }
@@ -122,9 +135,21 @@ export const networkIsolationFixture = base.extend<{
     restore()
   },
   context: async (
-    { context, baseURL, networkPolicy, liveCloudBillingConfig },
+    {
+      context,
+      baseURL,
+      networkPolicy,
+      liveCloudBillingConfig,
+      liveNetworkOrigins,
+      billingNewUx
+    },
     use
   ) => {
+    if (billingNewUx) {
+      await context.addInitScript(installSeededServerFlags, {
+        billing_new_ux_enabled: billingNewUx
+      })
+    }
     const { origins, unexpected } = networkPolicy
     const restore = guardApiRequests(
       context.request,
@@ -136,7 +161,7 @@ export const networkIsolationFixture = base.extend<{
     await context.route('**/*', async (route) => {
       const url = new URL(route.request().url())
       if (origins.has(url.origin)) {
-        await route.continue()
+        await route.fallback()
         return
       }
       unexpected.add(getBlockedRequestViolation(url, route.request().method()))
@@ -150,6 +175,11 @@ export const networkIsolationFixture = base.extend<{
         await socket.close()
       }
     )
+    if (liveNetworkOrigins.length > 0) {
+      await use(context)
+      restore()
+      return
+    }
     await context.route('https://huggingface.co/**/resolve/**', (route) =>
       route.request().method() === 'HEAD'
         ? route.fulfill({ status: 200, body: '' })
@@ -162,6 +192,15 @@ export const networkIsolationFixture = base.extend<{
     )
     await context.route('https://apis.google.com/js/api.js**', (route) =>
       route.fulfill({ status: 503, body: '' })
+    )
+    await context.route(
+      'https://ajax.googleapis.com/ajax/libs/model-viewer/**',
+      (route) =>
+        route.fulfill({
+          contentType: 'application/javascript',
+          headers: { 'Access-Control-Allow-Origin': '*' },
+          body: ''
+        })
     )
     await context.route('https://cloud.comfy.org/cdn-cgi/trace', (route) =>
       route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' })
@@ -189,6 +228,8 @@ export const networkIsolationFixture = base.extend<{
         networkPolicy,
         liveCloudBillingConfig
       )
+    } else {
+      await mockDeploymentRolloutRefusal(context)
     }
     await use(context)
     restore()

@@ -2,7 +2,7 @@ name: 'Restore tool caches'
 description: >
   Restores ESLint, Stylelint or TypeScript incremental caches from the most
   recent run on the same configuration, falling back to any run for the same
-  lockfile. The lint:ci scripts run with --cache-strategy content and
+  lockfile. CI lint runs use --cache-strategy content and
   tsbuildinfo stores content hashes, so entries stay valid across checkouts
   with different mtimes. Pair with tool-cache-save using the returned key.
 
@@ -28,7 +28,7 @@ runs:
       env:
         SCOPE: ${{ inputs.scope }}
         LOCK_HASH: ${{ hashFiles('pnpm-lock.yaml') }}
-        CONFIG_HASH: ${{ hashFiles('eslint.config.ts', 'scripts/eslintScope.ts', 'tools/eslint-plugins/**', 'tools/oxlint-plugins/**', '.oxlintrc.json', 'oxlint-suppressions.json', 'scripts/primevue-import-allowlist.json', '.stylelintrc.json', '**/tsconfig*.json', '!**/node_modules/**') }}
+        CONFIG_HASH: ${{ hashFiles('eslint.config.ts', 'scripts/eslintScope.ts', 'scripts/i18n/eslint-generated-messages.js', 'src/locales/en/*.json', 'apps/billing-web/src/locales/en/*.json', 'tools/eslint-plugins/**', 'tools/oxlint-plugins/**', '.oxlintrc.json', 'oxlint-suppressions.json', '.stylelintrc.json', '**/tsconfig*.json', '!**/node_modules/**') }}
       run: |
         lockfile_prefix="${SCOPE}-cache-${RUNNER_OS}-${LOCK_HASH}"
         config_prefix="${lockfile_prefix}-${CONFIG_HASH}"
@@ -39,6 +39,7 @@ runs:
         } >> "$GITHUB_OUTPUT"
 
     - name: Restore caches
+      id: restore
       uses: actions/cache/restore@v5
       with:
         path: ${{ inputs.path }}
@@ -46,3 +47,13 @@ runs:
         restore-keys: |
           ${{ steps.key.outputs.config-prefix }}
           ${{ steps.key.outputs.lockfile-prefix }}
+
+    - name: Discard incompatible ESLint cache
+      shell: bash
+      env:
+        MATCHED_KEY: ${{ steps.restore.outputs.cache-matched-key }}
+        CONFIG_PREFIX: ${{ steps.key.outputs.config-prefix }}
+      run: |
+        if [[ -n "$MATCHED_KEY" && "$MATCHED_KEY" != "$CONFIG_PREFIX"* ]]; then
+          rm -f .eslintcache
+        fi

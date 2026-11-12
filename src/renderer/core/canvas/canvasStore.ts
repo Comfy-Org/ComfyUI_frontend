@@ -6,7 +6,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
-import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   LGraph,
   LGraphCanvas,
@@ -15,14 +16,22 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { createPositionBounds } from '@/utils/positionBounds'
+
+let promoteRecommendedWidgets: (subgraphNode: SubgraphNode) => void
+
+/** Called by `promotionUtils` when it loads; it imports this store. */
+export function providePromoteRecommendedWidgets(
+  promote: (subgraphNode: SubgraphNode) => void
+): void {
+  promoteRecommendedWidgets = promote
+}
 
 export const useTitleEditorStore = defineStore('titleEditor', () => {
   const titleEditorTarget = shallowRef<LGraphNode | LGraphGroup | null>(null)
@@ -161,7 +170,7 @@ export const useCanvasStore = defineStore('canvas', () => {
         () => currentGraph.value?.events,
         'node:before-removed',
         (e: CustomEvent<{ node: LGraphNode }>) => {
-          newCanvas.deselect(e.detail.node)
+          newCanvas.deselect(e.detail.node, { notify: false })
         }
       )
 

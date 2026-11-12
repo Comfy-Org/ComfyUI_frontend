@@ -1,19 +1,17 @@
 import { onBeforeUnmount, onMounted } from 'vue'
 
-const DARK_THEME_CLASS = 'dark-theme'
+import { DEFAULT_DARK_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
+import { resolveTheme } from '@comfyorg/theme-core/resolveTheme'
+import { applyTheme } from '@/platform/theme/applyTheme'
 
-/**
- * Puts the dark theme on the document root while the calling layout is
- * mounted, so dialogs and toasts teleported to `body` match the dark page.
- */
 export function useDocumentDarkTheme(): void {
-  let added = false
+  let previousStyle = ''
   onMounted(() => {
-    const { classList } = document.documentElement
-    added = !classList.contains(DARK_THEME_CLASS)
-    classList.add(DARK_THEME_CLASS)
+    const { style } = document.documentElement
+    previousStyle = style.cssText
+    applyTheme(resolveTheme(DEFAULT_DARK_THEME_PRESET), { style })
   })
   onBeforeUnmount(() => {
-    if (added) document.documentElement.classList.remove(DARK_THEME_CLASS)
+    document.documentElement.style.cssText = previousStyle
   })
 }

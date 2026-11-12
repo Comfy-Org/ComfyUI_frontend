@@ -12,10 +12,7 @@ import {
   withOutputAssets,
   withPagination
 } from '@e2e/fixtures/helpers/AssetHelper'
-import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const test = mergeTests(comfyPageFixture, assetApiFixture)
 
@@ -296,7 +293,9 @@ test.describe('Assets sidebar - grid view display', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    await expect(tab.assetCards.locator('.pi-image')).toBeVisible()
+    await expect(
+      tab.assetCards.getByRole('img', { name: 'Image failed to load' })
+    ).toBeVisible()
   })
 })
 
@@ -1165,7 +1164,7 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
       }
     }),
     createMockJob({
-      id: 'job2',
+      id: 'job3',
       preview_output: {
         filename: `3.png`,
         type: 'input',

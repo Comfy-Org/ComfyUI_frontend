@@ -6,25 +6,33 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
+import { pagedItems } from '@/utils/pagedList'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
+
 beforeEach(() => {
+  distribution.isCloud = false
   const store = useAssetsStore()
-  store.outputAssets = {
-    items: [],
-    hasMore: false,
-    isLoading: false,
-    loadMore: vi.fn(async () => false),
-    loadNew: vi.fn(async () => {}),
-    invalidate: vi.fn(async () => {})
-  }
+  Object.assign(store, {
+    outputAssets: mockPagedList<AssetItem>({
+      items: [folderAsset],
+      loadMore: vi.fn(async () => false),
+      loadNew: vi.fn(async () => undefined),
+      invalidate: vi.fn(async () => undefined)
+    })
+  })
   vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
   vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
 })
@@ -82,6 +90,8 @@ vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
+vi.mock(import('@/services/hdrViewerService'))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -113,45 +123,60 @@ const sidebarTabTemplateStub = {
 
 const assetsGridStub = {
   props: ['assets'],
-  emits: ['output-count-click', 'context-menu'],
+  emits: ['output-count-click', 'context-menu', 'zoom'],
+  methods: { pagedItems },
   template: `
     <div data-testid="assets-grid">
       <button
         aria-label="Enter output folder"
-        @click="$emit('output-count-click', assets[0])"
-        @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
+        @click="$emit('output-count-click', pagedItems(assets)[0])"
+        @contextmenu.prevent="$emit('context-menu', $event, pagedItems(assets)[0])"
       />
+      <button aria-label="Zoom" @click="$emit('zoom', pagedItems(assets)[0])" />
     </div>
   `
 }
 
-function renderTab({ realTemplate = false } = {}) {
+const mediaLightboxStub = {
+  props: ['allGalleryItems', 'activeIndex'],
+  template: `<div data-testid="lightbox-url" :data-display-name="String(allGalleryItems[activeIndex]?.filenameIsDisplayName)">{{ allGalleryItems[activeIndex]?.url }}</div>`
+}
+
+function renderTab({ realTemplate = false, realList = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
-      directives: {
-        tooltip: {}
-      },
       stubs: {
         ...(realTemplate ? {} : { SidebarTabTemplate: sidebarTabTemplateStub }),
         AssetsSidebarGridView: assetsGridStub,
-        AssetsSidebarListView: true,
-        MediaAssetFilterBar: true,
+        AssetsSidebarListView: !realList,
+        MediaAssetFilterBar: realList
+          ? {
+              emits: ['update:viewMode'],
+              template:
+                "<button @click=\"$emit('update:viewMode', 'list')\">List view</button>"
+            }
+          : true,
+        VirtualGrid: {
+          props: ['items', 'canLoadMore', 'onLoadMore'],
+          template: `
+            <div>
+              <slot v-for="item in items" :key="item.key" name="item" :item="item" />
+              <button :disabled="!canLoadMore" @click="onLoadMore()">Load more</button>
+            </div>
+          `
+        },
         MediaAssetSelectionBar: true,
-        MediaLightbox: true
+        MediaLightbox: mediaLightboxStub
       }
     }
   })
 }
 
-beforeEach(() => {
-  useAssetsStore().outputAssets.items = [folderAsset]
-  useAssetsStore().outputAssets.hasMore = false
-})
-
 it('keeps pagination mounted when more assets can be loaded', () => {
-  useAssetsStore().outputAssets.items = []
-  useAssetsStore().outputAssets.hasMore = true
+  const { outputAssets } = useAssetsStore()
+  outputAssets.items = []
+  outputAssets.hasMore = true
 
   renderTab()
 
@@ -201,6 +226,31 @@ describe('AssetsSidebarTab reopen', () => {
 })
 
 describe('AssetsSidebarTab folder navigation', () => {
+  it('does not page global history from a completed folder list and resumes paging after leaving', async () => {
+    onTestFinished(() =>
+      localStorage.removeItem('Comfy.Assets.Sidebar.ViewMode')
+    )
+    const { outputAssets } = useAssetsStore()
+    outputAssets.hasMore = true
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
+    renderTab({ realList: true })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'List view' }))
+
+    expect(await screen.findByText('multi-output.png')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(outputAssets.loadMore).not.toHaveBeenCalled()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to all assets' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(outputAssets.loadMore).toHaveBeenCalledOnce()
+  })
+
   it('places accessible folder actions beside the job ID', async () => {
     vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
     renderTab()
@@ -232,6 +282,37 @@ describe('AssetsSidebarTab folder navigation', () => {
   })
 })
 
+it('gives the lightbox a playable URL for a video without a preview_url', async () => {
+  useAssetsStore().outputAssets.items = [
+    { ...folderAsset, id: 'clip', name: 'clip.mp4' }
+  ]
+  renderTab()
+
+  await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+
+  expect(screen.getByTestId('lightbox-url').textContent).toBeTruthy()
+})
+
+it.for([
+  { isCloud: true, expected: 'true' },
+  { isCloud: false, expected: 'false' }
+])(
+  'marks the lightbox item filename as a display name only on Cloud ($isCloud)',
+  async ({ isCloud, expected }) => {
+    distribution.isCloud = isCloud
+    useAssetsStore().outputAssets.items = [
+      { ...folderAsset, id: 'clip', name: 'clip.mp4' }
+    ]
+    renderTab()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Zoom' }))
+
+    expect(
+      screen.getByTestId('lightbox-url').getAttribute('data-display-name')
+    ).toBe(expected)
+  }
+)
+
 it('shows the sidebar close button when mounted as a sidebar tab', () => {
   renderTab({ realTemplate: true })
 
@@ -239,6 +320,33 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
 })
 
 describe('AssetsSidebarTab context menu', () => {
+  it('inspects an HDR output in the HDR viewer', async () => {
+    useAssetsStore().outputAssets.items = [
+      {
+        ...folderAsset,
+        name: 'sky.exr',
+        loader_path: 'renders/sky.exr',
+        preview_url: '/api/assets/sky-preview/content'
+      }
+    ]
+    renderTab()
+
+    await fireEvent.contextMenu(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: 'mediaAsset.actions.inspect'
+      })
+    )
+
+    expect(openHdrViewer).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /\/view\?filename=sky\.exr&type=output&subfolder=renders$/
+      )
+    )
+  })
+
   it('inserts a loadable image as a node', async () => {
     const asset = { ...folderAsset, name: 'image.png' }
     useAssetsStore().outputAssets.items = [asset]

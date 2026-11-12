@@ -37,6 +37,9 @@ jobs:
     steps:
       - name: Checkout ref
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -48,29 +51,21 @@ jobs:
           scope: lint
           path: ${{ env.LINT_CACHE_PATHS }}
 
-      - name: Verify lint
-        run: pnpm lint:ci
+      - parallel:
+          - name: Verify Stylelint
+            run: pnpm stylelint
 
-      - name: Verify format
-        run: pnpm -r --include-workspace-root format:check
+          - name: Verify oxlint
+            run: pnpm oxlint
 
-      - name: Save lint caches
-        if: always()
-        uses: ./.github/actions/tool-cache-save
-        with:
-          cache-key: ${{ steps.lint-cache.outputs.cache-key }}
-          path: ${{ env.LINT_CACHE_PATHS }}
+          - name: Verify architecture
+            run: pnpm architecture:check
 
-  server-facts:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout ref
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
+          - name: Verify ESLint
+            run: pnpm exec eslint --cache --concurrency auto --cache-strategy content
 
-      - name: Setup frontend
-        uses: ./.github/actions/setup-frontend
+          - name: Verify format
+            run: pnpm -r --include-workspace-root format:check
 
       # Push runs gate the pushed range; a branch-creation push has no base.
       - name: Check server facts on changed lines
@@ -78,6 +73,13 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.merge_group.base_sha || github.event.before }}
         run: pnpm lint:server-facts --base "$BASE_SHA"
+
+      - name: Save lint caches
+        if: always()
+        uses: ./.github/actions/tool-cache-save
+        with:
+          cache-key: ${{ steps.lint-cache.outputs.cache-key }}
+          path: ${{ env.LINT_CACHE_PATHS }}
 
   typecheck:
     runs-on: ubuntu-latest
@@ -145,12 +147,12 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Verify knip, locale integrity and ADR index
+      - name: Verify knip, locale integrity and ADR naming
         uses: ./.github/actions/repo-checks
 
   # Single stable branch-protection context over the parallel jobs above.
   lint-and-format:
-    needs: [lint, server-facts, typecheck, typecheck-aux, repo-checks]
+    needs: [lint, typecheck, typecheck-aux, repo-checks]
     if: ${{ always() && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:

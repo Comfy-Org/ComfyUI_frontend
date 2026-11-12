@@ -2,12 +2,12 @@ import type {
   ComposerInsertionPoint,
   ComposerPrompt,
   ComposerReference
-} from '../types/composerPrompt'
+} from '@/workbench/extensions/agent/types/composerPrompt'
 import {
   composerReferenceKey,
   composerReferenceName
-} from '../types/composerPrompt'
-import type { PromptSnapshot } from '../types/workflowReference'
+} from '@/workbench/extensions/agent/types/composerPrompt'
+import type { PromptSnapshot } from '@/workbench/extensions/agent/types/workflowReference'
 import { assetReferenceText, nodeReferenceText } from './agentMessageText'
 import { promptReferenceParts } from './promptReferenceParts'
 import { serializeSkillReference } from './skillReferenceText'
@@ -73,7 +73,7 @@ export function composerPromptForSend(prompt: ComposerPrompt): PromptSnapshot {
         textOffset: text.length,
         workflowIndex: workflowReferences.length
       }
-    } else {
+    } else if (reference.kind !== 'error') {
       const name = composerReferenceName(reference)
       text +=
         reference.kind === 'node'

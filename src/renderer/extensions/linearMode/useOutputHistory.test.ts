@@ -12,7 +12,8 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { toNodeId } from '@/types/nodeId'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   getAssetType: (tags?: string[]) =>
@@ -67,8 +68,9 @@ function makeResult(
 }
 
 beforeEach(() => {
-  useAssetsStore().outputAssets.hasMore = false
-  vi.spyOn(useAssetsStore().outputAssets, 'loadMore').mockResolvedValue(false)
+  Object.assign(useAssetsStore(), {
+    outputAssets: mockPagedList<AssetItem>({ loadMore: vi.fn() })
+  })
   vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
     () => undefined
   )
@@ -79,7 +81,6 @@ beforeEach(() => {
 
 describe(useOutputHistory, () => {
   beforeEach(() => {
-    useAssetsStore().outputAssets.items = []
     useLinearOutputStore().pendingResolve = new Set()
     useLinearOutputStore().inProgressItems = []
     Object.assign(useLinearOutputStore(), { activeWorkflowInProgressItems: [] })
@@ -342,7 +343,6 @@ describe(useOutputHistory, () => {
 
     it('skips jobs with no matching asset in media', async () => {
       useLinearOutputStore().pendingResolve = new Set(['job-missing'])
-      useAssetsStore().outputAssets.items = []
 
       useOutputHistory()
       await nextTick()

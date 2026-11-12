@@ -129,7 +129,7 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 | modelToNodeStore.ts          | useModelToNodeStore           | Maps models to compatible nodes                         | Models     |
 | nodeBookmarkStore.ts         | useNodeBookmarkStore          | Manages node bookmarks and favorites                    | Nodes      |
 | nodeDefStore.ts              | useNodeDefStore               | Manages node definitions and schemas                    | Nodes      |
-| nodeDefStore.ts              | useNodeFrequencyStore         | Tracks node usage frequency                             | Nodes      |
+| nodeFrequencyStore.ts        | useNodeFrequencyStore         | Tracks node usage frequency                             | Nodes      |
 | queueStore.ts                | useQueueStore                 | Manages execution queue and task history                | Execution  |
 | queueStore.ts                | useQueuePendingTaskCountStore | Tracks pending task counts                              | Execution  |
 | queueSettingsStore.ts        | useQueueSettingsStore         | Manages queue execution settings                        | Execution  |
@@ -152,13 +152,12 @@ The following table lists ALL 46 store instances in the system as of 2026-01-29:
 
 Located in `stores/workspace/`:
 
-| File                 | Store                | Description                                 | Category |
-| -------------------- | -------------------- | ------------------------------------------- | -------- |
-| bottomPanelStore.ts  | useBottomPanelStore  | Controls bottom panel visibility and state  | UI       |
-| colorPaletteStore.ts | useColorPaletteStore | Manages color palette configurations        | UI       |
-| nodeHelpStore.ts     | useNodeHelpStore     | Handles node help and documentation display | UI       |
-| searchBoxStore.ts    | useSearchBoxStore    | Manages search box functionality            | UI       |
-| sidebarTabStore.ts   | useSidebarTabStore   | Controls sidebar tab states and navigation  | UI       |
+| File                | Store               | Description                                 | Category |
+| ------------------- | ------------------- | ------------------------------------------- | -------- |
+| bottomPanelStore.ts | useBottomPanelStore | Controls bottom panel visibility and state  | UI       |
+| nodeHelpStore.ts    | useNodeHelpStore    | Handles node help and documentation display | UI       |
+| searchBoxStore.ts   | useSearchBoxStore   | Manages search box functionality            | UI       |
+| sidebarTabStore.ts  | useSidebarTabStore  | Controls sidebar tab states and navigation  | UI       |
 
 ## Store Development Guidelines
 
@@ -167,7 +166,7 @@ When developing or modifying stores, follow these best practices:
 1. **Define clear purpose**: Each store should have a specific responsibility
 2. **Use actions for async operations**: Encapsulate asynchronous logic in actions
 3. **Keep stores focused**: Each store should manage related state
-4. **Document public API**: Add comments for state properties, actions, and getters
+4. **Name the public API clearly**: Names should make state, actions, and getters self-explanatory. Add curt JSDoc only where an exported action's contract is not obvious, and no other comments
 5. **Use getters for derived state**: Compute derived values using getters
 6. **Test store functionality**: Write unit tests for stores
 
@@ -180,16 +179,13 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 export const useExampleStore = defineStore('example', () => {
-  // State
   const items = ref([])
   const isLoading = ref(false)
   const error = ref(null)
 
-  // Getters
   const itemCount = computed(() => items.value.length)
   const hasError = computed(() => error.value !== null)
 
-  // Actions
   function addItem(item) {
     items.value.push(item)
   }
@@ -209,18 +205,12 @@ export const useExampleStore = defineStore('example', () => {
     }
   }
 
-  // Expose state, getters, and actions
   return {
-    // State
     items,
     isLoading,
     error,
-
-    // Getters
     itemCount,
     hasError,
-
-    // Actions
     addItem,
     fetchItems
   }

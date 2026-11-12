@@ -3,8 +3,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import { computed, nextTick, ref } from 'vue'
+import userEvent from '@testing-library/user-event'
+import { computed, nextTick } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -54,17 +54,14 @@ vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())
 const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())
 
-const { mockItemsRef, mockSelectedSetRef, mockFilterSelectedRef } = vi.hoisted(
-  () => {
-    // oxlint-disable-next-line typescript/no-require-imports
-    const { ref } = require('vue')
-    return {
-      mockItemsRef: ref([]) as Ref<FormDropdownItem[]>,
-      mockSelectedSetRef: ref(new Set()) as Ref<Set<string>>,
-      mockFilterSelectedRef: ref('all') as Ref<string>
-    }
+const { mockItemsRef, mockSelectedSetRef } = vi.hoisted(() => {
+  // oxlint-disable-next-line typescript/no-require-imports
+  const { ref } = require('vue')
+  return {
+    mockItemsRef: ref([]) as Ref<FormDropdownItem[]>,
+    mockSelectedSetRef: ref(new Set()) as Ref<Set<string>>
   }
-)
+})
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'),
@@ -74,16 +71,12 @@ vi.mock(
     return {
       useWidgetSelectItems: () => ({
         dropdownItems: computed(() => mockItemsRef.value),
-        displayItems: computed(() => mockItemsRef.value),
-        filterSelected: mockFilterSelectedRef,
         filterOptions: computed(() => [
           { name: 'All', value: 'all' },
           { name: 'Inputs', value: 'inputs' }
         ]),
-        ownershipSelected: ref('all'),
         showOwnershipFilter: computed(() => false),
         ownershipOptions: computed(() => []),
-        baseModelSelected: ref(new Set<string>()),
         showBaseModelFilter: computed(() => false),
         baseModelOptions: computed(() => []),
         selectedSet: computed(() => mockSelectedSetRef.value)
@@ -120,7 +113,6 @@ describe('WidgetSelectDropdown', () => {
     mockAssetsData.items = []
     mockItemsRef.value = []
     mockSelectedSetRef.value = new Set()
-    mockFilterSelectedRef.value = 'all'
   })
 
   function renderComponent(
@@ -132,13 +124,10 @@ describe('WidgetSelectDropdown', () => {
       props: {
         widget,
         modelValue,
-        assetKind: 'image',
-        allowUpload: true,
-        uploadFolder: 'input',
         ...extraProps
       },
       global: {
-        plugins: [PrimeVue, getActivePinia()!, i18n]
+        plugins: [getActivePinia()!, i18n]
       }
     })
   }
@@ -161,19 +150,26 @@ describe('WidgetSelectDropdown', () => {
     expect(screen.getByText('img_001.png')).toBeDefined()
   })
 
-  it('allows EXR files for image uploads', () => {
+  it('allows EXR files for image uploads', async () => {
+    const user = userEvent.setup()
+    const file = new File(['hdr pixels'], 'environment.exr', {
+      type: 'application/octet-stream'
+    })
     const widget = createMockWidget<string | undefined>({
       value: undefined,
       name: 'test_image',
       type: 'combo',
-      options: { values: [] }
+      options: { values: [] },
+      spec: { type: 'COMBO', name: 'test_image', image_upload: true }
     })
-    renderComponent(widget, undefined)
+    renderComponent(widget, undefined, {
+      assetKind: 'image',
+      allowUpload: true
+    })
 
-    expect(screen.getByLabelText('g.upload')).toHaveAttribute(
-      'accept',
-      'image/*,.exr'
-    )
+    await user.upload(screen.getByLabelText('g.upload'), file)
+
+    expect(mockHandleFilesUpdate).toHaveBeenCalledWith([file])
   })
 
   it('renders in cloud asset mode', () => {
@@ -197,7 +193,6 @@ describe('WidgetSelectDropdown', () => {
       }
     })
     renderComponent(widget, 'model_a.safetensors', {
-      assetKind: 'model',
       isAssetMode: true,
       nodeType: 'CheckpointLoaderSimple'
     })
