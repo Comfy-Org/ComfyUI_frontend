@@ -7,6 +7,7 @@ import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/temp
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
+import { sum } from 'es-toolkit'
 
 type TemplateModelSetupStatus =
   | 'installed'
@@ -120,7 +121,11 @@ function totalDeclarations(
 }
 
 /** The state a row's own download is in, as the view's row-downloads reports it. */
-type RowDownloadStatus = { status: string }
+type RowDownloadStatus = {
+  status: string
+  activity?: string
+  receivedBytes?: number | null
+}
 
 /** A row the bulk action would actually start. */
 export function isModelDownloadCandidate(
@@ -129,7 +134,11 @@ export function isModelDownloadCandidate(
 ): boolean {
   if (row.status !== 'downloadable') return false
   const state = stateFor(row.model)
-  return state.status === 'idle' || state.status === 'failed'
+  return (
+    state.status === 'idle' ||
+    state.status === 'failed' ||
+    (state.status === 'downloading' && state.activity === 'paused')
+  )
 }
 
 /** Nothing left to satisfy: already on disk, or downloaded in this session. */
@@ -149,9 +158,18 @@ export function remainingModelDownloadTotal(
   rows: readonly TemplateModelSetupRow[],
   stateFor: (model: ModelWithUrl) => RowDownloadStatus
 ): TemplateModelDeclarationTotal {
-  return totalDeclarations(
-    rows.filter((row) => isModelDownloadCandidate(row, stateFor))
+  const candidates = rows.filter((row) =>
+    isModelDownloadCandidate(row, stateFor)
   )
+  const total = totalDeclarations(candidates)
+  const receivedByIdentity = new Map(
+    candidates.map((row) => [
+      getModelFileKey(row.model),
+      stateFor(row.model).receivedBytes ?? 0
+    ])
+  )
+  const received = sum([...receivedByIdentity.values()])
+  return { ...total, bytes: Math.max(0, total.bytes - received) }
 }
 
 export function deriveTemplateModelSetup(

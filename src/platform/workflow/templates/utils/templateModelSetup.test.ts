@@ -335,4 +335,20 @@ describe('remainingModelDownloadTotal', () => {
     expect(isModelDownloadCandidate(rows[1], stateFor)).toBe(false)
     expect(isModelRowComplete(rows[1], stateFor)).toBe(false)
   })
+
+  it('counts only what is left of a paused download', () => {
+    const starting = model('a.safetensors')
+    const paused = model('b.safetensors')
+    const rows = rowsFor([starting, 1024], [paused, 4096])
+    const stateFor = (m: ModelWithUrl) =>
+      m.name === paused.name
+        ? { status: 'downloading', activity: 'paused', receivedBytes: 3072 }
+        : { status: 'idle' }
+
+    expect(remainingModelDownloadTotal(rows, stateFor)).toEqual({
+      bytes: 2048,
+      isComplete: true
+    })
+    expect(isModelDownloadCandidate(rows[1], stateFor)).toBe(true)
+  })
 })

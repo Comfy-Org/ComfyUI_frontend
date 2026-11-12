@@ -36,11 +36,11 @@ function runningDownload(filename: string): ComfyDownloadProgress {
 async function startOnCanvas(
   comfyPage: ComfyPage,
   modelDownloadHost: ModelDownloadHost,
-  filenames: readonly string[]
+  downloads: readonly ComfyDownloadProgress[]
 ) {
   await loadWorkflowAndOpenErrorsTab(comfyPage, WORKFLOW)
-  for (const filename of filenames) {
-    await modelDownloadHost.emitProgress(runningDownload(filename))
+  for (const download of downloads) {
+    await modelDownloadHost.emitProgress(download)
   }
 }
 
@@ -75,7 +75,10 @@ test.describe(
       comfyPage,
       modelDownloadHost
     }) => {
-      await startOnCanvas(comfyPage, modelDownloadHost, [MODEL_A, MODEL_B])
+      await startOnCanvas(comfyPage, modelDownloadHost, [
+        runningDownload(MODEL_A),
+        runningDownload(MODEL_B)
+      ])
 
       const detail = await openTemplateDetail(comfyPage)
 
@@ -87,9 +90,10 @@ test.describe(
       await expect(
         detail.getByRole('button', { name: /^Download assets & open/ })
       ).toBeHidden()
-      await detail
-        .getByRole('button', { name: 'Just open', exact: true })
-        .click()
+      await expect(
+        detail.getByRole('button', { name: 'Just open', exact: true })
+      ).toBeHidden()
+      await detail.getByRole('button', { name: 'Open', exact: true }).click()
 
       await expect(detail).toBeHidden()
       expect(await modelDownloadHost.downloads()).toEqual([])
@@ -99,7 +103,9 @@ test.describe(
       comfyPage,
       modelDownloadHost
     }) => {
-      await startOnCanvas(comfyPage, modelDownloadHost, [MODEL_A])
+      await startOnCanvas(comfyPage, modelDownloadHost, [
+        runningDownload(MODEL_A)
+      ])
 
       const detail = await openTemplateDetail(comfyPage)
 
@@ -118,6 +124,30 @@ test.describe(
         .toEqual([
           { url: MODEL_URL, filename: MODEL_B, directory: 'checkpoints' }
         ])
+    })
+
+    test('resumes a paused model instead of requesting it again', async ({
+      comfyPage,
+      modelDownloadHost
+    }) => {
+      await startOnCanvas(comfyPage, modelDownloadHost, [
+        { ...runningDownload(MODEL_A), status: 'paused' },
+        runningDownload(MODEL_B)
+      ])
+
+      const detail = await openTemplateDetail(comfyPage)
+
+      await expect(
+        detail.getByRole('button', { name: 'Just open', exact: true })
+      ).toBeVisible()
+      await detail
+        .getByRole('button', { name: /^Download assets & open/ })
+        .click()
+
+      await expect
+        .poll(() => modelDownloadHost.controls())
+        .toEqual([{ action: 'resume', ref: `canvas-${MODEL_A}` }])
+      expect(await modelDownloadHost.downloads()).toEqual([])
     })
   }
 )

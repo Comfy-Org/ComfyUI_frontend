@@ -352,6 +352,10 @@ export const useMissingModelDownloadStore = defineStore(
       }
       const key = getModelFileKey(model)
       const current = downloads.get(key)
+      if (current?.state.status === 'downloading' && current.state.paused) {
+        control(model, 'resumeDownload')
+        return
+      }
       if (isBusy(current)) return
 
       const request = ++nextRequest

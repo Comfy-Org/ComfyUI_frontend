@@ -235,6 +235,20 @@ describe(useMissingModelDownloadStore, () => {
     expect(hostDownloadModel).not.toHaveBeenCalled()
   })
 
+  it('resumes a paused download instead of starting another', () => {
+    installDesktopHost()
+    const resumeDownload = vi.fn().mockResolvedValue(true)
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, resumeDownload }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('paused')
+
+    store.download(model)
+
+    expect(resumeDownload).toHaveBeenCalledWith('job-1')
+    expect(hostDownloadModel).not.toHaveBeenCalled()
+  })
+
   it('does not fail a retry when the earlier request is refused late', async () => {
     installDesktopHost()
     let refuse: (accepted: boolean) => void = () => {}
