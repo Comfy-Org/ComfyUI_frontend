@@ -33,32 +33,31 @@ export async function trackHandledImageLoads(page: Page) {
       }
     })
     const nativePostMessage = Worker.prototype.postMessage
-    Worker.prototype.postMessage = function (
-      this: Worker,
-      ...args: [unknown, (StructuredSerializeOptions | Transferable[])?]
-    ) {
-      const [message] = args
-      if (
-        message &&
-        typeof message === 'object' &&
-        'id' in message &&
-        'source' in message &&
-        typeof message.source === 'string'
-      ) {
-        const entry = { src: message.source, handled: false }
-        const { id } = message
-        tracked.set(message, entry)
-        const onReply = (event: MessageEvent) => {
-          if (event.data?.id !== id) return
-          this.removeEventListener('message', onReply)
-          setTimeout(() => {
-            entry.handled = true
-          })
+    Worker.prototype.postMessage = new Proxy(nativePostMessage, {
+      apply(postMessage, worker: Worker, args: unknown[]) {
+        const [message] = args
+        if (
+          message &&
+          typeof message === 'object' &&
+          'id' in message &&
+          'source' in message &&
+          typeof message.source === 'string'
+        ) {
+          const entry = { src: message.source, handled: false }
+          const { id } = message
+          tracked.set(message, entry)
+          const onReply = (event: MessageEvent) => {
+            if (event.data?.id !== id) return
+            worker.removeEventListener('message', onReply)
+            setTimeout(() => {
+              entry.handled = true
+            })
+          }
+          worker.addEventListener('message', onReply)
         }
-        this.addEventListener('message', onReply)
+        Reflect.apply(postMessage, worker, args)
       }
-      Reflect.apply(nativePostMessage, this, args)
-    }
+    })
     w.__restoreImageSrc = () => {
       Object.defineProperty(HTMLImageElement.prototype, 'src', src)
       Worker.prototype.postMessage = nativePostMessage

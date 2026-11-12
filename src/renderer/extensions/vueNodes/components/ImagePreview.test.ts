@@ -3,7 +3,7 @@
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -12,7 +12,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { downloadFile } from '@/base/common/downloadUtil'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
-import { getDisplayImage } from '@/renderer/extensions/vueNodes/utils/downscaledImage'
+import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -30,10 +30,6 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
 vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
-
-vi.mock(import('@/renderer/extensions/vueNodes/utils/downscaledImage'), () => ({
-  getDisplayImage: vi.fn(async (source: string) => ({ source }))
-}))
 
 const i18n = createI18n({
   legacy: false,
@@ -67,6 +63,12 @@ const i18n = createI18n({
 })
 
 describe('ImagePreview', () => {
+  beforeEach(() => {
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockImplementation(
+      async (source) => ({ source })
+    )
+  })
+
   const defaultProps = {
     imageUrls: [
       '/api/view?filename=test1.png&type=output',
@@ -96,6 +98,7 @@ describe('ImagePreview', () => {
   }
 
   it('shows a downscaled copy while keeping the full-resolution source', async () => {
+    const { getDisplayImage } = useImagePreviewStore()
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
     const revoke = vi.spyOn(URL, 'revokeObjectURL')
     vi.mocked(getDisplayImage).mockResolvedValue({
@@ -125,6 +128,7 @@ describe('ImagePreview', () => {
   })
 
   it('clears the previous copy while the next gallery image is pending', async () => {
+    const { getDisplayImage } = useImagePreviewStore()
     let nextCopy = 0
     vi.spyOn(URL, 'createObjectURL').mockImplementation(
       () => `blob:copy-${nextCopy++}`

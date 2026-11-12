@@ -282,7 +282,7 @@ import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { getDisplayImage } from '@/renderer/extensions/vueNodes/utils/downscaledImage'
+import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
 import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
 
 const DISPLAY_MAX_EDGE = 1024
@@ -299,6 +299,7 @@ const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
+const { getDisplayImage } = useImagePreviewStore()
 const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 const toast = useToast()
 

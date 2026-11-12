@@ -1,3 +1,5 @@
+import { limitAsync } from 'es-toolkit'
+
 import type {
   DownscaleRequest,
   DownscaleResponse
@@ -36,12 +38,8 @@ async function downscale({
   }
 }
 
-let queue = Promise.resolve()
-
-self.onmessage = (event: MessageEvent<DownscaleRequest>) => {
-  queue = queue.then(async () => {
-    const result = await downscale(event.data).catch(() => undefined)
-    const message: DownscaleResponse = { id: event.data.id, result }
-    self.postMessage(message)
-  })
-}
+self.onmessage = limitAsync(async (event: MessageEvent<DownscaleRequest>) => {
+  const result = await downscale(event.data).catch(() => undefined)
+  const message: DownscaleResponse = { id: event.data.id, result }
+  self.postMessage(message)
+}, 1)

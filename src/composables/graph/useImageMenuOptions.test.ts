@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -176,34 +176,29 @@ describe('useImageMenuOptions', () => {
   })
 
   describe('Copy Image action', () => {
-    let original: HTMLImageElement
-    let bounds: number[]
-    let context: CanvasRenderingContext2D
-    const png = new Blob(['original pixels'], { type: 'image/png' })
-
-    beforeEach(() => {
-      original = document.createElement('img')
+    function createCopyImageFixture() {
+      const original = document.createElement('img')
       Object.defineProperties(original, {
         naturalWidth: { value: 4096 },
         naturalHeight: { value: 2048 }
       })
-      original.decode = vi.fn().mockResolvedValue(undefined)
+      original.decode = vi
+        .fn<HTMLImageElement['decode']>()
+        .mockResolvedValue(undefined)
       vi.spyOn(globalThis, 'Image').mockImplementation(function () {
         return original
       })
-      bounds = []
-      context = createMockCanvasRenderingContext2D()
+      const capture: { bounds: number[] } = { bounds: [] }
+      const png = new Blob(['original pixels'], { type: 'image/png' })
+      const context = createMockCanvasRenderingContext2D()
       stubCanvasGetContext(context)
       vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
         function (this: HTMLCanvasElement, callback) {
-          bounds = [this.width, this.height]
+          capture.bounds = [this.width, this.height]
           callback(png)
         }
       )
       vi.spyOn(navigator.clipboard, 'write').mockResolvedValue(undefined)
-    })
-
-    it('copies the decoded original with its full asymmetric bounds', async () => {
       const display = document.createElement('img')
       display.src = 'blob:display-copy'
       display.dataset.fullSrc = 'http://localhost/original.png'
@@ -218,10 +213,16 @@ describe('useImageMenuOptions', () => {
       )
       assert.exists(copy?.action)
 
-      await copy.action()
+      return { original, context, png, capture, copy: copy.action }
+    }
+
+    it('copies the decoded original with its full asymmetric bounds', async () => {
+      const { original, context, png, capture, copy } = createCopyImageFixture()
+
+      await copy()
 
       expect(original.src).toBe('http://localhost/original.png')
-      expect(bounds).toEqual([4096, 2048])
+      expect(capture.bounds).toEqual([4096, 2048])
       expect(context.drawImage).toHaveBeenCalledWith(original, 0, 0)
       const writes = vi.mocked(navigator.clipboard.write).mock.calls
       expect(writes).toHaveLength(1)
@@ -229,18 +230,10 @@ describe('useImageMenuOptions', () => {
     })
 
     it('warns without changing the clipboard when the original cannot decode', async () => {
+      const { original, copy } = createCopyImageFixture()
       vi.mocked(original.decode).mockRejectedValue(new Error('decode refused'))
-      const display = document.createElement('img')
-      display.src = 'blob:display-copy'
-      display.dataset.fullSrc = 'http://localhost/original.png'
-      const node = createMockLGraphNode({ imgs: [display], imageIndex: 0 })
-      const { getImageMenuOptions } = mountComposable()
-      const copy = getImageMenuOptions(node).find(
-        (option) => option.label === 'Copy Image'
-      )
-      assert.exists(copy?.action)
 
-      await copy.action()
+      await copy()
 
       expect(useToast().toasts).toEqual([
         expect.objectContaining({ kind: 'warning' })

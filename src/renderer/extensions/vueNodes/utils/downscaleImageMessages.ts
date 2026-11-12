@@ -1,7 +1,7 @@
 export interface DownscaleRequest {
   readonly id: number
-  readonly source: string
   readonly maxEdge: number
+  readonly source: string
 }
 
 export interface DownscaleResponse {
@@ -9,8 +9,8 @@ export interface DownscaleResponse {
   readonly result:
     | {
         readonly originalSize: {
-          readonly width: number
           readonly height: number
+          readonly width: number
         }
         readonly blob?: Blob
       }
