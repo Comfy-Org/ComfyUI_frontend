@@ -6,6 +6,7 @@ import { createApp } from 'vue'
 import App from '@/App.vue'
 import { currentHostname } from '@/config/env'
 import { resolveBillingWebTelemetryConfig } from '@/config/firebase'
+import { handoffTab } from '@/handoff/handoffTab'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter } from '@/router'
 import { billedScope, billingWebLivePhase } from '@/session/billingWebAuth'
@@ -18,15 +19,17 @@ import { initBillingWebRum } from '@/telemetry/rum'
 const sessionIdentity = () =>
   toSessionIdentity(billingWebLivePhase.value, billedScope.value?.uid)
 
-initBillingWebRum({
-  hostname: currentHostname(),
-  version: __BILLING_WEB_COMMIT__
-})
-billingWebTelemetry.startRumUser(sessionIdentity)
-void billingWebTelemetry.startPostHog({
-  config: resolveBillingWebTelemetryConfig(),
-  identity: sessionIdentity
-})
+if (handoffTab.value === undefined) {
+  initBillingWebRum({
+    hostname: currentHostname(),
+    version: __BILLING_WEB_COMMIT__
+  })
+  billingWebTelemetry.startRumUser(sessionIdentity)
+  void billingWebTelemetry.startPostHog({
+    config: resolveBillingWebTelemetryConfig(),
+    identity: sessionIdentity
+  })
+}
 
 const app = createApp(App)
 
