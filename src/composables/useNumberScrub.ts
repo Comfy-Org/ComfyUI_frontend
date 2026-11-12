@@ -25,15 +25,15 @@ export function useNumberScrub(
   let startValue = 0
   let unitsPerPixel = 0
   let dragged = false
-  let editingControl = true
+  let blockedAtStart = true
   const swipe = usePointerSwipe(target, {
     threshold: 3,
     onSwipeStart: (event) => {
       dragged = false
-      editingControl = isEditingControl(event.target)
+      blockedAtStart = toValue(disabled) || isEditingControl(event.target)
     },
     onSwipe: () => {
-      if (toValue(disabled) || editingControl) return
+      if (toValue(disabled) || blockedAtStart) return
       if (!dragged) {
         if (!['left', 'right'].includes(swipe.direction.value)) return
         startValue = toValue(value)
@@ -45,6 +45,7 @@ export function useNumberScrub(
         unitsPerPixel = Math.max(toValue(step), width > 0 ? span / width : 0)
       }
       dragged = true
+      if (!(Math.abs(startValue) <= Number.MAX_SAFE_INTEGER)) return
       const increment = toValue(step)
       const delta = -swipe.distanceX.value * unitsPerPixel
       const offset =
@@ -53,7 +54,7 @@ export function useNumberScrub(
         toValue(max),
         Math.max(toValue(min), startValue + offset)
       )
-      if (nextValue !== toValue(value)) onScrub(nextValue)
+      onScrub(nextValue)
     }
   })
 
