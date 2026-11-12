@@ -59,7 +59,6 @@ function forwardUnlessOnButton(event: PointerEvent) {
     :inert="canvasStore.isPickingNodes"
     :aria-label="title"
     class="pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) w-(--node-width) origin-top-left"
-    :data-node-id="context.graph.inputNode.id"
     :style
     @wheel="handleWheel"
     @pointerdown.capture="handlePointerDown"

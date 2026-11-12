@@ -118,7 +118,7 @@ export function useSubgraphInputLayout(
     )
       return
     resizingGraph = graph
-    resize(event)
+    resize(event, 'SE', element.value ?? undefined)
   }
 
   return { style, startResize }

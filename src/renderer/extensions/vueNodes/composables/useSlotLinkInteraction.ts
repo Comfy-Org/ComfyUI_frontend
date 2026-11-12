@@ -795,7 +795,6 @@ export function useSlotLinkInteraction({
     if (!wasConnecting && activeAdapter.linkConnector.isConnecting) {
       dragReveal.revealLinks()
       const { linkConnector } = activeAdapter
-
       linkConnector.events.addEventListener(
         'reset',
         () =>
