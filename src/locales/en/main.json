@@ -2611,10 +2611,10 @@
     "noClips": "Connect videos to preview and order them",
     "clips": "Clips",
     "clipLabel": "Clip {position}",
-    "previewClips": "Clips",
-    "previewResult": "Last run",
     "reorderHint": "Drag clips or press Alt + arrow keys to reorder, click to jump",
-    "mixedDimensions": "Mixed sizes"
+    "mixedDimensions": "Mixed sizes",
+    "mixedDimensionsWarning": "All clips must match clip {position} ({width} × {height}) to concatenate: {clips}.",
+    "clipSize": "clip {position} is {width} × {height}"
   },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
