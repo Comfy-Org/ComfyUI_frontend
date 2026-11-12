@@ -175,9 +175,9 @@ function bytesLeft(
 ): number | null {
   const received = receivedBytes ?? 0
   const size = totalBytes && totalBytes >= received ? totalBytes : row.fileSize
-  if (size === null) return null
+  if (size === null || received > size) return null
   const done = receivedBytes ?? (fraction ?? 0) * size
-  return Math.max(0, size - done)
+  return Math.ceil(size - done)
 }
 
 export function deriveTemplateModelSetup(

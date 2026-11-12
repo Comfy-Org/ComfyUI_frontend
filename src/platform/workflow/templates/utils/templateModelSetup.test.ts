@@ -369,7 +369,7 @@ describe('remainingModelDownloadTotal', () => {
           stateFor: pausedAt(2048),
           canResume: () => true
         })
-      ).toEqual({ bytes: 4096, isComplete: true })
+      ).toEqual({ bytes: 4096, isComplete: false })
     })
 
     it('measures what is left by the host size when the host knows it', () => {
@@ -402,6 +402,11 @@ describe('remainingModelDownloadTotal', () => {
         name: 'only a fraction',
         state: { receivedBytes: null, fraction: 0.25 },
         bytes: 3072
+      },
+      {
+        name: 'a fraction that leaves part of a byte',
+        state: { receivedBytes: null, fraction: 0.1 },
+        bytes: 3687
       }
     ])('falls back to the declared size given $name', ({ state, bytes }) => {
       const rows = rowsFor([paused, 4096])
@@ -416,6 +421,17 @@ describe('remainingModelDownloadTotal', () => {
           canResume: () => true
         })
       ).toEqual({ bytes, isComplete: true })
+    })
+
+    it('reports an unknown size when more arrived than the declared size', () => {
+      const rows = rowsFor([paused, 4096])
+
+      expect(
+        remainingModelDownloadTotal(rows, {
+          stateFor: pausedAt(8192),
+          canResume: () => true
+        })
+      ).toMatchObject({ isComplete: false })
     })
 
     it.for([
