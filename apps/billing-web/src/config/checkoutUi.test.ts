@@ -370,3 +370,28 @@ describe('settleCheckoutUi', () => {
     }
   )
 })
+
+describe('in a billing handoff tab', () => {
+  it('fails closed without minting a session or reading Cloud features', async () => {
+    const { awaitCheckoutUiVariant } = await freshCheckoutUi()
+    const { handoffTab } = await import('@/handoff/handoffTab')
+    handoffTab.value = { kind: 'ended', ending: 'session_ended' }
+
+    await expect(awaitCheckoutUiVariant()).resolves.toBe('embedded')
+
+    expect(h.ensureFresh).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('ignores a dev override that would open the full-page checkout', async () => {
+    localStorage.setItem(
+      'ff:billing_web_checkout_ui',
+      JSON.stringify('full_page')
+    )
+    const { awaitCheckoutUiVariant } = await freshCheckoutUi()
+    const { handoffTab } = await import('@/handoff/handoffTab')
+    handoffTab.value = { kind: 'ended', ending: 'session_ended' }
+
+    await expect(awaitCheckoutUiVariant()).resolves.toBe('embedded')
+  })
+})
