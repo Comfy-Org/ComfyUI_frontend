@@ -6,6 +6,8 @@
  * snapshot — so disconnecting while iterating is safe, which is precisely what
  * the old mutable-array mirror made hazardous.
  */
+import { omitBy } from 'es-toolkit'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
@@ -317,6 +319,28 @@ export function toLinkInfo(graph: LGraph, link: LLink): LinkInfo | undefined {
   })
 }
 
+function slotAppearance(patch: SlotPatch): Partial<INodeInputSlot> {
+  const properties: Partial<INodeInputSlot> = {}
+  if ('localizedName' in patch) {
+    properties.localized_name = patch.localizedName ?? undefined
+  }
+  if ('position' in patch) {
+    properties.pos = patch.position
+      ? [patch.position.x, patch.position.y]
+      : undefined
+  }
+  if ('direction' in patch) {
+    properties.dir = patch.direction
+      ? SLOT_DIRECTIONS[patch.direction]
+      : undefined
+  }
+  if (patch.shape !== undefined) {
+    properties.shape =
+      patch.shape === 'default' ? undefined : SLOT_SHAPES[patch.shape]
+  }
+  return properties
+}
+
 function applyPatch(
   slot: INodeInputSlot | INodeOutputSlot | undefined,
   patch: SlotPatch
@@ -324,23 +348,8 @@ function applyPatch(
   if (!slot) return
   if (patch.name !== undefined) slot.name = patch.name
   if ('label' in patch) slot.label = patch.label
-  if ('localizedName' in patch) {
-    slot.localized_name = patch.localizedName ?? undefined
-  }
   if (patch.type !== undefined) slot.type = normaliseType(patch.type)
-  if ('position' in patch) {
-    slot.pos = patch.position ? [patch.position.x, patch.position.y] : undefined
-  }
-  if ('direction' in patch) {
-    slot.dir =
-      patch.direction === null || patch.direction === undefined
-        ? undefined
-        : SLOT_DIRECTIONS[patch.direction]
-  }
-  if (patch.shape !== undefined) {
-    slot.shape =
-      patch.shape === 'default' ? undefined : SLOT_SHAPES[patch.shape]
-  }
+  Object.assign(slot, slotAppearance(patch))
   if ('color' in patch) slot.color_on = patch.color ?? undefined
   if ('colorWhenUnconnected' in patch) {
     slot.color_off = patch.colorWhenUnconnected ?? undefined
@@ -842,19 +851,10 @@ export function slotShapeOf(shape?: SlotShape) {
 
 function slotProperties(options?: SlotOptions) {
   if (!options) return undefined
-  const properties: Partial<INodeInputSlot> = {}
-  if (options.shape && options.shape !== 'default') {
-    properties.shape = SLOT_SHAPES[options.shape]
-  }
-  if (options.localizedName !== undefined) {
-    properties.localized_name = options.localizedName
-  }
-  if (options.position) {
-    properties.pos = [options.position.x, options.position.y]
-  }
-  if (options.direction) {
-    properties.dir = SLOT_DIRECTIONS[options.direction]
-  }
+  const properties = omitBy(
+    slotAppearance(options),
+    (value) => value === undefined
+  )
   if (options.widget) {
     const widget: NonNullable<INodeInputSlot['widget']> = {
       name: options.widget

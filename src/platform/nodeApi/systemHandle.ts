@@ -118,6 +118,15 @@ function isAccelerator(value: unknown): value is SystemMonitorAccelerator {
   )
 }
 
+function isBoundedArray<T>(
+  value: unknown,
+  isItem: (value: unknown) => value is T
+): value is T[] {
+  return (
+    Array.isArray(value) && value.length <= MAX_ITEMS && value.every(isItem)
+  )
+}
+
 function isSnapshot(value: unknown): value is SystemMonitorSnapshot {
   if (!isRecord(value)) return false
   const { cpu, memory, volumes, accelerators } = value
@@ -125,12 +134,8 @@ function isSnapshot(value: unknown): value is SystemMonitorSnapshot {
     isRecord(cpu) &&
     isPercent(cpu.utilization_percent) &&
     isMemory(memory) &&
-    Array.isArray(volumes) &&
-    volumes.length <= MAX_ITEMS &&
-    volumes.every(isVolume) &&
-    Array.isArray(accelerators) &&
-    accelerators.length <= MAX_ITEMS &&
-    accelerators.every(isAccelerator)
+    isBoundedArray(volumes, isVolume) &&
+    isBoundedArray(accelerators, isAccelerator)
   )
 }
 
