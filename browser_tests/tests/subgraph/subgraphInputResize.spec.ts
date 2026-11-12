@@ -19,7 +19,7 @@ test.describe(
       const input = panel.getByRole('textbox', { name: 'text', exact: true })
       await input.fill('resized instance text')
       await panel
-        .getByRole('combobox', { name: 'Choose a subgraph instance' })
+        .getByRole('button', { name: 'Leave Subgraph', exact: true })
         .focus()
       const before = await panel.boundingBox()
       const textBefore = await input.boundingBox()

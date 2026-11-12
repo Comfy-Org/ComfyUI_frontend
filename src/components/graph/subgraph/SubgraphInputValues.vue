@@ -2,14 +2,15 @@
 import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import NodeBody from '@/renderer/extensions/vueNodes/components/NodeBody.vue'
+import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
+import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
+import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
 import { useSubgraphInputNode } from './useSubgraphInputNode'
 import SubgraphInputValuesContent from './SubgraphInputValuesContent.vue'
 import { useSubgraphInputLayout } from './useSubgraphInputLayout'
@@ -17,8 +18,15 @@ import NodeResizeHandle from '@/renderer/extensions/vueNodes/components/NodeResi
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
 const { t } = useI18n()
-const { context, collapsed, slots, options, selectedKey, handleKeydown } =
-  useSubgraphInputNode()
+const {
+  context,
+  collapsed,
+  slots,
+  title,
+  badges,
+  leaveSubgraph,
+  handleKeydown
+} = useSubgraphInputNode()
 const canvasStore = useCanvasStore()
 const {
   handleWheel,
@@ -44,7 +52,7 @@ const { style, startResize } = useSubgraphInputLayout(
     data-testid="subgraph-input-values"
     data-subgraph-io
     :inert="canvasStore.isPickingNodes"
-    :aria-label="t('subgraphInputValues.chooseInstance')"
+    :aria-label="title"
     class="pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) w-(--node-width) origin-top-left"
     :data-node-id="context.graph.inputNode.id"
     :style
@@ -57,45 +65,29 @@ const { style, startResize } = useSubgraphInputLayout(
     @pointerup.stop
     @keydown="handleKeydown"
   >
-    <header
-      ref="header"
-      class="lg-node-header flex items-center gap-1 rounded-t-(--node-radius) bg-node-header py-1 pr-2 pl-1"
-      @pointerdown.self="forwardEventToCanvas"
-      @pointermove="forwardEventToCanvas"
-      @pointerup.self="forwardEventToCanvas"
-    >
-      <Button
-        variant="textonly"
-        size="icon-sm"
-        :aria-label="
-          collapsed
-            ? t('subgraphInputValues.expand')
-            : t('subgraphInputValues.collapse')
-        "
-        :aria-expanded="!collapsed"
-        @click="collapsed = !collapsed"
-      >
-        <i
-          :class="
-            collapsed
-              ? 'icon-[lucide--chevron-right]'
-              : 'icon-[lucide--chevron-down]'
-          "
-        />
-      </Button>
-      <SingleSelect
-        v-model="selectedKey"
-        size="md"
-        :options
-        :label="t('subgraphInputValues.chooseInstance')"
-        :accessible-label="t('subgraphInputValues.chooseInstance')"
-        class="min-w-0 flex-1 border-0 bg-transparent font-medium"
-        @pointerdown.stop
-        @pointermove.stop
-        @pointerup.stop
+    <template #before>
+      <NodeBadges
+        :groups="badges"
+        role="img"
+        :aria-label="t('g.subgraph')"
+        class="absolute right-0 bottom-full"
       />
-    </header>
+    </template>
+    <div
+      ref="header"
+      @pointerdown="forwardEventToCanvas"
+      @pointermove="forwardEventToCanvas"
+      @pointerup="forwardEventToCanvas"
+    >
+      <NodeHeader
+        :title
+        :editable="false"
+        :collapsed
+        @collapse="collapsed = !collapsed"
+      />
+    </div>
     <NodeBody
+      data-testid="subgraph-input-body"
       class="rounded-b-(--node-radius)"
       @pointerdown.self="forwardEventToCanvas"
     >
@@ -129,6 +121,7 @@ const { style, startResize } = useSubgraphInputLayout(
       />
     </NodeBody>
     <template #after>
+      <NodeFooter subgraph-action="leave" @navigate-subgraph="leaveSubgraph" />
       <NodeResizeHandle
         v-if="!collapsed"
         :handle="RESIZE_HANDLES[0]"

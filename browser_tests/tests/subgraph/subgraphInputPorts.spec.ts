@@ -65,11 +65,15 @@ test.describe(
 
       await test.step('Dragging the node background also carries its linked port', async () => {
         const before = await panel.boundingBox()
-        if (!before) throw new Error('Expected the input node to be rendered')
+        const body = await panel
+          .getByTestId('subgraph-input-body')
+          .boundingBox()
+        if (!before || !body)
+          throw new Error('Expected the input node and body to be rendered')
         const slot = await comfyPage.subgraph.getInputSlot('clip').getPosition()
         await comfyMouse.dragAndDrop(
-          { x: before.x + 8, y: before.y + before.height - 6 },
-          { x: before.x + 28, y: before.y + before.height + 24 }
+          { x: body.x + 8, y: body.y + body.height - 6 },
+          { x: body.x + 28, y: body.y + body.height + 24 }
         )
         await expect
           .poll(async () => (await panel.boundingBox())?.x)

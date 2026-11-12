@@ -37,7 +37,7 @@ defineExpose({ element })
     <div
       :class="
         cn(
-          'relative flex flex-1 flex-col',
+          'relative isolate flex flex-1 flex-col',
           contentVisibility &&
             '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] group-data-measured/node:[content-visibility:auto] group-data-measured/node:[overflow-clip-margin:16px]'
         )

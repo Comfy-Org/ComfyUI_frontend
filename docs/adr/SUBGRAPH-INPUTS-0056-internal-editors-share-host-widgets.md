@@ -20,16 +20,20 @@ updates. Those contracts already belong to the widget rendering system.
 ## Decision
 
 The prototype renders the existing input boundary through LGraphNode.vue with
-outputs and native widgets. Its title is an instance picker identifying the host
-by title and node ID. The final empty output creates a new external input through
+outputs and native widgets. Its title identifies the host by title and node ID.
+A Leave Subgraph footer uses the existing exit command to return to the parent
+context. Users enter a different SubgraphNode to edit another instance.
+The final empty output creates a new external input through
 the existing connection handlers. Widgets display their own labels.
 Explicit entry records a graph-scoped host locator. Direct entry infers a host
 only when there is one candidate. Removing an explicitly selected host leaves
 the context unresolved rather than selecting another host implicitly.
 
-LGraphNode.vue owns the shared frame, NodeBody the shared body spacing, and
-NodeResizeHandle the resize affordance. GraphNode.vue owns the ordinary node's
-rendering integration. State and behavior belong to shared composables:
+LGraphNode.vue owns the shared frame, NodeHeader the title and collapse control,
+NodeBody the shared body spacing, NodeFooter the subgraph navigation action, and
+NodeResizeHandle the resize affordance. The same footer renders enter and leave
+actions; the header supports a read-only instance title. GraphNode.vue owns the
+ordinary node's rendering integration. State and behavior belong to shared composables:
 useGraphNodePresentation coordinates existing entity stores, useGraphNodeActions
 owns commands, useGraphNodeWidgets resolves native widget/media presentation, and
 useNodeShape derives shape tokens. Header and body components only render their
@@ -136,8 +140,8 @@ would lose host isolation and contradict promoted-widget ownership.
 ## Consequences
 
 Both renderer modes use the existing Vue controls in the panel. The prototype
-adds no workflow fields or migration. Switching the instance changes the editing
-target without changing the definition.
+adds no workflow fields or migration. Navigation through a different host
+changes the editing target without changing the definition.
 
 The input node can occupy more space than the previous boundary. Its widgets can
 collapse, and the whole unit pans and zooms with the canvas.

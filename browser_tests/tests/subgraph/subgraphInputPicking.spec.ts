@@ -20,12 +20,14 @@ test.describe(
         exact: true,
         includeHidden: true
       })
-      const picker = panel.getByRole('combobox', {
-        name: 'Choose a subgraph instance',
+      const heading = panel.getByRole('heading', { includeHidden: true })
+      const leave = panel.getByRole('button', {
+        name: 'Leave Subgraph',
+        exact: true,
         includeHidden: true
       })
       const collapse = panel.getByRole('button', {
-        name: 'Collapse input values',
+        name: 'Collapse',
         exact: true,
         includeHidden: true
       })
@@ -48,14 +50,14 @@ test.describe(
           'shared-definition-two-hosts-promoted-text'
         )
         await comfyPage.vueNodes.enterSubgraph('11')
-        await expect(picker).toHaveText('Host A · #11')
+        await expect(heading).toHaveText('Host A · #11')
         await input.fill('before-picking')
-        await picker.focus()
+        await leave.focus()
       })
 
       const before = await comfyPage.nodeOps.getSerializedGraphWithoutViewport()
 
-      await test.step('Picking blocks widgets, the instance picker, and collapsing', async () => {
+      await test.step('Picking blocks widgets, leaving the subgraph, and collapsing', async () => {
         await agentPanel.root
           .getByRole('button', { name: 'Add to prompt', exact: true })
           .click()
@@ -76,9 +78,12 @@ test.describe(
         await comfyPage.page.keyboard.type('x')
         await expect(input).not.toBeFocused()
         await expect(input).toHaveValue('before-picking')
-        await clickThroughInertLayer(picker)
-        await expect(comfyPage.page.getByRole('listbox')).toHaveCount(0)
-        await expect(picker).toHaveText('Host A · #11')
+        const graphId = await comfyPage.subgraph.getActiveGraphId()
+        await clickThroughInertLayer(
+          leave.getByText('Leave Subgraph', { exact: true })
+        )
+        expect(await comfyPage.subgraph.getActiveGraphId()).toBe(graphId)
+        await expect(heading).toHaveText('Host A · #11')
         await clickThroughInertLayer(collapse)
         await expect(collapse).toHaveAttribute('aria-expanded', 'true')
         await expect(input).toBeVisible()
@@ -90,19 +95,16 @@ test.describe(
       await test.step('Exiting restores editing and panel controls', async () => {
         await agentPanel.exitNodeSelectionMode()
         await input.fill('after-picking')
-        await picker.focus()
+        await leave.focus()
         await expect(input).toHaveValue('after-picking')
         await collapse.click()
         await expect(input).toHaveCount(0)
-        await panel
-          .getByRole('button', { name: 'Expand input values', exact: true })
-          .click()
+        await panel.getByRole('button', { name: 'Expand', exact: true }).click()
         await expect(input).toHaveValue('after-picking')
-        await picker.click()
-        await comfyPage.page
-          .getByRole('option', { name: 'Host B · #12', exact: true })
-          .click()
-        await expect(picker).toHaveText('Host B · #12')
+        await leave.getByText('Leave Subgraph', { exact: true }).click()
+        await expect(panel).toBeHidden()
+        await comfyPage.vueNodes.enterSubgraph('12')
+        await expect(heading).toHaveText('Host B · #12')
         await expect(input).toHaveValue('')
       })
     })

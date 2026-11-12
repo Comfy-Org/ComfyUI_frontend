@@ -65,14 +65,14 @@
     <template #after>
       <NodeFooter
         v-if="!isRerouteNode"
-        :is-subgraph
+        :subgraph-action="isSubgraph ? 'enter' : undefined"
         :error-severity="errorSeverity"
         :show-errors-tab-enabled="showErrorsTabEnabled"
         :show-advanced-inputs-button="showAdvancedInputsButton"
         :show-advanced-state="!!nodeData.showAdvanced"
         :header-color="applyLightThemeColor(nodeData.color)"
         :shape="nodeData.shape"
-        @enter-subgraph="handleEnterSubgraph"
+        @navigate-subgraph="handleEnterSubgraph"
         @open-errors="handleOpenErrors"
         @toggle-advanced="handleToggleAdvanced"
       />

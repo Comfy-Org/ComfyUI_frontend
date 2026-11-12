@@ -1,10 +1,19 @@
 import { computedWithControl, useEventListener } from '@vueuse/core'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeBadgeGroup } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
+
+const badges: NodeBadgeGroup[] = [
+  { kind: 'core', badges: [{ text: '', cssIcon: 'icon-[comfy--workflow]' }] }
+]
 
 export function useSubgraphInputNode() {
   const context = useSubgraphInputValuesStore()
+  const canvasStore = useCanvasStore()
+  const commands = useCommandStore()
   const { t } = useI18n()
   const collapsed = ref(false)
   const slots = computedWithControl(
@@ -22,27 +31,20 @@ export function useSubgraphInputNode() {
     ],
     slots.trigger
   )
-  const options = computed(() =>
-    context.candidates.map((node) => ({
-      value: `${node.graphId}:${node.id}`,
-      name: t('subgraphInputValues.instance', {
-        title: node.title,
-        id: node.id
-      })
-    }))
+  const title = computed(() =>
+    context.selected
+      ? t('subgraphInputValues.instance', {
+          title: context.selected.title,
+          id: context.selected.id
+        })
+      : context.graph?.name
   )
-  const selectedKey = computed({
-    get: () =>
-      context.selected
-        ? `${context.selected.graphId}:${context.selected.id}`
-        : undefined,
-    set: (value: string | number | undefined) => {
-      const host = context.candidates.find(
-        (node) => `${node.graphId}:${node.id}` === value
-      )
-      if (host) context.selectHost(host)
+
+  function leaveSubgraph() {
+    if (!canvasStore.isPickingNodes) {
+      void commands.execute('Comfy.Graph.ExitSubgraph')
     }
-  })
+  }
 
   function handleKeydown(event: KeyboardEvent) {
     if (
@@ -55,5 +57,13 @@ export function useSubgraphInputNode() {
     }
   }
 
-  return { context, collapsed, slots, options, selectedKey, handleKeydown }
+  return {
+    context,
+    collapsed,
+    slots,
+    title,
+    badges,
+    leaveSubgraph,
+    handleKeydown
+  }
 }

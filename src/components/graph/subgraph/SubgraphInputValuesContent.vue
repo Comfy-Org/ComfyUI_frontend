@@ -26,7 +26,7 @@ const { rows, resolve, locate } = useSubgraphInputValues()
       </p>
     </template>
     <p v-else class="mx-3 my-0 text-muted-foreground">
-      {{ t('subgraphInputValues.chooseInstanceHint') }}
+      {{ t('subgraphInputValues.enterInstanceHint') }}
     </p>
   </div>
 </template>

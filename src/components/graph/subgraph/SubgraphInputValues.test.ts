@@ -69,6 +69,7 @@ async function renderInputNode() {
     ]
   })
   const host = createTestSubgraphNode(graph)
+  host.title = 'Host A'
   graph.rootGraph.add(host)
   vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph.rootGraph)
   const store = useCanvasStore()
@@ -94,6 +95,17 @@ async function renderInputNode() {
 }
 
 describe('subgraph input node ports', () => {
+  it('identifies the current instance without a picker and offers a leave action', async () => {
+    const { host } = await renderInputNode()
+
+    expect(
+      screen.getByRole('heading', { name: `${host.title} · #${host.id}` })
+    ).toBeVisible()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'Subgraph' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Leave Subgraph' })).toBeVisible()
+  })
+
   it('does not start resizing a pinned input node', async () => {
     const { graph } = await renderInputNode()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })

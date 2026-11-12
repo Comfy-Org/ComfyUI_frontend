@@ -54,22 +54,25 @@ for (const renderer of [
         )
         const initial = await savedValues()
         const panel = comfyPage.page.getByTestId('subgraph-input-values')
-        const hostPicker = panel.getByRole('combobox', {
-          name: 'Choose a subgraph instance'
+        const heading = panel.getByRole('heading')
+        const leave = panel.getByRole('button', {
+          name: 'Leave Subgraph',
+          exact: true
         })
         const input = panel.getByRole('textbox', { name: 'text', exact: true })
 
         await test.step('Entering Host A identifies the instance and preserves saved values', async () => {
           await renderer.enter(comfyPage, '11')
           await expect(panel).toBeVisible()
-          await expect(hostPicker).toHaveText('Host A · #11')
+          await expect(heading).toHaveText('Host A · #11')
+          await expect(panel.getByRole('combobox')).toHaveCount(0)
           await expect(input).toHaveValue('')
           expect(await savedValues()).toEqual(initial)
         })
 
         await test.step('Editing inside Host A changes only its promoted value', async () => {
           await input.fill('boundary-host-a')
-          await hostPicker.focus()
+          await leave.focus()
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
@@ -78,23 +81,22 @@ for (const renderer of [
             ])
           expect((await savedValues()).defaults).toEqual(initial.defaults)
           await panel
-            .getByRole('button', { name: 'Collapse input values', exact: true })
+            .getByRole('button', { name: 'Collapse', exact: true })
             .click()
           expect((await savedValues()).inputBounds).toEqual(initial.inputBounds)
           await panel
-            .getByRole('button', { name: 'Expand input values', exact: true })
+            .getByRole('button', { name: 'Expand', exact: true })
             .click()
         })
 
-        await test.step('Selecting Host B changes the editing target without leaving the definition', async () => {
-          await hostPicker.click()
-          await comfyPage.page
-            .getByRole('option', { name: 'Host B · #12', exact: true })
-            .click()
-          await expect(hostPicker).toHaveText('Host B · #12')
+        await test.step('Leaving the subgraph and entering Host B changes the editing target', async () => {
+          await leave.getByText('Leave Subgraph', { exact: true }).click()
+          await expect(panel).toBeHidden()
+          await renderer.enter(comfyPage, '12')
+          await expect(heading).toHaveText('Host B · #12')
           await expect(input).toHaveValue('')
           await input.fill('boundary-host-b')
-          await hostPicker.focus()
+          await leave.focus()
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
@@ -104,7 +106,7 @@ for (const renderer of [
         })
 
         await test.step('Workflow undo and redo restore the host values', async () => {
-          await hostPicker.press('Control+z')
+          await leave.press('Control+z')
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
@@ -112,7 +114,7 @@ for (const renderer of [
               { id: '12', values: [''] }
             ])
           await panel
-            .getByRole('button', { name: 'Collapse input values', exact: true })
+            .getByRole('button', { name: 'Collapse', exact: true })
             .press('Control+y')
           await expect
             .poll(async () => (await savedValues()).hosts)
@@ -126,7 +128,7 @@ for (const renderer of [
           await comfyPage.subgraph.exitViaBreadcrumb()
           await comfyPage.subgraph.serializeAndReload()
           await renderer.enter(comfyPage, '12')
-          await expect(hostPicker).toHaveText('Host B · #12')
+          await expect(heading).toHaveText('Host B · #12')
           await expect(input).toHaveValue('boundary-host-b')
           expect((await savedValues()).defaults).toEqual(initial.defaults)
         })
@@ -190,7 +192,7 @@ for (const renderer of [
               })
             )
             .toBe(true)
-          await expect(hostPicker).toHaveText('Host B · #12')
+          await expect(heading).toHaveText('Host B · #12')
           await expect(input).toHaveValue('boundary-host-b')
         })
       })

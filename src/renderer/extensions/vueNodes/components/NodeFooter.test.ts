@@ -24,6 +24,7 @@ const i18n = createI18n({
       g: {
         enter: 'Enter',
         enterSubgraph: 'Enter Subgraph',
+        leaveSubgraph: 'Leave Subgraph',
         error: 'Error'
       },
       rightSidePanel: {
@@ -40,7 +41,7 @@ const i18n = createI18n({
 type Props = ComponentProps<typeof NodeFooter>
 
 const baseProps: Props = {
-  isSubgraph: false,
+  subgraphAction: undefined,
   errorSeverity: 'none',
   showErrorsTabEnabled: false
 }
@@ -61,6 +62,16 @@ function allButtonClasses(): string {
 
 describe('NodeFooter', () => {
   describe('rendering branches', () => {
+    it('offers leaving through the same navigation action', async () => {
+      const { emitted } = renderFooter({ subgraphAction: 'leave' })
+      const user = userEvent.setup()
+
+      await user.click(screen.getByRole('button', { name: 'Leave Subgraph' }))
+
+      expect(emitted()).toHaveProperty('navigateSubgraph')
+      expect(screen.queryByText('Enter Subgraph')).not.toBeInTheDocument()
+    })
+
     it('renders nothing when no relevant flags are set', () => {
       renderFooter()
       expect(screen.queryAllByRole('button')).toHaveLength(0)
@@ -68,7 +79,7 @@ describe('NodeFooter', () => {
 
     it('renders error + enter tabs for subgraph with error (Case 1)', () => {
       renderFooter({
-        isSubgraph: true,
+        subgraphAction: 'enter',
         errorSeverity: 'error',
         showErrorsTabEnabled: true
       })
@@ -103,7 +114,7 @@ describe('NodeFooter', () => {
     })
 
     it('renders subgraph-only footer without errors (Case 3)', () => {
-      renderFooter({ isSubgraph: true })
+      renderFooter({ subgraphAction: 'enter' })
       expect(screen.getByText('Enter Subgraph')).toBeTruthy()
       expect(screen.queryByText('Error')).toBeNull()
     })
@@ -120,24 +131,39 @@ describe('NodeFooter', () => {
   })
 
   it.for([
-    { name: 'regular', isSubgraph: false, showAdvancedInputsButton: false },
-    { name: 'subgraph', isSubgraph: true, showAdvancedInputsButton: false },
-    { name: 'advanced', isSubgraph: false, showAdvancedInputsButton: true }
-  ])('opens issues from the warning footer on a $name node', async (props) => {
-    const user = userEvent.setup()
-    const { emitted } = renderFooter({
-      ...props,
-      errorSeverity: 'missing',
-      showErrorsTabEnabled: true
-    })
-    const button = screen.getByRole('button', { name: 'Issues' })
-    expect(button).toHaveClass('bg-warning', 'text-warning-foreground')
-    expect(
-      screen.queryByRole('button', { name: 'Error' })
-    ).not.toBeInTheDocument()
-    await user.click(button)
-    expect(emitted()).toHaveProperty('openErrors')
-  })
+    {
+      name: 'regular',
+      subgraphAction: undefined,
+      showAdvancedInputsButton: false
+    },
+    {
+      name: 'subgraph',
+      subgraphAction: 'enter',
+      showAdvancedInputsButton: false
+    },
+    {
+      name: 'advanced',
+      subgraphAction: undefined,
+      showAdvancedInputsButton: true
+    }
+  ] as const)(
+    'opens issues from the warning footer on a $name node',
+    async (props) => {
+      const user = userEvent.setup()
+      const { emitted } = renderFooter({
+        ...props,
+        errorSeverity: 'missing',
+        showErrorsTabEnabled: true
+      })
+      const button = screen.getByRole('button', { name: 'Issues' })
+      expect(button).toHaveClass('bg-warning', 'text-warning-foreground')
+      expect(
+        screen.queryByRole('button', { name: 'Error' })
+      ).not.toBeInTheDocument()
+      await user.click(button)
+      expect(emitted()).toHaveProperty('openErrors')
+    }
+  )
 
   describe('emits', () => {
     let user: ReturnType<typeof userEvent.setup>
@@ -155,10 +181,10 @@ describe('NodeFooter', () => {
       expect(emitted()).toHaveProperty('openErrors')
     })
 
-    it('emits enterSubgraph when the enter tab is clicked', async () => {
-      const { emitted } = renderFooter({ isSubgraph: true })
+    it('emits navigateSubgraph when the enter tab is clicked', async () => {
+      const { emitted } = renderFooter({ subgraphAction: 'enter' })
       await user.click(screen.getByTestId('subgraph-enter-button'))
-      expect(emitted()).toHaveProperty('enterSubgraph')
+      expect(emitted()).toHaveProperty('navigateSubgraph')
     })
 
     it('emits toggleAdvanced when the advanced tab is clicked', async () => {
@@ -172,50 +198,50 @@ describe('NodeFooter', () => {
         layoutStore.isDraggingVueNodes.value = false
       })
 
-      it('does not emit enterSubgraph when a node drag is in progress at pointerup', async () => {
-        const { emitted } = renderFooter({ isSubgraph: true })
+      it('does not emit navigateSubgraph when a node drag is in progress at pointerup', async () => {
+        const { emitted } = renderFooter({ subgraphAction: 'enter' })
         layoutStore.isDraggingVueNodes.value = true
         await user.click(screen.getByTestId('subgraph-enter-button'))
 
-        expect(emitted().enterSubgraph).toBeUndefined()
+        expect(emitted().navigateSubgraph).toBeUndefined()
       })
 
       it('only suppresses the immediately following click, not later ones', async () => {
-        const { emitted } = renderFooter({ isSubgraph: true })
+        const { emitted } = renderFooter({ subgraphAction: 'enter' })
         const button = screen.getByTestId('subgraph-enter-button')
 
         layoutStore.isDraggingVueNodes.value = true
         await user.click(button)
-        expect(emitted().enterSubgraph).toBeUndefined()
+        expect(emitted().navigateSubgraph).toBeUndefined()
 
         layoutStore.isDraggingVueNodes.value = false
         await user.click(button)
-        expect(emitted()).toHaveProperty('enterSubgraph')
+        expect(emitted()).toHaveProperty('navigateSubgraph')
       })
     })
   })
 
   describe('shape-based radius classes (getBottomRadius)', () => {
     it('BOX shape renders no rounded-b* class on the single-tab footer', () => {
-      renderFooter({ isSubgraph: true, shape: RenderShape.BOX })
+      renderFooter({ subgraphAction: 'enter', shape: RenderShape.BOX })
       expect(allButtonClasses()).not.toMatch(/rounded-b/)
     })
 
     it('CARD shape emits rounded-br variant on the single-tab footer', () => {
-      renderFooter({ isSubgraph: true, shape: RenderShape.CARD })
+      renderFooter({ subgraphAction: 'enter', shape: RenderShape.CARD })
       const classes = allButtonClasses()
       expect(classes).toMatch(/rounded-br-\(--node-radius\)/)
       expect(classes).not.toMatch(/\srounded-b-\w/)
     })
 
     it('default shape emits rounded-b variant on the single-tab footer', () => {
-      renderFooter({ isSubgraph: true })
+      renderFooter({ subgraphAction: 'enter' })
       expect(allButtonClasses()).toMatch(/rounded-b-\(--node-radius\)/)
     })
 
     it('enter tab uses right-only rounding in dual-tab mode (Case 1)', () => {
       renderFooter({
-        isSubgraph: true,
+        subgraphAction: 'enter',
         errorSeverity: 'error',
         showErrorsTabEnabled: true
       })
@@ -226,7 +252,7 @@ describe('NodeFooter', () => {
 
   describe('headerColor style', () => {
     it('applies backgroundColor to the enter button when headerColor is set', () => {
-      renderFooter({ isSubgraph: true, headerColor: 'rgb(10, 20, 30)' })
+      renderFooter({ subgraphAction: 'enter', headerColor: 'rgb(10, 20, 30)' })
       const enterBtn = screen.getByTestId('subgraph-enter-button')
       expect(enterBtn.getAttribute('style')).toMatch(
         /background-color:\s*rgb\(10,\s*20,\s*30\)/
@@ -234,7 +260,7 @@ describe('NodeFooter', () => {
     })
 
     it('omits backgroundColor style when headerColor is missing', () => {
-      renderFooter({ isSubgraph: true })
+      renderFooter({ subgraphAction: 'enter' })
       const enterBtn = screen.getByTestId('subgraph-enter-button')
       expect(enterBtn.getAttribute('style') ?? '').not.toMatch(
         /background-color/

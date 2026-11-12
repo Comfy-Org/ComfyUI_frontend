@@ -9,7 +9,6 @@ import {
 import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
 export const useSubgraphInputValuesStore = defineStore(
@@ -38,16 +37,6 @@ export const useSubgraphInputValuesStore = defineStore(
       },
       { immediate: true, flush: 'sync' }
     )
-
-    function selectHost(host: NodeState) {
-      const current = graph.value
-      if (!current || host.type !== current.id) return
-      context.value = transitionSubgraphHostContext(context.value, {
-        type: 'entered',
-        rootGraphId: current.rootGraph.id,
-        host: { graphId: host.graphId, nodeId: host.id, subgraphId: current.id }
-      })
-    }
 
     useEventListener(
       () => canvasStore.canvas?.canvas,
@@ -89,6 +78,6 @@ export const useSubgraphInputValuesStore = defineStore(
           ? candidates.value[0]
           : undefined
     })
-    return { graph, candidates, selected, selectHost }
+    return { graph, selected }
   }
 )

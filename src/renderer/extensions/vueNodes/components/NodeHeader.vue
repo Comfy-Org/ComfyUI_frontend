@@ -23,6 +23,9 @@
             data-testid="node-collapse-button"
             :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
             :aria-expanded="!collapsed"
+            @pointerdown.left.stop
+            @pointermove.left.stop
+            @pointerup.left.stop
             @click.stop="handleCollapse"
             @dblclick.stop
           >
@@ -49,6 +52,8 @@
             <div
               class="flex min-w-0 flex-1 items-center gap-2"
               data-testid="node-title"
+              role="heading"
+              aria-level="2"
             >
               <div class="flex-1 truncate">
                 <EditableText
@@ -104,12 +109,19 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 
 interface NodeHeaderProps {
   nodeData?: NodeState
+  title?: string
+  editable?: boolean
   collapsed?: boolean
   showMissingWarning?: boolean
 }
 
-const { nodeData, collapsed, showMissingWarning } =
-  defineProps<NodeHeaderProps>()
+const {
+  nodeData,
+  title,
+  editable = true,
+  collapsed,
+  showMissingWarning
+} = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -143,7 +155,7 @@ const resolveTitle = (info: NodeState | undefined) => {
   })
 }
 
-const displayTitle = computed(() => resolveTitle(nodeData))
+const displayTitle = computed(() => title ?? resolveTitle(nodeData))
 
 const bypassed = computed(
   (): boolean => nodeData?.mode === LGraphEventMode.BYPASS
@@ -187,14 +199,13 @@ const handleCollapse = () => {
 }
 
 const handleDoubleClick = () => {
-  isEditing.value = true
+  if (editable) isEditing.value = true
 }
 
 const handleTitleEdit = (newTitle: string) => {
   isEditing.value = false
   const trimmedTitle = newTitle.trim()
   if (trimmedTitle && trimmedTitle !== displayTitle.value) {
-    // Emit for litegraph sync
     emit('update:title', trimmedTitle)
   }
 }

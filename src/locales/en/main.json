@@ -124,6 +124,8 @@
     "subgraphUnpackFailed": "Unable to unpack the selected subgraph.",
     "enter": "Enter",
     "enterSubgraph": "Enter subgraph",
+    "leaveSubgraph": "Leave Subgraph",
+    "subgraph": "Subgraph",
     "inSubgraph": "in subgraph '{name}'",
     "missingNodeTypesInGroup": "missing: {types}",
     "resizeFromBottomRight": "Resize from bottom-right corner",
@@ -1372,17 +1374,14 @@
   },
   "subgraphInputValues": {
     "instance": "{title} · #{id}",
-    "chooseInstance": "Choose a subgraph instance",
-    "chooseInstanceHint": "Choose the subgraph node whose values you want to edit.",
+    "enterInstanceHint": "Enter this subgraph through a Subgraph Node to edit its values.",
     "linked": "Linked value · read-only",
     "fromSource": "Source: {title} · #{id}",
     "sourceHint": "Editing this source also changes the other inputs connected to it.",
     "sharedSource": "Shared source",
     "locateSource": "Locate source node",
     "unavailable": "Value unavailable",
-    "noInputs": "Promote inputs to edit their values here.",
-    "expand": "Expand input values",
-    "collapse": "Collapse input values"
+    "noInputs": "Promote inputs to edit their values here."
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",

@@ -117,6 +117,21 @@ const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
 }
 
 describe('NodeHeader.vue', () => {
+  it('displays an explicit read-only title without enabling rename', async () => {
+    const { user, onUpdateTitle } = renderHeader({
+      nodeData: undefined,
+      title: 'Host A · #11',
+      editable: false
+    })
+    const title = screen.getByRole('heading', { name: 'Host A · #11' })
+
+    await user.dblClick(title)
+
+    expect(title).toBeVisible()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(onUpdateTitle).not.toHaveBeenCalled()
+  })
+
   it('emits collapse when collapse button is clicked', async () => {
     const { user, onCollapse } = renderHeader()
     await user.click(screen.getByRole('button', { name: 'Collapse' }))
