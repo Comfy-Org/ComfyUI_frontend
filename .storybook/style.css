@@ -1,6 +1,21 @@
 @import '../packages/design-system/src/css/theme.css';
+@import '../packages/mask-editor/src/ui/style.css';
 
+@source '../packages/mask-editor/src/ui';
 @source '../packages/design-system/src/components';
 @source not '../packages/design-system/src/components/**/*.test.ts';
 @source not '../packages/design-system/src/components/**/*.md';
 @source '../src/**/*.stories.ts';
+@source '../packages/account-ui/src';
+@source not '../packages/account-ui/src/**/*.test.ts';
+@source not '../packages/account-ui/src/**/*.md';
+
+body.sb-show-main,
+body.sb-show-docs {
+  overflow-y: auto;
+}
+
+.docs-story {
+  background-color: var(--background);
+  color: var(--foreground);
+}

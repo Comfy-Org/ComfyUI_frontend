@@ -12,6 +12,7 @@ import type {
   CancelSubscriptionResponse,
   CreateTopupCheckoutRequest,
   CreateTopupCheckoutResponse,
+  CreateTopupQuoteRequest,
   CreateTopupRequest,
   CreateTopupResponse,
   HostedTopupCheckout,
@@ -37,7 +38,8 @@ import type {
   SubscriptionDuration,
   SubscriptionTier,
   TeamCreditStops,
-  TeamCreditStopSummary
+  TeamCreditStopSummary,
+  TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 import {
   zRetentionAcceptance,
@@ -473,6 +475,22 @@ export function createBillingApi({
         return response.data
       } catch (err) {
         handleAxiosError(err, 'createTopupCheckout')
+      }
+    },
+    async quoteTopup(
+      amountCents: number,
+      signal?: AbortSignal
+    ): Promise<TopupQuoteResponse> {
+      const auth = await requestAuth()
+      try {
+        const response = await client.post<TopupQuoteResponse>(
+          resolveUrl('/billing/topup/quote'),
+          { amount_cents: amountCents } satisfies CreateTopupQuoteRequest,
+          { ...auth, signal }
+        )
+        return response.data
+      } catch (err) {
+        handleAxiosError(err, 'quoteTopup')
       }
     },
     async listTopupCheckouts(): Promise<HostedTopupCheckoutList> {
