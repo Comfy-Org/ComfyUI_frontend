@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { expect, fn } from 'storybook/test'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -27,6 +27,12 @@ const meta: Meta<{
     components: { WidgetSelectDefault },
     setup() {
       const value = ref(args.value)
+      watch(
+        () => args.value,
+        (next) => {
+          value.value = next
+        }
+      )
       const widget = computed<SimplifiedWidget<string>>(() => ({
         name: 'checkpoint',
         type: 'COMBO',
