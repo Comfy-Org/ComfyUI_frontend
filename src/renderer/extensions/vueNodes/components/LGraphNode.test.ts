@@ -487,6 +487,22 @@ describe('LGraphNode', () => {
     expect(screen.queryByTestId('node-content')).not.toBeInTheDocument()
   })
 
+  it('limits a generic image preview to the images output bucket', () => {
+    const outputs = seedNodeOutputs([
+      { filename: 'output.png', type: 'output' }
+    ])
+    outputs.nodeOutputs['test-node-123'] = {
+      images: [{ filename: 'output.png', type: 'output' }],
+      video: [{ filename: 'output.webm', type: 'output' }]
+    }
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(screen.getByTestId('node-content')).toHaveTextContent(
+      /^output\.png$/
+    )
+  })
+
   it('keeps an executed output preview when the LoadImage selector is linked', () => {
     mockData.mockLgraphNode = {
       constructor: {

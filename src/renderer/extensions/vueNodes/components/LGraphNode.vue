@@ -711,7 +711,9 @@ const nodeMedia = computed(() => {
 
   if (type === 'video' && hasVideoPreviewWidget.value) return undefined
 
-  const items = nodeOutputs.getNodeOutputItems(node, outputs)
+  const items = nodeOutputs
+    .getNodeOutputItems(node, outputs)
+    .filter((item) => type === 'video' || item.mediaType === 'images')
   if (!items.length) return undefined
 
   return { type, items } as const

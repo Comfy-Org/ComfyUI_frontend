@@ -5,13 +5,15 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import ImagePreview from './ImagePreview.vue'
 
 function sampleItem(seed: string, previewUrl?: string): AugmentedResultItem {
+  const url = previewUrl ?? `https://picsum.photos/seed/${seed}/800/600`
   return {
     filename: `${seed}.png`,
     subfolder: '',
     type: 'output',
     mediaType: 'images',
     nodeId: '1',
-    previewUrl: previewUrl ?? `https://picsum.photos/seed/${seed}/800/600`
+    url,
+    previewUrl: url
   }
 }
 

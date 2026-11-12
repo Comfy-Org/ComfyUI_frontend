@@ -1025,6 +1025,24 @@ describe('nodeOutputStore image url cache busting', () => {
     vi.mocked(app.getRandParam).mockImplementation(() => `&rand=${calls++}`)
   })
 
+  it.for(['blob:original-image', 'https://example.com/original.png'])(
+    'preserves explicit original and preview URLs for %s',
+    (url) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 7 })
+      const image = {
+        filename: 'original.png',
+        url,
+        previewUrl: 'blob:preview-image'
+      }
+      store.nodeOutputs['7'] = { images: [image] }
+
+      expect(store.getNodeOutputItems(node)).toEqual([
+        expect.objectContaining({ url, previewUrl: 'blob:preview-image' })
+      ])
+    }
+  )
+
   it('reuses one url for the same outputs and a fresh one for new outputs', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 7 })

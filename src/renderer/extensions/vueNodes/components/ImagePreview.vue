@@ -87,7 +87,17 @@
         </p>
       </div>
       <!-- Loading State -->
-      <div v-if="showLoader && !imageError" class="size-full">
+      <div
+        v-if="
+          showLoader &&
+          !imageError &&
+          displayUrls[currentIndex] &&
+          !failedHdrPreviews[currentIndex]
+        "
+        role="status"
+        :aria-label="t('g.loading')"
+        class="size-full"
+      >
         <Skeleton class="size-full rounded-sm" />
       </div>
       <img

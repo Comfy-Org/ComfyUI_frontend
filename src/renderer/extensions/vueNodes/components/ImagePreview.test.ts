@@ -324,11 +324,15 @@ describe('ImagePreview', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('offers the HDR viewer instead of an <img> for exr outputs', () => {
+  it('offers the HDR viewer without a persistent loader for exr outputs', async () => {
     renderImagePreview({ items: [outputItem('out.exr')] })
+    await vi.advanceTimersByTimeAsync(300)
 
     expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
     expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('status', { name: 'Loading' })
+    ).not.toBeInTheDocument()
   })
 
   it('shows the server preview of an exr output and still offers the HDR viewer', async () => {

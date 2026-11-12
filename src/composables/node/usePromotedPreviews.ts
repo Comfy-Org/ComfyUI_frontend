@@ -11,6 +11,7 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
+import { isAudioResult, isVideoResult } from '@/utils/resultItem'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   appendNodeExecutionId,
@@ -30,9 +31,15 @@ type PromotedPreview = PromotedContent & {
   sourceWidgetName: string
 }
 
-function getPreviewMediaType(node: LGraphNode): PromotedOutput['type'] {
+function getPreviewMediaType(
+  node: LGraphNode,
+  items: AugmentedResultItem[]
+): PromotedOutput['type'] {
   const media = node.previewMediaType
-  return media === 'video' || media === 'audio' ? media : 'image'
+  if (media === 'image' || media === 'video' || media === 'audio') return media
+  if (items.some(isVideoResult)) return 'video'
+  if (items.some(isAudioResult)) return 'audio'
+  return 'image'
 }
 
 export function usePromotedPreviews(
@@ -50,7 +57,7 @@ export function usePromotedPreviews(
     if (url) return { type: 'preview', url }
     if (!outputs) return undefined
     const items = nodeOutputStore.getNodeOutputItems(node, outputs)
-    if (items.length) return { type: getPreviewMediaType(node), items }
+    if (items.length) return { type: getPreviewMediaType(node, items), items }
     return undefined
   }
 

@@ -155,6 +155,32 @@ describe(usePromotedPreviews, () => {
     expect(promotedPreviews.value[0].type).toBe('video')
   })
 
+  it.for([
+    { bucket: 'video', filename: 'output.webm', expected: 'video' },
+    { bucket: 'audio', filename: 'output.flac', expected: 'audio' }
+  ])(
+    'infers promoted $expected output without a node media hint',
+    ({ bucket, filename, expected }) => {
+      const setup = createSetup()
+      addInteriorNode(setup)
+      exposePreview(setup, '10')
+      useNodeOutputStore().nodeOutputs[
+        createNodeLocatorId(setup.subgraph.id, toNodeId(10))
+      ] = {
+        [bucket]: [{ filename }]
+      }
+
+      const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+
+      expect(promotedPreviews.value).toEqual([
+        expect.objectContaining({
+          type: expected,
+          items: outputItems(filename)
+        })
+      ])
+    }
+  )
+
   it('defaults preview type to image when previewMediaType is unset', () => {
     const { setup, items } = arrangePromotedPreview()
 
