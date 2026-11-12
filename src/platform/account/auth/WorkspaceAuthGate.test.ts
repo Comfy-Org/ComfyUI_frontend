@@ -154,6 +154,21 @@ describe('WorkspaceAuthGate', () => {
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
 
+    it('reads billing capabilities for a host sign-in once its in-flight workspace setup finishes', async () => {
+      mockIsCloud.value = false
+      Object.assign(useAuthStore(), {
+        isInitialized: true,
+        userId: 'host-user'
+      })
+      Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
+
+      mountComponent()
+      await flushPromises()
+
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
+      expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
+    })
+
     it('does not read billing capabilities when the local workspace context fails', async () => {
       mockIsCloud.value = false
       Object.assign(useAuthStore(), { isInitialized: true })
@@ -787,6 +802,7 @@ describe('WorkspaceAuthGate', () => {
 
     it('shows a recoverable error without a ready workspace context', async () => {
       Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
+      vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValueOnce()
 
       mountComponent()
       await flushPromises()

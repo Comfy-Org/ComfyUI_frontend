@@ -16,6 +16,11 @@ const FIFTY = { kind: 'preset', cents: 5000 } as const
 const FAILED = { kind: 'checkout_failed' } as const
 const URL = 'https://billing.comfy.org/topup?session=1'
 const SETUP_URL = 'https://platform.comfy.org/profile/billing?auto_top_up=setup'
+const ACTIVATED = {
+  threshold_credits: 1000,
+  target_credits: 11550,
+  monthly_budget_cents: null
+} as const
 
 const STATES = {
   amount: { step: 'amount', amount: FIFTY },
@@ -48,6 +53,8 @@ const STATES = {
     checkoutUrl: URL
   },
   autoTopUpOffer: { step: 'auto_top_up_offer', setupUrl: SETUP_URL },
+  autoTopUpOn: { step: 'auto_top_up_on', settings: ACTIVATED },
+  autoTopUpFailed: { step: 'auto_top_up_failed', setupUrl: SETUP_URL },
   landed: { step: 'landed' }
 } as const satisfies Record<string, AddCreditsState>
 
@@ -69,6 +76,15 @@ const EVENTS = {
   landedOfferingAutoTopUp: {
     type: 'payment_landed',
     autoTopUpSetupUrl: SETUP_URL
+  },
+  landedTurningOn: {
+    type: 'payment_landed',
+    activation: { status: 'on', settings: ACTIVATED }
+  },
+  landedFailingToTurnOn: {
+    type: 'payment_landed',
+    autoTopUpSetupUrl: SETUP_URL,
+    activation: { status: 'failed' }
   }
 } as const satisfies Record<string, AddCreditsEvent>
 
@@ -87,31 +103,41 @@ const TRANSITIONS: Partial<
     refused: { step: 'amount', amount: FIFTY, refusal: FAILED },
     abandoned: STATES.amount,
     landed: STATES.landed,
-    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
   },
   openingWithoutTab: {
     created: STATES.blocked,
     refused: { step: 'amount', amount: FIFTY, refusal: FAILED },
     abandoned: STATES.amount,
     landed: STATES.landed,
-    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
   },
   reopening: {
     created: STATES.opened,
     refused: { ...STATES.opened, refusal: FAILED },
     abandoned: STATES.opened,
     landed: STATES.landed,
-    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
   },
   opened: {
     requested: STATES.reopening,
     landed: STATES.landed,
-    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
   },
   blocked: {
     followed: STATES.opened,
     landed: STATES.landed,
-    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
   }
 }
 

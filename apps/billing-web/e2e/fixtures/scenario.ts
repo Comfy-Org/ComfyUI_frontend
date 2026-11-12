@@ -36,6 +36,7 @@ export function capabilitiesWith(
 ): BillingCapabilitiesResponse {
   return {
     auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'embedded',
     capabilities: {
       can_cancel: true,
       can_change_seats: false,
