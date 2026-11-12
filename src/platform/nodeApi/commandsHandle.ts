@@ -37,7 +37,10 @@ export interface CommandDef {
    */
   readonly label: string | (() => string)
   readonly run: () => void | Promise<void>
-  /** Bound as a default, so a user's own binding still wins. */
+  /**
+   * Bound as a default, so a user's own binding still wins. A key another
+   * command already holds by default stays with that command.
+   */
   readonly keybinding?: KeyCombo
   /**
    * Where the keybinding applies. Defaults to anywhere in the application.
@@ -114,15 +117,22 @@ export function createCommandsApi(): CommandsHandle {
       })
 
       if (!def.keybinding) return
-      // A default rather than a user binding: the user's own choice must
-      // survive the pack re-registering on every load.
-      useKeybindingStore().addDefaultKeybinding(
-        new KeybindingImpl({
-          commandId: def.id,
-          combo: def.keybinding,
-          ...(def.scope === 'canvas' ? { targetElementId: 'graph-canvas' } : {})
-        })
-      )
+      try {
+        useKeybindingStore().addDefaultKeybinding(
+          new KeybindingImpl({
+            commandId: def.id,
+            combo: def.keybinding,
+            ...(def.scope === 'canvas'
+              ? { targetElementId: 'graph-canvas' }
+              : {})
+          })
+        )
+      } catch (error) {
+        console.warn(
+          `[comfy] Command '${def.id}' was registered without its key.`,
+          error instanceof Error ? error.message : error
+        )
+      }
     },
 
     notify(def: NotifyDef) {

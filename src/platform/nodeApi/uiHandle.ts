@@ -41,6 +41,8 @@ import type {
   ChromeItemHandle
 } from './chromeContributions'
 import { ComfyApiError } from './errors'
+import { mountViewportPanel } from './viewportPanel'
+import type { ViewportPanelDef, ViewportPanelHandle } from './viewportPanel'
 import type { Unsubscribe } from './widgetHandle'
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -222,6 +224,11 @@ export interface UiHandle {
    * host does use, so a pack keeps the capability and loses only the placement.
    */
   prompt(def: PromptDef): Promise<string | undefined>
+  /**
+   * Mounts a panel over the graph view, placed by the host against an edge or
+   * corner. It stays put while the graph pans and zooms.
+   */
+  mountViewportPanel(def: ViewportPanelDef): ViewportPanelHandle
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -381,6 +388,7 @@ export function createUiHandle(): UiHandle {
   return {
     addTopBarBadge: addBadgeContribution,
     addActionBarButton: addButtonContribution,
+    mountViewportPanel,
 
     addSidebarTab(def) {
       if (!def.id.trim()) {

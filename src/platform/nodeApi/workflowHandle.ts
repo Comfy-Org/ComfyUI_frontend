@@ -3,6 +3,9 @@ import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { ComfyApiError } from './errors'
+import { registerWorkflowImporter } from './workflowImporters'
+import type { WorkflowImporter } from './workflowImporters'
+import type { Unsubscribe } from './widgetHandle'
 
 /** Parsed ComfyUI workflow JSON. */
 export type WorkflowData = Readonly<Record<string, unknown>>
@@ -27,6 +30,11 @@ export interface WorkflowHandle {
    * contents of the very document that is still current.
    */
   documentId(): string | undefined
+  /**
+   * Adds a reader for files the host cannot load a workflow from. It is asked
+   * when such a file is opened or dropped, before the host gives up on it.
+   */
+  registerImporter(importer: WorkflowImporter): Unsubscribe
 }
 
 export function createWorkflowApi(
@@ -61,6 +69,7 @@ export function createWorkflowApi(
     },
     documentId() {
       return getDocumentId?.()
-    }
+    },
+    registerImporter: registerWorkflowImporter
   })
 }

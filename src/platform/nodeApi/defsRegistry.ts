@@ -116,6 +116,8 @@ export interface PreviewFrame {
 export interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   readonly index: number
+  /** The changed slot's name, or `undefined` if the slot is already gone. */
+  readonly name?: string
   readonly connected: boolean
   /**
    * The node at the other end, or `undefined` on a disconnect.
@@ -610,6 +612,11 @@ interface Registration {
   readonly handleFor: (nodeId: string) => NodeHandle
   readonly handleForNode: (node: LGraphNode) => NodeHandle
   readonly teardown: (() => void)[]
+}
+
+interface KnownType {
+  readonly def: NodeDef
+  readonly extend?: (registration: Registration) => void
 }
 
 function whenDefined<T>(value: T | undefined, use: (value: T) => void): void {
@@ -1237,7 +1244,14 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
   applyTo(nodeType: { prototype: Partial<LGraphNode> }, raw: unknown): void
 } {
   const registrations = new Set<Registration>()
-  const known = new Map<string, NodeDef>()
+  const known = new Map<string, KnownType>()
+
+  const extendKnownTypes = (registration: Registration) => {
+    const applied = [...known.values()].filter(({ def }) =>
+      matches(registration.selector, def)
+    )
+    for (const { extend } of applied) extend?.(registration)
+  }
 
   const defineType = (
     definition: NodeDefinition,
@@ -1294,8 +1308,8 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
       define: (definition: NodeDefinition) =>
         defineType(definition, handleFor, handleForNode),
       defineWidgetType: createWidgetTypeRegistrar(handleForNode),
-      get: (type) => known.get(type),
-      all: () => Object.freeze([...known.values()]),
+      get: (type) => known.get(type)?.def,
+      all: () => Object.freeze([...known.values()].map(({ def }) => def)),
       has: (type) => known.has(type),
 
       typeColor: (type) => packTypeColors.get(type) ?? getLinkTypeColor(type),
@@ -1346,23 +1360,6 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
 
       extend(selector, apply) {
         assertSelector(selector)
-        // Scoped to the types this selector actually names. `define()` installs
-        // prototype behaviour before it returns, so extending a type already
-        // applied would run every earlier hook twice — but a pack loaded after
-        // some *other* pack called `define()` is not that case. As a global
-        // latch this threw in the second pack's module body, so it registered
-        // nothing at all: whichever pack happened to define first silently
-        // disabled every extending pack behind it.
-        const applied = [...known.values()].filter((def) =>
-          matches(selector, def)
-        )
-        if (applied.length) {
-          const names = applied.map((def) => `'${def.type}'`).join(', ')
-          throw new ComfyApiError(
-            `comfy.defs.extend() cannot extend ${names}: already registered. ` +
-              `Register the extension before the definition.`
-          )
-        }
         const registration: Registration = {
           selector,
           apply,
@@ -1372,6 +1369,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           teardown: []
         }
         registrations.add(registration)
+        extendKnownTypes(registration)
         return () => {
           if (!registration.active) return
           registration.active = false
@@ -1384,7 +1382,8 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
     applyTo(nodeType: { prototype: Partial<LGraphNode> }, raw: unknown) {
       let def = toNodeDef(raw as RawNodeDef)
       const original = def
-      known.set(def.type, def)
+      known.set(def.type, { def })
+      let applied = 0
 
       type Bound<TArgs extends unknown[]> = {
         run: (node: NodeHandle, ...args: TArgs) => void
@@ -1433,9 +1432,12 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         frontendOnly: boolean
         resolver?: Resolver
         owner?: Registration
+        pending: boolean
+        undo?: () => void
       } = {
         frontendOnly: false,
-        resolver: undefined
+        resolver: undefined,
+        pending: true
       }
       const declaredSuppliers: Supplier[] = []
       const menuItems: MenuItemBinding[] = []
@@ -1494,110 +1496,114 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         }
       }
 
-      const applyRegistrations = () => {
-        let applied = 0
-        for (const registration of registrations) {
-          if (!matches(registration.selector, def)) continue
-          applied++
-          const { handleFor, handleForNode } = registration
-          const isActive = () => registration.active
-          const binding = { handleFor, handleForNode, isActive }
+      const applyRegistration = (registration: Registration) => {
+        applied++
+        const { handleFor, handleForNode } = registration
+        const isActive = () => registration.active
+        const binding = { handleFor, handleForNode, isActive }
 
-          const builder: NodeDefBuilder = {
-            get def() {
-              return def
-            },
-            setTitle: (title) => {
-              def = Object.freeze({ ...def, title })
-            },
-            setCategory: (category) => {
-              def = Object.freeze({ ...def, category })
-            },
-            setExecution: (execution, resolve) => {
-              executionState.frontendOnly = execution === 'frontend'
-              executionState.owner = registration
-              if (resolve) {
-                executionState.resolver = (view) =>
-                  isActive() ? resolve(view) : Object.freeze({})
-              }
-            },
-            setSupply: (supply) => {
-              declaredSuppliers.push((view) =>
-                isActive() ? supply(view) : Object.freeze([])
-              )
-            },
-            addWidget: (def) => widgets.push({ def, ...binding }),
-            hideWidget: (name) => hidden.push({ name, ...binding }),
-            onCreated: (run) => created.push({ run, ...binding }),
-            onExecuted: (run) => executed.push({ run, ...binding }),
-            onConfigured: (run) => configured.push({ run, ...binding }),
-            onPropertyChanged: (run) =>
-              propertyChanges.push({ run, ...binding }),
-            onResized: (run) => resized.push({ run, ...binding }),
-            onHover: (run) => hovered.push({ run, ...binding }),
-            onDoubleClick: (run) => doubleClicked.push({ run, ...binding }),
-            onDragOver: (run) => dragOver.push({ run, ...binding }),
-            onDrop: (run) => dropped.push({ run, ...binding }),
-            onConnectionsChanged: (run) =>
-              connections.push({ run, ...binding }),
-            onRemoved: (run) => removed.push({ run, ...binding }),
-            onPreview: (run) => previewed.push({ run, ...binding }),
-            onSerialize: (run) => serialized.push({ run, ...binding }),
-            onPromptSerialize: (run) =>
-              promptSerialized.push({ run, handleForNode, isActive }),
-            onBeforeConnect: (run) => beforeConnect.push({ run, ...binding }),
-            onUnplacedLink: (run) => unplacedLink.push({ run, ...binding }),
-            addMenuItem: (item) => menuItems.push({ item, ...binding })
-          }
-
-          try {
-            registration.apply(builder)
-          } catch (error) {
-            console.error(
-              `[comfy.defs] extension failed for '${def.type}'`,
-              error instanceof Error ? error.message : error
+        const builder: NodeDefBuilder = {
+          get def() {
+            return def
+          },
+          setTitle: (title) => {
+            def = Object.freeze({ ...def, title })
+          },
+          setCategory: (category) => {
+            def = Object.freeze({ ...def, category })
+          },
+          setExecution: (execution, resolve) => {
+            executionState.frontendOnly = execution === 'frontend'
+            executionState.owner = registration
+            executionState.pending = true
+            if (resolve) {
+              executionState.resolver = (view) =>
+                isActive() ? resolve(view) : Object.freeze({})
+            }
+          },
+          setSupply: (supply) => {
+            declaredSuppliers.push((view) =>
+              isActive() ? supply(view) : Object.freeze([])
             )
-            reportError(error, {
-              errorType: 'node_api_def_extension_failure',
-              surface: 'graph',
-              tags: { node_type: def.type }
-            })
+          },
+          addWidget: (def) => widgets.push({ def, ...binding }),
+          hideWidget: (name) => hidden.push({ name, ...binding }),
+          onCreated: (run) => created.push({ run, ...binding }),
+          onExecuted: (run) => executed.push({ run, ...binding }),
+          onConfigured: (run) => configured.push({ run, ...binding }),
+          onPropertyChanged: (run) => propertyChanges.push({ run, ...binding }),
+          onResized: (run) => resized.push({ run, ...binding }),
+          onHover: (run) => hovered.push({ run, ...binding }),
+          onDoubleClick: (run) => doubleClicked.push({ run, ...binding }),
+          onDragOver: (run) => dragOver.push({ run, ...binding }),
+          onDrop: (run) => dropped.push({ run, ...binding }),
+          onConnectionsChanged: (run) => connections.push({ run, ...binding }),
+          onRemoved: (run) => removed.push({ run, ...binding }),
+          onPreview: (run) => previewed.push({ run, ...binding }),
+          onSerialize: (run) => serialized.push({ run, ...binding }),
+          onPromptSerialize: (run) =>
+            promptSerialized.push({ run, handleForNode, isActive }),
+          onBeforeConnect: (run) => beforeConnect.push({ run, ...binding }),
+          onUnplacedLink: (run) => unplacedLink.push({ run, ...binding }),
+          addMenuItem: (item) => menuItems.push({ item, ...binding })
+        }
+
+        try {
+          registration.apply(builder)
+        } catch (error) {
+          console.error(
+            `[comfy.defs] extension failed for '${def.type}'`,
+            error instanceof Error ? error.message : error
+          )
+          reportError(error, {
+            errorType: 'node_api_def_extension_failure',
+            surface: 'graph',
+            tags: { node_type: def.type }
+          })
+        }
+      }
+
+      const applyRegistrations = () => {
+        for (const registration of registrations) {
+          if (matches(registration.selector, def)) {
+            applyRegistration(registration)
           }
         }
-        return applied
       }
 
-      const applied = applyRegistrations()
-      if (!applied) {
-        frontendResolvers.delete(def.type)
-        frontendSuppliers.delete(def.type)
-        promptInputProjectors.delete(def.type)
-        previewSubscribers.delete(def.type)
-        unplacedLinkSubscribers.delete(def.type)
-        return
-      }
-      const commitDefinition = () => {
-        known.set(def.type, def)
-        if (executionState.frontendOnly) {
-          const { isVirtualNode, resolutionOwned } = nodeType.prototype
-          const { resolver, owner } = executionState
-          nodeType.prototype.isVirtualNode = true
-          if (resolver) {
-            frontendResolvers.set(def.type, resolver)
-            nodeType.prototype.resolutionOwned = true
-          } else {
-            frontendResolvers.delete(def.type)
-          }
-          owner?.teardown.push(() => {
-            nodeType.prototype.isVirtualNode = isVirtualNode
-            nodeType.prototype.resolutionOwned = resolutionOwned
-            if (frontendResolvers.get(def.type) === resolver) {
-              frontendResolvers.delete(def.type)
-            }
-          })
+      const commitExecution = () => {
+        if (!executionState.pending) return
+        executionState.pending = false
+        executionState.undo?.()
+        const { frontendOnly, resolver, owner } = executionState
+        if (!frontendOnly) {
+          frontendResolvers.delete(def.type)
+          return
+        }
+        const { isVirtualNode, resolutionOwned } = nodeType.prototype
+        nodeType.prototype.isVirtualNode = true
+        if (resolver) {
+          frontendResolvers.set(def.type, resolver)
+          nodeType.prototype.resolutionOwned = true
         } else {
           frontendResolvers.delete(def.type)
         }
+        const undo = () => {
+          if (executionState.undo !== undo) return
+          executionState.undo = undefined
+          nodeType.prototype.isVirtualNode = isVirtualNode
+          nodeType.prototype.resolutionOwned = resolutionOwned
+          if (frontendResolvers.get(def.type) === resolver) {
+            frontendResolvers.delete(def.type)
+          }
+        }
+        executionState.undo = undo
+        owner?.teardown.push(undo)
+      }
+
+      const commitDefinition = () => {
+        known.set(def.type, { def, extend: extendWith })
+        commitExecution()
 
         if (declaredSuppliers.length === 1) {
           frontendSuppliers.set(def.type, declaredSuppliers[0])
@@ -1620,30 +1626,22 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         } else {
           promptInputProjectors.delete(def.type)
         }
+      }
 
+      const writeRenamesToRawDefinition = () => {
         const rawDef = raw as RawNodeDef
         if (def.title !== original.title) rawDef.display_name = def.title
         if (def.category !== original.category) rawDef.category = def.category
       }
-      commitDefinition()
 
-      // Callbacks compose: each is invoked in registration order, and none can
-      // suppress another by forgetting to chain.
       const install = <TKey extends NodeCallbackKey>(
         key: TKey,
         run: (node: LGraphNode, ...args: NodeCallbackArgs<TKey>) => unknown,
-        /**
-         * A vetoing callback: litegraph reads `false` as "refuse", so the
-         * chain must return a value and stop at the first refusal rather than
-         * calling everything and discarding the answers.
-         */
         options?: { veto: true }
       ) => {
         const previous = nodeType.prototype[key] as
           | ((this: LGraphNode, ...args: NodeCallbackArgs<TKey>) => unknown)
           | undefined
-        // The previous value may be another pack's legacy prototype patch, so
-        // it is still called through — composition here, chaining underneath.
         ;(nodeType.prototype as Record<string, unknown>)[key] = function (
           this: LGraphNode,
           ...args: NodeCallbackArgs<TKey>
@@ -1655,43 +1653,80 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
         }
       }
 
-      // Unconditional: `restored` is answered from whether configure ran, so
-      // it must be recorded for every node of a type any pack extends, not
-      // only those with an onConfigured listener.
-      install('onConfigure', (node) => {
-        restoredNodes.add(node)
-      })
+      const installed = new Set<string>()
+      const installOnce = (
+        hook: string,
+        demand: number,
+        installHook: () => void
+      ) => {
+        if (!demand || installed.has(hook)) return
+        installed.add(hook)
+        installHook()
+      }
+
+      const configuredDetached = new WeakMap<
+        LGraphNode,
+        Record<string, unknown>
+      >()
+      const deliverConfigured = (
+        node: LGraphNode,
+        data: Record<string, unknown>
+      ) => {
+        for (const { run, handleForNode, isActive } of configured) {
+          if (isActive()) {
+            invokeAttached('onConfigured', node, () =>
+              run(handleForNode(node), data)
+            )
+          }
+        }
+      }
+      const deliverDetachedConfiguration = (node: LGraphNode) => {
+        const data = configuredDetached.get(node)
+        if (!data) return
+        configuredDetached.delete(node)
+        deliverConfigured(node, data)
+      }
 
       const installLifecycleHooks = () => {
-        if (created.length || widgets.length || hidden.length) {
-          install('onAdded', (node) => {
-            for (const { def: widget, handleForNode, isActive } of widgets) {
-              if (isActive()) {
-                invokeAttached('addWidget', node, () =>
-                  handleForNode(node).widgets.add(widget)
-                )
-              }
-            }
-            for (const { name, handleForNode, isActive } of hidden) {
-              if (!isActive()) continue
-              const widget = handleForNode(node).widgets.get(name)
-              if (widget) invoke('hideWidget', () => widget.setHidden(true))
-            }
-            const loading = isLoadingGraph()
-            const event: NodeCreatedEvent = Object.freeze({
-              restored: loading || restoredNodes.has(node),
-              loading
-            })
-            for (const { run, handleForNode, isActive } of created) {
-              if (isActive())
-                invokeAttached('onCreated', node, () =>
-                  run(handleForNode(node), event)
-                )
-            }
+        installOnce('restored', applied, () =>
+          install('onConfigure', (node) => {
+            restoredNodes.add(node)
           })
-        }
+        )
 
-        if (executed.length) {
+        installOnce(
+          'added',
+          created.length + widgets.length + hidden.length + configured.length,
+          () =>
+            install('onAdded', (node) => {
+              for (const { def: widget, handleForNode, isActive } of widgets) {
+                if (isActive()) {
+                  invokeAttached('addWidget', node, () =>
+                    handleForNode(node).widgets.add(widget)
+                  )
+                }
+              }
+              for (const { name, handleForNode, isActive } of hidden) {
+                if (!isActive()) continue
+                const widget = handleForNode(node).widgets.get(name)
+                if (widget) invoke('hideWidget', () => widget.setHidden(true))
+              }
+              const loading = isLoadingGraph()
+              const event: NodeCreatedEvent = Object.freeze({
+                restored: loading || restoredNodes.has(node),
+                loading
+              })
+              for (const { run, handleForNode, isActive } of created) {
+                if (isActive())
+                  invokeAttached('onCreated', node, () =>
+                    run(handleForNode(node), event)
+                  )
+              }
+              deliverDetachedConfiguration(node)
+            })
+        )
+
+        installOnce('executed', executed.length, () =>
           install('onExecuted', (node, message) => {
             const result = toExecutionResult(message)
             for (const { run, handleForNode, isActive } of executed) {
@@ -1702,41 +1737,18 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
               }
             }
           })
-        }
+        )
 
-        if (configured.length) {
-          const deliverConfigured = (
-            node: LGraphNode,
-            data: Record<string, unknown>
-          ) => {
-            for (const { run, handleForNode, isActive } of configured) {
-              if (isActive()) {
-                invokeAttached('onConfigured', node, () =>
-                  run(handleForNode(node), data)
-                )
-              }
-            }
-          }
-          const configuredDetached = new WeakMap<
-            LGraphNode,
-            Record<string, unknown>
-          >()
+        installOnce('configured', configured.length, () =>
           install('onConfigure', (node, serialised) => {
             const data = (extensionValue(serialised) ??
               {}) as unknown as Record<string, unknown>
             if (node.graph) deliverConfigured(node, data)
             else configuredDetached.set(node, data)
           })
-          install('onAdded', (node) => {
-            const data = configuredDetached.get(node)
-            if (!data) return
-            configuredDetached.delete(node)
-            deliverConfigured(node, data)
-          })
-        }
+        )
 
-        if (propertyChanges.length) {
-          /** Runs every handler and reports the value they settled on. */
+        installOnce('propertyChanges', propertyChanges.length, () => {
           const settle = (
             node: LGraphNode,
             name: string,
@@ -1765,12 +1777,6 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             return replacement
           }
 
-          // Wrapping setProperty rather than only hooking onPropertyChanged:
-          // setProperty writes `properties`, calls the callback, and *then*
-          // syncs any widget bound to the property — from the value it was
-          // passed, not the one the callback settled on. Nothing a callback does
-          // can win against a write that happens after it returns, so the
-          // replacement has to be in place before litegraph starts.
           const settling = new WeakSet<LGraphNode>()
           const previousSetProperty = nodeType.prototype.setProperty as (
             this: LGraphNode,
@@ -1794,9 +1800,6 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             }
           }
 
-          // The properties panel writes the record and calls the callback
-          // directly, without going through setProperty. No widget sync follows
-          // it, so writing the record here is enough.
           install(
             'onPropertyChanged',
             (node, name, value, previous) => {
@@ -1808,11 +1811,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             },
             { veto: true }
           )
-        }
+        })
       }
 
       const installVisualLifecycleHooks = () => {
-        if (resized.length) {
+        installOnce('resized', resized.length, () =>
           install('onResize', (node, [width, height]) => {
             const size: Size = Object.freeze({ width, height })
             for (const { run, handleForNode, isActive } of resized) {
@@ -1822,9 +1825,9 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
                 )
             }
           })
-        }
+        )
 
-        if (hovered.length) {
+        installOnce('hovered', hovered.length, () => {
           const dispatchHover = (node: LGraphNode, hovering: boolean) => {
             for (const { run, handleForNode, isActive } of hovered) {
               if (isActive()) {
@@ -1836,9 +1839,9 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           }
           install('onMouseEnter', (node) => dispatchHover(node, true))
           install('onMouseLeave', (node) => dispatchHover(node, false))
-        }
+        })
 
-        if (doubleClicked.length) {
+        installOnce('doubleClicked', doubleClicked.length, () =>
           install('onDblClick', (node) => {
             for (const { run, handleForNode, isActive } of doubleClicked) {
               if (isActive())
@@ -1847,11 +1850,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
                 )
             }
           })
-        }
+        )
       }
 
       const installInteractionHooks = () => {
-        if (dragOver.length) {
+        installOnce('dragOver', dragOver.length, () => {
           const previous = nodeType.prototype.onDragOver
           nodeType.prototype.onDragOver = function (
             this: LGraphNode,
@@ -1866,9 +1869,9 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
                 ) === true
             )
           }
-        }
+        })
 
-        if (dropped.length) {
+        installOnce('dropped', dropped.length, () => {
           const previous = nodeType.prototype.onDragDrop
           nodeType.prototype.onDragDrop = async function (
             this: LGraphNode,
@@ -1888,24 +1891,22 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             }
             return false
           }
-        }
+        })
 
-        if (connections.length) {
+        installOnce('connections', connections.length, () =>
           install(
             'onConnectionsChange',
             (node, side, index, connected, link) => {
               const input = side === 1
-              // The link names both ends; which one is the peer depends on
-              // which end this node is.
               const peer = link
                 ? input
                   ? { id: link.origin_id, slot: link.origin_slot }
                   : { id: link.target_id, slot: link.target_slot }
                 : undefined
               const event: ConnectionChangeEvent = Object.freeze({
-                // litegraph's slot-type enum: 1 = input, 2 = output.
                 side: input ? 'input' : 'output',
                 index,
+                name: (input ? node.inputs : node.outputs).at(index)?.name,
                 connected,
                 peerNodeId: peer ? String(peer.id) : undefined,
                 peerIndex: peer?.slot
@@ -1919,9 +1920,9 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
               }
             }
           )
-        }
+        )
 
-        if (serialized.length) {
+        installOnce('serialized', serialized.length, () => {
           const previous = nodeType.prototype.onSerialize
           ;(nodeType.prototype as Record<string, unknown>).onSerialize =
             function (this: LGraphNode, o: Record<string, unknown>) {
@@ -1933,22 +1934,14 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
                 )
                 if (!extra) continue
                 for (const [key, value] of Object.entries(extra)) {
-                  // Core fields stay ours. A pack rewriting `type` or
-                  // `widgets_values` changes what the workflow means, which is
-                  // the one thing this migration promises not to do.
                   if (RESERVED_SERIAL_KEYS.has(key)) continue
                   o[key] = value
                 }
               }
             }
-        }
+        })
 
-        if (beforeConnect.length) {
-          /**
-           * Asks every listener, in registration order. Any refusal refuses the
-           * connection: a veto is only useful if one pack cannot be overruled by
-           * another's silence.
-           */
+        installOnce('beforeConnect', beforeConnect.length, () => {
           const mayConnect = (
             node: LGraphNode,
             event: BeforeConnectEvent
@@ -1993,11 +1986,6 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
             { veto: true }
           )
 
-          // The output side was declared from the start and never installed, so
-          // `side` was typed 'input' | 'output' and was always 'input'. A node
-          // that may only feed particular types — rgthree's relay reaching only
-          // a repeater — could be wired to anything and would silently do
-          // nothing.
           install(
             'onConnectOutput',
             (node, index, _type, _input, targetNode, targetIndex) =>
@@ -2011,11 +1999,11 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
               ),
             { veto: true }
           )
-        }
+        })
       }
 
       const installMenuHooks = () => {
-        if (menuItems.length) {
+        installOnce('menuItems', menuItems.length, () => {
           const previous = nodeType.prototype.getExtraMenuOptions
           ;(nodeType.prototype as Record<string, unknown>).getExtraMenuOptions =
             function (this: LGraphNode, canvas: unknown, options: unknown[]) {
@@ -2024,7 +2012,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
               )?.call(this, canvas, options)
               appendMenuItems(this, options, menuItems, invoke)
             }
-        }
+        })
       }
 
       const installSubscribers = () => {
@@ -2041,8 +2029,6 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
 
         if (unplacedLink.length) {
           unplacedLinkSubscribers.set(def.type, (nodeId, event) => {
-            // Stops at the first listener that claims the drop, so two packs
-            // extending one type cannot both wire the same gesture.
             for (const { run, handleFor, isActive } of unplacedLink) {
               if (!isActive()) continue
               const node = extensionValue(handleFor(nodeId))
@@ -2057,7 +2043,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           unplacedLinkSubscribers.delete(def.type)
         }
 
-        if (removed.length) {
+        installOnce('removed', removed.length, () =>
           install('onRemoved', (node) => {
             for (const { run, handleForNode, isActive } of removed) {
               if (isActive()) {
@@ -2067,14 +2053,26 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
               }
             }
           })
-        }
+        )
       }
 
-      installLifecycleHooks()
-      installVisualLifecycleHooks()
-      installInteractionHooks()
-      installMenuHooks()
-      installSubscribers()
+      const commitAndInstall = () => {
+        commitDefinition()
+        installLifecycleHooks()
+        installVisualLifecycleHooks()
+        installInteractionHooks()
+        installMenuHooks()
+        installSubscribers()
+      }
+
+      const extendWith = (registration: Registration) => {
+        applyRegistration(registration)
+        commitAndInstall()
+      }
+
+      applyRegistrations()
+      commitAndInstall()
+      writeRenamesToRawDefinition()
     }
   }
 

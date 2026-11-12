@@ -85,6 +85,8 @@ import {
 } from '@/composables/usePaste'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { registerWorkflowImporter } from '@/platform/nodeApi/workflowImporters'
+import type { WorkflowImporter } from '@/platform/nodeApi/workflowImporters'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
 import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
@@ -257,6 +259,13 @@ function createMockCanvas(): Partial<LGraphCanvas> {
 
 function createTestFile(name: string, type: string): File {
   return new File([''], name, { type })
+}
+
+function registerTestImporter(importer: WorkflowImporter): void {
+  const stop = registerWorkflowImporter(importer)
+  onTestFinished(() => {
+    stop()
+  })
 }
 
 /**
@@ -5804,6 +5813,59 @@ describe('ComfyApp', () => {
       expect(loadGraphData).toHaveBeenCalled()
       expect(Load3dUtils.uploadFile).not.toHaveBeenCalled()
       expect(createNode).not.toHaveBeenCalled()
+    })
+
+    it('loads the workflow a pack importer reads from a file the host cannot', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
+      const imported = createWorkflowGraphData()
+      registerTestImporter({
+        id: 'Pack.jpeg',
+        mimeTypes: ['image/jpeg'],
+        maxBytes: 1024,
+        parse: () => ({ workflow: imported })
+      })
+      const loadGraphData = vi
+        .spyOn(app, 'loadGraphData')
+        .mockResolvedValue(true)
+
+      await app.handleFile(createTestFile('saved.jpg', 'image/jpeg'))
+
+      expect(loadGraphData).toHaveBeenCalledWith(
+        imported,
+        true,
+        true,
+        'saved',
+        expect.anything()
+      )
+      expect(createNode).not.toHaveBeenCalled()
+    })
+
+    it('falls back to a media node when every pack importer declines', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({})
+      const parse = vi.fn(() => null)
+      registerTestImporter({ id: 'Pack.jpeg', maxBytes: 1024, parse })
+      vi.mocked(createNode).mockResolvedValue(createMockNode())
+
+      await app.handleFile(createTestFile('photo.jpg', 'image/jpeg'))
+
+      expect(parse).toHaveBeenCalledOnce()
+      expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
+    })
+
+    it('does not ask pack importers about a file the host can read', async () => {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        workflow: createWorkflowGraphData()
+      })
+      const parse = vi.fn(() => null)
+      registerTestImporter({ id: 'Pack.any', maxBytes: 1024, parse })
+      const loadGraphData = vi
+        .spyOn(app, 'loadGraphData')
+        .mockResolvedValue(true)
+
+      await app.handleFile(createTestFile('saved.png', 'image/png'))
+
+      expect(loadGraphData).toHaveBeenCalled()
+      expect(parse).not.toHaveBeenCalled()
     })
 
     it('should alert the user when loading an embedded API prompt fails', async () => {
