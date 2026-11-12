@@ -1562,32 +1562,27 @@ export class ComfyApi extends EventTarget {
     return await res.json()
   }
 
-  /**
-   * Sends a POST request to the API
-   * @param {*} type The endpoint to post to
-   * @param {*} body Optional POST data
-   */
-  private async _postItem(type: string, body?: Record<string, unknown>) {
+  private async _postItem(
+    type: string,
+    body?: Record<string, unknown>
+  ): Promise<boolean> {
     try {
-      await this.fetchApi('/' + type, {
+      const response = await this.fetchApi('/' + type, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: body ? JSON.stringify(body) : undefined
       })
+      return response.ok
     } catch (error) {
       console.error(error)
+      return false
     }
   }
 
-  /**
-   * Deletes an item from the specified list
-   * @param {string} type The type of item to delete, queue or history
-   * @param {number} id The id of the item to delete
-   */
-  async deleteItem(type: string, id: string) {
-    await this._postItem(type, { delete: [id] })
+  async deleteItem(type: string, id: string): Promise<boolean> {
+    return this._postItem(type, { delete: [id] })
   }
 
   /**

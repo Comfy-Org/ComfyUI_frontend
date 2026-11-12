@@ -127,7 +127,7 @@ export const useAssetsStore = defineStore('assets', () => {
     const resolvedAssetsCache = ref<Partial<Record<string, AssetItem[]>>>({})
     watch(
       () => toValue(history.items),
-      (items) => {
+      (items, previousItems) => {
         const currentAssetsCache = resolvedAssetsCache.value
         const currentIds = new Set(items.map(({ id }) => id))
         for (const jobId of Object.keys(currentAssetsCache)) {
@@ -136,7 +136,7 @@ export const useAssetsStore = defineStore('assets', () => {
         for (const asset of items) {
           const metadata = getOutputAssetMetadata(asset.user_metadata)
           const jobId = metadata?.jobId
-          if (!jobId || currentAssetsCache[jobId]) continue
+          if (!jobId || previousItems?.includes(asset)) continue
           void resolveOutputAssetItems(metadata, {
             createdAt: asset.created_at
           }).then((assets) => {

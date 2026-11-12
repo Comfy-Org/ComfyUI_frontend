@@ -714,8 +714,9 @@ export function useMediaAssetActions() {
     }
     let deletedJobCount = 0
     async function deleteJob(operation: JobDeletion) {
-      await api.deleteItem('history', operation.id)
-      deletedJobCount++
+      const deleted = await api.deleteItem('history', operation.id)
+      if (deleted) deletedJobCount++
+      return deleted
     }
     async function performDelete(
       operation: DeleteOperation
@@ -732,7 +733,7 @@ export function useMediaAssetActions() {
 
         try {
           if (operation.kind === 'asset') await deleteAsset(operation)
-          else await deleteJob(operation)
+          else if (!(await deleteJob(operation))) return [operation]
         } catch (err) {
           return [err]
         }

@@ -5,6 +5,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
+import { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -1709,7 +1710,7 @@ describe('useMediaAssetActions', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
       mockGetAssetType.mockReturnValue('output')
       mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
-      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      vi.mocked(api.deleteItem).mockResolvedValue(true)
       const actions = useMediaAssetActions()
       const asset = createMockAsset({
         id: 'asset-1',
@@ -1750,7 +1751,7 @@ describe('useMediaAssetActions', () => {
           props.onConfirm(true)
       )
       vi.mocked(assetService.getAssetDetails).mockResolvedValue(record)
-      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      vi.mocked(api.deleteItem).mockResolvedValue(true)
     })
 
     it.for([
@@ -1791,7 +1792,54 @@ describe('useMediaAssetActions', () => {
         expect(mockDeleteAsset.mock.calls.map(([id]) => id)).toEqual(
           deletedRecords
         )
-        expect(vi.mocked(api.deleteItem).mock.calls).toEqual(deletedHistory)
+        expect(
+          vi.mocked(api.deleteItem).mock.calls.map(([type, id]) => [type, id])
+        ).toEqual(deletedHistory)
+      }
+    )
+
+    it.for([
+      {
+        name: 'successful history deletion',
+        response: async () => new Response(null, { status: 200 }),
+        successes: 1,
+        errors: 0
+      },
+      {
+        name: 'HTTP failure',
+        response: async () => new Response(null, { status: 503 }),
+        successes: 0,
+        errors: 1
+      },
+      {
+        name: 'network failure',
+        response: async (): Promise<Response> => {
+          throw new Error('Offline')
+        },
+        successes: 0,
+        errors: 1
+      }
+    ])(
+      'reports $name for a text-only job',
+      async ({ response, successes, errors }) => {
+        const client = new ComfyApi({
+          isCloud: false,
+          featureFlagOverride: () => undefined,
+          onFreeMemory: () => undefined
+        })
+        vi.spyOn(client, 'fetchApi').mockImplementation(response)
+        vi.mocked(api.deleteItem).mockImplementation(
+          client.deleteItem.bind(client)
+        )
+        vi.mocked(api.getJobAssets).mockResolvedValue({
+          assets: [],
+          complete: true
+        })
+
+        await useMediaAssetActions().deleteAssets(selection)
+
+        expect(useToast().success).toHaveBeenCalledTimes(successes)
+        expect(useToast().error).toHaveBeenCalledTimes(errors)
       }
     )
 

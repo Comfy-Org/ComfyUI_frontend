@@ -174,6 +174,27 @@ describe('assetsStore - resolved history outputs', () => {
     )
   })
 
+  it('recovers missing outputs when a refreshed job keeps the same ID', async () => {
+    vi.mocked(api.getHistory).mockResolvedValue([job('recovered')])
+    vi.mocked(api.getJobDetail)
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(detail('recovered'))
+    const store = useAssetsStore()
+    await vi.waitFor(() =>
+      expect(
+        toValue(store.flatOutputAssets.items).map(({ name }) => name)
+      ).toEqual(['recovered-a.png'])
+    )
+
+    await store.outputAssets.invalidate()
+
+    await vi.waitFor(() =>
+      expect(
+        toValue(store.flatOutputAssets.items).map(({ name }) => name)
+      ).toEqual(['recovered-b.png', 'recovered-a.png'])
+    )
+  })
+
   it('keeps children from independently completed jobs with their parent timestamps', async () => {
     let finishFirst!: (value: JobDetail) => void
     let finishSecond!: (value: JobDetail) => void
