@@ -100,6 +100,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           MATRIX: ${{ needs.resolve.outputs.matrix }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         shell: bash
         run: |
           set -euo pipefail
@@ -113,6 +114,7 @@ jobs:
                 -f "inputs[package]=$PACKAGE" \
                 -f "inputs[version]=$VERSION" \
                 -f "inputs[dist_tag]=$DIST_TAG" \
+                -f "inputs[sha]=$MERGE_SHA" \
                 --jq '.workflow_run_id')
               gh run watch "$RUN_ID" --repo "$REPO" --exit-status --interval 15 </dev/null
             done

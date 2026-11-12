@@ -17,6 +17,13 @@ on:
         required: true
         default: next
         type: string
+      # Pins every package of one release to its merge commit. It must already
+      # be on main, so nobody who can press the button hands NPM_TOKEN an
+      # arbitrary commit.
+      sha:
+        description: 'Commit on main to publish (defaults to the dispatched ref)'
+        required: false
+        type: string
   workflow_call:
     inputs:
       package:
@@ -29,9 +36,7 @@ on:
         required: false
         type: string
         default: next
-      # Only an in-repo caller sets this. The dispatch path has no ref input
-      # on purpose: it publishes the ref it was dispatched on, so nobody who
-      # can press the button hands NPM_TOKEN an arbitrary commit.
+      # Only an in-repo caller sets this.
       ref:
         required: false
         type: string
@@ -87,10 +92,25 @@ jobs:
         id: resolve_ref
         env:
           REF: ${{ inputs.ref }}
+          SHA: ${{ inputs.sha }}
           DEFAULT_REF: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         shell: bash
         run: |
           set -euo pipefail
+          if [ -n "$SHA" ]; then
+            if ! [[ "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "::error title=Invalid sha::'$SHA' is not a full commit SHA." >&2
+              exit 1
+            fi
+            STATUS=$(gh api "repos/$REPO/compare/$SHA...main" --jq .status)
+            if [ "$STATUS" != identical ] && [ "$STATUS" != ahead ]; then
+              echo "::error title=Commit not on main::$SHA is not on main ($STATUS)." >&2
+              exit 1
+            fi
+            REF="$SHA"
+          fi
           if [ -z "$REF" ]; then
             REF="$DEFAULT_REF"
           fi

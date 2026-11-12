@@ -279,6 +279,24 @@ describe('planRelease', () => {
     expect(plan(new Set([...firstReleases, '1.0.1']))).toEqual([])
   })
 
+  it('plans the first release of a package npm does not have yet', () => {
+    initRepository()
+
+    expect(
+      planRelease({
+        root,
+        publishedVersions: (name) =>
+          name === 'billing-contract' ? new Set() : firstReleases
+      })
+    ).toEqual([
+      {
+        package: 'billing-contract',
+        version: '1.0.0-alpha.1',
+        reasons: ['first release']
+      }
+    ])
+  })
+
   it('keeps the version a reviewer raised on the open release PR', () => {
     initRepository()
     write(

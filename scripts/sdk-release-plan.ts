@@ -4,29 +4,14 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gt, inc } from 'semver'
 
-/**
- * Which SDK packages need a release, decided against each package's last
- * released version: the commit that set the newest version of it on npm, so a
- * bump that merged but never published is planned again.
- *
- * - `ingest-types` releases only when a schema an SDK package imports, or one
- *   such a schema is built from, changed. Endpoints no SDK package reads do
- *   not ship a release.
- * - The hand-written SDK packages release when their published source or any
- *   published manifest field changed.
- *
- * `account-core` resolves `ingest-types` as a caret range and keeps it
- * external, so a schema change reaches it through the `ingest-types` release
- * alone; it does not need a release of its own for that.
- */
-
+// account-core keeps ingest-types external, so a schema change ships through
+// the ingest-types release alone.
 const SDK_PACKAGES = ['account-core', 'account-ui', 'billing-contract'] as const
 const INGEST_ZOD = 'packages/ingest-types/src/zod.gen.ts'
 const INGEST_IMPORT =
   /import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'@comfyorg\/ingest-types(?:\/zod)?'/g
 const SCHEMA_START = /^export const (z[A-Z]\w*) = /gm
 const SCHEMA_REFERENCE = /\bz[A-Z]\w*\b/g
-/** A string or regex literal, kept verbatim, or a whitespace run outside one. */
 const LITERAL_OR_SPACE =
   /('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`|\/(?![*/])(?:[^/\\\n[]|\\.|\[(?:[^\]\\\n]|\\.)*\])+\/[a-z]*)|\s+/g
 const TEST_FILE = /(\.test\.ts|\.spec\.ts|\/__fixtures__\/|\/__mocks__\/)/
@@ -54,11 +39,10 @@ export interface ReleaseReason {
 interface PlanOptions {
   root?: string
   publishedVersions?: (name: Package) => ReadonlySet<string>
-  /** The open release PR's branch, whose versions a reviewer may have raised. */
   releaseRef?: string
 }
 
-/** The next version of a package, keeping a higher one the open release PR already carries. */
+// A reviewer may raise a version on the open release PR; a refresh keeps it.
 export function releaseVersion(
   name: Package,
   current: string,
@@ -73,7 +57,7 @@ export function releaseVersion(
   return open && gt(open, next) ? open : next
 }
 
-/** The schema names SDK source imports; a type `Foo` stands for its schema `zFoo`. */
+// A type `Foo` stands for its schema `zFoo`.
 export function referencedSchemas(sources: readonly string[]): Set<string> {
   const names = new Set<string>()
   for (const source of sources) {
@@ -90,7 +74,6 @@ export function referencedSchemas(sources: readonly string[]): Set<string> {
   return names
 }
 
-/** Each exported schema's definition, with doc comments dropped and spacing outside literals collapsed. */
 export function schemaDefinitions(zodGen: string): Map<string, string> {
   const starts = [...zodGen.matchAll(SCHEMA_START)]
   return new Map(
@@ -125,7 +108,6 @@ function closure(
   return seen
 }
 
-/** The referenced schemas, and what they are built from, whose definition changed. */
 export function changedSchemas(
   released: string,
   current: string,
@@ -151,12 +133,18 @@ function read(root: string, file: string): string {
 }
 
 function npmVersions(name: Package): Set<string> {
-  const json = execFileSync(
-    'npm',
-    ['view', `@comfyorg/${name}`, 'versions', '--json'],
-    { encoding: 'utf8' }
-  )
-  return new Set([JSON.parse(json)].flat())
+  try {
+    const json = execFileSync(
+      'npm',
+      ['view', `@comfyorg/${name}`, 'versions', '--json'],
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+    )
+    return new Set([JSON.parse(json)].flat())
+  } catch (error) {
+    const { stdout, stderr } = error as { stdout?: string; stderr?: string }
+    if (`${stdout}${stderr}`.includes('E404')) return new Set()
+    throw error
+  }
 }
 
 function versionCommit(
@@ -179,12 +167,13 @@ function versionCommit(
   return commit
 }
 
-/** The commit that set the newest version npm has; a bump whose publish failed is not a release. */
+// A bump whose publish failed is not a release; undefined means never published.
 function releasedCommit(
   root: string,
   name: Package,
   published: ReadonlySet<string>
-): string {
+): string | undefined {
+  if (published.size === 0) return undefined
   const manifest = `packages/${name}/package.json`
   let version = JSON.parse(read(root, manifest)).version as string
   let commit = versionCommit(root, manifest, version, 'HEAD')
@@ -219,7 +208,6 @@ function changedSourceFiles(
     .filter((file) => file && !TEST_FILE.test(file))
 }
 
-/** The default `catalog:` block of a `pnpm-workspace.yaml`, as package name to range. */
 export function catalogRanges(workspaceYaml: string): Map<string, string> {
   const block = /^catalog:\n((?:[ \t]+.*\n?)*)/m.exec(workspaceYaml)?.[1] ?? ''
   return new Map(
@@ -245,7 +233,6 @@ function withCatalogResolved(
   return resolved
 }
 
-/** The top-level `package.json` fields that ship to npm and differ between the two manifests, `catalog:` ranges resolved. */
 export function changedManifestFields(
   released: string,
   current: string,
@@ -278,7 +265,6 @@ function sdkSources(root: string): string[] {
   )
 }
 
-/** Whether HEAD only bumps package versions, as merging a release does. */
 function isReleaseMerge(root: string): boolean {
   const manifests = new Set(
     (['ingest-types', ...SDK_PACKAGES] as const).map(
@@ -336,15 +322,21 @@ export function planRelease({
   }
 
   const ingestReleased = released('ingest-types')
-  const schemas = changedSchemas(
-    git(root, 'show', `${ingestReleased}:${INGEST_ZOD}`),
-    read(root, INGEST_ZOD),
-    referencedSchemas(sdkSources(root))
-  )
+  const schemas = !ingestReleased
+    ? ['first release']
+    : changedSchemas(
+        git(root, 'show', `${ingestReleased}:${INGEST_ZOD}`),
+        read(root, INGEST_ZOD),
+        referencedSchemas(sdkSources(root))
+      )
   if (schemas.length > 0) release('ingest-types', schemas)
 
   for (const name of SDK_PACKAGES) {
     const since = released(name)
+    if (!since) {
+      release(name, ['first release'])
+      continue
+    }
     const manifest = `packages/${name}/package.json`
     const reasons = [
       ...changedSourceFiles(root, name, since),
