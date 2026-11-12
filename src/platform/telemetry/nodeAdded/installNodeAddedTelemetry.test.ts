@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginGraphLoad } from '@/core/graph/graphLoadState'
 import { useTelemetry } from '@comfyorg/telemetry'
 
 import { installNodeAddedTelemetry } from './installNodeAddedTelemetry'
@@ -25,14 +25,6 @@ function addNode(graph: LGraph, type: string) {
 }
 
 describe('installNodeAddedTelemetry', () => {
-  beforeEach(() => {
-    ChangeTracker.isLoadingGraph = false
-  })
-
-  afterEach(() => {
-    ChangeTracker.isLoadingGraph = false
-  })
-
   it('fires trackNodeAdded with the current source on add', () => {
     const graph = fakeGraph()
     installNodeAddedTelemetry(graph)
@@ -62,7 +54,7 @@ describe('installNodeAddedTelemetry', () => {
   it('skips telemetry during workflow load', () => {
     const graph = fakeGraph()
     installNodeAddedTelemetry(graph)
-    ChangeTracker.isLoadingGraph = true
+    beginGraphLoad(graph)
 
     addNode(graph, 'VAEDecode')
 
