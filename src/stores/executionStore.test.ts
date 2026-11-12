@@ -1700,6 +1700,10 @@ describe('useExecutionStore - RAF batching', () => {
   beforeEach(() => {
     store = useExecutionStore()
     store.bindExecutionEvents()
+    api.dispatchCustomEvent('execution_start', {
+      prompt_id: 'job-1',
+      timestamp: 0
+    })
   })
 
   describe('handleProgress', () => {
@@ -2433,8 +2437,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     it('sets _executingNodeProgress from the event payload (RAF-batched)', () => {
       const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
 
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
       fire('progress', payload)
-      // RAF-batched: not applied synchronously
       expect(store._executingNodeProgress).toBeNull()
 
       vi.advanceTimersToNextFrame()
@@ -2763,6 +2767,29 @@ describe('useExecutionStore - frames from a background workflow', () => {
 
     expect(store.activeJobId).toBeNull()
     expect(store.nodeProgressStatesByJob['job-background']).toEqual(nodes)
+  })
+
+  it('keeps visible scalar progress empty after the active job stops', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fireProgressState('job-background', '1')
+    fire('progress', {
+      value: 7,
+      max: 10,
+      prompt_id: 'job-background',
+      node: '1'
+    })
+
+    fire('executing_with_metadata', {
+      node: null,
+      prompt_id: 'job-visible'
+    })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.activeJobId).toBeNull()
+    expect(store._executingNodeProgress).toBeNull()
+    expect(store.nodeProgressStatesByJob['job-background']['1'].state).toBe(
+      'running'
+    )
   })
 
   it('records background progress per job without painting the canvas', () => {

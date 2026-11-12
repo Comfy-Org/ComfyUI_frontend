@@ -789,7 +789,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const updates = [...pendingProgressByJob.values()]
     pendingProgressByJob.clear()
     for (const detail of updates) {
-      if (activeJobId.value && detail.prompt_id !== activeJobId.value) continue
+      if (detail.prompt_id !== activeJobId.value) continue
       _executingNodeProgress.value = detail
     }
   }, 'raf:progress')

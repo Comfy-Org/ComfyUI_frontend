@@ -41,6 +41,11 @@ supported; the client does not manufacture a missing workflow ID.
 Transitions without a prompt ID cannot own any pending updates and are ignored
 by the execution store.
 
+Buffered scalar progress also requires a matching active prompt at flush time.
+If the active run stops before the next animation frame, another run's retained
+scalar update cannot become visible merely because `activeJobId` is now null.
+Background node-state snapshots remain available in the per-job map.
+
 ## Alternatives considered
 
 - Change the existing `executing` event to an object: breaks extensions
