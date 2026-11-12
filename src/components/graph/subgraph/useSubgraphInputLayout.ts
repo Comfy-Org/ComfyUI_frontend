@@ -1,5 +1,5 @@
 import { computedWithControl, useElementSize, useRafFn } from '@vueuse/core'
-import { computed,watch } from 'vue'
+import { computed, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { Subgraph } from '@comfyorg/graph-model/entityRegistry'
 
