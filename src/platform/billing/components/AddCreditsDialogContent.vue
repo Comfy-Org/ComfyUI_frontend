@@ -112,7 +112,16 @@ const pendingTopup = computed(() =>
 
 let paymentWatched = false
 const readingActivation = shallowRef(false)
-let activationSessionId: string | undefined
+
+interface OwnedCheckout {
+  readonly generation: number
+  readonly activationSessionId?: string
+}
+let ownedCheckout: OwnedCheckout | undefined
+const ownsCheckout = (
+  checkout: OwnedCheckout | undefined
+): checkout is OwnedCheckout =>
+  checkout?.generation === workspaceIdentity.workspaceTransitionGeneration
 
 const ports: AddCreditsPorts = {
   async quote(amountCents, signal) {
@@ -133,6 +142,7 @@ const ports: AddCreditsPorts = {
     if (!returnUrl) {
       return { status: 'error', refusal: { kind: 'checkout_failed' } }
     }
+    const generation = workspaceIdentity.workspaceTransitionGeneration
     try {
       if (!balance.value) await Promise.allSettled([fetchBalance()])
       const { url, sessionId } = await createHostedCheckout(
@@ -141,7 +151,14 @@ const ports: AddCreditsPorts = {
         signal,
         autoTopUp
       )
-      activationSessionId = autoTopUp && sessionId
+      const checkout = {
+        generation,
+        activationSessionId: autoTopUp && sessionId
+      }
+      if (!ownsCheckout(checkout)) {
+        return { status: 'error', refusal: { kind: 'checkout_failed' } }
+      }
+      ownedCheckout = checkout
       return { status: 'ok', url }
     } catch (error) {
       return {
@@ -152,6 +169,7 @@ const ports: AddCreditsPorts = {
   },
   reserveTab: reserveBillingTab,
   watchPayment(landed) {
+    if (!ownsCheckout(ownedCheckout)) return () => {}
     paymentWatched = true
     usePendingTopup().startPendingTopup()
     const scope = new AbortController()
@@ -161,14 +179,16 @@ const ports: AddCreditsPorts = {
     )
     const stop = watchForTopupBalanceUpdate({
       onBalanceIncreased: async () => {
-        const sessionId = activationSessionId
-        if (sessionId === undefined) return landed()
+        const checkout = ownedCheckout
+        if (!ownsCheckout(checkout)) return
+        const { activationSessionId } = checkout
+        if (activationSessionId === undefined) return landed()
         readingActivation.value = true
         const activation = await readAutoTopUpActivation(
-          (signal) => billingApi.getTopupCheckout(sessionId, signal),
+          (signal) => billingApi.getTopupCheckout(activationSessionId, signal),
           scope.signal
         ).catch(() => null)
-        if (activation !== null) landed(activation)
+        if (activation !== null && ownsCheckout(checkout)) landed(activation)
       },
       source: {
         current: () => balance.value?.amountMicros ?? null,

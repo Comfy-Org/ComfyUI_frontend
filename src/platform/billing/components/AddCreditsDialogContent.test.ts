@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -8,6 +8,7 @@ import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import {
   autoTopUpCardState,
@@ -19,6 +20,7 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -42,6 +44,9 @@ const hoisted = vi.hoisted(() => ({
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/billing/api/billingApi'))
+vi.mock(import('@/platform/billing/addCredits/autoTopUpActivation'), {
+  spy: true
+})
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingAutoTopUpCard'))
@@ -152,6 +157,26 @@ function renderDialog({ atCheckout }: { atCheckout: boolean }) {
   return { user: userEvent.setup(), unmount }
 }
 
+const ACTIVATED_CHECKOUT: Partial<HostedTopupCheckout> = {
+  auto_top_up_activation: 'on',
+  auto_top_up: {
+    threshold_credits: 1000,
+    target_credits: 11_550,
+    monthly_budget_cents: 6_000_000,
+    monthly_budget_is_default: true
+  }
+}
+
+function switchWorkspaceInThisTab() {
+  const workspaces = useTeamWorkspaceStore()
+  const identity = workspaces.identityGeneration
+  const transition = workspaces.workspaceTransitionGeneration
+  vi.spyOn(workspaceApi, 'list').mockReturnValue(new Promise(() => {}))
+  void workspaces.switchWorkspace('ws-other')
+  expect(workspaces.identityGeneration).toBe(identity)
+  expect(workspaces.workspaceTransitionGeneration).toBe(transition + 1)
+}
+
 const checkbox = () =>
   screen.queryByRole('checkbox', { name: /Turn on auto top-up/ })
 const continueButton = () => screen.getByRole('button', { name: 'Continue' })
@@ -197,15 +222,7 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
   })
 
   it('sends the checked settings and shows auto top-up on from the served checkout', async () => {
-    await payWithAutoTopUp({
-      auto_top_up_activation: 'on',
-      auto_top_up: {
-        threshold_credits: 1000,
-        target_credits: 11_550,
-        monthly_budget_cents: 6_000_000,
-        monthly_budget_is_default: true
-      }
-    })
+    await payWithAutoTopUp(ACTIVATED_CHECKOUT)
     await hoisted.balanceIncreased!()
 
     expect(hoisted.createHostedCheckout).toHaveBeenCalledWith(
@@ -242,9 +259,6 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
       auto_top_up_activation: 'pending'
     })
     vi.useFakeTimers()
-    onTestFinished(() => {
-      vi.useRealTimers()
-    })
     const landing = hoisted.balanceIncreased!()
     await vi.advanceTimersByTimeAsync(0)
     expect(billingApi.getTopupCheckout).toHaveBeenCalledTimes(1)
@@ -258,10 +272,13 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
 
   it('mints no second checkout once the payment landed and its activation is still being read', async () => {
     const { user } = await payWithAutoTopUp({})
+    let serve!: (checkout: HostedTopupCheckout) => void
     vi.mocked(billingApi.getTopupCheckout).mockReturnValue(
-      new Promise(() => {})
+      new Promise((resolve) => {
+        serve = resolve
+      })
     )
-    void hoisted.balanceIncreased!()
+    const landing = hoisted.balanceIncreased!()
     await waitFor(() =>
       expect(billingApi.getTopupCheckout).toHaveBeenCalledOnce()
     )
@@ -270,6 +287,8 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
 
     expect(hoisted.createHostedCheckout).toHaveBeenCalledOnce()
     expect(screen.getByTestId('add-credits-reopen')).toBeDisabled()
+    serve(servedCheckout({ auto_top_up_activation: 'not_attempted' }))
+    await landing
   })
 
   it('drops a pending activation read once this tab switches workspace', async () => {
@@ -285,21 +304,57 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
       expect(billingApi.getTopupCheckout).toHaveBeenCalledOnce()
     )
 
-    useTeamWorkspaceStore().resetForIdentityChange()
-    serve(
-      servedCheckout({
-        auto_top_up_activation: 'on',
-        auto_top_up: {
-          threshold_credits: 1000,
-          target_credits: 11_550,
-          monthly_budget_cents: 6_000_000,
-          monthly_budget_is_default: true
-        }
-      })
-    )
+    switchWorkspaceInThisTab()
+    serve(servedCheckout(ACTIVATED_CHECKOUT))
     await landing
 
     expect(screen.queryByTestId('add-credits-auto-top-up-on')).toBeNull()
     expect(billingApi.getTopupCheckout).toHaveBeenCalledOnce()
+  })
+
+  it('publishes no activation when the identity resets after the read settles', async () => {
+    await payWithAutoTopUp({})
+    vi.mocked(readAutoTopUpActivation).mockImplementationOnce(async () => {
+      useTeamWorkspaceStore().resetForIdentityChange()
+      return {
+        status: 'on',
+        settings: {
+          threshold_credits: 1000,
+          target_credits: 11_550,
+          monthly_budget_cents: null
+        }
+      }
+    })
+
+    await hoisted.balanceIncreased!()
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(screen.queryByTestId('add-credits-auto-top-up-on')).toBeNull()
+  })
+
+  it('drops a checkout minted for the workspace this tab left', async () => {
+    const { user } = renderDialog({ atCheckout: true })
+    vi.mocked(billingApi.getTopupCheckout).mockResolvedValue(
+      servedCheckout(ACTIVATED_CHECKOUT)
+    )
+    let mint!: (session: { url: string; sessionId: string }) => void
+    hoisted.createHostedCheckout.mockReturnValue(
+      new Promise((resolve) => {
+        mint = resolve
+      })
+    )
+    await user.click(
+      await screen.findByRole('checkbox', { name: /Turn on auto top-up/ })
+    )
+    await user.click(continueButton())
+    await waitFor(() =>
+      expect(hoisted.createHostedCheckout).toHaveBeenCalledOnce()
+    )
+
+    switchWorkspaceInThisTab()
+    mint({ url: CHECKOUT_URL, sessionId: 'cs_1' })
+
+    expect(await screen.findByText("Couldn't open checkout")).toBeVisible()
+    expect(hoisted.balanceIncreased).toBeUndefined()
   })
 })
