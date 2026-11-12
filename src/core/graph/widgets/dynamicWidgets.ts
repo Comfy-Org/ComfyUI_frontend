@@ -1,4 +1,4 @@
-import { remove } from 'es-toolkit'
+import { range, remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
 import { assert } from '@/base/assert'
@@ -554,23 +554,6 @@ function resolveAutogrowOrdinal(
   const match = name.match(ORDINAL_REGEX)
   return match ? parseInt(match[0]) : undefined
 }
-function autogrowInputConnected(index: number, node: AutogrowNode) {
-  const input = node.inputs.at(index)
-  if (!input) return
-  const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const lastInput = node.inputs.findLast((inp) =>
-    inp.name.startsWith(groupName + '.')
-  )
-  const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
-  if (
-    !lastInput ||
-    ordinal == undefined ||
-    ordinal !== resolveAutogrowOrdinal(lastInput.name, groupName, node)
-  )
-    return
-  addAutogrowGroup(ordinal + 1, groupName, node)
-}
-
 function hasAutogrowGroups(node: LGraphNode): node is AutogrowNode {
   return !!node.comfyDynamic?.autogrow
 }
@@ -599,117 +582,97 @@ export function liveAutogrowGroupOf(
   return undefined
 }
 
-function highestAutogrowOrdinal(node: AutogrowNode, groupName: string): number {
-  let highest = -1
-  for (const input of node.inputs) {
-    if (!input.name.startsWith(`${groupName}.`)) continue
-    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
-    if (ordinal !== undefined && ordinal > highest) highest = ordinal
-  }
-  return highest
-}
-
 /**
  * Grows the autogrow group `name` belongs to until the node holds an input by
- * that name, and returns its live index. A local connect onto a slot the bound
- * document has not seen mints a `grow` op (`docOpMinter.mintConnect`); this is
- * the read leg of that exchange, for a slot the host grew whose live
- * counterpart does not exist yet. Growth starts above the group's highest live
- * ordinal, so the slots already carrying links are left alone. Undefined when
- * `name` belongs to no autogrow group of this node, or the group's `max` stops
- * short of it.
+ * that name, and returns its live index. Undefined when `name` belongs to no
+ * autogrow group of this node, or the group's `max` stops short of it.
  */
 export function growAutogrowInput(
   node: LGraphNode,
   name: string
 ): number | undefined {
-  if (!hasAutogrowGroups(node)) return undefined
   const groupName = liveAutogrowGroupOf(node, name)
-  if (groupName === undefined) return undefined
-  const ordinal = resolveAutogrowOrdinal(name, groupName, node)
-  if (ordinal === undefined) return undefined
-  for (
-    let next = highestAutogrowOrdinal(node, groupName) + 1;
-    next <= ordinal;
-    next++
-  ) {
-    addAutogrowGroup(next, groupName, node)
-  }
+  if (groupName === undefined || !hasAutogrowGroups(node)) return undefined
+  reconcileAutogrowGroup(groupName, node, {
+    atLeast: resolveAutogrowOrdinal(name, groupName, node)
+  })
   const index = node.inputs.findIndex((input) => input.name === name)
   return index === -1 ? undefined : index
 }
 
-function autogrowInputDisconnected(index: number, node: AutogrowNode) {
-  const input = node.inputs.at(index)
-  if (!input) return
-  //The slot was reconnected before this deferred compaction ran (e.g. a
-  //connect/disconnect/reconnect sequence in immediate succession); the
-  //compaction is stale and must not run against the slot's new link.
-  if (node.getInputLink(index)) return
-  const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const autogrowGroup = Object.hasOwn(node.comfyDynamic.autogrow, groupName)
-    ? node.comfyDynamic.autogrow[groupName]
-    : undefined
-  if (!autogrowGroup) return
+function reconcileAutogrowGroup(
+  groupName: string,
+  node: AutogrowNode,
+  { atLeast = -1, compactFrom = Infinity } = {}
+) {
+  if (!Object.hasOwn(node.comfyDynamic.autogrow, groupName)) return
+  const { min, max, inputSpecs } = node.comfyDynamic.autogrow[groupName]
+  const start = Math.min(compactFrom, max)
+  const nameAt = (ordinal: number, column: number) =>
+    autogrowOrdinalToName(ordinal, inputSpecs[column].name, groupName, node)
+      .name
+  const inputAt = (ordinal: number, column: number) =>
+    node.inputs.find((input) => input.name === nameAt(ordinal, column))
 
-  const { min, inputSpecs } = autogrowGroup
-  const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
-  if (ordinal == undefined || ordinal + 1 < min) return
-
-  //resolve all inputs in group
-  const groupInputs = node.inputs.filter(
-    (inp) =>
-      inp.name.startsWith(groupName + '.') &&
-      inp.name.lastIndexOf('.') === groupName.length
-  )
-  const stride = inputSpecs.length
-  if (stride + index >= node.inputs.length) return
-  if (groupInputs.length % stride !== 0) {
-    console.error('Failed to group multi-input autogrow inputs')
-    return
+  const before = captureInputLayout(node)
+  const linkAt = (ordinal: number, column: number) => {
+    const input = inputAt(ordinal, column)
+    return input && before.links.get(input)
   }
-  node.graph?.setDirtyCanvas(true, true)
-  const previous = captureInputLayout(node)
-  const inputLinks = new Map(previous.links)
-  const transplants: { input: INodeInputSlot; link: LLink }[] = []
+  const packed = inputSpecs.map((_, column) =>
+    range(start, max).flatMap((ordinal) => linkAt(ordinal, column) ?? [])
+  )
+  const highestLinked = Math.max(
+    -1,
+    ...range(0, start).filter((ordinal) =>
+      inputSpecs.some((_, column) => linkAt(ordinal, column))
+    ),
+    ...packed.flatMap((links) =>
+      links.length ? [start + links.length - 1] : []
+    )
+  )
+  const last = Math.min(max - 1, Math.max(min, highestLinked + 1, atLeast))
 
-  for (let column = 0; column < stride; column++) {
-    for (
-      let bubbleOrdinal = ordinal * stride + column;
-      bubbleOrdinal + stride < groupInputs.length;
-      bubbleOrdinal += stride
-    ) {
-      const input = groupInputs[bubbleOrdinal]
-      const donor = groupInputs[bubbleOrdinal + stride]
-      const link = inputLinks.get(donor)
-      inputLinks.delete(input)
-      inputLinks.delete(donor)
-      if (link) {
-        inputLinks.set(input, link)
-        transplants.push({ input, link })
-      }
+  for (const ordinal of range(0, last + 1))
+    if (!inputAt(ordinal, 0)) addAutogrowGroup(ordinal, groupName, node)
+
+  const layout = captureInputLayout(node)
+  const assignments = new Map(layout.links)
+  const moved: { input: INodeInputSlot; link: LLink }[] = []
+  for (const [column, links] of packed.entries()) {
+    for (const ordinal of range(start, last + 1)) {
+      const input = inputAt(ordinal, column)
+      if (input) assignments.delete(input)
+    }
+    for (const [offset, link] of links.entries()) {
+      const input = inputAt(start + offset, column)
+      if (!input) continue
+      assignments.set(input, link)
+      if (layout.links.get(input) !== link) moved.push({ input, link })
     }
   }
+  const removed = layout.inputs.filter((input) => {
+    if (!input.name.startsWith(`${groupName}.`)) return false
+    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
+    return ordinal !== undefined && ordinal > last && compactFrom !== Infinity
+  })
+  if (!moved.length && !removed.length) return
 
-  const removalChecks = groupInputs.slice(min * stride)
-  let i
-  for (i = removalChecks.length - stride; i >= 0; i -= stride) {
-    if (
-      removalChecks.slice(i, i + stride).some((input) => inputLinks.has(input))
-    )
-      break
-  }
-  const toRemove = removalChecks.slice(i + stride * 2)
-  const finalInputs = node.inputs.filter((input) => !toRemove.includes(input))
-  const result = replaceNodeInputs(node, previous, finalInputs, inputLinks)
+  const result = replaceNodeInputs(
+    node,
+    layout,
+    layout.inputs.filter((input) => !removed.includes(input)),
+    assignments
+  )
   if (!result.ok) return
+  node.graph?.setDirtyCanvas(true, true)
 
-  for (const { input, link } of transplants) {
+  for (const { input, link } of moved) {
     const slot = node.inputs.indexOf(input)
-    if (slot === -1) continue
-    node.onConnectionsChange(LiteGraph.INPUT, slot, true, link, input)
+    if (slot !== -1)
+      node.onConnectionsChange(LiteGraph.INPUT, slot, true, link, input)
   }
-  for (const input of toRemove) {
+  for (const input of removed) {
     const widgetName = input.widget?.name
     if (!widgetName) continue
     for (const widget of remove(node.widgets, (w) => w.name === widgetName)) {
@@ -721,37 +684,32 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   node.size = [node.size[0], node.computeSize([...node.size])[1]]
 }
 
+function restoreAutogrowGroup(
+  groupName: string,
+  node: AutogrowNode,
+  info: ISerialisedNode
+) {
+  const { min, max } = node.comfyDynamic.autogrow[groupName]
+  const requiredOrdinals = (info.inputs ?? []).flatMap((input) => {
+    if (!input.name.startsWith(`${groupName}.`)) return []
+    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
+    if (ordinal === undefined) return []
+    return [input.link == null ? ordinal : ordinal + 1]
+  })
+  const last = Math.min(Math.max(min, ...requiredOrdinals), max - 1)
+  for (let ordinal = 0; ordinal <= last; ordinal++)
+    addAutogrowGroup(ordinal, groupName, node)
+}
+
+function trimAutogrowGroups(node: AutogrowNode) {
+  for (const [groupName, { max }] of Object.entries(node.comfyDynamic.autogrow))
+    reconcileAutogrowGroup(groupName, node, { compactFrom: max })
+}
+
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   if (node.comfyDynamic?.autogrow) return
   node.comfyDynamic ??= {}
   node.comfyDynamic.autogrow = {}
-
-  let pendingConnection: number | undefined
-  //Whether the input-side `connect` event for `pendingConnection` has
-  //already fired. `connectSlots` (LGraphNode.ts) calls `onConnectInput`
-  //synchronously before it does anything else, then - only when the slot
-  //is replacing an existing link (a real swap) - fires the *disconnect*
-  //event for the old link before the *connect* event for the new one, all
-  //in the same synchronous call. So a disconnect that arrives for
-  //`pendingConnection` before its connect event has been seen is the
-  //synchronous tail of that swap. A disconnect that arrives *after* the
-  //connect event has already fired is a separate, later operation (e.g.
-  //the user - or an agent applying CRDT ops with no render yield between
-  //them - immediately disconnecting the slot it just connected) and must
-  //not be mistaken for a swap just because it lands within the same
-  //rAF-bounded window (PM-1496).
-  let pendingConnectionSeen = false
-  //Which slot, if any, is mid a same-slot swap: `connectSlots` just fired
-  //that slot's disconnect (the swap's tail, detected above) and its
-  //matching connect event is expected synchronously right after. Scoped
-  //to a single slot - not node-wide - so a genuine connect on a
-  //*different* slot of this node in between is never mistaken for the
-  //swap's own connect and silently dropped. Cleared deterministically by
-  //the connection lifecycle itself (the matching connect event) rather
-  //than solely by a frame boundary, so it cannot stay armed indefinitely
-  //while `requestAnimationFrame` is suspended (e.g. a hidden background
-  //tab); the frame-boundary reset below is only a defensive fallback.
-  let swappingSlot: number | undefined
 
   node.onConfigure = useChainCallback(
     node.onConfigure,
@@ -770,100 +728,24 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     }
   )
 
-  const originalOnConnectInput = node.onConnectInput
-  node.onConnectInput = function (slot: number, ...args) {
-    pendingConnection = slot
-    pendingConnectionSeen = false
-    requestAnimationFrame(() => {
-      pendingConnection = undefined
-      pendingConnectionSeen = false
-    })
-    return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
-  }
-
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
-    function (
-      this: AutogrowNode,
-      contype: ISlotType,
-      slot: number,
-      iscon: boolean,
-      linf: LLink | null | undefined
-    ) {
+    function (this: AutogrowNode, contype: ISlotType, slot: number, iscon) {
       const input = this.inputs.at(slot)
-      if (contype !== LiteGraph.INPUT || !input) return
-      //Return if input isn't known autogrow
-      const key = input.name.slice(0, input.name.lastIndexOf('.'))
-      const autogrowGroup = Object.hasOwn(this.comfyDynamic.autogrow, key)
-        ? this.comfyDynamic.autogrow[key]
-        : undefined
-      if (!autogrowGroup) return
-      if (useApp().configuringGraph) return
-      if (iscon) {
-        if (pendingConnection === slot) pendingConnectionSeen = true
-        if (swappingSlot === slot) {
-          swappingSlot = undefined
-          return
-        }
-        if (!linf) return
-        autogrowInputConnected(slot, this)
-      } else {
-        if (pendingConnection === slot && !pendingConnectionSeen) {
-          swappingSlot = slot
-          requestAnimationFrame(() => {
-            if (swappingSlot === slot) swappingSlot = undefined
-          })
-          return
-        }
-        requestAnimationFrame(() => autogrowInputDisconnected(slot, this))
-      }
+      if (contype !== LiteGraph.INPUT || !input || useApp().configuringGraph)
+        return
+      const groupName = liveAutogrowGroupOf(this, input.name)
+      if (groupName === undefined) return
+      if (iscon) return reconcileAutogrowGroup(groupName, this)
+      const { min } = this.comfyDynamic.autogrow[groupName]
+      const ordinal = resolveAutogrowOrdinal(input.name, groupName, this)
+      if (ordinal === undefined || ordinal + 1 < min) return
+      requestAnimationFrame(() =>
+        reconcileAutogrowGroup(groupName, this, { compactFrom: ordinal })
+      )
     }
   )
 }
-function restoreAutogrowGroup(
-  groupName: string,
-  node: AutogrowNode,
-  info: ISerialisedNode
-) {
-  const { min, max } = node.comfyDynamic.autogrow[groupName]
-  const requiredOrdinals = (info.inputs ?? []).flatMap((input) => {
-    if (!input.name.startsWith(`${groupName}.`)) return []
-    const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
-    if (ordinal === undefined) return []
-    return [input.link == null ? ordinal : ordinal + 1]
-  })
-  const last = Math.min(Math.max(min, ...requiredOrdinals), max - 1)
-  for (let ordinal = 0; ordinal <= last; ordinal++)
-    addAutogrowGroup(ordinal, groupName, node)
-}
-
-function trimAutogrowGroup(groupName: string, node: AutogrowNode) {
-  const { min } = node.comfyDynamic.autogrow[groupName]
-  const ordinalOf = (input: INodeInputSlot) =>
-    input.name.startsWith(`${groupName}.`)
-      ? resolveAutogrowOrdinal(input.name, groupName, node)
-      : undefined
-  const highestLinked = Math.max(
-    -1,
-    ...node.inputs.flatMap((input, slot) => {
-      const ordinal = ordinalOf(input)
-      const linked = node.graph && node.getInputLink(slot)
-      return ordinal !== undefined && linked ? [ordinal] : []
-    })
-  )
-  const last = Math.max(min, highestLinked + 1)
-  replaceNodeInputs(
-    node,
-    captureInputLayout(node),
-    node.inputs.filter((input) => (ordinalOf(input) ?? -1) <= last)
-  )
-}
-
-function trimAutogrowGroups(node: AutogrowNode) {
-  for (const groupName of Object.keys(node.comfyDynamic.autogrow))
-    trimAutogrowGroup(groupName, node)
-}
-
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   withComfyAutogrow(node)
 
