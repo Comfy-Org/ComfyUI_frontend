@@ -41,7 +41,6 @@ export async function queueAuthToken(
   if (!workspaceToken || !workspaceId || isCloud) return workspaceToken
   if (!useFeatureFlags().flags.partnerNodeTokenEnabled) return workspaceToken
 
-  // The prompt stays with the Desktop session it was queued under.
   const startedUnder = desktopHostSessionRevision()
   const sessionChanged = () => desktopHostSessionRevision() !== startedUnder
 
