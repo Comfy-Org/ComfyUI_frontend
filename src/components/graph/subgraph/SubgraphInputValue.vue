@@ -26,7 +26,7 @@ const { source, upstream, owner, processedWidgets, widget, expands } =
       class="mx-3 flex items-center gap-2 text-xs text-muted-foreground"
     >
       <span
-        class="min-w-0 flex-1 truncate"
+        class="min-w-0 flex-1 wrap-anywhere"
         :title="t('subgraphInputValues.sourceHint')"
       >
         {{
