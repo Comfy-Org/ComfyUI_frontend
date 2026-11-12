@@ -234,6 +234,38 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
   }
 
   /**
+   * A temporary tab is never followed into a chat (one the agent created may
+   * be bound to one), but a fresh one with no binding has no chat.
+   */
+  function followTemporaryTab(
+    workflow: ComfyWorkflow,
+    operation: FollowOperation,
+    blankWhenNoChat: boolean
+  ): void {
+    if (blankWhenNoChat && deps.cloudIdFor(workflow) === undefined)
+      showBlankChat(operation)
+  }
+
+  async function followSavedTab(
+    workflow: ComfyWorkflow,
+    operation: FollowOperation,
+    blankWhenNoChat: boolean
+  ): Promise<void> {
+    const workflowId = await resolveWorkflowId(workflow)
+    if (workflowId === undefined || !isCurrent(operation)) return
+    if (workflowId === null) {
+      if (blankWhenNoChat) showBlankChat(operation)
+      return
+    }
+    if (
+      !(await refreshForFollow(workflowId, operation)) ||
+      !isCurrent(operation)
+    )
+      return
+    await openLatestChat(workflowId, operation, blankWhenNoChat)
+  }
+
+  /**
    * `blankWhenNoChat`: a tab the user switched to that has no chat shows the
    * blank chat. Off when the panel mounts, so a chat whose tab is not active
    * keeps its restore path.
@@ -246,25 +278,9 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     const operation = state.value
     if (operation.status !== 'loading') return
     try {
-      // A temporary tab is never followed into a chat (one the agent created
-      // may be bound to one), but a fresh one with no binding has no chat.
-      if (workflow.isTemporary) {
-        if (blankWhenNoChat && deps.cloudIdFor(workflow) === undefined)
-          showBlankChat(operation)
-        return
-      }
-      const workflowId = await resolveWorkflowId(workflow)
-      if (workflowId === undefined || !isCurrent(operation)) return
-      if (workflowId === null) {
-        if (blankWhenNoChat) showBlankChat(operation)
-        return
-      }
-      if (
-        !(await refreshForFollow(workflowId, operation)) ||
-        !isCurrent(operation)
-      )
-        return
-      await openLatestChat(workflowId, operation, blankWhenNoChat)
+      if (workflow.isTemporary)
+        followTemporaryTab(workflow, operation, blankWhenNoChat)
+      else await followSavedTab(workflow, operation, blankWhenNoChat)
     } finally {
       dispatch({ type: 'finished', generation: operation.generation })
     }
