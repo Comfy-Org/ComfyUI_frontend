@@ -24,13 +24,17 @@ function canPasteImage(node?: LGraphNode): boolean {
 
 async function fullResolutionImage(
   img: HTMLImageElement
-): Promise<HTMLImageElement> {
+): Promise<HTMLImageElement | undefined> {
   const src = fullResolutionSrc(img)
   if (src === img.src) return img
   const full = new Image()
   full.src = src
-  await full.decode()
-  return full
+  try {
+    await full.decode()
+    return full
+  } catch {
+    return undefined
+  }
 }
 
 async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
@@ -86,8 +90,15 @@ export function useImageMenuOptions() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    const source = await fullResolutionImage(img)
+    if (!source) {
+      toast.warning(
+        t('toastMessages.errorCopyImage', { error: t('g.unknownError') })
+      )
+      return
+    }
+
     try {
-      const source = await fullResolutionImage(img)
       canvas.width = source.naturalWidth
       canvas.height = source.naturalHeight
       ctx.drawImage(source, 0, 0)

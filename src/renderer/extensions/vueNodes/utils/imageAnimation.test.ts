@@ -57,6 +57,16 @@ describe('isAnimatedImage', () => {
       image: bytes('RIFF', [0, 0, 0, 0], 'WEBP', 'VP8 '),
       animated: false
     },
+    {
+      name: 'an AVIF image sequence',
+      image: bytes([0, 0, 0, 24], 'ftyp', 'avis', [0, 0, 0, 0], 'avif', 'avis'),
+      animated: true
+    },
+    {
+      name: 'a still AVIF',
+      image: bytes([0, 0, 0, 20], 'ftyp', 'avif', [0, 0, 0, 0], 'mif1'),
+      animated: false
+    },
     { name: 'a JPEG', image: bytes([0xff, 0xd8, 0xff]), animated: false }
   ])('detects whether $name is animated', ({ image, animated }) => {
     expect(isAnimatedImage(image)).toBe(animated)
