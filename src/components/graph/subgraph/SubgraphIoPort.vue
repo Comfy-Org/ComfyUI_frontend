@@ -28,7 +28,7 @@ const dimmed = computed(() => {
     data-port-anchor
     :class="
       cn(
-        'lg-slot relative z-10 flex h-(--node-widget-height) w-0 shrink-0 cursor-crosshair items-center justify-center',
+        'lg-slot flex h-(--node-widget-height) w-0 shrink-0 cursor-crosshair items-center justify-center',
         dimmed && 'opacity-40'
       )
     "

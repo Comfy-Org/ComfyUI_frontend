@@ -155,7 +155,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
         aria-hidden="true"
         :class="
           cn(
-            'pointer-events-none absolute inset-y-0 border-2 border-foreground',
+            'pointer-events-none absolute inset-y-0 -z-1 border-2 border-foreground',
             isInput
               ? '-right-px rounded-r-(--node-radius) border-l-0'
               : '-left-px rounded-l-(--node-radius) border-r-0'
