@@ -82,6 +82,7 @@ test.describe('Local web billing handoff', () => {
       await settings.category('Billing', { exact: true }).click()
       const billingTab = comfyPage.page.getByTestId('billing-tab')
       await expect(billingTab).toBeVisible()
+      await expect(billingTab.getByTestId('billing-plan-row')).toBeVisible()
       await expect(billingTab.getByTestId('billing-handoff')).toHaveCount(0)
       await expect(billingTab.locator('a[href*="/profile/"]')).toHaveCount(0)
       await expect(

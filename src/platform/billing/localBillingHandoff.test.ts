@@ -114,16 +114,18 @@ describe('launchLocalBillingHandoff', () => {
     const tab = fakeTab()
     openTabs(tab)
     let answer: (response: Response) => void = () => {}
-    respondToFetch(
-      HANDOFFS,
-      () => new Promise<Response>((resolve) => (answer = resolve))
-    )
+    const response = new Promise<Response>((resolve) => (answer = resolve))
+    respondToFetch(HANDOFFS, () => response)
 
     const launch = launchLocalBillingHandoff(retry)
-    await vi.waitFor(() => expect(fetchRequests(HANDOFFS)).toHaveLength(1))
-    expect(tab.document.title).toBe(t('billingHandoff.opening'))
-    expect(tab.location.href).toBe('')
-    answer(issued())
+    try {
+      await vi.waitFor(() => expect(fetchRequests(HANDOFFS)).toHaveLength(1))
+      expect(tab.document.title).toBe(t('billingHandoff.opening'))
+      expect(tab.location.href).toBe('')
+    } finally {
+      answer(issued())
+      await launch
+    }
 
     await expect(launch).resolves.toBe('opened')
     expect(tab.location.href).toBe(ENTRY_URL)
