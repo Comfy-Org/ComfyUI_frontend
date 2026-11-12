@@ -1,3 +1,6 @@
+import type { HasBoundingRect } from '@comfyorg/shared-frontend-utils/geometry'
+
+import { createBounds } from '@/lib/litegraph/src/measure'
 import { parseUrl } from '@/utils/urlSafety'
 
 const XHTML_NS = 'http://www.w3.org/1999/xhtml'
@@ -181,17 +184,14 @@ async function loadSvgWithEmbeddedFonts(
 }
 
 function paddedBounds(elements: readonly PositionedElement[], padding: number) {
-  if (elements.length === 0) return undefined
-  const left = Math.min(...elements.map(({ x }) => x)) - padding
-  const top = Math.min(...elements.map(({ y }) => y)) - padding
-  const right =
-    Math.max(...elements.map(({ x, element }) => x + element.offsetWidth)) +
+  const bounds = createBounds(
+    elements.map<HasBoundingRect>(({ x, y, element }) => ({
+      boundingRect: [x, y, element.offsetWidth, element.offsetHeight]
+    })),
     padding
-  const bottom =
-    Math.max(...elements.map(({ y, element }) => y + element.offsetHeight)) +
-    padding
-  const width = right - left
-  const height = bottom - top
+  )
+  if (!bounds) return undefined
+  const [left, top, width, height] = bounds
   if (!(width > 0 && height > 0)) return undefined
   return { left, top, width, height }
 }

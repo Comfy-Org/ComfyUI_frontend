@@ -1,5 +1,6 @@
 import type {
   HasBoundingRect,
+  PointTuple,
   ReadOnlyRect
 } from '@comfyorg/shared-frontend-utils/geometry'
 
@@ -7,6 +8,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { createBounds } from '@/lib/litegraph/src/litegraph'
 import { createElementRasterizer } from '@/renderer/core/canvas/workflowImage/rasterizeElement'
 import type { PositionedElement } from '@/renderer/core/canvas/workflowImage/rasterizeElement'
+import { anyItemOverlapsRect } from '@/utils/mathUtil'
 
 const GRAPH_PADDING = 64
 const NODE_PADDING = 32
@@ -111,28 +113,21 @@ function drawNodeMedia(
   ctx.restore()
 }
 
-function overlaps(a: PositionedElement, b: PositionedElement): boolean {
-  return (
-    a.x < b.x + b.element.offsetWidth &&
-    b.x < a.x + a.element.offsetWidth &&
-    a.y < b.y + b.element.offsetHeight &&
-    b.y < a.y + a.element.offsetHeight
-  )
-}
-
 function batchBelowMedia(
   elements: readonly PositionedElement[]
 ): PositionedElement[][] {
   const batches: PositionedElement[][] = [[]]
-  let mediaInBatch: PositionedElement[] = []
+  let mediaInBatch: { pos: PointTuple; size: PointTuple }[] = []
   for (const positioned of elements) {
-    if (mediaInBatch.some((media) => overlaps(media, positioned))) {
+    const { x, y, element } = positioned
+    const size: PointTuple = [element.offsetWidth, element.offsetHeight]
+    if (anyItemOverlapsRect(mediaInBatch, [x, y, ...size])) {
       batches.push([])
       mediaInBatch = []
     }
     batches[batches.length - 1].push(positioned)
-    if (positioned.element.querySelector('img, video, canvas'))
-      mediaInBatch.push(positioned)
+    if (element.querySelector('img, video, canvas'))
+      mediaInBatch.push({ pos: [x, y], size })
   }
   return batches
 }
