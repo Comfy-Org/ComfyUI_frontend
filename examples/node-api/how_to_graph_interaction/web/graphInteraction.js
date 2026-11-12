@@ -120,8 +120,8 @@ api.defs.define({
     text: { literal: String(self.widgetValue('text') ?? '') }
   }),
   onDragOver(_node, event) {
-    return [...(event.dataTransfer?.files ?? [])].some((file) =>
-      file.name.toLowerCase().endsWith('.txt')
+    return [...(event.dataTransfer?.items ?? [])].some(
+      (item) => item.kind === 'file'
     )
   },
   async onDrop(node, event) {
