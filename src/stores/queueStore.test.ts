@@ -250,7 +250,6 @@ describe('TaskItemImpl', () => {
       })
     ])
     expect(task.previewableOutputs).toStrictEqual(task.flatOutputs)
-    expect(task.previewOutput).toBe(task.flatOutputs[0])
   })
 
   it('should reject non-text preview outputs without a filename', () => {

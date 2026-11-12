@@ -1,6 +1,21 @@
 import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, toValue } from 'vue'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { effectScope, nextTick, toValue } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
+import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useExecutionStore } from '@/stores/executionStore'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
@@ -127,6 +142,45 @@ describe('assetsStore - resolved history outputs', () => {
     expect(
       new Set(toValue(store.flatOutputAssets.items).map(({ id }) => id)).size
     ).toBe(4)
+  })
+
+  it('recovers inline text in App history when the asset API has no files', async () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    vi.mocked(api.fetchApi).mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ assets: [], total: 0, has_more: false }))
+    )
+    vi.mocked(api.getHistory).mockResolvedValueOnce([
+      {
+        ...job('text-job'),
+        outputs_count: 1,
+        previewable_outputs_count: 1,
+        preview_output: {
+          nodeId: '1',
+          mediaType: 'text',
+          content: 'Recovered inline text'
+        }
+      }
+    ])
+    useWorkflowStore().activeWorkflow = fromPartial({ path: 'text.json' })
+    useExecutionStore().jobIdToSessionWorkflowPath.set('text-job', 'text.json')
+    useAppModeStore().selectedOutputs = [toNodeId('1')]
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const history = scope.run(useOutputHistory)
+    assert(history)
+
+    await vi.waitFor(() =>
+      expect(
+        toValue(history.outputs.items).flatMap(history.allOutputs)
+      ).toEqual([
+        expect.objectContaining({
+          nodeId: '1',
+          mediaType: 'text',
+          content: 'Recovered inline text'
+        })
+      ])
+    )
   })
 
   it('does not start resolving abandoned history after switching to the asset API', async () => {

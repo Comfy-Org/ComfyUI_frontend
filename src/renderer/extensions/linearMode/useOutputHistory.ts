@@ -11,7 +11,7 @@ import { api } from '@/scripts/api'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -26,8 +26,7 @@ export function useOutputHistory(): {
   isWorkflowActive: ComputedRef<boolean>
   cancelActiveWorkflowJobs: () => Promise<void>
 } {
-  const assetsStore = useAssetsStore()
-  void assetsStore.outputAssets.loadMore()
+  const [history] = useJobOutputHistory()
   const linearStore = useLinearOutputStore()
   const workflowStore = useWorkflowStore()
   const executionStore = useExecutionStore()
@@ -71,7 +70,7 @@ export function useOutputHistory(): {
     )
   }
 
-  const outputs = new WrappedList(assetsStore.outputAssets, (items) => {
+  const outputs = new WrappedList(history, (items) => {
     const path = workflowStore.activeWorkflow?.path
     if (!path) return []
 

@@ -2,7 +2,7 @@ import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOut
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -14,6 +14,8 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
+vi.mock(import('@/platform/assets/composables/useJobOutputHistory'))
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'), () => ({
   getAssetType: (tags?: string[]) =>
@@ -68,9 +70,10 @@ function makeResult(
 }
 
 beforeEach(() => {
-  Object.assign(useAssetsStore(), {
-    outputAssets: mockPagedList<AssetItem>({ loadMore: vi.fn() })
-  })
+  vi.mocked(useJobOutputHistory).mockReturnValue([
+    mockPagedList<AssetItem>({}),
+    mockPagedList<AssetItem>({})
+  ])
   vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
     () => undefined
   )
@@ -102,7 +105,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json'],
         ['job-2', 'workflows/other.json']
       ])
-      useAssetsStore().outputAssets.items = [
+      useJobOutputHistory()[0].items = [
         makeAsset('a1', 'job-1'),
         makeAsset('a2', 'job-2')
       ]
@@ -118,7 +121,7 @@ describe(useOutputHistory, () => {
       useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json']
       ])
-      useAssetsStore().outputAssets.items = [makeAsset('a1', 'job-1')]
+      useJobOutputHistory()[0].items = [makeAsset('a1', 'job-1')]
 
       const { outputs } = useOutputHistory()
 
@@ -130,7 +133,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/a.json'],
         ['job-2', 'workflows/b.json']
       ])
-      useAssetsStore().outputAssets.items = [
+      useJobOutputHistory()[0].items = [
         makeAsset('a1', 'job-1'),
         makeAsset('a2', 'job-2')
       ]
@@ -325,7 +328,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json']
       ])
       useLinearOutputStore().pendingResolve = new Set(['job-1'])
-      useAssetsStore().outputAssets.items = [asset]
+      useJobOutputHistory()[0].items = [asset]
       useLinearOutputStore().selectedId = null
 
       useOutputHistory()
@@ -351,7 +354,7 @@ describe(useOutputHistory, () => {
         ['job-1', 'workflows/test.json']
       ])
       useLinearOutputStore().pendingResolve = new Set(['job-1'])
-      useAssetsStore().outputAssets.items = [asset]
+      useJobOutputHistory()[0].items = [asset]
       useLinearOutputStore().selectedId = 'history:existing:0'
 
       useOutputHistory()
@@ -379,7 +382,7 @@ describe(useOutputHistory, () => {
       useExecutionStore().jobIdToSessionWorkflowPath = new Map([
         ['job-1', 'workflows/test.json']
       ])
-      useAssetsStore().outputAssets.items = [makeAsset('a1', 'job-1')]
+      useJobOutputHistory()[0].items = [makeAsset('a1', 'job-1')]
 
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()

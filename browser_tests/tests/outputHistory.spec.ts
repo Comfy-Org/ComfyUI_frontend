@@ -176,7 +176,6 @@ test.describe('Output History', { tag: '@ui' }, () => {
     comfyPage,
     getWebSocket
   }) => {
-    test.slow()
     const ws = await getWebSocket()
     const { exec, jobId } = await startExecution(comfyPage, ws)
     const content = 'Inline text output'
