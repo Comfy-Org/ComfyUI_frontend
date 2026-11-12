@@ -1,4 +1,4 @@
-import { remove } from 'es-toolkit'
+import { range, remove } from 'es-toolkit'
 import { shallowReactive } from 'vue'
 
 import { assert } from '@/base/assert'
@@ -613,8 +613,6 @@ function reconcileAutogrowGroup(
       .name
   const inputAt = (ordinal: number, column: number) =>
     node.inputs.find((input) => input.name === nameAt(ordinal, column))
-  const ordinals = (from: number, to: number) =>
-    Array.from({ length: Math.max(to - from, 0) }, (_, i) => from + i)
 
   const before = captureInputLayout(node)
   const linkAt = (ordinal: number, column: number) => {
@@ -622,11 +620,11 @@ function reconcileAutogrowGroup(
     return input && before.links.get(input)
   }
   const packed = inputSpecs.map((_, column) =>
-    ordinals(start, max).flatMap((ordinal) => linkAt(ordinal, column) ?? [])
+    range(start, max).flatMap((ordinal) => linkAt(ordinal, column) ?? [])
   )
   const highestLinked = Math.max(
     -1,
-    ...ordinals(0, start).filter((ordinal) =>
+    ...range(0, start).filter((ordinal) =>
       inputSpecs.some((_, column) => linkAt(ordinal, column))
     ),
     ...packed.flatMap((links) =>
@@ -635,14 +633,14 @@ function reconcileAutogrowGroup(
   )
   const last = Math.min(max - 1, Math.max(min, highestLinked + 1, atLeast))
 
-  for (const ordinal of ordinals(0, last + 1))
+  for (const ordinal of range(0, last + 1))
     if (!inputAt(ordinal, 0)) addAutogrowGroup(ordinal, groupName, node)
 
   const layout = captureInputLayout(node)
   const assignments = new Map(layout.links)
   const moved: { input: INodeInputSlot; link: LLink }[] = []
   for (const [column, links] of packed.entries()) {
-    for (const ordinal of ordinals(start, last + 1)) {
+    for (const ordinal of range(start, last + 1)) {
       const input = inputAt(ordinal, column)
       if (input) assignments.delete(input)
     }
