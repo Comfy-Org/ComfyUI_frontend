@@ -195,7 +195,6 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   let checkoutScope: AbortController | undefined
   let stopWatch: (() => void) | undefined
   let disposed = false
-  let offeredWithPurchase = false
   let acceptedRequest: AddCreditsAutoTopUpRequest = { kind: 'not_offered' }
 
   function armPaymentWatch() {
@@ -215,7 +214,8 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   function setupUrlAfterPaying(
     activation: AutoTopUpActivationOutcome | undefined
   ): Promise<string | null> {
-    const asks = activation?.status === 'failed' || !offeredWithPurchase
+    const asks =
+      activation?.status === 'failed' || acceptedRequest.kind === 'not_offered'
     return asks ? setupUrl() : Promise.resolve(null)
   }
 
@@ -231,7 +231,6 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     amountCents: number,
     request: AddCreditsAutoTopUpRequest
   ) {
-    offeredWithPurchase = request.kind !== 'not_offered'
     const tab = ports.reserveTab()
     dispatch({
       type: 'checkout_requested',
