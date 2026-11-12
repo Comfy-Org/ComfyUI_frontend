@@ -14,6 +14,7 @@ import {
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import * as graphTraversalUtil from '@/utils/graphTraversalUtil'
 import * as litegraphUtil from '@/utils/litegraphUtil'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isAnimatedOutput: vi.fn(),
@@ -1030,12 +1031,37 @@ describe('nodeOutputStore image url cache busting', () => {
 
     store.setNodeOutputs(node, 'same-name.png')
     const first = store.getNodeImageUrls(node)
+    const firstItems = store.getNodeOutputItems(node)
     const again = store.getNodeImageUrls(node)
+    const againItems = store.getNodeOutputItems(node)
     store.setNodeOutputs(node, 'same-name.png')
     const afterReload = store.getNodeImageUrls(node)
+    const afterItems = store.getNodeOutputItems(node)
 
     expect(again).toEqual(first)
     expect(afterReload).not.toEqual(first)
+    expect(againItems).toEqual(firstItems)
+    expect(
+      firstItems.map((item) =>
+        new URL(
+          resultItemPreviewUrl(item),
+          window.location.origin
+        ).searchParams.get('rand')
+      )
+    ).toEqual(['0'])
+    expect(
+      afterItems.map((item) =>
+        new URL(
+          resultItemPreviewUrl(item),
+          window.location.origin
+        ).searchParams.get('rand')
+      )
+    ).toEqual(['1'])
+    expect(
+      afterItems.map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+    ).not.toEqual(
+      firstItems.map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+    )
   })
 })
 

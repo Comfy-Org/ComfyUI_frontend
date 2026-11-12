@@ -15,6 +15,9 @@ import type {
   ResultItem
 } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import { parseNodeOutput } from '@/stores/resultItemParsing'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'
@@ -167,6 +170,33 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       randParamByOutputs.set(key, rand)
     }
     return rand
+  }
+
+  function getNodeOutputItems(
+    node: LGraphNode,
+    outputs = getNodeOutputs(node)
+  ) {
+    if (!outputs) return []
+    const rand = randParamFor(outputs)
+    return parseNodeOutput(node.id, outputs).map((item) => {
+      const { filepath, rootFolder } = parseAnnotatedPath(
+        item.filename,
+        item.type
+      )
+      const result = {
+        ...item,
+        filename:
+          node.comfyClass === 'LoadImageOutput' ? item.filename : filepath,
+        type: rootFolder
+      }
+      return {
+        ...result,
+        url: resultItemUrl(result) + rand,
+        previewUrl: isHdrImageFilename(result.filename)
+          ? resultItemPreviewUrl(result)
+          : resultItemPreviewUrl(result) + getPreviewParam(node, outputs) + rand
+      }
+    })
   }
 
   function buildImageUrls(
@@ -615,6 +645,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   return {
     getNodeOutputs,
+    getNodeOutputItems,
     getNodeImageUrls,
     getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,
