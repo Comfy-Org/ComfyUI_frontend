@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe('Properties panel - Node selection', () => {
-  let panel: PropertiesPanelHelper
+  let panel: PropertiesPanel
 
   test.beforeEach(async ({ comfyPage }) => {
-    panel = new PropertiesPanelHelper(comfyPage.page)
+    panel = new PropertiesPanel(comfyPage.page)
     await comfyPage.actionbar.propertiesButton.click()
   })
 
@@ -224,6 +224,22 @@ test.describe('Properties panel - Node selection', () => {
         'CLIP Text Encode (Prompt)'
       ])
       await expect(panel.getTab('Info')).toBeHidden()
+    })
+
+    test('should toggle all sections with Expand all and Collapse all', async ({
+      comfyPage
+    }) => {
+      await comfyPage.nodeOps.selectNodes([
+        'KSampler',
+        'CLIP Text Encode (Prompt)'
+      ])
+      await expect(panel.expandAllButton).toBeVisible()
+
+      await panel.expandAllButton.click()
+      await expect(panel.collapseAllButton).toBeVisible()
+
+      await panel.collapseAllButton.click()
+      await expect(panel.expandAllButton).toBeVisible()
     })
   })
 

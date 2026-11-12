@@ -4,11 +4,14 @@ import { expect } from '@playwright/test'
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-export class PropertiesPanelHelper {
+export class PropertiesPanel {
   readonly root: Locator
   readonly panelTitle: Locator
   readonly searchBox: Locator
+  readonly toggleButton: Locator
   readonly closeButton: Locator
+  readonly expandAllButton: Locator
+  readonly collapseAllButton: Locator
   readonly errorsTab: Locator
   readonly titleEditor: TitleEditor
   readonly pinnedSwitch: Locator
@@ -17,7 +20,16 @@ export class PropertiesPanelHelper {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
-    this.closeButton = this.root.locator('button[aria-pressed]')
+    this.toggleButton = page.getByRole('button', {
+      name: 'Toggle properties panel'
+    })
+    this.closeButton = this.root.getByRole('button', {
+      name: 'Toggle properties panel'
+    })
+    this.expandAllButton = this.root.getByRole('button', { name: 'Expand all' })
+    this.collapseAllButton = this.root.getByRole('button', {
+      name: 'Collapse all'
+    })
     this.errorsTab = this.root.getByTestId(TestIds.propertiesPanel.errorsTab)
     this.titleEditor = new TitleEditor(this.root)
     this.pinnedSwitch = this.root.getByRole('switch', { name: 'Pinned' })
@@ -78,12 +90,7 @@ export class PropertiesPanelHelper {
       .evaluate((element) => element.getBoundingClientRect().left)
   }
 
-  /**
-   * Drag the widget row at `fromIndex` down onto the row at `toIndex`.
-   * Grabs the row by its header strip (`y + 8`): the widget body owns its own
-   * pointer events, but the header is pointer-events-none so the grab lands on
-   * the draggable row itself.
-   */
+  /** Drag the widget row at `fromIndex` down onto the row at `toIndex`. */
   async dragSectionWidgetRow(
     fromIndex: number,
     toIndex: number
@@ -100,12 +107,12 @@ export class PropertiesPanelHelper {
     if (!from || !to) throw new Error('widget row not visible')
 
     const { mouse } = this.page
-    const grabOffsetY = 8
+    const headerStripOffsetY = 8
     const viewport = this.page.viewportSize()
     if (!viewport) throw new Error('page has no viewport')
     const dropY = Math.min(to.y + to.height * 0.95, viewport.height - 1)
 
-    await mouse.move(from.x + from.width / 2, from.y + grabOffsetY)
+    await mouse.move(from.x + from.width / 2, from.y + headerStripOffsetY)
     await mouse.down()
     try {
       await expect(rows.nth(fromIndex)).toHaveClass(/\bis-draggable\b/)
@@ -129,12 +136,6 @@ export class PropertiesPanelHelper {
 
   get viewAllSettingsButton(): Locator {
     return this.root.getByRole('button', { name: /view all settings/i })
-  }
-
-  get collapseToggleButton(): Locator {
-    return this.root.locator(
-      'button:has(i[class*="lucide--chevrons-down-up"]), button:has(i[class*="lucide--chevrons-up-down"])'
-    )
   }
 
   async open(actionbar: Locator): Promise<void> {

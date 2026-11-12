@@ -16,14 +16,14 @@ Tests for the properties panel (`src/renderer/extensions/propertiesPanel/Propert
 | `errorsTab.spec.ts`               | Errors tab visibility                                       |
 | `propertiesPanelPosition.spec.ts` | Panel position relative to sidebar                          |
 
-## Shared Helper
+## Page Object
 
-`PropertiesPanelHelper.ts` — Encapsulates panel locators and actions. Instantiated in `beforeEach`:
+`browser_tests/fixtures/components/PropertiesPanel.ts` encapsulates panel locators and actions. It is also exposed as `comfyPage.menu.propertiesPanel`. Instantiate it in `beforeEach`:
 
 ```typescript
-let panel: PropertiesPanelHelper
+let panel: PropertiesPanel
 test.beforeEach(async ({ comfyPage }) => {
-  panel = new PropertiesPanelHelper(comfyPage.page)
+  panel = new PropertiesPanel(comfyPage.page)
 })
 ```
 

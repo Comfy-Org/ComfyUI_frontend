@@ -47,7 +47,7 @@
     {
       "name": "Properties panel opens, switches tabs, and keeps favorited widget actions",
       "checks": [
-        "browser_tests/tests/rightSidePanelTabs.spec.ts",
+        "browser_tests/tests/propertiesPanel/nodeSelection.spec.ts",
         "browser_tests/tests/propertiesPanel/openClose.spec.ts",
         "browser_tests/tests/propertiesPanel/widgetActionsMenu.spec.ts"
       ]
