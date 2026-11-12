@@ -6674,6 +6674,8 @@
     "superseded": "Your account or workspace changed while billing was opening. Try again.",
     "signInAgain": "Sign in again to open billing.",
     "popupBlocked": "Your browser blocked the billing tab.",
-    "openBilling": "Open billing"
+    "openBilling": "Open billing",
+    "opening": "Opening checkout…",
+    "openingDetail": "This takes a few seconds."
   }
 }

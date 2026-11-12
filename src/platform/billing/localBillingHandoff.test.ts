@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { t } from '@/i18n'
 import type {
   DesktopHostAuthBridge,
   DesktopHostAuthState
@@ -61,6 +62,7 @@ const HANDOFFS = /\/api\/auth\/handoffs$/
 const ENTRY_URL = 'https://billing.comfy.org/handoff#token=abc'
 
 interface FakeTab {
+  document: Document
   location: { href: string }
   opener: unknown
   closed: boolean
@@ -69,6 +71,7 @@ interface FakeTab {
 
 function fakeTab(): FakeTab {
   const tab: FakeTab = {
+    document: document.implementation.createHTMLDocument(''),
     location: { href: '' },
     opener: window,
     closed: false,
@@ -114,6 +117,7 @@ describe('launchLocalBillingHandoff', () => {
 
     await expect(launchLocalBillingHandoff(retry)).resolves.toBe('opened')
 
+    expect(tab.document.title).toBe(t('billingHandoff.opening'))
     expect(tab.location.href).toBe(ENTRY_URL)
     expect(tab.closed).toBe(false)
     const [request] = fetchRequests(HANDOFFS)
