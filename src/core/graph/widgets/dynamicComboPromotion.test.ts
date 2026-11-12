@@ -23,6 +23,7 @@ import {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'
 import { graphToPrompt } from '@/utils/executionUtil'
+import { triggerCallbackOnAllNodes } from '@/utils/graphTraversalUtil'
 
 const COMBO_NODE_TYPE = 'test/PromotedDynamicCombo'
 const SOURCE_NODE_TYPE = 'test/PromotedDynamicComboSource'
@@ -209,14 +210,18 @@ function addNode(graph: LGraph, type: string) {
   return node
 }
 
+function setValues(node: LGraphNode, edits: Record<string, string | number>) {
+  for (const [name, value] of Object.entries(edits))
+    widget(node, name).value = value
+}
+
 function buildPromoted(
   type = COMBO_NODE_TYPE,
   interiorValues: Record<string, string | number> = { 'mode.factor': 7 }
 ) {
   const graph = newGraph()
   const node = addNode(graph, type)
-  for (const [name, value] of Object.entries(interiorValues))
-    widget(node, name).value = value
+  setValues(node, interiorValues)
   const { subgraph, node: host } = graph.convertToSubgraph(
     new Set<Positionable>([node])
   )
@@ -372,7 +377,7 @@ describe('Promoting a dynamic combo onto a subgraph node', () => {
     expect(host.serialize().widgets_values).toBeUndefined()
   })
 
-  test.for([
+  test.for<{ type: string; edits: Record<string, string | number> }>([
     {
       type: COMBO_NODE_TYPE,
       edits: { mode: 'caption', 'mode.text': 'saved' }
@@ -385,14 +390,13 @@ describe('Promoting a dynamic combo onto a subgraph node', () => {
     'keeps the $type option and child values across save and load',
     ({ type, edits }) => {
       const { graph, host } = buildPromoted(type, {})
-      for (const [name, value] of Object.entries(edits))
-        widget(host, name).value = value
+      setValues(host, edits)
 
       const reloaded = newGraph()
       reloaded.configure(structuredClone(graph.serialize()))
       const reloadedHost = reloaded.getNodeById(host.id)
       assert(reloadedHost?.isSubgraphNode())
-      reloadedHost.subgraph.nodes.forEach((n) => n.onAfterGraphConfigured?.())
+      triggerCallbackOnAllNodes(reloaded, 'onAfterGraphConfigured')
 
       expect(values(reloadedHost)).toMatchObject(edits)
       expect(names(reloadedHost.subgraph.nodes[0]).inputs).toEqual(['mode'])
