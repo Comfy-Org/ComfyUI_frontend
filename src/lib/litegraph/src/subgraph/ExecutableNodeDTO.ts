@@ -176,18 +176,12 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     })
   }
 
-  /** The value of the subgraph node's widget for an unlinked `input`. */
   private _hostWidgetInput(
     subgraphNode: SubgraphNode,
     input: INodeInputSlot
   ): ResolvedInput | undefined {
     const widget = subgraphNode.getWidgetFromSlot(input)
-    if (
-      !widget ||
-      widget.serialize === false ||
-      widget.options.serialize === false
-    )
-      return
+    if (!widget || widget.options.serialize === false) return
     return {
       node: this,
       origin_id: this.id,
@@ -268,7 +262,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     )
   }
 
-  /** Resolves the subgraph node's `hostInput`: its link, else its widget value. */
   private _resolveHostInput(
     hostInput: INodeInputSlot | undefined,
     visited: Set<string>,

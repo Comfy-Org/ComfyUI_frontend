@@ -334,12 +334,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       'input-connected',
       (e) => {
         input.shape = this.getSlotShape(subgraphInput, e.detail.input)
-        // A reconnect landing before the deferred demotion below runs is a
-        // rewire, not a real disconnect: cancel the pending demotion so the
-        // widget is never torn down.
+        const rewired = input._pendingDemotionToken !== undefined
         input._pendingDemotionToken = undefined
         if (!e.detail.node) return
         if (this.bindDynamicInput(input, e.detail.node, e.detail.input)) return
+        if (rewired) this.unbindDynamicInput(input)
         if (!e.detail.widget) return
 
         this._setWidget(
@@ -364,39 +363,41 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           this.invalidatePromotedViews()
           return
         }
-        if (this._bindsRemainingLink(subgraphInput, input)) return
-
-        // Defer the actual demotion by a microtask instead of clearing
-        // input.widgetId/.widget/._widget here: a rewire (this disconnect
-        // immediately followed by a reconnect of the same input, e.g.
-        // dragging a new source onto an already-promoted widget) would
-        // otherwise drop the widget from `this.widgets` for one tick, which
-        // is exactly the window the Vue widget grid can render from. The
-        // 'input-connected' listener above cancels this token on a
-        // same-tick reconnect.
         const widget = input._widget
         const id = input.widgetId
+        if (this._bindsRemainingLink(subgraphInput, input)) {
+          if (widget) this._demoteInputWidget(input, widget, id)
+          return
+        }
+
         const token = Symbol()
         input._pendingDemotionToken = token
         queueMicrotask(() => {
           if (input._pendingDemotionToken !== token) return
           input._pendingDemotionToken = undefined
           this.unbindDynamicInput(input)
-
-          if (widget) this.ensureWidgetRemoved(widget)
-          if (id && !this.inputs.some((i) => i.widgetId === id)) {
-            useWidgetValueStore().deleteWidget(id)
-          }
-
-          input.pos = undefined
-          input.widget = undefined
-          input.widgetId = undefined
-          input._widget = undefined
-          this.invalidatePromotedViews()
+          this._demoteInputWidget(input, widget, id)
         })
       },
       { signal }
     )
+  }
+
+  private _demoteInputWidget(
+    input: INodeInputSlot,
+    widget: IBaseWidget | undefined,
+    id: WidgetId | undefined
+  ): void {
+    if (widget) this.ensureWidgetRemoved(widget)
+    if (id && !this.inputs.some((i) => i.widgetId === id)) {
+      useWidgetValueStore().deleteWidget(id)
+    }
+
+    input.pos = undefined
+    input.widget = undefined
+    input.widgetId = undefined
+    input._widget = undefined
+    this.invalidatePromotedViews()
   }
 
   private _rebindInputSubgraphSlots(): void {
@@ -530,10 +531,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  /**
-   * Inputs whose widget value the host serializes, in input order: promoted
-   * widgets, and widgets the host owns for a promoted dynamic input.
-   */
   private _serializedInputWidgets(): {
     input: INodeInputSlot
     value: unknown

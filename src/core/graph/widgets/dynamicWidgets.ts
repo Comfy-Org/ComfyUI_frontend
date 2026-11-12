@@ -77,7 +77,6 @@ function commitMutatedInputs(
   return replaceNodeInputs(node, previous, finalInputs, assignments)
 }
 
-/** `onConnectionsChange` at each input's live slot: a callback can grow a group and shift later inputs. */
 function notifyRelinked(
   node: LGraphNode,
   relinked: readonly { input: INodeInputSlot; link: LLink }[]
@@ -89,7 +88,6 @@ function notifyRelinked(
   }
 }
 
-/** Moves each removed input's link onto the input that replaced it by name. */
 function carryLinks(
   node: LGraphNode,
   removedInputs: INodeInputSlot[],
@@ -194,7 +192,6 @@ function dynamicComboWidget(
         addNodeInput(node, specToAdd)
       }
   }
-  /** Moves inputs added past `start` to after the combo's socket, reusing same-named existing inputs. */
   function placeAddedInputs(start: number, hasAddedWidgets: boolean) {
     const socket = node.inputs.findIndex((i) => i.name === widget.name)
     if (socket === -1 && node.inputs.length > start && !hasAddedWidgets)
@@ -310,7 +307,8 @@ function withComfyDynamicCombo(
   node.onAfterGraphConfigured = useChainCallback(
     node.onAfterGraphConfigured,
     () => {
-      for (const combo of Object.values(combos)) combo.sync()
+      for (const name of Object.keys(combos))
+        if (Object.hasOwn(combos, name)) combos[name].sync()
     }
   )
   node.onConnectionsChange = useChainCallback(
@@ -950,29 +948,33 @@ function bindPromotedDynamicCombo(
     !Object.hasOwn(interiorNode.comfyDynamic.dynamicCombo, interiorName)
   )
     return false
+  const { inputSpec } = interiorNode.comfyDynamic.dynamicCombo[interiorName]
   if (
     hasDynamicCombos(node) &&
-    Object.hasOwn(node.comfyDynamic.dynamicCombo, input.name)
+    Object.hasOwn(node.comfyDynamic.dynamicCombo, input.name) &&
+    node.comfyDynamic.dynamicCombo[input.name].inputSpec === inputSpec
   )
     return true
+  unbindPromotedDynamicInput(node, input)
   input.widget = { name: input.name }
-  const { inputSpec } = interiorNode.comfyDynamic.dynamicCombo[interiorName]
   const { widget } = dynamicComboWidget(node, input.name, inputSpec, useApp())
   if (input.label) widget.label = input.label
-
-  const interiorWidgets = new Map(
-    interiorNode.widgets?.map((w) => [w.name, w.value])
-  )
-  if (interiorWidgets.has(interiorName))
-    widget.value = interiorWidgets.get(interiorName)
-  for (const child of node.widgets?.filter((w) =>
-    w.name.startsWith(`${input.name}.`)
-  ) ?? []) {
-    const interiorChildName = interiorName + child.name.slice(input.name.length)
-    if (interiorWidgets.has(interiorChildName))
-      child.value = interiorWidgets.get(interiorChildName)
-  }
+  copyComboValues(interiorNode, interiorName, node, input.name)
   return true
+}
+
+function copyComboValues(
+  from: LGraphNode,
+  fromName: string,
+  to: LGraphNode,
+  toName: string
+) {
+  for (const { name, value } of from.widgets ?? []) {
+    if (name !== fromName && !name.startsWith(`${fromName}.`)) continue
+    const targetName = toName + name.slice(fromName.length)
+    const target = to.widgets?.find((w) => w.name === targetName)
+    if (target) target.value = value
+  }
 }
 
 function bindPromotedAutogrowGroup(
@@ -986,12 +988,15 @@ function bindPromotedAutogrowGroup(
     !Object.hasOwn(interiorNode.comfyDynamic.autogrow, interiorInput.name)
   )
     return false
+  const { inputSpec } = interiorNode.comfyDynamic.autogrow[interiorInput.name]
   if (
     hasAutogrowGroups(node) &&
-    Object.hasOwn(node.comfyDynamic.autogrow, input.name)
+    Object.hasOwn(node.comfyDynamic.autogrow, input.name) &&
+    node.comfyDynamic.autogrow[input.name].inputSpec.template ===
+      inputSpec.template
   )
     return true
-  const { inputSpec } = interiorNode.comfyDynamic.autogrow[interiorInput.name]
+  unbindPromotedDynamicInput(node, input)
   applyAutogrow(node, {
     ...inputSpec,
     name: input.name,
