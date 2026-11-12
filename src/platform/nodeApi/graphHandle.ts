@@ -50,11 +50,40 @@ export interface NodeInit {
   position?: { x: number; y: number }
 }
 
+/**
+ * `'visible'` is the graph on screen. `'root-and-subgraphs'` is the root graph
+ * and every subgraph definition, each counted once however often it is placed.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export type NodeQueryScope = (typeof NODE_QUERY_SCOPES)[number]
+
+/**
+ * Every field narrows, and they combine as AND. Omitting all returns the scope.
+ *
+ * @knipIgnoreUnusedButUsedByCustomNodes
+ */
+export interface NodeQuery {
+  /** Defaults to `'visible'`. */
+  readonly scope?: NodeQueryScope
+  /** An exact type, any of several, or a pattern. */
+  readonly type?: string | RegExp | readonly string[]
+  /** Keep only nodes in the graph on screen, wherever they are scrolled to. */
+  readonly rendered?: boolean
+  /** Keep only nodes the group currently contains. */
+  readonly group?: GroupHandle
+}
+
 export interface GraphHandle {
   readonly id: string
   node(id: string): NodeHandle | undefined
   nodes(): readonly NodeHandle[]
   nodesOfType(type: string): readonly NodeHandle[]
+  /**
+   * One flat query over the nodes in a scope. Under `'root-and-subgraphs'`
+   * each handle comes from its owning graph, so compare with `sameEntity()`.
+   */
+  queryNodes(query?: NodeQuery): readonly NodeHandle[]
   add(type: string, init?: NodeInit): NodeHandle
   remove(id: string): boolean
   links(): readonly LinkInfo[]
@@ -109,6 +138,11 @@ export interface GraphHandle {
    * the canvas allows, so a stored extreme cannot strand the user.
    */
   setZoom(scale: number): void
+  /**
+   * Pans the view by a distance in CSS pixels, the same at every zoom.
+   * Positive x and y move the graph content right and down.
+   */
+  panBy(delta: Point): void
   /**
    * Where the pointer is, in graph space — the coordinates {@link nodeAt} and
    * {@link NodeHandle.setPosition} use.
@@ -397,6 +431,28 @@ function reportDroppedReplacementLinks(
   )
 }
 
+const NODE_QUERY_SCOPES = ['visible', 'root-and-subgraphs'] as const
+
+function assertNodeQueryScope(scope: unknown): asserts scope is NodeQueryScope {
+  if (!NODE_QUERY_SCOPES.some((candidate) => candidate === scope)) {
+    throw new TypeError(
+      `Node query scope must be one of ${NODE_QUERY_SCOPES.join(', ')}.`
+    )
+  }
+}
+
+function matchesNodeType(type: NodeQuery['type'], actual: string): boolean {
+  if (type === undefined) return true
+  if (typeof type === 'string') return type === actual
+  if (type instanceof RegExp) {
+    type.lastIndex = 0
+    return type.test(actual)
+  }
+  return type.includes(actual)
+}
+
+const nodeKey = (node: NodeHandle) => `${node.graphId}\u0000${node.id}`
+
 const isAsyncFunction = (callback: unknown): boolean =>
   Object.prototype.toString.call(callback) === '[object AsyncFunction]'
 
@@ -544,6 +600,28 @@ export function createGraphApi(
           .map((n) => handleFor(String(n.id)))
       ),
 
+    queryNodes({ scope = 'visible', type, rendered, group } = {}) {
+      assertNodeQueryScope(scope)
+      const graph = getGraph()
+      if (!graph) return Object.freeze([])
+      const { rootGraph } = graph
+      const candidates =
+        scope === 'visible'
+          ? api.nodes()
+          : [rootGraph, ...rootGraph.subgraphs.values()].flatMap((owner) =>
+              graphScopeHandle(owner).nodes()
+            )
+      const contained = group && new Set(group.nodes().map(nodeKey))
+      return Object.freeze(
+        candidates.filter(
+          (node) =>
+            matchesNodeType(type, node.type) &&
+            (!rendered || node.graphId === graph.id) &&
+            (!contained || contained.has(nodeKey(node)))
+        )
+      )
+    },
+
     add(type, init) {
       const graph = requireGraph(`add node '${type}'`)
       // Through the registry, not `new LGraphNode`: inputs, outputs, widgets
@@ -655,6 +733,14 @@ export function createGraphApi(
       // Around the middle of the viewport: zooming about the origin throws the
       // graph off screen at anything but the default pan.
       canvas.setZoom(scale, [element.width / 2, element.height / 2])
+    },
+
+    panBy(delta) {
+      const { x, y } = delta
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        throw new TypeError('panBy() requires finite x and y distances.')
+      }
+      extensionValue(LGraphCanvas.active_canvas)?.ds.mouseDrag(x, y)
     },
 
     centerOn(node) {

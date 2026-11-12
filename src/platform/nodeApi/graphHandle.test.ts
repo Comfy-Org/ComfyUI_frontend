@@ -900,6 +900,144 @@ describe('zoom', () => {
   })
 })
 
+describe('panning', () => {
+  it('pans by a screen distance that does not depend on zoom', () => {
+    const graph = new LGraph()
+    const canvas = testCanvas(graph)
+    LGraphCanvas.active_canvas = canvas
+    canvas.ds.scale = 2
+    canvas.ds.offset = [10, 20]
+    const api = createGraphApi(() => graph)
+
+    api.panBy({ x: 100, y: -50 })
+
+    expect([...canvas.ds.offset]).toEqual([60, -5])
+    expect(canvas.ds.scale).toBe(2)
+  })
+
+  it('refuses a distance that is not finite and leaves the view alone', () => {
+    const graph = new LGraph()
+    const canvas = testCanvas(graph)
+    LGraphCanvas.active_canvas = canvas
+    const api = createGraphApi(() => graph)
+
+    expect(() => api.panBy({ x: Number.NaN, y: 0 })).toThrow(TypeError)
+    expect([...canvas.ds.offset]).toEqual([0, 0])
+  })
+
+  it('does nothing without a canvas', () => {
+    LGraphCanvas.active_canvas = undefined as never
+    const api = createGraphApi(() => new LGraph())
+
+    expect(() => api.panBy({ x: 5, y: 5 })).not.toThrow()
+  })
+})
+
+describe('querying nodes', () => {
+  function nested() {
+    const root = new LGraph()
+    const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+    root.subgraphs.set(subgraph.id, subgraph)
+    const outer = new LGraphNode('outer', 'Mine/A')
+    root.add(outer)
+    const inner = new LGraphNode('inner', 'Mine/B')
+    const other = new LGraphNode('other', 'Theirs')
+    subgraph.add(inner)
+    subgraph.add(other)
+    return { root, subgraph, api: createGraphApi(() => subgraph) }
+  }
+  const titles = (nodes: readonly { getTitle(): string }[]) =>
+    nodes.map((node) => node.getTitle())
+
+  it('returns the graph on screen by default, as nodes() does', () => {
+    const { api } = nested()
+
+    const found = api.queryNodes()
+
+    expect(titles(found)).toEqual(['inner', 'other'])
+    expect(found[0]).toBe(api.node(found[0].id))
+  })
+
+  it('reaches the root and every subgraph, each node in its own graph', () => {
+    const { root, subgraph, api } = nested()
+
+    const found = api.queryNodes({
+      scope: 'root-and-subgraphs',
+      type: /^Mine\//
+    })
+
+    expect(found.map((node) => [node.graphId, node.getTitle()])).toEqual([
+      [root.id, 'outer'],
+      [subgraph.id, 'inner']
+    ])
+  })
+
+  it.for([
+    { name: 'an exact type', type: 'Theirs', expected: ['other'] },
+    {
+      name: 'any of several types',
+      type: ['Mine/A', 'Theirs'],
+      expected: ['outer', 'other']
+    },
+    {
+      name: 'a pattern reused across calls',
+      type: /mine/gi,
+      expected: ['outer', 'inner']
+    }
+  ])('narrows by $name', ({ type, expected }) => {
+    const { api } = nested()
+    const query = { scope: 'root-and-subgraphs', type } as const
+
+    expect(titles(api.queryNodes(query))).toEqual(expected)
+    expect(titles(api.queryNodes(query))).toEqual(expected)
+  })
+
+  it('keeps only nodes in the graph on screen when asked for rendered ones', () => {
+    const { api } = nested()
+
+    expect(
+      titles(api.queryNodes({ scope: 'root-and-subgraphs', rendered: true }))
+    ).toEqual(['inner', 'other'])
+  })
+
+  it('keeps only nodes a group contains, combined with the type', () => {
+    const graph = new LGraph()
+    const inside = new LGraphNode('inside', 'Mine/A')
+    const alsoInside = new LGraphNode('also inside', 'Theirs')
+    const outside = new LGraphNode('outside', 'Mine/A')
+    graph.add(inside)
+    graph.add(alsoInside)
+    graph.add(outside)
+    inside.pos = [60, 60]
+    alsoInside.pos = [60, 160]
+    outside.pos = [900, 900]
+    inside.size = [80, 40]
+    alsoInside.size = [80, 40]
+    outside.size = [80, 40]
+    inside.updateArea()
+    alsoInside.updateArea()
+    outside.updateArea()
+    const box = new LGraphGroup('Box')
+    graph.add(box)
+    box._bounding.set([20, 20, 400, 300])
+    const api = createGraphApi(() => graph)
+    const [group] = api.groups()
+
+    expect(titles(api.queryNodes({ group }))).toEqual(['inside', 'also inside'])
+    expect(titles(api.queryNodes({ group, type: 'Mine/A' }))).toEqual([
+      'inside'
+    ])
+  })
+
+  it('refuses a scope it does not know', () => {
+    const { api } = nested()
+
+    expect(() =>
+      Reflect.apply(api.queryNodes, api, [{ scope: 'everywhere' }])
+    ).toThrow(TypeError)
+  })
+})
+
 describe('pointer position', () => {
   it('reports the pointer in the coordinates nodeAt uses', () => {
     // A pack adding a node from a menu put it under the cursor; without this
