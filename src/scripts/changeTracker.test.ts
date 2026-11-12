@@ -1781,6 +1781,60 @@ describe('ChangeTracker', () => {
       ])
     })
 
+    it('tells the app that undo and redo rebuild the open document', async () => {
+      const initial = createState(1)
+      const changed = structuredClone(initial)
+      changed.nodes[0].widgets_values = [2]
+      const tracker = createTracker(changed)
+      tracker.undoQueue.push(initial)
+
+      await tracker.undo()
+      await tracker.redo()
+
+      expect(
+        vi
+          .mocked(app.loadGraphData)
+          .mock.calls.map(([, , , , options]) => options?.restoresHistory)
+      ).toEqual([true, true])
+    })
+
+    it('treats a state that does not come from its own history as a load', async () => {
+      const initial = createState(1)
+      const changed = structuredClone(initial)
+      changed.nodes[0].widgets_values = [2]
+      const tracker = createTracker(changed)
+
+      await tracker.updateState([initial], tracker.undoQueue)
+
+      expect(
+        vi
+          .mocked(app.loadGraphData)
+          .mock.calls.map(([, , , , options]) => options?.restoresHistory)
+      ).toEqual([false])
+    })
+
+    it('treats an undo or redo across a state that did not come from its own history as a load', async () => {
+      const initial = createState(1)
+      const current = structuredClone(initial)
+      current.nodes[0].widgets_values = [2]
+      const reused = structuredClone(initial)
+      reused.nodes[0].type = 'OtherNode'
+      const tracker = createTracker(current)
+      tracker.undoQueue.push(initial)
+
+      await tracker.updateState([reused], tracker.undoQueue)
+      await tracker.undo()
+      await tracker.undo()
+      await tracker.redo()
+      await tracker.redo()
+
+      expect(
+        vi
+          .mocked(app.loadGraphData)
+          .mock.calls.map(([, , , , options]) => options?.restoresHistory)
+      ).toEqual([false, false, true, true, false])
+    })
+
     it('keeps Redo after Undo normalizes an interior node size', async () => {
       const initial = await createSubgraphState()
       const changed = structuredClone(initial)

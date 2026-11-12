@@ -47,6 +47,7 @@ import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
 import {
   graphsAwaitingNodeTypes,
   markOpenGraphsAwaitingNodeTypes
@@ -1397,7 +1398,8 @@ export class ComfyApp implements IComfyApp {
       workflowNavigationId,
       isCurrent,
       isReady,
-      resolveGraphData
+      resolveGraphData,
+      restoresHistory = false
     } = options
     const backgroundRestore =
       !clean &&
@@ -1658,9 +1660,14 @@ export class ComfyApp implements IComfyApp {
           return { loaded: false }
         }
         try {
-          graph.configure(graphData as ISerialisedGraph, undefined, {
-            preserveMountedNodeSizes: options.restoreHistory
-          })
+          if (!restoresHistory) useComfyApiStore().beginDocument()
+          try {
+            graph.configure(graphData as ISerialisedGraph, undefined, {
+              preserveMountedNodeSizes: options.restoreHistory
+            })
+          } finally {
+            if (restoresHistory) useComfyApiStore().afterHistoryRestore()
+          }
 
           const originalMainGraphRenderer = graph.extra.workflowRendererVersion
 

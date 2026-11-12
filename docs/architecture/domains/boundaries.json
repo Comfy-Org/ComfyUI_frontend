@@ -937,6 +937,7 @@
           "src/extensions/core/index.cloudSessionCookieLogoutFallback.test.ts",
           "src/extensions/core/index.test.ts",
           "src/extensions/core/clipspace.ts",
+          "src/platform/nodeApi/**",
           "src/scripts/clipspace.ts",
           "src/scripts/clipspace.test.ts",
           "src/scripts/__mocks__/**",

@@ -1001,7 +1001,7 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 35
+      "count": 36
     }
   },
   "src/types/slotId.test.ts": {

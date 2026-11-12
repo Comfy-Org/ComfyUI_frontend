@@ -1,0 +1,27 @@
+import { defineStore } from 'pinia'
+
+import { useApp } from '@/scripts/appInstance'
+
+import { createComfyApi } from './comfyApi'
+
+/** The app's one V4 node API, and the host's side of it. */
+export const useComfyApiStore = defineStore('comfyApiV4', () => {
+  const { comfy, host } = createComfyApi({
+    getGraph: () => useApp().canvasOrUndefined?.graph ?? null
+  })
+
+  function publish(): void {
+    Object.defineProperty(window, 'comfy_v4', {
+      value: comfy,
+      enumerable: true,
+      configurable: true
+    })
+  }
+
+  return {
+    publish,
+    markReady: host.markReady,
+    beginDocument: host.beginDocument,
+    afterHistoryRestore: host.afterHistoryRestore
+  }
+})

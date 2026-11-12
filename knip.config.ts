@@ -105,6 +105,7 @@ const config: KnipConfig = {
     // admits one endpoint, and openapi-ts still emits the request/response
     // wrappers and a barrel for it; src/index.ts re-exports what is consumed.
     'packages/comfyui-api-types/src/generated/**',
+    'public/comfy/api/v4.js',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**'
   ],
