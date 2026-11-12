@@ -23,6 +23,7 @@ import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -266,6 +267,8 @@ const successHeading = (page: Page) =>
   page.getByRole('heading', { name: "You're all set" })
 
 test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   for (const { name, rails } of RAIL_MATRIX) {
     test.describe(`on the ${name} rail`, () => {
       test('announces a processing subscribe and clears it once it settles', async ({

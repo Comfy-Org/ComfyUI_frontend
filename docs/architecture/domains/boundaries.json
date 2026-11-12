@@ -34,12 +34,17 @@
           "src/extensions/core/imageCompositor.ts",
           "src/extensions/core/layerEditor.ts",
           "src/lib/litegraph/src/widgets/CompositorWidget.ts",
-          "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+          "src/renderer/extensions/layerEditor/compositor/WidgetCompositor.vue",
           "src/renderer/extensions/layerEditor/composables/useLayerEditor.ts",
           "src/renderer/extensions/layerEditor/layerEditorDialogKey.ts",
           "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
           "packages/layer-editor/src/mode.ts",
-          "packages/layer-editor/src/node.ts"
+          "packages/layer-editor/src/node.ts",
+          "packages/layer-editor/src/persistence/compositorTypes.ts",
+          "packages/layer-editor-ui/src/LayerEditorCanvas.vue",
+          "packages/layer-editor-ui/src/LayerEditorToolbar.vue",
+          "packages/layer-editor-ui/src/LayerPanel.vue",
+          "packages/layer-editor-ui/src/LayerPropertiesPanel.vue"
         ]
       },
       {
@@ -73,13 +78,17 @@
       {
         "name": "mask-editor/public",
         "patterns": [
-          "src/extensions/core/clipspace.ts",
-          "src/extensions/core/maskeditor.ts",
+          "src/renderer/extensions/maskEditor/extension.ts",
           "src/renderer/extensions/maskEditor/composables/useMaskEditor.ts",
-          "src/scripts/clipspace.ts",
           "packages/mask-editor/src/brushUtils.ts",
           "packages/mask-editor/src/maskEditorStore.ts",
-          "packages/mask-editor/src/StrokeProcessor.ts"
+          "packages/mask-editor/src/StrokeProcessor.ts",
+          "packages/mask-editor/src/types.ts",
+          "packages/mask-editor/src/imageOutput.ts",
+          "packages/mask-editor/src/useCanvasTransform.ts",
+          "packages/mask-editor/src/ui/EditorCanvas.vue",
+          "packages/mask-editor/src/ui/EditorToolbar.vue",
+          "packages/mask-editor/src/ui/style.css"
         ]
       },
       {
@@ -397,6 +406,7 @@
           "src/stores/assetExportStore.ts",
           "src/stores/assetExportStore.test.ts",
           "src/stores/assetsStore.ts",
+          "src/stores/assetsStore.history.test.ts",
           "src/stores/assetsStore.test.ts",
           "src/stores/workspace/assetsSidebarBadgeStore.ts",
           "src/stores/workspace/assetsSidebarBadgeStore.test.ts",
@@ -526,6 +536,7 @@
           "src/platform/billing/composables/useBillingDialogs.cancelSubscription.test.ts",
           "src/platform/billing/composables/useBillingDialogs.comingSoon.test.ts",
           "src/platform/billing/composables/useBillingDialogs.downgrade.test.ts",
+          "src/platform/billing/composables/useBillingDialogs.localBillingHandoff.test.ts",
           "src/platform/billing/composables/useBillingDialogs.subscriptionRequired.test.ts",
           "src/platform/billing/composables/useBillingDialogs.topUpCredits.test.ts",
           "src/platform/billing/composables/useBillingRouting.ts",
@@ -570,6 +581,7 @@
           "src/platform/billing/components/SubscriptionTransitionPreviewWorkspace.test.ts",
           "src/platform/billing/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts",
           "src/platform/billing/components/AddCreditsDialogContent.vue",
+          "src/platform/billing/components/AddCreditsDialogContent.test.ts",
           "src/platform/billing/components/UnifiedPricingTable.stories.ts",
           "src/platform/billing/components/UnifiedPricingTable.vue",
           "src/platform/billing/components/UnifiedPricingTable.test.ts",
@@ -578,15 +590,12 @@
           "src/platform/billing/components/settings/**",
           "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts",
           "src/platform/billing/composables/activateBillingScope.testUtils.ts",
-          "src/platform/billing/composables/deriveAutoTopUpBanner.ts",
-          "src/platform/billing/composables/deriveAutoTopUpBanner.test.ts",
           "src/platform/billing/composables/useAutoTopUpBannerKind.ts",
           "src/platform/billing/composables/useAutoTopUpBannerKind.test.ts",
           "src/platform/billing/composables/useAutoTopUpCardViewed.ts",
           "src/platform/billing/composables/useBillingAutoTopUpCard.ts",
           "src/platform/billing/composables/useBillingAutoTopUpCard.test.ts",
           "src/platform/billing/composables/billingOperationTestUtils.ts",
-          "src/platform/billing/composables/deriveBillingBanner.test.ts",
           "src/platform/billing/composables/readOnRail.ts",
           "src/platform/billing/composables/readOnRail.test.ts",
           "src/platform/billing/composables/readWorkspaceBillingEvents.ts",
@@ -723,11 +732,6 @@
           "src/utils/textCaseUtil.test.ts",
           "packages/shared-frontend-utils/src/piiUtil.ts",
           "packages/shared-frontend-utils/src/piiUtil.test.ts",
-          "src/constants/coreColorPalettes.ts",
-          "src/services/colorPaletteService.ts",
-          "src/services/colorPaletteService.test.ts",
-          "src/stores/workspace/colorPaletteStore.ts",
-          "packages/settings-core/src/colorPaletteSchema.ts",
           "src/composables/useCachedRequest.ts",
           "src/composables/useCachedRequest.test.ts",
           "src/constants/searchConstants.ts",
@@ -874,6 +878,9 @@
           "src/extensions/core/index.cloudModuleRejection.test.ts",
           "src/extensions/core/index.cloudSessionCookieLogoutFallback.test.ts",
           "src/extensions/core/index.test.ts",
+          "src/extensions/core/clipspace.ts",
+          "src/scripts/clipspace.ts",
+          "src/scripts/clipspace.test.ts",
           "src/scripts/__mocks__/**",
           "src/scripts/api.ts",
           "src/scripts/api.cancel.test.ts",
@@ -1634,6 +1641,8 @@
           "src/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.test.ts",
           "src/utils/htmlEscape.ts",
           "src/utils/htmlEscape.test.ts",
+          "packages/theme-core/src/**",
+          "src/platform/theme/**",
           "src/utils/dateTimeUtil.ts",
           "src/utils/dateTimeUtil.test.ts",
           "src/utils/numberUtil.ts",
@@ -1923,10 +1932,10 @@
           "src/extensions/core/imageCompositor.test.ts",
           "src/extensions/core/layerEditor.ts",
           "src/lib/litegraph/src/widgets/CompositorWidget.ts",
-          "src/renderer/extensions/compositor/**",
           "src/renderer/extensions/layerEditor/**",
           "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
-          "packages/layer-editor/src/**"
+          "packages/layer-editor/src/**",
+          "packages/layer-editor-ui/src/**"
         ]
       },
       {
@@ -1953,15 +1962,7 @@
       {
         "name": "mask-editor",
         "patterns": [
-          "src/extensions/core/clipspace.ts",
-          "src/extensions/core/maskeditor.ts",
-          "src/extensions/core/maskeditor.test.ts",
           "src/renderer/extensions/maskEditor/**",
-          "src/scripts/clipspace.ts",
-          "src/scripts/clipspace.test.ts",
-          "src/utils/__fixtures__/**",
-          "src/utils/pngEncodeUtil.ts",
-          "src/utils/pngEncodeUtil.test.ts",
           "packages/mask-editor/src/**"
         ]
       },

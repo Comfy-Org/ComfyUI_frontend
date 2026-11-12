@@ -204,6 +204,34 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('billingNewUxEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it.for([
+      { label: 'absent', value: undefined, enabled: false },
+      { label: 'false', value: false, enabled: false },
+      { label: 'a string', value: 'true', enabled: false },
+      { label: 'true', value: true, enabled: true }
+    ])(
+      'enables the 1.61 billing UX only for literal true ($label)',
+      ({ value, enabled }) => {
+        remoteConfig.value = {}
+        vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+        expect(useFeatureFlags().flags.billingNewUxEnabled).toBe(enabled)
+      }
+    )
+
+    it('reads the billing rollout from /features', () => {
+      remoteConfig.value = { billing_new_ux_enabled: true }
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+
+      expect(useFeatureFlags().flags.billingNewUxEnabled).toBe(true)
+    })
+  })
+
   describe('billingSdkTopupEnabled', () => {
     afterEach(() => {
       remoteConfig.value = {}
@@ -522,6 +550,43 @@ describe('useFeatureFlags', () => {
       const { flags } = useFeatureFlags()
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
     })
+  })
+
+  describe('openOnCloudEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it('stays off in a production build that serves no value', () => {
+      vi.stubEnv('DEV', false)
+
+      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
+    })
+
+    it('defaults on in a development build that serves no value', () => {
+      vi.stubEnv('DEV', true)
+
+      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(true)
+    })
+
+    it.for([
+      { dev: false, served: true, expected: true },
+      { dev: true, served: false, expected: false }
+    ])(
+      'follows a remote config $served over the dev=$dev default',
+      ({ dev, served, expected }) => {
+        vi.stubEnv('DEV', dev)
+        remoteConfig.value = { open_on_cloud_enabled: served }
+
+        expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(expected)
+      }
+    )
   })
 
   describe('assetsEnabled', () => {
