@@ -29,8 +29,9 @@ const FORM: AutoTopUpFormInput = {
   limitOn: false
 }
 
-const form = (overrides: Partial<AutoTopUpFormInput>) =>
-  parseAutoTopUpForm({ ...FORM, ...overrides })
+function form(overrides: Partial<AutoTopUpFormInput>) {
+  return parseAutoTopUpForm({ ...FORM, ...overrides })
+}
 
 describe('startAutoTopUpForm', () => {
   it('opens at the starting threshold and tops up by the credits picked', () => {
@@ -101,6 +102,16 @@ describe('validateAutoTopUp', () => {
       errors: { limit: 'invalid' }
     },
     {
+      name: 'a limit with a decimal comma',
+      input: { limitOn: true, limit: '50,01' },
+      errors: { limit: 'invalid' }
+    },
+    {
+      name: 'a threshold with a misplaced comma',
+      input: { threshold: '1,00' },
+      errors: { threshold: 'notWhole' }
+    },
+    {
       name: 'an unreadable limit while the limit is off',
       input: { limitOn: false, limit: 'ten' },
       errors: {}
@@ -142,32 +153,32 @@ describe('autoTopUpActivationFor', () => {
   })
 })
 
-const settings = (
-  status: AutoReloadSettings['status']
-): AutoReloadSettings => ({
-  card_expiry: null,
-  configured: false,
-  cycle_resets_at: null,
-  declined_payment_method: null,
-  disabled_reason: null,
-  enabled: status === 'on',
-  last_failure_at: null,
-  last_failure_reason: null,
-  max_monthly_budget_cents: RULES.maxMonthlyBudgetCents,
-  max_reload_credits: RULES.maxReloadCredits,
-  min_reload_credits: RULES.minReloadCredits,
-  monthly_budget_cents: null,
-  monthly_budget_is_default: true,
-  paused_by_budget: false,
-  paused_by_budget_remainder: false,
-  paused_by_decline: false,
-  reload_amount_cents: null,
-  reload_credits: null,
-  spent_this_cycle_cents: 0,
-  status,
-  target_credits: null,
-  threshold_credits: null
-})
+function settings(status: AutoReloadSettings['status']): AutoReloadSettings {
+  return {
+    card_expiry: null,
+    configured: false,
+    cycle_resets_at: null,
+    declined_payment_method: null,
+    disabled_reason: null,
+    enabled: status === 'on',
+    last_failure_at: null,
+    last_failure_reason: null,
+    max_monthly_budget_cents: RULES.maxMonthlyBudgetCents,
+    max_reload_credits: RULES.maxReloadCredits,
+    min_reload_credits: RULES.minReloadCredits,
+    monthly_budget_cents: null,
+    monthly_budget_is_default: true,
+    paused_by_budget: false,
+    paused_by_budget_remainder: false,
+    paused_by_decline: false,
+    reload_amount_cents: null,
+    reload_credits: null,
+    spent_this_cycle_cents: 0,
+    status,
+    target_credits: null,
+    threshold_credits: null
+  }
+}
 
 const OWNER: AddCreditsAutoTopUpFacts = {
   autoTopUpEnabled: true,
