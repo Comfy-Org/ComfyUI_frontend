@@ -147,6 +147,7 @@ import {
   notifyDefsRefreshed
 } from '@/platform/nodeApi/defsRegistry'
 import { mayRun } from '@/platform/nodeApi/queueGuard'
+import { importWorkflowFile } from '@/platform/nodeApi/workflowImporters'
 import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
@@ -2174,6 +2175,10 @@ export class ComfyApp implements IComfyApp {
     let workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
     try {
       workflowData = await getWorkflowDataFromFile(file)
+      const { workflow, prompt, parameters, templates } = workflowData ?? {}
+      if (!(workflow || prompt || parameters || templates)) {
+        workflowData = (await importWorkflowFile(file)) ?? workflowData
+      }
     } catch (error) {
       await previousDiscovery
       releaseDiscovery()
