@@ -14,6 +14,8 @@ export function useAutoTopUpSetupOffer() {
     { target: 'auto_top_up', action: 'turn_on' }
   )
 
+  const platformAvailable = () => available.value
+
   function trackOffer(stage: 'viewed' | 'declined') {
     useTelemetry()?.trackBillingEvent({
       operation: 'auto_top_up_offer',
@@ -29,9 +31,10 @@ export function useAutoTopUpSetupOffer() {
       setup: autoTopUpSetup.value
     })
     if (!canSetUp) return null
+    if (!platformAvailable()) return null
     const settings = await billingApi.getBillingAutoReload()
     if (settings.status !== 'off') return null
-    if (!available.value) return null
+    if (!platformAvailable()) return null
     trackOffer('viewed')
     return href.value
   }
