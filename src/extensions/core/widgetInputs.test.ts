@@ -440,6 +440,13 @@ describe('PrimitiveNode', () => {
       replace: false,
       value: 'a photo of cat',
       expected: undefined
+    },
+    {
+      label: 'sends nothing while bypassed',
+      mode: LGraphEventMode.BYPASS,
+      replace: false,
+      value: 'a photo of cat',
+      expected: undefined
     }
   ])(
     '$label to a forceInput without a widget',

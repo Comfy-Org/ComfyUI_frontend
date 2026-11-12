@@ -167,14 +167,16 @@ test.describe(
       await input.fill('5')
       await input.blur()
 
-      const prompt = await comfyPage.workflow.getExportedWorkflow({ api: true })
-      const forceInputNode = Object.values(prompt).find(
-        (entry) => entry.class_type === 'DevToolsNodeWithForceInput'
-      )
-      expect(
-        forceInputNode?.inputs.int_input,
-        'Serialized prompt has primitive value'
-      ).toBe(5)
+      await expect
+        .poll(
+          async () =>
+            Object.values(
+              await comfyPage.workflow.getExportedWorkflow({ api: true })
+            ).find((entry) => entry.class_type === 'DevToolsNodeWithForceInput')
+              ?.inputs.int_input,
+          { message: 'Serialized prompt has primitive value' }
+        )
+        .toBe(5)
     })
   }
 )
