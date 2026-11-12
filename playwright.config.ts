@@ -42,6 +42,7 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
 export default defineConfig({
   testDir: './browser_tests',
   testIgnore: [
+    '**/liveExecution/**',
     '**/liveCloud/**',
     '**/crossOriginSession/**',
     '**/*.test.ts',
