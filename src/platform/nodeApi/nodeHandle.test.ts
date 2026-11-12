@@ -181,6 +181,31 @@ describe('NodeHandle', () => {
       expect('injected' in node.properties).toBe(false)
     })
 
+    it('turns the resize affordance off and on without touching the saved node', () => {
+      node.pos = [100, 100]
+      node.size = [300, 120]
+      node.updateArea()
+      const saved = node.serialize()
+      expect(node.findResizeDirection(398, 218)).toBe('SE')
+
+      handle().setResizable(false)
+
+      expect(node.findResizeDirection(398, 218)).toBeUndefined()
+      expect(node.serialize()).toEqual(saved)
+
+      handle().setResizable(true)
+
+      expect(node.findResizeDirection(398, 218)).toBe('SE')
+    })
+
+    it('keeps a pinned node fixed when asked to make it resizable', () => {
+      node.pin(true)
+
+      handle().setResizable(true)
+
+      expect(node.resizable).toBe(false)
+    })
+
     it('maps public mode strings back to the internal enum', () => {
       handle().setMode('never')
       expect(node.mode).toBe(LGraphEventMode.NEVER)

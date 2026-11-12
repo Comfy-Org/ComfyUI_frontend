@@ -101,6 +101,11 @@ export interface NodeHandle extends HandleCommon {
   setCollapsed(collapsed: boolean): void
   isPinned(): boolean
   setPinned(pinned: boolean): void
+  /**
+   * Whether the user can resize the node. Not saved, and its size is
+   * unchanged. A pinned node stays fixed.
+   */
+  setResizable(resizable: boolean): void
   getColor(): string | undefined
   setColor(color: string | undefined): void
   getBgColor(): string | undefined
@@ -395,6 +400,9 @@ export function createNodeHandles(
         setCollapsed: (n, ...args) => setFlag(n, 'collapsed', Boolean(args[0])),
         isPinned: (n) => n.flags.pinned ?? false,
         setPinned: (n, ...args) => setFlag(n, 'pinned', Boolean(args[0])),
+        setResizable: (n, ...args) => {
+          n.resizable = Boolean(args[0]) && !n.pinned
+        },
         getColor: (n) => n.color,
         setColor: (n, ...args) => {
           const color =
