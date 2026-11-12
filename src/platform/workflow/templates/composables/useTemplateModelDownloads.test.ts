@@ -1,4 +1,7 @@
-import type { ComfyDownloadProgress,ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
+import type {
+  ComfyDownloadProgress,
+  ComfyDesktop2Bridge
+} from '@comfyorg/comfyui-desktop-bridge-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
