@@ -62,14 +62,15 @@ export abstract class SubgraphIONodeBase<
       this.id
     )
     if (!measured) return this._boundingRect
-    const [x, y, width] = this._boundingRect
     return new Rectangle(
-      x + width - measured.width,
-      y,
+      this.measuredLeft(measured.width),
+      this._boundingRect[1],
       measured.width,
       measured.height
     )
   }
+
+  protected abstract measuredLeft(width: number): number
 
   get selected(): boolean {
     return isSelectedIn(

@@ -80,6 +80,27 @@ describe('subgraph IO renderer measurements', () => {
     expect(node.allSlots[0].boundingRect[3]).toBe(LiteGraph.NODE_SLOT_HEIGHT)
   })
 
+  it('keeps a measured output node anchored at its left edge', () => {
+    const graph = createTestSubgraph()
+    graph.addOutput('result', 'IMAGE')
+    const node = graph.outputNode
+    node.pos = [100, 200]
+    node.size = [128, 100]
+    useSubgraphIoLayoutStore().report(graph.id, node.id, {
+      width: 180,
+      height: 90,
+      slotCenters: [30, 66]
+    })
+
+    node.arrange()
+
+    expect([...node.boundingRect]).toEqual([100, 200, 180, 90])
+    expect(node.allSlots.map((slot) => [...slot.pos])).toEqual([
+      [124, 230],
+      [124, 266]
+    ])
+  })
+
   it('isolates measurements by definition and restores the canvas layout on unmount', () => {
     const first = createTestSubgraph()
     const second = createTestSubgraph()

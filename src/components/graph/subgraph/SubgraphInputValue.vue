@@ -6,20 +6,19 @@ import { useI18n } from 'vue-i18n'
 import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { cn } from '@comfyorg/tailwind-utils'
+import SubgraphIoLabel from './SubgraphIoLabel.vue'
+import SubgraphIoPort from './SubgraphIoPort.vue'
 
 const {
   port,
   label,
   isAddPort = false,
-  dimmed = false,
   collapsed = false,
   host,
   source
@@ -27,7 +26,6 @@ const {
   port: SubgraphInput
   label: string
   isAddPort?: boolean
-  dimmed?: boolean
   collapsed?: boolean
   host?: NodeState
   source?: InputValueSource
@@ -35,7 +33,6 @@ const {
 const emit = defineEmits<{ locate: [node: NodeState] }>()
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const { forwardEventToCanvas } = useCanvasInteractions()
 
 const shown = computed(() => (collapsed ? undefined : source))
 const upstream = computed(() =>
@@ -114,35 +111,12 @@ const sourceTitle = computed(() =>
         :node-title="owner.node.title"
         :sync-layout="false"
       />
-      <div
-        v-else-if="!isAddPort"
-        class="mx-3 flex h-(--node-widget-height) min-w-0 items-center gap-2 rounded-(--node-widget-radius) bg-input/50 px-3"
-      >
-        <span class="truncate">{{ label }}</span>
-        <span
-          v-if="status"
-          class="ml-auto truncate text-muted-foreground italic"
-          >{{ status }}</span
-        >
-      </div>
+      <SubgraphIoLabel v-else-if="!isAddPort" :label :status />
     </div>
-    <div
-      data-port-anchor
+    <SubgraphIoPort
+      :port
       :data-testid="isAddPort ? 'subgraph-add-input' : 'subgraph-input-port'"
       :aria-label="isAddPort ? undefined : label"
-      :class="
-        cn(
-          'lg-slot lg-slot--output flex h-(--node-widget-height) w-4 shrink-0 cursor-crosshair items-center justify-center',
-          dimmed && 'opacity-40'
-        )
-      "
-      @pointerdown="forwardEventToCanvas"
-      @pointermove="forwardEventToCanvas"
-      @pointerup="forwardEventToCanvas"
-      @dblclick="forwardEventToCanvas"
-      @contextmenu.prevent
-    >
-      <SlotConnectionDot :slot-data="port" />
-    </div>
+    />
   </div>
 </template>

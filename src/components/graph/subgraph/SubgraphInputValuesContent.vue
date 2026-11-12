@@ -12,7 +12,6 @@ import type {
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -33,13 +32,6 @@ const linkStore = useLinkStore()
 const widgetStore = useWidgetValueStore()
 const canvasStore = useCanvasStore()
 const navigation = useSubgraphNavigationStore()
-const { state: linkDrag } = useSlotLinkDragUIState()
-
-const draggedFrom = computed(() =>
-  linkDrag.active
-    ? canvasStore.canvas?.linkConnector.renderLinks[0]?.fromSlot
-    : undefined
-)
 
 const sources = computed(() => {
   const { graph, selected: host } = context
@@ -95,18 +87,13 @@ function captureEdits() {
 </script>
 
 <template>
-  <div
-    class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) pt-1 pr-4 pb-3"
-    @contextmenu.prevent
-    @focusout="captureEdits"
-  >
+  <div class="contents" @focusout="captureEdits">
     <SubgraphInputValue
       v-for="slot in slots"
       :key="`${context.selected?.graphId}:${context.selected?.id}:${slot.id}`"
       :port="slot"
       :label="slot.displayName"
       :is-add-port="slot === context.graph?.inputNode.emptySlot"
-      :dimmed="!!draggedFrom && !slot.isValidTarget(draggedFrom)"
       :collapsed
       :host="context.selected"
       :source="sources.get(slot.name)"
