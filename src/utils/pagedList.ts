@@ -5,16 +5,25 @@ export interface PagedList<T> {
   hasMore: Readonly<MaybeRef<boolean>>
   invalidate: (items?: string[]) => Promise<void>
   isLoading: Readonly<MaybeRef<boolean>>
-  items: Readonly<MaybeRef<T[]>>
-  loadMore: () => Promise<void>
+  items: Readonly<MaybeRef<readonly T[]>>
+  /** Returns whether pagination advanced. Page-walking callers must stop on false. */
+  loadMore: () => Promise<boolean>
   loadNew: () => Promise<void>
 }
 
-export class WrappedList<T> implements PagedList<T> {
-  readonly items: MaybeRef<T[]>
+export type MaybePaged<T> = readonly T[] | PagedList<T>
+export function isPaged<T>(list: MaybePaged<T>): list is PagedList<T> {
+  return !Array.isArray(list)
+}
+export function pagedItems<T>(list: MaybePaged<T>): readonly T[] {
+  return isPaged(list) ? toValue(list.items) : list
+}
+
+export class WrappedList<T, U> implements PagedList<U> {
+  readonly items: MaybeRef<readonly U[]>
   constructor(
     private readonly childList: PagedList<T>,
-    private readonly transform: (items: readonly T[]) => T[]
+    private readonly transform: (items: readonly T[]) => readonly U[]
   ) {
     this.items = computed(() => this.transform(toValue(this.childList.items)))
   }
@@ -27,8 +36,8 @@ export class WrappedList<T> implements PagedList<T> {
   get isLoading() {
     return this.childList.isLoading
   }
-  async loadMore() {
-    await this.childList.loadMore()
+  loadMore() {
+    return this.childList.loadMore()
   }
   async loadNew() {
     await this.childList.loadNew()
@@ -99,8 +108,8 @@ class SharedPagedList<T> implements PagedList<T> {
   get items() {
     return this.childList.items
   }
-  async loadMore() {
-    await this.childList.loadMore()
+  loadMore() {
+    return this.childList.loadMore()
   }
   async loadNew() {
     await Promise.all(this.overlapping().map((l) => l.loadNew()))
@@ -151,7 +160,7 @@ export function usePreemptableQueue() {
     const task = makeTask(PREEMPT_KIND, runner)
     controller.abort()
     controller = new AbortController()
-    const active = queue[0]
+    const active = queue.at(0)
     const existing = queue.splice(0, queue.length, task)
     if (active) {
       await active.promise

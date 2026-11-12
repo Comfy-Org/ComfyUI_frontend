@@ -1,19 +1,26 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IButtonWidget } from '@/lib/litegraph/src/types/widgets'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
-import { BaseWidget } from './BaseWidget'
+import type { IButtonWidget } from '@comfyorg/graph-model/widgets'
+
+import { BaseWidget, extensionValue } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
+
+type ButtonWidgetSource = Omit<IButtonWidget, 'options'> & {
+  options?: IButtonWidget['options']
+}
 
 export class ButtonWidget
   extends BaseWidget<IButtonWidget>
   implements IButtonWidget
 {
-  override type = 'button' as const
-  clicked: boolean
+  declare clicked: boolean
 
-  constructor(widget: IButtonWidget, node: LGraphNode) {
-    super(widget, node)
-    this.clicked ??= false
+  constructor(widget: ButtonWidgetSource, node: LGraphNode) {
+    const normalizedWidget = Object.assign(widget, {
+      options: widget.options ?? {}
+    })
+    super(normalizedWidget, node)
+    this.clicked = extensionValue(this.clicked) ?? false
   }
 
   /**

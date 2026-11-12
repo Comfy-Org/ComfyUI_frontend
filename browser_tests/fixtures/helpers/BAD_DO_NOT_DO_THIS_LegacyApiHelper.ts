@@ -1,8 +1,8 @@
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Page } from '@playwright/test'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
   constructor(private readonly page: Page) {}
@@ -42,13 +42,15 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
         if (!node) throw new Error(`${nodeType} not found`)
 
         const links = node.outputs[outputIndex].links!
+        const hadRemovedLink = links.length > 0
+        const hadRetainedLink = links.length > 1
         const removedLink = links[0]
         const retainedLink = links[1]
         links.splice(0, 1)
 
         return {
-          removed: removedLink != null && !graph.links.has(removedLink),
-          retained: retainedLink != null && graph.links.has(retainedLink),
+          removed: hadRemovedLink && !graph.links.has(removedLink),
+          retained: hadRetainedLink && graph.links.has(retainedLink),
           viewSynchronized: links.length === 1 && links[0] === retainedLink
         }
       },
@@ -63,9 +65,11 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
         const node = graph.nodes.find((node) => node.type === nodeType)
         if (!node) throw new Error(`${nodeType} not found`)
 
-        const link = node.outputs[outputIndex].links![0]
+        const links = node.outputs[outputIndex].links!
+        const hadLink = links.length > 0
+        const link = links[0]
         node.outputs[outputIndex].links = []
-        return link != null && !graph.links.has(link)
+        return hadLink && !graph.links.has(link)
       },
       [nodeType, outputIndex] as const
     )
@@ -235,10 +239,7 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
     )
   }
 
-  setImageCropWidgetValue(
-    nodeId: NodeId,
-    bounds: { x: number; y: number; width: number; height: number }
-  ) {
+  setImageCropWidgetValue(nodeId: NodeId, bounds: Bounds) {
     return this.page.evaluate(
       ({ nodeId, bounds }) => {
         const node = window.app!.graph.getNodeById(nodeId)
@@ -323,9 +324,7 @@ export class BAD_DO_NOT_DO_THIS_LegacyApiHelper {
     return this.page.evaluate(
       ([nodeId, imageSource]) =>
         new Promise<void>((resolve, reject) => {
-          const node = window.app!.graph.getNodeById(nodeId) as
-            | (LGraphNode & { imgs?: HTMLImageElement[] })
-            | null
+          const node = window.app!.graph.getNodeById(nodeId)
           if (!node) throw new Error(`Node ${nodeId} not found`)
 
           const image = new Image()

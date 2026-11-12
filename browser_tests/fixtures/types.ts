@@ -1,9 +1,3 @@
-export interface Position {
-  x: number
-  y: number
-}
+export type { Point2D as Position } from '@comfyorg/shared-frontend-utils/geometry'
 
-export interface Size {
-  width: number
-  height: number
-}
+export type { Size2D as Size } from '@comfyorg/shared-frontend-utils/geometry'

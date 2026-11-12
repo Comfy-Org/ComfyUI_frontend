@@ -1,42 +1,31 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
+
+import { app } from './app'
 import { ComfyUI } from './ui'
 
-const { mockApp } = vi.hoisted(() => ({
-  mockApp: {
-    handleFile: vi.fn<(file: File, source: string) => Promise<void>>(),
-    showErrorOnFileLoad: vi.fn(),
-    queuePrompt: vi.fn(),
-    loadGraphData: vi.fn(),
-    refreshComboInNodes: vi.fn(),
-    openClipspace: vi.fn(),
-    clean: vi.fn(),
-    lastExecutionError: null
-  }
+vi.mock(import('./app'))
+
+vi.mock(import('./api'))
+
+vi.mock(import('./ui/dialog'), () => ({
+  ComfyDialog: fromAny(class {})
 }))
 
-vi.mock('./app', () => ({
-  ComfyApp: class {},
-  app: mockApp
+vi.mock(import('./ui/settings'), () => ({
+  ComfySettingsDialog: fromAny(class {})
 }))
 
-vi.mock('./api', () => ({
-  api: {
-    addEventListener: vi.fn()
-  }
-}))
-
-vi.mock('./ui/dialog', () => ({
-  ComfyDialog: class {}
-}))
-
-vi.mock('./ui/settings', () => ({
-  ComfySettingsDialog: class {}
-}))
-
-vi.mock('./ui/toggleSwitch', () => ({
+vi.mock(import('./ui/toggleSwitch'), () => ({
   toggleSwitch: vi.fn(() => document.createElement('div'))
 }))
+
+function giveDialogDoublesRemovableElements(ui: ComfyUI) {
+  ui.dialog.element = document.createElement('div')
+  ui.settings.element = document.createElement('dialog')
+}
 
 describe('ComfyUI file input', () => {
   beforeEach(() => {
@@ -53,8 +42,13 @@ describe('ComfyUI file input', () => {
   it('reports rejected imports and resets the selected file', async () => {
     const file = new File([''], 'a1111.png', { type: 'image/png' })
     const error = new Error('import failed')
-    mockApp.handleFile.mockRejectedValue(error)
-    new ComfyUI(mockApp)
+    vi.mocked(app.handleFile).mockRejectedValue(error)
+    new ComfyUI(app, {
+      resetView: vi.fn(),
+      restoreOutputs: vi.fn(),
+      trackRunButton: vi.fn(),
+      enterFocusMode: vi.fn()
+    })
     const fileInput = document.getElementById(
       'comfy-file-input'
     ) as HTMLInputElement
@@ -62,18 +56,48 @@ describe('ComfyUI file input', () => {
       files: { value: [file], configurable: true },
       value: { value: 'a1111.png', writable: true, configurable: true }
     })
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
     fileInput.dispatchEvent(new Event('change'))
 
     await vi.waitFor(() =>
-      expect(mockApp.showErrorOnFileLoad).toHaveBeenCalledWith(file)
+      expect(app.showErrorOnFileLoad).toHaveBeenCalledWith(file)
     )
-    expect(mockApp.handleFile).toHaveBeenCalledWith(file, 'file_button')
-    expect(consoleError).toHaveBeenCalledWith('Failed to load file:', error)
-    expect(consoleError.mock.invocationCallOrder[0]).toBeLessThan(
-      mockApp.showErrorOnFileLoad.mock.invocationCallOrder[0]
+    expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button')
+    expect(console.error).toHaveBeenCalledWith('Failed to load file:', error)
+    expect(vi.mocked(console.error).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(app.showErrorOnFileLoad).mock.invocationCallOrder[0]
     )
+    expect(fileInput.value).toBe('')
+  })
+
+  it('does not warn again when a rejected import was already presented', async ({
+    onTestFinished
+  }) => {
+    const file = new File([''], 'a1111.png', { type: 'image/png' })
+    const error = markGraphLoadFailurePresented(new Error('import failed'))
+    vi.mocked(app.handleFile).mockRejectedValue(error)
+    const ui = new ComfyUI(app, {
+      resetView: vi.fn(),
+      restoreOutputs: vi.fn(),
+      trackRunButton: vi.fn(),
+      enterFocusMode: vi.fn()
+    })
+    giveDialogDoublesRemovableElements(ui)
+    onTestFinished(() => ui.dispose())
+    const fileInput = document.getElementById(
+      'comfy-file-input'
+    ) as HTMLInputElement
+    Object.defineProperties(fileInput, {
+      files: { value: [file], configurable: true },
+      value: { value: 'a1111.png', writable: true, configurable: true }
+    })
+
+    fileInput.dispatchEvent(new Event('change'))
+
+    await vi.waitFor(() =>
+      expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button')
+    )
+    expect(app.showErrorOnFileLoad).not.toHaveBeenCalled()
     expect(fileInput.value).toBe('')
   })
 })

@@ -1,8 +1,37 @@
 <template>
-  <WidgetLayoutField :widget>
+  <WidgetLayoutField
+    :widget
+    :input-id
+    :value-text="selectedSummary"
+    :root-class="
+      cn(
+        !disabled && 'cursor-pointer',
+        isInvalid && 'ring-1 ring-destructive focus-within:ring-destructive'
+      )
+    "
+  >
+    <template #leading>
+      <Button
+        type="button"
+        tabindex="-1"
+        :aria-label="`${widgetLabel}: ${$t('g.previous')}`"
+        :disabled="isStepDisabled(-1)"
+        class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+        variant="muted-textonly"
+        size="icon-sm"
+        @click="stepOption(-1)"
+      >
+        <i
+          class="icon-[lucide--chevron-left] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
+          aria-hidden="true"
+        />
+      </Button>
+    </template>
+    <template #between><slot name="between" /></template>
     <ComboboxRoot
       :open="isOpen"
-      :model-value="comboboxValue"
+      :model-value="selectedOption ?? null"
+      by="value"
       :disabled
       ignore-filter
       selection-behavior="replace"
@@ -16,81 +45,76 @@
           :class="
             cn(
               WidgetInputBaseClass,
-              'flex w-full min-w-0 items-center overflow-hidden',
+              'flex w-full min-w-0 items-center overflow-hidden not-disabled:bg-transparent',
               useWidgetHeight(),
-              !disabled && 'hover:bg-component-node-widget-background-hovered',
-              disabled && 'opacity-50',
-              isInvalid && 'ring-1 ring-destructive-background'
+              disabled && 'opacity-50'
             )
           "
         >
           <ComboboxTrigger as-child>
-            <button
+            <Button
+              :id="inputId"
               type="button"
               role="combobox"
               aria-haspopup="listbox"
-              :aria-label="widget.label || widget.name"
+              :aria-label="widgetLabel"
               :aria-invalid="isInvalid || undefined"
               :aria-expanded="isOpen"
               :disabled
               tabindex="0"
               data-testid="widget-select-default-trigger"
-              class="flex min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none disabled:cursor-default"
+              variant="textonly"
+              size="sm"
+              class="h-full min-w-0 flex-1 overflow-hidden rounded-none p-0 font-normal"
             >
-              <span
-                class="min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left text-xs"
-              >
-                {{ selectedLabel || placeholder || '\u00a0' }}
+              <span class="min-w-[4ch] flex-1 truncate px-2 text-right">
+                {{ selectedSummary || placeholder || '\u00a0' }}
               </span>
-            </button>
+            </Button>
           </ComboboxTrigger>
           <slot />
-          <button
+          <Button
             type="button"
             tabindex="-1"
-            aria-hidden="true"
-            :disabled
-            class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
-            @click="handleOpenChange(true)"
+            :aria-label="`${widgetLabel}: ${$t('g.next')}`"
+            :disabled="isStepDisabled(1)"
+            class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
+            variant="muted-textonly"
+            size="icon-sm"
+            @click="stepOption(1)"
           >
             <i
-              :class="
-                cn(
-                  'icon-[lucide--chevron-down] size-4',
-                  disabled
-                    ? 'bg-component-node-foreground-secondary'
-                    : 'bg-muted-foreground'
-                )
-              "
+              class="icon-[lucide--chevron-right] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
               aria-hidden="true"
             />
-          </button>
+          </Button>
         </div>
       </ComboboxAnchor>
 
-      <ComboboxPortal>
+      <ComboboxPortal :key="Number(isOpen)">
         <ComboboxContent
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
           position="popper"
           :side-offset="1"
-          align="start"
+          align="end"
           :class="
             cn(
-              'z-3000 overflow-hidden rounded-lg border border-solid border-border-default bg-base-background p-0 text-base-foreground shadow-md',
-              'min-w-(--reka-combobox-trigger-width)'
+              'z-overlay overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
+              'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
+          @keydown.capture="replayComboboxNavigation"
           @keydown.escape.stop="handleOpenChange(false)"
           @focus-outside="handleFocusOutside"
         >
           <div
             v-if="isFilterable"
             ref="searchInputContainerRef"
-            class="m-1 flex items-center gap-2 rounded-md border border-solid border-border-default px-2 py-1.5 transition-colors focus-within:border-primary-background"
+            class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-ring"
           >
             <i
-              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
+              class="icon-[lucide--search] text-sm text-muted-foreground"
               aria-hidden="true"
             />
             <ComboboxInput
@@ -106,35 +130,47 @@
           <div
             data-testid="widget-select-default-viewport"
             role="presentation"
-            class="flex max-h-56 min-w-full scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent scrollbar-gutter-stable flex-col gap-1 overflow-y-auto p-1 text-xs"
+            class="max-h-56 min-w-full scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent scrollbar-gutter-stable overflow-y-auto p-1 text-xs"
             :style="viewportStyle"
             @pointerdown.capture.self="handleViewportPointerDown"
           >
-            <ComboboxItem
-              v-for="option in filteredOptions"
-              :key="option.key"
-              :value="option.comboboxValue"
-              :text-value="option.label"
-              :class="
-                cn(
-                  'relative flex min-h-7 cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
-                  'hover:bg-secondary-background data-highlighted:bg-secondary-background',
-                  'data-[state=checked]:bg-primary-background/20 data-[state=checked]:hover:bg-primary-background/20 data-[state=checked]:data-highlighted:bg-primary-background/30'
-                )
-              "
+            <div
+              aria-hidden="true"
+              class="invisible flex h-0 gap-3 overflow-hidden px-2"
             >
-              <span class="truncate">
-                {{ option.label }}
-              </span>
-              <ComboboxItemIndicator
-                class="flex shrink-0 items-center justify-center"
+              <span class="whitespace-nowrap">{{ longestLabel }}</span>
+              <span class="size-3.5 shrink-0" />
+            </div>
+            <ComboboxVirtualizer
+              v-slot="{ option }"
+              :options="filteredOptions"
+              :estimate-size="32"
+              :text-content="(option) => option.label"
+            >
+              <ComboboxItem
+                :value="option"
+                :text-value="option.label"
+                :class="
+                  cn(
+                    'flex h-8 w-full cursor-pointer items-center justify-between gap-3 rounded-sm p-2 outline-none select-none',
+                    'hover:bg-secondary data-highlighted:bg-secondary',
+                    'data-[state=checked]:bg-foreground/10 data-[state=checked]:hover:bg-foreground/10 data-[state=checked]:data-highlighted:bg-foreground/20'
+                  )
+                "
               >
-                <i
-                  class="icon-[lucide--check] size-3.5 text-base-foreground"
-                  aria-hidden="true"
-                />
-              </ComboboxItemIndicator>
-            </ComboboxItem>
+                <span class="truncate">
+                  {{ option.label }}
+                </span>
+                <ComboboxItemIndicator
+                  class="flex shrink-0 items-center justify-center"
+                >
+                  <i
+                    class="icon-[lucide--check] size-3.5 text-foreground"
+                    aria-hidden="true"
+                  />
+                </ComboboxItemIndicator>
+              </ComboboxItem>
+            </ComboboxVirtualizer>
 
             <div
               v-if="filteredOptions.length === 0"
@@ -153,19 +189,24 @@
 
 <script setup lang="ts">
 import {
+  ComboboxPortal,
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
   ComboboxItemIndicator,
-  ComboboxPortal,
   ComboboxRoot,
-  ComboboxTrigger
+  ComboboxTrigger,
+  ComboboxVirtualizer
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import type { CSSProperties } from 'vue'
 
+import Button from '@comfyorg/design-system/button/Button'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useComboStepping } from '@/renderer/extensions/vueNodes/widgets/composables/useComboStepping'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
+import { replayComboboxNavigation } from '@/renderer/extensions/vueNodes/widgets/utils/replayComboboxNavigation'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -175,11 +216,10 @@ import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 
 interface Props {
   widget: SimplifiedWidget<string | undefined>
+  filenameSummary?: boolean
 }
 
 interface SelectOption {
-  comboboxValue: string
-  key: string
   label: string
   rawValue: NonNullable<WidgetValue>
   value: string
@@ -189,24 +229,11 @@ type SelectWidgetOptions = NonNullable<Props['widget']['options']> & {
   filterPlaceholder?: string
 }
 
-const { widget } = defineProps<Props>()
+const { widget, filenameSummary = false } = defineProps<Props>()
+const inputId = useId()
+const widgetLabel = computed(() => widget.label || widget.name)
 
-// Reka reserves an empty string value for clearing the combobox. Encode values
-// internally so custom-node combo options can still use '' like PrimeVue/legacy.
-const COMBOBOX_VALUE_PREFIX = 'widget-select-value:'
 const MAX_VISIBLE_OPTIONS = 7
-
-function toComboboxValue(value: string) {
-  return `${COMBOBOX_VALUE_PREFIX}${value}`
-}
-
-function fromComboboxValue(value: string | undefined) {
-  if (value === undefined || !value.startsWith(COMBOBOX_VALUE_PREFIX)) {
-    return undefined
-  }
-
-  return value.slice(COMBOBOX_VALUE_PREFIX.length)
-}
 
 function resolveRawValues(values: unknown): unknown[] {
   try {
@@ -268,6 +295,9 @@ const widgetOptions = computed(
   () => widget.options as SelectWidgetOptions | undefined
 )
 
+const dynamicOptions = computed(
+  () => typeof widgetOptions.value?.values === 'function'
+)
 const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
 const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
 const filterPlaceholder = computed(
@@ -294,9 +324,7 @@ const normalizedOptions = computed<SelectOption[]>(() => {
   void optionsRefreshKey.value
 
   return resolveValues(widgetOptions.value?.values).map(
-    ({ rawValue, value }, index) => ({
-      comboboxValue: toComboboxValue(value),
-      key: `${value}-${index}`,
+    ({ rawValue, value }) => ({
       label: getOptionLabel(value),
       rawValue,
       value
@@ -335,11 +363,19 @@ const selectedOption = computed(() =>
   )
 )
 
-const comboboxValue = computed(() => selectedOption.value?.comboboxValue ?? '')
+const longestLabel = computed(() =>
+  normalizedOptions.value.reduce(
+    (longest, { label }) => (label.length > longest.length ? label : longest),
+    ''
+  )
+)
 
 const isInvalid = computed(
   () =>
-    modelValue.value != null && modelValue.value !== '' && !selectedOption.value
+    widgetOptions.value?.values !== undefined &&
+    modelValue.value != null &&
+    modelValue.value !== '' &&
+    !selectedOption.value
 )
 
 const selectedLabel = computed(() => {
@@ -348,17 +384,29 @@ const selectedLabel = computed(() => {
   return ''
 })
 
-function selectOption(rekaValue: string | undefined) {
-  const value = fromComboboxValue(rekaValue)
-  const option = normalizedOptions.value.find(
-    (option) => option.value === value
-  )
+const selectedSummary = computed(() =>
+  filenameSummary && !widgetOptions.value?.getOptionLabel
+    ? selectedLabel.value.split(/[/\\]/).at(-1)
+    : selectedLabel.value
+)
+
+function selectOption(option: SelectOption | null) {
   if (!option) return
 
   modelValue.value = option.rawValue
+  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   searchQuery.value = ''
   isOpen.value = false
 }
+
+const { isStepDisabled, stepOption } = useComboStepping({
+  options: normalizedOptions,
+  selectedOption,
+  disabled,
+  dynamicOptions,
+  refreshOptions,
+  onSelect: selectOption
+})
 
 function focusSearchInput() {
   const input =

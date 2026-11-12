@@ -8,12 +8,12 @@
     "
   >
     <div
-      class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-interface-panel-job-progress-primary transition-[width]"
+      class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-primary transition-[width]"
       :style="{ width: `${totalPercent}%` }"
     />
     <div
       data-testid="queue-inline-progress-node-fill"
-      class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-interface-panel-job-progress-secondary transition-[width]"
+      class="pointer-events-none absolute bottom-0 left-0 h-[3px] bg-primary/30 transition-[width]"
       :style="{ width: `${currentNodePercent}%` }"
     />
   </div>

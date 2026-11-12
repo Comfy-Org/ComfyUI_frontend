@@ -3,7 +3,7 @@
     <TagsInputRoot
       :model-value="tagValues"
       delimiter=""
-      class="flex cursor-text flex-wrap items-center gap-2 rounded-lg bg-secondary-background px-4 py-3"
+      class="flex cursor-text flex-wrap items-center gap-2 rounded-lg bg-secondary px-4 py-3"
       @remove-tag="onRemoveTag"
       @click="inputRef?.focus()"
     >
@@ -13,7 +13,7 @@
         :key="filterKey(filter)"
         :value="filterKey(filter)"
         data-testid="filter-chip"
-        class="-my-1 inline-flex items-center gap-1 rounded-lg bg-base-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary"
+        class="-my-1 inline-flex items-center gap-1 rounded-lg bg-background px-2 py-1 data-[state=active]:ring-2 data-[state=active]:ring-primary"
       >
         <span class="text-sm opacity-80">
           {{ t(`g.${filter.filterDef.id}`) }}:
@@ -25,7 +25,7 @@
           type="button"
           data-testid="chip-delete"
           :aria-label="$t('g.remove')"
-          class="ml-1 flex aspect-square cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-muted-foreground hover:text-base-foreground"
+          class="ml-1 flex aspect-square cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-muted-foreground hover:text-foreground"
         >
           <i class="icon-[lucide--x] size-3" />
         </TagsInputItemDelete>
@@ -35,13 +35,14 @@
           ref="inputRef"
           v-model="searchQuery"
           type="text"
+          autofocus
           role="combobox"
           aria-autocomplete="list"
           :aria-expanded="true"
           aria-controls="results-list"
           :aria-label="t('g.addNode')"
           :placeholder="t('g.addNode')"
-          class="text-foreground h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent font-inter text-sm outline-none placeholder:text-muted-foreground"
+          class="h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
           @keydown.enter.prevent="emit('selectCurrent')"
           @keydown.down.prevent="emit('navigateDown')"
           @keydown.up.prevent="emit('navigateUp')"
@@ -52,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   TagsInputInput,
@@ -61,7 +62,7 @@ import {
   TagsInputRoot
 } from 'reka-ui'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
 
@@ -95,10 +96,6 @@ function onRemoveTag(tagValue: string) {
 function focus() {
   inputRef.value?.focus()
 }
-
-onMounted(() => {
-  focus()
-})
 
 defineExpose({ focus })
 </script>

@@ -65,7 +65,6 @@ The following table lists ALL services in the system as of 2025-09-01:
 | -------------------------- | --------------------------------------------------------- | ---------- |
 | audioService.ts            | Manages audio recording and WAV encoding functionality    | Media      |
 | autoQueueService.ts        | Manages automatic queue execution                         | Execution  |
-| colorPaletteService.ts     | Handles color palette management and customization        | UI         |
 | comfyManagerService.ts     | Manages ComfyUI application packages and updates          | Manager    |
 | comfyRegistryService.ts    | Handles registration and discovery of ComfyUI extensions  | Registry   |
 | customerEventsService.ts   | Handles customer event tracking and audit logs            | Analytics  |
@@ -400,16 +399,10 @@ const { saveWorkflow, loadWorkflow } = useWorkflowService()
 describe('useWorkflowService', () => {
   beforeEach(() => {
     // Mock external dependencies
-    vi.mock('@/stores/settingStore', () => ({
+    vi.mock('@/platform/settings/settingStore', () => ({
       useSettingStore: () => ({
         get: vi.fn().mockReturnValue(true),
         set: vi.fn()
-      })
-    }))
-
-    vi.mock('@/stores/toastStore', () => ({
-      useToastStore: () => ({
-        add: vi.fn()
       })
     }))
   })
@@ -506,7 +499,7 @@ describe('newUserService', () => {
 
 ```typescript
 // Mock stores
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn(),
     set: vi.fn()

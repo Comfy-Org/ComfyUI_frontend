@@ -1,14 +1,18 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive, shallowRef } from 'vue'
+import { nextTick, shallowRef } from 'vue'
 
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { DEBOUNCE_MS } from '@/renderer/glsl/glslPreviewUtils'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 /**
  * Guards the writer/reader store contract behind the GLSL live preview: the
@@ -17,8 +21,9 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
  * store-backed customtext write that #13851 fixed.
  */
 
-const GRAPH_ID = 'root'
 const SHADER = 'void main() { gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); }'
+
+const createDOMWidgetNode = useDOMWidgetTestNodes()
 
 const mockRenderer = vi.hoisted(() => {
   const compileFragment = vi.fn(() => ({ success: true, log: '' }))
@@ -41,78 +46,62 @@ const mockRenderer = vi.hoisted(() => {
   }
 })
 
-vi.mock('@/renderer/glsl/useGLSLRenderer', () => ({
+vi.mock<unknown>(import('@/renderer/glsl/useGLSLRenderer'), () => ({
   useGLSLRenderer: (_config?: GLSLRendererConfig) => mockRenderer.create()
 }))
 
-const nodeOutputs = reactive<Record<string, unknown>>({})
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: () => ({
-    setNodePreviewsByNodeId: vi.fn(),
-    setNodePreviewsByLocatorId: vi.fn(),
-    revokePreviewsByLocatorId: vi.fn(),
-    nodeOutputs
-  })
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => ({
-    nodeIdToNodeLocatorId: (id: string | number) => String(id),
-    nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
-  })
-}))
-
-vi.mock('@/scripts/app', () => ({
-  app: { rootGraph: { id: 'root' } }
-}))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: () => false })
-}))
-
-function seedShaderThroughWidget(nodeId: number, value: string): void {
-  const node = createMockDOMWidgetNode({
-    id: nodeId,
-    graph: { id: GRAPH_ID, rootGraph: { id: GRAPH_ID } }
-  })
+function seedShaderThroughWidget(node: LGraphNode, value: string): void {
   const inputSpec: InputSpec = {
     type: 'STRING',
     name: 'fragment_shader',
     default: '',
     multiline: true
   }
-  useStringWidget()(node, inputSpec)
-
-  const options = vi.mocked(node.addDOMWidget).mock.calls[0][3]
-  options?.setValue?.(value)
+  const widget = useStringWidget()(node, inputSpec)
+  widget.value = value
 }
 
-function createGLSLNode(nodeId: number): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
-    id: nodeId,
-    type: 'GLSLShader',
-    inputs: [],
-    graph: { id: GRAPH_ID, rootGraph: { id: GRAPH_ID } },
-    getInputNode: () => null,
-    isSubgraphNode: () => false
-  })
-}
+beforeEach(() => {
+  vi.mocked(useWorkflowStore().nodeIdToNodeLocatorId).mockImplementation((id) =>
+    createNodeLocatorId(null, id)
+  )
+  vi.mocked(useWorkflowStore().nodeToNodeLocatorId).mockImplementation((node) =>
+    createNodeLocatorId(null, node.id)
+  )
+  vi.mocked(useNodeOutputStore().setNodePreviewsByNodeId).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useNodeOutputStore().setNodePreviewsByLocatorId).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useNodeOutputStore().revokePreviewsByLocatorId).mockImplementation(
+    () => undefined
+  )
+})
 
 describe('GLSL live preview reads the shader written by the customtext widget', () => {
   beforeEach(() => {
-    for (const key of Object.keys(nodeOutputs)) delete nodeOutputs[key]
+    for (const key of Object.keys(useNodeOutputStore().nodeOutputs))
+      delete useNodeOutputStore().nodeOutputs[key]
   })
 
   it('compiles the shader value written through the widget store path', async () => {
     const nodeId = 1
-    seedShaderThroughWidget(nodeId, SHADER)
-    nodeOutputs[String(nodeId)] = {
+    const node = createDOMWidgetNode({
+      id: toNodeId(nodeId),
+      type: 'GLSLShader',
+      graph: new LGraph()
+    })
+    seedShaderThroughWidget(node, SHADER)
+    useNodeOutputStore().nodeOutputs[String(nodeId)] = {
       images: [{ filename: 'test.png', subfolder: '', type: 'temp' }]
     }
 
     const nodeRef = shallowRef<LGraphNode | null>(null)
     useGLSLPreview(nodeRef)
-    nodeRef.value = createGLSLNode(nodeId)
+    nodeRef.value = node
 
     await nextTick()
     await vi.advanceTimersByTimeAsync(DEBOUNCE_MS)

@@ -1,12 +1,12 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const { useAudioRecorderMock, useAudioPlaybackMock, useAudioWaveformMock } =
   vi.hoisted(() => ({
@@ -16,6 +16,7 @@ const { useAudioRecorderMock, useAudioPlaybackMock, useAudioWaveformMock } =
   }))
 const appMock = vi.hoisted(() => ({
   app: {
+    rootGraphOrUndefined: { events: new EventTarget() },
     canvas: {
       graph: {
         getNodeById: vi.fn<(id: string) => unknown>(() => null)
@@ -25,27 +26,36 @@ const appMock = vi.hoisted(() => ({
 }))
 const isDOMWidgetMock = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock('../composables/audio/useAudioRecorder', () => ({
-  useAudioRecorder: useAudioRecorderMock
-}))
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'),
+  () => ({
+    useAudioRecorder: useAudioRecorderMock
+  })
+)
 
-vi.mock('../composables/audio/useAudioPlayback', () => ({
-  useAudioPlayback: useAudioPlaybackMock
-}))
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'),
+  () => ({
+    useAudioPlayback: useAudioPlaybackMock
+  })
+)
 
-vi.mock('../composables/audio/useAudioWaveform', () => ({
-  useAudioWaveform: useAudioWaveformMock
-}))
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioWaveform'),
+  () => ({
+    useAudioWaveform: useAudioWaveformMock
+  })
+)
 
-vi.mock('@/scripts/app', () => appMock)
+vi.mock<unknown>(import('@/scripts/app'), () => appMock)
 
-vi.mock('@/scripts/domWidget', () => ({
+vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
-import type { useAudioPlayback } from '../composables/audio/useAudioPlayback'
-import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
-import type { useAudioWaveform } from '../composables/audio/useAudioWaveform'
+import type { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
+import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
+import type { useAudioWaveform } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioWaveform'
 import WidgetRecordAudio from './WidgetRecordAudio.vue'
 
 type RecorderOptions = NonNullable<Parameters<typeof useAudioRecorder>[0]>
@@ -113,7 +123,7 @@ const ButtonStub = defineComponent({
 function renderWidget(props: { readonly?: boolean; nodeId?: NodeId } = {}) {
   return render(WidgetRecordAudio, {
     global: {
-      plugins: [i18n, createTestingPinia({ createSpy: vi.fn })],
+      plugins: [i18n, getActivePinia()!],
       stubs: { Button: ButtonStub }
     },
     props: { readonly: false, nodeId: toNodeId('n1'), ...props }
@@ -260,7 +270,7 @@ describe('WidgetRecordAudio', () => {
 
   describe('Recording persistence via onRecordingComplete', () => {
     function createAudioWidget(initialSrc = '') {
-      const element = document.createElement('audio') as HTMLAudioElement
+      const element = document.createElement('audio')
       element.src = initialSrc
       return {
         name: 'audioUI',
@@ -282,11 +292,6 @@ describe('WidgetRecordAudio', () => {
       vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     })
 
-    afterEach(() => {
-      vi.mocked(URL.createObjectURL).mockRestore()
-      vi.mocked(URL.revokeObjectURL).mockRestore()
-    })
-
     it('replaces the audio widget element src with a new blob URL when a recording completes', async () => {
       const audioWidget = createAudioWidget()
       primeAudioWidgetInNode([audioWidget])
@@ -296,6 +301,26 @@ describe('WidgetRecordAudio', () => {
       await getRecorderOptions().onRecordingComplete?.(blob)
 
       expect(audioWidget.element.src).toContain('blob:fake/')
+    })
+
+    it('attaches the recording to the node a reloaded graph holds', async () => {
+      vi.mocked(URL.createObjectURL)
+        .mockReturnValueOnce('blob:fake/first')
+        .mockReturnValueOnce('blob:fake/second')
+      const staleWidget = createAudioWidget()
+      primeAudioWidgetInNode([staleWidget])
+      renderWidget()
+      await getRecorderOptions().onRecordingComplete?.(new Blob(['x']))
+      const reloadedWidget = createAudioWidget()
+      primeAudioWidgetInNode([reloadedWidget])
+
+      appMock.app.rootGraphOrUndefined.events.dispatchEvent(
+        new Event('configured')
+      )
+      await getRecorderOptions().onRecordingComplete?.(new Blob(['y']))
+
+      expect(reloadedWidget.element.src).toBe('blob:fake/second')
+      expect(staleWidget.element.src).toBe('blob:fake/first')
     })
 
     it('revokes the previous blob URL before replacing it', async () => {

@@ -1,0 +1,46 @@
+{
+  "id": "extension-manager",
+  "capability": "Extension manager",
+  "description": "Custom-node pack discovery, compatibility checks, installation queues, and manager dialogs. Registry access, workflow state, and host dialog services remain external dependencies.",
+  "modules": [
+    {
+      "path": "src/platform/customNodes/manager/**"
+    },
+    {
+      "path": "packages/api-client/src/generatedManagerTypes.ts"
+    }
+  ],
+  "publicEntryPoints": [],
+  "characterizationScenarios": [
+    {
+      "name": "Compatibility and version policy determine pack conflicts and ordering",
+      "checks": [
+        "src/platform/customNodes/manager/utils/systemCompatibility.test.ts",
+        "src/platform/customNodes/manager/utils/versionUtil.test.ts",
+        "src/platform/customNodes/manager/utils/nodePackSort.test.ts"
+      ]
+    },
+    {
+      "name": "Queued pack operations and dialog lifecycle preserve manager behavior",
+      "checks": [
+        "src/platform/customNodes/manager/composables/useManagerQueue.test.ts",
+        "src/platform/customNodes/manager/composables/dialogs/useManagerDialog.test.ts",
+        "src/platform/customNodes/manager/stores/comfyManagerStore.test.ts"
+      ]
+    },
+    {
+      "name": "Registry requests are cached, pack ids normalised, and install logs streamed",
+      "checks": [
+        "src/composables/useCachedRequest.test.ts",
+        "src/platform/customNodes/manager/utils/packUtils.test.ts",
+        "src/platform/customNodes/manager/services/useServerLogs.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing menus and missing-node panels may continue importing manager internals during inventory.",
+    "Application-to-dialog and utility-to-store coupling remains untracked coupling debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

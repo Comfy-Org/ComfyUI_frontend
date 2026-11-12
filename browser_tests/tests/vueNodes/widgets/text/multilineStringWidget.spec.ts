@@ -5,10 +5,6 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   const getFirstClipNode = (comfyPage: ComfyPage) =>
     comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode (Prompt)').first()
 
@@ -32,6 +28,30 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
     await expect(textarea).toHaveValue(multilineValue)
   })
 
+  test('keeps paragraph breaks across a serialize and reload round-trip', async ({
+    comfyPage
+  }) => {
+    const textarea = getFirstMultilineStringWidget(comfyPage)
+
+    const paragraphs = [
+      'First paragraph, ending in a space ',
+      '',
+      'Second paragraph',
+      'still the second paragraph'
+    ].join('\n')
+
+    await textarea.fill(paragraphs)
+    await expect(textarea).toHaveValue(paragraphs)
+
+    const serialized = await comfyPage.workflow.getExportedWorkflow()
+    await comfyPage.workflow.loadGraphData(serialized)
+    await comfyPage.vueNodes.waitForNodes()
+
+    await expect(getFirstMultilineStringWidget(comfyPage)).toHaveValue(
+      paragraphs
+    )
+  })
+
   test('should retain value after focus changes', async ({ comfyPage }) => {
     const textarea = getFirstMultilineStringWidget(comfyPage)
 
@@ -48,7 +68,7 @@ test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
 
   test('should use native context menu when focused', async ({ comfyPage }) => {
     const textarea = getFirstMultilineStringWidget(comfyPage)
-    const vueContextMenu = comfyPage.page.locator('.p-contextmenu')
+    const vueContextMenu = comfyPage.page.getByRole('menu')
 
     await textarea.focus()
     await textarea.click({ button: 'right' })

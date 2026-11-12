@@ -5,13 +5,6 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
-export async function enableErrorsOverlay(comfyPage: ComfyPage) {
-  await comfyPage.settings.setSetting(
-    'Comfy.RightSidePanel.ShowErrorsTab',
-    true
-  )
-}
-
 /** Dismiss the error overlay (the floating dialog with the dismiss button). */
 export async function dismissErrorOverlay(comfyPage: ComfyPage): Promise<void> {
   const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
@@ -33,6 +26,20 @@ export async function loadWorkflowAndOpenErrorsTab(
   await expect(errorOverlay).toBeHidden()
 }
 
+/** Queue a workflow that fails at runtime and open its Errors tab. */
+export async function queueWorkflowAndOpenExecutionErrors(
+  comfyPage: ComfyPage,
+  workflow = 'nodes/execution_error'
+) {
+  await comfyPage.workflow.loadWorkflow(workflow)
+  await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+
+  const errorOverlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+  await expect(errorOverlay).toBeVisible()
+  await errorOverlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
+  await expect(errorOverlay).toBeHidden()
+}
+
 export async function openErrorsTab(comfyPage: ComfyPage) {
   const panel = new PropertiesPanelHelper(comfyPage.page)
   await panel.open(comfyPage.actionbar.propertiesButton)
@@ -47,17 +54,19 @@ export async function openErrorsTab(comfyPage: ComfyPage) {
 export async function expectNoErrorUiAfterVerification(
   comfyPage: ComfyPage,
   panel: PropertiesPanelHelper,
-  verificationResponse: Promise<Response>,
+  verificationResponse?: Promise<Response>,
   observationMs = 2_000
 ): Promise<void> {
   const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-  const readiness = await Promise.race([
-    verificationResponse.then(() => 'verification' as const),
-    overlay.waitFor({ state: 'visible' }).then(() => 'error-ui' as const),
-    panel.errorsTab
-      .waitFor({ state: 'visible' })
-      .then(() => 'error-ui' as const)
-  ])
+  const readiness =
+    verificationResponse &&
+    (await Promise.race([
+      verificationResponse.then(() => 'verification' as const),
+      overlay.waitFor({ state: 'visible' }).then(() => 'error-ui' as const),
+      panel.errorsTab
+        .waitFor({ state: 'visible' })
+        .then(() => 'error-ui' as const)
+    ]))
   let sawErrorUi = readiness === 'error-ui'
   const startedAt = Date.now()
 

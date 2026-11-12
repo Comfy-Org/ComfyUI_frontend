@@ -1,36 +1,30 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useThemeStore } from '@/platform/theme/themeStore'
+import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
+import {
+  MINIMAP_DECORATION_POP_MS,
+  renderMinimapToCanvas
+} from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { useLinkStore } from '@/stores/linkStore'
-import { adjustColor } from '@/utils/colorUtil'
+import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import {
   createMockLGraph,
   createMockLGraphNode,
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-const mockUseColorPaletteStore = vi.hoisted(() => vi.fn())
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
-  useColorPaletteStore: mockUseColorPaletteStore
-}))
-
-vi.mock('@/utils/colorUtil', () => ({
+vi.mock(import('@comfyorg/shared-frontend-utils/colorUtil'), () => ({
   adjustColor: vi.fn((color: string) => color + '_adjusted')
-}))
-
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: vi.fn(() => ({
-    nodeLocationProgressStates: {}
-  }))
 }))
 
 const GRAPH_ID: UUID = 'renderer-graph'
@@ -45,8 +39,6 @@ describe('minimapCanvasRenderer', () => {
   let mockGraph: LGraph
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-
     mockContext = {
       clearRect: vi.fn(),
       fillRect: vi.fn(),
@@ -95,12 +87,12 @@ describe('minimapCanvasRenderer', () => {
       getNodeById: vi.fn()
     })
 
-    mockUseColorPaletteStore.mockReturnValue({
-      completedActivePalette: {
+    Object.assign(useThemeStore(), {
+      activeTheme: {
         id: 'test',
         name: 'Test Palette',
-        colors: {},
-        light_theme: false
+        canvas: { nodeSelectedTitleColor: '#fff' },
+        colorScheme: 'dark'
       }
     })
   })
@@ -309,12 +301,12 @@ describe('minimapCanvasRenderer', () => {
   })
 
   it('should handle light theme colors', () => {
-    mockUseColorPaletteStore.mockReturnValue({
-      completedActivePalette: {
+    Object.assign(useThemeStore(), {
+      activeTheme: {
         id: 'test',
         name: 'Test Palette',
-        colors: {},
-        light_theme: true
+        canvas: { nodeSelectedTitleColor: '#000' },
+        colorScheme: 'light'
       }
     })
 
@@ -360,4 +352,71 @@ describe('minimapCanvasRenderer', () => {
     // This affects node positioning
     expect(mockContext.fillRect).toHaveBeenCalled()
   })
+
+  it('renders a scoped semantic decoration after the base node fill', () => {
+    renderMinimapToCanvas(mockCanvas, mockGraph, {
+      bounds: { minX: 0, minY: 0, width: 500, height: 400 },
+      scale: 0.5,
+      settings: {
+        nodeColors: false,
+        showLinks: false,
+        showGroups: false,
+        renderBypass: false,
+        renderError: true
+      },
+      width: 250,
+      height: 200,
+      decorations: [
+        {
+          target: { ...GRAPH_SCOPE, nodeId: toNodeId('1') },
+          enter: 'pop',
+          enteredAt: 1_000
+        }
+      ],
+      now: 2_000
+    })
+
+    expect(mockContext.fillRect).toHaveBeenCalledTimes(3)
+    expect(mockContext.fillRect).toHaveBeenLastCalledWith(50, 50, 75, 40)
+    expect(mockContext.strokeRect).toHaveBeenCalledAfter(
+      vi.mocked(mockContext.fillRect)
+    )
+  })
+
+  test.for([0, MINIMAP_DECORATION_POP_MS / 2, MINIMAP_DECORATION_POP_MS])(
+    'keeps tiny pop markers centered and legible at %dms',
+    (elapsed) => {
+      renderMinimapToCanvas(mockCanvas, mockGraph, {
+        bounds: { minX: 0, minY: 0, width: 50_000, height: 40_000 },
+        scale: 0.005,
+        settings: {
+          nodeColors: false,
+          showLinks: false,
+          showGroups: false,
+          renderBypass: false,
+          renderError: true
+        },
+        width: 250,
+        height: 200,
+        decorations: [
+          {
+            target: { ...GRAPH_SCOPE, nodeId: toNodeId('1') },
+            enter: 'pop',
+            enteredAt: 1_000
+          }
+        ],
+        now: 1_000 + elapsed
+      })
+
+      const marker = vi
+        .mocked(mockContext.strokeRect)
+        .mock.calls.find(([, , width, height]) => width === 2 && height === 2)
+      expect(marker).toBeDefined()
+      const [x, y, width, height] = marker!
+      expect(width).toBe(2)
+      expect(height).toBe(2)
+      expect(x + width / 2).toBeCloseTo(0.875)
+      expect(y + height / 2).toBeCloseTo(0.7)
+    }
+  )
 })

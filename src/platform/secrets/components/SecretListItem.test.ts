@@ -4,10 +4,10 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
 
-import type { SecretMetadata } from '../types'
+import type { SecretMetadata } from '@/platform/secrets/types'
 import SecretListItem from './SecretListItem.vue'
 
-vi.mock('../providers', () => ({
+vi.mock(import('@/platform/secrets/providers'), () => ({
   getProviderLabel: (provider: string | undefined) => {
     if (provider === 'huggingface') return 'HuggingFace'
     if (provider === 'civitai') return 'Civitai'
@@ -24,7 +24,8 @@ const i18n = createI18n({
     en: {
       g: {
         edit: 'Edit',
-        delete: 'Delete'
+        delete: 'Delete',
+        loading: 'Loading'
       },
       secrets: {
         createdAt: 'Created {date}',
@@ -59,17 +60,7 @@ function renderComponent(props: {
   return render(SecretListItem, {
     props,
     global: {
-      plugins: [i18n],
-      stubs: {
-        Button: {
-          template:
-            '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-          props: ['disabled', 'variant', 'size', 'aria-label']
-        }
-      },
-      directives: {
-        tooltip: () => {}
-      }
+      plugins: [i18n]
     }
   })
 }
@@ -203,34 +194,31 @@ describe('SecretListItem', () => {
   describe('loading state', () => {
     it('shows spinner when loading', () => {
       const secret = createMockSecret()
-      const { container } = renderComponent({ secret, loading: true })
+      renderComponent({ secret, loading: true })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-      expect(container.querySelector('.pi-spinner')).toBeInTheDocument()
+      expect(
+        screen.getByRole('status', { name: 'Loading' })
+      ).toBeInTheDocument()
     })
 
     it('hides action buttons when loading', () => {
       const secret = createMockSecret()
-      const { container } = renderComponent({ secret, loading: true })
+      renderComponent({ secret, loading: true })
 
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-        container.querySelector('.pi-pen-to-square')
+        screen.queryByRole('button', { name: 'Edit' })
       ).not.toBeInTheDocument()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-      expect(container.querySelector('.pi-trash')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Delete' })
+      ).not.toBeInTheDocument()
     })
 
     it('shows action buttons when not loading', () => {
       const secret = createMockSecret()
-      const { container } = renderComponent({ secret, loading: false })
+      renderComponent({ secret, loading: false })
 
-      expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-        container.querySelector('.pi-pen-to-square')
-      ).toBeInTheDocument()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-      expect(container.querySelector('.pi-trash')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
     })
   })
 
@@ -266,7 +254,7 @@ describe('SecretListItem', () => {
       await user.click(buttons[0])
 
       expect(emitted()['edit']).toBeDefined()
-      expect(emitted()['edit']!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['edit'].length).toBeGreaterThanOrEqual(1)
     })
 
     it('emits delete event when delete button clicked', async () => {
@@ -278,7 +266,7 @@ describe('SecretListItem', () => {
       await user.click(buttons[1])
 
       expect(emitted()['delete']).toBeDefined()
-      expect(emitted()['delete']!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['delete'].length).toBeGreaterThanOrEqual(1)
     })
   })
 })

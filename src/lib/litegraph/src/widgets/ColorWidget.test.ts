@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode as LGraphNodeType } from '@/lib/litegraph/src/litegraph'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IColorWidget } from '@/lib/litegraph/src/types/widgets'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IColorWidget } from '@comfyorg/graph-model/widgets'
 import type { ColorWidget as ColorWidgetType } from '@/lib/litegraph/src/widgets/ColorWidget'
 
 type LGraphCanvasType = InstanceType<typeof LGraphCanvas>
@@ -86,6 +86,20 @@ describe('ColorWidget', () => {
         'input[type="color"]'
       ) as HTMLInputElement
       expect(input.value).toBe('#00ff00')
+    })
+
+    it('should display integer-backed colors as hex', () => {
+      widget = new ColorWidget(
+        createMockWidgetConfig({ value: 0x45edf5 }),
+        node
+      )
+
+      widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
+
+      const input = document.querySelector(
+        'input[type="color"]'
+      ) as HTMLInputElement
+      expect(input.value).toBe('#45edf5')
     })
 
     it('should default to #000000 when widget value is empty', () => {
@@ -178,6 +192,28 @@ describe('ColorWidget', () => {
       input.dispatchEvent(new Event('change'))
 
       expect(setValueSpy).toHaveBeenCalledWith('#00ff00', {
+        e: mockEvent,
+        node,
+        canvas: mockCanvas
+      })
+    })
+
+    it('should preserve integer-backed colors when the input changes', () => {
+      widget = new ColorWidget(
+        createMockWidgetConfig({ value: 0x45edf5 }),
+        node
+      )
+      const setValueSpy = vi.spyOn(widget, 'setValue')
+
+      widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
+
+      const input = document.querySelector(
+        'input[type="color"]'
+      ) as HTMLInputElement
+      input.value = '#00ff00'
+      input.dispatchEvent(new Event('change'))
+
+      expect(setValueSpy).toHaveBeenCalledWith(0x00ff00, {
         e: mockEvent,
         node,
         canvas: mockCanvas

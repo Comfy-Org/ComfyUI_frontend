@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAppModeWidgetResizing } from './useAppModeWidgetResizing'
@@ -36,11 +36,9 @@ describe('useAppModeWidgetResizing', () => {
     const { onPointerDown } = useAppModeWidgetResizing(onResize)
 
     function bind(wrapper: HTMLElement, widget: IBaseWidget) {
-      wrapper.addEventListener(
-        'pointerdown',
-        (e) => onPointerDown(widget, e as PointerEvent),
-        { capture: true }
-      )
+      wrapper.addEventListener('pointerdown', (e) => onPointerDown(widget, e), {
+        capture: true
+      })
     }
 
     return { onResize, bind }
@@ -174,7 +172,7 @@ describe('useAppModeWidgetResizing', () => {
     const { wrapper, textarea } = wrapWithTextarea()
     wrapper.addEventListener(
       'pointerdown',
-      (e) => onPointerDown(WIDGET_PROMPT, e as PointerEvent),
+      (e) => onPointerDown(WIDGET_PROMPT, e),
       { capture: true }
     )
 

@@ -9,9 +9,9 @@ import type {
   ExportedSubgraph,
   ISerialisedGraph,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
-import { toLinkId } from '@/types/linkId'
-import { toRerouteId } from '@/types/rerouteId'
+} from '@comfyorg/graph-model/serialisation'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { workflowToClipboardItems } from './workflowToClipboardItems'
@@ -84,6 +84,34 @@ describe('workflowToClipboardItems', () => {
       }
     ])
     expect(items.reroutes).toEqual([{ id: 7, pos: [40, 50], linkIds: [] }])
+  })
+
+  it('carries 0.4 sidecar presentation onto object links', () => {
+    const workflow = fromPartial<ISerialisedGraph>({
+      id: createUuidv4(),
+      version: 0.4,
+      nodes: [],
+      groups: [],
+      links: [[1, 1, 0, 2, 0, 'MODEL']],
+      extra: {
+        linkExtensions: [{ id: 1, parentId: 7 }],
+        linkPresentation: { '1': { hidden: true, label: 'Vae' } }
+      }
+    })
+
+    expect(workflowToClipboardItems(workflow).links).toEqual([
+      {
+        id: 1,
+        origin_id: 1,
+        origin_slot: 0,
+        target_id: 2,
+        target_slot: 0,
+        type: 'MODEL',
+        parentId: 7,
+        hidden: true,
+        label: 'Vae'
+      }
+    ])
   })
 
   it('tolerates a legacy workflow with no links', () => {

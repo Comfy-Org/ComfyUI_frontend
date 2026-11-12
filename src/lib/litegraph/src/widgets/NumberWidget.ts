@@ -1,18 +1,21 @@
-import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
-import { evaluateInput, getWidgetStep } from '@/lib/litegraph/src/utils/widget'
+import type { INumericWidget } from '@comfyorg/graph-model/widgets'
+import {
+  evaluateInput,
+  formatNumericWidgetValue,
+  getWidgetStep
+} from '@/lib/litegraph/src/utils/widget'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
-import type { WidgetEventOptions } from './BaseWidget'
+import type { WidgetEventOptions, WidgetValueOptions } from './BaseWidget'
 
 export class NumberWidget
   extends BaseSteppedWidget<INumericWidget>
   implements INumericWidget
 {
-  override type = 'number' as const
-
   override get _displayValue() {
     if (this.computedDisabled) return ''
-    return Number(this.value).toFixed(
+    return formatNumericWidgetValue(
+      this.value,
       this.options.precision !== undefined ? this.options.precision : 3
     )
   }
@@ -35,7 +38,7 @@ export class NumberWidget
     this.setValue(this.value - getWidgetStep(this.options), options)
   }
 
-  override setValue(value: number, options: WidgetEventOptions) {
+  override setValue(value: number, options?: WidgetValueOptions) {
     let newValue = value
     if (this.options.min != null && newValue < this.options.min) {
       newValue = this.options.min
@@ -85,7 +88,7 @@ export class NumberWidget
     const delta = x < 40 ? -1 : x > width - 40 ? 1 : 0
 
     if (delta && x > -3 && x < width + 3) return
-    this.setValue(this.value + (e.deltaX ?? 0) * getWidgetStep(this.options), {
+    this.setValue(this.value + e.deltaX * getWidgetStep(this.options), {
       e,
       node,
       canvas

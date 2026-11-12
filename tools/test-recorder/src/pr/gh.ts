@@ -5,6 +5,10 @@ import { pass, fail, warn, info } from '../ui/logger'
 const DEFAULT_BASE_BRANCH = 'main'
 const DEFAULT_BASE_REF = `origin/${DEFAULT_BASE_BRANCH}`
 
+function commandOutputToString(output: string | null): string {
+  return output ?? ''
+}
+
 interface CommandResult {
   status: number | null
   stdout: string
@@ -31,8 +35,8 @@ function spawnSyncRunner(cwd: string | undefined): CommandRunner {
     })
     return {
       status: result.error ? null : result.status,
-      stdout: result.stdout ?? '',
-      stderr: result.error?.message ?? result.stderr ?? ''
+      stdout: commandOutputToString(result.stdout),
+      stderr: result.error?.message ?? commandOutputToString(result.stderr)
     }
   }
 }

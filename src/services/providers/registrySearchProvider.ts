@@ -1,64 +1,89 @@
+import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
+
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
-  SearchPacksResult,
-  SortableField
+  SearchPacksOutcome
 } from '@/types/searchServiceTypes'
 
 type RegistryNodePack = components['schemas']['Node']
 
-/**
- * Search provider for the Comfy Registry.
- * Uses public Comfy Registry API.
- */
+const zRegistrySearchResult = z.looseObject({
+  nodes: z.array(
+    z.custom<RegistryNodePack>(
+      (node) => typeof node === 'object' && node !== null,
+      { message: 'expected a node pack object' }
+    )
+  )
+})
+
+interface CachedRegistryRequest<TParams, TResult> {
+  call: (params: TParams) => Promise<TResult | null>
+  evict: (params: TParams) => void
+}
+
 export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
   const registryStore = useComfyRegistryStore()
 
-  /**
-   * Search for node packs using the Comfy Registry API.
-   */
+  const requestFailure = (): Error => {
+    const cause = registryStore.error
+    return new Error(
+      cause
+        ? `Comfy Registry request failed: ${cause}`
+        : 'Comfy Registry request failed'
+    )
+  }
+
+  const requestPage = async <TParams, TResult>(
+    request: CachedRegistryRequest<TParams, TResult>,
+    params: TParams
+  ): Promise<SearchPacksOutcome> => {
+    const response = await request.call(params)
+    if (!response) {
+      request.evict(params)
+      return { ok: false, cause: requestFailure() }
+    }
+    const parsed = zRegistrySearchResult.safeParse(response)
+    if (!parsed.success) {
+      request.evict(params)
+      return {
+        ok: false,
+        cause: fromZodError(parsed.error, {
+          prefix: 'Malformed registry search response'
+        })
+      }
+    }
+    return {
+      ok: true,
+      result: { nodePacks: parsed.data.nodes, querySuggestions: [] }
+    }
+  }
+
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
+  ): Promise<SearchPacksOutcome> => {
     const { pageSize, pageNumber, restrictSearchableAttributes } = params
+    const registryPage = pageNumber + 1
 
-    // For empty queries, use the cached listAllPacks endpoint instead of search
     if (!query || query.trim() === '') {
-      const listParams = {
+      return requestPage(registryStore.listAllPacks, {
         limit: pageSize,
-        page: pageNumber + 1 // Registry API uses 1-based pagination
-        // Note: omitting 'latest' parameter defaults to cached result
-      }
-
-      const listResult = await registryStore.listAllPacks.call(listParams)
-      const nodePacks = listResult?.nodes ?? []
-
-      return {
-        nodePacks,
-        querySuggestions: []
-      }
+        page: registryPage
+      })
     }
 
-    // For non-empty queries, use the search endpoint
     const isNodeSearch = restrictSearchableAttributes?.includes('comfy_nodes')
 
-    const searchParams = {
+    return requestPage(registryStore.search, {
       search: isNodeSearch ? undefined : query,
       comfy_node_search: isNodeSearch ? query : undefined,
       limit: pageSize,
-      page: pageNumber + 1
-    }
-
-    const searchResult = await registryStore.search.call(searchParams)
-    const nodePacks = searchResult?.nodes ?? []
-
-    return {
-      nodePacks,
-      querySuggestions: [] // Registry doesn't support query suggestions
-    }
+      page: registryPage
+    })
   }
 
   const clearSearchCache = () => {
@@ -66,39 +91,8 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
     registryStore.listAllPacks.clear()
   }
 
-  const getSortValue = (
-    pack: RegistryNodePack,
-    sortField: string
-  ): string | number => {
-    switch (sortField) {
-      case 'downloads':
-        return pack.downloads ?? 0
-      case 'name':
-        return pack.name ?? ''
-      case 'publisher':
-        return pack.publisher?.name ?? ''
-      case 'updated':
-        return pack.latest_version?.createdAt
-          ? new Date(pack.latest_version.createdAt).getTime()
-          : 0
-      default:
-        return 0
-    }
-  }
-
-  const getSortableFields = (): SortableField[] => {
-    return [
-      { id: 'downloads', label: 'Downloads', direction: 'desc' },
-      { id: 'name', label: 'Name', direction: 'asc' },
-      { id: 'publisher', label: 'Publisher', direction: 'asc' },
-      { id: 'updated', label: 'Updated', direction: 'desc' }
-    ]
-  }
-
   return {
     searchPacks,
-    clearSearchCache,
-    getSortValue,
-    getSortableFields
+    clearSearchCache
   }
 }

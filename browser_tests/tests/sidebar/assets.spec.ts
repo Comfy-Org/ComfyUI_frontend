@@ -1,16 +1,21 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 import type { Asset } from '@comfyorg/ingest-types'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
+import { assetsStartupFixture } from '@e2e/fixtures/assetsStartupFixture'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   AssetsHelper,
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
-import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import {
+  withOutputAssets,
+  withPagination
+} from '@e2e/fixtures/helpers/AssetHelper'
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
+
+const test = mergeTests(comfyPageFixture, assetApiFixture, assetsStartupFixture)
 
 // Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
 // browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
@@ -146,13 +151,8 @@ const JOB_GAMMA_DETAIL: JobDetail = {
 // ==========================================================================
 
 test.describe('Assets sidebar - empty states', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockEmptyState()
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    assetMocks: { setup: async (assets) => assets.mockEmptyState() }
   })
 
   test('Shows empty-state copy for generated tab', async ({ comfyPage }) => {
@@ -185,14 +185,13 @@ test.describe('Assets sidebar - empty states', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - tab navigation', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    assetMocks: {
+      setup: async (assets) => {
+        await assets.mockOutputHistory(SAMPLE_JOBS)
+        await assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
+      }
+    }
   })
 
   test('Generated tab is active by default', async ({ comfyPage }) => {
@@ -234,14 +233,13 @@ test.describe('Assets sidebar - tab navigation', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - grid view display', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    assetMocks: {
+      setup: async (assets) => {
+        await assets.mockOutputHistory(SAMPLE_JOBS)
+        await assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
+      }
+    }
   })
 
   test('Displays generated assets as cards in grid view', async ({
@@ -286,7 +284,9 @@ test.describe('Assets sidebar - grid view display', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    await expect(tab.assetCards.locator('.pi-image')).toBeVisible()
+    await expect(
+      tab.assetCards.getByRole('img', { name: 'Image failed to load' })
+    ).toBeVisible()
   })
 })
 
@@ -295,10 +295,13 @@ test.describe('Assets sidebar - grid view display', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - view mode', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
-    await comfyPage.setup()
+  test.use({
+    assetMocks: {
+      setup: async (assets) => {
+        await assets.mockOutputHistory(SAMPLE_JOBS)
+        await assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
+      }
+    }
   })
 
   test.afterEach(async ({ comfyPage }) => {
@@ -404,14 +407,13 @@ test.describe('Assets sidebar - view mode', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - search', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    assetMocks: {
+      setup: async (assets) => {
+        await assets.mockOutputHistory(SAMPLE_JOBS)
+        await assets.mockInputFiles([])
+      }
+    }
   })
 
   test('Search input is visible', async ({ comfyPage }) => {
@@ -461,14 +463,13 @@ test.describe('Assets sidebar - search', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - selection', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    assetMocks: {
+      setup: async (assets) => {
+        await assets.mockOutputHistory(SAMPLE_JOBS)
+        await assets.mockInputFiles([])
+      }
+    }
   })
 
   test('Clicking an asset card selects it', async ({ comfyPage }) => {
@@ -537,10 +538,13 @@ test.describe('Assets sidebar - selection', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - context menu', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    await comfyPage.setup()
+  test.use({
+    assetMocks: {
+      setup: async (assets) => {
+        await assets.mockOutputHistory(SAMPLE_JOBS)
+        await assets.mockInputFiles([])
+      }
+    }
   })
 
   test.afterEach(async ({ comfyPage }) => {
@@ -553,7 +557,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
 
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
     await expect(contextMenu).toBeVisible()
   })
 
@@ -565,7 +569,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Download')).toBeVisible()
@@ -579,7 +583,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Inspect asset')).toBeVisible()
@@ -593,7 +597,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Delete')).toBeVisible()
@@ -607,7 +611,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu')
+      .getByRole('menu')
       .waitFor({ state: 'visible', timeout: 3000 })
 
     await expect(tab.contextMenuItem('Copy job ID')).toBeVisible()
@@ -621,7 +625,7 @@ test.describe('Assets sidebar - context menu', () => {
 
     await tab.assetCards.first().click({ button: 'right' })
 
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
     await expect(contextMenu).toBeVisible()
 
     await expect(
@@ -702,7 +706,7 @@ test.describe('Assets sidebar - context menu', () => {
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
-    await tab.dismissToasts()
+    await comfyPage.toast.closeToasts()
 
     // useKeyModifier('Control') needs keyboard events, not click modifiers.
     await cards.first().click()
@@ -714,7 +718,7 @@ test.describe('Assets sidebar - context menu', () => {
     await expect(tab.selectionFooter).toBeVisible()
 
     // dispatchEvent avoids the selection footer intercepting a right click.
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
+    const contextMenu = comfyPage.page.getByRole('menu')
     await cards.first().dispatchEvent('contextmenu', {
       bubbles: true,
       cancelable: true,
@@ -731,14 +735,13 @@ test.describe('Assets sidebar - context menu', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - bulk actions', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    assetMocks: {
+      setup: async (assets) => {
+        await assets.mockOutputHistory(SAMPLE_JOBS)
+        await assets.mockInputFiles([])
+      }
+    }
   })
 
   test('Footer shows download button when assets selected', async ({
@@ -792,27 +795,14 @@ test.describe('Assets sidebar - bulk actions', () => {
   })
 
   test('Selection bar stays capped, not stretched, on a wide panel', async ({
-    comfyPage
+    comfyPage,
+    comfyMouse
   }) => {
     await comfyPage.page.setViewportSize({ width: 1600, height: 900 })
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    const gutter = comfyPage.page.locator('.p-splitter-gutter').first()
-    await expect(gutter).toBeVisible()
-    const gutterBox = await gutter.boundingBox()
-    if (!gutterBox) {
-      throw new Error('sidebar splitter gutter has no bounding box')
-    }
-    await comfyPage.page.mouse.move(
-      gutterBox.x + gutterBox.width / 2,
-      gutterBox.y + gutterBox.height / 2
-    )
-    await comfyPage.page.mouse.down()
-    await comfyPage.page.mouse.move(900, gutterBox.y + gutterBox.height / 2, {
-      steps: 12
-    })
-    await comfyPage.page.mouse.up()
+    await tab.resize(comfyMouse, 600)
 
     await tab.assetCards.first().click()
     await expect(tab.selectionFooter).toBeVisible()
@@ -930,18 +920,15 @@ test.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - pagination', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    assetMocks: {
+      setup: async (assets) => assets.mockOutputHistory(createMockJobs(250))
+    }
   })
 
   test('initial load fetches first batch with offset 0', async ({
     comfyPage
   }) => {
-    const manyJobs = createMockJobs(250)
-    await comfyPage.assets.mockOutputHistory(manyJobs)
-    await comfyPage.setup()
-
-    // Queue polling also calls /jobs, so wait for completed history only.
     const firstRequest = comfyPage.page.waitForRequest((req) => {
       if (!/\/api\/jobs\?/.test(req.url())) return false
       const url = new URL(req.url())
@@ -957,6 +944,32 @@ test.describe('Assets sidebar - pagination', () => {
     expect(url.searchParams.get('offset')).toBe('0')
     expect(Number(url.searchParams.get('limit'))).toBeGreaterThan(0)
   })
+
+  test.describe('Assets enabled', () => {
+    test.use({
+      assetMocks: {},
+      modelLibraryOptions: {
+        operators: [withOutputAssets(30), withPagination({ limit: 1 })]
+      },
+      initialLocalStorage: { 'unified-sidebar': '[43, 57]' }
+    })
+
+    test('Pages assets to fill view', async ({ assetApi: _, comfyPage }) => {
+      await comfyPage.featureFlags.setServerFlagsPersistent({ assets: true })
+      const listRequests: URL[] = []
+      comfyPage.page.on('request', (req) => {
+        if (req.method() !== 'GET') return
+        const url = new URL(req.url())
+        if (url.pathname.endsWith('/api/assets')) listRequests.push(url)
+      })
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+
+      await expect.poll(() => tab.assetCards.count()).toBeGreaterThan(3)
+      expect(listRequests.length).toBeGreaterThan(3)
+    })
+  })
 })
 
 // ==========================================================================
@@ -964,14 +977,13 @@ test.describe('Assets sidebar - pagination', () => {
 // ==========================================================================
 
 test.describe('Assets sidebar - settings menu', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(SAMPLE_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
+  test.use({
+    assetMocks: {
+      setup: async (assets) => {
+        await assets.mockOutputHistory(SAMPLE_JOBS)
+        await assets.mockInputFiles([])
+      }
+    }
   })
 
   test('Settings menu shows view mode options', async ({ comfyPage }) => {
@@ -1031,8 +1043,7 @@ test.describe('Assets sidebar - delete confirmation', () => {
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount - 1)
 
-    const successToast = comfyPage.page.locator('.p-toast-message-success')
-    await expect(successToast).toBeVisible()
+    await expect(comfyPage.toast.toastSuccesses).toBeVisible()
   })
 
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {
@@ -1051,113 +1062,6 @@ test.describe('Assets sidebar - delete confirmation', () => {
 
     await expect(dialog).toBeHidden()
     await expect(tab.assetCards).toHaveCount(initialCount)
-  })
-})
-
-// ==========================================================================
-// 12. Media type filter (cloud-only)
-// ==========================================================================
-
-const MIXED_MEDIA_JOBS: RawJobListItem[] = [
-  createMockJob({
-    id: 'job-image',
-    create_time: 1000,
-    execution_start_time: 1000,
-    execution_end_time: 1010,
-    preview_output: {
-      filename: 'photo.png',
-      subfolder: '',
-      type: 'output',
-      nodeId: '1',
-      mediaType: 'images'
-    },
-    outputs_count: 1
-  }),
-  createMockJob({
-    id: 'job-video',
-    create_time: 2000,
-    execution_start_time: 2000,
-    execution_end_time: 2010,
-    preview_output: {
-      filename: 'clip.mp4',
-      subfolder: '',
-      type: 'output',
-      nodeId: '2',
-      mediaType: 'video'
-    },
-    outputs_count: 1
-  }),
-  createMockJob({
-    id: 'job-audio',
-    create_time: 3000,
-    execution_start_time: 3000,
-    execution_end_time: 3010,
-    preview_output: {
-      filename: 'track.mp3',
-      subfolder: '',
-      type: 'output',
-      nodeId: '3',
-      mediaType: 'audio'
-    },
-    outputs_count: 1
-  })
-]
-
-// Filter button is guarded by isCloud; cloud CI needs authenticated setup.
-test.describe('Assets sidebar - media type filter', () => {
-  test.fixme(true, 'Requires DISTRIBUTION=cloud build with auth bypass')
-
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
-    await comfyPage.assets.mockInputFiles([])
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.assets.clearMocks()
-  })
-
-  test('Filter menu shows media type options', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-
-    await tab.openFilterMenu()
-
-    await expect(tab.filterCheckbox('Image')).toBeVisible()
-    await expect(tab.filterCheckbox('Video')).toBeVisible()
-    await expect(tab.filterCheckbox('Audio')).toBeVisible()
-    await expect(tab.filterCheckbox('3D')).toBeVisible()
-  })
-
-  test('Unchecking image filter hides image assets', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-
-    const initialCount = tab.assetCards
-    await expect(
-      initialCount,
-      'All three mixed-media jobs should render'
-    ).toHaveCount(3)
-
-    await tab.openFilterMenu()
-    await tab.filterCheckbox('Image').click()
-
-    await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
-    await expect(tab.getAssetCardByName('photo.png')).toBeVisible()
-  })
-
-  test('Re-enabling filter restores hidden assets', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-
-    const initialCount = await tab.assetCards.count()
-
-    await tab.openFilterMenu()
-    await tab.filterCheckbox('Image').click()
-    await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
-
-    await tab.filterCheckbox('Image').click()
-    await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
   })
 })
 
@@ -1182,7 +1086,6 @@ test.describe('Assets sidebar - drag and drop', () => {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
 
     const [loadImage] = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
-    if (!loadImage) throw new Error('Load Image node not found')
     await loadImage.centerOnNode()
 
     const { assetsTab } = comfyPage.menu
@@ -1249,7 +1152,7 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
       }
     }),
     createMockJob({
-      id: 'job2',
+      id: 'job3',
       preview_output: {
         filename: `3.png`,
         type: 'input',
@@ -1271,8 +1174,8 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     await assetsTab.assetCards.nth(index).scrollIntoViewIfNeeded()
     await assetsTab.assetCards.nth(index).click({ button: 'right' })
 
-    await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
-    await comfyPage.contextMenu.primeVueMenu.getByText('Insert as node').click()
+    await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
+    await comfyPage.contextMenu.ariaMenu.getByText('Insert as node').click()
 
     await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')

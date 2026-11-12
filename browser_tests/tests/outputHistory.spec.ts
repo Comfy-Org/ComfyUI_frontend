@@ -1,7 +1,7 @@
 import type { WebSocketRoute } from '@playwright/test'
 import { mergeTests } from '@playwright/test'
 
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 import {
   comfyPageFixture,
   comfyExpect as expect
@@ -118,6 +118,40 @@ test.describe('Output History', { tag: '@ui' }, () => {
     await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(3)
   })
 
+  test('keeps the selected output when opening and closing the sidebar', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const ws = await getWebSocket()
+    const { exec, jobId } = await startExecution(comfyPage, ws)
+    const history = comfyPage.appMode.outputHistory
+
+    await test.step('Select an older output', async () => {
+      exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('first.png'))
+      await expect(history.imageOutputs).toHaveCount(1)
+      exec.executed(jobId, SAVE_IMAGE_NODE, imageOutput('second.png'))
+      await expect(history.imageOutputs).toHaveCount(2)
+      await history.selectInProgressItem(1)
+      await expect(history.selectedImageOutput).toHaveAttribute(
+        'src',
+        /first\.png/
+      )
+    })
+
+    await test.step('Keep that selection across sidebar visibility changes', async () => {
+      await comfyPage.menu.assetsTab.open({ waitForAssets: false })
+      await expect(history.selectedImageOutput).toHaveAttribute(
+        'src',
+        /first\.png/
+      )
+      await comfyPage.menu.assetsTab.close()
+      await expect(history.selectedImageOutput).toHaveAttribute(
+        'src',
+        /first\.png/
+      )
+    })
+  })
+
   test('Video output renders video element', async ({
     comfyPage,
     getWebSocket
@@ -167,7 +201,8 @@ test.describe('Output History', { tag: '@ui' }, () => {
     getWebSocket
   }) => {
     const ws = await getWebSocket()
-    const { exec, jobId } = await startExecution(comfyPage, ws)
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const jobId = await exec.run()
 
     const job: RawJobListItem = {
       id: jobId,
@@ -186,25 +221,24 @@ test.describe('Output History', { tag: '@ui' }, () => {
             pagination: { offset: 0, limit: 200, total: 1, has_more: false }
           })
         })
-      },
-      { times: 1 }
-    )
-    // Trigger queue refresh
-    const queueRefresh = comfyPage.page.waitForResponse(
-      /\/api\/jobs\?status=in_progress/
+      }
     )
     exec.status(1)
-    await queueRefresh
-    await comfyPage.nextFrame()
-
     await expect(comfyPage.appMode.cancelRunButton).toBeVisible()
+
+    exec.executionStart(jobId)
+    await expect(
+      comfyPage.appMode.outputHistory.skeletons.first()
+    ).toBeVisible()
 
     await comfyPage.page.route('**/interrupt', (route) =>
       route.fulfill({ status: 200 })
     )
     const interruptRequest = comfyPage.page.waitForRequest('**/interrupt')
     await comfyPage.appMode.cancelRunButton.click()
-    await interruptRequest
+    expect((await interruptRequest).postDataJSON()).toEqual({
+      prompt_id: jobId
+    })
   })
 
   test('Full execution lifecycle cleans up in-progress items', async ({
@@ -336,7 +370,6 @@ test.describe('Output History', { tag: '@ui' }, () => {
   }) => {
     const ws = await getWebSocket()
 
-    // Complete one execution with 100 image outputs
     const { exec, jobId } = await startExecution(comfyPage, ws)
     exec.executed(
       jobId,
@@ -348,6 +381,7 @@ test.describe('Output History', { tag: '@ui' }, () => {
         )
       )
     )
+    await expect(comfyPage.appMode.outputHistory.imageOutputs).toHaveCount(100)
     await exec.completeWithHistory(jobId, {
       filename: 'image_000.png',
       subfolder: '',
@@ -358,22 +392,17 @@ test.describe('Output History', { tag: '@ui' }, () => {
 
     await expect(comfyPage.appMode.outputHistory.historyItems).toHaveCount(100)
 
-    // First history item is visible before scrolling
     const firstItem = comfyPage.appMode.outputHistory.historyItems.first()
     await expect(firstItem).toBeInViewport()
 
-    // Scroll the history feed all the way to the right
     await comfyPage.appMode.outputHistory.outputs.evaluate((el) => {
       el.scrollLeft = el.scrollWidth
     })
 
-    // First history item is now off-screen
     await expect(firstItem).not.toBeInViewport()
 
-    // Start a new execution to get an in-progress item
     await startExecution(comfyPage, ws, exec)
 
-    // In-progress item is visible despite scrolling
     await expect(
       comfyPage.appMode.outputHistory.inProgressItems.first()
     ).toBeInViewport()

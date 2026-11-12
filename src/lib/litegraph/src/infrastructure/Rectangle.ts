@@ -1,10 +1,10 @@
 import type {
   CompassCorners,
-  Point,
+  PointTuple as Point,
   ReadOnlyRect,
   ReadOnlyTypedArray,
-  Size
-} from '@/lib/litegraph/src/interfaces'
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 /**
@@ -79,7 +79,7 @@ export class Rectangle extends Float64Array {
    */
   get pos(): Point {
     this._pos ??= this.subarray(0, 2)
-    return this._pos! as unknown as Point
+    return this._pos as unknown as Point
   }
 
   set pos(value: Readonly<Point>) {
@@ -94,7 +94,7 @@ export class Rectangle extends Float64Array {
    */
   get size(): Size {
     this._size ??= this.subarray(2, 4)
-    return this._size! as unknown as Size
+    return this._size as unknown as Size
   }
 
   set size(value: Readonly<Size>) {
@@ -476,6 +476,13 @@ export type ReadOnlyRectangle = Omit<
   | 'resizeBottomLeft'
   | 'resizeTopRight'
   | 'resizeBottomRight'
-  | 'resizeBottomRight'
   | 'updateTo'
 >
+
+type RegisteredRectangle = Rectangle
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    Rectangle: RegisteredRectangle
+  }
+}

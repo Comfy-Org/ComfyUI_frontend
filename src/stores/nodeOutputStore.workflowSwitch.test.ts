@@ -1,55 +1,36 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 const { WORKFLOW_A, WORKFLOW_B } = vi.hoisted(() => ({
   WORKFLOW_A: 'workflows/a.json',
   WORKFLOW_B: 'workflows/b.json'
 }))
 
-const mocks = vi.hoisted(() => ({
-  workflowStore: null as unknown as {
-    activeWorkflow: { path: string } | null
-    openWorkflows: { path: string }[]
-    nodeIdToNodeLocatorId: (id: string | number) => string
-    nodeToNodeLocatorId: (node: { id: string | number }) => string
-  }
-}))
-
-vi.mock('@/utils/litegraphUtil', () => ({
+vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isAnimatedOutput: vi.fn(() => false),
   isVideoNode: vi.fn(() => false),
   resolveNode: vi.fn()
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    getPreviewFormatParam: vi.fn(() => ''),
-    getRandParam: vi.fn(() => ''),
-    rootGraph: { getNodeById: vi.fn() },
-    nodeOutputs: {} as Record<string, unknown>,
-    nodePreviewImages: {} as Record<string, string[]>
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
-  const { reactive } = await import('vue')
-  mocks.workflowStore = reactive({
-    activeWorkflow: { path: WORKFLOW_A } as { path: string } | null,
-    openWorkflows: [{ path: WORKFLOW_A }, { path: WORKFLOW_B }],
-    nodeIdToNodeLocatorId: (id: string | number) => String(id),
-    nodeToNodeLocatorId: (node: { id: string | number }) => String(node.id)
-  })
-  return { useWorkflowStore: () => mocks.workflowStore }
-})
+const KEPT_SUBGRAPH = '11111111-1111-4111-8111-111111111111'
+const OTHER_SUBGRAPH = '22222222-2222-4222-8222-222222222222'
 
 const createMockNode = (id: number): LGraphNode =>
   fromAny<LGraphNode, unknown>({ id: toNodeId(id), type: 'KSampler' })
@@ -61,10 +42,10 @@ const createMockNode = (id: number): LGraphNode =>
  */
 function switchToWorkflow(path: string) {
   const store = useNodeOutputStore()
-  const leaving = mocks.workflowStore.activeWorkflow
+  const leaving = useWorkflowStore().activeWorkflow
   if (leaving) store.stashPreviewsForWorkflow(leaving.path)
   store.resetAllOutputsAndPreviews()
-  mocks.workflowStore.activeWorkflow = { path }
+  useWorkflowStore().activeWorkflow = fromPartial({ path })
   store.restorePreviewsForWorkflow(path)
 }
 
@@ -86,11 +67,10 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
       .mockImplementation(() => {})
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
-    mocks.workflowStore.activeWorkflow = { path: WORKFLOW_A }
-    mocks.workflowStore.openWorkflows = [
-      { path: WORKFLOW_A },
-      { path: WORKFLOW_B }
-    ]
+    useWorkflowStore().activeWorkflow = fromPartial({ path: WORKFLOW_A })
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [{ path: WORKFLOW_A }, { path: WORKFLOW_B }]
+    })
   })
 
   it('keeps a finished run preview when the user switches tabs and comes back', () => {
@@ -154,7 +134,7 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     store.setNodePreviewsByNodeId(createMockNode(5).id, [previewUrl])
     switchToWorkflow(WORKFLOW_B)
 
-    mocks.workflowStore.openWorkflows = [{ path: WORKFLOW_B }]
+    Object.assign(useWorkflowStore(), { openWorkflows: [{ path: WORKFLOW_B }] })
     switchToWorkflow(WORKFLOW_B)
 
     expect(revokeObjectURL).toHaveBeenCalledWith(previewUrl)
@@ -172,13 +152,95 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
     // Back to A: a frame lands between app.clean() and afterLoadNewGraph().
     store.stashPreviewsForWorkflow(WORKFLOW_B)
     store.resetAllOutputsAndPreviews()
-    mocks.workflowStore.activeWorkflow = { path: WORKFLOW_A }
+    useWorkflowStore().activeWorkflow = fromPartial({ path: WORKFLOW_A })
     store.setNodePreviewsByNodeId(node.id, [arrivedUrl])
     store.restorePreviewsForWorkflow(WORKFLOW_A)
 
     expect(store.getNodePreviews(node)).toEqual([arrivedUrl])
     expect(revokeObjectURL).toHaveBeenCalledWith(stashedUrl)
     expect(revokeObjectURL).not.toHaveBeenCalledWith(arrivedUrl)
+  })
+
+  it('adds a frame that arrived while the workflow was off the canvas to its stash', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode(5)
+    const otherNode = createMockNode(6)
+    const stashedUrl = createBlobUrl()
+    const otherUrl = createBlobUrl()
+    const arrivedUrl = createBlobUrl()
+
+    store.setNodePreviewsByNodeId(node.id, [stashedUrl])
+    store.setNodePreviewsByNodeId(otherNode.id, [otherUrl])
+    store.stashPreviewsForWorkflow(WORKFLOW_A)
+    store.resetAllOutputsAndPreviews()
+    store.setNodePreviewsByNodeId(node.id, [arrivedUrl])
+    store.addLivePreviewsToStash(WORKFLOW_A)
+    store.resetAllOutputsAndPreviews()
+    store.restorePreviewsForWorkflow(WORKFLOW_A)
+
+    expect(store.getNodePreviews(node)).toEqual([arrivedUrl])
+    expect(store.getNodePreviews(otherNode)).toEqual([otherUrl])
+    expect(revokeObjectURL).toHaveBeenCalledWith(stashedUrl)
+    expect(revokeObjectURL).not.toHaveBeenCalledWith(arrivedUrl)
+    expect(revokeObjectURL).not.toHaveBeenCalledWith(otherUrl)
+  })
+
+  describe('restoring a preview resolved against another workflow into a graph without its subgraph', () => {
+    beforeEach(() => {
+      vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(
+        fromPartial<LGraph>({
+          subgraphs: new Map([[KEPT_SUBGRAPH, fromPartial<Subgraph>({})]])
+        })
+      )
+    })
+
+    it('drops and revokes the preview while restoring root and in-graph subgraph previews', () => {
+      const store = useNodeOutputStore()
+      const rootUrl = createBlobUrl()
+      const keptUrl = createBlobUrl()
+      const otherUrl = createBlobUrl()
+      const keptLocator = createNodeLocatorId(KEPT_SUBGRAPH, 6)
+      const otherLocator = createNodeLocatorId(OTHER_SUBGRAPH, 6)
+
+      store.setNodePreviewsByNodeId(createMockNode(5).id, [rootUrl])
+      store.setNodePreviewsByLocatorId(keptLocator, [keptUrl])
+      store.setNodePreviewsByLocatorId(otherLocator, [otherUrl])
+      switchToWorkflow(WORKFLOW_B)
+      switchToWorkflow(WORKFLOW_A)
+
+      expect(store.nodePreviewImages).toEqual({
+        '5': [rootUrl],
+        [keptLocator]: [keptUrl]
+      })
+      expect(app.nodePreviewImages).toEqual(store.nodePreviewImages)
+      expect(revokeObjectURL).toHaveBeenCalledWith(otherUrl)
+      expect(revokeObjectURL).not.toHaveBeenCalledWith(rootUrl)
+      expect(revokeObjectURL).not.toHaveBeenCalledWith(keptUrl)
+    })
+
+    it('does not revoke a dropped preview URL that a restored preview still shows', () => {
+      const store = useNodeOutputStore()
+      const sharedUrl = createBlobUrl()
+      const keptLocator = createNodeLocatorId(KEPT_SUBGRAPH, 6)
+      const otherLocator = createNodeLocatorId(OTHER_SUBGRAPH, 6)
+
+      store.setNodePreviewsByNodeId(createMockNode(5).id, [sharedUrl])
+      store.setNodePreviewsByLocatorId(otherLocator, [sharedUrl])
+      store.setNodePreviewsByLocatorId(keptLocator, [sharedUrl])
+      switchToWorkflow(WORKFLOW_B)
+      switchToWorkflow(WORKFLOW_A)
+
+      expect(store.nodePreviewImages).toEqual({
+        '5': [sharedUrl],
+        [keptLocator]: [sharedUrl]
+      })
+      expect(revokeObjectURL).not.toHaveBeenCalledWith(sharedUrl)
+
+      store.revokePreviewsByLocatorId(keptLocator)
+      store.revokePreviewsByLocatorId(createNodeLocatorId(null, 5))
+
+      expect(revokeObjectURL).toHaveBeenCalledWith(sharedUrl)
+    })
   })
 
   it('restores previews when the same workflow is reloaded in place', () => {

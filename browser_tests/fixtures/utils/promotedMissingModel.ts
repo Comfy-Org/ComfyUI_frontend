@@ -11,7 +11,7 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { setPromotedHostWidgetValue } from '@e2e/fixtures/utils/promotedWidgets'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 const PROMOTED_MODEL_WIDGET_NAME = 'ckpt_name'
 
@@ -139,7 +139,9 @@ export async function selectVueAssetPromotedModel(
   modelName: string
 ) {
   await selectModelFromFormDropdown(
-    comfyPage.vueNodes.getNodeByTitle(workflow.hostNodeTitle),
+    comfyPage.vueNodes
+      .getNodeByTitle(workflow.hostNodeTitle)
+      .getByRole('button', { name: PROMOTED_MODEL_WIDGET_NAME, exact: true }),
     currentModelName,
     modelName
   )
@@ -169,7 +171,10 @@ export async function selectSectionAssetPromotedModel(
 ) {
   const panel = await openHostNodeParametersPanel(comfyPage, workflow)
   await selectModelFromFormDropdown(
-    panel.contentArea,
+    panel.contentArea.getByRole('button', {
+      name: currentModelName,
+      exact: true
+    }),
     currentModelName,
     modelName
   )
@@ -213,8 +218,7 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
     subgraphNodeIdToEnter: string
     nodeTitle: string
   }>,
-  resolvedModelName: string,
-  staleModelName: string
+  resolvedModelName: string
 ) {
   await loadPromotedMissingModelWithHostValues(comfyPage, workflow, {
     [workflow.hostNodeId]: resolvedModelName
@@ -241,12 +245,8 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
     })
     await expect(
       staleCombo,
-      `${step.nodeTitle} should expose the stale linked interior widget`
-    ).toBeDisabled()
-    await expect(
-      staleCombo,
-      `${step.nodeTitle} should keep the stale interior value`
-    ).toContainText(staleModelName)
+      `${step.nodeTitle} should suppress the stale linked interior widget`
+    ).toHaveCount(0)
     await expectNoMissingModelUi(comfyPage)
   }
 }
@@ -288,7 +288,7 @@ function setRootHostWidgetValue(
   hostNodeId: number,
   value: string
 ) {
-  const hostNode = graphData.nodes?.find(
+  const hostNode = graphData.nodes.find(
     (node) => Number(node.id) === hostNodeId
   )
   if (!hostNode) throw new Error(`Expected host node ${hostNodeId}`)
@@ -299,20 +299,18 @@ function setRootHostWidgetValue(
   }
 
   hostNode.widgets_values = {
-    ...(hostNode.widgets_values ?? {}),
+    ...hostNode.widgets_values,
     [PROMOTED_MODEL_WIDGET_NAME]: value
   }
 }
 
 async function selectModelFromFormDropdown(
-  root: Locator,
+  trigger: Locator,
   currentModelName: string,
   nextModelName: string
 ) {
-  const trigger = root
-    .getByRole('button', { name: currentModelName, exact: true })
-    .first()
   await expect(trigger).toBeVisible()
+  await expect(trigger).toContainText(currentModelName)
   await WidgetSelectDropdownFixture.fromTrigger(trigger).selectOption(
     nextModelName
   )

@@ -1,24 +1,19 @@
 <template>
-  <div>
-    <!--
-    UnloadWindowConfirmDialog: This component does not render
-    anything visible. It is used to confirm the user wants to
-    close the window, and if they do, it will call the
-    beforeunload event.
-    -->
-  </div>
+  <div />
 </template>
 
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { takeLeavePromptSkip } from '@/platform/workflow/management/leavePrompt'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 const settingStore = useSettingStore()
 const workflowStore = useWorkflowStore()
 
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  if (takeLeavePromptSkip()) return undefined
   if (
     settingStore.get('Comfy.Window.UnloadConfirmation') &&
     workflowStore.modifiedWorkflows.length > 0

@@ -1,11 +1,15 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getOutputSubfolder } from '@/platform/assets/utils/assetMetadataUtils'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetContext } from '@/platform/assets/schemas/mediaAssetSchema'
+import { getAssetType as getAssetSourceType } from '@/platform/assets/utils/assetTypeUtil'
+import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import type { ResultItemInit, TaskItemImpl } from '@/stores/queueStore'
-import { ResultItemImpl } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
@@ -31,7 +35,7 @@ export function getAssetType(tags?: string[]): AssetContext['type'] {
  */
 export function mapTaskOutputToAssetItem(
   taskItem: TaskItemImpl,
-  output: ResultItemImpl
+  output: AugmentedResultItem
 ): AssetItem {
   const metadata: OutputAssetMetadata = {
     jobId: taskItem.jobId,
@@ -54,8 +58,8 @@ export function mapTaskOutputToAssetItem(
     created_at: executionTime,
     updated_at: executionTime,
     tags: ['output'],
-    thumbnail_url: output.previewUrl,
-    preview_url: output.url,
+    thumbnail_url: resultItemPreviewUrl(output),
+    preview_url: resultItemUrl(output),
     user_metadata: metadata
   }
 }
@@ -66,40 +70,41 @@ const byCreatedAtAsc = (a: AssetItem, b: AssetItem): number =>
 
 const byCreatedAtDesc = (a: AssetItem, b: AssetItem): number =>
   new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+function isTempOutput(asset: AssetItem): boolean {
+  return asset.tags.includes('temp') || getAssetSourceType(asset) === 'temp'
+}
+
+const NON_OUTPUT_TAGS = new Set(['input', 'models'])
+
+/** Whether an asset added to a workflow lives in the temp root: its stored output identity, else temp evidence on a generated output. */
+export function isGeneratedTempOutput(asset: AssetItem): boolean {
+  const storedType = getStoredOutputIdentity(asset)?.type
+  if (storedType) return storedType === 'temp'
+  if (getAssetSourceType(asset) === 'input') return false
+  return (
+    !asset.tags.some((tag) => NON_OUTPUT_TAGS.has(tag)) && isTempOutput(asset)
+  )
+}
+
 const byIsTemp = (a: AssetItem, b: AssetItem): number =>
-  Number(b.tags.includes('temp')) - Number(a.tags.includes('temp'))
+  Number(isTempOutput(b)) - Number(isTempOutput(a))
 
-function flatAssetToResultItem(asset: AssetItem): ResultItemImpl {
-  class AssetResultItem extends ResultItemImpl {
-    private readonly _url: string
-    private readonly _previewUrl: string
-
-    constructor(asset: AssetItem, init: ResultItemInit) {
-      super(init)
-      this._url = asset.preview_url ?? ''
-      this._previewUrl = asset.thumbnail_url ?? this._url
-    }
-
-    override get url(): string {
-      return this._url
-    }
-
-    override get previewUrl(): string {
-      return this._previewUrl
-    }
-  }
-
+function flatAssetToResultItem(asset: AssetItem): AugmentedResultItem {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
-  return new AssetResultItem(asset, {
+  const url = asset.preview_url ?? ''
+  return {
     assetId: asset.id,
+    hash: asset.hash,
     display_name: asset.display_name ?? undefined,
     filename: asset.name,
     format: metadata?.format,
     mediaType: getMediaTypeFromFilename(asset.name),
     nodeId: metadata?.nodeId ?? '',
-    subfolder: metadata?.subfolder ?? '',
-    type: asset.tags.includes('temp') ? 'temp' : 'output'
-  })
+    subfolder: getOutputSubfolder(asset) ?? '',
+    type: isTempOutput(asset) ? 'temp' : 'output',
+    url,
+    previewUrl: asset.thumbnail_url ?? url
+  }
 }
 
 /**
@@ -128,8 +133,8 @@ export function unflattenOutputAssets(
   const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
     const ordered = [...assets].sort(byCreatedAtAsc)
     const representative =
-      ordered
-        .toSorted(byIsTemp)
+      [...ordered]
+        .sort(byIsTemp)
         .findLast((asset) =>
           isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
         ) ?? ordered.at(-1)!
@@ -139,8 +144,9 @@ export function unflattenOutputAssets(
       created_at: ordered.at(-1)!.created_at,
       user_metadata: {
         jobId: job_id,
-        subfolder: '',
         ...representative.user_metadata,
+        subfolder: getOutputSubfolder(representative) ?? '',
+        assetId: representative.id,
         outputCount: ordered.length,
         allOutputs: ordered.map(flatAssetToResultItem)
       }

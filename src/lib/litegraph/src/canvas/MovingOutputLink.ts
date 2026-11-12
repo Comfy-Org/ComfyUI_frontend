@@ -1,19 +1,26 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type {
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphInput
+} from '@comfyorg/graph-model/entityRegistry'
+
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotIndex } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
+
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
-import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import type { SubgraphIO } from '@comfyorg/graph-model/serialisation'
 
 import { MovingLinkBase } from './MovingLinkBase'
 
@@ -71,12 +78,17 @@ export class MovingOutputLink extends MovingLinkBase {
   ): LLink | null | undefined {
     if (output === this.outputSlot) return
 
+    const graph = this.inputNode.graph
+    if (!graph) return
+    const scope = graphScopeOf(graph)
+
     const link = outputNode.connectSlots(
       output,
       this.inputNode,
       this.inputSlot,
       this.link.parentId
     )
+    transferLinkPresentation(scope, this.presentation, link?.id)
     if (link) events.dispatch('output-moved', this)
     return link
   }
@@ -85,11 +97,16 @@ export class MovingOutputLink extends MovingLinkBase {
     input: SubgraphInput,
     events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
+    const graph = this.inputNode.graph
+    if (!graph) return
+    const scope = graphScopeOf(graph)
+
     const newLink = input.connect(
       this.fromSlot,
       this.node,
       this.fromReroute?.id
     )
+    transferLinkPresentation(scope, this.presentation, newLink?.id)
     events?.dispatch('link-created', newLink)
   }
 
@@ -109,9 +126,12 @@ export class MovingOutputLink extends MovingLinkBase {
   ): void {
     // Moving output side of links
     const { inputNode, inputSlot, fromReroute } = this
+    const graph = this.inputNode.graph
+    if (!graph) return
+    const scope = graphScopeOf(graph)
 
     // Creating a new link removes floating prop - check before connecting
-    const floatingTerminus = reroute?.floating?.slotType === 'output'
+    const floatingTerminus = reroute.floating?.slotType === 'output'
 
     // Connect the first reroute of the link being dragged to the reroute being dropped on
     if (fromReroute) {
@@ -121,7 +141,13 @@ export class MovingOutputLink extends MovingLinkBase {
       this.link.parentId = reroute.id
     }
     // Use the last reroute id on the link to retain all reroutes
-    outputNode.connectSlots(output, inputNode, inputSlot, this.link.parentId)
+    const newLink = outputNode.connectSlots(
+      output,
+      inputNode,
+      inputSlot,
+      this.link.parentId
+    )
+    transferLinkPresentation(scope, this.presentation, newLink?.id)
 
     // Connecting from the final reroute of a floating reroute chain
     if (floatingTerminus) reroute.removeAllFloatingLinks()
@@ -132,4 +158,10 @@ export class MovingOutputLink extends MovingLinkBase {
   disconnect(): boolean {
     return this.outputNode.disconnectOutput(this.outputIndex, this.inputNode)
   }
+}
+
+type RegisteredMovingOutputLink = MovingOutputLink
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface MovingOutputLink extends RegisteredMovingOutputLink {}
 }

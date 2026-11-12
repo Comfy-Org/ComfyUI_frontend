@@ -1,3 +1,4 @@
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 /**
  * Composable for managing transform state synchronized with LiteGraph canvas
  *
@@ -54,15 +55,8 @@ import { computed, reactive, readonly } from 'vue'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { createSharedComposable } from '@vueuse/core'
 
-interface Point {
-  x: number
-  y: number
-}
-
-interface Camera {
-  x: number
-  y: number
-  z: number // scale/zoom
+interface Camera extends Point {
+  z: number
 }
 
 function useTransformStateIndividual() {
@@ -95,8 +89,6 @@ function useTransformStateIndividual() {
    * @param canvas - LiteGraph canvas instance with DragAndScale (ds) transform state
    */
   function syncWithCanvas(canvas: LGraphCanvas) {
-    if (!canvas || !canvas.ds) return
-
     // Mirror LiteGraph's transform state to Vue's reactive state
     // ds.offset = pan offset, ds.scale = zoom level
     camera.x = canvas.ds.offset[0]

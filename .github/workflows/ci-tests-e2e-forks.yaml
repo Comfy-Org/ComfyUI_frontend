@@ -77,6 +77,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SUMMARY_FILE: playwright-section.md
           BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
         run: |

@@ -1,11 +1,18 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
+import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvasElement,
+  stubCanvasGetContext
+} from '@/utils/__tests__/canvasTestUtils'
 
 import { useNodeLayout } from './useNodeLayout'
 
@@ -32,16 +39,6 @@ function createNode(graphId: UUID, x: number): void {
   })
 }
 
-const state = vi.hoisted<{
-  canvasStore: { rootGraphId: UUID | undefined } | null
-}>(() => ({ canvasStore: null }))
-
-vi.mock('@/renderer/core/canvas/canvasStore', async () => {
-  const { reactive } = await import('vue')
-  state.canvasStore = reactive({ rootGraphId: undefined })
-  return { useCanvasStore: () => state.canvasStore }
-})
-
 const NodeLayoutHost = defineComponent({
   setup() {
     const { position } = useNodeLayout(NODE)
@@ -54,14 +51,14 @@ describe('useNodeLayout', () => {
     layoutStore.resetForTests()
     createNode(FIRST_WORKFLOW, 100)
     createNode(SECOND_WORKFLOW, 200)
-    state.canvasStore!.rootGraphId = FIRST_WORKFLOW
+    Object.assign(useCanvasStore(), { rootGraphId: FIRST_WORKFLOW })
   })
 
   it('follows layout changes when the workflow changes', async () => {
     const { container } = render(NodeLayoutHost)
     expect(container.textContent).toBe('100')
 
-    state.canvasStore!.rootGraphId = SECOND_WORKFLOW
+    Object.assign(useCanvasStore(), { rootGraphId: SECOND_WORKFLOW })
     await nextTick()
     expect(container.textContent).toBe('200')
 
@@ -76,5 +73,33 @@ describe('useNodeLayout', () => {
     })
     await nextTick()
     expect(container.textContent).toBe('300')
+  })
+
+  it('presents the latest position only when the canvas draws it', async () => {
+    stubCanvasGetContext()
+    const canvas = new LGraphCanvas(
+      createTestCanvasElement({
+        ctx: createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+      }),
+      new LGraph(),
+      { skip_render: true, skip_events: true }
+    )
+    useCanvasStore().canvas = canvas
+    const { container } = render(NodeLayoutHost)
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: FIRST_WORKFLOW,
+      nodeId: NODE,
+      position: { x: 137, y: 59 },
+      timestamp: 2,
+      source: LayoutSource.Vue
+    })
+    await nextTick()
+    expect(container.textContent).toBe('100')
+
+    canvas.draw()
+    await nextTick()
+    expect(container.textContent).toBe('137')
   })
 })
