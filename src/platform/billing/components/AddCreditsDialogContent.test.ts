@@ -182,12 +182,13 @@ function switchWorkspaceInThisTab() {
   const switching = workspaces
     .switchWorkspace('ws-other')
     .catch((error: unknown) => error)
-  expect(workspaces.identityGeneration).toBe(identity)
-  expect(workspaces.workspaceTransitionGeneration).toBe(transition + 1)
-  return async function releaseSwitch() {
+  expect.soft(workspaces.identityGeneration).toBe(identity)
+  expect.soft(workspaces.workspaceTransitionGeneration).toBe(transition + 1)
+  async function releaseSwitch() {
     closeList(listClosed)
     expect(await switching).toBe(listClosed)
   }
+  return releaseSwitch
 }
 
 function checkbox() {
