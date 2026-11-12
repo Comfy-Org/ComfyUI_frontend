@@ -65,7 +65,47 @@ export const ADD_CREDITS_COPY = {
   'blocked.title': "Checkout didn't open",
   'blocked.body':
     'Your browser blocked the new tab. Open checkout to finish paying.',
-  'blocked.action': 'Open checkout'
+  'blocked.action': 'Open checkout',
+  'autoTopUpOffer.body':
+    'Buy credits automatically when you run low, so workflows and API calls keep running.',
+  'autoTopUpOffer.setUp': 'Set up',
+  'autoTopUpOffer.notNow': 'Not now',
+  'autoTopUp.label': 'Turn on auto top-up',
+  'autoTopUp.body':
+    'Buy credits automatically when you run low, so workflows keep running.',
+  'autoTopUp.threshold': 'When credits drop below',
+  'autoTopUp.thresholdHint': 'Counts plan credits and credits you’ve bought.',
+  'autoTopUp.target': 'Top up to',
+  'autoTopUp.targetHint': '{target} credits. Each top-up is at least {amount}.',
+  'autoTopUp.limit': 'Monthly limit',
+  'autoTopUp.limitOff':
+    'Up to {max} a month, the maximum. Turn on to set a lower limit.',
+  'autoTopUp.limitHint': 'Most you can set here: {max} a month.',
+  'autoTopUp.consentNoCard':
+    'Top-ups are charged to the card you pay with at checkout, up to {max} a month. Turn this off anytime in {billing}.',
+  'autoTopUp.consentDefaultCard':
+    'Top-ups are charged to your default card, {card}, up to {max} a month. Turn this off anytime in {billing}.',
+  'autoTopUp.card': '{brand} ···· {last4}',
+  'autoTopUp.billing': 'Billing',
+  'autoTopUp.invalid': 'Enter a valid value.',
+  'autoTopUp.fieldError.notWhole': 'Enter a whole number of credits.',
+  'autoTopUp.fieldError.belowMinimum': 'Must be at least 1 credit.',
+  'autoTopUp.fieldError.belowTarget':
+    'Must be at least {minimum} credits, about {usd} above your threshold.',
+  'autoTopUp.fieldError.aboveTarget':
+    'Can’t be more than {max} credits (about {usd}).',
+  'autoTopUp.fieldError.belowTopUp':
+    'Can’t cover one top-up. Set at least {amount}.',
+  'autoTopUp.isOn': 'Auto top-up is on.',
+  'autoTopUp.manage': 'Manage',
+  'autoTopUpOn.title': 'Auto top-up is on',
+  'autoTopUpOn.summary': 'Below {threshold} credits, tops up to {target}.',
+  'autoTopUpOn.limit': 'Up to {limit} a month.',
+  'autoTopUpOn.noLimit': 'No monthly limit.',
+  'autoTopUpOn.done': 'Done',
+  'autoTopUpFailed.title': "Auto top-up didn't turn on",
+  'autoTopUpFailed.body':
+    'Your credits were added. Set up auto top-up in Billing to try again.'
 } as const satisfies Record<string, string>
 
 export type AddCreditsCopyKey = keyof typeof ADD_CREDITS_COPY

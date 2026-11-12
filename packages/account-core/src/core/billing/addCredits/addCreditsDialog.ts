@@ -4,6 +4,7 @@ import type {
   AddCreditsBounds
 } from './addCreditsAmount'
 import { checkAddCreditsAmount } from './addCreditsAmount'
+import type { AutoTopUpActivation } from './addCreditsAutoTopUp'
 import type { AddCreditsRefusal } from './addCreditsRefusal'
 
 /**
@@ -36,7 +37,17 @@ export type AddCreditsState =
       readonly amountCents: number
       readonly checkoutUrl: string
     }
+  | { readonly step: 'auto_top_up_offer'; readonly setupUrl: string }
+  | {
+      readonly step: 'auto_top_up_on'
+      readonly settings: AutoTopUpActivation
+    }
+  | { readonly step: 'auto_top_up_failed'; readonly setupUrl?: string }
   | { readonly step: 'landed' }
+
+export type AutoTopUpActivationOutcome =
+  | { readonly status: 'on'; readonly settings: AutoTopUpActivation }
+  | { readonly status: 'failed' }
 
 export type AddCreditsEvent =
   | { readonly type: 'preset_picked'; readonly cents: number }
@@ -50,7 +61,12 @@ export type AddCreditsEvent =
   | { readonly type: 'checkout_refused'; readonly refusal: AddCreditsRefusal }
   | { readonly type: 'checkout_abandoned' }
   | { readonly type: 'blocked_link_followed' }
-  | { readonly type: 'payment_landed' }
+  | {
+      readonly type: 'payment_landed'
+      /** Platform's Turn on auto top-up link, when the served facts offer it. */
+      readonly autoTopUpSetupUrl?: string
+      readonly activation?: AutoTopUpActivationOutcome
+    }
 
 export function startAddCredits(amount: AddCreditsAmount): AddCreditsState {
   return { step: 'amount', amount }
@@ -81,6 +97,29 @@ function backToOrigin(
         ...withRefusal
       }
     : { step: 'amount', amount: state.amount, ...withRefusal }
+}
+
+const LANDABLE_STEPS: ReadonlySet<AddCreditsState['step']> = new Set([
+  'opening',
+  'checkout_opened',
+  'checkout_blocked'
+])
+
+function landedState({
+  activation,
+  autoTopUpSetupUrl
+}: EventOf<'payment_landed'>): AddCreditsState {
+  if (activation?.status === 'on') {
+    return { step: 'auto_top_up_on', settings: activation.settings }
+  }
+  if (activation?.status === 'failed') {
+    return autoTopUpSetupUrl === undefined
+      ? { step: 'auto_top_up_failed' }
+      : { step: 'auto_top_up_failed', setupUrl: autoTopUpSetupUrl }
+  }
+  return autoTopUpSetupUrl === undefined
+    ? { step: 'landed' }
+    : { step: 'auto_top_up_offer', setupUrl: autoTopUpSetupUrl }
 }
 
 const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
@@ -127,10 +166,8 @@ const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
             amountCents: state.amountCents
           }
         : state,
-    payment_landed: (state) =>
-      state.step === 'amount' || state.step === 'landed'
-        ? state
-        : { step: 'landed' }
+    payment_landed: (state, event) =>
+      LANDABLE_STEPS.has(state.step) ? landedState(event) : state
   }
 
 export function reduceAddCredits(

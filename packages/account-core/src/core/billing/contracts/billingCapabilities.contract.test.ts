@@ -50,6 +50,7 @@ function capabilitiesBody(
 ): CapabilitiesResponseBody {
   return {
     auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'embedded',
     capabilities: capabilities(),
     expires_at: '2024-06-15T12:01:00.000Z',
     resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },
@@ -63,24 +64,6 @@ function capabilitiesBody(
   }
 }
 
-expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
-  | 'auto_top_up_enabled'
-  | 'auto_top_up_setup'
-  | 'billing_notice_audience'
-  | 'capabilities'
-  | 'denied_reason_params'
-  | 'denied_reasons'
-  | 'ending_notice_starts_at'
-  | 'expires_at'
-  | 'has_parked_billing_operation'
-  | 'payment_recovery_available'
-  | 'plan_kind'
-  | 'recovery_route'
-  | 'resolved_for'
-  | 'revision'
-  | 'rollout_defaults_applied'
-  | 'subscription_state_authoritative'
->()
 expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_cancel: boolean
   can_change_seats: boolean

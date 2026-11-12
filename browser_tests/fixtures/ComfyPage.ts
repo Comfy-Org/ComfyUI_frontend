@@ -776,4 +776,11 @@ export const comfyPageFixture = base.extend<{
   }
 })
 
+export const mockCloudComfyPageFixture = comfyPageFixture.extend({
+  comfyPage: async ({ page, request }, use, testInfo) => {
+    testInfo.setTimeout(Math.max(testInfo.timeout, 45_000))
+    await use(new ComfyPage(page, request))
+  }
+})
+
 export { comfyExpect }

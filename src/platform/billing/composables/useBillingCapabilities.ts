@@ -219,6 +219,12 @@ function useBillingCapabilitiesInternal() {
   const autoTopUpSetup = computed(
     () => resolvedResponse.value?.auto_top_up_setup ?? null
   )
+  const autoTopUpMemberView = computed(() =>
+    receiveServerFact(
+      'auto_top_up_member_view',
+      resolvedResponse.value?.auto_top_up_member_view ?? null
+    )
+  )
   const canRunWorkflows = computed(
     () => capabilities.value?.can_run_workflows ?? false
   )
@@ -605,6 +611,7 @@ function useBillingCapabilitiesInternal() {
     canViewAutoTopUpMemberNotice,
     autoTopUpEnabled,
     autoTopUpSetup,
+    autoTopUpMemberView,
     canRunWorkflows,
     planKind,
     paymentRecoveryAvailable,
