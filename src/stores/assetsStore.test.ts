@@ -224,7 +224,7 @@ describe('assetsStore - OSS history pagination', () => {
       await store.outputAssets.invalidate()
 
       expect(toValue(store.outputAssets.items)).toHaveLength(200)
-      expect(console.error).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
     })
   })
 })
