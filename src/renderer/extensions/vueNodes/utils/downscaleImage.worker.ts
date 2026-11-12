@@ -2,17 +2,7 @@ import type {
   DownscaleRequest,
   DownscaleResponse
 } from './downscaleImageMessages'
-
-async function isAnimated(blob: Blob): Promise<boolean> {
-  if (typeof ImageDecoder === 'undefined') return blob.type === 'image/gif'
-  const decoder = new ImageDecoder({ data: blob.stream(), type: blob.type })
-  try {
-    await decoder.tracks.ready
-    return decoder.tracks.selectedTrack?.animated ?? false
-  } finally {
-    decoder.close()
-  }
-}
+import { isAnimatedImage } from './imageAnimation'
 
 async function downscale({
   source,
@@ -25,7 +15,8 @@ async function downscale({
   const originalSize = { width: full.width, height: full.height }
   try {
     const scale = maxEdge / Math.max(full.width, full.height)
-    if (scale >= 1 || (await isAnimated(blob))) return { originalSize }
+    if (scale >= 1 || isAnimatedImage(new Uint8Array(await blob.arrayBuffer())))
+      return { originalSize }
 
     const canvas = new OffscreenCanvas(
       Math.round(full.width * scale),

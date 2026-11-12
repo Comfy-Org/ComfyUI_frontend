@@ -1,6 +1,8 @@
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -57,6 +59,7 @@ async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
  */
 export function useImageMenuOptions() {
   const { t } = useI18n()
+  const toast = useToast()
   const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 
   const openMaskEditor = () => {
@@ -102,7 +105,11 @@ export function useImageMenuOptions() {
         new ClipboardItem({ 'image/png': blob })
       ])
     } catch (error) {
-      console.error('Failed to copy image to clipboard:', error)
+      toast.warning(
+        t('toastMessages.errorCopyImage', {
+          error: getErrorMessage(error) ?? t('g.unknownError')
+        })
+      )
     }
   }
 
