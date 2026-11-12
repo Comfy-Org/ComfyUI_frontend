@@ -157,6 +157,7 @@ describe('useBillingCapabilities workspace scope mismatch', () => {
   ): BillingCapabilitiesResponse {
     return {
       auto_top_up_enabled: false,
+      billing_web_checkout_ui: 'embedded',
       resolved_for: {
         user_id: 'canonical-user-1',
         workspace_id: resolvedWorkspaceId
