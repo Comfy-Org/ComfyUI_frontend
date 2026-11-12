@@ -1,18 +1,10 @@
-/**
- * Builds the published API's type surface as a single `.d.ts`.
- *
- * Checked in at `docs/node-api/comfy-api.d.ts` and dropped into every working
- * copy as `v2/comfy-api.d.ts`, so an agent reads the contract it is coding
- * against instead of a prose list of capability names.
- * The prose list drifted — the doc said eleven capabilities while the code had
- * eighteen, and twelve files were punted against API that already existed.
- * Types cannot drift: they are the thing being described.
- */
 import { readFileSync, readdirSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath, URL } from 'node:url'
 import ts from 'typescript'
+import { format } from 'oxfmt'
+import formatConfig from '../../.oxfmtrc.json' with { type: 'json' }
 
 import { reachableDeclarationNames } from './gen_api_surface.mjs'
 
@@ -29,6 +21,29 @@ export function declarations(source) {
     true,
     ts.ScriptKind.TS
   )
+  const tuples = new Map()
+  for (const statement of sourceFile.statements) {
+    if (!ts.isVariableStatement(statement)) continue
+    for (const declaration of statement.declarationList.declarations) {
+      const value = declaration.initializer
+      if (
+        !ts.isIdentifier(declaration.name) ||
+        !value ||
+        !ts.isAsExpression(value) ||
+        value.type.getText(sourceFile) !== 'const' ||
+        !ts.isArrayLiteralExpression(value.expression) ||
+        !value.expression.elements.length ||
+        !value.expression.elements.every(ts.isStringLiteral)
+      )
+        continue
+      tuples.set(
+        declaration.name.text,
+        value.expression.elements
+          .map((item) => item.getText(sourceFile))
+          .join(' | ')
+      )
+    }
+  }
 
   return sourceFile.statements.flatMap((statement) => {
     const kind = ts.isInterfaceDeclaration(statement)
@@ -40,25 +55,44 @@ export function declarations(source) {
       (modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword
     )
     if (!kind || !exported) return []
+    let text = statement.getFullText(sourceFile)
+    if (
+      ts.isTypeAliasDeclaration(statement) &&
+      ts.isIndexedAccessTypeNode(statement.type)
+    ) {
+      const type = statement.type
+      const object = ts.isParenthesizedTypeNode(type.objectType)
+        ? type.objectType.type
+        : type.objectType
+      if (
+        type.indexType.kind === ts.SyntaxKind.NumberKeyword &&
+        ts.isTypeQueryNode(object) &&
+        ts.isIdentifier(object.exprName)
+      ) {
+        const union = tuples.get(object.exprName.text)
+        if (union) {
+          const start = type.getStart(sourceFile) - statement.getFullStart()
+          const end = type.end - statement.getFullStart()
+          text = text.slice(0, start) + union + text.slice(end)
+        }
+      }
+    }
 
     return [
       {
         name: statement.name.text,
         kind,
-        text: statement.getFullText(sourceFile).trim()
+        text: text.trim()
       }
     ]
   })
 }
 
-export function buildApiDts(directory = sourceDirectory()) {
+export async function buildApiDts(directory = sourceDirectory()) {
   const files = readdirSync(directory)
     .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
     .sort()
 
-  // Only what a pack can reach from `Comfy`. Scraping every exported
-  // declaration published host plumbing — PropSpec, HandleSpec, HandleToken,
-  // ResolveOptions — and the reference then documented their private fields.
   const published = reachableDeclarationNames(directory)
   const sections = []
   for (const file of files) {
@@ -66,40 +100,25 @@ export function buildApiDts(directory = sourceDirectory()) {
       readFileSync(join(directory, file), 'utf8')
     ).filter((d) => published.has(d.name))
     if (!found.length) continue
-    sections.push(
-      `// ─── ${file} ${'─'.repeat(Math.max(0, 60 - file.length))}\n\n` +
-        // Emitted without `export`, which keeps the contract a global script
-        // rather than a module. A module cannot host an ambient declaration
-        // for '/comfy/api/v2.js' — there the same block means augmentation,
-        // and augmenting a module that has no other declaration is an error,
-        // so the specifier packs actually import stayed untyped.
-        found
-          .map((d) => d.text.replace(/\bexport (interface|type) /, '$1 '))
-          .join('\n\n')
-    )
+    sections.push(found.map((d) => d.text).join('\n\n'))
   }
 
-  return (
-    `/**\n` +
-    ` * The published ComfyUI custom-node API — the complete surface.\n` +
-    ` *\n` +
-    ` * Generated from src/platform/nodeApi. If a member is not here it does not\n` +
-    ` * exist: do not call it, and punt as api-gap naming what is missing.\n` +
-    ` * Reached from a converted pack as:\n` +
-    ` *\n` +
-    ` *   import { comfy } from '/comfy/api/v2.js'\n` +
-    ` */\n\n` +
-    sections.join('\n\n') +
-    // The types above describe the surface but nothing bound them to the
-    // specifier packs are told to import, so `comfy` arrived untyped and the
-    // contract could not be checked at the one place a pack touches it.
-    `\n\n// ─── the published entry point ${'─'.repeat(31)}\n\n` +
-    // Wildcard because an ambient declaration may not name a rooted path, and
-    // '/comfy/api/v2.js' is one. The pattern still matches only that specifier.
+  const source =
+    `/** Generated from src/platform/nodeApi; import from '/comfy/api/v2.js'. */\n` +
     `declare module '*/comfy/api/v2.js' {\n` +
+    sections
+      .join('\n\n')
+      .split('\n')
+      .map((line) => (line ? `  ${line}` : ''))
+      .join('\n') +
+    `\n\n` +
     `  export const comfy: Comfy\n` +
     `}\n`
-  )
+  const result = await format('comfy-api.d.ts', source, formatConfig)
+  if (result.errors.length) {
+    throw new Error(result.errors.map((error) => error.message).join('\n'))
+  }
+  return result.code
 }
 
 const entryPath = process.argv[1]
@@ -108,5 +127,5 @@ if (
   realpathSync(fileURLToPath(import.meta.url)) ===
     realpathSync(resolve(entryPath))
 ) {
-  process.stdout.write(buildApiDts())
+  process.stdout.write(await buildApiDts())
 }

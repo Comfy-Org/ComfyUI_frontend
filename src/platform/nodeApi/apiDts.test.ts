@@ -5,20 +5,25 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
-  symlinkSync
+  symlinkSync,
+  writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { resolve } from 'node:path'
 
 import ts from 'typescript'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import {
   buildApiDts,
   declarations
 } from '../../../scripts/node-api/gen_api_dts.mjs'
 
-function contractDiagnostics(source: string, pack?: string): string[] {
+function contractDiagnostics(
+  source: string,
+  pack?: string,
+  globals?: string
+): string[] {
   const contractPath = '/comfy-api.d.ts'
   const packPath = '/pack.ts'
   const options: ts.CompilerOptions = {
@@ -37,6 +42,7 @@ function contractDiagnostics(source: string, pack?: string): string[] {
 
   const virtual = new Map([[contractPath, source]])
   if (pack !== undefined) virtual.set(packPath, pack)
+  if (globals !== undefined) virtual.set('/consumer-globals.d.ts', globals)
 
   host.fileExists = (fileName) => virtual.has(fileName) || fileExists(fileName)
   host.readFile = (fileName) => virtual.get(fileName) ?? readFile(fileName)
@@ -55,11 +61,11 @@ function contractDiagnostics(source: string, pack?: string): string[] {
 }
 
 describe('generated custom-node API contract', () => {
-  it('matches the checked-in machine-readable contract', () => {
+  it('matches the checked-in machine-readable contract', async () => {
     const directory = resolve(process.cwd(), 'src/platform/nodeApi')
     const checkedIn = readFileSync('docs/node-api/comfy-api.d.ts', 'utf8')
 
-    expect(checkedIn).toBe(buildApiDts(directory))
+    expect(checkedIn).toBe(await buildApiDts(directory))
   })
 
   it('includes only exported type declarations and their own documentation', () => {
@@ -92,30 +98,137 @@ export function mutate(): void {}
     expect(extracted[1].text).toContain('/** Public mode. */')
   })
 
-  it('emits a self-contained TypeScript contract', { timeout: 15_000 }, () => {
-    const directory = resolve(process.cwd(), 'src/platform/nodeApi')
-    expect(contractDiagnostics(buildApiDts(directory))).toEqual([])
-  })
-
-  it('publishes nothing a pack cannot reach from Comfy', () => {
-    // Host plumbing that happened to be exported was scraped into the
-    // contract, and the reference then documented its private fields.
-    const directory = resolve(process.cwd(), 'src/platform/nodeApi')
-    const contract = buildApiDts(directory)
-
-    for (const name of [
-      'PropSpec',
-      'HandleSpec',
-      'HandleToken',
-      'ResolveOptions'
-    ]) {
-      expect(contract).not.toMatch(new RegExp(`\\b${name}\\b`))
+  it(
+    'emits a self-contained TypeScript contract',
+    { timeout: 15_000 },
+    async () => {
+      const directory = resolve(process.cwd(), 'src/platform/nodeApi')
+      expect(contractDiagnostics(await buildApiDts(directory))).toEqual([])
     }
+  )
+
+  it(
+    'keeps API types separate from consumer globals',
+    { timeout: 15_000 },
+    async () => {
+      const directory = resolve(process.cwd(), 'src/platform/nodeApi')
+      const pack = `
+import { comfy } from '/comfy/api/v2.js'
+
+comfy.graph.nodes()[0]?.setPosition({ x: 1, y: 2 })
+const unrelatedPoint: Point = { z: 3 }
+export const height = unrelatedPoint.z
+`
+
+      expect(
+        contractDiagnostics(
+          await buildApiDts(directory),
+          pack,
+          'interface Point { z: number }'
+        )
+      ).toEqual([])
+    }
+  )
+
+  it(
+    'exports named types from the API module',
+    { timeout: 15_000 },
+    async () => {
+      const directory = resolve(process.cwd(), 'src/platform/nodeApi')
+      const pack = `
+import { comfy, type Point } from '/comfy/api/v2.js'
+
+const position: Point = { x: 1, y: 2 }
+comfy.graph.nodes()[0]?.setPosition(position)
+`
+
+      expect(contractDiagnostics(await buildApiDts(directory), pack)).toEqual(
+        []
+      )
+    }
+  )
+
+  it(
+    'expands private tuple-backed public types',
+    { timeout: 15_000 },
+    async () => {
+      const directory = mkdtempSync(resolve(tmpdir(), 'node-api-tuples-'))
+      onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
+      writeFileSync(
+        resolve(directory, 'api.ts'),
+        `
+const modes = ['disabled', 'instant'] as const
+export type Mode = (typeof modes)[number]
+export interface Comfy { setMode(mode: Mode): void }
+`
+      )
+      const contract = await buildApiDts(directory)
+      const pack = `
+import { comfy } from '/comfy/api/v2.js'
+comfy.setMode('instant')
+comfy.setMode('unknown')
+`
+
+      expect(contractDiagnostics(contract, pack)).toEqual([
+        expect.stringContaining('"unknown"')
+      ])
+      expect(contract).not.toMatch(/\bmodes\b/)
+    }
+  )
+
+  it(
+    'types the lifecycle conversion recipes',
+    { timeout: 15_000 },
+    async () => {
+      const directory = resolve(process.cwd(), 'src/platform/nodeApi')
+      const skill = readFileSync(
+        '.claude/skills/converting-custom-nodes/SKILL.md',
+        'utf8'
+      )
+      const recipes = skill
+        .split('\n')
+        .filter((line) =>
+          /^\| `nodeType\.prototype\.on(?:NodeCreated|Executed|Configure|Removed) =/.test(
+            line
+          )
+        )
+        .map((line) =>
+          line
+            .split('|')[2]
+            .trim()
+            .replace(/^`|`$/g, '')
+            .replace('...', 'node.getTitle()')
+        )
+      expect(recipes).toHaveLength(4)
+      const pack = `
+import { comfy } from '/comfy/api/v2.js'
+
+const defs = comfy.defs
+const sel = 'PreviewImage'
+const node = comfy.graph.nodes()[0]!
+const result = { text: [], images: [], raw: {} }
+const data = {}
+defs.extend(sel, (b) => {
+  ${recipes.join('\n')}
+})
+`
+
+      expect(contractDiagnostics(await buildApiDts(directory), pack)).toEqual(
+        []
+      )
+    }
+  )
+
+  it('publishes nothing a pack cannot reach from Comfy', async () => {
+    const directory = resolve(process.cwd(), 'src/platform/nodeApi')
+    const contract = await buildApiDts(directory)
+
+    expect(contract).not.toMatch(
+      /\b(?:PropSpec|HandleSpec|HandleToken|ResolveOptions)\b/
+    )
   })
 
-  it('rejects reassigning a root member', { timeout: 15_000 }, () => {
-    // The runtime freezes the root, so a contract that accepted this would be
-    // typing an assignment that throws.
+  it('rejects reassigning a root member', { timeout: 15_000 }, async () => {
     const directory = resolve(process.cwd(), 'src/platform/nodeApi')
     const pack = `
 import { comfy } from '/comfy/api/v2.js'
@@ -123,7 +236,7 @@ import { comfy } from '/comfy/api/v2.js'
 comfy.queue = comfy.queue
 `
 
-    expect(contractDiagnostics(buildApiDts(directory), pack)).toEqual([
+    expect(contractDiagnostics(await buildApiDts(directory), pack)).toEqual([
       expect.stringContaining('read-only')
     ])
   })
@@ -131,7 +244,7 @@ comfy.queue = comfy.queue
   it(
     'types the import the documentation tells packs to write',
     { timeout: 15_000 },
-    () => {
+    async () => {
       const directory = resolve(process.cwd(), 'src/platform/nodeApi')
       const pack = `
 import { comfy } from '/comfy/api/v2.js'
@@ -140,7 +253,7 @@ export const title: string | undefined = comfy.graph.nodes()[0]?.getTitle()
 export const missing = comfy.graph.noSuchMember()
 `
 
-      expect(contractDiagnostics(buildApiDts(directory), pack)).toEqual([
+      expect(contractDiagnostics(await buildApiDts(directory), pack)).toEqual([
         expect.stringContaining('noSuchMember')
       ])
     }
@@ -151,6 +264,7 @@ export const missing = comfy.graph.noSuchMember()
     try {
       mkdirSync(resolve(checkout, 'scripts'), { recursive: true })
       mkdirSync(resolve(checkout, 'src/platform'), { recursive: true })
+      cpSync('.oxfmtrc.json', resolve(checkout, '.oxfmtrc.json'))
       cpSync('scripts/node-api', resolve(checkout, 'scripts/node-api'), {
         recursive: true
       })
@@ -160,6 +274,17 @@ export const missing = comfy.graph.noSuchMember()
         { recursive: true }
       )
       symlinkSync(resolve('node_modules'), resolve(checkout, 'node_modules'))
+      const surfacePath = resolve(
+        checkout,
+        'src/platform/nodeApi/apiSurface.ts'
+      )
+      writeFileSync(
+        surfacePath,
+        readFileSync(surfacePath, 'utf8').replace(
+          "'onPromptSerialize'",
+          "'staleMember'"
+        )
+      )
 
       const declaration = execFileSync(
         process.execPath,
@@ -171,12 +296,9 @@ export const missing = comfy.graph.noSuchMember()
       ])
 
       expect(declaration).toContain('interface Comfy')
-      expect(
-        readFileSync(
-          resolve(checkout, 'src/platform/nodeApi/apiSurface.ts'),
-          'utf8'
-        )
-      ).toContain("'onPromptSerialize'")
+      const surface = readFileSync(surfacePath, 'utf8')
+      expect(surface).toContain("'onPromptSerialize'")
+      expect(surface).not.toContain("'staleMember'")
     } finally {
       rmSync(checkout, { recursive: true, force: true })
     }
