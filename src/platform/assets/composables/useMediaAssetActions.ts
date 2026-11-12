@@ -583,7 +583,7 @@ export function useMediaAssetActions() {
   /**
    * Show confirmation dialog and delete asset(s) if confirmed
    * @param assets Single asset or array of assets to delete
-   * @returns true if user confirmed and deletion was attempted, false if cancelled
+   * @returns true if at least one item was deleted, false otherwise
    */
   async function deleteAssets(input: AssetItem[] | AssetItem) {
     const assets = Array.isArray(input) ? input : [input]
@@ -686,7 +686,8 @@ export function useMediaAssetActions() {
 
     let deletedAssetCount = 0
     async function deleteAsset(operation: AssetDeletion) {
-      await assetService.deleteAsset(operation.id)
+      const deleted = await assetService.deleteAsset(operation.id)
+      if (!deleted) return false
       deletedAssetCount++
       for (const variant of operation.variants) deletedVariants.add(variant)
       for (const tag of operation.tags ?? []) {
@@ -694,6 +695,7 @@ export function useMediaAssetActions() {
           invalidatedModelTags.add(tag)
       }
       void assetsStore.inputAssets.invalidate([operation.id])
+      return true
     }
     let deletedJobCount = 0
     async function deleteJob(operation: JobDeletion) {
@@ -714,8 +716,9 @@ export function useMediaAssetActions() {
         }
 
         try {
-          if (operation.kind === 'asset') await deleteAsset(operation)
-          else await deleteJob(operation)
+          if (operation.kind === 'asset') {
+            if (!(await deleteAsset(operation))) return [false]
+          } else await deleteJob(operation)
         } catch (err) {
           return [err]
         }
@@ -804,7 +807,7 @@ export function useMediaAssetActions() {
       description: resultMessages.join('\n'),
       duration: outcome === 'success' ? 2000 : 5000
     })
-    return true
+    return deletedJobCount > 0 || deletedAssetCount > 0
   }
 
   return {

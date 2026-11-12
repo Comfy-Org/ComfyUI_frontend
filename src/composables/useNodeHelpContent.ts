@@ -18,13 +18,13 @@ import { getNodeHelpBaseUrl } from '@/workbench/utils/nodeHelpUtil'
 export function useNodeHelpContent(
   nodeRef: MaybeRefOrGetter<ComfyNodeDefImpl | null>
 ) {
-  const { locale } = useI18n()
+  const { locale, t } = useI18n()
 
   const helpContent = ref<string>('')
   const isLoading = ref<boolean>(false)
   const error = ref<string | null>(null)
 
-  let currentRequest: Promise<string> | null = null
+  let currentRequest: Promise<string | undefined> | null = null
 
   const baseUrl = computed(() => {
     const node = toValue(nodeRef)
@@ -36,38 +36,49 @@ export function useNodeHelpContent(
     return renderMarkdownToHtml(helpContent.value, baseUrl.value)
   })
 
-  // Watch for node changes and fetch help content
-  watch(
-    () => toValue(nodeRef),
-    async (node) => {
-      helpContent.value = ''
-      error.value = null
+  function applyHelpContent(
+    node: ComfyNodeDefImpl,
+    content: string | undefined
+  ) {
+    helpContent.value = content ?? node.description
+    error.value = content === undefined ? t('nodeHelpPage.notFound') : null
+  }
 
-      if (node) {
-        isLoading.value = true
-        const request = (currentRequest = nodeHelpService.fetchNodeHelp(
-          node,
-          locale.value || 'en'
-        ))
+  function applyHelpError(node: ComfyNodeDefImpl, cause: unknown) {
+    error.value = cause instanceof Error ? cause.message : String(cause)
+    helpContent.value = node.description
+  }
 
-        try {
-          const content = await request
-          if (currentRequest !== request) return
-          helpContent.value = content
-        } catch (e: unknown) {
-          if (currentRequest !== request) return
-          error.value = e instanceof Error ? e.message : String(e)
-          helpContent.value = node.description || ''
-        } finally {
-          if (currentRequest === request) {
-            currentRequest = null
-            isLoading.value = false
-          }
-        }
+  async function loadNodeHelp(node: ComfyNodeDefImpl | null) {
+    helpContent.value = ''
+    error.value = null
+
+    if (!node) {
+      currentRequest = null
+      isLoading.value = false
+      return
+    }
+
+    isLoading.value = true
+    const request = (currentRequest = nodeHelpService.fetchNodeHelp(
+      node,
+      locale.value || 'en'
+    ))
+
+    try {
+      const content = await request
+      if (currentRequest === request) applyHelpContent(node, content)
+    } catch (cause: unknown) {
+      if (currentRequest === request) applyHelpError(node, cause)
+    } finally {
+      if (currentRequest === request) {
+        currentRequest = null
+        isLoading.value = false
       }
-    },
-    { immediate: true }
-  )
+    }
+  }
+
+  watch(() => toValue(nodeRef), loadNodeHelp, { immediate: true })
 
   return {
     helpContent,

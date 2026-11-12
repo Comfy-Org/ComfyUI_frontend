@@ -14,6 +14,7 @@ import type {
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useApp } from '@/scripts/appInstance'
 import { uploadFile } from '@/scripts/utils'
@@ -123,7 +124,9 @@ export const useThemeService = () => {
   async function setActiveTheme(id: string) {
     const preset = themeStore.presetsLookup[id]
     if (!preset) {
-      toastErrorHandler(new Error(`Color palette ${id} not found`))
+      toastErrorHandler(
+        new Error(t('palette.notFound', { colorPaletteId: id }))
+      )
       return
     }
     const theme = resolveTheme(preset)
@@ -152,7 +155,9 @@ export const useThemeService = () => {
   function exportThemePreset(id: string) {
     const preset = themeStore.presetsLookup[id]
     if (!preset) {
-      toastErrorHandler(new Error(`Color palette ${id} not found`))
+      toastErrorHandler(
+        new Error(t('palette.notFound', { colorPaletteId: id }))
+      )
       return
     }
     downloadBlob(

@@ -276,7 +276,7 @@
   },
   "src/lib/litegraph/src/LGraph.ts": {
     "comfy/no-new-error-throw": {
-      "count": 9
+      "count": 8
     },
     "comfy/no-positional-boolean-params": {
       "count": 7
@@ -448,7 +448,7 @@
   },
   "src/platform/assets/services/assetService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 21
+      "count": 20
     }
   },
   "src/platform/assets/utils/assetFilterUtils.ts": {
@@ -623,7 +623,7 @@
   },
   "src/platform/keybindings/presetService.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 5
     }
   },
   "src/platform/serverFacts/serverFact.ts": {
@@ -1002,11 +1002,6 @@
       "count": 3
     }
   },
-  "src/services/nodeHelpService.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    }
-  },
   "src/services/nodeOrganizationService.ts": {
     "comfy/no-new-error-throw": {
       "count": 2
@@ -1027,11 +1022,6 @@
       "count": 1
     }
   },
-  "src/stores/nodeBookmarkStore.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
   "src/stores/nodeOutputStore.workflowSwitch.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -1039,7 +1029,7 @@
   },
   "src/stores/subgraphStore.ts": {
     "comfy/no-new-error-throw": {
-      "count": 7
+      "count": 4
     }
   },
   "src/stores/userFileStore.ts": {
