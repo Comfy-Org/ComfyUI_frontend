@@ -16,6 +16,7 @@ const privateImports = [
 const consumer = `
 import type {
   ComfyNodeDef,
+  ComfyNodeApi,
   IBaseWidget,
   ICurveWidget,
   IWidgetLocator,
@@ -41,6 +42,13 @@ export const rect: Rect = [17, -4, ...size]
 export const readOnlyRect: ReadOnlyRect = rect
 export type WindowLGraphBadge = typeof window.LGraphBadge
 export type WindowLiteGraph = typeof window.LiteGraph
+export const publishedApi: ComfyNodeApi | undefined = window.comfy
+export const publishedNode = publishedApi?.graph.node('1')
+export const publishedNodeTitle = publishedNode?.getTitle()
+export type PublishedApi = ComfyNodeApi
+export type PublishedNode = NonNullable<typeof publishedNode>
+export type PublishedNodeTitle = NonNullable<typeof publishedNodeTitle>
+export type PublishedTitleContract = Check<PublishedNodeTitle extends string ? true : false>
 export type ComfyClass = LGraphNodeConstructor['comfyClass']
 export type NodeData = LGraphNodeConstructor['nodeData']
 export type NodeImage = NonNullable<LGraphNode['images']>[number]

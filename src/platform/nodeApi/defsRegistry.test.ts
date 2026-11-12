@@ -1337,7 +1337,7 @@ describe('extend after define', () => {
           mark()
           return { omitInputs: [] }
         }),
-      fire: (node) => projectedPromptInputOmissions('KSampler', String(node.id))
+      fire: (node) => projectedPromptInputOmissions('KSampler', node)
     },
     {
       name: 'onBeforeConnect',
@@ -1362,11 +1362,10 @@ describe('extend after define', () => {
     {
       name: 'onPreview',
       listen: (b, mark) => b.onPreview(mark),
-      fire: (node) =>
-        deliverPreview(String(node.id), 'KSampler', {
-          blob: new Blob(),
-          url: 'blob:x'
-        })
+      fire: (node) => {
+        node.type = 'KSampler'
+        deliverPreview(node, { blob: new Blob(), url: 'blob:x' })
+      }
     },
     {
       name: 'addMenuItem',
@@ -1750,20 +1749,23 @@ describe('preview frames', () => {
     const registry = createDefRegistry()
     const seen: unknown[] = []
 
-    registry
+    const stop = registry
       .forMajor((id) => comfy.graph.node(id)!)
       .extend('KSampler', (b) =>
         b.onPreview((node, frame) => seen.push([node.id, frame.url]))
       )
+    onTestFinished(stop)
     const Generated = nodeClass('KSampler')
     registry.applyTo(Generated, RAW_DEF)
     const node = new Generated()
+    node.type = 'KSampler'
     graph.add(node)
+    const other = new LGraphNode('Other', 'SomethingElse')
+    graph.add(other)
 
     const frame = { blob: new Blob(), url: 'blob:x' }
-    deliverPreview(String(node.id), 'KSampler', frame)
-    // A frame for a type nobody registered must not fan out to everyone.
-    deliverPreview(String(node.id), 'SomethingElse', frame)
+    deliverPreview(node, frame)
+    deliverPreview(other, frame)
 
     expect(seen).toEqual([[String(node.id), 'blob:x']])
   })
@@ -1776,12 +1778,20 @@ describe('preview frames', () => {
     const stop = registry
       .forMajor((id) => comfy.graph.node(id)!)
       .extend('KSampler', (builder) => builder.onPreview(seen))
-    registry.applyTo(nodeClass('KSampler'), RAW_DEF)
+    onTestFinished(stop)
+    const Generated = nodeClass('KSampler')
+    registry.applyTo(Generated, RAW_DEF)
+    const node = new Generated()
+    node.type = 'KSampler'
+    graph.add(node)
+    const frame = { blob: new Blob(), url: 'blob:x' }
+    deliverPreview(node, frame)
+    expect(seen).toHaveBeenCalledOnce()
 
     stop()
-    deliverPreview('1', 'KSampler', { blob: new Blob(), url: 'blob:x' })
+    deliverPreview(node, frame)
 
-    expect(seen).not.toHaveBeenCalled()
+    expect(seen).toHaveBeenCalledOnce()
   })
 })
 
@@ -1873,10 +1883,7 @@ describe('onPromptSerialize', () => {
     source.connect(0, target, 0)
 
     expect(
-      await projectedPromptInputOmissions(
-        'PromptProjectionNode',
-        String(target.id)
-      )
+      await projectedPromptInputOmissions('PromptProjectionNode', target)
     ).toEqual(['text'])
     const before = graph.serialize()
     const savedTarget = before.nodes.find(
@@ -1890,10 +1897,7 @@ describe('onPromptSerialize', () => {
     expect(toggle).toBeDefined()
     toggle!.value = true
     expect(
-      await projectedPromptInputOmissions(
-        'PromptProjectionNode',
-        String(target.id)
-      )
+      await projectedPromptInputOmissions('PromptProjectionNode', target)
     ).toEqual([])
     expect(
       graph
@@ -1913,7 +1917,8 @@ describe('onPromptSerialize', () => {
     api.extend(type, (builder) =>
       builder.onPromptSerialize(() => ({ omitInputs: ['use_input_text'] }))
     )
-    registry.applyTo(nodeClass(type), {
+    const Generated = nodeClass(type)
+    registry.applyTo(Generated, {
       name: type,
       input: {
         required: { use_input_text: ['BOOLEAN', {}] },
@@ -1921,7 +1926,9 @@ describe('onPromptSerialize', () => {
       }
     })
 
-    expect(await projectedPromptInputOmissions(type, '7')).toEqual([
+    const target = new Generated()
+    graph.add(target)
+    expect(await projectedPromptInputOmissions(type, target)).toEqual([
       'text',
       'use_input_text'
     ])
@@ -1935,8 +1942,10 @@ describe('onPromptSerialize', () => {
     ]
     for (const [index, result] of cases.entries()) {
       const type = `InvalidPromptProjectionNode${index}`
-      install(type, () => result)
-      await expect(projectedPromptInputOmissions(type, '9')).rejects.toThrow(
+      const Generated = install(type, () => result)
+      const target = new Generated()
+      graph.add(target)
+      await expect(projectedPromptInputOmissions(type, target)).rejects.toThrow(
         /onPromptSerialize/
       )
     }

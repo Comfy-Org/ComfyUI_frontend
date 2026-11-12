@@ -26,7 +26,7 @@ import {
   createNodeDragEndObserver,
   createNodeMoveObserver
 } from './interaction'
-import type { NodeMoveEvent } from './interaction'
+import type { NodeMoveEvent, NodeMoveTarget } from './interaction'
 import { watch } from 'vue'
 
 import { parseSelectableKey } from '@/core/selection/selectionState'
@@ -474,6 +474,22 @@ function buildMajor(
     return graphId === rootGraph.id ? rootGraph.node(nodeId) : undefined
   }
 
+  function movedNode({
+    rootGraphId,
+    nodeId
+  }: NodeMoveTarget): NodeHandle | undefined {
+    if (rootGraphId !== rootGraph.id) return undefined
+    const visible = graph.node(nodeId)
+    if (visible) return visible
+    const top = rootGraph.node(nodeId)
+    if (top) return top
+    for (const subgraph of graph.subgraphs()) {
+      const node = subgraph.node(nodeId)
+      if (node) return node
+    }
+    return undefined
+  }
+
   function executionNode(id: string): NodeHandle | undefined {
     const root = getGraph()?.rootGraph
     if (!root) return undefined
@@ -523,8 +539,8 @@ function buildMajor(
     backend,
     workflow,
     isInteracting,
-    onNodeMoved: createNodeMoveObserver((id) => graph.node(id)),
-    onNodeDragEnd: createNodeDragEndObserver((id) => graph.node(id)),
+    onNodeMoved: createNodeMoveObserver(movedNode),
+    onNodeDragEnd: createNodeDragEndObserver(movedNode),
     onViewportChanged: createViewportObserver(),
     onSelectionChanged: (listener: (nodes: readonly NodeHandle[]) => void) =>
       watch(
@@ -617,8 +633,7 @@ const defRegistries = new WeakMap<Comfy, ReturnType<typeof createDefRegistry>>()
 /**
  * Applies registered `defs.extend` callbacks to a node class being registered.
  * Called by the app from its legacy `beforeRegisterNodeDef` dispatch.
- *
- * @knipIgnoreUsedByStackedPR litegraphService calls this in the wiring PR
+
  */
 export function applyDefExtensions(
   nodeType: { prototype: object },
@@ -630,13 +645,7 @@ export function applyDefExtensions(
 
 let singleton: Comfy | undefined
 
-/**
- * The app-wide instance. The graph provider is injected by the app layer rather
- * than imported here, so this module stays a leaf: it depends on litegraph
- * types only, never on stores or the app.
- *
- * @knipIgnoreUsedByStackedPR magicPatch/verify builds its instance through this
- */
+/** Returns the shared instance, creating it with this provider if absent. */
 export function useComfyApi(
   getGraph: () => LGraph | null | undefined,
   host?: ComfyApiHost
@@ -649,7 +658,6 @@ export function useComfyApi(
  * Drops the memoised instance, so a suite can build one against a graph it
  * controls. The conversion corpus runs every converted pack this way.
  *
- * @knipIgnoreUsedByStackedPR magicPatch/verify resets between packs
  */
 export function resetComfyApi(): void {
   singleton = undefined
@@ -663,8 +671,7 @@ export function resetComfyApi(): void {
  * `setup()` resolves — which is why packs historically could not touch the app
  * at module scope. Installing here removes that trap: `window.comfy` is usable
  * from the first line of an extension.
- *
- * @knipIgnoreUsedByStackedPR app.ts calls this in the wiring PR
+
  */
 export function installComfyApi(
   getGraph: () => LGraph | null | undefined,

@@ -1,4 +1,5 @@
 import type { ShallowRef } from 'vue'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
@@ -86,6 +87,7 @@ export interface LoadGraphDataOptions {
   skipAssetScans?: boolean
   silentAssetErrors?: boolean
   workflowNavigationId?: number
+  restoreDocumentId?: UUID
   isCurrent?: () => boolean
 }
 

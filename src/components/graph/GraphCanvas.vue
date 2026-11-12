@@ -172,6 +172,7 @@ import { waitForDeploymentPick } from '@/platform/workspace/composables/waitForD
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useOpenDocuments } from '@/platform/workflow/management/openDocuments'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
@@ -192,6 +193,13 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
+import { installComfyApi } from '@/platform/nodeApi/comfyApi'
+import { markAppReady } from '@/platform/nodeApi/appReady'
+import { ComfyApiError } from '@/platform/nodeApi/errors'
+import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
+import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
+import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useThemeService } from '@/platform/theme/themeService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
@@ -591,6 +599,20 @@ onMounted(async () => {
       )
     }
 
+    installNodeMoveBridge()
+    installNodeChangeBridge()
+    provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
+    installComfyApi(() => canvasStore.currentGraph, {
+      documents: useOpenDocuments(),
+      openWorkflow: async (data) => {
+        const result = await comfyApp.loadGraphData(data as ComfyWorkflowJSON)
+        if (result === false || result === undefined) {
+          throw new ComfyApiError('Workflow could not be opened.')
+        }
+      },
+      refreshDefinitions: () => comfyApp.refreshComboInNodes()
+    })
+
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>
       loadExtensions(lateCustomNodeWork.signal)
     )
@@ -615,6 +637,9 @@ onMounted(async () => {
     window.graph = comfyApp.graph
 
     comfyAppReady.value = true
+    await nextTick()
+    if (disposed) return
+    markAppReady()
 
     if (comfyApp.canvas?.graph) {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)

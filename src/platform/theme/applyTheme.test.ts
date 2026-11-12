@@ -1,9 +1,10 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { DEFAULT_DARK_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
 import { resolveTheme } from '@comfyorg/theme-core/resolveTheme'
-import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createComfyApi } from '@/platform/nodeApi/comfyApi'
 
 import { applyTheme } from './applyTheme'
 
@@ -105,6 +106,22 @@ describe('applyTheme', () => {
       LGraphCanvas.link_type_colors.IMAGE,
       canvas.default_connection_color_byType.CUSTOM
     ]).toEqual(['#123456', '', '#123456', '#123456', ''])
+  })
+
+  it('preserves a registered pack color when a theme resets known types', () => {
+    const comfy = createComfyApi(() => new LGraph())
+    onTestFinished(comfy.defs.setTypeColor('PACK_THEME_TYPE', '#c9a'))
+
+    applyTheme(fixtureTheme(), {
+      style: document.createElement('div').style,
+      canvas: fixtureCanvas(),
+      dataTypes: ['IMAGE', 'PACK_THEME_TYPE']
+    })
+
+    expect([
+      LGraphCanvas.link_type_colors.PACK_THEME_TYPE,
+      LGraphCanvas.link_type_colors.IMAGE
+    ]).toEqual(['#c9a', '#123456'])
   })
 
   it('keeps canvas globals unchanged for a style-only target', () => {

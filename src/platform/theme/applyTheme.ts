@@ -6,6 +6,7 @@ import {
 } from '@comfyorg/theme-core/themePresetSchema'
 
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { reapplyPackTypeColors } from '@/platform/nodeApi/defsRegistry'
 
 const THEME_ALIASED_LEGACY_KEYS: ReadonlySet<string> = new Set([
   'fg-color',
@@ -111,6 +112,7 @@ function applyDataTypeColors(theme: Theme, target: ThemeTarget) {
     const reset = Object.fromEntries(types.map((type) => [type, '']))
     Object.assign(target.canvas.default_connection_color_byType, reset, colors)
     Object.assign(LGraphCanvas.link_type_colors, reset, colors)
+    reapplyPackTypeColors()
   }
 }
 

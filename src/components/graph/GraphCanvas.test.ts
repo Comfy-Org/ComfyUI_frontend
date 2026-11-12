@@ -35,6 +35,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
+import { resetComfyApi } from '@/platform/nodeApi/comfyApi'
+import { resetAppReadyForTest } from '@/platform/nodeApi/appReady'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -69,6 +71,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/platform/workspace/deploymentHint'), () => ({
   readDeploymentHint: vi.fn<typeof readDeploymentHint>(() => 'deployment'),
@@ -151,7 +154,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
       },
       ui: { settings: { dispatchChange: vi.fn() } },
       setup: vi.fn(),
-      loadGraphData: vi.fn()
+      loadGraphData: vi.fn<typeof app.loadGraphData>()
     }
   }
 })
@@ -230,21 +233,24 @@ async function mountGraphCanvas(
   stubs: Record<string, unknown> = {},
   errorHandler?: (error: unknown) => void
 ) {
-  // Handed to the component rather than left to the active-Pinia fallback, so
-  // the readiness gates below are set on the instance startup actually reads.
+  const previousComfy = window.comfy
+  resetComfyApi()
+  resetAppReadyForTest()
+  onTestFinished(() => {
+    resetComfyApi()
+    resetAppReadyForTest()
+    if (previousComfy === undefined) delete window.comfy
+    else window.comfy = previousComfy
+  })
   const pinia = getActivePinia()!
   vi.mocked(useReleaseStore().initialize).mockResolvedValue(undefined)
   app.canvas.graph = null
   setRootGraph(undefined)
 
-  // Startup waits on both readiness gates before it reaches the tour hand-off.
   useSettingStore().isReady = true
   useBootstrapStore().isI18nReady = true
 
   render(GraphCanvas, {
-    // Child components are stubbed: this covers the startup sequence, not the
-    // canvas chrome. `shallow` is forwarded verbatim to Vue Test Utils' mount,
-    // which honours it — @testing-library/vue just omits it from its own type.
     shallow: true,
     global: {
       plugins: [
@@ -256,7 +262,6 @@ async function mountGraphCanvas(
     }
   } as RenderOptions<typeof GraphCanvas>)
 
-  // The startup sequence is a chain of awaits; flush until it settles.
   for (let i = 0; i < 50; i++) {
     await nextTick()
     await Promise.resolve()
@@ -301,10 +306,72 @@ describe('GraphCanvas first-run tour wiring', () => {
     mocks.loadSharedWorkflowFromUrlIfPresent.mockResolvedValue(undefined)
   })
 
+  it('lets an extension subscribe to movement while its module loads', async () => {
+    const moduleLoaded = vi.fn()
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      const comfy = window.comfy
+      assert.exists(comfy)
+      const stop = comfy.onNodeMoved(() => {})
+      stop()
+      moduleLoaded()
+    })
+
+    await mountGraphCanvas()
+
+    expect(moduleLoaded).toHaveBeenCalledOnce()
+    expect(loadExtensions).toHaveBeenCalledOnce()
+  })
+
   it('hands the startup outcome to the first-run entry point', async () => {
     await mountGraphCanvas()
 
     expect(mocks.handleStartupOutcome).toHaveBeenCalledWith('url-intent')
+  })
+
+  it('exposes the attached graph when an extension becomes ready', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Ready node')
+    graph.add(node)
+    vi.mocked(app.setup).mockImplementationOnce(async () => {
+      setRootGraph(graph)
+      app.canvas.graph = graph
+    })
+    const observedNodeIds: string[][] = []
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      const comfy = window.comfy
+      assert.exists(comfy)
+      const stop = comfy.onReady(() => {
+        observedNodeIds.push(comfy.graph.nodes().map((entry) => entry.id))
+      })
+      onTestFinished(stop)
+    })
+
+    await mountGraphCanvas()
+
+    expect(observedNodeIds).toEqual([[String(node.id)]])
+  })
+
+  it.for([false, undefined])(
+    'rejects workflow.open when the host reports %s',
+    async (result) => {
+      await mountGraphCanvas()
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(result)
+      const comfy = window.comfy
+      assert.exists(comfy)
+
+      await expect(comfy.workflow.open({})).rejects.toThrow(
+        'Workflow could not be opened.'
+      )
+    }
+  )
+
+  it('resolves workflow.open when the host opens the workflow', async () => {
+    await mountGraphCanvas()
+    vi.mocked(app.loadGraphData).mockResolvedValueOnce(true)
+    const comfy = window.comfy
+    assert.exists(comfy)
+
+    await expect(comfy.workflow.open({})).resolves.toBeUndefined()
   })
 
   it('settles the startup outcome before running the URL action loaders', async () => {

@@ -36,8 +36,6 @@ import type { WidgetTypeDef } from './widgetTypes'
 
 /**
  * The read view of a node definition. Frozen and inert, like every read here.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface NodeDef {
   readonly type: string
@@ -92,8 +90,6 @@ export interface NodeDef {
  * `raw` carries everything else verbatim — ADR-NODE-OUTPUTS-0007's passthrough schema
  * guarantees custom output keys survive, so a pack reading a bespoke key keeps
  * working.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface ExecutionResult {
   readonly images: readonly Readonly<Record<string, unknown>>[]
@@ -117,7 +113,6 @@ export interface PreviewFrame {
   readonly url: string
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   readonly index: number
@@ -142,14 +137,11 @@ export interface ConnectionChangeEvent {
  * Inputs are named from that node type's own backend declaration. The saved
  * workflow is untouched; the prompt builder removes these names only from the
  * executable payload it is assembling now.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface PromptInputProjection {
   readonly omitInputs: readonly string[]
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export type PromptInputProjector = (
   node: NodeHandle
 ) => PromptInputProjection | Promise<PromptInputProjection>
@@ -361,7 +353,6 @@ export interface UnplacedLinkEvent {
   readonly replaceExisting: boolean
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface BeforeConnectEvent {
   readonly side: 'input' | 'output'
   readonly index: number
@@ -373,7 +364,6 @@ export interface BeforeConnectEvent {
 }
 
 /** One entry inside a menu item's submenu. */
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface NodeSubMenuItem {
   readonly label: string
   run(node: NodeHandle): void
@@ -382,8 +372,6 @@ export interface NodeSubMenuItem {
 /**
  * One entry of ComfyUI's node palette: the title bar, the body, and the shade
  * a group of that colour is filled with.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface NodeColor {
   readonly color: string
@@ -391,7 +379,6 @@ export interface NodeColor {
   readonly groupColor: string
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface NodeMenuItem {
   /**
    * A function when the text depends on the node — packs label entries with
@@ -465,8 +452,6 @@ export type DefSelector =
  * `LiteGraph.registerNodeType`, which is OOP entity modelling — the thing ADR
  * 0008 rules out. Here the definition is plain data; the class behind it is an
  * internal detail of this layer, never the pack's.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
  */
 export interface NodeDefinition {
   readonly type: string
@@ -605,7 +590,6 @@ export interface DefRegistry {
   onRefreshed(listener: () => void): Unsubscribe
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface PropertyChangeEvent {
   readonly name: string
   readonly value: unknown
@@ -985,7 +969,7 @@ const frontendResolvers = new Map<string, Resolver>()
 
 type BoundPromptInputProjector = {
   run: PromptInputProjector
-  handleFor: (nodeId: string) => NodeHandle
+  handleForNode: (node: LGraphNode) => NodeHandle
   isActive: () => boolean
 }
 
@@ -1097,27 +1081,21 @@ function addProjectedInputNames(
   }
 }
 
-/**
- * Returns the union of inputs this node's extensions omit from this prompt.
- *
- * Validation lives here, at the authority boundary, rather than in packs or
- * the prompt builder. A malformed projection aborts the build with attribution
- * and never degrades to a broader execution graph.
- */
+/** Returns the validated union of inputs omitted from this node's prompt. */
 export async function projectedPromptInputOmissions(
   nodeType: string,
-  nodeId: string
+  node: LGraphNode
 ): Promise<readonly string[]> {
   const policy = promptInputProjectors.get(nodeType)
   if (!policy) return Object.freeze([])
 
   const omitted = new Set<string>()
   let failure: unknown
-  for (const { run, handleFor, isActive } of policy.projectors) {
+  for (const { run, handleForNode, isActive } of policy.projectors) {
     if (!isActive()) continue
     let value: unknown
     try {
-      value = await run(handleFor(nodeId))
+      value = await run(handleForNode(node))
     } catch (error) {
       reportError(error, {
         errorType: 'node_api_extension_callback_failure',
@@ -1150,15 +1128,9 @@ export function frontendSupplierMap(): ReadonlyMap<string, Supplier> {
   return frontendSuppliers
 }
 
-/**
- * Type name -> its preview listeners.
- *
- * Module level because delivery comes from the app's socket, which knows a node
- * id but not which registry instance registered for it.
- */
 const previewSubscribers = new Map<
   string,
-  (nodeId: string, frame: PreviewFrame) => void
+  (node: LGraphNode, frame: PreviewFrame) => void
 >()
 
 /**
@@ -1208,18 +1180,10 @@ export function offerUnplacedLink(
   return unplacedLinkSubscribers.get(nodeType)?.(nodeId, event) ?? false
 }
 
-/**
- * Hands a preview frame to whichever node type registered for it.
- *
- * Called by the app when the backend emits a preview. The node type is looked
- * up rather than passed, so the app does not need to know which packs care.
- */
-export function deliverPreview(
-  nodeId: string,
-  nodeType: string,
-  frame: PreviewFrame
-): void {
-  previewSubscribers.get(nodeType)?.(nodeId, frame)
+/** Delivers a preview to listeners for the resolved node's type. */
+export function deliverPreview(node: LGraphNode, frame: PreviewFrame): void {
+  if (!node.graph) return
+  previewSubscribers.get(node.type)?.(node, frame)
 }
 
 function rawDefinedNode(definition: NodeDefinition): RawNodeDef {
@@ -1578,7 +1542,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
           onPreview: (run) => previewed.push({ run, ...binding }),
           onSerialize: (run) => serialized.push({ run, ...binding }),
           onPromptSerialize: (run) =>
-            promptSerialized.push({ run, handleFor, isActive }),
+            promptSerialized.push({ run, handleForNode, isActive }),
           onBeforeConnect: (run) => beforeConnect.push({ run, ...binding }),
           onUnplacedLink: (run) => unplacedLink.push({ run, ...binding }),
           addMenuItem: (item) => menuItems.push({ item, ...binding })
@@ -2053,12 +2017,10 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
 
       const installSubscribers = () => {
         if (previewed.length) {
-          previewSubscribers.set(def.type, (nodeId, frame) => {
-            for (const { run, handleFor, isActive } of previewed) {
+          previewSubscribers.set(def.type, (node, frame) => {
+            for (const { run, handleForNode, isActive } of previewed) {
               if (!isActive()) continue
-              const node = extensionValue(handleFor(nodeId))
-              if (!node) continue
-              invoke('onPreview', () => run(node, frame))
+              invoke('onPreview', () => run(handleForNode(node), frame))
             }
           })
         } else {

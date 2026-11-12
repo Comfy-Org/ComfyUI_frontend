@@ -137,6 +137,18 @@ import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplaceme
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import {
+  beginDocument,
+  currentDocumentId,
+  notifyWorkflowLoaded
+} from '@/platform/nodeApi/appReady'
+import {
+  deliverPreview,
+  notifyDefsRefreshed
+} from '@/platform/nodeApi/defsRegistry'
+import { mayRun } from '@/platform/nodeApi/queueGuard'
+import { importWorkflowFile } from '@/platform/nodeApi/workflowImporters'
+import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -248,6 +260,11 @@ export function sanitizeNodeName(string: string) {
   return string.replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
   })
+}
+
+async function finishWorkflowLoad(): Promise<void> {
+  await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+  notifyWorkflowLoaded()
 }
 
 function createNodeOutputsMutationView(
@@ -456,6 +473,7 @@ export class ComfyApp implements IComfyApp {
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
+  private disposeUnplacedLinkBridge?: () => void
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -840,6 +858,10 @@ export class ComfyApp implements IComfyApp {
       )) {
         setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
+      const node = getNodeByExecutionId(this.rootGraph, displayNodeExecutionId)
+      if (node?.type) {
+        deliverPreview(node, Object.freeze({ blob, url: blobUrl }))
+      }
       releaseSharedObjectUrl(blobUrl)
     })
 
@@ -900,7 +922,6 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/sync-workflows', () =>
       useWorkspaceStore().workflow.syncWorkflows()
     )
-    //Doesn't need to block. Blueprints will load async
     void useSubgraphStore().fetchSubgraphs()
 
     this.addProcessKeyHandler()
@@ -909,7 +930,6 @@ export class ComfyApp implements IComfyApp {
 
     const graph = new LGraph()
 
-    // Register the subgraph - adds type wrapper for Litegraph's `createNode` factory
     graph.events.addEventListener('subgraph-created', (e) => {
       try {
         const { subgraph, data } = e.detail
@@ -929,7 +949,8 @@ export class ComfyApp implements IComfyApp {
     const interactionMode = createCanvasInteractionMode()
     this.canvas = new LGraphCanvas(canvasEl, graph, { interactionMode })
     useCommandStore().setInteractionMode(interactionMode)
-    // Make canvas states reactive so we can observe changes on them.
+    this.disposeUnplacedLinkBridge?.()
+    this.disposeUnplacedLinkBridge = installUnplacedLinkBridge(this.canvas)
     this.canvas.state = reactive(this.canvas.state)
 
     this.ctx = canvasEl.getContext('2d')!
@@ -968,13 +989,10 @@ export class ComfyApp implements IComfyApp {
       }
     )
 
-    // Ensure subgraphs are scaled when entering them
     this.canvas.canvas.addEventListener<'litegraph:set-graph'>(
       'litegraph:set-graph',
       (e) => {
         const { newGraph, oldGraph } = e.detail
-        // Only scale when switching between graphs (not during initial setup)
-        // oldGraph is null/undefined during initial setup, so skip scaling then
         if (oldGraph) {
           ensureCorrectLayoutScale(
             newGraph.extra.workflowRendererVersion,
@@ -986,7 +1004,6 @@ export class ComfyApp implements IComfyApp {
 
     this.rootGraph.start()
 
-    // Ensure the canvas fills the window
     useResizeObserver(this.canvasElRef, ([canvasEl]) => {
       if (canvasEl.target instanceof HTMLCanvasElement) {
         this.resizeCanvas(canvasEl.target)
@@ -1004,7 +1021,6 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
-
     await defaultWorkflowReady
 
     this.positionConversion = useCanvasPositionConversion(
@@ -1231,6 +1247,7 @@ export class ComfyApp implements IComfyApp {
       skipAssetScans = false,
       silentAssetErrors = false,
       workflowNavigationId,
+      restoreDocumentId,
       isCurrent
     } = options
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
@@ -1243,10 +1260,6 @@ export class ComfyApp implements IComfyApp {
       useExecutionErrorStore().setActiveGraph(null)
 
       if (skipAssetScans) {
-        // Only reset candidates; preserve UI state (fileSizes, etc.)
-        // so cached results restored by showPendingWarnings still display sizes.
-        // Abort any in-flight verification from the outgoing workflow so a late
-        // result cannot repopulate the store after we've switched workflows.
         useMissingModelStore().createVerificationAbortController().abort()
         useMissingMediaStore().createVerificationAbortController().abort()
         useMissingModelStore().setMissingModels([])
@@ -1257,17 +1270,11 @@ export class ComfyApp implements IComfyApp {
       }
 
       if (clean) {
-        // Reset canvas context before configuring a new graph so subgraph UI
-        // state from the previous workflow cannot leak into the newly loaded
-        // one, and so `clean()` can clear the root graph even when the user is
-        // currently inside a subgraph.
         this.canvas.setGraph(this.rootGraph)
 
         withGraphIntentSource('load', () => this.clean())
       }
 
-      // Use explicit validation instead of falsy check to avoid replacing
-      // valid but falsy values (empty objects, 0, false, etc.)
       if (
         !graphData ||
         typeof graphData !== 'object' ||
@@ -1283,14 +1290,8 @@ export class ComfyApp implements IComfyApp {
         const { graphData: validatedGraphData } =
           await useWorkflowValidation().validateWorkflow(graphData)
 
-        // If the validation failed, use the original graph data.
-        // Ideally we should not block users from loading the workflow.
         graphData = validatedGraphData ?? graphData
       }
-      // Only show the reroute migration warning if the workflow does not have native
-      // reroutes. Merging reroute network has great complexity, and it is not supported
-      // for now.
-      // See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/3317
       if (
         checkForRerouteMigration &&
         graphData.version === 0.4 &&
@@ -1330,7 +1331,6 @@ export class ComfyApp implements IComfyApp {
       const nodeReplacementStore = useNodeReplacementStore()
       await nodeReplacementStore.load()
 
-      // Collect missing node types from all nodes (root + subgraphs)
       const collectMissingNodes = (
         nodes: readonly FlattenableWorkflowNode[],
         pathPrefix: string = '',
@@ -1345,8 +1345,6 @@ export class ComfyApp implements IComfyApp {
         }
         for (const n of nodes) {
           if (!(n.type in LiteGraph.registered_node_types)) {
-            // Always sanitize so configure() can handle unregistered types,
-            // but only report as missing if the node is active.
             const isMuted =
               n.mode === LGraphEventMode.NEVER ||
               n.mode === LGraphEventMode.BYPASS
@@ -1397,16 +1395,6 @@ export class ComfyApp implements IComfyApp {
         }
       }
     } catch (error) {
-      // This try wraps everything between `beforeLoadGraph` and
-      // `rootGraph.configure`: asset-scan resets, `clean()`, workflow
-      // cloning, `validateWorkflow`, reroute-migration inspection, a
-      // malformed subgraph definition, a `beforeConfigureGraph` extension
-      // hook throwing, or a node-replacement load failure. Any of those
-      // happens before `rootGraph.configure` and so reaches neither the
-      // `afterConfigureGraph` success path nor the `onGraphLoadError` catch
-      // below. Left unhandled, that would both reject silently and leak any
-      // suppression/loading-state a `beforeLoadGraph` listener opened for
-      // this load, since nothing ever notifies it the load ended.
       try {
         await this.reportGraphLoadFailure(error)
       } finally {
@@ -1443,14 +1431,12 @@ export class ComfyApp implements IComfyApp {
         restore_view &&
         useSettingStore().get('Comfy.EnableWorkflowViewRestore')
       ) {
-        // Always fit view for templates to ensure they're visible on load
         if (openSource === 'template') {
           useLitegraphService().fitView()
         } else if (savedCameraState) {
           this.canvas.ds.offset = savedCameraState.offset
           this.canvas.ds.scale = savedCameraState.scale
 
-          // Fit view if no nodes visible in restored viewport
           this.canvas.ds.computeVisibleArea(this.canvas.viewport)
           if (
             this.canvas.visible_area.width &&
@@ -1473,17 +1459,15 @@ export class ComfyApp implements IComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
+        if (!restoreDocumentId || restoreDocumentId !== currentDocumentId())
+          beginDocument()
         this.rootGraph.configure(graphData as ISerialisedGraph)
 
-        // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =
           this.rootGraph.extra.workflowRendererVersion
 
-        // Scale main graph
         ensureCorrectLayoutScale(originalMainGraphRenderer, this.rootGraph)
 
-        // Scale all subgraphs that were loaded with the workflow
-        // Use original main graph renderer as fallback (not the modified one)
         for (const subgraph of this.rootGraph.subgraphs.values()) {
           ensureCorrectLayoutScale(
             subgraph.extra.workflowRendererVersion || originalMainGraphRenderer,
@@ -1524,7 +1508,6 @@ export class ComfyApp implements IComfyApp {
         }
       } catch (error) {
         await this.reportGraphLoadFailure(error)
-        // Resolves rather than throws: the close/replacement guards read this outcome.
         return false
       }
       const configuredGraphState = this.rootGraph.state
@@ -1541,8 +1524,6 @@ export class ComfyApp implements IComfyApp {
           snapPoint(size, snapTo, 'ceil')
           node.setSize(size)
           if (node.widgets) {
-            // If you break something in the backend and want to patch workflows in the frontend
-            // This is the place to do this
             for (const widget of node.widgets) {
               if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
                 if (widget.name == 'sampler_name') {
@@ -1638,14 +1619,15 @@ export class ComfyApp implements IComfyApp {
         return undefined
       }
       ChangeTracker.isLoadingGraph = false
-      // Capture the workflow this load activated before the asset-scan awaits
-      // below can hand control back and let the user switch to another one.
+      notifyWorkflowLoaded(
+        !!restoreDocumentId && restoreDocumentId === currentDocumentId()
+      )
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
 
-      // Drop missing-node entries whose enclosing subgraph is
-      // muted/bypassed. The initial JSON scan only checks each node's
-      // own mode; the cascade from an inactive container is applied here
-      // using the now-configured live graph.
       const activeMissingNodeTypes = missingNodeTypes.filter(
         (n) =>
           typeof n === 'string' ||
@@ -1700,13 +1682,11 @@ export class ComfyApp implements IComfyApp {
       })
       return activatedWorkflow ?? true
     } finally {
-      // Finally: a throwing load still repairs the URL.
       void useSubgraphNavigationStore().updateHash(
         'workflow-load',
         workflowNavigationId
       )
       ChangeTracker.isLoadingGraph = false
-      // The retirement watcher skips transitions made during the load.
       useExecutionErrorStore().retireResolvedMissingNodePromptError()
       reconcileResourceErrors?.()
     }
@@ -1767,10 +1747,6 @@ export class ComfyApp implements IComfyApp {
       requestId,
       workflowQueueIntent: intent
     })
-    api.dispatchCustomEvent('promptQueueing', {
-      requestId,
-      batchCount
-    })
 
     if (this.processingQueue) {
       return false
@@ -1782,6 +1758,7 @@ export class ComfyApp implements IComfyApp {
     const telemetry = useTelemetry()
     executionErrorStore.clearRunErrors()
     let queueResultOverride: boolean | null = null
+    let finishActiveAttempt: (() => void) | undefined
 
     const teamWorkspaceStore = useTeamWorkspaceStore()
     try {
@@ -1847,6 +1824,48 @@ export class ComfyApp implements IComfyApp {
           workflowQueueIntent
         } = this.queueItems.pop()!
         let queuedCount = 0
+        let rejectedCount = 0
+        const promptIds: string[] = []
+        const submissions: { promptId: string; nodeCount: number }[] = []
+        const announceQueued = () => {
+          if (queuedCount === 0) return
+          this.canvas.draw(true, true)
+          void this.ui.queue.update().catch((error) => {
+            reportError(error, {
+              surface: 'graph',
+              errorType: 'queue_ui_update_failure'
+            })
+          })
+          api.dispatchCustomEvent('promptQueued', {
+            number,
+            batchCount: queuedCount,
+            requestId,
+            promptIds,
+            submissions,
+            rejectedCount
+          })
+        }
+        const finishAttempt = () => {
+          announceQueued()
+          api.dispatchCustomEvent('promptQueueAttemptEnded', {
+            requestId,
+            queued: queuedCount,
+            rejected: rejectedCount
+          })
+          finishActiveAttempt = undefined
+        }
+        finishActiveAttempt = finishAttempt
+        api.dispatchCustomEvent('promptQueueing', {
+          requestId,
+          batchCount,
+          number
+        })
+
+        if (!(await mayRun())) {
+          queueResultOverride = false
+          finishAttempt()
+          continue
+        }
         const workflowExecutionIntent: WorkflowExecutionIntent = {
           trigger_source: normalizeExecutionTriggerSource(
             workflowQueueIntent?.trigger_source
@@ -1930,6 +1949,15 @@ export class ComfyApp implements IComfyApp {
             delete api.authToken
             delete api.apiKey
             if (!res.prompt_id) {
+              rejectedCount++
+              api.dispatchCustomEvent('promptRejected', {
+                response: {
+                  error: 'Prompt rejected',
+                  ...(res.node_errors === undefined
+                    ? {}
+                    : { node_errors: res.node_errors })
+                }
+              })
               telemetry?.trackExecutionOutcome({
                 startTime,
                 endTime: responseReceivedAt,
@@ -1943,25 +1971,32 @@ export class ComfyApp implements IComfyApp {
               res.node_errors ?? null,
               queuedRunErrorKey
             )
+            if (!res.prompt_id) {
+              queueResultOverride = false
+              break
+            }
+            const promptId = res.prompt_id
             queueResultOverride = null
             try {
-              if (res.prompt_id) {
-                executionStore.storeJob({
-                  id: res.prompt_id,
-                  nodes: Object.keys(p.output),
-                  promptOutput: p.output,
-                  startTime,
-                  submissionAcceptedAt: responseReceivedAt,
-                  workflow: queuedWorkflow,
-                  mode: queuedMode,
-                  workflowContext,
-                  workflowExecutionIntent
-                })
-              }
+              executionStore.storeJob({
+                id: promptId,
+                nodes: Object.keys(p.output),
+                promptOutput: p.output,
+                startTime,
+                submissionAcceptedAt: responseReceivedAt,
+                workflow: queuedWorkflow,
+                mode: queuedMode,
+                workflowContext,
+                workflowExecutionIntent
+              })
             } catch (error) {
               console.warn('Failed to store queued job metadata', {
-                promptId: res.prompt_id,
+                promptId,
                 error
+              })
+              reportError(error, {
+                surface: 'graph',
+                errorType: 'queue_job_metadata_store_failed'
               })
             }
             if (executionErrorStore.hasNodeError) {
@@ -1970,7 +2005,19 @@ export class ComfyApp implements IComfyApp {
               }
               this.canvas.draw(true, true)
             }
+            promptIds.push(promptId)
+            submissions.push({
+              promptId,
+              nodeCount: Object.keys(p.output).length
+            })
           } catch (error: unknown) {
+            if (error instanceof PromptExecutionError) {
+              rejectedCount++
+              api.dispatchCustomEvent('promptRejected', {
+                response: error.response,
+                status: error.status
+              })
+            }
             telemetry?.trackExecutionOutcome({
               startTime,
               endTime: performance.now(),
@@ -2093,22 +2140,10 @@ export class ComfyApp implements IComfyApp {
           useFreeTierQuota().trackRun()
         }
 
-        if (queuedCount > 0) {
-          this.canvas.draw(true, true)
-          void this.ui.queue.update().catch((error) => {
-            reportError(error, {
-              surface: 'graph',
-              errorType: 'queue_ui_update_failure'
-            })
-          })
-          api.dispatchCustomEvent('promptQueued', {
-            number,
-            batchCount: queuedCount,
-            requestId
-          })
-        }
+        finishAttempt()
       }
     } finally {
+      finishActiveAttempt?.()
       this.processingQueue = false
     }
     return queueResultOverride ?? !executionErrorStore.lastNodeErrors
@@ -2141,6 +2176,10 @@ export class ComfyApp implements IComfyApp {
     let workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
     try {
       workflowData = await getWorkflowDataFromFile(file)
+      const { workflow, prompt, parameters, templates } = workflowData ?? {}
+      if (!(workflow || prompt || parameters || templates)) {
+        workflowData = (await importWorkflowFile(file)) ?? workflowData
+      }
     } catch (error) {
       await previousDiscovery
       releaseDiscovery()
@@ -2307,6 +2346,7 @@ export class ComfyApp implements IComfyApp {
               }
               releaseCaptureSuppression = beginChangeCaptureSuppression()
               this.canvas.setGraph(this.rootGraph)
+              beginDocument()
             }
           )
           switch (outcome) {
@@ -2325,9 +2365,12 @@ export class ComfyApp implements IComfyApp {
               break
             default: {
               const unexpectedOutcome: never = outcome
-              throw new Error(
-                `Unhandled A1111 import outcome: ${unexpectedOutcome}`
-              )
+              reportError(new Error('Unhandled A1111 import outcome'), {
+                surface: 'graph',
+                errorType: 'a1111_import_unhandled_outcome',
+                context: { outcome: unexpectedOutcome }
+              })
+              return
             }
           }
           await withGraphIntentSource('load', () =>
@@ -2340,7 +2383,7 @@ export class ComfyApp implements IComfyApp {
             fileName,
             this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
           )
-          await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+          await finishWorkflowLoad()
           return
         } catch (error) {
           if (!lifecycle.started) throw error
@@ -2502,6 +2545,7 @@ export class ComfyApp implements IComfyApp {
       releaseCaptureSuppression = beginChangeCaptureSuppression()
       this.canvas.setGraph(this.rootGraph)
       withGraphIntentSource('load', () => this.clean())
+      beginDocument()
 
       const ids = Object.keys(apiData)
       const localNodeIdsByApiId = new Map<string, NodeId>()
@@ -2701,7 +2745,7 @@ export class ComfyApp implements IComfyApp {
         fileName,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
-      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      await finishWorkflowLoad()
       lifecycleCompleted = true
       if (missingNodeTypes.length) {
         this.showMissingNodesError(missingNodeTypes, options)
@@ -2811,6 +2855,7 @@ export class ComfyApp implements IComfyApp {
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
     }
+    notifyDefsRefreshed()
     return true
   }
 
@@ -2891,14 +2936,24 @@ export class ComfyApp implements IComfyApp {
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
     if (!this.positionConversion) {
-      throw new Error('clientPosToCanvasPos called before setup')
+      reportError(new Error('Canvas position conversion unavailable'), {
+        surface: 'graph',
+        errorType: 'canvas_position_conversion_unavailable',
+        context: { direction: 'client_to_canvas' }
+      })
+      return pos
     }
     return this.positionConversion.clientPosToCanvasPos(pos)
   }
 
   canvasPosToClientPos(pos: Vector2): Vector2 {
     if (!this.positionConversion) {
-      throw new Error('canvasPosToClientPos called before setup')
+      reportError(new Error('Canvas position conversion unavailable'), {
+        surface: 'graph',
+        errorType: 'canvas_position_conversion_unavailable',
+        context: { direction: 'canvas_to_client' }
+      })
+      return pos
     }
     return this.positionConversion.canvasPosToClientPos(pos)
   }
