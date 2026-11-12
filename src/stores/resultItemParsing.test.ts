@@ -132,10 +132,24 @@ describe(parseNodeOutput, () => {
   })
 
   it('parses inline text outputs', () => {
-    const result = parseNodeOutput('1', makeOutput({ text: ['hello'] }))
+    const result = parseNodeOutput(
+      '1',
+      makeOutput({ text: ['hello', 'world'] })
+    )
 
     expect(result).toStrictEqual([
-      expect.objectContaining({ content: 'hello', mediaType: 'text' })
+      expect.objectContaining({ content: 'hello', mediaType: 'text' }),
+      expect.objectContaining({ content: 'world', mediaType: 'text' })
+    ])
+  })
+
+  it('excludes text outputs with malformed filenames', () => {
+    const result = parseNodeOutput('1', {
+      text: [{ filename: 42, content: 'invalid' }, { content: 'valid' }]
+    })
+
+    expect(result).toStrictEqual([
+      expect.objectContaining({ content: 'valid', filename: '' })
     ])
   })
 
@@ -167,12 +181,13 @@ describe(parseNodeOutput, () => {
   })
 
   it('excludes items missing filename', () => {
-    const output = fromPartial<NodeExecutionOutput>({
+    const output = {
       images: [
         { filename: 'valid.png', subfolder: '', type: 'output' },
-        { subfolder: '', type: 'output' }
+        { subfolder: '', type: 'output' },
+        { content: 'not text' }
       ]
-    })
+    }
 
     const result = parseNodeOutput('1', output)
 
