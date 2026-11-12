@@ -19,7 +19,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 const ISSUE_TIMEOUT_MS = 15_000
 
-export type HandoffIssue =
+type HandoffIssue =
   | { readonly kind: 'issued'; readonly entryUrl: string }
   | { readonly kind: 'sign_in_again' }
   | { readonly kind: 'refused'; readonly message: string | undefined }
@@ -43,8 +43,7 @@ async function serverMessage(response: Response): Promise<string | undefined> {
   return body.success ? body.data.message : undefined
 }
 
-/** Asks Cloud for a one-time billing-web entry URL for `workspaceId`, signed in with the local web credential. */
-export async function issueBillingHandoff(
+async function issueBillingHandoff(
   token: string,
   workspaceId: string,
   cloudBaseUrl: string

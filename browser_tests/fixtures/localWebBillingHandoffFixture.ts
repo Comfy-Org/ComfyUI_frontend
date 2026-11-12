@@ -1,4 +1,5 @@
 import type { Request } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 import type {
   BillingHandoffCreateResponse,
@@ -57,6 +58,7 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
   localBillingWeb: boolean
   handoffReply: HandoffReply
   handoffRequests: Request[]
+  cloudFlagReads: Request[]
   openAddCredits: () => Promise<void>
 }>({
   localBillingWeb: [false, { option: true }],
@@ -64,15 +66,21 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
   handoffRequests: async ({ browserName: _browserName }, use) => {
     await use([])
   },
-  openAddCredits: async ({ page }, use) => {
+  cloudFlagReads: async ({ browserName: _browserName }, use) => {
+    await use([])
+  },
+  openAddCredits: async ({ page, cloudFlagReads }, use) => {
     await use(async () => {
+      await expect
+        .poll(() => cloudFlagReads.length, 'Cloud flag never read')
+        .toBeGreaterThan(0)
       await page.getByRole('button', { name: 'Current user' }).click()
       await page.getByRole('button', { name: /^Credits/ }).hover()
       await page.getByRole('button', { name: 'Add credits' }).click()
     })
   },
   page: async (
-    { page, localBillingWeb, handoffReply, handoffRequests },
+    { page, localBillingWeb, handoffReply, handoffRequests, cloudFlagReads },
     use
   ) => {
     await page.route('**/api/features', (route) =>
@@ -84,9 +92,10 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
         } satisfies RemoteConfig)
       )
     )
-    await page.route(`${CLOUD_BASE_URL}/api/features`, (route) =>
-      route.fulfill(jsonRoute({ local_billing_web: localBillingWeb }))
-    )
+    await page.route(`${CLOUD_BASE_URL}/api/features`, async (route) => {
+      await route.fulfill(jsonRoute({ local_billing_web: localBillingWeb }))
+      cloudFlagReads.push(route.request())
+    })
     await page.route(`${CLOUD_BASE_URL}/api/auth/handoffs`, (route) => {
       handoffRequests.push(route.request())
       return route.fulfill({
