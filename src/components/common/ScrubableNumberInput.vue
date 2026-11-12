@@ -145,7 +145,8 @@ const canIncrement = computed(
 const canStep = computed(
   () =>
     Number.isFinite(modelValue.value) &&
-    Math.abs(modelValue.value) <= Number.MAX_SAFE_INTEGER
+    Math.abs(modelValue.value) <= Number.MAX_SAFE_INTEGER &&
+    stepMin.value <= stepMax.value
 )
 
 function handleInput(event: Event) {

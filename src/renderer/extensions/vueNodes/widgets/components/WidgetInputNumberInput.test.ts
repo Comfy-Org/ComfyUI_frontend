@@ -596,6 +596,31 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     }
   )
 
+  it.for([
+    { bounds: { max: -1e16 }, key: 'ArrowDown' },
+    { bounds: { min: 1e16 }, key: 'ArrowUp' }
+  ])(
+    'blocks $key when updated bounds exclude the safe range',
+    async ({ bounds, key }) => {
+      const user = userEvent.setup()
+      const { emitted, rerender } = await renderControlledComponent(
+        createNumberInputWidget(37, 'int', { step2: 1 }),
+        37
+      )
+      await rerender({
+        widget: createNumberInputWidget(37, 'int', { ...bounds, step2: 1 })
+      })
+
+      await user.click(screen.getByTestId('widget-number-row'))
+      await user.keyboard(`{${key}}`)
+
+      expect(screen.getByRole('spinbutton')).toHaveValue('37')
+      expect(emitted()['update:modelValue']).toBeUndefined()
+      expect(screen.getByTestId('increment')).toBeDisabled()
+      expect(screen.getByTestId('decrement')).toBeDisabled()
+    }
+  )
+
   it('commits unsafe text and allows editing back into the stepping range', async () => {
     const user = userEvent.setup()
     await renderControlledComponent(
