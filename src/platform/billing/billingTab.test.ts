@@ -35,6 +35,31 @@ describe('reserveBillingTab', () => {
       expect(tab.location.href).toBe(checkoutUrl)
     })
 
+    it('shows the opening page in the reserved tab until it navigates', () => {
+      const tab = {
+        opener: window,
+        document: document.implementation.createHTMLDocument(''),
+        location: { href: '' },
+        close: vi.fn()
+      }
+      vi.spyOn(window, 'open').mockReturnValue(tab as never)
+
+      reserveBillingTab({
+        title: 'Opening checkout…',
+        detail: 'This takes a few seconds.'
+      })
+
+      expect(tab.document.title).toBe('Opening checkout…')
+      expect(
+        tab.document
+          .querySelector('[role="progressbar"]')
+          ?.getAttribute('aria-label')
+      ).toBe('Opening checkout…')
+      expect(tab.document.body.textContent).toBe(
+        'Opening checkout…This takes a few seconds.'
+      )
+    })
+
     it('reports a blocked tab', () => {
       vi.spyOn(window, 'open').mockReturnValue(null)
 

@@ -13,6 +13,7 @@ import {
 import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
+import type { HostedCheckoutSession } from '@/platform/billing/sdk/topupOperationView'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -266,9 +267,9 @@ describe('useTopupOperation', () => {
       vi.useFakeTimers()
     })
 
-    async function settle(promise: Promise<string>) {
+    async function settle(promise: Promise<HostedCheckoutSession>) {
       const outcome = promise.then(
-        (url) => ({ url }),
+        (session) => session,
         (error: unknown) => ({ error })
       )
       await vi.runAllTimersAsync()
@@ -343,7 +344,7 @@ describe('useTopupOperation', () => {
         const checkout = useTopupOperation()
           .createHostedCheckout(1000, returnUrl, scope.signal)
           .then(
-            (url) => ({ url }),
+            (session) => session,
             (error: unknown) => ({ error })
           )
         await vi.advanceTimersByTimeAsync(500)
@@ -372,6 +373,42 @@ describe('useTopupOperation', () => {
           flagOn
             ? { amountCents: 1000, returnUrl, signal: scope.signal }
             : scope.signal
+        )
+      }
+    )
+
+    it.for(rails)(
+      'sends the auto top-up settings and returns the session id on the $rail rail',
+      async ({ flagOn }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        const autoTopUp = {
+          threshold_credits: 1000,
+          target_credits: 5000,
+          monthly_budget_cents: null
+        }
+        const mintCheckout = flagOn
+          ? vi
+              .mocked(harness.sdk.topup.createHostedTopupCheckout)
+              .mockResolvedValueOnce({
+                status: 'ok',
+                url: 'https://stripe/new',
+                sessionId: 'cs_1'
+              })
+          : vi.spyOn(billingApi, 'createTopupCheckout').mockResolvedValueOnce({
+              checkout_url: 'https://stripe/new',
+              session_id: 'cs_1'
+            })
+
+        await expect(
+          useTopupOperation().createHostedCheckout(
+            1000,
+            returnUrl,
+            undefined,
+            autoTopUp
+          )
+        ).resolves.toEqual({ url: 'https://stripe/new', sessionId: 'cs_1' })
+        expect(mintCheckout.mock.lastCall).toContainEqual(
+          flagOn ? { amountCents: 1000, returnUrl, autoTopUp } : autoTopUp
         )
       }
     )

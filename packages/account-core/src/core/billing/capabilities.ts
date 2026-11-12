@@ -70,6 +70,10 @@ const CapabilitiesBodySchema = z.object({
     .optional()
     .catch(undefined),
   auto_top_up_setup: zBillingCapabilitiesResponse.shape.auto_top_up_setup,
+  billing_web_checkout_ui:
+    zBillingCapabilitiesResponse.shape.billing_web_checkout_ui
+      .optional()
+      .catch(undefined),
   capabilities: zBillingCapabilities,
   expires_at: z.string(),
   has_parked_billing_operation:
@@ -102,6 +106,8 @@ export interface CapabilitiesSnapshot {
   readonly autoTopUpSetup?: z.infer<
     typeof zBillingCapabilitiesResponse.shape.auto_top_up_setup
   >
+  /** As received. Absent when the server omits it or sends an unknown variant. */
+  readonly billingWebCheckoutUi?: CapabilitiesBody['billing_web_checkout_ui']
   readonly hasParkedBillingOperation?: boolean
   readonly paymentRecoveryAvailable?: boolean
   readonly planKind?: z.infer<
@@ -212,6 +218,7 @@ export function createCapabilitiesReader(
         autoTopUpEnabled: data.auto_top_up_enabled,
         autoTopUpMemberView: data.auto_top_up_member_view,
         autoTopUpSetup: data.auto_top_up_setup,
+        billingWebCheckoutUi: data.billing_web_checkout_ui,
         capabilities: data.capabilities,
         denials,
         hasParkedBillingOperation: data.has_parked_billing_operation,

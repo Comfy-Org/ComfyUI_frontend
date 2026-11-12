@@ -42,8 +42,8 @@ test.describe('TopUpCredits dialog', { tag: '@ui' }, () => {
   for (const { amount, error } of [
     { amount: '3', error: 'Minimum is $5.' },
     {
-      amount: '10001',
-      error: 'The largest top-up is $10,000. Add more with another top-up.'
+      amount: '2501',
+      error: 'The largest top-up is $2,500. Add more with another top-up.'
     },
     { amount: '12.5', error: 'Whole dollars only.' }
   ]) {

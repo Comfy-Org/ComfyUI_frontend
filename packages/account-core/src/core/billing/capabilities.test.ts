@@ -100,6 +100,25 @@ describe('createCapabilitiesReader', () => {
     }
   )
 
+  it.for([
+    { wire: { billing_web_checkout_ui: 'full_page' }, expected: 'full_page' },
+    { wire: { billing_web_checkout_ui: 'embedded' }, expected: 'embedded' },
+    { wire: { billing_web_checkout_ui: 'sideways' }, expected: undefined },
+    { wire: {}, expected: undefined }
+  ])(
+    'serves the checkout UI variant $expected as received',
+    async ({ wire, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([httpOk(capabilitiesBody(wire))])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      expect(reader.getSnapshot()?.billingWebCheckoutUi).toBe(expected)
+    }
+  )
+
   it('decodes the server answer and reports the resolved scope', async () => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(capabilitiesBody())])
