@@ -115,6 +115,66 @@ test.describe('Errors tab - Execution error lifecycle', { tag: '@ui' }, () => {
   })
 })
 
+webSocketTest.describe('Errors tab - node warnings', { tag: '@ui' }, () => {
+  webSocketTest.use({
+    initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+  })
+
+  webSocketTest(
+    'Should show a node warning until that node executes again',
+    async ({ comfyPage, getWebSocket }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/execution_error')
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const warningText = 'Falling back to CPU'
+      const warning = comfyPage.page.getByText(warningText)
+
+      const jobId = await execution.run()
+      await comfyPage.nextFrame()
+      execution.executionStart(jobId)
+      execution.executionWarning(jobId, '17', warningText)
+
+      await openErrorsTab(comfyPage)
+      await expect(warning).toBeVisible()
+
+      execution.executing(jobId, '17')
+      await expect(warning).toBeHidden()
+    }
+  )
+
+  webSocketTest(
+    'Should keep a node warning received before the prompt response',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage, getWebSocket }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/execution_error')
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const warningText = 'Falling back to CPU'
+      const warningReceived = comfyPage.page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            window.app!.api.addEventListener(
+              'execution_warning',
+              () => resolve(),
+              { once: true }
+            )
+          })
+      )
+
+      await execution.run({
+        beforePromptResponse: async (jobId) => {
+          execution.executionWarning(jobId, '17', warningText)
+          await warningReceived
+        }
+      })
+
+      await expect(comfyPage.vueNodes.getNodeInnerWrapper('17')).toHaveClass(
+        /ring-warning/
+      )
+      await openErrorsTab(comfyPage)
+      await expect(comfyPage.page.getByText(warningText)).toBeVisible()
+    }
+  )
+})
+
 webSocketTest.describe(
   'Errors tab - early execution errors',
   { tag: '@ui' },

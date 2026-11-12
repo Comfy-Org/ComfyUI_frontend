@@ -33,10 +33,13 @@
           <div role="status" class="flex items-center gap-2 p-2">
             <span v-if="hasMixedSeverityTotals" class="sr-only">
               {{
-                t('rightSidePanel.severityCountsStatus', {
-                  errors: errorCount,
-                  setup: missingCount
-                })
+                t(
+                  isMissingSeverityWarningsOnly
+                    ? 'rightSidePanel.severityCountsWarningsStatus'
+                    : 'rightSidePanel.severityCountsStatus',
+                  { errors: errorCount, setup: missingCount },
+                  missingCount
+                )
               }}
             </span>
             <span
@@ -421,6 +424,7 @@ import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 
@@ -611,6 +615,10 @@ const missingCount = computed(() =>
 const hasMixedSeverity = computed(
   () => errorCount.value > 0 && missingCount.value > 0
 )
+const executionErrorStore = useExecutionErrorStore()
+const isMissingSeverityWarningsOnly = computed(
+  () => !executionErrorStore.hasMissingError
+)
 
 const BUILD_FIXABLE_TYPES: ReadonlySet<ErrorGroup['type']> = new Set([
   'missing_node',
@@ -682,21 +690,24 @@ const selectionEmphasisSignature = computed(() =>
 )
 
 /** Issue identity per severity — membership, so same-count replacements are visible. */
-const severityIssueKeys = computed<Record<ErrorGroupSeverity, Set<string>>>(
-  () => ({
-    error: new Set(
-      allErrorGroups.value
-        .filter((group) => group.type === 'execution')
-        .flatMap((group) =>
-          group.cards.flatMap((card) =>
-            card.errors.map(
-              (error, index) =>
-                `${group.groupKey}|${card.id}|${error.message}#${index}`
-            )
+function executionIssueKeys(severity: ErrorGroupSeverity): string[] {
+  return allErrorGroups.value.flatMap((group) =>
+    group.type === 'execution' && group.severity === severity
+      ? group.cards.flatMap((card) =>
+          card.errors.map(
+            (error, index) =>
+              `${group.groupKey}|${card.id}|${error.message}#${index}`
           )
         )
-    ),
+      : []
+  )
+}
+
+const severityIssueKeys = computed<Record<ErrorGroupSeverity, Set<string>>>(
+  () => ({
+    error: new Set(executionIssueKeys('error')),
     missing: new Set([
+      ...executionIssueKeys('missing'),
       ...missingPackGroups.value.flatMap((pack) =>
         pack.nodeTypes.map(
           (nodeType) =>
@@ -765,6 +776,14 @@ const hero = computed(() => {
       description: t('rightSidePanel.resolveBeforeRun')
     }
   }
+  if (missingCount.value > 0 && isMissingSeverityWarningsOnly.value) {
+    return {
+      count: missingCount.value,
+      countClass: 'text-warning',
+      title: t('rightSidePanel.warningsDetected', missingCount.value),
+      description: t('rightSidePanel.warningsFromRun')
+    }
+  }
   if (missingCount.value > 0) {
     return {
       count: missingCount.value,
@@ -799,7 +818,9 @@ const severityChips = computed(() => [
   {
     severity: 'missing' as const,
     active: activeSeverityFilter.value === 'missing',
-    label: t('rightSidePanel.setupFilter', missingCount.value)
+    label: isMissingSeverityWarningsOnly.value
+      ? t('rightSidePanel.warningsFilter', missingCount.value)
+      : t('rightSidePanel.setupFilter', missingCount.value)
   }
 ])
 

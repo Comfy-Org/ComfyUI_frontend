@@ -233,6 +233,16 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send `execution_warning` WS event. */
+  executionWarning(jobId: string, nodeId: string, text: string): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'execution_warning',
+        data: { prompt_id: jobId, node: nodeId, text }
+      })
+    )
+  }
+
   /** Send `execution_error` WS event carrying cloud validation node errors. */
   validationError(
     jobId: string,

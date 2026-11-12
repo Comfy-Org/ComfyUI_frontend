@@ -111,6 +111,11 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   current_inputs?: unknown
   current_outputs?: unknown
 }
+export interface ExecutionWarningWsMessage extends StampedWorkflowId {
+  node: NodeId
+  text: string
+  prompt_id: JobId
+}
 export interface ProgressTextWsMessage {
   nodeId: NodeId
   text: string
