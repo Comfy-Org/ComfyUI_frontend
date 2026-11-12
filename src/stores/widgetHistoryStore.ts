@@ -1,7 +1,8 @@
-import { cloneDeep } from 'es-toolkit'
+import { cloneDeep, maxBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { shallowReactive } from 'vue'
 
+import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export const WIDGET_HISTORY_LIMIT = 10
@@ -27,15 +28,45 @@ export interface WidgetHistoryScope {
   widgetId: WidgetId
 }
 
+export type HistoryDirection = 'undo' | 'redo'
+
+interface HistoryNode {
+  rootGraphId: string
+  graphId: string
+  nodeId: string
+}
+
+function isOnNode(scope: WidgetHistoryScope | null, node: HistoryNode) {
+  if (scope?.rootGraphId !== node.rootGraphId) return false
+  const { graphId, nodeId } = parseWidgetId(scope.widgetId)
+  return graphId === node.graphId && String(nodeId) === node.nodeId
+}
+
+export interface WidgetHistoryTraveler {
+  scope: () => WidgetHistoryScope | null
+  canTravel: (direction: HistoryDirection) => boolean
+  travel: (direction: HistoryDirection) => void | Promise<void>
+}
+
 interface WidgetHistory {
-  readonly past: readonly unknown[]
-  readonly future: readonly unknown[]
+  readonly past: readonly StoredStep[]
+  readonly future: readonly StoredStep[]
   readonly mergeKey?: string
   readonly baseline?: HistoryStep
 }
 
 interface HistoryStep {
   readonly value: unknown
+}
+
+interface StoredStep extends HistoryStep {
+  readonly order: number
+}
+
+let lastHistoryOrder = 0
+
+function nextHistoryOrder(): number {
+  return ++lastHistoryOrder
 }
 
 const storedByReference = new WeakSet<object>()
@@ -54,6 +85,10 @@ function snapshot<T>(value: T): T {
     : cloneDeep(value)
 }
 
+function storedStep(value: unknown): StoredStep {
+  return { value: snapshot(value), order: nextHistoryOrder() }
+}
+
 const EMPTY_HISTORY: WidgetHistory = { past: [], future: [] }
 
 function recordStep(
@@ -66,11 +101,20 @@ function recordStep(
     mergeKey === history.mergeKey &&
     history.future.length === 0
   ) {
-    return history
+    const merged = history.past.at(-1)
+    return merged
+      ? {
+          ...history,
+          past: [
+            ...history.past.slice(0, -1),
+            { ...merged, order: nextHistoryOrder() }
+          ]
+        }
+      : history
   }
   return {
     ...history,
-    past: [...history.past, snapshot(previous)].slice(-WIDGET_HISTORY_LIMIT),
+    past: [...history.past, storedStep(previous)].slice(-WIDGET_HISTORY_LIMIT),
     future: [],
     mergeKey
   }
@@ -81,8 +125,15 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
     new Map<string, Map<WidgetId, WidgetHistory>>()
   )
 
+  const travelers = new Set<WidgetHistoryTraveler>()
+
   function historyOf({ rootGraphId, widgetId }: WidgetHistoryScope) {
     return workflows.get(rootGraphId)?.get(widgetId) ?? EMPTY_HISTORY
+  }
+
+  function nextStep(scope: WidgetHistoryScope, direction: HistoryDirection) {
+    const { past, future } = historyOf(scope)
+    return (direction === 'undo' ? past : future).at(-1)
   }
 
   function save(
@@ -108,15 +159,15 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
   ): HistoryStep | undefined {
     const history = historyOf(scope)
     const { past, future } = history
-    if (!past.length) return undefined
-    const value = past.at(-1)
+    const step = past.at(-1)
+    if (!step) return undefined
     save(scope, {
       ...history,
       mergeKey: undefined,
       past: past.slice(0, -1),
-      future: [...future, snapshot(current)]
+      future: [...future, storedStep(current)]
     })
-    return { value: snapshot(value) }
+    return { value: snapshot(step.value) }
   }
 
   function redo(
@@ -125,15 +176,15 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
   ): HistoryStep | undefined {
     const history = historyOf(scope)
     const { past, future } = history
-    if (!future.length) return undefined
-    const value = future.at(-1)
+    const step = future.at(-1)
+    if (!step) return undefined
     save(scope, {
       ...history,
       mergeKey: undefined,
-      past: [...past, snapshot(current)],
+      past: [...past, storedStep(current)],
       future: future.slice(0, -1)
     })
-    return { value: snapshot(value) }
+    return { value: snapshot(step.value) }
   }
 
   function baselineOf(scope: WidgetHistoryScope): HistoryStep | undefined {
@@ -146,11 +197,33 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
 
   function peek(
     scope: WidgetHistoryScope,
-    direction: 'undo' | 'redo'
+    direction: HistoryDirection
   ): HistoryStep | undefined {
-    const { past, future } = historyOf(scope)
-    const steps = direction === 'undo' ? past : future
-    return steps.length ? { value: snapshot(steps.at(-1)) } : undefined
+    const step = nextStep(scope, direction)
+    return step ? { value: snapshot(step.value) } : undefined
+  }
+
+  function registerTraveler(traveler: WidgetHistoryTraveler): () => void {
+    travelers.add(traveler)
+    return () => {
+      travelers.delete(traveler)
+    }
+  }
+
+  function latestTraveler(node: HistoryNode, direction: HistoryDirection) {
+    return maxBy(
+      [...travelers].flatMap((traveler) => {
+        const scope = traveler.scope()
+        const step =
+          scope && isOnNode(scope, node) && traveler.canTravel(direction)
+            ? nextStep(scope, direction)
+            : undefined
+        return step
+          ? [{ order: step.order, travel: () => traveler.travel(direction) }]
+          : []
+      }),
+      ({ order }) => order
+    )
   }
 
   function canUndo(scope: WidgetHistoryScope): boolean {
@@ -191,7 +264,7 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
   function storedSteps(): { scope: WidgetHistoryScope; value: unknown }[] {
     return [...workflows].flatMap(([rootGraphId, histories]) =>
       [...histories].flatMap(([widgetId, { past, future }]) =>
-        [...past, ...future].map((value) => ({
+        [...past, ...future].map(({ value }) => ({
           scope: { rootGraphId, widgetId },
           value
         }))
@@ -203,8 +276,8 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
     const history = historyOf(scope)
     save(scope, {
       ...history,
-      past: history.past.filter((step) => step !== value),
-      future: history.future.filter((step) => step !== value)
+      past: history.past.filter((step) => step.value !== value),
+      future: history.future.filter((step) => step.value !== value)
     })
   }
 
@@ -215,6 +288,8 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
     baselineOf,
     setBaseline,
     peek,
+    registerTraveler,
+    latestTraveler,
     canUndo,
     canRedo,
     retainLive,
