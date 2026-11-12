@@ -33,6 +33,11 @@ try {
     )
   }
   cpSync('.storybook/style.css', join(fixture, '.storybook/style.css'))
+  mkdirSync(join(fixture, 'packages/mask-editor/src/ui'), { recursive: true })
+  cpSync(
+    'packages/mask-editor/src/ui/style.css',
+    join(fixture, 'packages/mask-editor/src/ui/style.css')
+  )
   for (const [file, size] of [
     ['src/components/Component.vue', 12341],
     ['src/components/Component.stories.ts', 12342],

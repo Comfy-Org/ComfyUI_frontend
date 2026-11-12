@@ -9,7 +9,10 @@ import type {
   SessionSnapshot
 } from '@comfyorg/account-core/session'
 
-import { createBillingWebClient } from '@/session/billingWebClient'
+import {
+  createBillingWebClient,
+  createHandoffBillingClient
+} from '@/session/billingWebClient'
 import { createResubscribeTelemetry } from '@/telemetry/resubscribeTelemetry'
 import { createSubscriptionCheckoutTelemetry } from '@/telemetry/subscriptionCheckoutTelemetry'
 
@@ -368,4 +371,64 @@ describe('SDK operation telemetry', () => {
       ).toEqual(sequence)
     }
   )
+})
+
+describe('createHandoffBillingClient', () => {
+  function handoffSession(): BillingSession {
+    return {
+      ...signedInSession().session,
+      ensureFresh: vi.fn(async () => ({
+        status: 'ok' as const,
+        session: CREDENTIAL
+      })),
+      remint: vi.fn(async () => ({
+        status: 'error' as const,
+        code: 'NOT_AUTHENTICATED' as const
+      }))
+    }
+  }
+
+  it.for([
+    { name: 'a GET', call: (c: BillingClient) => c.credits.read() },
+    {
+      name: 'a POST that is never retried',
+      call: (c: BillingClient) =>
+        c.commands.openPaymentPortal({ returnUrl: 'https://example.test' })
+    }
+  ])(
+    'ends the handoff when Cloud refuses the scoped session on $name',
+    async ({ call }) => {
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify({ code: 'INVALID_CREDENTIAL' }), {
+          status: 401
+        })
+      )
+      const onSessionRefused = vi.fn()
+      const client = createHandoffBillingClient(
+        handoffSession(),
+        onSessionRefused
+      )
+
+      await call(client)
+
+      expect(onSessionRefused).toHaveBeenCalled()
+      disposeBillingClient(client)
+    }
+  )
+
+  it('keeps the handoff on a 401 from a route that does not take scoped sessions', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ code: 'UNAUTHORIZED' }), { status: 401 })
+    )
+    const onSessionRefused = vi.fn()
+    const client = createHandoffBillingClient(
+      handoffSession(),
+      onSessionRefused
+    )
+
+    await client.credits.read()
+
+    expect(onSessionRefused).not.toHaveBeenCalled()
+    disposeBillingClient(client)
+  })
 })

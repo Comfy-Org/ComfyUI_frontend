@@ -11,7 +11,7 @@
     <div
       :class="
         cn(
-          'flex size-full flex-col overflow-hidden rounded-md',
+          'flex size-full flex-col overflow-hidden rounded-md border-(length:--node-widget-border-width) border-node-border',
           !widget.options?.disabled && (isReadOnly ? 'bg-input/50' : 'bg-input')
         )
       "

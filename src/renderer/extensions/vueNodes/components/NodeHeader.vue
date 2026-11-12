@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-xs',
+        'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4',
         headerShapeClass
       )
     "
@@ -29,8 +29,16 @@
             <i
               :class="
                 cn(
-                  'icon-[lucide--chevron-down] transition-transform',
+                  'icon-[lucide--chevron-down] transition-transform triangle-icons:hidden',
                   collapsed && '-rotate-90'
+                )
+              "
+            />
+            <span
+              :class="
+                cn(
+                  'hidden size-2.5 rounded-full bg-node-border transition-colors triangle-icons:block',
+                  collapsed && 'bg-node-foreground'
                 )
               "
             />
@@ -158,18 +166,18 @@ const headerShapeClass = computed(() => {
       case RenderShape.BOX:
         return 'rounded-none'
       case RenderShape.CARD:
-        return 'rounded-tl-xl rounded-br-xl rounded-tr-none rounded-bl-none'
+        return 'rounded-tl-(--node-radius) rounded-br-(--node-radius) rounded-tr-none rounded-bl-none'
       default:
-        return 'rounded-xl'
+        return 'rounded-(--node-radius)'
     }
   }
   switch (nodeData?.shape) {
     case RenderShape.BOX:
       return 'rounded-t-none'
     case RenderShape.CARD:
-      return 'rounded-tl-xl rounded-tr-none'
+      return 'rounded-tl-(--node-radius) rounded-tr-none'
     default:
-      return 'rounded-t-xl'
+      return 'rounded-t-(--node-radius)'
   }
 })
 

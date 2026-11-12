@@ -11,11 +11,8 @@ export function createBillingCapabilities(
 ): BillingCapabilitiesResponse {
   return {
     auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'embedded',
     resolved_for: {
-      // The signed-in uid `CloudAuthHelper` mocks. Capabilities resolve per
-      // (user, workspace) and the SDK reader checks both halves
-      // (`capabilities.ts:180`), discarding an answer resolved for anyone else
-      // — so a placeholder here reads as "no capabilities" on the SDK rail.
       user_id: 'test-user-e2e',
       workspace_id: workspaceId
     },
@@ -51,7 +48,6 @@ export function createBillingCapabilities(
       can_top_up: false
     },
     revision: 1,
-    // Far-future expiry so the snapshot never goes stale mid-test.
     expires_at: '2099-01-01T00:00:00Z'
   }
 }

@@ -83,7 +83,7 @@ export function projectTopupOperation(
  * handles, carrying the terminal its status cannot: the decline reason, or
  * that this tab stopped watching, or that support must reconcile it.
  */
-class UncreditedTopupResponse implements CreateTopupResponse {
+export class UncreditedTopupResponse implements CreateTopupResponse {
   readonly topup_id = ''
 
   constructor(
@@ -186,10 +186,17 @@ export function projectTopupResult(
   }
 }
 
-/** The hosted Checkout URL, or the failure as the error the dialog handles. */
+export type HostedCheckoutSession = Pick<
+  Extract<HostedTopupCheckoutResult, { status: 'ok' }>,
+  'url' | 'sessionId'
+>
+
+/** The hosted Checkout session, or the failure as the error the dialog handles. */
 export function projectHostedTopupCheckoutResult(
   result: HostedTopupCheckoutResult
-): string {
-  if (result.status === 'ok') return result.url
-  throw topupFailureError(result)
+): HostedCheckoutSession {
+  if (result.status !== 'ok') throw topupFailureError(result)
+  return result.sessionId === undefined
+    ? { url: result.url }
+    : { url: result.url, sessionId: result.sessionId }
 }
