@@ -7,7 +7,6 @@ import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/temp
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
 import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
-import { sum } from 'es-toolkit'
 
 type TemplateModelSetupStatus =
   | 'installed'
@@ -99,7 +98,8 @@ function deriveRow(
 }
 
 function totalDeclarations(
-  rows: readonly TemplateModelSetupRow[]
+  rows: readonly TemplateModelSetupRow[],
+  sizeOf: (row: TemplateModelSetupRow) => number | null = (row) => row.fileSize
 ): TemplateModelDeclarationTotal {
   const seen = new Set<string>()
   let bytes = 0
@@ -110,10 +110,11 @@ function totalDeclarations(
     if (seen.has(identity)) continue
 
     seen.add(identity)
-    if (row.fileSize === null) {
+    const size = sizeOf(row)
+    if (size === null) {
       isComplete = false
     } else {
-      bytes += row.fileSize
+      bytes += size
     }
   }
 
@@ -127,18 +128,22 @@ type RowDownloadStatus = {
   receivedBytes?: number | null
 }
 
-/** A row the bulk action would actually start. */
+/** What the view's row-downloads reports about a row, and whether it can resume it. */
+type RowDownloads = {
+  stateFor: (model: ModelWithUrl) => RowDownloadStatus
+  canResume: (model: ModelWithUrl) => boolean
+}
+
+/** A row the bulk action would actually start or resume. */
 export function isModelDownloadCandidate(
   row: TemplateModelSetupRow,
-  stateFor: (model: ModelWithUrl) => RowDownloadStatus
+  { stateFor, canResume }: RowDownloads
 ): boolean {
   if (row.status !== 'downloadable') return false
   const state = stateFor(row.model)
-  return (
-    state.status === 'idle' ||
-    state.status === 'failed' ||
-    (state.status === 'downloading' && state.activity === 'paused')
-  )
+  if (state.status === 'downloading' && state.activity === 'paused')
+    return canResume(row.model)
+  return state.status === 'idle' || state.status === 'failed'
 }
 
 /** Nothing left to satisfy: already on disk, or downloaded in this session. */
@@ -156,20 +161,18 @@ export function isModelRowComplete(
  */
 export function remainingModelDownloadTotal(
   rows: readonly TemplateModelSetupRow[],
-  stateFor: (model: ModelWithUrl) => RowDownloadStatus
+  downloads: RowDownloads
 ): TemplateModelDeclarationTotal {
-  const candidates = rows.filter((row) =>
-    isModelDownloadCandidate(row, stateFor)
+  return totalDeclarations(
+    rows.filter((row) => isModelDownloadCandidate(row, downloads)),
+    (row) =>
+      row.fileSize === null
+        ? null
+        : Math.max(
+            0,
+            row.fileSize - (downloads.stateFor(row.model).receivedBytes ?? 0)
+          )
   )
-  const total = totalDeclarations(candidates)
-  const receivedByIdentity = new Map(
-    candidates.map((row) => [
-      getModelFileKey(row.model),
-      stateFor(row.model).receivedBytes ?? 0
-    ])
-  )
-  const received = sum([...receivedByIdentity.values()])
-  return { ...total, bytes: Math.max(0, total.bytes - received) }
 }
 
 export function deriveTemplateModelSetup(

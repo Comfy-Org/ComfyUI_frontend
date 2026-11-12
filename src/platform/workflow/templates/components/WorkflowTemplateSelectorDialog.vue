@@ -1178,7 +1178,7 @@ const activeDetailModelDownloadCandidates = computed<
   const setup = activeDetail.value?.modelSetup
   if (!setup || setup.pending) return []
   return setup.result.rows.filter((row) =>
-    isModelDownloadCandidate(row, setup.rowDownloads.stateFor)
+    isModelDownloadCandidate(row, setup.rowDownloads)
   )
 })
 
@@ -1211,7 +1211,7 @@ const activeDetailAssetSetup = computed<TemplateAssetSetup | undefined>(() => {
 
   const total = remainingModelDownloadTotal(
     setup.result.rows,
-    setup.rowDownloads.stateFor
+    setup.rowDownloads
   )
   return {
     state: 'startable',

@@ -98,6 +98,36 @@ describe(useTemplateModelDownloads, () => {
     expect(useTemplateModelRowDownloads).toHaveBeenCalledOnce()
   })
 
+  it.for([
+    { name: 'the host can resume it', resumable: true, tracked: true },
+    { name: 'the host has no resume', resumable: false, tracked: true },
+    { name: 'the dialog tracks it itself', resumable: true, tracked: false }
+  ])(
+    'offers a paused download for resuming only when $name',
+    ({ resumable, tracked }) => {
+      installDesktopHost()
+      if (resumable) {
+        window.__comfyDesktop2 = {
+          ...window.__comfyDesktop2,
+          resumeDownload: vi.fn().mockResolvedValue(true)
+        }
+      }
+      const stopTracking = useMissingModelDownloadStore().startTracking()
+      const downloads = useTemplateModelDownloads({ folderPaths: {} })
+      emitHostProgress({
+        id: 'canvas-job',
+        url: model.url,
+        filename: model.name,
+        directory: model.directory,
+        status: 'paused',
+        progress: 0.5
+      })
+      if (!tracked) stopTracking()
+
+      expect(downloads.canResume(model)).toBe(resumable && tracked)
+    }
+  )
+
   it('requests nothing after the dialog is disposed', () => {
     installDesktopHost()
     const stopTracking = useMissingModelDownloadStore().startTracking()

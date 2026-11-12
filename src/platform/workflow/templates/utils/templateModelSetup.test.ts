@@ -286,7 +286,7 @@ describe('deriveTemplateModelSetup', () => {
 })
 
 describe('remainingModelDownloadTotal', () => {
-  const idle = () => ({ status: 'idle' })
+  const idle = { stateFor: () => ({ status: 'idle' }), canResume: () => true }
 
   function rowsFor(...sizes: [ModelFile, number | null][]) {
     return deriveTemplateModelSetup(
@@ -325,30 +325,68 @@ describe('remainingModelDownloadTotal', () => {
     const starting = model('a.safetensors')
     const running = model('b.safetensors')
     const rows = rowsFor([starting, 1024], [running, 4096])
-    const stateFor = (m: ModelWithUrl) =>
-      m.name === running.name ? { status: 'downloading' } : { status: 'idle' }
+    const downloads = {
+      stateFor: (m: ModelWithUrl) =>
+        m.name === running.name
+          ? { status: 'downloading' }
+          : { status: 'idle' },
+      canResume: () => true
+    }
 
-    expect(remainingModelDownloadTotal(rows, stateFor)).toEqual({
+    expect(remainingModelDownloadTotal(rows, downloads)).toEqual({
       bytes: 1024,
       isComplete: true
     })
-    expect(isModelDownloadCandidate(rows[1], stateFor)).toBe(false)
-    expect(isModelRowComplete(rows[1], stateFor)).toBe(false)
+    expect(isModelDownloadCandidate(rows[1], downloads)).toBe(false)
+    expect(isModelRowComplete(rows[1], downloads.stateFor)).toBe(false)
   })
 
-  it('counts only what is left of a paused download', () => {
-    const starting = model('a.safetensors')
-    const paused = model('b.safetensors')
-    const rows = rowsFor([starting, 1024], [paused, 4096])
-    const stateFor = (m: ModelWithUrl) =>
+  describe('a paused download', () => {
+    const paused = model('paused.safetensors')
+    const pausedAt = (receivedBytes: number) => (m: ModelWithUrl) =>
       m.name === paused.name
-        ? { status: 'downloading', activity: 'paused', receivedBytes: 3072 }
+        ? { status: 'downloading', activity: 'paused', receivedBytes }
         : { status: 'idle' }
 
-    expect(remainingModelDownloadTotal(rows, stateFor)).toEqual({
-      bytes: 2048,
-      isComplete: true
+    it('counts only what is left of it', () => {
+      const idleModel = model('idle.safetensors')
+      const rows = rowsFor([idleModel, 1024], [paused, 4096])
+
+      expect(
+        remainingModelDownloadTotal(rows, {
+          stateFor: pausedAt(3072),
+          canResume: () => true
+        })
+      ).toEqual({ bytes: 2048, isComplete: true })
     })
-    expect(isModelDownloadCandidate(rows[1], stateFor)).toBe(true)
+
+    it('does not let its excess bytes reduce another model', () => {
+      const idleModel = model('idle.safetensors')
+      const rows = rowsFor([idleModel, 4096], [paused, 1024])
+
+      expect(
+        remainingModelDownloadTotal(rows, {
+          stateFor: pausedAt(2048),
+          canResume: () => true
+        })
+      ).toEqual({ bytes: 4096, isComplete: true })
+    })
+
+    it.for([
+      { canResume: true, candidate: true },
+      { canResume: false, candidate: false }
+    ])(
+      'is a candidate only when it can be resumed ($canResume)',
+      ({ canResume, candidate }) => {
+        const rows = rowsFor([paused, 4096])
+
+        expect(
+          isModelDownloadCandidate(rows[0], {
+            stateFor: pausedAt(0),
+            canResume: () => canResume
+          })
+        ).toBe(candidate)
+      }
+    )
   })
 })

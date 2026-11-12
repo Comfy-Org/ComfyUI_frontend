@@ -124,6 +124,10 @@ test.describe(
         .toEqual([
           { url: MODEL_URL, filename: MODEL_B, directory: 'checkpoints' }
         ])
+      await expect(detail).toBeHidden()
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toContain(TEMPLATE)
     })
 
     test('resumes a paused model instead of requesting it again', async ({
