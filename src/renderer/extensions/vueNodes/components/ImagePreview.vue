@@ -282,10 +282,12 @@ import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
 import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
 
 const DISPLAY_MAX_EDGE = 1024
+const PRELOAD_MIN_SCALE = 1
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -378,6 +380,28 @@ const gridCols = computed(() => {
   const bias = gridWidth.value / gridHeight.value / imageAspectRatio.value
   return Math.max(Math.round(Math.sqrt(imageUrls.length * bias)), 1)
 })
+
+const { camera } = useTransformState()
+const isZoomedIn = computed(() => camera.z >= PRELOAD_MIN_SCALE)
+const preloadUrls = computed(() => {
+  if (!hasMultipleImages.value || !isZoomedIn.value) return []
+  const count = imageUrls.length
+  const candidates =
+    viewMode.value === 'grid'
+      ? imageUrls
+      : [
+          imageUrls[(currentIndex.value + 1) % count],
+          imageUrls[(currentIndex.value - 1 + count) % count]
+        ]
+  return candidates.filter((url) => !getHdrPreviewUrl(url))
+})
+watch(
+  preloadUrls,
+  (urls) => {
+    for (const url of urls) void getDisplayImage(url, DISPLAY_MAX_EDGE)
+  },
+  { immediate: true }
+)
 
 watch(
   () => imageUrls,

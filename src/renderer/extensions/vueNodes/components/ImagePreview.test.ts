@@ -2,6 +2,7 @@
 /* oxlint-disable testing-library/prefer-user-event */
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -11,6 +12,8 @@ import { useTelemetry } from '@comfyorg/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
@@ -30,6 +33,12 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
 vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+
+function setZoom(scale: number) {
+  useTransformState().syncWithCanvas(
+    fromPartial<LGraphCanvas>({ ds: { offset: [0, 0], scale } })
+  )
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -67,6 +76,7 @@ describe('ImagePreview', () => {
     vi.mocked(useImagePreviewStore().getDisplayImage).mockImplementation(
       async (source) => ({ source })
     )
+    setZoom(0.5)
   })
 
   const defaultProps = {
@@ -186,6 +196,49 @@ describe('ImagePreview', () => {
     await vi.waitFor(() => expect(revoke).toHaveBeenCalledWith('blob:copy-1'))
     expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
     expect(getDisplayImage).toHaveBeenCalledTimes(2)
+  })
+
+  describe('background preloading', () => {
+    const batch = [0, 1, 2, 3].map(
+      (i) => `/api/view?filename=batch${i}.png&type=output`
+    )
+
+    it.for([
+      { name: 'zoomed out', zoom: 0.5, preloaded: [] },
+      { name: 'zoomed in', zoom: 1, preloaded: batch }
+    ])(
+      'preloads display copies of a grid only when $name',
+      async ({ zoom, preloaded }) => {
+        setZoom(zoom)
+        renderImagePreview({ imageUrls: batch })
+        await nextTick()
+
+        const requested = vi
+          .mocked(useImagePreviewStore().getDisplayImage)
+          .mock.calls.map(([source]) => source)
+        expect(requested).toEqual(preloaded)
+      }
+    )
+
+    it('preloads only the gallery neighbors when zoomed in', async () => {
+      setZoom(1)
+      const { getDisplayImage } = useImagePreviewStore()
+      renderImagePreview({ imageUrls: batch })
+      const user = userEvent.setup()
+      await switchToGallery(user)
+      vi.mocked(getDisplayImage).mockClear()
+
+      await user.keyboard('{ArrowRight}')
+      await nextTick()
+
+      const requested = vi
+        .mocked(getDisplayImage)
+        .mock.calls.map(([source]) => source)
+      expect(requested).toEqual(
+        expect.arrayContaining([batch[0], batch[1], batch[2]])
+      )
+      expect(requested).not.toContain(batch[3])
+    })
   })
 
   it('does not render when no imageUrls provided', () => {
