@@ -1,12 +1,14 @@
-import { computedWithControl, useElementSize } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import {
+  computedWithControl,
+  useElementSize,
+  useResizeObserver
+} from '@vueuse/core'
+import { computed, shallowRef, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { Subgraph } from '@comfyorg/graph-model/entityRegistry'
 
 import { useSubgraphInputValuesStore } from '@/components/graph/subgraph/subgraphInputValuesStore'
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSubgraphIoLayoutStore } from '@/renderer/core/layout/store/subgraphIoLayoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -15,7 +17,7 @@ import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resiz
 
 export function useSubgraphInputLayout(
   element: Readonly<Ref<HTMLElement | null>>,
-  header: Readonly<Ref<HTMLElement | null>>,
+  slotCount: () => number,
   collapsed: () => boolean
 ) {
   const context = useSubgraphInputValuesStore()
@@ -25,17 +27,12 @@ export function useSubgraphInputLayout(
   const { width, height } = useElementSize(element, undefined, {
     box: 'border-box'
   })
-  const { height: headerHeight } = useElementSize(header, undefined, {
-    box: 'border-box'
-  })
-  const socketInset = SubgraphIONodeBase.socketInset
-  const slotTop = () => (headerHeight.value || LiteGraph.NODE_TITLE_HEIGHT) + 4
   const size = computedWithControl(
     () => context.graph,
     () => {
       const bounds = context.graph?.inputNode.asSerialisable().bounding
       return {
-        width: Math.max(MIN_NODE_WIDTH, (bounds?.[2] ?? 0) - socketInset),
+        width: Math.max(MIN_NODE_WIDTH, bounds?.[2] ?? 0),
         height: bounds?.[3] ?? 0
       }
     }
@@ -46,13 +43,40 @@ export function useSubgraphInputLayout(
     '--min-node-width': `${MIN_NODE_WIDTH}px`
   }))
 
+  const rows = shallowRef<HTMLElement[]>([])
+  const slotCenters = shallowRef<number[]>([])
+  function measureSlotCenters() {
+    const panel = element.value
+    if (!panel?.offsetHeight) return
+    const panelRect = panel.getBoundingClientRect()
+    const scale = panelRect.height / panel.offsetHeight
+    slotCenters.value = rows.value.map((row) => {
+      const port = row.querySelector('[data-port-anchor]') ?? row
+      const rect = port.getBoundingClientRect()
+      return (rect.top + rect.height / 2 - panelRect.top) / scale
+    })
+  }
+  useResizeObserver(() => [element.value, ...rows.value], measureSlotCenters)
+  watch(
+    [element, slotCount, collapsed],
+    () => {
+      rows.value = [
+        ...(element.value?.querySelectorAll<HTMLElement>(
+          '[data-subgraph-port]'
+        ) ?? [])
+      ]
+      measureSlotCenters()
+    },
+    { flush: 'post', immediate: true }
+  )
+
   watch(
     [
       () => context.graph,
       () => canvasStore.linearMode,
       width,
       height,
-      headerHeight
+      slotCenters
     ],
     (_, __, onCleanup) => {
       const graph = context.graph
@@ -61,7 +85,7 @@ export function useSubgraphInputLayout(
       layout.report(graph.id, nodeId, {
         width: width.value || size.value.width,
         height: height.value || size.value.height,
-        slotTop: slotTop()
+        slotCenters: slotCenters.value
       })
       canvasStore.canvas?.setDirty(true, true)
       onCleanup(() => {
@@ -97,13 +121,13 @@ export function useSubgraphInputLayout(
     const node = graph.inputNode
     const [x, y] = node.boundingRect
     node.pos = [x, y]
-    node.size = [next.width + socketInset, next.height]
+    node.size = [next.width, next.height]
     graph.setDirtyCanvas(true, true)
     size.trigger()
     layout.report(graph.id, node.id, {
       width: next.width,
       height: next.height,
-      slotTop: slotTop()
+      slotCenters: slotCenters.value
     })
   })
 

@@ -3,28 +3,19 @@ import { computedWithControl, useEventListener } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import NodeFrame from '@/renderer/extensions/vueNodes/components/NodeFrame.vue'
-import NodeBody from '@/renderer/extensions/vueNodes/components/NodeBody.vue'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
-import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
-import type { NodeBadgeGroup } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
-import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
-import SubgraphInputValuesContent from './SubgraphInputValuesContent.vue'
-import { useSubgraphInputLayout } from './useSubgraphInputLayout'
 import NodeResizeHandle from '@/renderer/extensions/vueNodes/components/NodeResizeHandle.vue'
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 import { cn } from '@comfyorg/tailwind-utils'
-
-const badges: NodeBadgeGroup[] = [
-  { kind: 'core', badges: [{ text: '', cssIcon: 'icon-[comfy--workflow]' }] }
-]
+import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
+import SubgraphInputValuesContent from './SubgraphInputValuesContent.vue'
+import { useSubgraphInputLayout } from './useSubgraphInputLayout'
 
 const { t } = useI18n()
 const context = useSubgraphInputValuesStore()
@@ -53,12 +44,6 @@ useEventListener(
   ],
   slots.trigger
 )
-const { state: linkDrag } = useSlotLinkDragUIState()
-const draggedFrom = computed(() =>
-  linkDrag.active
-    ? canvasStore.canvas?.linkConnector.renderLinks[0]?.fromSlot
-    : undefined
-)
 const title = computed(() =>
   context.selected
     ? t('subgraphInputValues.instance', {
@@ -70,10 +55,9 @@ const title = computed(() =>
 
 const nodeView = useTemplateRef('nodeView')
 const panel = computed(() => nodeView.value?.element ?? null)
-const header = useTemplateRef('header')
 const { style, startResize } = useSubgraphInputLayout(
   panel,
-  header,
+  () => slots.value.length,
   () => collapsed.value
 )
 
@@ -108,7 +92,13 @@ function forwardUnlessOnButton(event: PointerEvent) {
     data-subgraph-io
     :inert="canvasStore.isPickingNodes"
     :aria-label="title"
-    class="pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) w-(--node-width) origin-top-left"
+    :class="
+      cn(
+        'pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) origin-top-left drop-shadow-none',
+        collapsed ? 'w-fit max-w-(--node-width)' : 'w-(--node-width)'
+      )
+    "
+    container-class="w-full rounded-(--node-radius) bg-node/60"
     :style
     @wheel="handleWheel"
     @pointerdown.capture="handlePointerDown"
@@ -118,55 +108,30 @@ function forwardUnlessOnButton(event: PointerEvent) {
     @keydown="stopUnmodifiedKeys"
   >
     <template #before>
-      <NodeBadges :groups="badges" role="img" :aria-label="t('g.subgraph')" />
+      <div
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-y-0 right-0 z-10 rounded-r-(--node-radius) border-2 border-l-0 border-foreground"
+        :style="{ width: `${SubgraphIONodeBase.roundedRadius}px` }"
+      />
     </template>
     <div
-      ref="header"
       @pointerdown="forwardUnlessOnButton"
       @pointermove="forwardUnlessOnButton"
       @pointerup="forwardUnlessOnButton"
     >
-      <NodeHeader :title :collapsed @collapse="collapsed = !collapsed" />
-    </div>
-    <NodeBody
-      data-testid="subgraph-input-body"
-      class="rounded-b-(--node-radius)"
-      @pointerdown.self="forwardEventToCanvas"
-    >
-      <div>
-        <div
-          v-for="slot in slots"
-          :key="slot.id"
-          :class="
-            cn(
-              'lg-slot lg-slot--output relative flex cursor-crosshair items-center justify-end pr-3',
-              draggedFrom && !slot.isValidTarget(draggedFrom) && 'opacity-40'
-            )
-          "
-          :style="{ height: `${LiteGraph.NODE_SLOT_HEIGHT}px` }"
-          :data-testid="
-            slot === context.graph.inputNode.emptySlot
-              ? 'subgraph-add-input'
-              : 'subgraph-input-port'
-          "
-          @pointerdown="forwardEventToCanvas"
-          @pointermove="forwardEventToCanvas"
-          @pointerup="forwardEventToCanvas"
-          @dblclick="forwardEventToCanvas"
-          @contextmenu.prevent
-        >
-          <span class="truncate">{{ slot.displayName }}</span>
-          <SlotConnectionDot
-            :slot-data="slot"
-            class="absolute right-0 translate-x-1/2"
-          />
-        </div>
-      </div>
-      <SubgraphInputValuesContent
-        v-if="!collapsed"
-        @pointerdown.self="forwardEventToCanvas"
+      <NodeHeader
+        :title
+        :collapsed
+        :style="{ paddingRight: `${SubgraphIONodeBase.socketInset}px` }"
+        @collapse="collapsed = !collapsed"
       />
-    </NodeBody>
+    </div>
+    <SubgraphInputValuesContent
+      data-testid="subgraph-input-body"
+      :slots
+      :collapsed
+      @pointerdown.self="forwardEventToCanvas"
+    />
     <template #after>
       <NodeFooter
         subgraph-action="exit"

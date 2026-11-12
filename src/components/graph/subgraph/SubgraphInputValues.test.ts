@@ -102,7 +102,6 @@ describe('subgraph input node ports', () => {
       screen.getByRole('heading', { name: `${host.title} · #${host.id}` })
     ).toBeVisible()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
-    expect(screen.getByRole('img', { name: 'Subgraph' })).toBeVisible()
     expect(screen.getByRole('button', { name: 'Exit subgraph' })).toBeVisible()
   })
 
@@ -182,7 +181,7 @@ describe('subgraph input node ports', () => {
       expect(
         screen
           .getAllByTestId('subgraph-input-port')
-          .map((port) => port.textContent.trim())
+          .map((port) => port.getAttribute('aria-label'))
       ).toEqual(expected)
       expect(screen.getByTestId('subgraph-add-input')).toBeVisible()
     }

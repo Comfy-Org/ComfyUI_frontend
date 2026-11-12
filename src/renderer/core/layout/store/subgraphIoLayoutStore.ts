@@ -6,7 +6,7 @@ import type { UUID } from '@comfyorg/graph-model/uuid'
 interface SubgraphIoLayout {
   width: number
   height: number
-  slotTop: number
+  slotCenters: readonly number[]
 }
 
 export const useSubgraphIoLayoutStore = defineStore('subgraphIoLayout', () => {

@@ -29,7 +29,7 @@ test.describe(
       )
       const clip = panel
         .getByTestId('subgraph-input-port')
-        .filter({ hasText: /^clip$/ })
+        .and(panel.getByLabel('clip', { exact: true }))
         .getByTestId('slot-connection-dot')
 
       async function dragPort(source: Locator) {

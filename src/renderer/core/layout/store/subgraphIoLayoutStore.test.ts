@@ -22,7 +22,7 @@ describe('subgraph IO renderer measurements', () => {
     useSubgraphIoLayoutStore().report(graph.id, graph.inputNode.id, {
       width: 320,
       height: 400,
-      slotTop: 36
+      slotCenters: []
     })
     graph.inputNode.arrange()
     const canvas = new LGraphCanvas(document.createElement('canvas'), graph, {
@@ -51,7 +51,7 @@ describe('subgraph IO renderer measurements', () => {
       node: interior
     })
   })
-  it('keeps connection anchors aligned with a measured node and the final empty port', () => {
+  it('places each connection anchor at its measured row center', () => {
     const graph = createTestSubgraph()
     graph.addInput('first', 'STRING')
     graph.addInput('second', 'STRING')
@@ -63,20 +63,20 @@ describe('subgraph IO renderer measurements', () => {
     layouts.report(graph.id, node.id, {
       width: 320,
       height: 400,
-      slotTop: 36
+      slotCenters: [40, 72, 140]
     })
 
     node.arrange()
 
     expect(node.allSlots.map((slot) => [...slot.pos])).toEqual([
-      [204, 246],
-      [204, 266],
-      [204, 286]
+      [204, 240],
+      [204, 272],
+      [204, 340]
     ])
-    expect([...node.boundingRect.size]).toEqual([344, 400])
+    expect([...node.boundingRect.size]).toEqual([320, 400])
     expect(node.asSerialisable().bounding).toEqual(savedBounds)
     expect(node.allSlots.at(-1)).toBe(node.emptySlot)
-    expect(graph.outputNode.boundingRect[2]).not.toBe(344)
+    expect(graph.outputNode.boundingRect[2]).not.toBe(320)
     expect(node.allSlots[0].boundingRect[3]).toBe(LiteGraph.NODE_SLOT_HEIGHT)
   })
 
@@ -87,7 +87,7 @@ describe('subgraph IO renderer measurements', () => {
     layouts.report(first.id, first.inputNode.id, {
       width: 320,
       height: 400,
-      slotTop: 36
+      slotCenters: []
     })
     first.inputNode.arrange()
     second.inputNode.arrange()

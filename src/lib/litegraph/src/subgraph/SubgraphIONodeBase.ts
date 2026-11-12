@@ -63,11 +63,10 @@ export abstract class SubgraphIONodeBase<
     )
     if (!measured) return this._boundingRect
     const [x, y, width] = this._boundingRect
-    const socketInset = SubgraphIONodeBase.socketInset
     return new Rectangle(
-      x + width - socketInset - measured.width,
+      x + width - measured.width,
       y,
-      measured.width + socketInset,
+      measured.width,
       measured.height
     )
   }
@@ -342,10 +341,12 @@ export abstract class SubgraphIONodeBase<
     const x = this.slotAnchorX
 
     let maxWidth = minWidth
-    let currentY = y + (measured?.slotTop ?? roundedRadius)
+    let currentY = y + roundedRadius
 
-    for (const slot of this.allSlots) {
+    for (const [index, slot] of this.allSlots.entries()) {
       const [slotWidth, slotHeight] = slot.measure()
+      const center = measured?.slotCenters[index]
+      if (center !== undefined) currentY = y + center - slotHeight / 2
       slot.arrange([x, currentY, slotWidth, slotHeight])
 
       currentY += slotHeight
