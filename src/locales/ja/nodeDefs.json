@@ -1645,12 +1645,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "Seedance 2.5 ドラフトの1080p最終動画をレンダリングします。最終版ではドラフトのシーンと動きを維持し、プロンプト、参照、長さ、アスペクト比、オーディオ設定を再利用します。",
+    "description": "Seedance 2.5 Draft の1080pまたは4kの最終動画をレンダリングします。最終版では下書きのシーンと動きを維持し、プロンプト、参照、長さ、アスペクト比、オーディオ設定を再利用します。",
     "display_name": "ByteDance Seedance 2.5 ドラフトから最終動画",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "Seedance 2.5 Draftモデルで実行したSeedance 2.5ノードのdraft_task_id出力、または貼り付けたドラフトタスクID。レビューしたドラフトを再利用するには、そのノードのseed制御を固定に設定してください。設定しない場合、次回の実行では新しいドラフトが生成されます。ドラフトは作成後7日間レンダリングできます。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "最終動画の解像度。4kはエンタープライズアカウントでのみ利用できます。"
       },
       "watermark": {
         "name": "透かし",
@@ -1688,7 +1692,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5は最新モデル向けで、最大30秒の動画、エンタープライズアカウント向けの4k、mp4/mov出力に対応しています。Seedance 2.5 Draftは高速な480pプレビュー向けで、そのdraft_task_idをSeedance 2.5 Draft to Final Videoノードで使用すると1080pまたは4kの最終版をレンダリングできます。Seedance 2.0は最高品質と4k向けです。Fastは速度最適化向けです。Miniは最速かつ最低コストの生成向けです。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1720,7 +1724,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 ドラフトから最終動画ノードに接続して、1080pの最終版をレンダリングします。"
+        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 Draft to Final Videoノードに接続して、1080pまたは4kの最終版をレンダリングします。"
       }
     }
   },
@@ -1733,7 +1737,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5は最新モデル向けで、最大30秒の動画、エンタープライズアカウント向けの4k、mp4/mov出力に対応しています。Seedance 2.5 Draftは高速な480pプレビュー向けで、そのdraft_task_idをSeedance 2.5 Draft to Final Videoノードで使用すると1080pまたは4kの最終版をレンダリングできます。Seedance 2.0は最高品質と4k向けです。Fastは速度最適化向けです。Miniは最速かつ最低コストの生成向けです。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -1786,7 +1790,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5は最新モデル向けで、最大30秒の動画、エンタープライズアカウント向けの4k、mp4/mov出力に対応しています。Seedance 2.5 Draftは高速な480pプレビュー向けで、そのdraft_task_idをSeedance 2.5 Draft to Final Videoノードで使用すると1080pまたは4kの最終版をレンダリングできます。Seedance 2.0は最高品質と4k向けです。Fastは速度最適化向けです。Miniは最速かつ最低コストの生成向けです。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -1830,7 +1834,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 ドラフトから最終動画ノードに接続して、1080pの最終版をレンダリングします。"
+        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 Draft to Final Videoノードに接続して、1080pまたは4kの最終版をレンダリングします。"
       }
     }
   },
@@ -1843,7 +1847,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最長30秒の動画、mp4/mov出力にはSeedance 2.5、素早い480pプレビューと、そのdraft_task_idをSeedance 2.5 ドラフトから最終動画ノードで1080p最終版としてレンダリングするにはSeedance 2.5 Draft、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5は最新モデル向けで、最大30秒の動画、エンタープライズアカウント向けの4k、mp4/mov出力に対応しています。Seedance 2.5 Draftは高速な480pプレビュー向けで、そのdraft_task_idをSeedance 2.5 Draft to Final Videoノードで使用すると1080pまたは4kの最終版をレンダリングできます。Seedance 2.0は最高品質と4k向けです。Fastは速度最適化向けです。Miniは最速かつ最低コストの生成向けです。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1878,7 +1882,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 ドラフトから最終動画ノードに接続して、1080pの最終版をレンダリングします。"
+        "tooltip": "Seedance 2.5 Draft実行のタスクID。Seedance 2.5 Draft to Final Videoノードに接続して、1080pまたは4kの最終版をレンダリングします。"
       }
     }
   },
@@ -7440,7 +7444,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "Google の Gemini Omni Flash モデルを使用して、テキストプロンプトから音声付き動画を生成します。必要に応じて、結果の誘導または編集用に参照画像や動画を指定できます。希望する長さ（3～10秒）はプロンプト内に直接記述してください。",
+    "description": "GoogleのGemini Omni Flashモデルを使用し、テキストプロンプトからオーディオ付き動画を生成します。必要に応じて、結果の誘導または編集用に参照画像や動画を指定できます。希望する長さはプロンプト内で直接指定してください（Omni Flash 1.2では3～15秒、旧モデルでは3～10秒）。",
     "display_name": "Google Gemini Omni（動画）",
     "inputs": {
       "control_after_generate": {
@@ -7748,7 +7752,8 @@
         "name": "image"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-image-qualityとgrok-imagine-image-proはxAIにより廃止され、現在は低品質設定のgrok-imagine-image-2.0として実行されます。"
       },
       "number_of_images": {
         "name": "生成画像数",
@@ -7780,7 +7785,8 @@
         "name": "生成後のコントロール"
       },
       "model": {
-        "name": "モデル"
+        "name": "モデル",
+        "tooltip": "grok-imagine-image-qualityとgrok-imagine-image-proはxAIにより廃止され、現在は低品質設定のgrok-imagine-image-2.0として実行されます。"
       },
       "model_aspect_ratio": {
         "name": "アスペクト比"
@@ -7820,7 +7826,8 @@
         "name": "生成後の制御"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-image-qualityとgrok-imagine-image-proはxAIにより廃止され、現在は低品質設定のgrok-imagine-image-2.0として実行されます。"
       },
       "number_of_images": {
         "name": "生成画像数",
@@ -10320,6 +10327,9 @@
       "model_aspect_ratio": {
         "name": "アスペクト比"
       },
+      "model_audio": {
+        "name": "オーディオ"
+      },
       "model_prompt": {
         "name": "プロンプト"
       },
@@ -10337,7 +10347,7 @@
     }
   },
   "Kling4ImageToVideoNode": {
-    "description": "最大10個のキーフレームを使用して音声付き動画を生成します。中間フレームは均等に配置され、動画のアスペクト比は最初のキーフレームに従います。",
+    "description": "kling-4.0では最大10個のキーフレームを通じて、またはkling-4.0-flashでは最初のフレームから、オーディオ付き動画を生成します。中間フレームは均等に配置され、動画は最初のキーフレームのアスペクト比を使用します。",
     "display_name": "Kling 4.0 画像から動画",
     "inputs": {
       "control_after_generate": {
@@ -18750,7 +18760,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "モデルが回答前にどの程度推論するかを指定します。'default' はモデルに選択を委ねます。対応レベルはモデルごとに異なります: GPT-6 Astra は low-max、GPT-6 Sol/Luna および GPT-5.6 は none-max（minimal なし）、GPT-5.5 は none-xhigh、GPT-5.5 Pro は medium-xhigh、GPT-5 は minimal-high、o-series は low-high、GPT-4.1 には推論機能がありません。非対応のレベルはリクエスト送信前に拒否されます。"
+        "tooltip": "対応レベルはモデルによって異なります。未対応のレベルを指定すると実行が停止し、有効なレベルが一覧表示されます。'default'ではモデルが選択します。"
       },
       "truncation": {
         "name": "切り捨て",
@@ -18855,9 +18865,55 @@
       }
     }
   },
+  "OpenAIGPTImageGIFNode": {
+    "description": "OpenAIのGPT Imageエンドポイント経由でアニメーションGIFを生成し、そのフレームとフレームレートを出力します。",
+    "display_name": "OpenAI GPT Image 2.6 GIF",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_complexity": {
+        "name": "複雑度"
+      },
+      "model_frame_count": {
+        "name": "frame_count"
+      },
+      "model_frame_duration_ms": {
+        "name": "frame_duration_ms"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size": {
+        "name": "サイズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "フレーム",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImageNodeV2": {
     "description": "OpenAIのGPT Imageエンドポイントを使って画像を生成します。",
-    "display_name": "OpenAI GPT Image 2.5",
+    "display_name": "OpenAI GPT Image",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -18867,6 +18923,9 @@
       },
       "model_background": {
         "name": "背景"
+      },
+      "model_complexity": {
+        "name": "複雑度"
       },
       "model_custom_height": {
         "name": "カスタム高さ"
@@ -18891,6 +18950,82 @@
       "seed": {
         "name": "シード",
         "tooltip": "バックエンドではまだ未実装"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV3": {
+    "description": "OpenAIのGPT Imageエンドポイント経由で画像を生成・編集し、注釈に基づく編集を行います。",
+    "display_name": "OpenAI GPT Image 2.6",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_complexity": {
+        "name": "複雑度"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size": {
+        "name": "サイズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageSVGNode": {
+    "description": "OpenAI の GPT Image エンドポイントを介して SVG を生成します。",
+    "display_name": "OpenAI GPT Image 2.6 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_complexity": {
+        "name": "複雑さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size": {
+        "name": "サイズ"
       }
     },
     "outputs": {
@@ -19010,6 +19145,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "テキストから画像を生成するか、画像を使用する場合は、他の画像を参照として image_1 を編集します。プロンプトではそれらを <Picture 1>、<Picture 2>、... として参照します。モデルには 1.0/1.0 の ModelSamplingMiniMaxH3 が必要です。",
+    "display_name": "p-h3-image コンディショニング",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高さ",
+        "tooltip": "0 の場合、スケーリング後の image_1 の高さを使用します。画像がない場合は 2912 です。"
+      },
+      "images": {
+        "name": "画像"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像がある場合、短い指示の先頭には「Edit <Picture 1>. 」が追加されます。「Edit <Picture」で始まる指示と、プロンプトアップサンプラーによる編集指示はそのまま使用されます。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "画像が接続されている場合に必要な p-h3-image VAE。"
+      },
+      "width": {
+        "name": "幅",
+        "tooltip": "0 の場合、スケーリング後の image_1 の幅を使用します。画像がない場合は 2912 です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +19833,183 @@
       },
       "positive": {
         "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika の後処理学習済み MiniMax H3 である Pika H3 Flex。参照画像、動画、音声をガイドとして、同期された音声付きの動画を生成または編集します。",
+    "display_name": "Pika H3 Flex リファレンスから動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto は参照動画に従い、それ以外の場合はプロンプトに従います。参照画像は影響しません。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "出力の長さはフレームグリッドに従います。5 秒の場合は 124 フレームで、約 5.17 秒です。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "参照は @Image1、@Video1、@Audio1、または <Picture 1>、<Video 1>、<Audio 1> として指定します。"
+      },
+      "reference_audios": {
+        "name": "参照オーディオ",
+        "tooltip": "プロンプト内で@Audio1..@Audio3として参照されるクリップを最大3つ指定できます。各2～15秒、合計15秒までです。出力にコピーされる場合、プロンプトで指定された番号にかかわらず、クリップは接続順に、接続された動画の音声より先に再生されます。"
+      },
+      "reference_images": {
+        "name": "参照画像",
+        "tooltip": "接続順に、プロンプト内で@Image1..@Image9として参照される画像を最大9枚指定できます。画像または動画が少なくとも1つ必要です。"
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "接続された動画の音声が出力にコピーされます。新しい環境音や新しい音楽でのモーショントランスファーには、これをオフにしてください。プロンプトに台詞がない話す人物には、音声が生成されます。"
+      },
+      "reference_videos": {
+        "name": "参照動画",
+        "tooltip": "接続順に、プロンプト内で@Video1..@Video3として参照される動画を最大3本指定できます。各2～15秒、合計15秒までです。秒単位で課金されます。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "1080p 以上は 768p でレンダリングされ、一度アップスケールされます。480p で同じシードを使用すると、異なる動画になります。"
+      },
+      "rewrite_prompt": {
+        "name": "プロンプトを書き換える",
+        "tooltip": "まずPikaにプロンプトを拡張させます。その場合、同じシードでも実行ごとに異なる動画が生成されます。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "rewrite_promptをオフにすると、同じシードで完全に同じ動画が再現されます。同じシードでローカル実行した場合は異なる結果になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pikaによる追加学習済みMiniMax H3、Pika H3 Flexです。テキストと任意の最初および最後のフレームから、同期された音声付きの動画を生成します。",
+    "display_name": "Pika H3 Flex Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "アスペクト比",
+        "tooltip": "autoは最初に接続されたフレームに従い、それ以外の場合はプロンプトに従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "出力の長さはフレームグリッドに従います。5秒の場合は124フレーム、約5.17秒です。"
+      },
+      "first_frame": {
+        "name": "最初のフレーム"
+      },
+      "last_frame": {
+        "name": "最後のフレーム"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "1080p以上は768pでレンダリングされ、一度アップスケールされます。480pでは、同じシードでも異なる動画が生成されます。"
+      },
+      "rewrite_prompt": {
+        "name": "プロンプトを書き換える",
+        "tooltip": "まずPikaにプロンプトを拡張させます。その場合、同じシードでも実行ごとに異なる動画が生成されます。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "rewrite_promptをオフにすると、同じシードで完全に同じ動画が再現されます。同じシードでローカル実行した場合は異なる結果になります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "Pikaで、テキストによる説明と任意の歌詞から音楽を生成するか、楽曲をカバーします。",
+    "display_name": "Pika Music",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "mode": {
+        "name": "モード"
+      },
+      "mode_duration": {
+        "name": "長さ"
+      },
+      "mode_lyrics": {
+        "name": "歌詞"
+      },
+      "mode_prompt": {
+        "name": "プロンプト"
+      },
+      "mode_rewrite_prompt": {
+        "name": "プロンプトを書き換える"
+      },
+      "mode_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "Pikaでテキストによる説明から効果音を生成します。",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "Pikaで動画に同期したサウンドトラックを生成します。映像と長さは維持され、音声のみが置き換えられます。",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "音声の内容（効果音、環境音、音楽、スタイル）を指定します。空欄の場合は映像から導出します。"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "最大10分。"
       }
     },
     "outputs": {
@@ -21713,8 +22062,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "RelayVSR動画アップスケーリング用のconditioningと空のlatentです。cfg 1で1ステップのサンプリングを行います。15フレームごとにのみモデルを通し、VSR Decodeがすべてを復元します。",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "ネイティブ解像度の低品質動画です。アップスケール倍率はモデルが決定します。"
+      },
+      "model": {
+        "name": "モデル"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "潜在",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "アクティブな演算デバイス上で、狭帯域距離フィールド + Dual Contouringにより均一にテッセレーションされたメッシュを再抽出します。乱雑な／非多様体の／自己交差するトポロジーを正規化します。正確な面数にするには、Decimate Meshの前に実行してください。出力は溶接状態を維持します。",
+    "description": "アクティブな計算デバイス上で、狭帯域距離場 + Dual Contouringにより均一にテッセレーションされたメッシュを再抽出します。乱雑な / 非多様体 / 自己交差するトポロジーを正規化します。正確な面数にするには、Decimate Meshの前に実行してください。出力は溶接された状態に保たれます。0.51を超えるメッシュ、または範囲が0.5未満のメッシュは、まず[-0.5,0.5]キューブにフィットさせてから元に戻します。",
     "display_name": "メッシュをリメッシュ（狭帯域DC）",
     "inputs": {
       "band": {
@@ -24973,6 +25345,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "Sonilo Music 1.5を使用して、テキストプロンプトから歌唱ボーカル付きの楽曲を生成します。",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "'auto'は楽曲の長さを歌詞に合わせます。カスタムの長さでは、収まらない歌詞は切り詰められ、短い歌詞は繰り返されます。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "楽曲のジャンル、雰囲気、楽器、ボーカルを説明します。歌詞を設定するには、[Verse] / [Chorus]タグを含む'Lyrics:'ブロックを追加します。追加しない場合、モデルが独自の歌詞を書きます。最大: 2000文字。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "SoniloのAIモデルを使ってテキストプロンプトから音楽を生成します。継続時間を0にすると、プロンプトから自動的に推定されます。",
     "display_name": "Sonilo テキストから音楽生成",
@@ -25052,6 +25450,10 @@
         "name": "色シャープ化",
         "tooltip": "頂点テクスチャを鮮明にします：1.0＝物理的に正しいブレンド、それ以上は各ボクセルの色を近傍の平均ではなく支配的なガウシアンに寄せます（テクスチャのぼやけを軽減）。色のみで、ジオメトリは変化しません。"
       },
+      "fill": {
+        "name": "充填",
+        "tooltip": "中実の場合のみ。表面に従う場合に対する開口部を閉じるコストです。低いほど大きな開口部を閉じます。3前後では中空オブジェクトを密閉しますが、カップや襟にも蓋を付けます。"
+      },
       "kernel": {
         "name": "カーネル",
         "tooltip": "ボクセル単位での最大スプラット半幅。各ガウシアンは自身の3シグマサイズのウィンドウでラスタライズされ、ここで上限が設定されます。小さいサーフェルは計算コストが低く、大きいものは切り捨てられません。スプラットが疎で隙間ができる場合は値を上げてください。"
@@ -25075,6 +25477,10 @@
       "smooth": {
         "name": "スムーズ",
         "tooltip": "Taubinメッシュスムージングの反復回数。密度のぼかしとは異なり、体積を保ったまま表面を滑らかにします。0の場合は生の表面です。"
+      },
+      "solid": {
+        "name": "中実",
+        "tooltip": "単一の閉じた表面にするため、gaussiansの向きに基づいて内部を充填します。オフ: 生の密度等値面。表面の背後に隠れた内壁が残ります。"
       },
       "splat": {
         "name": "splat"
@@ -25813,6 +26219,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "TencentのHy4モデルでテキスト応答を生成します。テキストプロンプトと、任意でコンテキスト用の1枚以上の画像を指定します。",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_reasoning": {
+        "name": "推論"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "温度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: 画像からモデルへ (Pro)",
     "inputs": {
@@ -26421,7 +26862,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "テキストを生成（非推奨）",
     "inputs": {
       "audio": {
         "name": "オーディオ"
@@ -26480,7 +26921,7 @@
       },
       "video": {
         "name": "ビデオ",
-        "tooltip": "ビデオフレームを画像バッチとして扱います。24 FPSと仮定し、内部的に1 FPSにサブサンプリングされます。"
+        "tooltip": "画像バッチとしての動画フレーム。24 FPS と仮定され、内部的にモデルのフレームレートへサブサンプリングされます。"
       }
     },
     "outputs": {
@@ -26554,12 +26995,85 @@
       },
       "video": {
         "name": "ビデオ",
-        "tooltip": "ビデオフレームを画像バッチとして扱います。24 FPSと仮定し、内部的に1 FPSにサブサンプリングされます。"
+        "tooltip": "画像バッチとしての動画フレーム。24 FPS と仮定され、内部的にモデルのフレームレートへサブサンプリングされます。"
       }
     },
     "outputs": {
       "0": {
         "name": "生成テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "テキストを生成",
+    "inputs": {
+      "audios": {
+        "name": "音声"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "画像"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "チェックポイントのマルチトークン予測ヘッドを使用する投機的デコーディング。MTP 重みがない場合は効果がありません。auto は観測されたトークン一致と実行コストに合わせてドラフトの深さと幅を適応的に調整します。2-5 は一定のドラフト深さに固定します。tree モードは幅と深さの両方を固定します。サンプリングされた出力は正しい分布を維持しますが、同じシードでも非 MTP 出力とは異なります。"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "シード"
+      },
+      "sampling_mode_temperature": {
+        "name": "温度"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルのチャットテンプレート内のシステムプロンプトを置き換えます。デフォルトテンプレートを使用しない場合は無視されます。"
+      },
+      "thinking": {
+        "name": "思考",
+        "tooltip": "モデルが対応している場合、思考モードで動作します。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "モデルに組み込みのシステムプロンプト／テンプレートがある場合、それを使用します。"
+      },
+      "videos": {
+        "name": "動画"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {
@@ -29083,6 +29597,31 @@
       },
       "steps": {
         "name": "ステップ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VSRDecode": {
+    "description": "低品質フレームも読み取る RelayVSR Flash デコーダーで、RelayVSR の潜在表現をデコードします。",
+    "display_name": "VSR デコード",
+    "inputs": {
+      "detail": {
+        "name": "ディテール",
+        "tooltip": "デコーダーが各フレームのバイキュービックアップスケールに追加するディテールをどの程度保持するかを指定します。1 は完全なモデル出力です。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "コンディショニングノードに与えたものと同じ低品質動画。"
+      },
+      "samples": {
+        "name": "サンプル"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -32204,6 +32743,55 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL 検出",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "visual_prompt 用の参照ボックス。"
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "WeVisOne-VL テキストエンコーダー。"
+      },
+      "image": {
+        "name": "image"
+      },
+      "individual_masks": {
+        "name": "individual_masks",
+        "tooltip": "フレームごとに1つの統合マスクではなく、bboxes の順序およびフレームの並びに従って、ボックスごとに1つの mask を出力します。"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "query",
+        "tooltip": "検索対象。freeform はこれをプロンプト全体として送信します。"
+      },
+      "task": {
+        "name": "task",
+        "tooltip": "segmentation：ボックスとアルファマット。detection と point では、1行につき1つのラベルを指定します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "points",
+        "tooltip": "point および count_point タスク用の、ピクセル単位の JSON [{\"x\", \"y\", \"label\", \"frame\"}] 形式のポイント。"
+      },
+      "3": {
+        "name": "text",
+        "tooltip": "生の回答。"
       }
     }
   },
