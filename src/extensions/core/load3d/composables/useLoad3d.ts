@@ -14,6 +14,7 @@ import type { ModelStats } from '@comfyorg/viewport3d/load3d/modelStats'
 import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
+import { recordModelChange } from '@/extensions/core/load3d/recordModelChange'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import {
   isAssetPreviewSupported,
@@ -955,6 +956,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
           options.values.push(uploadedPath)
         }
         modelWidget.value = uploadedPath
+        recordModelChange()
       }
     } catch (error) {
       console.error('Model drop failed:', error)

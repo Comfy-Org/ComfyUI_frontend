@@ -6,11 +6,15 @@ import { useAttrsClass } from '@comfyorg/design-system/lib/composables/useAttrsC
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 
-const { containerClass = 'rounded-(--node-radius)', containerStyle } =
-  defineProps<{
-    containerClass?: ClassValue
-    containerStyle?: CSSProperties
-  }>()
+const {
+  containerClass = 'rounded-(--node-radius)',
+  containerStyle,
+  contentVisibility = false
+} = defineProps<{
+  containerClass?: ClassValue
+  containerStyle?: CSSProperties
+  contentVisibility?: boolean
+}>()
 defineOptions({ inheritAttrs: false })
 const { attrsClass, attrsWithoutClass } = useAttrsClass()
 const element = useTemplateRef<HTMLDivElement>('element')
@@ -31,17 +35,27 @@ defineExpose({ element })
   >
     <slot name="before" />
     <div
-      data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex w-(--node-width) flex-1 flex-col bg-node-header',
-          containerClass
+          'relative flex flex-1 flex-col',
+          contentVisibility &&
+            '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] group-data-measured/node:[content-visibility:auto] group-data-measured/node:[overflow-clip-margin:16px]'
         )
       "
-      :style="containerStyle"
     >
-      <slot />
+      <div
+        data-testid="node-inner-wrapper"
+        :class="
+          cn(
+            'flex w-(--node-width) flex-1 flex-col bg-node-header',
+            containerClass
+          )
+        "
+        :style="containerStyle"
+      >
+        <slot />
+      </div>
+      <slot name="after" />
     </div>
-    <slot name="after" />
   </div>
 </template>

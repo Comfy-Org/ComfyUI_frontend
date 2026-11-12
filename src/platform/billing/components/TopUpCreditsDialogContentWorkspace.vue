@@ -1,6 +1,6 @@
-<!-- fallow-ignore-next-line complexity -->
 <template>
   <Card class="flex min-h-[500px] w-[min(512px,95vw)] flex-col shadow-md">
+    <!-- Header -->
     <div class="flex items-center justify-between p-8">
       <div class="flex items-center gap-2">
         <button
@@ -150,6 +150,8 @@
       @pay-amount="handlePayAmountChange"
       @credits="creditsModel = $event"
     />
+
+    <!-- Warnings -->
 
     <p
       v-if="negativeBalanceCredits !== null && step === 'amount'"
@@ -364,14 +366,13 @@
 </template>
 
 <script setup lang="ts">
-import {
-  servedTopUpBound,
-  getTopupAmountPreset,
-  PURCHASE_REFUSAL_SERVER_CODES
-} from '@comfyorg/account-core/billing'
 import Card from '@comfyorg/design-system/card/Card'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
+import {
+  getTopupAmountPreset,
+  PURCHASE_REFUSAL_SERVER_CODES
+} from '@comfyorg/account-core/billing'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -384,10 +385,10 @@ import {
 } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import TopUpAmountFields from './TopUpAmountFields.vue'
-import TopUpAutoTopUpCard from './TopUpAutoTopUpCard.vue'
+import TopUpAmountFields from '@/platform/billing/components/TopUpAmountFields.vue'
+import TopUpAutoTopUpCard from '@/platform/billing/components/TopUpAutoTopUpCard.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
-import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
+import { useTopUpPlanCreditCopy } from '@/platform/billing/legacy160/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -493,6 +494,9 @@ const {
   dismissOperation,
   adoptPendingOperation
 } = useTopupOperation()
+// Start over invalidates the attempt in flight: on the SDK rail the purchase
+// call resolves only at settlement, so a superseded attempt must not unlock
+// or close the dialog for the attempt that replaced it.
 let purchaseAttempt = 0
 const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
@@ -501,6 +505,15 @@ const topupAuthenticationError = computed(
 const topupIsFailedRetryable = computed(
   () => topupOperation.value?.authenticationState === 'failed_retryable'
 )
+// Parked on the customer with no link to send them to. The operation stays open
+// server-side, and that also refuses a replacement purchase, so this state
+// explains the wait rather than offering a restart that would be rejected.
+// Leaving this screen keeps the pending-top-up marker: the copy sends the
+// customer off to pay elsewhere, and the marker outlives the wait, so it is
+// what refreshes the balance when they come back to a settled purchase.
+// Latent on this rail today — only the legacy hosted-checkout path sets the
+// marker, so usually there is none here to keep. Preserving it is still right,
+// and it starts paying off if this rail ever sets one when it parks.
 const topupIsParkedWithoutLink = computed(
   () =>
     !topupActionUrl.value &&
@@ -527,6 +540,7 @@ const verifyingBody = computed(() => {
   })
 })
 
+// Constants
 const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
 const DEFAULT_AMOUNT = 50
@@ -537,6 +551,7 @@ function wholeDollarsOrNull(cents: number | null | undefined): number | null {
   return Number.isInteger(dollars) ? dollars : null
 }
 
+// State
 const suggestedAmount = computed(() =>
   wholeDollarsOrNull(balance.value?.suggestedTopupAmountCents)
 )
@@ -568,6 +583,7 @@ const step = ref<
   | 'defaultCardBlocked'
 >(topupOperation.value && canTopUp.value ? 'verifying' : 'amount')
 
+// Computed
 const pricingUrl = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
 )
@@ -581,22 +597,28 @@ const creditsModel = computed({
   }
 })
 
+function servedBoundOr(
+  fallbackUsd: number,
+  cents: number | undefined,
+  credits: number | undefined
+) {
+  return cents === undefined || credits === undefined
+    ? { usd: fallbackUsd, credits: usdToCredits(fallbackUsd) }
+    : { usd: cents / 100, credits }
+}
+
 const minTopup = computed(() =>
-  servedTopUpBound(
-    { usd: MIN_AMOUNT, credits: usdToCredits(MIN_AMOUNT) },
-    {
-      cents: balance.value?.minTopupCents,
-      credits: balance.value?.minTopupCredits
-    }
+  servedBoundOr(
+    MIN_AMOUNT,
+    balance.value?.minTopupCents,
+    balance.value?.minTopupCredits
   )
 )
 const maxTopup = computed(() =>
-  servedTopUpBound(
-    { usd: MAX_AMOUNT, credits: usdToCredits(MAX_AMOUNT) },
-    {
-      cents: balance.value?.maxTopupCents,
-      credits: balance.value?.maxTopupCredits
-    }
+  servedBoundOr(
+    MAX_AMOUNT,
+    balance.value?.maxTopupCents,
+    balance.value?.maxTopupCredits
   )
 )
 
@@ -654,10 +676,12 @@ watch(
   }
 )
 
+// Utility functions
 function formatNumber(num: number): string {
   return num.toLocaleString('en-US')
 }
 
+// Event handlers
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
@@ -690,7 +714,7 @@ function openTopupVerification() {
 }
 
 function showAmountStep() {
-  stopPayRetryOnCardReturn()
+  stopPayOfferOnCardReturn()
   checkoutRecovery.value = null
   step.value = 'amount'
 }
@@ -710,7 +734,6 @@ function handleClose(clearTracking = true) {
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
-// fallow-ignore-next-line complexity
 async function handleBuy() {
   if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
     return
@@ -758,6 +781,9 @@ async function handleBuy() {
       return
     }
 
+    // Only correlate the response to the journey that submitted it: the user
+    // may have closed this dialog and started another journey while the
+    // request was in flight, and that later journey must not be bound here.
     const submittingJourneyStillActive =
       submittingJourney !== null &&
       getActiveCheckoutJourney()?.journey_id === submittingJourney.journey_id
@@ -856,14 +882,14 @@ watch(
   () => workspaceStore.workspaceTransitionGeneration,
   () => {
     checkoutScope?.abort()
-    stopPayRetryOnCardReturn()
+    stopPayOfferOnCardReturn()
   },
   { flush: 'sync' }
 )
 onUnmounted(() => {
   unmounted = true
   checkoutScope?.abort()
-  stopPayRetryOnCardReturn()
+  stopPayOfferOnCardReturn()
 })
 
 function watchCheckoutCompletion() {
@@ -888,50 +914,21 @@ function watchCheckoutCompletion() {
   })
 }
 
-function stopPayRetryOnCardReturn() {
+function stopPayOfferOnCardReturn() {
   stopDefaultCardReturnRefresh?.()
   stopDefaultCardReturnRefresh = null
 }
 
-function armPayRetryAfterNextDeparture() {
-  stopPayRetryOnCardReturn()
-  const arm = () => {
-    stopPayRetryOnCardReturn()
-    armPayRetryOnCardReturn()
-  }
-  const onVisibility = () => {
-    if (document.visibilityState === 'hidden') arm()
-  }
-  window.addEventListener('blur', arm)
-  document.addEventListener('visibilitychange', onVisibility)
-  stopDefaultCardReturnRefresh = () => {
-    window.removeEventListener('blur', arm)
-    document.removeEventListener('visibilitychange', onVisibility)
-  }
-}
-
-function armPayRetryOnCardReturn() {
-  stopPayRetryOnCardReturn()
+function offerPayOnCardReturn() {
+  stopPayOfferOnCardReturn()
   const launchedGeneration = workspaceStore.workspaceTransitionGeneration
   stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
-    const stop = stopDefaultCardReturnRefresh
-    stopDefaultCardReturnRefresh = null
-    stop?.()
+    stopPayOfferOnCardReturn()
     if (step.value !== 'confirm') return
     if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
       return
     }
-    const attempt = purchaseAttempt
-    await handleBuy()
-    if (unmounted) return
-    if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
-      return
-    }
-    if (checkoutRecovery.value === 'refused') {
-      armPayRetryAfterNextDeparture()
-      return
-    }
-    if (purchaseAttempt === attempt) armPayRetryOnCardReturn()
+    checkoutRecovery.value = null
   })
 }
 
@@ -955,7 +952,7 @@ async function setDefaultCard() {
       return
     }
     portalTab.navigate(url)
-    armPayRetryOnCardReturn()
+    offerPayOnCardReturn()
   } catch {
     reportDefaultCardPortalFailure(portalTab)
   } finally {
@@ -965,7 +962,7 @@ async function setDefaultCard() {
 
 function followBlockedDefaultCardLink() {
   step.value = 'confirm'
-  armPayRetryOnCardReturn()
+  offerPayOnCardReturn()
 }
 
 function reportDefaultCardPortalFailure(portalTab: BillingTab | null) {
@@ -1042,6 +1039,11 @@ async function openCheckoutInReservedTab(): Promise<
   }
 }
 
+/**
+ * The terminal a response's status implies. A synchronous `failed` is a
+ * declined charge, not a pre-attempt rejection; a `pending` one is the
+ * poller's to report once it settles.
+ */
 const RESPONSE_TERMINALS: Record<
   CreateTopupResponse['status'],
   BillingOperationTerminal | undefined
@@ -1077,6 +1079,7 @@ function reportTerminal(
     ...(billingOpId ? { billing_op_id: billingOpId } : {}),
     duration_ms: Date.now() - attemptStartedAt
   }
+  // No timeout stage on the top-up funnel; the poller reports it as failed too.
   telemetry?.trackBillingEvent(
     terminal.stage === 'succeeded'
       ? {
@@ -1116,6 +1119,8 @@ function purchaseErrorDetail(error?: unknown): string {
   const refusal = purchaseRefusalMessage(error)
   if (refusal !== null) return refusal
   const code = error instanceof WorkspaceApiError ? error.code : undefined
+  // Only one billing operation is open at a time, so this refusal means the
+  // previous purchase has not settled or expired yet — not that anything failed.
   if (code === 'SUBSCRIPTION_CHANGE_IN_PROGRESS') {
     return t('credits.topUp.changeInProgressError')
   }

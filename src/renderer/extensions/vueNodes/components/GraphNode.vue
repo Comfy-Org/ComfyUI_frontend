@@ -10,6 +10,7 @@
     :style="nodeStyle"
     :inert="isGhostPlacing"
     :container-class="containerClass"
+    :content-visibility="!isCollapsed"
     :container-style="{
       '--node': applyLightThemeColor(nodeData.bgcolor),
       '--component-node-background': 'var(--node)',

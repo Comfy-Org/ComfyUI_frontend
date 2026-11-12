@@ -78,13 +78,17 @@
       {
         "name": "mask-editor/public",
         "patterns": [
-          "src/extensions/core/clipspace.ts",
-          "src/extensions/core/maskeditor.ts",
+          "src/renderer/extensions/maskEditor/extension.ts",
           "src/renderer/extensions/maskEditor/composables/useMaskEditor.ts",
-          "src/scripts/clipspace.ts",
           "packages/mask-editor/src/brushUtils.ts",
           "packages/mask-editor/src/maskEditorStore.ts",
-          "packages/mask-editor/src/StrokeProcessor.ts"
+          "packages/mask-editor/src/StrokeProcessor.ts",
+          "packages/mask-editor/src/types.ts",
+          "packages/mask-editor/src/imageOutput.ts",
+          "packages/mask-editor/src/useCanvasTransform.ts",
+          "packages/mask-editor/src/ui/EditorCanvas.vue",
+          "packages/mask-editor/src/ui/EditorToolbar.vue",
+          "packages/mask-editor/src/ui/style.css"
         ]
       },
       {
@@ -402,6 +406,7 @@
           "src/stores/assetExportStore.ts",
           "src/stores/assetExportStore.test.ts",
           "src/stores/assetsStore.ts",
+          "src/stores/assetsStore.history.test.ts",
           "src/stores/assetsStore.test.ts",
           "src/stores/workspace/assetsSidebarBadgeStore.ts",
           "src/stores/workspace/assetsSidebarBadgeStore.test.ts",
@@ -583,15 +588,12 @@
           "src/platform/billing/components/settings/**",
           "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts",
           "src/platform/billing/composables/activateBillingScope.testUtils.ts",
-          "src/platform/billing/composables/deriveAutoTopUpBanner.ts",
-          "src/platform/billing/composables/deriveAutoTopUpBanner.test.ts",
           "src/platform/billing/composables/useAutoTopUpBannerKind.ts",
           "src/platform/billing/composables/useAutoTopUpBannerKind.test.ts",
           "src/platform/billing/composables/useAutoTopUpCardViewed.ts",
           "src/platform/billing/composables/useBillingAutoTopUpCard.ts",
           "src/platform/billing/composables/useBillingAutoTopUpCard.test.ts",
           "src/platform/billing/composables/billingOperationTestUtils.ts",
-          "src/platform/billing/composables/deriveBillingBanner.test.ts",
           "src/platform/billing/composables/readOnRail.ts",
           "src/platform/billing/composables/readOnRail.test.ts",
           "src/platform/billing/composables/readWorkspaceBillingEvents.ts",
@@ -874,6 +876,9 @@
           "src/extensions/core/index.cloudModuleRejection.test.ts",
           "src/extensions/core/index.cloudSessionCookieLogoutFallback.test.ts",
           "src/extensions/core/index.test.ts",
+          "src/extensions/core/clipspace.ts",
+          "src/scripts/clipspace.ts",
+          "src/scripts/clipspace.test.ts",
           "src/scripts/__mocks__/**",
           "src/scripts/api.ts",
           "src/scripts/api.cancel.test.ts",
@@ -1954,15 +1959,7 @@
       {
         "name": "mask-editor",
         "patterns": [
-          "src/extensions/core/clipspace.ts",
-          "src/extensions/core/maskeditor.ts",
-          "src/extensions/core/maskeditor.test.ts",
           "src/renderer/extensions/maskEditor/**",
-          "src/scripts/clipspace.ts",
-          "src/scripts/clipspace.test.ts",
-          "src/utils/__fixtures__/**",
-          "src/utils/pngEncodeUtil.ts",
-          "src/utils/pngEncodeUtil.test.ts",
           "packages/mask-editor/src/**"
         ]
       },

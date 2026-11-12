@@ -1,4 +1,5 @@
-import { computed, nextTick, toRef, watch } from 'vue'
+import { computed, nextTick, onMounted, shallowRef, toRef, watch } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -193,19 +194,38 @@ export function useWidgetGridModel(
       .join('|')
   )
 
+  function syncOffsets() {
+    const rootGraphId = canvasStore.rootGraphId
+    if (
+      nodePresentation.value &&
+      options.value.syncLayout !== false &&
+      grid.value &&
+      rootGraphId &&
+      options.value.nodeId
+    ) {
+      syncSlotOffsets(grid.value, rootGraphId, options.value.nodeId)
+    }
+  }
+
+  const rows = shallowRef<HTMLElement[]>([])
+  useResizeObserver(rows, syncOffsets)
+
+  function trackRows() {
+    rows.value =
+      nodePresentation.value &&
+      options.value.syncLayout !== false &&
+      options.value.nodeId &&
+      grid.value
+        ? [...grid.value.querySelectorAll<HTMLElement>('[data-widget-name]')]
+        : []
+  }
+
+  onMounted(trackRows)
   watch(
     layoutKey,
     () => {
-      const rootGraphId = canvasStore.rootGraphId
-      if (
-        nodePresentation.value &&
-        options.value.syncLayout !== false &&
-        grid.value &&
-        rootGraphId &&
-        options.value.nodeId
-      ) {
-        syncSlotOffsets(grid.value, rootGraphId, options.value.nodeId)
-      }
+      trackRows()
+      syncOffsets()
     },
     { flush: 'post' }
   )
