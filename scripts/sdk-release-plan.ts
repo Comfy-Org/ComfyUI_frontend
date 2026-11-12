@@ -1,10 +1,13 @@
 import { execFileSync } from 'node:child_process'
 import { appendFileSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { gt, inc } from 'semver'
 
 /**
  * Which SDK packages need a release, decided against each package's last
- * released version (the commit that set the version on main now carries).
+ * released version: the commit that set the newest version of it on npm, so a
+ * bump that merged but never published is planned again.
  *
  * - `ingest-types` releases only when a schema an SDK package imports, or one
  *   such a schema is built from, changed. Endpoints no SDK package reads do
@@ -41,7 +44,30 @@ type Package = (typeof SDK_PACKAGES)[number] | 'ingest-types'
 
 export interface ReleaseReason {
   package: Package
+  version: string
   reasons: string[]
+}
+
+interface PlanOptions {
+  root?: string
+  publishedVersions?: (name: Package) => ReadonlySet<string>
+  /** The open release PR's branch, whose versions a reviewer may have raised. */
+  releaseRef?: string
+}
+
+/** The next version of a package, keeping a higher one the open release PR already carries. */
+export function releaseVersion(
+  name: Package,
+  current: string,
+  open?: string
+): string {
+  // ADR-RELEASES-PACKAGES-0033 holds the hand-written packages on 1.0.0-alpha.N.
+  const next =
+    name === 'ingest-types'
+      ? inc(current, 'patch')
+      : inc(current, 'prerelease', 'alpha')
+  if (!next) throw new Error(`Cannot bump ${name}@${current}`)
+  return open && gt(open, next) ? open : next
 }
 
 /** The schema names SDK source imports; a type `Foo` stands for its schema `zFoo`. */
@@ -113,27 +139,79 @@ export function changedSchemas(
     .sort()
 }
 
-function git(...args: string[]): string {
-  return execFileSync('git', args, { encoding: 'utf8' })
+function git(root: string, ...args: string[]): string {
+  return execFileSync('git', args, { cwd: root, encoding: 'utf8' })
 }
 
-function releasedCommit(name: Package): string {
-  const manifest = `packages/${name}/package.json`
-  const version = JSON.parse(readFileSync(manifest, 'utf8')).version as string
+function read(root: string, file: string): string {
+  return readFileSync(join(root, file), 'utf8')
+}
+
+function npmVersions(name: Package): Set<string> {
+  const json = execFileSync(
+    'npm',
+    ['view', `@comfyorg/${name}`, 'versions', '--json'],
+    { encoding: 'utf8' }
+  )
+  return new Set([JSON.parse(json)].flat())
+}
+
+function versionCommit(
+  root: string,
+  manifest: string,
+  version: string,
+  from: string
+): string {
   const commit = git(
+    root,
     'log',
     '-1',
     '--format=%H',
     `-S"version": "${version}"`,
+    from,
     '--',
     manifest
   ).trim()
-  if (!commit) throw new Error(`No commit set ${name}@${version}`)
+  if (!commit) throw new Error(`No commit set ${manifest} to ${version}`)
   return commit
 }
 
-function changedSourceFiles(name: Package, since: string): string[] {
-  return git('diff', '--name-only', since, 'HEAD', '--', `packages/${name}/src`)
+/** The commit that set the newest version npm has; a bump whose publish failed is not a release. */
+function releasedCommit(
+  root: string,
+  name: Package,
+  published: ReadonlySet<string>
+): string {
+  const manifest = `packages/${name}/package.json`
+  let version = JSON.parse(read(root, manifest)).version as string
+  let commit = versionCommit(root, manifest, version, 'HEAD')
+  while (!published.has(version)) {
+    let previous: string
+    try {
+      previous = git(root, 'show', `${commit}^:${manifest}`)
+    } catch {
+      throw new Error(`No version of ${name} in git history is on npm`)
+    }
+    version = JSON.parse(previous).version as string
+    commit = versionCommit(root, manifest, version, `${commit}^`)
+  }
+  return commit
+}
+
+function changedSourceFiles(
+  root: string,
+  name: Package,
+  since: string
+): string[] {
+  return git(
+    root,
+    'diff',
+    '--name-only',
+    since,
+    'HEAD',
+    '--',
+    `packages/${name}/src`
+  )
     .split('\n')
     .filter((file) => file && !TEST_FILE.test(file))
 }
@@ -188,46 +266,68 @@ export function changedManifestFields(
     .sort()
 }
 
-function sdkSources(): string[] {
+function sdkSources(root: string): string[] {
   return SDK_PACKAGES.flatMap((name) =>
-    git('ls-files', `packages/${name}/src`)
+    git(root, 'ls-files', `packages/${name}/src`)
       .split('\n')
       .filter((file) => file.endsWith('.ts') && !TEST_FILE.test(file))
-      .map((file) => readFileSync(file, 'utf8'))
+      .map((file) => read(root, file))
   )
 }
 
-export function planRelease(): ReleaseReason[] {
+export function planRelease({
+  root = process.cwd(),
+  publishedVersions = npmVersions,
+  releaseRef
+}: PlanOptions = {}): ReleaseReason[] {
   const plan: ReleaseReason[] = []
+  const released = (name: Package) =>
+    releasedCommit(root, name, publishedVersions(name))
+  const release = (name: Package, reasons: string[]) => {
+    const manifest = `packages/${name}/package.json`
+    const open = releaseRef
+      ? git(root, 'show', `${releaseRef}:${manifest}`)
+      : undefined
+    plan.push({
+      package: name,
+      version: releaseVersion(
+        name,
+        JSON.parse(read(root, manifest)).version,
+        open && JSON.parse(open).version
+      ),
+      reasons
+    })
+  }
 
-  const ingestReleased = releasedCommit('ingest-types')
+  const ingestReleased = released('ingest-types')
   const schemas = changedSchemas(
-    git('show', `${ingestReleased}:${INGEST_ZOD}`),
-    readFileSync(INGEST_ZOD, 'utf8'),
-    referencedSchemas(sdkSources())
+    git(root, 'show', `${ingestReleased}:${INGEST_ZOD}`),
+    read(root, INGEST_ZOD),
+    referencedSchemas(sdkSources(root))
   )
-  if (schemas.length > 0)
-    plan.push({ package: 'ingest-types', reasons: schemas })
+  if (schemas.length > 0) release('ingest-types', schemas)
 
   for (const name of SDK_PACKAGES) {
-    const released = releasedCommit(name)
+    const since = released(name)
     const manifest = `packages/${name}/package.json`
     const reasons = [
-      ...changedSourceFiles(name, released),
+      ...changedSourceFiles(root, name, since),
       ...changedManifestFields(
-        git('show', `${released}:${manifest}`),
-        readFileSync(manifest, 'utf8'),
-        git('show', `${released}:${WORKSPACE}`),
-        readFileSync(WORKSPACE, 'utf8')
+        git(root, 'show', `${since}:${manifest}`),
+        read(root, manifest),
+        git(root, 'show', `${since}:${WORKSPACE}`),
+        read(root, WORKSPACE)
       ).map((field) => `${manifest}#${field}`)
     ]
-    if (reasons.length > 0) plan.push({ package: name, reasons })
+    if (reasons.length > 0) release(name, reasons)
   }
   return plan
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const plan = planRelease()
+  const plan = planRelease({
+    releaseRef: process.env.SDK_RELEASE_REF || undefined
+  })
   const summary = JSON.stringify(plan)
   console.log(summary)
   if (process.env.GITHUB_OUTPUT) {

@@ -1,12 +1,23 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
-import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { dirname, join } from 'node:path'
 
 import {
   catalogRanges,
   changedManifestFields,
   changedSchemas,
-  referencedSchemas
+  planRelease,
+  referencedSchemas,
+  releaseVersion
 } from './sdk-release-plan'
 
 const RELEASED = `
@@ -182,4 +193,139 @@ describe('catalogRanges', () => {
     expect(ranges.get('zod')).toMatch(/^[\^~]?\d/)
     expect(ranges.get('@vueuse/core')).toMatch(/^[\^~]?\d/)
   })
+})
+
+describe('planRelease', () => {
+  let root = ''
+
+  afterEach(() => rmSync(root, { recursive: true, force: true }))
+
+  const git = (...args: string[]) =>
+    execFileSync('git', args, { cwd: root, encoding: 'utf8' })
+  const write = (file: string, contents: string) => {
+    mkdirSync(dirname(join(root, file)), { recursive: true })
+    writeFileSync(join(root, file), contents)
+  }
+  const manifest = (name: string, version: string) =>
+    write(
+      `packages/${name}/package.json`,
+      JSON.stringify({ name: `@comfyorg/${name}`, version }, null, 2)
+    )
+  const commit = (message: string) => {
+    git('add', '-A')
+    git('commit', '-q', '-m', message)
+  }
+
+  function initRepository() {
+    root = mkdtempSync(join(tmpdir(), 'sdk-release-plan-'))
+    git('init', '-q', '-b', 'main')
+    git('config', 'user.name', 'fixture')
+    git('config', 'user.email', 'fixture@example.com')
+    git('config', 'commit.gpgsign', 'false')
+    write('pnpm-workspace.yaml', 'packages:\n  - packages/*\n')
+    write(
+      'packages/ingest-types/src/zod.gen.ts',
+      'export const zFoo = z.object({ a: z.string() })\n'
+    )
+    write(
+      'packages/account-core/src/index.ts',
+      "import { zFoo } from '@comfyorg/ingest-types/zod'\n"
+    )
+    write('packages/account-ui/src/index.ts', 'export {}\n')
+    write('packages/billing-contract/src/index.ts', 'export {}\n')
+    manifest('ingest-types', '1.0.0')
+    manifest('account-core', '1.0.0-alpha.0')
+    manifest('account-ui', '1.0.0-alpha.0')
+    manifest('billing-contract', '1.0.0-alpha.0')
+    commit('release')
+  }
+
+  const firstReleases = new Set(['1.0.0', '1.0.0-alpha.0'])
+
+  it('still plans a package whose committed version never reached npm', () => {
+    initRepository()
+    write(
+      'packages/ingest-types/src/zod.gen.ts',
+      'export const zFoo = z.object({ a: z.number() })\n'
+    )
+    commit('schema change')
+    manifest('ingest-types', '1.0.1')
+    commit('bump without a publish')
+
+    const plan = (published: Set<string>) =>
+      planRelease({ root, publishedVersions: () => published })
+
+    expect(plan(firstReleases)).toEqual([
+      { package: 'ingest-types', version: '1.0.2', reasons: ['zFoo'] }
+    ])
+    expect(plan(new Set([...firstReleases, '1.0.1']))).toEqual([])
+  })
+
+  it('keeps the version a reviewer raised on the open release PR', () => {
+    initRepository()
+    write(
+      'packages/ingest-types/src/zod.gen.ts',
+      'export const zFoo = z.object({ a: z.number() })\n'
+    )
+    commit('schema change')
+    git('checkout', '-q', '-b', 'sdk-release/auto')
+    manifest('ingest-types', '2.0.0')
+    commit('reviewer marks the change breaking')
+    git('checkout', '-q', 'main')
+
+    expect(
+      planRelease({
+        root,
+        publishedVersions: () => firstReleases,
+        releaseRef: 'sdk-release/auto'
+      })
+    ).toEqual([
+      { package: 'ingest-types', version: '2.0.0', reasons: ['zFoo'] }
+    ])
+  })
+})
+
+describe('releaseVersion', () => {
+  it.for([
+    {
+      case: 'no release PR is open',
+      name: 'ingest-types',
+      current: '1.5.0',
+      open: undefined,
+      expected: '1.5.1'
+    },
+    {
+      case: 'the open PR carries a reviewer’s minor',
+      name: 'ingest-types',
+      current: '1.5.0',
+      open: '1.6.0',
+      expected: '1.6.0'
+    },
+    {
+      case: 'the open PR carries only the bot’s patch',
+      name: 'ingest-types',
+      current: '1.5.0',
+      open: '1.5.1',
+      expected: '1.5.1'
+    },
+    {
+      case: 'the open PR predates a release that already merged',
+      name: 'ingest-types',
+      current: '1.6.0',
+      open: '1.6.0',
+      expected: '1.6.1'
+    },
+    {
+      case: 'a hand-written package is still on alpha',
+      name: 'account-core',
+      current: '1.0.0-alpha.6',
+      open: '1.0.0-alpha.7',
+      expected: '1.0.0-alpha.7'
+    }
+  ] as const)(
+    'is $expected when $case',
+    ({ name, current, open, expected }) => {
+      expect(releaseVersion(name, current, open)).toBe(expected)
+    }
+  )
 })

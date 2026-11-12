@@ -248,7 +248,9 @@ and an exact pin is the lockfile conflict this ADR rejects below.
 > **Amended (2026-10-31):** `sdk-release-pr.yaml` closes the regeneration gap
 > from this repository instead of the Cloud bot. On a push to `main` it runs
 > `scripts/sdk-release-plan.ts`, which compares each package with the commit
-> that set its current version. `ingest-types` is bumped (patch) only when a
+> that set the newest version of it on npm. A bump that merged but never
+> published is not a release, so the planner plans that package again rather
+> than reading the unpublished version as shipped. `ingest-types` is bumped (patch) only when a
 > schema an SDK package imports, or one it is built from, changed; endpoints
 > no SDK package reads ship nothing. The hand-written packages get an `alpha`
 > prerelease bump when their published source or any published manifest field
@@ -257,7 +259,9 @@ and an exact pin is the lockfile conflict this ADR rejects below.
 > among them, with `catalog:` ranges resolved through `pnpm-workspace.yaml`)
 > changed. The
 > bumps land in one `Release`-labelled PR on `sdk-release/auto`, refreshed on
-> every push, so a release is still a reviewed merge. The on-merge publish now
+> every push, so a release is still a reviewed merge. A refresh keeps, per
+> package, the higher of the version the open PR carries and the newly
+> computed bump, so it never lowers a version a reviewer raised. The on-merge publish now
 > dispatches the packages from one job, one at a time in dependency order
 > (`ingest-types` first), waits for each run, and stops at the first failure,
 > so one PR can carry a package and a dependent that needs it. Before it
@@ -270,7 +274,7 @@ and an exact pin is the lockfile conflict this ADR rejects below.
   planner always proposes `patch` for a regeneration; a reviewer raises it on
   the release PR when the schema change warrants `minor` or `major`, per the
   Versioning policy. A later push to `main` regenerates the PR from `main`
-  and resets it to `patch`, so the reviewer raises it again before merging.
+  but keeps the raised version.
 - **Pre-merge snapshots ship separately.** A `pull_request` run executes the
   workflow definition from the pull request's own merge ref, so a publish step
   triggered that way is PR-authored code holding `NPM_TOKEN`. This would be
