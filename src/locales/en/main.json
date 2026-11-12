@@ -1292,11 +1292,12 @@
       "retryDownloadNamed": "Retry download for {model}",
       "getItManually": "Get it manually",
       "usedBy": "Used by {nodes}",
-      "downloadModelsAndOpen": "Download models & open",
-      "downloadModelsAndOpenWithSize": "Download models & open ({size})",
+      "downloadAssetsAndOpen": "Download assets & open",
+      "downloadAssetsAndOpenWithSize": "Download assets & open ({size})",
       "descriptionMore": "Show more",
       "descriptionLess": "Show less",
-      "openNow": "Open now",
+      "justOpen": "Just open",
+      "open": "Open",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"
     },
@@ -3220,7 +3221,7 @@
       "appliedBadge": "Applied",
       "pricePerMonth": "{price}/mo",
       "savings": "You'll save {savings} on this payment. | You'll save {savings} across these {months} payments.",
-      "renewsAt": "Renews at {regular} on {date}.",
+      "renewsAfterOffer": "After the offer ends, your plan renews at {regular}/mo.",
       "failedTitle": "We couldn't apply your discount",
       "failedBody": "Something went wrong on our end, and your {plan} plan hasn't changed. Try again, or continue cancelling.",
       "declinedBody": "Your {plan} plan hasn't changed. You can keep it at its current price or continue cancelling.",
@@ -3790,6 +3791,7 @@
         },
         "scheduledChange": "Changes to {plan} on {date}.",
         "stayConfirm": {
+          "body": "You'll stay on {current}, which renews on {date}. You can schedule a change again anytime.",
           "bodyNoAmount": "You'll stay on {current}. You can schedule a change again anytime.",
           "title": "Cancel your change to {plan}?"
         },
@@ -3857,7 +3859,7 @@
         "body": "You won't be charged again. Members keep full access until then. Resume your plan to keep your team's shared credits.",
         "memberBody": "You can run workflows until then.",
         "personalTitle": "Your {plan} plan ends on {date}",
-        "personalBody": "You won't be charged again. Resume your plan to keep your monthly credits.",
+        "personalBody": "You won't be charged again. Resume your plan to keep getting credits.",
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume plan",
@@ -3889,7 +3891,7 @@
         "teamMemberBody": "Ask your workspace owner to resubscribe.",
         "personalTitle": "Your {plan} plan ended on {date}",
         "personalTitleNoDate": "Your {plan} plan has ended",
-        "personalBody": "Resubscribe to run workflows and get monthly credits again.",
+        "personalBody": "Resubscribe to run workflows and get credits again.",
         "enterpriseTitle": "Your Enterprise plan ended on {date}",
         "enterpriseBody": "Contact sales to start a new Enterprise plan.",
         "planTitle": "Your plan ended on {date}",
@@ -4168,6 +4170,18 @@
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
     "failedToSwitch": "Failed to switch workspace"
+  },
+  "profileMenu": {
+    "switchWorkspace": "Switch workspace",
+    "credits": "Credits",
+    "balanceUnavailable": "Couldn't load your balance.",
+    "billingSettings": "Billing settings",
+    "planStatus": {
+      "noPlan": "No plan",
+      "paused": "Paused",
+      "paymentDue": "Payment due",
+      "ended": "Plan ended"
+    }
   },
   "deploymentSwitcher": {
     "runOn": "Run on",
@@ -5349,7 +5363,20 @@
       "downloadAll": "Download all",
       "refresh": "Refresh",
       "refreshing": "Refreshing missing models.",
-      "refreshFailed": "Failed to refresh missing models. Please try again."
+      "refreshFailed": "Failed to refresh missing models. Please try again.",
+      "downloadQueued": "Queued",
+      "downloadStarting": "Starting",
+      "downloadingModel": "Downloading {model}",
+      "downloadPaused": "Paused",
+      "downloadPausedProgress": "Paused · {progress}",
+      "downloaded": "Downloaded",
+      "retryDownload": "Retry",
+      "retryDownloadModel": "Retry download for {model}",
+      "downloadFailedHint": "The download couldn't be completed. Use Retry to try again.",
+      "downloading": "Downloading",
+      "pauseDownloadModel": "Pause download for {model}",
+      "resumeDownloadModel": "Resume download for {model}",
+      "cancelDownloadModel": "Cancel download for {model}"
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"
@@ -6604,6 +6631,51 @@
       "body": "Buy credits automatically when you run low, so workflows and API calls keep running.",
       "setUp": "Set up",
       "notNow": "Not now"
+    },
+    "autoTopUp": {
+      "label": "Turn on auto top-up",
+      "body": "Buy credits automatically when you run low, so workflows keep running.",
+      "threshold": "When credits drop below",
+      "thresholdHint": "Counts plan credits and credits you’ve bought.",
+      "target": "Top up to",
+      "targetHint": "{target} credits. Each top-up is at least {amount}.",
+      "limit": "Monthly limit",
+      "limitOff": "Up to {max} a month, the maximum. Turn on to set a lower limit.",
+      "limitHint": "Most you can set here: {max} a month.",
+      "consentNoCard": "Top-ups are charged to the card you pay with at checkout, up to {max} a month. Turn this off anytime in {billing}.",
+      "consentDefaultCard": "Top-ups are charged to your default card, {card}, up to {max} a month. Turn this off anytime in {billing}.",
+      "card": "{brand} ···· {last4}",
+      "billing": "Billing",
+      "invalid": "Enter a valid value.",
+      "fieldError": {
+        "notWhole": "Enter a whole number of credits.",
+        "belowMinimum": "Must be at least 1 credit.",
+        "belowTarget": "Must be at least {minimum} credits, about {usd} above your threshold.",
+        "aboveTarget": "Can’t be more than {max} credits (about {usd}).",
+        "belowTopUp": "Can’t cover one top-up. Set at least {amount}."
+      },
+      "isOn": "Auto top-up is on.",
+      "manage": "Manage"
+    },
+    "autoTopUpOn": {
+      "title": "Auto top-up is on",
+      "summary": "Below {threshold} credits, tops up to {target}.",
+      "limit": "Up to {limit} a month.",
+      "noLimit": "No monthly limit.",
+      "done": "Done"
+    },
+    "autoTopUpFailed": {
+      "title": "Auto top-up didn't turn on",
+      "body": "Your credits were added. Set up auto top-up in Billing to try again."
     }
+  },
+  "billingHandoff": {
+    "failed": "Could not open billing. Try again.",
+    "superseded": "Your account or workspace changed while billing was opening. Try again.",
+    "signInAgain": "Sign in again to open billing.",
+    "popupBlocked": "Your browser blocked the billing tab.",
+    "openBilling": "Open billing",
+    "opening": "Opening checkout…",
+    "openingDetail": "This takes a few seconds."
   }
 }
