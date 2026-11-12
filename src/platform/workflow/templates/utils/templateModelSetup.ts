@@ -126,6 +126,7 @@ type RowDownloadStatus = {
   activity?: string
   receivedBytes?: number | null
   totalBytes?: number | null
+  fraction?: number | null
 }
 
 type RowDownloads = {
@@ -170,10 +171,13 @@ export function remainingModelDownloadTotal(
 
 function bytesLeft(
   row: TemplateModelSetupRow,
-  { receivedBytes, totalBytes }: RowDownloadStatus
+  { receivedBytes, totalBytes, fraction }: RowDownloadStatus
 ): number | null {
-  const size = totalBytes ?? row.fileSize
-  return size === null ? null : Math.max(0, size - (receivedBytes ?? 0))
+  const received = receivedBytes ?? 0
+  const size = totalBytes && totalBytes >= received ? totalBytes : row.fileSize
+  if (size === null) return null
+  const done = receivedBytes ?? (fraction ?? 0) * size
+  return Math.max(0, size - done)
 }
 
 export function deriveTemplateModelSetup(

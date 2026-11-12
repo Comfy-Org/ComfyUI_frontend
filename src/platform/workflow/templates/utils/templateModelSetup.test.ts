@@ -388,6 +388,37 @@ describe('remainingModelDownloadTotal', () => {
     })
 
     it.for([
+      {
+        name: 'an unknown host total',
+        state: { receivedBytes: 1024, totalBytes: 0 },
+        bytes: 3072
+      },
+      {
+        name: 'a host total below what arrived',
+        state: { receivedBytes: 1024, totalBytes: 512 },
+        bytes: 3072
+      },
+      {
+        name: 'only a fraction',
+        state: { receivedBytes: null, fraction: 0.25 },
+        bytes: 3072
+      }
+    ])('falls back to the declared size given $name', ({ state, bytes }) => {
+      const rows = rowsFor([paused, 4096])
+
+      expect(
+        remainingModelDownloadTotal(rows, {
+          stateFor: () => ({
+            status: 'downloading',
+            activity: 'paused',
+            ...state
+          }),
+          canResume: () => true
+        })
+      ).toEqual({ bytes, isComplete: true })
+    })
+
+    it.for([
       { canResume: true, candidate: true },
       { canResume: false, candidate: false }
     ])(
