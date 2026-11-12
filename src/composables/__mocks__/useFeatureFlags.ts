@@ -41,6 +41,7 @@ const defaultFlags: FeatureFlags = {
   billingControlEnabled: false,
   memberCreditLimitsEnabled: false,
   billingNewUxEnabled: false,
+  billingAutoTopUpAtCheckoutEnabled: false,
   billingSdkTopupEnabled: false,
   billingSdkTopupRailEnabled: false,
   billingSdkSubscriptionEnabled: false,

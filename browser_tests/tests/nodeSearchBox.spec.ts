@@ -91,23 +91,22 @@ test.describe('Node search box', { tag: '@node' }, () => {
     await expect(comfyPage.searchBox.input).toHaveCount(1)
   })
 
-  test('New user (1.24.1+) gets search box by default on link release', async ({
-    comfyPage
-  }) => {
-    // Start fresh to test new user behavior
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({ clearStorage: true })
-    // Simulate new user with 1.24.1+ installed version
-    await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
-    // Don't set LinkRelease settings explicitly to test versioned defaults
+  test.describe('New user defaults', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.InstalledVersion': '1.24.1',
+        'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+      }
+    })
 
-    await comfyPage.canvasOps.disconnectEdge()
-    await expect(comfyPage.searchBox.input).toHaveCount(1)
-    await expect(comfyPage.searchBox.input).toBeVisible()
+    test('New user (1.24.1+) gets search box by default on link release', async ({
+      comfyPage
+    }) => {
+      await comfyPage.canvasOps.disconnectEdge()
+      await expect(comfyPage.searchBox.input).toHaveCount(1)
+      await expect(comfyPage.searchBox.input).toBeVisible()
+    })
   })
 
   test('Can add node', { tag: '@screenshot' }, async ({ comfyPage }) => {
@@ -529,48 +528,42 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     }
   )
 
-  test('Existing user (pre-1.24.1) gets context menu by default on link release', async ({
-    comfyPage
-  }) => {
-    // Start fresh to test existing user behavior
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({ clearStorage: true })
-    // Simulate existing user with pre-1.24.1 version
-    await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.23.0')
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
-    // Don't set LinkRelease settings explicitly to test versioned defaults
+  test.describe('Existing user defaults', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.InstalledVersion': '1.23.0',
+        'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+      }
+    })
 
-    await comfyPage.canvasOps.disconnectEdge()
-    // Context menu should appear, search box should not
-    await expect(comfyPage.searchBox.input).toHaveCount(0)
-    const contextMenu = comfyPage.page.locator('.litecontextmenu')
-    await expect(contextMenu).toBeVisible()
+    test('Existing user (pre-1.24.1) gets context menu by default on link release', async ({
+      comfyPage
+    }) => {
+      await comfyPage.canvasOps.disconnectEdge()
+      await expect(comfyPage.searchBox.input).toHaveCount(0)
+      const contextMenu = comfyPage.page.locator('.litecontextmenu')
+      await expect(contextMenu).toBeVisible()
+    })
   })
 
-  test('Explicit setting overrides versioned defaults', async ({
-    comfyPage
-  }) => {
-    // Start fresh and simulate new user who should get search box by default
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({ clearStorage: true })
-    await comfyPage.settings.setSetting('Comfy.InstalledVersion', '1.24.1')
-    // But explicitly set to context menu (overriding versioned default)
-    await comfyPage.settings.setSetting(
-      'Comfy.LinkRelease.Action',
-      'context menu'
-    )
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test.describe('Explicit link release setting', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.InstalledVersion': '1.24.1',
+        'Comfy.LinkRelease.Action': 'context menu',
+        'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
+      }
+    })
 
-    await comfyPage.canvasOps.disconnectEdge()
-    // Context menu should appear due to explicit setting, not search box
-    await expect(comfyPage.searchBox.input).toHaveCount(0)
-    const contextMenu = comfyPage.page.locator('.litecontextmenu')
-    await expect(contextMenu).toBeVisible()
+    test('Explicit setting overrides versioned defaults', async ({
+      comfyPage
+    }) => {
+      await comfyPage.canvasOps.disconnectEdge()
+      await expect(comfyPage.searchBox.input).toHaveCount(0)
+      const contextMenu = comfyPage.page.locator('.litecontextmenu')
+      await expect(contextMenu).toBeVisible()
+    })
   })
 })
