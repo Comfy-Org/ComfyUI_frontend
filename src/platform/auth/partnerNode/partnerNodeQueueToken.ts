@@ -1,6 +1,7 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   desktopHostPartnerNodeToken,
+  desktopHostSessionRevision,
   desktopHostUser,
   desktopHostWorkspaceToken
 } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -40,10 +41,17 @@ export async function queueAuthToken(
   if (!workspaceToken || !workspaceId || isCloud) return workspaceToken
   if (!useFeatureFlags().flags.partnerNodeTokenEnabled) return workspaceToken
 
+  // The prompt stays with the Desktop session it was queued under.
+  const startedUnder = desktopHostSessionRevision()
+  const sessionChanged = () => desktopHostSessionRevision() !== startedUnder
+
   const fromDesktop = await desktopHostPartnerNodeToken(workspaceId)
   if (fromDesktop) return fromDesktop
+  if (sessionChanged()) return workspaceToken
 
   const target = mintTarget(workspaceId)
   if (!target) return workspaceToken
-  return (await partnerNodeTokens.tokenFor(target)) ?? workspaceToken
+  const minted = await partnerNodeTokens.tokenFor(target)
+  if (sessionChanged()) return workspaceToken
+  return minted ?? workspaceToken
 }

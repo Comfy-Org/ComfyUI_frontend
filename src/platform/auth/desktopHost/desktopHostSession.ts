@@ -58,6 +58,11 @@ export function isDesktopHostSessionActive(): boolean {
   return session.value.status !== 'inactive'
 }
 
+/** Changes whenever the Desktop account or workspace changes. */
+export function desktopHostSessionRevision(): number {
+  return revision
+}
+
 /** True while a Desktop account is signed in; only then does it own auth. */
 export function isDesktopHostSignedIn(): boolean {
   return desktopHostUser.value !== null
