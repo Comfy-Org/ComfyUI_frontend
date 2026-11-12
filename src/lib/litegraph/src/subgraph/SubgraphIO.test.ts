@@ -388,6 +388,30 @@ describe('SubgraphIO - Advanced Scenarios', () => {
     expect(subgraphNode.outputs.length).toBe(0)
   })
 
+  it('shrinks the output node when outputs are removed', () => {
+    const subgraph = createTestSubgraph()
+    const outputs = ['a', 'b', 'c', 'd'].map((name) =>
+      subgraph.addOutput(name, 'STRING')
+    )
+    subgraph.outputNode.arrange()
+    const tall = subgraph.outputNode.size[1]
+
+    for (const output of outputs.slice(1)) subgraph.removeOutput(output)
+    subgraph.outputNode.arrange()
+
+    expect(subgraph.outputNode.size[1]).toBeLessThan(tall)
+  })
+
+  it('keeps a requested input node size larger than its slots', () => {
+    const subgraph = createTestSubgraph()
+    subgraph.addInput('a', 'STRING')
+    subgraph.inputNode.size = [344, 400]
+
+    subgraph.inputNode.arrange()
+
+    expect([...subgraph.inputNode.size]).toEqual([344, 400])
+  })
+
   it('maintains slot synchronization across multiple instances', () => {
     const subgraph = createTestSubgraph({
       name: 'Multi-Instance Test',

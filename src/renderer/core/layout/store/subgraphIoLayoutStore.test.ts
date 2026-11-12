@@ -76,10 +76,10 @@ describe('subgraph IO renderer measurements', () => {
       [204, 266],
       [204, 286]
     ])
-    expect([...node.size]).toEqual([344, 400])
+    expect([...node.boundingRect.size]).toEqual([344, 400])
     expect(node.asSerialisable().bounding).toEqual(savedBounds)
     expect(node.allSlots.at(-1)).toBe(node.emptySlot)
-    expect(graph.outputNode.size[0]).not.toBe(344)
+    expect(graph.outputNode.boundingRect[2]).not.toBe(344)
     expect(node.allSlots[0].boundingRect[3]).toBe(LiteGraph.NODE_SLOT_HEIGHT)
   })
 
@@ -92,11 +92,11 @@ describe('subgraph IO renderer measurements', () => {
     first.inputNode.arrange()
     second.inputNode.arrange()
 
-    expect(first.inputNode.size[1]).toBe(400)
-    expect(second.inputNode.size[1]).not.toBe(400)
+    expect(first.inputNode.boundingRect[3]).toBe(400)
+    expect(second.inputNode.boundingRect[3]).not.toBe(400)
     layouts.measurements.delete(key)
     first.inputNode.arrange()
 
-    expect(first.inputNode.size[1]).not.toBe(400)
+    expect(first.inputNode.boundingRect[3]).not.toBe(400)
   })
 })

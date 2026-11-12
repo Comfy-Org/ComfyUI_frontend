@@ -56,6 +56,16 @@ export class SubgraphInputNode
     return x + width - SubgraphIONodeBase.roundedRadius
   }
 
+  override arrange(): void {
+    const [requestedWidth, requestedHeight] = this.size
+    super.arrange()
+    const [fittedWidth, fittedHeight] = this.size
+    this.size = [
+      Math.max(requestedWidth, fittedWidth),
+      Math.max(requestedHeight, fittedHeight)
+    ]
+  }
+
   override onPointerDown(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,

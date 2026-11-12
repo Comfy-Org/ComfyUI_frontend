@@ -97,7 +97,7 @@ export abstract class SubgraphIONodeBase<
   }
 
   get size() {
-    return this.boundingRect.size
+    return this._boundingRect.size
   }
 
   set size(value) {
@@ -328,11 +328,9 @@ export abstract class SubgraphIONodeBase<
 
   arrange(): void {
     const { minWidth, roundedRadius } = SubgraphIONodeBase
-    const [left, y] = this.boundingRect
+    const [, y] = this.boundingRect
     const measured = getSubgraphIoLayout(this.subgraph.id, this.id)
-    const x = measured
-      ? left + measured.width + LiteGraph.NODE_SLOT_HEIGHT / 2
-      : this.slotAnchorX
+    const x = this.slotAnchorX
 
     let maxWidth = minWidth
     let currentY = y + (measured?.slotTop ?? roundedRadius)
@@ -346,10 +344,7 @@ export abstract class SubgraphIONodeBase<
     }
 
     if (!measured)
-      this.size = [
-        Math.max(this._boundingRect[2], maxWidth + 2 * roundedRadius),
-        Math.max(this._boundingRect[3], currentY - y + roundedRadius)
-      ]
+      this.size = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
   }
 
   draw(
