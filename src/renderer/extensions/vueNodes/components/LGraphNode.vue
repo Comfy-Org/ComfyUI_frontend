@@ -310,7 +310,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isVideoOutput } from '@/utils/litegraphUtil'

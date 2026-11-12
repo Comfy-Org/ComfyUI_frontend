@@ -10,8 +10,8 @@ import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import {
   computedSectionDataList,
   searchWidgetsAndNodes
-} from '@/components/rightSidePanel/shared'
-import type { NodeWidgetsListList } from '@/components/rightSidePanel/shared'
+} from '@/renderer/extensions/propertiesPanel/shared'
+import type { NodeWidgetsListList } from '@/renderer/extensions/propertiesPanel/shared'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 

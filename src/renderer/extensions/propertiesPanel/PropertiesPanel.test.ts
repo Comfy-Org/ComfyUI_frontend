@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import RightSidePanel from '@/renderer/extensions/propertiesPanel/PropertiesPanel.vue'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
@@ -17,7 +17,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
@@ -44,9 +44,12 @@ vi.mock(
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
-vi.mock(import('@/composables/graph/useGraphHierarchy'), () => ({
-  useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
-}))
+vi.mock(
+  import('@/renderer/extensions/propertiesPanel/useGraphHierarchy'),
+  () => ({
+    useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
+  })
+)
 
 vi.mock(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: () => ({

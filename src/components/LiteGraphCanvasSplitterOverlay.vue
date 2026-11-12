@@ -225,7 +225,7 @@ import {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {

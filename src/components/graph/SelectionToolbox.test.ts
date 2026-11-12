@@ -16,7 +16,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 

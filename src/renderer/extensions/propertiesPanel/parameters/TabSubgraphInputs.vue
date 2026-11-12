@@ -13,14 +13,14 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 
-import { searchWidgets } from '@/components/rightSidePanel/shared'
-import type { NodeWidgetsList } from '@/components/rightSidePanel/shared'
+import { searchWidgets } from '@/renderer/extensions/propertiesPanel/shared'
+import type { NodeWidgetsList } from '@/renderer/extensions/propertiesPanel/shared'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 

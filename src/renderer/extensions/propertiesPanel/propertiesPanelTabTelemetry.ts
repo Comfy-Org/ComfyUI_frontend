@@ -1,5 +1,5 @@
 import { useTelemetry } from '@comfyorg/telemetry'
-import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
+import type { RightSidePanelTab } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 
 /**
  * Tabs whose opening we want discoverability telemetry for, mapped to the

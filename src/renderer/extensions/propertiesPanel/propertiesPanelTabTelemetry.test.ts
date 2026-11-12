@@ -4,7 +4,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
 
-import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
+import { trackRightSidePanelTabOpened } from './propertiesPanelTabTelemetry'
 
 describe('trackRightSidePanelTabOpened', () => {
   it('tracks opening the settings tab', () => {

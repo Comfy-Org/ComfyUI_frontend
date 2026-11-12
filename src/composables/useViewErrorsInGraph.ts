@@ -1,6 +1,6 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useErrorsTabRequestStore } from '@/platform/workflowErrors/panel/errorsTabRequestStore'
 
 export function useViewErrorsInGraph() {

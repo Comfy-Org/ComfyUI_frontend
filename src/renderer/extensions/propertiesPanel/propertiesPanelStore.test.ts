@@ -2,7 +2,7 @@ import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 
 vi.mock(import('@/scripts/api'))
 

@@ -166,7 +166,7 @@ import { useExtensionService } from '@/platform/extensions/services/extensionSer
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import VerticalDivider from '@comfyorg/design-system/common/VerticalDivider'

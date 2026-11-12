@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/scripts/api'))
