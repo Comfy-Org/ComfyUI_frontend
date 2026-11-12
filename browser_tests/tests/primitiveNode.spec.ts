@@ -155,43 +155,18 @@ test.describe(
   'Primitive Node forced inputs',
   { tag: ['@node', '@vue-nodes'] },
   () => {
-    test.use({
-      initialSettings: {
-        'Comfy.UseNewMenu': 'Top',
-        'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
-      }
-    })
-
     test('Can serialize to forced inputs', async ({ comfyPage }) => {
-      await test.step('Add nodes', async () => {
-        await comfyPage.workflow.newBlankWorkflow()
-
-        await comfyPage.page.mouse.dblclick(250, 500, { delay: 5 })
-        await comfyPage.searchBox.fillAndSelectFirstNode('Primitive')
-        await expect(comfyPage.searchBox.input).toBeHidden()
-        await comfyPage.page.mouse.dblclick(600, 500, { delay: 5 })
-        await comfyPage.searchBox.fillAndSelectFirstNode(
-          'Node With Force Input'
-        )
-      })
-
-      const primitive = await comfyPage.vueNodes.getFixtureByTitle('Primitive')
-      const node = await comfyPage.vueNodes.getFixtureByTitle(
-        'Node With Force Input'
+      await comfyPage.workflow.loadWorkflow(
+        'primitive/primitive_node_force_input'
       )
+      const input = comfyPage.vueNodes
+        .getNodeByTitle('Primitive')
+        .getByRole('spinbutton', { name: 'value', exact: true })
+      await expect(input).toHaveValue('3')
 
-      await test.step('Link nodes', async () => {
-        await primitive.getSlot('').dragTo(node.getSlot('int_input').first())
-        await expect
-          .poll(() => comfyPage.vueNodes.isSlotConnected(primitive.getSlot('')))
-          .toBe(true)
-      })
-
-      const { input } = comfyPage.vueNodes.getInputNumberControls(
-        comfyPage.vueNodes.getWidgetByName('Primitive', 'value')
-      )
       await input.fill('5')
       await input.blur()
+
       const prompt = await comfyPage.workflow.getExportedWorkflow({ api: true })
       const forceInputNode = Object.values(prompt).find(
         (entry) => entry.class_type === 'DevToolsNodeWithForceInput'
