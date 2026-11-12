@@ -250,7 +250,10 @@ and an exact pin is the lockfile conflict this ADR rejects below.
 > `scripts/sdk-release-plan.ts`, which compares each package with the commit
 > that set the newest version of it on npm. A bump that merged but never
 > published is not a release, so the planner plans that package again rather
-> than reading the unpublished version as shipped. `ingest-types` is bumped (patch) only when a
+> than reading the unpublished version as shipped. The push that merges a
+> release changes only `version` fields, and its publish is still running, so
+> the planner plans nothing on it; a failed publish is planned again on the
+> next push that touches package sources. `ingest-types` is bumped (patch) only when a
 > schema an SDK package imports, or one it is built from, changed; endpoints
 > no SDK package reads ship nothing. The hand-written packages get an `alpha`
 > prerelease bump when their published source or any published manifest field

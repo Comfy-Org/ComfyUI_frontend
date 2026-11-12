@@ -78,6 +78,19 @@ describe('changedSchemas', () => {
       expected
     )
   })
+
+  it('keeps whitespace inside string and regex literals', () => {
+    const released =
+      "export const zPlan = z.object({ slug: z.enum(['a b']), id: z.string().regex(/^a b$/) })\n"
+    const changed = (current: string) =>
+      changedSchemas(released, current, ['zPlan'])
+
+    expect(changed(released.replace("'a b'", "'a  b'"))).toEqual(['zPlan'])
+    expect(changed(released.replace('/^a b$/', '/^a  b$/'))).toEqual(['zPlan'])
+    expect(
+      changed(released.replace('({ ', '({\n  ').replace(' })', '\n})'))
+    ).toEqual([])
+  })
 })
 
 const RELEASED_MANIFEST = {
@@ -251,6 +264,11 @@ describe('planRelease', () => {
     commit('schema change')
     manifest('ingest-types', '1.0.1')
     commit('bump without a publish')
+    write(
+      'packages/ingest-types/src/zod.gen.ts',
+      'export const zFoo = z.object({ a: z.number() })\nexport const zBar = z.string()\n'
+    )
+    commit('a later push')
 
     const plan = (published: Set<string>) =>
       planRelease({ root, publishedVersions: () => published })
@@ -282,6 +300,50 @@ describe('planRelease', () => {
     ).toEqual([
       { package: 'ingest-types', version: '2.0.0', reasons: ['zFoo'] }
     ])
+  })
+
+  it('does not re-plan a release whose publish is still running', () => {
+    const root = mkdtempSync(join(tmpdir(), 'sdk-release-race-'))
+    const git = (...args: string[]) => execFileSync('git', args, { cwd: root })
+    const write = (file: string, content: string) => {
+      mkdirSync(join(root, file, '..'), { recursive: true })
+      writeFileSync(join(root, file), content)
+    }
+    const manifest = (name: string, version: string) =>
+      write(
+        `packages/${name}/package.json`,
+        JSON.stringify({ name: `@comfyorg/${name}`, version }, null, 2) + '\n'
+      )
+
+    git('init', '-q')
+    git('config', 'user.email', 'a@b')
+    git('config', 'user.name', 'a')
+    write('pnpm-workspace.yaml', 'catalog:\n  zod: ^3\n')
+    write(
+      'packages/ingest-types/src/zod.gen.ts',
+      'export const zFoo = z.string()\n'
+    )
+    manifest('ingest-types', '1.0.0')
+    for (const name of ['account-core', 'account-ui', 'billing-contract']) {
+      manifest(name, '1.0.0-alpha.1')
+      write(
+        `packages/${name}/src/index.ts`,
+        "import { Foo } from '@comfyorg/ingest-types'\n"
+      )
+    }
+    git('add', '-A')
+    git('commit', '-qm', 'released')
+
+    write(
+      'packages/account-core/src/index.ts',
+      "import { Foo } from '@comfyorg/ingest-types'\nexport const x = 1\n"
+    )
+    git('commit', '-qam', 'change')
+    manifest('account-core', '1.0.0-alpha.2')
+    git('commit', '-qam', '[release] account-core 1.0.0-alpha.2')
+
+    const npm = new Set(['1.0.0', '1.0.0-alpha.1'])
+    expect(planRelease({ root, publishedVersions: () => npm })).toEqual([])
   })
 })
 

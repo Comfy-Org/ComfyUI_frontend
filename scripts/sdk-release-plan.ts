@@ -26,6 +26,9 @@ const INGEST_IMPORT =
   /import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'@comfyorg\/ingest-types(?:\/zod)?'/g
 const SCHEMA_START = /^export const (z[A-Z]\w*) = /gm
 const SCHEMA_REFERENCE = /\bz[A-Z]\w*\b/g
+/** A string or regex literal, kept verbatim, or a whitespace run outside one. */
+const LITERAL_OR_SPACE =
+  /('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`|\/(?![*/])(?:[^/\\\n[]|\\.|\[(?:[^\]\\\n]|\\.)*\])+\/[a-z]*)|\s+/g
 const TEST_FILE = /(\.test\.ts|\.spec\.ts|\/__fixtures__\/|\/__mocks__\/)/
 const WORKSPACE = 'pnpm-workspace.yaml'
 const CATALOG_ENTRY = /^[ \t]+['"]?([^'":\s]+)['"]?:[ \t]*['"]?([^'"#\s]+)/gm
@@ -87,7 +90,7 @@ export function referencedSchemas(sources: readonly string[]): Set<string> {
   return names
 }
 
-/** Each exported schema's definition, with doc comments and spacing dropped. */
+/** Each exported schema's definition, with doc comments dropped and spacing outside literals collapsed. */
 export function schemaDefinitions(zodGen: string): Map<string, string> {
   const starts = [...zodGen.matchAll(SCHEMA_START)]
   return new Map(
@@ -96,7 +99,7 @@ export function schemaDefinitions(zodGen: string): Map<string, string> {
       const body = zodGen
         .slice(match.index, end)
         .replace(/\/\*\*[\s\S]*?\*\//g, '')
-        .replace(/\s+/g, ' ')
+        .replace(LITERAL_OR_SPACE, (_space, literal?: string) => literal ?? ' ')
         .trim()
       return [match[1], body]
     })
@@ -275,11 +278,44 @@ function sdkSources(root: string): string[] {
   )
 }
 
+/** Whether HEAD only bumps package versions, as merging a release does. */
+function isReleaseMerge(root: string): boolean {
+  const manifests = new Set(
+    (['ingest-types', ...SDK_PACKAGES] as const).map(
+      (name) => `packages/${name}/package.json`
+    )
+  )
+  const withoutVersion = (ref: string, file: string) => {
+    const { version: _, ...rest } = JSON.parse(
+      git(root, 'show', `${ref}:${file}`)
+    )
+    return JSON.stringify(rest)
+  }
+  try {
+    const files = git(root, 'diff', '--name-only', 'HEAD^', 'HEAD')
+      .split('\n')
+      .filter(Boolean)
+    return (
+      files.length > 0 &&
+      files.every(
+        (file) =>
+          manifests.has(file) &&
+          withoutVersion('HEAD^', file) === withoutVersion('HEAD', file)
+      )
+    )
+  } catch {
+    return false
+  }
+}
+
 export function planRelease({
   root = process.cwd(),
   publishedVersions = npmVersions,
   releaseRef
 }: PlanOptions = {}): ReleaseReason[] {
+  // Its publish is still running, so npm lacking the version is not a failure
+  // yet. A failed publish is planned again on the next push.
+  if (isReleaseMerge(root)) return []
   const plan: ReleaseReason[] = []
   const released = (name: Package) =>
     releasedCommit(root, name, publishedVersions(name))
