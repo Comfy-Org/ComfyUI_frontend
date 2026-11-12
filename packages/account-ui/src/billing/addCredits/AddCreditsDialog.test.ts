@@ -858,7 +858,7 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
   )
 
   it("shows Auto top-up didn't turn on with Set up when the server reports a failure", async () => {
-    const { user, ports } = renderOffered()
+    const { user, ports, emitted } = renderOffered()
     ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
     await user.click(checkbox())
     await user.click(continueButton())
@@ -873,11 +873,12 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
         'Your credits were added. Set up auto top-up in Billing to try again.'
       )
     ).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Set up' })).toHaveAttribute(
       'href',
       AUTO_TOP_UP_SETUP_URL
     )
+    await user.click(screen.getByRole('button', { name: 'Done' }))
+    expect(emitted().close).toHaveLength(1)
   })
 
   it('a checked purchase that lands without an outcome closes without claiming a failure', async () => {
