@@ -1,15 +1,20 @@
 import { cloneDeep } from 'es-toolkit'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/scripts/app'))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetStore } from '@/stores/widgetStore'
+import {
+  createMockCanvasRenderingContext2D,
+  stubCanvasGetContext
+} from '@/utils/__tests__/canvasTestUtils'
 
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
@@ -238,6 +243,64 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
     expect(widget?.options.advanced).toBe(true)
     expect(widget?.options.hidden).toBe(true)
     expect(widget?.hidden).toBe(true)
+  })
+})
+
+describe('canvas Copy Image action', () => {
+  it('preserves original bounds when clipboard requires PNG conversion', async () => {
+    const nodeName = 'TestOriginalImageCopy'
+    await useLitegraphService().registerNodeDef(
+      nodeName,
+      createNodeDefV1({ name: nodeName })
+    )
+    const node = LiteGraph.createNode(nodeName)
+    assert.exists(node)
+    const display = document.createElement('img')
+    display.src = 'blob:display-copy'
+    display.dataset.fullSrc = 'http://localhost/view?filename=original.webp'
+    display.width = 1024
+    display.height = 512
+    node.imgs = [display]
+    node.imageIndex = 0
+    const original = document.createElement('img')
+    original.width = 4096
+    original.height = 2048
+    vi.stubGlobal('createImageBitmap', undefined)
+    vi.spyOn(globalThis, 'Image').mockImplementation(function () {
+      queueMicrotask(() => original.dispatchEvent(new Event('load')))
+      return original
+    })
+    const context = createMockCanvasRenderingContext2D()
+    stubCanvasGetContext(context)
+    let bounds: number[] = []
+    const png = new Blob(['original pixels'], { type: 'image/png' })
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
+      function (this: HTMLCanvasElement, callback) {
+        bounds = [this.width, this.height]
+        callback(png)
+      }
+    )
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(new Blob(['original'], { type: 'image/webp' }))
+    )
+    const write = vi
+      .spyOn(navigator.clipboard, 'write')
+      .mockRejectedValueOnce(new Error('Unsupported image/webp'))
+      .mockResolvedValue(undefined)
+    const options: (IContextMenuValue | null)[] = []
+    node.getExtraMenuOptions?.(app.canvas, options)
+    const copy = options.find((option) => option?.content === 'Copy Image')
+    assert.exists(copy?.callback)
+
+    await copy.callback.call(document.createElement('div'))
+
+    expect(fetch).toHaveBeenCalledWith(
+      new URL('http://localhost/view?filename=original.webp')
+    )
+    expect(bounds).toEqual([4096, 2048])
+    expect(context.drawImage).toHaveBeenCalledWith(original, 0, 0)
+    expect(write).toHaveBeenCalledTimes(2)
+    expect(await write.mock.calls[1][0][0].getType('image/png')).toBe(png)
   })
 })
 
