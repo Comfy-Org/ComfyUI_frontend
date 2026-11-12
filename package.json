@@ -176,6 +176,7 @@
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/test-utils": "workspace:*",
     "@eslint/js": "catalog:",
+    "@flakiness/playwright": "catalog:",
     "@intlify/eslint-plugin-vue-i18n": "catalog:",
     "@microsoft/api-extractor": "catalog:",
     "@pinia/testing": "catalog:",

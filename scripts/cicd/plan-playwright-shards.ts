@@ -141,6 +141,40 @@ function collectGroups(config: FullConfig, tests: TestCase[], project: string) {
   return collected
 }
 
+function saltTimings(
+  tests: TestCase[],
+  collected: CollectedTest[],
+  millisecondsPerTest: Record<string, number>,
+  project: string
+) {
+  const samples = Object.values(millisecondsPerTest).sort((a, b) => a - b)
+  const fallback = samples[Math.floor(samples.length / 2)]
+  return {
+    environments: [{ name: project }],
+    suites: tests.map((test, index) =>
+      test
+        .titlePath()
+        .slice(2, -1)
+        .reduceRight<unknown>(
+          (child, title, index, titles) => ({
+            title,
+            ...(index === titles.length - 1
+              ? { tests: [child] }
+              : { suites: [child] })
+          }),
+          {
+            title: test.title,
+            attempts: [
+              {
+                duration: millisecondsPerTest[collected[index].file] ?? fallback
+              }
+            ]
+          }
+        )
+    )
+  }
+}
+
 export default class ShardPlanner implements Reporter {
   private collection?: { config: FullConfig; suite: Suite }
 
@@ -194,6 +228,12 @@ export default class ShardPlanner implements Reporter {
       writeFileSync(
         path.join(directory, 'plan.json'),
         JSON.stringify(shards, null, 2)
+      )
+      writeFileSync(
+        path.join(directory, 'salt-timings.json'),
+        JSON.stringify(
+          saltTimings(tests, collected, baseline.millisecondsPerTest, project)
+        )
       )
       return { status: 'passed' }
     } catch (error) {
