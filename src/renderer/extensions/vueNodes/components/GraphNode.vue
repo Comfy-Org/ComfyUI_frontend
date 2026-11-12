@@ -44,19 +44,21 @@
       @update:title="handleHeaderTitleUpdate"
     />
 
+    <NodeSlots v-if="bodyKind === 'reroute'" :node-data />
     <GraphNodeBodyContent
-      v-if="!isCollapsed"
+      v-if="bodyKind === 'node'"
       :node-data
       :has-renderable-widgets
       :processed-widget-model
       :body-rounding-class
       :media="nodeMedia"
       :previews="promotedPreviews"
-      :has-expanding-widget
+      :media-class
       :has-custom-content
       :preview-url="previewUrl"
       :progress="visibleProgress"
-      :progress-classes
+      :progress-classes="bodyProgressClass"
+      :progress-style
     />
 
     <template #after>
@@ -73,14 +75,12 @@
         @open-errors="handleOpenErrors"
         @toggle-advanced="handleToggleAdvanced"
       />
-      <template v-if="canResize">
-        <NodeResizeHandle
-          v-for="handle in RESIZE_HANDLES"
-          :key="handle.corner"
-          :handle
-          @resize="handleResizePointerDown"
-        />
-      </template>
+      <NodeResizeHandle
+        v-for="handle in resizeHandles"
+        :key="handle.corner"
+        :handle
+        @resize="handleResizePointerDown"
+      />
     </template>
   </LGraphNode>
 </template>
@@ -91,12 +91,12 @@ import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { st } from '@/i18n'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { applyLightThemeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 import { useGraphNodePresentation } from '@/renderer/extensions/vueNodes/composables/useGraphNodePresentation'
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import NodeBadges from './NodeBadges.vue'
 import NodeResizeHandle from './NodeResizeHandle.vue'
 import NodeFooter from './NodeFooter.vue'
+import NodeSlots from './NodeSlots.vue'
 import LGraphNode from './LGraphNode.vue'
 import GraphNodeHeader from './GraphNodeHeader.vue'
 import GraphNodeBodyContent from './GraphNodeBodyContent.vue'
@@ -127,14 +127,17 @@ const {
   bodyRoundingClass,
   nodeMedia,
   promotedPreviews,
-  hasExpandingWidget,
+  mediaClass,
+  bodyProgressClass,
+  progressStyle,
   previewUrl,
   isRerouteNode,
+  bodyKind,
   isSubgraph,
   errorSeverity,
   showErrorsTabEnabled,
   showAdvancedInputsButton,
-  canResize,
+  resizeHandles,
   hasCustomContent,
   handleResizePointerDown,
   handleContextMenu,

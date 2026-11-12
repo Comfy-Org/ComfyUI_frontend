@@ -29,6 +29,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import { useGraphNodeActions } from './useGraphNodeActions'
 import { useGraphNodeWidgets } from './useGraphNodeWidgets'
 import { useNodeShape } from './useNodeShape'
+import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
 export function useGraphNodePresentation(
   nodeSource: MaybeRefOrGetter<NodeState>
@@ -79,6 +80,9 @@ export function useGraphNodePresentation(
   const isRerouteNode = computed(() => nodeData.value.type === 'Reroute')
 
   const isCollapsed = computed(() => nodeData.value.flags.collapsed ?? false)
+  const bodyKind = computed(() =>
+    isCollapsed.value ? 'hidden' : isRerouteNode.value ? 'reroute' : 'node'
+  )
 
   const bypassed = computed(
     (): boolean => nodeData.value.mode === LGraphEventMode.BYPASS
@@ -228,12 +232,13 @@ export function useGraphNodePresentation(
       !hasAnyError.value
   )
 
-  const canResize = computed(
-    () =>
-      !isCollapsed.value &&
-      !isRerouteNode.value &&
-      nodeData.value.resizable !== false &&
-      !isSelectMode.value
+  const resizeHandles = computed(() =>
+    !isCollapsed.value &&
+    !isRerouteNode.value &&
+    nodeData.value.resizable !== false &&
+    !isSelectMode.value
+      ? RESIZE_HANDLES
+      : []
   )
 
   const nodeStyle = computed(() => ({
@@ -274,6 +279,24 @@ export function useGraphNodePresentation(
   const hasCustomContent = computed(
     () => promotedPreviews.value.length > 0 || !!nodeMedia.value?.urls.length
   )
+  const mediaClass = computed(() =>
+    cn(
+      'flex min-h-0 flex-col',
+      nodeMedia.value?.type === 'image' && hasExpandingWidget.value
+        ? 'shrink-0'
+        : 'flex-1'
+    )
+  )
+  const bodyProgressClass = computed(() =>
+    cn(
+      'absolute inset-x-0 top-1/2 -translate-y-1/2',
+      progress.value !== undefined && progress.value < 1 && 'rounded-r-full',
+      progressClasses
+    )
+  )
+  const progressStyle = computed(() => ({
+    width: `${Math.min((progress.value ?? 0) * 100, 100)}%`
+  }))
   return {
     handleWheel,
     nodeAttributes,
@@ -299,14 +322,17 @@ export function useGraphNodePresentation(
     bodyRoundingClass,
     nodeMedia,
     promotedPreviews,
-    hasExpandingWidget,
+    mediaClass,
+    bodyProgressClass,
+    progressStyle,
     previewUrl,
     isRerouteNode,
+    bodyKind,
     isSubgraph,
     errorSeverity,
     showErrorsTabEnabled,
     showAdvancedInputsButton,
-    canResize,
+    resizeHandles,
     hasCustomContent,
     ...actions
   }

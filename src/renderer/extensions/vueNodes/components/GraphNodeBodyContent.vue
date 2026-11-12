@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { cn } from '@comfyorg/tailwind-utils'
+import type { CSSProperties } from 'vue'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 import type { PromotedPreview } from '@/composables/node/usePromotedPreviews'
 import type { NodeMedia } from '@/renderer/extensions/vueNodes/types/nodeMedia'
@@ -17,66 +17,45 @@ defineProps<{
   bodyRoundingClass: ClassValue
   media?: NodeMedia
   previews: PromotedPreview[]
-  hasExpandingWidget: boolean
+  mediaClass: string
   hasCustomContent: boolean
   previewUrl?: string
   progress?: number
-  progressClasses: ClassValue
+  progressClasses: string
+  progressStyle: CSSProperties
 }>()
 </script>
 
 <template>
-  <template v-if="nodeData.type === 'Reroute'">
-    <NodeSlots :node-data />
-  </template>
+  <div class="relative">
+    <div
+      v-if="progress !== undefined"
+      :class="progressClasses"
+      :style="progressStyle"
+    />
+  </div>
 
-  <template v-else>
-    <div class="relative">
-      <div
-        v-if="progress !== undefined"
-        :class="
-          cn(
-            'absolute inset-x-0 top-1/2 -translate-y-1/2',
-            !!(progress < 1) && 'rounded-r-full',
-            progressClasses
-          )
-        "
-        :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+  <NodeBody
+    :class="bodyRoundingClass"
+    :data-testid="`node-body-${nodeData.id}`"
+  >
+    <NodeSlots :node-data />
+
+    <NodeWidgets
+      v-if="hasRenderableWidgets"
+      :node-data
+      :processed-widget-model
+    />
+
+    <div v-if="hasCustomContent" :class="mediaClass">
+      <NodeContent v-if="media" :node-data :media="media" />
+      <NodeContent
+        v-for="preview in previews"
+        :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
+        :node-data
+        :media="preview"
       />
     </div>
-
-    <NodeBody
-      :class="bodyRoundingClass"
-      :data-testid="`node-body-${nodeData.id}`"
-    >
-      <NodeSlots :node-data />
-
-      <NodeWidgets
-        v-if="hasRenderableWidgets"
-        :node-data
-        :processed-widget-model
-      />
-
-      <div
-        v-if="hasCustomContent"
-        :class="
-          cn(
-            'flex min-h-0 flex-col',
-            media?.type === 'image' && hasExpandingWidget
-              ? 'shrink-0'
-              : 'flex-1'
-          )
-        "
-      >
-        <NodeContent v-if="media" :node-data :media="media" />
-        <NodeContent
-          v-for="preview in previews"
-          :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
-          :node-data
-          :media="preview"
-        />
-      </div>
-      <LivePreview v-if="previewUrl !== undefined" :image-url="previewUrl" />
-    </NodeBody>
-  </template>
+    <LivePreview v-if="previewUrl !== undefined" :image-url="previewUrl" />
+  </NodeBody>
 </template>

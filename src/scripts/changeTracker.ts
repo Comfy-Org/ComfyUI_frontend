@@ -129,6 +129,14 @@ function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
   if (key === 'Z') return e.shiftKey ? 'redo' : 'undo'
 }
 
+function isEditingText(element: Element | null): boolean {
+  return (
+    element?.tagName === 'INPUT' ||
+    element?.tagName === 'TEXTAREA' ||
+    (element instanceof HTMLElement && element.isContentEditable)
+  )
+}
+
 function isAutoQueueOnChange(): boolean {
   const { ui } = useApp()
   return (
@@ -718,20 +726,13 @@ export class ChangeTracker implements WorkflowChangeTracker {
         if (clipspace.maskEditorIsOpened?.()) return
 
         const activeEl = document.activeElement
-        const isEditingText =
-          activeEl?.tagName === 'INPUT' ||
-          activeEl?.tagName === 'TEXTAREA' ||
-          (activeEl instanceof HTMLElement && activeEl.isContentEditable)
-        if (isEditingText && (shortcut || !isAutoQueueOnChange())) return
+        if (isEditingText(activeEl) && (shortcut || !isAutoQueueOnChange()))
+          return
         if (isModalOpen(dialogStore.dialogStack.length)) return
 
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
 
-        keyIgnored =
-          e.key === 'Control' ||
-          e.key === 'Shift' ||
-          e.key === 'Alt' ||
-          e.key === 'Meta'
+        keyIgnored = ['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)
         if (keyIgnored) return
         if (shortcut) e.preventDefault()
         if (e.repeat) return

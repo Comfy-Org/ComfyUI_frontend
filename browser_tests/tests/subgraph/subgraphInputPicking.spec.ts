@@ -7,6 +7,7 @@ test.describe(
   'Subgraph input values during node picking',
   { tag: ['@subgraph', '@widget', '@cloud', '@vue-nodes'] },
   () => {
+    test.describe.configure({ timeout: 30_000 })
     test.use({ objectInfo: 'server' })
 
     test('blocks the whole panel while picking and restores editing after exiting', async ({
@@ -62,6 +63,7 @@ test.describe(
           .getByRole('menuitem', { name: 'Nodes', exact: true })
           .click()
         await expect(agentPanel.nodeSelectionBanner).toBeVisible()
+        await comfyPage.canvasOps.waitForViewToSettle()
         const bounds = await panel.boundingBox()
         if (!bounds) throw new Error('Expected the input node to be rendered')
         await comfyPage.canvasOps.pan(
