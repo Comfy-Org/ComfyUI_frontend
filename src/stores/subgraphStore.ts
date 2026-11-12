@@ -245,16 +245,20 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       return Promise.allSettled(filteredEntries.map(loadGlobalBlueprint))
     }
 
-    const userSubs = (
-      await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
-    ).filter((f) => f.path.endsWith('.json'))
-    const [globalResult, ...userResults] = await Promise.allSettled([
+    async function loadUserBlueprints() {
+      const userSubs = (
+        await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
+      ).filter((f) => f.path.endsWith('.json'))
+      return Promise.allSettled(userSubs.map(loadBlueprint))
+    }
+
+    const results = await Promise.allSettled([
       loadInstalledBlueprints(),
-      ...userSubs.map(loadBlueprint)
+      loadUserBlueprints()
     ])
-    const globalResults =
-      globalResult.status === 'fulfilled' ? globalResult.value : []
-    const settled = [...globalResults, ...userResults]
+    const settled = results.flatMap((result) =>
+      result.status === 'fulfilled' ? result.value : [result]
+    )
 
     const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
     errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
@@ -277,7 +281,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const subgraphNode = workflow.changeTracker.initialState.nodes[0]
     subgraphNode.inputs ??= []
     subgraphNode.outputs ??= []
-    //NOTE: Types are cast to string. This is only used for input coloring on previews
     const inputs = Object.fromEntries(
       subgraphNode.inputs.map((i) => [
         i.name,
@@ -311,7 +314,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       essentials_category: subgraphDefEssentialsCategory,
       ...overrides
     }
-    nodeDefStore.registerBlueprintNodeDef(new ComfyNodeDefImpl(nodedefv1))
+    nodeDefStore.registerBlueprintNodeDef(
+      new ComfyNodeDefImpl(nodedefv1, { validateInputs: true })
+    )
     subgraphCache[name] = workflow
   }
   async function publishSubgraph(providedName?: string) {

@@ -142,6 +142,40 @@ describe('useSubgraphStore', () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(userBlueprintNames()).toEqual(['SubgraphBlueprint.test'])
   })
+  it.for([false, true])(
+    'loads blueprint boundary inputs when object info is trusted: %s',
+    async (isTrusted) => {
+      mockDistributionTypes.isCloud = isTrusted
+
+      await mockFetch({
+        'dynamic-boundaries.json': {
+          ...mockGraph,
+          nodes: [
+            {
+              type: '123',
+              inputs: [
+                { name: 'autogrow', type: 'COMFY_AUTOGROW_V3', link: null },
+                { name: 'match', type: 'COMFY_MATCHTYPE_V3', link: null },
+                { name: 'group', type: 'COMFY_DYNAMICGROUP_V3', link: null },
+                { name: 'image', type: 'IMAGE', link: null }
+              ],
+              outputs: [
+                { name: 'matched', type: 'COMFY_MATCHTYPE_V3', links: null },
+                { name: 'image', type: 'IMAGE', links: null }
+              ]
+            }
+          ]
+        }
+      })
+
+      const blueprintDef = useNodeDefStore().nodeDefs.find(
+        (def) => def.name === 'SubgraphBlueprint.dynamic-boundaries'
+      )
+      expect(blueprintDef).toBeDefined()
+      expect(blueprintDef?.inputTypes).toEqual(['IMAGE'])
+      expect(blueprintDef?.outputTypes).toEqual(['IMAGE'])
+    }
+  )
   it('should remove deleted blueprints from the node library', async () => {
     await mockFetch({ 'test.json': mockGraph })
     await store.deleteBlueprint('SubgraphBlueprint.test')
@@ -288,6 +322,47 @@ describe('useSubgraphStore', () => {
     )
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
   })
+
+  it.for([
+    {
+      source: 'user',
+      failedListing: 'listUserDataFullInfo',
+      survivingBlueprint: 'SubgraphBlueprint.installed_test'
+    },
+    {
+      source: 'installed',
+      failedListing: 'getGlobalSubgraphs',
+      survivingBlueprint: 'SubgraphBlueprint.user_test'
+    }
+  ] as const)(
+    'loads the other blueprint source and reports a failed $source listing',
+    async ({ failedListing, survivingBlueprint }) => {
+      vi.mocked(api[failedListing]).mockRejectedValueOnce(
+        new Error('Listing failed')
+      )
+
+      await mockFetch(
+        { 'user_test.json': mockGraph },
+        {
+          installed_test: {
+            name: 'Installed Test',
+            info: { node_pack: 'test_pack' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+
+      expect([...useNodeDefStore().blueprintNodeDefsByName.keys()]).toEqual([
+        survivingBlueprint
+      ])
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'Listing failed',
+          kind: 'error'
+        })
+      ])
+    }
+  )
 
   it('should handle global blueprint with rejected data promise gracefully', async () => {
     await mockFetch(

@@ -100,6 +100,7 @@ import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/b
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
 type Status = AutoReloadSettings['status']
@@ -420,11 +421,10 @@ const view = computed(() => {
   return { status: STATUS[key], lines: LINES[key](settings) }
 })
 
+const action = computed(() => view.value?.status.action.id ?? 'turn_on')
+
 const { href, track, available } = usePlatformHandoff(
-  '/profile/billing',
-  () => ({
-    target: 'auto_top_up',
-    action: view.value?.status.action.id ?? 'turn_on'
-  })
+  () => platformAutoTopUpPath(action.value),
+  () => ({ target: 'auto_top_up', action: action.value })
 )
 </script>
