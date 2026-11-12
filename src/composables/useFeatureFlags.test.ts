@@ -14,6 +14,7 @@ import {
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
@@ -37,6 +38,7 @@ vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
 // Mock the distribution types module
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
+  isDesktop: false,
   isNightly: false
 }))
 
@@ -418,7 +420,7 @@ describe('useFeatureFlags', () => {
   describe.for([
     {
       flag: 'unifiedBillingSettingsEnabled' as const,
-      offCloudTrue: true
+      offCloudTrue: false
     }
   ])('$flag', ({ flag, offCloudTrue }) => {
     afterEach(() => {
@@ -480,6 +482,42 @@ describe('useFeatureFlags', () => {
       vi.mocked(getSessionOverride).mockReturnValue(true)
 
       expect(useFeatureFlags().flags[flag]).toBe(true)
+    })
+  })
+
+  describe('unifiedBillingSettingsEnabled off cloud', () => {
+    afterEach(() => {
+      setLocalBillingWebEnabled(false)
+      delete window.__comfyDesktop2
+    })
+
+    it.for([
+      {
+        case: 'local web with local_billing_web on',
+        desktop: false,
+        flag: true,
+        expected: true
+      },
+      {
+        case: 'local web with local_billing_web off',
+        desktop: false,
+        flag: false,
+        expected: false
+      },
+      {
+        case: 'Desktop with local_billing_web on',
+        desktop: true,
+        flag: true,
+        expected: false
+      }
+    ])('is $expected on $case', ({ desktop, flag, expected }) => {
+      if (desktop) window.__comfyDesktop2 = {}
+      setLocalBillingWebEnabled(flag)
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      expect(useFeatureFlags().flags.unifiedBillingSettingsEnabled).toBe(
+        expected
+      )
     })
   })
 

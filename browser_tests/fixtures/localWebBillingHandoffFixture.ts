@@ -6,6 +6,7 @@ import type {
   CreateTopupQuoteRequest,
   ErrorResponse,
   ListSavedPaymentMethodsResponse,
+  ListTopupCheckoutsResponse,
   TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 
@@ -106,6 +107,14 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
     })
     await page.route('**/api/billing/payment-methods', (route) =>
       route.fulfill({ json: [] satisfies ListSavedPaymentMethodsResponse })
+    )
+    await page.route(`${CLOUD_BASE_URL}/api/billing/topup/checkouts`, (route) =>
+      route.fulfill({
+        json: {
+          checkouts: [],
+          next_cursor: null
+        } satisfies ListTopupCheckoutsResponse
+      })
     )
     await page.route('**/api/billing/topup/quote', (route) => {
       const { amount_cents } = route

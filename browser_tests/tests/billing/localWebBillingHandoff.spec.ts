@@ -9,6 +9,19 @@ import {
   WORKSPACE_ID,
   localWebBillingHandoffTest as test
 } from '@e2e/fixtures/localWebBillingHandoffFixture'
+import type { Request } from '@playwright/test'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+
+async function openSettingsAfterFlagRead(
+  comfyPage: ComfyPage,
+  cloudFlagReads: Request[]
+) {
+  await expect
+    .poll(() => cloudFlagReads.length, 'Cloud flag never read')
+    .toBeGreaterThan(0)
+  await comfyPage.settingDialog.open()
+  return comfyPage.settingDialog
+}
 
 test.describe('Local web billing handoff', () => {
   test.describe.configure({ timeout: 60_000 })
@@ -31,6 +44,21 @@ test.describe('Local web billing handoff', () => {
 
       await expect(new TopUpCreditsDialog(page).heading).toBeVisible()
       expect(handoffRequests).toHaveLength(0)
+    })
+
+    test('keeps Plan & Credits in Settings', async ({
+      comfyPage,
+      cloudFlagReads
+    }) => {
+      const settings = await openSettingsAfterFlagRead(
+        comfyPage,
+        cloudFlagReads
+      )
+
+      await expect(
+        settings.category('Plan & Credits', { exact: true })
+      ).toBeVisible()
+      await expect(settings.category('Billing', { exact: true })).toHaveCount(0)
     })
   })
 
@@ -62,6 +90,22 @@ test.describe('Local web billing handoff', () => {
         })
       )
       await expect(page.getByRole('dialog')).toHaveCount(0)
+    })
+
+    test('shows the Billing tab in Settings instead of Plan & Credits', async ({
+      comfyPage,
+      cloudFlagReads
+    }) => {
+      const settings = await openSettingsAfterFlagRead(
+        comfyPage,
+        cloudFlagReads
+      )
+
+      await settings.category('Billing', { exact: true }).click()
+      await expect(comfyPage.page.getByTestId('billing-tab')).toBeVisible()
+      await expect(
+        settings.category('Plan & Credits', { exact: true })
+      ).toHaveCount(0)
     })
 
     test.describe('when Cloud refuses the handoff', () => {

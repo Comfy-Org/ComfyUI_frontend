@@ -26,10 +26,7 @@ import {
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { launchLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
-import {
-  localSurface,
-  useLocalBillingWebFlagStore
-} from '@/platform/billing/stores/localBillingWebFlagStore'
+import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
@@ -51,14 +48,6 @@ const DENIED_TOP_UP_OUTCOME: Record<
     toast: 'subscription.planUnavailable.billingStateUnknown'
   },
   unresolved: { toast: 'subscription.planUnavailable.billingStateUnknown' }
-}
-
-function opensLocalBillingHandoff(): boolean {
-  return (
-    !isCloud &&
-    localSurface() === 'local_web' &&
-    useLocalBillingWebFlagStore().enabled
-  )
 }
 
 export function useBillingDialogs() {

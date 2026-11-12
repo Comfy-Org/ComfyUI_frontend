@@ -1,6 +1,6 @@
 import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { z } from 'zod'
 
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
@@ -8,7 +8,12 @@ import {
   desktopHostTokenRecoveries,
   desktopHostUser
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import {
+  localBillingWebEnabled,
+  localSurface,
+  setLocalBillingWebEnabled
+} from '@/platform/billing/localBillingWebEnabled'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -16,13 +21,6 @@ const REREAD_INTERVAL_MS = 10 * 60_000
 const READ_TIMEOUT_MS = 10_000
 
 const zAllowlistedCloudFlags = z.object({ local_billing_web: z.boolean() })
-
-/** Which local app this view runs in, as the `local_billing_web` flag splits it. */
-export function localSurface(): 'desktop' | 'local_web' {
-  return isDesktop || window.__comfyDesktop2 !== undefined
-    ? 'desktop'
-    : 'local_web'
-}
 
 async function readLocalBillingWeb(): Promise<boolean> {
   try {
@@ -54,18 +52,17 @@ async function readLocalBillingWeb(): Promise<boolean> {
 export const useLocalBillingWebFlagStore = defineStore(
   'localBillingWebFlag',
   () => {
-    const enabled = ref(false)
     let generation = 0
 
     function clear(): void {
       generation++
-      enabled.value = false
+      setLocalBillingWebEnabled(false)
     }
 
     async function reread(): Promise<void> {
       const current = ++generation
       const value = await readLocalBillingWeb()
-      if (current === generation) enabled.value = value
+      if (current === generation) setLocalBillingWebEnabled(value)
     }
 
     if (!isCloud) {
@@ -105,6 +102,6 @@ export const useLocalBillingWebFlagStore = defineStore(
       }, REREAD_INTERVAL_MS)
     }
 
-    return { enabled: computed(() => enabled.value) }
+    return { enabled: computed(() => localBillingWebEnabled.value) }
   }
 )
