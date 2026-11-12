@@ -2318,7 +2318,7 @@ export const zBillingHandoffExchangeResponse = z.object({
   expires_at: z.iso.datetime(),
   user: zBillingHandoffUser,
   workspace: zBillingHandoffWorkspace,
-  role: z.string()
+  role: z.enum(['owner', 'member'])
 })
 
 /**

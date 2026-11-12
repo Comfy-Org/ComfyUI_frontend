@@ -406,6 +406,7 @@
           "src/stores/assetExportStore.ts",
           "src/stores/assetExportStore.test.ts",
           "src/stores/assetsStore.ts",
+          "src/stores/assetsStore.history.test.ts",
           "src/stores/assetsStore.test.ts",
           "src/stores/workspace/assetsSidebarBadgeStore.ts",
           "src/stores/workspace/assetsSidebarBadgeStore.test.ts",
