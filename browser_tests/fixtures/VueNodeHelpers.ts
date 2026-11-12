@@ -21,8 +21,8 @@ export class VueNodeHelpers {
   public readonly emphasizedNodes: Locator
 
   constructor(private page: Page) {
-    this.nodes = page.locator('[data-node-id]')
-    this.emphasizedNodes = page.locator('[data-node-id][data-emphasized]')
+    this.nodes = page.locator('[data-node-id]:not([data-subgraph-io])')
+    this.emphasizedNodes = this.nodes.and(page.locator('[data-emphasized]'))
   }
 
   /**
@@ -107,7 +107,7 @@ export class VueNodeHelpers {
    * Use `.first()` for unique titles, `.nth(n)` for duplicates.
    */
   getNodeByTitle(title: string | RegExp): Locator {
-    return this.page.locator('[data-node-id]').filter({
+    return this.nodes.filter({
       has: this.page.getByTestId('node-title').filter({ hasText: title })
     })
   }

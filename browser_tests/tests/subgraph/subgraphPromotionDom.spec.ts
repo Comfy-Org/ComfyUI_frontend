@@ -152,9 +152,8 @@ test.describe(
 
           await openSubgraphById(comfyPage, '11')
 
-          const interiorTextareas = comfyPage.page
-            .locator('[data-node-id]')
-            .getByRole('textbox')
+          const interiorTextareas =
+            comfyPage.vueNodes.nodes.getByRole('textbox')
           await expect(interiorTextareas).toHaveCount(0)
 
           await comfyPage.subgraph.exitViaBreadcrumb()
