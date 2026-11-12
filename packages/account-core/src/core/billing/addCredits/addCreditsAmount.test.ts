@@ -10,8 +10,12 @@ import {
 const BOUNDS = ADD_CREDITS_FALLBACK_BOUNDS
 
 describe('checkAddCreditsAmount', () => {
-  it('accepts no fallback amount the hosted checkout request refuses', () => {
-    for (const amount_cents of [BOUNDS.minCents, BOUNDS.maxCents]) {
+  it.for([
+    { bound: 'minimum', amount_cents: BOUNDS.minCents },
+    { bound: 'maximum', amount_cents: BOUNDS.maxCents }
+  ])(
+    'sends a fallback $bound the hosted checkout request accepts',
+    ({ amount_cents }) => {
       expect(
         zCreateTopupCheckoutRequest.safeParse({
           amount_cents,
@@ -19,7 +23,7 @@ describe('checkAddCreditsAmount', () => {
         })
       ).toMatchObject({ success: true })
     }
-  })
+  )
 
   it.for([
     { input: '', expected: { status: 'empty' } },
