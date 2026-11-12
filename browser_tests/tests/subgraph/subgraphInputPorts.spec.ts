@@ -63,17 +63,21 @@ test.describe(
         expect(moved.y).toBeCloseTo(slot.y + 60, 0)
       })
 
-      await test.step('Dragging the node background also carries its linked port', async () => {
+      await test.step('Dragging a label row also carries its linked port', async () => {
         const before = await panel.boundingBox()
-        const body = await panel
+        const label = await panel
           .getByTestId('subgraph-input-body')
+          .getByText('clip', { exact: true })
           .boundingBox()
-        if (!before || !body)
-          throw new Error('Expected the input node and body to be rendered')
+        if (!before || !label)
+          throw new Error('Expected the input node and its clip row')
         const slot = await comfyPage.subgraph.getInputSlot('clip').getPosition()
         await comfyMouse.dragAndDrop(
-          { x: body.x + 8, y: body.y + body.height - 6 },
-          { x: body.x + 28, y: body.y + body.height + 24 }
+          { x: label.x + label.width / 2, y: label.y + label.height / 2 },
+          {
+            x: label.x + label.width / 2 + 20,
+            y: label.y + label.height / 2 + 30
+          }
         )
         await expect
           .poll(async () => (await panel.boundingBox())?.x)
@@ -94,6 +98,31 @@ test.describe(
             target_id: target.id,
             target_slot: 1
           })
+      })
+
+      await test.step('Collapsing keeps the node in place and its ports on the canvas slots', async () => {
+        const before = await panel.boundingBox()
+        if (!before) throw new Error('Expected the input node to be rendered')
+        await panel.getByTestId('node-collapse-button').click()
+        await expect
+          .poll(async () => (await panel.boundingBox())?.width)
+          .toBeLessThan(before.width)
+        const after = await panel.boundingBox()
+        expect(after?.x).toBeCloseTo(before.x, 0)
+        expect(after?.y).toBeCloseTo(before.y, 0)
+        await expect
+          .poll(async () => {
+            const dot = await clip.boundingBox()
+            const slot = await comfyPage.subgraph
+              .getInputSlot('clip')
+              .getPosition()
+            return dot ? Math.abs(dot.x + dot.width / 2 - slot.x) : Infinity
+          })
+          .toBeLessThan(1)
+        await panel.getByTestId('node-collapse-button').click()
+        await expect
+          .poll(async () => (await panel.boundingBox())?.width)
+          .toBeCloseTo(before.width, 0)
       })
 
       await test.step('Drag the trailing empty slot to create a typed external input', async () => {

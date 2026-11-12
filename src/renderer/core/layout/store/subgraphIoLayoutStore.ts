@@ -4,6 +4,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 
 interface SubgraphIoLayout {
+  offsetX: number
   width: number
   height: number
   slotCenters: readonly number[]

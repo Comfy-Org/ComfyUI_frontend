@@ -20,6 +20,7 @@ describe('subgraph IO renderer measurements', () => {
     const graph = createTestSubgraph()
     graph.inputNode.pos = [100, 200]
     useSubgraphIoLayoutStore().report(graph.id, graph.inputNode.id, {
+      offsetX: 0,
       width: 320,
       height: 400,
       slotCenters: []
@@ -61,6 +62,7 @@ describe('subgraph IO renderer measurements', () => {
     const savedBounds = node.asSerialisable().bounding
     const layouts = useSubgraphIoLayoutStore()
     layouts.report(graph.id, node.id, {
+      offsetX: -192,
       width: 320,
       height: 400,
       slotCenters: [40, 72, 140]
@@ -73,7 +75,7 @@ describe('subgraph IO renderer measurements', () => {
       [204, 272],
       [204, 340]
     ])
-    expect([...node.boundingRect.size]).toEqual([320, 400])
+    expect([...node.boundingRect]).toEqual([-92, 200, 320, 400])
     expect(node.asSerialisable().bounding).toEqual(savedBounds)
     expect(node.allSlots.at(-1)).toBe(node.emptySlot)
     expect(graph.outputNode.boundingRect[2]).not.toBe(320)
@@ -87,6 +89,7 @@ describe('subgraph IO renderer measurements', () => {
     node.pos = [100, 200]
     node.size = [128, 100]
     useSubgraphIoLayoutStore().report(graph.id, node.id, {
+      offsetX: 0,
       width: 180,
       height: 90,
       slotCenters: [30, 66]
@@ -106,6 +109,7 @@ describe('subgraph IO renderer measurements', () => {
     const second = createTestSubgraph()
     const layouts = useSubgraphIoLayoutStore()
     layouts.report(first.id, first.inputNode.id, {
+      offsetX: 0,
       width: 320,
       height: 400,
       slotCenters: []

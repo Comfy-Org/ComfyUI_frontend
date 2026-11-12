@@ -52,10 +52,6 @@ export class SubgraphOutputNode
     return x + SubgraphIONodeBase.roundedRadius
   }
 
-  protected override measuredLeft(): number {
-    return this.pos[0]
-  }
-
   override onPointerDown(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,

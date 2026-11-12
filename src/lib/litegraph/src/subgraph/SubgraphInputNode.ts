@@ -56,10 +56,6 @@ export class SubgraphInputNode
     return x + width - SubgraphIONodeBase.roundedRadius
   }
 
-  protected override measuredLeft(width: number): number {
-    return this.pos[0] + this.size[0] - width
-  }
-
   override arrange(): void {
     const [requestedWidth, requestedHeight] = this.size
     super.arrange()

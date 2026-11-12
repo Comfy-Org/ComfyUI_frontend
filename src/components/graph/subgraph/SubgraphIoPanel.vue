@@ -92,7 +92,11 @@ function stopUnmodifiedKeys(event: KeyboardEvent) {
 }
 
 function forwardUnlessOnButton(event: PointerEvent) {
-  if (event.target instanceof Element && event.target.closest('button')) return
+  if (
+    event.target instanceof Element &&
+    event.target.closest('button, [role="button"]')
+  )
+    return
   forwardEventToCanvas(event)
 }
 </script>
@@ -106,19 +110,21 @@ function forwardUnlessOnButton(event: PointerEvent) {
     :aria-label="title"
     :class="
       cn(
-        'pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) origin-top-left drop-shadow-none',
+        'pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) origin-top-left rounded-(--node-radius) bg-node/60 drop-shadow-none',
         isInput && !collapsed
           ? 'w-(--node-width)'
           : 'w-fit max-w-(--node-width)'
       )
     "
-    container-class="w-full rounded-(--node-radius) bg-node/60"
+    container-class="w-full bg-transparent"
     :style
     @wheel="handleWheel"
     @pointerdown.capture="handlePointerDown"
     @pointermove.capture="handlePointerMove"
     @pointerup.capture="handlePointerUp"
-    @pointerdown.self.stop="forwardEventToCanvas"
+    @pointerdown="forwardUnlessOnButton"
+    @pointermove="forwardUnlessOnButton"
+    @pointerup="forwardUnlessOnButton"
     @keydown="stopUnmodifiedKeys"
   >
     <template #before>
@@ -135,22 +141,14 @@ function forwardUnlessOnButton(event: PointerEvent) {
         :style="{ width: `${SubgraphIONodeBase.roundedRadius}px` }"
       />
     </template>
-    <div
-      @pointerdown="forwardUnlessOnButton"
-      @pointermove="forwardUnlessOnButton"
-      @pointerup="forwardUnlessOnButton"
-    >
-      <NodeHeader
-        :title
-        :collapsed
-        :style="
-          isInput
-            ? { paddingRight: bracketInset }
-            : { paddingLeft: bracketInset }
-        "
-        @collapse="collapsed = !collapsed"
-      />
-    </div>
+    <NodeHeader
+      :title
+      :collapsed
+      :style="
+        isInput ? { paddingRight: bracketInset } : { paddingLeft: bracketInset }
+      "
+      @collapse="collapsed = !collapsed"
+    />
     <div
       :data-testid="isInput ? 'subgraph-input-body' : 'subgraph-output-body'"
       :class="
@@ -159,7 +157,6 @@ function forwardUnlessOnButton(event: PointerEvent) {
           isInput ? 'pr-4' : 'pl-4'
         )
       "
-      @pointerdown.self="forwardEventToCanvas"
       @contextmenu.prevent
     >
       <slot :slots :collapsed />
@@ -169,6 +166,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
         subgraph-action="exit"
         error-severity="none"
         :show-errors-tab-enabled="false"
+        header-color="transparent"
         @navigate-subgraph="exitSubgraph"
       />
       <NodeResizeHandle

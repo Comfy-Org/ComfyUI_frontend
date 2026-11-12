@@ -30,11 +30,12 @@ export function useSubgraphIoLayout(
     box: 'border-box'
   })
   const size = computedWithControl(ioNode, () => {
-    const bounds = ioNode()?.asSerialisable().bounding
-    return {
-      width: Math.max(MIN_NODE_WIDTH, bounds?.[2] ?? 0),
-      height: bounds?.[3] ?? 0
-    }
+    const node = ioNode()
+    const [, , storedWidth = 0, height = 0] =
+      node?.asSerialisable().bounding ?? []
+    const width = Math.max(MIN_NODE_WIDTH, storedWidth)
+    const growsLeft = node === node?.subgraph.inputNode
+    return { width, height, offsetX: growsLeft ? storedWidth - width : 0 }
   })
   const style = computed(() => ({
     '--node-width': `${size.value.width}px`,
@@ -70,11 +71,12 @@ export function useSubgraphIoLayout(
   )
 
   watch(
-    [ioNode, () => canvasStore.linearMode, width, height, slotCenters],
+    [ioNode, () => canvasStore.linearMode, width, height, slotCenters, size],
     ([node], __, onCleanup) => {
       if (!node || canvasStore.linearMode) return
       const graphId = node.subgraph.id
       layout.report(graphId, node.id, {
+        offsetX: size.value.offsetX,
         width: width.value || size.value.width,
         height: height.value || size.value.height,
         slotCenters: slotCenters.value
@@ -115,6 +117,7 @@ export function useSubgraphIoLayout(
     node.subgraph.setDirtyCanvas(true, true)
     size.trigger()
     layout.report(node.subgraph.id, node.id, {
+      offsetX: size.value.offsetX,
       width: next.width,
       height: next.height,
       slotCenters: slotCenters.value
