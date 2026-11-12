@@ -1,24 +1,24 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
-import { defineComponent } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { useElementSize } from '@vueuse/core'
+import { defineComponent, ref } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MEDIA_ASSET_GRID_MODE } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
 
 import AssetsSidebarGridView from './AssetsSidebarGridView.vue'
 
-const VirtualGridStub = defineComponent({
-  name: 'VirtualGrid',
-  props: {
-    items: {
-      type: Array,
-      default: () => []
-    }
-  },
-  template:
-    '<div><slot v-for="item in items" :key="item.key" name="item" :item="item" /></div>'
+vi.mock(import('@vueuse/core'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(useElementSize).mockReturnValue({
+    width: ref(400),
+    height: ref(200),
+    stop: vi.fn()
+  })
 })
 
 const MediaAssetCardStub = defineComponent({
@@ -42,7 +42,7 @@ const videoAsset: AssetItem = fromPartial({
 function renderGridView(gridMode: MediaAssetGridMode) {
   return render(AssetsSidebarGridView, {
     props: {
-      assets: [videoAsset],
+      assets: mockPagedList({ items: [videoAsset] }),
       isSelected: () => false,
       showOutputCount: () => false,
       getOutputCount: () => 0,
@@ -50,7 +50,6 @@ function renderGridView(gridMode: MediaAssetGridMode) {
     },
     global: {
       stubs: {
-        VirtualGrid: VirtualGridStub,
         MediaAssetCard: MediaAssetCardStub
       }
     }

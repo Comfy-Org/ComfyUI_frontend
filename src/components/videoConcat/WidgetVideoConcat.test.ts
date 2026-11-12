@@ -1,5 +1,6 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -96,6 +97,21 @@ describe('WidgetVideoConcat', () => {
     mountWith({ order: ['video2'] })
 
     expect(clipNames()).toEqual(['video2', 'video0', 'video1'])
+  })
+
+  it('offers the last run result once the node has one', async () => {
+    const concat = buildConcat(['red.mp4'])
+    vi.spyOn(app.canvas.graph!, 'getNodeById').mockReturnValue(concat)
+    renderWidget(concat, {})
+    expect(screen.queryByTestId('video-concat-preview-mode')).toBeNull()
+
+    useNodeOutputStore().nodeOutputs[String(concat.id)] = {
+      images: [{ filename: 'result.mp4', type: 'temp' }],
+      animated: [true]
+    }
+    await nextTick()
+
+    expect(screen.getByTestId('video-concat-preview-mode')).toBeTruthy()
   })
 
   it('stores the new order when a clip is dragged', async () => {

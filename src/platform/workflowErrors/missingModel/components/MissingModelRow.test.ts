@@ -16,7 +16,12 @@ import {
   fetchModelMetadata,
   openGatedRepoPage
 } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
+import type {
+  MissingModelCandidate,
+  MissingModelViewModel
+} from '@/platform/workflowErrors/missingModel/types'
+import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
+import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -720,5 +725,155 @@ describe('MissingModelRow', () => {
       },
       {}
     )
+  })
+
+  describe('on the Desktop 2 host', () => {
+    const hostUrl =
+      'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
+    const progressListeners: ((progress: ComfyDownloadProgress) => void)[] = []
+    const hostDownloadModel =
+      vi.fn<
+        (url: string, filename: string, directory: string) => Promise<boolean>
+      >()
+
+    function emitHostProgress(progress: Partial<ComfyDownloadProgress>) {
+      const event: ComfyDownloadProgress = {
+        id: 'job-1',
+        url: hostUrl,
+        filename: 'model.safetensors',
+        directory: 'checkpoints',
+        progress: 0,
+        status: 'downloading',
+        ...progress
+      }
+      for (const listener of progressListeners) listener(event)
+    }
+
+    function renderHostRow() {
+      const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+      model.representative.url = hostUrl
+      renderRow(model, vi.fn(), false)
+    }
+
+    beforeEach(() => {
+      mockIsCloud.value = false
+      progressListeners.length = 0
+      hostDownloadModel.mockReset().mockImplementation(async () => {
+        emitHostProgress({
+          id: `host-job-${hostDownloadModel.mock.calls.length}`,
+          status: 'pending'
+        })
+        return true
+      })
+      window.__comfyDesktop2 = {
+        isRemote: () => false,
+        downloadModel: hostDownloadModel,
+        onDownloadProgress: (listener) => {
+          progressListeners.push(listener)
+          return () => {}
+        }
+      }
+      useMissingModelDownloadStore().startTracking()
+    })
+
+    it('shows download progress in place of the Download button', async () => {
+      renderHostRow()
+
+      await userEvent.click(screen.getByTestId('missing-model-download'))
+      emitHostProgress({
+        receivedBytes: 512 * 1024 * 1024,
+        totalBytes: 1024 * 1024 * 1024
+      })
+      await nextTick()
+
+      expect(hostDownloadModel).toHaveBeenCalledWith(
+        hostUrl,
+        'model.safetensors',
+        'checkpoints'
+      )
+      expect(
+        screen.getByRole('progressbar', {
+          name: 'Downloading model.safetensors'
+        })
+      ).toHaveAttribute('aria-valuetext', '512 MB / 1 GB')
+      expect(
+        screen.getByTestId('missing-model-download-progress')
+      ).toHaveTextContent(/^50%$/)
+      expect(
+        screen.getByText('checkpoints · 512 MB / 1 GB')
+      ).toBeInTheDocument()
+      expect(screen.queryByTestId('missing-model-download')).toBeNull()
+    })
+
+    it('marks the model downloaded and re-checks missing models once the download completes', async () => {
+      const missingModelStore = useMissingModelStore()
+      missingModelStore.setMissingModels([
+        fromPartial<MissingModelCandidate>({
+          name: 'model.safetensors',
+          directory: 'checkpoints',
+          isMissing: true
+        })
+      ])
+      const refreshMissingModels = vi
+        .spyOn(missingModelStore, 'refreshMissingModels')
+        .mockReturnValue(new Promise(() => {}))
+      renderHostRow()
+
+      await userEvent.click(screen.getByTestId('missing-model-download'))
+      emitHostProgress({ status: 'pending' })
+      emitHostProgress({ status: 'completed', progress: 1 })
+      await nextTick()
+
+      expect(screen.getByTestId('missing-model-downloaded')).toHaveTextContent(
+        'Downloaded'
+      )
+      expect(refreshMissingModels).toHaveBeenCalledOnce()
+    })
+
+    it('offers Download again when the model is still missing after the re-check', async () => {
+      const missingModelStore = useMissingModelStore()
+      missingModelStore.setMissingModels([
+        fromPartial<MissingModelCandidate>({
+          name: 'model.safetensors',
+          directory: 'checkpoints',
+          isMissing: true
+        })
+      ])
+      vi.spyOn(missingModelStore, 'refreshMissingModels').mockImplementation(
+        async () => {
+          missingModelStore.isRefreshingMissingModels = true
+          await nextTick()
+          missingModelStore.isRefreshingMissingModels = false
+        }
+      )
+      renderHostRow()
+
+      await userEvent.click(screen.getByTestId('missing-model-download'))
+      emitHostProgress({ status: 'pending' })
+      emitHostProgress({ status: 'completed', progress: 1 })
+
+      expect(await screen.findByTestId('missing-model-download')).toBeVisible()
+      expect(screen.queryByTestId('missing-model-downloaded')).toBeNull()
+    })
+
+    it('offers Retry after a failed download and starts it again', async () => {
+      renderHostRow()
+
+      await userEvent.click(screen.getByTestId('missing-model-download'))
+      emitHostProgress({ status: 'pending' })
+      emitHostProgress({ status: 'error' })
+      await userEvent.click(
+        await screen.findByRole('button', {
+          name: 'Retry download for model.safetensors'
+        })
+      )
+
+      expect(hostDownloadModel).toHaveBeenCalledTimes(2)
+      expect(
+        screen.getByRole('progressbar', {
+          name: 'Downloading model.safetensors'
+        })
+      ).toBeVisible()
+    })
   })
 })
