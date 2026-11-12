@@ -595,5 +595,27 @@
   "topupReturn": {
     "title": "Return to ComfyUI",
     "body": "Your balance updates in the app once the payment is confirmed. If you canceled, nothing was charged."
+  },
+  "handoff": {
+    "link_unavailable": {
+      "title": "This checkout link no longer works",
+      "body": "Return to ComfyUI and try again."
+    },
+    "exchange_lost": {
+      "title": "This checkout link no longer works",
+      "body": "Return to ComfyUI and try again."
+    },
+    "storage_unavailable": {
+      "title": "Checkout can't open in this tab",
+      "body": "This browser is blocking the storage checkout needs. Allow site data for this page, then return to ComfyUI and try again."
+    },
+    "refused": {
+      "title": "Billing isn't available here",
+      "body": "This account can't manage billing for this workspace from ComfyUI. Return to ComfyUI for details."
+    },
+    "session_ended": {
+      "title": "This checkout session has ended",
+      "body": "Return to ComfyUI and try again."
+    }
   }
 }
