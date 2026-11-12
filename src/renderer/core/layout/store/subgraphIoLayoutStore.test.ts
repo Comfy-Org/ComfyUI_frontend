@@ -52,7 +52,7 @@ describe('subgraph IO renderer measurements', () => {
       node: interior
     })
   })
-  it('places each connection anchor at its measured row center', () => {
+  it('anchors each connection on the panel edge at its measured row center', () => {
     const graph = createTestSubgraph()
     graph.addInput('first', 'STRING')
     graph.addInput('second', 'STRING')
@@ -71,9 +71,9 @@ describe('subgraph IO renderer measurements', () => {
     node.arrange()
 
     expect(node.allSlots.map((slot) => [...slot.pos])).toEqual([
-      [204, 240],
-      [204, 272],
-      [204, 340]
+      [228, 240],
+      [228, 272],
+      [228, 340]
     ])
     expect([...node.boundingRect]).toEqual([-92, 200, 320, 400])
     expect(node.asSerialisable().bounding).toEqual(savedBounds)
@@ -82,7 +82,7 @@ describe('subgraph IO renderer measurements', () => {
     expect(node.allSlots[0].boundingRect[3]).toBe(LiteGraph.NODE_SLOT_HEIGHT)
   })
 
-  it('keeps a measured output node anchored at its left edge', () => {
+  it('anchors measured output connections on the left edge and hit-tests their outer half', () => {
     const graph = createTestSubgraph()
     graph.addOutput('result', 'IMAGE')
     const node = graph.outputNode
@@ -99,9 +99,11 @@ describe('subgraph IO renderer measurements', () => {
 
     expect([...node.boundingRect]).toEqual([100, 200, 180, 90])
     expect(node.allSlots.map((slot) => [...slot.pos])).toEqual([
-      [124, 230],
-      [124, 266]
+      [100, 230],
+      [100, 266]
     ])
+    expect(graph.getIoNodeOnPos(95, 230)).toBe(node)
+    expect(graph.getIoNodeOnPos(95, 248)).toBeUndefined()
   })
 
   it('isolates measurements by definition and restores the canvas layout on unmount', () => {

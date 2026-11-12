@@ -15,11 +15,11 @@
   >
     <div class="flex min-w-0 items-center justify-between gap-1">
       <div class="relative mr-auto flex min-w-0 items-center gap-1">
-        <div class="flex shrink-0 items-center px-0.5">
+        <div v-if="collapsible" class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
             variant="textonly"
-            class="text-inherit hover:bg-transparent"
+            class="group/collapse text-inherit hover:bg-transparent"
             data-testid="node-collapse-button"
             :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
             :aria-expanded="!collapsed"
@@ -27,20 +27,10 @@
             @dblclick.stop
           >
             <i
-              :class="
-                cn(
-                  'icon-[lucide--chevron-down] transition-transform triangle-icons:hidden',
-                  collapsed && '-rotate-90'
-                )
-              "
+              class="icon-[lucide--chevron-down] transition-transform group-aria-[expanded=false]/collapse:-rotate-90 triangle-icons:hidden"
             />
             <span
-              :class="
-                cn(
-                  'hidden size-2.5 rounded-full bg-node-border transition-colors triangle-icons:block',
-                  collapsed && 'bg-node-foreground'
-                )
-              "
+              class="hidden size-2.5 rounded-full bg-node-border transition-colors group-aria-[expanded=false]/collapse:bg-node-foreground triangle-icons:block"
             />
           </Button>
         </div>
@@ -108,11 +98,17 @@ interface NodeHeaderProps {
   nodeData?: NodeState
   title?: string
   collapsed?: boolean
+  collapsible?: boolean
   showMissingWarning?: boolean
 }
 
-const { nodeData, title, collapsed, showMissingWarning } =
-  defineProps<NodeHeaderProps>()
+const {
+  nodeData,
+  title,
+  collapsed,
+  collapsible = true,
+  showMissingWarning
+} = defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []

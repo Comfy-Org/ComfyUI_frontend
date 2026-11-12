@@ -63,7 +63,7 @@ const title = computed(() =>
       })
     : ioNode.subgraph.name
 )
-const bracketInset = `${SubgraphIONodeBase.socketInset}px`
+const bracketInset = `${SubgraphIONodeBase.roundedRadius}px`
 
 const nodeView = useTemplateRef('nodeView')
 const panel = computed(() => nodeView.value?.element ?? null)
@@ -144,6 +144,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
     <NodeHeader
       :title
       :collapsed
+      :collapsible="isInput"
       :style="
         isInput ? { paddingRight: bracketInset } : { paddingLeft: bracketInset }
       "
@@ -151,12 +152,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
     />
     <div
       :data-testid="isInput ? 'subgraph-input-body' : 'subgraph-output-body'"
-      :class="
-        cn(
-          'flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) pt-1 pb-1',
-          isInput ? 'pr-4' : 'pl-4'
-        )
-      "
+      class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) py-1"
       @contextmenu.prevent
     >
       <slot :slots :collapsed />

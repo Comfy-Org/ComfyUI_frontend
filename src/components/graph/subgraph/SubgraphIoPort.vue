@@ -28,7 +28,7 @@ const dimmed = computed(() => {
     data-port-anchor
     :class="
       cn(
-        'lg-slot flex h-(--node-widget-height) w-4 shrink-0 cursor-crosshair items-center justify-center',
+        'lg-slot flex h-(--node-widget-height) w-0 shrink-0 cursor-crosshair items-center justify-center',
         dimmed && 'opacity-40'
       )
     "
@@ -38,6 +38,6 @@ const dimmed = computed(() => {
     @dblclick="forwardEventToCanvas"
     @contextmenu.prevent
   >
-    <SlotConnectionDot :slot-data="port" />
+    <SlotConnectionDot class="shrink-0" :slot-data="port" />
   </div>
 </template>
