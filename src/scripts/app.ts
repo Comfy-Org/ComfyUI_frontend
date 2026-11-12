@@ -1619,8 +1619,9 @@ export class ComfyApp implements IComfyApp {
         return undefined
       }
       ChangeTracker.isLoadingGraph = false
-      if (!restoreDocumentId || restoreDocumentId !== currentDocumentId())
-        notifyWorkflowLoaded()
+      notifyWorkflowLoaded(
+        !!restoreDocumentId && restoreDocumentId === currentDocumentId()
+      )
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
         return undefined

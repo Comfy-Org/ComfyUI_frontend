@@ -1126,13 +1126,13 @@ describe('ComfyApp', () => {
       expect(app.rootGraph.extra.marker).toBe('changed')
       expect(currentDocumentId()).toBe(documentId)
       expect(currentDocumentGeneration()).toBe(generation)
-      expect(workflowLoaded).toHaveBeenCalledTimes(1)
+      expect(workflowLoaded).toHaveBeenCalledTimes(3)
 
       await app.loadGraphData(changed, false, false, workflow)
 
       expect(currentDocumentId()).not.toBe(documentId)
       expect(currentDocumentGeneration()).not.toBe(generation)
-      expect(workflowLoaded).toHaveBeenCalledTimes(2)
+      expect(workflowLoaded).toHaveBeenCalledTimes(4)
     })
 
     it('announces history restores when another workflow overtakes them or is already active', async () => {
