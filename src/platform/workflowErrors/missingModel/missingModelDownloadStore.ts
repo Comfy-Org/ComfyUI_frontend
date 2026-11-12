@@ -92,6 +92,14 @@ function isActive(state: MissingModelDownloadState): boolean {
   )
 }
 
+function isHeldJob(progress: ComfyDownloadProgress): boolean {
+  return (
+    progress.status === 'pending' ||
+    progress.status === 'downloading' ||
+    progress.status === 'paused'
+  )
+}
+
 function isHostTerminal(status: ComfyDownloadProgress['status']): boolean {
   return status === 'completed' || status === 'error' || status === 'cancelled'
 }
@@ -277,6 +285,14 @@ export const useMissingModelDownloadStore = defineStore(
       flushRefresh()
     }
 
+    function hasNoLiveState(progress: ComfyDownloadProgress): boolean {
+      const key = keyFor(progress)
+      return (
+        key !== undefined &&
+        (downloads.get(key)?.state.status ?? 'idle') === 'idle'
+      )
+    }
+
     function seedFromHost(subscription: number) {
       const list = window.__comfyDesktop2?.listModelDownloads
       if (typeof list !== 'function') return
@@ -286,14 +302,15 @@ export const useMissingModelDownloadStore = defineStore(
           errorType: 'error_listing_model_downloads'
         })
       try {
-        void list().then((jobs) => {
-          if (subscription !== trackingGeneration) return
-          for (const progress of jobs) {
-            const key = keyFor(progress)
-            if (key !== undefined && !downloads.has(key))
-              applyHostProgress(progress)
-          }
-        }, reportSeedFailure)
+        void list()
+          .then((jobs) => {
+            if (subscription !== trackingGeneration) return
+            for (const progress of jobs) {
+              if (isHeldJob(progress) && hasNoLiveState(progress))
+                applyHostProgress(progress)
+            }
+          })
+          .catch(reportSeedFailure)
       } catch (error) {
         reportSeedFailure(error)
       }

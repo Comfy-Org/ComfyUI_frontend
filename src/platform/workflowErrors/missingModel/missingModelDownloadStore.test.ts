@@ -330,6 +330,53 @@ describe(useMissingModelDownloadStore, () => {
       expect(store.stateFor(model).status).toBe('idle')
     })
 
+    it('shows a held paused download again after tracking restarts', async () => {
+      listJobs(Promise.resolve([]))
+      const store = useMissingModelDownloadStore()
+      const stopTracking = store.startTracking()
+      emitHostProgress('downloading')
+      stopTracking()
+      window.__comfyDesktop2 = {
+        ...window.__comfyDesktop2,
+        listModelDownloads: () => Promise.resolve([hostJob('paused')])
+      }
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
+
+    it('prefers the held job over a finished one listed for the same file', async () => {
+      listJobs(
+        Promise.resolve([
+          hostJob('error', { id: 'old-job' }),
+          hostJob('paused')
+        ])
+      )
+      const store = useMissingModelDownloadStore()
+
+      store.startTracking()
+
+      await vi.waitFor(() =>
+        expect(store.stateFor(model)).toMatchObject({ paused: true })
+      )
+    })
+
+    it('reports a listing it cannot read', async () => {
+      listJobs(Promise.resolve(fromAny<ComfyDownloadProgress[], null>(null)))
+
+      useMissingModelDownloadStore().startTracking()
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
+          surface: 'platform',
+          errorType: 'error_listing_model_downloads'
+        })
+      )
+    })
+
     it('reports a listing the host fails', async () => {
       const failure = new Error('cannot list')
       listJobs(Promise.reject(failure))
