@@ -2,6 +2,8 @@
 
 import * as z from 'zod'
 
+import type { CccPublicationCondition } from './types.gen'
+
 /**
  * Response returned after successfully accepting a workspace invitation.
  */
@@ -2064,7 +2066,9 @@ export const zCccPagesPage = z.object({
 export const zCccPublicationCondition = z.object({
   equals: z.unknown(),
   field: z.string(),
-  if_absent: z.lazy((): any => zCccPublicationCondition).optional()
+  if_absent: z
+    .lazy((): z.ZodType<CccPublicationCondition> => zCccPublicationCondition)
+    .optional()
 })
 
 /**
