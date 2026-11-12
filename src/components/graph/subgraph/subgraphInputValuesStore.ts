@@ -2,21 +2,24 @@ import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
-import {
-  emptySubgraphHostContext,
-  transitionSubgraphHostContext
-} from '@/core/graph/subgraph/subgraphHostContext'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { isSubgraph } from '@/utils/typeGuardUtil'
+import type { UUID } from '@/utils/uuid'
+
+interface EnteredHost {
+  readonly graphId: UUID
+  readonly nodeId: NodeId
+}
 
 export const useSubgraphInputValuesStore = defineStore(
   'subgraphInputValues',
   () => {
     const canvasStore = useCanvasStore()
     const nodeDataStore = useNodeDataStore()
-    const context = shallowRef(emptySubgraphHostContext)
+    const enteredHosts = shallowRef<ReadonlyMap<UUID, EnteredHost>>(new Map())
     const graph = computed(() => {
       const current = canvasStore.currentGraph
       return isSubgraph(current) ? current : undefined
@@ -25,17 +28,13 @@ export const useSubgraphInputValuesStore = defineStore(
     watch(
       () => canvasStore.currentGraph,
       (current, previous) => {
-        if (current?.rootGraph !== previous?.rootGraph) {
-          context.value = emptySubgraphHostContext
-        }
-        if (!current) return
-        context.value = transitionSubgraphHostContext(context.value, {
-          type: 'navigated',
-          rootGraphId: current.rootGraph.id,
-          graphId: current.id
-        })
+        if (
+          !isSubgraph(current) ||
+          current.rootGraph.id !== previous?.rootGraph.id
+        )
+          enteredHosts.value = new Map()
       },
-      { immediate: true, flush: 'sync' }
+      { flush: 'sync' }
     )
 
     useEventListener(
@@ -43,14 +42,9 @@ export const useSubgraphInputValuesStore = defineStore(
       'subgraph-opened',
       (event: CustomEvent<LGraphCanvasEventMap['subgraph-opened']>) => {
         const { fromNode, subgraph, closingGraph } = event.detail
-        context.value = transitionSubgraphHostContext(context.value, {
-          type: 'entered',
-          rootGraphId: subgraph.rootGraph.id,
-          host: {
-            graphId: closingGraph.id,
-            nodeId: fromNode.id,
-            subgraphId: subgraph.id
-          }
+        enteredHosts.value = new Map(enteredHosts.value).set(subgraph.id, {
+          graphId: closingGraph.id,
+          nodeId: fromNode.id
         })
       }
     )
@@ -67,9 +61,7 @@ export const useSubgraphInputValuesStore = defineStore(
     })
     const selected = computed(() => {
       const current = graph.value
-      const host = context.value.hosts.find(
-        (entry) => entry.subgraphId === current?.id
-      )
+      const host = current && enteredHosts.value.get(current.id)
       return host
         ? candidates.value.find(
             (node) => node.graphId === host.graphId && node.id === host.nodeId
