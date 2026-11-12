@@ -53,15 +53,24 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   override applyToGraph(extraLinks: LLink[] = []) {
-    const sourceWidget = this.widgets?.[0]
-    const graph = this.graph
-    if (!sourceWidget || !graph) return
+    applyFirstWidgetValueToGraph(this, extraLinks, (value) =>
+      this._applyTextReplacements(value)
+    )
+  }
 
-    let v = sourceWidget.value
-    if (v && this.properties[replacePropertyName]) {
-      v = applyTextReplacements(graph, v as string)
-    }
-    applyFirstWidgetValueToGraph(this, extraLinks, () => v)
+  // fallow-ignore-next-line unused-class-member
+  override resolveVirtualValue() {
+    const widget = this.widgets?.[0]
+    if (!widget) return
+    return this._applyTextReplacements(
+      widget.serializeValue ? widget.serializeValue(this, 0) : widget.value
+    )
+  }
+
+  private _applyTextReplacements<T>(value: T): T | string {
+    return value && this.properties[replacePropertyName] && this.graph
+      ? applyTextReplacements(this.graph, String(value))
+      : value
   }
 
   override refreshComboInNode(defs?: Record<string, ComfyNodeDef>): void {
@@ -478,14 +487,6 @@ export class PrimitiveNode extends LGraphNode {
     delete this.outputs[0].widget
 
     this._removeWidgets()
-  }
-
-  override resolveVirtualValue() {
-    const w = this.widgets?.[0]
-    const value = w?.serializeValue ? w.serializeValue(this, 0) : w?.value
-    return value && this.properties[replacePropertyName] && this.graph
-      ? applyTextReplacements(this.graph, String(value))
-      : value
   }
 }
 

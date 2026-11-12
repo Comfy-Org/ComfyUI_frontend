@@ -1,6 +1,7 @@
 import type {
   LGraph,
   LGraphNode,
+  LLink,
   Subgraph,
   SubgraphNode
 } from '@comfyorg/graph-model/entityRegistry'
@@ -232,10 +233,19 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     }
 
     // Not part of a subgraph; use the original link
+    return this._resolveGraphLink(link, input, visited, type)
+  }
+
+  private _resolveGraphLink(
+    link: LLink,
+    input: ExecutableNodeDTO['inputs'][number],
+    visited: Set<string>,
+    type?: ISlotType
+  ): ResolvedInput | undefined {
     const outputNode = this.graph.getNodeById(link.origin_id)
     if (!outputNode)
       throw new InvalidLinkError(
-        `No input node found for id [${this.id}] slot [${slot}] ${input.name}`
+        `No input node found for id [${this.id}] slot [${link.target_slot}] ${input.name}`
       )
 
     const outputNodeExecutionId: ExecutionId = [
@@ -248,11 +258,22 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         `No output node DTO found for id [${outputNodeExecutionId}]`
       )
 
-    return outputNodeDto.resolveOutput(
+    const resolved = outputNodeDto.resolveOutput(
       link.origin_slot,
       type ?? input.type,
       visited
     )
+    // Widget inputs already received the value through applyToGraph
+    if (resolved || this.node.inputs[link.target_slot]?.widget) return resolved
+
+    const value = outputNode.resolveVirtualValue?.(link.origin_slot)
+    if (value === undefined) return
+    return {
+      node: outputNodeDto,
+      origin_id: outputNodeDto.id,
+      origin_slot: -1,
+      widgetInfo: { value }
+    }
   }
 
   /**
@@ -320,15 +341,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
 
         return inputNodeDto.resolveOutput(virtualSource.slot, type, visited)
       }
-      if (this.node.resolveVirtualValue) {
-        return {
-          node: this,
-          origin_id: this.id,
-          origin_slot: -1,
-          widgetInfo: { value: this.node.resolveVirtualValue(slot) }
-        }
-      }
-
       const virtualLink = this.node.getInputLink(slot)
       if (virtualLink) {
         const { inputNode } = virtualLink.resolve(this.graph)

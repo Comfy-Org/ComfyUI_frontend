@@ -1682,8 +1682,8 @@ export class LGraphNode
   ): { node: LGraphNode; slot: number } | undefined
 
   /**
-   * Resolves the value of an to be sent from an output slot
-   * Ensures virtual nodes can apply state to socketless widgets
+   * Returns the prompt value a virtual node sends from output {@link slot}
+   * to an input that has no widget to receive it.
    */
   resolveVirtualValue?(slot: number): unknown
 
