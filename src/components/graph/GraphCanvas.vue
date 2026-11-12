@@ -172,6 +172,7 @@ import { waitForDeploymentPick } from '@/platform/workspace/composables/waitForD
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useOpenDocuments } from '@/platform/workflow/management/openDocuments'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
@@ -602,6 +603,7 @@ onMounted(async () => {
     installNodeChangeBridge()
     provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
     installComfyApi(() => canvasStore.currentGraph, {
+      documents: useOpenDocuments(),
       openWorkflow: async (data) => {
         const result = await comfyApp.loadGraphData(data as ComfyWorkflowJSON)
         if (result === false || result === undefined) {

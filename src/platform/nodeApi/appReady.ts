@@ -90,9 +90,13 @@ export function currentDocumentGeneration(): number {
   return documentGeneration
 }
 
-/** Called by the host each time a workflow finishes being configured. */
-export function notifyWorkflowLoaded(): void {
-  documentId = createUuidv4()
+/**
+ * Called by the host each time a workflow finishes being configured.
+ * `sameDocument` is true for an undo or redo, which rebuilds the document it
+ * already had.
+ */
+export function notifyWorkflowLoaded(sameDocument = false): void {
+  if (!sameDocument) documentId = createUuidv4()
   for (const listener of Array.from(workflowLoaded)) run(listener)
 }
 
