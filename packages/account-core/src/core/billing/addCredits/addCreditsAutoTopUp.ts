@@ -50,7 +50,10 @@ export interface AutoTopUpActivation {
   readonly monthly_budget_cents: number | null
 }
 
-const stripped = (raw: string) => raw.replace(/[,\s$]/g, '')
+function stripped(raw: string): string {
+  const text = raw.replace(/[\s$]/g, '')
+  return /^\d{1,3}(,\d{3})+(\.\d*)?$/.test(text) ? text.replace(/,/g, '') : text
+}
 
 function parseWhole(raw: string): number | null {
   const text = stripped(raw)
