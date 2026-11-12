@@ -9,10 +9,12 @@ import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHa
 export function useAutoTopUpSetupOffer() {
   const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
     useBillingCapabilities()
-  const { href, track } = usePlatformHandoff(
+  const { href, track, available } = usePlatformHandoff(
     '/profile/billing?auto_top_up=setup',
     { target: 'auto_top_up', action: 'turn_on' }
   )
+
+  const platformAvailable = () => available.value
 
   function trackOffer(stage: 'viewed' | 'declined') {
     useTelemetry()?.trackBillingEvent({
@@ -29,8 +31,10 @@ export function useAutoTopUpSetupOffer() {
       setup: autoTopUpSetup.value
     })
     if (!canSetUp) return null
+    if (!platformAvailable()) return null
     const settings = await billingApi.getBillingAutoReload()
     if (settings.status !== 'off') return null
+    if (!platformAvailable()) return null
     trackOffer('viewed')
     return href.value
   }

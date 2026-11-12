@@ -71,7 +71,8 @@ function arrange(options: {
 }) {
   vi.mocked(usePlatformHandoff).mockReturnValue({
     href: computed(() => 'https://platform.test/profile/billing'),
-    track
+    track,
+    available: computed(() => true)
   })
   vi.mocked(useAutoTopUpBannerKind).mockReturnValue(
     computed(() => options.autoTopUp ?? null)

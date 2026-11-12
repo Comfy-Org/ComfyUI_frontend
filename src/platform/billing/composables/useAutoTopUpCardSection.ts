@@ -91,10 +91,13 @@ export function useAutoTopUpCardSection(shown: MaybeRefOrGetter<boolean>) {
       : 'turn_on'
   )
 
-  const { href, track } = usePlatformHandoff('/profile/billing', () => ({
-    target: 'auto_top_up',
-    action: action.value
-  }))
+  const { href, track, available } = usePlatformHandoff(
+    '/profile/billing',
+    () => ({
+      target: 'auto_top_up',
+      action: action.value
+    })
+  )
 
   return {
     setup: autoTopUpSetup,
@@ -103,6 +106,7 @@ export function useAutoTopUpCardSection(shown: MaybeRefOrGetter<boolean>) {
     copy,
     retry,
     href,
-    track
+    track,
+    available
   }
 }

@@ -64,6 +64,7 @@
         </p>
       </div>
       <Button
+        v-if="available"
         as="a"
         :href
         target="_blank"
@@ -419,8 +420,11 @@ const view = computed(() => {
   return { status: STATUS[key], lines: LINES[key](settings) }
 })
 
-const { href, track } = usePlatformHandoff('/profile/billing', () => ({
-  target: 'auto_top_up',
-  action: view.value?.status.action.id ?? 'turn_on'
-}))
+const { href, track, available } = usePlatformHandoff(
+  '/profile/billing',
+  () => ({
+    target: 'auto_top_up',
+    action: view.value?.status.action.id ?? 'turn_on'
+  })
+)
 </script>
