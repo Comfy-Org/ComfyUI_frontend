@@ -44,7 +44,22 @@ describe('fetchOAuthConsentChallenge', () => {
       validChallenge.oauth_request_id
     )
 
-    expect(result).toEqual(validChallenge)
+    expect(result).toEqual({ kind: 'challenge', challenge: validChallenge })
+  })
+
+  it('reports session-required instead of following the redirect to sign-in', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      Object.defineProperty(new Response(null), 'type', {
+        value: 'opaqueredirect'
+      })
+    )
+
+    const result = await fetchOAuthConsentChallenge(
+      validChallenge.oauth_request_id
+    )
+
+    expect(result).toEqual({ kind: 'session-required' })
+    expect(vi.mocked(fetch).mock.calls[0]?.[1]?.redirect).toBe('manual')
   })
 
   it('URL-encodes the oauth_request_id', async () => {
@@ -60,14 +75,17 @@ describe('fetchOAuthConsentChallenge', () => {
     )
   })
 
-  it('throws OAuthApiError with status on non-2xx', async () => {
-    vi.mocked(fetch).mockResolvedValue(errorResponse(400, 'expired'))
+  it.for([400, 401, 403, 404])(
+    'throws OAuthApiError with status %i on that refusal',
+    async (status) => {
+      vi.mocked(fetch).mockResolvedValue(errorResponse(status, 'refused'))
 
-    await expect(fetchOAuthConsentChallenge('abc')).rejects.toMatchObject({
-      name: 'OAuthApiError',
-      status: 400
-    })
-  })
+      await expect(fetchOAuthConsentChallenge('abc')).rejects.toMatchObject({
+        name: 'OAuthApiError',
+        status
+      })
+    }
+  )
 
   it('rejects when scopes are not strings', async () => {
     vi.mocked(fetch).mockResolvedValue(

@@ -16,7 +16,20 @@ import {
 } from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
+const { createSessionOrThrow } = vi.hoisted(() => ({
+  createSessionOrThrow: vi.fn<() => Promise<void>>(async () => undefined)
+}))
+
 vi.mock(import('@/platform/cloud/oauth/oauthApi'), { spy: true })
+vi.mock(import('@/platform/auth/session/useSessionCookie'), () => ({
+  useSessionCookie: () => ({
+    createSession: vi.fn(),
+    createSessionOrThrow,
+    sessionRequiresSso: vi.fn(),
+    ensureSessionCookie: vi.fn(),
+    deleteSession: vi.fn()
+  })
+}))
 vi.mock(import('@/composables/auth/useAuthActions'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -460,5 +473,95 @@ describe('OAuthConsentView signed-in account', () => {
         decision: 'allow'
       })
     )
+  })
+})
+
+describe('OAuthConsentView without a Cloud session cookie', () => {
+  const signInPath = `/cloud/login?switchAccount=true&oauth_request_id=${challenge.oauth_request_id}`
+  const signInRedirect = () =>
+    Object.defineProperty(new Response(null), 'type', {
+      value: 'opaqueredirect'
+    })
+
+  async function renderLoadedConsent() {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/oauth/consent', component: OAuthConsentView }]
+    })
+    await router.push(
+      `/oauth/consent?oauth_request_id=${challenge.oauth_request_id}`
+    )
+    render(OAuthConsentView, { global: { plugins: [i18n, router] } })
+  }
+
+  it('establishes the session and shows the consent when the backend sends the request to sign-in', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(signInRedirect())
+      .mockResolvedValueOnce(Response.json(challenge))
+
+    await renderLoadedConsent()
+
+    expect(await screen.findByText('Comfy Desktop wants access')).toBeVisible()
+    expect(createSessionOrThrow).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
+  })
+
+  it('sends the user to sign in again with the same request when the session cannot be established', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(signInRedirect())
+    createSessionOrThrow.mockRejectedValueOnce(new Error('No Firebase token'))
+
+    await renderLoadedConsent()
+
+    await waitFor(() => {
+      expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
+        signInPath
+      })
+    })
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('retries once and then sends the user to sign in again when the backend still sends the request to sign-in', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(signInRedirect())
+      .mockResolvedValueOnce(signInRedirect())
+
+    await renderLoadedConsent()
+
+    await waitFor(() => {
+      expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
+        signInPath
+      })
+    })
+    expect(createSessionOrThrow).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows the session error when leaving for sign-in is cancelled', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(signInRedirect())
+    createSessionOrThrow.mockRejectedValueOnce(new Error('No Firebase token'))
+    vi.mocked(useAuthActions().logout).mockResolvedValueOnce(false)
+
+    await renderLoadedConsent()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Failed to establish session. Please try again.'
+    )
+  })
+
+  it('shows the session error for a 401 without establishing a session or leaving', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({ message: 'unauthorized' }, { status: 401 })
+    )
+
+    await renderLoadedConsent()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Failed to establish session. Please try again.'
+    )
+    expect(createSessionOrThrow).not.toHaveBeenCalled()
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
   })
 })

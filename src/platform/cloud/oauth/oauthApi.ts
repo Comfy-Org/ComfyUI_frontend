@@ -149,16 +149,29 @@ function isValidWorkspace(value: unknown): value is OAuthWorkspace {
   )
 }
 
+type OAuthConsentChallengeFetch =
+  | { kind: 'challenge'; challenge: OAuthConsentChallenge }
+  | { kind: 'session-required' }
+
+/**
+ * Resolves `session-required` when the backend redirects to sign-in because
+ * the Cloud session cookie is missing.
+ */
 export async function fetchOAuthConsentChallenge(
   oauthRequestId: string
-): Promise<OAuthConsentChallenge> {
+): Promise<OAuthConsentChallengeFetch> {
   const response = await fetch(
     `/oauth/authorize?oauth_request_id=${encodeURIComponent(oauthRequestId)}`,
     {
       method: 'GET',
-      credentials: 'include'
+      credentials: 'include',
+      redirect: 'manual'
     }
   )
+
+  if (response.type === 'opaqueredirect') {
+    return { kind: 'session-required' }
+  }
 
   if (!response.ok) {
     throw await readApiError(response)
@@ -166,7 +179,7 @@ export async function fetchOAuthConsentChallenge(
 
   const challenge: unknown = await response.json()
   assertChallenge(challenge)
-  return challenge
+  return { kind: 'challenge', challenge }
 }
 
 export async function submitOAuthConsentDecision({

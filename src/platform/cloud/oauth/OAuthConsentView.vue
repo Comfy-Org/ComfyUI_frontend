@@ -351,12 +351,42 @@ async function loadChallenge() {
     return
   }
   try {
-    const next = await fetchOAuthConsentChallenge(oauthRequestId)
-    challenge.value = next
-    selectedWorkspaceId.value = getDefaultWorkspaceId(next)
+    const fetched = await fetchChallengeEstablishingSession(oauthRequestId)
+    if (fetched.kind === 'session-required') {
+      await signInAgain(oauthRequestId)
+      return
+    }
+    challenge.value = fetched.challenge
+    selectedWorkspaceId.value = getDefaultWorkspaceId(fetched.challenge)
   } catch (error) {
     errorMessage.value = messageForError(error)
   }
+}
+
+async function fetchChallengeEstablishingSession(oauthRequestId: string) {
+  const fetched = await fetchOAuthConsentChallenge(oauthRequestId)
+  if (fetched.kind === 'challenge' || !(await establishSessionCookie())) {
+    return fetched
+  }
+  return fetchOAuthConsentChallenge(oauthRequestId)
+}
+
+async function establishSessionCookie(): Promise<boolean> {
+  try {
+    const { useSessionCookie } =
+      await import('@/platform/auth/session/useSessionCookie')
+    await useSessionCookie().createSessionOrThrow()
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function signInAgain(oauthRequestId: string) {
+  const signedOut = await useAuthActions().logout({
+    signInPath: switchAccountSignInPath(oauthRequestId)
+  })
+  if (!signedOut) errorMessage.value = t('oauth.consent.sessionError')
 }
 
 function messageForError(error: unknown): string {
