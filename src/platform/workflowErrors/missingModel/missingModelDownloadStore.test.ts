@@ -717,4 +717,72 @@ describe(useMissingModelDownloadStore, () => {
     )
     expect(store.stateFor(model).status).toBe('requested')
   })
+
+  it('keeps a request whose cancel the host does not confirm', async () => {
+    installDesktopHost()
+    hostDownloadModel.mockReturnValueOnce(new Promise(() => {}))
+    const cancelDownload = vi.fn().mockResolvedValue(undefined)
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, cancelDownload }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    store.download(model)
+    store.cancel(model)
+    await vi.waitFor(() => expect(cancelDownload).toHaveBeenCalledOnce())
+    await nextTick()
+
+    expect(store.stateFor(model).status).toBe('requested')
+  })
+
+  it('sends one control at a time for a download', async () => {
+    installDesktopHost()
+    let settle: (accepted: boolean) => void = () => {}
+    const cancelDownload = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          settle = resolve
+        })
+    )
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, cancelDownload }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('downloading')
+
+    store.cancel(model)
+    store.cancel(model)
+
+    expect(cancelDownload).toHaveBeenCalledOnce()
+    expect(store.canControl(model, 'cancelDownload')).toBe(false)
+    settle(true)
+    await vi.waitFor(() =>
+      expect(store.canControl(model, 'cancelDownload')).toBe(true)
+    )
+  })
+
+  it('keeps a finished download while a re-check is pending even if another view finds it missing', () => {
+    installDesktopHost()
+    seedMissingModel()
+    vi.spyOn(useMissingModelStore(), 'refreshMissingModels').mockReturnValue(
+      new Promise(() => {})
+    )
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    useMissingModelStore().isRefreshingMissingModels = true
+    emitHostProgress('completed')
+
+    store.reopenFinished([model])
+
+    expect(store.stateFor(model).status).toBe('done')
+  })
+
+  it('finishes an already-present file that no missing model needs', async () => {
+    installDesktopHost()
+    hostDownloadModel.mockResolvedValueOnce(true)
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+
+    store.download(model)
+
+    await vi.waitFor(() => expect(store.stateFor(model).status).toBe('done'))
+  })
 })

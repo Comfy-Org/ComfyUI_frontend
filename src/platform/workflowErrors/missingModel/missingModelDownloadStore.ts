@@ -167,6 +167,7 @@ export const useMissingModelDownloadStore = defineStore(
   () => {
     const missingModelStore = useMissingModelStore()
     const downloads = shallowReactive(new Map<string, HostDownload>())
+    const controlsInFlight = shallowReactive(new Set<string>())
     let refreshPending = false
     const tracking = ref(false)
     let trackingGeneration = 0
@@ -209,7 +210,7 @@ export const useMissingModelDownloadStore = defineStore(
     }
 
     function reopenStillMissing(
-      candidates: readonly MissingModelCandidate[] | null
+      candidates: readonly { name: string; directory?: string }[] | null
     ) {
       if (refreshPending || missingModelStore.isRefreshingMissingModels) return
       reopenFinished(candidates ?? [])
@@ -323,16 +324,17 @@ export const useMissingModelDownloadStore = defineStore(
     function finishUnreportedRequest(model: ModelWithUrl, request: number) {
       const current = unreportedRequest(model, request)
       if (!current) return
-      const isMissing = isMissingCandidate(
-        missingModelStore.missingModelCandidates,
-        { filename: model.name, directory: model.directory }
-      )
       downloads.set(getModelFileKey(model), {
         ...current,
-        state: isMissing ? { status: 'done' } : IDLE,
+        state: { status: 'done' },
         jobEnded: true
       })
-      requestRefresh(isMissing)
+      requestRefresh(
+        isMissingCandidate(missingModelStore.missingModelCandidates, {
+          filename: model.name,
+          directory: model.directory
+        })
+      )
     }
 
     function reportStartFailure(error: unknown) {
@@ -403,6 +405,7 @@ export const useMissingModelDownloadStore = defineStore(
       return (
         tracking.value &&
         typeof window.__comfyDesktop2?.[action] === 'function' &&
+        !controlsInFlight.has(getModelFileKey(model)) &&
         controlRef(model) !== undefined
       )
     }
@@ -426,21 +429,35 @@ export const useMissingModelDownloadStore = defineStore(
     }
 
     function control(model: ModelWithUrl, action: DownloadControl) {
+      const key = getModelFileKey(model)
+      const send = window.__comfyDesktop2?.[action]
       const target = controlRef(model)
-      if (target === undefined) return
-      const request = downloads.get(getModelFileKey(model))?.request
+      if (
+        typeof send !== 'function' ||
+        target === undefined ||
+        controlsInFlight.has(key)
+      )
+        return
+      const request = downloads.get(key)?.request
+      controlsInFlight.add(key)
       try {
-        void Promise.resolve(window.__comfyDesktop2?.[action]?.(target)).then(
-          (accepted) => {
-            if (accepted === false) {
-              reportControlFailure(new Error(`Host refused ${action}`), action)
-            } else if (action === 'cancelDownload') {
-              withdrawUnreportedRequest(model, request)
-            }
-          },
-          (error: unknown) => reportControlFailure(error, action)
-        )
+        void Promise.resolve(send(target))
+          .then(
+            (accepted: unknown) => {
+              if (accepted === false) {
+                reportControlFailure(
+                  new Error(`Host refused ${action}`),
+                  action
+                )
+              } else if (accepted === true && action === 'cancelDownload') {
+                withdrawUnreportedRequest(model, request)
+              }
+            },
+            (error: unknown) => reportControlFailure(error, action)
+          )
+          .finally(() => controlsInFlight.delete(key))
       } catch (error) {
+        controlsInFlight.delete(key)
         reportControlFailure(error, action)
       }
     }
@@ -450,7 +467,7 @@ export const useMissingModelDownloadStore = defineStore(
       download,
       startTracking,
       tracksHostProgress: () => tracking.value,
-      reopenFinished,
+      reopenFinished: reopenStillMissing,
       canControl,
       pause: (model: ModelWithUrl) => control(model, 'pauseDownload'),
       resume: (model: ModelWithUrl) => control(model, 'resumeDownload'),
