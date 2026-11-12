@@ -1,19 +1,18 @@
-import { computedWithControl, useElementSize, useRafFn } from '@vueuse/core'
+import { computedWithControl, useElementSize } from '@vueuse/core'
 import { computed, watch } from 'vue'
 import type { Ref } from 'vue'
 import type { Subgraph } from '@comfyorg/graph-model/entityRegistry'
 
 import { useSubgraphInputValuesStore } from '@/components/graph/subgraph/subgraphInputValuesStore'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { nodeSlotHitTests } from '@/lib/litegraph/src/canvas/nodeSlotHitTests'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
-import { applySubgraphInputLayout } from '@/renderer/core/layout/operations/subgraphInputLayout'
 import { useSubgraphIoLayoutStore } from '@/renderer/core/layout/store/subgraphIoLayoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import { LayoutSource } from '@/renderer/core/layout/types'
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 
 export function useSubgraphInputLayout(
@@ -80,15 +79,22 @@ export function useSubgraphInputLayout(
     { flush: 'sync', immediate: true }
   )
 
-  useRafFn(() => {
-    const current = element.value
-    const graph = context.graph
-    const canvas = canvasStore.canvas
-    if (!current || !graph || !canvas) return
-    syncWithCanvas(canvas)
-    const [x, y] = graph.inputNode.boundingRect
-    current.style.transform = `translate(${(x + camera.x) * camera.z}px, ${(y + camera.y) * camera.z}px) scale(${camera.z})`
-  })
+  watch(
+    [() => context.graph, () => canvasStore.canvas],
+    ([graph, canvas], _, onCleanup) => {
+      if (!graph || !canvas) return
+      onCleanup(
+        onCanvasFrame(canvas.canvas, 'present', () => {
+          const current = element.value
+          if (!current) return
+          syncWithCanvas(canvas)
+          const [x, y] = graph.inputNode.boundingRect
+          current.style.transform = `translate(${(x + camera.x) * camera.z}px, ${(y + camera.y) * camera.z}px) scale(${camera.z})`
+        })
+      )
+    },
+    { immediate: true }
+  )
 
   let resizingGraph: Subgraph | undefined
   const { startResize: resize } = useNodeResize(({ size: next }) => {
@@ -97,22 +103,9 @@ export function useSubgraphInputLayout(
       return
     const node = graph.inputNode
     const [x, y] = node.boundingRect
-    const applied = applySubgraphInputLayout(graph, {
-      type: 'batchUpdateBounds',
-      graphId: graph.id,
-      nodeIds: [node.id],
-      bounds: {
-        [node.id]: {
-          x,
-          y,
-          width: next.width + socketInset,
-          height: next.height
-        }
-      },
-      source: LayoutSource.Vue,
-      timestamp: Date.now()
-    })
-    if (!applied) return
+    node.pos = [x, y]
+    node.size = [next.width + socketInset, next.height]
+    graph.setDirtyCanvas(true, true)
     size.trigger()
     layout.measurements.set(`${graph.id}:${node.id}`, {
       width: next.width,
