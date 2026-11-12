@@ -23,6 +23,7 @@
 </template>
 
 <script setup lang="ts">
+import { canSetUpAutoTopUp } from '@comfyorg/account-core/billing'
 import Button from '@comfyorg/design-system/button/Button'
 import { computed, watch } from 'vue'
 
@@ -34,13 +35,13 @@ const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
   useBillingCapabilities()
 const { state, ensureRead } = useBillingAutoTopUpCard()
 
-const canSetUp = computed(() => {
-  if (!autoTopUpEnabled.value) return false
-  if (!canManageAutoTopUp.value) return false
-  const setup = autoTopUpSetup.value
-  if (setup === null || setup.state === 'unavailable') return false
-  return !(setup.state === 'frozen' && setup.reason === 'payment_past_due')
-})
+const canSetUp = computed(() =>
+  canSetUpAutoTopUp({
+    autoTopUpEnabled: autoTopUpEnabled.value,
+    canManageAutoTopUp: canManageAutoTopUp.value,
+    setup: autoTopUpSetup.value
+  })
+)
 
 watch(
   canSetUp,

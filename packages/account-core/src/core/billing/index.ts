@@ -425,6 +425,7 @@ export type {
 export {
   autoTopUpOffView,
   canSetUpAutoTopUp,
+  isAutoTopUpNotAvailable,
   deriveAutoTopUpCard,
   deriveAutoTopUpSection
 } from './billingTab/autoTopUpCard'
