@@ -1524,6 +1524,60 @@ export const zBillingEventsResponse = z.object({
   totalPages: z.int()
 })
 
+/**
+ * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
+ */
+export const zBillingHandoffCreateRequest = z.object({
+  client_version: z.string().max(64),
+  receiver: z.enum(['billing_web', 'platform']),
+  surface: z.enum(['local_web', 'desktop']),
+  workspace_id: z.string().min(1)
+})
+
+/**
+ * An issued handoff. The token is single use and expires within 60 seconds.
+ */
+export const zBillingHandoffCreateResponse = z.object({
+  entry_url: z.string(),
+  expires_at: z.iso.datetime(),
+  request_id: z.string()
+})
+
+/**
+ * The handoff token a receiver read from its URL fragment.
+ */
+export const zBillingHandoffExchangeRequest = z.object({
+  token: z.string().min(1).max(128)
+})
+
+/**
+ * The user a scoped billing session acts as.
+ */
+export const zBillingHandoffUser = z.object({
+  email: z.string(),
+  id: z.string()
+})
+
+/**
+ * The workspace a scoped billing session is bound to.
+ */
+export const zBillingHandoffWorkspace = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.string()
+})
+
+/**
+ * A scoped billing session for the handoff's user and workspace.
+ */
+export const zBillingHandoffExchangeResponse = z.object({
+  expires_at: z.iso.datetime(),
+  role: z.enum(['owner', 'member']),
+  session_token: z.string(),
+  user: zBillingHandoffUser,
+  workspace: zBillingHandoffWorkspace
+})
+
 export const zBillingOpCancelResponse = z.object({
   billing_op_id: z.string(),
   status: z.enum(['canceled', 'cancel_requested'])
@@ -1580,6 +1634,89 @@ export const zBillingCompanyDetailsUpdateRequest = z.object({
  */
 export const zBulkRevokeApiKeysResponse = z.object({
   revoked_count: z.int().gte(0)
+})
+
+export const zCccActivityPageRef = z.object({
+  slug: z.string(),
+  title: z.string(),
+  type: z.enum(['model', 'workflow', 'app']),
+  uid: z.uuid()
+})
+
+export const zCccActivityItem = z.object({
+  actor_uid: z.string(),
+  at: z.iso.datetime(),
+  catalog_status: z
+    .enum(['draft', 'published', 'reverted', 'archived'])
+    .optional(),
+  changed_fields: z.array(z.string()).max(50).optional(),
+  file_count: z.int().optional(),
+  is_deleted: z.boolean().optional(),
+  is_new: z.boolean().optional(),
+  kind: z.enum(['save', 'publish', 'discard', 'revert']),
+  page: zCccActivityPageRef.optional(),
+  page_count: z.int().optional(),
+  pages: z.array(zCccActivityPageRef).max(50).optional(),
+  previous_revision_uid: z.uuid().optional(),
+  restored_from: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  restored_revision: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  reverted: z.boolean().optional(),
+  reverted_revision: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  revision: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  revision_uid: z.uuid().optional()
+})
+
+export const zCccActivityPage = z.object({
+  has_more: z.boolean(),
+  items: z.array(zCccActivityItem).max(100),
+  last_publish: z
+    .object({
+      actor_uid: z.string(),
+      at: z.iso.datetime(),
+      reverted: z.boolean(),
+      revision: z.coerce
+        .bigint()
+        .min(BigInt('-9223372036854775808'), {
+          error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+        })
+        .max(BigInt('9223372036854775807'), {
+          error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+        })
+    })
+    .nullable(),
+  next_cursor: z.string().max(256).optional()
 })
 
 export const zCccCatalogState = z.object({
@@ -1704,12 +1841,290 @@ export const zCccjson = z.object({
 })
 
 /**
+ * One immutable save: the flat CCCJSON read plus the status of the catalog revision that holds it and its save time.
+ */
+export const zCccHistoryItem = zCccjson.and(
+  z.object({
+    catalog_status: z.enum(['draft', 'published', 'reverted', 'archived']),
+    saved_at: z.iso.datetime()
+  })
+)
+
+/**
+ * One page of save history, newest edit_sequence first. next_cursor is present only when has_more is true. There is no total.
+ */
+export const zCccHistoryPage = z.object({
+  has_more: z.boolean(),
+  items: z.array(zCccHistoryItem),
+  next_cursor: z.string().optional()
+})
+
+/**
  * Current Hub page that replaces an old public URL
  */
 export const zCccLegacyTarget = z.object({
   path: z.string(),
   slug: z.string(),
   type: z.enum(['workflow', 'app', 'model'])
+})
+
+export const zCccMediaConstraint = z.object({
+  max_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  max_height: z.int().optional(),
+  max_width: z.int().optional(),
+  mime_type: z.string(),
+  min_bytes: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional()
+})
+
+/**
+ * Matching pages per type. Every filter applies except types.
+ */
+export const zCccPageCounts = z.object({
+  app: z.int().gte(0),
+  model: z.int().gte(0),
+  workflow: z.int().gte(0)
+})
+
+/**
+ * Card picture. Absent when the page has none, which is what missing=cover selects.
+ */
+export const zCccPagePreview = z.object({
+  kind: z.enum(['image', 'video']),
+  src: z.string()
+})
+
+/**
+ * Display data for the row.
+ */
+export const zCccPagePresentation = z.object({
+  preview: zCccPagePreview.optional()
+})
+
+/**
+ * One model, workflow or app page at its Draft head.
+ */
+export const zCccPageRow = z.object({
+  author_uid: z.string(),
+  description: z.string().max(1000),
+  enabled: z.boolean(),
+  has_draft_edits: z.boolean(),
+  has_live: z.boolean(),
+  held_until_start: z.boolean(),
+  is_deleted: z.boolean(),
+  on_hub: z.boolean(),
+  presentation: zCccPagePresentation,
+  revision_uid: z.uuid(),
+  saved_at: z.iso.datetime(),
+  saved_by_uid: z.string(),
+  slug: z.string().max(200),
+  status: z.enum([
+    'removed',
+    'not_live',
+    'unpublished',
+    'hidden',
+    'scheduled',
+    'live'
+  ]),
+  title: z.string().max(300),
+  type: z.enum(['model', 'workflow', 'app']),
+  uid: z.uuid(),
+  visibility: z.string().max(20),
+  visible_from: z.string().max(100)
+})
+
+/**
+ * Live and Draft revisions this page was read from.
+ */
+export const zCccPagesState = z.object({
+  draft_generation: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  draft_rev: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  live_rev: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  next_rev: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  previous_live_rev: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable()
+})
+
+/**
+ * One page of the staff page list.
+ */
+export const zCccPagesPage = z.object({
+  as_of: z.iso.datetime(),
+  counts: zCccPageCounts,
+  has_more: z.boolean(),
+  items: z.array(zCccPageRow).max(100),
+  next_cursor: z.string().max(2048).optional(),
+  state: zCccPagesState
+})
+
+/**
+ * Holds when field equals equals (a bool or string). if_absent decides when field is absent or null; a value of another shape holds.
+ */
+export const zCccPublicationCondition = z.object({
+  equals: z.unknown(),
+  field: z.string(),
+  if_absent: z.lazy((): any => zCccPublicationCondition).optional()
+})
+
+/**
+ * One publish-time field rule. Publish enforces required levels, media constraints and resolves_to references; recommended levels are advice only.
+ */
+export const zCccPublicationRule = z.object({
+  fields: z.array(z.string()).min(1),
+  level: z.enum(['required', 'recommended']).optional(),
+  media: zCccMediaConstraint.optional(),
+  message: z.string(),
+  resolves_to: z.string().optional(),
+  types: z
+    .array(z.enum(['model', 'workflow', 'app', 'template_set']))
+    .optional(),
+  when: zCccPublicationCondition.optional()
+})
+
+/**
+ * One tag and the number of eligible model and workflow pages that carry it
+ */
+export const zCccSiteTagUsageItem = z.object({
+  count: z.int().gte(1),
+  tag: z.string().min(1)
+})
+
+/**
+ * Every tag on the eligible hub model and workflow pages, most used first
+ */
+export const zCccSiteTagUsage = z.object({
+  generation: z.int(),
+  revision_id: z.int(),
+  tags: z.array(zCccSiteTagUsageItem).max(5000)
+})
+
+export const zCccStagingMediaUse = z.object({
+  differs_from_head: z.boolean(),
+  file_version_uid: z.uuid().optional(),
+  is_deleted: z.boolean(),
+  mime_type: z.string().optional(),
+  name: z.string().optional(),
+  origin: z.boolean(),
+  slug: z.string().optional(),
+  title: z.string(),
+  type: z.enum(['model', 'workflow', 'app', 'template_set']),
+  uid: z.uuid()
+})
+
+export const zCccStagingPresentation = z.object({
+  media_name: z.string().optional(),
+  preview: z
+    .object({
+      kind: z.enum(['image', 'video']),
+      src: z.string()
+    })
+    .optional(),
+  uses: z.array(zCccStagingMediaUse).optional()
+})
+
+export const zCccStagingResource = z.object({
+  author_uid: z.string(),
+  document: z.object({
+    change_id: z.string().optional(),
+    enabled: z.boolean().optional(),
+    name: z.string().optional(),
+    provider: z.string().optional(),
+    slug: z.string().optional(),
+    title: z.string().optional(),
+    visibility: z.string().optional(),
+    visible_from: z.string().optional()
+  }),
+  is_deleted: z.boolean(),
+  revision_uid: z.uuid(),
+  saved_by_uid: z.string().optional(),
+  type: z.enum(['model', 'workflow', 'app', 'media', 'template_set']),
+  uid: z.uuid()
+})
+
+export const zCccStagingRow = z.object({
+  before: zCccStagingResource.optional(),
+  content: zCccStagingResource,
+  decision: z.enum(['NEW', 'APPROVED', 'DEFERRED', 'DELETED']),
+  presentation: zCccStagingPresentation.optional(),
+  saved_at: z.iso.datetime().optional(),
+  status: z.enum(['NEW', 'APPROVED', 'DEFERRED', 'DELETED']),
+  summary: z.string()
+})
+
+/**
+ * Staging read. Page and selection rows are sparse; detail and the legacy read return full content.
+ */
+export const zCccStagingReview = z.object({
+  items: z.array(zCccStagingRow).max(5000).optional(),
+  representation: z.enum(['page', 'selection', 'detail']).optional(),
+  selection_digest: z.string().optional(),
+  state: zCccCatalogState.optional(),
+  unresolved_count: z.int().optional()
+})
+
+export const zCccTypeSchema = z.object({
+  contract_version: z.string(),
+  environment: z.string(),
+  format: z.enum(['openapi-3.0-schema']),
+  publication: z
+    .object({
+      rules: z.array(zCccPublicationRule)
+    })
+    .optional(),
+  schema: z.record(z.string(), z.unknown()),
+  schema_version: z.int(),
+  server_fields: z.array(z.string()).optional(),
+  type: z.enum(['model', 'workflow', 'app', 'template_set', 'media'])
 })
 
 export const zCccWebsiteCardFacet = z.object({
@@ -2265,60 +2680,6 @@ export const zDesktopLoginCodeCreateResponse = z.object({
   code: z.string(),
   expires_in: z.int(),
   poll_interval: z.int()
-})
-
-/**
- * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
- */
-export const zBillingHandoffCreateRequest = z.object({
-  workspace_id: z.string().min(1),
-  receiver: z.enum(['billing_web', 'platform']),
-  surface: z.enum(['local_web', 'desktop']),
-  client_version: z.string().max(64)
-})
-
-/**
- * An issued handoff. The token is single use and expires within 60 seconds.
- */
-export const zBillingHandoffCreateResponse = z.object({
-  entry_url: z.string(),
-  expires_at: z.iso.datetime(),
-  request_id: z.string()
-})
-
-/**
- * The handoff token a receiver read from its URL fragment.
- */
-export const zBillingHandoffExchangeRequest = z.object({
-  token: z.string().min(1).max(128)
-})
-
-/**
- * The user a scoped billing session acts as.
- */
-export const zBillingHandoffUser = z.object({
-  id: z.string(),
-  email: z.string()
-})
-
-/**
- * The workspace a scoped billing session is bound to.
- */
-export const zBillingHandoffWorkspace = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.string()
-})
-
-/**
- * A scoped billing session for the handoff's user and workspace.
- */
-export const zBillingHandoffExchangeResponse = z.object({
-  session_token: z.string(),
-  expires_at: z.iso.datetime(),
-  user: zBillingHandoffUser,
-  workspace: zBillingHandoffWorkspace,
-  role: z.enum(['owner', 'member'])
 })
 
 /**
@@ -5583,6 +5944,23 @@ export const zAssetCreatedWritable = zAssetWritable.and(
 )
 
 /**
+ * One immutable save: the flat CCCJSON read plus the status of the catalog revision that holds it and its save time.
+ */
+export const zCccHistoryItemWritable = z.object({
+  catalog_status: z.enum(['draft', 'published', 'reverted', 'archived']),
+  saved_at: z.iso.datetime()
+})
+
+/**
+ * One page of save history, newest edit_sequence first. next_cursor is present only when has_more is true. There is no total.
+ */
+export const zCccHistoryPageWritable = z.object({
+  has_more: z.boolean(),
+  items: z.array(zCccHistoryItemWritable),
+  next_cursor: z.string().optional()
+})
+
+/**
  * Paginated list of assets belonging to the authenticated user.
  */
 export const zListAssetsResponseWritable = z.object({
@@ -6147,6 +6525,19 @@ export const zCreateDesktopLoginCodeResponse = zDesktopLoginCodeCreateResponse
 
 export const zExchangeDesktopLoginCodeBody = zDesktopLoginCodeExchangeRequest
 
+/**
+ * Pending (not yet redeemed) or complete with a custom token
+ */
+export const zExchangeDesktopLoginCodeResponse =
+  zDesktopLoginCodeExchangeResponse
+
+export const zRedeemDesktopLoginCodeBody = zDesktopLoginCodeRedeemRequest
+
+/**
+ * Code redeemed (or already redeemed by the same user)
+ */
+export const zRedeemDesktopLoginCodeResponse = zDesktopLoginCodeRedeemResponse
+
 export const zCreateBillingHandoffBody = zBillingHandoffCreateRequest
 
 /**
@@ -6160,19 +6551,6 @@ export const zExchangeBillingHandoffBody = zBillingHandoffExchangeRequest
  * Scoped session created
  */
 export const zExchangeBillingHandoffResponse = zBillingHandoffExchangeResponse
-
-/**
- * Pending (not yet redeemed) or complete with a custom token
- */
-export const zExchangeDesktopLoginCodeResponse =
-  zDesktopLoginCodeExchangeResponse
-
-export const zRedeemDesktopLoginCodeBody = zDesktopLoginCodeRedeemRequest
-
-/**
- * Code redeemed (or already redeemed by the same user)
- */
-export const zRedeemDesktopLoginCodeResponse = zDesktopLoginCodeRedeemResponse
 
 /**
  * Session deleted successfully
@@ -7244,6 +7622,27 @@ export const zGetUsersInfoResponse = z.object({
   storage: z.string()
 })
 
+export const zGetCccActivityQuery = z.object({
+  kind: z
+    .array(z.enum(['save', 'publish', 'discard', 'revert']))
+    .max(4)
+    .optional(),
+  actor_uid: z.string().min(1).max(200).optional(),
+  type: z
+    .array(z.enum(['model', 'workflow', 'app']))
+    .max(3)
+    .optional(),
+  since: z.iso.datetime().optional(),
+  until: z.iso.datetime().optional(),
+  limit: z.int().gte(1).lte(100).optional().default(50),
+  cursor: z.string().max(256).optional()
+})
+
+/**
+ * One page of activity, has_more, optional next_cursor and the newest publication
+ */
+export const zGetCccActivityResponse = zCccActivityPage
+
 /**
  * Editing instructions from this deployed catalog API build
  */
@@ -7262,7 +7661,7 @@ export const zListCccWebsiteCardsQuery = z.object({
   kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
   limit: z.int().gte(1).lte(24).optional().default(24),
   cursor: z.string().max(4096).optional(),
-  locale: z.enum(['en', 'zh-CN']).optional().default('en'),
+  locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en'),
   q: z.string().max(300).optional(),
   sort: z
     .enum(['popular', 'name', 'priceAsc', 'priceDesc'])
@@ -7537,6 +7936,7 @@ export const zGetCccStagingQuery = z.object({
   uid: z.uuid().optional(),
   search: z.string().max(300).optional(),
   author_uid: z.string().min(1).optional(),
+  saved_by: z.string().min(1).optional(),
   change_id: z
     .string()
     .min(1)
@@ -7557,7 +7957,7 @@ export const zGetCccStagingQuery = z.object({
 /**
  * Private review with exact Draft generation and optional sparse page metadata
  */
-export const zGetCccStagingResponse = zCccjson
+export const zGetCccStagingResponse = zCccStagingReview
 
 export const zStageCccChangesBody = zCccjson
 
@@ -7626,7 +8026,7 @@ export const zGetCccItemHistoryQuery = z.object({
 /**
  * Flat immutable items with catalog_status and saved_at, has_more and optional opaque next_cursor; no total
  */
-export const zGetCccItemHistoryResponse = zCccjson
+export const zGetCccItemHistoryResponse = zCccHistoryPage
 
 export const zGetCccLegacyTargetPath = z.object({
   source: z.string().max(20),
@@ -7658,7 +8058,7 @@ export const zListCccWebsiteModelDirectoryHeaders = z.object({
 })
 
 export const zListCccWebsiteModelDirectoryQuery = z.object({
-  locale: z.enum(['en', 'zh-CN']).optional().default('en')
+  locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en')
 })
 
 /**
@@ -7670,6 +8070,42 @@ export const zListCccWebsiteModelDirectoryResponse = zCccWebsiteModelDirectory
  * Catalog OpenAPI with contract fingerprint and environment
  */
 export const zGetCatalogOpenApiResponse = zCccjson
+
+export const zListCccAdminItemsQuery = z.object({
+  types: z
+    .array(z.enum(['model', 'workflow', 'app']))
+    .max(3)
+    .optional(),
+  q: z.string().max(300).optional(),
+  status: z
+    .array(
+      z.enum([
+        'not_live',
+        'unpublished',
+        'live',
+        'scheduled',
+        'hidden',
+        'removed'
+      ])
+    )
+    .max(6)
+    .optional(),
+  saved_by: z.string().min(1).max(200).optional(),
+  enabled: z.boolean().optional(),
+  uid: z.array(z.uuid()).max(100).optional(),
+  missing: z
+    .array(z.enum(['cover']))
+    .max(1)
+    .optional(),
+  sort: z.enum(['saved_desc', 'title_asc']).optional().default('saved_desc'),
+  limit: z.int().gte(1).lte(100).optional().default(50),
+  cursor: z.string().max(2048).optional()
+})
+
+/**
+ * One page of staff page rows, the per-type counts and the optional opaque next_cursor
+ */
+export const zListCccAdminItemsResponse = zCccPagesPage
 
 export const zGetCccPreviewMediaBytesPath = z.object({
   rev: z.int().gte(1),
@@ -7722,7 +8158,7 @@ export const zGetCccWebsiteRootPresentationHeaders = z.object({
 
 export const zGetCccWebsiteRootPresentationQuery = z.object({
   path: z.enum(['/hub/models/', '/hub/workflows/', '/hub/apps/']),
-  locale: z.enum(['en', 'zh-CN']).optional().default('en'),
+  locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en'),
   revision_id: z.coerce
     .bigint()
     .gte(BigInt(1))
@@ -7746,12 +8182,22 @@ export const zGetCccTypeSchemaPath = z.object({
 /**
  * Build-coupled OpenAPI 3.0 schema object, type, version and API environment
  */
-export const zGetCccTypeSchemaResponse = zCccjson
+export const zGetCccTypeSchemaResponse = zCccTypeSchema
 
 /**
  * Private state; never cacheable
  */
 export const zGetCccStateResponse = zCccjson
+
+export const zGetCccSiteTagsQuery = z.object({
+  view: z.enum(['LIVE', 'DRAFT']).optional().default('DRAFT'),
+  now: z.iso.datetime().optional()
+})
+
+/**
+ * Complete tag usage with Draft generation
+ */
+export const zGetCccSiteTagsResponse = zCccSiteTagUsage
 
 export const zGetVhsQueryVideoQuery = z.object({
   filename: z.string(),
