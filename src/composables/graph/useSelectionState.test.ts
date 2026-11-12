@@ -238,11 +238,11 @@ describe('useSelectionState', () => {
     })
 
     test('should not open node info when legacy menu uses the new node library', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
       mockSettingValues({
         'Comfy.UseNewMenu': 'Disabled',
         'Comfy.NodeLibrary.NewDesign': true
       })
+      const rightSidePanelStore = useRightSidePanelStore()
       selectSingleNodeWithNodeDef(12)
 
       const { canOpenNodeInfo, openNodeInfo } = useSelectionState()
@@ -255,11 +255,11 @@ describe('useSelectionState', () => {
     })
 
     test('should not open node info when legacy menu uses the legacy node library', () => {
-      const rightSidePanelStore = useRightSidePanelStore()
       mockSettingValues({
         'Comfy.UseNewMenu': 'Disabled',
         'Comfy.NodeLibrary.NewDesign': false
       })
+      const rightSidePanelStore = useRightSidePanelStore()
       selectSingleNodeWithNodeDef(13)
 
       const { canOpenNodeInfo, openNodeInfo } = useSelectionState()

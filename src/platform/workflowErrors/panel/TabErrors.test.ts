@@ -19,7 +19,7 @@ import type { MissingModelCandidate } from '@/platform/workflowErrors/missingMod
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useErrorsTabRequestStore } from './errorsTabRequestStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -1647,15 +1647,15 @@ describe('TabErrors.vue', () => {
       .getByTestId('error-group-execution')
       .getAttribute('data-group-key')
     assert.exists(groupKey)
-    useRightSidePanelStore().requestErrorDetails(['execution:unrelated'])
+    useErrorsTabRequestStore().requestDetails(['execution:unrelated'])
     await nextTick()
     expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
 
-    useRightSidePanelStore().requestErrorDetails([groupKey])
+    useErrorsTabRequestStore().requestDetails([groupKey])
     await nextTick()
 
     expect(screen.getByText(/Line 1/)).toBeInTheDocument()
-    expect(useRightSidePanelStore().errorDetailsRequest).toBeNull()
+    expect(useErrorsTabRequestStore().detailsRequest).toBeNull()
   })
 
   it('opens closed issue details when view details is requested', async () => {
@@ -1693,7 +1693,7 @@ describe('TabErrors.vue', () => {
       .getByTestId('error-group-execution')
       .getAttribute('data-group-key')
     assert.exists(groupKey)
-    useRightSidePanelStore().requestErrorDetails([groupKey])
+    useErrorsTabRequestStore().requestDetails([groupKey])
     await nextTick()
 
     expect(screen.getByText('KSampler - positive')).toBeInTheDocument()
@@ -1727,7 +1727,7 @@ describe('TabErrors.vue', () => {
       screen.queryByTestId('error-group-execution')
     ).not.toBeInTheDocument()
 
-    useRightSidePanelStore().requestErrorDetails([groupKey])
+    useErrorsTabRequestStore().requestDetails([groupKey])
 
     expect(await screen.findByTestId('error-group-execution')).toBeVisible()
     expect(screen.getByRole('textbox')).toHaveValue('')

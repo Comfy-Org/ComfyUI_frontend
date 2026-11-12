@@ -77,7 +77,7 @@ function renderToolbox() {
 describe('SelectionToolbox', () => {
   beforeEach(() => {
     useCanvasStore().canvas = createMockCanvas()
-    vi.spyOn(useRightSidePanelStore(), 'openPanel').mockImplementation(() => {})
+    vi.spyOn(useRightSidePanelStore(), 'openPanel').mockReturnValue(true)
     vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(nodeDef)
     vi.mocked(useExtensionService().invokeExtensions).mockReturnValue([])
     useSettingStore().$patch({

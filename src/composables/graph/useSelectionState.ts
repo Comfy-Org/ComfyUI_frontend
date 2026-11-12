@@ -101,9 +101,7 @@ export function useSelectionState() {
     computeSelectionStatesFromNodes(selectedNodes.value)
 
   const canOpenNodeInfo = computed(
-    () =>
-      Boolean(nodeDef.value) &&
-      settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
+    () => Boolean(nodeDef.value) && rightSidePanelStore.isAvailable
   )
 
   const openNodeInfo = () => {

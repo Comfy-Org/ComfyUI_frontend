@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useErrorsTabRequestStore } from '@/platform/workflowErrors/panel/errorsTabRequestStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -56,7 +58,7 @@ describe('useViewErrorsInGraph', () => {
     expect(canvasStore.selectedItems).toEqual([])
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(rightSidePanelStore.isOpen).toBe(true)
-    expect(rightSidePanelStore.errorDetailsRequest).toEqual([
+    expect(useErrorsTabRequestStore().detailsRequest).toEqual([
       'execution:out_of_memory'
     ])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
@@ -73,7 +75,7 @@ describe('useViewErrorsInGraph', () => {
 
     expect(rightSidePanelStore.activeTab).toBe('errors')
     expect(rightSidePanelStore.isOpen).toBe(true)
-    expect(rightSidePanelStore.errorDetailsRequest).toEqual([])
+    expect(useErrorsTabRequestStore().detailsRequest).toEqual([])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
   })
 
@@ -84,6 +86,17 @@ describe('useViewErrorsInGraph', () => {
     rightSidePanelStore.activeTab = 'parameters'
     await nextTick()
 
-    expect(rightSidePanelStore.errorDetailsRequest).toBeNull()
+    expect(useErrorsTabRequestStore().detailsRequest).toBeNull()
+  })
+
+  it('requests no details while the legacy menu keeps the panel closed', () => {
+    useSettingStore().$patch({
+      settingValues: { 'Comfy.UseNewMenu': 'Disabled' }
+    })
+
+    useViewErrorsInGraph().viewErrorsInGraph(['missing_node'])
+
+    expect(useRightSidePanelStore().isOpen).toBe(false)
+    expect(useErrorsTabRequestStore().detailsRequest).toBeNull()
   })
 })

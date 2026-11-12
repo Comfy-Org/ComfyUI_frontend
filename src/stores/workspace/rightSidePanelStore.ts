@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useErrorsTabRequestStore } from '@/platform/workflowErrors/panel/errorsTabRequestStore'
 
 export type RightSidePanelTab =
   | 'parameters'
@@ -19,50 +20,36 @@ type RightSidePanelSection = 'advanced-inputs'
  */
 export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   const settingStore = useSettingStore()
+  const errorsTabRequestStore = useErrorsTabRequestStore()
 
-  const isLegacyMenu = computed(
-    () => settingStore.get('Comfy.UseNewMenu') === 'Disabled'
+  const isAvailable = computed(
+    () => settingStore.get('Comfy.UseNewMenu') !== 'Disabled'
   )
 
   const isOpen = computed({
     get: () =>
-      !isLegacyMenu.value && settingStore.get('Comfy.RightSidePanel.IsOpen'),
+      isAvailable.value && settingStore.get('Comfy.RightSidePanel.IsOpen'),
     set: (value: boolean) =>
       settingStore.set('Comfy.RightSidePanel.IsOpen', value)
   })
   const activeTab = ref<RightSidePanelTab>('parameters')
   const isEditingSubgraph = computed(() => activeTab.value === 'subgraph')
   const focusedSection = ref<RightSidePanelSection | null>(null)
-  /**
-   * Graph node ID to focus in the errors tab.
-   * Set by SectionWidgets when the user clicks "See Error", consumed and
-   * cleared by TabErrors after expanding the relevant error group.
-   */
-  const focusedErrorNodeId = ref<string | null>(null)
-  const errorDetailsRequest = shallowRef<readonly string[] | null>(null)
 
-  // Auto-close panel when switching to legacy menu mode
-  watch(isLegacyMenu, (legacy) => {
-    if (legacy) {
-      void settingStore.set('Comfy.RightSidePanel.IsOpen', false)
-    }
+  watch(isAvailable, (available) => {
+    if (!available) void settingStore.set('Comfy.RightSidePanel.IsOpen', false)
   })
 
   watch([isOpen, activeTab], ([open, tab]) => {
-    if (!open || tab !== 'errors') errorDetailsRequest.value = null
+    if (!open || tab !== 'errors') errorsTabRequestStore.clearDetailsRequest()
   })
 
-  function openPanel(tab?: RightSidePanelTab) {
-    if (isLegacyMenu.value) return
+  /** Opens the panel, optionally on a tab; returns false when it cannot open. */
+  function openPanel(tab?: RightSidePanelTab): boolean {
+    if (!isAvailable.value) return false
     isOpen.value = true
-    if (tab) {
-      activeTab.value = tab
-    }
-  }
-
-  function requestErrorDetails(groupKeys: readonly string[]) {
-    if (isLegacyMenu.value) return
-    errorDetailsRequest.value = [...groupKeys]
+    if (tab) activeTab.value = tab
+    return true
   }
 
   function closePanel() {
@@ -91,14 +78,12 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   }
 
   return {
+    isAvailable,
     isOpen,
     activeTab,
     isEditingSubgraph,
     focusedSection,
-    focusedErrorNodeId,
-    errorDetailsRequest,
     openPanel,
-    requestErrorDetails,
     closePanel,
     togglePanel,
     focusSection,
