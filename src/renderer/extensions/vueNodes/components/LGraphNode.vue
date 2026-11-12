@@ -310,6 +310,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { isVideoResult } from '@/utils/resultItem'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -725,7 +726,9 @@ const nodeMedia = computed(() => {
 
   const items = nodeOutputs
     .getNodeOutputItems(node, outputs)
-    .filter((item) => type === 'video' || item.mediaType === 'images')
+    .filter((item) =>
+      type === 'video' ? isVideoResult(item) : item.mediaType === 'images'
+    )
   if (!items.length) return undefined
 
   return { type, items } as const

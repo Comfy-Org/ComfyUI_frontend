@@ -503,6 +503,21 @@ describe('LGraphNode', () => {
     )
   })
 
+  it('keeps legacy video files without adding text outputs to the preview', () => {
+    const outputs = seedNodeOutputs([])
+    outputs.nodeOutputs['test-node-123'] = {
+      text: ['Video saved'],
+      images: [{ filename: 'output.mp4', type: 'output' }],
+      animated: [true]
+    }
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(screen.getByTestId('node-content')).toHaveTextContent(
+      /^output\.mp4$/
+    )
+  })
+
   it('keeps an executed output preview when the LoadImage selector is linked', () => {
     mockData.mockLgraphNode = {
       constructor: {
