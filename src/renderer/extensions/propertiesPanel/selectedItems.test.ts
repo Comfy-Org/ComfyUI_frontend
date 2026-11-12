@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
@@ -108,7 +108,13 @@ describe('flatAndCategorizeSelectedItems', () => {
   })
 
   it('should handle non-node/non-group items as others', () => {
-    const unknownItem = { pos: [0, 0], size: [100, 100] } as Positionable
+    const unknownItem: Positionable = {
+      id: toGroupId(99),
+      pos: [0, 0],
+      boundingRect: [0, 0, 100, 100],
+      move: vi.fn(),
+      snapToGrid: () => false
+    }
 
     const result = flatAndCategorizeSelectedItems([
       testNode1,

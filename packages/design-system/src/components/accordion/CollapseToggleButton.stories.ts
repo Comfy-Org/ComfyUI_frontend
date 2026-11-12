@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fn } from 'storybook/test'
 import { ref, toRefs } from 'vue'
 
 import CollapseToggleButton from './CollapseToggleButton.vue'
@@ -10,16 +11,21 @@ const meta: Meta<typeof CollapseToggleButton> = {
   args: {
     show: true,
     expandLabel: 'Expand all',
-    collapseLabel: 'Collapse all'
+    collapseLabel: 'Collapse all',
+    'onUpdate:modelValue': fn()
   },
   render: (args) => ({
     components: { CollapseToggleButton },
     setup() {
       const isAllCollapsed = ref(false)
-      return { isAllCollapsed, ...toRefs(args) }
+      function onUpdate(value: boolean) {
+        isAllCollapsed.value = value
+        args['onUpdate:modelValue']?.(value)
+      }
+      return { isAllCollapsed, onUpdate, ...toRefs(args) }
     },
     template:
-      '<div class="flex items-center"><span>Sections</span><CollapseToggleButton v-model="isAllCollapsed" :show="show" :expand-label="expandLabel" :collapse-label="collapseLabel" /></div>'
+      '<div class="flex items-center"><span>Sections</span><CollapseToggleButton :model-value="isAllCollapsed" :show="show" :expand-label="expandLabel" :collapse-label="collapseLabel" @update:model-value="onUpdate" /></div>'
   })
 }
 

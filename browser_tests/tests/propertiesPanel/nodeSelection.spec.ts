@@ -234,12 +234,15 @@ test.describe('Properties panel - Node selection', () => {
         'CLIP Text Encode (Prompt)'
       ])
       await expect(panel.expandAllButton).toBeVisible()
+      await expect(panel.sectionWidgetsLists).toHaveCount(0)
 
       await panel.expandAllButton.click()
       await expect(panel.collapseAllButton).toBeVisible()
+      await expect(panel.sectionWidgetsLists).toHaveCount(3)
 
       await panel.collapseAllButton.click()
       await expect(panel.expandAllButton).toBeVisible()
+      await expect(panel.sectionWidgetsLists).toHaveCount(0)
     })
   })
 

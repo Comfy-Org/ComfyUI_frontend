@@ -28,6 +28,7 @@ describe('computedSectionDataList', () => {
     )
 
     expect(shownNames).toEqual(['seed'])
+    expect(node.widgets.map(({ name }) => name)).toEqual(['seed', 'viewport'])
   })
 
   it('hides canvasOnly, hidden, and hideInPanel widgets from the panel', () => {

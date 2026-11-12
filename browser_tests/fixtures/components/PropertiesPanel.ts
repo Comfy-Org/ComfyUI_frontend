@@ -47,8 +47,12 @@ export class PropertiesPanel {
     return this.panelTitle.locator('i[class*="lucide--pencil"]')
   }
 
+  get sectionWidgetsLists(): Locator {
+    return this.root.getByTestId('section-widgets-list')
+  }
+
   get sectionWidgetsList(): Locator {
-    return this.root.getByTestId('section-widgets-list').first()
+    return this.sectionWidgetsLists.first()
   }
 
   getNodeStateButton(state: 'Normal' | 'Bypass' | 'Mute'): Locator {
