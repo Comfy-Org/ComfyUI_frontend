@@ -76,12 +76,8 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     setAnchor(-1, null)
   }
 
-  function toggleAssetSelection(
-    asset: AssetItem,
-    index: number,
-    allAssets: AssetItem[]
-  ) {
-    if (!asset.id || index < 0 || index >= allAssets.length) {
+  function toggleAssetSelection(asset: AssetItem, index: number) {
+    if (!asset.id || index < 0) {
       console.warn('Invalid asset selection parameters')
       return
     }
@@ -100,7 +96,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
       metaKey
     }: Pick<MouseEvent, 'shiftKey' | 'ctrlKey' | 'metaKey'>
   ) {
-    if (!asset.id || index < 0 || index >= allAssets.length) {
+    if (!asset.id || index < 0) {
       console.warn('Invalid asset selection parameters')
       return
     }
@@ -115,7 +111,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     }
 
     if (ctrlKey || metaKey) {
-      toggleAssetSelection(asset, index, allAssets)
+      toggleAssetSelection(asset, index)
       return
     }
 
@@ -192,11 +188,8 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     hasSelection,
     selectedIdsArray,
 
-    addToSelection,
-    removeFromSelection,
     setSelection,
     clearSelection,
-    toggleSelection,
     isSelected,
     setLastSelectedIndex,
     setLastSelectedAssetId,

@@ -209,7 +209,7 @@ describe('useAssetSelectionStore', () => {
       const assets = createMockAssets(3)
 
       store.selectAll(assets)
-      store.toggleAssetSelection(assets[1], 1, assets)
+      store.toggleAssetSelection(assets[1], 1)
 
       expect(store.isSelected('asset-0')).toBe(true)
       expect(store.isSelected('asset-1')).toBe(false)
@@ -222,7 +222,7 @@ describe('useAssetSelectionStore', () => {
       const assets = createMockAssets(3)
 
       store.handleAssetClick(assets[0], 0, assets, noMods)
-      store.toggleAssetSelection(assets[1], 1, assets)
+      store.toggleAssetSelection(assets[1], 1)
 
       expect(store.isSelected('asset-0')).toBe(true)
       expect(store.isSelected('asset-1')).toBe(true)

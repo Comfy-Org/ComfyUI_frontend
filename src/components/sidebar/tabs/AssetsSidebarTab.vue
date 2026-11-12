@@ -511,7 +511,7 @@ function handleAssetSelect(
 function handleAssetSelectionToggle(asset: AssetItem) {
   const index = visibleAssets.value.findIndex((item) => item.id === asset.id)
   emit('assetSelected', asset)
-  toggleAssetSelection(asset, index, visibleAssets.value)
+  toggleAssetSelection(asset, index)
 }
 
 function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
