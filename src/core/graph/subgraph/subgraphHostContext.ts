@@ -1,7 +1,7 @@
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-export interface SubgraphHost {
+interface SubgraphHost {
   readonly graphId: UUID
   readonly nodeId: NodeId
   readonly subgraphId: UUID
