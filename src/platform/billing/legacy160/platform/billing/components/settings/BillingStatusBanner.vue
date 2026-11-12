@@ -183,7 +183,6 @@ interface BannerView {
   title: string
   body: string
   action: BannerAction | null
-  /** The banner's action is the one way out, so it takes the white button. */
   primaryAction?: boolean
   dismissible: boolean
 }

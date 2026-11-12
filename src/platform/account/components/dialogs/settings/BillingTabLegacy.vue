@@ -176,6 +176,7 @@ import { computed, onMounted } from 'vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { isCloud } from '@/platform/distribution/types'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -262,11 +263,11 @@ const action = computed(() =>
 )
 
 const { state: autoTopUp } = useBillingAutoTopUpCard()
+const { isPlanTerminal } = usePlanEnded()
 const endedPlanSalesVariant = computed(() =>
-  billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
+  isPlanTerminal.value ? 'inverted' : 'secondary'
 )
 
-// Local follows the billing-site rule: Add credits outranks plan actions.
 const salesVariant = computed(() =>
   isCloud ? endedPlanSalesVariant.value : 'secondary'
 )

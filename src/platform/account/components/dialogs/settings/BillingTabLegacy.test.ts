@@ -79,6 +79,7 @@ const activeSubscription: SubscriptionInfo = {
 interface Scenario {
   subscription?: SubscriptionInfo | null
   subscriptionStatus?: 'active' | 'canceled' | 'ended' | null
+  canAccessSubscriptionFeatures?: boolean
   subscriptionState?: SubscriptionState | null
   planKind?: NonNullable<BillingCapabilitiesResponse['plan_kind']> | null
   isInitialized?: boolean
@@ -146,7 +147,9 @@ function arrange(scenario: Scenario = {}) {
       ),
       subscriptionState: computed(() => scenario.subscriptionState ?? null),
       billingStatus: computed(() => scenario.billingStatus ?? 'paid'),
-      canAccessSubscriptionFeatures: computed(() => true),
+      canAccessSubscriptionFeatures: computed(
+        () => scenario.canAccessSubscriptionFeatures ?? true
+      ),
       manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
@@ -541,18 +544,28 @@ describe('BillingTab', () => {
       variant: 'secondary'
     },
     {
+      subscriptionStatus: 'canceled' as const,
+      accessClosed: true,
+      isCloud: true,
+      variant: 'inverted'
+    },
+    {
       subscriptionStatus: 'active' as const,
       isCloud: true,
       variant: 'secondary'
     }
   ])(
-    'renders Contact sales as $variant when subscription_status is $subscriptionStatus (Cloud: $isCloud)',
-    ({ subscriptionStatus, isCloud, variant }) => {
+    'renders Contact sales as $variant when subscription_status is $subscriptionStatus (Cloud: $isCloud, access closed: $accessClosed)',
+    ({ subscriptionStatus, accessClosed, isCloud, variant }) => {
       distribution.isCloud = isCloud
       onTestFinished(() => {
         distribution.isCloud = false
       })
-      arrange({ planKind: 'sales_managed', subscriptionStatus })
+      arrange({
+        planKind: 'sales_managed',
+        subscriptionStatus,
+        canAccessSubscriptionFeatures: !accessClosed
+      })
 
       expect(
         screen.getByRole('link', { name: 'Contact sales' })
