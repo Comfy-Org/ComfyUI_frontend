@@ -66,12 +66,7 @@ const { style, startResize } = useSubgraphInputLayout(
     @keydown="handleKeydown"
   >
     <template #before>
-      <NodeBadges
-        :groups="badges"
-        role="img"
-        :aria-label="t('g.subgraph')"
-        class="absolute right-0 bottom-full"
-      />
+      <NodeBadges :groups="badges" role="img" :aria-label="t('g.subgraph')" />
     </template>
     <div
       ref="header"

@@ -3,6 +3,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { NodeBadgeMode } from '@/types/nodeSource'
 
 for (const renderer of [
   {
@@ -199,3 +200,45 @@ for (const renderer of [
     }
   )
 }
+
+test.describe(
+  'Subgraph input badge placement',
+  { tag: ['@subgraph', '@vue-nodes'] },
+  () => {
+    test('uses the same positive badge gap as an ordinary node', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.NodeBadge.NodeIdBadgeMode',
+        NodeBadgeMode.ShowAll
+      )
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/shared-definition-two-hosts-promoted-text'
+      )
+      await comfyPage.vueNodes.enterSubgraph('11')
+      await comfyPage.canvasOps.waitForViewToSettle()
+      const interior = await comfyPage.nodeOps.getNodeRefByType(
+        'CLIPTextEncode',
+        true
+      )
+      const ordinary = comfyPage.vueNodes.getNodeLocator(String(interior.id))
+      const input = comfyPage.page.getByTestId('subgraph-input-values')
+      const [ordinaryBounds, ordinaryBadge, inputBounds, inputBadge] =
+        await Promise.all([
+          ordinary.boundingBox(),
+          ordinary.getByTestId('node-badges').boundingBox(),
+          input.boundingBox(),
+          input.getByRole('img', { name: 'Subgraph' }).boundingBox()
+        ])
+      if (!ordinaryBounds || !ordinaryBadge || !inputBounds || !inputBadge) {
+        throw new Error('Expected both native nodes and their badges')
+      }
+      const nativeGap =
+        ordinaryBounds.y - ordinaryBadge.y - ordinaryBadge.height
+      const inputGap = inputBounds.y - inputBadge.y - inputBadge.height
+
+      expect(nativeGap).toBeGreaterThan(0)
+      expect(inputGap).toBeCloseTo(nativeGap, 1)
+    })
+  }
+)

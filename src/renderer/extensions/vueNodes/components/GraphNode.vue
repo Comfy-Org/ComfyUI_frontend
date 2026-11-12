@@ -26,8 +26,7 @@
       <NodeBadges
         v-if="showBadges"
         v-bind="badges"
-        class="absolute right-0 bottom-full"
-        :style="badgesStyle"
+        :outline-offset="badgeOutlineOffset"
       />
       <AppOutput v-if="showAppOutput" :id="nodeId" />
       <div data-testid="node-state-outline-overlay" :class="outlineClass" />
@@ -113,7 +112,7 @@ const {
   containerClass,
   showBadges,
   badges,
-  badgesStyle,
+  badgeOutlineOffset,
   showAppOutput,
   nodeId,
   outlineClass,

@@ -181,9 +181,11 @@ export function useGraphNodePresentation(
   })
   const { isDraggingOver } = actions
 
-  const badgesStyle = computed(() => ({
-    marginBottom: `${4 + (hasAnyError.value || isDraggingOver.value ? 4 : 0) + (isEmphasized.value || executing.value ? 3 : 0)}px`
-  }))
+  const badgeOutlineOffset = computed(
+    () =>
+      (hasAnyError.value || isDraggingOver.value ? 4 : 0) +
+      (isEmphasized.value || executing.value ? 3 : 0)
+  )
 
   const rootClass = computed(() =>
     cn(
@@ -310,7 +312,7 @@ export function useGraphNodePresentation(
     containerClass,
     showBadges,
     badges,
-    badgesStyle,
+    badgeOutlineOffset,
     showAppOutput,
     nodeId,
     outlineClass,
