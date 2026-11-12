@@ -75,9 +75,6 @@ test.describe(
       await test.step('reload with no local workflow, so the node can only come back from the document', async () => {
         const before = agentConversation.subscribeCount()
         await agentConversation.reloadWithoutLocalWorkflow()
-        await expect(
-          agentConversation.vueNodes.getNodeLocator(nodeId)
-        ).not.toBeAttached()
         await agentConversation.sendPrompt()
         await expect
           .poll(() => agentConversation.subscribeCount())

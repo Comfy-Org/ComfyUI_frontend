@@ -137,10 +137,27 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return writeIndex(workspaceId, index)
   }
 
-  /**
-   * Saves a draft (data + metadata).
-   * Primes index cache, writes payload, then persists updated index.
-   */
+  function commitDraftIndex(
+    index: DraftIndexV2,
+    previousIndex: DraftIndexV2,
+    draftKey: string,
+    previousPayload: DraftPayloadV2 | null
+  ): boolean {
+    let written = false
+    try {
+      written = persistIndex(index)
+      return written
+    } finally {
+      if (!written) {
+        const workspaceId = currentWorkspaceId()
+        if (previousPayload)
+          writePayload(workspaceId, draftKey, previousPayload)
+        else deletePayload(workspaceId, draftKey)
+        persistIndex(previousIndex)
+      }
+    }
+  }
+
   function saveDraft(
     path: string,
     data: string,
@@ -175,18 +192,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       return evict && handleQuotaExceeded(path, data, meta)
     }
 
-    let indexWritten = false
-    try {
-      indexWritten = persistIndex(newIndex)
-    } finally {
-      if (!indexWritten) {
-        if (previousPayload)
-          writePayload(workspaceId, draftKey, previousPayload)
-        else deletePayload(workspaceId, draftKey)
-        persistIndex(index)
-      }
-    }
-    if (!indexWritten) return false
+    if (!commitDraftIndex(newIndex, index, draftKey, previousPayload))
+      return false
 
     deletePayloads(workspaceId, evicted)
     deleteLineages(workspaceId, evicted)
@@ -361,9 +368,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
   }
 
-  /**
-   * Gets draft data by path.
-   */
   function getDraft(
     path: string,
     { fresh = false } = {}
@@ -381,7 +385,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     if (entry?.path !== path) return null
 
     const draftKey = hashPath(path)
-    if (fresh && !index.order.includes(draftKey)) return null
+    if (!index.order.includes(draftKey)) return null
     const payload = readPayload(workspaceId, draftKey)
     if (!payload) {
       if (!fresh) removeDraft(path)
