@@ -199,11 +199,19 @@ jobs:
         with:
           node_cache: 'false'
 
+      - name: Plan chromium shards by historical duration
+        run: pnpm exec playwright test --project=chromium --list --reporter=./scripts/cicd/plan-playwright-shards.ts
+        env:
+          PLAYWRIGHT_SHARD_TOTAL: ${{ matrix.shardTotal }}
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/chromium-shards
+
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
+        run: pnpm exec playwright test --project=chromium --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/chromium-shards
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-chromium-${{ matrix.shardIndex }}.zip
           COLLECT_COVERAGE: 'true'
 
       - name: Upload blob report

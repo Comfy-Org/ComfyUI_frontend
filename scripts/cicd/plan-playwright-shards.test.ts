@@ -11,6 +11,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 import { assert, describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
@@ -106,11 +107,11 @@ describe('whole-file duration sharding', () => {
   )
 })
 
-function cloudWorkflowSteps(root: string) {
+function workflowSteps(root: string, project: 'cloud' | 'chromium') {
   const workflow = z
     .object({
       jobs: z.object({
-        'playwright-tests-cloud-sharded': z.object({
+        [`playwright-tests-${project}-sharded`]: z.object({
           steps: z.array(
             z.object({
               name: z.string().optional(),
@@ -128,9 +129,9 @@ function cloudWorkflowSteps(root: string) {
         readFileSync(join(root, '.github/workflows/ci-tests-e2e.yaml'), 'utf8')
       )
     )
-  const steps = workflow.jobs['playwright-tests-cloud-sharded'].steps
+  const steps = workflow.jobs[`playwright-tests-${project}-sharded`].steps
   const plan = steps.find(
-    (step) => step.name === 'Plan cloud shards by historical duration'
+    (step) => step.name === `Plan ${project} shards by historical duration`
   )
   const run = steps.find((step) =>
     step.name?.startsWith('Run Playwright tests')
@@ -142,9 +143,9 @@ function cloudWorkflowSteps(root: string) {
   return { plan: runnable.parse(plan), run: runnable.parse(run) }
 }
 
-function runWorkflowPilot() {
+function runWorkflowPilot(project: 'cloud' | 'chromium') {
   const root = resolve(import.meta.dirname, '../..')
-  const directory = mkdtempSync(join(tmpdir(), 'cloud-shards-'))
+  const directory = mkdtempSync(join(tmpdir(), `${project}-shards-`))
   onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
   symlinkSync(join(root, 'node_modules'), join(directory, 'node_modules'))
   symlinkSync(join(root, 'scripts'), join(directory, 'scripts'))
@@ -153,17 +154,17 @@ function runWorkflowPilot() {
   writeFileSync(
     join(directory, 'playwright.config.ts'),
     `
-import config from '${root}/playwright.config.ts'
+import config from ${JSON.stringify(pathToFileURL(join(root, 'playwright.config.ts')).href)}
 export default { ...config, testDir: './tests', globalSetup: undefined, globalTeardown: undefined, snapshotPathTemplate: '{testDir}/goldens/{arg}{ext}' }
 `
   )
   mkdirSync(join(directory, 'tests/goldens'), { recursive: true })
   writeFileSync(join(directory, 'tests/goldens/stale.txt'), 'old')
   const specs = {
-    a: `test.describe.configure({mode: 'serial'}); test('first @cloud', () => {}); test('second @cloud', () => {})`,
-    b: `test('retry @cloud', ({}, info) => expect(info.retry).toBeGreaterThan(0))`,
-    c: `test('snapshot @cloud', () => expect('new').toMatchSnapshot('stale.txt'))`,
-    d: `test('pass @cloud', () => {}); test.skip('skip @cloud', () => {})`
+    a: `test.describe.configure({mode: 'serial'}); test('first @${project}', () => {}); test('second @${project}', () => {})`,
+    b: `test('retry @${project}', ({}, info) => expect(info.retry).toBeGreaterThan(0))`,
+    c: `test('snapshot @${project}', () => expect('new').toMatchSnapshot('stale.txt'))`,
+    d: `test('pass @${project}', () => {}); test.skip('skip @${project}', () => {})`
   }
   for (const [file, body] of Object.entries(specs)) {
     writeFileSync(
@@ -171,7 +172,7 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
       `import { test, expect } from '@playwright/test'\n${body}\n`
     )
   }
-  const { plan, run } = cloudWorkflowSteps(root)
+  const { plan, run } = workflowSteps(root, project)
   const merged = join(directory, 'merged')
   mkdirSync(merged)
   const manifests: unknown[] = []
@@ -203,7 +204,7 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
         result.stdout + result.stderr
       )
     }
-    const name = `report-cloud-${shard}.zip`
+    const name = `report-${project}-${shard}.zip`
     copyFileSync(join(directory, 'blob-report', name), join(merged, name))
     manifests.push(
       JSON.parse(
@@ -244,16 +245,16 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
   }
 }
 
-it(
-  'runs the cloud workflow lists with retries and merges unique blobs without losing snapshot updates',
+it.for(['cloud', 'chromium'] as const)(
+  'runs the %s workflow lists with retries and merges unique blobs without losing snapshot updates',
   { timeout: 60_000 },
-  () => {
-    const result = runWorkflowPilot()
+  (project) => {
+    const result = runWorkflowPilot(project)
     expect(result.blobs).toEqual([
-      'report-cloud-1.zip',
-      'report-cloud-2.zip',
-      'report-cloud-3.zip',
-      'report-cloud-4.zip'
+      `report-${project}-1.zip`,
+      `report-${project}-2.zip`,
+      `report-${project}-3.zip`,
+      `report-${project}-4.zip`
     ])
     expect(result.report).toMatchObject({
       stats: { expected: 3, flaky: 1, unexpected: 1, skipped: 1 }

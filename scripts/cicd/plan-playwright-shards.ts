@@ -11,7 +11,10 @@ import type {
 } from '@playwright/test/reporter'
 import { z } from 'zod'
 
-import baseline from './cloud-shard-timings.json' with { type: 'json' }
+import chromiumBaseline from './chromium-shard-timings.json' with { type: 'json' }
+import cloudBaseline from './cloud-shard-timings.json' with { type: 'json' }
+
+const baselines = { chromium: chromiumBaseline, cloud: cloudBaseline }
 
 type CollectedTest = Pick<TestCase, 'id'> & { file: string }
 
@@ -89,11 +92,13 @@ export default class ShardPlanner implements Reporter {
       const { config, suite } = this.collection
       assert(!config.shard, 'Collect the full project without --shard')
       const tests = suite.allTests()
-      assert.deepEqual(
-        [...new Set(tests.map((test) => test.parent.project()?.name))],
-        [baseline.project],
-        'Collect only the project matching the timing baseline'
-      )
+      const projects = [
+        ...new Set(tests.map((test) => test.parent.project()?.name))
+      ]
+      assert.equal(projects.length, 1, 'Collect exactly one project')
+      const project = z.enum(['cloud', 'chromium']).parse(projects[0])
+      const baseline = baselines[project]
+      assert.equal(baseline.project, project)
       const directory = z
         .string()
         .min(1)
