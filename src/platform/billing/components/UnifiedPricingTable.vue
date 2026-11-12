@@ -367,7 +367,7 @@
           :href="CONTACT_SUPPORT_URL"
           target="_blank"
           rel="noopener noreferrer"
-          class="font-inter text-sm font-bold text-background no-underline hover:opacity-80"
+          class="font-inter font-bold text-background no-underline hover:opacity-80"
         >
           {{ t('subscription.signupPaymentRecovery.contactSupport') }}
         </a>
@@ -1004,8 +1004,8 @@ const isButtonDisabled = (tier: PricingTierConfig): boolean =>
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
-    ? 'font-inter text-sm font-bold leading-normal text-background'
-    : 'font-inter text-sm font-bold leading-normal text-foreground'
+    ? 'text-sm font-bold leading-normal text-background'
+    : 'text-sm font-bold leading-normal'
 
 const getPrice = (tier: PricingTierConfig): number =>
   getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
