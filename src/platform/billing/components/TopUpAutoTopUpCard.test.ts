@@ -28,8 +28,11 @@ vi.mock(
 )
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string, correlationId?: string) =>
-    `https://platform.test${path}?correlation_id=${correlationId}`
+  platformLink: (path: string, correlationId?: string) => {
+    const url = new URL(`https://platform.test${path}`)
+    if (correlationId) url.searchParams.set('correlation_id', correlationId)
+    return url.href
+  }
 }))
 
 const PROMPT = 'Running low on credits? Turn on auto top-up.'
@@ -69,13 +72,15 @@ function renderCard(served: Partial<Served> = {}) {
 }
 
 describe('TopUpAutoTopUpCard', () => {
-  it('offers a manager with auto top-up off to set it up on the billing site', () => {
+  it('offers a manager with auto top-up off to set it up on the billing site, with its setup dialog open', () => {
     renderCard()
 
     expect(screen.getByText(PROMPT)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Set up' })).toHaveAttribute(
       'href',
-      expect.stringContaining('https://platform.test/profile/billing')
+      expect.stringMatching(
+        /^https:\/\/platform\.test\/profile\/billing\?auto_top_up=setup&correlation_id=.+$/
+      )
     )
   })
 
