@@ -536,6 +536,7 @@
           "src/platform/billing/composables/useBillingDialogs.cancelSubscription.test.ts",
           "src/platform/billing/composables/useBillingDialogs.comingSoon.test.ts",
           "src/platform/billing/composables/useBillingDialogs.downgrade.test.ts",
+          "src/platform/billing/composables/useBillingDialogs.localBillingHandoff.test.ts",
           "src/platform/billing/composables/useBillingDialogs.subscriptionRequired.test.ts",
           "src/platform/billing/composables/useBillingDialogs.topUpCredits.test.ts",
           "src/platform/billing/composables/useBillingRouting.ts",
