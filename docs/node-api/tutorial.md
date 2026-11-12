@@ -83,15 +83,16 @@ state from a widget `change` listener and have the badge read that state.
 
 ## 4. Add feedback after execution
 
-The definition builder can observe backend results without subscribing to raw
-backend messages or guessing which node produced them:
+Extend a `PreviewImage` node downstream of your sampler to observe its delivered
+UI result. `onExecuted` observes these results, not every node completion:
+`KSampler` returns latent data without a UI result.
 
 ```js
-comfy.defs.extend('KSampler', (definition) => {
+comfy.defs.extend('PreviewImage', (definition) => {
   definition.onExecuted((node, result) => {
     comfy.commands.notify({
       severity: 'success',
-      summary: 'Sampling complete',
+      summary: 'Preview ready',
       detail: `${node.getTitle()} produced ${result.images.length} image(s)`,
       life: 2500
     })
@@ -149,8 +150,8 @@ Exercise at least these cases in a real frontend:
 3. choose “Reset seed” and confirm linked seed controls and serialization react
    as they would to a user edit;
 4. duplicate, save, reload, and delete the node;
-5. run the workflow and confirm the notification is attributed to the correct
-   node;
+5. connect the sampler through VAE Decode to a PreviewImage node, run a fresh
+   workflow execution, and confirm the notification names that preview node;
 6. repeat under every renderer the pack claims to support.
 
 Static type and conformance checks cannot prove those interactions. They are the

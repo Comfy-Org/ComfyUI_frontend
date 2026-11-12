@@ -251,8 +251,8 @@ node that has not been added yet. If you find yourself looking a node up by id
 inside a helper, the helper should be taking a `NodeHandle` instead — its
 caller has one.
 
-Optional chaining on a _read_ is fine: `?.getValue()` returning undefined is
-visible. On a write it is a bug that never reports itself.
+Optional chaining on a read returns `undefined` for a missing widget. On a
+write, it silently skips the mutation.
 
 ## Reordering
 
@@ -265,20 +265,30 @@ node.widgets.move('prompt', 0) // single move
 omitted — which is precisely how the splice idiom lost them. The error names
 what is missing.
 
-## `setOption` preserves accessors — do not hand-merge
+## Updating options with live combo values
 
 ```js
-// kjnodes builds dynamic combos with a live getter
-Object.defineProperty(
-  newOpts,
-  'values',
-  Object.getOwnPropertyDescriptor(comboOptions, 'values')
-)
+const comboOptions = {
+  get values() {
+    return currentModels
+  }
+}
 ```
 
-`setOption` merges by **property descriptor**, so getters stay getters. If you
-hand-roll `{ ...widget.getOptions(), ...patch }` you will invoke the getter and
-freeze its result — pinning a dynamic combo to a one-time snapshot, silently.
+To keep reading that incoming getter as its backing list changes, pass a
+function:
+
+```js
+widget.setOption('values', () => comboOptions.values)
+```
+
+`widget.setOption('values', comboOptions.values)` reads the getter immediately
+and installs that one list. It does not copy the incoming property descriptor.
+`setOption` preserves getters only on existing options that it does not replace;
+changing `tooltip`, for example, leaves an existing `values` getter live.
+
+Spreading `widget.getOptions()` also reads getters and keeps their current
+values. Use a function for incoming combo values that must stay live.
 
 `getOptions()` returns a frozen _snapshot_ by design; use `setOption` to write.
 

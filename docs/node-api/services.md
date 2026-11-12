@@ -228,13 +228,20 @@ The result is `undefined` when the user cancels.
 
 ### Calling this pack's declared endpoints
 
+This section requires the optional Secure Nodes pack-route broker. The ordinary
+`/comfy/api/v2.js` instance in this stack does not install that broker:
+`backend.fetch` requires a same-origin path beginning with `/`, and
+`backend.ownFetch` rejects requests. `backend.url` and `backend.assetUrl` are
+available for shared-page URLs. The restrictions below describe the broker's
+pack-scoped API.
+
 ```js
 const response = await comfy.backend.fetch('presets', {
   method: 'GET'
 })
 ```
 
-`backend.fetch()` and `backend.ownFetch()` call only endpoints declared by the
+With the broker, `backend.fetch()` and `backend.ownFetch()` call only endpoints declared by the
 calling Secure Nodes pack. New code uses relative endpoint paths, with no
 leading slash, empty or dot segments, percent-encoded path, scheme, authority,
 backslash, fragment, or control character. Invalid paths are rejected rather

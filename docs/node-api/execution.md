@@ -206,8 +206,9 @@ Resolution follows chains to a physical backend output, literal, or omission,
 with cycle detection. A resolver must be pure. It may return its result directly or as a promise; async resolvers run concurrently, receive an `AbortSignal` on the view, and are abandoned at the resolution deadline, so an awaited call that never settles cannot stall the prompt. It cannot edit
 the graph or a prompt draft.
 
-`InputSlotHandle.resolvedSource()` exposes the same final result for editor
-behavior without changing topology.
+`InputSlotHandle.resolvedSource()` performs synchronous editor inspection without
+changing topology. It cannot await resolver promises; the prompt path awaits
+them instead.
 
 ## Suppliers and broadcast behavior
 
@@ -257,16 +258,18 @@ for (const edge of comfy.graph.resolvedSupplies()) {
   if (edge.supplierNodeId !== broadcaster.id) continue
   if (edge.from.kind !== 'output') continue
 
-  broadcaster.outputs
-    .at(edge.from.output)
+  comfy.graph
+    .node(edge.from.nodeId)
+    ?.outputs.at(edge.from.output)
     ?.connectTo(edge.to.nodeId, { index: edge.to.input })
 }
 ```
 
-This recomputes the same pure resolver and priority arbitration prompt execution
-uses. It is the safe basis for a command such as “convert virtual broadcasts to
-real links”; reimplementing matching in the pack can create links the prompt
-would not use.
+This recomputes synchronous resolver and supplier results with the same priority
+arbitration as prompt execution. Promise-returning resolvers are unresolved here,
+and async suppliers contribute no edge. Use it to convert synchronous virtual
+broadcasts to real links. The prompt path also awaits async results, so this
+editor inspection may show fewer edges.
 
 The returned IDs are local to that graph scope. `GraphScopeHandle` offers the
 same read for root or subgraph definitions.

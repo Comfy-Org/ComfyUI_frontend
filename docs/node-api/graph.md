@@ -239,9 +239,11 @@ down while it is true.
 
 ## Resolved supply inspection
 
-`graph.resolvedSupplies()` runs the same pure supplier and priority arbitration
-used by prompt construction and returns the winning graph-local edges without
-mutating the graph. It is intended for editor commands that materialize virtual
-broadcasts as real links. Exact-priority ties are absent, matching execution.
+`graph.resolvedSupplies()` synchronously resolves suppliers with the priority
+arbitration used by prompt construction. It returns winning graph-local edges
+without mutating the graph. Promise-returning resolvers are unresolved here, and
+async suppliers contribute no edge; prompt construction awaits those results.
+Use this inspection to materialize synchronous broadcasts as real links.
+Exact-priority ties are absent, matching execution.
 
 See [Execution and resolution](./execution.md) for supplier semantics.

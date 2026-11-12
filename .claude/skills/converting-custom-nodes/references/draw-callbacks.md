@@ -163,7 +163,8 @@ b.onCreated((node) => {
   stateFor(node).surface = surface
 })
 b.onExecuted((node, result) => {
-  stateFor(node).value = String(result.text[0] ?? '')
+  const values = result.raw.value
+  stateFor(node).value = Array.isArray(values) ? String(values[0] ?? '') : ''
   stateFor(node).surface?.redraw()
 })
 ```

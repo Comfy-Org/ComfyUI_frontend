@@ -478,8 +478,8 @@ with `input.modify()`. The widget name must already exist on that node.
 
 ### How do I handle a link dropped on a node when no one slot fits?
 
-Use `onUnplacedLink` when the node understands a bundle or pipe and can expand
-one gesture into its own connections:
+Use `onUnplacedLink` when a node supports expanding a bundle or pipe into
+multiple connections:
 
 ```js
 comfy.defs.extend('MyPack/ContextPipe', (definition) => {
@@ -649,6 +649,9 @@ comfy.defs.defineWidgetType('MY_PACK_COLOR', {
     input.ariaLabel = name
 
     const onInput = () => value.set(input.value)
+    const stopValue = value.onChange((next) => {
+      input.value = String(next)
+    })
     input.addEventListener('input', onInput)
     container.append(input)
 
@@ -657,6 +660,7 @@ comfy.defs.defineWidgetType('MY_PACK_COLOR', {
     )
     return () => {
       stopReady()
+      stopValue()
       input.removeEventListener('input', onInput)
       input.remove()
     }
@@ -1106,6 +1110,9 @@ limitation instead of restoring prompt mutation.
 
 ### How do I call my Python routes or receive custom messages?
 
+The relative-route example requires the optional Secure Nodes pack-route broker.
+It is not provided by the ordinary `/comfy/api/v2.js` instance in this stack.
+
 ```js
 const response = await comfy.backend.fetch('presets')
 const stop = comfy.backend.on('my-pack-progress', (detail) => {
@@ -1113,13 +1120,15 @@ const stop = comfy.backend.on('my-pack-progress', (detail) => {
 })
 ```
 
-Declare `presets` as a relative route in this pack's `secure-nodes.json`.
+With that broker, declare `presets` as a relative route in this pack's `secure-nodes.json`.
 `backend.fetch('presets')` and `backend.ownFetch('presets')` call only that pack's
 endpoint. Paths have no leading slash, traversal, percent-encoded path, or scheme.
 The host alone assigns the base and builds the authenticated request.
 
-Shared operations use their published named async methods. URL builders are
-not a supported pack API; do not construct `/ext/` or core URLs. See the
+The shared-page API instead accepts same-origin paths beginning with `/` in
+`backend.fetch`; `backend.ownFetch` rejects requests without the broker. Its
+`backend.url` and `backend.assetUrl` helpers build shared-page URLs. The broker's
+pack-relative restrictions do not apply to that ordinary host. See the
 [routing contract](./services.md#pack-relative-backend-requests-and-events).
 Use `new URL('./asset.css', import.meta.url)` for an admitted bundled file.
 

@@ -30,7 +30,7 @@ String resolution is:
 
 `get(name)` throws `ComfyAmbiguousSlotError` when more than one slot has that
 name. `byName(name)` returns `undefined` on ambiguity. Output names may
-legitimately repeat, so the API never guesses.
+legitimately repeat, so use a slot ID to select a particular output.
 
 Slot IDs are runtime identity. Workflows still serialize link endpoints by
 index, so do not persist a `SlotId` across save and reload.
@@ -79,9 +79,10 @@ Important input reads:
 | `mergeWidgetConfig(config)` | Compatible intersection of this and another declaration.                        |
 | `snapshot()`                | Frozen `SlotSnapshot`.                                                          |
 
-Use `source()` to edit physical topology. Use `resolvedSource()` to understand
-what execution ultimately receives through reroutes, Get/Set nodes, and other
-frontend resolvers.
+Use `source()` to edit physical topology. Use `resolvedSource()` for synchronous
+inspection through reroutes, Get/Set nodes, and other frontend resolvers.
+Promise-returning resolvers are unresolved in this view; prompt construction
+awaits them.
 
 ## Inspecting an output
 
