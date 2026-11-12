@@ -1,4 +1,6 @@
 import type { JobDetail, JobListItem } from '@comfyorg/api-client/jobTypes'
+import { ComfyApi } from '@comfyorg/api-client/ComfyApi'
+import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import {
   assert,
   beforeEach,
@@ -96,6 +98,79 @@ describe('assetsStore - resolved history outputs', () => {
       expect(
         toValue(store.flatOutputAssets.items).map(({ name }) => name)
       ).toEqual(['replacement-b.png', 'replacement-a.png'])
+    )
+  })
+
+  it('retains App history through an HTTP failure and accepts a successful empty refresh', async () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    vi.mocked(api.getHistory).mockImplementation((limit, options) =>
+      ComfyApi.prototype.getHistory.call(api, limit, options)
+    )
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            jobs: [job('retained')],
+            pagination: { total: 1, offset: 0, limit: 200, has_more: false }
+          })
+        )
+      )
+      .mockResolvedValueOnce(new Response(null, { status: 503 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            jobs: [],
+            pagination: { total: 0, offset: 0, limit: 200, has_more: false }
+          })
+        )
+      )
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const history = scope.run(useJobOutputHistory)
+    assert(history)
+    await history.loadMore()
+
+    await history.invalidate()
+
+    expect(toValue(history.items).map(({ id }) => id)).toEqual(['retained'])
+
+    await history.invalidate()
+
+    expect(toValue(history.items)).toEqual([])
+  })
+
+  it('retains both jobs when a second completion arrives during a refresh', async () => {
+    let resolvePending: ((jobs: JobListItem[]) => void) | undefined
+    const pending = new Promise<JobListItem[]>((resolve) => {
+      resolvePending = resolve
+    })
+    vi.mocked(api.getHistory)
+      .mockResolvedValueOnce([])
+      .mockReturnValueOnce(pending)
+      .mockResolvedValueOnce([job('second'), job('first')])
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const history = scope.run(useJobOutputHistory)
+    assert(history)
+    await history.loadMore()
+
+    api.dispatchCustomEvent('execution_success', {
+      prompt_id: 'first',
+      timestamp: 1
+    })
+    await nextTick()
+    api.dispatchCustomEvent('execution_success', {
+      prompt_id: 'second',
+      timestamp: 2
+    })
+    assert(resolvePending)
+    resolvePending([job('first')])
+
+    await vi.waitFor(() =>
+      expect(toValue(history.items).map(({ id }) => id)).toEqual([
+        'second',
+        'first'
+      ])
     )
   })
 

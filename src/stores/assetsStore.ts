@@ -35,6 +35,8 @@ import {
   loadNewAll
 } from '@/platform/assets/composables/useAssetsQuery'
 import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import {
@@ -120,6 +122,42 @@ export const useAssetsStore = defineStore('assets', () => {
     loadNew: async () => undefined
   }
 
+  function useHistoryAssets(): [PagedList<AssetItem>, PagedList<AssetItem>] {
+    const history = useJobOutputHistory()
+    const resolvedAssetsCache = ref<Partial<Record<string, AssetItem[]>>>({})
+    watch(
+      () => toValue(history.items),
+      (items) => {
+        const currentAssetsCache = resolvedAssetsCache.value
+        const currentIds = new Set(items.map(({ id }) => id))
+        for (const jobId of Object.keys(currentAssetsCache)) {
+          if (!currentIds.has(jobId)) delete currentAssetsCache[jobId]
+        }
+        for (const asset of items) {
+          const metadata = getOutputAssetMetadata(asset.user_metadata)
+          const jobId = metadata?.jobId
+          if (!jobId || currentAssetsCache[jobId]) continue
+          void resolveOutputAssetItems(metadata, {
+            createdAt: asset.created_at
+          }).then((assets) => {
+            if (toValue(history.items).includes(asset)) {
+              currentAssetsCache[jobId] = assets
+            }
+          })
+        }
+      },
+      { immediate: true }
+    )
+    const flatOutputs = new WrappedList(history, (items) =>
+      items.flatMap((asset) => {
+        const jobId = getOutputAssetMetadata(asset.user_metadata)?.jobId
+        if (!jobId) return [asset]
+        return resolvedAssetsCache.value[jobId] ?? [asset]
+      })
+    )
+    return [history, flatOutputs]
+  }
+
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
   const outputAssets = ref<PagedList<AssetItem>>(undefined!)
   const flatOutputAssets = ref<PagedList<AssetItem>>(undefined!)
@@ -146,7 +184,7 @@ export const useAssetsStore = defineStore('assets', () => {
           })
         } else {
           inputAssets.value = historyInputs
-          ;[outputAssets.value, flatOutputAssets.value] = useJobOutputHistory()
+          ;[outputAssets.value, flatOutputAssets.value] = useHistoryAssets()
           allAssets.value = new WrappedList(
             flatOutputAssets.value,
             (outputItems) => [...toValue(historyInputs.items), ...outputItems]

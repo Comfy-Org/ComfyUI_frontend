@@ -1514,15 +1514,17 @@ export class ComfyApi extends EventTarget {
    */
   async getHistory(
     max_items: number = 200,
-    options?: { offset?: number }
+    options?: { offset?: number; throwOnError?: boolean }
   ): Promise<JobListItem[]> {
     try {
       return await fetchHistory(
         this.fetchApi.bind(this),
         max_items,
-        options?.offset
+        options?.offset,
+        options
       )
     } catch (error) {
+      if (options?.throwOnError) throw error
       console.error(error)
       return []
     }

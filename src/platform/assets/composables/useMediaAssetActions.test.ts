@@ -15,6 +15,7 @@ import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { assetService } from '@/platform/assets/services/assetService'
 import {
   MediaAssetKey,
   parseAssetInfo
@@ -131,6 +132,7 @@ const mockCreateAssetExport = vi.hoisted(() =>
 )
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
+    getAssetDetails: vi.fn<typeof assetService.getAssetDetails>(),
     deleteAsset: mockDeleteAsset,
     createAssetExport: mockCreateAssetExport
   }
@@ -1722,6 +1724,108 @@ describe('useMediaAssetActions', () => {
       expect(mockDeleteAsset).not.toHaveBeenCalled()
       expect(useToast().success).toHaveBeenCalled()
     })
+  })
+
+  describe('deleteAssets - job-backed App history', () => {
+    const record = createMockAsset({
+      id: 'real-asset-record',
+      name: 'output.png',
+      tags: ['output']
+    })
+    const selection = createMockAsset({
+      id: 'job-distinct-from-asset',
+      name: 'output.png',
+      tags: ['output'],
+      user_metadata: { jobId: 'job-distinct-from-asset' }
+    })
+
+    beforeEach(() => {
+      mockIsCloud.value = true
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+      mockGetOutputAssetMetadata.mockImplementation(
+        (metadata) => metadata ?? null
+      )
+      mockShowDialog.mockImplementation(
+        ({ props }: { props: { onConfirm: (confirmed: boolean) => void } }) =>
+          props.onConfirm(true)
+      )
+      vi.mocked(assetService.getAssetDetails).mockResolvedValue(record)
+      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+    })
+
+    it.for([
+      {
+        name: 'file-backed output',
+        records: [record],
+        deleteRecord: async () => undefined,
+        deletedRecords: ['real-asset-record'],
+        deletedHistory: [['history', 'job-distinct-from-asset']]
+      },
+      {
+        name: 'text-only output',
+        records: [],
+        deleteRecord: async () => undefined,
+        deletedRecords: [],
+        deletedHistory: [['history', 'job-distinct-from-asset']]
+      },
+      {
+        name: 'failed record deletion',
+        records: [record],
+        deleteRecord: async () => {
+          throw new Error('503 Service Unavailable')
+        },
+        deletedRecords: ['real-asset-record'],
+        deletedHistory: []
+      }
+    ])(
+      'deletes the correct identities for $name',
+      async ({ records, deleteRecord, deletedRecords, deletedHistory }) => {
+        vi.mocked(api.getJobAssets).mockResolvedValue({
+          assets: records,
+          complete: true
+        })
+        mockDeleteAsset.mockImplementation(deleteRecord)
+
+        await useMediaAssetActions().deleteAssets(selection)
+
+        expect(mockDeleteAsset.mock.calls.map(([id]) => id)).toEqual(
+          deletedRecords
+        )
+        expect(vi.mocked(api.deleteItem).mock.calls).toEqual(deletedHistory)
+      }
+    )
+
+    it.for([
+      {
+        name: 'incomplete asset listing',
+        complete: false,
+        readRecord: async () => record
+      },
+      {
+        name: 'failed asset lookup',
+        complete: true,
+        readRecord: async (): Promise<AssetItem> => {
+          throw new Error('503 Service Unavailable')
+        }
+      }
+    ])(
+      'preserves assets and history after an $name',
+      async ({ complete, readRecord }) => {
+        vi.mocked(api.getJobAssets).mockResolvedValue({
+          assets: [record],
+          complete
+        })
+        vi.mocked(assetService.getAssetDetails).mockImplementation(readRecord)
+
+        await expect(
+          useMediaAssetActions().deleteAssets(selection)
+        ).resolves.toBe(false)
+
+        expect(mockDeleteAsset).not.toHaveBeenCalled()
+        expect(api.deleteItem).not.toHaveBeenCalled()
+        expect(useToast().error).toHaveBeenCalled()
+      }
+    )
   })
 
   describe('deleteAssets - cancellation', () => {

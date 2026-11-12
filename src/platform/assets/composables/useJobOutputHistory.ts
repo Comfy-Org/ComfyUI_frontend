@@ -1,15 +1,12 @@
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { createSharedComposable, useEventListener } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
 import { mapTaskOutputToAssetItem } from '@/platform/assets/composables/media/assetMappers'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { api } from '@/scripts/api'
 import { TaskItemImpl } from '@/stores/queueStore'
-import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
 function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
@@ -43,18 +40,20 @@ const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000
 
 export const useJobOutputHistory = createSharedComposable(
-  (): [PagedList<AssetItem>, PagedList<AssetItem>] => {
+  (): PagedList<AssetItem> => {
     const historyOffset = ref(0)
     const hasMoreHistory = ref(true)
     const isLoadingMore = ref(false)
     const historyAssets = ref<AssetItem[]>([])
-    const resolvedAssetsCache = ref<Partial<Record<string, AssetItem[]>>>({})
 
     const fetchHistoryAssets = async (
       loadMore = false
     ): Promise<AssetItem[]> => {
       const offset = loadMore ? historyOffset.value : 0
-      const history = await api.getHistory(BATCH_SIZE, { offset })
+      const history = await api.getHistory(BATCH_SIZE, {
+        offset,
+        throwOnError: true
+      })
       const newAssets = mapHistoryToAssets(history)
       const items = loadMore ? [...historyAssets.value] : []
       const loadedIds = new Set(items.map(({ id }) => id))
@@ -77,30 +76,33 @@ export const useJobOutputHistory = createSharedComposable(
     }
 
     const historyLoading = ref(false)
-    const historyError = ref<unknown>(null)
     let historyQueue = Promise.resolve()
     let refreshPromise: Promise<void> | undefined
     let loadMorePromise: Promise<boolean> | undefined
+    let refreshRequest = 0
 
     const doUpdateHistory = async () => {
       historyLoading.value = true
-      historyError.value = null
       try {
-        const items = await fetchHistoryAssets(false)
-        resolvedAssetsCache.value = {}
-        historyAssets.value = items
-      } catch (err) {
-        reportError(err, {
-          errorType: 'failure_loading_job_history',
-          surface: 'assets'
-        })
-        historyError.value = err
+        let refreshedRequest: number
+        do {
+          refreshedRequest = refreshRequest
+          try {
+            historyAssets.value = await fetchHistoryAssets(false)
+          } catch (err) {
+            reportError(err, {
+              errorType: 'failure_loading_job_history',
+              surface: 'assets'
+            })
+          }
+        } while (refreshedRequest !== refreshRequest)
       } finally {
         historyLoading.value = false
       }
     }
 
     const updateHistory = () => {
+      refreshRequest++
       if (!refreshPromise) {
         refreshPromise = historyQueue.then(doUpdateHistory).finally(() => {
           refreshPromise = undefined
@@ -112,7 +114,6 @@ export const useJobOutputHistory = createSharedComposable(
 
     const doLoadMoreHistory = async () => {
       isLoadingMore.value = true
-      historyError.value = null
       try {
         historyAssets.value = await fetchHistoryAssets(true)
         return true
@@ -121,7 +122,6 @@ export const useJobOutputHistory = createSharedComposable(
           errorType: 'failure_loading_job_history',
           surface: 'assets'
         })
-        historyError.value = err
         return false
       } finally {
         isLoadingMore.value = false
@@ -149,38 +149,8 @@ export const useJobOutputHistory = createSharedComposable(
       loadMore: loadMoreHistory,
       loadNew: updateHistory
     }
-    watch(
-      historyAssets,
-      (items) => {
-        const currentAssetsCache = resolvedAssetsCache.value
-        const currentIds = new Set(items.map(({ id }) => id))
-        for (const jobId of Object.keys(currentAssetsCache)) {
-          if (!currentIds.has(jobId)) delete currentAssetsCache[jobId]
-        }
-        for (const asset of items) {
-          const metadata = getOutputAssetMetadata(asset.user_metadata)
-          const jobId = metadata?.jobId
-          if (!jobId || currentAssetsCache[jobId]) continue
-          void resolveOutputAssetItems(metadata, {
-            createdAt: asset.created_at
-          }).then((assets) => {
-            if (historyAssets.value.includes(asset)) {
-              currentAssetsCache[jobId] = assets
-            }
-          })
-        }
-      },
-      { immediate: true }
-    )
-    const flatOutputs = new WrappedList(outputAssets, (items) =>
-      items.flatMap((asset) => {
-        const jobId = getOutputAssetMetadata(asset.user_metadata)?.jobId
-        if (!jobId) return [asset]
-        return resolvedAssetsCache.value[jobId] ?? [asset]
-      })
-    )
     useEventListener(api, 'execution_success', updateHistory)
     void loadMoreHistory()
-    return [outputAssets, flatOutputs]
+    return outputAssets
   }
 )
