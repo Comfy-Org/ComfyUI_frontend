@@ -62,9 +62,7 @@ export function useTemplateModelDownloads(
     },
     canResume: (model) => {
       const tracker = dialogTracker()
-      return tracker
-        ? tracker.canResume(model)
-        : store.canControl(model, 'resumeDownload')
+      return tracker ? tracker.canResume(model) : store.canResume(model)
     },
     request: (model) => {
       if (disposed) return
