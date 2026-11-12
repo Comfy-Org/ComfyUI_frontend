@@ -45,7 +45,7 @@ export function useAddCreditsAutoTopUpOffer() {
   const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
     useBillingCapabilities()
   const { state, ensureRead } = useBillingAutoTopUpCard()
-  const { href } = usePlatformHandoff('/profile/billing', {
+  const { href, available } = usePlatformHandoff('/profile/billing', {
     target: 'auto_top_up',
     action: 'manage'
   })
@@ -82,5 +82,7 @@ export function useAddCreditsAutoTopUpOffer() {
       : served
   })
 
-  return { offer, billingUrl: href }
+  const billingUrl = computed(() => (available.value ? href.value : undefined))
+
+  return { offer, billingUrl }
 }

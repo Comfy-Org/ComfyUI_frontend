@@ -9,7 +9,7 @@ import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHa
 export function useAutoTopUpSetupOffer() {
   const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
     useBillingCapabilities()
-  const { href, track } = usePlatformHandoff(
+  const { href, track, available } = usePlatformHandoff(
     '/profile/billing?auto_top_up=setup',
     { target: 'auto_top_up', action: 'turn_on' }
   )
@@ -28,6 +28,7 @@ export function useAutoTopUpSetupOffer() {
       canManageAutoTopUp: canManageAutoTopUp.value,
       setup: autoTopUpSetup.value
     })
+    if (!available.value) return null
     if (!canSetUp) return null
     const settings = await billingApi.getBillingAutoReload()
     if (settings.status !== 'off') return null
