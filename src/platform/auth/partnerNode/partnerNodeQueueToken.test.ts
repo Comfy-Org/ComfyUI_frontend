@@ -275,6 +275,24 @@ describe('queueAuthToken', () => {
         await expect(queued).resolves.toBe('host-token')
       })
 
+      it('does not mint for the account that signed in during the lookup', async () => {
+        let handOver: (token: string | null) => void = () => {}
+        const { push } = await startHostSession(signedInAs('host-a'), {
+          getPartnerNodeToken: () =>
+            new Promise<string | null>((resolve) => {
+              handOver = resolve
+            })
+        })
+        respondWithPartnerNodeToken()
+
+        const queued = queueAuthToken('host-token', 'ws-a')
+        await push(signedInAs('host-b'))
+        handOver(null)
+
+        await expect(queued).resolves.toBe('host-token')
+        expect(fetchRequests(MINT_URL)).toHaveLength(0)
+      })
+
       it('does not ask Desktop with the flag off', async () => {
         vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = false
         const getPartnerNodeToken = vi.fn(
