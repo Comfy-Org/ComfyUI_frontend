@@ -2,24 +2,36 @@ import { defineConfig } from '@hey-api/openapi-ts'
 import type { IR, Plugins } from '@hey-api/openapi-ts'
 
 type ZodObjectResolver = NonNullable<Plugins.Zod.Resolvers['object']>
+type ObjectResolverContext = Parameters<ZodObjectResolver>[0]
 
-const definitionQuery = (ref: string) => ({
-  artifact: 'zod',
-  category: 'schema',
-  resource: 'definition',
-  resourceId: ref
-})
+function definitionQuery(ref: string) {
+  return {
+    artifact: 'zod',
+    category: 'schema',
+    resource: 'definition',
+    resourceId: ref
+  }
+}
 
-// The default lazy returns `any`, which erases the recursive type for consumers.
-const typeLazyReferences: ZodObjectResolver = (ctx) => {
+function lazyReference(
+  ctx: ObjectResolverContext,
+  property: IR.SchemaObject
+): string | undefined {
+  return property.$ref !== undefined &&
+    !ctx.plugin.isSymbolRegistered(definitionQuery(property.$ref))
+    ? property.$ref
+    : undefined
+}
+
+function typeLazyReferences(
+  ctx: ObjectResolverContext
+): ReturnType<ZodObjectResolver> {
   const properties: Record<string, IR.SchemaObject> =
     ctx.schema.properties ?? {}
-  const lazyReference = (property: IR.SchemaObject) =>
-    property.$ref !== undefined &&
-    !ctx.plugin.isSymbolRegistered(definitionQuery(property.$ref))
-      ? property.$ref
-      : undefined
-  if (!Object.values(properties).some(lazyReference)) return undefined
+  if (
+    !Object.values(properties).some((property) => lazyReference(ctx, property))
+  )
+    return undefined
 
   const { z } = ctx.plugin.imports
   ctx.nodes.shape(ctx)
@@ -27,7 +39,7 @@ const typeLazyReferences: ZodObjectResolver = (ctx) => {
   Object.entries(properties).forEach(([name, property], index) => {
     const result = ctx._childResults[index]
     const optional = !ctx.schema.required?.includes(name)
-    const ref = lazyReference(property)
+    const ref = lazyReference(ctx, property)
     const chain =
       ref === undefined
         ? result.chain

@@ -13,6 +13,37 @@ export const zAcceptInviteResponse = z.object({
 })
 
 /**
+ * The auto top-up settings a purchase was accepted with, echoed so checkout and its done state show exactly what turns on. Present only on a purchase sent with auto_top_up.
+ */
+export const zAcceptedAutoTopUpSettings = z.object({
+  monthly_budget_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  monthly_budget_is_default: z.boolean(),
+  target_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  threshold_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
  * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
  */
 export const zAgentAdmissionError = z.object({
@@ -628,7 +659,7 @@ export const zAgentTurnRefusal = z.object({
 })
 
 /**
- * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
+ * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge. On a local-agent turn it is the proxy-reported lower bound, and priced_rounds / unpriced_rounds count the rounds that did and did not report a price.
  */
 export const zAgentTurnUsage = z.object({
   cache_creation_input_tokens: z.int().gte(0),
@@ -636,7 +667,9 @@ export const zAgentTurnUsage = z.object({
   charge_micro_usd: z.int().gte(1).optional(),
   input_tokens: z.int().gte(0),
   output_tokens: z.int().gte(0),
-  total_tokens: z.int().gte(0)
+  priced_rounds: z.int().gte(0).optional(),
+  total_tokens: z.int().gte(0),
+  unpriced_rounds: z.int().gte(0).optional()
 })
 
 /**
@@ -1090,6 +1123,21 @@ export const zAutoReloadSettingsRequest = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     })
 })
+
+/**
+ * Did auto top-up turn on with a purchase sent with auto_top_up; absent otherwise, so absence is not "off". pending: payment or activation has not finished; keep polling. on: on with auto_top_up's settings. failed: payment and credits stand but auto top-up did not turn on; send the owner to set it up in Billing. not_attempted: the payment did not succeed (or the checkout expired). Not the current status; read GET /api/billing/auto-reload.
+ */
+export const zAutoTopUpActivation = z.enum([
+  'pending',
+  'on',
+  'failed',
+  'not_attempted'
+])
+
+/**
+ * Only when auto_top_up_activation is failed. An auto_top_up_setup reason (GET /api/billing/capabilities) or activation_error. For support and analytics, not copy.
+ */
+export const zAutoTopUpActivationReason = z.string()
 
 /**
  * Read-only auto top-up display for non-owner workspace members. Omitted when unavailable, hidden, or unsupported by an older server; keep the member discoverability notice as the fallback. Never grants management access and contains no limit amounts, spending or payment details.
@@ -1757,8 +1805,11 @@ export const zCccCatalogState = z.object({
 
 export const zCccAuthoringContext = z.object({
   actor_uid: z.string().min(1),
+  can_access_catalog: z.boolean(),
   can_apply: z.boolean(),
   can_edit: z.boolean(),
+  can_manage_users: z.boolean(),
+  can_transfer: z.boolean(),
   owner_uid: z.string().min(1),
   state: zCccCatalogState
 })
@@ -2050,6 +2101,21 @@ export const zCccSiteTagUsage = z.object({
   generation: z.int(),
   revision_id: z.int(),
   tags: z.array(zCccSiteTagUsageItem).max(5000)
+})
+
+export const zCccStaffPermissions = z.object({
+  account_id: z.string().min(1).max(128),
+  avatar_url: z.string().max(4000).optional(),
+  can_edit: z.boolean(),
+  can_manage_users: z.boolean(),
+  can_publish: z.boolean(),
+  can_transfer: z.boolean(),
+  display_name: z.string().max(200).optional(),
+  updated_at: z.iso.datetime(),
+  updated_by: z.string(),
+  version: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
+    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+  })
 })
 
 export const zCccStagingMediaUse = z.object({
@@ -2403,15 +2469,6 @@ export const zCreateSessionResponse = z.object({
 })
 
 /**
- * Request body for creating a hosted credit top-up checkout session.
- */
-export const zCreateTopupCheckoutRequest = z.object({
-  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(1600000)),
-  idempotency_key: z.string().optional(),
-  return_url: z.url()
-})
-
-/**
  * A hosted Stripe Checkout session for a credit top-up.
  */
 export const zCreateTopupCheckoutResponse = z.object({
@@ -2434,7 +2491,7 @@ export const zCreateTopupQuoteRequest = z.object({
 })
 
 /**
- * Legacy on-file top-up. Explicit payment authority and save/default fields require the dedicated interactive route and are rejected here, including null or false values.
+ * Legacy on-file top-up. Explicit payment authority, save/default fields and auto_top_up require the dedicated interactive route and are rejected here, including null or false values.
  */
 export const zCreateTopupRequest = z.object({
   amount_cents: z.coerce
@@ -3058,6 +3115,9 @@ export const zHostedTopupCheckout = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  auto_top_up: zAcceptedAutoTopUpSettings.optional(),
+  auto_top_up_activation: zAutoTopUpActivation.optional(),
+  auto_top_up_activation_reason: zAutoTopUpActivationReason.optional(),
   payment_amount_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -3287,20 +3347,6 @@ export const zInputUploadResponse = z.object({
  */
 export const zInputUploadUrlRequest = z.object({
   content_type: z.string().max(64)
-})
-
-/**
- * Pay once with exactly one new-card confirmation token or explicitly selected attached card. Keep the exact request and key on retry; never fall back to the on-file route.
- */
-export const zInteractiveTopupRequest = z.object({
-  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(99999999)),
-  checkout_attempt_id: z.string().optional(),
-  confirmation_token: z.string().min(1).max(255).optional(),
-  idempotency_key: z.string().min(1).max(255),
-  make_default: z.boolean().optional().default(false),
-  return_url: z.string().min(1).max(2048).optional(),
-  save_payment_method: z.boolean().optional().default(false),
-  saved_payment_method_id: z.string().min(1).max(255).optional()
 })
 
 /**
@@ -4680,9 +4726,19 @@ export const zPlan = z.object({
     }),
   denied_reason: zPlanActionDeniedReason.optional(),
   denied_reason_params: zPlanActionDeniedReasonParams.optional(),
+  discount_percent: z.number().optional(),
   duration: zSubscriptionDuration,
   feature_items: z.array(zPlanFeatureItem).optional(),
   features: z.array(z.string()).optional(),
+  list_price_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   max_seats: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -5222,6 +5278,9 @@ export const zBillingOpStatusResponse = z.object({
       'reconciliation_needed'
     ])
     .optional(),
+  auto_top_up: zAcceptedAutoTopUpSettings.optional(),
+  auto_top_up_activation: zAutoTopUpActivation.optional(),
+  auto_top_up_activation_reason: zAutoTopUpActivationReason.optional(),
   cancelable: z.boolean().optional(),
   charge_breakdown: zBillingOpChargeBreakdown.optional(),
   checkout_state: z
@@ -5280,6 +5339,66 @@ export const zBillingOpStatusResponse = z.object({
   started_at: z.iso.datetime(),
   status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed']),
   topup_purchase_amount: zTopUpPurchaseAmount.optional()
+})
+
+/**
+ * Turns auto top-up on after this purchase's payment succeeds; the server does it, so never follow with PUT /api/billing/auto-reload. Absent leaves auto top-up unchanged. Owner who may manage auto top-up only. Hosted checkout shows a $0.00 "Auto top-up" line and consent covering future top-ups.
+ * PUT /api/billing/auto-reload's enabled-save rules apply before anything is charged (400 INVALID_AUTO_TOP_UP); 400 AUTO_TOP_UP_NOT_ELIGIBLE when setup is unavailable or frozen except for a missing default card; 400 AUTO_TOP_UP_NOT_AVAILABLE when first enrollment is outside the rollout.
+ * Auto top-up charges the default card. With none, the paid card is saved off-session and becomes the default; an existing default is kept and a new card is not saved. On the interactive route a new card's confirmation token must use setup_future_usage off_session exactly when there is no default card.
+ * A replay with other settings is refused. The outcome is auto_top_up_activation on the checkout read (hosted) or GET /api/billing/ops/{id} (interactive).
+ *
+ */
+export const zTopupAutoTopUpSettings = z.object({
+  monthly_budget_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullish(),
+  target_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  threshold_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
+ * Request body for creating a hosted credit top-up checkout session.
+ */
+export const zCreateTopupCheckoutRequest = z.object({
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(250000)),
+  auto_top_up: zTopupAutoTopUpSettings.optional(),
+  idempotency_key: z.string().optional(),
+  return_url: z.url()
+})
+
+/**
+ * Pay once with exactly one new-card confirmation token or explicitly selected attached card. Keep the exact request and key on retry; never fall back to the on-file route.
+ */
+export const zInteractiveTopupRequest = z.object({
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(99999999)),
+  auto_top_up: zTopupAutoTopUpSettings.optional(),
+  checkout_attempt_id: z.string().optional(),
+  confirmation_token: z.string().min(1).max(255).optional(),
+  idempotency_key: z.string().min(1).max(255),
+  make_default: z.boolean().optional().default(false),
+  return_url: z.string().min(1).max(2048).optional(),
+  save_payment_method: z.boolean().optional().default(false),
+  saved_payment_method_id: z.string().min(1).max(255).optional()
 })
 
 /**
@@ -5749,6 +5868,7 @@ export const zBillingCapabilitiesResponse = z.object({
   auto_top_up_member_view: zAutoTopUpMemberView.optional(),
   auto_top_up_setup: zAutoTopUpSetup.optional(),
   billing_notice_audience: z.enum(['none', 'team', 'personal']).optional(),
+  billing_web_checkout_ui: z.enum(['embedded', 'full_page']),
   capabilities: zBillingCapabilities,
   denied_reason_params: zBillingCapabilityDenialParams.optional(),
   denied_reasons: zBillingCapabilityDenials.optional(),
@@ -6674,7 +6794,7 @@ export const zUpdateBillingCompanyDetailsResponse =
 export const zGetBillingEventsQuery = z.object({
   page: z.int().gte(1).optional().default(1),
   limit: z.int().gte(1).lte(100).optional().default(20),
-  scope: z.enum(['self', 'workspace', 'user']).optional().default('self'),
+  scope: z.enum(['self', 'workspace', 'user']).optional(),
   user_id: z.string().optional(),
   spend_source: z.string().max(200).optional(),
   filter: z.string().optional(),
@@ -8111,6 +8231,65 @@ export const zListCccAdminItemsQuery = z.object({
  */
 export const zListCccAdminItemsResponse = zCccPagesPage
 
+/**
+ * Current website permission records
+ */
+export const zListCccStaffPermissionsResponse = z.object({
+  items: z.array(zCccStaffPermissions)
+})
+
+export const zDeleteCccStaffPermissionsPath = z.object({
+  account_id: z.string().min(1).max(128)
+})
+
+export const zDeleteCccStaffPermissionsQuery = z.object({
+  expected_version: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
+ * Website access removed
+ */
+export const zDeleteCccStaffPermissionsResponse = z.void()
+
+export const zPutCccStaffPermissionsBody = z.object({
+  can_edit: z.boolean(),
+  can_manage_users: z.boolean(),
+  can_publish: z.boolean(),
+  can_transfer: z.boolean(),
+  expected_version: z.coerce
+    .bigint()
+    .gte(BigInt(0))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+export const zPutCccStaffPermissionsPath = z.object({
+  account_id: z.string().min(1).max(128)
+})
+
+/**
+ * Saved website permissions and the new version token
+ */
+export const zPutCccStaffPermissionsResponse = zCccStaffPermissions
+
+export const zResolveCccStaffAccountBody = z.object({
+  email: z.email().max(254)
+})
+
+/**
+ * Verified active account, without granting access
+ */
+export const zResolveCccStaffAccountResponse = z.object({
+  account_id: z.string().min(1).max(128),
+  display_name: z.string().max(200).optional()
+})
+
 export const zGetCccPreviewMediaBytesPath = z.object({
   rev: z.int().gte(1),
   uid: z.uuid(),
@@ -8737,6 +8916,13 @@ export const zPostOAuthRegisterBody = zOAuthRegisterRequest
  * Registered. Body echoes the metadata RFC 7591 §3.2.1 requires.
  */
 export const zPostOAuthRegisterResponse = zOAuthRegisterResponse
+
+export const zPostOAuthRevokeBody = z.object({
+  client_id: z.string(),
+  client_secret: z.string().optional(),
+  token: z.string(),
+  token_type_hint: z.string().optional()
+})
 
 export const zPostOAuthTokenBody = z.object({
   client_id: z.string(),
