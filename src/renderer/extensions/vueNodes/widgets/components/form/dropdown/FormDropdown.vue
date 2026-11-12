@@ -67,7 +67,6 @@ interface Props {
 const { t } = useI18n()
 
 const {
-  inputId,
   placeholder,
   multiple = false,
   uploadable = false,

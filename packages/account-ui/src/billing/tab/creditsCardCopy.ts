@@ -1,8 +1,7 @@
-import { formatPlanDate } from '@comfyorg/account-core/billing'
+import { CREDITS_PER_USD, formatPlanDate } from '@comfyorg/account-core/billing'
 import type { PlanCreditsState } from '@comfyorg/account-core/billing'
 
-/** Credits bought per US dollar; credit amounts are shown from served cents. */
-export const CREDITS_PER_USD = 211
+export { CREDITS_PER_USD }
 
 /** Host-translated strings for the Credits card. */
 export interface CreditsCardCopy {

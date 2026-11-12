@@ -96,7 +96,7 @@ describe('useThemeService theme variables', () => {
         '--background': '#ffffff',
         '--node': 'var(--card)',
         '--node-header': 'var(--secondary)',
-        '--node-foreground': '#444444',
+        '--node-foreground': '#606060',
         '--secondary': '#e9e9e9',
         '--border': '#b4b4b4'
       }

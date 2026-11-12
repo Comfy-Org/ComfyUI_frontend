@@ -119,4 +119,62 @@ test.describe('Desktop missing model download', { tag: '@desktop' }, () => {
     ).toHaveAttribute('aria-valuenow', '25')
     expect(await modelDownloadHost.downloads()).toEqual([])
   })
+
+  test('pauses and cancels a running download from the missing model row', async ({
+    comfyPage,
+    modelDownloadHost
+  }) => {
+    const fakeModel = {
+      id: 'job-1',
+      url: 'http://localhost:8188/api/devtools/fake_model.safetensors',
+      filename: 'fake_model.safetensors',
+      directory: 'checkpoints',
+      progress: 0.5,
+      receivedBytes: 512,
+      totalBytes: 1024
+    }
+    await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+    const group = comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+    await modelDownloadHost.emitProgress({
+      ...fakeModel,
+      status: 'downloading'
+    })
+
+    await test.step('pause hands the job id to the host', async () => {
+      await group
+        .getByRole('button', {
+          name: 'Pause download for fake_model.safetensors'
+        })
+        .click()
+      await modelDownloadHost.emitProgress({ ...fakeModel, status: 'paused' })
+
+      await expect(
+        group.getByRole('button', {
+          name: 'Resume download for fake_model.safetensors'
+        })
+      ).toBeVisible()
+    })
+
+    await test.step('cancel offers the download again', async () => {
+      await group
+        .getByRole('button', {
+          name: 'Cancel download for fake_model.safetensors'
+        })
+        .click()
+      await modelDownloadHost.emitProgress({
+        ...fakeModel,
+        status: 'cancelled'
+      })
+
+      await expect(
+        group.getByTestId(TestIds.dialogs.missingModelDownload)
+      ).toBeVisible()
+      await expect
+        .poll(() => modelDownloadHost.controls())
+        .toEqual([
+          { action: 'pause', ref: 'job-1' },
+          { action: 'cancel', ref: 'job-1' }
+        ])
+    })
+  })
 })

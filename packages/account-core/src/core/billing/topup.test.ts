@@ -735,6 +735,28 @@ describe('createHostedTopupCheckout', () => {
     ])
   })
 
+  it('sends the auto top-up settings with the purchase', async () => {
+    const { command, calls } = harness()
+    const autoTopUp = {
+      threshold_credits: 1000,
+      target_credits: 5000,
+      monthly_budget_cents: null
+    }
+
+    await command.createHostedTopupCheckout({
+      amountCents: 1000,
+      returnUrl: RETURN_URL,
+      autoTopUp
+    })
+
+    expect(postedBodies(calls)[0].body).toEqual({
+      amount_cents: 1000,
+      return_url: RETURN_URL,
+      auto_top_up: autoTopUp,
+      idempotency_key: 'key-1'
+    })
+  })
+
   it('refuses when the server resolved can_top_up false, without a POST', async () => {
     const { hosted, routes } = harness({
       capabilities: {

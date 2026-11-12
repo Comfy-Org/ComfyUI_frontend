@@ -242,10 +242,14 @@ describe('TaskItemImpl', () => {
 
     const task = new TaskItemImpl(job)
 
-    expect(task.flatOutputs).toHaveLength(1)
-    expect(task.flatOutputs[0].filename).toBe('')
-    expect(task.previewableOutputs).toHaveLength(1)
-    expect(task.previewOutput?.content).toBe('test')
+    expect(task.flatOutputs).toStrictEqual([
+      expect.objectContaining({
+        filename: '',
+        content: 'test',
+        mediaType: 'text'
+      })
+    ])
+    expect(task.previewableOutputs).toStrictEqual(task.flatOutputs)
   })
 
   it('should reject non-text preview outputs without a filename', () => {
@@ -1105,7 +1109,7 @@ describe('useQueueStore', () => {
       const job = createPendingJob(1, 'pend-1')
       const task = new TaskItemImpl(job)
 
-      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      vi.mocked(api.deleteItem).mockResolvedValue(true)
       vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
       vi.mocked(api.getHistory).mockResolvedValue([])
 
@@ -1118,7 +1122,7 @@ describe('useQueueStore', () => {
       const job = createHistoryJob(1, 'hist-1')
       const task = new TaskItemImpl(job, createTaskOutput())
 
-      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      vi.mocked(api.deleteItem).mockResolvedValue(true)
       vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
       vi.mocked(api.getHistory).mockResolvedValue([])
 
@@ -1131,7 +1135,7 @@ describe('useQueueStore', () => {
       const job = createPendingJob(1, 'pend-1')
       const task = new TaskItemImpl(job)
 
-      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      vi.mocked(api.deleteItem).mockResolvedValue(true)
       vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
       vi.mocked(api.getHistory).mockResolvedValue([])
 

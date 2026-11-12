@@ -126,11 +126,13 @@ test.describe(
         await new ExecutionHelper(
           comfyPage,
           await getWebSocket()
-        ).completeWithHistory(
-          'job-selected-output',
-          '1',
-          'selected-output.webp'
-        )
+        ).completeWithHistory('job-selected-output', {
+          filename: 'selected-output.webp',
+          subfolder: '',
+          type: 'output',
+          nodeId: '1',
+          mediaType: 'images'
+        })
         await comfyPage.menu.topbar.newWorkflowButton.click()
         await comfyPage.expectNodeCount(0)
         await comfyPage.searchBoxV2.addNode('Load Image (from Outputs)')

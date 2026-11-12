@@ -21,7 +21,6 @@ import { deploymentDownloads } from '@/platform/workspace/stores/deploymentLibra
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
-  mapTaskOutputToAssetItem,
   unflattenOutputAssets
 } from '@/platform/assets/composables/media/assetMappers'
 import type {
@@ -35,6 +34,7 @@ import {
   invalidateAll,
   loadNewAll
 } from '@/platform/assets/composables/useAssetsQuery'
+import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
@@ -46,13 +46,10 @@ import {
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { AssetSeedCompletedWsMessage } from '@comfyorg/api-client/executionTypes'
-import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
-import { isAbortError } from '@/utils/typeGuardUtil'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
-import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
 
@@ -76,46 +73,6 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
   )
 }
 
-/**
- * Convert history job items to asset items
- */
-function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
-  const assetItems: AssetItem[] = []
-
-  for (const job of historyItems) {
-    // Only process completed jobs with preview output
-    if (job.status !== 'completed' || !job.preview_output) {
-      continue
-    }
-
-    const task = new TaskItemImpl(job)
-
-    if (!task.previewOutput) {
-      continue
-    }
-
-    const assetItem = mapTaskOutputToAssetItem(task, task.previewOutput)
-
-    assetItem.user_metadata = {
-      ...assetItem.user_metadata,
-      outputCount:
-        task.previewableOutputsCount ??
-        task.outputsCount ??
-        task.previewableOutputs.length,
-      allOutputs: task.previewableOutputs
-    }
-
-    assetItems.push(assetItem)
-  }
-
-  return assetItems.sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )
-}
-
-const BATCH_SIZE = 200
-const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
 const MAX_OUTPUT_LOOKUP_PAGES = 20
 
 export const useAssetsStore = defineStore('assets', () => {
@@ -166,119 +123,11 @@ export const useAssetsStore = defineStore('assets', () => {
   }
 
   function useHistoryAssets(): [PagedList<AssetItem>, PagedList<AssetItem>] {
-    const historyOffset = ref(0)
-    const hasMoreHistory = ref(true)
-    const isLoadingMore = ref(false)
-    const historyAssets = ref<AssetItem[]>([])
+    const history = useJobOutputHistory()
     const resolvedAssetsCache = ref<Partial<Record<string, AssetItem[]>>>({})
-
-    const fetchHistoryAssets = async (
-      loadMore = false
-    ): Promise<AssetItem[]> => {
-      const offset = loadMore ? historyOffset.value : 0
-      const history = await api.getHistory(BATCH_SIZE, {
-        offset,
-        throwOnError: true
-      })
-      const newAssets = mapHistoryToAssets(history)
-      const items = loadMore ? [...historyAssets.value] : []
-      const loadedIds = new Set(items.map(({ id }) => id))
-
-      for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) continue
-        loadedIds.add(asset.id)
-
-        const assetTime = new Date(asset.created_at).getTime()
-        const insertIndex = items.findIndex(
-          (item) => new Date(item.created_at).getTime() < assetTime
-        )
-
-        if (insertIndex === -1) {
-          items.push(asset)
-        } else {
-          items.splice(insertIndex, 0, asset)
-        }
-      }
-
-      historyOffset.value = offset + BATCH_SIZE
-      hasMoreHistory.value = history.length === BATCH_SIZE
-
-      return items.slice(0, MAX_HISTORY_ITEMS)
-    }
-
-    const historyLoading = ref(false)
-    const historyError = ref<unknown>(null)
-    let historyQueue = Promise.resolve()
-    let refreshPromise: Promise<void> | undefined
-    let loadMorePromise: Promise<boolean> | undefined
-
-    const doUpdateHistory = async () => {
-      historyLoading.value = true
-      historyError.value = null
-      try {
-        const items = await fetchHistoryAssets(false)
-        resolvedAssetsCache.value = {}
-        historyAssets.value = items
-      } catch (err) {
-        if (isAbortError(err)) return
-        console.error('Error fetching history assets:', err)
-        historyError.value = err
-      } finally {
-        historyLoading.value = false
-      }
-    }
-
-    const updateHistory = () => {
-      if (!refreshPromise) {
-        refreshPromise = historyQueue.then(doUpdateHistory).finally(() => {
-          refreshPromise = undefined
-        })
-        historyQueue = refreshPromise
-      }
-      return refreshPromise
-    }
-
-    const doLoadMoreHistory = async () => {
-      isLoadingMore.value = true
-      historyError.value = null
-
-      try {
-        historyAssets.value = await fetchHistoryAssets(true)
-        return true
-      } catch (err) {
-        if (isAbortError(err)) return false
-        console.error('Error loading more history:', err)
-        historyError.value = err
-        return false
-      } finally {
-        isLoadingMore.value = false
-      }
-    }
-
-    const loadMoreHistory = () => {
-      if (!loadMorePromise) {
-        const operation = historyQueue.then(() =>
-          hasMoreHistory.value ? doLoadMoreHistory() : false
-        )
-        loadMorePromise = operation.finally(() => {
-          loadMorePromise = undefined
-        })
-        historyQueue = operation.then(() => undefined)
-      }
-      return loadMorePromise
-    }
-
-    const outputAssets = {
-      hasMore: hasMoreHistory,
-      invalidate: updateHistory,
-      isLoading: computed(() => historyLoading.value || isLoadingMore.value),
-      items: historyAssets,
-      loadMore: loadMoreHistory,
-      loadNew: updateHistory
-    }
     watch(
-      historyAssets,
-      (items) => {
+      () => toValue(history.items),
+      (items, previousItems) => {
         const currentAssetsCache = resolvedAssetsCache.value
         const currentIds = new Set(items.map(({ id }) => id))
         for (const jobId of Object.keys(currentAssetsCache)) {
@@ -287,12 +136,12 @@ export const useAssetsStore = defineStore('assets', () => {
         for (const asset of items) {
           const metadata = getOutputAssetMetadata(asset.user_metadata)
           const jobId = metadata?.jobId
-          if (!jobId || currentAssetsCache[jobId]) continue
-
+          if (!jobId || previousItems?.includes(asset)) continue
           void resolveOutputAssetItems(metadata, {
-            createdAt: asset.created_at
+            createdAt: asset.created_at,
+            fallbackItems: currentAssetsCache[jobId]
           }).then((assets) => {
-            if (historyAssets.value.includes(asset)) {
+            if (toValue(history.items).includes(asset)) {
               currentAssetsCache[jobId] = assets
             }
           })
@@ -300,15 +149,14 @@ export const useAssetsStore = defineStore('assets', () => {
       },
       { immediate: true }
     )
-    const flatOutputs = new WrappedList(outputAssets, (items) =>
+    const flatOutputs = new WrappedList(history, (items) =>
       items.flatMap((asset) => {
         const jobId = getOutputAssetMetadata(asset.user_metadata)?.jobId
         if (!jobId) return [asset]
         return resolvedAssetsCache.value[jobId] ?? [asset]
       })
     )
-    void loadMoreHistory()
-    return [outputAssets, flatOutputs]
+    return [history, flatOutputs]
   }
 
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
