@@ -1,22 +1,33 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type {
+  LGraphNode,
+  SubgraphInputNode,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+
+import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
+import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
 import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  Point,
+  PointTuple as Point,
   ReadOnlyRect
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
-import type { SubgraphInputNode } from './SubgraphInputNode'
-import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphSlot } from './SubgraphSlotBase'
-import { isNodeSlot, isSubgraphOutput } from './subgraphUtils'
+import { isNodeSlot, isSubgraphOutput } from './subgraphTypeGuards'
 
 /**
  * An input "slot" from a parent graph into a subgraph.
@@ -73,34 +84,24 @@ export class SubgraphInput extends SubgraphSlot {
     //   )
     // }
 
-    // Disconnect target input, if it is already connected.
-    if (slot.link != null) {
-      subgraph.beforeChange()
-      const link = subgraph.getLink(slot.link)
-      this.parent._disconnectNodeInput(node, slot, link)
-    }
-
     const inputWidget = node.getWidgetFromSlot(slot)
-    if (inputWidget) {
-      if (!this.matchesWidget(inputWidget)) {
-        console.warn('Target input has invalid widget.', slot, node)
-        return
-      }
-
-      // Keep the widget reference in sync with the active upstream widget.
-      // Stale references can appear across nested promotion rebinds.
-      this._widget = inputWidget
-      this.events.dispatch('input-connected', {
-        input: slot,
-        widget: inputWidget,
-        node
-      })
-    } else {
-      this.events.dispatch('input-connected', { input: slot })
+    if (inputWidget && !this.matchesWidget(inputWidget)) {
+      console.warn('Target input has invalid widget.', slot, node)
+      return
     }
+
+    const existingLink = inputLink(subgraph, node.id, node.inputs.indexOf(slot))
+    if (existingLink) {
+      subgraph.beforeChange()
+    }
+
+    const linkId = mintLinkId(
+      subgraph.state,
+      linkIdReservations(subgraph.rootGraph)
+    )
 
     const link = new LLink(
-      ++subgraph.state.lastLinkId,
+      linkId,
       slot.type,
       this.parent.id,
       this.parent.slots.indexOf(this),
@@ -109,38 +110,47 @@ export class SubgraphInput extends SubgraphSlot {
       afterRerouteId
     )
 
-    // Add to graph links list
-    subgraph._links.set(link.id, link)
-
-    // Set link ID in each slot
-    this.linkIds.push(link.id)
-    slot.link = link.id
-
-    // Reroutes
-    const reroutes = LLink.getReroutes(subgraph, link)
-    for (const reroute of reroutes) {
-      reroute.linkIds.add(link.id)
-      if (reroute.floating) delete reroute.floating
-      reroute._dragging = undefined
+    if (!replaceLinkTopology(subgraph, existingLink, link)) {
+      if (existingLink) subgraph.afterChange()
+      return
     }
+    subgraph._addLink(link)
 
-    // If this is the terminus of a floating link, remove it
-    const lastReroute = reroutes.at(-1)
-    if (lastReroute) {
-      for (const linkId of lastReroute.floatingLinkIds) {
-        const link = subgraph.floatingLinks.get(linkId)
-        if (link?.parentId === lastReroute.id) {
-          subgraph.removeFloatingLink(link)
-        }
+    try {
+      if (existingLink) {
+        this.parent._disconnectNodeInput(node, slot, existingLink)
+        if (subgraph.getLink(link.id) !== link) return
       }
+
+      this.linkIds.push(link.id)
+      anchorRerouteChain(subgraph, link)
+      subgraph.incrementVersion()
+
+      if (inputWidget) {
+        this._widget = inputWidget
+        this.events.dispatch('input-connected', {
+          input: slot,
+          widget: inputWidget,
+          node
+        })
+      } else {
+        this.events.dispatch('input-connected', { input: slot })
+      }
+      if (subgraph.getLink(link.id) !== link) return
+
+      node.onConnectionsChange?.(
+        NodeSlotType.INPUT,
+        inputIndex,
+        true,
+        link,
+        slot
+      )
+      if (subgraph.getLink(link.id) !== link) return
+
+      return link
+    } finally {
+      subgraph.afterChange()
     }
-    subgraph._version++
-
-    node.onConnectionsChange?.(NodeSlotType.INPUT, inputIndex, true, link, slot)
-
-    subgraph.afterChange()
-
-    return link
   }
 
   get labelPos(): Point {
@@ -239,11 +249,8 @@ export class SubgraphInput extends SubgraphSlot {
   override isValidTarget(
     fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
   ): boolean {
-    if (isNodeSlot(fromSlot)) {
-      return (
-        'link' in fromSlot &&
-        LiteGraph.isValidConnection(this.type, fromSlot.type)
-      )
+    if (isNodeSlot(fromSlot) && 'link' in fromSlot) {
+      return LiteGraph.isValidConnection(this.type, fromSlot.type)
     }
 
     if (isSubgraphOutput(fromSlot)) {
@@ -252,4 +259,10 @@ export class SubgraphInput extends SubgraphSlot {
 
     return false
   }
+}
+
+type RegisteredSubgraphInput = SubgraphInput
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface SubgraphInput extends RegisteredSubgraphInput {}
 }

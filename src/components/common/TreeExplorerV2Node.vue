@@ -1,6 +1,6 @@
 <template>
   <TreeItem
-    v-slot="{ isExpanded, isSelected, handleToggle, handleSelect }"
+    v-slot="{ isExpanded, handleToggle, handleSelect }"
     :value="item.value"
     :level="item.level"
     as-child
@@ -9,38 +9,53 @@
     <div
       v-if="item.value.type === 'node'"
       v-bind="$attrs"
-      :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
-      :style="rowStyle"
+      :class="cn(treeItemClass, 'overflow-hidden')"
+      :style="treeItemIndent(item.level)"
       draggable="true"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
       @contextmenu="handleContextMenu"
+      @pointerdown="handleContextMenu"
       @mouseenter="handleMouseEnter"
       @mouseleave="handleMouseLeave"
       @dragstart="handleDragStart"
       @dragend="handleDragEnd"
     >
-      <i class="icon-[comfy--node] size-4 shrink-0 text-muted-foreground" />
-      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
+      <i class="icon-[comfy--node] text-muted-foreground" />
+      <span class="min-w-0 flex-1 truncate">
         <slot name="node" :node="item.value">
           {{ item.value.label }}
         </slot>
       </span>
       <div class="flex shrink-0 items-center gap-0.5">
-        <button
+        <Button
           v-if="isUserBlueprint"
-          :class="cn(ACTION_BTN_CLASS, 'text-destructive')"
+          variant="muted-textonly"
+          size="icon-sm"
+          class="opacity-0 group-hover/tree-node:opacity-100"
           :aria-label="$t('g.delete')"
           @click.stop="deleteBlueprint"
         >
-          <i class="icon-[lucide--trash-2]" />
-        </button>
-        <button
-          :class="cn(ACTION_BTN_CLASS, 'text-muted-foreground')"
+          <i class="icon-[lucide--trash-2] bg-destructive" />
+        </Button>
+        <Button
+          v-if="isUserBlueprint"
+          variant="muted-textonly"
+          size="icon-sm"
+          class="opacity-0 group-hover/tree-node:opacity-100"
+          :aria-label="$t('g.edit')"
+          @click.stop="editBlueprint"
+        >
+          <i class="icon-[lucide--square-pen]" />
+        </Button>
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          class="opacity-0 group-hover/tree-node:opacity-100"
           :aria-label="$t('icon.bookmark')"
           @click.stop="toggleBookmark"
         >
           <i :class="isBookmarked ? 'pi pi-bookmark-fill' : 'pi pi-bookmark'" />
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -48,24 +63,23 @@
     <div
       v-else
       v-bind="$attrs"
-      :class="cn(ROW_CLASS, isSelected && 'bg-comfy-input')"
-      :style="rowStyle"
+      :class="cn(treeItemClass, 'overflow-hidden')"
+      :style="treeItemIndent(item.level)"
       @click.stop="handleClick($event, handleToggle, handleSelect)"
       @contextmenu="clearContextMenuNode"
+      @pointerdown="clearContextMenuNode"
     >
       <i
         v-if="item.hasChildren"
         :class="
           cn(
-            'icon-[lucide--chevron-down] size-4 shrink-0 text-muted-foreground transition-transform',
+            'icon-[lucide--chevron-down] text-muted-foreground transition-transform',
             !isExpanded && '-rotate-90'
           )
         "
       />
-      <i
-        :class="cn(item.value.icon, 'size-4 shrink-0 text-muted-foreground')"
-      />
-      <span class="text-foreground min-w-0 flex-1 truncate text-sm">
+      <i :class="cn(item.value.icon, 'text-muted-foreground')" />
+      <span class="min-w-0 flex-1 truncate">
         <slot name="folder" :node="item.value">
           {{ item.value.label }}
         </slot>
@@ -77,10 +91,7 @@
     v-if="showPreview && item.value.type === 'node' && item.value.data"
     to="body"
   >
-    <div
-      :ref="(el) => (previewRef = el as HTMLElement)"
-      :style="nodePreviewStyle"
-    >
+    <div ref="previewRef" :style="nodePreviewStyle">
       <NodePreviewCard :node-def="item.value.data as ComfyNodeDefImpl" />
     </div>
   </Teleport>
@@ -89,26 +100,25 @@
 <script setup lang="ts">
 import type { FlattenedItem } from 'reka-ui'
 import { TreeItem } from 'reka-ui'
-import { computed, inject } from 'vue'
+import { computed, inject, useTemplateRef } from 'vue'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
+import Button from '@comfyorg/design-system/button/Button'
+import {
+  treeItemClass,
+  treeItemIndent
+} from '@comfyorg/design-system/lib/tree/treeStyles'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
 })
-
-const ROW_CLASS =
-  'group/tree-node flex w-full min-w-0 cursor-pointer select-none items-center gap-3 overflow-hidden py-2 outline-none hover:bg-comfy-input rounded'
-
-const ACTION_BTN_CLASS =
-  'flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border-none bg-transparent text-sm opacity-0 group-hover/tree-node:opacity-100 hover:text-foreground'
 
 const { item } = defineProps<{
   item: FlattenedItem<RenderedTreeExplorerNode<ComfyNodeDefImpl>>
@@ -124,6 +134,7 @@ const emit = defineEmits<{
 const contextMenuNode = inject(InjectKeyContextMenuNode)
 const nodeBookmarkStore = useNodeBookmarkStore()
 const subgraphStore = useSubgraphStore()
+const previewRef = useTemplateRef('previewRef')
 
 const nodeDef = computed(() => item.value.data)
 
@@ -147,20 +158,22 @@ function deleteBlueprint() {
     void subgraphStore.deleteBlueprint(nodeDef.value.name)
   }
 }
+const editBlueprint = async () => {
+  if (!nodeDef.value) {
+    console.error('Failed to edit subgraph blueprint lacking backing node data')
+    return
+  }
+  await useSubgraphStore().editBlueprint(nodeDef.value.name)
+}
 
 const {
-  previewRef,
   showPreview,
   nodePreviewStyle,
   handleMouseEnter: baseHandleMouseEnter,
   handleMouseLeave,
   handleDragStart: baseHandleDragStart,
   handleDragEnd
-} = useNodePreviewAndDrag(nodeDef)
-
-const rowStyle = computed(() => ({
-  paddingLeft: `${8 + (item.level - 1) * 24}px`
-}))
+} = useNodePreviewAndDrag(nodeDef, previewRef)
 
 function handleClick(
   e: MouseEvent,

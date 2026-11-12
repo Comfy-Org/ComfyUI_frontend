@@ -1,0 +1,497 @@
+import {
+  getBillingTelemetryEventName,
+  getBillingTelemetryEventPayload
+} from '@comfyorg/account-core/billing'
+import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
+import type {
+  ComfyDesktop2TelemetryBridge,
+  ComfyDesktop2TelemetryValue
+} from '@comfyorg/comfyui-desktop-bridge-types'
+import type {
+  AddCreditsClickMetadata,
+  AgentAttachButtonClickedMetadata,
+  AgentConsentNotOfferedMetadata,
+  AgentConsentOfferExitedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
+  AgentCreditUsageExposureMetadata,
+  AgentEntryButtonClickedMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
+  AgentGraphProjectionMetadata,
+  AgentMessageFeedbackMetadata,
+  AgentMessageSentMetadata,
+  AgentNodeTaggedMetadata,
+  AgentOnboardingNotShownMetadata,
+  AgentSendGatedMetadata,
+  AgentOnboardingStepMetadata,
+  AgentPanelClosedMetadata,
+  AgentPanelOpenedMetadata,
+  AgentPanelRenderStalledMetadata,
+  AgentPaywallCtaMetadata,
+  AgentPaywallShownMetadata,
+  AgentRunApprovalResolvedMetadata,
+  AgentRunApprovalShownMetadata,
+  AgentRunModeChangedMetadata,
+  AgentStarterPromptClickedMetadata,
+  AgentStopClickedMetadata,
+  AgentThreadStartedMetadata,
+  AgentWorkflowBoundMetadata,
+  AgentWorkflowAppliedMetadata,
+  AuthMetadata,
+  BeginCheckoutMetadata,
+  DefaultViewSetMetadata,
+  EnterLinearMetadata,
+  ExecutionErrorMetadata,
+  ExecutionSuccessMetadata,
+  HelpCenterClosedMetadata,
+  HelpCenterOpenedMetadata,
+  HelpResourceClickedMetadata,
+  LinkDedupDropMetadata,
+  NamedValuesShadowDiffMismatchMetadata,
+  NamedValuesShadowDiffSummaryMetadata,
+  NodeAddedMetadata,
+  NodeSearchMetadata,
+  NodeSearchResultMetadata,
+  PageViewMetadata,
+  PageVisibilityMetadata,
+  RunButtonProperties,
+  SearchQueryMetadata,
+  SettingChangedMetadata,
+  ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
+  SharedWorkflowRunMetadata,
+  ResubscribeClickMetadata,
+  SubscriptionCancellationMetadata,
+  SubscriptionMetadata,
+  SubscriptionSuccessMetadata,
+  SurveyResponses,
+  TabCountMetadata,
+  TelemetryEventName,
+  TelemetryProvider,
+  TemplateFilterMetadata,
+  TemplateLibraryClosedMetadata,
+  TemplateLibraryMetadata,
+  TemplateMetadata,
+  UiButtonClickMetadata,
+  WorkflowCreatedMetadata,
+  WorkflowImportMetadata,
+  WorkflowSavedMetadata
+} from '@comfyorg/telemetry/types'
+import {
+  CANCELLATION_STAGE_EVENTS,
+  TelemetryEvents
+} from '@comfyorg/telemetry/types'
+import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
+
+type HostTelemetryProperties = Parameters<
+  ComfyDesktop2TelemetryBridge['capture']
+>[1]
+
+function isHostTelemetryPrimitive(
+  value: unknown
+): value is ComfyDesktop2TelemetryValue {
+  return (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  )
+}
+
+function toHostTelemetryProperties(
+  properties?: object
+): HostTelemetryProperties {
+  if (!properties) return undefined
+
+  const out: NonNullable<HostTelemetryProperties> = {}
+  for (const [key, value] of Object.entries(properties)) {
+    if (isHostTelemetryPrimitive(value)) {
+      out[key] = value
+    } else if (Array.isArray(value) && value.every(isHostTelemetryPrimitive)) {
+      out[key] = value
+    }
+  }
+
+  return out
+}
+
+export class HostTelemetrySink implements TelemetryProvider {
+  private capture(event: TelemetryEventName, properties?: object): void {
+    window.__comfyDesktop2?.Telemetry?.capture(
+      event,
+      toHostTelemetryProperties(properties)
+    )
+  }
+
+  trackSignupOpened(): void {
+    this.capture(TelemetryEvents.USER_SIGN_UP_OPENED)
+  }
+
+  trackAuth(metadata: AuthMetadata): void {
+    this.capture(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+  }
+
+  trackUserLoggedIn(): void {
+    this.capture(TelemetryEvents.USER_LOGGED_IN)
+  }
+
+  trackSubscription(
+    event: 'modal_opened' | 'subscribe_clicked',
+    metadata?: SubscriptionMetadata
+  ): void {
+    this.capture(
+      event === 'modal_opened'
+        ? TelemetryEvents.SUBSCRIPTION_REQUIRED_MODAL_OPENED
+        : TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED,
+      metadata
+    )
+  }
+
+  trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
+    this.capture(TelemetryEvents.BEGIN_CHECKOUT, metadata)
+  }
+
+  trackBillingEvent(event: BillingTelemetryEvent): void {
+    this.capture(
+      getBillingTelemetryEventName(event),
+      getBillingTelemetryEventPayload(event)
+    )
+  }
+
+  trackMonthlySubscriptionSucceeded(
+    metadata?: SubscriptionSuccessMetadata
+  ): void {
+    this.capture(TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED, metadata)
+  }
+
+  trackMonthlySubscriptionCancelled(): void {
+    this.capture(TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED)
+  }
+
+  trackSubscriptionCancellation(
+    event: 'flow_opened' | 'confirmed' | 'abandoned' | 'failed',
+    metadata?: SubscriptionCancellationMetadata
+  ): void {
+    this.capture(CANCELLATION_STAGE_EVENTS[event], metadata)
+  }
+
+  trackResubscribeClicked(metadata: ResubscribeClickMetadata): void {
+    this.capture(TelemetryEvents.RESUBSCRIBE_BUTTON_CLICKED, metadata)
+  }
+
+  trackAddApiCreditButtonClicked(metadata?: AddCreditsClickMetadata): void {
+    this.capture(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
+    this.capture(TelemetryEvents.AGENT_PAYWALL_SHOWN, metadata)
+  }
+
+  trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
+    this.capture(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
+  }
+
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE, metadata)
+  }
+
+  trackApiCreditTopupButtonPurchaseClicked(amount: number): void {
+    this.capture(TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED, {
+      credit_amount: amount
+    })
+  }
+
+  trackApiCreditTopupSucceeded(): void {
+    this.capture(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  trackRunButton(properties: RunButtonProperties): void {
+    this.capture(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
+  }
+
+  trackSurvey(
+    stage: 'opened' | 'submitted',
+    responses?: SurveyResponses
+  ): void {
+    this.capture(
+      stage === 'opened'
+        ? TelemetryEvents.USER_SURVEY_OPENED
+        : TelemetryEvents.USER_SURVEY_SUBMITTED,
+      responses ? normalizeSurveyResponses(responses) : undefined
+    )
+  }
+
+  trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
+    const event =
+      stage === 'opened'
+        ? TelemetryEvents.USER_EMAIL_VERIFY_OPENED
+        : stage === 'requested'
+          ? TelemetryEvents.USER_EMAIL_VERIFY_REQUESTED
+          : TelemetryEvents.USER_EMAIL_VERIFY_COMPLETED
+    this.capture(event)
+  }
+
+  trackTemplate(metadata: TemplateMetadata): void {
+    this.capture(TelemetryEvents.TEMPLATE_WORKFLOW_OPENED, metadata)
+  }
+
+  trackTemplateLibraryOpened(metadata: TemplateLibraryMetadata): void {
+    this.capture(TelemetryEvents.TEMPLATE_LIBRARY_OPENED, metadata)
+  }
+
+  trackTemplateLibraryClosed(metadata: TemplateLibraryClosedMetadata): void {
+    this.capture(TelemetryEvents.TEMPLATE_LIBRARY_CLOSED, metadata)
+  }
+
+  trackWorkflowImported(metadata: WorkflowImportMetadata): void {
+    this.capture(TelemetryEvents.WORKFLOW_IMPORTED, metadata)
+  }
+
+  trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
+    this.capture(TelemetryEvents.WORKFLOW_OPENED, metadata)
+  }
+
+  trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
+    this.capture(TelemetryEvents.WORKFLOW_SAVED, metadata)
+  }
+
+  trackDefaultViewSet(metadata: DefaultViewSetMetadata): void {
+    this.capture(TelemetryEvents.DEFAULT_VIEW_SET, metadata)
+  }
+
+  trackEnterLinear(metadata: EnterLinearMetadata): void {
+    this.capture(TelemetryEvents.ENTER_LINEAR_MODE, metadata)
+  }
+
+  trackShareFlow(metadata: ShareFlowMetadata): void {
+    this.capture(TelemetryEvents.SHARE_FLOW, metadata)
+  }
+
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.capture(TelemetryEvents.SHARE_LINK_OPENED, metadata)
+  }
+
+  trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
+    this.capture(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
+  }
+
+  trackTabCount(metadata: TabCountMetadata): void {
+    this.capture(TelemetryEvents.TAB_COUNT_TRACKING, metadata)
+  }
+
+  trackNodeSearch(metadata: NodeSearchMetadata): void {
+    this.capture(TelemetryEvents.NODE_SEARCH, metadata)
+  }
+
+  trackNodeSearchResultSelected(metadata: NodeSearchResultMetadata): void {
+    this.capture(TelemetryEvents.NODE_SEARCH_RESULT_SELECTED, metadata)
+  }
+
+  trackSearchQuery(metadata: SearchQueryMetadata): void {
+    this.capture(TelemetryEvents.SEARCH_QUERY, metadata)
+  }
+
+  trackNodeAdded(metadata: NodeAddedMetadata): void {
+    this.capture(TelemetryEvents.NODE_ADDED, metadata)
+  }
+
+  trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {
+    this.capture(TelemetryEvents.TEMPLATE_FILTER_CHANGED, metadata)
+  }
+
+  trackHelpCenterOpened(metadata: HelpCenterOpenedMetadata): void {
+    this.capture(TelemetryEvents.HELP_CENTER_OPENED, metadata)
+  }
+
+  trackHelpResourceClicked(metadata: HelpResourceClickedMetadata): void {
+    this.capture(TelemetryEvents.HELP_RESOURCE_CLICKED, metadata)
+  }
+
+  trackHelpCenterClosed(metadata: HelpCenterClosedMetadata): void {
+    this.capture(TelemetryEvents.HELP_CENTER_CLOSED, metadata)
+  }
+
+  trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
+    this.capture(TelemetryEvents.WORKFLOW_CREATED, metadata)
+  }
+
+  trackExecutionError(metadata: ExecutionErrorMetadata): void {
+    this.capture(TelemetryEvents.EXECUTION_ERROR, metadata)
+  }
+
+  trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
+    this.capture(TelemetryEvents.EXECUTION_SUCCESS, metadata)
+  }
+
+  trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {
+    this.capture(TelemetryEvents.SHARED_WORKFLOW_RUN, metadata)
+  }
+
+  trackSettingChanged(metadata: SettingChangedMetadata): void {
+    this.capture(TelemetryEvents.SETTING_CHANGED, metadata)
+  }
+
+  trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
+    this.capture(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {
+    this.capture(TelemetryEvents.AGENT_MESSAGE_FEEDBACK, metadata)
+  }
+
+  trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_PANEL_OPENED, metadata)
+  }
+
+  trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
+  }
+
+  trackAgentPanelRenderStalled(
+    metadata: AgentPanelRenderStalledMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_PANEL_RENDER_STALLED, metadata)
+  }
+
+  trackAgentEntryButtonClicked(
+    metadata: AgentEntryButtonClickedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_ENTRY_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentCloseButtonClicked(): void {
+    this.capture(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED)
+  }
+
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_SHOWN, metadata)
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_RESOLVED, metadata)
+  }
+
+  trackAgentOnboardingShown(): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_SHOWN)
+  }
+
+  trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_STEP, metadata)
+  }
+
+  trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
+    this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
+  }
+
+  trackAgentStarterPromptClicked(
+    metadata: AgentStarterPromptClickedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_STARTER_PROMPT_CLICKED, metadata)
+  }
+
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.capture(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.capture(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
+  }
+
+  trackAgentCreditUsageExposure(
+    metadata: AgentCreditUsageExposureMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CREDIT_USAGE_EXPOSURE, metadata)
+  }
+
+  trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
+  }
+
+  trackAgentAttachButtonClicked(
+    metadata: AgentAttachButtonClickedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED, metadata)
+  }
+
+  trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentGraphProjection(metadata: AgentGraphProjectionMetadata): void {
+    this.capture(TelemetryEvents.AGENT_GRAPH_PROJECTION, metadata)
+  }
+
+  trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_STOP_CLICKED, metadata)
+  }
+
+  trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
+    this.capture(TelemetryEvents.AGENT_WORKFLOW_BOUND, metadata)
+  }
+
+  trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {
+    this.capture(TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN, metadata)
+  }
+
+  trackAgentRunApprovalResolved(
+    metadata: AgentRunApprovalResolvedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED, metadata)
+  }
+
+  trackAgentRunModeChanged(metadata: AgentRunModeChangedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_RUN_MODE_CHANGED, metadata)
+  }
+
+  trackAgentThreadStarted(metadata: AgentThreadStartedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_THREAD_STARTED, metadata)
+  }
+
+  trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentConsentOfferExited(
+    metadata: AgentConsentOfferExitedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_OFFER_EXITED, metadata)
+  }
+
+  trackAgentOnboardingNotShown(
+    metadata: AgentOnboardingNotShownMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
+  }
+
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_SEND_GATED, metadata)
+  }
+
+  trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {
+    this.capture(TelemetryEvents.LINK_DEDUP_DROP, metadata)
+  }
+
+  trackNamedValuesShadowDiffMismatch(
+    metadata: NamedValuesShadowDiffMismatchMetadata
+  ): void {
+    this.capture(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_MISMATCH, metadata)
+  }
+
+  trackNamedValuesShadowDiffSummary(
+    metadata: NamedValuesShadowDiffSummaryMetadata
+  ): void {
+    this.capture(TelemetryEvents.NAMED_VALUES_SHADOW_DIFF_SUMMARY, metadata)
+  }
+
+  trackPageView(pageName: string, properties?: PageViewMetadata): void {
+    this.capture(TelemetryEvents.PAGE_VIEW, {
+      page_name: pageName,
+      ...properties
+    })
+  }
+}

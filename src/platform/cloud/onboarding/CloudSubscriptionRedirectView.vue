@@ -1,25 +1,50 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import Button from '@comfyorg/design-system/button/Button'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { performSubscriptionCheckout } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import { getPricingCheckoutSelection } from '@/platform/billing/subscription/composables/usePricingTableUrlLoader'
+import type { CheckoutTierKey } from '@/platform/billing/composables/types'
 
-import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
+
+function isBillingCycle(value: string): value is BillingCycle {
+  return value === 'monthly' || value === 'yearly'
+}
+
+// Only paid personal tiers can be checked out via this redirect.
+function isCheckoutTierKey(value: string): value is CheckoutTierKey {
+  return ['standard', 'creator', 'pro'].includes(value)
+}
+
+function isPaidPersonalTierKey(
+  value: string
+): value is Exclude<TierKey, 'free'> {
+  return isCheckoutTierKey(value) || value === 'founder'
+}
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const { reportError, accessBillingPortal } = useAuthActions()
+const { reportError } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
+const { showPricingTable } = useSubscriptionDialog()
 
-const { isActiveSubscription, isInitialized, initialize } = useBillingContext()
+const {
+  canAccessSubscriptionFeatures,
+  isInitialized,
+  teamCreditStops,
+  initialize,
+  fetchPlans,
+  manageSubscription
+} = useBillingContext()
 
 const selectedTierKey = ref<TierKey | null>(null)
 
@@ -34,6 +59,12 @@ const tierDisplayName = computed(() => {
   }
   return names[selectedTierKey.value]
 })
+
+const isTeamCheckout = ref(false)
+
+const planLabel = computed(() =>
+  isTeamCheckout.value ? t('subscription.teamPlan.name') : tierDisplayName.value
+)
 
 const runRedirect = wrapWithErrorHandlingAsync(async () => {
   const rawType = route.query.tier
@@ -58,46 +89,87 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     return
   }
 
-  // Only paid tiers can be checked out via redirect
-  const validTierKeys: TierKey[] = ['standard', 'creator', 'pro', 'founder']
-  if (!(validTierKeys as string[]).includes(tierKeyParam)) {
+  const billingCycle: BillingCycle = isBillingCycle(cycleParam)
+    ? cycleParam
+    : 'monthly'
+
+  let stopId: string | null = null
+  if (tierKeyParam === 'team') {
+    const rawStop = route.query.stop
+    stopId =
+      typeof rawStop === 'string'
+        ? rawStop
+        : Array.isArray(rawStop)
+          ? rawStop[0]
+          : null
+    if (!stopId) {
+      await router.push('/')
+      return
+    }
+    isTeamCheckout.value = true
+  } else if (!isPaidPersonalTierKey(tierKeyParam)) {
     await router.push('/')
     return
-  }
-
-  const tierKey = tierKeyParam as TierKey
-
-  selectedTierKey.value = tierKey
-
-  const validCycles: BillingCycle[] = ['monthly', 'yearly']
-  if (!cycleParam || !(validCycles as string[]).includes(cycleParam)) {
-    cycleParam = 'monthly'
+  } else {
+    selectedTierKey.value = tierKeyParam
   }
 
   if (!isInitialized.value) {
     await initialize()
   }
 
-  if (isActiveSubscription.value) {
-    await accessBillingPortal(undefined, false)
-  } else {
-    await performSubscriptionCheckout(
-      tierKey,
-      cycleParam as BillingCycle,
-      false
-    )
+  if (canAccessSubscriptionFeatures.value) {
+    await manageSubscription()
+    return
   }
+
+  if (isPaidPersonalTierKey(tierKeyParam)) {
+    if (!isCheckoutTierKey(tierKeyParam)) {
+      showPricingTable({
+        reason: 'deep_link',
+        sameTab: true,
+        planMode: 'personal'
+      })
+      return
+    }
+    showPricingTable({
+      reason: 'deep_link',
+      sameTab: true,
+      planMode: 'personal',
+      initialCheckout: {
+        planMode: 'personal',
+        tierKey: tierKeyParam,
+        billingCycle
+      }
+    })
+    return
+  }
+
+  if (!teamCreditStops.value) {
+    await fetchPlans().catch(reportError)
+  }
+  const initialCheckout = getPricingCheckoutSelection(
+    tierKeyParam,
+    stopId,
+    billingCycle,
+    teamCreditStops.value
+  )
+  showPricingTable({
+    reason: 'deep_link',
+    sameTab: true,
+    planMode: 'team',
+    initialCheckout
+  })
 }, reportError)
 
 onMounted(() => {
+  document.getElementById('splash-loader')?.remove()
   void runRedirect()
 })
 </script>
 
 <template>
-  <div
-    class="bg-comfy-menu-secondary-bg flex size-full items-center justify-center"
-  >
+  <div class="flex size-full items-center justify-center bg-secondary">
     <div class="flex flex-col items-center gap-4">
       <img
         src="/assets/images/comfy-logo-single.svg"
@@ -105,23 +177,19 @@ onMounted(() => {
         class="size-16"
       />
       <p
-        v-if="selectedTierKey"
-        class="font-inter text-base/normal font-normal text-base-foreground"
+        v-if="planLabel"
+        class="font-inter text-base/normal font-normal text-foreground"
       >
         {{
           t('subscription.subscribeTo', {
-            plan: tierDisplayName
+            plan: planLabel
           })
         }}
       </p>
-      <ProgressSpinner v-if="selectedTierKey" class="size-8" stroke-width="4" />
-      <Button
-        v-if="selectedTierKey"
-        as="a"
-        href="/"
-        link
-        :label="t('cloudOnboarding.skipToCloudApp')"
-      />
+      <AppSpinner v-if="planLabel" class="size-8" />
+      <Button v-if="planLabel" as="a" href="/" variant="link">
+        {{ t('cloudOnboarding.skipToCloudApp') }}
+      </Button>
     </div>
   </div>
 </template>

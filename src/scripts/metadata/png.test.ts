@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import { getFromPngBuffer } from './png'
+import {
+  mockFileReaderAbort,
+  mockFileReaderError
+} from './__fixtures__/helpers'
+import { getFromPngBuffer, getFromPngFile } from './png'
+
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 
 function createPngWithChunk(
   chunkType: string,
   keyword: string,
-  content: string,
+  content: string | Uint8Array,
   options: {
     compressionFlag?: number
     compressionMethod?: number
@@ -20,12 +26,11 @@ function createPngWithChunk(
     translatedKeyword = ''
   } = options
 
-  const signature = new Uint8Array([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
-  ])
+  const signature = new Uint8Array(PNG_SIGNATURE)
   const typeBytes = new TextEncoder().encode(chunkType)
   const keywordBytes = new TextEncoder().encode(keyword)
-  const contentBytes = new TextEncoder().encode(content)
+  const contentBytes =
+    content instanceof Uint8Array ? content : new TextEncoder().encode(content)
 
   let chunkData: Uint8Array
   if (chunkType === 'iTXt') {
@@ -66,12 +71,11 @@ function createPngWithChunk(
   new DataView(lengthBytes.buffer).setUint32(0, chunkData.length, false)
 
   const crc = new Uint8Array(4)
-
   const iendType = new TextEncoder().encode('IEND')
   const iendLength = new Uint8Array(4)
   const iendCrc = new Uint8Array(4)
 
-  const total = signature.length + 4 + 4 + chunkData.length + 4 + 4 + 4 + 0 + 4
+  const total = signature.length + (4 + 4 + chunkData.length + 4) + (4 + 4 + 4)
   const result = new Uint8Array(total)
 
   let offset = 0
@@ -94,6 +98,25 @@ function createPngWithChunk(
   result.set(iendCrc, offset)
 
   return result.buffer
+}
+
+function encode(text: string): Uint8Array {
+  return new TextEncoder().encode(text)
+}
+
+function rawChunk(
+  chunkType: string,
+  data: Uint8Array,
+  declaredLength = data.length
+): Uint8Array {
+  const header = new Uint8Array(8)
+  new DataView(header.buffer).setUint32(0, declaredLength)
+  header.set(encode(chunkType), 4)
+  return concatBytes(header, data, [0, 0, 0, 0])
+}
+
+function concatBytes(...parts: ArrayLike<number>[]): Uint8Array<ArrayBuffer> {
+  return Uint8Array.from(parts.flatMap((part) => Array.from(part)))
 }
 
 describe('getFromPngBuffer', () => {
@@ -138,6 +161,20 @@ describe('getFromPngBuffer', () => {
     expect(result['workflow']).toBe(workflow)
   })
 
+  it('logs warning and skips iTXt chunk with unsupported compression method', async () => {
+    const buffer = createPngWithChunk('iTXt', 'workflow', 'data', {
+      compressionFlag: 1,
+      compressionMethod: 99
+    })
+
+    const result = await getFromPngBuffer(buffer)
+
+    expect(result['workflow']).toBeUndefined()
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('Unsupported compression method 99')
+    )
+  })
+
   it('parses compressed iTXt chunk', async () => {
     const workflow = '{"nodes":[{"id":1,"type":"KSampler"}]}'
     const contentBytes = new TextEncoder().encode(workflow)
@@ -149,7 +186,7 @@ describe('getFromPngBuffer', () => {
 
     const reader = stream.readable.getReader()
     const chunks: Uint8Array[] = []
-    while (true) {
+    for (;;) {
       const { done, value } = await reader.read()
       if (done) break
       chunks.push(value)
@@ -163,83 +200,128 @@ describe('getFromPngBuffer', () => {
       pos += chunk.length
     }
 
-    const buffer = createPngWithCompressedITXt(
-      'workflow',
-      compressedBytes,
-      '',
-      ''
-    )
+    const buffer = createPngWithChunk('iTXt', 'workflow', compressedBytes, {
+      compressionFlag: 1,
+      compressionMethod: 0
+    })
     const result = await getFromPngBuffer(buffer)
     expect(result['workflow']).toBe(workflow)
   })
+
+  it('skips corrupt compressed iTXt metadata', async () => {
+    const corruptCompressedBytes = Uint8Array.from([
+      0x78, 0x9c, 0x43, 0x4c, 0x4a, 0x4e, 0x49, 0x4d, 0x1c, 0x25, 0x46, 0x12,
+      0x01, 0x00, 0x3d, 0xa5, 0xc1, 0x5d
+    ])
+    const buffer = createPngWithChunk(
+      'iTXt',
+      'workflow',
+      corruptCompressedBytes,
+      {
+        compressionFlag: 1,
+        compressionMethod: 0
+      }
+    )
+
+    const result = await getFromPngBuffer(buffer)
+
+    expect(result).toEqual({})
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to decompress iTXt chunk "workflow":',
+      expect.any(Error)
+    )
+  })
+
+  it.for(['tEXt', 'comf', 'iTXt'])(
+    'skips a %s chunk whose keyword is not terminated inside the chunk and reads the next chunk',
+    async (chunkType) => {
+      const workflow = '{"nodes":[]}'
+      const buffer = concatBytes(
+        PNG_SIGNATURE,
+        rawChunk(chunkType, encode('abc')),
+        rawChunk('tEXt', encode(`workflow\0${workflow}`))
+      ).buffer
+
+      const result = await getFromPngBuffer(buffer)
+
+      expect(result).toEqual({ workflow })
+    }
+  )
+
+  it('stops at a text chunk whose declared length runs past the end of the file', async () => {
+    const workflow = '{"nodes":[]}'
+    const buffer = concatBytes(
+      PNG_SIGNATURE,
+      rawChunk('tEXt', encode(`workflow\0${workflow}`)),
+      rawChunk('tEXt', encode('abc\0def'), 0x7fffffff)
+    ).buffer
+
+    const result = await getFromPngBuffer(buffer)
+
+    expect(result).toEqual({ workflow })
+  })
+
+  it.for([1, 2, 3])(
+    'keeps the metadata when a %i-byte tail follows the IEND chunk',
+    async (trailingByteCount) => {
+      const workflow = '{"nodes":[]}'
+      const buffer = concatBytes(
+        PNG_SIGNATURE,
+        rawChunk('tEXt', encode(`workflow\0${workflow}`)),
+        rawChunk('IEND', new Uint8Array()),
+        new Uint8Array(trailingByteCount).fill(0x74)
+      ).buffer
+
+      const result = await getFromPngBuffer(buffer)
+
+      expect(result).toEqual({ workflow })
+    }
+  )
 })
 
-function createPngWithCompressedITXt(
-  keyword: string,
-  compressedContent: Uint8Array,
-  languageTag: string,
-  translatedKeyword: string
-): ArrayBuffer {
-  const signature = new Uint8Array([
-    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
-  ])
-  const typeBytes = new TextEncoder().encode('iTXt')
-  const keywordBytes = new TextEncoder().encode(keyword)
-  const langBytes = new TextEncoder().encode(languageTag)
-  const transBytes = new TextEncoder().encode(translatedKeyword)
+describe('getFromPngFile', () => {
+  it('reads metadata from a File object', async () => {
+    const workflow = '{"nodes":[]}'
+    const buffer = createPngWithChunk('tEXt', 'workflow', workflow)
+    const file = new File([buffer], 'test.png', { type: 'image/png' })
 
-  const totalLength =
-    keywordBytes.length +
-    1 +
-    2 +
-    langBytes.length +
-    1 +
-    transBytes.length +
-    1 +
-    compressedContent.length
+    const result = await getFromPngFile(file)
 
-  const chunkData = new Uint8Array(totalLength)
-  let pos = 0
-  chunkData.set(keywordBytes, pos)
-  pos += keywordBytes.length
-  chunkData[pos++] = 0
-  chunkData[pos++] = 1
-  chunkData[pos++] = 0
-  chunkData.set(langBytes, pos)
-  pos += langBytes.length
-  chunkData[pos++] = 0
-  chunkData.set(transBytes, pos)
-  pos += transBytes.length
-  chunkData[pos++] = 0
-  chunkData.set(compressedContent, pos)
+    expect(result['workflow']).toBe(workflow)
+  })
 
-  const lengthBytes = new Uint8Array(4)
-  new DataView(lengthBytes.buffer).setUint32(0, chunkData.length, false)
+  it('returns empty for an invalid PNG File', async () => {
+    const file = new File([new ArrayBuffer(8)], 'bad.png', {
+      type: 'image/png'
+    })
 
-  const crc = new Uint8Array(4)
-  const iendType = new TextEncoder().encode('IEND')
-  const iendLength = new Uint8Array(4)
-  const iendCrc = new Uint8Array(4)
+    const result = await getFromPngFile(file)
 
-  const total = signature.length + 4 + 4 + chunkData.length + 4 + 4 + 4 + 0 + 4
-  const result = new Uint8Array(total)
+    expect(result).toEqual({})
+    expect(console.error).toHaveBeenCalledWith('Not a valid PNG file')
+  })
 
-  let offset = 0
-  result.set(signature, offset)
-  offset += signature.length
-  result.set(lengthBytes, offset)
-  offset += 4
-  result.set(typeBytes, offset)
-  offset += 4
-  result.set(chunkData, offset)
-  offset += chunkData.length
-  result.set(crc, offset)
-  offset += 4
-  result.set(iendLength, offset)
-  offset += 4
-  result.set(iendType, offset)
-  offset += 4
-  result.set(iendCrc, offset)
+  describe('FileReader failure modes', () => {
+    const file = new File([new Uint8Array(16)], 'test.png')
 
-  return result.buffer
-}
+    it('rejects when the FileReader fires error', async () => {
+      mockFileReaderError('readAsArrayBuffer')
+      await expect(getFromPngFile(file)).rejects.toBeDefined()
+    })
+
+    it('rejects when the FileReader fires abort', async () => {
+      mockFileReaderAbort('readAsArrayBuffer')
+      await expect(getFromPngFile(file)).rejects.toThrow('FileReader aborted')
+    })
+  })
+
+  it('rejects rather than never settling when a chunk header is truncated', async () => {
+    const signature = new Uint8Array(PNG_SIGNATURE)
+    const truncated = new Uint8Array(signature.length + 1)
+    truncated.set(signature)
+
+    await expect(
+      getFromPngFile(new File([truncated], 'truncated.png'))
+    ).rejects.toThrow(RangeError)
+  })
+})

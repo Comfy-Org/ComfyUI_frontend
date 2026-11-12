@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-6">
     <div class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground select-none">
+      <span class="text-sm text-foreground select-none">
         {{ $t('comfyHubPublish.selectAThumbnail') }}
       </span>
       <ToggleGroup
@@ -14,9 +14,9 @@
           v-for="option in thumbnailOptions"
           :key="option.value"
           :value="option.value"
-          class="flex h-auto w-full gap-2 rounded-sm bg-node-component-surface p-2 font-inter text-base-foreground data-[state=on]:bg-muted-background"
+          class="flex h-auto w-full gap-2 rounded-sm bg-card p-2 font-inter text-foreground data-[state=on]:bg-muted"
         >
-          <i :class="cn('size-4', option.icon)" />
+          <i :class="option.icon" />
           <span class="text-center text-sm font-bold">
             {{ option.label }}
           </span>
@@ -26,7 +26,7 @@
 
     <div class="flex min-h-0 flex-1 flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-base-foreground select-none">
+        <span class="text-sm text-foreground select-none">
           {{ uploadSectionLabel }}
         </span>
         <Button
@@ -87,7 +87,7 @@
                     : 'flex-[0_1_1]',
                   comparisonOverStates[slot.key]
                     ? 'border-muted-foreground'
-                    : 'border-border-default hover:border-muted-foreground'
+                    : 'border-border hover:border-muted-foreground'
                 )
               "
               @dragenter.stop
@@ -130,7 +130,7 @@
               thumbnailPreviewUrl ? 'self-center p-1' : 'flex-1',
               isOverSingleDrop
                 ? 'border-muted-foreground'
-                : 'border-border-default hover:border-muted-foreground'
+                : 'border-border hover:border-muted-foreground'
             )
           "
           @dragenter.stop
@@ -150,7 +150,7 @@
           />
           <template v-if="thumbnailPreviewUrl">
             <video
-              v-if="isVideoFile"
+              v-if="showVideoPreview"
               :src="thumbnailPreviewUrl"
               :aria-label="$t('comfyHubPublish.videoPreview')"
               class="max-h-full max-w-full object-contain"
@@ -183,8 +183,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useSliderFromMouse } from '@/platform/workflow/sharing/composables/useSliderFromMouse'
 import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import {
@@ -192,20 +193,36 @@ import {
   MAX_IMAGE_SIZE_MB,
   MAX_VIDEO_SIZE_MB
 } from '@/platform/workflow/sharing/utils/validateFileSize'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useDropZone, useObjectUrl } from '@vueuse/core'
-import { computed, reactive, ref, shallowRef } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-const { thumbnailType = 'image' } = defineProps<{
+const {
+  thumbnailType = 'image',
+  thumbnailFile = null,
+  thumbnailUrl = null,
+  existingThumbnailType = null,
+  comparisonBeforeFile = null,
+  comparisonAfterFile = null,
+  comparisonAfterUrl = null
+} = defineProps<{
   thumbnailType?: ThumbnailType
+  thumbnailFile?: File | null
+  thumbnailUrl?: string | null
+  existingThumbnailType?: ThumbnailType | null
+  comparisonBeforeFile?: File | null
+  comparisonAfterFile?: File | null
+  comparisonAfterUrl?: string | null
 }>()
 
 const emit = defineEmits<{
   'update:thumbnailType': [value: ThumbnailType]
   'update:thumbnailFile': [value: File | null]
+  'update:thumbnailUrl': [value: string | null]
   'update:comparisonBeforeFile': [value: File | null]
   'update:comparisonAfterFile': [value: File | null]
+  'update:comparisonAfterUrl': [value: string | null]
 }>()
 
 const { t } = useI18n()
@@ -216,8 +233,7 @@ function isThumbnailType(value: string): value is ThumbnailType {
 
 function handleThumbnailTypeChange(value: unknown) {
   if (typeof value === 'string' && isThumbnailType(value)) {
-    comparisonBeforeFile.value = null
-    comparisonAfterFile.value = null
+    // Keep existing URLs; they stay inert until the type matches again (see existingSingleUrl).
     emit('update:thumbnailFile', null)
     emit('update:comparisonBeforeFile', null)
     emit('update:comparisonAfterFile', null)
@@ -256,30 +272,59 @@ const thumbnailOptions = [
     icon: 'icon-[lucide--diff]'
   }
 ]
+const existingSingleUrl = computed(() =>
+  existingThumbnailType === thumbnailType
+    ? (thumbnailUrl ?? undefined)
+    : undefined
+)
+// For imageComparison, thumbnailUrl is the "before" image (the backend's primary thumbnail_url).
+const existingComparisonUrls = computed(() =>
+  existingThumbnailType === 'imageComparison'
+    ? {
+        before: thumbnailUrl ?? undefined,
+        after: comparisonAfterUrl ?? undefined
+      }
+    : { before: undefined, after: undefined }
+)
 
-const thumbnailFile = shallowRef<File | null>(null)
-const thumbnailPreviewUrl = useObjectUrl(thumbnailFile)
-const isVideoFile = ref(false)
+const thumbnailFileUrl = useObjectUrl(() => thumbnailFile ?? undefined)
+const thumbnailPreviewUrl = computed(
+  () => thumbnailFileUrl.value ?? existingSingleUrl.value
+)
+
+function isAnimatedImageUrl(url: string): boolean {
+  return /\.(gif|webp)(\?|#|$)/i.test(url)
+}
+const showVideoPreview = computed(() => {
+  if (thumbnailFile) return thumbnailFile.type.startsWith('video/')
+  return thumbnailType === 'video' && !!existingSingleUrl.value
+    ? !isAnimatedImageUrl(existingSingleUrl.value)
+    : false
+})
 
 function setThumbnailPreview(file: File) {
   const maxSize = file.type.startsWith('video/')
     ? MAX_VIDEO_SIZE_MB
     : MAX_IMAGE_SIZE_MB
   if (isFileTooLarge(file, maxSize)) return
-  thumbnailFile.value = file
-  isVideoFile.value = file.type.startsWith('video/')
   emit('update:thumbnailFile', file)
+  emit('update:thumbnailUrl', null)
 }
 
-const comparisonBeforeFile = shallowRef<File | null>(null)
-const comparisonAfterFile = shallowRef<File | null>(null)
-const comparisonPreviewUrls = reactive({
-  before: useObjectUrl(comparisonBeforeFile),
-  after: useObjectUrl(comparisonAfterFile)
-})
+const comparisonBeforeFileUrl = useObjectUrl(
+  () => comparisonBeforeFile ?? undefined
+)
+const comparisonAfterFileUrl = useObjectUrl(
+  () => comparisonAfterFile ?? undefined
+)
+const comparisonPreviewUrls = computed(() => ({
+  before: comparisonBeforeFileUrl.value ?? existingComparisonUrls.value.before,
+  after: comparisonAfterFileUrl.value ?? existingComparisonUrls.value.after
+}))
 
 const hasBothComparisonImages = computed(
-  () => !!(comparisonPreviewUrls.before && comparisonPreviewUrls.after)
+  () =>
+    !!(comparisonPreviewUrls.value.before && comparisonPreviewUrls.value.after)
 )
 
 const comparisonPreviewRef = ref<HTMLElement | null>(null)
@@ -287,22 +332,24 @@ const previewSliderPosition = useSliderFromMouse(comparisonPreviewRef)
 
 const hasThumbnailContent = computed(() => {
   if (thumbnailType === 'imageComparison') {
-    return !!(comparisonPreviewUrls.before || comparisonPreviewUrls.after)
+    return !!(
+      comparisonPreviewUrls.value.before || comparisonPreviewUrls.value.after
+    )
   }
   return !!thumbnailPreviewUrl.value
 })
 
 function clearAllPreviews() {
   if (thumbnailType === 'imageComparison') {
-    comparisonBeforeFile.value = null
-    comparisonAfterFile.value = null
     emit('update:comparisonBeforeFile', null)
     emit('update:comparisonAfterFile', null)
+    emit('update:thumbnailUrl', null)
+    emit('update:comparisonAfterUrl', null)
     return
   }
 
-  thumbnailFile.value = null
   emit('update:thumbnailFile', null)
+  emit('update:thumbnailUrl', null)
 }
 
 function handleFileSelect(event: Event) {
@@ -349,19 +396,15 @@ const comparisonSlots = [
   }
 ]
 
-const comparisonFiles: Record<ComparisonSlot, typeof comparisonBeforeFile> = {
-  before: comparisonBeforeFile,
-  after: comparisonAfterFile
-}
-
 function setComparisonPreview(file: File, slot: ComparisonSlot) {
   if (isFileTooLarge(file, MAX_IMAGE_SIZE_MB)) return
-  comparisonFiles[slot].value = file
   if (slot === 'before') {
     emit('update:comparisonBeforeFile', file)
+    emit('update:thumbnailUrl', null)
     return
   }
   emit('update:comparisonAfterFile', file)
+  emit('update:comparisonAfterUrl', null)
 }
 
 function handleComparisonSelect(event: Event, slot: ComparisonSlot) {

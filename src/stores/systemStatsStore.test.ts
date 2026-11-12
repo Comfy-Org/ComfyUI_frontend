@@ -1,21 +1,14 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 const mockData = vi.hoisted(() => ({ isDesktop: false }))
 
-// Mock the API
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getSystemStats: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return mockData.isDesktop
   },
@@ -28,9 +21,7 @@ describe('useSystemStatsStore', () => {
   beforeEach(() => {
     // Mock API to prevent automatic fetch on store creation
     vi.mocked(api.getSystemStats).mockResolvedValue(null!)
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useSystemStatsStore()
-    vi.clearAllMocks()
   })
 
   it('should initialize and start fetching immediately', async () => {

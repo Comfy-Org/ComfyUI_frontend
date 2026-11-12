@@ -36,7 +36,7 @@
     "label": "Redémarrer"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "Ouvrir le visualiseur 3D (bêta) pour le nœud sélectionné"
+    "label": "Ouvrir la visionneuse 3D (bêta) pour le nœud sélectionné"
   },
   "Comfy_BrowseModelAssets": {
     "label": "Expérimental : Parcourir les ressources de modèles"
@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Supprimer les éléments sélectionnés"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "Supprimer les liens sélectionnés"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Ajuster la vue aux nœuds sélectionnés"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "Masquer les liens sélectionnés"
   },
   "Comfy_Canvas_Lock": {
     "label": "Verrouiller la toile"
@@ -83,6 +89,9 @@
   "Comfy_Canvas_SelectAll": {
     "label": "Tout sélectionner"
   },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "Afficher les liens sélectionnés"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "Basculer la visibilité du lien sur le canevas"
   },
@@ -97,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Réduire/Étendre les nœuds sélectionnés"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Masquer/Afficher les liens des nœuds sélectionnés"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Mettre en sourdine/Activer le son des nœuds sélectionnés"
@@ -158,15 +170,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Décompresser le sous-graphe sélectionné"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "Convertir les nœuds sélectionnés en nœud de groupe"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "Gérer les nœuds de groupe"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "Dégrouper les nœuds de groupe sélectionnés"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "Ouvrir À propos de ComfyUI"
   },
@@ -184,6 +187,9 @@
   },
   "Comfy_Interrupt": {
     "label": "Interrompre"
+  },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "Ouvrir l’éditeur de calques pour le nœud sélectionné"
   },
   "Comfy_LoadDefaultWorkflow": {
     "label": "Charger le flux de travail par défaut"
@@ -236,6 +242,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "Nouveau flux de travail vierge"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "Rejouer l’intégration"
+  },
   "Comfy_OpenClipspace": {
     "label": "Espace de clip"
   },
@@ -283,9 +292,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "Définir les alias de recherche du sous-graphe"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "Expérimental : Activer AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "Performance du canvas"

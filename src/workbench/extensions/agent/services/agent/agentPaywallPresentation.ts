@@ -1,0 +1,110 @@
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
+
+import type {
+  AgentPaywallCta,
+  AgentPaywallReason
+} from '@comfyorg/telemetry/types'
+import type { TopUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+
+export type AgentPaywallAction = 'addCredits' | 'subscribe' | 'upgrade'
+
+export type AgentPaywallPresentation =
+  | {
+      kind: 'subscribed'
+      showUpgrade: boolean
+      planCreditLine?: TopUpPlanCreditLine
+    }
+  | { kind: 'subscriptionRequired' }
+  | { kind: 'member' }
+  | { kind: 'salesManaged' }
+  | { kind: 'local' }
+  | { kind: 'unavailable' }
+
+interface AgentPaywallPresentationInput {
+  distribution: 'cloud' | 'local'
+  role: WorkspaceRole | undefined
+  tier: SubscriptionTier | null
+  canTopUp: boolean
+  canSubscribeSelfServe: boolean
+  planCreditLine?: TopUpPlanCreditLine | null
+}
+
+export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
+  kind: 'unavailable'
+} as const satisfies AgentPaywallPresentation
+
+const AGENT_PAYWALL_REASONS = {
+  subscribed: 'no_funds',
+  local: 'no_funds',
+  subscriptionRequired: 'subscription_inactive',
+  member: 'member_cannot_pay',
+  salesManaged: 'sales_managed',
+  unavailable: 'unknown'
+} satisfies Record<AgentPaywallPresentation['kind'], AgentPaywallReason>
+
+export function toAgentPaywallReason(
+  presentation: AgentPaywallPresentation
+): AgentPaywallReason {
+  return AGENT_PAYWALL_REASONS[presentation.kind]
+}
+
+const AGENT_PAYWALL_CTAS = {
+  addCredits: 'add_credits',
+  subscribe: 'subscribe',
+  upgrade: 'upgrade'
+} satisfies Record<AgentPaywallAction, AgentPaywallCta>
+
+export function toAgentPaywallCta(action: AgentPaywallAction): AgentPaywallCta {
+  return AGENT_PAYWALL_CTAS[action]
+}
+
+export type AgentPaywallRemediation = Extract<
+  AgentPaywallAction,
+  'addCredits' | 'subscribe'
+>
+
+const AGENT_PAYWALL_REMEDIATIONS = {
+  subscribed: 'addCredits',
+  local: 'addCredits',
+  subscriptionRequired: 'subscribe',
+  member: undefined,
+  salesManaged: undefined,
+  unavailable: undefined
+} satisfies Record<
+  AgentPaywallPresentation['kind'],
+  AgentPaywallRemediation | undefined
+>
+
+/** The one purchase route a viewer in this presentation can actually take. */
+export function toAgentPaywallRemediation(
+  presentation: AgentPaywallPresentation
+): AgentPaywallRemediation | undefined {
+  return AGENT_PAYWALL_REMEDIATIONS[presentation.kind]
+}
+
+export function resolveAgentPaywallPresentation({
+  distribution,
+  role,
+  tier,
+  canTopUp,
+  canSubscribeSelfServe,
+  planCreditLine
+}: AgentPaywallPresentationInput): AgentPaywallPresentation {
+  if (distribution === 'local') return { kind: 'local' }
+  if (role === undefined) return DEFAULT_AGENT_PAYWALL_PRESENTATION
+  if (role === 'member' && !canTopUp) return { kind: 'member' }
+  if (!canTopUp) {
+    return canSubscribeSelfServe
+      ? { kind: 'subscriptionRequired' }
+      : { kind: 'salesManaged' }
+  }
+  if (planCreditLine && canSubscribeSelfServe) {
+    return { kind: 'subscribed', showUpgrade: false, planCreditLine }
+  }
+  return {
+    kind: 'subscribed',
+    showUpgrade:
+      canSubscribeSelfServe && (tier === 'STANDARD' || tier === 'CREATOR')
+  }
+}

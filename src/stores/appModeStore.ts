@@ -2,9 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
-import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   InputWidgetConfig,
   LinearData,
@@ -14,11 +13,35 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyApp } from '@/types/comfy'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { resolveNode } from '@/utils/litegraphUtil'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import {
+  getWidgetIdForNode,
+  resolveNode,
+  resolveNodeWidget
+} from '@/utils/litegraphUtil'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { isWidgetId, parseWidgetId } from '@comfyorg/graph-model/widgetId'
+import type { ViewMode } from '@comfyorg/graph-model/appMode'
+
+function findWidgetByEntityId(
+  rootGraph: LGraph,
+  widgetId: WidgetId
+): IBaseWidget | undefined {
+  for (const node of rootGraph.nodes) {
+    const widget = node.widgets?.find(
+      (w) => getWidgetIdForNode(node, w) === widgetId
+    )
+    if (widget) return widget
+  }
+  return undefined
+}
 
 export function nodeTypeValidForApp(type: string) {
   return !['Note', 'MarkdownNote'].includes(type)
@@ -28,10 +51,30 @@ export const useAppModeStore = defineStore('appMode', () => {
   const { getCanvas } = useCanvasStore()
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
-  const { mode, setMode, isBuilderMode, isSelectMode } = useAppMode()
-  const emptyWorkflowDialog = useEmptyWorkflowDialog()
+  const { mode, setMode, isAppMode, isBuilderMode, isSelectMode } = useAppMode()
 
   const showVueNodeSwitchPopup = ref(false)
+
+  const viewMode = computed<ViewMode>(() => (isAppMode.value ? 'app' : 'graph'))
+
+  /**
+   * Frame-lagged mirror of {@link viewMode} driving the view-mode toggle's
+   * segment morph. The two-frame lag lets a toggle that mounts mid-switch
+   * render the previous mode first, then animate in. Kept in the store so it
+   * outlives the graph-mode toggle unmounting as the app toggle replaces it.
+   */
+  const displayViewMode = ref<ViewMode>(viewMode.value)
+  let outerFrame: number | undefined
+  let innerFrame: number | undefined
+  watch(viewMode, (next) => {
+    if (outerFrame !== undefined) cancelAnimationFrame(outerFrame)
+    if (innerFrame !== undefined) cancelAnimationFrame(innerFrame)
+    outerFrame = requestAnimationFrame(() => {
+      innerFrame = requestAnimationFrame(() => {
+        displayViewMode.value = next
+      })
+    })
+  })
 
   const selectedInputs = ref<LinearInput[]>([])
   const selectedOutputs = ref<NodeId[]>([])
@@ -40,41 +83,153 @@ export const useAppModeStore = defineStore('appMode', () => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
     void workflowStore.activeWorkflow
     void mode.value
-    return !!app.rootGraph?.nodes?.length
+    const app = useApp()
+    return app.isGraphReady && app.rootGraph.nodes.length > 0
   })
 
-  // Prune entries referencing nodes deleted in workflow mode.
-  // Only check node existence, not widgets — dynamic widgets can
-  // hide/show other widgets so a missing widget does not mean stale data.
-  function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
+  function pruneLinearData(data: Partial<LinearData> | undefined): {
+    inputs: LinearInput[]
+    outputs: NodeId[]
+  } {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
-
-    return {
-      inputs: app.rootGraph
-        ? rawInputs.filter(([nodeId]) => resolveNode(nodeId))
-        : rawInputs,
-      outputs: app.rootGraph
-        ? rawOutputs.filter((nodeId) => resolveNode(nodeId))
-        : rawOutputs
+    const app = useApp()
+    const rootGraph = app.isGraphReady ? app.rootGraph : undefined
+    if (!rootGraph) {
+      return {
+        inputs: rawInputs,
+        outputs: rawOutputs.flatMap((nodeId) => {
+          const parsedNodeId = parseNodeId(nodeId)
+          return parsedNodeId ? [parsedNodeId] : []
+        })
+      }
     }
+    return {
+      inputs: rawInputs
+        .map((input) => upgradeAndValidateInput(input, rootGraph))
+        .filter((entry): entry is LinearInput => entry !== null),
+      outputs: rawOutputs.flatMap((nodeId) => {
+        const parsedNodeId = parseNodeId(nodeId)
+        if (!parsedNodeId) return []
+        return ChangeTracker.isLoadingGraph || resolveNode(parsedNodeId)
+          ? [parsedNodeId]
+          : []
+      })
+    }
+  }
+
+  function buildEntry(
+    widgetId: WidgetId,
+    name: string,
+    config: InputWidgetConfig | undefined
+  ): LinearInput {
+    return config === undefined ? [widgetId, name] : [widgetId, name, config]
+  }
+
+  function upgradeAndValidateInput(
+    input: LinearInput,
+    rootGraph: ComfyApp['rootGraph']
+  ): LinearInput | null {
+    const [storedId, widgetName, config] = input
+
+    if (typeof storedId === 'string' && isWidgetId(storedId)) {
+      const widget = findWidgetByEntityId(rootGraph, storedId)
+      if (widget) return buildEntry(storedId, widgetName, config)
+      const { nodeId } = parseWidgetId(storedId)
+      if (rootGraph.getNodeById(nodeId)) {
+        return buildEntry(storedId, widgetName, config)
+      }
+      return null
+    }
+
+    if (typeof storedId === 'string' && storedId.includes(':')) {
+      const [, widget] = resolveNodeWidget(storedId, widgetName)
+      if (!widget?.widgetId) return null
+      return buildEntry(widget.widgetId, widgetName, config)
+    }
+
+    const directNodeId = parseNodeId(storedId)
+    const directNode = directNodeId ? rootGraph.getNodeById(directNodeId) : null
+    const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
+    if (directNode && directWidget) {
+      const derivedId = getWidgetIdForNode(directNode, directWidget)
+      if (derivedId) return buildEntry(derivedId, widgetName, config)
+    }
+
+    const matches: LinearInput[] = rootGraph.nodes.flatMap((node) => {
+      if (!(node instanceof SubgraphNode)) return []
+      return node.inputs.flatMap((inputSlot): LinearInput[] => {
+        if (!inputSlot.widgetId) return []
+        const target = resolveSubgraphInputTarget(node, inputSlot.name)
+        if (
+          target?.nodeId !== String(storedId) ||
+          target.widgetName !== widgetName
+        ) {
+          return []
+        }
+        return [buildEntry(inputSlot.widgetId, inputSlot.name, config)]
+      })
+    })
+    if (matches.length === 1) return matches[0]
+    if (matches.length > 1) {
+      console.warn(
+        '[appModeStore] dropping ambiguous legacy selectedInput tuple',
+        { storedId, widgetName }
+      )
+      return null
+    }
+
+    console.warn(
+      '[appModeStore] dropping legacy selectedInput tuple — no canonical identity available',
+      { storedId, widgetName }
+    )
+    return null
+  }
+
+  function warnOnUninterpretableAppConfig(
+    data: Partial<LinearData> | undefined,
+    resolvedInputs: LinearInput[],
+    resolvedOutputs: NodeId[]
+  ) {
+    if (ChangeTracker.isLoadingGraph) return
+
+    const app = useApp()
+    if (!app.isGraphReady || !app.rootGraph.nodes.length) return
+
+    const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
+    if (!hadConfig || resolvedInputs.length || resolvedOutputs.length) return
+
+    console.warn(
+      '[appModeStore] app config could not be interpreted; no inputs or outputs resolved from linearData',
+      {
+        inputs: data.inputs,
+        outputs: data.outputs
+      }
+    )
   }
 
   function loadSelections(data: Partial<LinearData> | undefined) {
     const { inputs, outputs } = pruneLinearData(data)
     selectedInputs.value = inputs
     selectedOutputs.value = outputs
+    warnOnUninterpretableAppConfig(data, inputs, outputs)
   }
 
   function resetSelectedToWorkflow() {
     const { activeWorkflow } = workflowStore
     if (!activeWorkflow) return
 
-    loadSelections(activeWorkflow.changeTracker?.activeState?.extra?.linearData)
+    const source =
+      activeWorkflow.changeTracker.activeState.extra?.linearData ??
+      activeWorkflow.initialState.extra?.linearData
+    loadSelections(source)
   }
 
   useEventListener(
-    () => app.rootGraph?.events,
+    () => {
+      const app = useApp()
+      return app.isGraphReady ? app.rootGraph.events : undefined
+    },
     'configured',
     resetSelectedToWorkflow
   )
@@ -86,28 +241,35 @@ export const useAppModeStore = defineStore('appMode', () => {
         : null,
     (data) => {
       if (!data || ChangeTracker.isLoadingGraph) return
-      const graph = app.rootGraph
-      if (!graph) return
-      const extra = (graph.extra ??= {})
+      if (!useApp().isGraphReady) return
+      const graph = useApp().rootGraph
+      const extra = graph.extra
       extra.linearData = {
-        inputs: [...data.inputs],
+        inputs: data.inputs.map(([id, name, config]): LinearInput =>
+          config
+            ? [
+                id,
+                name,
+                JSON.parse(JSON.stringify(config)) as InputWidgetConfig
+              ]
+            : [id, name]
+        ),
         outputs: [...data.outputs]
       }
-      workflowStore.activeWorkflow?.changeTracker?.checkState()
+      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
     },
     { deep: true }
   )
 
   let unwatchReadOnly: (() => void) | undefined
   function enforceReadOnly(inSelect: boolean) {
-    const { state } = getCanvas()
-    if (!state) return
-    state.readOnly = inSelect
+    const canvas = getCanvas()
+    canvas.read_only = inSelect
     unwatchReadOnly?.()
     if (inSelect)
       unwatchReadOnly = watch(
-        () => state.readOnly,
-        () => (state.readOnly = true)
+        () => canvas.read_only,
+        () => (canvas.read_only = true)
       )
   }
 
@@ -128,15 +290,6 @@ export const useAppModeStore = defineStore('appMode', () => {
   })
 
   function enterBuilder() {
-    if (!hasNodes.value) {
-      emptyWorkflowDialog.show({
-        onEnterBuilder: () => enterBuilder(),
-        onDismiss: () => setMode('graph')
-      })
-      return
-    }
-
-    // Prune stale references
     resetSelectedToWorkflow()
 
     useSidebarTabStore().activeSidebarTabId = null
@@ -153,27 +306,24 @@ export const useAppModeStore = defineStore('appMode', () => {
     setMode('graph')
   }
 
-  function removeSelectedInput(widget: IBaseWidget, node: { id: NodeId }) {
-    const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-    const storeName = isPromotedWidgetView(widget)
-      ? widget.sourceWidgetName
-      : widget.name
+  function removeSelectedInput(widget: IBaseWidget) {
+    const targetEntityId = widget.widgetId
+    if (!targetEntityId) return
     const index = selectedInputs.value.findIndex(
-      ([id, name]) => storeId == id && storeName === name
+      ([id]) => id === targetEntityId
     )
     if (index !== -1) selectedInputs.value.splice(index, 1)
   }
 
-  function updateInputConfig(
-    nodeId: NodeId,
-    widgetName: string,
-    config: InputWidgetConfig
-  ) {
-    const entry = selectedInputs.value.find(
-      ([id, name]) => nodeId == id && widgetName === name
+  function updateInputConfig(widget: IBaseWidget, config: InputWidgetConfig) {
+    const targetEntityId = widget.widgetId
+    if (!targetEntityId) return
+    const index = selectedInputs.value.findIndex(
+      ([id]) => id === targetEntityId
     )
-    if (!entry) return
-    entry[2] = { ...entry[2], ...config }
+    if (index === -1) return
+    const [id, type, options] = selectedInputs.value[index]
+    selectedInputs.value.splice(index, 1, [id, type, { ...options, ...config }])
   }
 
   return {
@@ -188,6 +338,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     selectedInputs,
     selectedOutputs,
     updateInputConfig,
-    showVueNodeSwitchPopup
+    showVueNodeSwitchPopup,
+    viewMode,
+    displayViewMode
   }
 })

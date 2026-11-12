@@ -1,0 +1,27 @@
+{
+  "last_node_id": 1,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Preview3D",
+      "pos": [50, 50],
+      "size": [450, 600],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Preview3D",
+        "Last Time Model File": "nonexistent_model.glb"
+      },
+      "widgets_values": ["nonexistent_model.glb"]
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": { "ds": { "offset": [0, 0], "scale": 1 } },
+  "version": 0.4
+}

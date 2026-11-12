@@ -3,10 +3,15 @@ import { computed, toValue } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
 
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import {
+  deriveWidgetVisibility,
+  isWidgetVisibleOnSurface
+} from '@/types/widgetVisibility'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -46,7 +51,10 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
       index,
       searchableLabel: item.widget.label?.toLowerCase() || '',
       searchableName: item.widget.name.toLowerCase(),
-      searchableType: item.widget.type.toLowerCase(),
+      searchableType:
+        typeof item.widget.type === 'string'
+          ? item.widget.type.toLowerCase()
+          : '',
       searchableValue: item.widget.value?.toString().toLowerCase() || ''
     }
     return searchableItem
@@ -65,9 +73,7 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
   const fuse = new Fuse(searchableList, fuseOptions)
   const results = fuse.search(query.trim())
 
-  const matchedItems = new Set(
-    results.map((result) => list[result.item.index]!)
-  )
+  const matchedItems = new Set(results.map((result) => list[result.item.index]))
 
   return list.filter((item) => matchedItems.has(item)) as T
 }
@@ -93,7 +99,7 @@ export function searchWidgetsAndNodes(
 
   const searchableList: NodeSearchItem[] = list.map((item) => ({
     nodeId: item.node.id,
-    searchableTitle: (item.node.getTitle() ?? '').toLowerCase()
+    searchableTitle: (item.node.getTitle() ?? item.node.type).toLowerCase()
   }))
 
   const fuseOptions: IFuseOptions<NodeSearchItem> = {
@@ -107,18 +113,14 @@ export function searchWidgetsAndNodes(
     nodeMatches.map((result) => result.item.nodeId)
   )
 
-  return list
-    .map((item) => {
-      if (matchedNodeIds.has(item.node.id)) {
-        return { ...item, keep: true }
-      }
-      return {
-        ...item,
-        keep: false,
-        widgets: searchWidgets(item.widgets, query)
-      }
-    })
-    .filter((item) => item.keep || item.widgets.length > 0)
+  return list.flatMap((item) => {
+    if (matchedNodeIds.has(item.node.id)) {
+      return [item]
+    }
+
+    const widgets = searchWidgets(item.widgets, query)
+    return widgets.length > 0 ? [{ ...item, widgets }] : []
+  })
 }
 
 type MixedSelectionItem = LGraphGroup | LGraphNode
@@ -197,7 +199,7 @@ function flatItems(
   }
 
   for (let i = 0; i < items.length; i++) {
-    const item = items[i] as Positionable
+    const item = items[i]
 
     if (isLGraphGroup(item)) {
       result.push(item)
@@ -261,13 +263,12 @@ export function computedSectionDataList(nodes: MaybeRefOrGetter<LGraphNode[]>) {
     return toValue(nodes).map((node) => {
       const { widgets = [] } = node
       const shownWidgets = widgets
-        .filter(
-          (w) =>
-            !(
-              w.options?.canvasOnly ||
-              w.options?.hidden ||
-              (w.options?.advanced && !includesAdvanced.value)
-            )
+        .filter((w) =>
+          isWidgetVisibleOnSurface(
+            w.visibility ?? deriveWidgetVisibility(w),
+            'panel',
+            { showAdvanced: includesAdvanced.value }
+          )
         )
         .map((widget) => ({ node, widget }))
       return { widgets: shownWidgets, node }

@@ -11,17 +11,7 @@ export const useQueueClearHistoryDialog = () => {
       dialogComponentProps: {
         headless: true,
         closable: false,
-        closeOnEscape: true,
-        dismissableMask: true,
-        pt: {
-          root: {
-            class: 'max-w-90 w-auto bg-transparent border-none shadow-none'
-          },
-          content: {
-            class: 'bg-transparent',
-            style: 'padding: 0'
-          }
-        }
+        dismissOnPointerDownOutside: true
       }
     })
   }

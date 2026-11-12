@@ -12,23 +12,137 @@ import IconsResolver from 'unplugin-icons/resolver'
 import Icons from 'unplugin-icons/vite'
 import Components from 'unplugin-vue-components/vite'
 import typegpuPlugin from 'unplugin-typegpu/vite'
+import { existsSync } from 'fs'
+import { resolve } from 'path'
 import { defineConfig } from 'vitest/config'
 import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { comfyAPIPlugin } from './build/plugins'
+import { cloudflareAccessHeaders } from './build/cloudflareAccess.ts'
+import {
+  createDevAgentConfig,
+  devServerAgentRoutes
+} from './build/devAgentConfig.ts'
+import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
+import {
+  hasCompleteSentryUploadConfig,
+  resolveSentryUploadConfig
+} from './build/sentryUploadConfig.ts'
 
 dotenvConfig()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
 const ANALYZE_BUNDLE = process.env.ANALYZE_BUNDLE === 'true'
-// vite dev server will listen on all addresses, including LAN and public addresses
-const VITE_REMOTE_DEV = process.env.VITE_REMOTE_DEV === 'true'
 const DISABLE_TEMPLATES_PROXY = process.env.DISABLE_TEMPLATES_PROXY === 'true'
 const GENERATE_SOURCEMAP = process.env.GENERATE_SOURCEMAP !== 'false'
+const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 const IS_STORYBOOK = process.env.npm_lifecycle_event === 'storybook'
+const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')
+const BROWSER_TESTS_DIR = resolve('browser_tests')
+const FRONTEND_SCRIPT_TESTS = [
+  'scripts/agentConversationFromLangfuse.test.ts',
+  'scripts/registry-census/matrix_runner.test.ts',
+  'scripts/testingPinia.test.ts'
+]
+const ISOLATED_STORE_TESTS = [
+  'src/stores/entityIdStore.test.ts',
+  'src/testing/pinia.test.ts'
+]
+
+const CRITICAL_COVERAGE_DIRS = [
+  'src/base',
+  'src/composables',
+  'src/core',
+  'src/lib/litegraph/src/node',
+  'src/lib/litegraph/src/subgraph',
+  'src/lib/litegraph/src/utils',
+  'src/platform/assets/composables',
+  'src/platform/assets/mappings',
+  'src/platform/assets/schemas',
+  'src/platform/assets/services',
+  'src/platform/assets/utils',
+  'src/platform/extensions',
+  'src/platform/billing/api',
+  'src/platform/billing/composables',
+  'src/platform/billing/stores',
+  'src/platform/billing/utils',
+  'src/platform/keybindings',
+  'src/platform/navigation',
+  'src/platform/remote',
+  'src/platform/remoteConfig',
+  'src/platform/secrets',
+  'src/platform/settings',
+  'src/platform/workflow',
+  'src/platform/workflowErrors/errorCatalog',
+  'src/platform/workflowErrors/missingMedia',
+  'src/platform/workflowErrors/missingModel',
+  'src/platform/workflowErrors/nodeReplacement',
+  'src/platform/workspace/api',
+  'src/platform/workspace/auth',
+  'src/platform/workspace/composables',
+  'src/platform/workspace/stores',
+  'src/platform/workspace/utils',
+  'src/schemas',
+  'src/scripts',
+  'src/services',
+  'src/stores',
+  'src/utils',
+  'src/platform/customNodes/manager/composables',
+  'src/platform/customNodes/manager/services',
+  'src/platform/customNodes/manager/stores',
+  'src/platform/customNodes/manager/utils',
+  'src/workbench/utils'
+]
+
+// A single glob key so vitest aggregates all critical dirs into one
+// thresholds bucket instead of one bucket per glob
+const CRITICAL_COVERAGE_GLOB = `{${CRITICAL_COVERAGE_DIRS.join(',')}}/**/*.{ts,vue}`
+
+const CRITICAL_COVERAGE_THRESHOLDS = {
+  statements: 69,
+  branches: 60,
+  functions: 67,
+  lines: 70
+}
+
+// Keep this high-coverage surface separate from the lower general floor.
+const AGENT_PANEL_COVERAGE_ROOT = 'src/workbench/extensions/agent'
+const AGENT_PANEL_COVERAGE_GLOB = `${AGENT_PANEL_COVERAGE_ROOT}/**/*.{ts,vue}`
+
+// Fail closed if the coverage root moves instead of matching zero files.
+if (!existsSync(resolve(import.meta.dirname, AGENT_PANEL_COVERAGE_ROOT))) {
+  throw new Error(
+    `Agent coverage bucket root '${AGENT_PANEL_COVERAGE_ROOT}' does not exist. ` +
+      'If the directory moved, update AGENT_PANEL_COVERAGE_ROOT — otherwise the ' +
+      'coverage floor for the agent surface silently passes on zero files.'
+  )
+}
+
+// Re-measured 2026-10-22 on a full `pnpm test:coverage` run against this tree:
+// 95.88% statements / 91.70% branches / 96.69% functions / 97.51% lines. The
+// floor sits ~3 points under each, which is about one large untested file of
+// headroom: tight enough that a real regression trips it, loose enough that
+// ordinary churn does not.
+const AGENT_PANEL_COVERAGE_THRESHOLDS = {
+  statements: 93,
+  branches: 88,
+  functions: 94,
+  lines: 95
+}
+
+const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
+  'src/lib/litegraph/imgs/**',
+  'src/lib/litegraph/public/**',
+  'src/lib/litegraph/src/*.{ts,vue}',
+  'src/lib/litegraph/src/__fixtures__/**',
+  'src/lib/litegraph/src/__snapshots__/**',
+  'src/lib/litegraph/src/canvas/**',
+  'src/lib/litegraph/src/infrastructure/**',
+  'src/lib/litegraph/src/types/**',
+  'src/lib/litegraph/src/widgets/**'
+]
 
 // Open Graph / Twitter Meta Tags Constants
 const VITE_OG_URL = 'https://cloud.comfy.org'
@@ -38,6 +152,18 @@ const VITE_OG_DESC =
   'Bring your creative ideas to life with Comfy Cloud. Build and run your workflows to generate stunning images and videos instantly using powerful GPUs — all from your browser, no installation required.'
 const VITE_OG_IMAGE = `${VITE_OG_URL}/assets/images/og-image.png`
 const VITE_OG_KEYWORDS = 'ComfyUI, Comfy Cloud, ComfyUI online'
+
+export function getCanonicalTags(distribution: string | undefined) {
+  return distribution === 'cloud'
+    ? [
+        {
+          tag: 'link',
+          attrs: { rel: 'canonical', href: `${VITE_OG_URL}/` },
+          injectTo: 'head' as const
+        }
+      ]
+    : []
+}
 
 // Auto-detect cloud mode from DEV_SERVER_COMFYUI_URL
 const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
@@ -51,7 +177,11 @@ const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
     : IS_CLOUD_URL
       ? 'cloud'
       : 'localhost'
-
+const SENTRY_UPLOAD_ENABLED = DISTRIBUTION === 'cloud' && !IS_DEV
+const SENTRY_UPLOAD =
+  SENTRY_UPLOAD_ENABLED && hasCompleteSentryUploadConfig(process.env)
+    ? resolveSentryUploadConfig(process.env)
+    : undefined
 // Nightly builds are from main branch; RC/stable builds are from core/* branches
 // Can be overridden via IS_NIGHTLY env var for testing
 const IS_NIGHTLY = process.env.IS_NIGHTLY === 'true'
@@ -74,6 +204,36 @@ if (!GIT_COMMIT) {
   }
 }
 
+/**
+ * Escape hatch for a poisoned CDN/browser cache.
+ *
+ * A content hash only changes when the chunk's own bytes change, so a routine
+ * redeploy leaves stable vendor chunks — `rolldown-runtime`, `vendor-*` — at
+ * byte-identical URLs. When one of those has been pinned as a 404 by an
+ * intermediary or a browser (IR-105), redeploying cannot dislodge it: the
+ * client never re-requests a URL it believes it already has.
+ *
+ * Setting ASSET_CACHE_BUST inserts its value into every emitted asset name, so
+ * every URL is new and nothing can be served from a poisoned entry.
+ *
+ * Only ever increment this. Clearing it reverts filenames to exactly the names
+ * that were poisoned in the first place.
+ */
+function assetCacheBustNames() {
+  const salt = process.env.ASSET_CACHE_BUST
+  if (!salt) return {}
+  if (!/^[a-zA-Z0-9]+$/.test(salt)) {
+    throw new Error(
+      `ASSET_CACHE_BUST must be alphanumeric (got "${salt}") — it becomes part of every asset filename.`
+    )
+  }
+  return {
+    entryFileNames: `assets/[name]-cb${salt}-[hash].js`,
+    chunkFileNames: `assets/[name]-cb${salt}-[hash].js`,
+    assetFileNames: `assets/[name]-cb${salt}-[hash][extname]`
+  }
+}
+
 // Disable Vue DevTools for production cloud distribution
 const DISABLE_VUE_PLUGINS =
   process.env.DISABLE_VUE_PLUGINS === 'true' ||
@@ -87,13 +247,99 @@ const DEV_SEVER_FALLBACK_URL =
 
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
+const devAgentConfig = createDevAgentConfig(process.env, DISTRIBUTION)
 
-const cloudProxyConfig =
-  DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
+const accessHeaders = cloudflareAccessHeaders(
+  process.env,
+  DEV_SERVER_COMFYUI_URL
+)
 
+if (accessHeaders && process.env.VITE_REMOTE_DEV === 'true') {
+  throw new Error(
+    'Cloudflare Access credentials cannot be used with VITE_REMOTE_DEV; bind the authenticated proxy to loopback.'
+  )
+}
+
+// Cloudflare routes on the Host header, so a token is only usable on a request
+// that carries the backend's host rather than the dev server's.
+const backendProxyConfig: ProxyOptions = {
+  ...(DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}),
+  ...(accessHeaders
+    ? {
+        headers: accessHeaders,
+        changeOrigin: true,
+        secure: true,
+        bypass: rejectForeignCaller
+      }
+    : {})
+}
+
+// The agent proxy adds the session token, so only the dev server's own pages may use it.
+function isCrossOrigin(req: IncomingMessage): boolean {
+  const origin = req.headers.origin
+  if (origin === undefined) return false
+  try {
+    return new URL(origin).host !== req.headers.host
+  } catch {
+    return true
+  }
+}
+
+// A foreign page cannot read a cross-origin response without CORS headers, but
+// the request still reaches the gated backend with our service token attached,
+// so a CORS-simple `POST /api/interrupt` from another localhost port drives a
+// real side effect on it. `Origin` covers those writes; browsers omit it on a
+// simple GET, so `Sec-Fetch-Site` covers the rest. A caller that sends neither
+// is not a browser page and is left alone, which is the policy `/api/agent`
+// already applies to its own token.
+function isForeignCaller(req: IncomingMessage): boolean {
+  if (isCrossOrigin(req)) return true
+  const site = req.headers['sec-fetch-site']
+  return typeof site === 'string' && site !== 'same-origin' && site !== 'none'
+}
+
+// Refuses the caller before the Access token is attached. Vite turns a `false`
+// bypass result into a bare 404, so the 403 and its reason are written here
+// first; the already-ended response makes Vite's status assignment a no-op.
+// `res` is undefined on a WebSocket upgrade, which `authenticatedWsGuard`
+// owns, so this leaves that path untouched.
+function rejectForeignCaller(
+  req: IncomingMessage,
+  res: ServerResponse | undefined
+): false | null {
+  if (!accessHeaders || !res || !isForeignCaller(req)) return null
+  res.statusCode = 403
+  res.end('The authenticated dev proxy serves the dev server origin only')
+  return false
+}
+
+// `bypass` is a single slot, so a route that already owns one has to run the
+// credential guard itself rather than inheriting it from `backendProxyConfig`.
+function guardedBypass(
+  bypass: NonNullable<ProxyOptions['bypass']>
+): NonNullable<ProxyOptions['bypass']> {
+  return (req, res, options) =>
+    rejectForeignCaller(req, res) === false ? false : bypass(req, res, options)
+}
+
+// Browsers do not apply the same-origin policy to WebSocket handshakes, so any
+// page can open ws://localhost:5173/ws. Once the service token rides on that
+// upgrade the dev server is an authenticated relay to the gated backend, so
+// reject a cross-origin upgrade the same way `/api/agent` does. Only applied
+// where credentials are actually attached, leaving the unconfigured checkout's
+// `/ws` proxy exactly as it was.
+const authenticatedWsGuard: Pick<ProxyOptions, 'configure'> = accessHeaders
+  ? {
+      configure: (proxy) => {
+        proxy.on('proxyReqWs', (_proxyReq, req, socket) => {
+          if (isCrossOrigin(req)) socket.destroy()
+        })
+      }
+    }
+  : {}
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
-  _req: IncomingMessage,
+  req: IncomingMessage,
   res: ServerResponse
 ) {
   const location = proxyRes.headers.location
@@ -115,8 +361,11 @@ function handleGcsRedirect(
     return
   }
 
-  // GCS redirect detected - fetch server-side to avoid CORS
-  fetch(location)
+  // GCS redirect detected - fetch server-side to avoid CORS. Range headers
+  // are forwarded and the partial-content response relayed so ranged reads
+  // behave like production, where the browser talks to GCS directly.
+  const rangeHeader = req.headers.range
+  fetch(location, rangeHeader ? { headers: { range: rangeHeader } } : undefined)
     .then(async (gcsResponse) => {
       if (!gcsResponse.body) {
         res.statusCode = 500
@@ -125,15 +374,24 @@ function handleGcsRedirect(
       }
 
       // Set response headers from GCS
-      res.statusCode = 200
+      res.statusCode = gcsResponse.status
       res.setHeader(
         'Content-Type',
         gcsResponse.headers.get('content-type') || 'application/octet-stream'
       )
 
-      const contentLength = gcsResponse.headers.get('content-length')
-      if (contentLength) {
-        res.setHeader('Content-Length', contentLength)
+      for (const header of [
+        'content-length',
+        'content-range',
+        'accept-ranges',
+        'cache-control',
+        'etag',
+        'last-modified'
+      ]) {
+        const value = gcsResponse.headers.get(header)
+        if (value) {
+          res.setHeader(header, value)
+        }
       }
 
       // Convert Web ReadableStream to Node.js stream and pipe to client
@@ -149,17 +407,28 @@ function handleGcsRedirect(
 
 const gcsRedirectProxyConfig: ProxyOptions = {
   target: DEV_SERVER_COMFYUI_URL,
-  ...cloudProxyConfig,
+  ...backendProxyConfig,
   selfHandleResponse: true,
   configure: (proxy) => {
     proxy.on('proxyRes', handleGcsRedirect)
   }
 }
 
+// Disabling absolute asset-URL transforms under Vitest keeps `/assets/...` as
+// string literals, avoiding rootless `file:///assets/...` imports that crash
+// Vitest's `createRequire` on Windows.
+const vuePluginOptions = process.env.VITEST
+  ? { template: { transformAssetUrls: { includeAbsolute: false } } }
+  : undefined
+
 export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
-    host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
+    host: devAgentConfig.host,
+    allowedHosts: process.env.AMP_ORB ? true : undefined,
+    warmup: {
+      clientFiles: ['./src/main.ts', './src/views/GraphView.vue']
+    },
     watch: {
       ignored: [
         './browser_tests/**',
@@ -169,7 +438,6 @@ export default defineConfig({
         '*.config.{ts,mts}',
         '**/.git/**',
         '**/.github/**',
-        '**/.nx/**',
         '**/*.{test,spec,stories}.ts',
         '**/coverage/**',
         '**/dist/**',
@@ -180,7 +448,7 @@ export default defineConfig({
     proxy: {
       '/internal': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       ...(DISTRIBUTION === 'cloud'
@@ -190,10 +458,15 @@ export default defineConfig({
           }
         : {}),
 
+      ...devServerAgentRoutes(devAgentConfig.proxy, {
+        target: DEV_SERVER_COMFYUI_URL,
+        ...backendProxyConfig
+      }),
+
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig,
-        bypass: (req, res, _options) => {
+        ...backendProxyConfig,
+        bypass: guardedBypass((req, res, _options) => {
           if (!res) return null
 
           // Return empty array for extensions API as these modules
@@ -211,37 +484,50 @@ export default defineConfig({
           }
 
           return null
-        }
+        })
+      },
+
+      '/oauth': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ...backendProxyConfig,
+        bypass: guardedBypass((req) => {
+          const path = (req.url ?? '').split('?')[0]
+          if (path === '/oauth/consent' || path.startsWith('/oauth/consent/')) {
+            return req.url
+          }
+          return null
+        })
       },
 
       '/ws': {
         target: DEV_SERVER_COMFYUI_URL,
         ws: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig,
+        ...authenticatedWsGuard
       },
 
       '/workflow_templates': {
         target: DEV_SERVER_COMFYUI_URL,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       '/extensions': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       '/docs': {
         target: DEV_SERVER_COMFYUI_URL,
         changeOrigin: true,
-        ...cloudProxyConfig
+        ...backendProxyConfig
       },
 
       ...(!DISABLE_TEMPLATES_PROXY
         ? {
             '/templates': {
               target: DEV_SERVER_COMFYUI_URL,
-              ...cloudProxyConfig
+              ...backendProxyConfig
             }
           }
         : {}),
@@ -255,19 +541,31 @@ export default defineConfig({
 
   plugins: [
     ...(!DISABLE_VUE_PLUGINS
-      ? [vueDevTools(), vue(), createHtmlPlugin({})]
-      : [vue()]),
+      ? [vueDevTools(), vue(vuePluginOptions), createHtmlPlugin({})]
+      : [vue(vuePluginOptions)]),
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
-    // Exclude proprietary ABCROM fonts from non-cloud builds
+    {
+      name: 'emit-build-manifest',
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'build-manifest.json',
+          source: JSON.stringify({
+            commit: GIT_COMMIT,
+            distribution: DISTRIBUTION
+          })
+        })
+      }
+    },
+    // Exclude proprietary fonts from non-cloud builds
     {
       name: 'exclude-proprietary-fonts',
       generateBundle(_options, bundle) {
         if (DISTRIBUTION !== 'cloud') {
-          // Remove ABCROM font files from bundle
           for (const [fileName] of Object.entries(bundle)) {
-            if (/ABCROM.*\.(woff2?|ttf|otf)$/i.test(fileName)) {
+            if (/(ABCROM|PPFormula).*\.(woff2?|ttf|otf)$/i.test(fileName)) {
               delete bundle[fileName]
             }
           }
@@ -311,11 +609,17 @@ export default defineConfig({
     {
       name: 'inject-twitter-meta',
       transformIndexHtml(html) {
-        if (DISTRIBUTION !== 'cloud') return html
+        if (DISTRIBUTION !== 'cloud') {
+          return {
+            html,
+            tags: [{ tag: 'title', children: 'ComfyUI', injectTo: 'head' }]
+          }
+        }
 
         return {
           html,
           tags: [
+            ...getCanonicalTags(DISTRIBUTION),
             // Basic SEO
             { tag: 'title', children: VITE_OG_TITLE, injectTo: 'head' },
             {
@@ -428,34 +732,16 @@ export default defineConfig({
     // Sentry sourcemap upload plugin
     // Uploads sourcemaps to both staging and prod Sentry projects so that
     // error stack traces are readable in both environments.
-    ...(DISTRIBUTION === 'cloud' &&
-    process.env.SENTRY_AUTH_TOKEN &&
-    process.env.SENTRY_ORG &&
-    process.env.SENTRY_PROJECT &&
-    !IS_DEV
+    ...(SENTRY_UPLOAD_ENABLED
       ? [
-          sentryVitePlugin({
-            org: process.env.SENTRY_ORG,
-            project: process.env.SENTRY_PROJECT,
-            authToken: process.env.SENTRY_AUTH_TOKEN,
-            sourcemaps: {
-              filesToDeleteAfterUpload: process.env.SENTRY_PROJECT_PROD
-                ? []
-                : ['**/*.map']
+          {
+            name: 'validate-sentry-upload-config',
+            apply: 'build' as const,
+            configResolved: () => {
+              resolveSentryUploadConfig(process.env)
             }
-          }),
-          ...(process.env.SENTRY_PROJECT_PROD
-            ? [
-                sentryVitePlugin({
-                  org: process.env.SENTRY_ORG,
-                  project: process.env.SENTRY_PROJECT_PROD,
-                  authToken: process.env.SENTRY_AUTH_TOKEN,
-                  sourcemaps: {
-                    filesToDeleteAfterUpload: ['**/*.map']
-                  }
-                })
-              ]
-            : [])
+          },
+          ...(SENTRY_UPLOAD ? [sentryVitePlugin(SENTRY_UPLOAD)] : [])
         ]
       : [])
   ],
@@ -463,7 +749,13 @@ export default defineConfig({
   build: {
     minify: SHOULD_MINIFY,
     target: 'es2022',
-    sourcemap: GENERATE_SOURCEMAP,
+    // Use 'hidden' so sourcemaps are still generated (for Sentry upload) but the
+    // browser-facing `//# sourceMappingURL=` comment is NOT injected into the JS
+    // bundles. This kills the ~57k/3d `/assets/*.js.map` 404 noise in prod
+    // (the .map files aren't served) without losing Sentry symbolication. See FE-1405.
+    // A coverage build serves its own .map files and needs the comment back:
+    // monocart maps V8 coverage to src/** only by following it.
+    sourcemap: GENERATE_SOURCEMAP && (COLLECT_COVERAGE || 'hidden'),
     // Exclude heavy optional vendor chunks from initial module preload
     // These chunks are only needed when their features are used (3D, terminal, etc.)
     modulePreload: {
@@ -514,6 +806,7 @@ export default defineConfig({
       },
       output: {
         keepNames: true,
+        ...assetCacheBustNames(),
         codeSplitting: {
           groups: [
             // Framework core - highest priority, very stable
@@ -533,13 +826,13 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/]@sentry[\\/]/,
               priority: 15
             },
-
-            // UI component libraries
             {
-              name: 'vendor-primevue',
-              test: /[\\/]node_modules[\\/](@?primevue|@primeuix)[\\/]/,
+              name: 'vendor-datadog',
+              test: /[\\/]node_modules[\\/]@datadog[\\/]/,
               priority: 15
             },
+
+            // UI component libraries
             {
               name: 'vendor-reka-ui',
               test: /[\\/]node_modules[\\/]reka-ui[\\/]/,
@@ -572,6 +865,11 @@ export default defineConfig({
               test: /[\\/]node_modules[\\/](yjs|lib0)[\\/]/,
               priority: 15
             },
+            {
+              name: 'vendor-ag-psd',
+              test: /[\\/]node_modules[\\/]ag-psd[\\/]/,
+              priority: 15
+            },
 
             // Utilities and validation
             {
@@ -598,14 +896,6 @@ export default defineConfig({
               name: 'vendor-markdown',
               test: /[\\/]node_modules[\\/](marked|dompurify)[\\/]/,
               priority: 12
-            },
-
-            // Catch-all for remaining node_modules
-            {
-              name: 'vendor-other',
-              test: /[\\/]node_modules[\\/]/,
-              priority: 0,
-              minSize: 10000
             }
           ]
         }
@@ -618,41 +908,126 @@ export default defineConfig({
       process.env.npm_package_version
     ),
     __COMFYUI_FRONTEND_COMMIT__: JSON.stringify(GIT_COMMIT),
-    __SENTRY_ENABLED__: JSON.stringify(
-      !(process.env.NODE_ENV === 'development' || !process.env.SENTRY_DSN)
-    ),
     __SENTRY_DSN__: JSON.stringify(process.env.SENTRY_DSN || ''),
     __ALGOLIA_APP_ID__: JSON.stringify(process.env.ALGOLIA_APP_ID || ''),
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
     __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
-    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)
+    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY),
+    'import.meta.env.VITE_DEV_AGENT_PROXY_CREDENTIAL': JSON.stringify(
+      devAgentConfig.proxySuppliesCredential ? 'true' : ''
+    )
   },
 
   resolve: {
     alias: {
+      '@/base/credits/comfyCredits':
+        '/packages/shared-frontend-utils/src/creditsUtil.ts',
       '@/utils/formatUtil': '/packages/shared-frontend-utils/src/formatUtil.ts',
       '@/utils/networkUtil':
         '/packages/shared-frontend-utils/src/networkUtil.ts',
-      '@': '/src'
+      '@/utils/urlSafety': '/packages/shared-frontend-utils/src/urlSafety.ts',
+      '@': '/src',
+      '@e2e': BROWSER_TESTS_DIR
     }
   },
 
   optimizeDeps: {
     exclude: ['@comfyorg/comfyui-electron-types'],
-    include: ['primevue/datatable', 'primevue/column'],
     entries: ['index.html']
   },
 
   test: {
+    mockReset: true,
+    restoreMocks: true,
+    unstubEnvs: true,
+    unstubGlobals: true,
+    strictTags: true,
+    tags: [
+      {
+        name: 'concurrent-safe',
+        description:
+          'Independent async tests with test-owned state and cleanup.',
+        concurrent: true
+      },
+      {
+        name: 'shared-state',
+        description: 'Sequential siblings; not a cross-file resource lock.',
+        concurrent: false
+      }
+    ],
+    fakeTimers: { now: TEST_SYSTEM_TIME, shouldAdvanceTime: true },
     globals: true,
     environment: 'happy-dom',
-    setupFiles: ['./vitest.setup.ts'],
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          // Stop happy-dom fetching real subresources. An <iframe src> or
+          // <link rel=stylesheet> pointing at a remote host issues a request
+          // that outlives the test; happy-dom aborts it during teardown and
+          // the resulting error is reported against whichever file is running
+          // then. Unit tests should never depend on the network.
+          disableIframePageLoading: true,
+          disableCSSFileLoading: true,
+          disableJavaScriptFileLoading: true
+        }
+      }
+    },
+    // Pin the timezone so date-formatting assertions are deterministic
+    // regardless of the contributor's local timezone (CI runs in UTC).
+    env: { TZ: 'UTC' },
     retry: process.env.CI ? 2 : 0,
-    include: [
-      'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'packages/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-      'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'frontend',
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.timer.setup.ts',
+            './vitest.setup.ts'
+          ],
+          exclude: ISOLATED_STORE_TESTS,
+          include: [
+            'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'packages/api-client/src/**/*.test.ts',
+            'packages/settings-core/src/**/*.test.ts',
+            'packages/theme-core/src/**/*.test.ts',
+            'packages/telemetry/src/**/*.test.ts',
+            'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            ...FRONTEND_SCRIPT_TESTS
+          ]
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'isolated-stores',
+          environment: 'node',
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts'
+          ],
+          include: ISOLATED_STORE_TESTS
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'tooling',
+          environment: 'node',
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts'
+          ],
+          exclude: FRONTEND_SCRIPT_TESTS,
+          include: [
+            'scripts/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'tools/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
+            'build/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'
+          ]
+        }
+      }
     ],
     coverage: {
       provider: 'v8',
@@ -664,11 +1039,19 @@ export default defineConfig({
         'src/**/*.stories.ts',
         'src/**/*.d.ts',
         'src/locales/**',
-        'src/lib/litegraph/**',
-        'src/assets/**'
-      ]
+        'src/assets/**',
+        'packages/**',
+        ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
+      ],
+      thresholds: process.env.VITEST_SHARD
+        ? undefined
+        : {
+            [CRITICAL_COVERAGE_GLOB]: CRITICAL_COVERAGE_THRESHOLDS,
+            [AGENT_PANEL_COVERAGE_GLOB]: AGENT_PANEL_COVERAGE_THRESHOLDS
+          }
     },
     exclude: [
+      'src/__ecs_matrix__/**',
       '**/node_modules/**',
       '**/dist/**',
       '**/cypress/**',

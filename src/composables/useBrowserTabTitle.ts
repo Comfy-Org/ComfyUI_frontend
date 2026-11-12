@@ -5,16 +5,18 @@ import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
-const DEFAULT_TITLE = 'ComfyUI'
 const TITLE_SUFFIX = ' - ComfyUI'
 
 export const useBrowserTabTitle = () => {
+  const defaultTitle = document.title || 'ComfyUI'
   const executionStore = useExecutionStore()
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   const workspaceStore = useWorkspaceStore()
+  const titlePrefixes = useBrowserTabTitleStore()
 
   const executionText = computed(() =>
     executionStore.isIdle
@@ -52,11 +54,10 @@ export const useBrowserTabTitle = () => {
     const workflowName = workflowStore.activeWorkflow?.filename
     return workflowName
       ? isUnsavedText.value + workflowName + TITLE_SUFFIX
-      : DEFAULT_TITLE
+      : defaultTitle
   })
 
   const nodeExecutionTitle = computed(() => {
-    // Check if any nodes are in progress
     const nodeProgressEntries = Object.entries(
       executionStore.nodeProgressStates
     )
@@ -68,28 +69,29 @@ export const useBrowserTabTitle = () => {
       return ''
     }
 
-    // If multiple nodes are running
     if (runningNodes.length > 1) {
       return `${executionText.value}[${runningNodes.length} ${t('g.nodesRunning', 'nodes running')}]`
     }
 
-    // If only one node is running
-    const [nodeId, state] = runningNodes[0]
+    const [, state] = runningNodes[0]
     const progress = Math.round((state.value / state.max) * 100)
-    const nodeType =
-      executionStore.activeJob?.workflow?.changeTracker?.activeState.nodes.find(
-        (n) => String(n.id) === nodeId
-      )?.type || 'Node'
+    const nodeLabel =
+      executionStore.executingNode?.type?.trim() ||
+      executionStore.executingNode?.title?.trim() ||
+      'Node'
 
-    return `${executionText.value}[${progress}%] ${nodeType}`
+    return `${executionText.value}[${progress}%] ${nodeLabel}`
   })
 
   const workflowTitle = computed(
     () =>
       executionText.value +
-      (newMenuEnabled.value ? workflowNameText.value : DEFAULT_TITLE)
+      (newMenuEnabled.value ? workflowNameText.value : defaultTitle)
   )
 
-  const title = computed(() => nodeExecutionTitle.value || workflowTitle.value)
+  const title = computed(
+    () =>
+      titlePrefixes.prefix + (nodeExecutionTitle.value || workflowTitle.value)
+  )
   useTitle(title)
 }

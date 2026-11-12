@@ -1,3 +1,5 @@
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
+
 import type {
   AuthMetadata,
   BeginCheckoutMetadata,
@@ -5,7 +7,6 @@ import type {
   EnterLinearMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
-  ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -13,9 +14,11 @@ import type {
   NodeSearchResultMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  RunButtonProperties,
   SettingChangedMetadata,
   ShareFlowMetadata,
   SubscriptionMetadata,
+  SubscriptionSuccessMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryProvider,
@@ -26,8 +29,10 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
-} from '../../types'
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 /**
  * Google Tag Manager telemetry provider.
@@ -82,11 +87,11 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     if (typeof window.gtag !== 'function') {
       function gtag() {
         // gtag queue shape is dataLayer.push(arguments)
-        // eslint-disable-next-line prefer-rest-params
+        // oxlint-disable-next-line prefer-rest-params
         ;(window.dataLayer as unknown[] | undefined)?.push(arguments)
       }
 
-      window.gtag = gtag as Window['gtag']
+      window.gtag = gtag
     }
 
     const gtagScriptSrc = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`
@@ -135,23 +140,18 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
+    const normalizedEmail = normalizeEmail(metadata.email)
     const payload = {
       method: metadata.method,
       ...(metadata.user_id ? { user_id: metadata.user_id } : {}),
-      ...(metadata.email
-        ? {
-            user_data: {
-              email: metadata.email.trim().toLowerCase()
-            }
-          }
-        : {})
+      ...(normalizedEmail ? { user_data: { email: normalizedEmail } } : {})
     }
 
     this.pushEvent(metadata.is_new_user ? 'sign_up' : 'login', payload)
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
-    this.pushEvent('begin_checkout', metadata)
+    this.pushEvent(TelemetryEvents.BEGIN_CHECKOUT, metadata)
   }
 
   trackSubscription(
@@ -160,24 +160,47 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   ): void {
     const ga4EventName =
       event === 'modal_opened' ? 'view_promotion' : 'select_promotion'
-    this.pushEvent(ga4EventName, metadata ? { ...metadata } : undefined)
+    this.pushEvent(
+      ga4EventName,
+      metadata && {
+        current_tier: metadata.current_tier,
+        reason: metadata.reason,
+        refusal_type: metadata.refusal_type
+      }
+    )
   }
 
   trackSignupOpened(): void {
     this.pushEvent('signup_opened')
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.pushEvent('subscription_success')
+  trackMonthlySubscriptionSucceeded(
+    metadata?: SubscriptionSuccessMetadata
+  ): void {
+    if (this.initialized && metadata?.ecommerce) {
+      window.dataLayer?.push({ ecommerce: null })
+    }
+
+    this.pushEvent(
+      'subscription_success',
+      metadata ? { ...metadata } : undefined
+    )
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    // GA4 names must be bare snake_case; the TelemetryEvents enum carries an
+    // `app:` prefix for Mixpanel/PostHog that dataLayer would forward verbatim.
+    this.pushEvent('workspace_invite_sent', metadata)
+  }
+
+  trackRunButton(properties: RunButtonProperties): void {
     this.pushEvent('run_workflow', {
-      subscribe_to_run: options?.subscribe_to_run ?? false,
-      trigger_source: options?.trigger_source ?? 'unknown'
+      subscribe_to_run: properties.subscribe_to_run,
+      trigger_source: properties.trigger_source ?? 'unknown',
+      view_mode: properties.view_mode,
+      is_app_mode: properties.is_app_mode,
+      dock_state: properties.dock_state,
+      agent_panel_open: properties.agent_panel_open
     })
   }
 
@@ -277,13 +300,16 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackShareFlow(metadata: ShareFlowMetadata): void {
     this.pushEvent('share_flow', {
       step: metadata.step,
-      source: metadata.source
+      source: metadata.source,
+      view_mode: metadata.view_mode,
+      is_app_mode: metadata.is_app_mode
     })
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.pushEvent('page_visibility', {
-      visibility_state: metadata.visibility_state
+      visibility_state: metadata.visibility_state,
+      agent_panel_open: metadata.agent_panel_open
     })
   }
 
@@ -323,7 +349,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.pushEvent('ui_button_click', {
-      button_id: metadata.button_id
+      button_id: metadata.button_id,
+      element_group: metadata.element_group
     })
   }
 

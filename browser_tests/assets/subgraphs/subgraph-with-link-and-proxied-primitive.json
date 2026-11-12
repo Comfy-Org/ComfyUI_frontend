@@ -1,0 +1,179 @@
+{
+  "id": "5c4a1450-26b8-4b34-b5ea-e3465273441e",
+  "revision": 0,
+  "last_node_id": 4,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "16aadaf6-aa66-4041-843e-589a6572a3ac",
+      "pos": [602, 409],
+      "size": [225, 144],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "proxyWidgets": [
+          ["1", "value"],
+          ["4", "value"]
+        ]
+      },
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "16aadaf6-aa66-4041-843e-589a6572a3ac",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 4,
+          "lastLinkId": 2,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "New Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [349, 383, 128, 68]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [867, 383, 128, 48]
+        },
+        "inputs": [
+          {
+            "id": "50fd1af4-4f20-434f-9828-6971210be4e9",
+            "name": "value",
+            "type": "STRING",
+            "linkIds": [1],
+            "pos": [453, 407]
+          }
+        ],
+        "outputs": [],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": 1,
+            "type": "PrimitiveString",
+            "pos": [537, 368],
+            "size": [270, 108],
+            "flags": {},
+            "order": 2,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "value",
+                "name": "value",
+                "type": "STRING",
+                "widget": {
+                  "name": "value"
+                },
+                "link": 1
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "STRING",
+                "name": "STRING",
+                "type": "STRING",
+                "links": null
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "PrimitiveString"
+            },
+            "widgets_values": [""]
+          },
+          {
+            "id": 3,
+            "type": "PrimitiveInt",
+            "pos": [534.9899497487436, 515.4924623115581],
+            "size": [270, 104],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "value",
+                "name": "value",
+                "type": "INT",
+                "widget": {
+                  "name": "value"
+                },
+                "link": 2
+              }
+            ],
+            "outputs": [
+              {
+                "localized_name": "INT",
+                "name": "INT",
+                "type": "INT",
+                "links": null
+              }
+            ],
+            "properties": {
+              "Node name for S&R": "PrimitiveInt"
+            },
+            "widgets_values": [0, "randomize"]
+          },
+          {
+            "id": 4,
+            "type": "PrimitiveNode",
+            "pos": [258.4381232333541, 549.1608040200999],
+            "size": [225, 104],
+            "flags": {},
+            "order": 1,
+            "mode": 0,
+            "inputs": [],
+            "outputs": [
+              {
+                "name": "INT",
+                "type": "INT",
+                "widget": {
+                  "name": "value"
+                },
+                "links": [2]
+              }
+            ],
+            "properties": {
+              "Run widget replace on values": false
+            },
+            "widgets_values": [0, "randomize"]
+          }
+        ],
+        "groups": [],
+        "links": [
+          {
+            "id": 1,
+            "origin_id": -10,
+            "origin_slot": 0,
+            "target_id": 1,
+            "target_slot": 0,
+            "type": "STRING"
+          },
+          {
+            "id": 2,
+            "origin_id": 4,
+            "origin_slot": 0,
+            "target_id": 3,
+            "target_slot": 0,
+            "type": "INT"
+          }
+        ],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "frontendVersion": "1.44.17"
+  },
+  "version": 0.4
+}

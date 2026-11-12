@@ -1,53 +1,27 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useTelemetry } from '@comfyorg/telemetry'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
 
-const mockWorkflowStore = reactive<{
-  activeWorkflow: {
-    path: string
-    directory: string
-    filename: string
-    isTemporary: boolean
-    isModified: boolean
-    lastModified: number
-  } | null
-}>({
-  activeWorkflow: null
-})
+vi.mock(import('@comfyorg/telemetry'))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: () => mockWorkflowStore
-}))
-
-const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
-
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => mockToast
-}))
-
-vi.mock('@formkit/auto-animate/vue', () => ({
+vi.mock(import('@formkit/auto-animate/vue'), () => ({
   vAutoAnimate: {}
-}))
-
-const mockFlags = vi.hoisted(() => ({
-  comfyHubUploadEnabled: false,
-  comfyHubProfileGateEnabled: true
 }))
 
 const mockShowPublishDialog = vi.hoisted(() => vi.fn())
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: mockFlags
-  })
-}))
-
-vi.mock(
-  '@/platform/workflow/sharing/composables/useComfyHubPublishDialog',
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/composables/useComfyHubPublishDialog'),
   () => ({
     useComfyHubPublishDialog: () => ({
       show: mockShowPublishDialog
@@ -55,12 +29,7 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: () => ({
-    saveWorkflow: vi.fn(),
-    renameWorkflow: vi.fn()
-  })
-}))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const mockShareServiceData = vi.hoisted(() => ({
   items: [
@@ -89,13 +58,16 @@ const mockGetPublishStatus = vi.hoisted(() => vi.fn())
 const mockPublishWorkflow = vi.hoisted(() => vi.fn())
 const mockGetShareableAssets = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  useWorkflowShareService: () => ({
-    getPublishStatus: mockGetPublishStatus,
-    publishWorkflow: mockPublishWorkflow,
-    getShareableAssets: mockGetShareableAssets
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    useWorkflowShareService: () => ({
+      getPublishStatus: mockGetPublishStatus,
+      publishWorkflow: mockPublishWorkflow,
+      getShareableAssets: mockGetShareableAssets
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -112,7 +84,10 @@ const i18n = createI18n({
         saveButton: 'Save workflow',
         createLinkButton: 'Create link',
         creatingLink: 'Creating link...',
+        copyLink: 'Copy link',
+        linkCopied: 'Copied',
         checkingAssets: 'Checking assets...',
+        shareUrlLabel: 'Share URL',
         successDescription: 'Anyone with this link...',
         hasChangesDescription: 'You have made changes...',
         updateLinkButton: 'Update link',
@@ -140,24 +115,23 @@ describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockPublishWorkflow.mockReset()
-    mockGetShareableAssets.mockReset()
-    mockWorkflowStore.activeWorkflow = {
-      path: 'workflows/test.json',
-      directory: 'workflows',
-      filename: 'test.json',
-      isTemporary: false,
-      isModified: false,
-      lastModified: 1000
-    }
+    vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = true
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: {
+        path: 'workflows/test.json',
+        directory: 'workflows',
+        filename: 'test.json',
+        isTemporary: false,
+        isModified: false,
+        lastModified: 1000
+      }
+    })
     mockGetPublishStatus.mockResolvedValue({
       isPublished: false,
       shareId: null,
       shareUrl: null,
       publishedAt: null
     })
-    mockFlags.comfyHubUploadEnabled = false
     mockShareServiceData.items = [
       {
         id: 'test.png',
@@ -201,10 +175,6 @@ describe('ShareWorkflowDialogContent', () => {
             template:
               '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">Start publishing</button></section>',
             props: ['onCreateProfile']
-          },
-          Input: {
-            template: '<input v-bind="$attrs" />',
-            methods: { focus() {}, select() {} }
           }
         }
       }
@@ -212,14 +182,16 @@ describe('ShareWorkflowDialogContent', () => {
   }
 
   it('renders in unsaved state when workflow is modified', async () => {
-    mockWorkflowStore.activeWorkflow = {
-      path: 'workflows/test.json',
-      directory: 'workflows',
-      filename: 'test.json',
-      isTemporary: false,
-      isModified: true,
-      lastModified: 1000
-    }
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: {
+        path: 'workflows/test.json',
+        directory: 'workflows',
+        filename: 'test.json',
+        isTemporary: false,
+        isModified: true,
+        lastModified: 1000
+      }
+    })
     const { container } = renderComponent()
     await flushPromises()
 
@@ -230,7 +202,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('renders share-link and publish tabs when comfy hub upload is enabled', async () => {
-    mockFlags.comfyHubUploadEnabled = true
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     const { container } = renderComponent()
     await flushPromises()
 
@@ -250,7 +222,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('shows publish intro panel in the share dialog', async () => {
-    mockFlags.comfyHubUploadEnabled = true
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     renderComponent()
     await flushPromises()
 
@@ -263,7 +235,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('shows start publishing CTA in the publish intro panel', async () => {
-    mockFlags.comfyHubUploadEnabled = true
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     renderComponent()
     await flushPromises()
 
@@ -278,7 +250,7 @@ describe('ShareWorkflowDialogContent', () => {
   })
 
   it('opens publish dialog from intro cta and closes share dialog', async () => {
-    mockFlags.comfyHubUploadEnabled = true
+    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = true
     renderComponent()
     await flushPromises()
 
@@ -373,20 +345,51 @@ describe('ShareWorkflowDialogContent', () => {
       'workflows/test.json',
       initialShareableAssets
     )
+    expect(useTelemetry()?.trackShareFlow).toHaveBeenCalledWith({
+      step: 'link_created',
+      source: 'graph_mode',
+      view_mode: 'graph',
+      is_app_mode: false,
+      share_id: 'test-123'
+    })
+  })
+
+  it('tracks copied share link with share id', async () => {
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'copy-123',
+      shareUrl: 'https://comfy.org/shared/copy-123',
+      publishedAt: new Date('2026-01-15')
+    })
+
+    renderComponent()
+    await flushPromises()
+
+    await userEvent.click(screen.getByRole('button', { name: /Copy link/i }))
+
+    expect(useTelemetry()?.trackShareFlow).toHaveBeenCalledWith({
+      step: 'link_copied',
+      source: 'graph_mode',
+      view_mode: 'graph',
+      is_app_mode: false,
+      share_id: 'copy-123'
+    })
   })
 
   it('shows update button when workflow was saved after last publish', async () => {
     const publishedAt = new Date('2026-01-15T00:00:00Z')
     const savedAfterPublishMs = publishedAt.getTime() + 60_000
 
-    mockWorkflowStore.activeWorkflow = {
-      path: 'workflows/test.json',
-      directory: 'workflows',
-      filename: 'test.json',
-      isTemporary: false,
-      isModified: false,
-      lastModified: savedAfterPublishMs
-    }
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: {
+        path: 'workflows/test.json',
+        directory: 'workflows',
+        filename: 'test.json',
+        isTemporary: false,
+        isModified: false,
+        lastModified: savedAfterPublishMs
+      }
+    })
     mockGetPublishStatus.mockResolvedValue({
       isPublished: true,
       shareId: 'abc-123',
@@ -405,14 +408,16 @@ describe('ShareWorkflowDialogContent', () => {
     const publishedAt = new Date('2026-01-15T00:00:00Z')
     const savedBeforePublishMs = publishedAt.getTime() - 60_000
 
-    mockWorkflowStore.activeWorkflow = {
-      path: 'workflows/test.json',
-      directory: 'workflows',
-      filename: 'test.json',
-      isTemporary: false,
-      isModified: false,
-      lastModified: savedBeforePublishMs
-    }
+    Object.assign(useWorkflowStore(), {
+      activeWorkflow: {
+        path: 'workflows/test.json',
+        directory: 'workflows',
+        filename: 'test.json',
+        isTemporary: false,
+        isModified: false,
+        lastModified: savedBeforePublishMs
+      }
+    })
     mockGetPublishStatus.mockResolvedValue({
       isPublished: true,
       shareId: 'abc-123',
@@ -429,14 +434,16 @@ describe('ShareWorkflowDialogContent', () => {
 
   describe('error and edge cases', () => {
     it('renders unsaved state when workflow is temporary', async () => {
-      mockWorkflowStore.activeWorkflow = {
-        path: 'workflows/Unsaved Workflow.json',
-        directory: 'workflows',
-        filename: 'Unsaved Workflow.json',
-        isTemporary: true,
-        isModified: false,
-        lastModified: 1000
-      }
+      Object.assign(useWorkflowStore(), {
+        activeWorkflow: {
+          path: 'workflows/Unsaved Workflow.json',
+          directory: 'workflows',
+          filename: 'Unsaved Workflow.json',
+          isTemporary: true,
+          isModified: false,
+          lastModified: 1000
+        }
+      })
       const { container } = renderComponent()
       await flushPromises()
 
@@ -453,10 +460,9 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).toContain('Create link')
-      expect(mockToast.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Failed to load publish status'
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        'Failed to load publish status'
+      )
     })
 
     it('shows error toast when publishWorkflow rejects', async () => {
@@ -474,15 +480,13 @@ describe('ShareWorkflowDialogContent', () => {
       await flushPromises()
 
       expect(container.textContent).not.toContain('Anyone with this link...')
-      expect(mockToast.add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Publish failed'
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: 'Publish failed'
       })
     })
 
     it('renders unsaved state when no active workflow exists', async () => {
-      mockWorkflowStore.activeWorkflow = null
+      Object.assign(useWorkflowStore(), { activeWorkflow: null })
       const { container } = renderComponent()
       await flushPromises()
 
@@ -497,7 +501,7 @@ describe('ShareWorkflowDialogContent', () => {
       renderComponent()
       await flushPromises()
 
-      mockWorkflowStore.activeWorkflow = null
+      Object.assign(useWorkflowStore(), { activeWorkflow: null })
 
       const publishButton = screen.getByRole('button', {
         name: /Create link/i
@@ -509,7 +513,6 @@ describe('ShareWorkflowDialogContent', () => {
     })
 
     it('does not switch to publishToHub mode when flag is disabled', async () => {
-      mockFlags.comfyHubUploadEnabled = false
       const { container } = renderComponent()
       await flushPromises()
 

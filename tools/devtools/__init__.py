@@ -96,5 +96,22 @@ async def set_settings(request: Request):
     except Exception as e:
         return web.Response(status=500, text=f"Error: {str(e)}")
 
+@server.PromptServer.instance.routes.delete("/devtools/view")
+async def delete_file(request: Request):
+    try:
+        filename = request.rel_url.query['filename']
+        type = request.rel_url.query.get('type', 'output')
+        output_dir = folder_paths.get_directory_by_type(type)
+        subfolder = request.rel_url.query.get('subfolder', '')
+        filepath = os.path.join(output_dir, subfolder, filename)
+        if os.path.commonpath([output_dir, filepath]) != output_dir:
+            return web.Response(status=403)
+        if (os.path.exists(filepath)):
+            os.remove(filepath)
+        return web.Response(status=200)
+    except Exception as e:
+        return web.Response(status=500, text=f"Error: {str(e)}")
 
-__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
+
+WEB_DIRECTORY = "./web"
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]

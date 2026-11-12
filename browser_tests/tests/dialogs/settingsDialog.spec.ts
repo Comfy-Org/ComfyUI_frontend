@@ -1,34 +1,75 @@
 import { expect } from '@playwright/test'
 
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
 
-test.describe('Settings dialog', { tag: '@ui' }, () => {
-  test('About panel renders mocked version from server', async ({
+test.describe('Settings dialog - extension actions', { tag: '@ui' }, () => {
+  test.use({ viewport: { width: 1920, height: 1080 } })
+
+  test('opens the actions menu from its trigger without closing the dialog', async ({
     comfyPage
   }) => {
-    const stats = {
-      ...mockSystemStats,
-      system: {
-        ...mockSystemStats.system,
-        comfyui_version: MOCK_COMFYUI_VERSION
-      }
-    }
-    await comfyPage.page.route('**/system_stats**', async (route) => {
-      await route.fulfill({ json: stats })
-    })
-    await comfyPage.setup()
-
     const dialog = comfyPage.settingDialog
     await dialog.open()
-    await dialog.goToAboutPanel()
+    await dialog.openExtensionActions()
 
-    const aboutPanel = comfyPage.page.getByTestId('about-panel')
-    await expect(aboutPanel).toBeVisible()
-    await expect(aboutPanel).toContainText(MOCK_COMFYUI_VERSION)
-    await expect(aboutPanel).toContainText('ComfyUI_frontend')
+    await comfyPage.contextMenu.clickMenuItemExact('Enable Selected')
+    await expect(dialog.root).toBeVisible()
+  })
+})
+
+test.describe(
+  'Settings dialog - left panel',
+  { tag: ['@ui', '@screenshot'] },
+  () => {
+    test('outlines the search field against the panel at rest', async ({
+      comfyPage
+    }) => {
+      const dialog = comfyPage.settingDialog
+      await dialog.open()
+      await expect(dialog.searchBox).toBeFocused()
+      await dialog.searchBox.blur()
+      await expect(dialog.searchBox).not.toBeFocused()
+
+      await expectElementScreenshot(
+        dialog.leftPanel,
+        'settings-left-panel.png',
+        { threshold: 0.05 }
+      )
+    })
+  }
+)
+
+test.describe('Settings dialog', { tag: '@ui' }, () => {
+  test.describe('About panel', () => {
+    test.beforeEach(async ({ page }) => {
+      const stats = {
+        ...mockSystemStats,
+        system: {
+          ...mockSystemStats.system,
+          comfyui_version: MOCK_COMFYUI_VERSION
+        }
+      }
+      await page.route('**/system_stats**', async (route) => {
+        await route.fulfill({ json: stats })
+      })
+    })
+
+    test('renders mocked version from server', async ({ comfyPage }) => {
+      const dialog = comfyPage.settingDialog
+      await dialog.open()
+      await dialog.goToAboutPanel()
+
+      const aboutPanel = comfyPage.page.getByTestId('about-panel')
+      await expect(aboutPanel).toBeVisible()
+      await expect(aboutPanel).toContainText(MOCK_COMFYUI_VERSION)
+      await expect(aboutPanel).toContainText('ComfyUI_frontend')
+    })
   })
 
   test('Toggling a boolean setting through UI persists the value', async ({
@@ -45,7 +86,7 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
       await expect(settingRow).toBeVisible()
 
-      await settingRow.locator('.p-toggleswitch').click()
+      await settingRow.getByRole('switch').click()
 
       await expect
         .poll(() => comfyPage.settings.getSetting<boolean>(settingId))
@@ -131,6 +172,38 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     expect(switched).toBe(true)
   })
 
+  test('Boolean setting persists after page reload', async ({ comfyPage }) => {
+    const settingId = 'Comfy.Node.MiddleClickRerouteNode'
+    const initialValue = await comfyPage.settings.getSetting<boolean>(settingId)
+
+    try {
+      await comfyPage.settings.setSetting(settingId, !initialValue)
+
+      await expect
+        .poll(() => comfyPage.settings.getSetting<boolean>(settingId))
+        .toBe(!initialValue)
+
+      await comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+      await comfyPage.page.waitForFunction(
+        () => window.app && window.app.extensionManager
+      )
+
+      await expect
+        .poll(() => comfyPage.settings.getSetting<boolean>(settingId))
+        .toBe(!initialValue)
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => window.LiteGraph!.middle_click_slot_add_default_node
+          )
+        )
+        .toBe(!initialValue)
+    } finally {
+      await comfyPage.settings.setSetting(settingId, initialValue)
+    }
+  })
+
   test('Dropdown setting can be changed and persists', async ({
     comfyPage
   }) => {
@@ -145,21 +218,25 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
       await expect(settingRow).toBeVisible()
 
-      // Open the dropdown via its combobox role and verify it expanded.
-      // Retry because the PrimeVue Select may re-render during search
-      // filtering, causing the first click to land on a stale element.
+      const settingItems = dialog.root.locator('[data-setting-id]')
+      await expect
+        .poll(() => settingItems.count(), { timeout: 5000 })
+        .toBeLessThanOrEqual(5)
+
       const select = settingRow.getByRole('combobox')
-      await expect(async () => {
-        const expanded = await select.getAttribute('aria-expanded')
-        if (expanded !== 'true') await select.click()
-        await expect(select).toHaveAttribute('aria-expanded', 'true')
-      }).toPass({ timeout: 5000 })
+      await expect(select).toBeVisible()
+      await expect(select).toBeEnabled()
+
+      await select.click()
 
       // Pick the option that is not the current value
       const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'
-      await comfyPage.page
-        .getByRole('option', { name: targetValue, exact: true })
-        .click()
+      const targetOption = comfyPage.page.getByRole('option', {
+        name: targetValue,
+        exact: true
+      })
+      await expect(targetOption).toBeVisible()
+      await targetOption.click()
 
       await expect
         .poll(() => comfyPage.settings.getSetting<string>(settingId))
@@ -169,3 +246,88 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
     }
   })
 })
+
+test.describe('Settings dialog - opening', { tag: '@ui' }, () => {
+  test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
+  test('@mobile Should be visible on mobile', async ({ comfyPage }) => {
+    await comfyPage.page.keyboard.press('Control+,')
+    const settingsDialog = comfyPage.page.getByTestId(TestIds.dialogs.settings)
+    await expect(settingsDialog).toBeVisible()
+    const contentArea = settingsDialog.locator('main')
+    await expect(contentArea).toBeVisible()
+    await expect
+      .poll(() => contentArea.evaluate((el) => el.clientHeight))
+      .toBeGreaterThan(30)
+  })
+
+  test('Can open settings with hotkey', async ({ comfyPage }) => {
+    await comfyPage.page.keyboard.down('ControlOrMeta')
+    await comfyPage.page.keyboard.press(',')
+    await comfyPage.page.keyboard.up('ControlOrMeta')
+    const settingsLocator = comfyPage.page.getByTestId(TestIds.dialogs.settings)
+    await expect(settingsLocator).toBeVisible()
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(settingsLocator).toBeHidden()
+  })
+})
+
+test.describe(
+  'Settings dialog - keybinding persistence',
+  { tag: '@ui' },
+  () => {
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
+    test('Should persist keybinding setting', async ({ comfyPage }) => {
+      await comfyPage.page.keyboard.press('Control+,')
+
+      const settingsDialog = comfyPage.page.getByTestId(
+        TestIds.dialogs.settings
+      )
+      await expect(settingsDialog).toBeVisible()
+      await settingsDialog
+        .locator('nav [role="button"]', { hasText: 'Keybinding' })
+        .click()
+      await expect(
+        comfyPage.page.getByPlaceholder('Search Keybindings...')
+      ).toBeVisible()
+
+      const newBlankWorkflowRow = comfyPage.page.locator('tr', {
+        has: comfyPage.page.getByRole('cell', { name: 'New Blank Workflow' })
+      })
+      await newBlankWorkflowRow.click()
+
+      const addKeybindingButton = newBlankWorkflowRow.locator(
+        '.icon-\\[lucide--plus\\]'
+      )
+      await addKeybindingButton.click()
+
+      const input = comfyPage.page.getByPlaceholder('Enter your keybind')
+      await input.press('Alt+n')
+
+      const requestPromise = comfyPage.page.waitForRequest(
+        (req) =>
+          req.url().includes('/api/settings') &&
+          !req.url().includes('/api/settings/') &&
+          req.method() === 'POST'
+      )
+
+      const saveButton = comfyPage.page
+        .getByLabel('Modify keybinding')
+        .getByText('Save')
+      await saveButton.click()
+
+      const request = await requestPromise
+      const expectedSetting: Keybinding = {
+        commandId: 'Comfy.NewBlankWorkflow',
+        combo: {
+          key: 'n',
+          ctrl: false,
+          alt: true,
+          shift: false
+        }
+      }
+      expect(request.postData()).toContain(JSON.stringify(expectedSetting))
+    })
+  }
+)

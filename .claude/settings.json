@@ -1,9 +1,31 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(pnpx vitest run --testPathPattern=\"draftCacheV2.property\")",
-      "Bash(pnpx vitest run \"draftCacheV2.property\")",
-      "Bash(node -e \"const fc = require\\(''fast-check''\\); console.log\\(Object.keys\\(fc\\).filter\\(k => k.includes\\(''string''\\)\\).join\\('', ''\\)\\)\")"
+  "attribution": {
+    "commit": "",
+    "pr": "",
+    "sessionUrl": false
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node --import tsx scripts/hooks/server-fact-write-guard.ts",
+            "timeout": 20
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node --import tsx scripts/hooks/server-fact-approve-guard.ts",
+            "timeout": 120
+          }
+        ]
+      }
     ]
   }
 }

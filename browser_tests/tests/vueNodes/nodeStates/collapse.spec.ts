@@ -3,14 +3,8 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 
-test.describe('Vue Node Collapse', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', false)
-    await comfyPage.settings.setSetting('Comfy.EnableTooltips', true)
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.setup()
-    await comfyPage.vueNodes.waitForNodes()
-  })
+test.describe('Vue Node Collapse', { tag: '@vue-nodes' }, () => {
+  test.use({ initialSettings: { 'Comfy.EnableTooltips': true } })
 
   test('should allow collapsing node with collapse icon', async ({
     comfyPage
@@ -60,6 +54,53 @@ test.describe('Vue Node Collapse', () => {
     // Expand and check icon
     await vueNode.toggleCollapse()
     await expect(vueNode.collapseIcon).not.toHaveClass(/-rotate-90/)
+  })
+
+  test('should keep a resized width across a collapsed save and reload', async ({
+    comfyPage
+  }) => {
+    test.setTimeout(30000)
+
+    const { beforeCollapse, resizedWidth } =
+      await test.step('Resize and collapse the node', async () => {
+        const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+        await expect(vueNode.root).toBeVisible()
+
+        await vueNode.resizeFromCorner('SE', 120, 0)
+        await comfyPage.nextFrame()
+        const resized = await vueNode.boundingBox()
+        expect(resized, 'Measure resized node').not.toBeNull()
+        const resizedWidth = resized?.width ?? 0
+
+        const beforeCollapse = Date.now()
+        await vueNode.select()
+        await comfyPage.keyboard.press('Alt+KeyC')
+        await expect
+          .poll(async () => (await vueNode.boundingBox())?.width)
+          .toBeLessThan(resizedWidth)
+
+        return { beforeCollapse, resizedWidth }
+      })
+
+    await test.step('Save and reload the collapsed node', async () => {
+      await comfyPage.workflow.waitForDraftIndexUpdatedSince(beforeCollapse)
+      await comfyPage.workflow.reloadAndWaitForApp()
+    })
+
+    await test.step('Expand to the saved width', async () => {
+      const reloaded = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      await expect(reloaded.root).toBeVisible()
+      await reloaded.select()
+      await comfyPage.keyboard.press('Alt+KeyC')
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(async () => (await reloaded.boundingBox())?.width)
+        .toBeGreaterThan(resizedWidth - 5)
+      await expect
+        .poll(async () => (await reloaded.boundingBox())?.width)
+        .toBeLessThan(resizedWidth + 5)
+    })
   })
 
   test('should preserve title when collapsing/expanding', async ({

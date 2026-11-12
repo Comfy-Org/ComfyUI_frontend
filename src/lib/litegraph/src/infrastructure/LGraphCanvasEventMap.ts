@@ -1,11 +1,17 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type {
+  LGraph,
+  LGraphGroup,
+  LGraphNode,
+  Subgraph,
+  SubgraphNode
+} from '@comfyorg/graph-model/entityRegistry'
+
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ConnectingLink } from '@comfyorg/graph-model/slots'
+
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 
 export interface LGraphCanvasEventMap {
   /** The active graph has changed. */
@@ -52,5 +58,21 @@ export interface LGraphCanvasEventMap {
   'litegraph:node-title-button-clicked': {
     node: LGraphNode
     button: LGraphButton
+  }
+
+  /** Ghost placement mode has started or ended. */
+  'litegraph:ghost-placement': {
+    active: boolean
+    nodeId: SerializedNodeId
+  }
+
+  /** The canvas read-only state has changed. */
+  'litegraph:read-only-changed': {
+    readOnly: boolean
+  }
+
+  /** Item dragging has started or ended. */
+  'litegraph:dragging-items-changed': {
+    dragging: boolean
   }
 }

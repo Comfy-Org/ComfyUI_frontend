@@ -1,13 +1,14 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col gap-8 px-6 py-4">
+  <div
+    data-testid="publish-finish-step"
+    class="flex min-h-0 flex-1 flex-col gap-8 px-6 py-4"
+  >
     <section class="flex flex-col gap-4">
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.shareAs') }}
       </span>
 
-      <div
-        class="flex items-center gap-4 rounded-2xl bg-secondary-background px-6 py-4"
-      >
+      <div class="flex items-center gap-4 rounded-2xl bg-secondary px-6 py-4">
         <div
           class="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-linear-to-b from-green-600/50 to-green-900"
         >
@@ -21,13 +22,11 @@
             {{ (profile.name ?? profile.username).charAt(0).toUpperCase() }}
           </span>
         </div>
-        <div class="flex flex-1 flex-col gap-2">
-          <span class="text-sm text-base-foreground">
+        <div class="flex flex-1 flex-col gap-2 text-sm">
+          <span class="text-foreground">
             {{ profile.name ?? profile.username }}
           </span>
-          <span class="text-sm text-muted-foreground">
-            @{{ profile.username }}
-          </span>
+          <span class="text-muted-foreground"> @{{ profile.username }} </span>
         </div>
       </div>
     </section>
@@ -36,7 +35,7 @@
       v-if="isLoadingAssets || hasPrivateAssets"
       class="flex flex-col gap-4"
     >
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.additionalInfo') }}
       </span>
 
@@ -59,7 +58,7 @@
 import { useAsyncState } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
-import type { ComfyHubProfile } from '@/schemas/apiSchema'
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 

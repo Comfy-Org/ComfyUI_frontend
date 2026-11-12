@@ -1,0 +1,238 @@
+import { mergeTests } from '@playwright/test'
+import type { Locator } from '@playwright/test'
+
+import {
+  comfyExpect as expect,
+  comfyPageFixture
+} from '@e2e/fixtures/ComfyPage'
+import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture)
+
+test.describe(
+  'Widget value persistence',
+  { tag: ['@widget', '@vue-nodes'] },
+  () => {
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({})
+    })
+
+    test.describe('Boolean drafts', () => {
+      test.use({ initialSettings: { 'Comfy.Workflow.Persist': true } })
+
+      for (const { action, toggleValue } of [
+        { action: 'click', toggleValue: (toggle: Locator) => toggle.click() },
+        {
+          action: 'Enter',
+          toggleValue: (toggle: Locator) => toggle.press('Enter')
+        }
+      ]) {
+        test(`keeps a toggle-only ${action} edit after reload`, async ({
+          comfyPage
+        }) => {
+          await comfyPage.workflow.loadWorkflow('inputs/boolean_input')
+          await comfyPage.workflow.waitForDraftPersisted()
+          await comfyPage.workflow.reloadAndWaitForApp()
+          const toggle = comfyPage.vueNodes
+            .getNodeByTitle('Boolean')
+            .getByRole('switch')
+          await expect(toggle).toBeChecked()
+
+          await toggleValue(toggle)
+          await expect(toggle).not.toBeChecked()
+
+          await expect
+            .poll(async () =>
+              (await comfyPage.workflow.getDraftWorkflows()).some((workflow) =>
+                workflow.nodes.some(
+                  (node) =>
+                    node.type === 'PrimitiveBoolean' &&
+                    Object.values(node.widgets_values ?? {})[0] === false
+                )
+              )
+            )
+            .toBe(true)
+          await comfyPage.workflow.reloadAndWaitForApp()
+          await expect(toggle).not.toBeChecked()
+        })
+      }
+    })
+
+    test('an emptied text widget remains empty after save and reopen', async ({
+      comfyPage
+    }) => {
+      test.slow()
+      await comfyPage.workflow.loadWorkflow('inputs/string_input')
+
+      const widget = comfyPage.vueNodes.getWidgetByName(
+        'Node With String Input',
+        'string_input'
+      )
+      await widget.fill('temporary value')
+      await expect(widget).toHaveValue('temporary value')
+      await widget.fill('')
+      await expect(widget).toHaveValue('')
+
+      await comfyPage.menu.topbar.saveWorkflow('empty-widget-value')
+      await comfyPage.menu.topbar.closeWorkflowTab('empty-widget-value')
+      await comfyPage.page.keyboard.press('w')
+      await comfyPage.menu.workflowsTab
+        .getPersistedItem('empty-widget-value')
+        .dblclick()
+      await expect
+        .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+        .toContain('empty-widget-value')
+
+      await expect(
+        comfyPage.vueNodes.getWidgetByName(
+          'Node With String Input',
+          'string_input'
+        )
+      ).toHaveValue('')
+    })
+
+    test.describe('LoadImageOutput', { tag: ['@oss', '@slow'] }, () => {
+      test.beforeEach(async ({ comfyPage, getWebSocket }) => {
+        test.slow()
+        await comfyPage.page.route(
+          '**/internal/files/output**',
+          async (route) => {
+            if (route.request().method() !== 'GET') {
+              await route.fallback()
+              return
+            }
+            await route.fulfill({
+              json: [
+                'first-output.webp [output]',
+                'selected-output.webp [output]'
+              ]
+            })
+          }
+        )
+        const image = {
+          contentType: 'image/webp',
+          path: assetPath('image64x64.webp')
+        }
+        await mockViewFiles(comfyPage.page, {
+          'first-output.webp [output]': image,
+          'selected-output.webp': image,
+          'selected-output.webp [output]': image
+        })
+        await new ExecutionHelper(
+          comfyPage,
+          await getWebSocket()
+        ).completeWithHistory(
+          'job-selected-output',
+          '1',
+          'selected-output.webp'
+        )
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await comfyPage.expectNodeCount(0)
+        await comfyPage.searchBoxV2.addNode('Load Image (from Outputs)')
+        await comfyPage.vueNodes.waitForNodes()
+      })
+
+      test('keeps a selected non-first output and its preview after save and reload', async ({
+        comfyPage
+      }) => {
+        const selectedValue = 'selected-output.webp [output]'
+        const selectedLabel = 'selected-output.webp'
+        const node = comfyPage.vueNodes.getNodeByTitle(
+          'Load Image (from Outputs)'
+        )
+        const imageTrigger = node.getByRole('button', {
+          name: 'image',
+          exact: true
+        })
+        await expect(imageTrigger).toContainText('first-output.webp [output]')
+        await WidgetSelectDropdownFixture.fromTrigger(imageTrigger).open()
+        const menu = comfyPage.page.getByTestId(
+          TestIds.widgets.formDropdownMenu
+        )
+        await menu
+          .getByRole('button', { name: 'Generated', exact: true })
+          .click()
+        const selectedOption = menu.getByRole('img', {
+          name: selectedValue,
+          exact: true
+        })
+        await selectedOption.click()
+        await expect(menu).toBeHidden()
+        await expect(imageTrigger).toBeVisible()
+        await expect(imageTrigger).toContainText(selectedLabel)
+        const nodes =
+          await comfyPage.nodeOps.getNodeRefsByType('LoadImageOutput')
+        expect(nodes, 'Workflow has one output image loader').toHaveLength(1)
+        const imageWidget = await nodes[0].getWidgetByName('image')
+        await expect.poll(() => imageWidget.getValue()).toBe(selectedValue)
+
+        await comfyPage.menu.topbar.saveWorkflow('remote-output-selection')
+        await comfyPage.workflow.reloadAndWaitForApp()
+        await comfyPage.vueNodes.waitForNodes()
+
+        await expect(imageTrigger).toContainText(
+          /^(first|selected)-output\.webp( \[output\])?$/
+        )
+        await WidgetSelectDropdownFixture.fromTrigger(imageTrigger).open()
+        await menu
+          .getByRole('button', { name: 'Generated', exact: true })
+          .click()
+        await expect(selectedOption).toBeVisible()
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(menu).toBeHidden()
+
+        await expect.poll(() => imageWidget.getValue()).toBe(selectedValue)
+        await expect(imageTrigger).toBeVisible()
+        await expect(imageTrigger).toContainText(selectedLabel)
+        const preview = node.getByTestId(TestIds.node.mainImage)
+        await expect(preview).toBeVisible()
+        await expect
+          .poll(async () => {
+            const src = await preview.getAttribute('src')
+            return src
+              ? new URL(src, comfyPage.page.url()).searchParams.get('filename')
+              : null
+          })
+          .toBe(selectedValue)
+        await expect(preview).toHaveJSProperty('naturalWidth', 64)
+      })
+    })
+
+    test('an emptied promoted text widget stays empty across a round-trip', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-promoted-text-widget'
+      )
+
+      const promotedTextbox = () =>
+        comfyPage.vueNodes
+          .getNodeLocator('11')
+          .getByRole('textbox', { name: 'text' })
+
+      async function roundTrip() {
+        const serialized = await comfyPage.workflow.getExportedWorkflow()
+        await comfyPage.workflow.loadGraphData(serialized)
+        await comfyPage.vueNodes.waitForNodes()
+      }
+
+      const baseline = 'promoted value that must be cleared'
+      await promotedTextbox().fill(baseline)
+      await expect(promotedTextbox()).toHaveValue(baseline)
+
+      await roundTrip()
+      await expect(promotedTextbox()).toHaveValue(baseline)
+
+      await promotedTextbox().fill('')
+      await expect(promotedTextbox()).toHaveValue('')
+
+      await roundTrip()
+      await expect(promotedTextbox()).toHaveValue('')
+    })
+  }
+)

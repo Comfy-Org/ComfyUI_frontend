@@ -65,7 +65,6 @@ The following table lists ALL services in the system as of 2025-09-01:
 | -------------------------- | --------------------------------------------------------- | ---------- |
 | audioService.ts            | Manages audio recording and WAV encoding functionality    | Media      |
 | autoQueueService.ts        | Manages automatic queue execution                         | Execution  |
-| colorPaletteService.ts     | Handles color palette management and customization        | UI         |
 | comfyManagerService.ts     | Manages ComfyUI application packages and updates          | Manager    |
 | comfyRegistryService.ts    | Handles registration and discovery of ComfyUI extensions  | Registry   |
 | customerEventsService.ts   | Handles customer event tracking and audit logs            | Analytics  |
@@ -306,13 +305,9 @@ export function useNodeFactory() {
     // Create node based on type and configuration
     switch (type) {
       case 'basic':
-        return {
-          /* basic node implementation */
-        }
+        return {/* basic node implementation */}
       case 'complex':
-        return {
-          /* complex node implementation */
-        }
+        return {/* complex node implementation */}
       default:
         throw new Error(`Unknown node type: ${type}`)
     }
@@ -347,9 +342,7 @@ Services in ComfyUI can be tested effectively using different approaches dependi
 
 ```typescript
 // Manual instantiation required
-const mockData = [
-  /* test data */
-]
+const mockData = [/* test data */]
 const service = new NodeSearchService(mockData)
 ```
 
@@ -406,16 +399,10 @@ const { saveWorkflow, loadWorkflow } = useWorkflowService()
 describe('useWorkflowService', () => {
   beforeEach(() => {
     // Mock external dependencies
-    vi.mock('@/stores/settingStore', () => ({
+    vi.mock('@/platform/settings/settingStore', () => ({
       useSettingStore: () => ({
         get: vi.fn().mockReturnValue(true),
         set: vi.fn()
-      })
-    }))
-
-    vi.mock('@/stores/toastStore', () => ({
-      useToastStore: () => ({
-        add: vi.fn()
       })
     }))
   })
@@ -455,7 +442,7 @@ describe('autoQueueService', () => {
     setupAutoQueueHandler()
 
     expect(mockApi.addEventListener).toHaveBeenCalledWith(
-      'graphChanged',
+      'autoQueueGraphChanged',
       expect.any(Function)
     )
   })
@@ -463,7 +450,7 @@ describe('autoQueueService', () => {
   test('should handle graph changes when auto-queue enabled', () => {
     setupAutoQueueHandler()
 
-    // Simulate graph change event
+    // Simulate execution graph change event
     const graphChangeHandler = mockApi.addEventListener.mock.calls[0][1]
     graphChangeHandler()
 
@@ -512,7 +499,7 @@ describe('newUserService', () => {
 
 ```typescript
 // Mock stores
-vi.mock('@/stores/settingStore', () => ({
+vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
     get: vi.fn(),
     set: vi.fn()

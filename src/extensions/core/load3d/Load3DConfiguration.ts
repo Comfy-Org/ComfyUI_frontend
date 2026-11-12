@@ -1,26 +1,51 @@
-import Load3d from '@/extensions/core/load3d/Load3d'
+import { effectScope, watch } from 'vue'
+
+import { LOAD3D_NONE_MODEL } from '@comfyorg/viewport3d/load3d/constants'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { isKeepingLoadedModel } from '@/extensions/core/load3d/load3dInstances'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import type {
   CameraConfig,
   CameraState,
   HDRIConfig,
   LightConfig,
+  GizmoConfig,
   ModelConfig,
-  SceneConfig
-} from '@/extensions/core/load3d/interfaces'
-import type { Dictionary } from '@/lib/litegraph/src/interfaces'
+  SceneConfig,
+  StoredModelConfig
+} from '@comfyorg/viewport3d/load3d/interfaces'
+import type { Dictionary } from '@comfyorg/graph-model/interfaces'
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 type Load3DConfigurationSettings = {
   loadFolder: string
   modelWidget: IBaseWidget
   cameraState?: CameraState
-  width?: IBaseWidget
-  height?: IBaseWidget
+  width?: INumericWidget
+  height?: INumericWidget
   bgImagePath?: string
+  silentOnNotFound?: boolean
+  /**
+   * Called when any change to one of the wired widgets (model_file, width,
+   * height), local or remote, makes the previously captured scene stale.
+   * Backend caching covers these inputs by themselves; this hook lets the
+   * caller invalidate any frontend-side capture cache so the next serialize
+   * re-renders at the new state.
+   */
+  onSceneInvalidated?: () => void
+}
+
+const DEFAULT_GIZMO: GizmoConfig = {
+  enabled: false,
+  mode: 'translate',
+  position: { x: 0, y: 0, z: 0 },
+  rotation: { x: 0, y: 0, z: 0 },
+  scale: { x: 1, y: 1, z: 1 }
 }
 
 class Load3DConfiguration {
@@ -29,80 +54,104 @@ class Load3DConfiguration {
     private properties?: Dictionary<NodeProperty | undefined>
   ) {}
 
-  configureForSaveMesh(loadFolder: 'input' | 'output', filePath: string) {
-    this.setupModelHandlingForSaveMesh(filePath, loadFolder)
+  configureForSaveMesh(
+    loadFolder: 'input' | 'output' | 'temp',
+    filePath: string,
+    options?: { silentOnNotFound?: boolean }
+  ) {
+    this.setupModelHandlingForSaveMesh(
+      filePath,
+      loadFolder,
+      options?.silentOnNotFound ?? false
+    )
     this.setupDefaultProperties()
   }
 
   configure(setting: Load3DConfigurationSettings) {
-    this.setupModelHandling(
+    const onModelWidgetUpdate = this.setupModelHandling(
       setting.modelWidget,
       setting.loadFolder,
-      setting.cameraState
+      setting.cameraState,
+      setting.silentOnNotFound ?? false
     )
     this.setupTargetSize(setting.width, setting.height)
+    this.setupReactiveHandling(setting, onModelWidgetUpdate)
     this.setupDefaultProperties(setting.bgImagePath)
   }
 
-  private setupTargetSize(width?: IBaseWidget, height?: IBaseWidget) {
+  private setupReactiveHandling(
+    setting: Load3DConfigurationSettings,
+    onModelWidgetUpdate: (value: IBaseWidget['value']) => Promise<void>
+  ): void {
+    const scope = effectScope()
+    scope.run(() => {
+      watch(
+        () => setting.modelWidget.value,
+        (value) => {
+          void onModelWidgetUpdate(value)
+          setting.onSceneInvalidated?.()
+        },
+        { flush: 'sync' }
+      )
+
+      const { width, height } = setting
+      if (width && height) {
+        watch(
+          [() => width.value, () => height.value],
+          ([nextWidth, nextHeight]) => {
+            this.load3d.setTargetSize(nextWidth, nextHeight)
+            setting.onSceneInvalidated?.()
+          },
+          { flush: 'sync' }
+        )
+      }
+    })
+    this.load3d.setConfigurationCleanup(() => scope.stop())
+  }
+
+  private setupTargetSize(width?: INumericWidget, height?: INumericWidget) {
     if (width && height) {
-      this.load3d.setTargetSize(width.value as number, height.value as number)
-
-      width.callback = (value: number) => {
-        this.load3d.setTargetSize(value, height.value as number)
-      }
-
-      height.callback = (value: number) => {
-        this.load3d.setTargetSize(width.value as number, value)
-      }
+      this.load3d.setTargetSize(width.value, height.value)
     }
   }
 
-  private setupModelHandlingForSaveMesh(filePath: string, loadFolder: string) {
-    const onModelWidgetUpdate = this.createModelUpdateHandler(loadFolder)
+  private setupModelHandlingForSaveMesh(
+    filePath: string,
+    loadFolder: 'input' | 'output' | 'temp',
+    silentOnNotFound: boolean
+  ) {
+    const onModelWidgetUpdate = this.createModelUpdateHandler(
+      loadFolder,
+      undefined,
+      silentOnNotFound
+    )
 
     if (filePath) {
-      onModelWidgetUpdate(filePath)
+      void onModelWidgetUpdate(filePath, isKeepingLoadedModel(this.load3d))
     }
   }
 
   private setupModelHandling(
     modelWidget: IBaseWidget,
     loadFolder: string,
-    cameraState?: CameraState
+    cameraState?: CameraState,
+    silentOnNotFound: boolean = false
   ) {
     const onModelWidgetUpdate = this.createModelUpdateHandler(
       loadFolder,
-      cameraState
+      cameraState,
+      silentOnNotFound
     )
-    if (modelWidget.value) {
-      onModelWidgetUpdate(modelWidget.value)
+    if (modelWidget.value && modelWidget.value !== LOAD3D_NONE_MODEL) {
+      void onModelWidgetUpdate(
+        modelWidget.value,
+        isKeepingLoadedModel(this.load3d)
+      )
+    } else if (isKeepingLoadedModel(this.load3d)) {
+      this.load3d.clearModel()
     }
 
-    const originalCallback = modelWidget.callback
-
-    let currentValue = modelWidget.value
-    Object.defineProperty(modelWidget, 'value', {
-      get() {
-        return currentValue
-      },
-      set(newValue) {
-        currentValue = newValue
-        if (modelWidget.callback && newValue !== undefined && newValue !== '') {
-          modelWidget.callback(newValue)
-        }
-      },
-      enumerable: true,
-      configurable: true
-    })
-
-    modelWidget.callback = (value: string | number | boolean | object) => {
-      onModelWidgetUpdate(value)
-
-      if (originalCallback) {
-        originalCallback(value)
-      }
-    }
+    return onModelWidgetUpdate
   }
 
   private setupDefaultProperties(bgImagePath?: string) {
@@ -127,7 +176,7 @@ class Load3DConfiguration {
       backgroundColor:
         '#' + useSettingStore().get('Comfy.Load3D.BackgroundColor'),
       backgroundImage: ''
-    } as SceneConfig
+    }
   }
 
   private loadCameraConfig(): CameraConfig {
@@ -138,7 +187,7 @@ class Load3DConfiguration {
     return {
       cameraType: useSettingStore().get('Comfy.Load3D.CameraType'),
       fov: 35
-    } as CameraConfig
+    }
   }
 
   private loadLightConfig(): LightConfig {
@@ -154,27 +203,30 @@ class Load3DConfiguration {
       return {
         intensity:
           saved.intensity ??
-          (useSettingStore().get('Comfy.Load3D.LightIntensity') as number),
-        hdri: { ...hdriDefaults, ...(saved.hdri ?? {}) }
+          useSettingStore().get('Comfy.Load3D.LightIntensity'),
+        hdri: { ...hdriDefaults, ...saved.hdri }
       }
     }
 
     return {
-      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity') as number,
+      intensity: useSettingStore().get('Comfy.Load3D.LightIntensity'),
       hdri: hdriDefaults
     }
   }
 
   private loadModelConfig(): ModelConfig {
-    if (this.properties && 'Model Config' in this.properties) {
-      return this.properties['Model Config'] as ModelConfig
-    }
-
-    return {
+    const stored = this.properties?.['Model Config'] as
+      | StoredModelConfig
+      | undefined
+    const config: ModelConfig = {
       upDirection: 'original',
       materialMode: 'original',
-      showSkeleton: false
+      showSkeleton: false,
+      ...stored,
+      gizmo: { ...DEFAULT_GIZMO, ...stored?.gizmo }
     }
+    if (stored) stored.gizmo = config.gizmo
+    return config
   }
 
   private applySceneConfig(config: SceneConfig, bgImagePath?: string) {
@@ -222,24 +274,38 @@ class Load3DConfiguration {
 
   private createModelUpdateHandler(
     loadFolder: string,
-    cameraState?: CameraState
+    cameraState?: CameraState,
+    silentOnNotFound: boolean = false
   ) {
     let isFirstLoad = true
-    return async (value: string | number | boolean | object) => {
-      if (!value) return
+    return async (value: IBaseWidget['value'], keepLoadedModel = false) => {
+      if (!value || value === LOAD3D_NONE_MODEL) {
+        this.load3d.clearModel()
+        return
+      }
 
-      const filename = value as string
+      const { filepath: filename, rootFolder: folder } = parseAnnotatedPath(
+        value as string,
+        loadFolder
+      )
 
       this.setResourceFolder(filename)
 
       const modelUrl = api.apiURL(
         Load3dUtils.getResourceURL(
           ...Load3dUtils.splitFilePath(filename),
-          loadFolder
+          folder
         )
       )
 
-      await this.load3d.loadModel(modelUrl, filename)
+      if (keepLoadedModel && this.isShowingModel(modelUrl)) {
+        isFirstLoad = false
+        return
+      }
+
+      const outcome = await this.load3d.loadModel(modelUrl, filename)
+      reportLoadModelOutcome(outcome, { silentOnNotFound })
+      if (outcome !== 'loaded') return
 
       const modelConfig = this.loadModelConfig()
       this.applyModelConfig(modelConfig)
@@ -252,7 +318,17 @@ class Load3DConfiguration {
         }
         isFirstLoad = false
       }
+
+      this.load3d.emitModelReady()
     }
+  }
+
+  private isShowingModel(modelUrl: string): boolean {
+    const { currentModel, originalURL } = this.load3d.modelManager
+    return (
+      currentModel !== null &&
+      Load3dUtils.isSameResourceURL(originalURL, modelUrl)
+    )
   }
 
   private setResourceFolder(filename: string): void {

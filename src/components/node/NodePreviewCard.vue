@@ -1,9 +1,15 @@
 <template>
   <div
-    class="flex w-50 flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background"
+    class="flex flex-col overflow-hidden rounded-lg border bg-background"
+    :style="{ width: `${BASE_WIDTH_PX * (scaleFactor / BASE_SCALE)}px` }"
+    data-testid="node-preview-card"
   >
     <div ref="previewContainerRef" class="overflow-hidden p-3">
-      <div ref="previewWrapperRef" class="origin-top-left scale-50">
+      <div
+        ref="previewWrapperRef"
+        class="origin-top-left"
+        :style="{ transform: `scale(${scaleFactor})` }"
+      >
         <LGraphNodePreview :node-def="nodeDef" position="relative" />
       </div>
     </div>
@@ -11,28 +17,28 @@
     <!-- Content Section -->
     <div class="flex flex-col gap-2 p-3 pt-1">
       <!-- Title -->
-      <h3 class="text-foreground m-0 text-xs font-semibold">
+      <h3 class="m-0 text-xs font-semibold text-foreground">
         {{ nodeDef.display_name }}
       </h3>
 
       <!-- Category Path -->
       <p
         v-if="showCategoryPath && nodeDef.category"
-        class="-mt-1 text-xs text-muted-foreground"
+        class="-mt-1 truncate text-xs text-muted-foreground"
       >
-        {{ nodeDef.category.replaceAll('/', ' > ') }}
+        {{ categoryPath }}
       </p>
 
       <!-- Badges -->
-      <div class="flex flex-wrap gap-2 empty:hidden">
-        <NodePricingBadge :node-def="nodeDef" />
+      <div class="flex flex-wrap gap-2 overflow-hidden empty:hidden">
+        <NodePricingBadge class="max-w-full truncate" :node-def="nodeDef" />
         <NodeProviderBadge :node-def="nodeDef" />
       </div>
 
       <!-- Description -->
       <p
         v-if="nodeDef.description"
-        class="m-0 text-2xs/normal font-normal text-muted-foreground"
+        class="m-0 max-h-[30vh] overflow-y-auto text-2xs/normal font-normal text-muted-foreground"
       >
         {{ nodeDef.description }}
       </p>
@@ -40,25 +46,26 @@
       <!-- Divider -->
       <div
         v-if="(inputs.length > 0 || outputs.length > 0) && showInputsAndOutputs"
-        class="border-t border-border-default"
+        class="border-t"
       />
 
       <!-- Inputs Section -->
       <div
         v-if="inputs.length > 0 && showInputsAndOutputs"
-        class="flex flex-col gap-1"
+        class="flex flex-col gap-1 text-2xs"
+        data-testid="node-preview-inputs"
       >
         <h4
-          class="m-0 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"
+          class="m-0 font-semibold tracking-wide text-muted-foreground uppercase"
         >
           {{ $t('nodeHelpPage.inputs') }}
         </h4>
         <div
           v-for="input in inputs"
           :key="input.name"
-          class="flex items-center justify-between gap-2 text-2xs"
+          class="flex items-center justify-between gap-2"
         >
-          <span class="text-foreground shrink-0">{{ input.name }}</span>
+          <span class="shrink-0 text-foreground">{{ input.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
             input.type
           }}</span>
@@ -68,19 +75,19 @@
       <!-- Outputs Section -->
       <div
         v-if="outputs.length > 0 && showInputsAndOutputs"
-        class="flex flex-col gap-1"
+        class="flex flex-col gap-1 text-2xs"
       >
         <h4
-          class="m-0 text-2xs font-semibold tracking-wide text-muted-foreground uppercase"
+          class="m-0 font-semibold tracking-wide text-muted-foreground uppercase"
         >
           {{ $t('nodeHelpPage.outputs') }}
         </h4>
         <div
           v-for="output in outputs"
           :key="output.name"
-          class="flex items-center justify-between gap-2 text-2xs"
+          class="flex items-center justify-between gap-2"
         >
-          <span class="text-foreground shrink-0">{{ output.name }}</span>
+          <span class="shrink-0 text-foreground">{{ output.name }}</span>
           <span class="min-w-0 truncate text-muted-foreground">{{
             output.type
           }}</span>
@@ -97,19 +104,23 @@ import { computed, ref } from 'vue'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
 import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { flattenInputSpecs } from '@/core/graph/nodeDef/inputSpecInterpreter'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
-const SCALE_FACTOR = 0.5
+const BASE_WIDTH_PX = 200
+const BASE_SCALE = 0.5
 const PREVIEW_CONTAINER_PADDING_PX = 24
 
 const {
   nodeDef,
   showInputsAndOutputs = true,
-  showCategoryPath = false
+  showCategoryPath = false,
+  scaleFactor = 0.5
 } = defineProps<{
   nodeDef: ComfyNodeDefImpl
   showInputsAndOutputs?: boolean
   showCategoryPath?: boolean
+  scaleFactor?: number
 }>()
 
 const previewContainerRef = ref<HTMLElement>()
@@ -118,17 +129,19 @@ const previewWrapperRef = ref<HTMLElement>()
 useResizeObserver(previewWrapperRef, (entries) => {
   const entry = entries[0]
   if (entry && previewContainerRef.value) {
-    const scaledHeight = entry.contentRect.height * SCALE_FACTOR
+    const scaledHeight = entry.contentRect.height * scaleFactor
     previewContainerRef.value.style.height = `${scaledHeight + PREVIEW_CONTAINER_PADDING_PX}px`
   }
 })
 
+const categoryPath = computed(() => nodeDef.category?.replaceAll('/', ' / '))
+
 const inputs = computed(() => {
   if (!nodeDef.inputs) return []
-  return Object.entries(nodeDef.inputs)
-    .filter(([_, input]) => !input.hidden)
-    .map(([name, input]) => ({
-      name,
+  return flattenInputSpecs(nodeDef.inputs)
+    .filter((input) => !input.hidden)
+    .map((input) => ({
+      name: input.name,
       type: input.type
     }))
 })

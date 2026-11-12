@@ -1,3 +1,26 @@
+const isoFractionalSecondsPattern = /\.(\d+)(?=Z|[+-]\d{2}:?\d{2}|$)/
+
+/**
+ * Parse an ISO 8601 date string tolerantly. Some JavaScript Date parsers reject
+ * fractional seconds unless they are exactly 3 digits, which turns values like
+ * "2026-04-18T10:04:55.6Z" or "2026-04-18T10:04:55.6513Z" into Invalid Date.
+ * This helper normalizes the fractional portion to millisecond precision first.
+ *
+ * @returns Parsed Date, or null if the string is missing or unparseable.
+ */
+export function parseIsoDateSafe(
+  input: string | null | undefined
+): Date | null {
+  if (!input) return null
+  const normalized = input.replace(
+    isoFractionalSecondsPattern,
+    (_, fractionalSeconds: string) =>
+      `.${fractionalSeconds.slice(0, 3).padEnd(3, '0')}`
+  )
+  const date = new Date(normalized)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
 /**
  * Return a local date key in YYYY-MM-DD format for grouping.
  *
@@ -61,17 +84,27 @@ export const formatShortMonthDay = (ts: number, locale: string): string => {
 }
 
 /**
- * Localized clock time, e.g. "10:05:06" with locale defaults for 12/24 hour.
+ * Localized clock time, e.g. "10:05:06" with the app locale for language and
+ * the browser/system locale preference for 12/24-hour formatting.
  *
  * @param ts Unix timestamp in milliseconds
  * @param locale BCP-47 locale string
+ * @param clockPreferenceLocale Optional locale source for hour-cycle preference
  * @returns Localized time string
  */
-export const formatClockTime = (ts: number, locale: string): string => {
+export const formatClockTime = (
+  ts: number,
+  locale: string,
+  clockPreferenceLocale?: string
+): string => {
   const d = new Date(ts)
+  const { hourCycle } = new Intl.DateTimeFormat(clockPreferenceLocale, {
+    hour: 'numeric'
+  }).resolvedOptions()
   return new Intl.DateTimeFormat(locale, {
     hour: 'numeric',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
+    hourCycle
   }).format(d)
 }

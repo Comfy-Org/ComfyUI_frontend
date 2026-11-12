@@ -1,7 +1,8 @@
 import type { Locator, Page } from '@playwright/test'
-import { test as base } from '@playwright/test'
 
-export class UserSelectPage {
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+
+class UserSelectPage {
   public readonly selectionUrl: string
   public readonly container: Locator
   public readonly newUserInput: Locator
@@ -24,6 +25,9 @@ export const userSelectPageFixture = base.extend<{
   userSelectPage: UserSelectPage
 }>({
   userSelectPage: async ({ page }, use) => {
+    await page.route('https://{api,stagingapi}.comfy.org/releases**', (route) =>
+      route.fulfill({ json: [] })
+    )
     const userSelectPage = new UserSelectPage(
       process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188',
       page

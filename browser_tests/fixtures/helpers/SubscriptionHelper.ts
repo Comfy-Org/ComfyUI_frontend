@@ -1,0 +1,221 @@
+import { expect } from '@playwright/test'
+import type { Page, Route } from '@playwright/test'
+
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import {
+  createBalance,
+  createSubscriptionStatus,
+  UNSUBSCRIBED,
+  ZERO_BALANCE
+} from '@e2e/fixtures/data/subscriptionFixtures'
+import type { BalanceResponse } from '@e2e/fixtures/data/subscriptionFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
+
+export interface SubscriptionConfig {
+  status: BillingStatusResponse
+  balance: BalanceResponse
+  features: RemoteConfig
+}
+
+function emptyConfig(): SubscriptionConfig {
+  return {
+    status: createSubscriptionStatus(UNSUBSCRIBED),
+    balance: createBalance(ZERO_BALANCE),
+    features: { subscription_required: true }
+  }
+}
+
+export type SubscriptionOperator = (
+  config: SubscriptionConfig
+) => SubscriptionConfig
+
+function withSubscriptionStatus(
+  overrides: Partial<BillingStatusResponse>
+): SubscriptionOperator {
+  return (config) => ({
+    ...config,
+    status: { ...config.status, ...overrides }
+  })
+}
+
+export function withActiveSubscription(
+  tier: NonNullable<BillingStatusResponse['subscription_tier']> = 'CREATOR'
+): SubscriptionOperator {
+  return withSubscriptionStatus({
+    is_active: true,
+    subscription_tier: tier,
+    renewal_date: '2099-12-31T00:00:00.000Z'
+  })
+}
+
+export function withFreeTier(): SubscriptionOperator {
+  return withSubscriptionStatus({
+    is_active: true,
+    subscription_tier: 'FREE'
+  })
+}
+
+export function withFreeTierEnabled(): SubscriptionOperator {
+  return (config) => ({
+    ...config,
+    features: {
+      ...config.features,
+      free_tier_balance: {
+        allowance: 100,
+        used: 0,
+        remaining: 100
+      }
+    }
+  })
+}
+
+export function withUnsubscribed(): SubscriptionOperator {
+  return withSubscriptionStatus({
+    is_active: false,
+    subscription_tier: 'FREE'
+  })
+}
+
+export class SubscriptionHelper {
+  private statusResponse: BillingStatusResponse
+  private balanceResponse: BalanceResponse
+  private featuresResponse: RemoteConfig
+  private routeHandlers: Array<{
+    pattern: string
+    handler: (route: Route) => Promise<void>
+  }> = []
+
+  constructor(
+    private readonly page: Page,
+    config: SubscriptionConfig = emptyConfig()
+  ) {
+    this.statusResponse = { ...config.status }
+    this.balanceResponse = { ...config.balance }
+    this.featuresResponse = { ...config.features }
+  }
+
+  async mock(): Promise<void> {
+    await this.page.addInitScript(() => {
+      window.__CONFIG__ = {
+        ...window.__CONFIG__,
+        subscription_required: true
+      }
+    })
+
+    // The cloud build calls `/api/features` at boot via `refreshRemoteConfig`,
+    // which overwrites `window.__CONFIG__` wholesale. Mock it to preserve
+    // `subscription_required: true` after that fetch resolves.
+    const featuresPattern = '**/api/features'
+    const featuresHandler = async (route: Route) => {
+      await route.fulfill({ json: this.featuresResponse })
+    }
+    this.routeHandlers.push({
+      pattern: featuresPattern,
+      handler: featuresHandler
+    })
+    await this.page.route(featuresPattern, featuresHandler)
+
+    const statusPattern = '**/api/billing/status'
+    const statusHandler = async (route: Route) => {
+      await route.fulfill({ json: this.statusResponse })
+    }
+    this.routeHandlers.push({ pattern: statusPattern, handler: statusHandler })
+    await this.page.route(statusPattern, statusHandler)
+  }
+
+  configure(...operators: SubscriptionOperator[]): void {
+    const config = operators.reduce<SubscriptionConfig>((cfg, op) => op(cfg), {
+      status: { ...this.statusResponse },
+      balance: { ...this.balanceResponse },
+      features: { ...this.featuresResponse }
+    })
+    this.statusResponse = { ...config.status }
+    this.balanceResponse = { ...config.balance }
+    this.featuresResponse = { ...config.features }
+  }
+
+  setStatus(overrides: Partial<BillingStatusResponse>): void {
+    this.statusResponse = { ...this.statusResponse, ...overrides }
+  }
+
+  setBalance(overrides: Partial<BalanceResponse>): void {
+    this.balanceResponse = { ...this.balanceResponse, ...overrides }
+  }
+
+  /**
+   * Open the user popover and return its locator after verifying visibility.
+   * Uses `dispatchEvent` to bypass Playwright's actionability check — a
+   * subscription dialog backdrop can intercept a normal `.click()` during
+   * initial page load.
+   */
+  async openUserPopover() {
+    await this.page
+      .getByTestId(TestIds.user.currentUserButton)
+      .dispatchEvent('click')
+    const popover = this.page.getByTestId(TestIds.user.currentUserPopover)
+    await expect(popover).toBeVisible()
+    return popover
+  }
+
+  /**
+   * Open the user popover and click the subscribe button.
+   * Uses `dispatchEvent` on the button too — the subscription dialog's
+   * backdrop appears mid-action, which would cause Playwright's actionability
+   * re-check to block a standard `.click()`.
+   */
+  async clickPopoverSubscribe(): Promise<void> {
+    const popover = await this.openUserPopover()
+    await popover
+      .getByRole('button', { name: /subscribe/i })
+      .first()
+      .dispatchEvent('click')
+  }
+
+  /**
+   * Dismiss the subscription-required dialog if it appears after boot.
+   * The dialog opens asynchronously after the `isLoggedIn` watcher fires,
+   * so we poll briefly; absence is not a failure.
+   */
+  async dismissSubscriptionDialogIfOpen(): Promise<void> {
+    const dialog = this.page.locator(
+      '[data-dialog-key="subscription-required"]'
+    )
+    // `expect().toBeVisible()` throws a Playwright AssertionError (not
+    // errors.TimeoutError) when the element is absent — both cases mean
+    // "dialog not present", which is the expected happy path here.
+    const appeared = await expect(dialog)
+      .toBeVisible({ timeout: 2000 })
+      .then(() => true)
+      .catch(() => false)
+    if (!appeared) return
+    const closeButton = dialog.getByRole('button', { name: /close/i }).first()
+    if (await closeButton.isVisible()) {
+      await closeButton.click()
+    } else {
+      await this.page.keyboard.press('Escape')
+    }
+    await expect(dialog).toBeHidden()
+  }
+
+  async clearMocks(): Promise<void> {
+    for (const { pattern, handler } of this.routeHandlers) {
+      await this.page.unroute(pattern, handler)
+    }
+    this.routeHandlers = []
+    this.statusResponse = { ...UNSUBSCRIBED }
+    this.balanceResponse = { ...ZERO_BALANCE }
+    this.featuresResponse = { subscription_required: true }
+  }
+}
+
+export function createSubscriptionHelper(
+  page: Page,
+  ...operators: SubscriptionOperator[]
+): SubscriptionHelper {
+  const config = operators.reduce<SubscriptionConfig>(
+    (cfg, op) => op(cfg),
+    emptyConfig()
+  )
+  return new SubscriptionHelper(page, config)
+}

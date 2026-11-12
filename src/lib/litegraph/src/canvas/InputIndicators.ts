@@ -1,4 +1,5 @@
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
+import { isMiddleButtonHeld } from '@/base/pointerUtils'
 
 /**
  * A class that can be added to the render cycle to show pointer / keyboard status symbols.
@@ -62,8 +63,8 @@ export class InputIndicators implements Disposable {
       canvas.drawFrontCanvas = origDrawFrontCanvas
     })
 
-    canvas.drawFrontCanvas = () => {
-      origDrawFrontCanvas()
+    canvas.drawFrontCanvas = (...args) => {
+      origDrawFrontCanvas(...args)
       this.draw()
     }
   }
@@ -71,7 +72,7 @@ export class InputIndicators implements Disposable {
   private _onPointerDownOrMove = this.onPointerDownOrMove.bind(this)
   onPointerDownOrMove(e: MouseEvent): void {
     this.mouse0Down = (e.buttons & 1) === 1
-    this.mouse1Down = (e.buttons & 4) === 4
+    this.mouse1Down = isMiddleButtonHeld(e)
     this.mouse2Down = (e.buttons & 2) === 2
 
     this.x = e.clientX

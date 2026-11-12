@@ -3,11 +3,9 @@
     data-component-id="ModelInfoPanel"
     class="flex scrollbar-custom h-full flex-col"
   >
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase select-none">
-          {{ t('assetBrowser.modelInfo.basicInfo') }}
-        </span>
+        {{ t('assetBrowser.modelInfo.basicInfo') }}
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.displayName')">
         <div class="group flex justify-between">
@@ -27,7 +25,7 @@
             :aria-label="t('assetBrowser.modelInfo.editDisplayName')"
             @click="isEditingDisplayName = !isImmutable"
           >
-            <i class="icon-[lucide--square-pen] size-4 self-center" />
+            <i class="icon-[lucide--square-pen] self-center" />
           </Button>
         </div>
       </ModelInfoField>
@@ -44,7 +42,7 @@
           :href="sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
+          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           <img
             v-if="sourceName === 'Civitai'"
@@ -59,20 +57,18 @@
             class="size-4 shrink-0"
           />
           {{ t('assetBrowser.modelInfo.viewOnSource', { source: sourceName }) }}
-          <i class="icon-[lucide--external-link] size-4 shrink-0" />
+          <i class="icon-[lucide--external-link]" />
         </a>
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase select-none">
-          {{ t('assetBrowser.modelInfo.modelTagging') }}
-        </span>
+        {{ t('assetBrowser.modelInfo.modelTagging') }}
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.modelType')">
-        <Select v-if="!isImmutable" v-model="selectedModelType">
-          <SelectTrigger class="w-full">
+        <Select v-if="isModelTypeEditable" v-model="selectedModelType">
+          <SelectTrigger>
             <SelectValue
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
             />
@@ -87,64 +83,49 @@
             </SelectItem>
           </SelectContent>
         </Select>
-        <div v-else class="p-2 text-sm text-muted-foreground">
-          {{
-            modelTypes.find((o) => o.value === selectedModelType)?.name ??
-            t('assetBrowser.unknown')
-          }}
-        </div>
+        <template v-else>
+          <div
+            aria-disabled="true"
+            :aria-describedby="modelTypeReadonlyReasonId"
+            class="cursor-not-allowed p-2 text-muted-foreground"
+          >
+            {{
+              modelTypes.find((o) => o.value === selectedModelType)?.name ??
+              t('assetBrowser.unknown')
+            }}
+          </div>
+          <span :id="modelTypeReadonlyReasonId" class="sr-only">
+            {{ modelTypeReadonlyReason }}
+          </span>
+        </template>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.compatibleBaseModels')">
-        <TagsInput
-          v-slot="{ isEmpty }"
+        <TagEditor
           v-model="baseModels"
           :disabled="isImmutable"
-        >
-          <TagsInputItem
-            v-for="model in baseModels"
-            :key="model"
-            :value="model"
-          >
-            <TagsInputItemText />
-            <TagsInputItemDelete />
-          </TagsInputItem>
-          <TagsInputInput
-            :is-empty="isEmpty"
-            :placeholder="
-              isImmutable
-                ? t('assetBrowser.modelInfo.baseModelUnknown')
-                : t('assetBrowser.modelInfo.addBaseModel')
-            "
-          />
-        </TagsInput>
+          :placeholder="
+            isImmutable
+              ? t('assetBrowser.modelInfo.baseModelUnknown')
+              : t('assetBrowser.modelInfo.addBaseModel')
+          "
+        />
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.additionalTags')">
-        <TagsInput
-          v-slot="{ isEmpty }"
+        <TagEditor
           v-model="additionalTags"
           :disabled="isImmutable"
-        >
-          <TagsInputItem v-for="tag in additionalTags" :key="tag" :value="tag">
-            <TagsInputItemText />
-            <TagsInputItemDelete />
-          </TagsInputItem>
-          <TagsInputInput
-            :is-empty="isEmpty"
-            :placeholder="
-              isImmutable
-                ? t('assetBrowser.modelInfo.noAdditionalTags')
-                : t('assetBrowser.modelInfo.addTag')
-            "
-          />
-        </TagsInput>
+          :placeholder="
+            isImmutable
+              ? t('assetBrowser.modelInfo.noAdditionalTags')
+              : t('assetBrowser.modelInfo.addTag')
+          "
+        />
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase select-none">
-          {{ t('assetBrowser.modelInfo.modelDescription') }}
-        </span>
+        {{ t('assetBrowser.modelInfo.modelDescription') }}
       </template>
       <ModelInfoField
         v-if="triggerPhrases.length > 0"
@@ -156,10 +137,9 @@
             size="icon-sm"
             :title="t('g.copyAll')"
             :aria-label="t('g.copyAll')"
-            class="p-0"
             @click="copyToClipboard(triggerPhrases.join(', '))"
           >
-            <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />
+            <i class="icon-[lucide--copy] min-h-4 min-w-4 opacity-60" />
           </Button>
         </template>
         <div class="flex flex-wrap gap-1 pt-1">
@@ -173,7 +153,7 @@
             @click="copyToClipboard(phrase)"
           >
             {{ phrase }}
-            <i class="icon-[lucide--copy] size-4 min-h-4 min-w-4 opacity-60" />
+            <i class="icon-[lucide--copy] min-h-4 min-w-4 opacity-60" />
           </Button>
         </div>
       </ModelInfoField>
@@ -181,7 +161,7 @@
         v-if="description"
         :label="t('assetBrowser.modelInfo.description')"
       >
-        <p class="text-sm whitespace-pre-wrap">{{ description }}</p>
+        <p class="whitespace-pre-wrap">{{ description }}</p>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.description')">
         <textarea
@@ -196,7 +176,7 @@
           rows="3"
           :class="
             cn(
-              'w-full resize-y rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground transition-colors outline-none focus:bg-component-node-widget-background',
+              'w-full resize-y scrollbar-gutter-stable rounded-lg border border-transparent bg-transparent px-3 py-2 transition-colors outline-none focus:bg-input',
               isImmutable && 'cursor-not-allowed'
             )
           "
@@ -209,42 +189,41 @@
 
 <script setup lang="ts">
 import { useDebounceFn } from '@vueuse/core'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import EditableText from '@/components/common/EditableText.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
-import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
-import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
-import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
-import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import Button from '@comfyorg/design-system/button/Button'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import TagEditor from '@/components/common/TagEditor.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
-import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
+import { useAssetMetadataStore } from '@/platform/assets/stores/assetMetadataStore'
 import {
   getAssetAdditionalTags,
   getAssetBaseModels,
   getAssetDescription,
   getAssetDisplayName,
   getAssetFilename,
-  getAssetModelType,
   getAssetSourceUrl,
   getAssetTriggerPhrases,
   getAssetUserDescription,
-  getSourceName
+  getEditableModelType,
+  getSourceName,
+  resolveModelTypeTagUpdate
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
-import ModelInfoField from './ModelInfoField.vue'
+import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
@@ -253,23 +232,33 @@ const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
   'descriptionTextarea'
 )
 
-const accordionClass = cn(
-  'border-t border-border-default bg-modal-panel-background'
-)
-
 const { asset, cacheKey } = defineProps<{
   asset: AssetDisplayItem
   cacheKey?: string
 }>()
 
 const assetsStore = useAssetsStore()
+const metadataStore = useAssetMetadataStore()
+const { flags } = useFeatureFlags()
 const { modelTypes } = useModelTypes()
 
-const pendingUpdates = ref<AssetUserMetadata>({})
+const pendingUpdates = computed(() => metadataStore.getPendingUpdates(asset.id))
 const pendingModelType = ref<string | undefined>(undefined)
 const isEditingDisplayName = ref(false)
 
 const isImmutable = computed(() => asset.is_immutable ?? true)
+// Retagging a model rewrites its asset tags; core is filesystem-backed and does
+// not yet move the file to match, so the model type is read-only off-cloud.
+const isModelTypeEditable = computed(() => !isImmutable.value && isCloud)
+// The read-only field is reached for an immutable asset (even on cloud) or on
+// core. Immutability is the more specific, actionable reason, so it wins when
+// both hold rather than blaming "core" on a cloud deployment.
+const modelTypeReadonlyReason = computed(() =>
+  isImmutable.value
+    ? t('assetBrowser.modelInfo.modelTypeImmutableReadonly')
+    : t('assetBrowser.modelInfo.modelTypeCoreReadonly')
+)
+const modelTypeReadonlyReasonId = useId()
 const displayName = computed(
   () => pendingUpdates.value.name ?? getAssetDisplayName(asset)
 )
@@ -281,69 +270,54 @@ const description = computed(() => getAssetDescription(asset))
 const triggerPhrases = computed(() => getAssetTriggerPhrases(asset))
 
 watch(
-  () => asset.user_metadata,
-  () => {
-    pendingUpdates.value = {}
-  }
-)
-
-watch(
   () => asset.tags,
   () => {
     pendingModelType.value = undefined
   }
 )
 
-const debouncedFlushMetadata = useDebounceFn(() => {
-  if (isImmutable.value) return
-  assetsStore.updateAssetMetadata(
-    asset,
-    { ...(asset.user_metadata ?? {}), ...pendingUpdates.value },
-    cacheKey
-  )
-}, 500)
-
-function queueMetadataUpdate(updates: AssetUserMetadata) {
-  pendingUpdates.value = { ...pendingUpdates.value, ...updates }
-  debouncedFlushMetadata()
-}
-
 function handleDisplayNameEdit(newName: string) {
   isEditingDisplayName.value = false
   if (newName && newName !== displayName.value) {
-    queueMetadataUpdate({ name: newName })
+    metadataStore.queueUpdate(asset, { name: newName }, cacheKey)
   }
 }
 
 const debouncedSaveModelType = useDebounceFn((newModelType: string) => {
-  if (isImmutable.value) return
-  const currentModelType = getAssetModelType(asset)
-  if (currentModelType === newModelType) return
-  const newTags = asset.tags
-    .filter((tag) => tag !== currentModelType)
-    .concat(newModelType)
-  assetsStore.updateAssetTags(asset, newTags, cacheKey)
+  const newTags = resolveModelTypeTagUpdate(
+    asset,
+    newModelType,
+    isModelTypeEditable.value,
+    flags.supportsModelTypeTags
+  )
+  if (newTags) assetsStore.updateAssetTags(asset, newTags, cacheKey)
 }, 500)
 
 const baseModels = computed({
   get: () => pendingUpdates.value.base_model ?? getAssetBaseModels(asset),
-  set: (value: string[]) => queueMetadataUpdate({ base_model: value })
+  set: (value: string[]) =>
+    metadataStore.queueUpdate(asset, { base_model: value }, cacheKey)
 })
 
 const additionalTags = computed({
   get: () =>
     pendingUpdates.value.additional_tags ?? getAssetAdditionalTags(asset),
-  set: (value: string[]) => queueMetadataUpdate({ additional_tags: value })
+  set: (value: string[]) =>
+    metadataStore.queueUpdate(asset, { additional_tags: value }, cacheKey)
 })
 
 const userDescription = computed({
   get: () =>
     pendingUpdates.value.user_description ?? getAssetUserDescription(asset),
-  set: (value: string) => queueMetadataUpdate({ user_description: value })
+  set: (value: string) =>
+    metadataStore.queueUpdate(asset, { user_description: value }, cacheKey)
 })
 
 const selectedModelType = computed({
-  get: () => pendingModelType.value ?? getAssetModelType(asset) ?? undefined,
+  get: () =>
+    pendingModelType.value ??
+    getEditableModelType(asset, flags.supportsModelTypeTags) ??
+    undefined,
   set: (value: string | undefined) => {
     if (!value) return
     pendingModelType.value = value

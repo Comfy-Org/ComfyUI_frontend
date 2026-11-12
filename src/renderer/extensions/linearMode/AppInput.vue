@@ -4,10 +4,11 @@ import { computed } from 'vue'
 
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { cn } from '@/utils/tailwindUtil'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { cn } from '@comfyorg/tailwind-utils'
 
-const { id, name } = defineProps<{
-  id: string
+const { widgetId, name } = defineProps<{
+  widgetId?: WidgetId
   enable: boolean
   name: string
 }>()
@@ -15,18 +16,19 @@ const { id, name } = defineProps<{
 const appModeStore = useAppModeStore()
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
 
-function matchesThis([nodeId, widgetName]: LinearInput) {
-  return id == nodeId && name === widgetName
+function matchesThis([storedId]: LinearInput) {
+  return widgetId !== undefined && storedId === widgetId
 }
 function togglePromotion() {
+  if (!widgetId) return
   if (isPromoted.value) remove(appModeStore.selectedInputs, matchesThis)
-  else appModeStore.selectedInputs.push([id, name])
+  else appModeStore.selectedInputs.push([widgetId, name])
 }
 </script>
 <template>
   <div
     v-if="enable"
-    class="pointer-events-auto relative col-span-2 flex cursor-pointer flex-row gap-1"
+    class="pointer-events-auto relative flex min-w-0 cursor-pointer gap-1"
     @pointerdown.capture.stop.prevent="togglePromotion"
     @click.capture.stop.prevent
     @pointerup.capture.stop.prevent
@@ -36,27 +38,27 @@ function togglePromotion() {
     <div
       :class="
         cn(
-          'm-1 size-4 self-center rounded-sm border border-primary-background',
-          isPromoted && 'flex items-center bg-primary-background'
+          'm-1 size-4 self-center rounded-sm border border-primary',
+          isPromoted && 'flex items-center bg-primary'
         )
       "
     >
       <i
         v-if="isPromoted"
-        class="bg-primary-foreground place-center icon-[lucide--check]"
+        class="place-center icon-[lucide--check] bg-background"
       />
     </div>
     <div
       :class="
         cn(
-          'pointer-events-none grid flex-1 grid-cols-2 items-stretch rounded-lg ring-primary-background',
+          'pointer-events-none grid min-w-0 flex-1 grid-cols-1 items-stretch rounded-lg ring-primary',
           isPromoted && 'ring-2'
         )
       "
     >
       <slot />
     </div>
-    <div class="absolute size-full rounded-lg hover:bg-primary-background/10" />
+    <div class="absolute size-full rounded-lg hover:bg-primary/10" />
   </div>
   <slot v-else />
 </template>

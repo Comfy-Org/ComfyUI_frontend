@@ -1,13 +1,13 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="video-preview group relative flex size-full min-h-16 min-w-16 flex-col px-2"
+    class="video-preview flex size-full min-h-55 min-w-16 flex-col px-2"
     @keydown="handleKeyDown"
   >
     <!-- Video Wrapper -->
     <div
       ref="videoWrapperEl"
-      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative flex flex-1 overflow-hidden rounded-[5px] bg-node"
       tabindex="0"
       role="region"
       :aria-label="$t('g.videoPreview')"
@@ -21,13 +21,13 @@
       <div
         v-if="videoError"
         role="alert"
-        class="flex flex-auto flex-col items-center justify-center bg-muted-background py-8 text-center text-base-foreground"
+        class="flex flex-auto flex-col items-center justify-center bg-muted py-8 text-center text-foreground"
       >
-        <i class="mb-2 icon-[lucide--video-off] size-12 text-base-foreground" />
-        <p class="text-sm text-base-foreground">
+        <i class="mb-2 icon-[lucide--video-off] size-12" />
+        <p class="text-sm">
           {{ $t('g.videoFailedToLoad') }}
         </p>
-        <p class="mt-1 text-xs text-base-foreground">
+        <p class="mt-1 text-xs">
           {{ getVideoFilename(currentVideoUrl) }}
         </p>
       </div>
@@ -36,16 +36,19 @@
       <Skeleton
         v-if="showLoader && !videoError"
         class="absolute inset-0 size-full"
-        border-radius="5px"
-        width="100%"
-        height="100%"
       />
 
       <!-- Main Video -->
       <video
         v-if="!videoError"
+        data-testid="main-video"
         :src="currentVideoUrl"
-        :class="cn('block size-full object-contain', showLoader && 'invisible')"
+        :class="
+          cn(
+            'absolute inset-0 size-full object-contain',
+            showLoader && 'invisible'
+          )
+        "
         preload="metadata"
         controls
         loop
@@ -60,24 +63,28 @@
         class="actions absolute top-2 right-2 flex gap-2.5"
       >
         <!-- Download Button -->
-        <button
-          :class="actionButtonClass"
+        <Button
+          variant="secondary"
+          size="icon"
+          class="shadow-sm"
           :title="$t('g.downloadVideo')"
           :aria-label="$t('g.downloadVideo')"
           @click="handleDownload"
         >
-          <i class="icon-[lucide--download] size-4" />
-        </button>
+          <i class="icon-[lucide--download]" />
+        </Button>
 
         <!-- Close Button -->
-        <button
-          :class="actionButtonClass"
+        <Button
+          variant="secondary"
+          size="icon"
+          class="shadow-sm"
           :title="$t('g.removeVideo')"
           :aria-label="$t('g.removeVideo')"
           @click="handleRemove"
         >
-          <i class="icon-[lucide--x] size-4" />
-        </button>
+          <i class="icon-[lucide--x]" />
+        </Button>
       </div>
 
       <!-- Multiple Videos Navigation -->
@@ -101,17 +108,15 @@
     </div>
 
     <!-- Video Dimensions -->
-    <div class="mt-2 text-center text-xs text-muted-foreground">
+    <div class="mt-2 text-center text-muted-foreground">
       <span
         v-if="videoError"
-        class="text-red-400"
+        class="text-destructive"
         data-testid="error-loading-video"
       >
         {{ $t('g.errorLoadingVideo') }}
       </span>
-      <span v-else-if="showLoader" class="text-smoke-400">
-        {{ $t('g.loading') }}...
-      </span>
+      <span v-else-if="showLoader"> {{ $t('g.loading') }}... </span>
       <span v-else>
         {{ actualDimensions || $t('g.calculatingDimensions') }}
       </span>
@@ -120,29 +125,30 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue'
-import Skeleton from 'primevue/skeleton'
+import Button from '@comfyorg/design-system/button/Button'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
+import { useTelemetry } from '@comfyorg/telemetry'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { cn } from '@/utils/tailwindUtil'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { cn } from '@comfyorg/tailwind-utils'
 
 interface VideoPreviewProps {
   /** Array of video URLs to display */
   readonly imageUrls: readonly string[] // Named imageUrls for consistency with parent components
   /** Optional node ID for context-aware actions */
-  readonly nodeId?: string
+  readonly nodeId?: NodeId
 }
 
 const props = defineProps<VideoPreviewProps>()
 
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
-
-const actionButtonClass =
-  'flex h-8 min-h-8 items-center justify-center gap-2.5 rounded-lg border-0 bg-button-surface px-2 py-2 text-button-surface-contrast shadow-sm transition-colors duration-200 hover:bg-button-hover-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-button-surface-contrast focus-visible:ring-offset-2 focus-visible:ring-offset-transparent cursor-pointer'
 
 // Component state
 const currentIndex = ref(0)
@@ -198,18 +204,24 @@ const handleVideoError = () => {
   showLoader.value = false
   videoError.value = true
   actualDimensions.value = null
+
+  const failedUrl = currentVideoUrl.value
+  if (!failedUrl) return
+  void describeImageLoadFailure(failedUrl).then((metadata) => {
+    useTelemetry()?.trackImageLoadFailed({
+      ...metadata,
+      source: 'node_video_preview'
+    })
+  })
 }
 
 const handleDownload = () => {
   try {
     downloadFile(currentVideoUrl.value)
   } catch (error) {
-    useToast().add({
-      severity: 'error',
-      summary: 'Error',
-      detail: t('g.failedToDownloadVideo'),
-      life: 3000,
-      group: 'video-preview'
+    useToast().error(t('g.error'), {
+      description: t('g.failedToDownloadVideo'),
+      duration: 3000
     })
   }
 }
@@ -254,8 +266,8 @@ const getNavigationDotClass = (index: number) =>
   cn(
     'size-2 cursor-pointer rounded-full border-0 transition-all duration-200',
     index === currentIndex.value
-      ? 'bg-base-foreground'
-      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
+      ? 'bg-foreground'
+      : 'bg-foreground/50 hover:bg-foreground/80'
   )
 
 const handleKeyDown = (event: KeyboardEvent) => {

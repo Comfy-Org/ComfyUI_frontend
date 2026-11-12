@@ -1,16 +1,25 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 const saveNodeTypes = new Set([
   'SaveImage',
+  'SaveImageAdvanced',
+  'SaveSVGNode',
   'SaveVideo',
   'SaveAnimatedWEBP',
   'SaveWEBM',
   'SaveAudio',
+  'SaveAudioMP3',
+  'SaveAudioOpus',
+  'SaveAudioAdvanced',
   'SaveGLB',
+  'Save3DAdvanced',
+  'SaveGaussianSplat',
+  'SavePointCloud',
   'SaveAnimatedPNG',
   'CLIPSave',
   'VAESave',
@@ -21,7 +30,7 @@ const saveNodeTypes = new Set([
 
 // Use widget values and dates in output filenames
 
-app.registerExtension({
+export const saveImageExtraOutputExtension: ComfyExtension = {
   name: 'Comfy.SaveImageExtraOutput',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -31,18 +40,14 @@ app.registerExtension({
       const onNodeCreated = nodeType.prototype.onNodeCreated
       // When the SaveImage node is created we want to override the serialization of the output name widget to run our S&R
       nodeType.prototype.onNodeCreated = function () {
-        const r = onNodeCreated
-          ? // @ts-expect-error fixme ts strict error
-            onNodeCreated.apply(this, arguments)
-          : undefined
+        const r = onNodeCreated?.call(this)
 
-        // @ts-expect-error fixme ts strict error
-        const widget = this.widgets.find((w) => w.name === 'filename_prefix')
-        // @ts-expect-error fixme ts strict error
-        widget.serializeValue = () => {
-          // @ts-expect-error fixme ts strict error
-          return applyTextReplacements(app.graph, widget.value)
-        }
+        const widget = this.widgets?.find((w) => w.name === 'filename_prefix')
+        if (!widget) return r
+        widget.serializeValue = () =>
+          typeof widget.value === 'string'
+            ? applyTextReplacements(app.graph, widget.value)
+            : widget.value
 
         return r
       }
@@ -50,12 +55,9 @@ app.registerExtension({
       // When any other node is created add a property to alias the node
       const onNodeCreated = nodeType.prototype.onNodeCreated
       nodeType.prototype.onNodeCreated = function () {
-        const r = onNodeCreated
-          ? // @ts-expect-error fixme ts strict error
-            onNodeCreated.apply(this, arguments)
-          : undefined
+        const r = onNodeCreated?.call(this)
 
-        if (!this.properties || !('Node name for S&R' in this.properties)) {
+        if (!('Node name for S&R' in this.properties)) {
           this.addProperty('Node name for S&R', this.constructor.type, 'string')
         }
 
@@ -63,4 +65,4 @@ app.registerExtension({
       }
     }
   }
-})
+}

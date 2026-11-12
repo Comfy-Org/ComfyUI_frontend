@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import {
   REROUTE_RADIUS,
   boundsIntersect,
   calculateBounds,
-  pointInBounds
+  pointInBounds,
+  polylineIntersectsBounds
 } from '@/renderer/core/layout/utils/layoutMath'
 
 describe('layoutMath utils', () => {
@@ -51,7 +55,7 @@ describe('layoutMath utils', () => {
 
   describe('calculateBounds', () => {
     const createTestNode = (
-      id: string,
+      id: NodeId,
       x: number,
       y: number,
       width: number,
@@ -66,7 +70,7 @@ describe('layoutMath utils', () => {
     })
 
     it('calculates bounds for single node', () => {
-      const nodes = [createTestNode('1', 10, 20, 100, 50)]
+      const nodes = [createTestNode(toNodeId('1'), 10, 20, 100, 50)]
       const bounds = calculateBounds(nodes)
 
       expect(bounds).toEqual({
@@ -79,9 +83,9 @@ describe('layoutMath utils', () => {
 
     it('calculates combined bounds for multiple nodes', () => {
       const nodes = [
-        createTestNode('1', 0, 0, 50, 50), // Top-left: (0,0) to (50,50)
-        createTestNode('2', 100, 100, 30, 40), // Bottom-right: (100,100) to (130,140)
-        createTestNode('3', 25, 75, 20, 10) // Middle: (25,75) to (45,85)
+        createTestNode(toNodeId('1'), 0, 0, 50, 50), // Top-left: (0,0) to (50,50)
+        createTestNode(toNodeId('2'), 100, 100, 30, 40), // Bottom-right: (100,100) to (130,140)
+        createTestNode(toNodeId('3'), 25, 75, 20, 10) // Middle: (25,75) to (45,85)
       ]
       const bounds = calculateBounds(nodes)
 
@@ -95,8 +99,8 @@ describe('layoutMath utils', () => {
 
     it('handles nodes with negative positions', () => {
       const nodes = [
-        createTestNode('1', -50, -30, 40, 20), // (-50,-30) to (-10,-10)
-        createTestNode('2', 10, 15, 25, 35) // (10,15) to (35,50)
+        createTestNode(toNodeId('1'), -50, -30, 40, 20), // (-50,-30) to (-10,-10)
+        createTestNode(toNodeId('2'), 10, 15, 25, 35) // (10,15) to (35,50)
       ]
       const bounds = calculateBounds(nodes)
 
@@ -117,6 +121,65 @@ describe('layoutMath utils', () => {
         width: -Infinity,
         height: -Infinity
       })
+    })
+  })
+
+  describe('polylineIntersectsBounds', () => {
+    const bounds = { x: 0, y: 0, width: 10, height: 10 }
+
+    it.for([
+      {
+        name: 'fully inside',
+        points: [
+          { x: 2, y: 2 },
+          { x: 8, y: 8 }
+        ],
+        expected: true
+      },
+      {
+        name: 'crossing with both ends outside',
+        points: [
+          { x: -5, y: 5 },
+          { x: 15, y: 5 }
+        ],
+        expected: true
+      },
+      {
+        name: 'second segment crossing',
+        points: [
+          { x: 20, y: 20 },
+          { x: 20, y: 5 },
+          { x: -5, y: 5 }
+        ],
+        expected: true
+      },
+      {
+        name: 'passing the corner diagonally',
+        points: [
+          { x: 5, y: 20 },
+          { x: 20, y: 5 }
+        ],
+        expected: false
+      },
+      {
+        name: 'parallel outside an edge',
+        points: [
+          { x: -5, y: 11 },
+          { x: 15, y: 11 }
+        ],
+        expected: false
+      },
+      { name: 'empty', points: [], expected: false },
+      {
+        name: 'non-finite',
+        points: [
+          { x: Number.NaN, y: 5 },
+          { x: 5, y: 5 }
+        ],
+        expected: false
+      }
+    ])('$name -> $expected', ({ points, expected }) => {
+      expect(polylineIntersectsBounds(points, bounds)).toBe(expected)
     })
   })
 })

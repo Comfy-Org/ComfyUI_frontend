@@ -3,12 +3,13 @@
  * Supports both job-based and asset-based workflow extraction
  */
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { getJobWorkflow } from '@/services/jobOutputCache'
+import { getJobApiPrompt, getJobWorkflow } from '@/services/jobOutputCache'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 /**
  * Extract workflow from AssetItem using jobs API
@@ -51,11 +52,11 @@ export async function extractWorkflowFromAsset(asset: AssetItem): Promise<{
       // Handle both string and object workflow data
       const workflow =
         typeof workflowData.workflow === 'string'
-          ? JSON.parse(workflowData.workflow)
-          : workflowData.workflow
+          ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflowData.workflow)
+          : (workflowData.workflow as ComfyWorkflowJSON)
 
       return {
-        workflow: workflow as ComfyWorkflowJSON,
+        workflow,
         filename: baseFilename
       }
     }
@@ -67,6 +68,25 @@ export async function extractWorkflowFromAsset(asset: AssetItem): Promise<{
     workflow: null,
     filename: baseFilename
   }
+}
+
+/**
+ * Extract the API-format graph stored for an output asset's job
+ *
+ * Only jobs submitted through the API expose one, so this is the fallback for
+ * assets whose job embeds no editor workflow. The graph is returned
+ * unvalidated — callers gate it with `app.isApiJson` before loading it.
+ *
+ * @param asset The asset item to extract the API graph from
+ * @returns The stored API-format graph, or undefined when there is none
+ */
+export async function extractApiPromptFromAsset(
+  asset: AssetItem
+): Promise<unknown> {
+  const metadata = getOutputAssetMetadata(asset.user_metadata)
+  if (!metadata?.jobId) return undefined
+
+  return await getJobApiPrompt(metadata.jobId)
 }
 
 /**

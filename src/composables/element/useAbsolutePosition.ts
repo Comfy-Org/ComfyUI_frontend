@@ -1,21 +1,19 @@
-import type { CSSProperties } from 'vue'
+import type { CSSProperties, Ref } from 'vue'
 import { ref, watch } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import type { Size, Vector2 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { PositionConfig } from '@comfyorg/shared-frontend-utils/geometry'
 
-export interface PositionConfig {
-  /* The position of the element on litegraph canvas */
-  pos: Vector2
-  /* The size of the element on litegraph canvas */
-  size: Size
-  /* The scale factor of the canvas */
-  scale?: number
+interface UseAbsolutePositionReturn {
+  style: Ref<CSSProperties>
+  updatePosition: (config: PositionConfig) => void
 }
 
-export function useAbsolutePosition(options: { useTransform?: boolean } = {}) {
+export function useAbsolutePosition(
+  options: { useTransform?: boolean } = {}
+): UseAbsolutePositionReturn {
   const { useTransform = false } = options
 
   const canvasStore = useCanvasStore()
@@ -34,11 +32,6 @@ export function useAbsolutePosition(options: { useTransform?: boolean } = {}) {
     { flush: 'post' }
   )
 
-  /**
-   * @note Do NOT convert style to a computed value, as it will cause lag when
-   * updating the style on different animation frames. Vue's computed value is
-   * evaluated asynchronously.
-   */
   const style = ref<CSSProperties>({})
 
   /**

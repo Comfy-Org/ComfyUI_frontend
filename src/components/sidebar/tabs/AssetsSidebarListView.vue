@@ -2,11 +2,12 @@
   <div class="flex h-full flex-col">
     <VirtualGrid
       class="flex-1"
-      :items="assetItems"
+      :items="pagedItems(assetItems)"
       :grid-style="listGridStyle"
       :max-columns="1"
       :default-item-height="48"
-      @approach-end="emit('approach-end')"
+      :on-load-more="loadMore"
+      :can-load-more="isPaged(assetItems) && toValue(assetItems.hasMore)"
     >
       <template #item="{ item }">
         <div class="relative">
@@ -14,7 +15,7 @@
             :loading="assetsStore.isAssetDeleting(item.asset.id)"
             size="sm"
           >
-            <i class="pi pi-trash text-xs" />
+            <i class="icon-[lucide--trash-2] size-3" />
           </LoadingOverlay>
           <AssetsListItem
             role="button"
@@ -40,6 +41,8 @@
             :stack-count="getStackCount(item.asset)"
             :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
             :stack-expanded="isStackExpanded(item.asset)"
+            :draggable="true"
+            @dragstart="startAssetDrag($event, item.asset)"
             @mouseenter="onAssetEnter(item.asset.id)"
             @mouseleave="onAssetLeave(item.asset.id)"
             @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
@@ -55,7 +58,7 @@
                 :aria-label="t('mediaAsset.actions.moreOptions')"
                 @click.stop="emit('context-menu', $event, item.asset)"
               >
-                <i class="icon-[lucide--ellipsis] size-4" />
+                <i class="icon-[lucide--ellipsis]" />
               </Button>
             </template>
           </AssetsListItem>
@@ -66,17 +69,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import Button from '@/components/ui/button/Button.vue'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
+import Button from '@comfyorg/design-system/button/Button'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -85,7 +90,10 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   assetItems,
@@ -94,7 +102,7 @@ const {
   isStackExpanded,
   toggleStack
 } = defineProps<{
-  assetItems: OutputStackListItem[]
+  assetItems: MaybePaged<OutputStackListItem>
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
@@ -107,11 +115,14 @@ const emit = defineEmits<{
   (e: 'select-asset', asset: AssetItem, assets?: AssetItem[]): void
   (e: 'preview-asset', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
-  (e: 'approach-end'): void
 }>()
 
 const { t } = useI18n()
 const hoveredAssetId = ref<string | null>(null)
+
+function loadMore() {
+  return isPaged(assetItems) ? assetItems.loadMore() : undefined
+}
 
 const listGridStyle = {
   display: 'grid',
@@ -134,9 +145,10 @@ function isVideoAsset(asset: AssetItem): boolean {
 
 function getAssetPreviewUrl(asset: AssetItem): string {
   const mediaType = getAssetMediaType(asset)
-  if (mediaType === 'image' || mediaType === 'video') {
-    return asset.preview_url || ''
-  }
+  if (asset.preview_id && isHdrImageFilename(asset.name))
+    return hdrPreviewAssetUrl(asset.preview_id)
+  if (mediaType === 'image' || mediaType === 'video')
+    return resolveMediaSrc(asset.preview_url)
   return ''
 }
 
@@ -173,10 +185,9 @@ function getStackCount(asset: AssetItem): number | undefined {
 
 function getAssetCardClass(selected: boolean): string {
   return cn(
-    'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
+    'w-full text-foreground transition-colors hover:bg-accent',
     'cursor-pointer',
-    selected &&
-      'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
+    selected && 'bg-accent ring-1 ring-muted-foreground ring-inset'
   )
 }
 

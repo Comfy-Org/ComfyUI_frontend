@@ -1,159 +1,191 @@
 packages:
   - apps/**
   - packages/**
+  - tools/**
+
+nodeOptions: '${NODE_OPTIONS:- } --no-experimental-webstorage --max-old-space-size=8192'
+
+ignoreWorkspaceRootCheck: true
+catalogMode: prefer
+publicHoistPattern:
+  - '@parcel/watcher'
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
-  '@astrojs/sitemap': ^3.7.1
-  '@astrojs/vue': ^5.0.0
+  '@comfyorg/comfyui-desktop-bridge-types': 0.5.0
   '@comfyorg/comfyui-electron-types': 0.6.2
-  '@eslint/js': ^9.39.1
+  '@customerio/cdp-analytics-browser': ^0.5.3
+  '@datadog/browser-rum': ^6.33.0
+  '@eslint/js': ^10.0.1
+  '@floating-ui/vue': ^1.1.11
   '@formkit/auto-animate': ^0.9.0
   '@iconify-json/lucide': ^1.1.178
   '@iconify/json': ^2.2.380
-  '@iconify/tailwind4': ^1.2.0
+  '@iconify/tailwind4': ^1.2.3
+  '@iconify/tools': ^5.0.3
   '@iconify/utils': ^3.1.0
-  '@intlify/eslint-plugin-vue-i18n': ^4.1.1
-  '@lobehub/i18n-cli': ^1.26.1
-  '@nx/eslint': 22.6.1
-  '@nx/playwright': 22.6.1
-  '@nx/storybook': 22.6.1
-  '@nx/vite': 22.6.1
-  '@pinia/testing': ^1.0.3
-  '@playwright/test': ^1.58.1
-  '@primeuix/forms': 0.0.2
-  '@primeuix/styled': 0.3.2
-  '@primeuix/utils': ^0.3.2
-  '@primevue/core': ^4.2.5
-  '@primevue/forms': ^4.2.5
-  '@primevue/icons': 4.2.5
-  '@primevue/themes': ^4.2.5
-  '@sentry/vite-plugin': ^4.6.0
+  '@intlify/eslint-plugin-vue-i18n': ^4.5.1
+  '@pinia/testing': 2.0.1
+  '@playwright/test': ^1.63.0
+  '@sentry/vite-plugin': ^11.10.0
   '@sentry/vue': ^10.32.1
-  '@sparkjsdev/spark': ^0.1.10
-  '@storybook/addon-docs': ^10.2.10
-  '@storybook/addon-mcp': 0.1.6
-  '@storybook/vue3': ^10.2.10
-  '@storybook/vue3-vite': ^10.2.10
-  '@tailwindcss/vite': ^4.2.0
+  '@sparkjsdev/spark': ^2.3.1
+  '@storybook/addon-docs': ^10.6.5
+  '@storybook/addon-mcp': 10.6.5
+  '@storybook/vue3': ^10.6.5
+  '@storybook/vue3-vite': ^10.6.5
+  '@stripe/stripe-js': ^9.12.0
+  '@tailwindcss/vite': ^4.3.3
   '@tanstack/vue-virtual': ^3.13.12
-  '@testing-library/jest-dom': ^6.9.1
-  '@testing-library/user-event': ^14.6.1
+  '@testing-library/jest-dom': ^7.0.1
+  '@testing-library/user-event': ^14.6.8
   '@testing-library/vue': ^8.1.0
-  '@tiptap/core': ^2.27.2
-  '@tiptap/extension-link': ^2.27.2
-  '@tiptap/extension-table': ^2.27.2
-  '@tiptap/extension-table-cell': ^2.27.2
-  '@tiptap/extension-table-header': ^2.27.2
-  '@tiptap/extension-table-row': ^2.27.2
-  '@tiptap/pm': 2.27.2
-  '@tiptap/starter-kit': ^2.27.2
+  '@tiptap/core': 3.31.0
+  '@tiptap/extension-table': 3.31.0
+  '@tiptap/pm': 3.31.0
+  '@tiptap/starter-kit': 3.31.0
   '@total-typescript/shoehorn': ^0.1.2
   '@types/fs-extra': ^11.0.4
-  '@types/jsdom': ^21.1.7
-  '@types/node': ^24.1.0
-  '@types/semver': ^7.7.0
-  '@types/three': ^0.169.0
-  '@vercel/analytics': ^2.0.1
-  '@vitejs/plugin-vue': ^6.0.0
-  '@vitest/coverage-v8': ^4.0.16
-  '@vitest/ui': ^4.0.16
-  '@vueuse/core': ^14.2.0
-  '@vueuse/integrations': ^14.2.0
-  '@webgpu/types': ^0.1.66
+  '@types/jsdom': ^30.0.0
+  '@types/node': ^26.6.6
+  '@types/semver': ^7.8.0
+  '@types/three': ^0.186.0
+  '@vitejs/plugin-vue': ^6.0.10
+  '@vitest/coverage-v8': ^5.0.5
+  '@vitest/ui': ^5.0.5
+  '@vueuse/core': ^14.4.0
+  '@vueuse/integrations': ^14.4.0
+  '@webgpu/types': ^0.1.74
+  ag-psd: ^31.0.2
   algoliasearch: ^5.21.0
-  astro: ^5.10.0
-  axios: ^1.13.5
+  axios: ^1.15.2
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
-  dompurify: ^3.3.1
+  dompurify: ^3.4.17
   dotenv: ^16.4.5
-  eslint: ^9.39.1
+  es-toolkit: ^1.39.9
+  eslint: ^10.13.0
   eslint-config-prettier: ^10.1.8
-  eslint-import-resolver-typescript: ^4.4.4
-  eslint-plugin-better-tailwindcss: ^4.3.1
-  eslint-plugin-import-x: ^4.16.1
-  eslint-plugin-oxlint: 1.59.0
-  eslint-plugin-playwright: ^2.10.1
-  eslint-plugin-storybook: ^10.2.10
-  eslint-plugin-testing-library: ^7.16.1
-  eslint-plugin-unused-imports: ^4.3.0
-  eslint-plugin-vue: ^10.6.2
-  fast-check: ^4.5.3
+  eslint-import-resolver-typescript: ^4.4.5
+  eslint-plugin-better-tailwindcss: ^4.10.0
+  eslint-plugin-import-x: ^4.17.1
+  eslint-plugin-oxlint: 1.77.0
+  eslint-plugin-playwright: ^2.12.1
+  eslint-plugin-regexp: ^3.3.2
+  eslint-plugin-storybook: ^10.6.5
+  eslint-plugin-testing-library: ^7.16.2
+  eslint-plugin-unused-imports: ^4.4.1
+  eslint-plugin-vue: ^10.12.0
+  fallow: 3.37.0
+  fast-check: ^4.10.2
   firebase: ^11.6.0
   glob: ^13.0.6
-  globals: ^16.5.0
-  happy-dom: ^20.0.11
+  globals: ^17.13.0
+  happy-dom: 21.0.4
   husky: ^9.1.7
-  jiti: 2.6.1
-  jsdom: ^27.4.0
+  jsdom: ^30.1.3
   jsonata: ^2.1.0
-  jsondiffpatch: ^0.7.3
-  knip: ^6.3.1
-  lint-staged: ^16.2.7
+  jsonc-parser: 3.3.1
+  knip: 6.27.0
+  lint-staged: ^17.6.0
   markdown-table: ^3.0.4
+  marked: ^15.0.11
+  mediabunny: ^1.53.1
+  minisearch: ^7.2.0
   mixpanel-browser: ^2.71.0
-  nx: 22.6.1
-  oxfmt: ^0.44.0
-  oxlint: ^1.59.0
-  oxlint-tsgolint: ^0.20.0
+  monocart-coverage-reports: ^3.2.0
+  openai: ^7.45.1
+  oxfmt: ^0.75.0
+  oxlint: 1.77.0
+  oxlint-tsgolint: 7.0.2001
   picocolors: ^1.1.1
-  pinia: ^3.0.4
-  postcss-html: ^1.8.0
+  pinia: ^4.0.2
+  postcss-html: ^2.0.0
   posthog-js: ^1.358.1
-  pretty-bytes: ^7.1.0
+  pretty-bytes: ^7.2.0
   primeicons: ^7.0.0
-  primevue: ^4.2.5
-  reka-ui: ^2.5.0
-  rollup-plugin-visualizer: ^6.0.4
-  storybook: ^10.2.10
-  stylelint: ^16.26.1
-  tailwindcss: ^4.2.0
-  tailwindcss-primeui: ^0.6.1
-  tsx: ^4.15.6
+  reka-ui: 2.11.0
+  rollup-plugin-visualizer: ^7.1.1
+  shiki: ^4.3.0
+  start-server-and-test: ^3.0.13
+  storybook: ^10.6.5
+  stylelint: ^17.16.0
+  tailwindcss: ^4.3.3
+  three: ^0.186.1
+  tsx: ^4.23.15
   tw-animate-css: ^1.3.8
   typegpu: ^0.8.2
-  typescript: ^5.9.3
-  typescript-eslint: ^8.49.0
-  unplugin-icons: ^22.5.0
+  typescript: ^6.0.3
+  typescript-eslint: ^8.72.1
+  unplugin-icons: ^24.0.0
   unplugin-typegpu: 0.8.0
-  unplugin-vue-components: ^30.0.0
-  vite: ^8.0.0
-  vite-plugin-dts: ^4.5.4
+  unplugin-vue-components: ^32.1.0
+  uuid: ^11.1.1
+  vee-validate: ^4.15.1
+  vite: ^8.3.5
+  vite-plugin-dts: ^5.1.2
   vite-plugin-html: ^3.2.2
-  vite-plugin-vue-devtools: ^8.0.0
-  vitest: ^4.0.16
-  vue: ^3.5.13
-  vue-component-type-helpers: ^3.2.1
-  vue-eslint-parser: ^10.4.0
-  vue-i18n: ^9.14.5
-  vue-router: ^4.4.3
-  vue-tsc: ^3.2.5
-  vuefire: ^3.2.1
+  vite-plugin-vue-devtools: ^8.2.1
+  vitest: ^5.0.5
+  vue: ^3.5.44
+  vue-component-type-helpers: ^3.3.14
+  vue-eslint-parser: ^10.4.1
+  vue-i18n: ^11.4.8
+  vue-router: ^5.2.0
+  vue-tsc: 3.3.11
   wwobjloader2: ^6.2.1
-  yjs: ^13.6.27
-  zod: ^3.23.8
-  zod-to-json-schema: ^3.24.1
-  zod-validation-error: ^3.3.0
+  yaml: ^2.9.1
+  yjs: ^13.6.32
+  zod: ^4.6.7
+  zod-validation-error: ^5.0.0
+  '@comfyorg/comfy-multi-player': 0.3.13
+  typescript-native-bridge: 6.0.3-bridge.19.tsgo.7.0.2
+  dependency-cruiser: ^18.7.0
+  '@microsoft/api-extractor': 7.60.0
+  fs-extra: ^11.4.1
+  zip-dir: ^2.0.0
+  '@hey-api/openapi-ts': 0.99.0
 
 cleanupUnusedCatalogs: true
 
-ignoredBuiltDependencies:
-  - '@firebase/util'
-  - protobufjs
-  - unrs-resolver
-  - vue-demi
-
-onlyBuiltDependencies:
-  - '@playwright/browser-chromium'
-  - '@playwright/browser-firefox'
-  - '@playwright/browser-webkit'
-  - '@sentry/cli'
-  - '@tailwindcss/oxide'
-  - esbuild
-  - nx
-  - oxc-resolver
+allowBuilds:
+  '@firebase/util': false
+  '@sentry/cli': true
+  '@tailwindcss/oxide': true
+  core-js: false
+  esbuild: true
+  oxc-resolver: true
+  protobufjs: false
+  unrs-resolver: false
+  vue-demi: false
 
 overrides:
-  '@tiptap/pm': 2.27.2
-  '@types/eslint': '-'
+  vite: 'catalog:'
+  'unplugin-dts>@vue/language-core': 3.3.11
+  '@tiptap/pm': 3.31.0
+  prettier: 3.9.5
+  # Security overrides
+  lodash: ^4.18.0
+  yaml: 'catalog:'
+  minimatch@^9.0.0: ^9.0.7
+  minimatch@^10.0.0: ^10.2.3
+  ajv@^8.0.0: ^8.18.0
+  undici@^7.0.0: ^7.29.0
+  dompurify@^3.0.0: ^3.4.17
+  js-yaml@^4.0.0: ^4.3.1
+  js-yaml@^3.0.0: ^3.15.1
+  fast-uri@^3.0.0: ^3.1.5
+  brace-expansion@^1.0.0: ^1.1.18
+  brace-expansion@^2.0.0: ^2.1.4
+  brace-expansion@^3.0.0: ^3.0.6
+  brace-expansion@^4.0.0: ^5.0.9
+  brace-expansion@^5.0.0: ^5.0.9
+  '@grpc/grpc-js@^1.9.0': ^1.14.6
+  tinypool@^2.0.0: 2.1.2
+
+# Transitional - drop each entry once that version is older than the release-age gate.
+minimumReleaseAgeExclude:
+  - '@comfyorg/comfyui-desktop-bridge-types@0.5.0'
+
+patchedDependencies:
+  '@total-typescript/shoehorn@0.1.2': patches/@total-typescript__shoehorn@0.1.2.patch

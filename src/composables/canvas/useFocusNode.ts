@@ -1,41 +1,56 @@
 import { nextTick } from 'vue'
 
+import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import type {
-  LGraph,
-  LGraphNode,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
-import {
-  getNodeByExecutionId,
-  getRootParentNode
-} from '@/utils/graphTraversalUtil'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
-import { useLitegraphService } from '@/services/litegraphService'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 
-async function navigateToGraph(targetGraph: LGraph) {
-  const canvasStore = useCanvasStore()
-  const canvas = canvasStore.canvas
-  if (!canvas) return
+async function waitForAnimationFrame() {
+  await new Promise<void>((resolve) => {
+    const timeoutId = window.setTimeout(resolve, 100)
+    requestAnimationFrame(() => {
+      window.clearTimeout(timeoutId)
+      resolve()
+    })
+  })
+}
 
-  if (canvas.graph !== targetGraph) {
-    canvas.subgraph = targetGraph.isRootGraph
-      ? undefined
-      : (targetGraph as Subgraph)
-    canvas.setGraph(targetGraph)
+async function waitForCanvasNavigation() {
+  await nextTick()
 
-    await nextTick()
-
-    // Double RAF to wait for LiteGraph's internal canvas frame cycle
-    await new Promise((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(resolve))
-    )
-  }
+  // Double frame waits for LiteGraph's internal canvas cycle. The timeout
+  // keeps focus calls from hanging while the document is backgrounded.
+  await waitForAnimationFrame()
+  await waitForAnimationFrame()
 }
 
 export function useFocusNode() {
   const canvasStore = useCanvasStore()
+  const navigationStore = useSubgraphNavigationStore()
+
+  async function focusNodeInstance(node: LGraphNode) {
+    const canvas = canvasStore.canvas
+    if (!canvas || !node.graph) return
+
+    const graphChanged = canvas.graph !== node.graph
+    const navigated = await navigationStore.navigateToGraph(node.graph)
+    if (!navigated) return
+    if (graphChanged) await waitForCanvasNavigation()
+
+    const activeCanvas = canvasStore.canvas
+    if (
+      !activeCanvas ||
+      activeCanvas.graph !== node.graph ||
+      !node.graph.nodes.includes(node)
+    ) {
+      return
+    }
+    activeCanvas.animateToBounds(node.boundingRect, {
+      viewport: visibleCanvasViewport(activeCanvas)
+    })
+  }
 
   /* Locate and focus a node on the canvas by its execution ID. */
   async function focusNode(
@@ -44,41 +59,16 @@ export function useFocusNode() {
   ) {
     if (!canvasStore.canvas) return
 
-    // For group node internals, locate the root parent group node instead
-    const parentNode = getRootParentNode(app.rootGraph, nodeId)
-
-    if (parentNode && isGroupNode(parentNode) && parentNode.graph) {
-      await navigateToGraph(parentNode.graph as LGraph)
-      canvasStore.canvas?.animateToBounds(parentNode.boundingRect)
-      return
-    }
-
     const graphNode = executionIdMap
       ? executionIdMap.get(nodeId)
       : getNodeByExecutionId(app.rootGraph, nodeId)
     if (!graphNode?.graph) return
 
-    await navigateToGraph(graphNode.graph as LGraph)
-    canvasStore.canvas?.animateToBounds(graphNode.boundingRect)
-  }
-
-  async function enterSubgraph(
-    nodeId: string,
-    executionIdMap?: Map<string, LGraphNode>
-  ) {
-    if (!canvasStore.canvas) return
-
-    const graphNode = executionIdMap
-      ? executionIdMap.get(nodeId)
-      : getNodeByExecutionId(app.rootGraph, nodeId)
-    if (!graphNode?.graph) return
-
-    await navigateToGraph(graphNode.graph as LGraph)
-    useLitegraphService().fitView()
+    await focusNodeInstance(graphNode)
   }
 
   return {
     focusNode,
-    enterSubgraph
+    focusNodeInstance
   }
 }

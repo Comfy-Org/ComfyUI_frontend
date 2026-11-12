@@ -6,15 +6,19 @@
       "customSyntax": "postcss-html"
     }
   ],
+  "languageOptions": {
+    "syntax": {
+      "types": {
+        "radial-gradient()": "| <any-value>"
+      }
+    }
+  },
   "rules": {
     "import-notation": "string",
     "font-family-no-missing-generic-family-keyword": true,
     "declaration-property-value-no-unknown": [
       true,
       {
-        "typesSyntax": {
-          "radial-gradient()": "| <any-value>"
-        },
         "ignoreProperties": {
           "speak": ["none"],
           "app-region": ["drag", "no-drag"],
@@ -26,6 +30,7 @@
     "shorthand-property-no-redundant-values": true,
     "selector-pseudo-element-colon-notation": "double",
     "no-duplicate-selectors": true,
+    "selector-no-unmatchable": true,
     "font-weight-notation": "numeric",
     "length-zero-no-unit": true,
     "color-no-invalid-hex": true,
@@ -67,6 +72,9 @@
   "ignoreFiles": [
     "node_modules/**",
     "dist/**",
+    "**/dist/**",
+    "coverage/**",
+    "**/coverage/**",
     "playwright-report/**",
     "public/**",
     "src/lib/litegraph/**"

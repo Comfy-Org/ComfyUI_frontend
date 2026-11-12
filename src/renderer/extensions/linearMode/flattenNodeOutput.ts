@@ -1,10 +1,10 @@
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 import { parseNodeOutput } from '@/stores/resultItemParsing'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 export function flattenNodeOutput([nodeId, nodeOutput]: [
   string | number,
-  NodeExecutionOutput
-]): ResultItemImpl[] {
+  NodeExecutionOutput | null | undefined
+]): AugmentedResultItem[] {
   return parseNodeOutput(nodeId, nodeOutput)
 }

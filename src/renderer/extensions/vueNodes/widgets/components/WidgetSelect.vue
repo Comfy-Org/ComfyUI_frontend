@@ -4,20 +4,21 @@
     v-model="modelValue"
     :widget
     :node-type="widget.nodeType ?? nodeType"
-    :asset-kind="assetKind"
-    :allow-upload="allowUpload"
-    :upload-folder="uploadFolder"
-    :upload-subfolder="uploadSubfolder"
-    :is-asset-mode="isAssetMode"
-    :default-layout-mode="defaultLayoutMode"
+    :asset-kind
+    :allow-upload
+    :upload-folder
+    :upload-subfolder
+    :is-asset-mode
+    :default-layout-mode
   />
   <WidgetWithControl
     v-else-if="widget.controlWidget"
     v-model="modelValue"
     :component="WidgetSelectDefault"
-    :widget="widget as StringControlWidget"
+    :widget="widget as SelectControlWidget"
+    :filename-summary
   />
-  <WidgetSelectDefault v-else v-model="modelValue" :widget />
+  <WidgetSelectDefault v-else v-model="modelValue" :widget :filename-summary />
 </template>
 
 <script setup lang="ts">
@@ -28,23 +29,30 @@ import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/componen
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import WidgetWithControl from '@/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
-import type { ResultItemType } from '@/schemas/apiSchema'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { parseComboSpecDescriptor } from '@/renderer/extensions/vueNodes/widgets/utils/comboSpecDescriptor'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type {
   SimplifiedControlWidget,
-  SimplifiedWidget
+  SimplifiedWidget,
+  WidgetValue
 } from '@/types/simplifiedWidget'
-import type { AssetKind } from '@/types/widgetTypes'
 
-type StringControlWidget = SimplifiedControlWidget<string | undefined>
+type SelectControlWidget = SimplifiedControlWidget<WidgetValue>
 
 const props = defineProps<{
   widget: SimplifiedWidget<string | undefined>
   nodeType?: string
 }>()
 
-const modelValue = defineModel<string | undefined>()
+const modelValue = defineModel<WidgetValue>()
+const filenameSummary = computed(() =>
+  assetService.isAssetBrowserEligible(
+    props.widget.nodeType ?? props.nodeType ?? '',
+    props.widget.name
+  )
+)
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
   if (props.widget.spec && isComboInputSpec(props.widget.spec)) {
@@ -53,66 +61,15 @@ const comboSpec = computed<ComboInputSpec | undefined>(() => {
   return undefined
 })
 
-const specDescriptor = computed<{
-  kind: AssetKind
-  allowUpload: boolean
-  folder: ResultItemType | undefined
-  subfolder: string | undefined
-}>(() => {
-  const spec = comboSpec.value
-  if (!spec) {
-    return {
-      kind: 'unknown',
-      allowUpload: false,
-      folder: undefined,
-      subfolder: undefined
-    }
-  }
-
-  const {
-    image_upload,
-    animated_image_upload,
-    video_upload,
-    image_folder,
-    audio_upload,
-    mesh_upload,
-    upload_subfolder
-  } = spec
-
-  let kind: AssetKind = 'unknown'
-  if (video_upload) {
-    kind = 'video'
-  } else if (image_upload || animated_image_upload) {
-    kind = 'image'
-  } else if (audio_upload) {
-    kind = 'audio'
-  } else if (mesh_upload) {
-    kind = 'mesh'
-  }
-
-  // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
-
-  const allowUpload =
-    image_upload === true ||
-    animated_image_upload === true ||
-    video_upload === true ||
-    audio_upload === true ||
-    mesh_upload === true
-
-  const folder = mesh_upload ? 'input' : image_folder
-
-  return {
-    kind,
-    allowUpload,
-    folder,
-    subfolder: upload_subfolder
-  }
-})
+const specDescriptor = computed(() => parseComboSpecDescriptor(comboSpec.value))
 
 const isAssetMode = computed(
   () =>
-    assetService.shouldUseAssetBrowser(props.nodeType, props.widget.name) ||
-    (assetService.isAssetAPIEnabled() && props.widget.type === 'asset')
+    assetService.shouldUseWidgetAssetPicker(
+      props.nodeType,
+      props.widget.name
+    ) ||
+    (assetService.isWidgetAssetPickerEnabled() && props.widget.type === 'asset')
 )
 
 const assetKind = computed(() => specDescriptor.value.kind)

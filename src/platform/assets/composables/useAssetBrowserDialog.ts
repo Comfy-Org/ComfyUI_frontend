@@ -1,5 +1,8 @@
-import AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
+import type { Component } from 'vue'
+
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { AssetBrowserModalProps } from '@/platform/assets/types/assetBrowserModalProps'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -24,9 +27,35 @@ interface BrowseOptions {
 
 const DIALOG_KEY = 'global-asset-browser'
 
+let assetBrowserModalComponent: Component<AssetBrowserModalProps> | undefined
+
+export function registerAssetBrowserModalComponent(
+  component: Component<AssetBrowserModalProps>
+) {
+  assetBrowserModalComponent = component
+}
+
 export const useAssetBrowserDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
+
+  function openModal(props: AssetBrowserModalProps) {
+    if (!assetBrowserModalComponent) {
+      reportError(
+        new Error('Asset browser modal component is not registered'),
+        {
+          errorType: 'failure_opening_asset_browser_modal',
+          surface: 'assets'
+        }
+      )
+      return
+    }
+    dialogService.showLayoutDialog({
+      key: DIALOG_KEY,
+      component: assetBrowserModalComponent,
+      props
+    })
+  }
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -38,16 +67,10 @@ export const useAssetBrowserDialog = () => {
       hide()
     }
 
-    dialogService.showLayoutDialog({
-      key: DIALOG_KEY,
-      component: AssetBrowserModal,
-      props: {
-        nodeType: props.nodeType,
-        inputName: props.inputName,
-        currentValue: props.currentValue,
-        onSelect: handleAssetSelected,
-        onClose: hide
-      }
+    openModal({
+      nodeType: props.nodeType,
+      onSelect: handleAssetSelected,
+      onClose: hide
     })
   }
 
@@ -57,16 +80,12 @@ export const useAssetBrowserDialog = () => {
       hide()
     }
 
-    dialogService.showLayoutDialog({
-      key: DIALOG_KEY,
-      component: AssetBrowserModal,
-      props: {
-        showLeftPanel: true,
-        assetType: options.assetType,
-        title: options.title,
-        onSelect: handleAssetSelected,
-        onClose: hide
-      }
+    openModal({
+      showLeftPanel: true,
+      assetType: options.assetType,
+      title: options.title,
+      onSelect: handleAssetSelected,
+      onClose: hide
     })
   }
 

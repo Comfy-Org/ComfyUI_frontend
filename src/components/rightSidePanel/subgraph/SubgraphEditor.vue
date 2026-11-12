@@ -1,44 +1,63 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useEventListener } from '@vueuse/core'
+import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import Button from '@comfyorg/design-system/button/Button'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
   demoteWidget,
   getPromotableWidgets,
-  getSourceNodeId,
-  getWidgetName,
-  isLinkedPromotion,
   isRecommendedWidget,
   promoteWidget,
-  pruneDisconnected
+  pruneDisconnected,
+  refreshPromotedWidgetRendering,
+  reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
+import {
+  promotedInputSource,
+  promotedInputWidget
+} from '@/core/graph/subgraph/promotedInputWidget'
+import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
+import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+import type {
+  INodeInputSlot,
+  ISubgraphInput
+} from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import { useLitegraphService } from '@/services/litegraphService'
-import { usePromotionStore } from '@/stores/promotionStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { cn } from '@/utils/tailwindUtil'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from '@/stores/previewExposureStore'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import SubgraphNodeWidget from './SubgraphNodeWidget.vue'
 
-const { t } = useI18n()
-const canvasStore = useCanvasStore()
-const promotionStore = usePromotionStore()
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+type PromotedRow = {
+  kind: 'promoted'
+  node: LGraphNode
+  input: INodeInputSlot & Partial<ISubgraphInput>
+  widget: IBaseWidget
+}
+type PreviewRow = {
+  kind: 'preview'
+  node: LGraphNode
+  exposure: PreviewExposure
+  realWidget?: IBaseWidget
+}
+type ActiveRow = PromotedRow | PreviewRow
 
-const promotionEntries = computed(() => {
-  const node = activeNode.value
-  if (!node) return []
-  return promotionStore.getPromotions(node.rootGraph.id, node.id)
-})
+const canvasStore = useCanvasStore()
+const previewExposureStore = usePreviewExposureStore()
+const searchQuery = ref('')
+const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -46,60 +65,95 @@ const activeNode = computed(() => {
   return undefined
 })
 
-const activeWidgets = computed<WidgetItem[]>({
-  get() {
-    const node = activeNode.value
-    if (!node) return []
+const promotedRows = shallowRef<readonly PromotedRow[]>([])
+function buildPromotedRows(node: SubgraphNode): PromotedRow[] {
+  return node.inputs.flatMap((input): PromotedRow[] => {
+    const widget = promotedInputWidget(input)
+    if (!widget) return []
+    const source = promotedInputSource(node, input)
+    if (!source) return []
+    const sourceNode = node.subgraph._nodes_by_id[source.nodeId]
+    if (!sourceNode) return []
+    return [{ kind: 'promoted', node: sourceNode, input, widget }]
+  })
+}
+function refreshPromotedRows() {
+  const node = activeNode.value
+  promotedRows.value = node ? buildPromotedRows(node) : []
+}
+watch(activeNode, refreshPromotedRows, { immediate: true })
+useEventListener(
+  () => activeNode.value?.subgraph.events,
+  [
+    'widget-promoted',
+    'widget-demoted',
+    'input-added',
+    'removing-input',
+    'inputs-reordered'
+  ],
+  refreshPromotedRows
+)
 
-    return promotionEntries.value.flatMap(
-      ({
-        sourceNodeId,
-        sourceWidgetName,
-        disambiguatingSourceNodeId
-      }): WidgetItem[] => {
-        if (sourceNodeId === '-1') {
-          const widget = node.widgets.find((w) => w.name === sourceWidgetName)
-          if (!widget) return []
-          return [
-            [{ id: -1, title: t('subgraphStore.linked'), type: '' }, widget]
-          ]
-        }
-        const wNode = node.subgraph._nodes_by_id[sourceNodeId]
-        if (!wNode) return []
-        const widget = getPromotableWidgets(wNode).find((w) => {
-          if (w.name !== sourceWidgetName) return false
-          if (disambiguatingSourceNodeId && isPromotedWidgetView(w))
-            return (
-              (w.disambiguatingSourceNodeId ?? w.sourceNodeId) ===
-              disambiguatingSourceNodeId
-            )
-          return true
-        })
-        if (!widget) return []
-        return [[wNode, widget]]
-      }
-    )
+function promotedRowSource(row: PromotedRow): PromotedSource | undefined {
+  const node = activeNode.value
+  return node ? promotedInputSource(node, row.input) : undefined
+}
+
+const activeRows = computed<ActiveRow[]>(() => {
+  const node = activeNode.value
+  if (!node) return []
+  return [...promotedRows.value, ...getActivePreviewRows(node)]
+})
+
+const activePromotedRows = computed<PromotedRow[]>({
+  get() {
+    return [...promotedRows.value]
   },
-  set(value: WidgetItem[]) {
-    const node = activeNode.value
-    if (!node) {
-      console.error('Attempted to toggle widgets with no node selected')
-      return
-    }
-    promotionStore.setPromotions(
-      node.rootGraph.id,
-      node.id,
-      value.map(([n, w]) => ({
-        sourceNodeId: String(n.id),
-        sourceWidgetName: getWidgetName(w),
-        disambiguatingSourceNodeId: isPromotedWidgetView(w)
-          ? w.disambiguatingSourceNodeId
-          : undefined
-      }))
-    )
-    refreshPromotedWidgetRendering()
+  set(value: PromotedRow[]) {
+    updateActivePromotedRows(value, activePromotedRows.value)
   }
 })
+
+function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
+  const hostLocator = getPreviewExposureHostLocator(node)
+  if (!hostLocator) return []
+  const rootGraphId = node.rootGraph.id
+  const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
+  return exposures.flatMap((exposure): PreviewRow[] => {
+    const sourceNode = node.subgraph.getNodeById(exposure.sourceNodeId)
+    if (!sourceNode) return []
+    const realWidget = getPromotableWidgets(sourceNode).find(
+      (candidate) => candidate.name === exposure.sourcePreviewName
+    )
+    return [{ kind: 'preview', node: sourceNode, exposure, realWidget }]
+  })
+}
+
+function updateActivePromotedRows(
+  value: PromotedRow[],
+  currentItems: PromotedRow[]
+) {
+  const node = activeNode.value
+  if (!node) {
+    console.error('Attempted to toggle widgets with no node selected')
+    return
+  }
+  const currentKeys = new Set(currentItems.map(promotedRowKey))
+  const nextKeys = new Set(value.map(promotedRowKey))
+  for (const item of value) {
+    if (!currentKeys.has(promotedRowKey(item))) promotePromotedRow(item)
+  }
+  for (const item of currentItems) {
+    if (!nextKeys.has(promotedRowKey(item))) demoteRow(item)
+  }
+  if (currentKeys.size === nextKeys.size) {
+    reorderSubgraphInputsByWidgetOrder(
+      node,
+      value.map((row) => ({ widgetId: row.widget.widgetId }))
+    )
+  }
+  refreshActiveNodeRendering()
+}
 
 const interiorWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
@@ -115,19 +169,27 @@ const interiorWidgets = computed<WidgetItem[]>(() => {
     .filter(([_, w]: WidgetItem) => !w.computedDisabled)
 })
 
+function activeRowSourceKey(row: ActiveRow): string {
+  if (row.kind !== 'promoted')
+    return `${row.exposure.sourceNodeId}:${row.exposure.sourcePreviewName}`
+
+  const source = promotedRowSource(row)
+  return `${source?.nodeId ?? row.node.id}:${source?.widgetName ?? ''}`
+}
+
 const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
-  return interiorWidgets.value.filter(
-    ([n, w]: WidgetItem) =>
-      !promotionStore.isPromoted(node.rootGraph.id, node.id, {
-        sourceNodeId: String(n.id),
-        sourceWidgetName: getWidgetName(w),
-        disambiguatingSourceNodeId: isPromotedWidgetView(w)
-          ? w.disambiguatingSourceNodeId
-          : undefined
-      })
-  )
+  const promotedSourceKeys = new Set(activeRows.value.map(activeRowSourceKey))
+  return interiorWidgets.value
+    .filter(([n, w]) => !promotedSourceKeys.has(`${n.id}:${w.name}`))
+    .filter(([, widget]) => {
+      const visibility = widget.visibility ?? deriveWidgetVisibility(widget)
+      return (
+        widget.name.startsWith('$$') ||
+        !(shouldRenderVueNodes.value && visibility.surfaces.vueNode === 'never')
+      )
+    })
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
   const query = searchQuery.value.toLowerCase()
@@ -145,76 +207,125 @@ const recommendedWidgets = computed(() => {
   return filteredCandidates.value.filter(isRecommendedWidget)
 })
 
-const filteredActive = computed<WidgetItem[]>(() => {
-  const query = searchQuery.value.toLowerCase()
-  if (!query) return activeWidgets.value
-  return activeWidgets.value.filter(
-    ([n, w]: WidgetItem) =>
-      n.title.toLowerCase().includes(query) ||
-      w.name.toLowerCase().includes(query)
+function rowMatchesQuery(row: ActiveRow, query: string): boolean {
+  return (
+    row.node.title.toLowerCase().includes(query) ||
+    rowDisplayName(row).toLowerCase().includes(query)
   )
+}
+
+const filteredActive = computed<ActiveRow[]>(() => {
+  const query = searchQuery.value.toLowerCase()
+  if (!query) return activeRows.value
+  return activeRows.value.filter((row) => rowMatchesQuery(row, query))
 })
 
-function refreshPromotedWidgetRendering() {
+const filteredActivePromoted = computed<PromotedRow[]>(() =>
+  filteredActive.value.filter(
+    (row): row is PromotedRow => row.kind === 'promoted'
+  )
+)
+
+const filteredActivePreviews = computed<PreviewRow[]>(() =>
+  filteredActive.value.filter(
+    (row): row is PreviewRow => row.kind === 'preview'
+  )
+)
+
+function refreshActiveNodeRendering() {
   const node = activeNode.value
   if (!node) return
 
-  node.computeSize(node.size)
-  node.setDirtyCanvas(true, true)
-  canvasStore.canvas?.setDirty(true, true)
+  refreshPromotedWidgetRendering([node])
 }
 
-function isItemLinked([node, widget]: WidgetItem): boolean {
+function rowDisplayName(row: ActiveRow): string {
+  if (row.kind === 'promoted') {
+    return row.widget.label || row.widget.name
+  }
   return (
-    node.id === -1 ||
-    (!!activeNode.value &&
-      isLinkedPromotion(
-        activeNode.value,
-        String(node.id),
-        getWidgetName(widget)
-      ))
+    row.realWidget?.label ||
+    row.realWidget?.name ||
+    row.exposure.sourcePreviewName
   )
 }
 
-function toKey(item: WidgetItem) {
-  const sid = getSourceNodeId(item[1])
-  return sid
-    ? `${item[0].id}: ${item[1].name}:${sid}`
-    : `${item[0].id}: ${item[1].name}`
+function isRowLinked(row: ActiveRow): boolean {
+  return row.kind === 'promoted'
 }
+
+function promotedRowKey(row: PromotedRow): string {
+  return `${row.node.id}: ${row.widget.name}`
+}
+
+function rowKey(row: ActiveRow): string {
+  return row.kind === 'promoted'
+    ? promotedRowKey(row)
+    : `${row.node.id}: ${row.exposure.name}`
+}
+
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
   return getPromotableWidgets(n).map((w) => [n, w])
 }
-function demote([node, widget]: WidgetItem) {
+
+function demoteRow(row: ActiveRow) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
-  demoteWidget(node, widget, [subgraphNode])
+  if (row.kind === 'promoted') {
+    const subgraphSlot = row.input._subgraphSlot
+    if (subgraphSlot) {
+      const inputIndex = subgraphNode.inputs.indexOf(row.input)
+      if (subgraphNode.isInputConnected(inputIndex)) subgraphSlot.disconnect()
+      else subgraphNode.subgraph.removeInput(subgraphSlot)
+    }
+    refreshActiveNodeRendering()
+    return
+  }
+  if (row.realWidget) {
+    demoteWidget(row.node, row.realWidget, [subgraphNode])
+    return
+  }
+  const hostLocator = getPreviewExposureHostLocator(subgraphNode)
+  if (!hostLocator) return
+  previewExposureStore.removeExposure(
+    subgraphNode.rootGraph.id,
+    hostLocator,
+    row.exposure.name
+  )
+  refreshActiveNodeRendering()
 }
-function promote([node, widget]: WidgetItem) {
+
+function promotePromotedRow(row: PromotedRow) {
+  const subgraphNode = activeNode.value
+  if (!subgraphNode) return
+  const source = promotedRowSource(row)
+  const sourceWidget = source
+    ? row.node.widgets?.find((widget) => widget.name === source.widgetName)
+    : undefined
+  if (sourceWidget) promoteWidget(row.node, sourceWidget, [subgraphNode])
+}
+
+function promoteCandidate([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   promoteWidget(node, widget, [subgraphNode])
+  refreshPromotedRows()
 }
+
 function showAll() {
   for (const item of filteredCandidates.value) {
-    promote(item)
+    promoteCandidate(item)
   }
 }
 function hideAll() {
-  const node = activeNode.value
-  for (const item of filteredActive.value) {
-    if (String(item[0].id) === '-1') continue
-    if (
-      node &&
-      isLinkedPromotion(node, String(item[0].id), getWidgetName(item[1]))
-    )
-      continue
-    demote(item)
+  for (const row of filteredActive.value) {
+    if (String(row.node.id) === '-1') continue
+    demoteRow(row)
   }
 }
 function showRecommended() {
   for (const item of recommendedWidgets.value) {
-    promote(item)
+    promoteCandidate(item)
   }
 }
 
@@ -225,8 +336,13 @@ onMounted(() => {
 
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
-    <div class="flex gap-2 border-b border-interface-stroke px-4 pt-1 pb-4">
-      <FormSearchInput v-model="searchQuery" />
+    <div class="flex gap-2 border-b px-4 pt-1 pb-4">
+      <AsyncSearchInput
+        v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+        :accessible-label="$t('g.search')"
+      />
     </div>
 
     <div class="flex-1">
@@ -244,7 +360,7 @@ onMounted(() => {
       <div
         v-if="filteredActive.length"
         data-testid="subgraph-editor-shown-section"
-        class="flex flex-col border-b border-interface-stroke"
+        class="flex flex-col border-b"
       >
         <div
           class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
@@ -253,30 +369,46 @@ onMounted(() => {
             {{ $t('subgraphStore.shown') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-muted-foreground hover:text-primary"
             @click.stop="hideAll"
           >
             {{ $t('subgraphStore.hideAll') }}</a
           >
         </div>
-        <DraggableList v-slot="{ dragClass }" v-model="activeWidgets">
+        <DraggableList v-slot="{ dragClass }" v-model="activePromotedRows">
           <SubgraphNodeWidget
-            v-for="[node, widget] in filteredActive"
-            :key="toKey([node, widget])"
-            :class="cn(!searchQuery && dragClass, 'bg-comfy-menu-bg')"
-            :node-title="node.title"
-            :widget-name="widget.label || widget.name"
-            :is-physical="isItemLinked([node, widget])"
+            v-for="row in filteredActivePromoted"
+            :key="rowKey(row)"
+            :data-nodeid="row.node.id"
+            :class="cn(!searchQuery && dragClass, 'bg-background')"
+            :node-title="row.node.title"
+            :widget-name="rowDisplayName(row)"
+            :is-physical="isRowLinked(row)"
             :is-draggable="!searchQuery"
-            @toggle-visibility="demote([node, widget])"
+            is-shown
+            @toggle-visibility="demoteRow(row)"
           />
         </DraggableList>
+        <div class="mt-0.5 space-y-0.5 px-2 pb-2">
+          <SubgraphNodeWidget
+            v-for="row in filteredActivePreviews"
+            :key="rowKey(row)"
+            :data-nodeid="row.node.id"
+            class="bg-background"
+            :node-title="row.node.title"
+            :widget-name="rowDisplayName(row)"
+            :is-physical="isRowLinked(row)"
+            :is-draggable="false"
+            is-shown
+            @toggle-visibility="demoteRow(row)"
+          />
+        </div>
       </div>
 
       <div
         v-if="filteredCandidates.length"
         data-testid="subgraph-editor-hidden-section"
-        class="flex flex-col border-b border-interface-stroke"
+        class="flex flex-col border-b"
       >
         <div
           class="sticky top-0 z-10 flex min-h-12 items-center justify-between px-4 backdrop-blur-xl"
@@ -285,7 +417,7 @@ onMounted(() => {
             {{ $t('subgraphStore.hidden') }}
           </div>
           <a
-            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-text-secondary hover:text-azure-600"
+            class="cursor-pointer text-right text-xs font-normal whitespace-nowrap text-muted-foreground hover:text-primary"
             @click.stop="showAll"
           >
             {{ $t('subgraphStore.showAll') }}</a
@@ -294,24 +426,21 @@ onMounted(() => {
         <div class="mt-0.5 space-y-0.5 px-2 pb-2">
           <SubgraphNodeWidget
             v-for="[node, widget] in filteredCandidates"
-            :key="toKey([node, widget])"
-            class="bg-comfy-menu-bg"
+            :key="`${node.id}:${widget.name}`"
+            :data-nodeid="node.id"
+            class="bg-background"
             :node-title="node.title"
             :widget-name="widget.name"
-            @toggle-visibility="promote([node, widget])"
+            @toggle-visibility="promoteCandidate([node, widget])"
           />
         </div>
       </div>
 
       <div
         v-if="recommendedWidgets.length"
-        class="flex justify-center border-b border-interface-stroke py-4"
+        class="flex justify-center border-b py-4"
       >
-        <Button
-          size="sm"
-          class="rounded-sm border-none px-3 py-0.5"
-          @click.stop="showRecommended"
-        >
+        <Button size="sm" class="px-3 py-0.5" @click.stop="showRecommended">
           {{ $t('subgraphStore.showRecommended') }}
         </Button>
       </div>

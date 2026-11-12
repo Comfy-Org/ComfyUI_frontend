@@ -118,11 +118,16 @@ Implement the fix. The `@perf` test from PR1 is now on main and will run automat
 The `ci-perf-report.yaml` posts a comment like:
 
 ```markdown
-## ⚡ Performance Report
+## ⚡ Performance: ✅ No regressions detected
+
+<details>
+<summary>Details</summary>
 
 | Metric                | Baseline | PR (n=3) | Δ    | Sig |
 | --------------------- | -------- | -------- | ---- | --- |
 | <name>: style recalcs | 450      | 12       | -97% | 🟢  |
+
+</details>
 ```
 
 If Δ is negative for the target metric, the fix is proven.
@@ -171,7 +176,7 @@ test('canvas text rendering with many nodes', async ({ comfyPage }) => {
 | ----------------- | ----------------------------------------------------- |
 | Perf test file    | `browser_tests/tests/performance.spec.ts`             |
 | PerformanceHelper | `browser_tests/fixtures/helpers/PerformanceHelper.ts` |
-| Perf reporter     | `browser_tests/helpers/perfReporter.ts`               |
+| Perf reporter     | `browser_tests/fixtures/utils/perfReporter.ts`        |
 | CI workflow       | `.github/workflows/ci-perf-report.yaml`               |
 | Report generator  | `scripts/perf-report.ts`                              |
 | Stats utilities   | `scripts/perf-stats.ts`                               |

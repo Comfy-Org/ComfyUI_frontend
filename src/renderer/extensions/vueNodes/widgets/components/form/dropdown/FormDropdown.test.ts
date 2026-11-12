@@ -1,10 +1,19 @@
-import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
+
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
+
+import { reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
+import { pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
+
 import FormDropdown from './FormDropdown.vue'
+import { DROPDOWN_PANEL_CLASS } from './shared'
 import type { FormDropdownItem } from './types'
 
 function createItem(id: string, name: string): FormDropdownItem {
@@ -13,14 +22,11 @@ function createItem(id: string, name: string): FormDropdownItem {
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({
-    addAlert: vi.fn()
-  })
-}))
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 const MockFormDropdownMenu = {
   name: 'FormDropdownMenu',
+  setup: () => ({ pagedItems }),
   props: [
     'items',
     'isSelected',
@@ -31,30 +37,50 @@ const MockFormDropdownMenu = {
     'showOwnershipFilter',
     'ownershipOptions',
     'showBaseModelFilter',
-    'baseModelOptions'
+    'baseModelOptions',
+    'candidateIndex',
+    'candidateLabel'
   ],
-  template:
-    '<div class="mock-menu" data-testid="dropdown-menu" :data-items="JSON.stringify(items)" />'
+  template: `<div class="mock-menu" data-testid="dropdown-menu" :data-candidate-index="candidateIndex" :data-candidate-label="candidateLabel ?? ''" :data-items="JSON.stringify(pagedItems(items))">
+      <button
+        v-for="(item, index) in pagedItems(items)"
+        :key="item.id"
+        type="button"
+        @click="$emit('item-click', item, index)"
+      >
+        {{ item.label ?? item.name }}
+      </button>
+      <button type="button" @click="$emit('search-enter')">Search enter</button>
+    </div>`
 }
 
 const MockFormDropdownInput = {
   name: 'FormDropdownInput',
+  setup(
+    _: unknown,
+    { expose }: { expose: (exposed: { focus: () => void }) => void }
+  ) {
+    const triggerButton = ref<HTMLButtonElement>()
+    expose({
+      focus: () => triggerButton.value?.focus()
+    })
+    return { triggerButton }
+  },
   template:
-    '<button class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
-}
-
-const MockPopover = {
-  name: 'Popover',
-  template: '<div><slot /></div>'
+    '<button ref="triggerButton" class="mock-dropdown-trigger" @click="$emit(\'select-click\', $event)">Open</button>'
 }
 
 interface MountDropdownOptions {
   searcher?: (
     query: string,
-    items: FormDropdownItem[],
+    items: readonly FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<FormDropdownItem[]>
+  ) => Promise<readonly FormDropdownItem[]>
+  multiple?: boolean | number
+  selected?: Set<string>
   searchQuery?: string
+  onUpdateSelected?: (selected: Set<string>) => void
+  onUpdateIsOpen?: (isOpen: boolean) => void
 }
 
 function flushPromises() {
@@ -62,17 +88,24 @@ function flushPromises() {
 }
 
 function mountDropdown(
-  items: FormDropdownItem[],
+  items: MaybePaged<FormDropdownItem>,
   options: MountDropdownOptions = {}
 ) {
   const user = userEvent.setup()
   const result = render(FormDropdown, {
-    props: { items, ...options },
+    props: {
+      items,
+      multiple: options.multiple,
+      selected: options.selected,
+      searcher: options.searcher,
+      searchQuery: options.searchQuery,
+      'onUpdate:selected': options.onUpdateSelected,
+      'onUpdate:isOpen': options.onUpdateIsOpen
+    },
     global: {
-      plugins: [PrimeVue, i18n],
+      plugins: [i18n, getActivePinia()!],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
-        Popover: MockPopover,
         FormDropdownMenu: MockFormDropdownMenu
       }
     }
@@ -85,14 +118,29 @@ function getMenuItems(): FormDropdownItem[] {
   return JSON.parse(menuEl.getAttribute('data-items') ?? '[]')
 }
 
+function getCandidateIndex(): number {
+  const menuEl = screen.getByTestId('dropdown-menu')
+  return Number(menuEl.getAttribute('data-candidate-index'))
+}
+
+function getCandidateLabel(): string {
+  const menuEl = screen.getByTestId('dropdown-menu')
+  return menuEl.getAttribute('data-candidate-label') ?? ''
+}
+
+async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Open' }))
+  await screen.findByTestId('dropdown-menu')
+}
+
 describe('FormDropdown', () => {
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
-      const { rerender } = mountDropdown([
+      const { rerender, user } = mountDropdown([
         createItem('input-0', 'video1.mp4'),
         createItem('input-1', 'video2.mp4')
       ])
-      await flushPromises()
+      await openDropdown(user)
 
       expect(getMenuItems()).toHaveLength(2)
 
@@ -110,8 +158,8 @@ describe('FormDropdown', () => {
     })
 
     it('updates when items change but IDs stay the same', async () => {
-      const { rerender } = mountDropdown([createItem('1', 'alpha')])
-      await flushPromises()
+      const { rerender, user } = mountDropdown([createItem('1', 'alpha')])
+      await openDropdown(user)
 
       await rerender({ items: [createItem('1', 'beta')] })
       await flushPromises()
@@ -120,8 +168,8 @@ describe('FormDropdown', () => {
     })
 
     it('updates when switching between empty and non-empty items', async () => {
-      const { rerender } = mountDropdown([])
-      await flushPromises()
+      const { rerender, user } = mountDropdown([])
+      await openDropdown(user)
 
       expect(getMenuItems()).toHaveLength(0)
 
@@ -140,7 +188,7 @@ describe('FormDropdown', () => {
 
   it('avoids filtering work while dropdown is closed', async () => {
     const searcher = vi.fn(
-      async (_query: string, sourceItems: FormDropdownItem[]) =>
+      async (_query: string, sourceItems: readonly FormDropdownItem[]) =>
         sourceItems.filter((item) => item.name.includes('video'))
     )
 
@@ -165,26 +213,339 @@ describe('FormDropdown', () => {
     await flushPromises()
 
     expect(searcher).not.toHaveBeenCalled()
-    expect(getMenuItems().map((item) => item.id)).toEqual(['3', '4'])
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
   })
 
   it('runs filtering when dropdown opens', async () => {
     const searcher = vi.fn(
-      async (_query: string, sourceItems: FormDropdownItem[]) =>
+      async (_query: string, sourceItems: readonly FormDropdownItem[]) =>
         sourceItems.filter((item) => item.id === 'keep')
     )
 
-    const { container, user } = mountDropdown(
+    const { user } = mountDropdown(
       [createItem('keep', 'alpha'), createItem('drop', 'beta')],
       { searcher }
     )
     await flushPromises()
 
-    // eslint-disable-next-line testing-library/no-node-access
-    await user.click(container.querySelector('.mock-dropdown-trigger')!)
-    await flushPromises()
+    await openDropdown(user)
 
     expect(searcher).toHaveBeenCalled()
     expect(getMenuItems().map((item) => item.id)).toEqual(['keep'])
+  })
+
+  it.for([
+    {
+      source: 'array',
+      wrap: (items: FormDropdownItem[]) => items
+    },
+    {
+      source: 'paged',
+      wrap: (items: FormDropdownItem[]) => mockPagedList({ items })
+    }
+  ])(
+    'selects the top matching item from a $source source when Enter is pressed in search',
+    async ({ wrap }) => {
+      const items = wrap([
+        createItem('beta', 'beta.ckpt'),
+        createItem('alpha', 'alpha.ckpt')
+      ])
+      const onUpdateSelected = vi.fn()
+      const { user } = mountDropdown(items, {
+        searchQuery: 'alp',
+        onUpdateSelected
+      })
+      await openDropdown(user)
+
+      await user.click(screen.getByRole('button', { name: 'Search enter' }))
+      await flushPromises()
+
+      expect(onUpdateSelected).toHaveBeenCalledWith(new Set(['alpha']))
+      expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+    }
+  )
+
+  it('keeps the selected item when it is clicked again in single-select mode', async () => {
+    const onUpdateSelected = vi.fn()
+    const onUpdateIsOpen = vi.fn()
+    const item = createItem('image', 'photo.png')
+    const { user } = mountDropdown([item], {
+      selected: new Set([item.id]),
+      onUpdateSelected,
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    await user.click(screen.getByRole('button', { name: item.label }))
+
+    expect(onUpdateSelected).not.toHaveBeenCalled()
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
+  it('replaces the selected item when a different item is clicked in single-select mode', async () => {
+    const onUpdateSelected = vi.fn()
+    const firstItem = createItem('first', 'first.png')
+    const secondItem = createItem('second', 'second.png')
+    const { user } = mountDropdown([firstItem, secondItem], {
+      selected: new Set([firstItem.id]),
+      onUpdateSelected
+    })
+    await openDropdown(user)
+
+    await user.click(screen.getByRole('button', { name: secondItem.label }))
+
+    expect(onUpdateSelected).toHaveBeenCalledWith(new Set([secondItem.id]))
+    expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+  })
+
+  it('does not select when Enter is pressed with an empty search query', async () => {
+    const onUpdateSelected = vi.fn()
+    const { user } = mountDropdown(
+      [createItem('beta', 'beta.ckpt'), createItem('alpha', 'alpha.ckpt')],
+      { onUpdateSelected }
+    )
+    await openDropdown(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search enter' }))
+    await flushPromises()
+
+    expect(onUpdateSelected).not.toHaveBeenCalled()
+  })
+
+  it('does not treat closed full-list items as current search results', async () => {
+    const onUpdateSelected = vi.fn()
+    const { user } = mountDropdown(
+      [createItem('beta', 'beta.ckpt'), createItem('alpha', 'alpha.ckpt')],
+      { searchQuery: 'alp', onUpdateSelected }
+    )
+    await flushPromises()
+
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
+
+    await user.keyboard('{Enter}')
+
+    expect(onUpdateSelected).not.toHaveBeenCalled()
+  })
+
+  it('searches the latest query before selecting the top search result', async () => {
+    const onUpdateSelected = vi.fn()
+    const searcher = vi.fn(
+      async (query: string, sourceItems: readonly FormDropdownItem[]) => {
+        if (query.trim() === '') return sourceItems
+        return sourceItems.filter((item) => item.name.includes(query))
+      }
+    )
+
+    const items = [
+      createItem('beta', 'beta.ckpt'),
+      createItem('alpha', 'alpha.ckpt')
+    ]
+    const { rerender, user } = mountDropdown(items, {
+      searcher,
+      onUpdateSelected
+    })
+    await openDropdown(user)
+
+    await rerender({
+      items,
+      searcher,
+      searchQuery: 'alp',
+      'onUpdate:selected': onUpdateSelected
+    })
+
+    expect(getCandidateIndex()).toBe(-1)
+
+    await user.click(screen.getByRole('button', { name: 'Search enter' }))
+    await flushPromises()
+
+    expect(onUpdateSelected).toHaveBeenCalledWith(new Set(['alpha']))
+    expect(searcher).toHaveBeenCalledWith('alp', items, expect.any(Function))
+  })
+
+  it('provides the candidate label for screen reader announcement', async () => {
+    const { user } = mountDropdown(
+      [createItem('beta', 'beta.ckpt'), createItem('alpha', 'alpha.ckpt')],
+      { searchQuery: 'alp' }
+    )
+    await openDropdown(user)
+
+    expect(getCandidateIndex()).toBe(0)
+    expect(getCandidateLabel()).toBe('alpha.ckpt')
+  })
+
+  it.for([
+    {
+      change: 'query',
+      nextQuery: 'bet',
+      nextItems: (items: FormDropdownItem[]) => items
+    },
+    {
+      change: 'source',
+      nextQuery: 'alp',
+      nextItems: () => [createItem('beta', 'beta.ckpt')]
+    }
+  ])(
+    'does not select a stale result if the $change changes before Enter search resolves',
+    async ({ nextQuery, nextItems }) => {
+      const onUpdateSelected = vi.fn()
+      let resolveAlphaSearch: () => void = () => {}
+      const searcher = vi.fn(
+        (query: string, sourceItems: readonly FormDropdownItem[]) => {
+          if (query === 'alp') {
+            return new Promise<FormDropdownItem[]>((resolve) => {
+              resolveAlphaSearch = () =>
+                resolve(sourceItems.filter((item) => item.name.includes(query)))
+            })
+          }
+
+          if (query.trim() === '') return Promise.resolve(sourceItems)
+          return Promise.resolve(
+            sourceItems.filter((item) => item.name.includes(query))
+          )
+        }
+      )
+
+      const items = [
+        createItem('beta', 'beta.ckpt'),
+        createItem('alpha', 'alpha.ckpt')
+      ]
+      const { rerender, user } = mountDropdown(items, {
+        searcher,
+        onUpdateSelected
+      })
+      await openDropdown(user)
+
+      await rerender({
+        items,
+        searcher,
+        searchQuery: 'alp',
+        'onUpdate:selected': onUpdateSelected
+      })
+      await user.click(screen.getByRole('button', { name: 'Search enter' }))
+      const resolveEnterSearch = resolveAlphaSearch
+
+      await rerender({
+        items: nextItems(items),
+        searcher,
+        searchQuery: nextQuery,
+        'onUpdate:selected': onUpdateSelected
+      })
+      resolveEnterSearch()
+      resolveAlphaSearch()
+      await flushPromises()
+
+      expect(searcher).toHaveBeenCalledWith('alp', items, expect.any(Function))
+      expect(onUpdateSelected).not.toHaveBeenCalled()
+    }
+  )
+
+  it('restores trigger focus after Escape', async () => {
+    const { user } = mountDropdown([createItem('1', 'alpha')])
+    await openDropdown(user)
+    await user.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+    )
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    { type: 'resize', target: window },
+    { type: 'scroll', target: document }
+  ])('dismisses on viewport $type', async ({ type, target }) => {
+    const { user } = mountDropdown([createItem('1', 'alpha')])
+    await openDropdown(user)
+    await fireEvent(target, new Event(type))
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+    )
+  })
+
+  it('closes on a pointerdown outside the menu and trigger', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    const outside = document.createElement('div')
+    document.body.appendChild(outside)
+    outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+    outside.remove()
+  })
+
+  it('closes when the canvas viewport moves', async () => {
+    const camera = reactive({ x: 0, y: 0, z: 1 })
+    vi.mocked(useTransformState()).camera = camera
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    camera.x += 77
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+  })
+
+  it('stays open on a pointerdown inside the menu', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    screen
+      .getByTestId('dropdown-menu')
+      .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+  })
+
+  it('stays open on a pointerdown inside a body-teleported sub-popover panel', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    const panel = document.createElement('div')
+    panel.classList.add(DROPDOWN_PANEL_CLASS)
+    const option = document.createElement('button')
+    panel.appendChild(option)
+    document.body.appendChild(panel)
+
+    option.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+    panel.remove()
+  })
+
+  it('does not select a search result from multi-select dropdowns', async () => {
+    const onUpdateSelected = vi.fn()
+    const { user } = mountDropdown(
+      [createItem('beta', 'beta.ckpt'), createItem('alpha', 'alpha.ckpt')],
+      { multiple: true, searchQuery: 'alp', onUpdateSelected }
+    )
+    await openDropdown(user)
+
+    expect(getCandidateIndex()).toBe(-1)
+
+    await user.click(screen.getByRole('button', { name: 'Search enter' }))
+    await flushPromises()
+
+    expect(onUpdateSelected).not.toHaveBeenCalled()
   })
 })

@@ -36,7 +36,7 @@
     "label": "重新啟動"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "為選取的節點開啟 3D 檢視器（Beta）"
+    "label": "開啟所選節點的 3D 檢視器（Beta 版）"
   },
   "Comfy_BrowseModelAssets": {
     "label": "實驗性：瀏覽模型資源"
@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "刪除選取項目"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "刪除選取的連線"
+  },
   "Comfy_Canvas_FitView": {
     "label": "將視圖適應至所選節點"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "隱藏選取的連線"
   },
   "Comfy_Canvas_Lock": {
     "label": "鎖定畫布"
@@ -83,6 +89,9 @@
   "Comfy_Canvas_SelectAll": {
     "label": "全選"
   },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "顯示選取的連線"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "畫布切換連結可見性"
   },
@@ -97,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "收合／展開選取的節點"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "隱藏／顯示所選節點上的連線"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "停用/啟用選取的節點"
@@ -158,15 +170,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "解開所選子圖"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "將選取的節點轉換為群組節點"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "管理群組節點"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "取消群組所選群組節點"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "開啟關於 ComfyUI"
   },
@@ -184,6 +187,9 @@
   },
   "Comfy_Interrupt": {
     "label": "中斷"
+  },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "為所選節點開啟圖層編輯器"
   },
   "Comfy_LoadDefaultWorkflow": {
     "label": "載入預設工作流程"
@@ -236,6 +242,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "新增空白工作流程"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "重新播放新手導覽"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
@@ -284,9 +293,6 @@
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "設定子圖搜尋別名"
   },
-  "Comfy_ToggleAssetAPI": {
-    "label": "實驗性：啟用 AssetAPI"
-  },
   "Comfy_ToggleCanvasInfo": {
     "label": "畫布效能"
   },
@@ -294,7 +300,7 @@
     "label": "說明中心"
   },
   "Comfy_ToggleLinear": {
-    "label": "切換線性模式"
+    "label": "切換應用模式"
   },
   "Comfy_ToggleQPOV2": {
     "label": "切換佇列面板 V2"
@@ -312,7 +318,7 @@
     "label": "登出"
   },
   "Experimental_ToggleVueNodes": {
-    "label": "實驗性：啟用 Vue 節點"
+    "label": "啟用 Nodes 2.0"
   },
   "Workspace_CloseWorkflow": {
     "label": "關閉當前工作流程"

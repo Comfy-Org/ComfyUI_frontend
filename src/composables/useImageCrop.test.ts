@@ -1,0 +1,1075 @@
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useResizeObserver } from '@vueuse/core'
+import { createApp, defineComponent, nextTick, ref, computed } from 'vue'
+import type { PropType } from 'vue'
+import { createI18n } from 'vue-i18n'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+
+import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
+import type { LocatedWidget } from '@/composables/widgetHistoryScope'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { app } from '@/scripts/app'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import {
+  createMockLGraphNode,
+  createMockSubgraphNode
+} from '@/utils/__tests__/litegraphTestUtils'
+
+import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
+
+const resizeObserverCallbacks: Array<() => void> = []
+
+const GRAPH_SCOPE = graphScopeOf({
+  id: 'test-graph',
+  rootGraph: { id: 'test-graph' }
+})
+const CROP_NODE_ID = toNodeId(2)
+
+vi.mock(import('@vueuse/core'), { spy: true })
+
+const mockCanvasNode = vi.fn<() => LGraphNode | undefined>()
+vi.mock(import('@/scripts/app'))
+
+const liveGraphNodes = vi.hoisted(() => ({
+  reloads: new Set<() => void>()
+}))
+
+vi.mock(import('@/composables/useLiveGraphNode'), async () => {
+  const { computed, onScopeDispose, shallowRef } = await import('vue')
+  return {
+    useLiveGraphNode: (resolve) => {
+      const node = shallowRef(resolve() ?? null)
+      const reload = () => (node.value = resolve() ?? null)
+      liveGraphNodes.reloads.add(reload)
+      onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
+      return computed(() => node.value)
+    }
+  }
+})
+
+function reloadGraph() {
+  for (const reload of liveGraphNodes.reloads) reload()
+}
+
+const onEditEnd = vi.fn()
+
+beforeEach(() => {
+  vi.mocked(useResizeObserver).mockImplementation((_target, cb) => {
+    resizeObserverCallbacks.push(() => cb([], fromPartial<ResizeObserver>({})))
+    return { stop: vi.fn(), isSupported: computed(() => true) }
+  })
+  const canvasGraph = app.canvas.graph
+  if (!canvasGraph) throw new Error('Expected a canvas graph')
+  vi.spyOn(canvasGraph, 'getNodeById').mockImplementation(
+    () => mockCanvasNode() ?? null
+  )
+  useCanvasStore().canvas = fromPartial<LGraphCanvas>({
+    graph: { rootGraph: { id: 'test-graph' } }
+  })
+})
+
+const ImageCropHarness = defineComponent({
+  name: 'ImageCropHarness',
+  props: {
+    nodeId: { type: Number, default: 2 },
+    widget: {
+      type: Object as PropType<LocatedWidget>,
+      default: () => ({ name: 'crop_region' })
+    }
+  },
+  setup(props) {
+    const modelValue = ref({ x: 40, y: 40, width: 160, height: 120 })
+    const imageEl = ref<HTMLImageElement | null>(null)
+    const containerEl = ref<HTMLDivElement | null>(null)
+    return {
+      modelValue,
+      imageEl,
+      containerEl,
+      ...useImageCrop(toNodeId(props.nodeId), {
+        widget: props.widget,
+        imageEl,
+        containerEl,
+        modelValue,
+        onEditEnd
+      })
+    }
+  },
+  template: `
+    <div
+      ref="containerEl"
+      style="width:400px;height:300px;position:relative;overflow:hidden"
+    >
+      <img v-if="imageUrl" ref="imageEl" :src="imageUrl" alt="" />
+    </div>
+  `
+})
+
+function flushResizeObservers() {
+  for (const cb of Array.from(resizeObserverCallbacks)) {
+    cb()
+  }
+}
+
+function mountContainerLayout(
+  el: HTMLElement,
+  width: number,
+  height: number,
+  rectWidth = width
+) {
+  Object.defineProperty(el, 'clientWidth', {
+    configurable: true,
+    value: width
+  })
+  Object.defineProperty(el, 'clientHeight', {
+    configurable: true,
+    value: height
+  })
+  el.getBoundingClientRect = () => ({
+    width: rectWidth,
+    height,
+    top: 0,
+    left: 0,
+    right: rectWidth,
+    bottom: height,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  })
+}
+
+function makePointerEvent(
+  type: 'pointerdown' | 'pointermove' | 'pointerup',
+  target: HTMLElement,
+  clientX: number,
+  clientY: number
+) {
+  const ev = new PointerEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    pointerId: 1,
+    clientX,
+    clientY
+  })
+  Object.defineProperty(ev, 'target', {
+    configurable: true,
+    enumerable: true,
+    value: target
+  })
+  return ev
+}
+
+type CropVm = Record<string, unknown> & {
+  $el: HTMLDivElement
+  modelValue: { x: number; y: number; width: number; height: number }
+}
+
+function setupImageLayout(vm: CropVm, nw: number, nh: number) {
+  /* Harness root + image are not RTL queries — layout is driven by composable state */
+  /* oxlint-disable testing-library/no-node-access */
+  const container = vm.$el
+  const img = container.querySelector('img')
+  /* oxlint-enable testing-library/no-node-access */
+  mountContainerLayout(container, 400, 300)
+  if (img) {
+    Object.defineProperty(img, 'naturalWidth', {
+      configurable: true,
+      value: nw
+    })
+    Object.defineProperty(img, 'naturalHeight', {
+      configurable: true,
+      value: nh
+    })
+  }
+  ;(vm.handleImageLoad as () => void)()
+  flushResizeObservers()
+}
+
+const harnessCleanups: Array<() => void> = []
+
+async function mountHarness(
+  nodeId: NodeId = toNodeId(2),
+  widget?: LocatedWidget
+) {
+  const el = document.createElement('div')
+  document.body.appendChild(el)
+  const harness = createApp(ImageCropHarness, {
+    nodeId: Number(nodeId),
+    widget
+  })
+  const vm = harness.mount(el) as unknown as CropVm
+  await nextTick()
+  await Promise.resolve()
+  harnessCleanups.push(() => {
+    harness.unmount()
+    el.remove()
+  })
+  return vm
+}
+
+async function flushTicks() {
+  await Promise.resolve()
+  await nextTick()
+}
+
+describe('imageCropLoadingAfterUrlChange', () => {
+  it('clears loading when url becomes null', () => {
+    expect(imageCropLoadingAfterUrlChange(null, 'https://a/b.png')).toBe(false)
+  })
+
+  it('keeps loading off when url stays null', () => {
+    expect(imageCropLoadingAfterUrlChange(null, null)).toBe(false)
+  })
+
+  it('starts loading when url changes to a new string', () => {
+    expect(imageCropLoadingAfterUrlChange('https://b', 'https://a')).toBe(true)
+  })
+
+  it('starts loading when first url is set', () => {
+    expect(imageCropLoadingAfterUrlChange('https://a', undefined)).toBe(true)
+  })
+
+  it('returns null when url is unchanged so caller can skip updating', () => {
+    expect(imageCropLoadingAfterUrlChange('https://a', 'https://a')).toBe(null)
+  })
+})
+
+describe('useImageCrop', () => {
+  let sourceNode: LGraphNode
+  let cropNode: LGraphNode
+  let outputStore: ReturnType<typeof useNodeOutputStore>
+
+  beforeEach(() => {
+    resizeObserverCallbacks.length = 0
+    outputStore = useNodeOutputStore()
+    sourceNode = createMockLGraphNode({
+      id: 99,
+      isSubgraphNode: () => false
+    })
+    cropNode = createMockLGraphNode({
+      id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
+      getInputNode: vi.fn(() => sourceNode),
+      getInputLink: vi.fn(() => ({ origin_slot: 0 })),
+      isSubgraphNode: () => false
+    })
+    mockCanvasNode.mockReturnValue(cropNode)
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
+      n === sourceNode ? ['https://example.com/a.png'] : undefined
+    )
+  })
+
+  const SOURCE_LOCATOR = 'source'
+
+  /**
+   * The real `getNodeImageUrls` reads the output store, so these stand-ins do
+   * too: a preview only refreshes if the composable tracks the store entry it
+   * was derived from.
+   */
+  function useSourcePreviews() {
+    vi.mocked(outputStore.getNodeImageUrls).mockImplementation((n) =>
+      n === sourceNode ? outputStore.nodePreviewImages[SOURCE_LOCATOR] : void 0
+    )
+  }
+
+  function setSourcePreview(url: string) {
+    outputStore.nodePreviewImages[SOURCE_LOCATOR] = [url]
+  }
+
+  function useSourceOutputs() {
+    vi.mocked(outputStore.getNodeImageUrls).mockImplementation((n) =>
+      n === sourceNode
+        ? outputStore.nodeOutputs[SOURCE_LOCATOR]?.images?.flatMap((image) =>
+            image.filename ? [image.filename] : []
+          )
+        : undefined
+    )
+  }
+
+  function setSourceOutput(url: string) {
+    outputStore.nodeOutputs[SOURCE_LOCATOR] = fromPartial({
+      images: [{ filename: url }]
+    })
+  }
+
+  function useLinkedCropNode(inputs = [{ name: 'image', type: 'IMAGE' }]) {
+    const linkStore = useLinkStore()
+    cropNode = createMockLGraphNode({
+      id: CROP_NODE_ID,
+      inputs,
+      isSubgraphNode: () => false,
+      getInputLink: (slot: number) =>
+        linkStore.getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, slot) ?? null,
+      getInputNode: (slot: number) =>
+        linkStore.getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, slot)
+          ? sourceNode
+          : null
+    })
+    mockCanvasNode.mockReturnValue(cropNode)
+  }
+
+  function connectImageInput(targetSlot = 0, type = 'IMAGE') {
+    useLinkStore().registerLink(GRAPH_SCOPE, {
+      id: toLinkId(1),
+      graphId: GRAPH_SCOPE.owningGraphId,
+      originNodeId: toNodeId(99),
+      originSlot: 0,
+      targetNodeId: CROP_NODE_ID,
+      targetSlot,
+      type
+    })
+  }
+
+  function disconnectImageInput() {
+    const link = useLinkStore().getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, 0)
+    if (!link) throw new Error('expected a link on the image input')
+    useLinkStore().deleteLink(GRAPH_SCOPE, link)
+  }
+
+  afterEach(() => {
+    for (const c of harnessCleanups) {
+      c()
+    }
+    harnessCleanups.length = 0
+  })
+
+  it('returns null image URL when the graph node cannot be resolved', async () => {
+    mockCanvasNode.mockReturnValue(undefined)
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBeNull()
+  })
+
+  it('returns null image URL when there is no input node', async () => {
+    const alone = createMockLGraphNode({
+      id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
+      getInputNode: vi.fn(() => null),
+      getInputLink: vi.fn(),
+      isSubgraphNode: () => false
+    })
+    mockCanvasNode.mockReturnValue(alone)
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBeNull()
+  })
+
+  it('returns null when subgraph link is missing', async () => {
+    const subgraphInput = createMockSubgraphNode([], {
+      id: 40,
+      resolveSubgraphOutputLink: vi.fn(() => ({ outputNode: null }))
+    })
+    const sgCrop = createMockLGraphNode({
+      id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
+      getInputNode: vi.fn(() => subgraphInput),
+      getInputLink: vi.fn(() => null),
+      isSubgraphNode: () => false
+    })
+    mockCanvasNode.mockReturnValue(sgCrop)
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBeNull()
+  })
+
+  it('resolves image through a subgraph input node', async () => {
+    const innerSource = createMockLGraphNode({
+      id: 50,
+      isSubgraphNode: () => false
+    })
+    const subgraphInput = createMockSubgraphNode([], {
+      id: 40,
+      resolveSubgraphOutputLink: vi.fn(() => ({ outputNode: innerSource }))
+    })
+
+    const sgCrop = createMockLGraphNode({
+      id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
+      getInputNode: vi.fn(() => subgraphInput),
+      getInputLink: vi.fn(() => ({ origin_slot: 0 })),
+      isSubgraphNode: () => false
+    })
+    mockCanvasNode.mockReturnValue(sgCrop)
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
+      n === innerSource ? ['https://subgraph.png'] : undefined
+    )
+
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://subgraph.png')
+  })
+
+  it('resolves the crop node and its image behind a widget promoted to a subgraph node', async () => {
+    const rootGraph = app.rootGraph
+    vi.mocked(rootGraph.getNodeById).mockRestore()
+    const subgraph = createTestSubgraph({
+      rootGraph,
+      inputs: [{ name: 'image', type: 'IMAGE' }]
+    })
+    rootGraph.subgraphs.set(subgraph.id, subgraph)
+    const host = createTestSubgraphNode(subgraph)
+    rootGraph.add(host)
+    const source = new LGraphNode('LoadImage')
+    source.addOutput('IMAGE', 'IMAGE')
+    rootGraph.add(source)
+    source.connect(0, host, 0)
+    const crop = new LGraphNode('ImageCropV2')
+    const imageInput = crop.addInput('image', 'IMAGE')
+    subgraph.add(crop)
+    subgraph.inputNode.slots[0].connect(imageInput, crop)
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
+      n === source ? ['https://outer.png'] : undefined
+    )
+
+    const vm = await mountHarness(host.id, {
+      name: 'crop_region',
+      nodeLocatorId: createNodeLocatorId(subgraph.id, crop.id)
+    })
+    expect(vm.imageUrl).toBe('https://outer.png')
+  })
+
+  it('updates imageUrl when nodeOutputs change', async () => {
+    useSourceOutputs()
+    setSourceOutput('https://example.com/a.png')
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+
+    setSourceOutput('https://example.com/b.png')
+
+    await flushTicks()
+    expect(vm.imageUrl).toBe('https://example.com/b.png')
+  })
+
+  it('updates imageUrl when nodePreviewImages change', async () => {
+    useSourcePreviews()
+    setSourcePreview('https://example.com/a.png')
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+
+    setSourcePreview('https://example.com/preview.png')
+
+    await flushTicks()
+    expect(vm.imageUrl).toBe('https://example.com/preview.png')
+  })
+
+  it('shows the image upstream of the node a reloaded graph holds', async () => {
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+    const reloadedSource = createMockLGraphNode({
+      id: 98,
+      isSubgraphNode: () => false
+    })
+    mockCanvasNode.mockReturnValue(
+      createMockLGraphNode({
+        id: 2,
+        inputs: [{ name: 'image', type: 'IMAGE' }],
+        getInputNode: vi.fn(() => reloadedSource),
+        getInputLink: vi.fn(() => ({ origin_slot: 0 })),
+        isSubgraphNode: () => false
+      })
+    )
+    vi.mocked(outputStore.getNodeImageUrls).mockImplementation((n) =>
+      n === reloadedSource ? ['https://example.com/b.png'] : undefined
+    )
+
+    reloadGraph()
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/b.png')
+  })
+
+  it('shows the upstream image when the input is connected after mount', async () => {
+    useLinkedCropNode()
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBeNull()
+
+    connectImageInput()
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows the image connected after mount to a first input not typed IMAGE', async () => {
+    useLinkedCropNode([{ name: 'image', type: '*' }])
+    const vm = await mountHarness()
+
+    connectImageInput(0)
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows the upstream image when the image input is not the first input, as after reopening a dynamic-input node', async () => {
+    useLinkedCropNode([
+      { name: 'model', type: 'COMFY_DYNAMICCOMBO_V3' },
+      { name: 'model.images.image_1', type: 'IMAGE' },
+      { name: 'model.images.image_2', type: 'IMAGE' },
+      { name: 'model.region', type: 'BOUNDING_BOX' }
+    ])
+    connectImageInput(1)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows the image from a union input before a later IMAGE input', async () => {
+    useLinkedCropNode([
+      { name: 'image', type: 'IMAGE,MASK' },
+      { name: 'reference', type: 'IMAGE' }
+    ])
+    connectImageInput(0)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('shows an empty preview on a subgraph host with a later image input', async () => {
+    const subgraph = createTestSubgraph({
+      inputs: [
+        { name: 'prompt', type: 'STRING' },
+        { name: 'image', type: 'IMAGE' }
+      ],
+      outputs: [{ name: 'out', type: 'IMAGE' }]
+    })
+    const host = createTestSubgraphNode(subgraph, { id: 2 })
+    mockCanvasNode.mockReturnValue(host)
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBeNull()
+  })
+
+  it('shows the image connected to a custom input type through the slot-0 fallback', async () => {
+    sourceNode = createMockLGraphNode({
+      id: 99,
+      isSubgraphNode: () => false,
+      outputs: [{ name: 'image', type: 'CUSTOM_IMAGE' }]
+    })
+    useLinkedCropNode([{ name: 'image', type: 'CUSTOM_IMAGE' }])
+    connectImageInput(0, 'CUSTOM_IMAGE')
+
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('clears the preview when the image input is disconnected', async () => {
+    useLinkedCropNode()
+    connectImageInput()
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+
+    disconnectImageInput()
+    await flushTicks()
+
+    expect(vm.imageUrl).toBeNull()
+  })
+
+  it('computes letterboxed display metrics for a wide image', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 800, 200)
+    vm.modelValue = { x: 0, y: 0, width: 400, height: 200 }
+    const style = vm.cropBoxStyle as Record<string, string>
+    expect(parseFloat(style.top)).toBeGreaterThan(20)
+    expect(parseFloat(style.left)).toBeLessThanOrEqual(2)
+  })
+
+  it('computes pillarboxed display metrics for a tall image', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 200, 800)
+    vm.modelValue = { x: 0, y: 0, width: 100, height: 400 }
+    const style = vm.cropBoxStyle as Record<string, string>
+    expect(parseFloat(style.left)).toBeGreaterThan(20)
+    expect(parseFloat(style.top)).toBeLessThanOrEqual(2)
+  })
+
+  it('uses scale factor 1 when natural dimensions are zero', async () => {
+    const vm = await mountHarness()
+    /* oxlint-disable testing-library/no-node-access */
+    const container = vm.$el
+    const img = container.querySelector('img')
+    /* oxlint-enable testing-library/no-node-access */
+    if (!img) throw new Error('expected preview img')
+    Object.defineProperty(img, 'naturalWidth', { configurable: true, value: 0 })
+    Object.defineProperty(img, 'naturalHeight', {
+      configurable: true,
+      value: 0
+    })
+    ;(vm.handleImageLoad as () => void)()
+    vm.modelValue = { x: 0, y: 0, width: 100, height: 80 }
+    const style = vm.cropBoxStyle as Record<string, string>
+    expect(parseFloat(style.width)).toBeCloseTo(100, 1)
+    expect(parseFloat(style.height)).toBeCloseTo(80, 1)
+  })
+
+  it('exposes eight resize handles when unlocked and four when locked', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    expect((vm.resizeHandles as { direction: string }[]).length).toBe(8)
+    vm.isLockEnabled = true
+    await nextTick()
+    expect((vm.resizeHandles as unknown[]).length).toBe(4)
+  })
+
+  it('is loading the upstream image it mounts with until the image loads', async () => {
+    const vm = await mountHarness()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+    expect(vm.isLoading).toBe(true)
+    ;(vm.handleImageLoad as () => void)()
+    expect(vm.isLoading).toBe(false)
+  })
+
+  it('sets isLoading to true when imageUrl changes to a new URL, then clears on load', async () => {
+    useSourcePreviews()
+    setSourcePreview('https://example.com/a.png')
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+
+    setSourcePreview('https://example.com/b.png')
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/b.png')
+    expect(vm.isLoading).toBe(true)
+    ;(vm.handleImageLoad as () => void)()
+    expect(vm.isLoading).toBe(false)
+  })
+
+  it('clears imageUrl on image error', async () => {
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBeTruthy()
+    ;(vm.handleImageError as () => void)()
+    expect(vm.imageUrl).toBeNull()
+    expect(vm.isLoading).toBe(false)
+  })
+
+  it('does not start dragging when there is no image', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(undefined)
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBeNull()
+    const xBefore = vm.cropX as number
+    const el = document.createElement('div')
+    el.setPointerCapture = vi.fn()
+    ;(vm.handleDragStart as (e: PointerEvent) => void)(
+      makePointerEvent('pointerdown', el, 10, 10)
+    )
+    expect(vm.cropX as number).toBe(xBefore)
+  })
+
+  it('drags the crop box in image space and ends on pointerup', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 300)
+    mountContainerLayout(vm.$el, 400, 300)
+    vm.modelValue = { x: 10, y: 10, width: 120, height: 90 }
+
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const dragStart = vm.handleDragStart as (e: PointerEvent) => void
+    const dragMove = vm.handleDragMove as (e: PointerEvent) => void
+    const dragEnd = vm.handleDragEnd as (e: PointerEvent) => void
+
+    const x0 = vm.cropX as number
+    dragStart(makePointerEvent('pointerdown', captureEl, 200, 150))
+    dragMove(makePointerEvent('pointermove', captureEl, 260, 180))
+    dragEnd(makePointerEvent('pointerup', captureEl, 260, 180))
+    expect(vm.cropX as number).toBeGreaterThan(x0)
+    expect(vm.cropY as number).toBeGreaterThanOrEqual(0)
+  })
+
+  it.for([
+    {
+      gesture: 'a drag',
+      start: 'handleDragStart',
+      move: 'handleDragMove',
+      end: 'handleDragEnd'
+    },
+    {
+      gesture: 'a resize',
+      start: 'handleResizeStart',
+      move: 'handleResizeMove',
+      end: 'handleResizeEnd'
+    }
+  ])(
+    'reports the end of an edit once $gesture ends',
+    async ({ start, move, end }) => {
+      const vm = await mountHarness()
+      setupImageLayout(vm, 400, 300)
+      const captureEl = document.createElement('div')
+      captureEl.setPointerCapture = vi.fn()
+      captureEl.releasePointerCapture = vi.fn()
+      const call = (name: string, e: PointerEvent) =>
+        (vm[name] as (e: PointerEvent, dir: string) => void)(e, 'right')
+
+      call(start, makePointerEvent('pointerdown', captureEl, 200, 150))
+      call(move, makePointerEvent('pointermove', captureEl, 230, 160))
+      expect(onEditEnd).not.toHaveBeenCalled()
+
+      call(end, makePointerEvent('pointerup', captureEl, 230, 160))
+      expect(onEditEnd).toHaveBeenCalledOnce()
+    }
+  )
+
+  it.for([
+    { ratio: '1:1', calls: 1 },
+    { ratio: 'custom', calls: 0 }
+  ])(
+    'reports $calls edit(s) when choosing the $ratio ratio',
+    async ({ ratio, calls }) => {
+      const vm = await mountHarness()
+      setupImageLayout(vm, 400, 400)
+
+      vm.selectedRatio = ratio
+
+      expect(onEditEnd).toHaveBeenCalledTimes(calls)
+    }
+  )
+
+  it('resizes from the right edge without moving origin', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 500, 500)
+    vm.modelValue = { x: 50, y: 50, width: 120, height: 100 }
+
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+
+    resizeStart(makePointerEvent('pointerdown', captureEl, 200, 120), 'right')
+    resizeMove(makePointerEvent('pointermove', captureEl, 260, 120))
+    resizeEnd(makePointerEvent('pointerup', captureEl, 260, 120))
+
+    expect(vm.modelValue.width).toBeGreaterThan(120)
+    expect(vm.modelValue.x).toBe(50)
+  })
+
+  it('resizes from the top edge, moving y and shrinking height', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 500, 500)
+    vm.modelValue = { x: 50, y: 100, width: 120, height: 200 }
+
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+
+    resizeStart(makePointerEvent('pointerdown', captureEl, 100, 100), 'top')
+    resizeMove(makePointerEvent('pointermove', captureEl, 100, 150))
+    resizeEnd(makePointerEvent('pointerup', captureEl, 100, 150))
+
+    expect(vm.modelValue.y).toBeGreaterThan(100)
+    expect(vm.modelValue.height).toBeLessThan(200)
+  })
+
+  it('applies a preset aspect ratio and clamps height to the image', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 800, 500)
+    vm.modelValue = { x: 0, y: 400, width: 200, height: 100 }
+    vm.selectedRatio = '9:16'
+    expect(vm.modelValue.height).toBeLessThanOrEqual(100)
+    expect(vm.modelValue.y + vm.modelValue.height).toBeLessThanOrEqual(500)
+  })
+
+  it('selecting custom clears locked ratio', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    vm.selectedRatio = '1:1'
+    expect(vm.isLockEnabled).toBe(true)
+    vm.selectedRatio = 'custom'
+    expect(vm.isLockEnabled).toBe(false)
+  })
+
+  it('shows custom in the ratio label when lock does not match a preset', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    vm.modelValue = { x: 0, y: 0, width: 300, height: 200 }
+    vm.isLockEnabled = true
+    await nextTick()
+    expect(vm.selectedRatio).toBe('custom')
+  })
+
+  it('keeps aspect ratio when resizing a corner while locked', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    vm.modelValue = { x: 40, y: 40, width: 120, height: 120 }
+    vm.isLockEnabled = true
+    const ratio = vm.modelValue.width / vm.modelValue.height
+
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+
+    resizeStart(makePointerEvent('pointerdown', captureEl, 300, 300), 'se')
+    resizeMove(makePointerEvent('pointermove', captureEl, 360, 360))
+    resizeEnd(makePointerEvent('pointerup', captureEl, 360, 360))
+
+    const r = vm.modelValue.width / vm.modelValue.height
+    expect(Math.abs(r - ratio)).toBeLessThan(0.05)
+  })
+
+  it('clamps constrained corner resize to the image bottom edge', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    vm.modelValue = { x: 300, y: 300, width: 80, height: 80 }
+    vm.isLockEnabled = true
+
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+
+    resizeStart(makePointerEvent('pointerdown', captureEl, 200, 200), 'se')
+    resizeMove(makePointerEvent('pointermove', captureEl, 600, 600))
+    resizeEnd(makePointerEvent('pointerup', captureEl, 600, 600))
+
+    expect(vm.modelValue.y + vm.modelValue.height).toBeLessThanOrEqual(400)
+  })
+
+  it('ends resize and clears direction on pointerup', async () => {
+    const vm = await mountHarness()
+    setupImageLayout(vm, 400, 400)
+    const captureEl = document.createElement('div')
+    captureEl.setPointerCapture = vi.fn()
+    captureEl.releasePointerCapture = vi.fn()
+
+    const resizeStart = vm.handleResizeStart as (
+      e: PointerEvent,
+      dir: string
+    ) => void
+    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
+    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+    const h0 = vm.cropHeight as number
+    resizeStart(makePointerEvent('pointerdown', captureEl, 10, 10), 'bottom')
+    resizeMove(makePointerEvent('pointermove', captureEl, 10, 80))
+    resizeEnd(makePointerEvent('pointerup', captureEl, 10, 80))
+    expect(vm.cropHeight as number).toBeGreaterThan(h0)
+  })
+})
+
+describe('WidgetImageCrop', () => {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        imageCrop: {
+          loading: 'Loading...',
+          noInputImage: 'No input image connected',
+          cropPreviewAlt: 'Crop preview',
+          ratio: 'Ratio',
+          lockRatio: 'Lock aspect ratio',
+          unlockRatio: 'Unlock aspect ratio',
+          custom: 'Custom'
+        },
+        widgetHistory: { undo: 'Undo', redo: 'Redo' }
+      }
+    }
+  })
+
+  beforeEach(() => {
+    resizeObserverCallbacks.length = 0
+    const source = createMockLGraphNode({ id: 99, isSubgraphNode: () => false })
+    const crop = createMockLGraphNode({
+      id: 2,
+      inputs: [{ name: 'image', type: 'IMAGE' }],
+      getInputNode: vi.fn(() => source),
+      getInputLink: vi.fn(),
+      isSubgraphNode: () => false
+    })
+    mockCanvasNode.mockReturnValue(crop)
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
+      n === source ? ['https://example.com/a.png'] : undefined
+    )
+  })
+
+  it('renders empty state copy when no image URL is available', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(undefined)
+    const widget = fromPartial<SimplifiedWidget>({
+      type: 'imagecrop',
+      options: {}
+    })
+    const attach = document.createElement('div')
+    document.body.appendChild(attach)
+    const { unmount } = render(WidgetImageCrop, {
+      container: attach,
+      props: {
+        widget,
+        nodeId: toNodeId(2),
+        modelValue: { x: 0, y: 0, width: 100, height: 100 }
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetBoundingBox: {
+            name: 'WidgetBoundingBox',
+            template: '<div data-testid="bbox-stub" />'
+          }
+        }
+      }
+    })
+    await flushTicks()
+    expect(screen.getByText('No input image connected')).toBeTruthy()
+    unmount()
+    attach.remove()
+  })
+
+  it('shows crop overlay after the preview image loads', async () => {
+    const widget = fromPartial<SimplifiedWidget>({
+      type: 'imagecrop',
+      options: {}
+    })
+    const attach = document.createElement('div')
+    attach.style.width = '420px'
+    attach.style.height = '320px'
+    document.body.appendChild(attach)
+    const { unmount } = render(WidgetImageCrop, {
+      container: attach,
+      props: {
+        widget,
+        nodeId: toNodeId(2),
+        modelValue: { x: 0, y: 0, width: 200, height: 200 }
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetBoundingBox: {
+            name: 'WidgetBoundingBox',
+            template: '<div data-testid="bbox-stub" />'
+          }
+        }
+      }
+    })
+    await flushTicks()
+    const img = screen.getByAltText('Crop preview')
+    Object.defineProperty(img, 'naturalWidth', {
+      configurable: true,
+      value: 400
+    })
+    Object.defineProperty(img, 'naturalHeight', {
+      configurable: true,
+      value: 400
+    })
+    img.dispatchEvent(new Event('load'))
+    await flushTicks()
+    expect(screen.getByTestId('crop-overlay')).toBeTruthy()
+    unmount()
+    attach.remove()
+  })
+
+  it('toggles aspect ratio lock from the toolbar button', async () => {
+    const user = userEvent.setup()
+    const widget = fromPartial<SimplifiedWidget>({
+      type: 'imagecrop',
+      options: {}
+    })
+    const attach = document.createElement('div')
+    attach.style.width = '420px'
+    attach.style.height = '320px'
+    document.body.appendChild(attach)
+    const { unmount } = render(WidgetImageCrop, {
+      container: attach,
+      props: {
+        widget,
+        nodeId: toNodeId(2),
+        modelValue: { x: 0, y: 0, width: 200, height: 200 }
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetBoundingBox: {
+            name: 'WidgetBoundingBox',
+            template: '<div data-testid="bbox-stub" />'
+          }
+        }
+      }
+    })
+    await flushTicks()
+    const img = screen.getByAltText('Crop preview')
+    Object.defineProperty(img, 'naturalWidth', {
+      configurable: true,
+      value: 400
+    })
+    Object.defineProperty(img, 'naturalHeight', {
+      configurable: true,
+      value: 400
+    })
+    img.dispatchEvent(new Event('load'))
+    await flushTicks()
+
+    await user.click(screen.getByRole('button', { name: 'Lock aspect ratio' }))
+    await flushTicks()
+    expect(
+      screen.getByRole('button', { name: 'Unlock aspect ratio' })
+    ).toBeTruthy()
+    unmount()
+    attach.remove()
+  })
+
+  it('renders ratio controls when the widget is enabled', async () => {
+    const widget = fromPartial<SimplifiedWidget>({
+      type: 'imagecrop',
+      options: {}
+    })
+    const attach = document.createElement('div')
+    document.body.appendChild(attach)
+    const { unmount } = render(WidgetImageCrop, {
+      container: attach,
+      props: {
+        widget,
+        nodeId: toNodeId(2),
+        modelValue: { x: 0, y: 0, width: 100, height: 100 }
+      },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WidgetBoundingBox: {
+            name: 'WidgetBoundingBox',
+            template: '<div data-testid="bbox-stub" />'
+          }
+        }
+      }
+    })
+    await flushTicks()
+    expect(screen.getByText('Ratio')).toBeTruthy()
+    unmount()
+    attach.remove()
+  })
+})

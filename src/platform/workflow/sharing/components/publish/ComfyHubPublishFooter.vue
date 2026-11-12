@@ -1,6 +1,7 @@
 <template>
   <footer
-    class="flex shrink items-center justify-end gap-4 border-t border-border-default px-6 py-4"
+    data-testid="publish-footer"
+    class="flex items-center justify-end gap-4 border-t px-6 py-4"
   >
     <Button v-if="!isFirstStep" size="lg" @click="$emit('back')">
       {{ $t('comfyHubPublish.back') }}
@@ -12,7 +13,7 @@
       @click="$emit('next')"
     >
       {{ $t('comfyHubPublish.next') }}
-      <i class="icon-[lucide--chevron-right] size-4" />
+      <i class="icon-[lucide--chevron-right]" />
     </Button>
     <Button
       v-else
@@ -22,20 +23,29 @@
       :loading="isPublishing"
       @click="$emit('publish')"
     >
-      <i class="icon-[lucide--upload] size-4" />
-      {{ $t('comfyHubPublish.publishButton') }}
+      <i
+        :class="
+          isUpdate ? 'icon-[lucide--refresh-cw]' : 'icon-[lucide--upload]'
+        "
+      />
+      {{
+        isUpdate
+          ? $t('comfyHubPublish.updateButton')
+          : $t('comfyHubPublish.publishButton')
+      }}
     </Button>
   </footer>
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 defineProps<{
   isFirstStep: boolean
   isLastStep: boolean
   isPublishDisabled?: boolean
   isPublishing?: boolean
+  isUpdate?: boolean
 }>()
 
 defineEmits<{

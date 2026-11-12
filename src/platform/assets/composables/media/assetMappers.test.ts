@@ -1,0 +1,221 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { api } from '@/scripts/api'
+
+import { mapInputFileToAssetItem, unflattenOutputAssets } from './assetMappers'
+
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+})
+
+vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
+  appendCloudResParam: vi.fn()
+}))
+
+describe('mapInputFileToAssetItem', () => {
+  it('preserves a clean filename', () => {
+    const asset = mapInputFileToAssetItem('photo.png', 0, 'input')
+
+    expect(asset.name).toBe('photo.png')
+    expect(asset.id).toBe('input-0-photo.png')
+    expect(asset.preview_url).toBe('/api/view?filename=photo.png&type=input')
+  })
+
+  it.for([
+    ['photo.png [input]', 'photo.png'],
+    ['photo.png [output]', 'photo.png'],
+    ['photo.png [temp]', 'photo.png'],
+    ['clip.mp4[input]', 'clip.mp4'],
+    ['MyFile.WEBP [Input]', 'MyFile.WEBP']
+  ])(
+    'strips ComfyUI directory annotation: %s -> %s',
+    ([input, expectedName]) => {
+      const asset = mapInputFileToAssetItem(input, 1, 'input')
+
+      expect(asset.name).toBe(expectedName)
+      expect(asset.id).toBe(`input-1-${expectedName}`)
+      expect(asset.preview_url).toBe(
+        `/api/view?filename=${encodeURIComponent(expectedName)}&type=input`
+      )
+    }
+  )
+
+  it('leaves non-annotation brackets in the filename intact', () => {
+    const asset = mapInputFileToAssetItem('my [draft] image.png', 0, 'input')
+
+    expect(asset.name).toBe('my [draft] image.png')
+  })
+
+  it('uses the directory passed in for the type query param', () => {
+    const asset = mapInputFileToAssetItem('clip.mp4 [output]', 0, 'output')
+
+    expect(asset.preview_url).toBe('/api/view?filename=clip.mp4&type=output')
+    expect(asset.tags).toEqual(['output'])
+  })
+})
+
+describe('unflattenOutputAssets', () => {
+  it('preserves each output directory type', () => {
+    const asset = {
+      job_id: 'job-id',
+      size: 1,
+      created_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z'
+    }
+    const assets = [
+      {
+        ...asset,
+        id: 'temp-id',
+        name: 'preview.png',
+        tags: ['temp']
+      },
+      {
+        ...asset,
+        id: 'output-id',
+        name: 'saved.png',
+        created_at: '2026-01-01T00:00:01Z',
+        updated_at: '2026-01-01T00:00:01Z',
+        tags: ['output']
+      }
+    ] satisfies AssetItem[]
+
+    const [grouped] = unflattenOutputAssets(assets)
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+    expect(metadata?.allOutputs?.map((output) => output.type)).toEqual([
+      'temp',
+      'output'
+    ])
+  })
+
+  it('represents the job with a saved output over a preview typed temp only by its URL', () => {
+    const asset = {
+      job_id: 'job-id',
+      size: 1,
+      tags: ['output'],
+      updated_at: '2026-01-01T00:00:00Z'
+    }
+    const assets = [
+      {
+        ...asset,
+        id: 'saved-id',
+        name: 'saved.png',
+        created_at: '2026-01-01T00:00:00Z'
+      },
+      {
+        ...asset,
+        id: 'preview-id',
+        name: 'preview.png',
+        created_at: '2026-01-01T00:00:01Z',
+        preview_url: '/api/view?filename=preview.png&type=temp'
+      }
+    ] satisfies AssetItem[]
+
+    const [grouped] = unflattenOutputAssets(assets)
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+    expect(metadata?.assetId).toBe('saved-id')
+    expect(metadata?.allOutputs?.map((output) => output.type)).toEqual([
+      'output',
+      'temp'
+    ])
+  })
+
+  it('keeps the subfolder of an output whose metadata names only the subfolder', () => {
+    const [grouped] = unflattenOutputAssets([
+      {
+        id: 'temp-id',
+        name: 'single_temp.png',
+        job_id: 'job-id',
+        size: 1,
+        tags: ['output', 'temp'],
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+        user_metadata: { subfolder: 'previews' }
+      }
+    ] satisfies AssetItem[])
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+    expect(metadata?.subfolder).toBe('previews')
+    expect(
+      metadata?.allOutputs?.map(({ filename, subfolder, type }) => ({
+        filename,
+        subfolder,
+        type
+      }))
+    ).toEqual([
+      { filename: 'single_temp.png', subfolder: 'previews', type: 'temp' }
+    ])
+  })
+
+  it.for([
+    { loaderPath: 'hdr_00001.exr', hash: undefined, subfolder: '' },
+    {
+      loaderPath: 'renders/hdr_00001.exr',
+      hash: undefined,
+      subfolder: 'renders'
+    },
+    {
+      loaderPath: 'archive/renders/hdr_00001.exr',
+      hash: undefined,
+      subfolder: 'archive/renders'
+    },
+    { loaderPath: 'renders/hdr_00001.exr', hash: 'blake3:abc', subfolder: '' }
+  ])(
+    'reads the subfolder "$subfolder" from a local output at $loaderPath with hash $hash',
+    ({ loaderPath, hash, subfolder }) => {
+      const [grouped] = unflattenOutputAssets([
+        {
+          id: 'output-id',
+          name: 'hdr_00001.exr',
+          hash,
+          loader_path: loaderPath,
+          job_id: 'job-id',
+          size: 1,
+          tags: ['output'],
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+          user_metadata: {}
+        }
+      ] satisfies AssetItem[])
+      const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+      expect(metadata?.subfolder).toBe(subfolder)
+      expect(
+        metadata?.allOutputs?.map((output) => ({
+          filename: output.filename,
+          subfolder: output.subfolder
+        }))
+      ).toEqual([{ filename: 'hdr_00001.exr', subfolder }])
+    }
+  )
+
+  it('keeps the representative asset id apart from same-named outputs', () => {
+    const asset = {
+      job_id: 'job-id',
+      name: 'ComfyUI_00001.glb',
+      size: 1,
+      tags: ['output'],
+      updated_at: '2026-01-01T00:00:00Z'
+    }
+    const assets = [
+      { ...asset, id: 'earlier-id', created_at: '2026-01-01T00:00:00Z' },
+      { ...asset, id: 'later-id', created_at: '2026-01-01T00:00:01Z' }
+    ] satisfies AssetItem[]
+
+    const [grouped] = unflattenOutputAssets(assets)
+    const metadata = getOutputAssetMetadata(grouped.user_metadata)
+
+    expect(grouped.id).toBe('job-id')
+    expect(metadata?.assetId).toBe('later-id')
+    expect(metadata?.allOutputs?.map((output) => output.assetId)).toEqual([
+      'earlier-id',
+      'later-id'
+    ])
+  })
+})

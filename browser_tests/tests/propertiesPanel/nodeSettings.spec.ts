@@ -3,13 +3,11 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
-test.describe('Properties panel - Node settings', () => {
+test.describe('Properties panel - Node settings', { tag: '@vue-nodes' }, () => {
   let panel: PropertiesPanelHelper
 
   test.beforeEach(async ({ comfyPage }) => {
     panel = new PropertiesPanelHelper(comfyPage.page)
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.vueNodes.waitForNodes()
     await comfyPage.actionbar.propertiesButton.click()
     await comfyPage.nodeOps.selectNodes(['KSampler'])
     await panel.switchToTab('Settings')
@@ -62,7 +60,7 @@ test.describe('Properties panel - Node settings', () => {
           comfyPage.page.evaluate(() => {
             const selected = window.app!.canvas.selected_nodes
             const node = Object.values(selected)[0]
-            return node?.color != null
+            return node.color != null
           })
         )
         .toBe(true)
@@ -76,7 +74,7 @@ test.describe('Properties panel - Node settings', () => {
           comfyPage.page.evaluate(() => {
             const selected = window.app!.canvas.selected_nodes
             const node = Object.values(selected)[0]
-            return node?.color != null
+            return node.color != null
           })
         )
         .toBe(true)
@@ -88,7 +86,7 @@ test.describe('Properties panel - Node settings', () => {
           comfyPage.page.evaluate(() => {
             const selected = window.app!.canvas.selected_nodes
             const node = Object.values(selected)[0]
-            return node?.color
+            return node.color
           })
         )
         .toBeFalsy()

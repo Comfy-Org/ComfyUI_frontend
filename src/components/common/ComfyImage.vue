@@ -25,16 +25,16 @@
     v-if="error"
     class="m-8 flex size-full flex-col items-center justify-center"
   >
-    <i class="pi pi-image mb-2 text-5xl" />
+    <i class="mb-2 icon-[lucide--image] size-12" />
     <span>{{ $t('g.imageFailedToLoad') }}</span>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
 import { computed } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { useImageQuiet } from '@/composables/useImageQuiet'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   src,
@@ -51,5 +51,5 @@ const {
   alt?: string
 }>()
 
-const { error } = useImage(computed(() => ({ src, alt })))
+const { error } = useImageQuiet(computed(() => ({ src, alt })))
 </script>

@@ -1,61 +1,50 @@
-import { createTestingPinia } from '@pinia/testing'
-import { render } from '@testing-library/vue'
-import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial, fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import WidgetButton from '@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue'
+import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { useLinkStore } from '@/stores/linkStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+
 import WidgetItem from './WidgetItem.vue'
 
-const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
-  mockGetInputSpecForWidget: vi.fn(),
+beforeEach(() => {
+  useCanvasStore().canvas = fromPartial({ setDirty: vi.fn() })
+})
+
+const { StubWidgetComponent } = vi.hoisted(() => ({
   StubWidgetComponent: {
     name: 'StubWidget',
     props: ['widget', 'modelValue', 'nodeId', 'nodeType'],
     template:
-      '<div class="stub-widget" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" />'
+      '<button class="stub-widget" type="button" :aria-label="widget?.name" :data-widget-options="JSON.stringify(widget?.options)" :data-widget-type="widget?.type" :data-widget-name="widget?.name" :data-widget-value="String(widget?.value)" @click="widget?.callback?.()" />'
   }
 }))
 
-vi.mock('@/stores/nodeDefStore', () => ({
-  useNodeDefStore: () => ({
-    getInputSpecForWidget: mockGetInputSpecForWidget
-  })
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({
-    canvas: { setDirty: vi.fn() }
-  })
-}))
-
-vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
-  useFavoritedWidgetsStore: () => ({
-    isFavorited: vi.fn().mockReturnValue(false),
-    toggleFavorite: vi.fn()
-  })
-}))
-
-vi.mock('@/composables/graph/useGraphNodeManager', () => ({
-  getControlWidget: vi.fn(() => undefined)
-}))
-
-vi.mock('@/core/graph/subgraph/resolvePromotedWidgetSource', () => ({
-  resolvePromotedWidgetSource: vi.fn(() => undefined)
-}))
-
 vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry',
+  import('@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'),
+
   () => ({
-    getComponent: () => StubWidgetComponent,
+    getComponent: vi.fn(() => StubWidgetComponent),
     shouldExpand: () => false
   })
 )
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'),
+
   () => ({
     default: StubWidgetComponent
   })
@@ -78,7 +67,7 @@ function createMockNode(overrides: Partial<LGraphNode> = {}): LGraphNode {
     id: 1,
     type: 'TestNode',
     isSubgraphNode: () => false,
-    graph: { rootGraph: { id: 'test-graph-id' } },
+    graph: { id: 'test-graph-id', rootGraph: { id: 'test-graph-id' } },
     ...overrides
   })
 }
@@ -93,44 +82,7 @@ function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
       values: ['option_a', 'option_b', 'option_c']
     },
     ...overrides
-  } as IBaseWidget
-}
-
-/**
- * Creates a mock PromotedWidgetView that mirrors the real class:
- * properties like name, type, value, options are prototype getters,
- * NOT own properties — so object spread loses them.
- */
-function createMockPromotedWidgetView(
-  sourceOptions: IBaseWidget['options'] = {
-    values: ['model_a.safetensors', 'model_b.safetensors']
   }
-): IBaseWidget {
-  class MockPromotedWidgetView {
-    readonly sourceNodeId = '42'
-    readonly sourceWidgetName = 'ckpt_name'
-    readonly serialize = false
-
-    get name(): string {
-      return 'ckpt_name'
-    }
-    get type(): string {
-      return 'combo'
-    }
-    get value(): unknown {
-      return 'model_a.safetensors'
-    }
-    get options(): IBaseWidget['options'] {
-      return sourceOptions
-    }
-    get label(): string | undefined {
-      return undefined
-    }
-    get y(): number {
-      return 0
-    }
-  }
-  return fromAny<IBaseWidget, unknown>(new MockPromotedWidgetView())
 }
 
 function renderWidgetItem(
@@ -150,7 +102,7 @@ function renderWidgetItem(
 }
 
 function getStubWidget(container: Element) {
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   const el = container.querySelector('.stub-widget')
   if (!el) throw new Error('stub-widget not found')
   return {
@@ -162,12 +114,61 @@ function getStubWidget(container: Element) {
 }
 
 describe('WidgetItem', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
+  describe('button actions', () => {
+    beforeEach(() => {
+      vi.mocked(getComponent).mockReturnValue(WidgetButton)
+    })
+
+    it.for(['button', 'BUTTON'])(
+      'invokes a %s callback with the original widget and node context',
+      async (type) => {
+        const user = userEvent.setup()
+        const callback = vi.fn(function (this: IBaseWidget) {
+          this.label = 'Restored'
+        })
+        const widget = createMockWidget({
+          type,
+          name: 'Restore selected',
+          value: undefined,
+          options: {},
+          callback
+        })
+        const node = createMockNode()
+        renderWidgetItem(widget, node)
+
+        await user.click(screen.getByRole('button', { name: widget.name }))
+
+        expect(callback).toHaveBeenCalledExactlyOnceWith(
+          undefined,
+          useCanvasStore().canvas,
+          node
+        )
+        expect(widget.label).toBe('Restored')
+      }
+    )
+
+    it('does not invoke a disabled button callback', async () => {
+      const user = userEvent.setup()
+      const callback = vi.fn()
+      const widget = createMockWidget({
+        type: 'button',
+        name: 'Restore selected',
+        value: undefined,
+        options: {},
+        disabled: true,
+        callback
+      })
+      renderWidgetItem(widget)
+
+      const button = screen.getByRole('button', { name: widget.name })
+      expect(button).toBeDisabled()
+      await user.click(button)
+
+      expect(callback).not.toHaveBeenCalled()
+    })
   })
 
-  describe('promoted widget options', () => {
+  describe('widget state rendering', () => {
     it('passes options from a regular widget to the widget component', () => {
       const widget = createMockWidget({
         options: { values: ['a', 'b', 'c'] }
@@ -180,39 +181,136 @@ describe('WidgetItem', () => {
       })
     })
 
-    it('passes options from a PromotedWidgetView to the widget component', () => {
+    it('passes options from widget state to the widget component', () => {
       const expectedOptions = {
         values: ['model_a.safetensors', 'model_b.safetensors']
       }
-      const widget = createMockPromotedWidgetView(expectedOptions)
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, name: 'ckpt_name' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: 'model_a.safetensors',
+        options: expectedOptions
+      })
+
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
 
       expect(stub.options).toEqual(expectedOptions)
     })
 
-    it('passes type from a PromotedWidgetView to the widget component', () => {
-      const widget = createMockPromotedWidgetView()
+    it('passes type from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, type: 'string' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: 'model_a.safetensors',
+        options: { values: ['model_a.safetensors'] }
+      })
+
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
 
       expect(stub.type).toBe('combo')
     })
 
-    it('passes name from a PromotedWidgetView to the widget component', () => {
-      const widget = createMockPromotedWidgetView()
+    it.for([
+      { scenario: 'no type', type: undefined, renderedType: null },
+      { scenario: 'a non-string type', type: 7, renderedType: '7' }
+    ])(
+      'renders a legacy widget with $scenario',
+      async ({ type, renderedType }) => {
+        const user = userEvent.setup()
+        const callback = vi.fn()
+        const widget = createMockWidget({ callback })
+        Reflect.set(widget, 'type', type)
+
+        const { container } = renderWidgetItem(widget)
+        const stub = getStubWidget(container)
+        await user.click(screen.getByRole('button', { name: 'test_widget' }))
+
+        expect(stub.name).toBe('test_widget')
+        expect(stub.type).toBe(renderedType)
+        expect(callback).not.toHaveBeenCalled()
+      }
+    )
+
+    it('passes name from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, name: 'source_name' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: 'model_a.safetensors',
+        options: { values: ['model_a.safetensors'] }
+      })
+
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
 
       expect(stub.name).toBe('ckpt_name')
     })
 
-    it('passes value from a PromotedWidgetView to the widget component', () => {
-      const widget = createMockPromotedWidgetView()
+    it('passes value from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, value: 'source value' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: 'model_a.safetensors',
+        options: { values: ['model_a.safetensors'] }
+      })
+
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
 
       expect(stub.value).toBe('model_a.safetensors')
+    })
+
+    it('passes null from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', toNodeId(1), 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, value: 'source value' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: null,
+        options: {}
+      })
+
+      const { container } = renderWidgetItem(widget)
+      const stub = getStubWidget(container)
+
+      expect(stub.value).toBe('null')
+    })
+
+    it('updates disabled options when the widget input is linked', async () => {
+      const inputs: INodeInputSlot[] = [
+        {
+          name: 'seed',
+          type: 'INT',
+          link: null,
+          boundingRect: [0, 0, 0, 0],
+          widget: { name: 'seed' }
+        }
+      ]
+      const node = createMockNode(
+        fromAny<Partial<LGraphNode>, unknown>({ inputs })
+      )
+      const widget = createMockWidget({ name: 'seed', options: {} })
+
+      const { container } = renderWidgetItem(widget, node)
+      expect(getStubWidget(container).options.disabled).toBeUndefined()
+
+      const graphScope = graphScopeOf(node.graph!)
+      useLinkStore().registerLink(graphScope, {
+        id: toLinkId(1),
+        graphId: graphScope.owningGraphId,
+        originNodeId: toNodeId(2),
+        originSlot: 0,
+        targetNodeId: node.id,
+        targetSlot: 0,
+        type: 'INT'
+      })
+      await nextTick()
+
+      expect(getStubWidget(container).options.disabled).toBe(true)
     })
   })
 })

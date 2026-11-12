@@ -1,31 +1,31 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
-import type { ClassValue } from '@/utils/tailwindUtil'
+import Button from '@comfyorg/design-system/button/Button'
+import { cn } from '@comfyorg/tailwind-utils'
+import type { ClassValue } from '@comfyorg/tailwind-utils'
 
 const {
   nodeTitle,
   widgetName,
   isDraggable = false,
   isPhysical = false,
+  isShown = false,
   class: className
 } = defineProps<{
   nodeTitle: string
   widgetName: string
   isDraggable?: boolean
   isPhysical?: boolean
+  isShown?: boolean
   class?: ClassValue
 }>()
-defineEmits<{
-  (e: 'toggleVisibility'): void
-}>()
+defineEmits<{ toggleVisibility: [] }>()
 
 const icon = computed(() =>
   isPhysical
     ? 'icon-[lucide--link]'
-    : isDraggable
+    : isShown
       ? 'icon-[lucide--eye]'
       : 'icon-[lucide--eye-off]'
 )
@@ -36,14 +36,18 @@ const icon = computed(() =>
     :class="
       cn(
         'flex items-center gap-1 rounded-sm px-2 py-1 break-all',
-        'bg-node-component-surface',
-        isDraggable && 'ring-accent-background hover:ring-1',
+        'bg-node',
+        isDraggable && 'ring-accent hover:ring-1',
         className
       )
     "
+    data-testid="subgraph-widget-item"
   >
     <div class="pointer-events-none flex-1">
-      <div class="line-clamp-1 text-xs text-text-secondary">
+      <div
+        class="line-clamp-1 text-xs text-muted-foreground"
+        data-testid="subgraph-widget-node-name"
+      >
         {{ nodeTitle }}
       </div>
       <div class="line-clamp-1 text-sm/8" data-testid="subgraph-widget-label">
@@ -59,9 +63,11 @@ const icon = computed(() =>
     >
       <i :class="icon" :data-testid="isPhysical ? 'icon-link' : 'icon-eye'" />
     </Button>
-    <div
+    <i
       v-if="isDraggable"
-      class="pointer-events-none icon-[lucide--grip-vertical] size-4"
+      aria-hidden="true"
+      data-testid="subgraph-widget-drag-handle"
+      class="pointer-events-none icon-[lucide--grip-vertical]"
     />
   </div>
 </template>

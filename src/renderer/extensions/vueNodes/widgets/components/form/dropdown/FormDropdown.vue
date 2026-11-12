@@ -1,27 +1,40 @@
 <script setup lang="ts">
-import { computedAsync, refDebounced } from '@vueuse/core'
-import Popover from 'primevue/popover'
+import {
+  computedAsync,
+  refDebounced,
+  unrefElement,
+  useEventListener
+} from '@vueuse/core'
+import { PopoverAnchor, PopoverRoot } from 'reka-ui'
+import type { ComponentPublicInstance } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
 
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
+import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
-import { defaultSearcher, getDefaultSortOptions } from './shared'
+import {
+  DROPDOWN_PANEL_CLASS,
+  defaultSearcher,
+  getDefaultSortOptions
+} from './shared'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: FormDropdownItem[]
-  /** Items used for display in the input field. Falls back to items if not provided. */
-  displayItems?: FormDropdownItem[]
+  inputId?: string
+  items: MaybePaged<FormDropdownItem>
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -43,15 +56,15 @@ interface Props {
     item: FormDropdownItem,
     index: number
   ) => boolean
+  isUploading?: boolean
   searcher?: (
     query: string,
-    items: FormDropdownItem[],
+    items: readonly FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<FormDropdownItem[]>
+  ) => Promise<readonly FormDropdownItem[]>
 }
 
 const { t } = useI18n()
-const overlayProps = useTransformCompatOverlayProps()
 
 const {
   placeholder,
@@ -94,30 +107,49 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
-const toastStore = useToastStore()
-const popoverRef = ref<InstanceType<typeof Popover>>()
-const triggerRef = useTemplateRef('triggerRef')
+const toast = useToast()
+const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
+const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
+const triggerRef =
+  useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
+const displayedSearchQuery = ref('')
+const isFiltering = ref(false)
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity
   if (typeof multiple === 'number') return multiple
   return 1
 })
+const isSingleSelect = computed(() => maxSelectable.value === 1)
 
 const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 
-const filteredItems = computedAsync(async (onCancel) => {
-  if (!isOpen.value) {
-    return items
-  }
+const filteredItems = computedAsync(
+  async (onCancel) => {
+    if (!isOpen.value) {
+      displayedSearchQuery.value = ''
+      return pagedItems(items).slice()
+    }
 
-  let cleanupFn: (() => void) | undefined
-  onCancel(() => cleanupFn?.())
-  const result = await searcher(debouncedSearchQuery.value, items, (cb) => {
-    cleanupFn = cb
-  })
-  return result
-}, items)
+    const query = debouncedSearchQuery.value
+    let cancelled = false
+    let cleanupFn: (() => void) | undefined
+    onCancel(() => {
+      cancelled = true
+      cleanupFn?.()
+    })
+
+    const result = await searcher(query, pagedItems(items).slice(), (cb) => {
+      cleanupFn = cb
+    })
+    if (!cancelled) displayedSearchQuery.value = query
+    return result
+  },
+  pagedItems(items).slice(),
+  {
+    evaluating: isFiltering
+  }
+)
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = sortOptions.find((option) => option.id === 'default')?.sorter
@@ -132,30 +164,74 @@ const selectedSorter = computed<SortOption['sorter']>(() => {
 })
 const sortedItems = computed(() => {
   if (!isOpen.value) {
-    return items
+    return pagedItems(items).slice()
   }
 
   return selectedSorter.value({ items: filteredItems.value }) || []
+})
+const isShowingCurrentSearchResults = computed(
+  () =>
+    isOpen.value &&
+    isSingleSelect.value &&
+    !isFiltering.value &&
+    searchQuery.value.trim() !== '' &&
+    displayedSearchQuery.value === searchQuery.value &&
+    sortedItems.value.length > 0
+)
+
+const candidateIndex = computed(() =>
+  isShowingCurrentSearchResults.value ? 0 : -1
+)
+const candidateLabel = computed(() => {
+  const candidate = sortedItems.value[candidateIndex.value]
+  return candidate?.label ?? candidate?.name
 })
 
 function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
 }
 
-const toggleDropdown = (event: Event) => {
+const toggleDropdown = () => {
   if (disabled) return
-  if (popoverRef.value && triggerRef.value) {
-    popoverRef.value.toggle?.(event, triggerRef.value)
-    isOpen.value = !isOpen.value
-  }
+  isOpen.value = !isOpen.value
 }
 
-const closeDropdown = () => {
-  if (popoverRef.value) {
-    popoverRef.value.hide?.()
-    isOpen.value = false
-  }
+function focusTrigger() {
+  triggerRef.value?.focus()
 }
+
+const closeDropdown = ({ restoreFocus = false } = {}) => {
+  isOpen.value = false
+
+  if (restoreFocus) focusTrigger()
+}
+
+useEventListener(
+  window,
+  'pointerdown',
+  (event) => {
+    if (!isOpen.value) return
+    const menuEl = unrefElement(menuRef)
+    const triggerEl = triggerAnchorRef.value
+    const path = event.composedPath()
+    if (menuEl && path.includes(menuEl)) return
+    if (triggerEl && path.includes(triggerEl)) return
+    if (path.some(isInsideDropdownPanel)) return
+    closeDropdown()
+  },
+  { capture: true }
+)
+
+function isInsideDropdownPanel(target: EventTarget): boolean {
+  return (
+    target instanceof HTMLElement &&
+    target.classList.contains(DROPDOWN_PANEL_CLASS)
+  )
+}
+
+useDismissOnCanvasGesture(isOpen, () => closeDropdown())
+
+usePopoverViewportDismiss(isOpen, triggerAnchorRef)
 
 function handleFileChange(event: Event) {
   if (disabled) return
@@ -169,8 +245,14 @@ function handleFileChange(event: Event) {
 
 function handleSelection(item: FormDropdownItem, index: number) {
   if (disabled) return
+  const itemIsSelected = internalIsSelected(item, index)
+  if (isSingleSelect.value && itemIsSelected) {
+    closeDropdown({ restoreFocus: true })
+    return
+  }
+
   const sel = selected.value
-  if (internalIsSelected(item, index)) {
+  if (itemIsSelected) {
     sel.delete(item.id)
   } else {
     if (sel.size < maxSelectable.value) {
@@ -179,70 +261,119 @@ function handleSelection(item: FormDropdownItem, index: number) {
       sel.clear()
       sel.add(item.id)
     } else {
-      toastStore.addAlert(t('widgets.uploadSelect.maxSelectionReached'))
+      toast.warning(t('widgets.uploadSelect.maxSelectionReached'))
       return
     }
   }
   selected.value = new Set(sel)
 
-  if (maxSelectable.value === 1) {
-    closeDropdown()
+  if (isSingleSelect.value) {
+    closeDropdown({ restoreFocus: true })
   }
 }
+
+async function getTopSearchResult() {
+  const query = searchQuery.value
+  if (query.trim() === '') return
+
+  const sourceItems = pagedItems(items)
+  const matches =
+    isShowingCurrentSearchResults.value && displayedSearchQuery.value === query
+      ? filteredItems.value
+      : await searcher(query, sourceItems.slice(), () => {})
+
+  if (
+    query !== searchQuery.value ||
+    sourceItems !== pagedItems(items) ||
+    !isOpen.value
+  ) {
+    return
+  }
+
+  return selectedSorter.value({ items: matches })[0]
+}
+
+async function selectTopSearchResult() {
+  try {
+    if (disabled || !isOpen.value || !isSingleSelect.value) return
+    const topResult = await getTopSearchResult()
+    if (!topResult) return
+    handleSelection(topResult, 0)
+  } catch (error) {
+    console.error('[FormDropdown] search selection failed', error)
+  }
+}
+
+function handleSearchEnter() {
+  void selectTopSearchResult()
+}
+
+function showPicker() {
+  triggerRef.value!.showPicker()
+  closeDropdown()
+}
+const dropdownItems = computed(() =>
+  isPaged(items)
+    ? new WrappedList(items, () => sortedItems.value)
+    : sortedItems.value
+)
 </script>
 
 <template>
-  <div ref="triggerRef">
-    <FormDropdownInput
-      :files
-      :is-open
-      :placeholder="placeholderText"
-      :items
-      :display-items
-      :max-selectable
-      :selected
-      :uploadable
-      :disabled
-      :accept
-      @select-click="toggleDropdown"
-      @file-change="handleFileChange"
-    />
-    <Popover
-      ref="popoverRef"
-      :dismissable="true"
-      :close-on-escape="true"
-      :append-to="overlayProps.appendTo"
-      unstyled
-      :pt="{
-        root: {
-          class: 'absolute z-50'
-        },
-        content: {
-          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
-        }
-      }"
-      @hide="isOpen = false"
-    >
-      <FormDropdownMenu
-        v-model:filter-selected="filterSelected"
-        v-model:layout-mode="layoutMode"
-        v-model:sort-selected="sortSelected"
-        v-model:search-query="searchQuery"
-        v-model:ownership-selected="ownershipSelected"
-        v-model:base-model-selected="baseModelSelected"
-        :filter-options
-        :sort-options
-        :show-ownership-filter
-        :ownership-options
-        :show-base-model-filter
-        :base-model-options
-        :disabled
-        :items="sortedItems"
-        :is-selected="internalIsSelected"
+  <div ref="triggerAnchorRef">
+    <PopoverRoot v-model:open="isOpen">
+      <FormDropdownInput
+        ref="triggerRef"
+        :input-id
+        :files
+        :is-open
+        :placeholder="placeholderText"
+        :selected-items="pagedItems(items).filter(internalIsSelected)"
         :max-selectable
-        @close="closeDropdown"
-        @item-click="handleSelection"
-      />
-    </Popover>
+        :uploadable
+        :disabled
+        :accept
+        :is-uploading
+        @select-click="toggleDropdown"
+        @file-change="handleFileChange"
+      >
+        <template #anchor="{ element }">
+          <PopoverAnchor as="template" :reference="element" />
+        </template>
+      </FormDropdownInput>
+      <PopoverContent
+        align="end"
+        class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+        @interact-outside.prevent
+        @close-auto-focus.prevent="focusTrigger"
+      >
+        <FormDropdownMenu
+          ref="menuRef"
+          v-model:filter-selected="filterSelected"
+          v-model:layout-mode="layoutMode"
+          v-model:sort-selected="sortSelected"
+          v-model:search-query="searchQuery"
+          v-model:ownership-selected="ownershipSelected"
+          v-model:base-model-selected="baseModelSelected"
+          :uploadable
+          :filter-options
+          :sort-options
+          :show-ownership-filter
+          :ownership-options
+          :show-base-model-filter
+          :base-model-options
+          :disabled
+          :items="dropdownItems"
+          :candidate-index
+          :candidate-label
+          :is-selected="internalIsSelected"
+          :max-selectable
+          @close="closeDropdown"
+          @search-enter="handleSearchEnter"
+          @item-click="handleSelection"
+          @show-picker="showPicker"
+        />
+      </PopoverContent>
+    </PopoverRoot>
   </div>
 </template>

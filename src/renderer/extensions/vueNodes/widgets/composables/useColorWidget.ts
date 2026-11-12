@@ -1,15 +1,27 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IColorWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IColorWidget } from '@comfyorg/graph-model/widgets'
+import { isColorInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type {
   ColorInputSpec,
   InputSpec as InputSpecV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const useColorWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IColorWidget => {
-    const { name, options } = inputSpec as ColorInputSpec
-    const defaultValue = options?.default || '#000000'
+    if (!isColorInputSpec(inputSpec)) {
+      console.error('Invalid input spec for color widget')
+    }
+
+    const colorSpec = inputSpec as ColorInputSpec
+    const { name } = colorSpec
+    const defaultValue =
+      colorSpec.default ?? colorSpec.options?.default ?? '#000000'
+
+    const existing = node.widgets?.find(
+      (w): w is IColorWidget => w.name === name && w.type === 'color'
+    )
+    if (existing) return existing
 
     const widget = node.addWidget('color', name, defaultValue, () => {}, {
       serialize: true

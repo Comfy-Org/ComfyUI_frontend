@@ -2,19 +2,14 @@
  * Simplified widget interface for Vue-based node rendering
  * Removes all DOM manipulation and positioning concerns
  */
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
-/** Valid types for widget values */
-export type WidgetValue =
-  | string
-  | number
-  | boolean
-  | object
-  | undefined
-  | null
-  | void
-  | File[]
+export type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 
 export const CONTROL_OPTIONS = [
   'fixed',
@@ -24,11 +19,11 @@ export const CONTROL_OPTIONS = [
 ] as const
 export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
 
-function isControlOption(val: WidgetValue): val is ControlOptions {
-  return CONTROL_OPTIONS.includes(val as ControlOptions)
+export function isControlOption(value: unknown): value is ControlOptions {
+  return CONTROL_OPTIONS.some((option) => option === value)
 }
 
-export function normalizeControlOption(val: WidgetValue): ControlOptions {
+function normalizeControlOption(val: WidgetValue): ControlOptions {
   if (isControlOption(val)) return val
   return 'randomize'
 }
@@ -38,8 +33,19 @@ export type SafeControlWidget = {
   update: (value: WidgetValue) => void
 }
 
+export function getControlWidget(
+  widget: IBaseWidget
+): SafeControlWidget | undefined {
+  const controlWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
+  if (!controlWidget) return
+  return {
+    value: normalizeControlOption(controlWidget.value),
+    update: (value) => (controlWidget.value = normalizeControlOption(value))
+  }
+}
+
 export interface LinkedUpstreamInfo {
-  nodeId: string
+  nodeId: NodeId
   outputName?: string
 }
 
@@ -64,29 +70,30 @@ export interface SimplifiedWidget<
   /** Optional method to compute widget size requirements */
   computeSize?: () => { minHeight: number; maxHeight?: number }
 
+  controlWidget?: SafeControlWidget
+
+  displayLabel?: string
+
   /** Localized display label (falls back to name if not provided) */
   label?: string
 
-  /** Widget options including filtered PrimeVue props */
-  options?: O
+  linkedUpstream?: LinkedUpstreamInfo
+
+  /** NodeLocatorId for the node that owns this widget's execution outputs */
+  nodeLocatorId?: NodeLocatorId
 
   /** Override for use with subgraph promoted asset widgets*/
   nodeType?: string
 
+  options?: O
+
   /** Optional serialization method for custom value handling */
   serializeValue?: () => unknown
-
-  /** NodeLocatorId for the node that owns this widget's execution outputs */
-  nodeLocatorId?: string
 
   /** Optional input specification backing this widget */
   spec?: InputSpecV2
 
   tooltip?: string
-
-  controlWidget?: SafeControlWidget
-
-  linkedUpstream?: LinkedUpstreamInfo
 }
 
 export interface SimplifiedControlWidget<

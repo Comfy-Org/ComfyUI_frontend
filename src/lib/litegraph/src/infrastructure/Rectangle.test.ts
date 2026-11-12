@@ -2,7 +2,10 @@
 import { test as baseTest, describe, expect, vi } from 'vitest'
 
 import { Rectangle } from '@/lib/litegraph/src/litegraph'
-import type { Point, Size } from '@/lib/litegraph/src/litegraph'
+import type {
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 // TODO: If there's a common test context, use it here
 // For now, we'll define a simple context for Rectangle tests
@@ -301,7 +304,7 @@ describe('Rectangle', () => {
   describe('containment and overlap', () => {
     const rect = new Rectangle(10, 10, 20, 20) // x: 10, y: 10, right: 30, bottom: 30
 
-    test.each([
+    test.for([
       [10, 10, true], // top-left corner
       [29, 29, true], // bottom-right corner
       [15, 15, true], // inside
@@ -311,14 +314,14 @@ describe('Rectangle', () => {
       [15, 30, false], // outside bottom
       [10, 29, true], // on bottom edge
       [29, 10, true] // on right edge
-    ])(
+    ] as const)(
       'when checking if (%s, %s) is inside, should return %s',
-      (x, y, expected) => {
+      ([x, y, expected]) => {
         expect(rect.containsXy(x, y)).toBe(expected)
       }
     )
 
-    test.each([
+    test.for([
       [[0, 0] as Point, true],
       [[9, 9] as Point, true],
       [[5, 5] as Point, true],
@@ -326,12 +329,15 @@ describe('Rectangle', () => {
       [[11, 5] as Point, false],
       [[5, -1] as Point, false],
       [[5, 11] as Point, false]
-    ])('should return %s for point %j', (point: Point, expected: boolean) => {
-      rect.updateTo([0, 0, 10, 10])
-      expect(rect.containsPoint(point)).toBe(expected)
-    })
+    ] as const)(
+      'should return %s for point %j',
+      ([point, expected]: readonly [Point, boolean]) => {
+        rect.updateTo([0, 0, 10, 10])
+        expect(rect.containsPoint(point)).toBe(expected)
+      }
+    )
 
-    test.each([
+    test.for([
       // Completely inside
       [new Rectangle(10, 10, 10, 10), true],
       // Touching edges
@@ -348,26 +354,26 @@ describe('Rectangle', () => {
       [new Rectangle(0, 0, 5, 5), new Rectangle(0, 0, 10, 10), true],
       // Same size
       [new Rectangle(0, 0, 99, 99), true]
-    ])(
+    ] as const)(
       'should return %s when checking if %s is inside outer rect',
-      (
-        inner: Rectangle,
-        expectedOrOuter: boolean | Rectangle,
-        expectedIfThreeArgs?: boolean
-      ) => {
+      ([inner, expectedOrOuter, expectedIfThreeArgs]: readonly [
+        Rectangle,
+        boolean | Rectangle,
+        boolean?
+      ]) => {
         let testOuter = rect
         rect.updateTo([0, 0, 100, 100])
 
         let testExpected = expectedOrOuter as boolean
         if (typeof expectedOrOuter !== 'boolean') {
-          testOuter = expectedOrOuter as Rectangle
+          testOuter = expectedOrOuter
           testExpected = expectedIfThreeArgs as boolean
         }
         expect(testOuter.containsRect(inner)).toBe(testExpected)
       }
     )
 
-    test.each([
+    test.for([
       // Completely overlapping
       [new Rectangle(15, 15, 10, 10), true], // r2 inside r1
       // Partially overlapping
@@ -387,7 +393,7 @@ describe('Rectangle', () => {
       [new Rectangle(0, 0, 5, 5), false], // r2 outside top-left
       // rect1 inside rect2
       [new Rectangle(0, 0, 100, 100), true]
-    ])('should return %s for overlap with %s', (rect2, expected) => {
+    ] as const)('should return %s for overlap with %s', ([rect2, expected]) => {
       const rect = new Rectangle(10, 10, 20, 20) // 10,10 to 30,30
 
       expect(rect.overlaps(rect2)).toBe(expected)

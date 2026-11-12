@@ -4,12 +4,7 @@
     class="relative flex size-full items-center justify-center overflow-hidden"
     :class="containerClass"
   >
-    <Skeleton
-      v-if="!isImageLoaded"
-      width="100%"
-      height="100%"
-      class="absolute inset-0"
-    />
+    <Skeleton v-if="!isImageLoaded" class="absolute inset-0 size-full" />
     <img
       v-if="cachedSrc"
       :src="cachedSrc"
@@ -36,13 +31,14 @@
 </template>
 
 <script setup lang="ts">
-import Skeleton from 'primevue/skeleton'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import type { StyleValue } from 'vue'
 
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useMediaCache } from '@/services/mediaCacheService'
-import type { ClassValue } from '@/utils/tailwindUtil'
+
+type ClassValue = string | Record<string, boolean> | ClassValue[]
 
 const {
   src,

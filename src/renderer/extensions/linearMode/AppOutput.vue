@@ -2,31 +2,34 @@
 import { remove } from 'es-toolkit'
 import { computed } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { cn } from '@/utils/tailwindUtil'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import { cn } from '@comfyorg/tailwind-utils'
 
-const { id } = defineProps<{ id: string }>()
+const { id } = defineProps<{ id: SerializedNodeId }>()
 
 const appModeStore = useAppModeStore()
+const parsedId = computed(() => parseNodeId(id))
 const isPromoted = computed(() =>
-  appModeStore.selectedOutputs.some(matchesThis)
+  parsedId.value ? appModeStore.selectedOutputs.some(matchesThis) : false
 )
 
 function matchesThis(nodeId: NodeId) {
-  return id == nodeId
+  return parsedId.value === nodeId
 }
 function togglePromotion() {
+  if (!parsedId.value) return
   if (isPromoted.value) remove(appModeStore.selectedOutputs, matchesThis)
-  else appModeStore.selectedOutputs.push(id)
+  else appModeStore.selectedOutputs.push(parsedId.value)
 }
 </script>
 <template>
   <div
     :class="
       cn(
-        'pointer-events-auto absolute z-1 size-full rounded-2xl ring-5 ring-warning-background/50',
-        isPromoted && 'ring-warning-background'
+        'pointer-events-auto absolute z-1 size-full rounded-2xl ring-5 ring-warning/50',
+        isPromoted && 'ring-warning'
       )
     "
     @click.capture.stop.prevent
@@ -38,13 +41,13 @@ function togglePromotion() {
     <div class="absolute top-0 right-0 size-8">
       <div
         v-if="isPromoted"
-        class="absolute -top-1/2 -right-1/2 size-full rounded-lg bg-warning-background p-2"
+        class="absolute -top-1/2 -right-1/2 size-full rounded-lg bg-warning p-2"
       >
-        <i class="bg-text-foreground icon-[lucide--check] size-full" />
+        <i class="icon-[lucide--check] size-full bg-foreground" />
       </div>
       <div
         v-else
-        class="absolute -top-1/2 -right-1/2 size-full rounded-lg bg-component-node-background ring-4 ring-warning-background/50 ring-inset"
+        class="absolute -top-1/2 -right-1/2 size-full rounded-lg bg-card ring-4 ring-warning/50 ring-inset"
       />
     </div>
   </div>

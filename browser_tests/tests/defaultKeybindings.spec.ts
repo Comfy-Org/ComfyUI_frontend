@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { SidebarTab } from '@e2e/fixtures/components/SidebarTab'
 
 async function pressKeyAndExpectRequest(
   comfyPage: ComfyPage,
@@ -20,7 +21,6 @@ async function pressKeyAndExpectRequest(
 test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
   test.describe('Sidebar Toggle Shortcuts', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.canvas.click({ position: { x: 400, y: 400 } })
       await comfyPage.nextFrame()
     })
@@ -34,17 +34,15 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
     for (const { key, tabId, label } of sidebarTabs) {
       test(`'${key}' toggles ${label} sidebar`, async ({ comfyPage }) => {
-        const selectedButton = comfyPage.page.locator(
-          `.${tabId}-tab-button.side-bar-button-selected`
-        )
+        const { selectedTabButton } = new SidebarTab(comfyPage.page, tabId)
 
-        await expect(selectedButton).toBeHidden()
+        await expect(selectedTabButton).toBeHidden()
 
         await comfyPage.canvas.press(key)
-        await expect(selectedButton).toBeVisible()
+        await expect(selectedTabButton).toBeVisible()
 
         await comfyPage.canvas.press(key)
-        await expect(selectedButton).toBeHidden()
+        await expect(selectedTabButton).toBeHidden()
       })
     }
   })
@@ -53,8 +51,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Alt+=' zooms in", async ({ comfyPage }) => {
       const initialScale = await comfyPage.canvasOps.getScale()
 
-      await comfyPage.canvas.press('Alt+Equal')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Alt+Equal')
 
       await expect
         .poll(() => comfyPage.canvasOps.getScale())
@@ -64,8 +61,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Alt+-' zooms out", async ({ comfyPage }) => {
       const initialScale = await comfyPage.canvasOps.getScale()
 
-      await comfyPage.canvas.press('Alt+Minus')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Alt+Minus')
 
       await expect
         .poll(() => comfyPage.canvasOps.getScale())
@@ -83,8 +79,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       await comfyPage.canvas.click({ position: { x: 400, y: 400 } })
       await comfyPage.nextFrame()
 
-      await comfyPage.canvas.press('Period')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Period')
 
       await expect
         .poll(() => comfyPage.canvasOps.getScale())
@@ -94,8 +89,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'h' locks canvas", async ({ comfyPage }) => {
       await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
 
-      await comfyPage.canvas.press('KeyH')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyH')
 
       await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
     })
@@ -103,11 +97,9 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'v' unlocks canvas", async ({ comfyPage }) => {
       // Lock first
       await comfyPage.command.executeCommand('Comfy.Canvas.Lock')
-      await comfyPage.nextFrame()
       await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(true)
 
-      await comfyPage.canvas.press('KeyV')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('KeyV')
 
       await expect.poll(() => comfyPage.canvasOps.isReadOnly()).toBe(false)
     })
@@ -122,16 +114,13 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       const node = nodes[0]
 
       await node.click('title')
-      await comfyPage.nextFrame()
 
       await expect.poll(() => node.isCollapsed()).toBe(false)
 
-      await comfyPage.canvas.press('Alt+KeyC')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Alt+KeyC')
       await expect.poll(() => node.isCollapsed()).toBe(true)
 
-      await comfyPage.canvas.press('Alt+KeyC')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Alt+KeyC')
       await expect.poll(() => node.isCollapsed()).toBe(false)
     })
 
@@ -141,7 +130,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
       const node = nodes[0]
 
       await node.click('title')
-      await comfyPage.nextFrame()
 
       // Normal mode is ALWAYS (0)
       const getMode = () =>
@@ -151,21 +139,17 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
 
       await expect.poll(() => getMode()).toBe(0)
 
-      await comfyPage.canvas.press('Control+KeyM')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+KeyM')
       // NEVER (2) = muted
       await expect.poll(() => getMode()).toBe(2)
 
-      await comfyPage.canvas.press('Control+KeyM')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+KeyM')
       await expect.poll(() => getMode()).toBe(0)
     })
   })
 
   test.describe('Mode and Panel Toggles', () => {
     test("'Alt+m' toggles app mode", async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
       // Set up linearData so app mode has something to show
       await comfyPage.appMode.enterAppModeWithInputs([])
       await expect(comfyPage.appMode.linearWidgets).toBeVisible()
@@ -180,7 +164,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     })
 
     test("'Alt+Shift+m' toggles minimap", async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.settings.setSetting('Comfy.Minimap.Visible', true)
       await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
       await comfyPage.workflow.loadWorkflow('default')
@@ -196,8 +179,6 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     })
 
     test("'Ctrl+`' toggles terminal/logs panel", async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-
       await expect(comfyPage.bottomPanel.root).toBeHidden()
 
       await comfyPage.page.keyboard.press('Control+Backquote')
@@ -245,17 +226,47 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Ctrl+s' triggers save workflow", async ({ comfyPage }) => {
       // On a new unsaved workflow, Ctrl+s triggers Save As dialog.
       // The dialog appearing proves the keybinding was intercepted by the app.
-      await comfyPage.page.keyboard.press('Control+s')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+s')
 
-      // The Save As dialog should appear (p-dialog overlay)
-      const dialogOverlay = comfyPage.page.locator('.p-dialog-mask')
-      await expect(dialogOverlay).toBeVisible()
+      // The Save As dialog should appear
+      const saveDialog = comfyPage.page.getByRole('dialog')
+      await expect(saveDialog).toBeVisible()
 
       // Dismiss the dialog
-      await comfyPage.page.keyboard.press('Escape')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Escape')
     })
+
+    for (const { label, key } of [
+      { label: 'Ctrl+s', key: 'Control+s' },
+      { label: 'Cmd+s', key: 'Meta+s' }
+    ]) {
+      test(`'${label}' does not fall through to the browser while a dialog is open`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.keyboard.press('Control+s')
+        await expect(comfyPage.page.getByRole('dialog')).toBeVisible()
+
+        await comfyPage.command.mockCommand('Comfy.SaveWorkflow')
+
+        await comfyPage.page.evaluate(() => {
+          window.TestCommand = false
+          window.addEventListener('keydown', (event: KeyboardEvent) => {
+            if (event.key === 's') window.TestCommand = event.defaultPrevented
+          })
+        })
+
+        await comfyPage.keyboard.press(key)
+
+        await expect
+          .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
+          .toBe(true)
+        expect(
+          await comfyPage.command.getExecutionCount('Comfy.SaveWorkflow')
+        ).toBe(0)
+
+        await comfyPage.keyboard.press('Escape')
+      })
+    }
 
     test("'Ctrl+o' triggers open workflow", async ({ comfyPage }) => {
       // Ctrl+o calls app.ui.loadFile() which clicks a hidden file input.
@@ -271,8 +282,7 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
         }
       })
 
-      await comfyPage.page.keyboard.press('Control+o')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+o')
 
       await expect
         .poll(() => comfyPage.page.evaluate(() => window.TestCommand))
@@ -284,27 +294,36 @@ test.describe('Default Keybindings', { tag: '@keyboard' }, () => {
     test("'Ctrl+Shift+e' converts selection to subgraph", async ({
       comfyPage
     }) => {
-      await expect
-        .poll(
-          () => comfyPage.nodeOps.getGraphNodesCount(),
-          'Default workflow should have multiple nodes'
-        )
-        .toBeGreaterThan(1)
+      await comfyPage.expectNodeCountMinimum(
+        2,
+        'Default workflow should have multiple nodes'
+      )
 
       const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-      // Select all nodes
-      await comfyPage.canvas.press('Control+a')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+a')
 
-      await comfyPage.page.keyboard.press('Control+Shift+KeyE')
-      await comfyPage.nextFrame()
+      await comfyPage.keyboard.press('Control+Shift+KeyE')
 
-      // After conversion, node count should decrease
-      // (multiple nodes replaced by single subgraph node)
+      await comfyPage.expectNodeCountMaximum(initialCount - 1)
+    })
+
+    test('Select-all still reaches the canvas after the settings dialog closes', async ({
+      comfyPage
+    }) => {
+      const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+      expect(nodeCount).toBeGreaterThan(1)
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.close()
+
+      await comfyPage.keyboard.press('Control+a')
+
       await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBeLessThan(initialCount)
+        .poll(() =>
+          comfyPage.page.evaluate(() => window.app!.canvas.selectedItems.size)
+        )
+        .toBe(nodeCount)
     })
 
     test("'r' refreshes node definitions", async ({ comfyPage }) => {

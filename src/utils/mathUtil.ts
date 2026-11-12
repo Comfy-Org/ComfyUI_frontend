@@ -1,5 +1,31 @@
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import type { Bounds } from '@/renderer/core/layout/types'
+import type {
+  ReadOnlyRectEdges as RectEdges,
+  ReadOnlyRect,
+  PointTuple,
+  Bounds
+} from '@comfyorg/shared-frontend-utils/geometry'
+import { clamp } from 'es-toolkit/math'
+
+export type { ReadOnlyRectEdges as RectEdges } from '@comfyorg/shared-frontend-utils/geometry'
+
+/**
+ * Clips a rectangle to `bounds`: each edge is limited independently, so the
+ * rect shrinks to the overlapping region rather than being moved to fit.
+ * Keeps an interaction rectangle (the canvas selection box, the assets
+ * marquee) inside its own surface. Both the rect and the bounds use
+ * viewport-style edges (left/top/right/bottom), e.g. a DOMRect.
+ */
+export function clipRectToBounds(
+  rect: RectEdges,
+  bounds: RectEdges
+): RectEdges {
+  return {
+    left: clamp(rect.left, bounds.left, bounds.right),
+    top: clamp(rect.top, bounds.top, bounds.bottom),
+    right: clamp(rect.right, bounds.left, bounds.right),
+    bottom: clamp(rect.bottom, bounds.top, bounds.bottom)
+  }
+}
 
 /**
  * Linearly maps a value from [min, max] to [0, 1].
@@ -20,8 +46,11 @@ export function denormalize(
   return min + normalized * (max - min)
 }
 
-/** Simple 2D point or size as [x, y] or [width, height] */
-type Vec2 = readonly [number, number]
+type Vec2 = Readonly<PointTuple>
+
+/** `value` wrapped into `[0, length)`. Unlike `%`, negatives wrap to the end. */
+export const wrapIndex = (value: number, length: number): number =>
+  ((value % length) + length) % length
 
 /**
  * Finds the greatest common divisor (GCD) for two numbers using iterative

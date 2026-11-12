@@ -57,4 +57,12 @@ export class SignInDialog extends BaseDialog {
     })
     await this.waitForVisible()
   }
+
+  async openWithResult(): Promise<{ result: Promise<boolean> }> {
+    const result = this.page.evaluate(() =>
+      window.app!.extensionManager.dialog.showSignInDialog()
+    )
+    await this.waitForVisible()
+    return { result }
+  }
 }

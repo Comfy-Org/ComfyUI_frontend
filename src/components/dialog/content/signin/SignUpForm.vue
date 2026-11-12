@@ -1,74 +1,134 @@
 <template>
-  <Form
-    v-slot="$form"
-    class="flex flex-col gap-6"
-    :resolver="zodResolver(signUpSchema)"
-    @submit="onSubmit"
-  >
-    <!-- Email Field -->
-    <FormField v-slot="$field" name="email" class="flex flex-col gap-2">
-      <label
-        class="mb-2 text-base font-medium opacity-80"
-        for="comfy-org-sign-up-email"
-      >
-        {{ t('auth.signup.emailLabel') }}
-      </label>
-      <InputText
-        pt:root:id="comfy-org-sign-up-email"
-        pt:root:autocomplete="email"
-        class="h-10"
-        type="text"
-        :placeholder="t('auth.signup.emailPlaceholder')"
-        :invalid="$field.invalid"
-      />
-      <small v-if="$field.error" class="text-red-500">{{
-        $field.error.message
-      }}</small>
-    </FormField>
+  <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
+    <FieldGroup>
+      <VeeField v-slot="{ componentField, errors }" name="email">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="comfy-org-sign-up-email">
+            {{ t('auth.signup.emailLabel') }}
+          </FieldLabel>
+          <Input
+            v-bind="componentField"
+            id="comfy-org-sign-up-email"
+            autocomplete="email"
+            :class="fieldClass"
+            type="email"
+            :placeholder="t('auth.signup.emailPlaceholder')"
+            :aria-invalid="!!errors.length"
+          />
+          <FieldError v-if="errors.length" :errors />
+        </Field>
+      </VeeField>
 
-    <PasswordFields />
+      <PasswordFields :field-class="fieldClass" />
+    </FieldGroup>
 
-    <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="mx-auto size-8" />
+    <TurnstileWidget
+      v-if="turnstileEnabled"
+      ref="turnstileWidget"
+      v-model:token="turnstileToken"
+      v-model:unavailable="turnstileUnavailable"
+    />
+
+    <FieldDescription
+      v-show="waitingForTurnstile"
+      id="comfy-org-sign-up-turnstile-hint"
+      role="status"
+      aria-live="polite"
+    >
+      {{ t('auth.turnstile.submitBlockedHint') }}
+    </FieldDescription>
+
     <Button
-      v-else
       type="submit"
-      class="mt-4 h-10 font-medium"
-      :disabled="!$form.valid"
+      :variant="submitVariant"
+      :size="submitSize"
+      :class="cn('mt-4', submitClass)"
+      :loading="loading"
+      :disabled="!meta.valid || waitingForTurnstile"
+      :aria-describedby="
+        waitingForTurnstile ? 'comfy-org-sign-up-turnstile-hint' : undefined
+      "
     >
       {{ t('auth.signup.signUpButton') }}
     </Button>
-  </Form>
+  </form>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form, FormField } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
+import { cn } from '@comfyorg/tailwind-utils'
 import { useThrottleFn } from '@vueuse/core'
-import InputText from 'primevue/inputtext'
-import ProgressSpinner from 'primevue/progressspinner'
-import { computed } from 'vue'
+import { Field as VeeField, useForm } from 'vee-validate'
+import { computed, useTemplateRef } from 'vue'
+import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
+import FieldError from '@comfyorg/design-system/field/FieldError'
+import FieldGroup from '@comfyorg/design-system/field/FieldGroup'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Input from '@comfyorg/design-system/input/Input'
+import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
 
 import PasswordFields from './PasswordFields.vue'
+import TurnstileWidget from './TurnstileWidget.vue'
+
+const {
+  fieldClass,
+  submitClass,
+  submitVariant = 'secondary',
+  submitSize = 'lg'
+} = defineProps<{
+  fieldClass?: HTMLAttributes['class']
+  submitClass?: HTMLAttributes['class']
+  submitVariant?: ButtonVariants['variant']
+  submitSize?: ButtonVariants['size']
+}>()
 
 const { t } = useI18n()
 const authStore = useAuthStore()
 const loading = computed(() => authStore.loading)
 
+const { enabled: turnstileEnabled } = useTurnstile()
+const {
+  token: turnstileToken,
+  unavailable: turnstileUnavailable,
+  waiting: waitingForTurnstile
+} = useTurnstileGate(turnstileEnabled)
+const turnstileWidget =
+  useTemplateRef<InstanceType<typeof TurnstileWidget>>('turnstileWidget')
+
 const emit = defineEmits<{
-  submit: [values: SignUpData]
+  submit: [values: SignUpData, turnstileToken?: string]
 }>()
 
-const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignUpData)
-  }
-}, 1_500)
+const { handleSubmit, meta } = useForm({
+  validationSchema: signUpSchema,
+  initialValues: { email: '', password: '', confirmPassword: '' }
+})
+
+const onSubmit = useThrottleFn(
+  handleSubmit((values) => {
+    if (waitingForTurnstile.value) return
+    emit('submit', values, turnstileToken.value || undefined)
+  }),
+  1_500
+)
+
+// Turnstile tokens are single-use. The parent calls this after a FAILED signup
+// (the form can't observe the submit outcome itself) to discard the spent token
+// and request a fresh challenge. Driving it from the actual result — instead of
+// watching the store-global loading flag — keeps an unrelated auth action from
+// wiping a freshly-solved token, and avoids resetting a widget that is about to
+// unmount on success.
+function resetTurnstile() {
+  turnstileWidget.value?.reset()
+}
+
+defineExpose({ resetTurnstile })
 </script>

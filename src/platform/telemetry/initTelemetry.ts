@@ -4,7 +4,7 @@
  * This module is only imported in cloud builds to keep
  * cloud telemetry code out of local/desktop bundles.
  */
-import { setTelemetryRegistry } from './index'
+import { setTelemetryRegistry } from '@comfyorg/telemetry'
 
 const IS_CLOUD_BUILD = __DISTRIBUTION__ === 'cloud'
 
@@ -26,14 +26,22 @@ export async function initTelemetry(): Promise<void> {
       { GtmTelemetryProvider },
       { ImpactTelemetryProvider },
       { PostHogTelemetryProvider },
-      { ClickHouseTelemetryProvider }
+      { ClickHouseTelemetryProvider },
+      { SyftTelemetryProvider },
+      { CustomerIoTelemetryProvider },
+      { DatadogRumTelemetryProvider },
+      { SentryTelemetryProvider }
     ] = await Promise.all([
-      import('./TelemetryRegistry'),
+      import('@comfyorg/telemetry/TelemetryRegistry'),
       import('./providers/cloud/MixpanelTelemetryProvider'),
       import('./providers/cloud/GtmTelemetryProvider'),
       import('./providers/cloud/ImpactTelemetryProvider'),
       import('./providers/cloud/PostHogTelemetryProvider'),
-      import('./providers/cloud/ClickHouseTelemetryProvider')
+      import('./providers/cloud/ClickHouseTelemetryProvider'),
+      import('./providers/cloud/SyftTelemetryProvider'),
+      import('./providers/cloud/CustomerIoTelemetryProvider'),
+      import('./providers/cloud/DatadogRumTelemetryProvider'),
+      import('./providers/cloud/SentryTelemetryProvider')
     ])
 
     const registry = new TelemetryRegistry()
@@ -42,6 +50,10 @@ export async function initTelemetry(): Promise<void> {
     registry.registerProvider(new ImpactTelemetryProvider())
     registry.registerProvider(new PostHogTelemetryProvider())
     registry.registerProvider(new ClickHouseTelemetryProvider())
+    registry.registerProvider(new SyftTelemetryProvider())
+    registry.registerProvider(new CustomerIoTelemetryProvider())
+    registry.registerProvider(new DatadogRumTelemetryProvider())
+    registry.registerProvider(new SentryTelemetryProvider())
 
     setTelemetryRegistry(registry)
   })()

@@ -28,5 +28,27 @@ export interface SortOption<TId extends string = string> {
 
 export type LayoutMode = 'list' | 'grid' | 'list-small'
 
+export interface FormDropdownInputProps {
+  inputId?: string
+  isOpen?: boolean
+  placeholder?: string
+  selectedItems: readonly FormDropdownItem[]
+  maxSelectable: number
+  uploadable: boolean
+  disabled: boolean
+  accept?: string
+  isUploading?: boolean
+}
+
+export interface FormDropdownMenuItemProps {
+  index: number
+  selected: boolean
+  candidate?: boolean
+  previewUrl: string
+  name: string
+  label?: string
+  layout?: LayoutMode
+}
+
 export const AssetKindKey: InjectionKey<ComputedRef<AssetKind | undefined>> =
   Symbol('assetKind')

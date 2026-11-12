@@ -8,66 +8,77 @@
     <!-- Image preview container -->
     <div
       ref="containerEl"
-      class="relative min-h-0 flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative min-h-0 flex-1 overflow-hidden rounded-[5px] bg-node"
     >
-      <div v-if="isLoading" class="flex size-full items-center justify-center">
-        <span class="text-sm">{{ $t('imageCrop.loading') }}</span>
-      </div>
-
       <div
-        v-else-if="!imageUrl"
+        v-if="!imageUrl"
         class="flex size-full flex-col items-center justify-center text-center"
+        data-testid="crop-empty-state"
       >
-        <i class="mb-2 icon-[lucide--image] size-12" />
+        <i
+          class="mb-2 icon-[lucide--image] size-12"
+          data-testid="crop-empty-icon"
+        />
         <p class="text-sm">{{ $t('imageCrop.noInputImage') }}</p>
       </div>
 
-      <img
-        v-else
-        ref="imageEl"
-        :src="imageUrl"
-        :alt="$t('imageCrop.cropPreviewAlt')"
-        draggable="false"
-        class="block size-full object-contain select-none"
-        @load="handleImageLoad"
-        @error="handleImageError"
-        @dragstart.prevent
-      />
+      <template v-else>
+        <img
+          ref="imageEl"
+          :src="imageUrl"
+          :alt="$t('imageCrop.cropPreviewAlt')"
+          draggable="false"
+          class="block size-full object-contain select-none"
+          @load="handleImageLoad"
+          @error="handleImageError"
+          @dragstart.prevent
+        />
 
-      <div
-        v-if="imageUrl && !isLoading"
-        :class="
-          cn(
-            'absolute box-content cursor-move border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]',
-            isDisabled && 'pointer-events-none opacity-60'
-          )
-        "
-        :style="cropBoxStyle"
-        @pointerdown="handleDragStart"
-        @pointermove="handleDragMove"
-        @pointerup="handleDragEnd"
-      />
-
-      <template v-for="handle in resizeHandles" :key="handle.direction">
         <div
-          v-show="imageUrl && !isLoading"
+          v-if="isLoading"
+          aria-live="polite"
+          class="absolute inset-0 z-10 flex size-full items-center justify-center bg-node/90"
+        >
+          <span class="text-sm">{{ $t('imageCrop.loading') }}</span>
+        </div>
+
+        <div
+          v-if="!isLoading"
           :class="
             cn(
-              'absolute',
-              handle.class,
+              'absolute box-content cursor-move border border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]',
               isDisabled && 'pointer-events-none opacity-60'
             )
           "
-          :style="handle.style"
-          @pointerdown="(e) => handleResizeStart(e, handle.direction)"
-          @pointermove="handleResizeMove"
-          @pointerup="handleResizeEnd"
+          :style="cropBoxStyle"
+          data-testid="crop-overlay"
+          @pointerdown="handleDragStart"
+          @pointermove="handleDragMove"
+          @pointerup="handleDragEnd"
         />
+
+        <template v-for="handle in resizeHandles" :key="handle.direction">
+          <div
+            v-show="!isLoading"
+            :data-testid="`crop-resize-${handle.direction}`"
+            :class="
+              cn(
+                'absolute',
+                handle.class,
+                isDisabled && 'pointer-events-none opacity-60'
+              )
+            "
+            :style="handle.style"
+            @pointerdown="(e) => handleResizeStart(e, handle.direction)"
+            @pointermove="handleResizeMove"
+            @pointerup="handleResizeEnd"
+          />
+        </template>
       </template>
     </div>
 
     <div v-if="!isDisabled" class="flex shrink-0 items-center gap-2">
-      <label class="text-xs text-muted-foreground">
+      <label>
         {{ $t('imageCrop.ratio') }}
       </label>
       <Select v-model="selectedRatio">
@@ -99,35 +110,47 @@
           "
         />
       </Button>
+      <WidgetHistoryButtons
+        class="ml-auto"
+        :can-undo
+        :can-redo
+        @undo="undo"
+        @redo="redo"
+      />
     </div>
 
     <WidgetBoundingBox
       v-model="effectiveBounds"
       :disabled="isDisabled"
       class="shrink-0"
+      @edit-end="commitAfterUpdate"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computed, nextTick, useTemplateRef } from 'vue'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Select from '@/components/ui/select/Select.vue'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
-import SelectItem from '@/components/ui/select/SelectItem.vue'
-import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
-import SelectValue from '@/components/ui/select/SelectValue.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Select from '@comfyorg/design-system/select/Select'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
+import SelectItem from '@comfyorg/design-system/select/SelectItem'
+import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
+import SelectValue from '@comfyorg/design-system/select/SelectValue'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import { ASPECT_RATIOS, useImageCrop } from '@/composables/useImageCrop'
 import {
   boundsExtractor,
   useUpstreamValue
 } from '@/composables/useUpstreamValue'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { Bounds } from '@/renderer/core/layout/types'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget
@@ -155,6 +178,18 @@ const effectiveBounds = computed({
   }
 })
 
+const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
+  scope: () => widgetHistoryScope(widget, nodeId),
+  read: () => modelValue.value,
+  apply: (value) => {
+    if (isBoundsObject(value)) modelValue.value = value
+  }
+})
+
+function commitAfterUpdate(mergeKey?: string) {
+  void nextTick(() => commit(mergeKey))
+}
+
 const imageEl = useTemplateRef<HTMLImageElement>('imageEl')
 const containerEl = useTemplateRef<HTMLDivElement>('containerEl')
 
@@ -178,5 +213,11 @@ const {
   handleResizeStart,
   handleResizeMove,
   handleResizeEnd
-} = useImageCrop(nodeId, { imageEl, containerEl, modelValue: effectiveBounds })
+} = useImageCrop(nodeId, {
+  widget,
+  imageEl,
+  containerEl,
+  modelValue: effectiveBounds,
+  onEditEnd: () => commitAfterUpdate()
+})
 </script>

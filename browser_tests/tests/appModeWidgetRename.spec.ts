@@ -5,15 +5,11 @@ import {
 import {
   saveAndReopenInAppMode,
   setupSubgraphBuilder
-} from '@e2e/helpers/builderTestUtils'
+} from '@e2e/fixtures/utils/builderTestUtils'
 
 test.describe('App mode widget rename', { tag: ['@ui', '@subgraph'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-    await comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      true
-    )
+  test.use({
+    initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
   test('Rename from builder input-select sidebar via menu', async ({

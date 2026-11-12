@@ -1,0 +1,942 @@
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+import type { AxiosAdapter } from 'axios'
+import axios, { AxiosError } from 'axios'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { SSO_REQUIRED_DIALOG_KEY } from '@/platform/auth/sso/ssoRequiredDialogKey'
+import { useDialogStore } from '@/stores/dialogStore'
+
+import {
+  attachUnifiedRemintInterceptor,
+  cloudRetryPolicy,
+  fetchWithUnifiedRemint
+} from '@/platform/auth/unified/remintRetry'
+import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
+import {
+  DEFAULT_RETRY_POLICY,
+  NO_RETRY_POLICY
+} from '@comfyorg/api-client/retryPolicy'
+
+vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('firebase/auth'))
+
+vi.mock(import('@/composables/useFeatureFlags'))
+
+// The axios interceptor gates on shouldRemintCloudRequest(), which is a no-op
+// off-cloud; the unit env is not a cloud build, so force it on.
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true
+}))
+
+beforeEach(() => {
+  stubAccountIdentityPort()
+})
+
+describe('cloudRetryPolicy', () => {
+  it('opts a cloud request into the sign-in refusal resend', () => {
+    expect(cloudRetryPolicy()).toEqual({
+      ...DEFAULT_RETRY_POLICY,
+      retrySignInRefusal: true
+    })
+  })
+
+  it('keeps the attempts of the policy it was given', () => {
+    expect(cloudRetryPolicy(NO_RETRY_POLICY)).toEqual({
+      ...NO_RETRY_POLICY,
+      retrySignInRefusal: true
+    })
+  })
+})
+
+describe('fetchWithUnifiedRemint', () => {
+  const ok = { status: 200 } as Response
+  const unauthorized = { status: 401 } as Response
+
+  beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+  })
+
+  it('re-mints once and retries with the fresh token on a 401 (AC1)', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(unauthorized)
+      .mockResolvedValueOnce(ok)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      {
+        headers: { Authorization: 'Bearer tokenA' as const, 'Comfy-User': 'u1' }
+      },
+      true
+    )
+
+    expect(result).toBe(ok)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledWith(
+      'tokenA'
+    )
+
+    const retryHeaders = new Headers(vi.mocked(fetch).mock.calls[1][1]?.headers)
+    expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
+    expect(retryHeaders.get('Comfy-User')).toBe('u1')
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'succeeded',
+      final_status: 200
+    })
+  })
+
+  it('surfaces a persistent 401 after exactly one retry (AC2)', async () => {
+    const secondUnauthorized = { status: 401 } as Response
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(unauthorized)
+      .mockResolvedValueOnce(secondUnauthorized)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer tokenA' as const } },
+      true
+    )
+
+    expect(result).toBe(secondUnauthorized)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
+  })
+
+  it('does not re-mint or retry when the caller gate is false (AC3)', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer tokenA' as const } },
+      false
+    )
+
+    expect(result).toBe(unauthorized)
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUnifiedAuthRetry).not.toHaveBeenCalled()
+  })
+
+  describe('with retryable server failures', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    const unavailable = () =>
+      new Response(null, { status: 503, headers: { 'Retry-After': '1' } })
+
+    it('retries a 503 without re-minting', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(ok)
+
+      const pending = fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { Authorization: 'Bearer tokenA' as const } },
+        true
+      )
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(await pending).toBe(ok)
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+    })
+
+    it('gives the re-minted request its own retry budget', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(unauthorized)
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(unavailable())
+        .mockResolvedValueOnce(ok)
+      vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+        'tokenB'
+      )
+
+      const pending = fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { Authorization: 'Bearer tokenA' as const } },
+        true
+      )
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(await pending).toBe(ok)
+      expect(fetch).toHaveBeenCalledTimes(6)
+      expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+    })
+
+    it('sends once on a 503 under the no-retry policy', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(unavailable())
+
+      const result = await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { headers: { Authorization: 'Bearer tokenA' as const } },
+        true,
+        undefined,
+        NO_RETRY_POLICY
+      )
+
+      expect(result.status).toBe(503)
+      expect(fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not retry a POST that got a 503', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce(unavailable())
+
+      const result = await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { method: 'POST', body: '{}' },
+        true
+      )
+
+      expect(result.status).toBe(503)
+      expect(fetch).toHaveBeenCalledTimes(1)
+    })
+
+    const signInRefused = () =>
+      new Response(
+        JSON.stringify({
+          code: 'unavailable',
+          message: 'authentication service unavailable'
+        }),
+        { status: 503, headers: { 'Retry-After': '1' } }
+      )
+
+    it('sends a POST once more when the sign-in check answers 503', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(signInRefused())
+        .mockResolvedValueOnce(ok)
+
+      const pending = fetchWithUnifiedRemint(
+        'https://cloud/x',
+        {
+          method: 'POST',
+          body: '{}',
+          headers: { Authorization: 'Bearer tokenA' as const }
+        },
+        true
+      )
+      await vi.advanceTimersByTimeAsync(1_250)
+
+      expect(await pending).toBe(ok)
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+    })
+
+    it('still re-mints a POST whose resend answers 401', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(signInRefused())
+        .mockResolvedValueOnce(unauthorized)
+        .mockResolvedValueOnce(ok)
+      vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+        'tokenB'
+      )
+
+      const pending = fetchWithUnifiedRemint(
+        'https://cloud/x',
+        {
+          method: 'POST',
+          body: '{}',
+          headers: { Authorization: 'Bearer tokenA' as const }
+        },
+        true
+      )
+      await vi.advanceTimersByTimeAsync(1_250)
+
+      expect(await pending).toBe(ok)
+      expect(fetch).toHaveBeenCalledTimes(3)
+      expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledWith(
+        'tokenA'
+      )
+      const retryHeaders = new Headers(
+        vi.mocked(fetch).mock.calls[2][1]?.headers
+      )
+      expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
+    })
+  })
+
+  it('does not retry a non-401 response', async () => {
+    const serverError = { status: 500 } as Response
+    vi.mocked(fetch).mockResolvedValueOnce(serverError)
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer t' as const } },
+      true
+    )
+
+    expect(result).toBe(serverError)
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+  })
+
+  it('surfaces the original 401 when the re-mint yields no token', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(null)
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer t' as const } },
+      true
+    )
+
+    expect(result).toBe(unauthorized)
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'remint_failed'
+    })
+  })
+
+  it('uses the bearer from a Request when init does not override headers', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(unauthorized)
+      .mockResolvedValueOnce(ok)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+    const request = new Request('https://cloud/x', {
+      headers: { Authorization: 'Bearer tokenA' as const }
+    })
+
+    const result = await fetchWithUnifiedRemint(request, {}, true)
+
+    expect(result).toBe(ok)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledWith(
+      'tokenA'
+    )
+    const retryHeaders = new Headers(vi.mocked(fetch).mock.calls[1][1]?.headers)
+    expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
+  })
+
+  it('preserves a Request body for the retry', async () => {
+    const body = JSON.stringify({ amount: 5 })
+    const request = new Request('https://cloud/x', {
+      method: 'POST',
+      body,
+      headers: { Authorization: 'Bearer tokenA' as const }
+    })
+    vi.mocked(fetch)
+      .mockImplementationOnce(async (input) => {
+        assert.instanceOf(input, Request)
+        expect(await input.text()).toBe(body)
+        return unauthorized
+      })
+      .mockImplementationOnce(async (input) => {
+        assert.instanceOf(input, Request)
+        expect(input).not.toBe(request)
+        expect(await input.text()).toBe(body)
+        return ok
+      })
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    const result = await fetchWithUnifiedRemint(request, {}, true)
+
+    expect(result).toBe(ok)
+    expect(fetch).toHaveBeenCalledTimes(2)
+    const retryHeaders = new Headers(vi.mocked(fetch).mock.calls[1][1]?.headers)
+    expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
+  })
+
+  it('surfaces the original 401 when the original bearer is unavailable', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
+
+    const result = await fetchWithUnifiedRemint('https://cloud/x', {}, true)
+
+    expect(result).toBe(unauthorized)
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'missing_bearer'
+    })
+  })
+
+  it('surfaces the original 401 when the re-mint throws a permanent auth error', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockRejectedValue(
+      new Error('INVALID_FIREBASE_TOKEN')
+    )
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer t' as const } },
+      true
+    )
+
+    expect(result).toBe(unauthorized)
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports an unexpected re-mint throw as auth_unified_remint_unexpected and keeps the 401 fallback', async () => {
+    const thrown = new TypeError('Failed to fetch dynamically imported module')
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockRejectedValue(
+      thrown
+    )
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer secret-token' as const } },
+      true
+    )
+
+    expect(result).toBe(unauthorized)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(thrown, {
+      surface: 'auth',
+      errorType: 'auth_unified_remint_unexpected',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'auth',
+        operation: 'auth',
+        outcome: 'failed'
+      },
+      level: 'error'
+    })
+    expect(
+      JSON.stringify(vi.mocked(reportError).mock.calls[0][1])
+    ).not.toContain('secret-token')
+    expect(console.warn).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'remint_failed'
+    })
+  })
+
+  it('does not report when the re-mint primitive returns null without throwing', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(null)
+
+    await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer t' as const } },
+      true
+    )
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('surfaces the original 401 without re-minting when the body is a non-replayable stream', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      {
+        method: 'POST',
+        body: new ReadableStream<Uint8Array>(),
+        headers: { Authorization: 'Bearer tokenA' as const }
+      },
+      true
+    )
+
+    expect(result).toBe(unauthorized)
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'non_replayable_body'
+    })
+  })
+
+  it('ends the initial timeout before re-minting and uses a fresh signal for the retry', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(unauthorized)
+      .mockResolvedValueOnce(ok)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+    const originalController = new AbortController()
+    const freshController = new AbortController()
+    const clearInitialTimeout = vi.fn()
+    const createSignal = vi.fn(() => freshController.signal)
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      {
+        headers: { Authorization: 'Bearer tokenA' as const },
+        signal: originalController.signal
+      },
+      true,
+      { clearInitialTimeout, createSignal }
+    )
+
+    expect(result).toBe(ok)
+    expect(clearInitialTimeout).toHaveBeenCalledTimes(1)
+    expect(createSignal).toHaveBeenCalledTimes(1)
+    expect(clearInitialTimeout).toHaveBeenCalledBefore(createSignal)
+    const retrySignal = vi.mocked(fetch).mock.calls[1][1]?.signal
+    expect(retrySignal).toBe(freshController.signal)
+    expect(retrySignal).not.toBe(originalController.signal)
+  })
+
+  it('does not use the retry signal lifecycle when no retry happens', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(unauthorized)
+    const clearInitialTimeout = vi.fn()
+    const createSignal = vi.fn()
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer tokenA' as const } },
+      false,
+      { clearInitialTimeout, createSignal }
+    )
+
+    expect(result).toBe(unauthorized)
+    expect(clearInitialTimeout).not.toHaveBeenCalled()
+    expect(createSignal).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      shape: 'object',
+      headers: { Authorization: 'Bearer tokenA' as const, 'Comfy-User': 'u1' }
+    },
+    {
+      shape: 'array of tuples',
+      headers: [
+        ['Authorization', 'Bearer tokenA'],
+        ['Comfy-User', 'u1']
+      ]
+    },
+    {
+      shape: 'Headers',
+      headers: new Headers({
+        Authorization: 'Bearer tokenA' as const,
+        'Comfy-User': 'u1'
+      })
+    }
+  ] as { shape: string; headers: HeadersInit }[])(
+    'preserves method/body and replaces Authorization on a POST retry ($shape headers)',
+    async ({ headers }) => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(unauthorized)
+        .mockResolvedValueOnce(ok)
+      vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+        'tokenB'
+      )
+      const body = JSON.stringify({ amount: 5 })
+
+      await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { method: 'POST', body, headers },
+        true
+      )
+
+      const retryInit = vi.mocked(fetch).mock.calls[1][1]
+      assert.exists(retryInit)
+      expect(retryInit.method).toBe('POST')
+      expect(retryInit.body).toBe(body)
+      const retryHeaders = new Headers(retryInit.headers)
+      expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
+      expect(retryHeaders.get('Comfy-User')).toBe('u1')
+    }
+  )
+})
+
+describe('attachUnifiedRemintInterceptor', () => {
+  beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+  })
+
+  // A custom axios adapter is responsible for its own status handling (axios
+  // only applies validateStatus inside its built-in adapters), so reject
+  // non-2xx with a real AxiosError to mirror a live response.
+  function makeAdapter(statuses: number[]) {
+    let call = 0
+    return vi.fn<AxiosAdapter>(async (config) => {
+      const status = statuses[Math.min(call, statuses.length - 1)]
+      call++
+      const response = {
+        data: status === 200 ? { ok: true } : { message: 'unauthorized' },
+        status,
+        statusText: String(status),
+        headers: {},
+        config
+      }
+      if (status >= 200 && status < 300) {
+        return response
+      }
+      throw new AxiosError(
+        `Request failed with status code ${status}`,
+        AxiosError.ERR_BAD_REQUEST,
+        config,
+        null,
+        response
+      )
+    })
+  }
+
+  function makeClient(statuses: number[]) {
+    const adapter = makeAdapter(statuses)
+    const client = axios.create({ adapter })
+    attachUnifiedRemintInterceptor(client)
+    return { client, adapter }
+  }
+
+  it('re-mints once and retries the request with the fresh token (AC1)', async () => {
+    const { client, adapter } = makeClient([401, 200])
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    const res = await client.get('https://cloud/x', {
+      headers: { Authorization: 'Bearer tokenA' as const }
+    })
+
+    expect(res.status).toBe(200)
+    expect(adapter).toHaveBeenCalledTimes(2)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledWith(
+      'tokenA'
+    )
+    expect(String(adapter.mock.calls[1][0].headers.Authorization)).toBe(
+      'Bearer tokenB'
+    )
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'axios',
+      outcome: 'succeeded',
+      final_status: 200
+    })
+  })
+
+  it('retries once then surfaces a persistent 401 (AC2)', async () => {
+    const { client, adapter } = makeClient([401, 401])
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    await expect(
+      client.get('https://cloud/x', {
+        headers: { Authorization: 'Bearer tokenA' as const }
+      })
+    ).rejects.toMatchObject({ response: { status: 401 } })
+
+    expect(adapter).toHaveBeenCalledTimes(2)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'axios',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'retry_rejected'
+    })
+  })
+
+  it('keeps the 503 retries and the 401 re-mint on separate budgets', async () => {
+    const adapter = makeAdapter([503, 503, 401, 503, 200])
+    const client = axios.create({ adapter })
+    attachRetryableStatusRetry(client, { sleep: async () => {} })
+    attachUnifiedRemintInterceptor(client)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    const res = await client.get('https://cloud/x', {
+      headers: { Authorization: 'Bearer tokenA' as const }
+    })
+
+    expect(res.status).toBe(200)
+    expect(adapter).toHaveBeenCalledTimes(5)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not re-mint when the flag is OFF (AC3)', async () => {
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
+    const { client, adapter } = makeClient([401])
+
+    await expect(
+      client.get('https://cloud/x', {
+        headers: { Authorization: 'Bearer tokenA' as const }
+      })
+    ).rejects.toMatchObject({ response: { status: 401 } })
+
+    expect(adapter).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackUnifiedAuthRetry).not.toHaveBeenCalled()
+  })
+
+  it('does not re-mint a request flagged __skipUnifiedRemint (acceptInvite)', async () => {
+    const { client, adapter } = makeClient([401])
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    await expect(
+      client.post('https://cloud/invites/x/accept', null, {
+        headers: { Authorization: 'Bearer firebase' as const },
+        __skipUnifiedRemint: true
+      })
+    ).rejects.toMatchObject({ response: { status: 401 } })
+
+    expect(adapter).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+  })
+
+  it('does not re-mint when the original bearer is unavailable', async () => {
+    const { client, adapter } = makeClient([401])
+
+    await expect(client.get('https://cloud/x')).rejects.toMatchObject({
+      response: { status: 401 }
+    })
+
+    expect(adapter).toHaveBeenCalledTimes(1)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+  })
+
+  it('passes a non-401 error through without re-minting', async () => {
+    const { client } = makeClient([500])
+
+    await expect(
+      client.get('https://cloud/x', {
+        headers: { Authorization: 'Bearer t' as const }
+      })
+    ).rejects.toMatchObject({ response: { status: 500 } })
+
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).not.toHaveBeenCalled()
+  })
+
+  it('preserves the POST body and method on a retry, with the fresh token', async () => {
+    const { client, adapter } = makeClient([401, 200])
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    const res = await client.post(
+      'https://cloud/topup',
+      { amount: 5 },
+      { headers: { Authorization: 'Bearer tokenA' as const } }
+    )
+
+    expect(res.status).toBe(200)
+    expect(adapter).toHaveBeenCalledTimes(2)
+    const firstConfig = adapter.mock.calls[0][0]
+    const retryConfig = adapter.mock.calls[1][0]
+    expect(retryConfig.method).toBe('post')
+    expect(retryConfig.data).toBe(firstConfig.data)
+    expect(String(retryConfig.headers.Authorization)).toBe('Bearer tokenB')
+  })
+
+  it('latches per request — a second request still retries once (no shared latch)', async () => {
+    // Per-URL: first call 401, second (the retry) 200. The latch lives on each
+    // request's config, so a second request must retry independently.
+    const callsByUrl = new Map<string, number>()
+    const adapter = vi.fn<AxiosAdapter>(async (config) => {
+      const url = config.url ?? ''
+      const nth = (callsByUrl.get(url) ?? 0) + 1
+      callsByUrl.set(url, nth)
+      const okStatus = nth >= 2
+      const response = {
+        data: okStatus ? { ok: true } : { message: 'unauthorized' },
+        status: okStatus ? 200 : 401,
+        statusText: okStatus ? '200' : '401',
+        headers: {},
+        config
+      }
+      if (okStatus) return response
+      throw new AxiosError(
+        'Request failed with status code 401',
+        AxiosError.ERR_BAD_REQUEST,
+        config,
+        null,
+        response
+      )
+    })
+    const client = axios.create({ adapter })
+    attachUnifiedRemintInterceptor(client)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+
+    const a = await client.get('https://cloud/a', {
+      headers: { Authorization: 'Bearer tokenA' as const }
+    })
+    const b = await client.get('https://cloud/b', {
+      headers: { Authorization: 'Bearer tokenA' as const }
+    })
+
+    expect(a.status).toBe(200)
+    expect(b.status).toBe(200)
+    // Each request: initial 401 + one retry = 4 adapter calls, one re-mint each.
+    expect(adapter).toHaveBeenCalledTimes(4)
+    expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('an SSO refusal at the cloud request seams', () => {
+  const SSO_REFUSAL = { code: 'sso_required', message: 'use SSO' }
+
+  async function ssoScreenShown() {
+    await vi.dynamicImportSettled()
+    return useDialogStore().isDialogOpen(SSO_REQUIRED_DIALOG_KEY)
+  }
+
+  it.for([
+    { ssoEnabled: true, body: SSO_REFUSAL, shown: true },
+    { ssoEnabled: false, body: SSO_REFUSAL, shown: false },
+    {
+      ssoEnabled: true,
+      body: { code: 'FORBIDDEN', message: 'no' },
+      shown: false
+    }
+  ])(
+    'fetch returns the 403 $body.code as is; the SSO screen shows: $shown (sso_enabled $ssoEnabled)',
+    async ({ ssoEnabled, body, shown }) => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(body, { status: 403 })
+      )
+
+      const response = await fetchWithUnifiedRemint('https://cloud/x', {}, true)
+
+      expect(response.status).toBe(403)
+      expect(await response.json()).toEqual(body)
+      expect(await ssoScreenShown()).toBe(shown)
+    }
+  )
+
+  it.for([
+    { ssoEnabled: true, shown: true },
+    { ssoEnabled: false, shown: false }
+  ])(
+    'axios rejects a 403 sso_required as is; the SSO screen shows: $shown (sso_enabled $ssoEnabled)',
+    async ({ ssoEnabled, shown }) => {
+      vi.mocked(useFeatureFlags().flags).ssoEnabled = ssoEnabled
+      const client = axios.create({
+        adapter: async (config) => {
+          throw new AxiosError(
+            'refused',
+            AxiosError.ERR_BAD_REQUEST,
+            config,
+            null,
+            {
+              data: SSO_REFUSAL,
+              status: 403,
+              statusText: '403',
+              headers: {},
+              config
+            }
+          )
+        }
+      })
+      attachUnifiedRemintInterceptor(client)
+
+      await expect(client.get('https://cloud/x')).rejects.toMatchObject({
+        response: { status: 403 }
+      })
+      expect(await ssoScreenShown()).toBe(shown)
+    }
+  )
+
+  describe('when presenting the SSO screen fails', () => {
+    const failure = new Error('sso screen unavailable')
+
+    beforeEach(() => {
+      Object.defineProperty(vi.mocked(useFeatureFlags().flags), 'ssoEnabled', {
+        configurable: true,
+        get: () => {
+          throw failure
+        }
+      })
+    })
+
+    afterEach(() => {
+      Object.defineProperty(vi.mocked(useFeatureFlags().flags), 'ssoEnabled', {
+        configurable: true,
+        writable: true,
+        value: false
+      })
+    })
+
+    it('fetch still returns the 403 and reports the failure', async () => {
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(SSO_REFUSAL, { status: 403 })
+      )
+
+      const response = await fetchWithUnifiedRemint('https://cloud/x', {}, true)
+
+      expect(response.status).toBe(403)
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'auth',
+        errorType: 'failure_presenting_sso_required'
+      })
+    })
+
+    it('axios still rejects with the 403 and reports the failure', async () => {
+      const client = axios.create({
+        adapter: async (config) => {
+          throw new AxiosError(
+            'refused',
+            AxiosError.ERR_BAD_REQUEST,
+            config,
+            null,
+            {
+              data: SSO_REFUSAL,
+              status: 403,
+              statusText: '403',
+              headers: {},
+              config
+            }
+          )
+        }
+      })
+      attachUnifiedRemintInterceptor(client)
+
+      await expect(client.get('https://cloud/x')).rejects.toMatchObject({
+        response: { status: 403 }
+      })
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'auth',
+        errorType: 'failure_presenting_sso_required'
+      })
+    })
+  })
+})

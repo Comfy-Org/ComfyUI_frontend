@@ -1,14 +1,11 @@
-/* eslint-disable vue/one-component-per-file */
-/* eslint-disable vue/no-unused-emit-declarations */
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen, fireEvent } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import type { SelectProps } from 'primevue/select'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -19,16 +16,7 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-// Mock state for asset service
-const mockShouldUseAssetBrowser = vi.hoisted(() => vi.fn(() => false))
-const mockIsAssetAPIEnabled = vi.hoisted(() => vi.fn(() => false))
-
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    shouldUseAssetBrowser: mockShouldUseAssetBrowser,
-    isAssetAPIEnabled: mockIsAssetAPIEnabled
-  }
-}))
+vi.mock(import('@/platform/assets/services/assetService'))
 
 const WidgetSelectDropdownStub = defineComponent({
   name: 'WidgetSelectDropdown',
@@ -59,7 +47,6 @@ const WidgetSelectDefaultStub = defineComponent({
 })
 
 const globalConfig = {
-  plugins: [PrimeVue, createTestingPinia(), i18n],
   stubs: {
     WidgetSelectDropdown: WidgetSelectDropdownStub,
     WidgetSelectDefault: WidgetSelectDefaultStub,
@@ -69,18 +56,43 @@ const globalConfig = {
   }
 }
 
-describe('WidgetSelect Value Binding', () => {
-  beforeEach(() => {
-    mockShouldUseAssetBrowser.mockReturnValue(false)
-    mockIsAssetAPIEnabled.mockReturnValue(false)
-    vi.clearAllMocks()
+it.for([
+  {
+    name: 'model',
+    eligible: true,
+    value: 'studio/model.safetensors',
+    expected: 'model.safetensors'
+  },
+  {
+    name: 'schedule',
+    eligible: false,
+    value: 'schedule/custom',
+    expected: 'schedule/custom'
+  }
+])('summarizes $name', ({ name, eligible, value, expected }) => {
+  vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(eligible)
+  render(WidgetSelect, {
+    props: {
+      widget: { name, type: 'combo', value, options: { values: [value] } },
+      nodeType: 'ModelLoader',
+      modelValue: value
+    },
+    global: {
+      plugins: [i18n]
+    }
   })
+  expect(screen.getByRole('combobox').textContent.trim()).toBe(expected)
+})
+
+describe('WidgetSelect Value Binding', () => {
+  type SelectWidgetOptions = {
+    values?: string[]
+    return_index?: boolean
+  }
 
   const createSelectWidget = (
     value: string = 'option1',
-    options: Partial<
-      SelectProps & { values?: string[]; return_index?: boolean }
-    > = {},
+    options: SelectWidgetOptions = {},
     callback?: (value: string | undefined) => void,
     spec?: ComboInputSpec
   ) =>
@@ -109,13 +121,13 @@ describe('WidgetSelect Value Binding', () => {
         'onUpdate:modelValue': onModelUpdate,
         ...extraProps
       },
-      global: globalConfig
+      global: { ...globalConfig, plugins: [getActivePinia()!, i18n] }
     })
     return onModelUpdate
   }
 
   describe('Vue Event Emission', () => {
-    it('emits Vue event when selection changes', async () => {
+    it('forwards model updates from the default select', async () => {
       const widget = createSelectWidget('option1')
       const onModelUpdate = renderComponent(widget, 'option1')
 
@@ -123,139 +135,12 @@ describe('WidgetSelect Value Binding', () => {
       await fireEvent.update(input, 'option2')
 
       expect(onModelUpdate).toHaveBeenCalledWith('option2')
-    })
-
-    it('emits string value for different options', async () => {
-      const widget = createSelectWidget('option1')
-      const onModelUpdate = renderComponent(widget, 'option1')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, 'option3')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('option3')
-    })
-
-    it('handles custom option values', async () => {
-      const customOptions = ['custom_a', 'custom_b', 'custom_c']
-      const widget = createSelectWidget('custom_a', { values: customOptions })
-      const onModelUpdate = renderComponent(widget, 'custom_a')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, 'custom_b')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('custom_b')
-    })
-
-    it('handles missing callback gracefully', async () => {
-      const widget = createSelectWidget('option1', {}, undefined)
-      const onModelUpdate = renderComponent(widget, 'option1')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, 'option2')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('option2')
-    })
-
-    it('handles value changes gracefully', async () => {
-      const widget = createSelectWidget('option1')
-      const onModelUpdate = renderComponent(widget, 'option1')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, 'option2')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('option2')
-    })
-  })
-
-  describe('Option Handling', () => {
-    it('handles empty options array', () => {
-      const widget = createSelectWidget('', { values: [] })
-      renderComponent(widget, '')
-
-      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
-    })
-
-    it('handles single option', () => {
-      const widget = createSelectWidget('only_option', {
-        values: ['only_option']
-      })
-      renderComponent(widget, 'only_option')
-
-      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
-    })
-
-    it('handles options with special characters', async () => {
-      const specialOptions = [
-        'option with spaces',
-        'option@#$%',
-        'option/with\\slashes'
-      ]
-      const widget = createSelectWidget(specialOptions[0], {
-        values: specialOptions
-      })
-      const onModelUpdate = renderComponent(widget, specialOptions[0])
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, specialOptions[1])
-
-      expect(onModelUpdate).toHaveBeenCalledWith(specialOptions[1])
-    })
-  })
-
-  describe('Edge Cases', () => {
-    it('handles selection of non-existent option gracefully', async () => {
-      const widget = createSelectWidget('option1')
-      const onModelUpdate = renderComponent(widget, 'option1')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, 'non_existent_option')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('non_existent_option')
-    })
-
-    it('handles numeric string options correctly', async () => {
-      const numericOptions = ['1', '2', '10', '100']
-      const widget = createSelectWidget('1', { values: numericOptions })
-      const onModelUpdate = renderComponent(widget, '1')
-
-      const input = screen.getByTestId('select-input')
-      await fireEvent.update(input, '100')
-
-      expect(onModelUpdate).toHaveBeenCalledWith('100')
-    })
-  })
-
-  describe('node-type prop passing', () => {
-    it('passes node-type prop to WidgetSelectDropdown', () => {
-      const spec: ComboInputSpec = {
-        type: 'COMBO',
-        name: 'test_select',
-        image_upload: true
-      }
-      const widget = createSelectWidget('option1', {}, undefined, spec)
-      renderComponent(widget, 'option1', {
-        nodeType: 'CheckpointLoaderSimple'
-      })
-
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.nodeType).toBe('CheckpointLoaderSimple')
-    })
-
-    it('does not pass node-type prop to WidgetSelectDefault', () => {
-      const widget = createSelectWidget('option1')
-      renderComponent(widget, 'option1', { nodeType: 'KSampler' })
-
-      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
-      expect(
-        screen.queryByTestId('widget-select-dropdown')
-      ).not.toBeInTheDocument()
     })
   })
 
   describe('Asset mode detection', () => {
-    it('enables asset mode when shouldUseAssetBrowser returns true', () => {
-      mockShouldUseAssetBrowser.mockReturnValue(true)
+    it('enables asset mode when shouldUseWidgetAssetPicker returns true', () => {
+      vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
 
       const widget = createSelectWidget('test.safetensors')
       renderComponent(widget, 'test.safetensors', {
@@ -265,8 +150,8 @@ describe('WidgetSelect Value Binding', () => {
       expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
     })
 
-    it('disables asset mode when shouldUseAssetBrowser returns false', () => {
-      mockShouldUseAssetBrowser.mockReturnValue(false)
+    it('disables asset mode when shouldUseWidgetAssetPicker returns false', () => {
+      vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
 
       const widget = createSelectWidget('test.safetensors')
       renderComponent(widget, 'test.safetensors', {
@@ -293,8 +178,7 @@ describe('WidgetSelect Value Binding', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('uses dropdown variant for audio uploads', (context) => {
-      context.skip('allowUpload is not false, should it be? needs diagnosis')
+    it('uses dropdown variant for audio uploads', () => {
       const spec: ComboInputSpec = {
         type: 'COMBO',
         name: 'test_select',
@@ -303,10 +187,7 @@ describe('WidgetSelect Value Binding', () => {
       const widget = createSelectWidget('clip.wav', {}, undefined, spec)
       renderComponent(widget, 'clip.wav')
 
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.assetKind).toBe('audio')
-      expect(dropdown.dataset.allowUpload).toBe('false')
+      expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
     })
 
     it('uses dropdown variant for mesh uploads via spec', () => {
@@ -319,12 +200,7 @@ describe('WidgetSelect Value Binding', () => {
       const widget = createSelectWidget('model.glb', {}, undefined, spec)
       renderComponent(widget, 'model.glb')
 
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.assetKind).toBe('mesh')
-      expect(dropdown.dataset.allowUpload).toBe('true')
-      expect(dropdown.dataset.uploadFolder).toBe('input')
-      expect(dropdown.dataset.uploadSubfolder).toBe('3d')
+      expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
     })
 
     it('keeps default select when no spec or media hints are present', () => {

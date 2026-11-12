@@ -1,47 +1,73 @@
+import type { ListAssetsData } from '@comfyorg/ingest-types'
+import { uniq } from 'es-toolkit'
 import { fromZodError } from 'zod-validation-error'
+import { z } from 'zod'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
+import { ASSETS_SEED_FAST_COMPLETE_EVENT } from '@/platform/assets/constants/assetEvents'
 
 import {
+  assetFilenameSchema,
   assetItemSchema,
   assetResponseSchema,
   asyncUploadResponseSchema,
   tagsOperationResultSchema
 } from '@/platform/assets/schemas/assetSchema'
 import type {
+  AssetId,
   AssetItem,
   AssetMetadata,
   AssetResponse,
   AssetUpdatePayload,
   AsyncUploadResponse,
   ModelFile,
-  ModelFolder,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import {
+  getAssetCategories,
+  getAssetFilename,
+  isModelTypeCovered
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
 export interface PaginationOptions {
   limit?: number
   offset?: number
 }
 
+export interface AssetPaginationOptions extends PaginationOptions {
+  /**
+   * Opaque keyset cursor from a prior response's `next_cursor`. When set, the
+   * server resumes after that cursor and `offset` is ignored.
+   */
+  after?: string
+  signal?: AbortSignal
+}
+
 interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
+  excludeTags?: string[]
   includePublic?: boolean
+  workspaceLibrary?: boolean
+  after?: string
+  signal?: AbortSignal
 }
 
 interface AssetExportOptions {
   job_ids?: string[]
-  asset_ids?: string[]
+  asset_ids?: AssetId[]
   naming_strategy?:
     | 'group_by_job_id'
-    | 'prepend_job_id'
+    | 'group_by_job_time'
     | 'preserve'
     | 'asset_id'
   job_asset_name_filters?: Record<string, string[]>
+  include_previews?: boolean
 }
 
 /**
@@ -165,13 +191,57 @@ function getLocalizedErrorMessage(errorCode: string): string {
 }
 
 const ASSETS_ENDPOINT = '/assets'
+const ASSETS_SEED_ENDPOINT = '/assets/seed'
 const ASSETS_DOWNLOAD_ENDPOINT = '/assets/download'
 const ASSETS_EXPORT_ENDPOINT = '/assets/export'
-const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make sure "Comfy.Assets.UseAssetAPI" is set to "false" in your ComfyUI Settings.\n`
 const DEFAULT_LIMIT = 500
+// Defensive backstop against a server that never signals exhaustion (e.g. an
+// unbounded stream of unique cursors); mirrors assetsStore's walk cap. At
+// DEFAULT_LIMIT per page this allows 500k assets per walk, so it only ever
+// trips on pathological pagination.
+const MAX_PAGINATION_BATCHES = 1000
 
 export const MODELS_TAG = 'models'
+export const INPUT_TAG = 'input'
+export const OUTPUT_TAG = 'output'
+/** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
+const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
+const EMPTY_PAGE: AssetResponse = { assets: [], total: 0, has_more: false }
+
+const uploadedAssetResponseSchema = assetItemSchema.extend({
+  created_new: z.boolean()
+})
+
+function normalizeAssetTags(tags: string[]): string[] {
+  return tags.map((tag) => tag.trim()).filter(Boolean)
+}
+
+/**
+ * Orders loader paths as subdirectories before files at every level,
+ * alphabetical within each group. The asset API returns models in storage
+ * order, which would otherwise interleave root-level files with folder
+ * contents in the sidebar tree.
+ */
+function compareLoaderPaths(a: string, b: string): number {
+  const aSegments = a.split('/')
+  const bSegments = b.split('/')
+  const sharedDepth = Math.min(aSegments.length, bSegments.length)
+  for (let i = 0; i < sharedDepth; i++) {
+    const aIsFile = i === aSegments.length - 1
+    const bIsFile = i === bSegments.length - 1
+    if (aIsFile !== bIsFile) return aIsFile ? 1 : -1
+    const order = aSegments[i].localeCompare(bSegments[i], undefined, {
+      numeric: true
+    })
+    if (order !== 0) return order
+  }
+  return 0
+}
+
+const WORKSPACE_LIBRARY_PARAM = 'workspace_library' satisfies keyof NonNullable<
+  ListAssetsData['query']
+>
 
 /**
  * Validates asset response data using Zod schema
@@ -181,8 +251,23 @@ function validateAssetResponse(data: unknown): AssetResponse {
   if (result.success) return result.data
 
   const error = fromZodError(result.error)
+  throw new Error(`Invalid asset response against zod schema:\n${error}`)
+}
+
+function validateUploadedAssetResponse(
+  data: unknown
+): AssetItem & { created_new: boolean } {
+  const result = uploadedAssetResponseSchema.safeParse(data)
+  if (result.success) {
+    return result.data
+  }
+
+  console.error('Invalid asset upload response:', fromZodError(result.error))
   throw new Error(
-    `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
+    st(
+      'assetBrowser.errorUploadFailed',
+      'Failed to upload asset. Please try again.'
+    )
   )
 }
 
@@ -191,6 +276,33 @@ function validateAssetResponse(data: unknown): AssetResponse {
  * Not exposed globally - used internally by ComfyApi
  */
 function createAssetService() {
+  const assetChangeListeners = new Set<() => void>()
+
+  /**
+   * Model assets bucketed by folder category, built from a single walk of the
+   * `models` tag rather than a fetch per category. Shared by the folder list
+   * and per-folder listings so the sidebar loads every model in one pass.
+   */
+  let modelBuckets: Map<string, AssetItem[]> | null = null
+  let modelBucketsRequestId = 0
+  let pendingModelBuckets: Promise<Map<string, AssetItem[]>> | null = null
+  // The supports_model_type_tags value the cached buckets were built under.
+  // The flag arrives asynchronously over the websocket handshake, so a cache
+  // built before it lands (or surviving a reconnect that flips it) groups tags
+  // by the wrong scheme and must be discarded.
+  let modelBucketsMode: boolean | null = null
+
+  /**
+   * Discards the cached model buckets so the next read re-walks the models
+   * tag. Bumping the request id keeps a walk that was already in flight from
+   * repopulating the cache with pre-invalidation data.
+   */
+  function invalidateModelBuckets(): void {
+    modelBucketsRequestId++
+    modelBuckets = null
+    pendingModelBuckets = null
+  }
+
   /**
    * Handles API response with consistent error handling and Zod validation
    */
@@ -200,87 +312,220 @@ function createAssetService() {
   ): Promise<AssetResponse> {
     const {
       includeTags,
+      excludeTags = DEFAULT_EXCLUDED_ASSET_TAGS,
       limit = DEFAULT_LIMIT,
       offset,
-      includePublic
+      after,
+      includePublic,
+      workspaceLibrary,
+      signal
     } = options
+    const normalizedIncludeTags = normalizeAssetTags(includeTags)
+    const normalizedExcludeTags = normalizeAssetTags(excludeTags)
+
     const queryParams = new URLSearchParams({
-      include_tags: includeTags.join(','),
+      include_tags: normalizedIncludeTags.join(','),
       limit: limit.toString()
     })
-    if (offset !== undefined && offset > 0) {
+    if (normalizedExcludeTags.length > 0) {
+      queryParams.set('exclude_tags', normalizedExcludeTags.join(','))
+    }
+    // `after` (keyset cursor) takes precedence over `offset`; the server ignores
+    // `offset` when a cursor is supplied, so we avoid sending a redundant param.
+    if (after !== undefined) {
+      queryParams.set('after', after)
+    } else if (offset !== undefined && offset > 0) {
       queryParams.set('offset', offset.toString())
     }
     if (includePublic !== undefined) {
       queryParams.set('include_public', includePublic ? 'true' : 'false')
     }
+    if (workspaceLibrary) {
+      queryParams.set(WORKSPACE_LIBRARY_PARAM, 'true')
+    }
 
     const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
-    const res = await api.fetchApi(url)
+    const res = signal
+      ? await api.fetchApi(url, { signal })
+      : await api.fetchApi(url)
     if (!res.ok) {
       throw new Error(
-        `${EXPERIMENTAL_WARNING}Unable to load ${context}: Server returned ${res.status}. Please try again.`
+        `Unable to load ${context}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
     return validateAssetResponse(data)
   }
   /**
-   * Gets a list of model folder keys from the asset API
-   *
-   * Logic:
-   * 1. Extract directory names directly from asset tags
-   * 2. Filter out blacklisted directories
-   * 3. Return alphabetically sorted directories with assets
-   *
-   * @returns The list of model folder keys
+   * Walks every `models`-tagged asset once and buckets each into the folder
+   * categories `getAssetCategories` resolves for it. A single asset lands in
+   * every category it is tagged with (e.g. a shared-root model in both
+   * `checkpoints` and `diffusion_models`); an asset covered by `model_type:`
+   * tags is grouped by those alone, so a legacy bare-tag twin left over from a
+   * partial re-tagging cannot also cross-list it into another folder. Which
+   * folders are actually shown is decided by `/experiment/models`; models with
+   * no category tag are dropped with a warning rather than hidden silently.
    */
-  async function getAssetModelFolders(): Promise<ModelFolder[]> {
-    const data = await handleAssetRequest(
-      { includeTags: [MODELS_TAG] },
-      'model folders'
-    )
+  async function buildModelBuckets(
+    modelTypeMode: boolean
+  ): Promise<Map<string, AssetItem[]>> {
+    // Private-only, matching the legacy per-folder listing this walk
+    // replaces: the local sidebar never surfaced public/community assets.
+    const assets = await getAllAssetsByTag(MODELS_TAG, false)
+    const buckets = new Map<string, AssetItem[]>()
 
-    // Blacklist directories we don't want to show
-    const blacklistedDirectories = new Set(['configs'])
+    for (const asset of assets) {
+      const folders = [...new Set(getAssetCategories(asset, modelTypeMode))]
 
-    // Extract directory names from assets that actually exist, exclude missing assets
-    const discoveredFolders = new Set<string>(
-      data?.assets
-        ?.filter((asset) => !asset.tags.includes(MISSING_TAG))
-        ?.flatMap((asset) => asset.tags)
-        ?.filter(
-          (tag) => tag !== MODELS_TAG && !blacklistedDirectories.has(tag)
-        ) ?? []
-    )
+      if (folders.length === 0) {
+        console.warn(
+          `Asset ${asset.id} (${asset.name}) is tagged '${MODELS_TAG}' but has no model category; skipping.`
+        )
+        continue
+      }
 
-    // Return only discovered folders in alphabetical order
-    const sortedFolders = Array.from(discoveredFolders).toSorted()
-    return sortedFolders.map((name) => ({ name, folders: [] }))
+      // On loader_path-contract backends a null loader_path marks an
+      // unloadable asset (e.g. an orphan): it must not mint a widget value,
+      // and `name` is deprecated for path semantics.
+      if (modelTypeMode && !asset.loader_path) {
+        console.warn(
+          `Asset ${asset.id} (${asset.name}) has no loader_path; skipping.`
+        )
+        continue
+      }
+
+      // The loader value flows into viewMetadata URLs and widget values, so a
+      // traversal-shaped path must not pass through even if the backend's own
+      // validation ever regresses.
+      const loaderValue = asset.loader_path ?? getAssetFilename(asset)
+      if (!assetFilenameSchema.safeParse(loaderValue).success) {
+        console.warn(
+          `Asset ${asset.id} (${asset.name}) has an unsafe loader path ('${loaderValue}'); skipping.`
+        )
+        continue
+      }
+
+      for (const folder of folders) {
+        const bucket = buckets.get(folder)
+        if (bucket) bucket.push(asset)
+        else buckets.set(folder, [asset])
+      }
+    }
+
+    for (const bucket of buckets.values()) {
+      bucket.sort((a, b) =>
+        compareLoaderPaths(
+          a.loader_path ?? getAssetFilename(a),
+          b.loader_path ?? getAssetFilename(b)
+        )
+      )
+    }
+
+    return buckets
+  }
+
+  /** Returns the memoized model buckets, walking the models tag on first read. */
+  async function loadModelBuckets(): Promise<Map<string, AssetItem[]>> {
+    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
+    // Discard a cache (or in-flight walk) built under a different flag value:
+    // the buckets would key tags by the wrong scheme otherwise.
+    if (modelBucketsMode !== modelTypeMode) invalidateModelBuckets()
+    if (modelBuckets) return modelBuckets
+    if (pendingModelBuckets) return pendingModelBuckets
+
+    modelBucketsMode = modelTypeMode
+    const requestId = ++modelBucketsRequestId
+    const walk = async () => {
+      try {
+        const buckets = await buildModelBuckets(modelTypeMode)
+        if (requestId === modelBucketsRequestId) {
+          modelBuckets = buckets
+        }
+        return buckets
+      } finally {
+        if (requestId === modelBucketsRequestId) {
+          pendingModelBuckets = null
+        }
+      }
+    }
+
+    pendingModelBuckets = walk()
+    return pendingModelBuckets
   }
 
   /**
-   * Gets a list of models in the specified folder from the asset API
+   * Gets the models in the specified folder from the single models walk.
    * @param folder The folder to list models from, such as 'checkpoints'
    * @returns The list of model filenames within the specified folder
    */
   async function getAssetModels(folder: string): Promise<ModelFile[]> {
-    const data = await handleAssetRequest(
-      { includeTags: [MODELS_TAG, folder] },
-      `models for ${folder}`
-    )
-
-    return (
-      data?.assets
+    const modelTypeMode = useFeatureFlags().flags.supportsModelTypeTags
+    const buckets = await loadModelBuckets()
+    const assets =
+      buckets.get(folder) ??
+      buckets
+        .get(folder.split('/')[0])
         ?.filter(
           (asset) =>
-            !asset.tags.includes(MISSING_TAG) && asset.tags.includes(folder)
+            !(modelTypeMode && isModelTypeCovered(asset)) &&
+            asset.tags.some(
+              (tag) => tag === folder || tag.startsWith(`${folder}/`)
+            )
         )
-        ?.map((asset) => ({
-          name: asset.name,
-          pathIndex: 0
-        })) ?? []
-    )
+
+    return (assets ?? []).map((asset) => ({
+      // `loader_path` is the category-relative path the loader widget expects
+      // and the source for the sidebar tree. Backends that predate it (bare-tag
+      // mode; today's cloud) fall back to the filename metadata — the same
+      // value the asset browser serializes — rather than `name`, which is a
+      // content hash on cloud.
+      name: asset.loader_path ?? getAssetFilename(asset),
+      // Asset records carry no root identity, so every model reports root 0.
+      // Known limitation on multi-root categories (extra_model_paths.yaml):
+      // preview reads target root 0 (wrong file or 404 for secondary-root
+      // files), and same-relative-path files in different roots collapse
+      // onto one sidebar row. Metadata is unaffected unless relative paths
+      // collide (/view_metadata searches roots in order without an index),
+      // as are loader widget values; lifting this needs the backend to carry
+      // root identity on assets.
+      pathIndex: 0
+    }))
+  }
+
+  /**
+   * Asks the backend to rescan the model roots on disk so newly added files
+   * become assets. Fire-and-forget: the scan's fast (insert) phase already
+   * writes the category tags and filenames the sidebar needs and is announced
+   * by an `assets.seed.fast_complete` websocket event. A 409 means a scan is
+   * already running, which will emit the same event, so it is not an error.
+   */
+  async function seedModelAssets(): Promise<void> {
+    const res = await api.fetchApi(ASSETS_SEED_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ roots: ['models'] })
+    })
+    if (!res.ok && res.status !== 409) {
+      throw new Error(
+        `Unable to start asset scan: Server returned ${res.status}`
+      )
+    }
+  }
+
+  /**
+   * Subscribes to the backend's scan fast-phase completion broadcast — the
+   * moment newly scanned files' tags and loader paths become queryable. The
+   * wire-level event name is shared via `ASSETS_SEED_FAST_COMPLETE_EVENT`;
+   * consumers receive a callback and an unsubscribe function.
+   */
+  function onModelsScanned(callback: () => void | Promise<void>): () => void {
+    const handler = () => {
+      void callback()
+    }
+    api.addCustomEventListener(ASSETS_SEED_FAST_COMPLETE_EVENT, handler)
+    return () => {
+      api.removeCustomEventListener(ASSETS_SEED_FAST_COMPLETE_EVENT, handler)
+    }
   }
 
   /**
@@ -295,17 +540,17 @@ function createAssetService() {
     widgetName: string
   ): boolean {
     if (!nodeType || !widgetName) return false
-    return (
-      useModelToNodeStore().getRegisteredNodeTypes()[nodeType] === widgetName
-    )
+    return useModelToNodeStore().isModelWidget(nodeType, widgetName)
   }
 
   /**
-   * Checks if the asset API is enabled (cloud environment + user setting).
+   * Whether widget-embedded asset pickers (canvas + Vue node model widgets) are
+   * enabled on Comfy Cloud without a deployment: MODEL_NODE_MAPPINGS is maintained for
+   * cloud asset tagging. NOT the asset-API gate — that is
+   * useFeatureFlags().flags.assetsEnabled.
    */
-  function isAssetAPIEnabled(): boolean {
-    if (!isCloud) return false
-    return !!useSettingStore().get('Comfy.Assets.UseAssetAPI')
+  function isWidgetAssetPickerEnabled(): boolean {
+    return isCloud && !useDeploymentPickStore().bootDeployment
   }
 
   /**
@@ -316,11 +561,14 @@ function createAssetService() {
    * @param widgetName - The name of the widget to check
    * @returns true if this input should use the asset browser
    */
-  function shouldUseAssetBrowser(
+  function shouldUseWidgetAssetPicker(
     nodeType: string | undefined,
     widgetName: string
   ): boolean {
-    return isAssetAPIEnabled() && isAssetBrowserEligible(nodeType, widgetName)
+    return (
+      isWidgetAssetPickerEnabled() &&
+      isAssetBrowserEligible(nodeType, widgetName)
+    )
   }
 
   /**
@@ -335,32 +583,60 @@ function createAssetService() {
    */
   async function getAssetsForNodeType(
     nodeType: string,
-    { limit = DEFAULT_LIMIT, offset = 0 }: PaginationOptions = {}
+    options: PaginationOptions = {}
   ): Promise<AssetItem[]> {
+    const data = await getAssetsPageForNodeType(nodeType, options)
+
+    // Return full AssetItem[] objects (don't strip like getAssetModels does)
+    return data.assets
+  }
+
+  /**
+   * Gets one paginated asset response for a specific node type by finding the
+   * matching category and fetching assets with that category tag.
+   *
+   * Unlike {@link getAssetsForNodeType}, the full response envelope is
+   * returned so callers can drive keyset cursor pagination from
+   * `next_cursor`/`has_more`.
+   *
+   * @param nodeType - The ComfyUI node type (e.g., 'CheckpointLoaderSimple')
+   * @param options - Pagination options
+   * @param options.limit - Maximum number of assets to return (default: 500)
+   * @param options.offset - Number of assets to skip (ignored when `after` is set)
+   * @param options.after - Keyset cursor from a prior response's `next_cursor`
+   * @param options.signal - Optional abort signal for cancelling the request
+   * @returns Promise<AssetResponse> - Page of assets plus pagination metadata
+   */
+  async function getAssetsPageForNodeType(
+    nodeType: string,
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0,
+      after,
+      signal
+    }: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
     if (!nodeType || typeof nodeType !== 'string') {
-      return []
+      return EMPTY_PAGE
     }
 
-    // Find the category for this node type using efficient O(1) lookup
     const modelToNodeStore = useModelToNodeStore()
     const category = modelToNodeStore.getCategoryForNodeType(nodeType)
 
     if (!category) {
-      return []
+      return EMPTY_PAGE
     }
 
-    // Fetch assets for this category using same API pattern as getAssetModels
-    const data = await handleAssetRequest(
-      { includeTags: [MODELS_TAG, category], limit, offset },
+    return await handleAssetRequest(
+      {
+        includeTags: [MODELS_TAG, category],
+        limit,
+        offset,
+        after,
+        includePublic: true,
+        signal
+      },
       `assets for ${nodeType}`
-    )
-
-    // Return full AssetItem[] objects (don't strip like getAssetModels does)
-    return (
-      data?.assets?.filter(
-        (asset) =>
-          !asset.tags.includes(MISSING_TAG) && asset.tags.includes(category)
-      ) ?? []
     )
   }
 
@@ -371,27 +647,20 @@ function createAssetService() {
    * @param id - The asset ID
    * @returns Promise<AssetItem> - Complete asset object with user_metadata
    */
-  async function getAssetDetails(id: string): Promise<AssetItem> {
+  async function getAssetDetails(id: AssetId): Promise<AssetItem> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`)
     if (!res.ok) {
       throw new Error(
-        `${EXPERIMENTAL_WARNING}Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
+        `Unable to load asset details for ${id}: Server returned ${res.status}. Please try again.`
       )
     }
     const data = await res.json()
 
-    // Validate the single asset response against our schema
-    const result = assetResponseSchema.safeParse({ assets: [data] })
-    if (result.success && result.data.assets?.[0]) {
-      return result.data.assets[0]
-    }
+    const result = assetItemSchema.safeParse(data)
+    if (result.success) return result.data
 
-    const error = result.error
-      ? fromZodError(result.error)
-      : 'Unknown validation error'
-    throw new Error(
-      `${EXPERIMENTAL_WARNING}Invalid asset response against zod schema:\n${error}`
-    )
+    const error = fromZodError(result.error)
+    throw new Error(`Invalid asset response against zod schema:\n${error}`)
   }
 
   /**
@@ -402,20 +671,153 @@ function createAssetService() {
    * @param options - Pagination options
    * @param options.limit - Maximum number of assets to return (default: 500)
    * @param options.offset - Number of assets to skip (default: 0)
+   * @param options.signal - Optional abort signal for cancelling the request
    * @returns Promise<AssetItem[]> - Full asset objects filtered by tag, excluding missing assets
    */
   async function getAssetsByTag(
     tag: string,
     includePublic: boolean = true,
-    { limit = DEFAULT_LIMIT, offset = 0 }: PaginationOptions = {}
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0,
+      after,
+      signal
+    }: AssetPaginationOptions = {}
   ): Promise<AssetItem[]> {
-    const data = await handleAssetRequest(
-      { includeTags: [tag], limit, offset, includePublic },
+    const data = await getAssetsPageByTag(tag, includePublic, {
+      limit,
+      offset,
+      after,
+      signal
+    })
+
+    return data.assets
+  }
+
+  /**
+   * Gets one paginated asset response filtered by a specific tag.
+   */
+  async function getAssetsPageByTag(
+    tag: string,
+    includePublic: boolean = true,
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0,
+      after,
+      signal
+    }: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
+    return await handleAssetRequest(
+      { includeTags: [tag], limit, offset, after, includePublic, signal },
       `assets for tag ${tag}`
     )
+  }
 
-    return (
-      data?.assets?.filter((asset) => !asset.tags.includes(MISSING_TAG)) ?? []
+  async function getWorkspaceLibraryAssetsPage(
+    options: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
+    return handleAssetRequest(
+      {
+        ...options,
+        includeTags: [MODELS_TAG],
+        includePublic: false,
+        workspaceLibrary: true
+      },
+      'workspace library models'
+    )
+  }
+
+  /**
+   * Gets every asset for a tag by walking paginated asset API responses.
+   *
+   * Uses keyset (cursor) pagination: each page is fetched with the prior
+   * response's `next_cursor`, which is stable under concurrent inserts/deletes
+   * and avoids the duplicate/skip drift that offset paging exhibits when the
+   * underlying set changes mid-walk. Falls back to terminating on `has_more`
+   * when the server omits `next_cursor`.
+   *
+   * @param tag - The tag to filter by (e.g., 'models', 'input')
+   * @param includePublic - Whether to include public assets (default: true)
+   * @param options - Pagination options
+   * @param options.limit - Page size for each request (default: 500)
+   * @param options.signal - Optional abort signal for cancelling requests
+   * @returns Promise<AssetItem[]> - Full asset objects filtered by tag
+   */
+  async function getAllAssetsByTag(
+    tag: string,
+    includePublic: boolean = true,
+    {
+      limit = DEFAULT_LIMIT,
+      signal
+    }: Pick<AssetPaginationOptions, 'limit' | 'signal'> = {}
+  ): Promise<AssetItem[]> {
+    return walkAssetPages(`tag '${tag}'`, signal, (after) =>
+      getAssetsPageByTag(tag, includePublic, {
+        limit: limit > 0 ? limit : DEFAULT_LIMIT,
+        after,
+        signal
+      })
+    )
+  }
+
+  async function walkAssetPages(
+    label: string,
+    signal: AbortSignal | undefined,
+    fetchPage: (after: string | undefined) => Promise<AssetResponse>
+  ): Promise<AssetItem[]> {
+    const assets: AssetItem[] = []
+    let after: string | undefined
+    let batchCount = 0
+
+    for (;;) {
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
+      if (batchCount++ >= MAX_PAGINATION_BATCHES) {
+        console.warn(
+          `Paginated walk for ${label} hit the ${MAX_PAGINATION_BATCHES}-batch backstop; returning a truncated listing.`
+        )
+        return assets
+      }
+
+      const data = await fetchPage(after)
+      const batch = data.assets
+      if (batch.length === 0) {
+        return assets
+      }
+
+      assets.push(...batch)
+
+      // A server that returns a non-advancing cursor would loop forever.
+      if (!data.has_more || !data.next_cursor || data.next_cursor === after) {
+        return assets
+      }
+
+      after = data.next_cursor
+    }
+  }
+
+  /**
+   * Lists the unique loader names in one folder of the workspace library.
+   */
+  async function getWorkspaceLibraryModels(folder: string): Promise<string[]> {
+    const assets = await walkAssetPages(
+      `workspace library folder '${folder}'`,
+      undefined,
+      (after) =>
+        handleAssetRequest(
+          {
+            includeTags: [MODELS_TAG, folder],
+            includePublic: false,
+            workspaceLibrary: true,
+            limit: DEFAULT_LIMIT,
+            after
+          },
+          `workspace library models in ${folder}`
+        )
+    )
+    return uniq(
+      assets
+        .map((asset) => asset.loader_path ?? getAssetFilename(asset))
+        .filter((name) => assetFilenameSchema.safeParse(name).success)
     )
   }
 
@@ -427,7 +829,7 @@ function createAssetService() {
    * @returns Promise<void>
    * @throws Error if deletion fails
    */
-  async function deleteAsset(id: string): Promise<void> {
+  async function deleteAsset(id: AssetId): Promise<void> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'DELETE'
     })
@@ -436,6 +838,21 @@ function createAssetService() {
       throw new Error(
         `Unable to delete asset ${id}: Server returned ${res.status}`
       )
+    }
+    notifyAssetsChanged()
+  }
+
+  function notifyAssetsChanged() {
+    for (const listener of assetChangeListeners) listener()
+  }
+
+  /**
+   * Calls back after this client deletes an asset, adds or removes an asset's tags, or an import finishes at once; returns the unsubscribe.
+   */
+  function onAssetsChanged(callback: () => void): () => void {
+    assetChangeListeners.add(callback)
+    return () => {
+      assetChangeListeners.delete(callback)
     }
   }
 
@@ -449,7 +866,7 @@ function createAssetService() {
    * @throws Error if update fails
    */
   async function updateAsset(
-    id: string,
+    id: AssetId,
     newData: AssetUpdatePayload
   ): Promise<AssetItem> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
@@ -490,17 +907,15 @@ function createAssetService() {
     )
 
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}))
-      throw new Error(
-        getLocalizedErrorMessage(errorData.code || 'UNKNOWN_ERROR')
-      )
+      const { code } = await parseErrorResponse(res)
+      throw new Error(getLocalizedErrorMessage(code))
     }
 
     const data: AssetMetadata = await res.json()
     if (data.validation?.is_valid === false) {
       throw new Error(
         getLocalizedErrorMessage(
-          data.validation?.errors?.[0]?.code || 'UNKNOWN_ERROR'
+          data.validation.errors?.[0]?.code || 'UNKNOWN_ERROR'
         )
       )
     }
@@ -544,7 +959,8 @@ function createAssetService() {
       )
     }
 
-    return await res.json()
+    const asset = validateUploadedAssetResponse(await res.json())
+    return asset
   }
 
   /**
@@ -597,7 +1013,8 @@ function createAssetService() {
       )
     }
 
-    return await res.json()
+    const asset = validateUploadedAssetResponse(await res.json())
+    return asset
   }
 
   /**
@@ -621,6 +1038,7 @@ function createAssetService() {
         `Unable to add tags to asset ${id}: Server returned ${res.status}`
       )
     }
+    notifyAssetsChanged()
 
     const result = await res.json()
     const parseResult = tagsOperationResultSchema.safeParse(result)
@@ -651,6 +1069,7 @@ function createAssetService() {
         `Unable to remove tags from asset ${id}: Server returned ${res.status}`
       )
     }
+    notifyAssetsChanged()
 
     const result = await res.json()
     const parseResult = tagsOperationResultSchema.safeParse(result)
@@ -708,6 +1127,12 @@ function createAssetService() {
           )
         )
       }
+      if (
+        result.data.type === 'async' &&
+        result.data.task.status === 'completed'
+      ) {
+        notifyAssetsChanged()
+      }
       return result.data
     }
 
@@ -723,6 +1148,7 @@ function createAssetService() {
         )
       )
     }
+    notifyAssetsChanged()
     return result.data
   }
 
@@ -755,15 +1181,23 @@ function createAssetService() {
   }
 
   return {
-    getAssetModelFolders,
     getAssetModels,
-    isAssetAPIEnabled,
+    invalidateModelBuckets,
+    onModelsScanned,
+    seedModelAssets,
+    isWidgetAssetPickerEnabled,
     isAssetBrowserEligible,
-    shouldUseAssetBrowser,
+    shouldUseWidgetAssetPicker,
     getAssetsForNodeType,
+    getAssetsPageForNodeType,
     getAssetDetails,
     getAssetsByTag,
+    getAssetsPageByTag,
+    getAllAssetsByTag,
+    getWorkspaceLibraryModels,
+    getWorkspaceLibraryAssetsPage,
     deleteAsset,
+    onAssetsChanged,
     updateAsset,
     addAssetTags,
     removeAssetTags,

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
-import type { User as UserConfig } from '@/schemas/apiSchema'
+import type { UserConfigResponse } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 
 export interface User {
@@ -13,7 +13,7 @@ export const useUserStore = defineStore('user', () => {
   /**
    * The user config. null if not loaded.
    */
-  const userConfig = ref<UserConfig | null>(null)
+  const userConfig = ref<UserConfigResponse | null>(null)
   /**
    * The current user id. null if not logged in or in single user mode.
    */
@@ -36,12 +36,22 @@ export const useUserStore = defineStore('user', () => {
   )
   const initialized = computed(() => userConfig.value !== null)
 
+  let initializePromise: Promise<void> | null = null
+
   /**
    * Initialize the user store.
    */
   async function initialize() {
-    userConfig.value = await api.getUserConfig()
-    currentUserId.value = localStorage['Comfy.userId']
+    initializePromise ??= (async () => {
+      try {
+        userConfig.value = await api.getUserConfig()
+        currentUserId.value = localStorage['Comfy.userId']
+      } catch (err) {
+        initializePromise = null
+        throw err
+      }
+    })()
+    return initializePromise
   }
 
   /**

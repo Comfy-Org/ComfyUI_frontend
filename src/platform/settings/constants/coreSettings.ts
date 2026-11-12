@@ -1,11 +1,18 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import {
+  getDefaultLocale,
+  SUPPORTED_LOCALE_OPTIONS
+} from '@/locales/localeConfig'
+import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
+import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
+import { CANVAS_NAVIGATION_PRESETS } from '@comfyorg/settings-core/canvasNavigation'
+import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingParams } from '@/platform/settings/types'
-import type { ColorPalettes } from '@/schemas/colorPaletteSchema'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
+import { normalizeDisabledExtensionPaths } from '@/platform/settings/utils/extensionPath'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
 
 /**
@@ -67,6 +74,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Only applies to the default implementation',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.NodeSearchBoxImpl.FollowCursor',
+    category: ['Comfy', 'Node Search Box', 'FollowCursor'],
+    name: 'Added nodes follow the cursor',
+    tooltip:
+      'When enabled, nodes added from the search box follow the cursor until clicked to place. Only applies to the default implementation.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.44.4'
   },
   {
     id: 'Comfy.NodeSearchBoxImpl.ShowCategory',
@@ -150,6 +167,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: 'Comfy.Workflow.NamedValuesRestore',
+    name: 'Restore widget values by name',
+    type: 'boolean',
+    defaultValue: false,
+    experimental: true
+  },
+  {
     id: 'Comfy.Canvas.NavigationMode',
     category: ['LiteGraph', 'Canvas Navigation', 'NavigationMode'],
     name: 'Navigation Mode',
@@ -166,22 +190,11 @@ export const CORE_SETTINGS: SettingParams[] = [
       '1.25.0': 'legacy'
     },
     onChange: async (val: unknown, old?: unknown) => {
-      const newValue = val as string
-      const oldValue = old as string | undefined
-      if (!oldValue) return
-      const settingStore = useSettingStore()
+      if (!old || typeof val !== 'string') return
+      const preset = CANVAS_NAVIGATION_PRESETS[val]
+      if (!preset) return
 
-      if (newValue === 'standard') {
-        await settingStore.setMany({
-          'Comfy.Canvas.LeftMouseClickBehavior': 'select',
-          'Comfy.Canvas.MouseWheelScroll': 'panning'
-        })
-      } else if (newValue === 'legacy') {
-        await settingStore.setMany({
-          'Comfy.Canvas.LeftMouseClickBehavior': 'panning',
-          'Comfy.Canvas.MouseWheelScroll': 'zoom'
-        })
-      }
+      await useSettingStore().setMany(preset)
     }
   },
   {
@@ -281,13 +294,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     }
   },
   {
-    id: 'Comfy.Workflow.ShowMissingModelsWarning',
-    name: 'Show missing models warning',
-    type: isCloud ? 'hidden' : 'boolean',
-    defaultValue: isCloud ? false : true,
-    experimental: true
-  },
-  {
     id: 'Comfy.Workflow.WarnBlueprintOverwrite',
     name: 'Require confirmation to overwrite an existing subgraph blueprint',
     type: 'boolean',
@@ -298,6 +304,19 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Cloud notification shown',
     type: 'hidden',
     defaultValue: false
+  },
+  {
+    id: AGENT_ONBOARDED_SCOPES_SETTING_ID,
+    name: 'Agent onboarding tour completed for these account scopes',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.DeploymentSwitcher.Seen',
+    name: 'Running on button opened at least once',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.61.0'
   },
   {
     id: 'Comfy.Graph.ZoomSpeed',
@@ -401,7 +420,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'Tree Explorer', 'ItemPadding'],
     name: 'Tree explorer item padding',
     type: 'slider',
-    defaultValue: 2,
+    defaultValue: 8,
     attrs: {
       min: 0,
       max: 8,
@@ -429,21 +448,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Locale',
     name: 'Language',
     type: 'combo',
-    options: [
-      { value: 'en', text: 'English' },
-      { value: 'zh', text: '中文' },
-      { value: 'zh-TW', text: '繁體中文' },
-      { value: 'ru', text: 'Русский' },
-      { value: 'ja', text: '日本語' },
-      { value: 'ko', text: '한국어' },
-      { value: 'fr', text: 'Français' },
-      { value: 'es', text: 'Español' },
-      { value: 'ar', text: 'عربي' },
-      { value: 'tr', text: 'Türkçe' },
-      { value: 'pt-BR', text: 'Português (BR)' },
-      { value: 'fa', text: 'فارسی' }
-    ],
-    defaultValue: () => navigator.language.split('-')[0] || 'en'
+    options: SUPPORTED_LOCALE_OPTIONS,
+    defaultValue: getDefaultLocale
   },
   {
     id: 'Comfy.NodeBadge.NodeSourceBadgeMode',
@@ -595,7 +601,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['Appearance', 'General'],
     name: 'Disable animations',
     type: 'boolean',
-    defaultValue: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    defaultValue: () =>
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     tooltip:
       'Turns off most CSS animations and transitions. Speeds up inference when the display GPU is also used for generation.',
     onChange: (value: unknown) => {
@@ -649,7 +656,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: isCloud ? 32 : 100,
+    defaultValue: 100,
     versionAdded: '1.3.5'
   },
   {
@@ -689,6 +696,21 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: [] as string[],
     versionAdded: '1.3.11'
+  },
+  {
+    id: 'Comfy.Extension.SeenAgentExtensions',
+    name: 'Seen agent-created extension names',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.34.0'
+  },
+  {
+    id: 'Comfy.Extension.DisabledPacks',
+    name: 'Disabled extension paths',
+    type: 'hidden',
+    defaultValue: [],
+    migrateDeprecatedValue: normalizeDisabledExtensionPaths,
+    versionAdded: '1.59.0'
   },
   {
     id: 'Comfy.LinkRenderMode',
@@ -778,7 +800,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, nodes are selected/deselected in real-time as you drag the selection rectangle, similar to other design tools.',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     versionAdded: '1.36.1'
   },
   {
@@ -799,19 +821,12 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Pointer.ClickBufferTime',
-    category: ['LiteGraph', 'Pointer', 'ClickBufferTime'],
-    name: 'Pointer click drift delay',
-    tooltip:
-      'After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.',
-    experimental: true,
-    type: 'slider',
-    attrs: {
-      min: 0,
-      max: 1000,
-      step: 25
-    },
-    defaultValue: 150,
-    versionAdded: '1.4.3'
+    name: 'Pointer click drift delay (deprecated)',
+    type: 'hidden',
+    deprecated: true,
+    defaultValue: 32,
+    versionAdded: '1.4.3',
+    versionModified: '1.54.3'
   },
   {
     id: 'Comfy.Pointer.DoubleClickTime',
@@ -859,7 +874,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Server config values used for frontend display only',
     type: 'hidden',
     // Mapping from server config id to value.
-    defaultValue: {} as Record<string, unknown>,
+    defaultValue: {},
     versionAdded: '1.4.8'
   },
   {
@@ -868,7 +883,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'These are the actual arguments that are passed to the server when it is launched.',
     type: 'hidden',
-    defaultValue: {} as Record<string, string>,
+    defaultValue: {},
     versionAdded: '1.4.8'
   },
   {
@@ -896,7 +911,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Seen new workflow action items',
     type: 'hidden',
     defaultValue: [] as string[],
-    versionAdded: '1.41.5'
+    versionAdded: '1.41.5',
+    deprecated: true
   },
   {
     id: 'Comfy.Execution.PreviewMethod',
@@ -943,9 +959,9 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: 'dark',
     versionModified: '1.6.7',
+    telemetry: { trackChanges: true, includeValues: true },
     migrateDeprecatedValue(val: unknown) {
       const value = val as string
-      // Legacy custom palettes were prefixed with 'custom_'
       return value.startsWith('custom_') ? value.replace('custom_', '') : value
     }
   },
@@ -953,7 +969,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.CustomColorPalettes',
     name: 'Custom color palettes',
     type: 'hidden',
-    defaultValue: {} as ColorPalettes,
+    defaultValue: {},
     versionModified: '1.6.7'
   },
   {
@@ -973,6 +989,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: false,
     versionAdded: '1.8.7'
+  },
+  {
+    id: TOUR_SEEN_SETTING,
+    name: 'Onboarding coachmark tours the user has already seen',
+    type: 'hidden',
+    defaultValue: [],
+    versionAdded: '1.48.0'
   },
   {
     id: 'Comfy.InstalledVersion',
@@ -1053,7 +1076,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Minimap.Visible',
     name: 'Display minimap on canvas',
     type: 'hidden',
-    defaultValue: window.innerWidth >= breakpointsTailwind.lg,
+    defaultValue: () => window.innerWidth >= breakpointsTailwind.lg,
     versionAdded: '1.25.0'
   },
   {
@@ -1205,22 +1228,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
-    id: 'Comfy.VueNodes.AutoScaleLayout',
-    category: ['Comfy', 'Nodes 2.0', 'AutoScaleLayout'],
-    name: 'Auto-scale layout (Nodes 2.0)',
-    tooltip:
-      'Automatically scale node positions when switching to Nodes 2.0 rendering to prevent overlap',
-    type: 'boolean',
-    sortOrder: 50,
-    experimental: true,
-    defaultValue: true,
-    versionAdded: '1.30.3'
+    id: 'Comfy.PartnerNodesEducation.Dismissed',
+    name: 'Partner nodes education card dismissed',
+    type: 'hidden',
+    defaultValue: false
   },
   {
-    id: 'Comfy.Assets.UseAssetAPI',
-    name: 'Use Asset API for model library',
+    id: 'Comfy.ModelLibrary.UseAssetBrowser',
+    name: 'Use the asset browser for the model library',
     type: 'hidden',
-    tooltip: 'Use new Asset API for model browsing',
+    tooltip:
+      'When the backend supports assets, the model library opens the asset browser instead of the sidebar tree.',
     defaultValue: isCloud ? true : false,
     experimental: true
   },
@@ -1245,7 +1263,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'boolean',
     tooltip:
       'Replaces the floating job queue panel with an equivalent job queue embedded in the job history side panel. You can disable this to return to the floating panel layout.',
-    defaultValue: false,
+    defaultValue: isNightly,
     experimental: true
   },
   {
@@ -1272,9 +1290,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'When enabled, missing nodes with known replacements will be shown as replaceable in the missing nodes dialog, allowing you to review and apply replacements.',
     type: 'boolean',
-    defaultValue: false,
-    experimental: true,
-    versionAdded: '1.40.0'
+    defaultValue: true,
+    experimental: false,
+    versionAdded: '1.40.0',
+    versionModified: '1.44.5'
   },
   {
     id: 'Comfy.Graph.DeduplicateSubgraphNodeIds',
@@ -1290,14 +1309,47 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.RightSidePanel.ShowErrorsTab',
-    category: ['Comfy', 'Error System'],
-    name: 'Show errors tab in side panel',
+    category: ['Comfy', 'Error System', 'IssuesTab'],
+    name: 'Show issues tab in side panel',
     tooltip:
-      'When enabled, an errors tab is displayed in the right side panel to show workflow execution errors at a glance.',
+      'When enabled, the Issues tab is displayed in the right side panel to show blocking errors and missing resources that need setup.',
     type: 'boolean',
     defaultValue: true,
     experimental: true,
     versionAdded: '1.40.0'
+  },
+  {
+    id: 'Comfy.Workflow.ShowMissingNodesWarning',
+    category: ['Comfy', 'Error System', 'MissingNodes'],
+    sortOrder: -1,
+    name: 'Show missing nodes in the issues tab',
+    tooltip:
+      'When disabled, missing node packs are not listed in the issues tab and their nodes are not highlighted. The workflow still cannot run until they are installed.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
+  },
+  {
+    id: 'Comfy.ErrorSystem.ShowMissingModels',
+    category: ['Comfy', 'Error System', 'MissingModels'],
+    sortOrder: -2,
+    name: 'Show missing models in the issues tab',
+    tooltip:
+      'When disabled, model files that are not found are not listed in the issues tab and their nodes are not highlighted.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
+  },
+  {
+    id: 'Comfy.Workflow.ShowMissingMediaWarning',
+    category: ['Comfy', 'Error System', 'MissingMedia'],
+    sortOrder: -3,
+    name: 'Show missing media in the issues tab',
+    tooltip:
+      'When disabled, input images, videos and audio that are not found are not listed in the issues tab and their nodes are not highlighted.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.55.0'
   },
   {
     id: 'LiteGraph.Group.SelectChildrenOnClick',

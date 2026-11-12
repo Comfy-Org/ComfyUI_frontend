@@ -1,9 +1,11 @@
 import type { InjectionKey, Ref } from 'vue'
 import { z } from 'zod'
 
+import { zResultItem } from '@comfyorg/api-client/executionTypes'
+
 import { assetItemSchema } from './assetSchema'
 
-const zMediaKindSchema = z.enum([
+export const zMediaKindSchema = z.enum([
   'video',
   'audio',
   'image',
@@ -22,7 +24,7 @@ const zDimensionsSchema = z.object({
 const zMediaAssetDisplayItemSchema = assetItemSchema.extend({
   // New required fields
   kind: zMediaKindSchema,
-  src: z.string().url(),
+  src: z.url(),
 
   // New optional fields
   duration: z.number().nonnegative().optional(),
@@ -43,9 +45,27 @@ export type AssetContext = z.infer<typeof zAssetContextSchema>
 interface MediaAssetProviderValue {
   asset: Ref<AssetMeta | undefined>
   context: Ref<AssetContext>
-  isVideoPlaying: Ref<boolean>
-  showVideoControls: Ref<boolean>
 }
 
 export const MediaAssetKey: InjectionKey<MediaAssetProviderValue> =
   Symbol('mediaAsset')
+
+export const MIME_ASSET_INFO = 'application/x-comfy-asset-info'
+
+const zDraggedAssetInfo = zResultItem.and(
+  z.object({
+    attachment_ref: z.string().min(1).optional(),
+    media_kind: zMediaKindSchema.optional(),
+    preview_url: z.url().optional(),
+    media_url: z.url().optional()
+  })
+)
+
+export function parseAssetInfo(dataTransfer: DataTransfer) {
+  const assetString = dataTransfer.getData(MIME_ASSET_INFO)
+  try {
+    return zDraggedAssetInfo.safeParse(JSON.parse(assetString)).data
+  } catch {
+    // output was not parsable, allow fallthrough and return undefined
+  }
+}

@@ -1,16 +1,18 @@
 import { expect } from '@playwright/test'
+import type { Route } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { openErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import defaultWorkflow from '@e2e/assets/default.json' with { type: 'json' }
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
 test.describe('Workflows sidebar', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.Workflow.WorkflowTabsPosition',
-      'Sidebar'
-    )
+  test.use({
+    initialSettings: { 'Comfy.Workflow.WorkflowTabsPosition': 'Sidebar' }
+  })
 
+  test.beforeEach(async ({ comfyPage }) => {
     // Open the sidebar
     const tab = comfyPage.menu.workflowsTab
     await tab.open()
@@ -18,6 +20,30 @@ test.describe('Workflows sidebar', () => {
 
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({})
+  })
+
+  test('draws each section divider as a single 1px line', async ({
+    comfyPage
+  }) => {
+    const separators = comfyPage.menu.workflowsTab.root.getByRole('separator')
+    await expect(separators).toHaveCount(2)
+
+    const borderWidths = await Promise.all(
+      (await separators.all()).map((separator) =>
+        separator.evaluate((element) => {
+          const style = getComputedStyle(element)
+          return [
+            style.borderTopWidth,
+            style.borderRightWidth,
+            style.borderBottomWidth,
+            style.borderLeftWidth
+          ]
+        })
+      )
+    )
+
+    const singleTopLine = ['1px', '0px', '0px', '0px']
+    expect(borderWidths).toEqual([singleTopLine, singleTopLine])
   })
 
   test('Can create new blank workflow', async ({ comfyPage }) => {
@@ -44,6 +70,56 @@ test.describe('Workflows sidebar', () => {
       .poll(() => tab.getTopLevelSavedWorkflowNames())
       .toEqual(expect.arrayContaining(['workflow1', 'workflow2']))
   })
+
+  test(
+    'Shows loading state while refreshing workflows',
+    { tag: '@smoke' },
+    async ({ comfyPage }) => {
+      const tab = comfyPage.menu.workflowsTab
+      const workflowsSyncRoute = /\/api\/userdata\?[^#]*\bdir=workflows\b/
+      const emptyWorkflowList: UserDataFullInfo[] = []
+
+      let releaseSync!: () => void
+      const syncBlocked = new Promise<void>((resolve) => {
+        releaseSync = resolve
+      })
+      const syncFulfillments: Promise<void>[] = []
+
+      const holdSyncResponse = async (route: Route) => {
+        if (route.request().method() !== 'GET') {
+          await route.fallback()
+          return
+        }
+
+        const syncFulfilled = syncBlocked.then(() =>
+          route.fulfill({ json: emptyWorkflowList })
+        )
+        syncFulfillments.push(syncFulfilled)
+        await syncFulfilled
+      }
+
+      await comfyPage.page.route(workflowsSyncRoute, holdSyncResponse)
+
+      try {
+        const syncRequest = comfyPage.page.waitForRequest((request) =>
+          workflowsSyncRoute.test(request.url())
+        )
+
+        await tab.refreshButton.click()
+        await syncRequest
+
+        await expect(tab.refreshButton).toBeDisabled()
+        await expect(tab.refreshButton).toHaveAttribute('aria-busy', 'true')
+      } finally {
+        releaseSync()
+        await Promise.all(syncFulfillments)
+        await comfyPage.page.unroute(workflowsSyncRoute, holdSyncResponse)
+      }
+
+      await expect(tab.refreshButton).toBeEnabled()
+      await expect(tab.refreshButton).toHaveAttribute('aria-busy', 'false')
+    }
+  )
 
   test('Can duplicate workflow', async ({ comfyPage }) => {
     const tab = comfyPage.menu.workflowsTab
@@ -179,7 +255,9 @@ test.describe('Workflows sidebar', () => {
     })
 
     await comfyPage.settings.setSetting('Comfy.Locale', 'zh')
-    await comfyPage.setup()
+    await expect(
+      comfyPage.page.getByRole('button', { name: '运行', exact: true })
+    ).toBeVisible()
 
     // Compare the exported workflow with the original
     delete downloadedContent.id
@@ -249,7 +327,7 @@ test.describe('Workflows sidebar', () => {
       .toEqual('workflow1')
   })
 
-  test('Reports missing nodes warning again when switching back to workflow', async ({
+  test('Restores missing nodes errors silently when switching back to workflow', async ({
     comfyPage
   }) => {
     await comfyPage.settings.setSetting(
@@ -271,11 +349,17 @@ test.describe('Workflows sidebar', () => {
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
 
-    // Switch back to the missing_nodes workflow — overlay should reappear
-    // so users can install missing node packs without a page reload
+    // Switch back to the missing_nodes workflow — overlay should NOT
+    // reappear (silent restore), but errors tab should have content
     await comfyPage.menu.workflowsTab.switchToWorkflow('missing_nodes')
 
-    await expect(errorOverlay).toBeVisible()
+    await expect(errorOverlay).toBeHidden()
+
+    // Errors tab should still show missing nodes after silent restore
+    await openErrorsTab(comfyPage)
+    await expect(
+      comfyPage.page.getByTestId(TestIds.dialogs.missingNodePacksGroup)
+    ).toBeVisible()
   })
 
   test('Can close saved-workflows from the open workflows section', async ({
@@ -358,6 +442,28 @@ test.describe('Workflows sidebar', () => {
       .toEqual(['*Unsaved Workflow', '*workflow1 (Copy)'])
   })
 
+  test(
+    'suppresses the native context menu on a saved workflow',
+    { tag: '@ui' },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({
+        'workflow1.json': 'default.json'
+      })
+      const tab = comfyPage.menu.workflowsTab
+      await tab.open()
+
+      const event = await comfyPage.contextMenu.dispatchFor(
+        tab.getPersistedItem('workflow1')
+      )
+
+      expect(event.defaultPrevented).toBe(true)
+      await comfyPage.contextMenu.clickMenuItemExact('Duplicate')
+      await expect
+        .poll(() => tab.getOpenedWorkflowNames())
+        .toEqual(['*Unsaved Workflow', '*workflow1 (Copy)'])
+    }
+  )
+
   test('Can drop workflow from workflows sidebar', async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({
       'workflow1.json': 'default.json'
@@ -390,8 +496,6 @@ test.describe('Workflows sidebar', () => {
     )
 
     // Wait for nodes to be inserted after drag-drop with retryable assertion
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(nodeCount * 2)
+    await comfyPage.expectNodeCount(nodeCount + defaultWorkflow.nodes.length)
   })
 })

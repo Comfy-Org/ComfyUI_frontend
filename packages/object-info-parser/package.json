@@ -1,0 +1,45 @@
+{
+  "name": "@comfyorg/object-info-parser",
+  "version": "1.0.0",
+  "description": "Shared object_info schemas and helpers",
+  "license": "GPL-3.0-only",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "imports": {
+    "#/*": {
+      "@comfyorg/object-info-parser": "./src/*.ts",
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "exports": {
+    ".": {
+      "@comfyorg/object-info-parser": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "@comfyorg/object-info-parser": "./src/*.ts",
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "prepack": "pnpm build",
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "test": "vitest run --config ./vitest.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "catalog:",
+    "zod-validation-error": "catalog:"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

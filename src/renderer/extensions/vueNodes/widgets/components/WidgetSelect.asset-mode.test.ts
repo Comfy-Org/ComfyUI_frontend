@@ -1,9 +1,9 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { assetService } from '@/platform/assets/services/assetService'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import { createMockWidget } from './widgetTestUtils'
 
@@ -16,15 +16,7 @@ const i18n = createI18n({
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    shouldUseAssetBrowser: vi.fn(() => true),
-    isAssetAPIEnabled: vi.fn(() => true)
-  }
-}))
-
-import { assetService } from '@/platform/assets/services/assetService'
-const mockShouldUseAssetBrowser = vi.mocked(assetService.shouldUseAssetBrowser)
+vi.mock(import('@/platform/assets/services/assetService'))
 
 const stubs = {
   WidgetSelectDropdown: {
@@ -48,8 +40,9 @@ describe('WidgetSelect asset mode', () => {
     })
 
   beforeEach(() => {
-    vi.clearAllMocks()
-    mockShouldUseAssetBrowser.mockReturnValue(true)
+    vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(true)
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
+    vi.mocked(assetService.isWidgetAssetPickerEnabled).mockReturnValue(true)
   })
 
   const renderWidget = () => {
@@ -60,23 +53,54 @@ describe('WidgetSelect asset mode', () => {
         nodeType: 'CheckpointLoaderSimple'
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia(), i18n],
+        plugins: [getActivePinia()!, i18n],
         stubs
       }
     })
   }
 
-  it('uses dropdown when isCloud && UseAssetAPI && isEligible', async () => {
+  it('uses dropdown when isCloud && isEligible', async () => {
     renderWidget()
     await flushPromises()
 
     expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
   })
 
-  it('uses default widget when shouldUseAssetBrowser returns false', () => {
-    mockShouldUseAssetBrowser.mockReturnValue(false)
+  it('uses default widget when shouldUseWidgetAssetPicker returns false', () => {
+    vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
     renderWidget()
 
     expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
+  })
+
+  it('does not fabricate a selection for a null model value', async () => {
+    const widget = createMockWidget<string | undefined>({
+      value: undefined,
+      name: 'image',
+      type: 'combo',
+      options: { values: ['first.png', 'second.png'] },
+      spec: {
+        type: 'COMBO',
+        name: 'image',
+        image_upload: true
+      }
+    })
+    render(WidgetSelect, {
+      props: {
+        widget,
+        modelValue: null,
+        nodeType: 'ImageLoader'
+      },
+      global: {
+        plugins: [getActivePinia()!, i18n],
+        stubs: {
+          WidgetSelectDefault: stubs.WidgetSelectDefault,
+          WidgetWithControl: stubs.WidgetWithControl
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(screen.queryByText('first.png')).not.toBeInTheDocument()
   })
 })

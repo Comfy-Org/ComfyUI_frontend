@@ -9,9 +9,12 @@ export type AssetKind =
   | 'mesh'
   | 'unknown'
 
-export const OnCloseKey: InjectionKey<() => void> = Symbol()
-
 export const HideLayoutFieldKey: InjectionKey<boolean> = Symbol()
 export function useHideLayoutField(): boolean {
   return inject(HideLayoutFieldKey, false)
+}
+
+export const WidgetHeightKey: InjectionKey<string> = Symbol()
+export function useWidgetHeight(): string {
+  return inject(WidgetHeightKey, 'h-(--node-widget-height)')
 }

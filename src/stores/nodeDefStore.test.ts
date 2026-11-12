@@ -1,16 +1,22 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import axios from 'axios'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import type { NodeDefFilter } from '@/stores/nodeDefStore'
 
 describe('useNodeDefStore', () => {
   let store: ReturnType<typeof useNodeDefStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useNodeDefStore()
   })
 
@@ -331,6 +337,115 @@ describe('useNodeDefStore', () => {
     })
   })
 
+  describe('subgraph widget input specs', () => {
+    function setupPromotedPrompt(nodeDef: ComfyNodeDef): SubgraphNode {
+      store.updateNodeDefs([nodeDef])
+      const subgraph = createTestSubgraph()
+      const host = createTestSubgraphNode(subgraph)
+      const graph = host.graph as LGraph
+      graph.add(host)
+
+      const interior = new LGraphNode('PromptNode', 'PromptNode')
+      const input = interior.addInput('prompt', 'STRING')
+      const widget = interior.addWidget(
+        'text',
+        'prompt',
+        'current edited value',
+        () => undefined
+      )
+      input.widget = { name: widget.name }
+      subgraph.add(interior)
+      promoteValueWidgetViaSubgraphInput(host, interior, widget)
+      return host
+    }
+
+    it('resolves the interior node definition spec, not the current value', () => {
+      const host = setupPromotedPrompt(
+        createMockNodeDef({
+          name: 'PromptNode',
+          input: {
+            required: { prompt: ['STRING', { default: 'real default' }] }
+          }
+        })
+      )
+
+      expect(store.getInputSpecForWidget(host, 'prompt')).toMatchObject({
+        name: 'prompt',
+        type: 'STRING',
+        default: 'real default'
+      })
+    })
+
+    it('does not fabricate a default from the current promoted value', () => {
+      const host = setupPromotedPrompt(
+        createMockNodeDef({
+          name: 'PromptNode',
+          input: { required: { prompt: ['STRING', {}] } }
+        })
+      )
+
+      const spec = store.getInputSpecForWidget(host, 'prompt')
+      expect(spec?.type).toBe('STRING')
+      expect(spec?.default).toBeUndefined()
+    })
+  })
+
+  describe('dynamic combo input ownership', () => {
+    it('returns the live selector for a child owned by its selected option', () => {
+      store.updateNodeDefs([
+        createMockNodeDef({
+          input: {
+            required: {
+              mode: [
+                'COMFY_DYNAMICCOMBO_V3',
+                {
+                  options: [
+                    {
+                      key: 'scale',
+                      inputs: { required: { multiplier: ['FLOAT', {}] } }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        })
+      ])
+      const node = new LGraphNode('TestNode', 'TestNode')
+      node.addWidget('combo', 'mode', 'scale', () => undefined, {
+        values: ['scale']
+      })
+
+      expect(
+        store.getDynamicComboSelectionForInput(node, 'mode.multiplier')
+      ).toEqual({ widget: 'mode', value: 'scale' })
+    })
+
+    it('does not claim a dynamic-group child with a dotted name', () => {
+      store.updateNodeDefs([
+        createMockNodeDef({
+          input: {
+            required: {
+              mode: [
+                'COMFY_DYNAMICGROUP_V3',
+                {
+                  min: 0,
+                  max: 2,
+                  template: { required: { multiplier: ['FLOAT', {}] } }
+                }
+              ]
+            }
+          }
+        })
+      ])
+      const node = new LGraphNode('TestNode', 'TestNode')
+
+      expect(
+        store.getDynamicComboSelectionForInput(node, 'mode.0.multiplier')
+      ).toBeUndefined()
+    })
+  })
+
   describe('performance', () => {
     it('should perform single traversal for multiple filters', () => {
       let filterCallCount = 0
@@ -357,6 +472,20 @@ describe('useNodeDefStore', () => {
 
       // Each node (10) should be checked by each filter (5 test + 2 core = 7 total)
       expect(filterCallCount).toBe(10 * 5)
+    })
+  })
+
+  describe('node frequencies', () => {
+    it('omits frequencies for unavailable node definitions', async () => {
+      store.updateNodeDefs([createMockNodeDef()])
+      vi.spyOn(axios, 'get').mockResolvedValueOnce({
+        data: { TestNode: 10, MissingNode: 9 }
+      })
+
+      const frequencyStore = useNodeFrequencyStore()
+      await frequencyStore.loadNodeFrequencies()
+
+      expect(store.topNodeDefs.map(({ name }) => name)).toEqual(['TestNode'])
     })
   })
 })

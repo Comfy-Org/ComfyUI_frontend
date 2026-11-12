@@ -1,42 +1,41 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
-import { computed, provide, shallowRef } from 'vue'
-
-import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
+import { computed, provide, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/Popover.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { OverlayAppendToKey } from '@/composables/useTransformCompatOverlayProps'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import WidgetDescription from '@/components/builder/WidgetDescription.vue'
+import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
+import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
+import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { draggableItemClass } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { parseImageWidgetValue } from '@/utils/imageUtil'
-import { resolveNodeWidget } from '@/utils/litegraphUtil'
-import { cn } from '@/utils/tailwindUtil'
-import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
+import { cn } from '@comfyorg/tailwind-utils'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 
 interface WidgetEntry {
   key: string
-  nodeId: NodeId
-  widgetName: string
   persistedHeight: number | undefined
-  nodeData: ReturnType<typeof nodeToNodeData> & {
-    widgets: NonNullable<ReturnType<typeof nodeToNodeData>['widgets']>
-  }
+  nodeData: ReturnType<typeof nodeToNodeData>
+  widgetIds: readonly WidgetId[]
   action: { widget: IBaseWidget; node: LGraphNode }
+  description?: string
 }
 
 const { mobile = false, builderMode = false } = defineProps<{
@@ -47,123 +46,108 @@ const { mobile = false, builderMode = false } = defineProps<{
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
+const templateInputDownloadStore = useTemplateInputDownloadStore()
+const widgetValueStore = useWidgetValueStore()
+const linkStore = useLinkStore()
 const maskEditor = useMaskEditor()
 
-const { onPointerDown } = useAppModeWidgetResizing(
-  (nodeId, widgetName, config) =>
-    appModeStore.updateInputConfig(nodeId, widgetName, config)
+const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
+  appModeStore.updateInputConfig(widget, config)
 )
 
 provide(HideLayoutFieldKey, true)
-provide(OverlayAppendToKey, 'body')
+provide(WidgetHeightKey, mobile ? 'h-10' : 'h-7')
 
-const graphNodes = shallowRef<LGraphNode[]>(app.rootGraph.nodes)
-useEventListener(
-  app.rootGraph.events,
-  'configured',
-  () => (graphNodes.value = app.rootGraph.nodes)
-)
+const resolvedInputs = useResolvedSelectedInputs()
+
+function ensureSelectedWidgetState(
+  widgetId: WidgetId,
+  widget: IBaseWidget
+): void {
+  if (widgetValueStore.getWidget(widgetId)) return
+
+  widgetValueStore.registerWidget(
+    widgetId,
+    {
+      type: widget.type,
+      value: widget.value,
+      options: widget.options,
+      label: widget.label,
+      serialize: widget.serialize,
+      disabled: widget.disabled
+    },
+    deriveWidgetRenderState(widget)
+  )
+}
+
+function isWidgetInputLinked(node: LGraphNode, widgetName: string): boolean {
+  const graph = node.graph
+  const slot = node.inputs?.findIndex((i) => i.widget?.name === widgetName)
+  if (!graph || slot === undefined || slot < 0) return false
+  return linkStore.isInputSlotConnected(graphScopeOf(graph), node.id, slot)
+}
+
+watchEffect(() => {
+  for (const entry of resolvedInputs.value) {
+    if (entry.status !== 'resolved') continue
+    if (entry.node.mode !== LGraphEventMode.ALWAYS) continue
+    ensureSelectedWidgetState(entry.widgetId, entry.widget)
+  }
+})
 
 const mappedSelections = computed((): WidgetEntry[] => {
-  void graphNodes.value
-  const nodeDataByNode = new Map<
-    LGraphNode,
-    ReturnType<typeof nodeToNodeData>
-  >()
+  return resolvedInputs.value.flatMap((entry) => {
+    if (entry.status !== 'resolved') return []
+    const { widgetId, node, widget, config } = entry
+    if (node.mode !== LGraphEventMode.ALWAYS) return []
 
-  return appModeStore.selectedInputs.flatMap(([nodeId, widgetName, config]) => {
-    const [node, widget] = resolveNodeWidget(nodeId, widgetName)
-    if (!widget || !node || node.mode !== LGraphEventMode.ALWAYS) return []
-
-    if (!nodeDataByNode.has(node)) {
-      nodeDataByNode.set(node, nodeToNodeData(node))
-    }
-    const fullNodeData = nodeDataByNode.get(node)!
-
-    const matchingWidget = fullNodeData.widgets?.find((vueWidget) => {
-      if (vueWidget.slotMetadata?.linked) return false
-
-      if (!node.isSubgraphNode()) return vueWidget.name === widget.name
-
-      const storeNodeId = vueWidget.storeNodeId?.split(':')?.[1] ?? ''
-      return (
-        isPromotedWidgetView(widget) &&
-        widget.sourceNodeId == storeNodeId &&
-        widget.sourceWidgetName === vueWidget.storeName
-      )
-    })
-    if (!matchingWidget) return []
-
-    matchingWidget.slotMetadata = undefined
-    matchingWidget.nodeId = String(node.id)
+    if (isWidgetInputLinked(node, widget.name)) return []
+    const fullNodeData = nodeToNodeData(node, widgetId)
 
     return [
       {
-        key: `${nodeId}:${widgetName}`,
-        nodeId,
-        widgetName,
+        key: widgetId,
         persistedHeight: config?.height,
-        nodeData: {
-          ...fullNodeData,
-          widgets: [matchingWidget]
-        },
+        description: config?.description,
+        nodeData: fullNodeData,
+        widgetIds: [widgetId],
         action: { widget, node }
       }
     ]
   })
 })
 
-function getDropIndicator(node: LGraphNode) {
-  if (node.type !== 'LoadImage') return undefined
-
-  const stringValue = extractWidgetStringValue(node.widgets?.[0]?.value)
-
-  const { filename, subfolder, type } = stringValue
-    ? parseImageWidgetValue(stringValue)
-    : { filename: '', subfolder: '', type: 'input' }
-
-  const buildImageUrl = () => {
-    if (!filename) return undefined
-    const params = new URLSearchParams({ filename, subfolder, type })
-    appendCloudResParam(params, filename)
-    return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
-  }
-
-  const imageUrl = buildImageUrl()
-
-  return {
-    iconClass: 'icon-[lucide--image]',
-    imageUrl,
-    label: mobile ? undefined : t('linearMode.dragAndDropImage'),
-    onClick: () => node.widgets?.[1]?.callback?.(undefined),
-    onMaskEdit: imageUrl ? () => maskEditor.openMaskEditor(node) : undefined
-  }
+function getDropIndicator(node: LGraphNode, id: WidgetId) {
+  return getLoaderDropIndicator(node, id, {
+    mobile,
+    label: t,
+    onMaskEdit: maskEditor.openMaskEditor,
+    widgetValueStore,
+    previewRevision: templateInputDownloadStore.previewRevision
+  })
 }
 
-function nodeToNodeData(node: LGraphNode) {
-  const dropIndicator = getDropIndicator(node)
-  const nodeData = extractVueNodeData(node)
+function nodeToNodeData(node: LGraphNode, id: WidgetId) {
+  const dropIndicator = getDropIndicator(node, id)
 
   return {
-    ...nodeData,
-    hasErrors: !!executionErrorStore.lastNodeErrors?.[node.id],
+    ...node._state,
+    hasErrors: !!executionErrorStore.surfacedNodeErrors?.[node.id],
     dropIndicator,
     onDragDrop: node.onDragDrop,
     onDragOver: node.onDragOver
   }
 }
 
-async function handleDragDrop(e: DragEvent) {
-  for (const { nodeData } of mappedSelections.value) {
-    if (!nodeData?.onDragOver?.(e)) continue
-
-    const rawResult = nodeData?.onDragDrop?.(e)
-    if (rawResult === false) continue
-
-    e.stopPropagation()
-    e.preventDefault()
-    if ((await rawResult) === true) return
+async function handleDragDrop() {
+  const onDragDrop = async (e: DragEvent) => {
+    for (const { nodeData } of mappedSelections.value)
+      if (nodeData?.onDragOver?.(e) && (await nodeData.onDragDrop?.(e)))
+        return true
+    return false
   }
+
+  app.dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
 }
 
 defineExpose({ handleDragDrop })
@@ -172,19 +156,14 @@ defineExpose({ handleDragDrop })
   <div
     v-for="{
       key,
-      nodeId,
-      widgetName,
       persistedHeight,
       nodeData,
-      action
+      widgetIds,
+      action,
+      description
     } in mappedSelections"
     :key
-    :class="
-      cn(
-        builderMode &&
-          'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing'
-      )
-    "
+    :class="cn(builderMode && ['pointer-events-auto', draggableItemClass])"
     :aria-label="
       builderMode
         ? `${action.widget.label ?? action.widget.name} — ${action.node.title}`
@@ -214,32 +193,46 @@ defineExpose({ handleDragDrop })
         {{ action.node.title }}
       </span>
       <div v-else class="flex-1" />
-      <Popover
+      <Menu
         :class="cn('shrink-0', builderMode && 'pointer-events-auto')"
-        :entries="[
+        :items="[
           {
             label: t('g.rename'),
+            // fallow-ignore-next-line css-token-drift
             icon: 'icon-[lucide--pencil]',
             command: () => promptRenameWidget(action.widget, action.node, t)
           },
           {
             label: t('g.remove'),
             icon: 'icon-[lucide--x]',
-            command: () =>
-              appModeStore.removeSelectedInput(action.widget, action.node)
+            command: () => appModeStore.removeSelectedInput(action.widget)
           }
         ]"
       >
-        <template #button>
+        <template #trigger>
           <Button
             variant="textonly"
             size="icon"
             data-testid="widget-actions-menu"
           >
+            <!-- fallow-ignore-next-line css-token-drift -->
             <i class="icon-[lucide--ellipsis]" />
           </Button>
         </template>
-      </Popover>
+      </Menu>
+    </div>
+    <div
+      v-if="description || builderMode"
+      data-testid="app-mode-widget-description"
+      class="h-5 px-5 text-muted-foreground"
+    >
+      <WidgetDescription
+        :description
+        label-class="drag-handle"
+        label-type="div"
+        :disabled="!builderMode"
+        :widget="action.widget"
+      />
     </div>
     <div
       :style="
@@ -255,7 +248,7 @@ defineExpose({ handleDragDrop })
         )
       "
       :inert="builderMode || undefined"
-      @pointerdown.capture="(e) => onPointerDown(nodeId, widgetName, e)"
+      @pointerdown.capture="(e) => onPointerDown(action.widget, e)"
     >
       <DropZone
         :on-drag-over="nodeData.onDragOver"
@@ -265,10 +258,11 @@ defineExpose({ handleDragDrop })
       >
         <NodeWidgets
           :node-data
+          :widget-ids
           :class="
             cn(
-              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1 not-md:**:[.h-7]:h-10',
-              nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
+              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
+              nodeData.hasErrors && 'ring-2 ring-destructive ring-inset'
             )
           "
         />

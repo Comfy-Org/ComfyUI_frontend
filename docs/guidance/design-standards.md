@@ -52,6 +52,9 @@ The Figma file contains component specifications. When implementing these compon
 
 When translating Figma design tokens into code:
 
+- Prefer existing core semantic roles over component-specific tokens. Keep the theme to a small shared vocabulary instead of adding a token family for each component.
+- Name new tokens for a reusable visual role, not for the first component or screen that uses them. Add one only when the role cannot be expressed with an existing token or a state derived from one.
+- Before adding a token, search `packages/design-system/src/css/theme.css` and existing components for an equivalent semantic role.
 - **Skip `-hover` and `-selected` suffixed tokens.** These states exist in Figma only for prototype demonstrations. On the frontend, hover and selected states must be derived programmatically (e.g., via `color-mix()` or Tailwind modifier classes like `hover:`).
 - **Color tier system:** Figma uses a tiered color hierarchy:
   - **Base** — default surface/background colors
@@ -62,5 +65,5 @@ When translating Figma design tokens into code:
 ## Integration with Codebase
 
 - Map Figma color values to Tailwind 4 semantic tokens — never hardcode hex values
-- Use `cn()` from `@/utils/tailwindUtil` for conditional class merging
+- Use `cn()` from `@comfyorg/tailwind-utils` for conditional class merging
 - Use the `dark:` avoidance rule from AGENTS.md — semantic tokens handle both themes

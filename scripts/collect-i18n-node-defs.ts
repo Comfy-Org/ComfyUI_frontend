@@ -1,104 +1,72 @@
 import * as fs from 'fs'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { transformNodeDefV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
-import { normalizeI18nKey } from '../packages/shared-frontend-utils/src/formatUtil'
-import type { ComfyNodeDefImpl } from '../src/stores/nodeDefStore'
+import type { WidgetLabels } from './nodeDefLocaleSerializer'
+import { serializeNodeDefLocales } from './nodeDefLocaleSerializer'
 
 const localePath = './src/locales/en/main.json'
 const nodeDefsPath = './src/locales/en/nodeDefs.json'
 
-interface WidgetInfo {
-  name?: string
-  label?: string
-}
-
-interface WidgetLabels {
-  [key: string]: Record<string, { name: string }>
-}
-
 test('collect-i18n-node-defs', async ({ comfyPage }) => {
-  // Mock view route
   await comfyPage.page.route('**/view**', async (route) => {
     await route.fulfill({
       body: JSON.stringify({})
     })
   })
 
-  // Note: Don't mock the object_info API endpoint - let it hit the actual backend
+  const rawNodeDefs = await comfyPage.page.evaluate(async () => {
+    const app = window.app
+    if (!app) throw new Error('ComfyUI app is not initialized')
 
-  const nodeDefs: ComfyNodeDefImpl[] = await comfyPage.page.evaluate(
-    async () => {
-      // @ts-expect-error - app is dynamically added to window
-      const api = window['app'].api
-      const rawNodeDefs = await api.getNodeDefs()
-      const { ComfyNodeDefImpl } = await import('../src/stores/nodeDefStore')
-
-      return (
-        Object.values(rawNodeDefs)
-          // Ignore DevTools nodes (used for internal testing)
-          .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
-          .map((def: ComfyNodeDef) => new ComfyNodeDefImpl(def))
-      )
-    }
-  )
-
-  console.log(`Collected ${nodeDefs.length} node definitions`)
-
-  const allDataTypesLocale = Object.fromEntries(
-    nodeDefs
-      .flatMap((nodeDef) => {
-        const inputDataTypes = Object.values(nodeDef.inputs).map(
-          (inputSpec) => inputSpec.type
-        )
-        const outputDataTypes = nodeDef.outputs.map(
-          (outputSpec) => outputSpec.type
-        )
-        const allDataTypes = [...inputDataTypes, ...outputDataTypes].flatMap(
-          (type: string) => type.split(',')
-        )
-        return allDataTypes.map((dataType) => [
-          normalizeI18nKey(dataType),
-          dataType
-        ])
-      })
-      .sort((a, b) => a[0].localeCompare(b[0]))
-  )
+    return app.api.getNodeDefs()
+  })
+  const nodeDefs: ComfyNodeDefV2[] = Object.values(rawNodeDefs)
+    .filter((def: ComfyNodeDef) => !def.name.startsWith('DevTools'))
+    .map((def: ComfyNodeDef) => transformNodeDefV1ToV2(def))
 
   async function extractWidgetLabels() {
     const nodeLabels: WidgetLabels = {}
 
     for (const nodeDef of nodeDefs) {
-      const inputNames = Object.values(nodeDef.inputs).map(
-        (input) => input.name
+      const inputNames = Object.values(nodeDef.inputs).flatMap(
+        (input): string[] =>
+          typeof input.name === 'string' ? [input.name] : input.name
       )
 
       if (!inputNames.length) continue
 
       try {
         const widgetsMappings = await comfyPage.page.evaluate(
-          (args) => {
-            const [nodeName, displayName, inputNames] = args
-            // @ts-expect-error - LiteGraph is dynamically added to window
-            const node = window['LiteGraph'].createNode(nodeName, displayName)
-            if (!node.widgets?.length) return {}
+          (args): Record<string, string | undefined> => {
+            const { nodeName, displayName, inputNames } = args
+            const liteGraph = window.LiteGraph
+            if (!liteGraph) throw new Error('LiteGraph is not initialized')
+
+            const node = liteGraph.createNode(nodeName, displayName)
+            if (!node?.widgets?.length) return {}
             return Object.fromEntries(
               node.widgets
                 .filter(
-                  (w: WidgetInfo) => w?.name && !inputNames.includes(w.name)
+                  (widget) => widget.name && !inputNames.includes(widget.name)
                 )
-                .map((w: WidgetInfo) => [w.name, w.label])
+                .map((widget) => [widget.name, widget.label])
             )
           },
-          [nodeDef.name, nodeDef.display_name, inputNames]
+          {
+            nodeName: nodeDef.name,
+            displayName: nodeDef.display_name,
+            inputNames
+          }
         )
 
-        // Format runtime widgets
         const runtimeWidgets = Object.fromEntries(
           Object.entries(widgetsMappings)
             .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([key, value]) => [normalizeI18nKey(key), { name: value }])
+            .map(([key, name]) => [key, { name }])
         )
 
         if (Object.keys(runtimeWidgets).length > 0) {
@@ -117,84 +85,8 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
   }
 
   const nodeDefLabels = await extractWidgetLabels()
-
-  function extractInputs(nodeDef: ComfyNodeDefImpl) {
-    const inputs = Object.fromEntries(
-      Object.values(nodeDef.inputs).flatMap((input) => {
-        const name = input.name
-        const tooltip = input.tooltip
-
-        if (name === undefined && tooltip === undefined) {
-          return []
-        }
-
-        return [
-          [
-            normalizeI18nKey(input.name),
-            {
-              name,
-              tooltip
-            }
-          ]
-        ]
-      })
-    )
-    return Object.keys(inputs).length > 0 ? inputs : undefined
-  }
-
-  function extractOutputs(nodeDef: ComfyNodeDefImpl) {
-    const outputs = Object.fromEntries(
-      nodeDef.outputs.flatMap((output, i) => {
-        // Ignore data types if they are already translated in allDataTypesLocale.
-        const name = output.name in allDataTypesLocale ? undefined : output.name
-        const tooltip = output.tooltip
-
-        if (name === undefined && tooltip === undefined) {
-          return []
-        }
-
-        return [
-          [
-            i.toString(),
-            {
-              name,
-              tooltip
-            }
-          ]
-        ]
-      })
-    )
-    return Object.keys(outputs).length > 0 ? outputs : undefined
-  }
-
-  const allNodeDefsLocale = Object.fromEntries(
-    nodeDefs
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((nodeDef) => {
-        const inputs = {
-          ...extractInputs(nodeDef),
-          ...(nodeDefLabels[nodeDef.name] ?? {})
-        }
-
-        return [
-          normalizeI18nKey(nodeDef.name),
-          {
-            display_name: nodeDef.display_name ?? nodeDef.name,
-            description: nodeDef.description || undefined,
-            inputs: Object.keys(inputs).length > 0 ? inputs : undefined,
-            outputs: extractOutputs(nodeDef)
-          }
-        ]
-      })
-  )
-
-  const allNodeCategoriesLocale = Object.fromEntries(
-    nodeDefs.flatMap((nodeDef) =>
-      nodeDef.category
-        .split('/')
-        .map((category) => [normalizeI18nKey(category), category])
-    )
-  )
+  const { dataTypes, nodeCategories, nodeDefinitions } =
+    serializeNodeDefLocales(nodeDefs, nodeDefLabels)
 
   const locale = JSON.parse(fs.readFileSync(localePath, 'utf-8'))
   fs.writeFileSync(
@@ -202,13 +94,13 @@ test('collect-i18n-node-defs', async ({ comfyPage }) => {
     JSON.stringify(
       {
         ...locale,
-        dataTypes: allDataTypesLocale,
-        nodeCategories: allNodeCategoriesLocale
+        dataTypes,
+        nodeCategories
       },
       null,
       2
     )
   )
 
-  fs.writeFileSync(nodeDefsPath, JSON.stringify(allNodeDefsLocale, null, 2))
+  fs.writeFileSync(nodeDefsPath, JSON.stringify(nodeDefinitions, null, 2))
 })

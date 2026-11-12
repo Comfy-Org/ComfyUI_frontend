@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, useTemplateRef } from 'vue'
 
-import ZoomPane from '@/components/ui/ZoomPane.vue'
+import ZoomPane from '@comfyorg/design-system/media/ZoomPane'
 import { useExecutionStatus } from '@/renderer/extensions/linearMode/useExecutionStatus'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { executionStatusMessage } = useExecutionStatus()
 
@@ -49,7 +49,7 @@ function onImageLoad() {
   />
   <span
     v-if="executionStatusMessage"
-    class="animate-pulse self-center text-muted md:z-10"
+    class="animate-pulse self-center text-muted-foreground md:z-10"
   >
     {{ executionStatusMessage }}
   </span>

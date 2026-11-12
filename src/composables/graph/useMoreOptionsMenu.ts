@@ -1,14 +1,18 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import type {
-  LGraphGroup,
-  LGraphNode,
-  NodeId
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  shouldHideLinkedCoreMediaInputActions,
+  shouldHideLinkedCoreMediaInputPreview
+} from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
+import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
 
 import {
@@ -19,45 +23,20 @@ import { useGroupMenuOptions } from './useGroupMenuOptions'
 import { useImageMenuOptions } from './useImageMenuOptions'
 import { useNodeMenuOptions } from './useNodeMenuOptions'
 import { useSelectionMenuOptions } from './useSelectionMenuOptions'
+import type { MenuOption } from './menuOption'
 import { useSelectionState } from './useSelectionState'
-
-export interface MenuOption {
-  label?: string
-  icon?: string
-  shortcut?: string
-  hasSubmenu?: boolean
-  type?: 'divider' | 'category'
-  action?: () => void
-  submenu?: SubMenuOption[]
-  badge?: BadgeVariant
-  disabled?: boolean
-  source?: 'litegraph' | 'vue'
-  isColorPicker?: boolean
-}
-
-export interface SubMenuOption {
-  label: string
-  icon?: string
-  action: () => void
-  color?: string
-  disabled?: boolean
-}
-
-export enum BadgeVariant {
-  NEW = 'new',
-  DEPRECATED = 'deprecated'
-}
 
 // Global singleton for NodeOptions component reference
 let nodeOptionsInstance: null | NodeOptionsInstance = null
 
-const hoveredWidget = ref<[string, NodeId | undefined]>()
+const invocationContext = ref<{ nodeId: NodeId; widgetName?: string }>()
 
 /**
  * Toggle the node options popover
  * @param event - The trigger event
  */
 export function toggleNodeOptions(event: Event) {
+  invocationContext.value = undefined
   if (nodeOptionsInstance?.toggle) {
     nodeOptionsInstance.toggle(event)
   }
@@ -70,10 +49,9 @@ export function toggleNodeOptions(event: Event) {
  */
 export function showNodeOptions(
   event: MouseEvent,
-  widgetName?: string,
-  nodeId?: NodeId
+  context?: { nodeId: NodeId; widgetName?: string }
 ) {
-  hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
+  invocationContext.value = context
   if (nodeOptionsInstance?.show) {
     nodeOptionsInstance.show(event)
   }
@@ -124,18 +102,21 @@ export function useMoreOptionsMenu() {
   const {
     selectedItems,
     selectedNodes,
-    nodeDef,
-    showNodeHelp,
+    canOpenNodeInfo,
+    openNodeInfo,
     hasSubgraphs: hasSubgraphsComputed,
     hasImageNode,
     hasOutputNodesSelected,
     hasMultipleSelection,
+    isSingleNode,
     computeSelectionFlags
   } = useSelectionState()
 
   const canvasStore = useCanvasStore()
+  const nodeOutputStore = useNodeOutputStore()
 
   const { getImageMenuOptions } = useImageMenuOptions()
+  const { hasMultipleOutputs } = useNodeOutputsExport()
   const {
     getNodeInfoOption,
     getNodeVisualOptions,
@@ -151,7 +132,9 @@ export function useMoreOptionsMenu() {
   const {
     getBasicSelectionOptions,
     getMultipleNodesOptions,
-    getSubgraphOptions
+    getSubgraphOptions,
+    getAlignmentOptions,
+    getDeleteOption
   } = useSelectionMenuOptions()
 
   const hasSubgraphs = hasSubgraphsComputed
@@ -169,9 +152,7 @@ export function useMoreOptionsMenu() {
     const states = computeSelectionFlags()
 
     // Detect single group selection context (and no nodes explicitly selected)
-    const selectedGroups = selectedItems.value.filter(
-      isLGraphGroup
-    ) as LGraphGroup[]
+    const selectedGroups = selectedItems.value.filter(isLGraphGroup)
     const groupContext: LGraphGroup | null =
       selectedGroups.length === 1 && selectedNodes.value.length === 0
         ? selectedGroups[0]
@@ -180,9 +161,27 @@ export function useMoreOptionsMenu() {
 
     // For single node selection, also get LiteGraph menu items to merge
     const litegraphOptions: MenuOption[] = []
-    const node: LGraphNode | undefined = selectedNodes.value[0]
+    const node: LGraphNode | undefined =
+      (invocationContext.value === undefined
+        ? undefined
+        : canvasStore.currentGraph?.getNodeById(
+            invocationContext.value.nodeId
+          )) ?? selectedNodes.value.at(0)
+    const hideLinkedInputActions = node
+      ? shouldHideLinkedCoreMediaInputActions(node)
+      : false
+    const hideLinkedInputPreview = node
+      ? shouldHideLinkedCoreMediaInputPreview(
+          node,
+          nodeOutputStore.getNodeOutputs(node)
+        )
+      : false
+    const unavailableCoreMediaActionKinds = new Set<CoreMediaMenuActionKind>()
+    if (hideLinkedInputActions) unavailableCoreMediaActionKinds.add('input')
+    if (hideLinkedInputPreview) unavailableCoreMediaActionKinds.add('preview')
     if (
       selectedNodes.value.length === 1 &&
+      node &&
       !groupContext &&
       canvasStore.canvas
     ) {
@@ -190,7 +189,14 @@ export function useMoreOptionsMenu() {
         const rawItems = canvasStore.canvas.getNodeMenuOptions(node)
         // Don't apply structuring yet - we'll do it after merging with Vue options
         litegraphOptions.push(
-          ...convertContextMenuToOptions(rawItems, node, false)
+          ...convertContextMenuToOptions(
+            filterUnavailableCoreMediaMenuActions(
+              rawItems,
+              unavailableCoreMediaActionKinds
+            ),
+            node,
+            false
+          )
         )
       } catch (error) {
         console.error('Error getting LiteGraph menu items:', error)
@@ -211,7 +217,7 @@ export function useMoreOptionsMenu() {
     }
     if (!groupContext) {
       const pin = getPinOption(states, bump)
-      const bypass = getBypassOption(states, bump)
+      const bypass = getBypassOption(bump)
       options.push(pin)
       options.push(bypass)
     }
@@ -230,6 +236,7 @@ export function useMoreOptionsMenu() {
     )
     if (hasMultipleNodes.value) {
       options.push(...getMultipleNodesOptions())
+      options.push(...getAlignmentOptions(node))
     }
     if (groupContext) {
       options.push(getFitGroupToNodesOption(groupContext))
@@ -243,8 +250,8 @@ export function useMoreOptionsMenu() {
     options.push({ type: 'divider' })
 
     // Section 4: Node properties (Node Info, Shape, Color)
-    if (nodeDef.value) {
-      options.push(getNodeInfoOption(showNodeHelp))
+    if (canOpenNodeInfo.value) {
+      options.push(getNodeInfoOption(openNodeInfo))
     }
     if (groupContext) {
       options.push(getGroupColorOptions(groupContext, bump))
@@ -260,30 +267,38 @@ export function useMoreOptionsMenu() {
     }
     options.push({ type: 'divider' })
 
-    // Section 5: Image operations (if image node)
-    if (hasImageNode.value && selectedNodes.value.length > 0) {
-      options.push(...getImageMenuOptions(selectedNodes.value[0]))
+    // Section 5: Image operations (image nodes, or a node with several outputs)
+    if (
+      (hasImageNode.value && selectedNodes.value.length > 0) ||
+      (isSingleNode.value && hasMultipleOutputs(selectedNodes.value[0]))
+    ) {
+      options.push(
+        ...getImageMenuOptions(selectedNodes.value[0], {
+          input: !hideLinkedInputActions,
+          preview: !hideLinkedInputPreview
+        })
+      )
       options.push({ type: 'divider' })
     }
-    const [widgetName, nodeId] = hoveredWidget.value ?? []
-    const widget =
-      nodeId !== undefined
-        ? node?.widgets?.find(
-            (w) =>
-              isPromotedWidgetView(w) &&
-              w.sourceWidgetName === widgetName &&
-              w.sourceNodeId === nodeId
-          )
-        : node?.widgets?.find((w) => w.name === widgetName)
-    if (widget) {
+    const widgetName = invocationContext.value?.widgetName
+    const widget = node?.widgets?.find((w) => w.name === widgetName)
+    if (node && widget) {
       const widgetOptions = convertContextMenuToOptions(
         getExtraOptionsForWidget(node, widget)
       )
-      if (widgetOptions) {
+      if (widgetOptions.length > 0) {
         options.push(...widgetOptions)
         options.push({ type: 'divider' })
       }
     }
+
+    options.push(
+      getDeleteOption(
+        selectedNodes.value.some(
+          (node) => node.removable === false || node.block_delete
+        )
+      )
+    )
 
     // Section 6 & 7: Extensions and Delete are handled by buildStructuredMenu
 

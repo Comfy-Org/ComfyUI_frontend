@@ -1,26 +1,40 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  LGraphNode,
+  SubgraphInput,
+  SubgraphOutput
+} from '@comfyorg/graph-model/entityRegistry'
+import { shallowReactive } from 'vue'
+
+import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
+
 import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 import type {
   CanvasColour,
   DefaultConnectionColors,
+  INodeSlot,
+  OptionalProps
+} from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
   INodeInputSlot,
   INodeOutputSlot,
-  INodeSlot,
-  ISubgraphInput,
-  OptionalProps,
-  Point
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
+  ISubgraphInput
+} from '@comfyorg/graph-model/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { getCentre } from '@/lib/litegraph/src/measure'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
-import {
-  LinkDirection,
-  RenderShape
-} from '@/lib/litegraph/src/types/globalEnums'
 
-import { NodeInputSlot } from './NodeInputSlot'
+import { LinkDirection, RenderShape } from '@comfyorg/graph-model/globalEnums'
+
 import { SlotBase } from './SlotBase'
+
+let isNodeInputSlot: (slot: NodeSlot) => boolean
+
+export function provideNodeInputSlotGuard(
+  guard: (slot: NodeSlot) => boolean
+): void {
+  isNodeInputSlot = guard
+}
 
 export interface IDrawOptions {
   colorContext: DefaultConnectionColors
@@ -61,27 +75,20 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
   }
 
   get highlightColor(): CanvasColour {
-    return (
-      LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR ??
-      LiteGraph.NODE_SELECTED_TITLE_COLOR ??
-      LiteGraph.NODE_TEXT_COLOR
-    )
+    return LiteGraph.NODE_TEXT_HIGHLIGHT_COLOR
   }
 
   abstract get isWidgetInputSlot(): boolean
 
   constructor(
-    slot: OptionalProps<INodeSlot, 'boundingRect'>,
+    slot:
+      | OptionalProps<INodeSlot, 'boundingRect'>
+      | OptionalProps<ISubgraphInput, 'link' | 'boundingRect'>,
     node: LGraphNode
   ) {
-    // @ts-expect-error Workaround: Ensure internal properties are not copied to the slot (_listenerController
     // https://github.com/Comfy-Org/litegraph.js/issues/1138
-    const maybeSubgraphSlot: OptionalProps<
-      ISubgraphInput,
-      'link' | 'boundingRect'
-    > = slot
-    const { boundingRect, name, type, _listenerController, ...rest } =
-      maybeSubgraphSlot
+    const { boundingRect, name, type, ...rest } = slot
+    if ('_listenerController' in rest) delete rest._listenerController
     const rectangle = boundingRect
       ? Rectangle.ensureRect(boundingRect)
       : new Rectangle()
@@ -90,6 +97,9 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
 
     Object.assign(this, rest)
     this._node = node
+
+    // Return the proxy so in-place field writes (rename, retype) reach Vue.
+    return shallowReactive(this)
   }
 
   /**
@@ -172,17 +182,16 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
           path.arc(pos[0], pos[1], highlight ? 2.5 : 1.5, 0, Math.PI * 2)
           ctx.clip(path, 'evenodd')
         }
+
         const radius = highlight ? 5 : 4
-        const typesSet = new Set(
-          `${this.type}`
-            .split(',')
-            .map(
-              this.isConnected
-                ? (type) => colorContext.getConnectedColor(type)
-                : (type) => colorContext.getDisconnectedColor(type)
-            )
-        )
-        const types = [...typesSet].slice(0, 3)
+        const colorMapper = this.isConnected
+          ? colorContext.getConnectedColor
+          : colorContext.getDisconnectedColor
+        const types = `${this.type}`
+          .split(',')
+          .map(colorMapper)
+          .slice(0, MAX_MULTITYPE_SLICES)
+
         if (types.length > 1) {
           doFill = false
           const arcLen = (Math.PI * 2) / types.length
@@ -292,7 +301,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       ctx.rect(x - 7 + 0.5, y - 4, 14, 8)
     } else if (this.shape === RenderShape.ARROW) {
       // Adjust arrow direction based on whether this is an input or output slot
-      const isInput = this instanceof NodeInputSlot
+      const isInput = isNodeInputSlot(this)
       if (isInput) {
         ctx.moveTo(x + 8, y)
         ctx.lineTo(x - 4, y - 4)

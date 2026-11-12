@@ -1,6 +1,10 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  graphItems,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 import { assertNodeSlotsWithinBounds } from '@e2e/fixtures/utils/slotBoundsUtil'
 
 const NODE_ID = '3'
@@ -8,16 +12,10 @@ const NODE_TITLE = 'KSampler'
 
 test.describe(
   'Collapsed node link positions',
-  { tag: ['@canvas', '@node'] },
+  { tag: ['@canvas', '@node', '@vue-nodes'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
       await comfyPage.workflow.loadWorkflow('default')
-      await comfyPage.vueNodes.waitForNodes()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
     })
 
     test('link endpoints stay within collapsed node bounds', async ({
@@ -63,6 +61,35 @@ test.describe(
       await comfyPage.nextFrame()
 
       await assertNodeSlotsWithinBounds(comfyPage.page, NODE_ID)
+    })
+  }
+)
+
+test.describe(
+  'Collapsed node links inside subgraph on first entry',
+  { tag: ['@canvas', '@node', '@vue-nodes', '@subgraph', '@screenshot'] },
+  () => {
+    test('renders collapsed node links correctly after fitView on first subgraph entry', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-collapsed-node'
+      )
+      await comfyPage.nextFrame()
+
+      await comfyPage.vueNodes.enterSubgraph('2')
+
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+
+      const region = await screenshotRegion(
+        comfyPage.page,
+        [
+          ...(await comfyPage.vueNodes.nodes.all()),
+          graphItems(comfyPage.page, 'subgraphIO')
+        ],
+        { padding: 8 }
+      )
+      await region.expectScreenshot('subgraph-entry-collapsed-node-links.png')
     })
   }
 )

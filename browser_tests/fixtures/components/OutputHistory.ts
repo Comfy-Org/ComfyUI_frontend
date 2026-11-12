@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { TestIds } from '../selectors'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const ids = TestIds.outputHistory
 
@@ -56,6 +56,14 @@ export class OutputHistoryComponent {
     return this.page.locator(
       `[data-testid="${ids.inProgressItem}"][data-state="checked"]`
     )
+  }
+
+  get selectedImageOutput(): Locator {
+    return this.selectedInProgressItem.getByTestId(ids.imageOutput)
+  }
+
+  async selectInProgressItem(index: number) {
+    await this.inProgressItems.nth(index).click()
   }
 
   /** The currently selected (checked) history item. */

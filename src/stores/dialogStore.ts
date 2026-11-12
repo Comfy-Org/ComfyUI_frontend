@@ -1,56 +1,49 @@
-// We should consider moving to https://primevue.org/dynamicdialog/ once everything is in Vue.
-// Currently we need to bridge between legacy app code and Vue app with a Pinia store.
-import { merge } from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
-import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { markRaw, ref } from 'vue'
-import type { Component } from 'vue'
+import type { Component, Ref } from 'vue'
 
-import type GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import type { DialogContentSize } from '@comfyorg/design-system/lib/dialog/dialog.variants'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
-type DialogPosition =
-  | 'center'
-  | 'top'
-  | 'bottom'
-  | 'left'
-  | 'right'
-  | 'topleft'
-  | 'topright'
-  | 'bottomleft'
-  | 'bottomright'
-
-interface CustomDialogComponentProps {
+export interface DialogComponentProps {
+  closable?: boolean
+  dismissOnPointerDownOutside?: boolean
+  /**
+   * The header, body and footer components lay out and pad their own
+   * sections, so the dialog frame adds no padding around them.
+   */
+  flush?: boolean
+  /** The component renders the whole panel: its surface, size and close button. */
+  headless?: boolean
   maximizable?: boolean
   maximized?: boolean
   onClose?: () => void
-  closable?: boolean
-  modal?: boolean
-  position?: DialogPosition
-  pt?: DialogPassThroughOptions
-  closeOnEscape?: boolean
-  dismissableMask?: boolean
-  unstyled?: boolean
-  headless?: boolean
+  /**
+   * Guaranteed cleanup: fires exactly once when the dialog leaves the stack
+   * for any reason — `closeDialog` (user or programmatic) or the
+   * 10-dialog-cap eviction in `createDialog`. Wire promise settlement here.
+   * Keep user-intent side effects (telemetry, "don't show again") in
+   * `onClose`, which never fires on eviction.
+   */
+  onRemoved?: () => void
+  /**
+   * Hides the header close button while keeping `closable` dismissal paths
+   * (Escape, programmatic close) available. Defaults to shown.
+   */
+  showCloseButton?: boolean
+  size?: DialogContentSize
 }
 
-export type DialogComponentProps = ComponentAttrs<typeof GlobalDialog> &
-  CustomDialogComponentProps
-
-export interface DialogInstance<
-  H extends Component = Component,
-  B extends Component = Component,
-  F extends Component = Component
-> {
+export interface DialogInstance {
   key: string
   visible: boolean
   title?: string
-  headerComponent?: H
-  headerProps?: ComponentAttrs<H>
-  component: B
-  contentProps: ComponentAttrs<B>
-  footerComponent?: F
-  footerProps?: ComponentAttrs<F>
+  headerComponent?: Component
+  headerProps?: Record<string, unknown>
+  component: Component
+  contentProps: Record<string, unknown>
+  footerComponent?: Component
+  footerProps?: Record<string, unknown>
   dialogComponentProps: DialogComponentProps
   priority: number
 }
@@ -77,13 +70,20 @@ export interface ShowDialogOptions<
   priority?: number
 }
 
-export const useDialogStore = defineStore('dialog', () => {
-  const dialogStack = ref<DialogInstance[]>([])
+interface UpdateDialogOptions {
+  key: string
+  contentProps?: Partial<DialogInstance['contentProps']>
+  dialogComponentProps?: Partial<DialogComponentProps>
+}
 
-  /**
-   * The key of the currently active (top-most) dialog.
-   * Only the active dialog can be closed with the ESC key.
-   */
+function notifyRemoved(dialog: DialogInstance | undefined) {
+  dialog?.dialogComponentProps.onRemoved?.()
+}
+
+export const useDialogStore = defineStore('dialog', () => {
+  const dialogStack: Ref<DialogInstance[]> = ref([])
+
+  /** The key `closeDialog()` closes when called without one. */
   const activeKey = ref<string | null>(null)
 
   const genDialogKey = () => `dialog-${Math.random().toString(36).slice(2, 9)}`
@@ -96,7 +96,6 @@ export const useDialogStore = defineStore('dialog', () => {
     const insertIndex = dialogStack.value.findIndex(
       (d) => d.priority <= dialog.priority
     )
-
     dialogStack.value.splice(
       insertIndex === -1 ? dialogStack.value.length : insertIndex,
       0,
@@ -112,7 +111,6 @@ export const useDialogStore = defineStore('dialog', () => {
       const [dialog] = dialogStack.value.splice(index, 1)
       insertDialogByPriority(dialog)
       activeKey.value = dialogKey
-      updateCloseOnEscapeStates()
     }
   }
 
@@ -122,16 +120,25 @@ export const useDialogStore = defineStore('dialog', () => {
       : dialogStack.value.find((d) => d.key === activeKey.value)
     if (!targetDialog) return
 
-    targetDialog.dialogComponentProps?.onClose?.()
-    const index = dialogStack.value.indexOf(targetDialog)
-    dialogStack.value.splice(index, 1)
+    targetDialog.dialogComponentProps.onClose?.()
+    // Identity, not key: a reentrant onClose can evict targetDialog and open a
+    // replacement under the same key. Whoever actually removes the dialog from
+    // the stack fires onRemoved, so it fires exactly once.
+    const index = dialogStack.value.findIndex((d) => d === targetDialog)
+    const removed = index !== -1
+    if (removed) dialogStack.value.splice(index, 1)
 
-    activeKey.value =
-      dialogStack.value.length > 0
-        ? dialogStack.value[dialogStack.value.length - 1].key
-        : null
+    // A reentrant callback may have already activated a dialog of its own;
+    // only fall back to the stack tail when the active key named a dialog that
+    // is now gone.
+    if (!dialogStack.value.some((d) => d.key === activeKey.value)) {
+      activeKey.value =
+        dialogStack.value.length > 0
+          ? dialogStack.value[dialogStack.value.length - 1].key
+          : null
+    }
 
-    updateCloseOnEscapeStates()
+    if (removed) notifyRemoved(targetDialog)
   }
 
   function createDialog<
@@ -139,9 +146,8 @@ export const useDialogStore = defineStore('dialog', () => {
     B extends Component = Component,
     F extends Component = Component
   >(options: ShowDialogOptions<H, B, F> & { key: string }) {
-    if (dialogStack.value.length >= 10) {
-      dialogStack.value.shift()
-    }
+    const evicted =
+      dialogStack.value.length >= 10 ? dialogStack.value.shift() : undefined
 
     const dialog = {
       key: options.key,
@@ -160,53 +166,18 @@ export const useDialogStore = defineStore('dialog', () => {
       priority: options.priority ?? 1,
       dialogComponentProps: {
         maximizable: false,
-        modal: true,
         closable: true,
-        closeOnEscape: true,
-        dismissableMask: true,
+        dismissOnPointerDownOutside: true,
         ...options.dialogComponentProps,
-        maximized: false,
-        onMaximize: () => {
-          dialog.dialogComponentProps.maximized = true
-        },
-        onUnmaximize: () => {
-          dialog.dialogComponentProps.maximized = false
-        },
-        onAfterHide: () => {
-          closeDialog(dialog)
-        },
-        pt: merge(options.dialogComponentProps?.pt || {}, {
-          root: {
-            onMousedown: () => {
-              riseDialog(dialog)
-            }
-          }
-        })
+        maximized: options.dialogComponentProps?.maximized ?? false
       }
     }
 
     insertDialogByPriority(dialog)
     activeKey.value = options.key
-    updateCloseOnEscapeStates()
+    notifyRemoved(evicted)
 
     return dialog
-  }
-
-  /**
-   * Ensures only the top-most dialog in the stack can be closed with the Escape key.
-   * This is necessary because PrimeVue Dialogs do not handle `closeOnEscape` prop
-   * correctly when multiple dialogs are open.
-   */
-  function updateCloseOnEscapeStates() {
-    const topDialog = dialogStack.value.find((d) => d.key === activeKey.value)
-    const topClosable = topDialog?.dialogComponentProps.closable
-
-    dialogStack.value.forEach((dialog) => {
-      dialog.dialogComponentProps = {
-        ...dialog.dialogComponentProps,
-        closeOnEscape: dialog === topDialog && !!topClosable
-      }
-    })
   }
 
   function showDialog<
@@ -253,6 +224,27 @@ export const useDialogStore = defineStore('dialog', () => {
     return dialogStack.value.some((d) => d.key === key)
   }
 
+  function updateDialog(options: UpdateDialogOptions): boolean {
+    const dialog = dialogStack.value.find((d) => d.key === options.key)
+    if (!dialog) return false
+
+    if (options.contentProps) {
+      dialog.contentProps = {
+        ...dialog.contentProps,
+        ...options.contentProps
+      }
+    }
+
+    if (options.dialogComponentProps) {
+      dialog.dialogComponentProps = {
+        ...dialog.dialogComponentProps,
+        ...options.dialogComponentProps
+      }
+    }
+
+    return true
+  }
+
   return {
     dialogStack,
     riseDialog,
@@ -260,6 +252,7 @@ export const useDialogStore = defineStore('dialog', () => {
     closeDialog,
     showExtensionDialog,
     isDialogOpen,
+    updateDialog,
     activeKey
   }
 })

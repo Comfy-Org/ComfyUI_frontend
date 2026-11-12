@@ -4,7 +4,7 @@
     ref="minimapRef"
     :class="
       cn(
-        'minimap-main-container absolute right-0 bottom-[54px] z-1000 flex',
+        'minimap-main-container absolute right-0 bottom-[54px] isolate flex',
         isMobile ? 'flex-col' : 'flex-row'
       )
     "
@@ -23,7 +23,9 @@
 
     <div
       ref="containerRef"
-      class="litegraph-minimap relative border border-interface-stroke bg-comfy-menu-bg shadow-interface"
+      class="litegraph-minimap relative border bg-background shadow-md"
+      data-testid="minimap-container"
+      :aria-label="`${$t('minimap.label')}. ${$t('minimap.highlightedNodes', { count: decorationCount })}`"
       :style="containerStyles"
     >
       <Button
@@ -47,7 +49,7 @@
       </Button>
 
       <hr
-        class="absolute top-6 h-px border-0 bg-node-component-border"
+        class="absolute top-8 h-px border-0 bg-border"
         :style="{
           width: containerStyles.width
         }"
@@ -58,12 +60,18 @@
         :width="width"
         :height="height"
         class="minimap-canvas"
+        data-testid="minimap-canvas"
       />
 
-      <div class="minimap-viewport" :style="viewportStyles" />
+      <div
+        class="minimap-viewport"
+        :style="viewportStyles"
+        data-testid="minimap-viewport"
+      />
 
       <div
         class="absolute inset-0 touch-none"
+        data-testid="minimap-interaction-overlay"
         @pointerdown="handlePointerDown"
         @pointermove="handlePointerMove"
         @pointerup="handlePointerUp"
@@ -79,10 +87,10 @@
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { useCommandStore } from '@/stores/commandStore'
-import { cn } from '@/utils/tailwindUtil'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import MiniMapPanel from './MiniMapPanel.vue'
 
@@ -96,6 +104,7 @@ const canvasRef = useTemplateRef<HTMLCanvasElement>('canvasRef')
 const {
   initialized,
   visible,
+  decorationCount,
   containerStyles,
   viewportStyles,
   width,

@@ -2,29 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-
-/**
- * Returns the client-space position of a group's title bar (for clicking).
- */
-async function getGroupTitlePosition(
-  comfyPage: ComfyPage,
-  title: string
-): Promise<{ x: number; y: number }> {
-  const pos = await comfyPage.page.evaluate((title) => {
-    const app = window.app!
-    const group = app.graph.groups.find(
-      (g: { title: string }) => g.title === title
-    )
-    if (!group) return null
-    const clientPos = app.canvasPosToClientPos([
-      group.pos[0] + 50,
-      group.pos[1] + 15
-    ])
-    return { x: clientPos[0], y: clientPos[1] }
-  }, title)
-  if (!pos) throw new Error(`Group "${title}" not found`)
-  return pos
-}
+import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 
 /**
  * Returns {selectedNodeCount, selectedGroupCount, selectedItemCount}
@@ -48,10 +26,6 @@ async function getSelectionCounts(comfyPage: ComfyPage) {
 }
 
 test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   test('Setting enabled: clicking outer group selects nested group and inner node', async ({
     comfyPage
   }) => {
@@ -60,7 +34,6 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
       true
     )
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.nextFrame()
 
     const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
     await comfyPage.canvas.click({ position: outerPos })
@@ -84,7 +57,6 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
       false
     )
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.nextFrame()
 
     const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')
     await comfyPage.canvas.click({ position: outerPos })
@@ -107,7 +79,6 @@ test.describe('Group Select Children', { tag: ['@canvas', '@node'] }, () => {
       true
     )
     await comfyPage.workflow.loadWorkflow('groups/nested-groups-1-inner-node')
-    await comfyPage.nextFrame()
 
     // Select the outer group (cascades to children)
     const outerPos = await getGroupTitlePosition(comfyPage, 'Outer Group')

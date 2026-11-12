@@ -1,11 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import type { ComputedRef } from 'vue'
 
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobErrorDialogService } from '@/components/queue/job/useJobErrorReporting'
 import { useJobErrorReporting } from '@/components/queue/job/useJobErrorReporting'
-import type { ExecutionError } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ExecutionError } from '@comfyorg/api-client/jobTypes'
 
 const createTaskWithError = (
   jobId: string,
@@ -30,7 +30,6 @@ describe('useJobErrorReporting', () => {
   let composable: ReturnType<typeof useJobErrorReporting>
 
   beforeEach(() => {
-    vi.clearAllMocks()
     taskState = ref<TaskItemImpl | null>(null)
     taskForJob = computed(() => taskState.value)
     copyToClipboard = vi.fn()
@@ -47,10 +46,6 @@ describe('useJobErrorReporting', () => {
       ) => void | Promise<void>,
       dialog
     })
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   it('exposes a computed message that reflects the current task error', () => {

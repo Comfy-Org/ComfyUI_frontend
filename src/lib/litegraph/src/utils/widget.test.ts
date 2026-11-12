@@ -7,10 +7,11 @@ import {
   getWidgetStep,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/litegraph'
+import { formatNumericWidgetValue } from '@/lib/litegraph/src/utils/widget'
 
 describe('getWidgetStep', () => {
   test('should return step2 when available', () => {
-    const options: IWidgetOptions<unknown> = {
+    const options: IWidgetOptions = {
       step2: 0.5,
       step: 20
     }
@@ -19,7 +20,7 @@ describe('getWidgetStep', () => {
   })
 
   test('should calculate from step when step2 is not available', () => {
-    const options: IWidgetOptions<unknown> = {
+    const options: IWidgetOptions = {
       step: 20
     }
 
@@ -27,24 +28,33 @@ describe('getWidgetStep', () => {
   })
 
   test('should use default step value of 10 when neither step2 nor step is provided', () => {
-    const options: IWidgetOptions<unknown> = {}
+    const options: IWidgetOptions = {}
 
     expect(getWidgetStep(options)).toBe(1) // 10 * 0.1 = 1
   })
   // Zero value is not allowed for step, fallback to 1.
   test('should handle zero values correctly', () => {
-    const optionsWithZeroStep2: IWidgetOptions<unknown> = {
+    const optionsWithZeroStep2: IWidgetOptions = {
       step2: 0,
       step: 20
     }
 
     expect(getWidgetStep(optionsWithZeroStep2)).toBe(2)
 
-    const optionsWithZeroStep: IWidgetOptions<unknown> = {
+    const optionsWithZeroStep: IWidgetOptions = {
       step: 0
     }
 
     expect(getWidgetStep(optionsWithZeroStep)).toBe(1)
+  })
+})
+
+describe('formatNumericWidgetValue', () => {
+  test.for<[string, unknown]>([
+    ['symbol', Symbol('legacy')],
+    ['object without primitive conversion', Object.create(null)]
+  ])('formats %s coercion failures as NaN', ([_label, value]) => {
+    expect(formatNumericWidgetValue(value)).toBe('NaN')
   })
 })
 
@@ -73,21 +83,21 @@ describe('resolveNodeRootGraphId', () => {
 })
 
 describe('evaluateInput', () => {
-  test.each([
+  test.for<[string, number]>([
     ['42', 42],
     ['3.14', 3.14],
     ['-7', -7],
     ['0', 0]
-  ])('plain number: "%s" = %d', (input, expected) => {
+  ])('plain number: "%s" = %d', ([input, expected]) => {
     expect(evaluateInput(input)).toBe(expected)
   })
 
-  test.each([
+  test.for<[string, number]>([
     ['2+3', 5],
     ['(4+2)*3', 18],
     ['3.14*2', 6.28],
     ['10/2+3', 8]
-  ])('expression: "%s" = %d', (input, expected) => {
+  ])('expression: "%s" = %d', ([input, expected]) => {
     expect(evaluateInput(input)).toBe(expected)
   })
 
@@ -95,7 +105,7 @@ describe('evaluateInput', () => {
     expect(evaluateInput('')).toBe(0)
   })
 
-  test.each(['abc', 'hello world'])(
+  test.for(['abc', 'hello world'])(
     'invalid input returns undefined: "%s"',
     (input) => {
       expect(evaluateInput(input)).toBeUndefined()
@@ -118,7 +128,7 @@ describe('evaluateInput', () => {
     expect(evaluateInput('0xff')).toBe(255)
   })
 
-  test.each(['Infinity', '-Infinity'])(
+  test.for(['Infinity', '-Infinity'])(
     '"%s" returns undefined (non-finite rejected)',
     (input) => {
       expect(evaluateInput(input)).toBeUndefined()

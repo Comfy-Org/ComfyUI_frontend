@@ -4,7 +4,7 @@
     variant="secondary"
     @click="openGitHubIssues"
   >
-    <i class="pi pi-github" />
+    <i class="icon-[lucide--github]" />
     {{ $t('g.findIssues') }}
   </Button>
 </template>
@@ -12,8 +12,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import { useTelemetry } from '@/platform/telemetry'
+import Button from '@comfyorg/design-system/button/Button'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 const props = defineProps<{
   errorMessage: string
@@ -25,7 +25,8 @@ const queryString = computed(() => props.errorMessage + ' is:issue')
 
 function openGitHubIssues() {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'error_dialog_find_existing_issues_clicked'
+    button_id: 'error_dialog_find_existing_issues_clicked',
+    element_group: 'error_dialog'
   })
   const query = encodeURIComponent(queryString.value)
   const url = `https://github.com/${props.repoOwner}/${props.repoName}/issues?q=${query}`

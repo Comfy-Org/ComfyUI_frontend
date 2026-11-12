@@ -22,7 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
+        with:
+          # Blobless full history: the locale pipeline lazily fetches the
+          # English source blobs recorded in src/locales/.source-manifest.json
+          fetch-depth: 0
+          filter: blob:none
 
       # Setup playwright environment with custom node repository
       - name: Setup ComfyUI Server (without launching)
@@ -36,7 +41,7 @@ jobs:
 
       # Install the custom node repository
       - name: Checkout custom node repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           repository: ${{ inputs.owner }}/${{ inputs.repository }}
           path: 'ComfyUI/custom_nodes/${{ inputs.repository }}'
@@ -76,7 +81,7 @@ jobs:
         run: |
           LOCALE_DIR=ComfyUI/custom_nodes/${{ inputs.repository }}/locales/
           install -d "$LOCALE_DIR"
-          cp -rf ComfyUI_frontend/temp/diff/* "$LOCALE_DIR"
+          cp -rf temp/diff/* "$LOCALE_DIR"
 
       # Git ops for pushing changes and creating PR
       - name: Check and create fork of custom node repository
@@ -113,7 +118,7 @@ jobs:
           git commit -m "Update locales"
 
       - name: Install SSH key For PUSH
-        uses: shimataro/ssh-key-action@d4fffb50872869abe2d9a9098a6d9c5aa7d16be4 # v2.7.0
+        uses: shimataro/ssh-key-action@87a8f067114a8ce263df83e9ed5c849953548bc3 # v2.8.1
         with:
           # PR private key from action server
           key: ${{ secrets.PR_SSH_PRIVATE_KEY }}

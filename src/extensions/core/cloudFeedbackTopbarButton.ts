@@ -1,26 +1,22 @@
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionService } from '@/services/extensionService'
-import type { ActionBarButton } from '@/types/comfy'
+import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
+import type { ActionBarButton, ComfyExtension } from '@/types/comfy'
 
-const TYPEFORM_SURVEY_URL = 'https://form.typeform.com/to/q7azbWPi'
-
-const buttons: ActionBarButton[] = [
-  {
-    icon: 'icon-[lucide--message-square-text]',
+function feedbackButton(): ActionBarButton {
+  return {
+    icon: 'icon-[lucide--megaphone] size-4',
     label: t('actionbar.feedback'),
     tooltip: t('actionbar.feedbackTooltip'),
-    onClick: () => {
-      window.open(TYPEFORM_SURVEY_URL, '_blank', 'noopener,noreferrer')
-    }
+    onClick: () => openFeedbackDialog('action-bar')
   }
-]
+}
 
-useExtensionService().registerExtension({
+export const feedbackButtonExtension: ComfyExtension = {
   name: 'Comfy.FeedbackButton',
   get actionBarButtons() {
     return useSettingStore().get('Comfy.UI.TabBarLayout') === 'Legacy'
-      ? buttons
+      ? [feedbackButton()]
       : []
   }
-})
+}

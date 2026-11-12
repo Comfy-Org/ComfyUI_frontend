@@ -4,52 +4,79 @@
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 
 const WidgetButton = defineAsyncComponent(
-  () => import('../components/WidgetButton.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue')
 )
 const WidgetInputText = defineAsyncComponent(
-  () => import('../components/WidgetInputText.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue')
 )
 const WidgetInputNumber = defineAsyncComponent(
-  () => import('../components/WidgetInputNumber.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue')
 )
 const WidgetToggleSwitch = defineAsyncComponent(
-  () => import('../components/WidgetToggleSwitch.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue')
 )
 const WidgetSelect = defineAsyncComponent(
-  () => import('../components/WidgetSelect.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue')
 )
 const WidgetColorPicker = defineAsyncComponent(
-  () => import('../components/WidgetColorPicker.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue')
 )
 const WidgetTextarea = defineAsyncComponent(
-  () => import('../components/WidgetTextarea.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue')
 )
 const WidgetChart = defineAsyncComponent(
-  () => import('../components/WidgetChart.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetChart.vue')
 )
 const WidgetImageCompare = defineAsyncComponent(
-  () => import('../components/WidgetImageCompare.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue')
 )
 const WidgetGalleria = defineAsyncComponent(
-  () => import('../components/WidgetGalleria.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetGalleria.vue')
 )
 const WidgetMarkdown = defineAsyncComponent(
-  () => import('../components/WidgetMarkdown.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue')
 )
-const WidgetLegacy = defineAsyncComponent(
-  () => import('../components/WidgetLegacy.vue')
+const WidgetTextPreview = defineAsyncComponent(
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue')
 )
 const WidgetRecordAudio = defineAsyncComponent(
-  () => import('../components/WidgetRecordAudio.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue')
 )
 const AudioPreviewPlayer = defineAsyncComponent(
-  () => import('../components/audio/AudioPreviewPlayer.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue')
 )
 const Load3D = defineAsyncComponent(
-  () => import('@/components/load3d/Load3D.vue')
+  () => import('@/extensions/core/load3d/components/Load3D.vue')
+)
+const Load3DAdvanced = defineAsyncComponent(
+  () => import('@/extensions/core/load3d/components/Load3DAdvanced.vue')
+)
+const CameraInfo = defineAsyncComponent(
+  () => import('@/extensions/core/load3d/components/cameraInfo/CameraInfo.vue')
+)
+const CameraAngle = defineAsyncComponent(
+  () =>
+    import('@/extensions/core/load3d/components/cameraAngle/CameraAngle.vue')
+)
+const LightInfo = defineAsyncComponent(
+  () => import('@/extensions/core/load3d/components/lightInfo/LightInfo.vue')
 )
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
@@ -61,10 +88,30 @@ const WidgetCurve = defineAsyncComponent(
   () => import('@/components/curve/WidgetCurve.vue')
 )
 const WidgetPainter = defineAsyncComponent(
-  () => import('@/components/painter/WidgetPainter.vue')
+  () => import('@/renderer/extensions/painter/components/WidgetPainter.vue')
+)
+const WidgetCompositor = defineAsyncComponent(
+  () =>
+    import('@/renderer/extensions/layerEditor/compositor/WidgetCompositor.vue')
 )
 const WidgetRange = defineAsyncComponent(
   () => import('@/components/range/WidgetRange.vue')
+)
+const WidgetBoundingBoxes = defineAsyncComponent(
+  () => import('@/components/boundingBoxes/WidgetBoundingBoxes.vue')
+)
+const WidgetVideoEdit = defineAsyncComponent(
+  () => import('@/components/videoEdit/WidgetVideoEdit.vue')
+)
+const WidgetVideoConcat = defineAsyncComponent(
+  () => import('@/components/videoConcat/WidgetVideoConcat.vue')
+)
+const WidgetColors = defineAsyncComponent(
+  () => import('@/components/palette/WidgetColors.vue')
+)
+const WidgetResolutionPreview = defineAsyncComponent(
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.vue')
 )
 
 export const FOR_TESTING = {
@@ -85,6 +132,17 @@ interface WidgetDefinition {
 }
 
 const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
+  [
+    'dynamic_group_row',
+    {
+      component: defineAsyncComponent(
+        () =>
+          import('@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue')
+      ),
+      aliases: [],
+      essential: false
+    }
+  ],
   [
     'button',
     { component: WidgetButton, aliases: ['BUTTON'], essential: false }
@@ -151,6 +209,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       essential: false
     }
   ],
+  [
+    'textPreview',
+    {
+      component: WidgetTextPreview,
+      aliases: ['TEXT_PREVIEW'],
+      essential: false
+    }
+  ],
   ['legacy', { component: WidgetLegacy, aliases: [], essential: true }],
   [
     'audiorecord',
@@ -169,6 +235,38 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }],
+  [
+    'load3DAdvanced',
+    {
+      component: Load3DAdvanced,
+      aliases: ['LOAD_3D_ADVANCED'],
+      essential: false
+    }
+  ],
+  [
+    'cameraInfo',
+    {
+      component: CameraInfo,
+      aliases: ['CAMERA_INFO_STATE'],
+      essential: false
+    }
+  ],
+  [
+    'cameraAngle',
+    {
+      component: CameraAngle,
+      aliases: ['CAMERA_ANGLE_VIEW'],
+      essential: false
+    }
+  ],
+  [
+    'lightinfo',
+    {
+      component: LightInfo,
+      aliases: ['LIGHT_INFO_PREVIEW', 'lightInfo'],
+      essential: false
+    }
+  ],
   [
     'imagecrop',
     {
@@ -202,10 +300,58 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'compositor',
+    {
+      component: WidgetCompositor,
+      aliases: ['COMPOSITOR'],
+      essential: false
+    }
+  ],
+  [
     'range',
     {
       component: WidgetRange,
       aliases: ['RANGE'],
+      essential: false
+    }
+  ],
+  [
+    'boundingboxes',
+    {
+      component: WidgetBoundingBoxes,
+      aliases: ['BOUNDING_BOXES'],
+      essential: false
+    }
+  ],
+  [
+    'videoedit',
+    {
+      component: WidgetVideoEdit,
+      aliases: ['VIDEO_EDIT'],
+      essential: false
+    }
+  ],
+  [
+    'videoconcat',
+    {
+      component: WidgetVideoConcat,
+      aliases: ['VIDEO_CONCAT'],
+      essential: false
+    }
+  ],
+  [
+    'colors',
+    {
+      component: WidgetColors,
+      aliases: ['COLORS'],
+      essential: false
+    }
+  ],
+  [
+    'resolutionpreview',
+    {
+      component: WidgetResolutionPreview,
+      aliases: ['RESOLUTION_PREVIEW'],
       essential: false
     }
   ]
@@ -235,18 +381,23 @@ export const isEssential = (type: string): boolean => {
   return widgets.get(canonicalType)?.essential || false
 }
 
-export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
-  return !widget.options?.canvasOnly && !!widget.type
-}
-
 const EXPANDING_TYPES = [
   'textarea',
   'markdown',
+  'textPreview',
   'load3D',
+  'load3DAdvanced',
+  'cameraInfo',
+  'cameraAngle',
+  'lightinfo',
   'curve',
   'painter',
+  'compositor',
   'imagecompare',
-  'range'
+  'range',
+  'boundingboxes',
+  'videoedit',
+  'videoconcat'
 ] as const
 
 export function shouldExpand(type: string): boolean {

@@ -1,0 +1,158 @@
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import AssetCard from '@/platform/assets/components/AssetCard.vue'
+import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import userEvent from '@testing-library/user-event'
+
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
+  assetService: {
+    deleteAsset: vi.fn()
+  }
+}))
+
+vi.mock(import('@/components/dialog/confirm/confirmDialog'), () => ({
+  showConfirmDialog: vi.fn()
+}))
+
+const HASH = 'blake3:abc123def456'
+const ORIGINAL_FILENAME = 'sunset_photo.png'
+
+function createDisplayAsset(
+  overrides: Partial<AssetDisplayItem> = {}
+): AssetDisplayItem {
+  return fromPartial({
+    id: 'asset-1',
+    name: HASH,
+    hash: HASH,
+    tags: ['input'],
+    preview_url: '/preview.png',
+    secondaryText: '',
+    badges: [],
+    stats: {},
+    user_metadata: {},
+    metadata: { filename: ORIGINAL_FILENAME },
+    ...overrides
+  })
+}
+
+function renderCard(asset: AssetDisplayItem) {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: {} },
+    missingWarn: false,
+    fallbackWarn: false
+  })
+  return render(AssetCard, {
+    props: { asset, interactive: true },
+    global: {
+      plugins: [i18n]
+    }
+  })
+}
+
+beforeEach(() => {
+  vi.mocked(useSettingStore().get).mockImplementation(() => 0)
+  vi.mocked(useAssetDownloadStore().isDownloadedThisSession).mockImplementation(
+    () => false
+  )
+  vi.mocked(useAssetDownloadStore().acknowledgeAsset).mockImplementation(
+    () => undefined
+  )
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
+})
+
+describe('AssetCard', () => {
+  it.for([true, false])(
+    'shows Library origin only for library cards: %s',
+    (isWorkspaceLibrary) => {
+      renderCard(createDisplayAsset({ isWorkspaceLibrary }))
+      expect(screen.queryByText('assetBrowser.library') !== null).toBe(
+        isWorkspaceLibrary
+      )
+    }
+  )
+
+  it('closes the asset menu before opening the delete confirmation', async () => {
+    renderCard(createDisplayAsset({ is_immutable: false }))
+
+    await userEvent.click(screen.getAllByRole('button')[1])
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'g.delete' })
+    )
+
+    expect(showConfirmDialog).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('menuitem', { name: 'g.delete' })).toBeNull()
+  })
+
+  describe('FE-228: filename rendering', () => {
+    it('renders the human-readable filename instead of hash when asset.name equals hash', () => {
+      const asset = createDisplayAsset()
+
+      renderCard(asset)
+
+      const heading = screen.getByRole('heading', { level: 3 })
+      expect(heading).toHaveTextContent(ORIGINAL_FILENAME)
+      expect(heading).not.toHaveTextContent(HASH)
+    })
+
+    it('falls back to display_name when user_metadata.filename and metadata.filename are absent', () => {
+      const asset = createDisplayAsset({
+        metadata: undefined,
+        user_metadata: undefined,
+        display_name: ORIGINAL_FILENAME
+      })
+
+      renderCard(asset)
+
+      const heading = screen.getByRole('heading', { level: 3 })
+      expect(heading).toHaveTextContent(ORIGINAL_FILENAME)
+      expect(heading).not.toHaveTextContent(HASH)
+    })
+  })
+
+  describe('preserves user-curated display name', () => {
+    const CURATED_NAME = 'My Favorite SDXL LoRA'
+    const MODEL_FILENAME = 'lora_v1_epoch4.safetensors'
+
+    it('renders the curated name (user_metadata.name) when it differs from the raw asset.name', () => {
+      const asset = createDisplayAsset({
+        id: 'model-1',
+        name: MODEL_FILENAME,
+        hash: undefined,
+        tags: ['models', 'loras'],
+        user_metadata: { name: CURATED_NAME },
+        metadata: { filename: MODEL_FILENAME }
+      })
+
+      renderCard(asset)
+
+      const heading = screen.getByRole('heading', { level: 3 })
+      expect(heading).toHaveTextContent(CURATED_NAME)
+      expect(heading).not.toHaveTextContent(MODEL_FILENAME)
+    })
+
+    it('ignores user_metadata.name that duplicates the hash and falls back to metadata.filename', () => {
+      const asset = createDisplayAsset({
+        name: HASH,
+        hash: HASH,
+        user_metadata: { name: HASH },
+        metadata: { filename: ORIGINAL_FILENAME }
+      })
+
+      renderCard(asset)
+
+      const heading = screen.getByRole('heading', { level: 3 })
+      expect(heading).toHaveTextContent(ORIGINAL_FILENAME)
+      expect(heading).not.toHaveTextContent(HASH)
+    })
+  })
+})

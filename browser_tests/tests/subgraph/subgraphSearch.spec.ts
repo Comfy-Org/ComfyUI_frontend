@@ -15,15 +15,14 @@ async function exitSubgraphAndPublish(
   subgraphNode: Awaited<ReturnType<typeof createSubgraphAndNavigateInto>>,
   blueprintName: string
 ) {
-  await comfyPage.page.keyboard.press('Escape')
-  await comfyPage.nextFrame()
+  await comfyPage.keyboard.press('Escape')
 
   await subgraphNode.click('title')
   await comfyPage.command.executeCommand('Comfy.PublishSubgraph', {
     name: blueprintName
   })
 
-  await expect(comfyPage.visibleToasts).toHaveCount(1)
+  await expect(comfyPage.toast.visibleToasts).toHaveCount(1)
   await comfyPage.toast.closeToasts(1)
 }
 
@@ -41,13 +40,7 @@ async function searchAndExpectResult(
 }
 
 test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.NodeSearchBoxImpl': 'v1 (legacy)' } })
 
   test('Can set description on subgraph', async ({ comfyPage }) => {
     await createSubgraphAndNavigateInto(comfyPage)
@@ -59,8 +52,9 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
       .poll(() =>
         comfyPage.page.evaluate(() => {
           const subgraph = window.app!.canvas.subgraph
-          return (subgraph?.extra as Record<string, unknown>)
-            ?.BlueprintDescription
+          if (!subgraph) return undefined
+          return (subgraph.extra as Record<string, unknown>)
+            .BlueprintDescription
         })
       )
       .toBe('This is a test description')

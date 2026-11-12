@@ -7,42 +7,49 @@
     data-testid="apps-sidebar"
   >
     <template #alt-title>
-      <span
-        class="ml-2 flex items-center rounded-full bg-primary-background px-1.5 py-0.5 text-2xs text-base-foreground uppercase"
-      >
+      <Badge variant="pill" severity="default" class="ml-2 px-1.5 uppercase">
         {{ $t('g.beta') }}
-      </span>
+      </Badge>
+    </template>
+    <template #header-actions="{ hasResults }">
+      <Button
+        v-if="hasResults"
+        variant="secondary"
+        size="md"
+        @click="createApp"
+      >
+        <i class="icon-[lucide--plus]" aria-hidden="true" />
+        {{ $t('linearMode.appModeToolbar.create') }}
+      </Button>
     </template>
     <template #empty-state>
       <NoResultsPlaceholder
         button-variant="secondary"
         text-class="text-muted-foreground text-sm"
-        :message="
-          isAppMode
-            ? $t('linearMode.appModeToolbar.appsEmptyMessage')
-            : `${$t('linearMode.appModeToolbar.appsEmptyMessage')}\n${$t('linearMode.appModeToolbar.appsEmptyMessageAction')}`
-        "
-        button-icon="icon-[lucide--hammer]"
-        :button-label="isAppMode ? undefined : $t('linearMode.buildAnApp')"
-        @action="enterAppMode"
+        :message="`${$t('linearMode.appModeToolbar.appsEmptyMessage')}\n${$t('linearMode.appModeToolbar.appsEmptyMessageAction')}`"
+        button-icon="icon-[lucide--plus]"
+        :button-label="$t('linearMode.appModeToolbar.createApp')"
+        @action="createApp"
       />
     </template>
   </BaseWorkflowsSidebarTab>
 </template>
 
 <script setup lang="ts">
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import BaseWorkflowsSidebarTab from '@/components/sidebar/tabs/BaseWorkflowsSidebarTab.vue'
-import { useAppMode } from '@/composables/useAppMode'
+import Button from '@comfyorg/design-system/button/Button'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
-const { isAppMode, setMode } = useAppMode()
+const commandStore = useCommandStore()
 
 function isAppWorkflow(workflow: ComfyWorkflow): boolean {
   return workflow.suffix === 'app.json'
 }
 
-function enterAppMode() {
-  setMode('app')
+function createApp() {
+  void commandStore.execute('Comfy.NewBlankWorkflow')
 }
 </script>

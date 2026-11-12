@@ -46,10 +46,6 @@ test.describe(
   'Subgraph promoted widget panel',
   { tag: ['@node', '@widget'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-    })
-
     test.describe('SubgraphEditor (Settings panel)', () => {
       test('linked promoted widgets have hide toggle disabled', async ({
         comfyPage
@@ -118,6 +114,25 @@ test.describe(
           .poll(() => collectWidgetLabels(shownSection))
           .not.toContain('text')
       })
+
+      test(
+        'control after generate does not display',
+        { tag: '@vue-nodes' },
+        async ({ comfyPage }) => {
+          await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph')
+          const subgraphNode = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
+          const { editor } = comfyPage.subgraph
+          await editor.ensureOpen(subgraphNode)
+
+          await expect(
+            editor.promotionItems.first(),
+            'some promotion item is visible'
+          ).toBeVisible()
+
+          const widgetName = 'control_after_generate'
+          await expect(editor.resolveItem({ widgetName })).toBeHidden()
+        }
+      )
     })
 
     test.describe('Parameters tab (WidgetActions menu)', () => {
@@ -140,7 +155,7 @@ test.describe(
         await expect(moreButtons.first()).toBeVisible()
         await moreButtons.first().click()
 
-        const menu = comfyPage.page.getByTestId(TestIds.menu.moreMenuContent)
+        const menu = comfyPage.page.getByRole('menu')
         await expect(menu).toBeVisible()
         await expect(menu.getByText('Hide input')).toHaveCount(0)
         await expect(menu.getByText('Show input')).toHaveCount(0)

@@ -1,15 +1,12 @@
-import {
-  TOOLKIT_BLUEPRINT_MODULES,
-  TOOLKIT_NODE_NAMES
-} from '@/constants/toolkitNodes'
+import { TOOLKIT_NODES } from '@/constants/essentialsNodes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
-import type { ExecutionContext } from '../types'
+import type { ExecutionContext } from '@comfyorg/telemetry/types'
 
 type NodeMetrics = {
   custom_node_count: number
@@ -30,26 +27,24 @@ export function getExecutionContext(): ExecutionContext {
   const activeWorkflow = workflowStore.activeWorkflow
 
   const nodeCounts = reduceAllNodes<NodeMetrics>(
-    app.rootGraph,
+    useApp().rootGraph,
     (metrics, node) => {
-      const nodeDef = nodeDefStore.nodeDefsByName[node.type]
+      const nodeDef = nodeDefStore.fromLGraphNode(node)
       const isCustomNode =
-        nodeDef?.nodeSource?.type === NodeSourceType.CustomNodes
-      const isApiNode = nodeDef?.api_node === true
-      const isSubgraph = node.isSubgraphNode?.() === true
+        nodeDef?.nodeSource.type === NodeSourceType.CustomNodes
+      const isApiNode = nodeDef?.api_node
+      const isSubgraph =
+        typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
 
       if (isApiNode) {
         metrics.has_api_nodes = true
-        const canonicalName = nodeDef?.name
+        const canonicalName = nodeDef.name
         if (canonicalName && !metrics.api_node_names.includes(canonicalName)) {
           metrics.api_node_names.push(canonicalName)
         }
       }
 
-      const isToolkitNode =
-        TOOLKIT_NODE_NAMES.has(node.type) ||
-        (nodeDef?.python_module !== undefined &&
-          TOOLKIT_BLUEPRINT_MODULES.has(nodeDef.python_module))
+      const isToolkitNode = TOOLKIT_NODES.has(node.type)
       if (isToolkitNode) {
         metrics.has_toolkit_nodes = true
         const trackingName = nodeDef?.name ?? node.type

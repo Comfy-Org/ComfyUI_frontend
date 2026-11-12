@@ -1,17 +1,13 @@
-import type { CSSProperties } from 'vue'
+import type {
+  Bounds as Rect,
+  Bounds,
+  PanZoom,
+  RectTuple
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { CSSProperties, Ref } from 'vue'
 import { ref } from 'vue'
 
-interface Rect {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
-/**
- * Finds the intersection between two rectangles
- */
-function intersect(a: Rect, b: Rect): [number, number, number, number] | null {
+function intersect(a: Rect, b: Rect): RectTuple | null {
   const x1 = Math.max(a.x, b.x)
   const y1 = Math.max(a.y, b.y)
   const x2 = Math.min(a.x + a.width, b.x + b.width)
@@ -28,30 +24,31 @@ interface ClippingOptions {
   margin?: number
 }
 
-export const useDomClipping = (options: ClippingOptions = {}) => {
+interface UseDomClippingReturn {
+  style: Ref<CSSProperties>
+  updateClipPath: (
+    element: HTMLElement,
+    canvasElement: HTMLCanvasElement,
+    isSelected: boolean,
+    selectedArea?: Bounds & PanZoom
+  ) => void
+}
+
+export function useDomClipping(
+  options: ClippingOptions = {}
+): UseDomClippingReturn {
   const style = ref<CSSProperties>({})
   const { margin = 4 } = options
 
-  /**
-   * Calculates a clip path for an element based on its intersection with a selected area
-   */
   const calculateClipPath = (
     elementRect: DOMRect,
     canvasRect: DOMRect,
     isSelected: boolean,
-    selectedArea?: {
-      x: number
-      y: number
-      width: number
-      height: number
-      scale: number
-      offset: [number, number]
-    }
+    selectedArea?: Bounds & PanZoom
   ): string => {
     if (!isSelected && selectedArea) {
       const { scale, offset } = selectedArea
 
-      // Get intersection in browser space
       const intersection = intersect(
         {
           x: elementRect.left - canvasRect.left,
@@ -71,7 +68,6 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
         return ''
       }
 
-      // Convert intersection to canvas scale (element has scale transform)
       const clipX =
         (intersection[0] - elementRect.left + canvasRect.left) / scale + 'px'
       const clipY =
@@ -87,23 +83,11 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
 
   let pendingRaf = 0
 
-  /**
-   * Updates the clip-path style based on element and selection information.
-   * Batched via requestAnimationFrame to avoid forcing synchronous layout
-   * from getBoundingClientRect() on every reactive state change.
-   */
   const updateClipPath = (
     element: HTMLElement,
     canvasElement: HTMLCanvasElement,
     isSelected: boolean,
-    selectedArea?: {
-      x: number
-      y: number
-      width: number
-      height: number
-      scale: number
-      offset: [number, number]
-    }
+    selectedArea?: Bounds & PanZoom
   ) => {
     if (pendingRaf) cancelAnimationFrame(pendingRaf)
     pendingRaf = requestAnimationFrame(() => {

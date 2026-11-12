@@ -1,8 +1,12 @@
 import { captureCheckoutAttributionFromSearch } from '@/platform/telemetry/utils/checkoutAttribution'
+import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
-import type { PageViewMetadata, TelemetryProvider } from '../../types'
+import type {
+  PageViewMetadata,
+  TelemetryProvider
+} from '@comfyorg/telemetry/types'
 
 const IMPACT_SCRIPT_URL =
   'https://utt.impactcdn.com/A6951770-3747-434a-9ac7-4e582e67d91f1.js'
@@ -85,7 +89,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     if (typeof window === 'undefined') return
 
     const { customerId, customerEmail } = this.resolveCustomerIdentity()
-    const normalizedEmail = customerEmail.trim().toLowerCase()
+    const normalizedEmail = normalizeEmail(customerEmail)
     // Impact's Identify spec requires customerEmail to be sent as a SHA1 hash.
     const hashedEmail = normalizedEmail
       ? await this.hashSha1(normalizedEmail)
@@ -111,9 +115,17 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
 
     if (stores.authStore.currentUser) {
       return {
-        customerId: stores.authStore.currentUser.uid ?? EMPTY_CUSTOMER_VALUE,
+        customerId: stores.authStore.currentUser.uid,
         customerEmail:
           stores.authStore.currentUser.email ?? EMPTY_CUSTOMER_VALUE
+      }
+    }
+
+    const { sessionOnlyUser } = stores.authStore
+    if (sessionOnlyUser) {
+      return {
+        customerId: sessionOnlyUser.id,
+        customerEmail: sessionOnlyUser.email
       }
     }
 
@@ -154,10 +166,6 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
 
   private async hashSha1(value: string): Promise<string> {
     try {
-      if (!globalThis.crypto?.subtle || typeof TextEncoder === 'undefined') {
-        return EMPTY_CUSTOMER_VALUE
-      }
-
       const digestBuffer = await crypto.subtle.digest(
         'SHA-1',
         new TextEncoder().encode(value)

@@ -1,4 +1,8 @@
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 
 /**
  * Workflow where SubgraphA contains a nested SubgraphNode referencing
@@ -58,8 +62,8 @@ export const nestedSubgraphProxyWidgets = {
         },
         name: 'SubgraphA',
         config: {},
-        inputNode: { id: -10, bounding: [10, 100, 150, 126] },
-        outputNode: { id: -20, bounding: [400, 100, 140, 126] },
+        inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [10, 100, 150, 126] },
+        outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [400, 100, 140, 126] },
         inputs: [],
         outputs: [],
         widgets: [{ id: 3, name: 'seed' }],
@@ -126,8 +130,8 @@ export const nestedSubgraphProxyWidgets = {
         },
         name: 'SubgraphB',
         config: {},
-        inputNode: { id: -10, bounding: [10, 100, 150, 126] },
-        outputNode: { id: -20, bounding: [400, 100, 140, 126] },
+        inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [10, 100, 150, 126] },
+        outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [400, 100, 140, 126] },
         inputs: [],
         outputs: [],
         widgets: [{ id: 8, name: 'prompt' }],

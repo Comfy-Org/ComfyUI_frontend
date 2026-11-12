@@ -1,24 +1,22 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
-test.describe('Vue Reroute Node Size', () => {
+test.describe('Vue Reroute Node Size', { tag: '@vue-nodes' }, () => {
+  test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
     await comfyPage.workflow.loadWorkflow('links/single_connected_reroute_node')
-    await comfyPage.vueNodes.waitForNodes()
   })
 
   test(
     'reroute node visual appearance',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      await comfyPage.nextFrame()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'vue-reroute-node-compact.png'
+      const region = await screenshotRegion(
+        comfyPage.page,
+        await comfyPage.vueNodes.nodes.all()
       )
+      await region.expectScreenshot('vue-reroute-node-compact.png')
     }
   )
 })

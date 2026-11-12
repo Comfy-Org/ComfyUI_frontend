@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, useAttrs } from 'vue'
 
+import { useTextFileContent } from '@/composables/useTextFileContent'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
-import VideoPreview from '@/renderer/extensions/linearMode/VideoPreview.vue'
+import VideoPreview from '@comfyorg/design-system/media/VideoPreview'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
-import type { ResultItemImpl } from '@/stores/queueStore'
-import { cn } from '@/utils/tailwindUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemUrl } from '@/utils/resultItemUrl'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const Preview3d = defineAsyncComponent(
   () => import('@/renderer/extensions/linearMode/Preview3d.vue')
@@ -14,7 +16,7 @@ const Preview3d = defineAsyncComponent(
 defineOptions({ inheritAttrs: false })
 
 const { output } = defineProps<{
-  output: ResultItemImpl
+  output: AugmentedResultItem
   mobile?: boolean
 }>()
 
@@ -23,6 +25,12 @@ const mediaType = computed(() => getMediaType(output))
 const outputLabel = computed(
   () => output.display_name?.trim() || output.filename
 )
+const { textContent } = useTextFileContent(() =>
+  mediaType.value === 'text'
+    ? { content: output.content, url: resultItemUrl(output) }
+    : undefined
+)
+const src = computed(() => resultItemUrl(output))
 </script>
 <template>
   <template v-if="mediaType === 'images' || mediaType === 'video'">
@@ -30,12 +38,12 @@ const outputLabel = computed(
       v-if="mediaType === 'images'"
       :class="attrs.class as string"
       :mobile
-      :src="output.url"
+      :src
       :label="outputLabel"
     />
     <VideoPreview
       v-else
-      :src="output.url"
+      :src
       :label="outputLabel"
       :class="
         cn(
@@ -50,22 +58,22 @@ const outputLabel = computed(
       v-if="mediaType === 'audio'"
       :class="cn('m-auto w-full', attrs.class as string)"
       controls
-      :src="output.url"
+      :src
     />
     <article
       v-else-if="mediaType === 'text'"
       :class="
         cn(
-          'm-auto my-12 size-full max-w-2xl scroll-shadows-secondary-background overflow-y-auto rounded-lg bg-secondary-background p-4 whitespace-pre-wrap',
+          'm-auto my-12 size-full max-w-2xl scroll-shadows-secondary overflow-y-auto rounded-lg bg-secondary p-4 whitespace-pre-wrap',
           attrs.class as string
         )
       "
-      v-text="output.content"
+      v-text="textContent"
     />
     <Preview3d
       v-else-if="mediaType === '3d'"
       :class="attrs.class as string"
-      :model-url="output.url"
+      :model-url="src"
     />
     <span v-if="outputLabel" class="self-center text-sm">
       {{ outputLabel }}

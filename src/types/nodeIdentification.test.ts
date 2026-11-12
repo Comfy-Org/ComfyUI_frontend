@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   compareExecutionId,
+  createLeafNodeExecutionId,
   createNodeExecutionId,
   createNodeLocatorId,
   getAncestorExecutionIds,
@@ -10,15 +12,18 @@ import {
   isNodeExecutionId,
   isNodeLocatorId,
   parseNodeExecutionId,
-  parseNodeLocatorId
-} from '@/types/nodeIdentification'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+  parseNodeLocatorId,
+  tryNormalizeNodeExecutionId
+} from '@comfyorg/graph-model/nodeIdentification'
 
 describe('nodeIdentification', () => {
   describe('NodeLocatorId', () => {
     const validUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     const validNodeId = '123'
-    const validNodeLocatorId = `${validUuid}:${validNodeId}` as NodeLocatorId
+    const validNodeLocatorId = createNodeLocatorId(
+      validUuid,
+      toNodeId(validNodeId)
+    )
 
     describe('isNodeLocatorId', () => {
       it('should return true for valid NodeLocatorId', () => {
@@ -38,13 +43,14 @@ describe('nodeIdentification', () => {
         expect(isNodeLocatorId(':123')).toBe(false) // Empty UUID
         expect(isNodeLocatorId(`${validUuid}:`)).toBe(false) // Empty node ID
         expect(isNodeLocatorId(`${validUuid}:123:456`)).toBe(false) // Too many parts
+        expect(isNodeLocatorId(`${validUuid}:node:1`)).toBe(false)
         expect(isNodeLocatorId(123)).toBe(false) // Not a string
         expect(isNodeLocatorId(null)).toBe(false)
         expect(isNodeLocatorId(undefined)).toBe(false)
       })
 
-      it('should validate UUID format correctly', () => {
-        // Valid UUID formats
+      it('should require a valid UUID as the subgraph prefix', () => {
+        // Valid subgraph UUIDs (node IDs like "123" are sequential integers, not UUIDs)
         expect(
           isNodeLocatorId('00000000-0000-0000-0000-000000000000:123')
         ).toBe(true)
@@ -52,7 +58,7 @@ describe('nodeIdentification', () => {
           isNodeLocatorId('A1B2C3D4-E5F6-7890-ABCD-EF1234567890:123')
         ).toBe(true)
 
-        // Invalid UUID formats
+        // Invalid subgraph UUID prefixes
         expect(isNodeLocatorId('00000000-0000-0000-0000-00000000000:123')).toBe(
           false
         ) // Too short
@@ -70,10 +76,13 @@ describe('nodeIdentification', () => {
 
     describe('parseNodeLocatorId', () => {
       it('should parse valid NodeLocatorId', () => {
+        expect(validNodeLocatorId).not.toBeNull()
+        if (!validNodeLocatorId) return
+
         const result = parseNodeLocatorId(validNodeLocatorId)
         expect(result).toEqual({
           subgraphUuid: validUuid,
-          localNodeId: 123
+          localNodeId: '123'
         })
       })
 
@@ -90,7 +99,7 @@ describe('nodeIdentification', () => {
         const result = parseNodeLocatorId('123')
         expect(result).toEqual({
           subgraphUuid: null,
-          localNodeId: 123
+          localNodeId: '123'
         })
 
         const stringResult = parseNodeLocatorId('node_1')
@@ -102,22 +111,91 @@ describe('nodeIdentification', () => {
 
       it('should return null for invalid formats', () => {
         expect(parseNodeLocatorId('123:456')).toBeNull() // No UUID in first part
+        expect(parseNodeLocatorId(`${validUuid}:node:1`)).toBeNull()
         expect(parseNodeLocatorId('')).toBeNull()
       })
+
+      it.for(['~root:insert:op', '~root:%69nsert%3Aop'])(
+        'rejects non-canonical encoded locator %s',
+        (locatorId) => {
+          expect(parseNodeLocatorId(locatorId)).toBeNull()
+          expect(isNodeLocatorId(locatorId)).toBe(false)
+        }
+      )
     })
 
     describe('createNodeLocatorId', () => {
       it('should create NodeLocatorId from components', () => {
-        const result = createNodeLocatorId(validUuid, 123)
+        const result = createNodeLocatorId(validUuid, toNodeId(123))
         expect(result).toBe(validNodeLocatorId)
         expect(isNodeLocatorId(result)).toBe(true)
       })
 
       it('should handle string node IDs', () => {
-        const result = createNodeLocatorId(validUuid, 'node_1')
+        const result = createNodeLocatorId(validUuid, toNodeId('node_1'))
         expect(result).toBe(`${validUuid}:node_1`)
         expect(isNodeLocatorId(result)).toBe(true)
       })
+    })
+
+    describe('createNodeLocatorId encoded forms', () => {
+      it('keeps an ordinary root id as-is', () => {
+        expect(createNodeLocatorId(null, toNodeId(123))).toBe('123')
+      })
+
+      it.for([
+        {
+          name: 'colon-bearing root-level id',
+          subgraphUuid: null,
+          rawId: 'insert:abc123:root:node:5',
+          expectedLocator: '~root:insert%3Aabc123%3Aroot%3Anode%3A5'
+        },
+        {
+          name: 'colon-bearing subgraph-local id',
+          subgraphUuid: validUuid,
+          rawId: 'insert:abc123:root:node:5',
+          expectedLocator: `~subgraph:${validUuid}:insert%3Aabc123%3Aroot%3Anode%3A5`
+        },
+        {
+          name: 'root id shaped like a subgraph locator',
+          subgraphUuid: null,
+          rawId: `${validUuid}:123`,
+          expectedLocator: `~root:${validUuid}%3A123`
+        },
+        {
+          name: 'empty root id',
+          subgraphUuid: null,
+          rawId: '',
+          expectedLocator: '~root:'
+        },
+        {
+          name: 'non-integer numeric root id',
+          subgraphUuid: null,
+          rawId: 1.5,
+          expectedLocator: '~root:1.5'
+        },
+        {
+          name: 'root id containing a literal escape sequence',
+          subgraphUuid: null,
+          rawId: 'a%3Ab:c',
+          expectedLocator: '~root:a%253Ab%3Ac'
+        }
+      ])('encodes $name', ({ subgraphUuid, rawId, expectedLocator }) => {
+        const locatorId = createNodeLocatorId(subgraphUuid, rawId)
+
+        expect(locatorId).toBe(expectedLocator)
+        expect(parseNodeLocatorId(locatorId)).toEqual({
+          subgraphUuid,
+          localNodeId: String(rawId)
+        })
+      })
+
+      it.for(['~subgraph:not-a-uuid:x', `~subgraph:${validUuid}`, '~root:%ZZ'])(
+        'rejects malformed encoded locator %s',
+        (locatorId) => {
+          expect(parseNodeLocatorId(locatorId)).toBeNull()
+        }
+      )
     })
   })
 
@@ -127,60 +205,122 @@ describe('nodeIdentification', () => {
         expect(isNodeExecutionId('123:456')).toBe(true)
         expect(isNodeExecutionId('123:456:789')).toBe(true)
         expect(isNodeExecutionId('node_1:node_2')).toBe(true)
+        expect(isNodeExecutionId('123')).toBe(true)
+        expect(isNodeExecutionId('node_1')).toBe(true)
       })
 
-      it('should return false for non-execution IDs', () => {
-        expect(isNodeExecutionId('123')).toBe(false)
-        expect(isNodeExecutionId('node_1')).toBe(false)
+      it('should return false for malformed execution IDs', () => {
         expect(isNodeExecutionId('')).toBe(false)
+        expect(isNodeExecutionId(':123')).toBe(false)
+        expect(isNodeExecutionId('123:')).toBe(false)
+        expect(isNodeExecutionId('123::456')).toBe(false)
         expect(isNodeExecutionId(123)).toBe(false)
         expect(isNodeExecutionId(null)).toBe(false)
         expect(isNodeExecutionId(undefined)).toBe(false)
       })
     })
 
+    describe('tryNormalizeNodeExecutionId', () => {
+      it('should return a branded ID for valid execution IDs', () => {
+        expect(tryNormalizeNodeExecutionId(123)).toBe('123')
+        expect(tryNormalizeNodeExecutionId('123:456')).toBe('123:456')
+      })
+
+      it('should return null for malformed execution IDs', () => {
+        expect(tryNormalizeNodeExecutionId('')).toBeNull()
+        expect(tryNormalizeNodeExecutionId(':123')).toBeNull()
+        expect(tryNormalizeNodeExecutionId('123:')).toBeNull()
+        expect(tryNormalizeNodeExecutionId('123::456')).toBeNull()
+      })
+    })
+
     describe('parseNodeExecutionId', () => {
       it('should parse execution IDs correctly', () => {
-        expect(parseNodeExecutionId('123:456')).toEqual([123, 456])
-        expect(parseNodeExecutionId('123:456:789')).toEqual([123, 456, 789])
+        expect(parseNodeExecutionId('123:456')).toEqual(['123', '456'])
+        expect(parseNodeExecutionId('123:456:789')).toEqual([
+          '123',
+          '456',
+          '789'
+        ])
         expect(parseNodeExecutionId('node_1:node_2')).toEqual([
           'node_1',
           'node_2'
         ])
         expect(parseNodeExecutionId('123:node_2:456')).toEqual([
-          123,
+          '123',
           'node_2',
-          456
+          '456'
         ])
+        expect(parseNodeExecutionId('123')).toEqual(['123'])
+        expect(parseNodeExecutionId('node_1')).toEqual(['node_1'])
       })
 
-      it('should return null for non-execution IDs', () => {
-        expect(parseNodeExecutionId('123')).toBeNull()
+      it('should return null for malformed execution IDs', () => {
         expect(parseNodeExecutionId('')).toBeNull()
+        expect(parseNodeExecutionId(':123')).toBeNull()
+        expect(parseNodeExecutionId('123:')).toBeNull()
+        expect(parseNodeExecutionId('123::456')).toBeNull()
       })
     })
 
     describe('createNodeExecutionId', () => {
       it('should create execution IDs from node arrays', () => {
-        expect(createNodeExecutionId([123, 456])).toBe('123:456')
-        expect(createNodeExecutionId([123, 456, 789])).toBe('123:456:789')
-        expect(createNodeExecutionId(['node_1', 'node_2'])).toBe(
-          'node_1:node_2'
+        expect(createNodeExecutionId([toNodeId(123), toNodeId(456)])).toBe(
+          '123:456'
         )
-        expect(createNodeExecutionId([123, 'node_2', 456])).toBe(
-          '123:node_2:456'
-        )
+        expect(
+          createNodeExecutionId([toNodeId(123), toNodeId(456), toNodeId(789)])
+        ).toBe('123:456:789')
+        expect(
+          createNodeExecutionId([toNodeId('node_1'), toNodeId('node_2')])
+        ).toBe('node_1:node_2')
+        expect(
+          createNodeExecutionId([
+            toNodeId(123),
+            toNodeId('node_2'),
+            toNodeId(456)
+          ])
+        ).toBe('123:node_2:456')
       })
 
       it('should handle single node ID', () => {
-        const result = createNodeExecutionId([123])
+        const result = createNodeExecutionId([toNodeId(123)])
         expect(result).toBe('123')
-        // Single node IDs are not execution IDs
-        expect(isNodeExecutionId(result)).toBe(false)
+        expect(isNodeExecutionId(result)).toBe(true)
       })
 
-      it('should handle empty array', () => {
-        expect(createNodeExecutionId([])).toBe('')
+      it('should return null for an empty array', () => {
+        const emptyNodeIds: NodeId[] = []
+        expect(createNodeExecutionId(emptyNodeIds)).toBeNull()
+      })
+
+      it('should return null for empty path segments', () => {
+        expect(createNodeExecutionId([toNodeId('')])).toBeNull()
+        expect(createNodeExecutionId([toNodeId(123), toNodeId('')])).toBeNull()
+      })
+
+      it('should return null for path segments with separators', () => {
+        expect(
+          createNodeExecutionId([toNodeId(123), toNodeId('node:1')])
+        ).toBeNull()
+      })
+    })
+
+    describe('createLeafNodeExecutionId', () => {
+      it('behaves like createNodeExecutionId for an ordinary, colon-free id', () => {
+        expect(createLeafNodeExecutionId(toNodeId(123))).toBe('123')
+      })
+
+      it('keeps a colon-bearing root-level id whole instead of rejecting it (PM-1580)', () => {
+        // comfy-multi-player's insert_workflow remaps every inserted node's
+        // id to a derived string with colons unrelated to subgraph scoping.
+        const rawId = toNodeId('insert:abc123:root:node:5')
+        expect(createNodeExecutionId([rawId])).toBeNull()
+        expect(createLeafNodeExecutionId(rawId)).toBe(rawId)
+      })
+
+      it('returns null for an empty id', () => {
+        expect(createLeafNodeExecutionId(toNodeId(''))).toBeNull()
       })
     })
   })
@@ -188,22 +328,30 @@ describe('nodeIdentification', () => {
   describe('Integration tests', () => {
     it('should round-trip NodeLocatorId correctly', () => {
       const uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-      const nodeId: NodeId = 123
+      const localNodeId: NodeId = toNodeId(123)
 
-      const locatorId = createNodeLocatorId(uuid, nodeId)
+      const locatorId = createNodeLocatorId(uuid, localNodeId)
+      expect(locatorId).not.toBeNull()
+      if (!locatorId) return
+
       const parsed = parseNodeLocatorId(locatorId)
-
       expect(parsed).toBeTruthy()
       expect(parsed!.subgraphUuid).toBe(uuid)
-      expect(parsed!.localNodeId).toBe(nodeId)
+      expect(parsed!.localNodeId).toBe(localNodeId)
     })
 
     it('should round-trip NodeExecutionId correctly', () => {
-      const nodeIds: NodeId[] = [123, 'node_2', 456]
+      const nodeIds: NodeId[] = [
+        toNodeId(123),
+        toNodeId('node_2'),
+        toNodeId(456)
+      ]
 
       const executionId = createNodeExecutionId(nodeIds)
-      const parsed = parseNodeExecutionId(executionId)
+      expect(executionId).not.toBeNull()
+      if (!executionId) return
 
+      const parsed = parseNodeExecutionId(executionId)
       expect(parsed).toEqual(nodeIds)
     })
   })
@@ -211,6 +359,10 @@ describe('nodeIdentification', () => {
   describe('getAncestorExecutionIds', () => {
     it('returns only itself for a root node', () => {
       expect(getAncestorExecutionIds('65')).toEqual(['65'])
+    })
+
+    it('returns an empty list for malformed execution IDs', () => {
+      expect(getAncestorExecutionIds('65::70')).toEqual([])
     })
 
     it('returns all ancestors including self for nested IDs', () => {

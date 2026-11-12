@@ -7,7 +7,7 @@ This guide helps you resolve common issues when developing ComfyUI Frontend.
 ```mermaid
 flowchart TD
     A[Having Issues?] --> B{What's the problem?}
-    B -->|Dev server stuck| C[nx serve hangs]
+    B -->|Dev server stuck| C[pnpm dev hangs]
     B -->|Build errors| D[Check build issues]
     B -->|Lint errors| Q[Check linting issues]
     B -->|Dependency issues| E[Package problems]
@@ -23,7 +23,7 @@ flowchart TD
     G -->|No| H[Run: pnpm i]
     G -->|Still stuck| I[Run: pnpm clean]
     I --> J{Still stuck?}
-    J -->|Yes| K[Nuclear option:<br/>pnpm dlx rimraf node_modules<br/>&& pnpm i]
+    J -->|Yes| K[Nuclear option:<br/>pnpm clean:all<br/>&& pnpm i]
     J -->|No| L[Fixed!]
     H --> L
 
@@ -41,11 +41,11 @@ flowchart TD
 
 ### Development Server Issues
 
-#### Q: `pnpm dev` or `nx serve` gets stuck and won't start
+#### Q: `pnpm dev` gets stuck and won't start
 
 **Symptoms:**
 
-- Command hangs on "nx serve"
+- Command hangs during Vite startup
 - Dev server doesn't respond
 - Terminal appears frozen
 
@@ -65,7 +65,7 @@ flowchart TD
 
 3. **Last resort - Full node_modules reset:**
    ```bash
-   pnpm dlx rimraf node_modules && pnpm i
+   pnpm clean:all && pnpm i
    ```
 
 **Why this happens:**
@@ -73,7 +73,7 @@ flowchart TD
 - Corrupted dependency cache
 - Outdated lock files after branch switching
 - Incomplete previous installations
-- NX cache corruption
+- stale local build cache
 
 ---
 
@@ -180,6 +180,21 @@ Check whether the rule is enforced by oxlint (in `.oxlintrc.json`) or ESLint (in
 
 ---
 
+#### Q: ESLint does not report anything for a `.ts` file
+
+**Symptoms:**
+
+- `pnpm exec eslint path/to/file.ts` prints nothing, or "File ignored because no matching configuration was supplied"
+- An `eslint-disable` comment in a `.ts` file has no effect
+
+**Solution:**
+
+This is expected. oxlint lints every `.ts`/`.js` file in the workspace; ESLint only lints what oxlint cannot parse (`.vue`) plus `better-tailwindcss` class-string checks in non-test `.ts` files under `src/`, `apps/` and `packages/`. Use `oxlint-disable` in `.ts` files.
+
+Both tools share the ignore list in `.oxlintrc.json` `ignorePatterns` (`eslint-plugin-oxlint` mirrors it into ESLint).
+
+---
+
 #### Q: New lint errors after pulling/upgrading oxlint
 
 **Symptoms:**
@@ -200,6 +215,31 @@ Check whether the rule is enforced by oxlint (in `.oxlintrc.json`) or ESLint (in
 3. **If a rule seems wrong**, check `.oxlintrc.json` to see if it should be disabled or configured differently.
 
 **Why this happens:** oxlint version bumps often enable new rules by default.
+
+---
+
+#### Q: oxlint or ESLint reports suppressions that do not occur anymore
+
+**Symptoms:**
+
+- Lint fails after you removed a `throw new Error(...)` or fixed another baselined violation
+- The help text points at `--prune-suppressions`
+
+**Solution:**
+
+`oxlint-suppressions.json` baselines pre-existing violations of rules that hold new code to a stricter standard (for example `comfy/no-new-error-throw`, `comfy/no-reexports`, and the `regexp/*` rules). Fixing one makes its entry stale; prune the file and commit it with your change:
+
+```bash
+pnpm oxlint --prune-suppressions
+```
+
+`eslint-suppressions.json` does the same for ESLint template rules such as `template-classes/prefer-design-system-button`:
+
+```bash
+pnpm exec eslint --prune-suppressions
+```
+
+Never run `--suppress-all` to silence new violations in your own code.
 
 ---
 

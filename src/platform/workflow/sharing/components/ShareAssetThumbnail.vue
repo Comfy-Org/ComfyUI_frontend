@@ -22,17 +22,17 @@
     />
     <i
       v-if="!normalizedPreviewUrl || error"
-      class="icon-[lucide--image] size-4 text-muted-foreground"
+      class="icon-[lucide--image] text-muted-foreground"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
 import { computed } from 'vue'
 
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
-import { cn } from '@/utils/tailwindUtil'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { useImageQuiet } from '@/composables/useImageQuiet'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { name, previewUrl } = defineProps<{
   name: string
@@ -63,5 +63,5 @@ const imageOptions = computed(() => ({
   src: normalizedPreviewUrl.value ?? ''
 }))
 
-const { isReady, isLoading, error } = useImage(imageOptions)
+const { isReady, isLoading, error } = useImageQuiet(imageOptions)
 </script>

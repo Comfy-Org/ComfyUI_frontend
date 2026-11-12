@@ -1,48 +1,77 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { nextTick, reactive } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  ComfyWorkflow,
-  LoadedComfyWorkflow
-} from '@/platform/workflow/management/stores/workflowStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import {
+  resetReportedWorkflowStateAnomaliesForTests,
+  UnreadableWorkflowError
+} from '@/platform/workflow/management/stores/comfyWorkflow'
+import {
+  ComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import {
+  initDefaultWorkflow,
+  resetDefaultWorkflowForTesting
+} from '@/platform/workflow/core/services/defaultWorkflowService'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import '@/scripts/changeTracker'
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { isValidUuid } from '@/utils/formatUtil'
+import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
-  createMockCanvas,
-  createMockChangeTracker
+  createMockChangeTracker,
+  createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
-// Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    listUserDataFullInfo: vi.fn(),
-    apiURL: vi.fn(),
-    addEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 // Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    canvas: {} // Start with empty canvas object
+    canvas: {}, // Start with empty canvas object
+    get canvasOrUndefined() {
+      return this.canvas
+    }
   }
 }))
 
 // Mock isSubgraph
-vi.mock('@/utils/typeGuardUtil', () => ({
+vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isSubgraph: vi.fn(() => false)
+}))
+
+vi.mock(import('@/utils/syncUtil'), { spy: true })
+
+const mockAssert = vi.hoisted(() => vi.fn())
+
+vi.mock(import('@/base/assert'), () => ({
+  assert: mockAssert
 }))
 
 describe('useWorkflowStore', () => {
@@ -67,11 +96,34 @@ describe('useWorkflowStore', () => {
     return await store.syncWorkflows()
   }
 
+  const saveV2Draft = (
+    path: string,
+    options: {
+      data?: string
+      name?: string
+      isTemporary?: boolean
+    } = {}
+  ) => {
+    const draftStore = useWorkflowDraftStoreV2()
+    draftStore.saveDraft(path, options.data ?? '{"dirty":true}', {
+      name: options.name ?? path.split('/').at(-1) ?? path,
+      isTemporary: options.isTemporary ?? false
+    })
+    return draftStore
+  }
+
+  const enableWorkflowPersistence = () => {
+    useSettingStore().settingsById['Comfy.Workflow.Persist'] = {
+      id: 'Comfy.Workflow.Persist',
+      name: 'Persist workflow state',
+      type: 'boolean',
+      defaultValue: true
+    }
+  }
+
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useWorkflowStore()
     bookmarkStore = useWorkflowBookmarkStore()
-    vi.clearAllMocks()
 
     // Add default mock implementations
     vi.mocked(api.getUserData).mockResolvedValue({
@@ -118,6 +170,111 @@ describe('useWorkflowStore', () => {
       expect(store.activeWorkflow?.isLoaded).toBe(true)
       expect(workflow.lastModified).toBe(200)
       expect(workflow.size).toBe(2)
+    })
+
+    it('keeps the unsaved edits of a background tab whose file changed remotely', async () => {
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'edited.json', modified: 100, size: 1 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+      const edited = store.getWorkflowByPath('workflows/edited.json')!
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
+      await store.openWorkflow(edited)
+      edited.changeTracker!.activeState = {
+        ...edited.changeTracker!.activeState,
+        extra: { unsaved: true }
+      }
+      edited.isModified = true
+      await store.openWorkflow(
+        store.getWorkflowByPath('workflows/active.json')!
+      )
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'edited.json', modified: 200, size: 2 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+
+      expect(edited.isLoaded).toBe(true)
+      expect(edited.isModified).toBe(true)
+      expect(edited.activeState?.extra).toEqual({ unsaved: true })
+      expect(edited.lastModified).toBe(100)
+    })
+
+    it('still drops the cached content of an unmodified background tab whose file changed', async () => {
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'clean.json', modified: 100, size: 1 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+      const clean = store.getWorkflowByPath('workflows/clean.json')!
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
+      await store.openWorkflow(clean)
+      await store.openWorkflow(
+        store.getWorkflowByPath('workflows/active.json')!
+      )
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'clean.json', modified: 200, size: 2 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+
+      expect(clean.isLoaded).toBe(false)
+      expect(clean.isModified).toBe(false)
+    })
+
+    describe('node widget histories', () => {
+      const rootGraphId = '00000000-0000-4000-8000-0000000000a1'
+
+      async function loadSyncedWorkflow() {
+        await syncRemoteWorkflowsWithMeta([
+          { path: 'a.json', modified: 100, size: 1 }
+        ])
+        const workflow = store.getWorkflowByPath('workflows/a.json')
+        assert(workflow)
+        vi.mocked(api.getUserData).mockResolvedValue(
+          fromPartial<Response>({
+            status: 200,
+            text: () =>
+              Promise.resolve(
+                JSON.stringify({ ...defaultGraph, id: rootGraphId })
+              )
+          })
+        )
+        await workflow.load()
+        return workflow
+      }
+
+      function recordNodeHistory() {
+        const scope = {
+          rootGraphId,
+          widgetId: widgetId(rootGraphId, toNodeId(1), 'bboxes')
+        }
+        useWidgetHistoryStore().record(scope, [])
+        return () => useWidgetHistoryStore().canUndo(scope)
+      }
+
+      it('forgets them when a remote change unloads the workflow', async () => {
+        await loadSyncedWorkflow()
+        const hasHistory = recordNodeHistory()
+
+        await syncRemoteWorkflowsWithMeta([
+          { path: 'a.json', modified: 200, size: 2 }
+        ])
+
+        expect(hasHistory()).toBe(false)
+      })
+
+      it('forgets them when the workflow file is deleted remotely', async () => {
+        await loadSyncedWorkflow()
+        const hasHistory = recordNodeHistory()
+
+        await syncRemoteWorkflowsWithMeta([])
+
+        expect(hasHistory()).toBe(false)
+      })
     })
 
     it('should not unload a loaded workflow if metadata has not changed', async () => {
@@ -178,6 +335,42 @@ describe('useWorkflowStore', () => {
       expect(workflow2.path).toBe('workflows/Unsaved Workflow (2).json')
     })
 
+    it('gives each default-created workflow its own root graph id', async () => {
+      const servedId = '11111111-1111-4111-8111-111111111111'
+      onTestFinished(resetDefaultWorkflowForTesting)
+      resetDefaultWorkflowForTesting()
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            ...defaultGraph,
+            id: servedId,
+            last_node_id: 4242
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+      await initDefaultWorkflow()
+
+      const first = JSON.parse(store.createTemporary().content!)
+      const second = JSON.parse(store.createTemporary().content!)
+
+      expect(first.last_node_id).toBe(4242)
+      expect(first.id).toBeTruthy()
+      expect(first.id).not.toBe(servedId)
+      expect(second.id).not.toBe(first.id)
+    })
+
+    it('assigns each workflow a stable unique session identity', async () => {
+      const workflow = store.createTemporary()
+      const otherWorkflow = store.createTemporary()
+      const instanceId = workflow.instanceId
+
+      await workflow.rename('workflows/renamed.json')
+
+      expect(workflow.instanceId).toBe(instanceId)
+      expect(otherWorkflow.instanceId).not.toBe(instanceId)
+    })
+
     it('should create a temporary workflow not clashing with persisted workflows', async () => {
       await syncRemoteWorkflows(['a.json'])
       const workflow = store.createTemporary('a.json')
@@ -186,28 +379,97 @@ describe('useWorkflowStore', () => {
 
     it('should assign a workflow id to newly created temporary workflows', () => {
       const workflow = store.createTemporary('id-test.json')
-      const state = JSON.parse(workflow.content!)
+      const state = zComfyWorkflow.parse(JSON.parse(workflow.content!))
 
-      expect(typeof state.id).toBe('string')
-      expect(state.id.length).toBeGreaterThan(0)
+      expect(isValidUuid(state.id)).toBe(true)
     })
 
-    it('should assign an id when temporary workflow data is missing one', () => {
-      const workflowDataWithoutId = {
+    it('migrates a legacy id without mutating the input', () => {
+      const workflowData = fromPartial<ComfyWorkflowJSON>({
         ...defaultGraph,
-        id: undefined
-      }
+        id: 'video-point-prompt-example'
+      })
+      const originalData = structuredClone(workflowData)
 
-      const workflow = store.createTemporary(
-        'missing-id.json',
-        workflowDataWithoutId
-      )
+      const workflow = store.createTemporary('legacy.json', workflowData)
+      const state = zComfyWorkflow.parse(JSON.parse(workflow.content!))
+
+      expect(isValidUuid(state.id)).toBe(true)
+      expect(workflow.legacyId).toBe('video-point-prompt-example')
+      expect(workflowData).toEqual(originalData)
+    })
+
+    it('accepts workflow data holding a reactive proxy', () => {
+      const workflowData = fromPartial<ComfyWorkflowJSON>({
+        ...structuredClone(defaultGraph),
+        extra: {
+          linearData: {
+            inputs: [reactive<LinearInput>(['1', 'seed'])],
+            outputs: []
+          }
+        }
+      })
+
+      const workflow = store.createNewTemporary('proxy.json', workflowData)
       const state = JSON.parse(workflow.content!)
 
-      expect(typeof state.id).toBe('string')
-      expect(state.id.length).toBeGreaterThan(0)
-      expect(workflowDataWithoutId.id).toBeUndefined()
+      expect(state.extra.linearData.inputs).toEqual([['1', 'seed']])
     })
+
+    it.for([
+      {
+        label: 'the same legacy id',
+        existingId: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
+        incomingId: 'legacy-a',
+        legacyId: 'legacy-a',
+        expectedPath: 'external/repeat.json',
+        expectedResetCount: 1
+      },
+      {
+        label: 'a different legacy id',
+        existingId: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
+        incomingId: 'legacy-b',
+        legacyId: 'legacy-a',
+        expectedPath: 'workflows/repeat.json',
+        expectedResetCount: 0
+      },
+      {
+        label: 'equivalent UUID casing',
+        existingId: '9cea40bb-b0cf-4b40-a758-8935cfe8d52f',
+        incomingId: '9CEA40BB-B0CF-4B40-A758-8935CFE8D52F',
+        expectedPath: 'external/repeat.json',
+        expectedResetCount: 1
+      }
+    ])(
+      'returns $expectedPath for an external same-name workflow with $label',
+      ({
+        existingId,
+        incomingId,
+        legacyId,
+        expectedPath,
+        expectedResetCount
+      }) => {
+        const existingWorkflow = new ComfyWorkflow({
+          path: 'external/repeat.json',
+          modified: Date.now(),
+          size: -1
+        })
+        existingWorkflow.changeTracker = createMockChangeTracker()
+        existingWorkflow.changeTracker.activeState.id = existingId
+        existingWorkflow.legacyId = legacyId
+        store.attachWorkflow(existingWorkflow)
+
+        const result = store.createTemporary(
+          'repeat.json',
+          fromPartial<ComfyWorkflowJSON>({ ...defaultGraph, id: incomingId })
+        )
+
+        expect(result.path).toBe(expectedPath)
+        expect(existingWorkflow.changeTracker.reset).toHaveBeenCalledTimes(
+          expectedResetCount
+        )
+      }
+    )
   })
 
   describe('openWorkflow', () => {
@@ -265,6 +527,134 @@ describe('useWorkflowStore', () => {
       expect(workflow.activeState).toEqual(defaultGraph)
       expect(workflow.initialState).toEqual(defaultGraph)
       expect(workflow.isModified).toBe(false)
+    })
+
+    it('should prefer a persisted V2 draft when loading a remote workflow', async () => {
+      enableWorkflowPersistence()
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: 100, size: 1 }
+      ])
+
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      const draftGraph = JSON.parse(defaultGraphJSON)
+      draftGraph.extra = {
+        ...draftGraph.extra,
+        draftMarker: 'v2'
+      }
+
+      saveV2Draft(workflow.path, {
+        data: JSON.stringify(draftGraph),
+        name: 'a.json'
+      })
+
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+
+      await workflow.load()
+
+      expect(workflow.activeState?.extra?.draftMarker).toBe('v2')
+      expect(workflow.isModified).toBe(true)
+    })
+
+    describe('restoring a saved workflow over its draft', () => {
+      const loadWithDraft = async (
+        draftData: string,
+        fileData = defaultGraphJSON
+      ) => {
+        enableWorkflowPersistence()
+        await syncRemoteWorkflowsWithMeta([
+          { path: 'a.json', modified: 100, size: 1 }
+        ])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        saveV2Draft(workflow.path, { data: draftData, name: 'a.json' })
+        vi.mocked(api.getUserData).mockResolvedValue(
+          new Response(fileData, { status: 200 })
+        )
+        await workflow.load()
+        return workflow
+      }
+
+      const draftWithExtra = (extra: ComfyWorkflowJSON['extra']) => {
+        const draftGraph: ComfyWorkflowJSON = structuredClone(defaultGraph)
+        draftGraph.extra = { ...draftGraph.extra, ...extra }
+        return JSON.stringify(draftGraph)
+      }
+
+      it('does not mark it modified when the draft a tab switch left matches the file', async () => {
+        const workflow = await loadWithDraft(defaultGraphJSON)
+
+        expect(workflow.activeState).toEqual(defaultGraph)
+        expect(workflow.isModified).toBe(false)
+      })
+
+      it('keeps the draft viewport without marking it modified', async () => {
+        const workflow = await loadWithDraft(
+          draftWithExtra({ ds: { scale: 2.5, offset: [40, -80] } })
+        )
+
+        expect(workflow.activeState?.extra?.ds).toEqual({
+          scale: 2.5,
+          offset: [40, -80]
+        })
+        expect(workflow.isModified).toBe(false)
+      })
+
+      it('marks it modified when the draft only changes app mode', async () => {
+        const workflow = await loadWithDraft(
+          draftWithExtra({ linearMode: true })
+        )
+
+        expect(workflow.activeState?.extra?.linearMode).toBe(true)
+        expect(workflow.isModified).toBe(true)
+      })
+
+      it('marks it modified when the draft has no node list to compare', async () => {
+        const workflow = await loadWithDraft('{"links":[]}')
+
+        expect(workflow.activeState).toEqual({ links: [] })
+        expect(workflow.isModified).toBe(true)
+      })
+
+      it('marks it modified when the saved file has no node list to compare', async () => {
+        const workflow = await loadWithDraft(defaultGraphJSON, '{"links":[]}')
+
+        expect(workflow.activeState).toEqual(defaultGraph)
+        expect(workflow.isModified).toBe(true)
+      })
+    })
+
+    it('should discard a stale V2 draft when the remote workflow is newer', async () => {
+      enableWorkflowPersistence()
+      const remoteModifiedAt = Date.now() + 60_000
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'a.json', modified: remoteModifiedAt, size: 1 }
+      ])
+
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      const draftGraph = JSON.parse(defaultGraphJSON)
+      draftGraph.extra = {
+        ...draftGraph.extra,
+        draftMarker: 'stale-v2'
+      }
+      const draftStore = saveV2Draft(workflow.path, {
+        data: JSON.stringify(draftGraph),
+        name: 'a.json'
+      })
+
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+
+      await workflow.load()
+
+      expect(workflow.activeState?.extra?.draftMarker).toBeUndefined()
+      expect(workflow.isModified).toBe(false)
+      expect(draftStore.getDraft(workflow.path)).toBeNull()
     })
 
     it('should load and open a remote workflow', async () => {
@@ -412,6 +802,28 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked('workflows/dir/test.json')).toBe(false)
     })
 
+    it('should move V2 draft when renaming workflow', async () => {
+      const workflow = store.createTemporary('test.json')
+      const oldPath = workflow.path
+      const newPath = 'workflows/renamed.json'
+      const draftStore = saveV2Draft(oldPath, {
+        name: workflow.key,
+        isTemporary: true
+      })
+
+      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
+        async function (this: unknown, ...args: unknown[]) {
+          ;(this as typeof workflow).path = args[0] as string
+          return this as typeof workflow
+        }
+      )
+
+      await store.renameWorkflow(workflow, newPath)
+
+      expect(draftStore.getDraft(oldPath)).toBeNull()
+      expect(draftStore.getDraft(newPath)?.name).toBe('renamed.json')
+    })
+
     it('should rename workflow without affecting bookmarks if not bookmarked', async () => {
       const workflow = store.createTemporary('test.json')
 
@@ -446,6 +858,28 @@ describe('useWorkflowStore', () => {
       await store.closeWorkflow(workflow)
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
+    })
+    it('forgets the node histories of the closed workflow only', async () => {
+      const workflow = store.createTemporary('test.json')
+      await store.openWorkflow(workflow)
+      const rootGraphId = workflow.activeState?.id
+      assert(rootGraphId)
+      const histories = useWidgetHistoryStore()
+      const closed = {
+        rootGraphId,
+        widgetId: widgetId(rootGraphId, toNodeId(1), 'b')
+      }
+      const other = {
+        rootGraphId: 'other',
+        widgetId: widgetId('other', toNodeId(1), 'b')
+      }
+      histories.record(closed, [])
+      histories.record(other, [])
+
+      await store.closeWorkflow(workflow)
+
+      expect(histories.canUndo(closed)).toBe(false)
+      expect(histories.canUndo(other)).toBe(true)
     })
   })
 
@@ -482,6 +916,104 @@ describe('useWorkflowStore', () => {
       // Verify bookmark was removed
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
     })
+
+    it('should remove a deleted workflow without closing other tabs', async () => {
+      const survivor = store.createTemporary('survivor.json')
+      const doomed = store.createTemporary('doomed.json')
+      vi.spyOn(doomed, 'delete').mockResolvedValue()
+      await store.openWorkflow(survivor)
+      await store.openWorkflow(doomed)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        survivor.path,
+        doomed.path
+      ])
+
+      await store.deleteWorkflow(doomed)
+
+      expect(store.isOpen(doomed)).toBe(false)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([survivor.path])
+    })
+  })
+
+  describe('openWorkflows integrity', () => {
+    it('should retain a missing active workflow until it becomes inactive', async () => {
+      await syncRemoteWorkflows(['a.json', 'b.json'])
+      vi.mocked(api.getUserData).mockImplementation(() =>
+        Promise.resolve(new Response(defaultGraphJSON, { status: 200 }))
+      )
+      const survivor = store.getWorkflowByPath('workflows/a.json')!
+      const removed = store.getWorkflowByPath('workflows/b.json')!
+      await store.openWorkflow(survivor)
+      await store.openWorkflow(removed)
+
+      await syncRemoteWorkflows(['a.json'])
+
+      expect(store.activeWorkflow).toBe(removed)
+      expect(store.getWorkflowByPath(removed.path)).toBe(removed)
+      expect(store.isOpen(removed)).toBe(true)
+      expect(store.openWorkflows.map((w) => w.path)).toEqual([
+        survivor.path,
+        removed.path
+      ])
+
+      await store.openWorkflow(survivor)
+      await syncRemoteWorkflows(['a.json'])
+
+      expect(store.activeWorkflow).toBe(survivor)
+      expect(store.getWorkflowByPath(removed.path)).toBeNull()
+      expect(store.isOpen(removed)).toBe(false)
+      expect(store.openWorkflows).toEqual([survivor])
+    })
+
+    it('should not expose open paths whose lookup record was removed', async () => {
+      const workflow = store.createTemporary('orphan.json')
+      await store.openWorkflow(workflow)
+      vi.mocked(syncEntities).mockImplementationOnce(
+        async (_dir, entityByPath) => {
+          delete entityByPath[workflow.path]
+        }
+      )
+
+      await store.syncWorkflows()
+
+      expect(store.isOpen(workflow)).toBe(true)
+      expect(store.openWorkflows).toEqual([])
+    })
+
+    it.for([
+      { openOrder: ['orphan', 'alpha', 'beta'] },
+      { openOrder: ['alpha', 'orphan', 'beta'] }
+    ])(
+      'should navigate and reorder tabs by their surviving index when opened as $openOrder',
+      async ({ openOrder }) => {
+        const workflows = Object.fromEntries(
+          openOrder.map((name) => [name, store.createTemporary(`${name}.json`)])
+        )
+        for (const name of openOrder) await store.openWorkflow(workflows[name])
+        await store.openWorkflow(workflows.alpha)
+        vi.mocked(syncEntities).mockImplementationOnce(
+          async (_dir, entityByPath) => {
+            delete entityByPath[workflows.orphan.path]
+          }
+        )
+
+        await store.syncWorkflows()
+
+        expect(store.openedWorkflowIndexShift(1)?.path).toBe(
+          workflows.beta.path
+        )
+        expect(store.openedWorkflowIndexShift(-1)?.path).toBe(
+          workflows.beta.path
+        )
+
+        store.reorderWorkflows(0, 1)
+
+        expect(store.openWorkflows.map((w) => w.path)).toEqual([
+          workflows.beta.path,
+          workflows.alpha.path
+        ])
+      }
+    )
   })
 
   describe('save', () => {
@@ -507,9 +1039,9 @@ describe('useWorkflowStore', () => {
 
       // Verify the content was updated
       expect(workflow.content).toBe(
-        JSON.stringify(workflow.changeTracker!.activeState)
+        JSON.stringify(workflow.changeTracker.activeState)
       )
-      expect(workflow.changeTracker!.reset).toHaveBeenCalled()
+      expect(workflow.changeTracker.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
     })
 
@@ -538,7 +1070,7 @@ describe('useWorkflowStore', () => {
       expect(api.storeUserData).toHaveBeenCalled()
 
       // Verify the content was updated
-      expect(workflow.changeTracker!.reset).toHaveBeenCalled()
+      expect(workflow.changeTracker.reset).toHaveBeenCalled()
       expect(workflow.isModified).toBe(false)
     })
   })
@@ -571,7 +1103,7 @@ describe('useWorkflowStore', () => {
 
       expect(newWorkflow.path).toBe('workflows/new-test.json')
       expect(newWorkflow.content).toBe(
-        JSON.stringify(workflow.changeTracker!.activeState)
+        JSON.stringify(workflow.changeTracker.activeState)
       )
       expect(newWorkflow.isModified).toBe(false)
     })
@@ -580,9 +1112,11 @@ describe('useWorkflowStore', () => {
   describe('Subgraphs', () => {
     beforeEach(async () => {
       // Ensure canvas exists for these tests
-      vi.mocked(comfyApp).canvas = createMockCanvas({
-        subgraph: undefined
-      }) as typeof comfyApp.canvas
+      vi.mocked(comfyApp).canvas = fromAny<typeof comfyApp.canvas, unknown>(
+        createMockCanvas({
+          subgraph: undefined
+        })
+      )
 
       // Setup an active workflow as updateActiveGraph depends on it
       const workflow = store.createTemporary('test-subgraph-workflow.json')
@@ -603,7 +1137,7 @@ describe('useWorkflowStore', () => {
 
     it('should handle when comfyApp.canvas is not available', async () => {
       // Arrange
-      vi.mocked(comfyApp).canvas = null! as typeof comfyApp.canvas
+      vi.mocked(comfyApp).canvas = fromAny<typeof comfyApp.canvas, null>(null)
 
       // Act
       console.debug(store.isSubgraphActive)
@@ -631,7 +1165,7 @@ describe('useWorkflowStore', () => {
 
     it('should correctly update state when a subgraph is active', async () => {
       // Arrange: Setup mock subgraph structure
-      const mockSubgraph = {
+      const mockSubgraph = fromAny<Subgraph, unknown>({
         name: 'Level 2 Subgraph',
         isRootGraph: false,
         pathToRootGraph: [
@@ -639,7 +1173,7 @@ describe('useWorkflowStore', () => {
           { name: 'Level 1 Subgraph' },
           { name: 'Level 2 Subgraph' }
         ]
-      } as Partial<Subgraph> as Subgraph
+      })
       vi.mocked(comfyApp.canvas).subgraph = mockSubgraph
 
       // Mock isSubgraph to return true for our mockSubgraph
@@ -658,11 +1192,11 @@ describe('useWorkflowStore', () => {
 
     it('should update automatically when activeWorkflow changes', async () => {
       // Arrange: Set initial canvas state (e.g., a subgraph)
-      const initialSubgraph = {
+      const initialSubgraph = fromAny<Subgraph, unknown>({
         name: 'Initial Subgraph',
         pathToRootGraph: [{ name: 'Root' }, { name: 'Initial Subgraph' }],
         isRootGraph: false
-      } as Partial<Subgraph> as Subgraph
+      })
       vi.mocked(comfyApp.canvas).subgraph = initialSubgraph
 
       // Mock isSubgraph to return true for our initialSubgraph
@@ -711,140 +1245,238 @@ describe('useWorkflowStore', () => {
   describe('NodeLocatorId conversions', () => {
     beforeEach(() => {
       // Setup mock graph structure with subgraphs
-      const mockRootGraph = {
-        _nodes: [] as unknown[],
-        nodes: [] as unknown[],
-        subgraphs: new Map(),
-        getNodeById: (id: string | number) => {
-          if (String(id) === '123') return mockNode
+      const mockNodes: LGraph['nodes'] = []
+      const mockSubgraphs = new Map<string, Subgraph>()
+      const mockRootGraph = fromAny<LGraph, unknown>({
+        _nodes: mockNodes,
+        nodes: mockNodes,
+        subgraphs: mockSubgraphs,
+        getNodeById: (id: NodeId) => {
+          if (id === toNodeId(123)) return mockNode
           return null
         }
-      }
+      })
 
-      const mockSubgraph = {
+      const mockSubgraph = fromAny<Subgraph, unknown>({
         id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-        rootGraph: mockRootGraph as LGraph,
+        rootGraph: mockRootGraph,
         _nodes: [],
         nodes: [],
         clear() {
           return undefined
         }
-      } as Partial<Subgraph> as Subgraph
+      })
 
-      const mockNode = {
-        id: 123,
+      const mockNode = createMockLGraphNode({
+        id: toNodeId(123),
         isSubgraphNode: () => true,
         subgraph: mockSubgraph
-      }
+      })
 
-      mockRootGraph._nodes = [mockNode]
-      mockRootGraph.nodes = [mockNode]
-      mockRootGraph.subgraphs = new Map([[mockSubgraph.id, mockSubgraph]])
+      mockNodes.push(mockNode)
+      mockSubgraphs.set(mockSubgraph.id, mockSubgraph)
 
-      vi.mocked(comfyApp).rootGraph = mockRootGraph as LGraph
+      vi.mocked(comfyApp).rootGraph = mockRootGraph
       vi.mocked(comfyApp.canvas).subgraph = mockSubgraph
       store.activeSubgraph = mockSubgraph
     })
 
     describe('nodeIdToNodeLocatorId', () => {
       it('should convert node ID to NodeLocatorId for subgraph nodes', () => {
-        const result = store.nodeIdToNodeLocatorId(456)
+        const result = store.nodeIdToNodeLocatorId(toNodeId(456))
         expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
       })
 
-      it('should return simple node ID for root graph nodes', () => {
-        store.activeSubgraph = undefined
-        const result = store.nodeIdToNodeLocatorId(123)
-        expect(result).toBe('123')
-      })
+      it.for([
+        { rawId: '', locatorId: '~root:' },
+        {
+          rawId: 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9',
+          locatorId:
+            '~root:insert%3A0fbd38ecb13037d0b3b0ca78b8a20a5a%3Aroot%3Anode%3A9'
+        }
+      ])(
+        'should key root node id $rawId under $locatorId',
+        ({ rawId, locatorId }) => {
+          store.activeSubgraph = undefined
+          const result = store.nodeIdToNodeLocatorId(toNodeId(rawId))
+
+          expect(result).toBe(locatorId)
+          expect(store.nodeLocatorIdToNodeId(result)).toBe(rawId)
+        }
+      )
 
       it('should use provided subgraph instead of active one', () => {
-        const customSubgraph = {
-          id: 'custom-uuid-1234-5678-90ab-cdef12345678',
-          rootGraph: undefined! as LGraph,
+        const customSubgraphId = '11111111-2222-4333-8444-555555555555'
+        const customSubgraph = fromPartial<Subgraph>({
+          id: customSubgraphId,
+          rootGraph: fromAny<LGraph, undefined>(undefined),
           _nodes: [],
           nodes: [],
           clear: vi.fn()
-        } as Partial<Subgraph> as Subgraph
-        const result = store.nodeIdToNodeLocatorId(789, customSubgraph)
-        expect(result).toBe('custom-uuid-1234-5678-90ab-cdef12345678:789')
+        })
+        const result = store.nodeIdToNodeLocatorId(
+          toNodeId(789),
+          customSubgraph
+        )
+        expect(result).toBe(`${customSubgraphId}:789`)
       })
     })
 
-    describe('nodeExecutionIdToNodeLocatorId', () => {
-      it('should convert execution ID to NodeLocatorId', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('123:456')
-        expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
+    describe('executionIdToCurrentId', () => {
+      it('should convert an execution ID to the active subgraph node ID', () => {
+        const result = store.executionIdToCurrentId('123:456')
+        expect(result).toBe('456')
       })
 
-      it('should return simple node ID for root level nodes', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('123')
-        expect(result).toBe('123')
+      it('should return undefined for execution IDs outside the active subgraph', () => {
+        expect(() => store.executionIdToCurrentId('999:456')).not.toThrow()
+        expect(store.executionIdToCurrentId('999:456')).toBeUndefined()
       })
 
-      it('should return null for invalid execution IDs', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('999:456')
-        expect(result).toBeNull()
+      it('should return undefined for malformed execution IDs', () => {
+        expect(() => store.executionIdToCurrentId('123::456')).not.toThrow()
+        expect(store.executionIdToCurrentId('123::456')).toBeUndefined()
       })
     })
-
     describe('nodeLocatorIdToNodeId', () => {
       it('should extract node ID from NodeLocatorId', () => {
         const result = store.nodeLocatorIdToNodeId(
-          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+          createNodeLocatorId(
+            'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            toNodeId(456)
+          )
         )
-        expect(result).toBe(456)
+        expect(result).toBe(toNodeId(456))
       })
 
       it('should handle string node IDs', () => {
         const result = store.nodeLocatorIdToNodeId(
-          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:node_1'
+          createNodeLocatorId(
+            'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            toNodeId('node_1')
+          )
         )
         expect(result).toBe('node_1')
       })
 
       it('should handle simple node IDs (root graph)', () => {
-        const result = store.nodeLocatorIdToNodeId('123')
-        expect(result).toBe(123)
+        const result = store.nodeLocatorIdToNodeId(
+          createNodeLocatorId(null, toNodeId(123))
+        )
+        expect(result).toBe(toNodeId(123))
 
-        const stringResult = store.nodeLocatorIdToNodeId('node_1')
+        const stringResult = store.nodeLocatorIdToNodeId(
+          createNodeLocatorId(null, toNodeId('node_1'))
+        )
         expect(stringResult).toBe('node_1')
       })
 
-      it('should return null for invalid NodeLocatorId', () => {
-        const result = store.nodeLocatorIdToNodeId('invalid:format')
-        expect(result).toBeNull()
+      it('should decode an encoded root-leaf locator to its node id', () => {
+        const locatorId = createNodeLocatorId(
+          null,
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+        const result = store.nodeLocatorIdToNodeId(locatorId)
+        expect(result).toBe(
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+      })
+
+      it('should return null for an unparseable locator', () => {
+        const locatorId = fromAny<NodeLocatorId, string>(
+          '~subgraph:not-a-uuid:5'
+        )
+
+        expect(store.nodeLocatorIdToNodeId(locatorId)).toBeNull()
       })
     })
 
     describe('nodeLocatorIdToNodeExecutionId', () => {
       it('should convert NodeLocatorId to execution ID', () => {
-        // Need to mock isSubgraph to identify our mockSubgraph
         vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
           return obj === store.activeSubgraph
         })
 
         const result = store.nodeLocatorIdToNodeExecutionId(
-          'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
+          createNodeLocatorId(
+            'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            toNodeId(456)
+          )
         )
         expect(result).toBe('123:456')
       })
 
       it('should handle simple node IDs (root graph)', () => {
-        const result = store.nodeLocatorIdToNodeExecutionId('123')
+        const result = store.nodeLocatorIdToNodeExecutionId(
+          createNodeLocatorId(null, toNodeId(123))
+        )
         expect(result).toBe('123')
       })
 
       it('should return null for unknown subgraph UUID', () => {
         const result = store.nodeLocatorIdToNodeExecutionId(
-          'unknown-uuid-1234-5678-90ab-cdef12345678:456'
+          createNodeLocatorId(
+            '99999999-8888-4777-8666-555555555555',
+            toNodeId(456)
+          )
         )
         expect(result).toBeNull()
       })
 
-      it('should return null for invalid NodeLocatorId', () => {
-        const result = store.nodeLocatorIdToNodeExecutionId('invalid:format')
-        expect(result).toBeNull()
+      it('should return null for an unparseable locator', () => {
+        const locatorId = fromAny<NodeLocatorId, string>(
+          '~subgraph:not-a-uuid:5'
+        )
+
+        expect(store.nodeLocatorIdToNodeExecutionId(locatorId)).toBeNull()
+      })
+
+      it('should mint a leaf execution id from an encoded root-leaf locator', () => {
+        const locatorId = createNodeLocatorId(
+          null,
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+        const result = store.nodeLocatorIdToNodeExecutionId(locatorId)
+        expect(result).toBe(
+          'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+        )
+      })
+
+      it('should append an encoded subgraph leaf to its execution path', () => {
+        vi.mocked(isSubgraph).mockImplementation((obj): obj is Subgraph => {
+          return obj === store.activeSubgraph
+        })
+        const locatorId = createNodeLocatorId(
+          'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+          'insert:abc123:root:node:5'
+        )
+
+        const result = store.nodeLocatorIdToNodeExecutionId(locatorId)
+
+        expect(result).toBe('123:insert:abc123:root:node:5')
+      })
+
+      it('should preserve a colon-bearing subgraph host in the execution path', () => {
+        const subgraphUuid = '11111111-2222-4333-8444-555555555555'
+        const subgraph = fromPartial<Subgraph>({ id: subgraphUuid })
+        vi.mocked(comfyApp).rootGraph = fromPartial<LGraph>({
+          _nodes: [
+            createMockLGraphNode({
+              id: toNodeId('insert:op:root:node:3'),
+              isSubgraphNode: () => true,
+              subgraph
+            })
+          ]
+        })
+        vi.mocked(isSubgraph).mockImplementation(
+          (graph): graph is Subgraph => graph === subgraph
+        )
+
+        expect(
+          store.nodeLocatorIdToNodeExecutionId(
+            createNodeLocatorId(subgraphUuid, toNodeId(7))
+          )
+        ).toBe('insert:op:root:node:3:7')
       })
     })
   })
@@ -940,38 +1572,344 @@ describe('useWorkflowStore', () => {
 
   describe('closeWorkflow draft cleanup', () => {
     it('should remove draft for persisted workflows on close', async () => {
-      const draftStore = useWorkflowDraftStore()
       await syncRemoteWorkflows(['a.json'])
       const workflow = store.getWorkflowByPath('workflows/a.json')!
-
-      draftStore.saveDraft('workflows/a.json', {
-        data: '{"dirty":true}',
-        updatedAt: Date.now(),
+      const draftStore = saveV2Draft('workflows/a.json', {
         name: 'a.json',
         isTemporary: false
       })
-      expect(draftStore.getDraft('workflows/a.json')).toBeDefined()
+      expect(draftStore.getDraft('workflows/a.json')).toBeTruthy()
 
       await store.closeWorkflow(workflow)
 
-      expect(draftStore.getDraft('workflows/a.json')).toBeUndefined()
+      expect(draftStore.getDraft('workflows/a.json')).toBeNull()
+    })
+
+    it('clears the modified mark of a closed persisted workflow so a bulk save skips it', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+      await workflow.load()
+      workflow.isModified = true
+
+      await store.closeWorkflow(workflow)
+
+      expect(workflow.isLoaded).toBe(false)
+      expect(workflow.isModified).toBe(false)
+      expect(store.modifiedWorkflows).not.toContain(workflow)
     })
 
     it('should remove draft for temporary workflows on close', async () => {
-      const draftStore = useWorkflowDraftStore()
       const workflow = store.createTemporary('temp.json')
-
-      draftStore.saveDraft(workflow.path, {
-        data: '{"dirty":true}',
-        updatedAt: Date.now(),
+      const draftStore = saveV2Draft(workflow.path, {
         name: 'temp.json',
         isTemporary: true
       })
-      expect(draftStore.getDraft(workflow.path)).toBeDefined()
+      expect(draftStore.getDraft(workflow.path)).toBeTruthy()
 
       await store.closeWorkflow(workflow)
 
-      expect(draftStore.getDraft(workflow.path)).toBeUndefined()
+      expect(draftStore.getDraft(workflow.path)).toBeNull()
+    })
+  })
+
+  describe('null-state hardening', () => {
+    const storedAs = (content: string) =>
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(content)
+      } as Response)
+
+    const failedAssertions = () =>
+      mockAssert.mock.calls.filter(([condition]) => !condition)
+
+    const expectReported = (message: string, context: object) =>
+      expect(mockAssert).toHaveBeenCalledWith(
+        false,
+        message,
+        expect.objectContaining(context)
+      )
+
+    beforeEach(() => {
+      resetReportedWorkflowStateAnomaliesForTests()
+    })
+
+    describe('load', () => {
+      it.for(['null', '42', '"text"', '[]'])(
+        'rejects stored content %s',
+        async (content) => {
+          await syncRemoteWorkflows(['a.json'])
+          const workflow = store.getWorkflowByPath('workflows/a.json')!
+          storedAs(content)
+
+          await expect(workflow.load()).rejects.toThrow('not a JSON object')
+
+          expect(workflow.isLoaded).toBe(false)
+          expect(workflow.changeTracker).toBeNull()
+        }
+      )
+
+      // The production crashes (CLOUD-FRONTEND-PROD-2Z2/-2Z3) had a tracker
+      // with a null initial state and a draft as its active state: a stored
+      // `null` overlaid by a newer draft.
+      it('rejects stored null even when a newer draft exists, and keeps the draft', async () => {
+        enableWorkflowPersistence()
+        await syncRemoteWorkflowsWithMeta([
+          { path: 'a.json', modified: 100, size: 1 }
+        ])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        const draftStore = saveV2Draft(workflow.path, {
+          data: defaultGraphJSON,
+          name: 'a.json'
+        })
+        storedAs('null')
+
+        await expect(workflow.load()).rejects.toThrow('not a JSON object')
+
+        expect(workflow.changeTracker).toBeNull()
+        expect(workflow.initialState).toBeNull()
+        expect(workflow.activeState).toBeNull()
+        expect(draftStore.getDraft(workflow.path)?.data).toBe(defaultGraphJSON)
+      })
+
+      it('reports the kind of content without including the path', async () => {
+        await syncRemoteWorkflows(['secret-name.json'])
+        const workflow = store.getWorkflowByPath('workflows/secret-name.json')!
+        storedAs('null')
+
+        await expect(workflow.load()).rejects.toThrow()
+
+        expectReported('Workflow content is not a JSON object', {
+          method: 'ComfyWorkflow.load',
+          isLoaded: false,
+          hasChangeTracker: false,
+          hasInitialState: false,
+          hasActiveState: false,
+          isPersisted: true,
+          isTemporary: false,
+          originalContentKind: 'null'
+        })
+        expect(JSON.stringify(mockAssert.mock.calls)).not.toContain(
+          'secret-name'
+        )
+      })
+
+      it('rejects with a typed error whose message does not include the path', async () => {
+        await syncRemoteWorkflows(['secret-name.json'])
+        const workflow = store.getWorkflowByPath('workflows/secret-name.json')!
+        storedAs('null')
+
+        const error: unknown = await workflow.load().catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(UnreadableWorkflowError)
+        expect((error as UnreadableWorkflowError).reason).toBe('not-object')
+        expect((error as UnreadableWorkflowError).workflowPath).toBe(
+          'workflows/secret-name.json'
+        )
+        expect((error as Error).message).not.toContain('secret-name')
+      })
+
+      it.for(['', '   '])(
+        'rejects empty stored content %j with a typed error and reports it',
+        async (content) => {
+          await syncRemoteWorkflows(['a.json'])
+          const workflow = store.getWorkflowByPath('workflows/a.json')!
+          storedAs(content)
+
+          const error: unknown = await workflow.load().catch((e: unknown) => e)
+
+          expect(error).toBeInstanceOf(UnreadableWorkflowError)
+          expect((error as UnreadableWorkflowError).reason).toBe('empty')
+          expectReported('Workflow content is missing or empty', {
+            method: 'ComfyWorkflow.load',
+            isPersisted: true
+          })
+        }
+      )
+
+      it('keeps the typed error when the anomaly assertion throws in development', async () => {
+        mockAssert.mockImplementation((condition: unknown, message: string) => {
+          if (!condition) throw new Error(message)
+        })
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs('null')
+
+        await expect(workflow.load()).rejects.toBeInstanceOf(
+          UnreadableWorkflowError
+        )
+      })
+
+      it('does not leave a tab behind when opening unreadable content', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs('null')
+
+        await expect(store.openWorkflow(workflow)).rejects.toBeInstanceOf(
+          UnreadableWorkflowError
+        )
+
+        expect(store.openWorkflows).not.toContain(workflow)
+      })
+
+      it('does not report content that is a JSON object', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs(defaultGraphJSON)
+
+        await workflow.load()
+
+        expect(workflow.isLoaded).toBe(true)
+        expect(failedAssertions()).toHaveLength(0)
+      })
+
+      it.for([
+        '[object Object]',
+        'undefined',
+        '{"nodes":[],',
+        'Workflow content is not a JSON object'
+      ])('rejects stored content %j as unparseable', async (content) => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs(content)
+
+        const error: unknown = await workflow.load().catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(UnreadableWorkflowError)
+        expect((error as UnreadableWorkflowError).reason).toBe('unparseable')
+        expect(workflow.isLoaded).toBe(false)
+        expect(workflow.changeTracker).toBeNull()
+      })
+
+      it('reports unparseable content with a static message and no content', async () => {
+        await syncRemoteWorkflows(['secret-name.json'])
+        const workflow = store.getWorkflowByPath('workflows/secret-name.json')!
+        storedAs('[object Object]')
+
+        await expect(workflow.load()).rejects.toThrow('not valid JSON')
+
+        expectReported('Workflow content is not valid JSON', {
+          method: 'ComfyWorkflow.load',
+          isPersisted: true,
+          originalContentKind: 'unparseable'
+        })
+        const reported = JSON.stringify(mockAssert.mock.calls)
+        expect(reported).not.toContain('secret-name')
+        expect(reported).not.toContain('[object Object]')
+      })
+
+      it('keeps the typed error when the anomaly assertion throws on unparseable content', async () => {
+        mockAssert.mockImplementation((condition: unknown, message: string) => {
+          if (!condition) throw new Error(message)
+        })
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs('[object Object]')
+
+        await expect(workflow.load()).rejects.toBeInstanceOf(
+          UnreadableWorkflowError
+        )
+      })
+    })
+
+    describe.for(['save', 'saveAs'] as const)('%s', (method) => {
+      it('refuses to persist an unloaded workflow and reports it', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        const contentBefore = workflow.content
+
+        const attempt =
+          method === 'save'
+            ? workflow.save()
+            : workflow.saveAs('workflows/copy.json')
+
+        await expect(attempt).rejects.toThrow(
+          /^Cannot save a workflow before it is loaded$/
+        )
+        expect(api.storeUserData).not.toHaveBeenCalled()
+        expect(workflow.content).toBe(contentBefore)
+        expectReported('Workflow saved without an active state', {
+          method: `ComfyWorkflow.${method}`,
+          isLoaded: false,
+          hasChangeTracker: false,
+          hasActiveState: false
+        })
+      })
+    })
+
+    describe('openWorkflow', () => {
+      it('loads a workflow that is active but was never loaded', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        store.activeWorkflow = workflow as LoadedComfyWorkflow
+        storedAs(defaultGraphJSON)
+
+        const opened = await store.openWorkflow(workflow)
+
+        expect(opened.isLoaded).toBe(true)
+        expect(opened.initialState).toEqual(defaultGraph)
+        expectReported(
+          'openWorkflow called on an active workflow that is not loaded',
+          {
+            method: 'workflowStore.openWorkflow',
+            isActive: true,
+            isLoaded: false,
+            hasInitialState: false
+          }
+        )
+      })
+
+      it('reports each affected workflow only once', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs(defaultGraphJSON)
+
+        for (let attempt = 0; attempt < 2; attempt++) {
+          workflow.unload()
+          store.activeWorkflow = workflow as LoadedComfyWorkflow
+          await store.openWorkflow(workflow)
+        }
+
+        expect(failedAssertions()).toHaveLength(1)
+      })
+
+      it('does not report an active workflow that is loaded', async () => {
+        const workflow = await store.createTemporary('test.json').load()
+        store.activeWorkflow = workflow
+
+        await store.openWorkflow(workflow)
+
+        expect(failedAssertions()).toHaveLength(0)
+      })
+
+      it('reports a never-loaded temporary workflow that aliases the active path', async () => {
+        const activeByPath = await store.createTemporary('aliased.json').load()
+        const neverLoaded = store.createTemporary('aliased.json')
+        neverLoaded.updatePath(activeByPath.path)
+        store.activeWorkflow = activeByPath
+
+        const opened = await store.openWorkflow(neverLoaded)
+
+        expectReported(
+          'openWorkflow called on an active workflow that is not loaded',
+          {
+            method: 'workflowStore.openWorkflow',
+            isActive: true,
+            isLoaded: false,
+            hasChangeTracker: false,
+            hasInitialState: false,
+            hasActiveState: false,
+            isPersisted: false,
+            isTemporary: true,
+            originalContentKind: 'object'
+          }
+        )
+        expect(opened).toBe(neverLoaded)
+        expect(opened.isLoaded).toBe(true)
+      })
     })
   })
 })

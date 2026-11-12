@@ -1,26 +1,26 @@
 import { watchDebounced } from '@vueuse/core'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
 /**
  * Cloud-only extension that polls for remote config updates
  * Initial config load happens in main.ts before any other imports
  */
-useExtensionService().registerExtension({
+export const cloudRemoteConfigExtension: ComfyExtension = {
   name: 'Comfy.Cloud.RemoteConfig',
 
   setup: async () => {
     const { isLoggedIn } = useCurrentUser()
-    const { isActiveSubscription } = useBillingContext()
+    const { canAccessSubscriptionFeatures } = useBillingContext()
 
     // Refresh config when auth or subscription status changes
     // Primary auth refresh is handled by WorkspaceAuthGate on mount
     // This watcher handles subscription changes and acts as a backup for auth
     watchDebounced(
-      [isLoggedIn, isActiveSubscription],
+      [isLoggedIn, canAccessSubscriptionFeatures],
       () => {
         if (!isLoggedIn.value) return
         void refreshRemoteConfig()
@@ -31,4 +31,4 @@ useExtensionService().registerExtension({
     // Poll for config updates every 10 minutes (with auth)
     setInterval(() => void refreshRemoteConfig(), 600_000)
   }
-})
+}

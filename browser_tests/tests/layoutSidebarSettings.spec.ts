@@ -1,0 +1,124 @@
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
+
+test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
+  test.describe('Comfy.Sidebar.Size', () => {
+    test('"small" applies small-sidebar class', async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'small')
+      await expect(comfyPage.menu.sideToolbar).toContainClass('small-sidebar')
+    })
+
+    test('"normal" does not apply small-sidebar class', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'normal')
+      await expect(comfyPage.menu.sideToolbar).not.toContainClass(
+        'small-sidebar'
+      )
+    })
+  })
+
+  test.describe('Comfy.Sidebar.Style', () => {
+    // `isConnected` overrides the Style setting when the toolbar overflows;
+    // small (48px) items keep content under the default viewport so Style
+    // actually drives rendering.
+    test.use({ initialSettings: { 'Comfy.Sidebar.Size': 'small' } })
+
+    test('"connected" applies connected-sidebar class', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.Sidebar.Style', 'connected')
+      await expect(comfyPage.menu.sideToolbar).toContainClass(
+        'connected-sidebar'
+      )
+      await expect(comfyPage.menu.sideToolbar).not.toContainClass(
+        'floating-sidebar'
+      )
+    })
+
+    test('"floating" applies floating-sidebar class', async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting('Comfy.Sidebar.Style', 'floating')
+      await expect(comfyPage.menu.sideToolbar).toContainClass(
+        'floating-sidebar'
+      )
+      await expect(comfyPage.menu.sideToolbar).not.toContainClass(
+        'connected-sidebar'
+      )
+    })
+
+    test('"floating" + Size "normal" is overridden to connected by overflow', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'normal')
+      await comfyPage.settings.setSetting('Comfy.Sidebar.Style', 'floating')
+      await expect(comfyPage.menu.sideToolbar).toContainClass(
+        'connected-sidebar'
+      )
+      await expect(comfyPage.menu.sideToolbar).toContainClass(
+        'overflowing-sidebar'
+      )
+    })
+
+    test('"floating" + Size "normal" renders floating in a viewport tall enough to fit', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'normal')
+      await comfyPage.settings.setSetting('Comfy.Sidebar.Style', 'floating')
+      await comfyPage.page.setViewportSize({ width: 1280, height: 1500 })
+      await expect(comfyPage.menu.sideToolbar).toContainClass(
+        'floating-sidebar'
+      )
+      await expect(comfyPage.menu.sideToolbar).not.toContainClass(
+        'overflowing-sidebar'
+      )
+    })
+  })
+
+  test.describe('Comfy.UI.TabBarLayout', () => {
+    test('"Default" renders integrated tab bar actions container', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.UI.TabBarLayout', 'Default')
+      await expect(comfyPage.menu.topbar.integratedTabBarActions).toBeAttached()
+    })
+
+    test('"Legacy" does not render integrated tab bar actions container', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.UI.TabBarLayout', 'Legacy')
+      await expect(comfyPage.menu.topbar.integratedTabBarActions).toHaveCount(0)
+    })
+  })
+
+  test.describe('Comfy.TreeExplorer.ItemPadding', () => {
+    test.describe('legacy node library', () => {
+      test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': false } })
+
+      test('applies the padding to tree rows', async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 4)
+        await comfyPage.menu.nodeLibraryTab.open()
+        const row = comfyPage.menu.nodeLibraryTab.nodeLibraryTree
+          .getByRole('treeitem')
+          .first()
+        await expect(row).toHaveCSS('padding-top', '4px')
+        await expect(row).toHaveCSS('padding-bottom', '4px')
+      })
+    })
+
+    test.describe('new node library', () => {
+      test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': true } })
+
+      test('applies the padding to tree rows', async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 4)
+        await comfyPage.menu.nodeLibraryTabV2.open()
+        const row = comfyPage.menu.nodeLibraryTabV2.sidebarContent
+          .getByRole('treeitem')
+          .first()
+        await expect(row).toHaveCSS('padding-top', '4px')
+        await expect(row).toHaveCSS('padding-bottom', '4px')
+      })
+    })
+  })
+})

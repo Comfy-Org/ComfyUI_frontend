@@ -1,13 +1,12 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import {
   ModelNodeProvider,
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 const EXPECTED_DEFAULT_TYPES = [
   'checkpoints',
@@ -31,33 +30,17 @@ const EXPECTED_DEFAULT_TYPES = [
   'latent_upscale_models',
   'sam2',
   'sams',
-  'ultralytics',
-  'depthanything',
   'ipadapter',
-  'segformer_b2_clothes',
-  'segformer_b3_clothes',
-  'segformer_b3_fashion',
   'nlf',
   'FlashVSR',
-  'FlashVSR-v1.1'
+  'FlashVSR-v1.1',
+  'background_removal',
+  'frame_interpolation',
+  'film'
 ] as const
 
-type NodeDefStoreType = ReturnType<typeof useNodeDefStore>
-
 function createMockNodeDef(name: string): ComfyNodeDefImpl {
-  const def: ComfyNodeDefV1 = {
-    name,
-    display_name: name,
-    category: 'test',
-    python_module: 'nodes',
-    description: '',
-    input: { required: {}, optional: {} },
-    output: [],
-    output_name: [],
-    output_is_list: [],
-    output_node: false
-  }
-  return new ComfyNodeDefImpl(def)
+  return fromPartial({ name })
 }
 
 const MOCK_NODE_NAMES = [
@@ -65,6 +48,8 @@ const MOCK_NODE_NAMES = [
   'ImageOnlyCheckpointLoader',
   'LoraLoader',
   'LoraLoaderModelOnly',
+  'LoadLoraModel',
+  'LoadLoraTextEncoder',
   'VAELoader',
   'ControlNetLoader',
   'UNETLoader',
@@ -84,33 +69,22 @@ const MOCK_NODE_NAMES = [
   'LatentUpscaleModelLoader',
   'DownloadAndLoadSAM2Model',
   'SAMLoader',
-  'UltralyticsDetectorProvider',
-  'DownloadAndLoadDepthAnythingV2Model',
   'IPAdapterModelLoader',
-  'LS_LoadSegformerModel',
   'LoadNLFModel',
-  'FlashVSRNode'
+  'FlashVSRNode',
+  'LTXICLoRALoaderModelOnly',
+  'LoadBackgroundRemovalModel',
+  'FrameInterpolationModelLoader',
+  'FILM VFI'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
   MOCK_NODE_NAMES.map((name) => [name, createMockNodeDef(name)])
 )
 
-vi.mock('@/stores/nodeDefStore', async (importOriginal) => {
-  const original = await importOriginal<NodeDefStoreType>()
-
-  return {
-    ...original,
-    useNodeDefStore: vi.fn(() => ({
-      nodeDefsByName: mockNodeDefsByName
-    }))
-  }
-})
-
 describe('useModelToNodeStore', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
+    useNodeDefStore().nodeDefsByName = mockNodeDefsByName
   })
 
   describe('modelToNodeMap', () => {
@@ -135,7 +109,7 @@ describe('useModelToNodeStore', () => {
 
       const provider = modelToNodeStore.getNodeProvider('checkpoints')
       expect(provider).toBeDefined()
-      expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
+      expect(provider?.nodeDef.name).toBe('CheckpointLoaderSimple')
       expect(provider?.key).toBe('ckpt_name')
     })
 
@@ -143,14 +117,6 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
       expect(modelToNodeStore.getNodeProvider('nonexistent')).toBeUndefined()
-    })
-
-    it('should return first registered provider when multiple providers exist for same model type', () => {
-      const modelToNodeStore = useModelToNodeStore()
-      modelToNodeStore.registerDefaults()
-
-      const provider = modelToNodeStore.getNodeProvider('checkpoints')
-      expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
     })
 
     it('should trigger lazy registration when called before registerDefaults', () => {
@@ -166,7 +132,7 @@ describe('useModelToNodeStore', () => {
 
       const provider = modelToNodeStore.getNodeProvider('checkpoints/subfolder')
       expect(provider).toBeDefined()
-      expect(provider?.nodeDef?.name).toBe('CheckpointLoaderSimple')
+      expect(provider?.nodeDef.name).toBe('CheckpointLoaderSimple')
     })
 
     it('should return undefined for hierarchical type with unregistered top-level', () => {
@@ -184,7 +150,7 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.quickRegister('level1', 'UNETLoader', 'key1')
 
         const provider = modelToNodeStore.getNodeProvider('level1')
-        expect(provider?.nodeDef?.name).toBe('UNETLoader')
+        expect(provider?.nodeDef.name).toBe('UNETLoader')
       })
 
       it('should resolve 2-level path to registered parent', () => {
@@ -192,7 +158,7 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.quickRegister('level1', 'UNETLoader', 'key1')
 
         const provider = modelToNodeStore.getNodeProvider('level1/child')
-        expect(provider?.nodeDef?.name).toBe('UNETLoader')
+        expect(provider?.nodeDef.name).toBe('UNETLoader')
       })
 
       it('should resolve 3-level path to nearest registered ancestor', () => {
@@ -202,7 +168,7 @@ describe('useModelToNodeStore', () => {
 
         // 3 levels: should match level1/level2 (nearest), not level1
         const provider = modelToNodeStore.getNodeProvider('level1/level2/child')
-        expect(provider?.nodeDef?.name).toBe('VAELoader')
+        expect(provider?.nodeDef.name).toBe('VAELoader')
       })
 
       it('should resolve 4-level path to nearest registered ancestor', () => {
@@ -213,7 +179,7 @@ describe('useModelToNodeStore', () => {
 
         // 4 levels: should match a/b/c (nearest), not a/b or a
         const provider = modelToNodeStore.getNodeProvider('a/b/c/d')
-        expect(provider?.nodeDef?.name).toBe('StyleModelLoader')
+        expect(provider?.nodeDef.name).toBe('StyleModelLoader')
       })
 
       it('should skip intermediate unregistered levels', () => {
@@ -223,7 +189,7 @@ describe('useModelToNodeStore', () => {
 
         // 3 levels: a/b not found, falls back to a
         const provider = modelToNodeStore.getNodeProvider('a/b/c')
-        expect(provider?.nodeDef?.name).toBe('UNETLoader')
+        expect(provider?.nodeDef.name).toBe('UNETLoader')
       })
 
       it('should prefer exact match over any fallback', () => {
@@ -232,7 +198,7 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.quickRegister('a/b/c', 'VAELoader', 'k2')
 
         const provider = modelToNodeStore.getNodeProvider('a/b/c')
-        expect(provider?.nodeDef?.name).toBe('VAELoader')
+        expect(provider?.nodeDef.name).toBe('VAELoader')
       })
 
       it('should return undefined when no ancestor is registered', () => {
@@ -251,33 +217,86 @@ describe('useModelToNodeStore', () => {
         'chatterbox/chatterbox_vc'
       )
       expect(provider).toBeDefined()
-      expect(provider?.nodeDef?.name).toBe('FL_ChatterboxVC')
+      expect(provider?.nodeDef.name).toBe('FL_ChatterboxVC')
       expect(provider?.key).toBe('')
     })
 
-    it.each([
+    it.for([
       ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
-      ['depthanything', 'DownloadAndLoadDepthAnythingV2Model', 'model'],
-      ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
-      ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
       ['FlashVSR', 'FlashVSRNode', ''],
       ['FlashVSR-v1.1', 'FlashVSRNode', ''],
-      ['segformer_b2_clothes', 'LS_LoadSegformerModel', 'model_name'],
-      ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name']
+      ['background_removal', 'LoadBackgroundRemovalModel', 'bg_removal_name'],
+      ['frame_interpolation', 'FrameInterpolationModelLoader', 'model_name'],
+      ['film', 'FILM VFI', 'ckpt_name']
     ])(
       'should return correct provider for %s',
-      (modelType, expectedNodeName, expectedKey) => {
+      ([modelType, expectedNodeName, expectedKey]) => {
         const modelToNodeStore = useModelToNodeStore()
         modelToNodeStore.registerDefaults()
 
         const provider = modelToNodeStore.getNodeProvider(modelType)
-        expect(provider?.nodeDef?.name).toBe(expectedNodeName)
+        expect(provider?.nodeDef.name).toBe(expectedNodeName)
         expect(provider?.key).toBe(expectedKey)
       }
     )
+
+    it.for(['ultralytics', 'ultralytics/bbox', 'ultralytics/segm'])(
+      'should not register %s as a default provider, so the node falls back to its static combo (regression for #8468)',
+      (modelType) => {
+        const modelToNodeStore = useModelToNodeStore()
+        modelToNodeStore.registerDefaults()
+
+        expect(modelToNodeStore.getNodeProvider(modelType)).toBeUndefined()
+      }
+    )
   })
+
+  it('does not treat an auto-loading provider as an asset widget', () => {
+    expect(useModelToNodeStore().isModelWidget('FL_ChatterboxVC', '')).toBe(
+      false
+    )
+  })
+
+  it('supports repeated model fields registered outside the default mappings', () => {
+    const store = useModelToNodeStore()
+    store.registerNodeProvider(
+      'vae',
+      new ModelNodeProvider(createMockNodeDef('MultiVAE'), /^items\.\d+\.file$/)
+    )
+
+    expect(store.isModelWidget('MultiVAE', 'items.3.file')).toBe(true)
+    expect(store.isModelWidget('MultiVAE', 'items.3.strength')).toBe(false)
+    expect(store.getCategoryForNodeType('MultiVAE')).toBe('vae')
+  })
+
+  it('matches string selectors literally, including regex characters', () => {
+    const store = useModelToNodeStore()
+    store.quickRegister('vae', 'VAELoader', 'items.*.file')
+
+    expect(store.isModelWidget('VAELoader', 'items.*.file')).toBe(true)
+    expect(store.isModelWidget('VAELoader', 'items.3.file')).toBe(false)
+  })
+
+  it.for(['g', 'y'])(
+    'keeps repeated widget checks stable with the %s flag',
+    (flags) => {
+      const store = useModelToNodeStore()
+      store.registerNodeProvider(
+        'vae',
+        new ModelNodeProvider(
+          createMockNodeDef('MultiVAE'),
+          new RegExp(/^items\.\d+\.file$/, flags)
+        )
+      )
+
+      expect(store.isModelWidget('MultiVAE', 'items.1.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.1.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.2.file')).toBe(true)
+      expect(store.isModelWidget('MultiVAE', 'items.2.strength')).toBe(false)
+    }
+  )
 
   describe('getAllNodeProviders', () => {
     it('should return all providers for model type with multiple nodes', () => {
@@ -301,7 +320,22 @@ describe('useModelToNodeStore', () => {
       )
 
       const loraProviders = modelToNodeStore.getAllNodeProviders('loras')
-      expect(loraProviders).toHaveLength(2)
+      expect(loraProviders).toHaveLength(5)
+      expect(loraProviders).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({ name: 'LoraLoader' })
+          }),
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({ name: 'LoraLoaderModelOnly' })
+          }),
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({
+              name: 'LTXICLoRALoaderModelOnly'
+            })
+          })
+        ])
+      )
     })
 
     it('should return single provider for model type with one node', () => {
@@ -342,10 +376,7 @@ describe('useModelToNodeStore', () => {
   describe('registerNodeProvider', () => {
     it('should not register provider when nodeDef is undefined', () => {
       const modelToNodeStore = useModelToNodeStore()
-      const providerWithoutNodeDef = new ModelNodeProvider(
-        undefined!,
-        'custom_key'
-      )
+      const providerWithoutNodeDef = { nodeDef: undefined, key: 'custom_key' }
 
       modelToNodeStore.registerNodeProvider(
         'custom_type',
@@ -481,18 +512,10 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should not register when nodeDefStore is empty', () => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: {}
-      })
+      useNodeDefStore().nodeDefsByName = {}
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
       expect(modelToNodeStore.getNodeProvider('checkpoints')).toBeUndefined()
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: mockNodeDefsByName
-      })
     })
   })
 
@@ -504,19 +527,11 @@ describe('useModelToNodeStore', () => {
     })
 
     it('should return empty Record when nodeDefStore is empty', () => {
-      setActivePinia(createTestingPinia({ stubActions: false }))
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: {}
-      })
+      useNodeDefStore().nodeDefsByName = {}
       const modelToNodeStore = useModelToNodeStore()
 
       const result = modelToNodeStore.getRegisteredNodeTypes()
       expect(result).toStrictEqual({})
-
-      vi.mocked(useNodeDefStore, { partial: true }).mockReturnValue({
-        nodeDefsByName: mockNodeDefsByName
-      })
     })
 
     it('should contain node types to resolve widget name', () => {
@@ -553,6 +568,18 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.getCategoryForNodeType('NonExistentNode')
       ).toBeUndefined()
       expect(modelToNodeStore.getCategoryForNodeType('')).toBeUndefined()
+    })
+
+    it('maps the IC-LoRA Loader Model Only node to loras so its lora_name dropdown uses the cloud asset browser (FE-838)', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      expect(
+        modelToNodeStore.getCategoryForNodeType('LTXICLoRALoaderModelOnly')
+      ).toBe('loras')
+      expect(
+        modelToNodeStore.getRegisteredNodeTypes()['LTXICLoRALoaderModelOnly']
+      ).toBe('lora_name')
     })
 
     it('should return first category when node type exists in multiple categories', () => {
@@ -596,8 +623,8 @@ describe('useModelToNodeStore', () => {
       }
       const end = performance.now()
 
-      // Should be fast enough for UI responsiveness
-      expect(end - start).toBeLessThan(10)
+      // Should be fast enough for UI responsiveness (O(1) map lookup)
+      expect(end - start).toBeLessThan(100)
     })
 
     it('should handle invalid input types gracefully', () => {

@@ -1,0 +1,19 @@
+<template>
+  <div :class="containerClasses">
+    <slot></slot>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
+
+const { fullHeight = true } = defineProps<{
+  fullHeight?: boolean
+}>()
+
+const containerClasses = computed(() =>
+  cn('w-full flex-1', fullHeight && 'h-full')
+)
+</script>

@@ -36,7 +36,7 @@
     "label": "重启"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "为选中节点打开3D查看器（测试版）"
+    "label": "为所选节点打开 3D 查看器（测试版）"
   },
   "Comfy_BrowseModelAssets": {
     "label": "实验性：浏览模型资源"
@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "删除选定的项目"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "删除选中的连线"
+  },
   "Comfy_Canvas_FitView": {
     "label": "适应视图到选中节点"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "隐藏选中的连线"
   },
   "Comfy_Canvas_Lock": {
     "label": "锁定画布"
@@ -83,6 +89,9 @@
   "Comfy_Canvas_SelectAll": {
     "label": "全选"
   },
+  "Comfy_Canvas_ShowSelectedLinks": {
+    "label": "显示选中的连线"
+  },
   "Comfy_Canvas_ToggleLinkVisibility": {
     "label": "切换链接可见性"
   },
@@ -97,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "折叠/展开选中节点"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "隐藏/显示所选节点上的连接线"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "静音/取消静音选中节点"
@@ -158,15 +170,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "解开所选子图"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "将选中节点转换为组节点"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "管理组节点"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "解散选中组节点"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "打开关于ComfyUI"
   },
@@ -184,6 +187,9 @@
   },
   "Comfy_Interrupt": {
     "label": "中断"
+  },
+  "Comfy_LayerEditor_OpenLayerEditor": {
+    "label": "为选中节点打开图层编辑器"
   },
   "Comfy_LoadDefaultWorkflow": {
     "label": "加载默认工作流"
@@ -236,6 +242,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "新建空白工作流"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "重新播放入门引导"
+  },
   "Comfy_OpenClipspace": {
     "label": "打开剪贴板"
   },
@@ -284,9 +293,6 @@
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "设置子图搜索别名"
   },
-  "Comfy_ToggleAssetAPI": {
-    "label": "实验性：启用 AssetAPI"
-  },
   "Comfy_ToggleCanvasInfo": {
     "label": "画布性能"
   },
@@ -294,7 +300,7 @@
     "label": "说明中心"
   },
   "Comfy_ToggleLinear": {
-    "label": "切换线性模式"
+    "label": "切换应用模式"
   },
   "Comfy_ToggleQPOV2": {
     "label": "切换队列面板V2"
@@ -312,7 +318,7 @@
     "label": "退出登录"
   },
   "Experimental_ToggleVueNodes": {
-    "label": "实验性：启用 Vue 节点"
+    "label": "启用 Nodes 2.0"
   },
   "Workspace_CloseWorkflow": {
     "label": "关闭当前工作流"

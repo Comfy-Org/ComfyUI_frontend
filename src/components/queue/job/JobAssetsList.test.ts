@@ -1,13 +1,15 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access -- stubs lack ARIA roles; data attributes for props */
-/* eslint-disable testing-library/prefer-user-event -- fireEvent needed: fake timers require fireEvent for mouseEnter/mouseLeave */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access -- stubs lack ARIA roles; data attributes for props */
+/* oxlint-disable testing-library/prefer-user-event -- fireEvent needed: fake timers require fireEvent for mouseEnter/mouseLeave */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import './testUtils/mockTanstackVirtualizer'
 
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import JobAssetsList from './JobAssetsList.vue'
 
@@ -19,13 +21,16 @@ const hoisted = vi.hoisted(() => ({
       workflowId: { type: String, default: undefined }
     },
     template:
-      '<div class="job-details-popover-stub" :data-job-id="jobId" :data-workflow-id="workflowId" />'
+      '<div data-testid="job-details" :data-job-id="jobId" :data-workflow-id="workflowId" />'
   }
 }))
 
-vi.mock('@/components/queue/job/JobDetailsPopover.vue', () => ({
-  default: hoisted.jobDetailsPopoverStub
-}))
+vi.mock<unknown>(
+  import('@/components/queue/job/JobDetailsPopover.vue'),
+  () => ({
+    default: hoisted.jobDetailsPopoverStub
+  })
+)
 
 const AssetsListItemStub = defineComponent({
   name: 'AssetsListItem',
@@ -55,25 +60,17 @@ const AssetsListItemStub = defineComponent({
   `
 })
 
-vi.mock('vue-i18n', () => {
-  return {
-    createI18n: () => ({
-      global: {
-        t: (key: string) => key,
-        te: () => true,
-        d: (value: string) => value
-      }
-    }),
-    useI18n: () => ({
-      t: (key: string) => key
-    })
-  }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
 })
 
 type TestPreviewOutput = {
+  filename: string
+  mediaType: string
   url: string
-  isImage: boolean
-  isVideo: boolean
+  previewUrl: string
 }
 
 type TestTaskRef = {
@@ -95,9 +92,10 @@ const createPreviewOutput = (
 ): TestPreviewOutput => {
   const url = `/api/view/${filename}`
   return {
+    filename,
+    mediaType,
     url,
-    isImage: mediaType === 'images',
-    isVideo: mediaType === 'video'
+    previewUrl: mediaType === 'images' ? `${url}?res=512` : url
   }
 }
 
@@ -143,8 +141,8 @@ function renderJobAssetsList({
     },
     attrs,
     global: {
+      plugins: [i18n],
       stubs: {
-        teleport: true,
         AssetsListItem: AssetsListItemStub
       }
     }
@@ -152,35 +150,6 @@ function renderJobAssetsList({
 
   return { ...result, user }
 }
-
-function createDomRect({
-  top,
-  left,
-  width,
-  height
-}: {
-  top: number
-  left: number
-  width: number
-  height: number
-}): DOMRect {
-  return {
-    x: left,
-    y: top,
-    top,
-    left,
-    width,
-    height,
-    right: left + width,
-    bottom: top + height,
-    toJSON: () => ''
-  } as DOMRect
-}
-
-afterEach(() => {
-  vi.useRealTimers()
-  vi.restoreAllMocks()
-})
 
 describe('JobAssetsList', () => {
   it('renders grouped headers alongside job rows', () => {
@@ -203,6 +172,40 @@ describe('JobAssetsList', () => {
     expect(screen.getByText('Yesterday')).toBeTruthy()
     expect(container.querySelector('[data-job-id="job-1"]')).not.toBeNull()
     expect(container.querySelector('[data-job-id="job-2"]')).not.toBeNull()
+  })
+
+  it('lets keyboard users focus the scroll container', async () => {
+    const { user } = renderJobAssetsList({
+      jobs: [buildJob({ id: 'job-1' })]
+    })
+
+    await user.tab()
+
+    expect(screen.getByRole('region', { name: 'Jobs' })).toHaveFocus()
+  })
+
+  it('lets callers opt the scroll container out of the tab order', async () => {
+    const { user } = renderJobAssetsList({
+      attrs: { tabindex: '-1' },
+      jobs: [buildJob({ id: 'job-1' })]
+    })
+
+    await user.tab()
+
+    const list = screen.getByRole('region', { name: 'Jobs' })
+    expect(list).not.toHaveFocus()
+    expect(list).toHaveAttribute('tabindex', '-1')
+  })
+
+  it('leaves a list with no jobs out of the tab order and landmarks', async () => {
+    const { user } = renderJobAssetsList({ jobs: [] })
+
+    await user.tab()
+
+    const list = screen.getByTestId('job-assets-list')
+    expect(list).not.toHaveFocus()
+    expect(list).toHaveAttribute('tabindex', '-1')
+    expect(screen.queryByRole('region')).not.toBeInTheDocument()
   })
 
   it('forwards parent attrs to the scroll container', () => {
@@ -238,6 +241,18 @@ describe('JobAssetsList', () => {
     await user.click(screen.getByTestId('preview-trigger'))
 
     expect(onViewItem).toHaveBeenCalledWith(job)
+  })
+
+  it('uses thumbnail preview URLs for completed image rows', () => {
+    const preview = createPreviewOutput('job-1.png')
+    const job = buildJob({
+      taskRef: createTaskRef(preview)
+    })
+    const { container } = renderJobAssetsList({ jobs: [job] })
+
+    const stubRoot = container.querySelector('.assets-list-item-stub')!
+    expect(stubRoot.getAttribute('data-preview-url')).toBe(preview.previewUrl)
+    expect(stubRoot.getAttribute('data-preview-url')).not.toBe(preview.url)
   })
 
   it('emits viewItem on double-click for completed jobs with preview', async () => {
@@ -309,14 +324,14 @@ describe('JobAssetsList', () => {
     const jobRow = container.querySelector(`[data-job-id="${job.id}"]`)!
     await fireEvent.mouseEnter(jobRow)
 
-    await fireEvent.click(screen.getByText('menuLabels.View'))
+    await fireEvent.click(screen.getByText('View'))
     await nextTick()
 
     expect(onViewItem).toHaveBeenCalledWith(job)
   })
 
   it('shows and hides the job details popover with hover delays', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
@@ -325,28 +340,28 @@ describe('JobAssetsList', () => {
     await fireEvent.mouseEnter(jobRow)
     await vi.advanceTimersByTimeAsync(199)
     await nextTick()
-    expect(container.querySelector('.job-details-popover-stub')).toBeNull()
+    expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()
 
     await vi.advanceTimersByTimeAsync(1)
     await nextTick()
 
-    const popoverStub = container.querySelector('.job-details-popover-stub')!
-    expect(popoverStub).not.toBeNull()
+    const popoverStub = screen.getByTestId('job-details')
+    expect(popoverStub).toBeInTheDocument()
     expect(popoverStub.getAttribute('data-job-id')).toBe(job.id)
     expect(popoverStub.getAttribute('data-workflow-id')).toBe('workflow-1')
 
     await fireEvent.mouseLeave(jobRow)
     await vi.advanceTimersByTimeAsync(149)
     await nextTick()
-    expect(container.querySelector('.job-details-popover-stub')).not.toBeNull()
+    expect(screen.getByTestId('job-details')).toBeInTheDocument()
 
     await vi.advanceTimersByTimeAsync(1)
     await nextTick()
-    expect(container.querySelector('.job-details-popover-stub')).toBeNull()
+    expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()
   })
 
   it('keeps the job details popover open while hovering the popover', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
@@ -360,76 +375,54 @@ describe('JobAssetsList', () => {
     await vi.advanceTimersByTimeAsync(100)
     await nextTick()
 
-    const popoverWrapper = container.querySelector('.job-details-popover')!
-    expect(popoverWrapper).not.toBeNull()
+    const popoverWrapper = screen.getByTestId('queue-job-details-popover')
+    expect(popoverWrapper).toBeInTheDocument()
 
     await fireEvent.mouseEnter(popoverWrapper)
     await vi.advanceTimersByTimeAsync(100)
     await nextTick()
-    expect(container.querySelector('.job-details-popover-stub')).not.toBeNull()
+    expect(screen.getByTestId('job-details')).toBeInTheDocument()
 
     await fireEvent.mouseLeave(popoverWrapper)
     await vi.advanceTimersByTimeAsync(149)
     await nextTick()
-    expect(container.querySelector('.job-details-popover-stub')).not.toBeNull()
+    expect(screen.getByTestId('job-details')).toBeInTheDocument()
 
     await vi.advanceTimersByTimeAsync(1)
     await nextTick()
-    expect(container.querySelector('.job-details-popover-stub')).toBeNull()
+    expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()
   })
 
-  it('positions the popover to the right of rows near the left viewport edge', async () => {
-    vi.useFakeTimers()
+  it.for([
+    { rowX: 20, side: 'right' },
+    { rowX: 860, side: 'left' }
+  ])('places the popover $side of a row at x=$rowX', async ({ rowX, side }) => {
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(
+      1024
+    )
+    vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(
+      768
+    )
     const job = buildJob()
     const { container } = renderJobAssetsList({ jobs: [job] })
 
     const jobRow = container.querySelector(`[data-job-id="${job.id}"]`)!
-
-    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1280)
-    vi.spyOn(jobRow, 'getBoundingClientRect').mockReturnValue(
-      createDomRect({
-        top: 100,
-        left: 40,
-        width: 200,
-        height: 48
-      })
-    )
+    const measureRow = vi
+      .spyOn(jobRow, 'getBoundingClientRect')
+      .mockReturnValue(new DOMRect(rowX, 30, 160, 48))
 
     await fireEvent.mouseEnter(jobRow)
     await vi.advanceTimersByTimeAsync(200)
     await nextTick()
 
-    const popover = container.querySelector('.job-details-popover')!
-    expect(popover.getAttribute('style')).toContain('left: 248px;')
-  })
-
-  it('positions the popover to the left of rows near the right viewport edge', async () => {
-    vi.useFakeTimers()
-    const job = buildJob()
-    const { container } = renderJobAssetsList({ jobs: [job] })
-
-    const jobRow = container.querySelector(`[data-job-id="${job.id}"]`)!
-
-    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(1280)
-    vi.spyOn(jobRow, 'getBoundingClientRect').mockReturnValue(
-      createDomRect({
-        top: 100,
-        left: 980,
-        width: 200,
-        height: 48
-      })
-    )
-
-    await fireEvent.mouseEnter(jobRow)
-    await vi.advanceTimersByTimeAsync(200)
-    await nextTick()
-
-    const popover = container.querySelector('.job-details-popover')!
-    expect(popover.getAttribute('style')).toContain('left: 672px;')
+    const popover = screen.getByTestId('queue-job-details-popover')
+    expect(popover).toHaveAttribute('data-state', 'open')
+    expect(popover).toHaveAttribute('data-side', side)
+    expect(popover).toHaveAttribute('data-align', 'start')
+    expect(measureRow).toHaveBeenCalled()
   })
 
   it('clears the previous popover when hovering a new row briefly and leaving the list', async () => {
-    vi.useFakeTimers()
     const firstJob = buildJob({ id: 'job-1' })
     const secondJob = buildJob({ id: 'job-2', title: 'Job 2' })
     const { container } = renderJobAssetsList({
@@ -442,9 +435,9 @@ describe('JobAssetsList', () => {
     await fireEvent.mouseEnter(firstRow)
     await vi.advanceTimersByTimeAsync(200)
     await nextTick()
-    const popoverJobId = container
-      .querySelector('.job-details-popover-stub')
-      ?.getAttribute('data-job-id')
+    const popoverJobId = screen
+      .getByTestId('job-details')
+      .getAttribute('data-job-id')
     expect(popoverJobId).toBe('job-1')
 
     await fireEvent.mouseLeave(firstRow)
@@ -455,11 +448,10 @@ describe('JobAssetsList', () => {
 
     await vi.advanceTimersByTimeAsync(150)
     await nextTick()
-    expect(container.querySelector('.job-details-popover-stub')).toBeNull()
+    expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()
   })
 
-  it('shows the new popover after the previous row hides while the next row stays hovered', async () => {
-    vi.useFakeTimers()
+  it('updates the visible popover without closing when hovering another row', async () => {
     const firstJob = buildJob({ id: 'job-1' })
     const secondJob = buildJob({ id: 'job-2', title: 'Job 2' })
     const { container } = renderJobAssetsList({
@@ -472,28 +464,27 @@ describe('JobAssetsList', () => {
     await fireEvent.mouseEnter(firstRow)
     await vi.advanceTimersByTimeAsync(200)
     await nextTick()
-    const firstPopoverJobId = container
-      .querySelector('.job-details-popover-stub')
-      ?.getAttribute('data-job-id')
+    const firstPopoverJobId = screen
+      .getByTestId('job-details')
+      .getAttribute('data-job-id')
     expect(firstPopoverJobId).toBe('job-1')
 
     await fireEvent.mouseLeave(firstRow)
     await fireEvent.mouseEnter(secondRow)
-
-    await vi.advanceTimersByTimeAsync(150)
-    await nextTick()
-    expect(container.querySelector('.job-details-popover-stub')).toBeNull()
-
-    await vi.advanceTimersByTimeAsync(50)
     await nextTick()
 
-    const popoverStub = container.querySelector('.job-details-popover-stub')!
-    expect(popoverStub).not.toBeNull()
-    expect(popoverStub.getAttribute('data-job-id')).toBe('job-2')
+    expect(screen.getByTestId('job-details').getAttribute('data-job-id')).toBe(
+      'job-2'
+    )
+
+    await vi.advanceTimersByTimeAsync(200)
+    await nextTick()
+    expect(screen.getByTestId('job-details').getAttribute('data-job-id')).toBe(
+      'job-2'
+    )
   })
 
   it('does not show details if the hovered row disappears before the show delay ends', async () => {
-    vi.useFakeTimers()
     const job = buildJob()
     const { container, rerender } = renderJobAssetsList({ jobs: [job] })
 
@@ -506,7 +497,7 @@ describe('JobAssetsList', () => {
     await vi.advanceTimersByTimeAsync(200)
     await nextTick()
 
-    expect(container.querySelector('.job-details-popover-stub')).toBeNull()
-    expect(container.querySelector('.job-details-popover')).toBeNull()
+    expect(screen.queryByTestId('job-details')).not.toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })

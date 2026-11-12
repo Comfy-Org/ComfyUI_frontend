@@ -1,11 +1,12 @@
 <template>
   <svg
     ref="svgRef"
+    data-testid="curve-editor"
     viewBox="-0.04 -0.04 1.08 1.08"
     preserveAspectRatio="xMidYMid meet"
     :class="
       cn(
-        'aspect-square w-full rounded-[5px] bg-node-component-surface',
+        'aspect-square w-full rounded-[5px] bg-node',
         disabled ? 'cursor-default' : 'cursor-crosshair'
       )
     "
@@ -68,6 +69,7 @@
       <circle
         v-for="(point, i) in modelValue"
         :key="i"
+        data-testid="curve-point"
         :cx="point[0]"
         :cy="1 - point[1]"
         r="0.02"
@@ -85,9 +87,10 @@
 import { computed, toRef, useTemplateRef } from 'vue'
 
 import { useCurveEditor } from '@/composables/useCurveEditor'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
-import type { CurveInterpolation, CurvePoint } from './types'
+import type { CurveInterpolation } from '@comfyorg/graph-model/curve'
+import type { PointTuple as CurvePoint } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { histogramToPath } from '@/utils/histogramUtil'
 
@@ -107,12 +110,17 @@ const modelValue = defineModel<CurvePoint[]>({
   required: true
 })
 
+const emit = defineEmits<{
+  editEnd: []
+}>()
+
 const svgRef = useTemplateRef<SVGSVGElement>('svgRef')
 
 const { curvePath, handleSvgPointerDown, startDrag } = useCurveEditor({
   svgRef,
   modelValue,
-  interpolation: toRef(() => interpolation)
+  interpolation: toRef(() => interpolation),
+  onEditEnd: () => emit('editEnd')
 })
 
 function onSvgPointerDown(e: PointerEvent) {

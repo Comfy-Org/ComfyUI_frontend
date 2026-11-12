@@ -2,5 +2,17 @@ export const PRESERVED_QUERY_NAMESPACES = {
   TEMPLATE: 'template',
   INVITE: 'invite',
   SHARE: 'share',
-  CREATE_WORKSPACE: 'create_workspace'
+  SHARE_AUTH: 'share_auth',
+  CREATE_WORKSPACE: 'create_workspace',
+  OAUTH: 'oauth',
+  PRICING: 'pricing',
+  TOPUP: 'topup',
+  SETTINGS: 'settings',
+  ASSETS: 'assets',
+  DESKTOP_LOGIN: 'desktop_login',
+  WORKSPACE: 'workspace',
+  DEPLOYMENT: 'deployment',
+  WORKFLOWS: 'workflows',
+  LOCAL_HANDOFF: 'local_handoff',
+  WORKFLOW_ID: 'workflowId'
 } as const

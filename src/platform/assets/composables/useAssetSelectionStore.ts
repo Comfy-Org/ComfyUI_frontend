@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import type { AssetId } from '@/platform/assets/schemas/assetSchema'
+
 export const useAssetSelectionStore = defineStore('assetSelection', () => {
   // State
-  const selectedAssetIds = ref<Set<string>>(new Set())
+  const selectedAssetIds = ref<Set<AssetId>>(new Set())
   const lastSelectedIndex = ref<number>(-1)
-  const lastSelectedAssetId = ref<string | null>(null)
+  const lastSelectedAssetId = ref<AssetId | null>(null)
 
   // Getters
   const selectedCount = computed(() => selectedAssetIds.value.size)
@@ -13,15 +15,15 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
   const selectedIdsArray = computed(() => Array.from(selectedAssetIds.value))
 
   // Actions
-  function addToSelection(assetId: string) {
+  function addToSelection(assetId: AssetId) {
     selectedAssetIds.value.add(assetId)
   }
 
-  function removeFromSelection(assetId: string) {
+  function removeFromSelection(assetId: AssetId) {
     selectedAssetIds.value.delete(assetId)
   }
 
-  function setSelection(assetIds: string[]) {
+  function setSelection(assetIds: AssetId[]) {
     selectedAssetIds.value = new Set(assetIds)
   }
 
@@ -31,7 +33,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     lastSelectedAssetId.value = null
   }
 
-  function toggleSelection(assetId: string) {
+  function toggleSelection(assetId: AssetId) {
     if (isSelected(assetId)) {
       removeFromSelection(assetId)
     } else {
@@ -39,7 +41,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     }
   }
 
-  function isSelected(assetId: string): boolean {
+  function isSelected(assetId: AssetId): boolean {
     return selectedAssetIds.value.has(assetId)
   }
 
@@ -47,7 +49,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     lastSelectedIndex.value = index
   }
 
-  function setLastSelectedAssetId(assetId: string | null) {
+  function setLastSelectedAssetId(assetId: AssetId | null) {
     lastSelectedAssetId.value = assetId
   }
 

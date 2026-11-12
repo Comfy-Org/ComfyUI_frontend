@@ -12,15 +12,67 @@ import type {
 } from './draftTypes'
 import { StorageKeys } from './storageKeys'
 
-/** Flag indicating if storage is available */
-let storageAvailable = true
+type StorageAvailability = 'available' | 'unavailable'
+type WorkflowStorageState =
+  | { status: 'ready'; availability: StorageAvailability }
+  | {
+      status: 'transitioning'
+      reason: 'workspace'
+      resumeAvailability: StorageAvailability
+      ownerId: symbol
+    }
+  | {
+      status: 'transitioning'
+      reason: 'logout'
+      resumeAvailability: StorageAvailability
+    }
+
+let workflowStorageState: WorkflowStorageState = {
+  status: 'ready',
+  availability: 'available'
+}
+const pendingPersistenceFlushes = new Set<() => void>()
+
+export function registerWorkflowPersistenceFlush(
+  flush: () => void
+): () => void {
+  pendingPersistenceFlushes.add(flush)
+  return () => pendingPersistenceFlushes.delete(flush)
+}
+
+function flushPendingWorkflowPersistence(): void {
+  for (const flush of pendingPersistenceFlushes) {
+    try {
+      flush()
+    } catch (error) {
+      console.warn('Failed to flush pending workflow persistence', error)
+    }
+  }
+}
 
 export function isStorageAvailable(): boolean {
-  return storageAvailable
+  return (
+    workflowStorageState.status === 'ready' &&
+    workflowStorageState.availability === 'available'
+  )
 }
 
 export function markStorageUnavailable(): void {
-  storageAvailable = false
+  workflowStorageState =
+    workflowStorageState.status === 'transitioning'
+      ? { ...workflowStorageState, resumeAvailability: 'unavailable' }
+      : { status: 'ready', availability: 'unavailable' }
+}
+
+function isStorageReadable(): boolean {
+  return workflowStorageState.status === 'transitioning'
+    ? workflowStorageState.resumeAvailability === 'available'
+    : workflowStorageState.availability === 'available'
+}
+
+/** @internal Test-only: do not call from production code paths. */
+export function resetStorageAvailable(): void {
+  workflowStorageState = { status: 'ready', availability: 'available' }
 }
 
 function isQuotaExceeded(error: unknown): boolean {
@@ -49,7 +101,7 @@ function isValidIndex(value: unknown): value is DraftIndexV2 {
  * Reads and parses the draft index from localStorage.
  */
 export function readIndex(workspaceId: string): DraftIndexV2 | null {
-  if (!storageAvailable) return null
+  if (!isStorageReadable()) return null
 
   try {
     const key = StorageKeys.draftIndex(workspaceId)
@@ -69,7 +121,7 @@ export function readIndex(workspaceId: string): DraftIndexV2 | null {
  * Writes the draft index to localStorage.
  */
 export function writeIndex(workspaceId: string, index: DraftIndexV2): boolean {
-  if (!storageAvailable) return false
+  if (!isStorageAvailable()) return false
 
   try {
     const key = StorageKeys.draftIndex(workspaceId)
@@ -88,7 +140,7 @@ export function readPayload(
   workspaceId: string,
   draftKey: string
 ): DraftPayloadV2 | null {
-  if (!storageAvailable) return null
+  if (!isStorageReadable()) return null
 
   try {
     const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
@@ -109,7 +161,7 @@ export function writePayload(
   draftKey: string,
   payload: DraftPayloadV2
 ): boolean {
-  if (!storageAvailable) return false
+  if (!isStorageAvailable()) return false
 
   try {
     const key = `${StorageKeys.prefixes.draftPayload}${workspaceId}:${draftKey}`
@@ -146,7 +198,7 @@ export function deletePayloads(workspaceId: string, draftKeys: string[]): void {
  * Gets all draft payload keys for a workspace from localStorage.
  */
 export function getPayloadKeys(workspaceId: string): string[] {
-  if (!storageAvailable) return []
+  if (!isStorageReadable()) return []
 
   const prefix = `${StorageKeys.prefixes.draftPayload}${workspaceId}:`
   const keys: string[] = []
@@ -185,53 +237,49 @@ export function deleteOrphanPayloads(
   return deleted
 }
 
-/**
- * Searches sessionStorage for a pointer matching the target workspaceId
- * when the exact clientId key has no entry (e.g. clientId changed after reload).
- * Migrates the found pointer to the new clientId key.
- */
 function findAndMigratePointer<T extends { workspaceId: string }>(
   newKey: string,
   prefix: string,
-  targetWorkspaceId: string
+  targetWorkspaceId: string,
+  isValid: (value: unknown) => value is T,
+  previousKey: string | null
 ): T | null {
+  const candidateKeys = previousKey ? [previousKey] : []
   for (let i = 0; i < sessionStorage.length; i++) {
     const storageKey = sessionStorage.key(i)
-    if (!storageKey?.startsWith(prefix) || storageKey === newKey) continue
-
-    const json = sessionStorage.getItem(storageKey)
-    if (!json) continue
-
-    try {
-      const pointer = JSON.parse(json) as T
-      if (pointer.workspaceId === targetWorkspaceId) {
-        sessionStorage.setItem(newKey, json)
-        sessionStorage.removeItem(storageKey)
-        return pointer
-      }
-    } catch {
-      continue
+    if (storageKey?.startsWith(prefix) && storageKey !== previousKey) {
+      candidateKeys.push(storageKey)
     }
+  }
+
+  for (const storageKey of candidateKeys) {
+    if (storageKey === newKey) continue
+    const pointer = readSessionValue(storageKey, isValid)
+    if (pointer?.workspaceId !== targetWorkspaceId) continue
+    sessionStorage.setItem(newKey, JSON.stringify(pointer))
+    sessionStorage.removeItem(storageKey)
+    return pointer
   }
   return null
 }
 
-/**
- * Reads a session pointer by clientId with workspace-based fallback.
- * Validates workspace on exact match and removes stale cross-workspace pointers.
- * If no valid entry exists, searches for any pointer matching the target
- * workspaceId and migrates it to the new key.
- */
 function readSessionPointer<T extends { workspaceId: string }>(
   key: string,
   prefix: string,
-  targetWorkspaceId?: string
+  targetWorkspaceId: string | undefined,
+  isValid: (value: unknown) => value is T,
+  previousKey: string | null
 ): T | null {
   try {
     const json = sessionStorage.getItem(key)
     if (json) {
-      const pointer = JSON.parse(json) as T
-      if (targetWorkspaceId && pointer.workspaceId !== targetWorkspaceId) {
+      const pointer: unknown = JSON.parse(json)
+      if (!isValid(pointer)) {
+        sessionStorage.removeItem(key)
+      } else if (
+        targetWorkspaceId &&
+        pointer.workspaceId !== targetWorkspaceId
+      ) {
         sessionStorage.removeItem(key)
       } else {
         return pointer
@@ -239,10 +287,73 @@ function readSessionPointer<T extends { workspaceId: string }>(
     }
 
     if (targetWorkspaceId) {
-      return findAndMigratePointer<T>(key, prefix, targetWorkspaceId)
+      return findAndMigratePointer(
+        key,
+        prefix,
+        targetWorkspaceId,
+        isValid,
+        previousKey
+      )
     }
 
     return null
+  } catch {
+    return null
+  }
+}
+
+function writeSessionPointer<T extends { workspaceId: string }>(
+  key: string,
+  prefix: string,
+  pointer: T,
+  isValid: (value: unknown) => value is T
+): void {
+  if (!isStorageAvailable()) return
+
+  let saved = true
+  try {
+    sessionStorage.setItem(key, JSON.stringify(pointer))
+  } catch {
+    saved = false
+  }
+  removeSessionPointers(
+    prefix,
+    pointer.workspaceId,
+    isValid,
+    saved ? key : null
+  )
+}
+
+function removeSessionPointers(
+  prefix: string,
+  workspaceId: string,
+  isValid: (value: unknown) => value is { workspaceId: string },
+  keepKey: string | null
+): void {
+  try {
+    const staleKeys: string[] = []
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const storageKey = sessionStorage.key(i)
+      if (!storageKey?.startsWith(prefix) || storageKey === keepKey) continue
+      if (readSessionValue(storageKey, isValid)?.workspaceId === workspaceId) {
+        staleKeys.push(storageKey)
+      }
+    }
+    for (const storageKey of staleKeys) sessionStorage.removeItem(storageKey)
+  } catch {
+    return
+  }
+}
+
+function readSessionValue<T>(
+  key: string,
+  isValid: (value: unknown) => value is T
+): T | null {
+  const json = sessionStorage.getItem(key)
+  if (!json) return null
+  try {
+    const value: unknown = JSON.parse(json)
+    return isValid(value) ? value : null
   } catch {
     return null
   }
@@ -254,15 +365,20 @@ function readSessionPointer<T extends { workspaceId: string }>(
  * then to localStorage when sessionStorage is empty (browser restart).
  */
 export function readActivePath(
-  clientId: string,
-  targetWorkspaceId?: string
+  clientId: string | null,
+  targetWorkspaceId?: string,
+  previousClientId: string | null = null
 ): ActivePathPointer | null {
   return (
-    readSessionPointer<ActivePathPointer>(
-      StorageKeys.activePath(clientId),
-      StorageKeys.prefixes.activePath,
-      targetWorkspaceId
-    ) ??
+    (clientId
+      ? readSessionPointer<ActivePathPointer>(
+          StorageKeys.activePath(clientId),
+          StorageKeys.prefixes.activePath,
+          targetWorkspaceId,
+          isValidActivePathPointer,
+          previousClientId ? StorageKeys.activePath(previousClientId) : null
+        )
+      : null) ??
     (targetWorkspaceId
       ? readLocalPointer<ActivePathPointer>(
           StorageKeys.lastActivePath(targetWorkspaceId),
@@ -281,11 +397,32 @@ export function writeActivePath(
   pointer: ActivePathPointer
 ): void {
   const json = JSON.stringify(pointer)
-  writeStorage(sessionStorage, StorageKeys.activePath(clientId), json)
+  writeSessionPointer(
+    StorageKeys.activePath(clientId),
+    StorageKeys.prefixes.activePath,
+    pointer,
+    isValidActivePathPointer
+  )
   writeStorage(
     localStorage,
     StorageKeys.lastActivePath(pointer.workspaceId),
     json
+  )
+}
+
+/** Inverse of {@link writeActivePath}: drops both pointers it writes. */
+export function clearActivePath(clientId: string, workspaceId: string): void {
+  try {
+    sessionStorage.removeItem(StorageKeys.activePath(clientId))
+    localStorage.removeItem(StorageKeys.lastActivePath(workspaceId))
+  } catch {
+    return
+  }
+  removeSessionPointers(
+    StorageKeys.prefixes.activePath,
+    workspaceId,
+    isValidActivePathPointer,
+    null
   )
 }
 
@@ -295,15 +432,20 @@ export function writeActivePath(
  * then to localStorage when sessionStorage is empty (browser restart).
  */
 export function readOpenPaths(
-  clientId: string,
-  targetWorkspaceId?: string
+  clientId: string | null,
+  targetWorkspaceId?: string,
+  previousClientId: string | null = null
 ): OpenPathsPointer | null {
   return (
-    readSessionPointer<OpenPathsPointer>(
-      StorageKeys.openPaths(clientId),
-      StorageKeys.prefixes.openPaths,
-      targetWorkspaceId
-    ) ??
+    (clientId
+      ? readSessionPointer<OpenPathsPointer>(
+          StorageKeys.openPaths(clientId),
+          StorageKeys.prefixes.openPaths,
+          targetWorkspaceId,
+          isValidOpenPathsPointer,
+          previousClientId ? StorageKeys.openPaths(previousClientId) : null
+        )
+      : null) ??
     (targetWorkspaceId
       ? readLocalPointer<OpenPathsPointer>(
           StorageKeys.lastOpenPaths(targetWorkspaceId),
@@ -322,7 +464,12 @@ export function writeOpenPaths(
   pointer: OpenPathsPointer
 ): void {
   const json = JSON.stringify(pointer)
-  writeStorage(sessionStorage, StorageKeys.openPaths(clientId), json)
+  writeSessionPointer(
+    StorageKeys.openPaths(clientId),
+    StorageKeys.prefixes.openPaths,
+    pointer,
+    isValidOpenPathsPointer
+  )
   writeStorage(
     localStorage,
     StorageKeys.lastOpenPaths(pointer.workspaceId),
@@ -365,6 +512,8 @@ function readLocalPointer<T>(
 }
 
 function writeStorage(storage: Storage, key: string, value: string): void {
+  if (!isStorageAvailable()) return
+
   try {
     storage.setItem(key, value)
   } catch {
@@ -372,52 +521,151 @@ function writeStorage(storage: Storage, key: string, value: string): void {
   }
 }
 
-/**
- * Clears all V2 workflow persistence data from storage.
- * Used during signout to prevent data leakage.
- */
-export function clearAllV2Storage(): void {
-  if (!storageAvailable) return
+const legacyLocalRestoreKeys = [
+  'Comfy.Workflow.Drafts',
+  'Comfy.Workflow.DraftOrder',
+  'Comfy.OpenWorkflowsPaths',
+  'Comfy.ActiveWorkflowIndex',
+  'Comfy.PreviousWorkflow',
+  'workflow'
+]
 
-  const prefixes = [
+const legacyAgentKeys = [
+  'Comfy.Agent.ThreadId',
+  'Comfy.Agent.WorkflowTabBindings',
+  'Comfy.Agent.WorkflowTabBindings.v2',
+  'Comfy.Agent.ChatTitles',
+  'Comfy.Agent.DeletedThreads'
+]
+
+const sessionRestorePrefixes = [
+  StorageKeys.prefixes.activePath,
+  StorageKeys.prefixes.openPaths,
+  'Comfy.PreviousWorkflow:',
+  'Comfy.OpenWorkflowsPaths:',
+  'Comfy.ActiveWorkflowIndex:',
+  'workflow:'
+]
+
+const sessionRestoreKeys = [
+  'Comfy.PreviousWorkflow',
+  'Comfy.OpenWorkflowsPaths',
+  'Comfy.ActiveWorkflowIndex'
+]
+
+function removeStorageKeys(
+  storage: Storage,
+  keys: string[],
+  prefixes: string[] = []
+): void {
+  try {
+    for (let i = storage.length - 1; i >= 0; i--) {
+      const key = storage.key(i)
+      if (
+        key &&
+        (keys.includes(key) ||
+          prefixes.some((prefix) => key.startsWith(prefix)))
+      ) {
+        try {
+          storage.removeItem(key)
+        } catch {
+          continue
+        }
+      }
+    }
+  } catch {
+    return
+  }
+}
+
+export function clearLegacyAgentStorage(): void {
+  removeStorageKeys(localStorage, legacyAgentKeys)
+}
+
+export function clearWorkflowRestoreState(): void {
+  removeStorageKeys(localStorage, legacyLocalRestoreKeys)
+  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
+}
+
+export function prepareWorkflowWorkspaceTransition(): () => void {
+  let ownerId: symbol | undefined
+  if (workflowStorageState.status === 'ready') {
+    flushPendingWorkflowPersistence()
+    ownerId = Symbol('workflow-storage-transition')
+    workflowStorageState = {
+      status: 'transitioning',
+      reason: 'workspace',
+      resumeAvailability: workflowStorageState.availability,
+      ownerId
+    }
+  }
+  clearWorkflowRestoreState()
+
+  return () => {
+    if (
+      workflowStorageState.status !== 'transitioning' ||
+      workflowStorageState.reason !== 'workspace' ||
+      workflowStorageState.ownerId !== ownerId
+    )
+      return
+
+    workflowStorageState = {
+      status: 'ready',
+      availability: workflowStorageState.resumeAvailability
+    }
+  }
+}
+
+export function prepareWorkflowLogoutTransition(): void {
+  workflowStorageState = {
+    status: 'transitioning',
+    reason: 'logout',
+    resumeAvailability:
+      workflowStorageState.status === 'transitioning'
+        ? workflowStorageState.resumeAvailability
+        : workflowStorageState.availability
+  }
+}
+
+export function completeWorkflowLogoutTransition(): void {
+  if (
+    workflowStorageState.status !== 'transitioning' ||
+    workflowStorageState.reason !== 'logout'
+  )
+    return
+
+  workflowStorageState = {
+    status: 'ready',
+    availability: workflowStorageState.resumeAvailability
+  }
+}
+
+export function clearAllWorkflowStorage(): void {
+  const localPrefixes = [
     StorageKeys.prefixes.draftIndex,
     StorageKeys.prefixes.draftPayload,
     StorageKeys.prefixes.lastActivePath,
-    StorageKeys.prefixes.lastOpenPaths
+    StorageKeys.prefixes.lastOpenPaths,
+    'Comfy.Workflow.Drafts:',
+    'Comfy.Workflow.DraftOrder:'
   ]
 
-  try {
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i)
-      if (key && prefixes.some((prefix) => key.startsWith(prefix))) {
-        try {
-          localStorage.removeItem(key)
-        } catch {
-          // Ignore
-        }
-      }
-    }
-  } catch {
-    // Ignore
-  }
+  removeStorageKeys(localStorage, legacyLocalRestoreKeys, localPrefixes)
+  removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
+}
 
-  const sessionPrefixes = [
-    StorageKeys.prefixes.activePath,
-    StorageKeys.prefixes.openPaths
-  ]
-
-  try {
-    for (let i = sessionStorage.length - 1; i >= 0; i--) {
-      const key = sessionStorage.key(i)
-      if (key && sessionPrefixes.some((prefix) => key.startsWith(prefix))) {
-        try {
-          sessionStorage.removeItem(key)
-        } catch {
-          // Ignore
-        }
-      }
-    }
-  } catch {
-    // Ignore
-  }
+export function clearAllWorkspaceStorage(): void {
+  clearAllWorkflowStorage()
+  clearLegacyAgentStorage()
+  removeStorageKeys(
+    localStorage,
+    [],
+    [
+      StorageKeys.prefixes.agentThread,
+      StorageKeys.prefixes.agentWorkflowTabBindings,
+      StorageKeys.prefixes.agentChatTitles,
+      StorageKeys.prefixes.agentDeletedThreads,
+      StorageKeys.prefixes.agentComposerDraft
+    ]
+  )
 }

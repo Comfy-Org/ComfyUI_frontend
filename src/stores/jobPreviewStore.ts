@@ -2,12 +2,13 @@ import { defineStore } from 'pinia'
 import { computed, readonly, ref, watch } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { JobId } from '@comfyorg/api-client/executionTypes'
 import {
   releaseSharedObjectUrl,
   retainSharedObjectUrl
 } from '@/utils/objectUrlUtil'
 
-type PromptPreviewMap = Record<string, string>
+type PromptPreviewMap = Record<JobId, string>
 interface NodePromptPreview {
   url: string
   nodeId?: string
@@ -15,7 +16,7 @@ interface NodePromptPreview {
 
 export const useJobPreviewStore = defineStore('jobPreview', () => {
   const settingStore = useSettingStore()
-  const nodePreviewsByPromptId = ref<Record<string, NodePromptPreview>>({})
+  const nodePreviewsByPromptId = ref<Record<JobId, NodePromptPreview>>({})
 
   const previewMethod = computed(() =>
     settingStore.get('Comfy.Execution.PreviewMethod')
@@ -31,14 +32,16 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
   })
 
   function setPreviewUrl(
-    promptId: string | undefined,
+    promptId: JobId | undefined,
     url: string,
     nodeId?: string
   ) {
     if (!promptId || !isPreviewEnabled.value) return
     const current = nodePreviewsByPromptId.value[promptId]
-    if (current?.url === url) return
-    if (current) releaseSharedObjectUrl(current.url)
+    if (promptId in nodePreviewsByPromptId.value) {
+      if (current.url === url) return
+      releaseSharedObjectUrl(current.url)
+    }
     retainSharedObjectUrl(url)
     nodePreviewsByPromptId.value = {
       ...nodePreviewsByPromptId.value,
@@ -46,10 +49,10 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
     }
   }
 
-  function clearPreview(promptId: string | undefined) {
+  function clearPreview(promptId: JobId | undefined) {
     if (!promptId) return
+    if (!(promptId in nodePreviewsByPromptId.value)) return
     const current = nodePreviewsByPromptId.value[promptId]
-    if (!current) return
     releaseSharedObjectUrl(current.url)
     const next = { ...nodePreviewsByPromptId.value }
     delete next[promptId]

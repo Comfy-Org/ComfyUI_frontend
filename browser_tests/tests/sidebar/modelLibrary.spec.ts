@@ -1,6 +1,9 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { modelLibraryFixture } from '@e2e/fixtures/modelLibraryFixture'
+
+const test = mergeTests(comfyPageFixture, modelLibraryFixture)
 
 const MOCK_FOLDERS: Record<string, string[]> = {
   checkpoints: [
@@ -12,20 +15,9 @@ const MOCK_FOLDERS: Record<string, string[]> = {
   vae: ['sdxl_vae.safetensors']
 }
 
-// ==========================================================================
-// 1. Tab open/close
-// ==========================================================================
+test.use({ modelFolders: MOCK_FOLDERS })
 
 test.describe('Model library sidebar - tab', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
-  })
-
   test('Opens model library tab and shows tree', async ({ comfyPage }) => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
@@ -43,22 +35,7 @@ test.describe('Model library sidebar - tab', () => {
   })
 })
 
-// ==========================================================================
-// 2. Folder display
-// ==========================================================================
-
 test.describe('Model library sidebar - folders', () => {
-  // Mocks are set up before setup(), so app.ts's loadModelFolders()
-  // call during initialization hits the mock and populates the store.
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
-  })
-
   test('Displays model folders after opening tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
@@ -68,17 +45,28 @@ test.describe('Model library sidebar - folders', () => {
     await expect(tab.getFolderByLabel('vae')).toBeVisible()
   })
 
-  test('Expanding a folder loads and shows models', async ({ comfyPage }) => {
+  test('Expanding a folder loads and shows models', async ({
+    comfyPage,
+    modelLibrary
+  }) => {
+    await modelLibrary.mockMetadata({
+      'sd_xl_base_1.0.safetensors': { 'modelspec.author': 'Stability AI' }
+    })
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
-    // Click the folder to expand it
-    await tab.getFolderByLabel('checkpoints').click()
+    await test.step('Expand the folder', async () => {
+      await tab.getFolderByLabel('checkpoints').click()
 
-    // Models should appear as leaf nodes
-    await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
-    await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
-    await expect(tab.getLeafByLabel('realisticVision_v51')).toBeVisible()
+      await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
+      await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
+      await expect(tab.getLeafByLabel('realisticVision_v51')).toBeVisible()
+    })
+
+    await test.step('Hover a model to preview it', async () => {
+      await tab.getLeafByLabel('sd_xl_base_1.0').hover()
+      await expect(tab.modelPreview).toBeVisible()
+    })
   })
 
   test('Expanding a different folder shows its models', async ({
@@ -94,30 +82,15 @@ test.describe('Model library sidebar - folders', () => {
   })
 })
 
-// ==========================================================================
-// 3. Search
-// ==========================================================================
-
 test.describe('Model library sidebar - search', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
-    await comfyPage.setup()
-  })
-
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
-  })
-
   test('Search filters models by filename', async ({ comfyPage }) => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
     await tab.searchInput.fill('dreamshaper')
 
-    // Wait for debounce (300ms) + load + render
     await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
 
-    // Other models should not be visible
     await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeHidden()
   })
 
@@ -128,10 +101,8 @@ test.describe('Model library sidebar - search', () => {
     await tab.searchInput.fill('dreamshaper')
     await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
 
-    // Clear the search
     await tab.searchInput.fill('')
 
-    // Folders should be visible again (collapsed)
     await expect(tab.getFolderByLabel('checkpoints')).toBeVisible()
     await expect(tab.getFolderByLabel('loras')).toBeVisible()
   })
@@ -140,65 +111,52 @@ test.describe('Model library sidebar - search', () => {
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
-    // Expand a folder and verify models are present before searching
     await tab.getFolderByLabel('checkpoints').click()
     await expect(tab.leafNodes).not.toHaveCount(0)
 
     await tab.searchInput.fill('nonexistent_model_xyz')
 
-    // Wait for debounce, then verify no leaf nodes
     await expect.poll(() => tab.leafNodes.count()).toBe(0)
   })
 })
 
-// ==========================================================================
-// 4. Refresh and load all
-// ==========================================================================
-
 test.describe('Model library sidebar - refresh', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
-  })
-
-  test('Refresh button reloads folder list', async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles({
-      checkpoints: ['model_a.safetensors']
-    })
-    await comfyPage.setup()
-
-    const tab = comfyPage.menu.modelLibraryTab
-    await tab.open()
-
-    await expect(tab.getFolderByLabel('checkpoints')).toBeVisible()
-
-    // Update mock to include a new folder
-    await comfyPage.modelLibrary.clearMocks()
-    await comfyPage.modelLibrary.mockFoldersWithFiles({
-      checkpoints: ['model_a.safetensors'],
-      loras: ['lora_b.safetensors']
+  test.describe('Updated folders', () => {
+    test.use({
+      modelFolders: { checkpoints: ['model_a.safetensors'] }
     })
 
-    // Wait for the refresh request to complete
-    const refreshRequest = comfyPage.page.waitForRequest(
-      (req) => req.url().endsWith('/experiment/models'),
-      { timeout: 5000 }
-    )
-    await tab.refreshButton.click()
-    await refreshRequest
+    test('Refresh button reloads folder list', async ({
+      comfyPage,
+      modelLibrary
+    }) => {
+      const tab = comfyPage.menu.modelLibraryTab
+      await tab.open()
 
-    await expect(tab.getFolderByLabel('loras')).toBeVisible()
+      await expect(tab.getFolderByLabel('checkpoints')).toBeVisible()
+
+      await modelLibrary.mockFoldersWithFiles({
+        checkpoints: ['model_a.safetensors'],
+        loras: ['lora_b.safetensors']
+      })
+
+      const refreshRequest = comfyPage.page.waitForRequest(
+        (req) => req.url().endsWith('/experiment/models'),
+        { timeout: 5000 }
+      )
+      await tab.refreshButton.click()
+      await refreshRequest
+
+      await expect(tab.getFolderByLabel('loras')).toBeVisible()
+    })
   })
 
   test('Load all folders button triggers loading all model data', async ({
     comfyPage
   }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles(MOCK_FOLDERS)
-    await comfyPage.setup()
-
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
-    // Wait for a per-folder model files request triggered by load all
     const folderRequest = comfyPage.page.waitForRequest(
       (req) =>
         /\/api\/experiment\/models\/[^/]+$/.test(req.url()) &&
@@ -211,26 +169,127 @@ test.describe('Model library sidebar - refresh', () => {
   })
 })
 
-// ==========================================================================
-// 5. Empty state
-// ==========================================================================
-
 test.describe('Model library sidebar - empty state', () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.modelLibrary.clearMocks()
-  })
+  test.use({ modelFolders: {} })
 
   test('Shows empty tree when no model folders exist', async ({
     comfyPage
   }) => {
-    await comfyPage.modelLibrary.mockFoldersWithFiles({})
-    await comfyPage.setup()
-
     const tab = comfyPage.menu.modelLibraryTab
     await tab.open()
 
     await expect(tab.modelTree).toBeVisible()
     await expect(tab.folderNodes).toHaveCount(0)
     await expect(tab.leafNodes).toHaveCount(0)
+  })
+
+  test.describe('Model library sidebar - add node', () => {
+    test.use({ modelFolders: MOCK_FOLDERS })
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.nodeOps.clearGraph()
+    })
+
+    test('Clicking a model defers creation until placed on the canvas', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.modelLibraryTab
+      await tab.open()
+      await tab.getFolderByLabel('checkpoints').click()
+      await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
+
+      await tab.getLeafByLabel('sd_xl_base_1.0').click()
+
+      await comfyPage.expectNodeCount(0, { timeout: 1000 })
+
+      const canvasBox = (await comfyPage.canvas.boundingBox())!
+      await comfyPage.canvas.click({
+        position: { x: canvasBox.width / 2, y: canvasBox.height / 2 }
+      })
+
+      await comfyPage.expectNodeCount(1)
+      await expect
+        .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
+        .toBe(1)
+
+      const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
+        'CheckpointLoaderSimple'
+      )
+      expect(loader).toBeDefined()
+      const widget = await loader.getWidgetByName('ckpt_name')
+      expect(await widget.getValue()).toBe('sd_xl_base_1.0.safetensors')
+    })
+
+    test('Ghost preview shows the model in the loader widget before placing', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.modelLibraryTab
+      await tab.open()
+      await tab.getFolderByLabel('checkpoints').click()
+      await expect(tab.getLeafByLabel('sd_xl_base_1.0')).toBeVisible()
+
+      await tab.getLeafByLabel('sd_xl_base_1.0').click()
+
+      const ghost = comfyPage.page.locator(
+        '[data-node-id="preview-CheckpointLoaderSimple"]'
+      )
+      await expect(ghost).toContainText('sd_xl_base_1.0.safetensors')
+    })
+  })
+})
+
+test.describe('Model library drops on Vue nodes', { tag: '@vue-nodes' }, () => {
+  test.use({ initialSettings: { 'Comfy.ModelLibrary.UseAssetBrowser': false } })
+
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('inputs/checkpoint_loader')
+    const tab = comfyPage.menu.modelLibraryTab
+    await tab.open()
+    await tab.refreshButton.click()
+    await tab.getFolderByLabel('checkpoints').click()
+    await expect(tab.getLeafByLabel('dreamshaper_8')).toBeVisible()
+    await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
+    await comfyPage.canvasOps.waitForViewToSettle()
+  })
+
+  test('updates an existing loader without creating another node', async ({
+    comfyPage
+  }) => {
+    const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
+      'CheckpointLoaderSimple'
+    )
+    const filename = await loader.getWidgetByName('ckpt_name')
+    const node = comfyPage.vueNodes.getNodeByTitle('Load Checkpoint')
+    const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+    await comfyPage.menu.modelLibraryTab
+      .getLeafByLabel('dreamshaper_8')
+      .dragTo(node)
+    await comfyPage.nextFrame()
+    await expect(node).toContainText('dreamshaper_8.safetensors')
+    await expect
+      .poll(() => filename.getValue())
+      .toBe('dreamshaper_8.safetensors')
+    await comfyPage.expectNodeCount(nodeCount)
+  })
+
+  test('still creates a loader when dropped onto empty canvas', async ({
+    comfyPage
+  }) => {
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await comfyPage.expectNodeCount(0)
+    const box = (await comfyPage.canvas.boundingBox())!
+    await comfyPage.menu.modelLibraryTab
+      .getLeafByLabel('dreamshaper_8')
+      .dragTo(comfyPage.canvas, {
+        targetPosition: { x: box.width / 2, y: box.height / 2 }
+      })
+    await comfyPage.nextFrame()
+    await comfyPage.expectNodeCount(1)
+    const [loader] = await comfyPage.nodeOps.getNodeRefsByType(
+      'CheckpointLoaderSimple'
+    )
+    await expect
+      .poll(async () => (await loader.getWidgetByName('ckpt_name')).getValue())
+      .toBe('dreamshaper_8.safetensors')
   })
 })

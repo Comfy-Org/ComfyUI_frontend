@@ -1,28 +1,15 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import { UserFile, useUserFileStore } from '@/stores/userFileStore'
 
-// Mock the api
-vi.mock('@/scripts/api', () => ({
-  api: {
-    listUserDataFullInfo: vi.fn(),
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    deleteUserData: vi.fn(),
-    moveUserData: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useUserFileStore', () => {
   let store: ReturnType<typeof useUserFileStore>
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     store = useUserFileStore()
-    vi.resetAllMocks()
   })
 
   it('should initialize with empty files', () => {
@@ -113,7 +100,7 @@ describe('useUserFileStore', () => {
         } as Response)
 
         await expect(file.load()).rejects.toThrow(
-          "Failed to load file 'file1.txt': 404 Not Found"
+          'Failed to load file: 404 Not Found'
         )
       })
     })

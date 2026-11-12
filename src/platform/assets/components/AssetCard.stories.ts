@@ -17,7 +17,6 @@ const createAssetData = (
     { label: '2.1 GB', type: 'size' }
   ],
   stats: {
-    formattedDate: '3/15/25',
     downloadCount: '1.8k',
     stars: '4.2k'
   },
@@ -32,7 +31,7 @@ const meta: Meta<typeof AssetCard> = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background"><story /></div>'
+      template: '<div class="p-8 bg-background"><story /></div>'
     })
   ]
 }
@@ -47,7 +46,7 @@ export const Interactive: Story = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+      template: '<div class="p-8 bg-background max-w-96"><story /></div>'
     })
   ],
   parameters: {
@@ -67,7 +66,7 @@ export const NonInteractive: Story = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+      template: '<div class="p-8 bg-background max-w-96"><story /></div>'
     })
   ],
   parameters: {
@@ -89,7 +88,7 @@ export const WithPreviewImage: Story = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+      template: '<div class="p-8 bg-background max-w-96"><story /></div>'
     })
   ],
   parameters: {
@@ -110,7 +109,7 @@ export const FallbackGradient: Story = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background max-w-96"><story /></div>'
+      template: '<div class="p-8 bg-background max-w-96"><story /></div>'
     })
   ],
   parameters: {
@@ -147,8 +146,7 @@ export const EdgeCases: Story = {
           name: 'No Stars',
           secondaryText: 'Testing missing stars data gracefully',
           stats: {
-            downloadCount: '1.8k',
-            formattedDate: '3/15/25'
+            downloadCount: '1.8k'
           }
         }),
         // No downloads
@@ -157,8 +155,7 @@ export const EdgeCases: Story = {
           name: 'No Downloads',
           secondaryText: 'Testing missing downloads data gracefully',
           stats: {
-            stars: '4.2k',
-            formattedDate: '3/15/25'
+            stars: '4.2k'
           }
         }),
         // No date
@@ -199,7 +196,7 @@ export const EdgeCases: Story = {
       return { edgeCases }
     },
     template: `
-      <div class="grid grid-cols-4 gap-6 p-8 bg-base-background">
+      <div class="grid grid-cols-4 gap-6 p-8 bg-background">
         <AssetCard
           v-for="asset in edgeCases"
           :key="asset.id"

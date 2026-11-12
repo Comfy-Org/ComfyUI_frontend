@@ -12,8 +12,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 import SidebarIcon from './SidebarIcon.vue'
@@ -37,7 +37,8 @@ const tooltipText = computed(
  */
 const toggleShortcutsPanel = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'sidebar_shortcuts_panel_toggled'
+    button_id: 'sidebar_shortcuts_panel_toggled',
+    element_group: 'sidebar'
   })
   bottomPanelStore.togglePanel('shortcuts')
 }

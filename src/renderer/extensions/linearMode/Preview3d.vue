@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { onUnmounted, ref, useTemplateRef, watch } from 'vue'
 
-import Load3DControls from '@/components/load3d/Load3DControls.vue'
-import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
-import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
+import Load3DControls from '@/extensions/core/load3d/components/Load3DControls.vue'
+import AnimationControls from '@/extensions/core/load3d/components/controls/AnimationControls.vue'
+import { useLoad3dViewer } from '@/extensions/core/load3d/composables/useLoad3dViewer'
 
 const { modelUrl } = defineProps<{
   modelUrl: string
@@ -44,9 +44,12 @@ onUnmounted(() => {
         v-model:model-config="viewer"
         v-model:camera-config="viewer"
         v-model:light-config="viewer"
-        :is-splat-model="viewer.isSplatModel"
-        :is-ply-model="viewer.isPlyModel"
+        :can-use-gizmo="viewer.canUseGizmo"
+        :can-use-lighting="viewer.canUseLighting"
+        :can-export="viewer.canExport"
+        :material-modes="viewer.materialModes"
         :has-skeleton="viewer.hasSkeleton"
+        :source-format="viewer.sourceFormat"
         @update-background-image="viewer.handleBackgroundImageUpdate"
         @export-model="viewer.exportModel"
       />

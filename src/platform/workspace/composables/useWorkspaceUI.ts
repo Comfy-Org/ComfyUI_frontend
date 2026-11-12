@@ -1,141 +1,86 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
-import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
-/** Permission flags for workspace actions */
+import type {
+  WorkspaceRole,
+  WorkspaceType
+} from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
 interface WorkspacePermissions {
   canViewOtherMembers: boolean
   canViewPendingInvites: boolean
-  canInviteMembers: boolean
-  canManageInvites: boolean
-  canRemoveMembers: boolean
-  canLeaveWorkspace: boolean
-  canAccessWorkspaceMenu: boolean
-  canManageSubscription: boolean
-  canTopUp: boolean
 }
 
-/** UI configuration for workspace role */
 interface WorkspaceUIConfig {
   showMembersList: boolean
   showPendingTab: boolean
   showSearch: boolean
-  showDateColumn: boolean
-  showRoleBadge: boolean
+  showRoleColumn: boolean
+  showCreditsColumn: boolean
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
-  showEditWorkspaceMenuItem: boolean
-  workspaceMenuAction: 'leave' | 'delete' | null
+  workspaceMenuAction: 'delete' | null
   workspaceMenuDisabledTooltip: string | null
-}
-
-function getPermissions(
-  type: WorkspaceType,
-  role: WorkspaceRole
-): WorkspacePermissions {
-  if (type === 'personal') {
-    return {
-      canViewOtherMembers: false,
-      canViewPendingInvites: false,
-      canInviteMembers: false,
-      canManageInvites: false,
-      canRemoveMembers: false,
-      canLeaveWorkspace: false,
-      canAccessWorkspaceMenu: false,
-      canManageSubscription: true,
-      canTopUp: true
-    }
-  }
-
-  if (role === 'owner') {
-    return {
-      canViewOtherMembers: true,
-      canViewPendingInvites: true,
-      canInviteMembers: true,
-      canManageInvites: true,
-      canRemoveMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
-      canManageSubscription: true,
-      canTopUp: true
-    }
-  }
-
-  // member role
-  return {
-    canViewOtherMembers: true,
-    canViewPendingInvites: false,
-    canInviteMembers: false,
-    canManageInvites: false,
-    canRemoveMembers: false,
-    canLeaveWorkspace: true,
-    canAccessWorkspaceMenu: true,
-    canManageSubscription: false,
-    canTopUp: false
-  }
 }
 
 function getUIConfig(
   type: WorkspaceType,
   role: WorkspaceRole
 ): WorkspaceUIConfig {
-  if (type === 'personal') {
+  if (role === 'member') {
     return {
-      showMembersList: false,
+      showMembersList: true,
       showPendingTab: false,
-      showSearch: false,
-      showDateColumn: false,
-      showRoleBadge: false,
-      membersGridCols: 'grid-cols-1',
+      showSearch: true,
+      showRoleColumn: true,
+      showCreditsColumn: false,
+      membersGridCols: 'grid-cols-[1fr_auto]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-1',
-      showEditWorkspaceMenuItem: false,
+      headerGridCols: 'grid-cols-[1fr_auto]',
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
   }
 
-  if (role === 'owner') {
+  if (type === 'personal') {
     return {
-      showMembersList: true,
-      showPendingTab: true,
-      showSearch: true,
-      showDateColumn: true,
-      showRoleBadge: true,
-      membersGridCols: 'grid-cols-[50%_40%_10%]',
+      showMembersList: false,
+      showPendingTab: false,
+      showSearch: false,
+      showRoleColumn: false,
+      showCreditsColumn: false,
+      membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-      headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
-      workspaceMenuAction: 'delete',
-      workspaceMenuDisabledTooltip:
-        'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
+      headerGridCols: 'grid-cols-1',
+      workspaceMenuAction: null,
+      workspaceMenuDisabledTooltip: null
     }
   }
 
-  // member role
   return {
     showMembersList: true,
-    showPendingTab: false,
+    showPendingTab: true,
     showSearch: true,
-    showDateColumn: true,
-    showRoleBadge: true,
-    membersGridCols: 'grid-cols-[1fr_auto]',
+    showRoleColumn: true,
+    showCreditsColumn: false,
+    membersGridCols: 'grid-cols-[50%_40%_10%]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
-    headerGridCols: 'grid-cols-[1fr_auto]',
-    showEditWorkspaceMenuItem: false,
-    workspaceMenuAction: 'leave',
-    workspaceMenuDisabledTooltip: null
+    headerGridCols: 'grid-cols-[50%_40%_10%]',
+    workspaceMenuAction: 'delete',
+    workspaceMenuDisabledTooltip:
+      'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
   }
 }
 
-/**
- * Internal implementation of UI configuration composable.
- */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
+  const { flags } = useFeatureFlags()
+
+  const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
 
   const workspaceType = computed<WorkspaceType>(
     () => store.activeWorkspace?.type ?? 'personal'
@@ -145,26 +90,49 @@ function useWorkspaceUIInternal() {
     () => store.activeWorkspace?.role ?? 'owner'
   )
 
-  const permissions = computed<WorkspacePermissions>(() =>
-    getPermissions(workspaceType.value, workspaceRole.value)
+  watch(
+    [() => store.activeWorkspace?.id, () => store.activeWorkspace?.role],
+    () => {
+      if (store.activeWorkspace?.role === 'owner') {
+        void store.ensureMembersLoaded()
+      }
+    },
+    { immediate: true }
   )
 
-  const uiConfig = computed<WorkspaceUIConfig>(() =>
-    getUIConfig(workspaceType.value, workspaceRole.value)
+  const uiConfig = computed<WorkspaceUIConfig>(() => {
+    const base = getUIConfig(workspaceType.value, workspaceRole.value)
+    const showCreditsColumn =
+      flags.memberCreditLimitsEnabled &&
+      workspaceType.value === 'team' &&
+      workspaceRole.value === 'owner'
+    if (!showCreditsColumn) return base
+
+    return {
+      ...base,
+      showCreditsColumn: true,
+      membersGridCols: 'grid-cols-[38%_18%_30%_14%]',
+      headerGridCols: 'grid-cols-[38%_18%_30%_14%]'
+    }
+  })
+
+  const permissions = computed<WorkspacePermissions>(() => ({
+    canViewOtherMembers: uiConfig.value.showMembersList,
+    canViewPendingInvites: uiConfig.value.showPendingTab
+  }))
+
+  const isWorkspaceMenuInHeader = computed(
+    () => flags.unifiedBillingSettingsEnabled
   )
 
   return {
-    // Permissions and config
     permissions,
     uiConfig,
     workspaceType,
-    workspaceRole
+    workspaceRole,
+    isInPersonalWorkspace,
+    isWorkspaceMenuInHeader
   }
 }
 
-/**
- * UI configuration composable derived from workspace state.
- * Controls what UI elements are visible/enabled based on role and workspace type.
- * Uses createSharedComposable to ensure tab state is shared across components.
- */
 export const useWorkspaceUI = createSharedComposable(useWorkspaceUIInternal)

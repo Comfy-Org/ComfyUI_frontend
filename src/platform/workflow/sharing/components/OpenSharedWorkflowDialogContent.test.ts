@@ -1,8 +1,8 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access */
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
@@ -10,12 +10,15 @@ import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/sh
 
 const mockGetSharedWorkflow = vi.fn()
 
-vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
-  SharedWorkflowLoadError: class extends Error {},
-  useWorkflowShareService: () => ({
-    getSharedWorkflow: mockGetSharedWorkflow
+vi.mock<unknown>(
+  import('@/platform/workflow/sharing/services/workflowShareService'),
+  () => ({
+    SharedWorkflowLoadError: class extends Error {},
+    useWorkflowShareService: () => ({
+      getSharedWorkflow: mockGetSharedWorkflow
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -34,6 +37,7 @@ const i18n = createI18n({
         copyAssetsAndOpen: 'Copy assets & open workflow',
         openWorkflow: 'Open workflow',
         openWithoutImporting: 'Open without importing',
+        opening: 'Opening shared workflow...',
         loadError:
           'Could not load this shared workflow. Please try again later.'
       },
@@ -86,10 +90,6 @@ function renderComponent(props: Record<string, unknown> = {}) {
 }
 
 describe('OpenSharedWorkflowDialogContent', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   describe('loading state', () => {
     it('shows skeleton placeholders while loading', () => {
       mockGetSharedWorkflow.mockReturnValue(new Promise(() => {}))
@@ -100,9 +100,10 @@ describe('OpenSharedWorkflowDialogContent', () => {
 
     it('shows dialog title in header while loading', () => {
       mockGetSharedWorkflow.mockReturnValue(new Promise(() => {}))
-      const { container } = renderComponent()
-      const header = container.querySelector('header h2') as HTMLElement
-      expect(header.textContent).toBe('Open shared workflow')
+      renderComponent()
+      expect(
+        screen.getByRole('heading', { name: 'Open shared workflow' })
+      ).toBeInTheDocument()
     })
   })
 
@@ -188,7 +189,7 @@ describe('OpenSharedWorkflowDialogContent', () => {
       await flushPromises()
 
       const buttons = container.querySelectorAll('footer button')
-      await userEvent.click(buttons[buttons.length - 1] as HTMLElement)
+      await userEvent.click(buttons[buttons.length - 1])
       expect(onConfirm).toHaveBeenCalledWith(payload)
     })
 
@@ -288,8 +289,27 @@ describe('OpenSharedWorkflowDialogContent', () => {
       await flushPromises()
 
       const buttons = container.querySelectorAll('footer button')
-      await userEvent.click(buttons[buttons.length - 1] as HTMLElement)
+      await userEvent.click(buttons[buttons.length - 1])
       expect(onConfirm).toHaveBeenCalledWith(assetsPayload)
+    })
+
+    it('shows opening status and disables actions while opening', async () => {
+      mockGetSharedWorkflow.mockResolvedValue(assetsPayload)
+      const { container } = renderComponent({ openingAction: 'copy-and-open' })
+      await flushPromises()
+
+      expect(screen.getByRole('status').textContent).toContain(
+        'Opening shared workflow...'
+      )
+      expect(container.textContent).not.toContain(
+        'Opening the workflow will create a new copy in your workspace'
+      )
+      expect(screen.getByRole('button', { name: 'Close' })).toBeEnabled()
+      expect(screen.getByTestId('open-shared-workflow-cancel')).toBeDisabled()
+      expect(
+        screen.getByTestId('open-shared-workflow-open-without-importing')
+      ).toBeDisabled()
+      expect(screen.getByTestId('open-shared-workflow-confirm')).toBeDisabled()
     })
 
     it('filters out assets already in library', async () => {

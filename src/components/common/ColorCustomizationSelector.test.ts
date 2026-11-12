@@ -1,10 +1,8 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import ColorPicker from 'primevue/colorpicker'
-import PrimeVue from 'primevue/config'
-import SelectButton from 'primevue/selectbutton'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, nextTick } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import ColorCustomizationSelector from './ColorCustomizationSelector.vue'
 
@@ -14,9 +12,15 @@ describe('ColorCustomizationSelector', () => {
     { name: 'Green', value: '#28a745' }
   ]
 
-  beforeEach(() => {
-    const app = createApp({})
-    app.use(PrimeVue)
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: {
+      en: {
+        g: { color: 'Color' },
+        color: { custom: 'Custom', hex: 'Hex', rgba: 'RGBA' }
+      }
+    }
   })
 
   function renderComponent(
@@ -27,8 +31,7 @@ describe('ColorCustomizationSelector', () => {
 
     const result = render(ColorCustomizationSelector, {
       global: {
-        plugins: [PrimeVue],
-        components: { SelectButton, ColorPicker }
+        plugins: [i18n]
       },
       props: {
         modelValue: null,
@@ -41,61 +44,68 @@ describe('ColorCustomizationSelector', () => {
     return { ...result, user }
   }
 
-  /** PrimeVue SelectButton renders toggle buttons with aria-pressed */
-  function getToggleButtons(container: Element) {
-    return container.querySelectorAll<HTMLButtonElement>( // eslint-disable-line testing-library/no-node-access -- PrimeVue SelectButton renders toggle buttons without standard ARIA radiogroup roles
-      '[data-pc-name="pctogglebutton"]'
+  function getToggleButtons() {
+    return ['Blue', 'Green', 'Custom'].map((name) =>
+      screen.getByRole('button', { name })
     )
   }
 
   it('renders predefined color options and custom option', () => {
-    const { container } = renderComponent()
-    expect(getToggleButtons(container)).toHaveLength(colorOptions.length + 1)
+    renderComponent()
+    expect(getToggleButtons()).toHaveLength(colorOptions.length + 1)
   })
 
   it('initializes with predefined color when provided', async () => {
-    const { container } = renderComponent({ modelValue: '#0d6efd' })
+    renderComponent({ modelValue: '#0d6efd' })
     await nextTick()
 
-    const buttons = getToggleButtons(container)
+    const buttons = getToggleButtons()
     expect(buttons[0]).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('initializes with custom color when non-predefined color provided', async () => {
-    const { container } = renderComponent({ modelValue: '#123456' })
+    renderComponent({ modelValue: '#123456' })
     await nextTick()
 
-    const buttons = getToggleButtons(container)
+    const buttons = getToggleButtons()
     const customButton = buttons[buttons.length - 1]
     expect(customButton).toHaveAttribute('aria-pressed', 'true')
-
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue ColorPicker uses readonly input preview with no ARIA role
-    const colorPreview = container.querySelector(
-      '.p-colorpicker-preview'
-    ) as HTMLInputElement | null
-    expect(colorPreview).not.toBeNull()
   })
 
   it('shows color picker when custom option is selected', async () => {
-    const { container, user } = renderComponent()
-
-    const buttons = getToggleButtons(container)
-    await user.click(buttons[buttons.length - 1])
+    const { user } = renderComponent({ modelValue: '#0d6efd' })
+    await nextTick()
 
     expect(
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue ColorPicker internal DOM
-      container.querySelector('[data-pc-name="colorpicker"]')
-    ).not.toBeNull()
+      screen.queryByRole('button', { name: '#0d6efd 100%' })
+    ).not.toBeInTheDocument()
+    const toggleButtons = getToggleButtons()
+    await user.click(toggleButtons[toggleButtons.length - 1])
+    await nextTick()
+
+    expect(
+      screen.getByRole('button', { name: '#0d6efd 100%' })
+    ).toHaveTextContent('#0d6efd')
+  })
+
+  it('keeps the custom color picker when custom is selected again', async () => {
+    const { user } = renderComponent({ modelValue: '#0d6efd' })
+    const customButton = screen.getByRole('button', { name: 'Custom' })
+
+    await user.click(customButton)
+    await user.click(customButton)
+
+    expect(customButton).toHaveAttribute('aria-pressed', 'true')
+    expect(
+      screen.getByRole('button', { name: '#0d6efd 100%' })
+    ).toHaveTextContent('#0d6efd')
   })
 
   it('emits update when predefined color is selected', async () => {
     const onUpdate = vi.fn()
-    const { container, user } = renderComponent(
-      {},
-      { 'onUpdate:modelValue': onUpdate }
-    )
+    const { user } = renderComponent({}, { 'onUpdate:modelValue': onUpdate })
 
-    const buttons = getToggleButtons(container)
+    const buttons = getToggleButtons()
     await user.click(buttons[0])
 
     expect(onUpdate).toHaveBeenCalledWith('#0d6efd')
@@ -103,33 +113,27 @@ describe('ColorCustomizationSelector', () => {
 
   it('emits update when custom color is changed', async () => {
     const onUpdate = vi.fn()
-    const { container, user } = renderComponent(
-      {},
-      { 'onUpdate:modelValue': onUpdate }
-    )
+    const { user } = renderComponent({}, { 'onUpdate:modelValue': onUpdate })
 
     // Custom is already selected by default (modelValue: null)
     // Select Blue first, then switch to custom so onUpdate fires for Blue
-    const buttons = getToggleButtons(container)
+    const buttons = getToggleButtons()
     await user.click(buttons[0]) // Select Blue
     expect(onUpdate).toHaveBeenCalledWith('#0d6efd')
 
     onUpdate.mockClear()
     await user.click(buttons[buttons.length - 1]) // Switch to custom
 
-    // When switching to custom, the custom color value inherits from Blue ('0d6efd')
+    // When switching to custom, the custom color value inherits from Blue
     // and the watcher on customColorValue emits the update
     expect(onUpdate).toHaveBeenCalledWith('#0d6efd')
   })
 
   it('inherits color from previous selection when switching to custom', async () => {
     const onUpdate = vi.fn()
-    const { container, user } = renderComponent(
-      {},
-      { 'onUpdate:modelValue': onUpdate }
-    )
+    const { user } = renderComponent({}, { 'onUpdate:modelValue': onUpdate })
 
-    const buttons = getToggleButtons(container)
+    const buttons = getToggleButtons()
 
     // First select Blue
     await user.click(buttons[0])
@@ -145,10 +149,10 @@ describe('ColorCustomizationSelector', () => {
   })
 
   it('handles null modelValue correctly', async () => {
-    const { container } = renderComponent({ modelValue: null })
+    renderComponent({ modelValue: null })
     await nextTick()
 
-    const buttons = getToggleButtons(container)
+    const buttons = getToggleButtons()
     const customButton = buttons[buttons.length - 1]
     expect(customButton).toHaveAttribute('aria-pressed', 'true')
   })

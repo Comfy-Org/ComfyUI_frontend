@@ -8,8 +8,8 @@ import {
   builderSaveAs,
   openWorkflowFromSidebar,
   setupBuilder
-} from '@e2e/helpers/builderTestUtils'
-import { fitToViewInstant } from '@e2e/helpers/fitToView'
+} from '@e2e/fixtures/utils/builderTestUtils'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 /**
  * After a first save, open save-as again from the chevron,
@@ -35,12 +35,8 @@ async function dismissSuccessDialog(
 }
 
 test.describe('Builder save flow', { tag: ['@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-    await comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      true
-    )
+  test.use({
+    initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
   test('Save as dialog appears for unsaved workflow', async ({ comfyPage }) => {
@@ -110,8 +106,7 @@ test.describe('Builder save flow', { tag: ['@ui'] }, () => {
 
     await expect(comfyPage.appMode.steps.toolbar).toBeVisible()
 
-    await comfyPage.page.keyboard.press('Escape')
-    await comfyPage.nextFrame()
+    await comfyPage.keyboard.press('Escape')
 
     await expect(comfyPage.appMode.steps.toolbar).toBeHidden()
   })

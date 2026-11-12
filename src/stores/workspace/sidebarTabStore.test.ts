@@ -1,163 +1,68 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const { mockGetSetting, mockRegisterCommand, mockRegisterCommands } =
-  vi.hoisted(() => ({
-    mockGetSetting: vi.fn(),
-    mockRegisterCommand: vi.fn(),
-    mockRegisterCommands: vi.fn()
-  }))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({
-    get: mockGetSetting
-  })
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    registerCommand: mockRegisterCommand,
-    commands: []
-  })
-}))
-
-vi.mock('@/stores/menuItemStore', () => ({
-  useMenuItemStore: () => ({
-    registerCommands: mockRegisterCommands
-  })
-}))
-
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key,
   te: () => false
 }))
 
-vi.mock('@/composables/sidebarTabs/useAssetsSidebarTab', () => ({
-  useAssetsSidebarTab: () => ({
-    id: 'assets',
-    title: 'assets',
-    type: 'vue',
-    component: {}
-  })
-}))
-
-vi.mock('@/composables/sidebarTabs/useJobHistorySidebarTab', () => ({
-  useJobHistorySidebarTab: () => ({
-    id: 'job-history',
-    title: 'job-history',
-    type: 'vue',
-    component: {}
-  })
-}))
-
-vi.mock('@/composables/sidebarTabs/useNodeLibrarySidebarTab', () => ({
-  useNodeLibrarySidebarTab: () => ({
-    id: 'node-library',
-    title: 'node-library',
-    type: 'vue',
-    component: {}
-  })
-}))
-
-vi.mock('@/composables/sidebarTabs/useModelLibrarySidebarTab', () => ({
-  useModelLibrarySidebarTab: () => ({
-    id: 'model-library',
-    title: 'model-library',
-    type: 'vue',
-    component: {}
-  })
-}))
-
-vi.mock(
-  '@/platform/workflow/management/composables/useWorkflowsSidebarTab',
-  () => ({
-    useWorkflowsSidebarTab: () => ({
-      id: 'workflows',
-      title: 'workflows',
-      type: 'vue',
-      component: {}
-    })
-  })
-)
-
-vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
-  useAppsSidebarTab: () => ({
-    id: 'apps',
-    title: 'apps',
-    type: 'vue',
-    component: {}
-  })
-}))
-
 describe('useSidebarTabStore', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    mockGetSetting.mockReset()
-    mockRegisterCommand.mockClear()
-    mockRegisterCommands.mockClear()
+  const registerTab = (onToggle?: () => Promise<boolean>) => {
+    const store = useSidebarTabStore()
+    store.registerSidebarTab({
+      id: 'tab',
+      title: 'tab',
+      type: 'vue',
+      component: {},
+      onToggle
+    })
+    return store
+  }
+
+  const runToggleCommand = async () => {
+    const toggleCommand = useCommandStore().commands.find(
+      (command) => command.id === 'Workspace.ToggleSidebarTab.tab'
+    )
+    await toggleCommand?.function()
+  }
+
+  describe('toggle command', () => {
+    it.for([
+      { hook: 'none', onToggle: undefined, activeTabId: 'tab' },
+      { hook: 'declines', onToggle: async () => false, activeTabId: 'tab' },
+      { hook: 'handles', onToggle: async () => true, activeTabId: null }
+    ])(
+      'activates the tab unless the onToggle hook handles it ($hook)',
+      async ({ onToggle, activeTabId }) => {
+        const store = registerTab(onToggle)
+
+        await runToggleCommand()
+
+        expect(store.activeSidebarTabId).toBe(activeTabId)
+      }
+    )
   })
 
-  it('registers the job history tab when QPO V2 is enabled', () => {
-    mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.Queue.QPOV2' ? true : undefined
+  it('keeps runtime registration attribution outside the public tab shape', () => {
+    const store = useSidebarTabStore()
+    store.registerSidebarTab(
+      {
+        id: 'agent-tab',
+        title: 'Agent tab',
+        type: 'vue',
+        component: {}
+      },
+      undefined,
+      'agent.tools.sidebar'
     )
 
-    const store = useSidebarTabStore()
-    store.registerCoreSidebarTabs()
-
-    expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
-      'job-history',
-      'assets',
-      'node-library',
-      'model-library',
-      'workflows',
-      'apps'
-    ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
-  })
-
-  it('does not register the job history tab when QPO V2 is disabled', () => {
-    mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.Queue.QPOV2' ? false : undefined
+    expect(store.getSourceExtensionName('agent-tab')).toBe(
+      'agent.tools.sidebar'
     )
 
-    const store = useSidebarTabStore()
-    store.registerCoreSidebarTabs()
-
-    expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
-      'assets',
-      'node-library',
-      'model-library',
-      'workflows',
-      'apps'
-    ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(5)
-  })
-
-  it('prepends the job history tab when QPO V2 is toggled on', async () => {
-    const qpoV2Enabled = ref(false)
-    mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.Queue.QPOV2' ? qpoV2Enabled.value : undefined
-    )
-
-    const store = useSidebarTabStore()
-    store.registerCoreSidebarTabs()
-
-    qpoV2Enabled.value = true
-    await nextTick()
-
-    expect(store.sidebarTabs.map((tab) => tab.id)).toEqual([
-      'job-history',
-      'assets',
-      'node-library',
-      'model-library',
-      'workflows',
-      'apps'
-    ])
-    expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
+    store.unregisterSidebarTab('agent-tab')
+    expect(store.getSourceExtensionName('agent-tab')).toBeUndefined()
   })
 })

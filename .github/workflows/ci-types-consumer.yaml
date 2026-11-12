@@ -1,0 +1,38 @@
+name: 'CI: Types Consumer Check'
+
+on:
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run-source }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  check:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Build @comfyorg/comfyui-frontend-types
+        run: pnpm build:types
+
+      - name: Type-check a consumer against the built types
+        run: pnpm check:types-consumer

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
@@ -16,28 +18,36 @@ import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: FormDropdownItem[]
+  items: MaybePaged<FormDropdownItem>
   isSelected: (item: FormDropdownItem, index: number) => boolean
+  uploadable: boolean
   filterOptions: FilterOption[]
   sortOptions: SortOption[]
   showOwnershipFilter?: boolean
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
+  candidateIndex?: number
+  candidateLabel?: string
 }
 
 const {
   items,
   isSelected,
+  uploadable,
   filterOptions,
   sortOptions,
   showOwnershipFilter,
   ownershipOptions,
   showBaseModelFilter,
-  baseModelOptions
+  baseModelOptions,
+  candidateIndex = -1,
+  candidateLabel
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
+  (e: 'search-enter'): void
+  (e: 'show-picker'): void
 }>()
 
 const filterSelected = defineModel<string>('filterSelected')
@@ -86,24 +96,32 @@ const gridStyle = computed<CSSProperties>(() => ({
   width: '100%'
 }))
 
-type VirtualDropdownItem = FormDropdownItem & { key: string }
-const virtualItems = computed<VirtualDropdownItem[]>(() =>
-  items.map((item) => ({
-    ...item,
-    key: String(item.id)
-  }))
-)
+const menuItems = computed(() => pagedItems(items))
+const hasMore = computed(() => isPaged(items) && toValue(items.hasMore))
+const isLoadingMore = computed(() => isPaged(items) && toValue(items.isLoading))
+
+function loadMore() {
+  return isPaged(items) ? items.loadMore() : undefined
+}
+
+const onWheel = (event: WheelEvent) => {
+  if (event.ctrlKey || event.metaKey) event.preventDefault()
+}
 </script>
 
 <template>
   <div
-    class="flex h-[640px] w-103 flex-col rounded-lg bg-component-node-background pt-4 outline -outline-offset-1 outline-node-component-border"
+    class="flex h-[640px] w-103 flex-col rounded-lg bg-node pt-4 outline -outline-offset-1 outline-node-border"
     data-capture-wheel="true"
+    data-testid="form-dropdown-menu"
+    @wheel="onWheel"
   >
     <FormDropdownMenuFilter
       v-if="filterOptions.length > 0"
       v-model:filter-selected="filterSelected"
       :filter-options
+      :uploadable
+      @show-picker="emit('show-picker')"
     />
     <FormDropdownMenuActions
       v-model:layout-mode="layoutMode"
@@ -116,9 +134,11 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
       :ownership-options
       :show-base-model-filter
       :base-model-options
+      :candidate-label
+      @search-enter="emit('search-enter')"
     />
     <div
-      v-if="items.length === 0"
+      v-if="menuItems.length === 0 && !hasMore"
       class="flex h-50 items-center justify-center"
     >
       <i
@@ -130,17 +150,20 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
     <VirtualGrid
       v-else
       :key="layoutMode"
-      :items="virtualItems"
+      :items="menuItems"
       :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
       :default-item-width="layoutConfig.itemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
+      :on-load-more="loadMore"
+      :can-load-more="hasMore"
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem
           :index
+          :candidate="index === candidateIndex"
           :selected="isSelected(item, index)"
           :preview-url="item.preview_url ?? ''"
           :name="item.name"
@@ -150,5 +173,15 @@ const virtualItems = computed<VirtualDropdownItem[]>(() =>
         />
       </template>
     </VirtualGrid>
+    <div
+      v-if="isLoadingMore"
+      class="flex items-center justify-center py-2"
+      data-testid="form-dropdown-loading-more"
+    >
+      <i
+        :aria-label="$t('g.loading')"
+        class="icon-[lucide--loader] size-6 animate-spin text-muted-foreground"
+      />
+    </div>
   </div>
 </template>

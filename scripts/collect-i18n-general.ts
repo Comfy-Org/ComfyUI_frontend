@@ -3,20 +3,37 @@ import * as fs from 'fs'
 // Import Vite define shim to make __DISTRIBUTION__ and other define variables available
 import './vite-define-shim'
 
-import { DESKTOP_DIALOGS } from '../apps/desktop-ui/src/constants/desktopDialogs'
-import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
+import {
+  comfyPageFixture as test,
+  comfyExpect as expect
+} from '../browser_tests/fixtures/ComfyPage'
 import {
   formatCamelCase,
   normalizeI18nKey
-} from '../packages/shared-frontend-utils/src/formatUtil'
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
-import type { SettingParams } from '../src/platform/settings/types'
-import type { ComfyCommandImpl } from '../src/stores/commandStore'
 
 const localePath = './src/locales/en/main.json'
 const commandsPath = './src/locales/en/commands.json'
 const settingsPath = './src/locales/en/settings.json'
+
+function getSettingOptionLabels(options: unknown): string[] | undefined {
+  if (!Array.isArray(options)) return undefined
+
+  return options.flatMap((option: unknown) => {
+    if (typeof option === 'string') return option
+    if (
+      typeof option === 'object' &&
+      option !== null &&
+      'text' in option &&
+      typeof option.text === 'string'
+    ) {
+      return option.text
+    }
+    return []
+  })
+}
 
 const extractMenuCommandLocaleStrings = (): Set<string> => {
   const labels = new Set<string>()
@@ -28,21 +45,38 @@ const extractMenuCommandLocaleStrings = (): Set<string> => {
 
 test('collect-i18n-general', async ({ comfyPage }) => {
   const commands = (
-    await comfyPage.page.evaluate(() => {
-      const workspace = window['app'].extensionManager
-      const commands = workspace.command.commands as ComfyCommandImpl[]
-      return commands.map((command) => ({
-        id: command.id,
-        label: command.label,
-        menubarLabel: command.menubarLabel,
-        tooltip: command.tooltip
-      }))
+    await comfyPage.page.evaluate(async () => {
+      const app = window.app
+      if (!app) throw new Error('ComfyUI app is not initialized')
+
+      const { load3dExtension } =
+        await import('../src/extensions/core/load3d/load3d')
+      const commandsById = new Map(
+        [
+          ...(load3dExtension.commands ?? []),
+          ...app.extensionManager.command.commands
+        ].map((command) => [command.id, command])
+      )
+
+      return Array.from(commandsById.values()).map((command) => {
+        const label =
+          typeof command.label === 'function' ? command.label() : command.label
+        const menubarLabel =
+          typeof command.menubarLabel === 'function'
+            ? command.menubarLabel()
+            : command.menubarLabel
+        const tooltip =
+          typeof command.tooltip === 'function'
+            ? command.tooltip()
+            : command.tooltip
+
+        return { id: command.id, label, menubarLabel, tooltip }
+      })
     })
   ).sort((a, b) => a.id.localeCompare(b.id))
 
   const locale = JSON.parse(fs.readFileSync(localePath, 'utf-8'))
 
-  // Commands
   const menuLabels = extractMenuCommandLocaleStrings()
   const commandMenuLabels = new Set(
     commands.map((command) => command.menubarLabel ?? command.label ?? '')
@@ -64,47 +98,50 @@ test('collect-i18n-general', async ({ comfyPage }) => {
     ])
   )
 
-  // Settings
-  const settings = await comfyPage.page.evaluate(() => {
-    const workspace = window['app'].extensionManager
-    const settings = workspace.setting.settings as Record<string, SettingParams>
-    return Object.values(settings)
+  const settings = await comfyPage.page.evaluate(async () => {
+    const { useSettingStore } =
+      await import('../src/platform/settings/settingStore')
+    return Object.values(useSettingStore().settingsById)
       .sort((a, b) => a.id.localeCompare(b.id))
       .filter((setting) => setting.type !== 'hidden')
-      .map((setting) => ({
-        id: setting.id,
-        name: setting.name,
-        tooltip: setting.tooltip,
-        category: setting.category,
-        options:
-          typeof setting.options === 'function'
-            ? // @ts-expect-error: Audit and deprecate usage of legacy options type:
-              // (value) => [string | {text: string, value: string}]
-              setting.options(setting.defaultValue ?? '')
-            : setting.options
-      }))
+      .map((setting) => {
+        const options: unknown = Reflect.get(setting, 'options')
+        const defaultValue =
+          typeof setting.defaultValue === 'function'
+            ? setting.defaultValue()
+            : setting.defaultValue
+        const resolvedOptions: unknown =
+          typeof options === 'function'
+            ? Reflect.apply(options, undefined, [defaultValue ?? ''])
+            : options
+
+        return {
+          id: setting.id,
+          name: setting.name,
+          tooltip: setting.tooltip,
+          category: setting.category,
+          options: resolvedOptions
+        }
+      })
   })
 
   const allSettingsLocale = Object.fromEntries(
-    settings.map((setting) => [
-      normalizeI18nKey(setting.id),
-      {
-        name: setting.name,
-        tooltip: setting.tooltip,
-        // Don't translate the locale options as each option is in its own language.
-        // e.g. "English", "中文", "Русский", "日本語", "한국어"
-        options:
-          setting.options && setting.id !== 'Comfy.Locale'
-            ? Object.fromEntries(
-                setting.options.map((option) => {
-                  const optionLabel =
-                    typeof option === 'string' ? option : option.text
-                  return [normalizeI18nKey(optionLabel), optionLabel]
-                })
-              )
-            : undefined
-      }
-    ])
+    settings.map((setting) => {
+      const optionLabels = getSettingOptionLabels(setting.options)
+      return [
+        normalizeI18nKey(setting.id),
+        {
+          name: setting.name,
+          tooltip: setting.tooltip,
+          options:
+            optionLabels && setting.id !== 'Comfy.Locale'
+              ? Object.fromEntries(
+                  optionLabels.map((label) => [normalizeI18nKey(label), label])
+                )
+              : undefined
+        }
+      ]
+    })
   )
 
   const allSettingCategoriesLocale = Object.fromEntries(
@@ -118,7 +155,6 @@ test('collect-i18n-general', async ({ comfyPage }) => {
       ])
   )
 
-  // Server Configs
   const allServerConfigsLocale = Object.fromEntries(
     SERVER_CONFIG_ITEMS.map((config) => [
       normalizeI18nKey(config.id),
@@ -138,38 +174,18 @@ test('collect-i18n-general', async ({ comfyPage }) => {
     ])
   )
 
-  // Desktop Dialogs
-  const allDesktopDialogsLocale = Object.fromEntries(
-    Object.values(DESKTOP_DIALOGS).map((dialog) => [
-      normalizeI18nKey(dialog.id),
-      {
-        title: dialog.title,
-        message: dialog.message,
-        buttons: Object.fromEntries(
-          dialog.buttons.map((button) => [
-            normalizeI18nKey(button.label),
-            button.label
-          ])
-        )
-      }
-    ])
-  )
-
   fs.writeFileSync(
     localePath,
     JSON.stringify(
       {
         ...locale,
         menuLabels: allLabelsLocale,
-        // Do merge for settingsCategories as there are some manual translations
-        // for special panels like "About" and "Keybinding".
         settingsCategories: {
-          ...(locale.settingsCategories ?? {}),
+          ...locale.settingsCategories,
           ...allSettingCategoriesLocale
         },
         serverConfigItems: allServerConfigsLocale,
-        serverConfigCategories: allServerConfigCategoriesLocale,
-        desktopDialogs: allDesktopDialogsLocale
+        serverConfigCategories: allServerConfigCategoriesLocale
       },
       null,
       2
@@ -178,4 +194,10 @@ test('collect-i18n-general', async ({ comfyPage }) => {
 
   fs.writeFileSync(commandsPath, JSON.stringify(allCommandsLocale, null, 2))
   fs.writeFileSync(settingsPath, JSON.stringify(allSettingsLocale, null, 2))
+
+  expect(JSON.parse(fs.readFileSync(commandsPath, 'utf-8'))).toMatchObject({
+    Comfy_3DViewer_Open3DViewer: {
+      label: 'Open 3D Viewer (Beta) for Selected Node'
+    }
+  })
 })

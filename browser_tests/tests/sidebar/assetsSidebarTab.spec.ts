@@ -1,0 +1,742 @@
+import { expect, mergeTests } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { assetsStartupFixture } from '@e2e/fixtures/assetsStartupFixture'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  PM_1150_JOB_ID,
+  pm1150Job,
+  pm1150JobDetail
+} from '@e2e/fixtures/data/pm1150AgentJob'
+import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  createRouteMockJob,
+  JobsRouteMocker,
+  jobsRouteFixture,
+  routeMockJobTimestamp
+} from '@e2e/fixtures/jobsRouteFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
+
+const test = mergeTests(
+  comfyPageFixture,
+  jobsRouteFixture,
+  assetsStartupFixture
+)
+
+const alphaJob = createRouteMockJob({
+  id: 'alpha',
+  create_time: routeMockJobTimestamp - 1_000,
+  execution_start_time: routeMockJobTimestamp - 1_000,
+  execution_end_time: routeMockJobTimestamp,
+  preview_output: {
+    filename: 'alpha.png',
+    subfolder: '',
+    type: 'output',
+    nodeId: '1',
+    mediaType: 'images'
+  }
+})
+
+const betaJob = createRouteMockJob({
+  id: 'beta',
+  create_time: routeMockJobTimestamp - 2_000,
+  execution_start_time: routeMockJobTimestamp - 2_000,
+  execution_end_time: routeMockJobTimestamp,
+  preview_output: {
+    filename: 'beta.png',
+    subfolder: '',
+    type: 'output',
+    nodeId: '2',
+    mediaType: 'images'
+  }
+})
+
+const multiOutputJob = createRouteMockJob({
+  id: 'multi-output',
+  create_time: routeMockJobTimestamp - 3_000,
+  execution_start_time: routeMockJobTimestamp - 3_000,
+  execution_end_time: routeMockJobTimestamp,
+  preview_output: {
+    filename: 'multi-output-a.png',
+    subfolder: '',
+    type: 'output',
+    nodeId: '3',
+    mediaType: 'images'
+  },
+  outputs_count: 2
+})
+
+const multiOutputJobDetail: JobDetail = {
+  ...multiOutputJob,
+  outputs: {
+    '3': {
+      images: [
+        {
+          filename: 'multi-output-a.png',
+          subfolder: '',
+          type: 'output'
+        },
+        {
+          filename: 'multi-output-b.png',
+          subfolder: '',
+          type: 'output'
+        }
+      ]
+    }
+  }
+}
+
+const previewableCountJob = createRouteMockJob({
+  id: 'previewable-count-job',
+  create_time: routeMockJobTimestamp - 4_000,
+  execution_start_time: routeMockJobTimestamp - 4_000,
+  execution_end_time: routeMockJobTimestamp,
+  preview_output: {
+    filename: 'previewable-count-a.png',
+    subfolder: '',
+    type: 'output',
+    nodeId: '4',
+    mediaType: 'images'
+  },
+  outputs_count: 3,
+  previewable_outputs_count: 2
+})
+
+// outputs_count (3) also counts the non-previewable "latents" file below;
+// previewable_outputs_count (2) counts only what the expanded view renders.
+const previewableCountJobDetail: JobDetail = {
+  ...previewableCountJob,
+  outputs: {
+    '4': {
+      images: [
+        {
+          filename: 'previewable-count-a.png',
+          subfolder: '',
+          type: 'output'
+        },
+        {
+          filename: 'previewable-count-b.png',
+          subfolder: '',
+          type: 'output'
+        }
+      ],
+      latents: [
+        {
+          filename: 'previewable-count.latent',
+          subfolder: '',
+          type: 'output'
+        }
+      ]
+    }
+  }
+}
+
+const generatedJobs: RawJobListItem[] = [alphaJob, betaJob]
+
+const viewFiles = {
+  'alpha.png': {},
+  'beta.png': {},
+  'imported.png': {},
+  'multi-output-a.png': {},
+  'multi-output-b.png': {},
+  'previewable-count-a.png': {},
+  'previewable-count-b.png': {}
+}
+
+async function mockInputFiles(page: Page, files: readonly string[]) {
+  await page.route('**/internal/files/input**', async (route) => {
+    if (route.request().method().toUpperCase() !== 'GET') {
+      await route.fallback()
+      return
+    }
+
+    await route.fulfill({ json: [...files] })
+  })
+}
+
+const bulkInsertionTest = comfyPageFixture.extend({
+  page: async ({ page }, use) => {
+    const jobsRoutes = new JobsRouteMocker(page)
+    await jobsRoutes.mockJobsQueue([])
+    await jobsRoutes.mockJobsHistory(generatedJobs)
+    await mockInputFiles(page, [])
+    await mockViewFiles(page, viewFiles)
+    await use(page)
+  }
+})
+
+test.describe('FE-130 assets sidebar route mocks', () => {
+  test.use({
+    assetMocks: {
+      setup: async (_, page) => {
+        const jobsRoutes = new JobsRouteMocker(page)
+        await jobsRoutes.mockJobsQueue([])
+        await jobsRoutes.mockJobsHistory(generatedJobs)
+        await mockInputFiles(page, ['imported.png'])
+        await mockViewFiles(page, viewFiles)
+      }
+    }
+  })
+
+  for (const area of ['padding', 'content'] as const) {
+    test(`uses one hover background over asset menu ${area}`, async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      const menu = comfyPage.contextMenu
+      await tab.open()
+      await tab.rightClickAsset('alpha')
+
+      await menu.hoverItem('Export workflow', area)
+      await expect(async () => {
+        const { row, content } =
+          await menu.getItemBackgrounds('Export workflow')
+        expect(content).toBe(row)
+      }).toPass({ timeout: 5000 })
+    })
+  }
+
+  test('opens the asset inspector from the context menu', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const menu = comfyPage.contextMenu
+    await tab.open()
+    await tab.rightClickAsset('alpha')
+
+    await menu.clickMenuItemExact('Inspect asset')
+    await expect(comfyPage.mediaLightbox.root).toBeVisible()
+  })
+
+  test('renders generated and imported assets with image previews', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await tab.open()
+
+    await expect(tab.getAssetCardByName('alpha')).toBeVisible()
+    await expect(tab.getAssetCardByName('beta')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('img', { name: 'alpha.png' })
+    ).toHaveJSProperty('naturalWidth', 1)
+
+    await tab.switchToImported()
+
+    await expect(tab.getAssetCardByName('imported')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('img', { name: 'imported.png' })
+    ).toHaveJSProperty('naturalWidth', 1)
+  })
+
+  test('opens previews for generated and imported images', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await tab.open()
+
+    await comfyPage.page.getByRole('img', { name: 'alpha.png' }).dblclick()
+    await expect(comfyPage.mediaLightbox.root).toBeVisible()
+    await expect(
+      comfyPage.mediaLightbox.root.getByRole('img', {
+        name: 'alpha.png'
+      })
+    ).toBeVisible()
+
+    await comfyPage.mediaLightbox.closeButton.click()
+    await expect(comfyPage.mediaLightbox.root).toBeHidden()
+
+    await tab.switchToImported()
+
+    await comfyPage.page.getByRole('img', { name: 'imported.png' }).dblclick()
+    await expect(comfyPage.mediaLightbox.root).toBeVisible()
+    await expect(
+      comfyPage.mediaLightbox.root.getByRole('img', {
+        name: 'imported.png'
+      })
+    ).toBeVisible()
+  })
+
+  test('shows footer actions for single and multiple generated selections', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await tab.open()
+
+    await tab.getAssetCardByName('alpha').click()
+    await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+    await expect(tab.deleteSelectedButton).toBeVisible()
+    await expect(tab.downloadSelectedButton).toBeVisible()
+
+    await comfyPage.page.keyboard.down('Control')
+    await tab.getAssetCardByName('beta').click()
+    await comfyPage.page.keyboard.up('Control')
+
+    await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
+    await expect(tab.deleteSelectedButton).toBeVisible()
+    await expect(tab.downloadSelectedButton).toBeVisible()
+  })
+
+  test.describe('full generated job outputs', () => {
+    test.use({
+      assetMocks: {
+        setup: async (_, page) => {
+          const jobsRoutes = new JobsRouteMocker(page)
+          await jobsRoutes.mockJobsQueue([])
+          await jobsRoutes.mockJobsHistory([multiOutputJob])
+          await jobsRoutes.mockJobDetail('multi-output', multiOutputJobDetail)
+          await mockInputFiles(page, ['imported.png'])
+          await mockViewFiles(page, viewFiles)
+        }
+      }
+    })
+
+    test('loads full generated job outputs from job detail', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+
+      await tab
+        .getAssetCardByName('multi-output-a')
+        .getByRole('button', { name: 'See more outputs' })
+        .click()
+
+      await expect(tab.backToAssetsButton).toBeVisible()
+      const folderJobId = comfyPage.page.getByText('multi-output', {
+        exact: true
+      })
+      await expect(folderJobId).toBeVisible()
+      await expect(
+        comfyPage.page.getByRole('button', { name: 'Copy Job ID' })
+      ).toBeVisible()
+      await expect(tab.getAssetCardByName('multi-output-b')).toBeVisible()
+      await expect(
+        comfyPage.page.getByRole('img', { name: 'multi-output-b.png' })
+      ).toHaveJSProperty('naturalWidth', 1)
+    })
+  })
+
+  test.describe('previewable output count', () => {
+    test.use({
+      assetMocks: {
+        setup: async (_, page) => {
+          const jobsRoutes = new JobsRouteMocker(page)
+          await jobsRoutes.mockJobsQueue([])
+          await jobsRoutes.mockJobsHistory([previewableCountJob])
+          await jobsRoutes.mockJobDetail(
+            'previewable-count-job',
+            previewableCountJobDetail
+          )
+          await mockInputFiles(page, ['imported.png'])
+          await mockViewFiles(page, viewFiles)
+        }
+      }
+    })
+
+    test('group badge shows previewable_outputs_count, matching the expanded drilldown', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+
+      const badge = tab
+        .getAssetCardByName('previewable-count-a')
+        .getByRole('button', { name: 'See more outputs' })
+      await expect(badge).toHaveText('2')
+
+      await badge.click()
+      await expect(tab.backToAssetsButton).toBeVisible()
+      await expect(tab.assetCards).toHaveCount(2)
+    })
+  })
+
+  test('deletes a generated output asset through explicit history refresh', async ({
+    comfyPage,
+    jobsRoutes
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await tab.open()
+    await expect(tab.getAssetCardByName('alpha')).toBeVisible()
+
+    const deleteRequests = await jobsRoutes.mockDeleteHistory()
+    await jobsRoutes.mockJobsHistory([betaJob])
+
+    await tab.getAssetCardByName('alpha').click({ button: 'right' })
+    await tab.contextMenuItem('Delete').click()
+    await comfyPage.confirmDialog.delete.click()
+
+    await expect.poll(() => deleteRequests).toHaveLength(1)
+    expect(deleteRequests[0]).toEqual({ delete: ['alpha'] })
+    await expect(tab.getAssetCardByName('alpha')).toHaveCount(0)
+    await expect(comfyPage.toast.toastSuccesses).toContainText(
+      'Deletion successful'
+    )
+  })
+})
+
+bulkInsertionTest.describe(
+  'Assets sidebar - bulk insert as nodes',
+  { tag: ['@vue-nodes', '@ui', '@node', '@widget'] },
+  () => {
+    bulkInsertionTest.use({
+      initialSettings: {
+        'Comfy.RightSidePanel.ShowErrorsTab': true
+      }
+    })
+
+    bulkInsertionTest.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.expectNodeCount(0)
+      await comfyPage.toast.closeToasts()
+      const panel = new PropertiesPanelHelper(comfyPage.page)
+      await panel.open(comfyPage.actionbar.propertiesButton)
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+      ).toBeHidden()
+      await expect(panel.errorsTab).toBeHidden()
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+      await expect(tab.assetCards).toHaveCount(2)
+    })
+
+    bulkInsertionTest(
+      'does not surface errors for inserted output assets',
+      async ({ comfyPage }) => {
+        const tab = comfyPage.menu.assetsTab
+        const panel = new PropertiesPanelHelper(comfyPage.page)
+        await expect(panel.root).toBeVisible()
+
+        await tab.getAssetCardByName('alpha').click()
+        await comfyPage.page.keyboard.down('ControlOrMeta')
+        await tab.getAssetCardByName('beta').click()
+        await comfyPage.page.keyboard.up('ControlOrMeta')
+        await expect(tab.selectedCards).toHaveCount(2)
+
+        await tab.getAssetCardByName('alpha').dispatchEvent('contextmenu', {
+          bubbles: true,
+          cancelable: true,
+          button: 2
+        })
+        await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
+        await tab.contextMenuItem('Insert all assets as nodes').click()
+
+        await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
+
+        await expectNoErrorUiAfterVerification(comfyPage, panel)
+      }
+    )
+  }
+)
+
+test.describe('FE-910 marquee selection and select all', () => {
+  test.use({
+    assetMocks: {
+      setup: async (_, page) => {
+        const jobsRoutes = new JobsRouteMocker(page)
+        await jobsRoutes.mockJobsQueue([])
+        await jobsRoutes.mockJobsHistory(generatedJobs)
+        await mockInputFiles(page, ['imported.png'])
+        await mockViewFiles(page, viewFiles)
+      }
+    }
+  })
+
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.menu.assetsTab.open()
+  })
+
+  test('Ctrl/Cmd+A selects every asset while the panel is hovered', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await expect(tab.assetCards).toHaveCount(2)
+
+    await tab.getAssetCardByName('alpha').hover()
+    await comfyPage.page.keyboard.press('ControlOrMeta+a')
+
+    await expect(tab.selectedCards).toHaveCount(2)
+  })
+
+  test('a marquee that begins in the panel header selects the cards', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await expect(tab.assetCards).toHaveCount(2)
+    await expect(tab.selectedCards).toHaveCount(0)
+
+    const header = await tab.panelHeader.boundingBox()
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!header || !beta) {
+      throw new Error('panel header or asset card has no layout box')
+    }
+
+    // Begin the rubber-band in the header (above the grid), then drag down
+    // across both cards.
+    await page.mouse.move(header.x + 24, header.y + 20)
+    await page.mouse.down()
+    await page.mouse.move(beta.x + 8, beta.y + beta.height - 8, { steps: 14 })
+    await page.mouse.up()
+
+    await expect(tab.selectedCards).toHaveCount(2)
+    await expect(tab.selectionFooter).toBeVisible()
+  })
+
+  test('Ctrl/Cmd+A leaves assets unselected while the canvas is hovered', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await expect(tab.assetCards).toHaveCount(2)
+
+    const viewport = page.viewportSize()
+    if (!viewport) throw new Error('viewport size is unavailable')
+
+    // Hover the canvas (not the panel); Ctrl/Cmd+A must yield to the canvas.
+    await page.mouse.move(viewport.width - 100, viewport.height / 2)
+    await page.keyboard.press('ControlOrMeta+a')
+
+    await expect(tab.selectedCards).toHaveCount(0)
+  })
+
+  test('a modifier-held marquee adds to the existing selection', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await expect(tab.assetCards).toHaveCount(2)
+
+    await tab.getAssetCardByName('alpha').click()
+    await expect(tab.selectedCards).toHaveCount(1)
+
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!beta) throw new Error('beta card has no layout box')
+
+    // Hold a modifier so the marquee is additive, then rubber-band over beta.
+    await page.keyboard.down('Control')
+    await page.mouse.move(beta.x + 12, beta.y + 12)
+    await page.mouse.down()
+    await page.mouse.move(beta.x + beta.width - 12, beta.y + beta.height - 12, {
+      steps: 12
+    })
+    await page.mouse.up()
+    await page.keyboard.up('Control')
+
+    await expect(tab.selectedCards).toHaveCount(2)
+  })
+
+  test('a Ctrl/Cmd+Shift marquee removes the covered cards from the selection', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await expect(tab.assetCards).toHaveCount(2)
+
+    await tab.getAssetCardByName('alpha').hover()
+    await page.keyboard.press('ControlOrMeta+a')
+    await expect(tab.selectedCards).toHaveCount(2)
+
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!beta) throw new Error('beta card has no layout box')
+
+    // Ctrl+Shift makes the marquee subtractive: rubber-band over beta only.
+    await page.keyboard.down('Control')
+    await page.keyboard.down('Shift')
+    await page.mouse.move(beta.x + 12, beta.y + 12)
+    await page.mouse.down()
+    await page.mouse.move(beta.x + beta.width - 12, beta.y + beta.height - 12, {
+      steps: 12
+    })
+    await page.mouse.up()
+    await page.keyboard.up('Shift')
+    await page.keyboard.up('Control')
+
+    await expect(tab.selectedCards).toHaveCount(1)
+    await expect(tab.getAssetCardByName('alpha')).toHaveAttribute(
+      'data-selected',
+      'true'
+    )
+  })
+
+  test('Ctrl/Cmd-dragging from an asset card starts a marquee selection', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await expect(tab.assetCards).toHaveCount(2)
+    await expect(tab.selectedCards).toHaveCount(0)
+
+    const alpha = await tab.getAssetCardByName('alpha').boundingBox()
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!alpha || !beta) throw new Error('asset cards have no layout box')
+
+    // Ctrl bypasses card drag, so a press that begins on a card rubber-bands.
+    await page.keyboard.down('Control')
+    await page.mouse.move(alpha.x + alpha.width / 2, alpha.y + alpha.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(beta.x + beta.width - 6, beta.y + beta.height - 6, {
+      steps: 12
+    })
+    await page.mouse.up()
+    await page.keyboard.up('Control')
+
+    await expect(tab.selectedCards).toHaveCount(2)
+    await expect(tab.selectionFooter).toBeVisible()
+  })
+
+  test('Ctrl/Cmd-dragging within a single card selects only that card', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await expect(tab.assetCards).toHaveCount(2)
+
+    const alpha = tab.getAssetCardByName('alpha')
+    const box = await alpha.boundingBox()
+    if (!box) throw new Error('alpha card has no layout box')
+
+    const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    await page.keyboard.down('Control')
+    await page.mouse.move(start.x, start.y)
+    await page.mouse.down()
+    await page.mouse.move(start.x + 12, start.y + 12, { steps: 4 })
+    await page.mouse.up()
+    await page.keyboard.up('Control')
+
+    await expect(tab.selectedCards).toHaveCount(1)
+    await expect(alpha).toHaveAttribute('data-selected', 'true')
+  })
+
+  test('Ctrl/Cmd+A in the focused search input does not select assets', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const query = 'alpha'
+
+    await tab.searchInput.fill(query)
+    await expect(tab.assetCards).toHaveCount(1)
+
+    await tab.searchInput.focus()
+    await comfyPage.page.keyboard.press('ControlOrMeta+a')
+
+    await expect(tab.selectedCards).toHaveCount(0)
+    await expect
+      .poll(() =>
+        tab.searchInput.evaluate((el: HTMLInputElement) => {
+          return { start: el.selectionStart, end: el.selectionEnd }
+        })
+      )
+      .toEqual({ start: 0, end: query.length })
+  })
+
+  test('a drag starting in the search input does not marquee-select assets', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+
+    await expect(tab.assetCards).toHaveCount(2)
+
+    const search = await tab.searchInput.boundingBox()
+    const beta = await tab.getAssetCardByName('beta').boundingBox()
+    if (!search || !beta)
+      throw new Error('search box or card has no layout box')
+
+    await page.mouse.move(
+      search.x + search.width / 2,
+      search.y + search.height / 2
+    )
+    await page.mouse.down()
+    await page.mouse.move(beta.x + beta.width / 2, beta.y + beta.height / 2, {
+      steps: 12
+    })
+    await page.mouse.up()
+
+    await expect(tab.selectedCards).toHaveCount(0)
+  })
+
+  test('Ctrl/Cmd+A does not select assets while an aria-modal dialog is open', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await expect(tab.assetCards).toHaveCount(2)
+
+    await comfyPage.page.evaluate(() => {
+      const dialog = document.createElement('div')
+      dialog.id = 'test-modal'
+      dialog.setAttribute('role', 'dialog')
+      dialog.setAttribute('aria-modal', 'true')
+      document.body.appendChild(dialog)
+    })
+
+    await tab.getAssetCardByName('alpha').hover()
+    await comfyPage.page.keyboard.press('ControlOrMeta+a')
+
+    await expect(tab.selectedCards).toHaveCount(0)
+
+    await comfyPage.page.evaluate(() => {
+      document.getElementById('test-modal')?.remove()
+    })
+  })
+})
+
+test.describe('Assets sidebar - agent-submitted job workflow open', () => {
+  test.beforeEach(async ({ jobsRoutes, page }) => {
+    await jobsRoutes.mockJobsHistory([pm1150Job])
+    await jobsRoutes.mockJobDetail(PM_1150_JOB_ID, pm1150JobDetail)
+    await mockInputFiles(page, [])
+    await mockViewFiles(page, { 'agent_job_output.png': {} })
+  })
+
+  test('PM-1150 — opens an agent-submitted job as a workflow via the stored API graph fallback', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+
+    await test.step('open the agent job as a workflow', async () => {
+      await tab.open()
+      await tab.rightClickAsset('agent_job_output')
+      await tab.contextMenuItem('Open as workflow in new tab').click()
+    })
+
+    await test.step('verify the rebuilt workflow loads and renders', async () => {
+      await expect(comfyPage.toast.toastSuccesses).toBeVisible()
+      await expect(comfyPage.toast.toastWarnings).toBeHidden({
+        timeout: 1500
+      })
+
+      await expect
+        .poll(() => comfyPage.menu.topbar.getActiveTabName())
+        .toBe('agent_job_output')
+      await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(7)
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() =>
+            window.app!.graph.nodes.map((node) => node.type)
+          )
+        )
+        .toEqual(
+          expect.arrayContaining([
+            'CheckpointLoaderSimple',
+            'KSampler',
+            'SaveImage'
+          ])
+        )
+    })
+  })
+})

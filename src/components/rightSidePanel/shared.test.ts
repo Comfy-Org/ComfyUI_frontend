@@ -1,24 +1,38 @@
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { describe, expect, it, beforeEach } from 'vitest'
-import { flatAndCategorizeSelectedItems, searchWidgets } from './shared'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import {
+  computedSectionDataList,
+  flatAndCategorizeSelectedItems,
+  searchWidgets,
+  searchWidgetsAndNodes
+} from './shared'
+import type { NodeWidgetsListList } from './shared'
 
 describe('searchWidgets', () => {
-  const createWidget = (
+  function createWidget(
     name: string,
     type: string,
     value?: string,
     label?: string
-  ): { widget: IBaseWidget } => ({
-    widget: {
-      name,
-      type,
-      value,
-      label
-    } as IBaseWidget
-  })
+  ): { widget: IBaseWidget } {
+    return {
+      widget: {
+        name,
+        options: {},
+        type,
+        value,
+        label,
+        y: 0
+      }
+    }
+  }
 
   it('should return all widgets when query is empty', () => {
     const widgets = [
@@ -69,6 +83,131 @@ describe('searchWidgets', () => {
     const result = searchWidgets(widgets, 'IMAGE width')
     expect(result).toHaveLength(1)
   })
+
+  it('searches a legacy widget with no type by name', () => {
+    const widget = createWidget('width', 'number')
+    Reflect.deleteProperty(widget.widget, 'type')
+
+    expect(searchWidgets([widget], 'width')).toEqual([widget])
+  })
+})
+
+describe('searchWidgetsAndNodes', () => {
+  function createWidget(name: string): IBaseWidget {
+    return {
+      name,
+      options: {},
+      type: 'number',
+      y: 0
+    }
+  }
+
+  function createNodeSection(
+    id: number,
+    title: string,
+    widgetNames: string[]
+  ): NodeWidgetsListList[number] {
+    const node = new LGraphNode(title)
+    node.id = toNodeId(id)
+    const widgets = widgetNames.map((name) => ({
+      node,
+      widget: createWidget(name)
+    }))
+
+    return { node, widgets }
+  }
+
+  it('keeps all widgets for matching nodes and filters widgets for other nodes', () => {
+    const matchingNode = createNodeSection(1, 'Image Size', ['width', 'height'])
+    const matchingWidget = createNodeSection(2, 'Sampler', [
+      'seed',
+      'imageQuality'
+    ])
+    const hiddenNode = createNodeSection(3, 'Preview', ['scale'])
+
+    const result = searchWidgetsAndNodes(
+      [matchingNode, matchingWidget, hiddenNode],
+      'image'
+    )
+
+    expect(result).toEqual([
+      matchingNode,
+      {
+        ...matchingWidget,
+        widgets: [matchingWidget.widgets[1]]
+      }
+    ])
+  })
+})
+
+describe('computedSectionDataList', () => {
+  function createWidget(
+    name: string,
+    options: IWidgetOptions = {}
+  ): IBaseWidget {
+    return { name, type: 'number', options, y: 0 }
+  }
+
+  it('omits hideInPanel widgets while keeping the rest on the node', () => {
+    const node = new LGraphNode('Load3D')
+    node.widgets = [
+      createWidget('seed'),
+      createWidget('viewport', { hideInPanel: true })
+    ]
+
+    const { widgetsSectionDataList } = computedSectionDataList([node])
+    const shownNames = widgetsSectionDataList.value[0].widgets.map(
+      ({ widget }) => widget.name
+    )
+
+    expect(shownNames).toEqual(['seed'])
+  })
+
+  it('hides canvasOnly, hidden, and hideInPanel widgets from the panel', () => {
+    const node = new LGraphNode('Load3D')
+    node.widgets = [
+      createWidget('seed'),
+      createWidget('preview', { canvasOnly: true }),
+      createWidget('internal', { hidden: true }),
+      createWidget('viewport', { hideInPanel: true })
+    ]
+
+    const { widgetsSectionDataList } = computedSectionDataList([node])
+    const shownNames = widgetsSectionDataList.value[0].widgets.map(
+      ({ widget }) => widget.name
+    )
+
+    expect(shownNames).toEqual(['seed'])
+  })
+
+  it('uses panel visibility tiers and suppression', () => {
+    const node = new LGraphNode('Visibility')
+    const connected = createWidget('connected')
+    node.widgets = [
+      createWidget('shown'),
+      createWidget('hidden', { hidden: true }),
+      createWidget('panel-hidden', { hideInPanel: true }),
+      createWidget('canvas-only', { canvasOnly: true }),
+      createWidget('advanced', { advanced: true }),
+      connected
+    ]
+    const connectedVisibility = deriveWidgetVisibility(connected)
+    connectedVisibility.suppression.byConnection = true
+    const registeredConnected = node.widgets.at(-1)
+    if (!registeredConnected) throw new Error('Missing connected widget')
+    Object.defineProperty(registeredConnected, 'visibility', {
+      value: connectedVisibility
+    })
+
+    const { widgetsSectionDataList } = computedSectionDataList([node])
+    const shownNames = () =>
+      widgetsSectionDataList.value[0].widgets.map(({ widget }) => widget.name)
+
+    expect(shownNames()).toEqual(['shown'])
+    useSettingStore().settingValues['Comfy.Node.AlwaysShowAdvancedWidgets'] =
+      true
+    expect(shownNames()).toEqual(['shown', 'advanced'])
+  })
 })
 
 describe('flatAndCategorizeSelectedItems', () => {
@@ -79,8 +218,8 @@ describe('flatAndCategorizeSelectedItems', () => {
   let testNode3: LGraphNode
 
   beforeEach(() => {
-    testGroup1 = new LGraphGroup('Group 1', 1)
-    testGroup2 = new LGraphGroup('Group 2', 2)
+    testGroup1 = new LGraphGroup('Group 1', toGroupId(1))
+    testGroup2 = new LGraphGroup('Group 2', toGroupId(2))
     testNode1 = new LGraphNode('Node 1')
     testNode2 = new LGraphNode('Node 2')
     testNode3 = new LGraphNode('Node 3')

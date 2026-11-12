@@ -1,12 +1,15 @@
 <template>
   <div
     v-show="isVisible"
-    class="pointer-events-none absolute z-9999 border border-blue-400 bg-blue-500/20"
+    data-testid="selection-rectangle"
+    class="pointer-events-none absolute z-1 border border-blue-400 bg-blue-500/20"
     :style="rectangleStyle"
   />
 </template>
 
 <script setup lang="ts">
+import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { useRafFn } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
@@ -14,12 +17,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 const canvasStore = useCanvasStore()
 
-const selectionRect = ref<{
-  x: number
-  y: number
-  w: number
-  h: number
-} | null>(null)
+const selectionRect = ref<CompactRect | null>(null)
 
 useRafFn(() => {
   const canvas = canvasStore.canvas

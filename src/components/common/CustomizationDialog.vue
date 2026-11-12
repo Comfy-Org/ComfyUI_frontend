@@ -1,72 +1,100 @@
 <template>
-  <Dialog v-model:visible="visible" :header="$t('g.customizeFolder')">
-    <div class="p-fluid">
-      <div class="field icon-field">
-        <label for="icon">{{ $t('g.icon') }}</label>
-        <SelectButton
-          v-model="selectedIcon"
-          :options="iconOptions"
-          option-label="name"
-          data-key="value"
-        >
-          <template #option="slotProps">
-            <i
-              :class="['pi', slotProps.option.value, 'mr-2']"
-              :style="{ color: finalColor }"
+  <Dialog v-model:open="visible">
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogContent size="md" :aria-labelledby="titleId">
+        <DialogHeader>
+          <DialogTitle :id="titleId">
+            {{ $t('g.customizeFolder') }}
+          </DialogTitle>
+          <DialogClose :aria-label="$t('g.close')" />
+        </DialogHeader>
+        <div class="flex flex-col gap-4 px-4 py-2">
+          <div class="flex flex-col gap-2">
+            <label for="customization-icon" class="text-sm font-medium">
+              {{ $t('g.icon') }}
+            </label>
+            <ToggleGroup
+              id="customization-icon"
+              v-model="selectedIconValue"
+              type="single"
+              :allow-empty="false"
+              class="justify-start"
+            >
+              <ToggleGroupItem
+                v-for="option in iconOptions"
+                :key="option.value"
+                :value="option.value"
+                :aria-label="option.name"
+                class="p-2"
+              >
+                <i
+                  :class="cn('pi text-lg', option.value)"
+                  :style="{ color: finalColor }"
+                />
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
+          <hr class="border-t border-border/50" />
+          <div class="flex flex-col gap-2">
+            <label for="customization-color" class="text-sm font-medium">
+              {{ $t('g.color') }}
+            </label>
+            <ColorCustomizationSelector
+              id="customization-color"
+              v-model="finalColor"
+              :color-options="colorOptions"
             />
-          </template>
-        </SelectButton>
-      </div>
-      <Divider />
-      <div class="field color-field">
-        <label for="color">{{ $t('g.color') }}</label>
-        <ColorCustomizationSelector
-          v-model="finalColor"
-          :color-options="colorOptions"
-        />
-      </div>
-    </div>
-    <template #footer>
-      <Button variant="textonly" @click="resetCustomization">
-        <i class="pi pi-refresh" />
-        {{ $t('g.reset') }}
-      </Button>
-      <Button autofocus @click="confirmCustomization">
-        <i class="pi pi-check" />
-        {{ $t('g.confirm') }}
-      </Button>
-    </template>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="textonly" @click="resetCustomization">
+            <i class="pi pi-refresh" />
+            {{ $t('g.reset') }}
+          </Button>
+          <Button autofocus @click="confirmCustomization">
+            <i class="pi pi-check" />
+            {{ $t('g.confirm') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </DialogPortal>
   </Dialog>
 </template>
 
 <script setup lang="ts">
-import Dialog from 'primevue/dialog'
-import Divider from 'primevue/divider'
-import SelectButton from 'primevue/selectbutton'
-import { computed, ref, watch } from 'vue'
+import { ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ColorCustomizationSelector from '@/components/common/ColorCustomizationSelector.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Dialog from '@comfyorg/design-system/dialog/Dialog'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
+import DialogFooter from '@comfyorg/design-system/dialog/DialogFooter'
+import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
+import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
+import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 
-const props = defineProps<{
-  modelValue: boolean
+const { initialIcon, initialColor } = defineProps<{
   initialIcon?: string
   initialColor?: string
 }>()
 
+const visible = defineModel<boolean>({ default: false })
+
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void
   (e: 'confirm', icon: string, color: string): void
 }>()
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
-})
+const titleId = useId()
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 
@@ -94,33 +122,24 @@ const defaultIcon = iconOptions.find(
   (option) => option.value === nodeBookmarkStore.defaultBookmarkIcon
 )
 
-// @ts-expect-error fixme ts strict error
-const selectedIcon = ref<{ name: string; value: string }>(defaultIcon)
-const finalColor = ref(
-  props.initialColor || nodeBookmarkStore.defaultBookmarkColor
-)
+const selectedIconValue = ref((defaultIcon ?? iconOptions[0]).value)
+const finalColor = ref(initialColor || nodeBookmarkStore.defaultBookmarkColor)
 
 const resetCustomization = () => {
-  // @ts-expect-error fixme ts strict error
-  selectedIcon.value =
-    iconOptions.find((option) => option.value === props.initialIcon) ||
-    defaultIcon
-  finalColor.value =
-    props.initialColor || nodeBookmarkStore.defaultBookmarkColor
+  selectedIconValue.value =
+    iconOptions.find((option) => option.value === initialIcon)?.value ??
+    iconOptions[0].value
+  finalColor.value = initialColor || nodeBookmarkStore.defaultBookmarkColor
 }
 
 const confirmCustomization = () => {
-  emit('confirm', selectedIcon.value.value, finalColor.value)
-  closeDialog()
-}
-
-const closeDialog = () => {
+  emit('confirm', selectedIconValue.value, finalColor.value)
   visible.value = false
 }
 
 watch(
-  () => props.modelValue,
-  (newValue: boolean) => {
+  visible,
+  (newValue) => {
     if (newValue) {
       resetCustomization()
     }
@@ -128,19 +147,3 @@ watch(
   { immediate: true }
 )
 </script>
-
-<style scoped>
-.p-selectbutton .p-button {
-  padding: 0.5rem;
-}
-
-.p-selectbutton .p-button .pi {
-  font-size: 1.5rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-</style>

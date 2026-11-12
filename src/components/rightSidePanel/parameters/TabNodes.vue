@@ -1,30 +1,27 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { computed, reactive, ref, shallowRef, watch } from 'vue'
+import { computed, reactive, ref, shallowRef } from 'vue'
 
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
-import type { NodeWidgetsListList } from '../shared'
+import {
+  computedSectionDataList,
+  searchWidgetsAndNodes
+} from '@/components/rightSidePanel/shared'
+import type { NodeWidgetsListList } from '@/components/rightSidePanel/shared'
+import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const canvasStore = useCanvasStore()
-const workflowStore = useWorkflowStore()
 
-const nodes = computed((): LGraphNode[] => {
-  // Depend on activeWorkflow to trigger recomputation when workflow changes
-  void workflowStore.activeWorkflow?.path
-  return (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
-})
+const nodes = computed(
+  (): LGraphNode[] => (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
+)
 
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 
 const { widgetsSectionDataList } = computedSectionDataList(nodes)
 
@@ -35,33 +32,24 @@ const isSearching = ref(false)
 
 const collapseMap = reactive<Record<string, boolean>>({})
 
-watch(
-  () => workflowStore.activeWorkflow?.path,
-  () => {
-    for (const key of Object.keys(collapseMap)) {
-      delete collapseMap[key]
-    }
-  }
-)
-
-function isSectionCollapsed(nodeId: string): boolean {
+function isSectionCollapsed(nodeId: NodeId): boolean {
   // Defaults to collapsed when not explicitly set by the user
   return collapseMap[nodeId] ?? true
 }
 
-function setSectionCollapsed(nodeId: string, collapsed: boolean) {
+function setSectionCollapsed(nodeId: NodeId, collapsed: boolean) {
   collapseMap[nodeId] = collapsed
 }
 
 const isAllCollapsed = computed({
   get() {
     return searchedWidgetsSectionDataList.value.every(({ node }) =>
-      isSectionCollapsed(String(node.id))
+      isSectionCollapsed(node.id)
     )
   },
   set(collapse: boolean) {
     for (const { node } of widgetsSectionDataList.value) {
-      setSectionCollapsed(String(node.id), collapse)
+      setSectionCollapsed(node.id, collapse)
     }
   }
 })
@@ -75,20 +63,16 @@ async function searcher(query: string) {
 </script>
 
 <template>
-  <div
-    class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
+  <PanelSearchHeader
+    v-model="searchQuery"
+    :searcher
+    :update-key="widgetsSectionDataList"
   >
-    <FormSearchInput
-      v-model="searchQuery"
-      :searcher
-      :update-key="widgetsSectionDataList"
-      class="flex-1"
-    />
     <CollapseToggleButton
       v-model="isAllCollapsed"
       :show="!isSearching && widgetsSectionDataList.length > 1"
     />
-  </div>
+  </PanelSearchHeader>
   <TransitionGroup tag="div" name="list-scale" class="relative">
     <div
       v-if="isSearching && searchedWidgetsSectionDataList.length === 0"
@@ -101,15 +85,15 @@ async function searcher(query: string) {
       :key="node.id"
       :node
       :widgets
-      :collapse="isSectionCollapsed(String(node.id)) && !isSearching"
+      :collapse="isSectionCollapsed(node.id) && !isSearching"
       :tooltip="
         isSearching || widgets.length
           ? ''
           : $t('rightSidePanel.inputsNoneTooltip')
       "
       show-locate-button
-      class="border-b border-interface-stroke"
-      @update:collapse="setSectionCollapsed(String(node.id), $event)"
+      class="border-b"
+      @update:collapse="setSectionCollapsed(node.id, $event)"
     />
   </TransitionGroup>
 </template>

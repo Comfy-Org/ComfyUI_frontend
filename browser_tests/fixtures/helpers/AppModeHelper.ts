@@ -4,62 +4,90 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 import { OutputHistoryComponent } from '@e2e/fixtures/components/OutputHistory'
+import { WorkflowActionsDropdown } from '@e2e/fixtures/components/WorkflowActionsDropdown'
 import { AppModeWidgetHelper } from '@e2e/fixtures/helpers/AppModeWidgetHelper'
 import { BuilderFooterHelper } from '@e2e/fixtures/helpers/BuilderFooterHelper'
 import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
 import { BuilderSelectHelper } from '@e2e/fixtures/helpers/BuilderSelectHelper'
 import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
+import { MobileAppHelper } from '@e2e/fixtures/helpers/MobileAppHelper'
 
 export class AppModeHelper {
-  readonly steps: BuilderStepsHelper
+  readonly arrangeNoOutputs: Locator
+  readonly arrangePreview: Locator
+  readonly arrangeSwitchToOutputsButton: Locator
+  readonly backToWorkflowButton: Locator
+  readonly buildAppButton: Locator
+  readonly cancelRunButton: Locator
+  readonly centerPanel: Locator
+  readonly connectOutputPopover: Locator
+  readonly connectOutputSwitchButton: Locator
+  readonly emptyWorkflowBackButton: Locator
+  readonly emptyWorkflowDialog: Locator
+  readonly emptyWorkflowLoadTemplateButton: Locator
+  readonly emptyWorkflowText: Locator
   readonly footer: BuilderFooterHelper
+  readonly imagePickerPopover: Locator
+  readonly linearWidgets: Locator
+  readonly loadTemplateButton: Locator
+  readonly mobile: MobileAppHelper
+  readonly outputHistory: OutputHistoryComponent
+  readonly outputPlaceholder: Locator
+  readonly rightPanelResizeHandle: Locator
+  readonly runButton: Locator
   readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
-  readonly outputHistory: OutputHistoryComponent
+  readonly steps: BuilderStepsHelper
+  readonly validationWarning: Locator
+  readonly viewErrorsInGraphButton: Locator
+  readonly vueNodeSwitchDismissButton: Locator
+  readonly vueNodeSwitchDontShowAgainCheckbox: Locator
+  readonly vueNodeSwitchPopup: Locator
+  readonly welcome: Locator
   readonly widgets: AppModeWidgetHelper
-  /** The "Connect an output" popover shown when saving without outputs. */
-  public readonly connectOutputPopover: Locator
-  /** The empty-state placeholder shown when no outputs are selected. */
-  public readonly outputPlaceholder: Locator
-  /** The linear-mode widget list container (visible in app mode). */
-  public readonly linearWidgets: Locator
-  /** The PrimeVue Popover for the image picker (renders with role="dialog"). */
-  public readonly imagePickerPopover: Locator
-  /** The Run button in the app mode footer. */
-  public readonly runButton: Locator
-  /** The welcome screen shown when app mode has no outputs or no nodes. */
-  public readonly welcome: Locator
-  /** The empty workflow message shown when no nodes exist. */
-  public readonly emptyWorkflowText: Locator
-  /** The "Build app" button shown when nodes exist but no outputs. */
-  public readonly buildAppButton: Locator
-  /** The "Back to workflow" button on the welcome screen. */
-  public readonly backToWorkflowButton: Locator
-  /** The "Load template" button shown when no nodes exist. */
-  public readonly loadTemplateButton: Locator
-  /** The cancel button for an in-progress run in the output history. */
-  public readonly cancelRunButton: Locator
+  readonly workflowActions: WorkflowActionsDropdown
 
   constructor(private readonly comfyPage: ComfyPage) {
-    this.steps = new BuilderStepsHelper(comfyPage)
+    this.mobile = new MobileAppHelper(comfyPage)
     this.footer = new BuilderFooterHelper(comfyPage)
     this.saveAs = new BuilderSaveAsHelper(comfyPage)
     this.select = new BuilderSelectHelper(comfyPage)
     this.outputHistory = new OutputHistoryComponent(comfyPage.page)
+    this.steps = new BuilderStepsHelper(comfyPage)
     this.widgets = new AppModeWidgetHelper(comfyPage)
+    this.workflowActions = new WorkflowActionsDropdown(comfyPage.page)
+
     this.connectOutputPopover = this.page.getByTestId(
       TestIds.builder.connectOutputPopover
+    )
+    this.connectOutputSwitchButton = this.page.getByTestId(
+      TestIds.builder.connectOutputSwitch
+    )
+    this.emptyWorkflowDialog = this.page.getByTestId(
+      TestIds.builder.emptyWorkflowDialog
+    )
+    this.emptyWorkflowBackButton = this.page.getByTestId(
+      TestIds.builder.emptyWorkflowBack
+    )
+    this.emptyWorkflowLoadTemplateButton = this.page.getByTestId(
+      TestIds.builder.emptyWorkflowLoadTemplate
     )
     this.outputPlaceholder = this.page.getByTestId(
       TestIds.builder.outputPlaceholder
     )
-    this.linearWidgets = this.page.getByTestId('linear-widgets')
+    this.linearWidgets = this.page.getByTestId(TestIds.linear.widgetContainer)
+    this.validationWarning = this.page.getByTestId(
+      TestIds.linear.validationWarning
+    )
+    this.viewErrorsInGraphButton = this.validationWarning.getByTestId(
+      TestIds.linear.viewErrorsInGraph
+    )
     this.imagePickerPopover = this.page
       .getByRole('dialog')
       .filter({ has: this.page.getByRole('button', { name: 'All' }) })
       .first()
     this.runButton = this.page
-      .getByTestId('linear-run-button')
+      .getByTestId(TestIds.linear.runButton)
       .getByRole('button', { name: /run/i })
     this.welcome = this.page.getByTestId(TestIds.appMode.welcome)
     this.emptyWorkflowText = this.page.getByTestId(
@@ -75,55 +103,63 @@ export class AppModeHelper {
     this.cancelRunButton = this.page.getByTestId(
       TestIds.outputHistory.cancelRun
     )
+    this.arrangePreview = this.page.getByTestId(TestIds.appMode.arrangePreview)
+    this.arrangeNoOutputs = this.page.getByTestId(
+      TestIds.appMode.arrangeNoOutputs
+    )
+    this.arrangeSwitchToOutputsButton = this.page.getByTestId(
+      TestIds.appMode.arrangeSwitchToOutputs
+    )
+    this.vueNodeSwitchPopup = this.page.getByTestId(
+      TestIds.appMode.vueNodeSwitchPopup
+    )
+    this.vueNodeSwitchDismissButton = this.page.getByTestId(
+      TestIds.appMode.vueNodeSwitchDismiss
+    )
+    this.vueNodeSwitchDontShowAgainCheckbox = this.page.getByTestId(
+      TestIds.appMode.vueNodeSwitchDontShowAgain
+    )
+    this.centerPanel = this.page.getByTestId(TestIds.linear.centerPanel)
+    this.rightPanelResizeHandle = this.page
+      .getByRole('separator')
+      .and(this.page.locator('[aria-controls="linearCenterPanel"]'))
   }
 
   private get page(): Page {
     return this.comfyPage.page
   }
 
-  /** Enable the linear mode feature flag and top menu. */
-  async enableLinearMode() {
-    await this.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        linear_toggle_enabled: true
-      }
-    })
-    await this.comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+  async resizeRightPanelBy(deltaX: number): Promise<void> {
+    const box = await this.rightPanelResizeHandle.boundingBox()
+    if (!box)
+      throw new Error('App mode right panel resize handle has no layout')
+
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    await this.page.mouse.move(x, y)
+    await this.page.mouse.down()
+    await this.page.mouse.move(x + deltaX, y, { steps: 10 })
+    await this.page.mouse.up()
   }
 
-  /** Enter builder mode via the "Workflow actions" dropdown. */
   async enterBuilder() {
-    await this.page
-      .getByRole('button', { name: 'Workflow actions' })
-      .first()
-      .click()
+    await this.comfyPage.menu.topbar.dismissWorkflowPopover()
+
+    await this.workflowActions.trigger.click()
     await this.page
       .getByRole('menuitem', { name: /Build app|Edit app/ })
       .click()
     await this.comfyPage.nextFrame()
   }
 
-  /** Toggle app mode (linear view) on/off. */
   async toggleAppMode() {
     await this.comfyPage.workflow.waitForActiveWorkflow()
     await this.comfyPage.command.executeCommand('Comfy.ToggleLinear')
-    await this.comfyPage.nextFrame()
   }
 
-  /**
-   * Inject linearData into the current graph and enter app mode.
-   *
-   * Serializes the graph, injects linearData with the given inputs and
-   * auto-detected output node IDs, then reloads so the appModeStore
-   * picks up the data via its activeWorkflow watcher.
-   *
-   * @param inputs - Widget selections as [nodeId, widgetName] tuples
-   */
   async enterAppModeWithInputs(inputs: [string, string][]) {
     await this.page.evaluate(async (inputTuples) => {
       const graph = window.app!.graph
-      if (!graph) return
 
       const outputNodeIds = graph.nodes
         .filter(
@@ -146,10 +182,6 @@ export class AppModeHelper {
     await this.toggleAppMode()
   }
 
-  /**
-   * Get the actions menu trigger for a widget in the app mode widget list.
-   * @param widgetName Text shown in the widget label (e.g. "seed").
-   */
   getAppModeWidgetMenu(widgetName: string): Locator {
     return this.linearWidgets
       .locator(`div:has(> div > span:text-is("${widgetName}"))`)

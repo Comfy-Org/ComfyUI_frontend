@@ -1,70 +1,80 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
-import { WidgetInputBaseClass } from '../../layout'
-import type { FormDropdownItem } from './types'
-
-interface Props {
-  isOpen?: boolean
-  placeholder?: string
-  items: FormDropdownItem[]
-  /** Items used for display in the input field. Falls back to items if not provided. */
-  displayItems?: FormDropdownItem[]
-  selected: Set<string>
-  maxSelectable: number
-  uploadable: boolean
-  disabled: boolean
-  accept?: string
-}
+import Loader from '@/components/loader/Loader.vue'
+import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
+import type { FormDropdownInputProps } from './types'
 
 const {
+  inputId,
   isOpen,
   placeholder = 'Select...',
-  items,
-  displayItems,
-  selected,
+  selectedItems,
   maxSelectable,
   uploadable,
   disabled,
   accept
-} = defineProps<Props>()
+} = defineProps<FormDropdownInputProps>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: 'select-click', event: MouseEvent): void
   (e: 'file-change', event: Event): void
 }>()
 
-const selectedItems = computed(() => {
-  const itemsToSearch = displayItems ?? items
-  return itemsToSearch.filter((item) => selected.has(item.id))
-})
-
 const theButtonStyle = computed(() =>
   cn(
-    'border-0 bg-component-node-widget-background text-text-secondary outline-none',
-    disabled
-      ? 'cursor-not-allowed'
-      : 'cursor-pointer hover:bg-component-node-widget-background-hovered',
-    selectedItems.value.length > 0 && 'text-text-primary'
+    'border-0 bg-input text-muted-foreground outline-none',
+    disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-muted',
+    selectedItems.length > 0 && 'text-foreground'
   )
 )
+
+const buttonRef = ref<HTMLButtonElement>()
+const fileInputRef = useTemplateRef<HTMLInputElement>('fileInputRef')
+
+function focus() {
+  buttonRef.value?.focus()
+}
+
+/**
+ * Open the native file picker without a user click on the input itself.
+ * Must be invoked synchronously from a user-initiated event handler so the
+ * browser's transient activation requirement is satisfied. Falls back to
+ * `click()` on browsers that predate showPicker (Chrome <99, Firefox <101,
+ * Safari <16).
+ */
+function showPicker() {
+  const input = fileInputRef.value!
+  if (typeof input.showPicker === 'function') {
+    input.showPicker()
+  } else {
+    input.click()
+  }
+}
+
+defineExpose({ focus, showPicker })
 </script>
 
 <template>
   <div
     :class="
-      cn(WidgetInputBaseClass, 'flex text-base leading-none', {
-        'cursor-not-allowed opacity-50 outline-node-component-border': disabled
+      cn(WidgetInputBaseClass, 'flex text-xs leading-none', {
+        'cursor-not-allowed opacity-50 outline-node-border': disabled
       })
     "
   >
     <button
+      :id="inputId"
+      ref="buttonRef"
       :class="
         cn(
           theButtonStyle,
-          'flex h-8 min-w-0 flex-1 items-center justify-between',
+          'flex h-8 min-w-0 flex-1 items-center justify-between gap-1 px-2',
           {
             'rounded-l-lg': uploadable,
             'rounded-lg': !uploadable
@@ -73,7 +83,7 @@ const theButtonStyle = computed(() =>
       "
       @click="emit('select-click', $event)"
     >
-      <span class="min-w-0 flex-1 truncate px-1 py-2 text-left">
+      <span class="min-w-0 flex-1 truncate py-2 text-left">
         <span v-if="!selectedItems.length">
           {{ placeholder }}
         </span>
@@ -85,26 +95,30 @@ const theButtonStyle = computed(() =>
         class="icon-[lucide--chevron-down]"
         :class="
           cn(
-            'mr-2 size-4 shrink-0 text-component-node-foreground-secondary transition-transform duration-200',
+            'text-muted-foreground transition-transform duration-200',
             isOpen && 'rotate-180'
           )
         "
       />
     </button>
+    <slot name="anchor" :element="buttonRef" />
     <label
       v-if="uploadable"
       :class="
         cn(
           theButtonStyle,
           'relative',
-          'flex size-8 items-center justify-center rounded-r-lg border-l border-node-component-border'
+          'flex size-8 items-center justify-center rounded-r-lg border-l border-node-border'
         )
       "
     >
-      <i class="icon-[lucide--folder-search] size-4" />
+      <Loader v-if="isUploading" size="sm" />
+      <i v-else class="icon-[lucide--folder-search]" aria-hidden="true" />
       <input
+        ref="fileInputRef"
         type="file"
         class="absolute inset-0 -z-1 opacity-0"
+        :aria-label="t('g.upload')"
         :multiple="maxSelectable > 1"
         :disabled="disabled"
         :accept="accept"

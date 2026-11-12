@@ -1,9 +1,9 @@
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
-import { useAppMode } from '@/composables/useAppMode'
-import { useTelemetry } from '@/platform/telemetry'
+import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useWorkflowStore } from '../../management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { t } from '@/i18n'
@@ -15,7 +15,7 @@ export function useShareDialog() {
   const dialogStore = useDialogStore()
   const { pruneLinearData } = useAppModeStore()
   const workflowStore = useWorkflowStore()
-  const { isAppMode } = useAppMode()
+  const shareFlowContext = useShareFlowContext()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -26,7 +26,7 @@ export function useShareDialog() {
     if (!wf) return share()
 
     const isAppDefault = wf.initialMode === 'app'
-    const linearData = wf.changeTracker?.activeState?.extra?.linearData
+    const linearData = wf.changeTracker.activeState.extra?.linearData
     const { outputs } = pruneLinearData(linearData)
 
     if (isAppDefault && outputs.length === 0) {
@@ -39,6 +39,7 @@ export function useShareDialog() {
           preserveNewlines: true
         },
         footerProps: {
+          cancelText: t('g.cancel'),
           confirmText: t('shareNoOutputs.shareAnyway'),
           confirmVariant: 'secondary',
           onCancel: () => dialogStore.closeDialog(dialog),
@@ -54,27 +55,16 @@ export function useShareDialog() {
     share()
   }
 
-  function getShareSource() {
-    return isAppMode.value ? 'app_mode' : ('graph_mode' as const)
-  }
-
   function showShareDialog() {
     useTelemetry()?.trackShareFlow({
       step: 'dialog_opened',
-      source: getShareSource()
+      ...shareFlowContext.value
     })
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: ShareWorkflowDialogContent,
       props: {
         onClose: hide
-      },
-      dialogComponentProps: {
-        pt: {
-          root: {
-            class: 'rounded-2xl overflow-hidden w-full sm:w-144 max-w-full'
-          }
-        }
       }
     })
   }

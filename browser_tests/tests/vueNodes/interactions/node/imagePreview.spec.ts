@@ -1,20 +1,23 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
-} from '@e2e/helpers/promotedWidgets'
+} from '@e2e/fixtures/utils/promotedWidgets'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+const wstest = mergeTests(test, webSocketFixture)
 
-test.describe('Vue Nodes Image Preview', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-  })
-
+test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
-    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-    await comfyPage.vueNodes.waitForNodes()
+    await comfyPage.nodeOps.clearGraph()
+    await comfyPage.searchBoxV2.addNode('Load Image')
 
     const loadImageNode = (
       await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
@@ -22,23 +25,33 @@ test.describe('Vue Nodes Image Preview', () => {
     const { x, y } = await loadImageNode.getPosition()
 
     await comfyPage.dragDrop.dragAndDropFile('image64x64.webp', {
-      dropPosition: { x, y }
+      dropPosition: { x, y },
+      waitForUpload: true
     })
 
-    const nodeId = String(loadImageNode.id)
-    const imagePreview = comfyPage.vueNodes
-      .getNodeLocator(nodeId)
-      .locator('.image-preview')
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+    await node.waitForImageLoaded('image64x64.webp')
+    await expect(node.imagePreview).toContainText('64 x 64')
 
-    await expect(imagePreview).toBeVisible()
-    await expect(imagePreview.locator('img')).toBeVisible({ timeout: 30_000 })
-    await expect(imagePreview).toContainText('x')
-
-    return {
-      imagePreview,
-      nodeId
-    }
+    return node
   }
+
+  test('restores an image preview with Undo and removes it again with Redo', async ({
+    comfyPage
+  }) => {
+    const node = await loadImageOnNode(comfyPage)
+    await node.title.click()
+    await comfyPage.keyboard.delete()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+
+    await comfyPage.keyboard.undo()
+    await node.waitForImageLoaded('image64x64.webp')
+    await expect(node.imagePreview).toContainText('64 x 64')
+    await node.title.click()
+
+    await comfyPage.keyboard.redo()
+    await expect(comfyPage.vueNodes.nodes).toHaveCount(0)
+  })
 
   test('opens mask editor from image preview button', async ({ comfyPage }) => {
     const { imagePreview } = await loadImageOnNode(comfyPage)
@@ -46,24 +59,40 @@ test.describe('Vue Nodes Image Preview', () => {
     await imagePreview.getByRole('region').hover()
     await comfyPage.page.getByLabel('Edit or mask image').click()
 
-    await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
+    await expect(
+      comfyPage.page.getByRole('heading', { name: 'Mask Editor' })
+    ).toBeVisible()
+  })
+
+  test('hides mask and download buttons when image is missing', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow(
+      'widgets/load_image_widget_missing_file'
+    )
+
+    const { imagePreview } =
+      await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+
+    await expect(imagePreview).toBeVisible()
+    await expect(imagePreview.getByTestId('error-loading-image')).toBeVisible()
+
+    await imagePreview.getByRole('region').hover()
+
+    await expect(imagePreview.getByLabel('Edit or mask image')).toHaveCount(0)
+    await expect(imagePreview.getByLabel('Download image')).toHaveCount(0)
   })
 
   test('shows image context menu options', async ({ comfyPage }) => {
-    const { nodeId } = await loadImageOnNode(comfyPage)
+    const node = await loadImageOnNode(comfyPage)
 
-    await comfyPage.vueNodes.selectNode(nodeId)
-    const nodeHeader = comfyPage.vueNodes
-      .getNodeLocator(nodeId)
-      .locator('.lg-node-header')
-    await nodeHeader.click({ button: 'right' })
-
-    const contextMenu = comfyPage.page.locator('.p-contextmenu')
-    await expect(contextMenu).toBeVisible()
-    await expect(contextMenu.getByText('Open Image')).toBeVisible()
-    await expect(contextMenu.getByText('Copy Image')).toBeVisible()
-    await expect(contextMenu.getByText('Save Image')).toBeVisible()
-    await expect(contextMenu.getByText('Open in Mask Editor')).toBeVisible()
+    const contextMenu = await comfyPage.contextMenu.openForVueNode(node.header)
+    await contextMenu.assertHasItems([
+      'Open Image',
+      'Copy Image',
+      'Save Image',
+      'Open in Mask Editor'
+    ])
   })
 
   test(
@@ -73,7 +102,6 @@ test.describe('Vue Nodes Image Preview', () => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-with-multiple-promoted-previews'
       )
-      await comfyPage.vueNodes.waitForNodes()
 
       const firstSubgraphNode = comfyPage.vueNodes.getNodeLocator('7')
       const secondSubgraphNode = comfyPage.vueNodes.getNodeLocator('8')
@@ -99,12 +127,10 @@ test.describe('Vue Nodes Image Preview', () => {
         )
         .toBe(1)
 
-      await expect(
-        firstSubgraphNode.locator('.lg-node-widgets')
-      ).not.toContainText('$$canvas-image-preview')
-      await expect(
-        secondSubgraphNode.locator('.lg-node-widgets')
-      ).not.toContainText('$$canvas-image-preview')
+      await expect(firstSubgraphNode.locator('.lg-node-widgets')).toHaveCount(0)
+      await expect(secondSubgraphNode.locator('.lg-node-widgets')).toHaveCount(
+        0
+      )
 
       await comfyPage.command.executeCommand('Comfy.Canvas.FitView')
       await comfyPage.command.executeCommand('Comfy.QueuePrompt')
@@ -120,9 +146,137 @@ test.describe('Vue Nodes Image Preview', () => {
       await expect(firstPreviewImages.nth(1)).toBeVisible({ timeout: 30_000 })
       await expect(secondPreviewImages.first()).toBeVisible({ timeout: 30_000 })
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
+      await fitToViewInstant(comfyPage, { zoom: 0.6 })
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [firstSubgraphNode, secondSubgraphNode],
         'vue-node-multiple-promoted-previews.png'
       )
+    }
+  )
+
+  wstest(
+    'Displays previews inside subgraphs received while workflow inactive',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const previewLocator = comfyPage.vueNodes.getNodeByTitle('Preview Image')
+      const previewImage = new VueNodeFixture(previewLocator)
+      const subgraphLocator = comfyPage.vueNodes.getNodeByTitle('New Subgraph')
+      const subgraphNode = new VueNodeFixture(subgraphLocator)
+
+      await test.step('Add node', async () => {
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        await expect(previewImage.root).toBeVisible()
+      })
+
+      await test.step('Create subgraph', async () => {
+        await previewImage.title.click()
+        await comfyPage.page.keyboard.press('Control+Shift+e')
+        await expect(subgraphNode.root).toBeVisible()
+      })
+
+      await test.step('Inject Previews from different tab', async () => {
+        const jobId = await execution.run()
+        await comfyPage.menu.topbar.getTab(0).click()
+        await expect(comfyPage.vueNodes.nodes).toHaveCount(7)
+
+        const images = [{ filename: 'example.png', type: 'input' }]
+        execution.executed(jobId, '2:1', { images })
+        await comfyPage.nextFrame()
+
+        await comfyPage.menu.topbar.getTab(1).click()
+      })
+
+      await expect(subgraphNode.imagePreview.locator('img')).toHaveCount(1)
+    }
+  )
+})
+
+async function countColumns(locator: Locator) {
+  return await locator.locator('img').evaluateAll((images) => {
+    const yOffsets = images.map((image) => image.getBoundingClientRect().y)
+    return yOffsets.filter((yOffset) => yOffset === yOffsets[0]).length
+  })
+}
+
+test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
+  wstest(
+    'Image previews tile to fit node',
+    async ({ comfyMouse, comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+      await test.step('Add node', async () => {
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
+        await expect(previewImage).toBeVisible()
+      })
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+
+      await test.step('Inject multiple previews', async () => {
+        const file = { filename: 'example.png', type: 'input' }
+        const images = Array.from({ length: 100 }, () => file)
+        execution.executed('', '1', { images })
+        await expect(node.imageGrid.locator('img')).toHaveCount(100)
+      })
+
+      const { bottomRight } = node.resize
+      await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
+      await comfyMouse.dragElementBy(bottomRight, { x: 200 })
+      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
+      await comfyMouse.dragElementBy(bottomRight, { x: -200, y: 200 })
+      await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
+    }
+  )
+
+  wstest(
+    'requests lightweight thumbnail URLs for grid cells',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+      await test.step('Add node', async () => {
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
+        await expect(previewImage).toBeVisible()
+      })
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const gridImages = node.imageGrid.locator('img')
+
+      await test.step('Inject a multi-image grid', async () => {
+        const images = Array.from({ length: 4 }, (_, index) => ({
+          filename: `grid-${index}.png`,
+          subfolder: '',
+          type: 'output'
+        }))
+        execution.executed('', '1', { images })
+        await expect(gridImages).toHaveCount(4)
+      })
+
+      await expect
+        .poll(() =>
+          gridImages.evaluateAll((images: HTMLImageElement[]) =>
+            images.map((image) => {
+              const { searchParams } = new URL(image.src)
+              return {
+                filename: searchParams.get('filename'),
+                preview: searchParams.get('preview')
+              }
+            })
+          )
+        )
+        .toEqual(
+          ['grid-0.png', 'grid-1.png', 'grid-2.png', 'grid-3.png'].map(
+            (filename) => ({ filename, preview: 'webp;75' })
+          )
+        )
     }
   )
 })

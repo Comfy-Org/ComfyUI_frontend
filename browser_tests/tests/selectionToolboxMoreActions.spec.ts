@@ -1,0 +1,182 @@
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
+import { openMoreOptions } from '@e2e/fixtures/utils/selectionToolbox'
+
+test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
+  test.describe('Single node actions', () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
+      await comfyPage.nextFrame()
+    })
+
+    test('pin and unpin node via More Options menu', async ({ comfyPage }) => {
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
+
+      await expect(nodeRef).not.toBePinned()
+
+      let menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Pin', { exact: true }).click()
+      await comfyPage.nextFrame()
+
+      await expect(nodeRef).toBePinned()
+
+      menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Unpin', { exact: true }).click()
+      await comfyPage.nextFrame()
+
+      await expect(nodeRef).not.toBePinned()
+    })
+
+    test('minimize and expand node via More Options menu', async ({
+      comfyPage
+    }) => {
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
+
+      await expect(nodeRef).not.toBeCollapsed()
+
+      let menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Minimize Node', { exact: true }).click()
+      await comfyPage.nextFrame()
+
+      await expect(nodeRef).toBeCollapsed()
+
+      menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Expand Node', { exact: true }).click()
+      await comfyPage.nextFrame()
+
+      await expect(nodeRef).not.toBeCollapsed()
+    })
+
+    test('More Options menu does not surface duplicate LiteGraph Resize / Collapse / Expand entries', async ({
+      comfyPage
+    }) => {
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
+
+      const menu = await openMoreOptions(comfyPage)
+
+      await expect(
+        menu.getByText('Minimize Node', { exact: true })
+      ).toBeVisible()
+      await expect(
+        menu.getByRole('menuitem', { name: 'Resize', exact: true })
+      ).toHaveCount(0)
+      await expect(
+        menu.getByRole('menuitem', { name: 'Collapse', exact: true })
+      ).toHaveCount(0)
+
+      await menu.getByText('Minimize Node', { exact: true }).click()
+      await openMoreOptions(comfyPage)
+
+      await expect(
+        menu.getByRole('menuitem', { name: 'Expand', exact: true })
+      ).toHaveCount(0)
+    })
+
+    test('copy via More Options menu', async ({ comfyPage }) => {
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
+
+      const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+      const menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Copy', { exact: true }).click()
+      await comfyPage.nextFrame()
+
+      // Paste the copied node
+      await comfyPage.clipboard.paste()
+      await comfyPage.nextFrame()
+
+      await comfyPage.expectNodeCount(initialCount + 1)
+    })
+
+    test('duplicate via More Options menu', async ({ comfyPage }) => {
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
+
+      const initialCount = await comfyPage.nodeOps.getGraphNodesCount()
+
+      const menu = await openMoreOptions(comfyPage)
+      await menu.getByText('Duplicate', { exact: true }).click()
+      await comfyPage.nextFrame()
+
+      await comfyPage.expectNodeCount(initialCount + 1)
+    })
+
+    test('refresh button is hidden for a node without refreshable widgets', async ({
+      comfyPage
+    }) => {
+      const nodeRef = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
+
+      await expect(comfyPage.selectionToolbox).toBeVisible()
+      await expect(
+        comfyPage.selectionToolbox.getByRole('button', {
+          name: 'Refresh Node',
+          exact: true
+        })
+      ).toBeHidden()
+    })
+  })
+
+  test.describe('Multiple node actions', () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.nextFrame()
+    })
+
+    test('bypass button toggles bypass on multiple selected nodes', async ({
+      comfyPage
+    }) => {
+      await comfyPage.nodeOps.selectNodes(['KSampler', 'Empty Latent Image'])
+      await comfyPage.nextFrame()
+
+      const ksampler = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
+      )[0]
+      const emptyLatent = (
+        await comfyPage.nodeOps.getNodeRefsByTitle('Empty Latent Image')
+      )[0]
+
+      await expect(ksampler).not.toBeBypassed()
+      await expect(emptyLatent).not.toBeBypassed()
+
+      const bypassButton = comfyPage.selectionToolbox.getByRole('button', {
+        name: 'Bypass/Unbypass Selected Nodes',
+        exact: true
+      })
+      await expect(bypassButton).toBeVisible()
+      await bypassButton.click()
+      await comfyPage.nextFrame()
+
+      await expect(ksampler).toBeBypassed()
+      await expect(emptyLatent).toBeBypassed()
+
+      await bypassButton.click()
+      await comfyPage.nextFrame()
+
+      await expect(ksampler).not.toBeBypassed()
+      await expect(emptyLatent).not.toBeBypassed()
+    })
+  })
+})

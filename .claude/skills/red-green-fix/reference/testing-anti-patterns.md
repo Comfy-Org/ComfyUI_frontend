@@ -1,6 +1,6 @@
 # Testing Anti-Patterns for Red-Green Fixes
 
-Common mistakes that undermine the red-green proof. Avoid these when writing the test commit (Step 1).
+Common mistakes that undermine the red-green proof. Avoid these when writing the test commit (Step 1). Each is a specific case of a rule in `docs/guidance/testing-principles.md`; this file shows why it breaks the red-green proof in particular.
 
 ## Testing Implementation Details
 
@@ -169,7 +169,7 @@ expect(result).toBeDefined() // This proves nothing
 
 ```bash
 # Instead of fixing the code, just updating the snapshot to match buggy output
-pnpm test:unit -- --update
+pnpm test:unit --update
 ```
 
 If a snapshot needs updating, the fix should change the code behavior, not the expected output.

@@ -2,11 +2,12 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createI18n } from 'vue-i18n'
 
-import type { SecretMetadata } from '../types'
+import type { SecretMetadata } from '@/platform/secrets/types'
 import SecretListItem from './SecretListItem.vue'
 
-vi.mock('../providers', () => ({
+vi.mock(import('@/platform/secrets/providers'), () => ({
   getProviderLabel: (provider: string | undefined) => {
     if (provider === 'huggingface') return 'HuggingFace'
     if (provider === 'civitai') return 'Civitai'
@@ -14,6 +15,29 @@ vi.mock('../providers', () => ({
   },
   getProviderLogo: () => undefined
 }))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  escapeParameter: true,
+  messages: {
+    en: {
+      g: {
+        edit: 'Edit',
+        delete: 'Delete',
+        loading: 'Loading'
+      },
+      secrets: {
+        createdAt: 'Created {date}',
+        lastUsed: 'Last used {date}'
+      }
+    }
+  }
+})
+
+function formatExpectedDate(dateString: string): string {
+  return i18n.global.d(new Date(dateString), { dateStyle: 'medium' })
+}
 
 function createMockSecret(
   overrides: Partial<SecretMetadata> = {}
@@ -36,20 +60,7 @@ function renderComponent(props: {
   return render(SecretListItem, {
     props,
     global: {
-      stubs: {
-        Button: {
-          template:
-            '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-          props: ['disabled', 'variant', 'size', 'aria-label']
-        }
-      },
-      directives: {
-        tooltip: () => {}
-      },
-      mocks: {
-        $t: (key: string, params?: object) =>
-          `${key}${params ? JSON.stringify(params) : ''}`
-      }
+      plugins: [i18n]
     }
   })
 }
@@ -89,55 +100,125 @@ describe('SecretListItem', () => {
       const secret = createMockSecret({ created_at: '2024-01-15T10:00:00Z' })
       renderComponent({ secret })
 
-      expect(screen.getByText(/secrets\.createdAt/)).toBeInTheDocument()
+      expect(
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
+      ).toBeInTheDocument()
     })
 
     it('displays last used date when available', () => {
       const secret = createMockSecret({ last_used_at: '2024-01-20T10:00:00Z' })
       renderComponent({ secret })
 
-      expect(screen.getByText(/secrets\.lastUsed/)).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          `Last used ${formatExpectedDate(secret.last_used_at!)}`
+        )
+      ).toBeInTheDocument()
     })
 
     it('hides last used when not available', () => {
       const secret = createMockSecret({ last_used_at: undefined })
       renderComponent({ secret })
 
-      expect(screen.queryByText(/secrets\.lastUsed/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/^Last used /)).not.toBeInTheDocument()
+    })
+
+    it('renders formatted dates without escaped slash entities', () => {
+      const secret = createMockSecret({
+        created_at: '2026-02-06T10:00:00Z',
+        last_used_at: '2026-04-17T10:00:00Z'
+      })
+      renderComponent({ secret })
+
+      expect(screen.queryByText(/&#x2F;/)).not.toBeInTheDocument()
+      expect(
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
+      ).toBeInTheDocument()
+    })
+
+    it('renders created date for ISO string with 4-digit fractional seconds', () => {
+      const secret = createMockSecret({
+        created_at: '2026-04-18T10:04:55.6513Z'
+      })
+      renderComponent({ secret })
+
+      expect(
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
+
+    it('renders created date for ISO string with 1-digit fractional seconds', () => {
+      const secret = createMockSecret({
+        created_at: '2026-04-18T10:04:55.6Z'
+      })
+      renderComponent({ secret })
+
+      expect(
+        screen.getByText(`Created ${formatExpectedDate(secret.created_at)}`)
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
+
+    it('hides created line when the timestamp is unparseable', () => {
+      const secret = createMockSecret({ created_at: 'not-a-date' })
+      renderComponent({ secret })
+
+      expect(screen.queryByText(/^Created /)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
+
+    it('hides last used line when the timestamp is unparseable', () => {
+      const secret = createMockSecret({ last_used_at: 'not-a-date' })
+      renderComponent({ secret })
+
+      expect(screen.queryByText(/^Last used /)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
+    })
+
+    it('renders last used date for 4-digit fractional seconds', () => {
+      const secret = createMockSecret({
+        last_used_at: '2026-04-18T11:00:00.6513Z'
+      })
+      renderComponent({ secret })
+
+      expect(
+        screen.getByText(
+          `Last used ${formatExpectedDate(secret.last_used_at!)}`
+        )
+      ).toBeInTheDocument()
+      expect(screen.queryByText(/Invalid Date/)).not.toBeInTheDocument()
     })
   })
 
   describe('loading state', () => {
     it('shows spinner when loading', () => {
       const secret = createMockSecret()
-      const { container } = renderComponent({ secret, loading: true })
+      renderComponent({ secret, loading: true })
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-      expect(container.querySelector('.pi-spinner')).toBeInTheDocument()
+      expect(
+        screen.getByRole('status', { name: 'Loading' })
+      ).toBeInTheDocument()
     })
 
     it('hides action buttons when loading', () => {
       const secret = createMockSecret()
-      const { container } = renderComponent({ secret, loading: true })
+      renderComponent({ secret, loading: true })
 
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-        container.querySelector('.pi-pen-to-square')
+        screen.queryByRole('button', { name: 'Edit' })
       ).not.toBeInTheDocument()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-      expect(container.querySelector('.pi-trash')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Delete' })
+      ).not.toBeInTheDocument()
     })
 
     it('shows action buttons when not loading', () => {
       const secret = createMockSecret()
-      const { container } = renderComponent({ secret, loading: false })
+      renderComponent({ secret, loading: false })
 
-      expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-        container.querySelector('.pi-pen-to-square')
-      ).toBeInTheDocument()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeIcon has no ARIA role
-      expect(container.querySelector('.pi-trash')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
     })
   })
 
@@ -173,7 +254,7 @@ describe('SecretListItem', () => {
       await user.click(buttons[0])
 
       expect(emitted()['edit']).toBeDefined()
-      expect(emitted()['edit']!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['edit'].length).toBeGreaterThanOrEqual(1)
     })
 
     it('emits delete event when delete button clicked', async () => {
@@ -185,7 +266,7 @@ describe('SecretListItem', () => {
       await user.click(buttons[1])
 
       expect(emitted()['delete']).toBeDefined()
-      expect(emitted()['delete']!.length).toBeGreaterThanOrEqual(1)
+      expect(emitted()['delete'].length).toBeGreaterThanOrEqual(1)
     })
   })
 })

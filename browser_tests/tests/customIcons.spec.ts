@@ -20,10 +20,6 @@ async function verifyCustomIconSvg(iconElement: Locator) {
 }
 
 test.describe('Custom Icons', { tag: '@settings' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
-  })
-
   test('sidebar tab icons use custom SVGs', async ({ comfyPage }) => {
     // Find the icon in the sidebar
     const icon = comfyPage.page.locator(

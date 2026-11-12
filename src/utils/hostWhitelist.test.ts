@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
+import {
+  isHostWhitelisted,
+  isLoopbackHost,
+  normalizeHost
+} from '@/utils/hostWhitelist'
 
 describe('hostWhitelist utils', () => {
   describe('normalizeHost', () => {
-    it.each([
+    it.for([
       ['LOCALHOST', 'localhost'],
       ['localhost.', 'localhost'], // trims trailing dot
       ['localhost:5173', 'localhost'], // strips :port
@@ -17,7 +21,7 @@ describe('hostWhitelist utils', () => {
       ['example.com.', 'example.com'], // trims trailing dot
       ['[2001:db8::1]:8443', '2001:db8::1'], // IPv6 with brackets+port
       ['2001:db8::1', '2001:db8::1'] // plain IPv6 stays
-    ])('normalizeHost(%o) -> %o', (input, expected) => {
+    ])('normalizeHost(%o) -> %o', ([input, expected]) => {
       expect(normalizeHost(input)).toBe(expected)
     })
 
@@ -29,7 +33,7 @@ describe('hostWhitelist utils', () => {
 
   describe('isHostWhitelisted', () => {
     describe('localhost label', () => {
-      it.each([
+      it.for([
         'localhost',
         'LOCALHOST',
         'localhost.',
@@ -42,7 +46,7 @@ describe('hostWhitelist utils', () => {
         expect(isHostWhitelisted(input)).toBe(true)
       })
 
-      it.each([
+      it.for([
         'localhost.com',
         'evil-localhost',
         'notlocalhost',
@@ -53,7 +57,7 @@ describe('hostWhitelist utils', () => {
     })
 
     describe('IPv4 127/8 loopback', () => {
-      it.each([
+      it.for([
         '127.0.0.1',
         '127.1.2.3',
         '127.255.255.255',
@@ -64,7 +68,7 @@ describe('hostWhitelist utils', () => {
         expect(isHostWhitelisted(input)).toBe(true)
       })
 
-      it.each([
+      it.for([
         '126.0.0.1',
         '127.256.0.1',
         '127.-1.0.1',
@@ -82,7 +86,7 @@ describe('hostWhitelist utils', () => {
     })
 
     describe('IPv6 loopback ::1 (all textual forms)', () => {
-      it.each([
+      it.for([
         '::1',
         '[::1]',
         '[::1]:5173',
@@ -97,7 +101,7 @@ describe('hostWhitelist utils', () => {
         expect(isHostWhitelisted(input)).toBe(true)
       })
 
-      it.each([
+      it.for([
         '::2',
         '::',
         '::0',
@@ -121,7 +125,7 @@ describe('hostWhitelist utils', () => {
     })
 
     describe('comfy.org hosts', () => {
-      it.each([
+      it.for([
         'staging.comfy.org',
         'stagingcloud.comfy.org',
         'pr-123.testingcloud.comfy.org',
@@ -130,7 +134,7 @@ describe('hostWhitelist utils', () => {
         expect(isHostWhitelisted(input)).toBe(true)
       })
 
-      it.each([
+      it.for([
         'comfy.org.evil.com',
         'evil-comfy.org',
         'comfy.organization',
@@ -140,6 +144,45 @@ describe('hostWhitelist utils', () => {
       ])('should NOT allow %o', (input) => {
         expect(isHostWhitelisted(input)).toBe(false)
       })
+    })
+  })
+  describe('isLoopbackHost', () => {
+    it.for([
+      'localhost',
+      'LOCALHOST',
+      'localhost.',
+      'app.localhost',
+      'localhost:5173',
+      '127.0.0.1',
+      '127.1.2.3',
+      '127.000.000.001',
+      '[::1]',
+      '::1',
+      '0:0:0:0:0:0:0:1',
+      '[0:0:0:0:0:0:0:1]',
+      '0.0.0.0',
+      '::',
+      '[::]',
+      '::ffff:127.0.0.1',
+      '[::ffff:7f00:1]'
+    ])('treats %o as this machine', (input) => {
+      expect(isLoopbackHost(input)).toBe(true)
+    })
+
+    it.for([
+      'gpu-box.lan',
+      '10.0.0.5',
+      '100.74.161.87',
+      '128.0.0.1',
+      '227.0.0.1',
+      'notlocalhost',
+      'localhost.evil.com',
+      '2001:db8::1',
+      '::ffff:10.0.0.1',
+      '[::ffff:a00:5]',
+      'cloud.comfy.org'
+    ])('does NOT treat %o as this machine', (input) => {
+      expect(isLoopbackHost(input)).toBe(false)
     })
   })
 })

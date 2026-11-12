@@ -1,13 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { createI18n } from 'vue-i18n'
-
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { DetachedWindowAPI } from 'happy-dom'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 export function createMockNodeDef(
   overrides: Partial<ComfyNodeDef> = {}
-): ComfyNodeDef {
-  return {
+): ComfyNodeDefImpl {
+  return new ComfyNodeDefImpl({
     name: 'TestNode',
     display_name: 'Test Node',
     category: 'test',
@@ -21,44 +19,14 @@ export function createMockNodeDef(
     deprecated: false,
     experimental: false,
     ...overrides
-  }
+  })
 }
 
-export function setupTestPinia() {
-  setActivePinia(createTestingPinia({ stubActions: false }))
-}
-
-export const testI18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: {
-        addNode: 'Add a node...',
-        filterBy: 'Filter by:',
-        mostRelevant: 'Most relevant',
-        recents: 'Recents',
-        favorites: 'Favorites',
-        essentials: 'Essentials',
-        custom: 'Custom',
-        comfy: 'Comfy',
-        partner: 'Partner',
-        extensions: 'Extensions',
-        noResults: 'No results',
-        filterByType: 'Filter by {type}...',
-        input: 'Input',
-        output: 'Output',
-        source: 'Source',
-        search: 'Search'
-      },
-      sideToolbar: {
-        nodeLibraryTab: {
-          filterOptions: {
-            blueprints: 'Blueprints',
-            partnerNodes: 'Partner Nodes'
-          }
-        }
-      }
-    }
+export function setViewport(viewport: { width: number; height: number }) {
+  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
+    .happyDOM
+  if (!happyDOM) {
+    throw new Error('window.happyDOM is unavailable to set viewport')
   }
-})
+  happyDOM.setViewport(viewport)
+}

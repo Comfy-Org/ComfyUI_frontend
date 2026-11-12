@@ -1,0 +1,99 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import CustomizationDialog from './CustomizationDialog.vue'
+
+const DEFAULT_ICON = 'pi-bookmark-fill'
+const DEFAULT_COLOR = '#a1a1aa'
+
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/Dialog'), () => ({
+  default: { name: 'Dialog', template: '<div><slot /></div>' }
+}))
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogPortal'), () => ({
+  default: { name: 'DialogPortal', template: '<div><slot /></div>' }
+}))
+vi.mock<unknown>(
+  import('@comfyorg/design-system/dialog/DialogOverlay'),
+  () => ({
+    default: { name: 'DialogOverlay', template: '<div />' }
+  })
+)
+vi.mock<unknown>(
+  import('@comfyorg/design-system/dialog/DialogContent'),
+  () => ({
+    default: { name: 'DialogContent', template: '<div><slot /></div>' }
+  })
+)
+
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogTitle'), () => ({
+  default: { name: 'DialogTitle', template: '<div><slot /></div>' }
+}))
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogClose'), () => ({
+  default: { name: 'DialogClose', template: '<button />' }
+}))
+
+vi.mock<unknown>(
+  import('@/components/common/ColorCustomizationSelector.vue'),
+  () => ({
+    default: {
+      name: 'ColorCustomizationSelector',
+      template: '<div />',
+      props: ['modelValue', 'colorOptions']
+    }
+  })
+)
+
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+
+function renderDialog(extraProps: Record<string, unknown> = {}) {
+  const onConfirm = vi.fn()
+  render(CustomizationDialog, {
+    global: { plugins: [i18n] },
+    props: { modelValue: true, onConfirm, ...extraProps }
+  })
+  return { onConfirm }
+}
+
+describe('CustomizationDialog', () => {
+  describe('confirmCustomization', () => {
+    it('emits the icon selected by the user', async () => {
+      const user = userEvent.setup()
+      const { onConfirm } = renderDialog()
+
+      await user.click(screen.getByRole('button', { name: 'icon.folder' }))
+      await user.click(screen.getByRole('button', { name: 'icon.folder' }))
+      await user.click(screen.getByText('g.confirm'))
+
+      expect(onConfirm).toHaveBeenCalledWith('pi-folder', DEFAULT_COLOR)
+    })
+
+    it('emits confirm with matching initialIcon when provided', async () => {
+      const user = userEvent.setup()
+      const { onConfirm } = renderDialog({ initialIcon: 'pi-star' })
+
+      await user.click(screen.getByText('g.confirm'))
+
+      expect(onConfirm).toHaveBeenCalledWith('pi-star', DEFAULT_COLOR)
+    })
+
+    it('falls back to default icon when initialIcon does not match any option', async () => {
+      const user = userEvent.setup()
+      const { onConfirm } = renderDialog({ initialIcon: 'pi-nonexistent' })
+
+      await user.click(screen.getByText('g.confirm'))
+
+      expect(onConfirm).toHaveBeenCalledWith(DEFAULT_ICON, DEFAULT_COLOR)
+    })
+
+    it('emits confirm with initialColor when provided', async () => {
+      const user = userEvent.setup()
+      const { onConfirm } = renderDialog({ initialColor: '#007bff' })
+
+      await user.click(screen.getByText('g.confirm'))
+
+      expect(onConfirm).toHaveBeenCalledWith(DEFAULT_ICON, '#007bff')
+    })
+  })
+})

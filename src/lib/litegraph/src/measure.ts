@@ -1,5 +1,14 @@
-import type { HasBoundingRect, Point, ReadOnlyRect, Rect } from './interfaces'
-import { Alignment, LinkDirection, hasFlag } from './types/globalEnums'
+import type {
+  HasBoundingRect,
+  PointTuple as Point,
+  ReadOnlyRect,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
+import {
+  Alignment,
+  LinkDirection,
+  hasFlag
+} from '@comfyorg/graph-model/globalEnums'
 
 /**
  * Calculates the distance between two points (2D vector)
@@ -360,6 +369,31 @@ export function snapPoint(
 
   pos[0] = snapTo * Math[method](pos[0] / snapTo)
   pos[1] = snapTo * Math[method](pos[1] / snapTo)
+  return true
+}
+
+/**
+ * Expands a {@link Rect} outwards so that all four edges lie on a grid of size
+ * {@link snapTo}.
+ *
+ * Unlike {@link snapPoint}, the rect is only ever grown, never shrunk, so
+ * anything it contained before the call is still contained afterwards.
+ * @param rect The rect that will be expanded, modified in place
+ * @param snapTo The grid size to expand out to (multiples thereof)
+ * @returns `true` if snapTo is truthy, otherwise `false`
+ */
+export function expandRectToGrid(rect: Rect, snapTo: number): boolean {
+  if (!snapTo) return false
+
+  const right = snapTo * Math.ceil((rect[0] + rect[2]) / snapTo)
+  const bottom = snapTo * Math.ceil((rect[1] + rect[3]) / snapTo)
+  const left = snapTo * Math.floor(rect[0] / snapTo)
+  const top = snapTo * Math.floor(rect[1] / snapTo)
+
+  rect[0] = left
+  rect[1] = top
+  rect[2] = right - left
+  rect[3] = bottom - top
   return true
 }
 

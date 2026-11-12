@@ -2,9 +2,10 @@ import { computed } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetState } from '@/stores/widgetValueStore'
-import type { Bounds } from '@/renderer/core/layout/types'
-import type { LinkedUpstreamInfo } from '@/types/simplifiedWidget'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import type { LinkedUpstreamInfo, WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 
 type ValueExtractor<T = unknown> = (
   widgets: WidgetState[],
@@ -21,14 +22,14 @@ export function useUpstreamValue<T>(
   return computed(() => {
     const upstream = getLinkedUpstream()
     if (!upstream) return undefined
-    const graphId = canvasStore.canvas?.graph?.rootGraph.id
+    const graphId = canvasStore.rootGraphId
     if (!graphId) return undefined
     const widgets = widgetValueStore.getNodeWidgets(graphId, upstream.nodeId)
     return extractValue(widgets, upstream.outputName)
   })
 }
 
-export function singleValueExtractor<T>(
+export function singleValueExtractor<T extends WidgetValue>(
   isValid: (value: unknown) => value is T
 ): ValueExtractor<T> {
   return (widgets, outputName) => {
@@ -39,17 +40,6 @@ export function singleValueExtractor<T>(
     const validValues = widgets.map((w) => w.value).filter(isValid)
     return validValues.length === 1 ? validValues[0] : undefined
   }
-}
-
-function isBoundsObject(value: unknown): value is Bounds {
-  if (typeof value !== 'object' || value === null) return false
-  const v = value as Record<string, unknown>
-  return (
-    typeof v.x === 'number' &&
-    typeof v.y === 'number' &&
-    typeof v.width === 'number' &&
-    typeof v.height === 'number'
-  )
 }
 
 export function boundsExtractor(): ValueExtractor<Bounds> {

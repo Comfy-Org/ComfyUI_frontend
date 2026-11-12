@@ -5,7 +5,6 @@ import {
 
 test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.setup()
     await comfyPage.queuePanel.overlayToggle.click()
   })
 
@@ -16,6 +15,17 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
 
     const dialog = comfyPage.confirmDialog.root
     await expect(dialog).toBeVisible()
+  })
+
+  test('Dialog keeps its 360px width in a narrow window', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.setViewportSize({ width: 640, height: 720 })
+    await comfyPage.queuePanel.openClearHistoryDialog()
+
+    const dialog = comfyPage.confirmDialog.root
+    await expect(dialog).toBeVisible()
+    await expect.poll(async () => (await dialog.boundingBox())?.width).toBe(360)
   })
 
   test('Dialog shows confirmation message with title, description, and assets note', async ({
@@ -56,7 +66,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
       if (route.request().method() === 'POST') {
         clearCalled = true
       }
-      return route.continue()
+      return route.fallback()
     })
 
     await dialog.getByRole('button', { name: 'Cancel' }).click()
@@ -79,7 +89,7 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
       if (route.request().method() === 'POST') {
         clearCalled = true
       }
-      return route.continue()
+      return route.fallback()
     })
 
     await dialog.getByLabel('Close').click()

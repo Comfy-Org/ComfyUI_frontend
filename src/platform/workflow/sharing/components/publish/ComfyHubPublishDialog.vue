@@ -1,9 +1,11 @@
 <template>
   <BaseModalLayout
+    :labels="modalLayoutLabels"
     :content-title="$t('comfyHubPublish.title')"
     content-padding="none"
     left-panel-width="16.5rem"
     size="md"
+    @close="onClose"
   >
     <template #leftPanelHeaderTitle>
       <h2 class="flex-1 text-base font-semibold select-none">
@@ -21,7 +23,11 @@
 
     <template #header />
     <template #content>
-      <div v-if="needsSave" class="flex flex-col gap-4 p-6">
+      <div
+        v-if="needsSave"
+        data-testid="publish-save-prompt"
+        class="flex flex-col gap-4 p-6"
+      >
         <p class="m-0 text-sm text-muted-foreground">
           {{ $t('comfyHubPublish.unsavedDescription') }}
         </p>
@@ -56,6 +62,7 @@
         :is-first-step
         :is-last-step
         :is-publishing
+        :is-update="isAlreadyPublished"
         :on-update-form-data="updateFormData"
         :on-go-next="goNext"
         :on-go-back="goBack"
@@ -70,21 +77,13 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  provide,
-  ref,
-  watch
-} from 'vue'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
 import ComfyHubPublishNav from '@/platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue'
 import ComfyHubPublishWizardContent from '@/platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue'
 import { useComfyHubPublishSubmission } from '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'
@@ -98,8 +97,9 @@ import { useWorkflowShareService } from '@/platform/workflow/sharing/services/wo
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { OnCloseKey } from '@/types/widgetTypes'
+import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 
 const { onClose } = defineProps<{
   onClose: () => void
@@ -125,6 +125,7 @@ const {
   applyPrefill
 } = useComfyHubPublishWizard()
 const isPublishing = ref(false)
+const isAlreadyPublished = ref(false)
 const needsSave = ref(false)
 const workflowName = ref('')
 const nameInputRef = ref<InstanceType<typeof Input> | null>(null)
@@ -179,10 +180,8 @@ const { isLoading: isSaving, execute: handleSave } = useAsyncState(
     immediate: false,
     onError: (error) => {
       console.error('Failed to save workflow:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('shareWorkflow.saveFailedTitle'),
-        detail: t('shareWorkflow.saveFailedDescription')
+      toast.error(t('shareWorkflow.saveFailedTitle'), {
+        description: t('shareWorkflow.saveFailedDescription')
       })
     }
   }
@@ -213,13 +212,18 @@ async function handlePublish(): Promise<void> {
     if (path) {
       cachePublishPrefill(path, formData.value)
     }
+    toast.success(t('comfyHubPublish.publishSuccessTitle'), {
+      description: t('comfyHubPublish.publishSuccessDescription'),
+      duration: 5000
+    })
     onClose()
   } catch (error) {
     console.error('Failed to publish workflow:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('comfyHubPublish.publishFailedTitle'),
-      detail: t('comfyHubPublish.publishFailedDescription')
+    const reason = getErrorMessage(error)
+    toast.error(t('comfyHubPublish.publishFailedTitle'), {
+      description: reason
+        ? t('comfyHubPublish.publishFailedDescriptionWithReason', { reason })
+        : t('comfyHubPublish.publishFailedDescription')
     })
   } finally {
     isPublishing.value = false
@@ -232,10 +236,15 @@ function updateFormData(patch: Partial<ComfyHubPublishFormData>) {
 
 async function fetchPublishPrefill() {
   const path = workflowStore.activeWorkflow?.path
-  if (!path) return
+  if (!path) {
+    isAlreadyPublished.value = false
+    return
+  }
 
   try {
     const status = await shareService.getPublishStatus(path)
+    if (workflowStore.activeWorkflow?.path !== path) return
+    isAlreadyPublished.value = status.isPublished
     const prefill = status.isPublished
       ? (status.prefill ?? getCachedPrefill(path))
       : getCachedPrefill(path)
@@ -243,6 +252,8 @@ async function fetchPublishPrefill() {
       applyPrefill(prefill)
     }
   } catch (error) {
+    if (workflowStore.activeWorkflow?.path !== path) return
+    isAlreadyPublished.value = false
     console.warn('Failed to fetch publish prefill:', error)
     const cached = getCachedPrefill(path)
     if (cached) {
@@ -257,6 +268,15 @@ onMounted(() => {
   void fetchPublishPrefill()
 })
 
+watch(
+  () => workflowStore.activeWorkflow?.path,
+  (newPath, oldPath) => {
+    if (isPublishing.value) return
+    if (!newPath || newPath === oldPath) return
+    void fetchPublishPrefill()
+  }
+)
+
 onBeforeUnmount(() => {
   for (const image of formData.value.exampleImages) {
     if (image.file) {
@@ -265,5 +285,5 @@ onBeforeUnmount(() => {
   }
 })
 
-provide(OnCloseKey, onClose)
+const modalLayoutLabels = useModalLayoutLabels()
 </script>

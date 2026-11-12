@@ -4,7 +4,6 @@ import { isDesktop } from '@/platform/distribution/types'
 
 /**
  * Extend Window interface to include electronAPI
- * Used by desktop-ui app storybook stories
  * @public
  */
 export type ElectronWindow = typeof window & {
@@ -16,9 +15,15 @@ export function electronAPI() {
 }
 
 export function showNativeSystemMenu() {
-  electronAPI()?.showContextMenu()
+  electronAPI().showContextMenu()
 }
 
 export function isNativeWindow() {
   return isDesktop && !!window.navigator.windowControlsOverlay?.visible
+}
+
+export function isLocalDesktopHost() {
+  const bridge = window.__comfyDesktop2
+  const isRemote = bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
+  return !isRemote && (isDesktop || bridge !== undefined)
 }

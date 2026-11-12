@@ -1,0 +1,115 @@
+name: Find Workflow Run
+description: Finds a workflow run for a given commit SHA and outputs its status and run ID.
+
+inputs:
+  workflow-id:
+    description: The workflow filename (e.g., 'ci-dist-inspection.yaml')
+    required: true
+  head-sha:
+    description: The commit SHA to find runs for
+    required: true
+  event:
+    description: Only consider runs triggered by this event (e.g., 'pull_request')
+    required: false
+  run-name:
+    description: Only consider runs with this exact display name
+    required: false
+  not-found-status:
+    description: Status to output when no run exists
+    required: false
+    default: pending
+  artifact-name:
+    description: When set, a completed run is ready only when this artifact exists
+    required: false
+  token:
+    description: GitHub token for API access
+    required: true
+
+outputs:
+  status:
+    description: One of 'ready', 'pending', 'failed', or the not-found-status value
+    value: ${{ steps.find.outputs.status }}
+  run-id:
+    description: The workflow run ID (only set when status is 'ready')
+    value: ${{ steps.find.outputs.run-id }}
+
+runs:
+  using: composite
+  steps:
+    - name: Find workflow run
+      id: find
+      uses: actions/github-script@v9
+      env:
+        WORKFLOW_ID: ${{ inputs.workflow-id }}
+        HEAD_SHA: ${{ inputs.head-sha }}
+        EVENT: ${{ inputs.event }}
+        RUN_NAME: ${{ inputs.run-name }}
+        NOT_FOUND_STATUS: ${{ inputs.not-found-status }}
+        ARTIFACT_NAME: ${{ inputs.artifact-name }}
+      with:
+        github-token: ${{ inputs.token }}
+        script: |
+          let run;
+          for await (const { data } of github.paginate.iterator(
+            github.rest.actions.listWorkflowRuns,
+            {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: process.env.WORKFLOW_ID,
+              head_sha: process.env.HEAD_SHA,
+              event: process.env.EVENT || undefined,
+              per_page: process.env.RUN_NAME ? 100 : 1,
+            }
+          )) {
+            run = data.find(candidate =>
+              !process.env.RUN_NAME || candidate.display_title === process.env.RUN_NAME
+            );
+            if (run) break;
+          }
+
+          if (!run) {
+            core.setOutput('status', process.env.NOT_FOUND_STATUS);
+            return;
+          }
+
+          if (run.status !== 'completed') {
+            core.setOutput('status', 'pending');
+            return;
+          }
+
+          if (process.env.ARTIFACT_NAME) {
+            const artifacts = await github.paginate(
+              github.rest.actions.listWorkflowRunArtifacts,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: run.id,
+                per_page: 100,
+              }
+            );
+            const artifact = artifacts.find(
+              candidate =>
+                candidate.name === process.env.ARTIFACT_NAME &&
+                !candidate.expired
+            );
+            if (!artifact) {
+              core.setOutput(
+                'status',
+                run.conclusion === 'success'
+                  ? process.env.NOT_FOUND_STATUS
+                  : 'failed'
+              );
+              return;
+            }
+            core.setOutput('status', 'ready');
+            core.setOutput('run-id', String(run.id));
+            return;
+          }
+
+          if (run.conclusion !== 'success') {
+            core.setOutput('status', 'failed');
+            return;
+          }
+
+          core.setOutput('status', 'ready');
+          core.setOutput('run-id', String(run.id));

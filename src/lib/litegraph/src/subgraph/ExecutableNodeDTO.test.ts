@@ -1,13 +1,22 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import {
+  ExecutableNodeDTO,
   LGraph,
-  LGraphNode,
   LGraphEventMode,
-  ExecutableNodeDTO
+  LGraphNode,
+  LLink
 } from '@/lib/litegraph/src/litegraph'
+import type { ExecutableLGraphNode } from '@/lib/litegraph/src/litegraph'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import {
   createNestedSubgraphs,
@@ -17,7 +26,6 @@ import {
 } from './__fixtures__/subgraphHelpers'
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   resetSubgraphFixtureState()
 })
 
@@ -41,7 +49,7 @@ describe('ExecutableNodeDTO Creation', () => {
   it('should create DTO with subgraph path', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Inner Node')
-    node.id = 42
+    node.id = toNodeId(42)
     graph.add(node)
     const subgraphPath = ['10', '20'] as const
 
@@ -56,15 +64,18 @@ describe('ExecutableNodeDTO Creation', () => {
     const node = new LGraphNode('Test Node')
     node.addInput('input1', 'number')
     node.addInput('input2', 'string')
-    node.inputs[0].link = 123 // Simulate connected input
     graph.add(node)
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    graph.add(source)
+    const link = source.connect(0, node, 0)!
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
 
     expect(dto.inputs).toHaveLength(2)
     expect(dto.inputs[0].name).toBe('input1')
     expect(dto.inputs[0].type).toBe('number')
-    expect(dto.inputs[0].linkId).toBe(123)
+    expect(dto.inputs[0].linkId).toBe(link.id)
     expect(dto.inputs[1].name).toBe('input2')
     expect(dto.inputs[1].type).toBe('string')
     expect(dto.inputs[1].linkId).toBeNull()
@@ -115,7 +126,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should generate simple ID for root node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Root Node')
-    node.id = 5
+    node.id = toNodeId(5)
     graph.add(node)
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
@@ -126,7 +137,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should generate path-based ID for nested node', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Nested Node')
-    node.id = 3
+    node.id = toNodeId(3)
     graph.add(node)
     const path = ['1', '2'] as const
 
@@ -138,7 +149,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should handle deep nesting paths', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Deep Node')
-    node.id = 99
+    node.id = toNodeId(99)
     graph.add(node)
     const path = ['1', '2', '3', '4', '5'] as const
 
@@ -150,11 +161,11 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
   it('should handle string and number IDs consistently', () => {
     const graph = new LGraph()
     const node1 = new LGraphNode('Node 1')
-    node1.id = 10
+    node1.id = toNodeId(10)
     graph.add(node1)
 
     const node2 = new LGraphNode('Node 2')
-    node2.id = 20
+    node2.id = toNodeId(20)
     graph.add(node2)
 
     const dto1 = new ExecutableNodeDTO(node1, ['5'], new Map(), undefined)
@@ -258,10 +269,6 @@ describe('ExecutableNodeDTO Output Resolution', () => {
 })
 
 describe('Muted node output resolution', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('should return undefined for NEVER mode nodes', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Muted Node')
@@ -329,6 +336,127 @@ describe('Muted node output resolution', () => {
   })
 })
 
+describe('Subgraph output whose inner link has no origin node', () => {
+  function subgraphNodeWithInnerLink(originId: NodeId) {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'in', type: 'IMAGE' }],
+      outputs: [{ name: 'images', type: 'IMAGE' }],
+      nodeCount: 1
+    })
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const innerLink = new LLink(
+      toLinkId(9),
+      'IMAGE',
+      originId,
+      0,
+      SUBGRAPH_OUTPUT_ID,
+      0
+    )
+    vi.spyOn(subgraphNode, 'resolveSubgraphOutputLink').mockReturnValue(
+      innerLink.resolve(subgraph)
+    )
+    return subgraphNode
+  }
+
+  it('resolves to nothing with a warning instead of throwing', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(toNodeId(632))
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toBeUndefined()
+    expect(console.warn).toHaveBeenCalled()
+  })
+
+  it('skips a pass-through link whose subgraph node input is missing', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(SUBGRAPH_INPUT_ID)
+    subgraphNode.removeInput(0)
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toBeUndefined()
+  })
+
+  it('forwards a pass-through link to the subgraph node input', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(SUBGRAPH_INPUT_ID)
+    const parentGraph = subgraphNode.graph!
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'IMAGE')
+    parentGraph.add(source)
+    parentGraph.add(subgraphNode)
+    source.connect(0, subgraphNode, 0)
+
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const sourceDto = new ExecutableNodeDTO(
+      source,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(sourceDto.id, sourceDto)
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toMatchObject({
+      node: sourceDto,
+      origin_slot: 0
+    })
+  })
+  it('returns the promoted widget value for an unlinked pass-through input', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(SUBGRAPH_INPUT_ID)
+    const id = widgetId(subgraphNode.rootGraph.id, subgraphNode.id, 'in')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: 7,
+      options: {}
+    })
+    subgraphNode.inputs[0].widgetId = id
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toMatchObject({
+      origin_slot: -1,
+      widgetInfo: { value: 7 }
+    })
+  })
+
+  it('resolves to nothing for an unlinked pass-through input with no widget', () => {
+    const subgraphNode = subgraphNodeWithInnerLink(SUBGRAPH_INPUT_ID)
+    const nodesByExecutionId = new Map<string, ExecutableLGraphNode>()
+    const dto = new ExecutableNodeDTO(
+      subgraphNode,
+      [],
+      nodesByExecutionId,
+      undefined
+    )
+    nodesByExecutionId.set(dto.id, dto)
+
+    expect(dto.resolveOutput(0, 'IMAGE', new Set())).toBeUndefined()
+  })
+})
+
 describe('Bypass node output resolution', () => {
   it('should still resolve bypass for BYPASS mode nodes', () => {
     const graph = new LGraph()
@@ -388,10 +516,6 @@ describe('ALWAYS mode node output resolution', () => {
 })
 
 describe('Virtual node resolveVirtualOutput', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('should resolve through resolveVirtualOutput when implemented', () => {
     const graph = new LGraph()
 
@@ -487,7 +611,7 @@ describe('ExecutableNodeDTO Properties', () => {
   it('should provide access to basic properties', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
-    node.id = 42
+    node.id = toNodeId(42)
     node.addInput('input', 'number')
     node.addOutput('output', 'string')
     graph.add(node)
@@ -505,8 +629,11 @@ describe('ExecutableNodeDTO Properties', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test Node')
     node.addInput('testInput', 'number')
-    node.inputs[0].link = 999 // Simulate connection
     graph.add(node)
+    const source = new LGraphNode('Source')
+    source.addOutput('out', 'number')
+    graph.add(source)
+    const link = source.connect(0, node, 0)!
 
     const dto = new ExecutableNodeDTO(node, [], new Map(), undefined)
 
@@ -514,7 +641,7 @@ describe('ExecutableNodeDTO Properties', () => {
     expect(dto.inputs).toHaveLength(1)
     expect(dto.inputs[0].name).toBe('testInput')
     expect(dto.inputs[0].type).toBe('number')
-    expect(dto.inputs[0].linkId).toBe(999)
+    expect(dto.inputs[0].linkId).toBe(link.id)
   })
 })
 
@@ -536,9 +663,9 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
     expect(dto.inputs).toHaveLength(2) // Copied input data only
 
     // Should not duplicate heavy node data
-    // eslint-disable-next-line no-prototype-builtins
+    // oxlint-disable-next-line no-prototype-builtins
     expect(dto.hasOwnProperty('outputs')).toBe(false) // Outputs not copied
-    // eslint-disable-next-line no-prototype-builtins
+    // oxlint-disable-next-line no-prototype-builtins
     expect(dto.hasOwnProperty('widgets')).toBe(false) // Widgets not copied
   })
 
@@ -549,7 +676,7 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
     // Create DTOs
     for (let i = 0; i < 100; i++) {
       const node = new LGraphNode(`Node ${i}`)
-      node.id = i
+      node.id = toNodeId(i)
       graph.add(node)
       const dto = new ExecutableNodeDTO(node, ['parent'], new Map(), undefined)
       nodes.push(dto)
@@ -578,9 +705,9 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
     expect(dto.graph).toBe(innerNode.graph)
 
     // Should not hold heavy references that prevent GC
-    // eslint-disable-next-line no-prototype-builtins
+    // oxlint-disable-next-line no-prototype-builtins
     expect(dto.hasOwnProperty('parentGraph')).toBe(false)
-    // eslint-disable-next-line no-prototype-builtins
+    // oxlint-disable-next-line no-prototype-builtins
     expect(dto.hasOwnProperty('rootGraph')).toBe(false)
   })
 })
@@ -619,7 +746,7 @@ describe('ExecutableNodeDTO Integration', () => {
   it('should preserve original node properties through DTO', () => {
     const graph = new LGraph()
     const originalNode = new LGraphNode('Original')
-    originalNode.id = 123
+    originalNode.id = toNodeId(123)
     originalNode.addInput('test', 'number')
     originalNode.properties = { value: 42 }
     graph.add(originalNode)
@@ -632,7 +759,7 @@ describe('ExecutableNodeDTO Integration', () => {
     )
 
     // DTO should provide access to original node properties
-    expect(dto.node.id).toBe(123)
+    expect(Number(dto.node.id)).toBe(123)
     expect(dto.node.inputs).toHaveLength(1)
     expect(dto.node.properties.value).toBe(42)
 
@@ -641,10 +768,11 @@ describe('ExecutableNodeDTO Integration', () => {
   })
 
   it('should handle execution context correctly', () => {
-    const subgraph = createTestSubgraph({ nodeCount: 1 })
+    const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph, { id: 99 })
-    const innerNode = subgraph.nodes[0]
-    innerNode.id = 55
+    const innerNode = new LGraphNode('Inner')
+    innerNode.id = toNodeId(55)
+    subgraph.add(innerNode)
 
     const dto = new ExecutableNodeDTO(
       innerNode,
@@ -655,44 +783,38 @@ describe('ExecutableNodeDTO Integration', () => {
 
     // DTO provides execution context
     expect(dto.id).toBe('99:55') // Path-based execution ID
-    expect(dto.node.id).toBe(55) // Original node ID preserved
-    expect(dto.subgraphNode?.id).toBe(99) // Subgraph context
+    expect(Number(dto.node.id)).toBe(55) // Original node ID preserved
+    expect(Number(dto.subgraphNode?.id)).toBe(99) // Subgraph context
   })
 })
 
 describe('ExecutableNodeDTO Scale Testing', () => {
   it('should create DTOs at scale', () => {
     const graph = new LGraph()
-    const startTime = performance.now()
     const dtos: ExecutableNodeDTO[] = []
 
-    // Create DTOs to test performance
     for (let i = 0; i < 1000; i++) {
       const node = new LGraphNode(`Node ${i}`)
-      node.id = i
+      node.id = toNodeId(i)
       node.addInput('in', 'number')
-      graph.add(node)
+      // Bulk add, as LGraph.configure does: recomputing execution order per
+      // node is O(n^2) and unrelated to the id generation under test.
+      graph.add(node, { skipComputeOrder: true })
 
       const dto = new ExecutableNodeDTO(node, ['parent'], new Map(), undefined)
       dtos.push(dto)
     }
 
-    const endTime = performance.now()
-    const duration = endTime - startTime
-
     expect(dtos).toHaveLength(1000)
-    // Test deterministic properties instead of flaky timing
     expect(dtos[0].id).toBe('parent:0')
     expect(dtos[999].id).toBe('parent:999')
     expect(dtos.every((dto, i) => dto.id === `parent:${i}`)).toBe(true)
-
-    console.log(`Created 1000 DTOs in ${duration.toFixed(2)}ms`)
   })
 
   it('should handle complex path generation correctly', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Deep Node')
-    node.id = 999
+    node.id = toNodeId(999)
     graph.add(node)
 
     // Test deterministic path generation behavior

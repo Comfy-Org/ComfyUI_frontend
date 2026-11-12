@@ -1,0 +1,222 @@
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type {
+  BillingBalanceResponse,
+  BillingStatusResponse
+} from '@comfyorg/billing-core'
+
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
+import {
+  mockWorkspaceTokenMint,
+  workspace
+} from '@e2e/fixtures/utils/workspaceMocks'
+
+/**
+ * Billing facade consumers — FE-933 (B3) regression.
+ *
+ * The repointed surfaces (avatar popover balance, free-tier dialog renewal
+ * date) must keep rendering from `useBillingContext`. Cloud
+ * personal workspaces route through the workspace `/api/billing/*` endpoints.
+ * Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
+ * against fully mocked endpoints — same pattern as creditsTile.spec.ts.
+ */
+const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+
+const jsonRoute = (body: unknown) => ({
+  status: 200,
+  contentType: 'application/json',
+  body: JSON.stringify(body)
+})
+
+const mockWorkspaceBalance: BillingBalanceResponse = {
+  amount_micros: 0,
+  currency: 'usd',
+  effective_balance_micros: 0
+}
+
+async function mockCloudBoot(
+  page: Page,
+  subscriptionStatus: Partial<BillingStatusResponse>,
+  remoteConfig: RemoteConfig = {}
+) {
+  const resolvedSubscriptionStatus: BillingStatusResponse = {
+    billing_rail: 'stripe',
+    is_active: false,
+    has_funds: false,
+    max_seats: 0,
+    occupied_seats: 0,
+    ended_at: null,
+    team_credit_stop: null,
+    scheduled_change: null,
+    next_charge: null,
+    ...subscriptionStatus
+  }
+  const billingRequests = {
+    workspaceStatus: 0,
+    workspaceBalance: 0
+  }
+
+  await page.route('**/api/features', (r) => r.fulfill(jsonRoute(remoteConfig)))
+  await page.route('**/api/system_stats', (r) =>
+    r.fulfill(jsonRoute(mockSystemStats))
+  )
+  await page.route('**/api/users', (r) =>
+    r.fulfill(
+      jsonRoute({
+        storage: 'server',
+        migrated: true,
+        users: { 'test-user-e2e': 'E2E Test User' }
+      })
+    )
+  )
+  // TutorialCompleted suppresses the new-user template browser, whose modal
+  // overlay would otherwise intercept clicks on the topbar.
+  await page.route('**/api/settings', (r) =>
+    r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
+  )
+  await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
+  await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
+  await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
+  await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
+  await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
+  await page.route('**/api/auth/session', (r) =>
+    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
+  )
+  await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
+  await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
+
+  // Single personal workspace.
+  await page.route('**/api/workspaces', (r) =>
+    r.fulfill(
+      jsonRoute({
+        workspaces: [
+          {
+            id: 'ws-personal',
+            name: 'Personal Workspace',
+            type: 'personal',
+            role: 'owner'
+          }
+        ]
+      })
+    )
+  )
+
+  // Cloud personal workspaces route through `/api/billing/*`.
+  await page.route('**/api/billing/status', (r) => {
+    billingRequests.workspaceStatus++
+    return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
+  })
+  await page.route('**/api/billing/balance', (r) => {
+    billingRequests.workspaceBalance++
+    return r.fulfill(jsonRoute(mockWorkspaceBalance))
+  })
+  await page.route('**/api/billing/plans', (r) =>
+    r.fulfill(jsonRoute({ plans: [] }))
+  )
+  await page.route('**/api/billing/capabilities', (r) =>
+    r.fulfill(jsonRoute(createBillingCapabilities('ws-personal')))
+  )
+
+  return billingRequests
+}
+
+async function bootApp(page: Page) {
+  const auth = new CloudAuthHelper(page)
+  await auth.mockAuth()
+
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.userId', 'test-user-e2e')
+  })
+
+  await page.goto(APP_URL)
+  await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+    timeout: 45_000
+  })
+}
+
+test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
+  test('subscribe-to-run routes an inactive FREE user to the platform Plans page', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    // The facade routes a personal workspace through the workspace
+    // `/api/billing/*` endpoints. With
+    // subscription gating on, an inactive FREE user gets the "Subscribe to run"
+    // button, which opens the pricing table on click. (refreshRemoteConfig
+    // overwrites window.__CONFIG__ from /api/features, so the flags must come
+    // from the features mock, not an init script.)
+    await mockCloudBoot(
+      page,
+      {
+        is_active: false,
+        subscription_tier: 'FREE',
+        subscription_duration: 'MONTHLY',
+        // 10:00Z keeps the en-US calendar date stable across CI timezones.
+        renewal_date: '2099-02-20T10:00:00Z',
+        has_funds: false
+      },
+      {
+        subscription_required: true
+      }
+    )
+    await bootApp(page)
+
+    await expectPlatformPlansOpened(page, () =>
+      page.getByTestId('subscribe-to-run-button').click()
+    )
+  })
+
+  test('keeps the free-tier quota inside the top action bars', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+
+    const freeTierRemoteConfig = {
+      subscription_required: true,
+      free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
+    } satisfies RemoteConfig
+
+    await mockCloudBoot(
+      page,
+      {
+        is_active: false,
+        subscription_tier: 'FREE',
+        subscription_duration: 'MONTHLY',
+        renewal_date: '2099-02-20T10:00:00Z',
+        has_funds: false
+      },
+      freeTierRemoteConfig
+    )
+    await bootApp(page)
+
+    const actionBars = page.getByTestId('top-menu-actionbars')
+    const quota = actionBars.getByTestId('free-tier-quota')
+    await expect(quota).toBeVisible()
+
+    await expect
+      .poll(async () => {
+        const [quotaBox, actionBarsBox] = await Promise.all([
+          quota.boundingBox(),
+          actionBars.boundingBox()
+        ])
+        if (!quotaBox || !actionBarsBox) return Number.POSITIVE_INFINITY
+
+        return Math.max(
+          actionBarsBox.x - quotaBox.x,
+          actionBarsBox.y - quotaBox.y,
+          quotaBox.x + quotaBox.width - (actionBarsBox.x + actionBarsBox.width),
+          quotaBox.y +
+            quotaBox.height -
+            (actionBarsBox.y + actionBarsBox.height)
+        )
+      })
+      .toBeLessThanOrEqual(0)
+  })
+})
