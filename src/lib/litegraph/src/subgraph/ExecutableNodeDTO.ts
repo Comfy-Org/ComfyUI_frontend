@@ -257,13 +257,26 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         `No output node DTO found for id [${outputNodeExecutionId}]`
       )
 
-    const resolved = outputNodeDto.resolveOutput(
-      link.origin_slot,
-      type ?? input.type,
-      visited
+    return (
+      outputNodeDto.resolveOutput(
+        link.origin_slot,
+        type ?? input.type,
+        visited
+      ) ?? this._resolveWidgetlessVirtualValue(link, outputNode, outputNodeDto)
     )
-    // Widget inputs already received the value through applyToGraph
-    if (resolved || this.node.inputs[link.target_slot]?.widget) return resolved
+  }
+
+  private _resolveWidgetlessVirtualValue(
+    link: LLink,
+    outputNode: LGraphNode,
+    outputNodeDto: ExecutableLGraphNode
+  ): ResolvedInput | undefined {
+    if (this.node.inputs[link.target_slot]?.widget) return
+    if (
+      outputNodeDto.mode === LGraphEventMode.NEVER ||
+      outputNodeDto.mode === LGraphEventMode.BYPASS
+    )
+      return
 
     const value = outputNode.resolveVirtualValue?.(link.origin_slot)
     if (value === undefined) return

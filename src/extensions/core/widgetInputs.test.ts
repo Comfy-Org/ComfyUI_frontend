@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
+  LGraphEventMode,
   LGraphNode,
   LiteGraph,
   LLink
@@ -421,21 +422,31 @@ describe('PrimitiveNode', () => {
   it.for([
     {
       label: 'sends its value',
+      mode: LGraphEventMode.ALWAYS,
       replace: false,
       value: 'a photo of %Source.subject%',
       expected: 'a photo of %Source.subject%'
     },
     {
       label: 'applies text replacements to its value',
+      mode: LGraphEventMode.ALWAYS,
       replace: true,
       value: 'a photo of %Source.subject%',
       expected: 'a photo of cat'
+    },
+    {
+      label: 'sends nothing while muted',
+      mode: LGraphEventMode.NEVER,
+      replace: false,
+      value: 'a photo of cat',
+      expected: undefined
     }
   ])(
     '$label to a forceInput without a widget',
-    async ({ replace, value, expected }) => {
+    async ({ mode, replace, value, expected }) => {
       const { graph, primitive, target } = stringTargetFixture()
       primitive.connect(0, target, 0)
+      primitive.mode = mode
       primitive.properties['Run widget replace on values'] = replace
       primitive.widgets![0].value = value
 
