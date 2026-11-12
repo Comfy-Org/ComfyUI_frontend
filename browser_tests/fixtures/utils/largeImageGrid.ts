@@ -29,7 +29,7 @@ export async function uploadGridImages(comfyPage: ComfyPage, size: number) {
           image: {
             name,
             mimeType: 'image/png',
-            buffer: await createLargePng(size, size, i + 1)
+            buffer: createLargePng(size, size, i + 1)
           },
           overwrite: 'true',
           type: 'input'
