@@ -92,7 +92,7 @@ test.describe('Local web billing handoff', () => {
       await expect(page.getByRole('dialog')).toHaveCount(0)
     })
 
-    test('shows the Billing tab in Settings instead of Plan & Credits', async ({
+    test('shows the Billing tab without Platform links instead of Plan & Credits', async ({
       comfyPage,
       cloudFlagReads
     }) => {
@@ -102,7 +102,10 @@ test.describe('Local web billing handoff', () => {
       )
 
       await settings.category('Billing', { exact: true }).click()
-      await expect(comfyPage.page.getByTestId('billing-tab')).toBeVisible()
+      const billingTab = comfyPage.page.getByTestId('billing-tab')
+      await expect(billingTab).toBeVisible()
+      await expect(billingTab.getByTestId('billing-handoff')).toHaveCount(0)
+      await expect(billingTab.locator('a[href*="/profile/"]')).toHaveCount(0)
       await expect(
         settings.category('Plan & Credits', { exact: true })
       ).toHaveCount(0)

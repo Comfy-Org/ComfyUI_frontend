@@ -96,7 +96,11 @@
     </section>
 
     <div class="flex flex-col gap-6">
-      <section class="flex flex-col gap-3" data-testid="billing-handoff">
+      <section
+        v-if="handoffAvailable"
+        class="flex flex-col gap-3"
+        data-testid="billing-handoff"
+      >
         <h2 class="m-0 text-base font-medium text-foreground">
           {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
         </h2>
@@ -286,7 +290,11 @@ const salesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
-const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
+const {
+  href: handoffHref,
+  track: trackHandoff,
+  available: handoffAvailable
+} = usePlatformHandoff(
   () => HANDOFF[handoffAudience.value].path,
   () => ({ target: HANDOFF[handoffAudience.value].target })
 )

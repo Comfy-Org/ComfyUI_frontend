@@ -1,6 +1,7 @@
 <template>
   <BillingAutoTopUpBanner v-if="autoTopUpKind" :kind="autoTopUpKind">
     <Button
+      v-if="available"
       as="a"
       :href
       target="_blank"
@@ -128,7 +129,7 @@ const balance = computed(() => billing.balance?.value ?? null)
 const isTeamPlan = computed(() => billing.isTeamPlan?.value ?? false)
 
 const autoTopUp = useAutoTopUpBannerKind()
-const { href, track } = usePlatformHandoff('/profile/billing', {
+const { href, track, available } = usePlatformHandoff('/profile/billing', {
   target: 'auto_top_up',
   action: 'update_payment'
 })

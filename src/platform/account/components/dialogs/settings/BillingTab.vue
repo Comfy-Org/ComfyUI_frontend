@@ -89,6 +89,7 @@
         </template>
         <template #action="{ action: shown, label, variant }">
           <Button
+            v-if="shown === 'contactSales' || plansAvailable"
             as="a"
             :href="planActionHref(shown)"
             target="_blank"
@@ -136,7 +137,9 @@
         :action-href="autoTopUpHref"
         @action="trackAutoTopUp"
         @retry="retryAutoTopUp"
-      />
+      >
+        <template v-if="!autoTopUpAvailable" #action />
+      </BillingAutoTopUpCard>
       <BillingAutoTopUpMemberBlock
         v-else-if="autoTopUpSection.kind === 'memberBlock'"
         :copy="autoTopUpMemberCopy"
@@ -146,7 +149,11 @@
     </section>
 
     <div class="flex flex-col gap-6">
-      <section class="flex flex-col gap-3" data-testid="billing-handoff">
+      <section
+        v-if="handoffAvailable"
+        class="flex flex-col gap-3"
+        data-testid="billing-handoff"
+      >
         <h2 class="m-0 text-base font-medium text-foreground">
           {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
         </h2>
@@ -358,6 +365,7 @@ const {
   copy: autoTopUpCardCopy,
   href: autoTopUpHref,
   track: trackAutoTopUp,
+  available: autoTopUpAvailable,
   retry: retryAutoTopUp
 } = useAutoTopUpCardSection(
   () => load.value === 'ready' && autoTopUpSection.value.kind === 'card'
@@ -390,15 +398,20 @@ const salesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
-const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
+const {
+  href: handoffHref,
+  track: trackHandoff,
+  available: handoffAvailable
+} = usePlatformHandoff(
   () => HANDOFF[handoffAudience.value].path,
   () => ({ target: HANDOFF[handoffAudience.value].target })
 )
 
-const { href: plansHref, track: trackPlans } = usePlatformHandoff(
-  '/profile/billing/plans',
-  { target: 'plans' }
-)
+const {
+  href: plansHref,
+  track: trackPlans,
+  available: plansAvailable
+} = usePlatformHandoff('/profile/billing/plans', { target: 'plans' })
 
 function planActionHref(shown: PlanRowAction) {
   return shown === 'contactSales' ? CONTACT_SALES_URL : plansHref.value

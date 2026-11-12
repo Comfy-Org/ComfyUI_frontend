@@ -50,8 +50,8 @@ export type BillingBannerView = BillingBannerText &
       }
     | {
         readonly kind: 'autoTopUp'
-        readonly action: 'updatePayment'
-        readonly href: string
+        readonly action: 'updatePayment' | null
+        readonly href: string | null
       }
     | {
         readonly kind: 'credit'

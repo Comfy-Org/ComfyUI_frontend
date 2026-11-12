@@ -20,5 +20,5 @@ export function setLocalBillingWebEnabled(value: boolean): void {
 
 /** Whether this local view sends billing through a handoff: the flag is on and its surface has a launcher. */
 export function opensLocalBillingHandoff(): boolean {
-  return !isCloud && localSurface() === 'local_web' && enabled.value
+  return !isCloud && enabled.value && localSurface() === 'local_web'
 }
