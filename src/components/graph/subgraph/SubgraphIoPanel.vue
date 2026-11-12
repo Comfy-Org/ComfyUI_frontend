@@ -127,20 +127,6 @@ function forwardUnlessOnButton(event: PointerEvent) {
     @pointerup="forwardUnlessOnButton"
     @keydown="stopUnmodifiedKeys"
   >
-    <template #before>
-      <div
-        aria-hidden="true"
-        :class="
-          cn(
-            'pointer-events-none absolute inset-y-0 z-10 border-2 border-foreground',
-            isInput
-              ? 'right-0 rounded-r-(--node-radius) border-l-0'
-              : 'left-0 rounded-l-(--node-radius) border-r-0'
-          )
-        "
-        :style="{ width: `${SubgraphIONodeBase.roundedRadius}px` }"
-      />
-    </template>
     <NodeHeader
       :title
       :collapsed
@@ -164,6 +150,18 @@ function forwardUnlessOnButton(event: PointerEvent) {
         error-severity="none"
         :show-errors-tab-enabled="false"
         @navigate-subgraph="exitSubgraph"
+      />
+      <div
+        aria-hidden="true"
+        :class="
+          cn(
+            'pointer-events-none absolute inset-y-0 border-2 border-foreground',
+            isInput
+              ? '-right-px rounded-r-(--node-radius) border-l-0'
+              : '-left-px rounded-l-(--node-radius) border-r-0'
+          )
+        "
+        :style="{ width: `${SubgraphIONodeBase.roundedRadius}px` }"
       />
       <NodeResizeHandle
         v-if="isInput && !collapsed"
