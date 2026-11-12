@@ -1,3 +1,4 @@
+import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { createInputSpecInterpreter } from '@comfyorg/object-info-parser/inputSpecInterpreter'
 import type { InputSpecDiagnosticSink } from '@comfyorg/object-info-parser/inputSpecInterpreter'
@@ -33,12 +34,18 @@ const warnSpecDrift: InputSpecDiagnosticSink = (spec, error, optionIndex) => {
   })
 }
 
+export const validatedInputSpecInterpreter =
+  createInputSpecInterpreter(warnSpecDrift)
+
+export const inputSpecInterpreter = createInputSpecInterpreter(warnSpecDrift, {
+  skipValidation: () => isCloud
+})
+
 export const {
   inputSpecTree,
   ownSlotTypes,
   dynamicComboOptionKeys,
   dynamicComboOptionTypes,
   flattenInputSpecs,
-  collectSearchableInputTypes,
   collectSearchableOutputTypes
-} = createInputSpecInterpreter(warnSpecDrift)
+} = inputSpecInterpreter
