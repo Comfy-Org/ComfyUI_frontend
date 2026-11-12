@@ -1,15 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
-import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 
 import { createModelsApi } from './modelsHandle'
 import type { ModelFolder } from './modelsHandle'
 
-vi.mock(import('@/scripts/api'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { api: fromPartial<ComfyApi>({ fetchApi: vi.fn() }) }
-})
+vi.mock(import('@/scripts/api'))
 
 function response(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), { status })

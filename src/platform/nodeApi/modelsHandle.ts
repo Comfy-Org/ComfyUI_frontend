@@ -2,21 +2,6 @@ import { api } from '@/scripts/api'
 
 import { ComfyApiError } from './errors'
 
-export type ModelFolder =
-  | 'checkpoints'
-  | 'clip'
-  | 'clip_vision'
-  | 'controlnet'
-  | 'diffusion_models'
-  | 'embeddings'
-  | 'loras'
-  | 'text_encoders'
-  | 'unet'
-  | 'upscale_models'
-  | 'vae'
-  | 'ipadapter'
-  | 'vae_approx'
-
 export interface ModelsHandle {
   /**
    * Lists at most 50,000 distinct logical model names from a known folder.
@@ -26,7 +11,7 @@ export interface ModelsHandle {
   list(folder: ModelFolder): Promise<string[]>
 }
 
-const MODEL_FOLDERS: ReadonlySet<ModelFolder> = new Set([
+const MODEL_FOLDER_NAMES = [
   'checkpoints',
   'clip',
   'clip_vision',
@@ -40,7 +25,11 @@ const MODEL_FOLDERS: ReadonlySet<ModelFolder> = new Set([
   'vae',
   'ipadapter',
   'vae_approx'
-])
+] as const
+
+export type ModelFolder = (typeof MODEL_FOLDER_NAMES)[number]
+
+const MODEL_FOLDERS: ReadonlySet<string> = new Set(MODEL_FOLDER_NAMES)
 
 function isModelName(value: unknown): value is string {
   return (
