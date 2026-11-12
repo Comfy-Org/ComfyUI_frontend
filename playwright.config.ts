@@ -1,4 +1,3 @@
-import type FlakinessReporter from '@flakiness/playwright'
 import type { PlaywrightTestConfig } from '@playwright/test'
 import { defineConfig, devices } from '@playwright/test'
 
@@ -56,21 +55,7 @@ export default defineConfig({
   ],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: process.env.PLAYWRIGHT_SALT_TIMINGS
-    ? [
-        [process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html'],
-        [
-          '@flakiness/playwright',
-          {
-            disableUpload: true,
-            collectBrowserVersions: false,
-            shardBalancing: { timingsFile: process.env.PLAYWRIGHT_SALT_TIMINGS }
-          } satisfies ConstructorParameters<typeof FlakinessReporter>[0]
-        ]
-      ]
-    : process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR
-      ? 'blob'
-      : 'html',
+  reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
   ...maybeLocalOptions,
 
   globalSetup:

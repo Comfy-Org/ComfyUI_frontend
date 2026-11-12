@@ -8,14 +8,6 @@ on:
     branches-ignore: [wip/*, draft/*, temp/*]
   merge_group:
   workflow_dispatch:
-    inputs:
-      shard_balancer:
-        description: Shard balancer for a same-commit benchmark
-        type: choice
-        default: planner
-        options:
-          - planner
-          - salt
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -215,15 +207,8 @@ jobs:
 
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: |
-          if [ "$SHARD_BALANCER" = salt ]; then
-            PLAYWRIGHT_SALT_TIMINGS="$PLAYWRIGHT_SHARD_PLAN_DIR/salt-timings.json" \
-              pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
-          else
-            pnpm exec playwright test --project=chromium --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
-          fi
+        run: pnpm exec playwright test --project=chromium --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
-          SHARD_BALANCER: ${{ inputs.shard_balancer || 'planner' }}
           PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/chromium-shards
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-chromium-${{ matrix.shardIndex }}.zip
@@ -305,15 +290,8 @@ jobs:
 
       - name: Run Playwright tests (cloud, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: |
-          if [ "$SHARD_BALANCER" = salt ]; then
-            PLAYWRIGHT_SALT_TIMINGS="$PLAYWRIGHT_SHARD_PLAN_DIR/salt-timings.json" \
-              pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
-          else
-            pnpm exec playwright test --project=cloud --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
-          fi
+        run: pnpm exec playwright test --project=cloud --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
-          SHARD_BALANCER: ${{ inputs.shard_balancer || 'planner' }}
           PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/cloud-shards
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-cloud-${{ matrix.shardIndex }}.zip

@@ -143,22 +143,10 @@ function workflowSteps(root: string, project: 'cloud' | 'chromium') {
   return { plan: runnable.parse(plan), run: runnable.parse(run) }
 }
 
-function runWorkflowPilot(
-  project: 'cloud' | 'chromium',
-  balancer: 'planner' | 'salt'
-) {
+function runWorkflowPilot(project: 'cloud' | 'chromium') {
   const root = resolve(import.meta.dirname, '../..')
   const directory = mkdtempSync(join(tmpdir(), `${project}-shards-`))
   onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
-  const git = spawnSync(
-    'bash',
-    [
-      '-c',
-      'git init -q && git -c user.name=Test -c user.email=test@example.invalid -c core.hooksPath=/dev/null commit --allow-empty -qm fixture'
-    ],
-    { cwd: directory, encoding: 'utf8' }
-  )
-  assert.equal(git.status, 0, git.stderr)
   symlinkSync(join(root, 'node_modules'), join(directory, 'node_modules'))
   symlinkSync(join(root, 'scripts'), join(directory, 'scripts'))
   symlinkSync(join(root, 'tools'), join(directory, 'tools'))
@@ -189,14 +177,12 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
   const merged = join(directory, 'merged')
   mkdirSync(merged)
   const manifests: unknown[] = []
-  const statuses: (number | null)[] = []
   for (const shard of [1, 2, 3, 4]) {
     const expand = (value: string) =>
       value
         .replaceAll('${{ matrix.shardIndex }}', String(shard))
         .replaceAll('${{ matrix.shardTotal }}', '4')
         .replaceAll('${{ runner.temp }}', directory)
-        .replaceAll("${{ inputs.shard_balancer || 'planner' }}", balancer)
     for (const step of shard === 1 ? [plan, run] : [run]) {
       const result = spawnSync('bash', ['-c', expand(step.run)], {
         cwd: directory,
@@ -213,14 +199,18 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
           )
         }
       })
-      if (step === plan) {
-        assert.equal(result.status, 0, result.stdout + result.stderr)
-      } else {
-        statuses.push(result.status)
-        if (balancer === 'salt') {
-          expect(result.stdout).toContain('duration hints: 8/8 tests (100%)')
-        }
-      }
+      assert.equal(
+        result.status,
+        step === plan
+          ? 0
+          : Number(
+              readFileSync(
+                join(directory, `${project}-shards`, `${shard}.txt`),
+                'utf8'
+              ).includes('snapshot @')
+            ),
+        result.stdout + result.stderr
+      )
     }
     const name = `report-${project}-${shard}.zip`
     copyFileSync(join(directory, 'blob-report', name), join(merged, name))
@@ -230,8 +220,6 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
       )
     )
   }
-  expect(statuses.filter((status) => status === 0)).toHaveLength(3)
-  expect(statuses.filter((status) => status === 1)).toHaveLength(1)
   const blobs = readdirSync(merged)
   const lists = [1, 2, 3, 4].map((shard) =>
     readFileSync(join(directory, `${project}-shards`, `${shard}.txt`), 'utf8')
@@ -269,15 +257,11 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
   }
 }
 
-it.for([
-  ['cloud', 'planner'],
-  ['chromium', 'planner'],
-  ['cloud', 'salt']
-] as const)(
-  'runs the %s workflow with retries and merges unique blobs without losing snapshot updates',
+it.for(['cloud', 'chromium'] as const)(
+  'runs the %s workflow lists with retries and merges unique blobs without losing snapshot updates',
   { timeout: 60_000 },
-  ([project, balancer]) => {
-    const result = runWorkflowPilot(project, balancer)
+  (project) => {
+    const result = runWorkflowPilot(project)
     expect(result.blobs).toEqual([
       `report-${project}-1.zip`,
       `report-${project}-2.zip`,
