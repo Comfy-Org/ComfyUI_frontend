@@ -28,7 +28,7 @@ export function useSubgraphInputLayout(
   const { height: headerHeight } = useElementSize(header, undefined, {
     box: 'border-box'
   })
-  const { socketInset } = SubgraphIONodeBase
+  const socketInset = SubgraphIONodeBase.socketInset
   const slotTop = () => (headerHeight.value || LiteGraph.NODE_TITLE_HEIGHT) + 4
   const size = computedWithControl(
     () => context.graph,

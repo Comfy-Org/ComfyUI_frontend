@@ -63,7 +63,7 @@ export abstract class SubgraphIONodeBase<
     )
     if (!measured) return this._boundingRect
     const [x, y, width] = this._boundingRect
-    const { socketInset } = SubgraphIONodeBase
+    const socketInset = SubgraphIONodeBase.socketInset
     return new Rectangle(
       x + width - socketInset - measured.width,
       y,
