@@ -9,11 +9,7 @@ const PANEL_ANCHORS = [
   'bottom-right'
 ] as const
 
-/**
- * A panel the pack renders over the graph view.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
- */
+/** A panel the pack renders over the graph view. */
 export interface ViewportPanelDef {
   /** Namespaced to the pack. */
   readonly id: string
@@ -31,7 +27,6 @@ export interface ViewportPanelDef {
   destroy?(): void
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface ViewportPanelHandle {
   remove(): void
 }

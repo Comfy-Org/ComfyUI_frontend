@@ -1,7 +1,6 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { ComfyApiError } from './errors'
-import type { WorkflowData } from './workflowHandle'
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface WorkflowImportContext {
@@ -9,16 +8,13 @@ export interface WorkflowImportContext {
   readonly type: string
 }
 
-/** @knipIgnoreUnusedButUsedByCustomNodes */
-export type WorkflowImportResult =
-  | { readonly workflow: WorkflowData | string }
-  | { readonly prompt: Readonly<Record<string, unknown>> | string }
+type ImportedData = Readonly<Record<string, unknown>>
 
-/**
- * Reads a workflow or prompt out of a file the host cannot read itself.
- *
- * @knipIgnoreUnusedButUsedByCustomNodes
- */
+export type WorkflowImportResult =
+  | { readonly workflow: ImportedData | string }
+  | { readonly prompt: ImportedData | string }
+
+/** Reads a workflow or prompt out of a file the host cannot read itself. */
 export interface WorkflowImporter {
   /** Namespaced; names the importer in diagnostics. */
   readonly id: string
@@ -86,7 +82,7 @@ function toImportResult(value: unknown): WorkflowImportResult | undefined {
   return undefined
 }
 
-function isImported(value: unknown): value is WorkflowData | string {
+function isImported(value: unknown): value is ImportedData | string {
   return (
     typeof value === 'string' ||
     (value !== null && typeof value === 'object' && !Array.isArray(value))
