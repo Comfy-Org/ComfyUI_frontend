@@ -180,6 +180,13 @@ declare module '*/comfy/api/v2.js' {
      */
     onViewportChanged(listener: () => void): Unsubscribe
     /**
+     * The selected nodes changed. Passes the complete node selection in the
+     * graph on screen; groups and reroutes are left out.
+     */
+    onSelectionChanged(
+      listener: (nodes: readonly NodeHandle[]) => void
+    ): Unsubscribe
+    /**
      * A node changed — its mode, title, colour or shape.
      *
      * For observing nodes the pack does not own. rgthree's relay polls every
@@ -266,7 +273,10 @@ declare module '*/comfy/api/v2.js' {
      */
     readonly label: string | (() => string)
     readonly run: () => void | Promise<void>
-    /** Bound as a default, so a user's own binding still wins. */
+    /**
+     * Bound as a default, so a user's own binding still wins. A key another
+     * command already holds by default stays with that command.
+     */
     readonly keybinding?: KeyCombo
     /**
      * Where the keybinding applies. Defaults to anywhere in the application.
@@ -402,6 +412,8 @@ declare module '*/comfy/api/v2.js' {
   export interface ConnectionChangeEvent {
     readonly side: 'input' | 'output'
     readonly index: number
+    /** The changed slot's name, or `undefined` if the slot is already gone. */
+    readonly name?: string
     readonly connected: boolean
     /**
      * The node at the other end, or `undefined` on a disconnect.
@@ -892,11 +904,40 @@ declare module '*/comfy/api/v2.js' {
     position?: { x: number; y: number }
   }
 
+  /**
+   * `'visible'` is the graph on screen. `'root-and-subgraphs'` is the root graph
+   * and every subgraph definition, each counted once however often it is placed.
+   *
+   * @knipIgnoreUnusedButUsedByCustomNodes
+   */
+  export type NodeQueryScope = 'visible' | 'root-and-subgraphs'
+
+  /**
+   * Every field narrows, and they combine as AND. Omitting all returns the scope.
+   *
+   * @knipIgnoreUnusedButUsedByCustomNodes
+   */
+  export interface NodeQuery {
+    /** Defaults to `'visible'`. */
+    readonly scope?: NodeQueryScope
+    /** An exact type, any of several, or a pattern. */
+    readonly type?: string | RegExp | readonly string[]
+    /** Keep only nodes in the graph on screen, wherever they are scrolled to. */
+    readonly rendered?: boolean
+    /** Keep only nodes the group currently contains. */
+    readonly group?: GroupHandle
+  }
+
   export interface GraphHandle {
     readonly id: string
     node(id: string): NodeHandle | undefined
     nodes(): readonly NodeHandle[]
     nodesOfType(type: string): readonly NodeHandle[]
+    /**
+     * One flat query over the nodes in a scope. Under `'root-and-subgraphs'`
+     * each handle comes from its owning graph, so compare with `sameEntity()`.
+     */
+    queryNodes(query?: NodeQuery): readonly NodeHandle[]
     add(type: string, init?: NodeInit): NodeHandle
     remove(id: string): boolean
     links(): readonly LinkInfo[]
@@ -951,6 +992,11 @@ declare module '*/comfy/api/v2.js' {
      * the canvas allows, so a stored extreme cannot strand the user.
      */
     setZoom(scale: number): void
+    /**
+     * Pans the view by a distance in CSS pixels, the same at every zoom.
+     * Positive x and y move the graph content right and down.
+     */
+    panBy(delta: Point): void
     /**
      * Where the pointer is, in graph space — the coordinates {@link nodeAt} and
      * {@link NodeHandle.setPosition} use.
@@ -1277,6 +1323,11 @@ declare module '*/comfy/api/v2.js' {
     setCollapsed(collapsed: boolean): void
     isPinned(): boolean
     setPinned(pinned: boolean): void
+    /**
+     * Whether the user can resize the node. Not saved, and its size is
+     * unchanged. A pinned node stays fixed.
+     */
+    setResizable(resizable: boolean): void
     getColor(): string | undefined
     setColor(color: string | undefined): void
     getBgColor(): string | undefined
@@ -2363,6 +2414,11 @@ declare module '*/comfy/api/v2.js' {
      * host does use, so a pack keeps the capability and loses only the placement.
      */
     prompt(def: PromptDef): Promise<string | undefined>
+    /**
+     * Mounts a panel over the graph view, placed by the host against an edge or
+     * corner. It stays put while the graph pans and zooms.
+     */
+    mountViewportPanel(def: ViewportPanelDef): ViewportPanelHandle
   }
 
   /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -2395,6 +2451,37 @@ declare module '*/comfy/api/v2.js' {
   /** @knipIgnoreUnusedButUsedByCustomNodes */
   export interface MenuHandle {
     close(): void
+  }
+
+  /** @knipIgnoreUnusedButUsedByCustomNodes */
+  export type ViewportPanelAnchor =
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right'
+
+  /** A panel the pack renders over the graph view. */
+  export interface ViewportPanelDef {
+    /** Namespaced to the pack. */
+    readonly id: string
+    /** The edge or corner the panel sits against. Defaults to `'top-left'`. */
+    readonly anchor?: ViewportPanelAnchor
+    /** Pixels in from the anchored side, or along from the centre. */
+    readonly offsetX?: number
+    /** Pixels in from the anchored top or bottom. */
+    readonly offsetY?: number
+    readonly width?: number
+    readonly maxHeight?: number
+    readonly ariaLabel?: string
+    /** Fills the panel. Called once, with an element already in the document. */
+    render(container: HTMLElement): void
+    destroy?(): void
+  }
+
+  export interface ViewportPanelHandle {
+    remove(): void
   }
 
   // `null` is included because core's own `WidgetValue` has it and
@@ -2986,6 +3073,42 @@ declare module '*/comfy/api/v2.js' {
      * contents of the very document that is still current.
      */
     documentId(): string | undefined
+    /**
+     * Adds a reader for files the host cannot load a workflow from. It is asked
+     * when such a file is opened or dropped, before the host gives up on it.
+     */
+    registerImporter(importer: WorkflowImporter): Unsubscribe
+  }
+
+  /** @knipIgnoreUnusedButUsedByCustomNodes */
+  export interface WorkflowImportContext {
+    readonly name: string
+    readonly type: string
+  }
+
+  export type WorkflowImportResult =
+    | { readonly workflow: Readonly<Record<string, unknown>> | string }
+    | { readonly prompt: Readonly<Record<string, unknown>> | string }
+
+  /** Reads a workflow or prompt out of a file the host cannot read itself. */
+  export interface WorkflowImporter {
+    /** Namespaced; names the importer in diagnostics. */
+    readonly id: string
+    /** Offered a file matching a type or an extension; every file if neither is given. */
+    readonly mimeTypes?: readonly string[]
+    readonly extensions?: readonly string[]
+    /** Larger files are not offered. The host never offers more than 16 MiB. */
+    readonly maxBytes: number
+    enabled?(): boolean | Promise<boolean>
+    /** Returns nothing to decline the file. */
+    parse(
+      bytes: Uint8Array,
+      context: WorkflowImportContext
+    ):
+      | WorkflowImportResult
+      | null
+      | undefined
+      | Promise<WorkflowImportResult | null | undefined>
   }
 
   export const comfy: Comfy

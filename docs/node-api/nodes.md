@@ -54,7 +54,10 @@ const stop = comfy.defs.extend('KSampler', (definition) => {
 ```
 
 Builder registrations compose. The host applies every matching extension rather
-than making each pack capture and call a previous prototype method.
+than making each pack capture and call a previous prototype method. An
+extension may register before or after the type it matches: one registered
+later applies to nodes created from then on, and callbacks always run in
+registration order.
 
 ### Builder configuration
 

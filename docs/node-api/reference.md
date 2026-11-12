@@ -65,6 +65,7 @@ See [Registration, lifecycle, and globals](./registration.md).
 | `onNodeMoved`            | `(listener: (event: NodeMoveEvent) => void) => Unsubscribe`          |
 | `onNodeDragEnd`          | `(listener: (nodes: readonly NodeHandle[]) => void) => Unsubscribe`  |
 | `onViewportChanged`      | `(listener: () => void) => Unsubscribe`                              |
+| `onSelectionChanged`     | `(listener: (nodes: readonly NodeHandle[]) => void) => Unsubscribe`  |
 | `onNodeChanged`          | `(listener, options?: NodeChangeOptions) => Unsubscribe`             |
 | `onReady`                | `(listener: () => void) => Unsubscribe`                              |
 | `onWorkflowLoaded`       | `(listener: () => void) => Unsubscribe`                              |
@@ -180,15 +181,15 @@ over `NodeDef`, or `{ category: string | RegExp }`.
 
 ### Definition callback payloads
 
-| Type                    | Fields and behavior                                                       |
-| ----------------------- | ------------------------------------------------------------------------- |
-| `NodeCreatedEvent`      | `restored`, `loading`                                                     |
-| `ExecutionResult`       | `images`, `text`, and passthrough `raw`                                   |
-| `PreviewFrame`          | `blob`, temporary object `url`                                            |
-| `ConnectionChangeEvent` | `side`, `index`, `connected`, optional `peerNodeId`, optional `peerIndex` |
-| `PropertyChangeEvent`   | `name`, `value`, `previous`, `setValue(value)`, `reject()`                |
-| `BeforeConnectEvent`    | `side`, `index`, optional `peerNodeId`, `peerIndex`, and `peerType`       |
-| `UnplacedLinkEvent`     | `side`, `peerNodeId`, `peerIndex`, `type`, `replaceExisting`              |
+| Type                    | Fields and behavior                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------ |
+| `NodeCreatedEvent`      | `restored`, `loading`                                                                      |
+| `ExecutionResult`       | `images`, `text`, and passthrough `raw`                                                    |
+| `PreviewFrame`          | `blob`, temporary object `url`                                                             |
+| `ConnectionChangeEvent` | `side`, `index`, optional `name`, `connected`, optional `peerNodeId`, optional `peerIndex` |
+| `PropertyChangeEvent`   | `name`, `value`, `previous`, `setValue(value)`, `reject()`                                 |
+| `BeforeConnectEvent`    | `side`, `index`, optional `peerNodeId`, `peerIndex`, and `peerType`                        |
+| `UnplacedLinkEvent`     | `side`, `peerNodeId`, `peerIndex`, `type`, `replaceExisting`                               |
 
 `NodeMenuItem` has a string or node-dependent `label`, optional `when`,
 optional `run`, optional one-level `items`, and optional numeric `order`.
@@ -207,6 +208,7 @@ See [Nodes and definitions](./nodes.md).
 | `node(id)`           | `NodeHandle \| undefined`       |
 | `nodes()`            | `readonly NodeHandle[]`         |
 | `nodesOfType(type)`  | `readonly NodeHandle[]`         |
+| `queryNodes(query?)` | `readonly NodeHandle[]`         |
 | `links()`            | `readonly LinkInfo[]`           |
 | `groups()`           | `readonly GroupHandle[]`        |
 | `selection()`        | `readonly NodeHandle[]`         |
@@ -216,6 +218,10 @@ See [Nodes and definitions](./nodes.md).
 | `nodeAt(point)`      | `NodeHandle \| undefined`       |
 | `pointerPosition()`  | `Point \| undefined`            |
 | `version`            | opaque `number` change token    |
+
+A `NodeQuery` has optional `scope`, `type`, `rendered` and `group`; every field
+narrows the result. `scope` is a `NodeQueryScope`: `visible`, the default, or
+`root-and-subgraphs`.
 
 ### Mutation and view
 
@@ -228,6 +234,7 @@ See [Nodes and definitions](./nodes.md).
 | `select`    | `(nodes: readonly NodeHandle[], options?: { add?: boolean }) => void` |
 | `centerOn`  | `(node: NodeHandle) => void`                                          |
 | `setZoom`   | `(scale: number) => void`                                             |
+| `panBy`     | `(delta: Point) => void`                                              |
 | `batch`     | `<T>(mutations: () => T) => T`                                        |
 
 ### `GraphScopeHandle`
@@ -258,6 +265,7 @@ Every node handle has `isDeleted`, `id`, `graphId`, `type`, and `comfyClass`.
 | `getMode()`                            | `setMode(mode)`                   |
 | `isCollapsed()`                        | `setCollapsed(collapsed)`         |
 | `isPinned()`                           | `setPinned(pinned)`               |
+|                                        | `setResizable(resizable)`         |
 | `getColor()`                           | `setColor(color)`                 |
 | `getBgColor()`                         | `setBgColor(color)`               |
 | `getShape()`                           | `setShape(shape)`                 |
@@ -598,6 +606,14 @@ browser-readable `src` and an optional volume from 0 to 1.
 - `showDialog(def): DialogHandle`
 - `showMenu(def): MenuHandle`
 - `prompt(def): Promise<string | undefined>`
+- `mountViewportPanel(def): ViewportPanelHandle`
+
+`mountViewportPanel` places a pack-rendered panel against an edge or corner of
+the graph view. A `ViewportPanelDef` has `id`, `render(container)`, and optional
+`anchor`, `offsetX`, `offsetY`, `width`, `maxHeight`, `ariaLabel` and
+`destroy()`. `anchor` is a `ViewportPanelAnchor` and defaults to `top-left`;
+the offsets are pixels in from the anchored sides. `remove()` on the returned
+`ViewportPanelHandle` takes the panel down and calls `destroy()`.
 
 Sidebar definitions share `SidebarTabBase` (`id`, `title`, optional `icon` and
 `tooltip`). `MountedSidebarTab` adds `render(container)` and optional
@@ -650,11 +666,22 @@ library path indexes or arbitrary file reads. See
 - `open(data: WorkflowData): Promise<void>`
 - `applyTextReplacements(value: string): string`
 - `documentId(): string | undefined`
+- `registerImporter(importer: WorkflowImporter): Unsubscribe`
 
 `WorkflowData` is parsed workflow JSON represented as a readonly record.
 `documentId()` is a process-local identity minted each time a workflow finishes
 loading. It changes when the document is replaced, even by a second load of the
 same file, and is absent before the first workflow load.
+
+`registerImporter` adds a reader for files the host cannot load a workflow
+from, such as a JPEG that carries one in its metadata. A `WorkflowImporter` has
+`id`, `maxBytes`, `parse(bytes, context)`, and optional `mimeTypes`,
+`extensions` and `enabled()`. When such a file is opened or dropped, importers
+whose types or extensions match are asked in registration order, with the
+file's bytes, up to their `maxBytes` and never more than 16 MiB. `parse`
+receives a `WorkflowImportContext` with the file's `name` and `type`, and
+returns a `WorkflowImportResult`, `{ workflow }` or `{ prompt }`, or nothing to
+decline. A file the host can read itself is never offered.
 
 ### `SystemHandle`
 

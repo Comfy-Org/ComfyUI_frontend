@@ -47,7 +47,17 @@ const node = comfy.graph.node('42')
 const samplers = comfy.graph.nodesOfType('KSampler')
 const allNodes = comfy.graph.nodes()
 const links = comfy.graph.links()
+const mine = comfy.graph.queryNodes({
+  scope: 'root-and-subgraphs',
+  type: /^MyPack\//
+})
 ```
+
+`queryNodes()` is one flat query. `scope` is `'visible'` by default or
+`'root-and-subgraphs'` for the root graph and every subgraph definition.
+`type`, `rendered` and `group` each narrow the result, and they combine. Under
+`'root-and-subgraphs'` each handle comes from its owning graph, so compare with
+`comfy.sameEntity()`.
 
 Every list is a frozen snapshot. `LinkInfo` is inert data with source and target
 node IDs, slot IDs, types, and endpoint indexes at snapshot time. Indexes are
@@ -128,14 +138,20 @@ comfy.graph.select([]) // clear
 
 comfy.graph.centerOn(node)
 comfy.graph.setZoom(1.25)
+comfy.graph.panBy({ x: 120, y: 0 })
 const pointer = comfy.graph.pointerPosition()
+
+const stop = comfy.onSelectionChanged((nodes) => showDetails(nodes))
 ```
 
 Selection and viewport methods address the visible graph and active editor.
 `select()` and `centerOn()` skip a handle from another graph, such as a
 subgraph that is not open.
 `pointerPosition()` is in graph coordinates and can return `undefined` when no
-canvas is available. `centerOn()` does not change zoom.
+canvas is available. `centerOn()` does not change zoom. `panBy()` moves the view
+by a distance in CSS pixels, the same at every zoom. `onSelectionChanged()`
+passes the complete node selection in the visible graph each time it changes;
+selecting only a group or reroute does not notify.
 
 For a panel anchored to a node, read `node.getScreenRect()` and update it when
 the viewport changes:
