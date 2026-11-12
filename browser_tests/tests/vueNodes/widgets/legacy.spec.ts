@@ -3,16 +3,20 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 test.describe(
   'Plain legacy widgets',
   { tag: ['@vue-nodes', '@widget'] },
   () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.nodeOps.clearGraph()
+    })
+
     test('renders widgets added through legacy APIs and direct mutation', async ({
       comfyPage
     }) => {
-      await comfyPage.nodeOps.clearGraph()
       const nodeId = toNodeId(
         await comfyPage.page.evaluate(() => {
           const node = window.LiteGraph!.createNode(
@@ -60,6 +64,109 @@ test.describe(
       await expect(
         node.getByTestId(TestIds.widgets.widget).locator('canvas')
       ).toHaveCount(3)
+    })
+
+    test('repaints when a legacy widget mutates its value and marks the canvas dirty', async ({
+      comfyPage
+    }) => {
+      const legacyNode = await comfyPage.nodeOps.addNode(
+        'DevToolsNodeWithLegacyWidget',
+        undefined,
+        { x: 400, y: 200 }
+      )
+      const canvas = comfyPage.vueNodes
+        .getNodeLocator(legacyNode.id)
+        .getByTestId(TestIds.widgets.legacyCanvas)
+      await expect(canvas).toBeVisible()
+
+      const insideFillCorner = { x: 32, y: 4 }
+      const readFillPixel = () =>
+        canvas.evaluate((element: HTMLCanvasElement, { x, y }) => {
+          const { data } = element.getContext('2d')!.getImageData(x, y, 1, 1)
+          return Array.from(data).join(',')
+        }, insideFillCorner)
+      const green = '119,255,119,255'
+      const blue = '119,119,255,255'
+      const red = '255,119,119,255'
+      await expect.poll(readFillPixel).toBe(green)
+
+      await test.step('click through the legacy mouse handler', async () => {
+        const { height } = (await canvas.boundingBox())!
+        await canvas.click({ position: { x: 20, y: height / 2 } })
+        await expect.poll(readFillPixel).toBe(blue)
+      })
+
+      await test.step('mutate the value outside any pointer event', async () => {
+        await comfyPage.page.evaluate((nodeId) => {
+          const node = window.app!.graph.getNodeById(nodeId)!
+          const widget = node.widgets!.find(
+            (widget) => widget.name === 'legacy_widget'
+          )!
+          widget.value = 1
+          node.setDirtyCanvas(true)
+        }, legacyNode.id)
+        await expect.poll(readFillPixel).toBe(red)
+      })
+    })
+
+    test('draws the widget canvas at the node width, including after a resize', async ({
+      comfyPage
+    }) => {
+      const legacyNode = await comfyPage.nodeOps.addNode(
+        'DevToolsNodeWithLegacyWidget',
+        undefined,
+        { x: 400, y: 200 }
+      )
+      const node = new VueNodeFixture(
+        comfyPage.vueNodes.getNodeLocator(legacyNode.id)
+      )
+      const canvas = node.root.getByTestId(TestIds.widgets.legacyCanvas)
+      await expect(canvas).toBeVisible()
+
+      const widthDrift = () =>
+        canvas.evaluate((element, nodeId) => {
+          const node = window.app!.graph.getNodeById(nodeId)!
+          const expected = node.size[0] * window.app!.canvas.ds.scale
+          return element.getBoundingClientRect().width - expected
+        }, legacyNode.id)
+
+      await expect.poll(widthDrift).toBeCloseTo(0, 0)
+
+      const initialWidth = (await canvas.boundingBox())!.width
+      await node.resizeFromCorner('SE', 120, 0)
+      await comfyPage.nextFrame()
+
+      await expect
+        .poll(async () => (await canvas.boundingBox())?.width ?? 0)
+        .toBeGreaterThan(initialWidth + 100)
+      await expect.poll(widthDrift).toBeCloseTo(0, 0)
+    })
+
+    test('ignores right clicks while left clicks still reach the widget', async ({
+      comfyPage
+    }) => {
+      const legacyNode = await comfyPage.nodeOps.addNode(
+        'DevToolsNodeWithLegacyWidget',
+        undefined,
+        { x: 400, y: 200 }
+      )
+      const canvas = comfyPage.vueNodes
+        .getNodeLocator(legacyNode.id)
+        .getByTestId(TestIds.widgets.legacyCanvas)
+      await expect(canvas).toBeVisible()
+      const { height } = (await canvas.boundingBox())!
+      const widget = await legacyNode.getWidget(0)
+      expect(await widget.getValue()).toBe(0)
+
+      await canvas.click({
+        button: 'right',
+        position: { x: 20, y: height / 2 }
+      })
+      await comfyPage.nextFrame()
+      expect(await widget.getValue()).toBe(0)
+
+      await canvas.click({ position: { x: 20, y: height / 2 } })
+      await expect.poll(() => widget.getValue()).toBe(-1)
     })
   }
 )

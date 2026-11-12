@@ -8,12 +8,13 @@ import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { returnToHost } from '@/entry/returnToHost'
 
 /**
  * Where a full-page checkout leaves to: back to the product, with a settled
  * payment's outcome and reference, or to the workspace's Plan & Credits
- * settings when this family has no destination for the link's target. Only
- * a tab a script opened can close itself.
+ * settings when this family has no destination for the link's target. Close
+ * shuts the tab when the browser allows it and goes back otherwise.
  */
 export function useCheckoutExit(page: Readonly<Ref<CheckoutPage>>) {
   const { entry } = useBillingEntry()
@@ -39,8 +40,7 @@ export function useCheckoutExit(page: Readonly<Ref<CheckoutPage>>) {
   const openedByScript = Boolean(window.opener)
 
   function close() {
-    if (openedByScript) window.close()
-    else window.location.assign(returnLink.value)
+    returnToHost(returnLink.value)
   }
 
   return { returnLink, openedByScript, close }
