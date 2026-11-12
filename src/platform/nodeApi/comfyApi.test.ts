@@ -1,0 +1,1049 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
+
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useExecutionStore } from '@/stores/executionStore'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
+import { api as backendApi } from '@/scripts/api'
+
+import {
+  LATEST_MAJOR,
+  NODE_API_VERSION,
+  SUPPORTED_MAJORS,
+  createComfyApi
+} from './comfyApi'
+import type { Comfy } from './comfyApi'
+import { beginDocument, notifyWorkflowLoaded } from './appReady'
+import { notifyDefsRefreshed } from './defsRegistry'
+import { ComfyUnsupportedError } from './errors'
+
+describe('comfy API root', () => {
+  let graph: LGraph
+
+  beforeEach(() => {
+    graph = new LGraph()
+  })
+
+  const api = () => createComfyApi(() => graph)
+
+  it('exposes the named model catalogue with capability probing', async ({
+    onTestFinished
+  }) => {
+    const fetch = vi
+      .spyOn(backendApi, 'fetchApi')
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([{ name: 'a.safetensors', pathIndex: 0 }]))
+      )
+    onTestFinished(() => fetch.mockRestore())
+    const comfy = api()
+    expect(comfy.supports('models.list')).toBe(true)
+    await expect(comfy.models.list('loras')).resolves.toEqual(['a.safetensors'])
+    expect(fetch).toHaveBeenCalledExactlyOnceWith('/experiment/models/loras', {
+      method: 'GET',
+      cache: 'no-store'
+    })
+  })
+
+  it('reports a version independent of the app version', () => {
+    expect(api().version).toBe(NODE_API_VERSION)
+    expect(api().version).toMatch(/^\d+\.\d+$/)
+    expect(api().major).toBe(LATEST_MAJOR)
+    expect(String(api().major)).toBe(NODE_API_VERSION.split('.')[0])
+  })
+
+  it('reports its version as major, minor and patch', () => {
+    const version = api().getApiVersion()
+
+    expect(version.slice(0, 2).join('.')).toBe(NODE_API_VERSION)
+    expect(version[2]).toBe(0)
+    expect(Object.isFrozen(version)).toBe(true)
+  })
+
+  it('compares its version with one written the way a pack writes it', () => {
+    const [major, minor, patch] = api().getApiVersion()
+    const at = (text: string) => api().isApiVersionAtLeast(text)
+
+    expect(at(`v${major}.${minor}.${patch}`)).toBe(true)
+    expect(at(`${major}.${minor}.${patch}`)).toBe(true)
+    expect(at(`v${major}`)).toBe(true)
+    expect(at(`v${major - 1}.9.9`)).toBe(true)
+    expect(at(`v${major}.${minor}.${patch + 1}`)).toBe(false)
+    expect(at(`v${major}.${minor + 1}.0`)).toBe(false)
+    expect(at(`v${major + 1}.0.0`)).toBe(false)
+  })
+
+  it.for(['', 'v', 'v2.x', 'v2.0.', 'latest'])(
+    'refuses the version %j',
+    (text) => {
+      expect(() => api().isApiVersionAtLeast(text)).toThrow(TypeError)
+    }
+  )
+
+  describe('capability probing', () => {
+    it('reports shipped capabilities', () => {
+      expect(api().supports('widgets.reorder')).toBe(true)
+      expect(api().supports('widgets.hidden')).toBe(true)
+      expect(api().supports('widgets.height')).toBe(true)
+      expect(api().supports('slots.resolvedSource')).toBe(true)
+      expect(api().supports('widgets.linked')).toBe(true)
+      expect(api().supports('widgets.textInteraction')).toBe(true)
+      expect(api().supports('slots.identity')).toBe(true)
+      expect(api().supports('widgets.typeContext')).toBe(true)
+      expect(api().supports('workflow.open')).toBe(false)
+      expect(api().supports('slots.widgetConfig')).toBe(true)
+      expect(api().supports('slots.layout')).toBe(true)
+      expect(api().supports('slots.localizedName')).toBe(true)
+      expect(api().supports('workflow.textReplacements')).toBe(true)
+      expect(api().supports('execution.node')).toBe(true)
+      expect(api().supports('defs.typeCompatibility')).toBe(true)
+      expect(api().supports('defs.inputValues')).toBe(true)
+      expect(api().supports('node.fileDrop')).toBe(true)
+      expect(api().supports('queue.disableAutoQueue')).toBe(true)
+      expect(api().supports('queue.settings')).toBe(true)
+      expect(api().supports('system.monitor')).toBe(true)
+    })
+
+    it('advertises workflow.open only when the host provides it', () => {
+      const comfy = createComfyApi(() => graph, LATEST_MAJOR, {
+        openWorkflow: vi.fn(() => Promise.resolve())
+      })
+
+      expect(comfy.supports('workflow.open')).toBe(true)
+      expect(comfy.capabilities()).toContain('workflow.open')
+    })
+
+    it('returns false for unknown capabilities instead of throwing', () => {
+      expect(api().supports('does.not.exist')).toBe(false)
+      expect(api().supports('')).toBe(false)
+    })
+
+    it('reports slots.named as false until the backend supplies names', () => {
+      // While false, '0' resolves positionally — see slotRef.
+      expect(api().supports('slots.named')).toBe(false)
+    })
+  })
+
+  describe('require()', () => {
+    it('passes silently for a supported capability', () => {
+      expect(() => api().require('widgets.reorder')).not.toThrow()
+    })
+
+    it('names the capability and host version when unsupported', () => {
+      expect(() => api().require('node.decorations')).toThrow(
+        ComfyUnsupportedError
+      )
+      expect(() => api().require('node.decorations')).toThrow(
+        /node\.decorations/
+      )
+      expect(() => api().require('node.decorations')).toThrow(
+        new RegExp(NODE_API_VERSION.replace(/\./g, '\\.'))
+      )
+    })
+
+    it('says which version a planned capability needs', () => {
+      expect(() => api().require('slots.named')).toThrow(
+        /'slots\.named' requires \d+\.\d+/
+      )
+    })
+
+    it('points at supports() so packs can degrade instead of crashing', () => {
+      expect(() => api().require('slots.named')).toThrow(/comfy\.supports/)
+    })
+
+    it('still fails clearly for an entirely unknown capability', () => {
+      expect(() => api().require('made.up')).toThrow(ComfyUnsupportedError)
+    })
+  })
+
+  describe('capabilities()', () => {
+    it('lists what this host provides', () => {
+      const caps = api().capabilities()
+      expect(caps).toContain('widgets.reorder')
+      expect(caps).not.toContain('slots.named')
+    })
+
+    it('is frozen', () => {
+      expect(Object.isFrozen(api().capabilities())).toBe(true)
+    })
+  })
+
+  describe('graph access', () => {
+    it('reaches the bound graph', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      expect(api().graph.nodes()).toHaveLength(1)
+      expect(api().graph.node(String(node.id))?.type).toBe('Alpha')
+    })
+
+    it('follows the graph it is bound to, rather than snapshotting it', () => {
+      let current: LGraph | null = null
+      const comfy = createComfyApi(() => current)
+      expect(comfy.graph.nodes()).toEqual([])
+
+      current = graph
+      graph.add(new LGraphNode('A', 'Alpha'))
+      expect(comfy.graph.nodes()).toHaveLength(1)
+    })
+
+    it('resolves an input through definitions registered on the public API', () => {
+      const comfy = api()
+      const dispose = comfy.defs.define({
+        type: 'ResolvedRelay',
+        execution: 'frontend',
+        inputs: [{ name: 'in', type: 'IMAGE' }],
+        outputs: [{ name: 'out', type: 'IMAGE' }],
+        resolve: ({ self }) => ({
+          out: { forwardTo: self.input('in')! }
+        })
+      })
+
+      try {
+        const source = new LGraphNode('Source', 'Source')
+        source.addOutput('image', 'IMAGE')
+        graph.add(source)
+        const relay = LiteGraph.createNode('ResolvedRelay')!
+        graph.add(relay)
+        const target = new LGraphNode('Target', 'Target')
+        target.addInput('image', 'IMAGE')
+        graph.add(target)
+        source.connect(0, relay, 0)
+        relay.connect(0, target, 0)
+
+        expect(
+          comfy.graph
+            .node(String(target.id))!
+            .inputs.byName('image')!
+            .resolvedSource()
+        ).toEqual({
+          kind: 'output',
+          graphId: graph.id,
+          nodeId: String(source.id),
+          outputIndex: 0
+        })
+      } finally {
+        dispose()
+      }
+    })
+  })
+
+  describe('graph ownership', () => {
+    it('retires a kept handle when another document is loaded into the graph', () => {
+      const first = new LGraphNode('first document')
+      first.addWidget('number', 'amount', 1, () => {})
+      graph.add(first)
+      const comfy = createComfyApi(() => graph)
+      const kept = comfy.graph.node(String(first.id))!
+      const keptWidgets = kept.widgets
+
+      graph.clear()
+      beginDocument()
+      const second = new LGraphNode('second document')
+      second.addWidget('number', 'amount', 2, () => {})
+      graph.add(second)
+
+      expect(second.id).toBe(first.id)
+      expect(kept.isDeleted).toBe(true)
+      expect(() => kept.setTitle('retargeted')).toThrow()
+      expect(keptWidgets.get('amount')).toBeUndefined()
+      expect(second.title).toBe('second document')
+      expect(comfy.graph.node(String(second.id))!.getTitle()).toBe(
+        'second document'
+      )
+    })
+
+    it('retires a kept handle when its graph is cleared, until undo restores it', () => {
+      const comfy = createComfyApi(() => graph)
+      const dispose = comfy.defs.define({ type: 'ClearProbe' })
+
+      try {
+        const first = LiteGraph.createNode('ClearProbe')!
+        first.title = 'before clear'
+        graph.add(first)
+        const kept = comfy.graph.node(String(first.id))!
+        const beforeClear = graph.serialize()
+
+        graph.clear()
+        const next = LiteGraph.createNode('ClearProbe')!
+        next.title = 'after clear'
+        graph.add(next)
+
+        expect(next.id).toBe(first.id)
+        expect(kept.isDeleted).toBe(true)
+        expect(() => kept.setTitle('retargeted')).toThrow()
+        expect(next.title).toBe('after clear')
+
+        graph.configure(beforeClear)
+
+        expect(kept.isDeleted).toBe(false)
+        expect(kept.getTitle()).toBe('before clear')
+      } finally {
+        dispose()
+      }
+    })
+
+    it('keeps handles into a subgraph when undo rebuilds it', () => {
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      root.add(createTestSubgraphNode(subgraph, { parentGraph: root }))
+      let active: LGraph = subgraph
+      const comfy = createComfyApi(() => active)
+      const dispose = comfy.defs.define({ type: 'RebuiltProbe' })
+
+      try {
+        const inner = LiteGraph.createNode('RebuiltProbe')!
+        inner.title = 'inner'
+        subgraph.add(inner)
+        const kept = comfy.graph.node(String(inner.id))!
+        const scope = comfy.graph
+          .subgraphs()
+          .find(({ id }) => id === subgraph.id)!
+
+        root.configure(root.serialize())
+        const rebuilt = root.subgraphs.get(subgraph.id)!
+        active = rebuilt
+        kept.setTitle('renamed')
+
+        expect(rebuilt).not.toBe(subgraph)
+        expect(kept.isDeleted).toBe(false)
+        expect(rebuilt.getNodeById(inner.id)!.title).toBe('renamed')
+        expect(scope.nodes().map((node) => node.getTitle())).toEqual([
+          'renamed'
+        ])
+      } finally {
+        dispose()
+      }
+    })
+
+    it('keeps a handle minted while the new document loads', () => {
+      const comfy = createComfyApi(() => graph)
+      graph.clear()
+      beginDocument()
+      const loaded = new LGraphNode('loaded')
+      graph.add(loaded)
+      const mintedDuringLoad = comfy.graph.node(String(loaded.id))!
+
+      expect(mintedDuringLoad.isDeleted).toBe(false)
+      expect(mintedDuringLoad.getTitle()).toBe('loaded')
+    })
+
+    it('keeps a retained handle bound to the graph that minted it', () => {
+      const first = new LGraph()
+      const second = new LGraph()
+      const inFirst = new LGraphNode('first')
+      const inSecond = new LGraphNode('second')
+      first.add(inFirst)
+      second.add(inSecond)
+      expect(inSecond.id).toBe(inFirst.id)
+      let active = first
+      const comfy = createComfyApi(() => active)
+      const retained = comfy.graph.nodes()[0]
+
+      active = second
+      expect(comfy.graph.node(String(inSecond.id))?.getTitle()).toBe('second')
+      retained.setTitle('retargeted')
+
+      expect(inSecond.title).toBe('second')
+      expect(inFirst.title).toBe('retargeted')
+    })
+
+    it('selects and centers on a kept handle only while its graph is on screen', () => {
+      const first = new LGraph()
+      const second = new LGraph()
+      const elsewhere = new LGraphNode('elsewhere')
+      const onScreen = new LGraphNode('on screen')
+      first.add(elsewhere)
+      second.add(onScreen)
+      let active = first
+      const comfy = createComfyApi(() => active)
+      const kept = comfy.graph.node(String(elsewhere.id))!
+      active = second
+      const previousCanvas = LGraphCanvas.active_canvas
+      onTestFinished(() => {
+        LGraphCanvas.active_canvas = previousCanvas
+      })
+      const canvas = createTestCanvas(
+        second,
+        createMockCanvasRenderingContext2D()
+      )
+      LGraphCanvas.active_canvas = canvas
+      const centerOnNode = vi.spyOn(canvas, 'centerOnNode')
+
+      comfy.graph.select([kept])
+      comfy.graph.centerOn(kept)
+
+      expect(elsewhere.id).toBe(onScreen.id)
+      expect(comfy.graph.selection()).toEqual([])
+      expect(centerOnNode).not.toHaveBeenCalled()
+
+      const visible = comfy.graph.node(String(onScreen.id))!
+      comfy.graph.select([visible])
+      comfy.graph.centerOn(visible)
+
+      expect(comfy.graph.selection().map((node) => node.getTitle())).toEqual([
+        'on screen'
+      ])
+      expect(centerOnNode).toHaveBeenCalledWith(onScreen)
+    })
+
+    it.for(['view first', 'scope first'] as const)(
+      'notifies widget listeners from every handle cache, subscribed %s',
+      (order) => {
+        const comfy = createComfyApi(() => graph)
+        const node = new LGraphNode('n')
+        node.addWidget('number', 'amount', 1, () => {})
+        graph.add(node)
+        const id = String(node.id)
+        const inView = comfy.graph.node(id)!.widgets.get('amount')!
+        const inScope = comfy.graph.root()!.node(id)!.widgets.get('amount')!
+        const viaView: unknown[] = []
+        const viaScope: unknown[] = []
+        const subscribe = {
+          view: () => inView.on('change', (value) => viaView.push(value)),
+          scope: () => inScope.on('change', (value) => viaScope.push(value))
+        }
+        const [first, second] =
+          order === 'view first'
+            ? (['view', 'scope'] as const)
+            : (['scope', 'view'] as const)
+        const stops = {
+          [first]: subscribe[first](),
+          [second]: subscribe[second]()
+        }
+
+        inView.setValue(5)
+        stops.scope()
+        inView.setValue(6)
+
+        expect(viaView).toEqual([5, 6])
+        expect(viaScope).toEqual([5])
+      }
+    )
+
+    it('applies serialize handlers registered through every handle cache', async () => {
+      const comfy = createComfyApi(() => graph)
+      const node = new LGraphNode('n')
+      node.addWidget('text', 'prompt', 'typed', () => {})
+      node.serialize_widgets = true
+      graph.add(node)
+      const id = String(node.id)
+      comfy.graph
+        .node(id)!
+        .widgets.get('prompt')!
+        .on('beforeSerialize', (event) => {
+          if (event.context === 'prompt') event.setSerializedValue('sent')
+        })
+      comfy.graph
+        .root()!
+        .node(id)!
+        .widgets.get('prompt')!
+        .on('beforeSerialize', (event) => {
+          if (event.context === 'workflow') event.setSerializedValue('saved')
+        })
+      const widget = node.widgets![0]
+
+      expect(await widget.serializeValue!(node, 0)).toBe('sent')
+      expect(node.serialize().widgets_values).toEqual(['saved'])
+    })
+
+    it('keeps retained slot and widget collections bound to their graph', () => {
+      const first = new LGraph()
+      const second = new LGraph()
+      const inFirst = new LGraphNode('first')
+      const inSecond = new LGraphNode('second')
+      inFirst.addWidget('number', 'amount', 1, () => {})
+      inSecond.addWidget('number', 'amount', 2, () => {})
+      inFirst.addOutput('out', 'IMAGE')
+      inSecond.addOutput('out', 'IMAGE')
+      first.add(inFirst)
+      second.add(inSecond)
+      let active = first
+      const comfy = createComfyApi(() => active)
+      const retained = comfy.graph.nodes()[0]
+      const widgets = retained.widgets
+      const outputs = retained.outputs
+
+      active = second
+      widgets.get('amount')!.setValue(9)
+      outputs.byName('out')!.modify({ label: 'renamed' })
+
+      expect(inSecond.widgets![0].value).toBe(2)
+      expect(inFirst.widgets![0].value).toBe(9)
+      expect(inSecond.outputs[0].label).toBeUndefined()
+      expect(inFirst.outputs[0].label).toBe('renamed')
+    })
+
+    it('hands a lifecycle callback the node in its owning graph', () => {
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      const comfy = createComfyApi(() => root)
+      const created: [string | undefined, string | undefined][] = []
+      comfy.defs.extend('OwnedProbe', (builder) =>
+        builder.onCreated((node) =>
+          created.push([node.graphId, node.getTitle()])
+        )
+      )
+      const dispose = comfy.defs.define({ type: 'OwnedProbe' })
+
+      try {
+        const outer = LiteGraph.createNode('OwnedProbe')!
+        outer.title = 'outer'
+        root.add(outer)
+        const inner = LiteGraph.createNode('OwnedProbe')!
+        inner.title = 'inner'
+        subgraph.add(inner)
+
+        expect(created).toEqual([
+          [root.id, 'outer'],
+          [subgraph.id, 'inner']
+        ])
+      } finally {
+        dispose()
+      }
+    })
+
+    it('hands onRemoved the node in its owning graph', () => {
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      const comfy = createComfyApi(() => root)
+      const removed: [string | undefined, string | undefined][] = []
+      comfy.defs.extend('RemovedProbe', (builder) =>
+        builder.onRemoved((node) =>
+          removed.push([node.graphId, node.getTitle()])
+        )
+      )
+      const dispose = comfy.defs.define({ type: 'RemovedProbe' })
+
+      try {
+        const outer = LiteGraph.createNode('RemovedProbe')!
+        outer.title = 'outer'
+        root.add(outer)
+        const inner = LiteGraph.createNode('RemovedProbe')!
+        inner.title = 'inner'
+        subgraph.add(inner)
+
+        subgraph.remove(inner)
+        root.remove(outer)
+
+        expect(removed).toEqual([
+          [subgraph.id, 'inner'],
+          [root.id, 'outer']
+        ])
+      } finally {
+        dispose()
+      }
+    })
+
+    it('configures a clone once it joins a graph, and never while detached', () => {
+      const comfy = createComfyApi(() => graph)
+      const delivered: [string, string, unknown][] = []
+      comfy.defs.extend('DetachedProbe', (builder) => {
+        builder.onCreated((node) => delivered.push(['created', node.id, null]))
+        builder.onConfigured((node, data) =>
+          delivered.push([
+            'configured',
+            node.id,
+            (data.properties as Record<string, unknown>).marker
+          ])
+        )
+      })
+      const dispose = comfy.defs.define({ type: 'DetachedProbe' })
+
+      try {
+        const original = LiteGraph.createNode('DetachedProbe')!
+        original.properties.marker = 'kept'
+        graph.add(original)
+        original.configure(original.serialize())
+        const clone = original.clone()!
+
+        expect(delivered).toEqual([
+          ['created', String(original.id), null],
+          ['configured', String(original.id), 'kept']
+        ])
+
+        graph.add(clone)
+
+        expect(clone.id).not.toBe(original.id)
+        expect(delivered.slice(2)).toEqual([
+          ['created', String(clone.id), null],
+          ['configured', String(clone.id), 'kept']
+        ])
+        expect(reportError).not.toHaveBeenCalled()
+      } finally {
+        dispose()
+      }
+    })
+  })
+
+  describe('subscriptions', () => {
+    it.for([
+      {
+        name: 'onWorkflowLoaded',
+        subscribe: (comfy: Comfy, listener: () => void) =>
+          comfy.onWorkflowLoaded(listener),
+        fire: () => notifyWorkflowLoaded()
+      },
+      {
+        name: 'onViewportChanged',
+        subscribe: (comfy: Comfy, listener: () => void) =>
+          comfy.onViewportChanged(listener),
+        fire: () => window.dispatchEvent(new Event('resize'))
+      },
+      {
+        name: 'defs.onRefreshed',
+        subscribe: (comfy: Comfy, listener: () => void) =>
+          comfy.defs.onRefreshed(listener),
+        fire: () => notifyDefsRefreshed()
+      }
+    ])(
+      'keeps a later $name subscription when a stale disposer runs again',
+      ({ subscribe, fire }) => {
+        const comfy = createComfyApi(() => graph)
+        const listener = vi.fn()
+        const stale = subscribe(comfy, listener)
+        stale()
+        onTestFinished(subscribe(comfy, listener))
+
+        stale()
+        fire()
+
+        expect(listener).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('keeps a later widget subscription when a stale disposer runs again', () => {
+      const comfy = createComfyApi(() => graph)
+      const node = new LGraphNode('n')
+      node.addWidget('number', 'amount', 1, () => {})
+      graph.add(node)
+      const widget = comfy.graph.node(String(node.id))!.widgets.get('amount')!
+      const listener = vi.fn()
+      const stale = widget.on('change', listener)
+      stale()
+      widget.on('change', listener)
+
+      stale()
+      widget.setValue(2)
+
+      expect(listener).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('selection changes', () => {
+    it('reports the selected nodes each time they change, and not for groups', async () => {
+      const first = new LGraphNode('first')
+      const second = new LGraphNode('second')
+      graph.add(first)
+      graph.add(second)
+      const group = new LGraphGroup('group')
+      graph.add(group)
+      const previousCanvas = LGraphCanvas.active_canvas
+      onTestFinished(() => {
+        LGraphCanvas.active_canvas = previousCanvas
+      })
+      const canvas = createTestCanvas(
+        graph,
+        createMockCanvasRenderingContext2D()
+      )
+      LGraphCanvas.active_canvas = canvas
+      const comfy = createComfyApi(() => graph)
+      const seen: string[][] = []
+      onTestFinished(
+        comfy.onSelectionChanged((nodes) =>
+          seen.push(nodes.map((node) => node.getTitle()))
+        )
+      )
+
+      canvas.selectItems([first, second])
+      await nextTick()
+      canvas.select(group)
+      await nextTick()
+      canvas.deselect(second)
+      await nextTick()
+      canvas.deselectAll()
+      await nextTick()
+
+      expect(seen).toEqual([['first', 'second'], ['first'], []])
+    })
+
+    it('stops reporting once unsubscribed', async () => {
+      const node = new LGraphNode('n')
+      graph.add(node)
+      const previousCanvas = LGraphCanvas.active_canvas
+      onTestFinished(() => {
+        LGraphCanvas.active_canvas = previousCanvas
+      })
+      const canvas = createTestCanvas(
+        graph,
+        createMockCanvasRenderingContext2D()
+      )
+      LGraphCanvas.active_canvas = canvas
+      const comfy = createComfyApi(() => graph)
+      const listener = vi.fn()
+      const stop = comfy.onSelectionChanged(listener)
+
+      canvas.select(node)
+      await nextTick()
+      stop()
+      canvas.deselectAll()
+      await nextTick()
+
+      expect(listener).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('documents', () => {
+    it('hands onWorkflowLoaded the open document on a load and on an undo', () => {
+      const comfy = createComfyApi(() => graph, LATEST_MAJOR, {
+        documents: () => [{ sessionId: 'doc-1', isActive: true }]
+      })
+      const seen: (string | undefined)[] = []
+      onTestFinished(
+        comfy.onWorkflowLoaded((document) => seen.push(document?.id))
+      )
+
+      notifyWorkflowLoaded()
+      notifyWorkflowLoaded(true)
+
+      expect(seen).toEqual(['doc-1', 'doc-1'])
+      expect(comfy.workflow.documentId()).toBe('doc-1')
+    })
+
+    it('tells a pack when a document closes', async () => {
+      const open = ref([{ sessionId: 'doc-1', isActive: true }])
+      const comfy = createComfyApi(() => graph, LATEST_MAJOR, {
+        documents: () => open.value
+      })
+      const closed: [string, boolean][] = []
+      onTestFinished(
+        comfy.onDocumentClosed((document) =>
+          closed.push([document.id, document.isDeleted])
+        )
+      )
+
+      open.value = []
+      await nextTick()
+
+      expect(closed).toEqual([['doc-1', true]])
+    })
+  })
+
+  describe('workflow access', () => {
+    it('opens workflow data through the host document service', async () => {
+      const openWorkflow = vi.fn(() => Promise.resolve())
+      const comfy = createComfyApi(() => graph, LATEST_MAJOR, {
+        openWorkflow
+      })
+      const workflow = { version: 0, nodes: [] }
+
+      await comfy.workflow.open(workflow)
+
+      expect(openWorkflow).toHaveBeenCalledOnce()
+      expect(openWorkflow).toHaveBeenCalledWith(workflow)
+    })
+
+    it('rejects non-object workflow data before reaching the host', async () => {
+      const openWorkflow = vi.fn(() => Promise.resolve())
+      const comfy = createComfyApi(() => graph, LATEST_MAJOR, {
+        openWorkflow
+      })
+
+      await expect(
+        Reflect.apply(comfy.workflow.open, comfy.workflow, [null])
+      ).rejects.toThrow(/workflow data must be an object/i)
+      expect(openWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('applies the host text-replacement grammar to the active document', () => {
+      const source = new LGraphNode('Source', 'TextSource')
+      source.title = 'Prompt source'
+      source.addWidget('text', 'text', 'cats/dogs', () => undefined, {})
+      graph.add(source)
+
+      expect(api().workflow.applyTextReplacements('%Prompt source.text%')).toBe(
+        'cats_dogs'
+      )
+    })
+  })
+
+  describe('execution nodes', () => {
+    it('resolves a node inside a subgraph from its backend execution id', () => {
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const host = createTestSubgraphNode(subgraph, { parentGraph: graph })
+      graph.add(host)
+      const inner = new LGraphNode('Inner', 'TestNode')
+      subgraph.add(inner)
+
+      const found = api().executionNode(
+        `${String(host.id)}:${String(inner.id)}`
+      )
+
+      expect(found?.id).toBe(String(inner.id))
+      expect(found?.graphId).toBe(subgraph.id)
+    })
+
+    it('observes executing nodes until unsubscribed', async () => {
+      const first = new LGraphNode('First', 'TestNode')
+      const second = new LGraphNode('Second', 'TestNode')
+      graph.add(first)
+      graph.add(second)
+      const seen: (string | undefined)[] = []
+      const stop = api().onExecutingNodeChanged((node) => seen.push(node?.id))
+
+      useExecutionStore().nodeProgressStates = {
+        [String(first.id)]: {
+          state: 'running',
+          value: 0,
+          max: 1,
+          node_id: String(first.id),
+          prompt_id: 'test'
+        }
+      }
+      await nextTick()
+      useExecutionStore().nodeProgressStates = {}
+      await nextTick()
+      stop()
+      useExecutionStore().nodeProgressStates = {
+        [String(second.id)]: {
+          state: 'running',
+          value: 0,
+          max: 1,
+          node_id: String(second.id),
+          prompt_id: 'test'
+        }
+      }
+      await nextTick()
+
+      expect(seen).toEqual([String(first.id), undefined])
+    })
+  })
+
+  describe('the same node can have two different proxies', () => {
+    // Two API instances — or two majors — necessarily mint different proxy
+    // objects for one node, because one object cannot have two shapes.
+    it('produces non-identical handles across instances', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+      const a = one.graph.node(String(node.id))!
+      const b = two.graph.node(String(node.id))!
+
+      expect(a).not.toBe(b)
+      expect(a.id).toBe(b.id)
+    })
+
+    it('compares equal via sameEntity', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+
+      const a = one.graph.node(String(node.id))!
+      const b = two.graph.node(String(node.id))!
+      expect(one.sameEntity(a, b)).toBe(true)
+      expect(two.sameEntity(a, b)).toBe(true)
+    })
+
+    it('mints a different handle for the same node reached through a subgraph', () => {
+      // The condition sameEntity's doc names. Reaching a node while its graph
+      // is on screen and reaching it through graph.subgraphs() go through
+      // different handle caches, so `===` says no and sameEntity says yes.
+      // Document-scoped onNodeChanged makes this the ordinary case, not a
+      // corner one, which is why the doc calls scope out by name.
+      const root = new LGraph()
+      const subgraph = createTestSubgraph({ rootGraph: root, name: 'Inner' })
+      root.subgraphs.set(subgraph.id, subgraph)
+      const node = new LGraphNode('A', 'Alpha')
+      subgraph.add(node)
+
+      const comfy = createComfyApi(() => subgraph)
+      const visible = comfy.graph.node(String(node.id))!
+      const viaDefinition = comfy.graph
+        .subgraphs()
+        .find(({ id }) => id === subgraph.id)!
+        .node(String(node.id))!
+
+      expect(visible).not.toBe(viaDefinition)
+      expect(comfy.sameEntity(visible, viaDefinition)).toBe(true)
+    })
+
+    it('reports different nodes as different', () => {
+      const first = new LGraphNode('A', 'Alpha')
+      const second = new LGraphNode('B', 'Beta')
+      graph.add(first)
+      graph.add(second)
+      const comfy = createComfyApi(() => graph)
+
+      expect(
+        comfy.sameEntity(
+          comfy.graph.node(String(first.id)),
+          comfy.graph.node(String(second.id))
+        )
+      ).toBe(false)
+    })
+
+    it('does not mistake non-handles for entities', () => {
+      const comfy = createComfyApi(() => graph)
+      expect(comfy.sameEntity({}, {})).toBe(false)
+      expect(comfy.sameEntity(null, undefined)).toBe(false)
+      expect(comfy.sameEntity('a', 'a')).toBe(false)
+    })
+
+    it('adopts a foreign handle into this instance', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+
+      const foreign = one.graph.node(String(node.id))!
+      const adopted = two.adopt(foreign)
+
+      expect(adopted).toBeDefined()
+      expect(adopted).toBe(two.graph.node(String(node.id)))
+      expect(adopted).not.toBe(foreign)
+      expect(adopted!.getTitle()).toBe('A')
+    })
+
+    it('adopts a foreign handle in its original graph scope', () => {
+      const subgraph = createTestSubgraph({ rootGraph: graph, name: 'Inner' })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const node = new LGraphNode('Nested', 'NestedType')
+      subgraph.add(node)
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+      const foreign = one.graph
+        .subgraphs()
+        .find(({ id }) => id === subgraph.id)!
+        .node(String(node.id))!
+
+      const adopted = two.adopt(foreign)
+
+      expect(adopted?.graphId).toBe(subgraph.id)
+      expect(adopted?.getTitle()).toBe('Nested')
+    })
+
+    it('returns undefined when adopting a non-handle or a dead entity', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+      const foreign = one.graph.node(String(node.id))!
+
+      expect(two.adopt({})).toBeUndefined()
+      expect(two.adopt(undefined)).toBeUndefined()
+
+      graph.remove(node)
+      expect(two.adopt(foreign)).toBeUndefined()
+    })
+
+    it('keeps the identity token out of spreads and JSON', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      const handle = createComfyApi(() => graph).graph.node(String(node.id))!
+
+      expect(Object.keys({ ...handle })).not.toContain('kind')
+      expect(JSON.stringify(handle)).not.toContain('comfy.handle')
+    })
+  })
+
+  describe('majors', () => {
+    it('serves the latest major by default', () => {
+      expect(api().major).toBe(LATEST_MAJOR)
+    })
+
+    it('pins to a requested major', () => {
+      expect(api().forMajor(LATEST_MAJOR).major).toBe(LATEST_MAJOR)
+    })
+
+    it('returns a stable instance per major', () => {
+      const comfy = api()
+      expect(comfy.forMajor(LATEST_MAJOR)).toBe(comfy.forMajor(LATEST_MAJOR))
+    })
+
+    it('reports every supported major', () => {
+      expect(SUPPORTED_MAJORS).toContain(LATEST_MAJOR)
+      expect(SUPPORTED_MAJORS.length).toBeGreaterThan(0)
+    })
+
+    it('fails clearly for a major this host does not know', () => {
+      expect(() => api().forMajor(99)).toThrow(ComfyUnsupportedError)
+      expect(() => api().forMajor(99)).toThrow(/API major 99/)
+    })
+  })
+
+  describe('handle caches are keyed by major', () => {
+    it('does not share handles between majors', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      graph.add(node)
+      const comfy = createComfyApi(() => graph)
+
+      const fromLatest = comfy.graph.node(String(node.id))!
+      const fromPinned = comfy
+        .forMajor(LATEST_MAJOR)
+        .graph.node(String(node.id))!
+
+      // Same major here, so the same instance is reused.
+      expect(fromPinned).toBe(fromLatest)
+      // ...and identity holds regardless.
+      expect(comfy.sameEntity(fromPinned, fromLatest)).toBe(true)
+    })
+
+    it('keeps slot identity agreeing across instances', () => {
+      const node = new LGraphNode('A', 'Alpha')
+      node.addOutput('IMAGE', 'IMAGE')
+      graph.add(node)
+
+      // Slot ids are intentionally global: a slot is the same slot whichever
+      // API instance or major observes it.
+      const one = createComfyApi(() => graph)
+      const two = createComfyApi(() => graph)
+      expect(one.graph.node(String(node.id))!.outputs.at(0)!.id).toBe(
+        two.graph.node(String(node.id))!.outputs.at(0)!.id
+      )
+    })
+
+    it('scopes widget handles per node, not globally by name', () => {
+      const a = new LGraphNode('A', 'Alpha')
+      const b = new LGraphNode('B', 'Alpha')
+      graph.add(a)
+      graph.add(b)
+      a.addWidget('number', 'seed', 1, () => undefined, {})
+      b.addWidget('number', 'seed', 2, () => undefined, {})
+
+      const comfy = createComfyApi(() => graph)
+      const wa = comfy.graph.node(String(a.id))!.widgets.get('seed')!
+      const wb = comfy.graph.node(String(b.id))!.widgets.get('seed')!
+
+      expect(wa).not.toBe(wb)
+      expect(wa.getValue()).toBe(1)
+      expect(wb.getValue()).toBe(2)
+    })
+  })
+
+  it('is frozen so packs cannot patch the root', () => {
+    const comfy = api()
+    expect(Object.isFrozen(comfy)).toBe(true)
+    expect(() => {
+      ;(comfy as { version: string }).version = '9.9.9'
+    }).toThrow()
+  })
+})

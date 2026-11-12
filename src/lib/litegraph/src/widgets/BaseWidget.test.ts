@@ -4,10 +4,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, INumericWidget } from '@comfyorg/graph-model/widgets'
-import {
-  BaseWidget,
-  extensionValue
-} from '@/lib/litegraph/src/widgets/BaseWidget'
+import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type {
   DrawWidgetOptions,
   WidgetEventOptions

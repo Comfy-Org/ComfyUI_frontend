@@ -194,6 +194,7 @@ type SettingInputType =
   | 'combo'
   | 'radio'
   | 'text'
+  | 'password'
   | 'image'
   | 'color'
   | 'url'

@@ -184,7 +184,23 @@ interface FrontendApiCalls {
    */
   autoQueueGraphChanged: never
   promptQueueing: { requestId: number; batchCount: number; number?: number }
-  promptQueued: { number: number; batchCount: number; requestId?: number }
+  promptRejected: {
+    response: PromptFailureResponse
+    status?: number
+  }
+  promptQueued: {
+    number: number
+    batchCount: number
+    requestId?: number
+    promptIds?: string[]
+    submissions?: { promptId: string; nodeCount: number }[]
+    rejectedCount?: number
+  }
+  promptQueueAttemptEnded: {
+    requestId: number
+    queued: number
+    rejected: number
+  }
   graphCleared: never
   reconnecting: never
   reconnected: never
@@ -192,6 +208,7 @@ interface FrontendApiCalls {
 
 export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
 export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
+export type PromptRejectedEventPayload = FrontendApiCalls['promptRejected']
 
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {
