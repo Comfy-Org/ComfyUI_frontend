@@ -56,9 +56,13 @@ type FollowDeps = {
   ) => Promise<boolean> | boolean
   adoptWorkflowTarget: (workflow: ComfyWorkflow, workflowId: string) => void
   adoptRestoredWorkflowTab: (workflowId: string) => void
-  /** Shows the blank new-chat screen, targeting the visible tab. */
   startBlankChat: () => void
 }
+
+type WorkflowIdLookup =
+  | { status: 'found'; workflowId: string }
+  | { status: 'unlisted' }
+  | { status: 'failed' }
 
 function requestedState(
   state: FollowState,
@@ -181,23 +185,17 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     deps.trackThreadStarted()
   }
 
-  /**
-   * The tab's cloud workflow id; `null` when a complete listing has no record
-   * of it (so it can have no chat); `undefined` when the listing failed.
-   */
-  async function resolveWorkflowId(
+  async function lookUpWorkflowId(
     workflow: ComfyWorkflow
-  ): Promise<string | null | undefined> {
+  ): Promise<WorkflowIdLookup> {
     const existing = deps.cloudIdFor(workflow)
-    if (existing !== undefined) return existing
+    if (existing !== undefined) return { status: 'found', workflowId: existing }
     const listed = await deps.refreshCloudWorkflowIds()
-    return deps.cloudIdFor(workflow) ?? (listed ? null : undefined)
+    const workflowId = deps.cloudIdFor(workflow)
+    if (workflowId !== undefined) return { status: 'found', workflowId }
+    return { status: listed ? 'unlisted' : 'failed' }
   }
 
-  /**
-   * A tab with no chat shows the blank new-chat screen for that tab, instead
-   * of leaving the previous tab's chat (and its workflow target) on screen.
-   */
   function showBlankChat(operation: FollowOperation): void {
     if (!isCurrent(operation)) return
     if (deps.currentThreadId() === null && deps.followsVisibleWorkflow()) return
@@ -233,17 +231,13 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       await openFollowedChat(latest, operation, workflowId)
   }
 
-  /**
-   * A temporary tab is never followed into a chat (one the agent created may
-   * be bound to one), but a fresh one with no binding has no chat.
-   */
   function followTemporaryTab(
     workflow: ComfyWorkflow,
     operation: FollowOperation,
     blankWhenNoChat: boolean
   ): void {
-    if (blankWhenNoChat && deps.cloudIdFor(workflow) === undefined)
-      showBlankChat(operation)
+    const boundToCloudWorkflow = deps.cloudIdFor(workflow) !== undefined
+    if (blankWhenNoChat && !boundToCloudWorkflow) showBlankChat(operation)
   }
 
   async function followSavedTab(
@@ -251,25 +245,20 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     operation: FollowOperation,
     blankWhenNoChat: boolean
   ): Promise<void> {
-    const workflowId = await resolveWorkflowId(workflow)
-    if (workflowId === undefined || !isCurrent(operation)) return
-    if (workflowId === null) {
+    const lookup = await lookUpWorkflowId(workflow)
+    if (lookup.status === 'failed' || !isCurrent(operation)) return
+    if (lookup.status === 'unlisted') {
       if (blankWhenNoChat) showBlankChat(operation)
       return
     }
     if (
-      !(await refreshForFollow(workflowId, operation)) ||
+      !(await refreshForFollow(lookup.workflowId, operation)) ||
       !isCurrent(operation)
     )
       return
-    await openLatestChat(workflowId, operation, blankWhenNoChat)
+    await openLatestChat(lookup.workflowId, operation, blankWhenNoChat)
   }
 
-  /**
-   * `blankWhenNoChat`: a tab the user switched to that has no chat shows the
-   * blank chat. Off when the panel mounts, so a chat whose tab is not active
-   * keeps its restore path.
-   */
   async function followTab(
     workflow: ComfyWorkflow,
     { blankWhenNoChat = true } = {}

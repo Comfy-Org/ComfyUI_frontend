@@ -7267,8 +7267,6 @@ describe('AgentPanelRoot history', () => {
       await vi.waitFor(() =>
         expect(userPrompts()).toEqual(['Prompt in th-open'])
       )
-      // A draft holds the open chat on screen across the switch to a tab with
-      // no chat; clearing it afterwards does not re-run the follow.
       await userEvent.type(screen.getByRole('textbox'), 'Draft')
       await activateTabAsUser(second)
       await settleFollow()

@@ -1933,9 +1933,6 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
   startBlankChat: startBlankChatForTab
 })
 
-// Follow-only reset: the user is not engaged (no draft, send or selection), so
-// there is nothing to cancel. Leaves `errorAttachRun` alone, so an error attach
-// that follows into a tab with no chat still completes.
 function startBlankChatForTab(): void {
   provisionalTitle.value = undefined
   newChat()

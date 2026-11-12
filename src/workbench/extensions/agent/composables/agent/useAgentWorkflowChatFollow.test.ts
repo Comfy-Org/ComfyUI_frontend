@@ -86,92 +86,76 @@ describe('useAgentWorkflowChatFollow', () => {
     expect(deps.startBlankChat).not.toHaveBeenCalled()
   })
 
-  it('shows a blank chat for a saved tab that has no chat', async () => {
-    const workflow = savedWorkflow('workflows/landscape.json')
-    const { deps, follow } = setup(workflow, {
-      cloudIdFor: () => 'wf-landscape'
-    })
+  it.for<{
+    name: string
+    workflow: () => ComfyWorkflow
+    overrides: Partial<Deps>
+    blankWhenNoChat?: boolean
+    blankChats: number
+  }>([
+    {
+      name: 'shows a blank chat for a saved tab that has no chat',
+      workflow: () => savedWorkflow('workflows/landscape.json'),
+      overrides: { cloudIdFor: () => 'wf-landscape' },
+      blankChats: 1
+    },
+    {
+      name: 'shows a blank chat for a saved tab the cloud listing has no record of',
+      workflow: () => savedWorkflow('workflows/unsynced.json'),
+      overrides: { cloudIdFor: () => undefined },
+      blankChats: 1
+    },
+    {
+      name: 'shows a blank chat for a new, unsaved tab',
+      workflow: () => unsavedWorkflow('workflows/Unsaved Workflow.json'),
+      overrides: { cloudIdFor: () => undefined },
+      blankChats: 1
+    },
+    {
+      name: 'keeps the current chat for a tab with no chat when the panel mounts',
+      workflow: () => savedWorkflow('workflows/landscape.json'),
+      overrides: { cloudIdFor: () => 'wf-landscape' },
+      blankWhenNoChat: false,
+      blankChats: 0
+    },
+    {
+      name: 'keeps the current chat when the cloud listing fails',
+      workflow: () => savedWorkflow('workflows/unsynced.json'),
+      overrides: {
+        cloudIdFor: () => undefined,
+        refreshCloudWorkflowIds: async () => false
+      },
+      blankChats: 0
+    },
+    {
+      name: 'leaves an unsaved tab the agent bound to a chat alone',
+      workflow: () => unsavedWorkflow('workflows/second.json'),
+      overrides: { cloudIdFor: () => 'wf-second' },
+      blankChats: 0
+    },
+    {
+      name: 'does not reset a blank chat that already follows the visible tab',
+      workflow: () => unsavedWorkflow('workflows/Unsaved Workflow (2).json'),
+      overrides: {
+        cloudIdFor: () => undefined,
+        currentThreadId: () => null,
+        followsVisibleWorkflow: () => true
+      },
+      blankChats: 0
+    },
+    {
+      name: 'keeps the current chat while the user has a draft or a send in flight',
+      workflow: () => unsavedWorkflow('workflows/Unsaved Workflow.json'),
+      overrides: { cloudIdFor: () => undefined, userEngaged: () => true },
+      blankChats: 0
+    }
+  ])('$name', async ({ overrides, blankWhenNoChat, blankChats, ...row }) => {
+    const workflow = row.workflow()
+    const { deps, follow } = setup(workflow, overrides)
 
-    await follow.followTab(workflow)
+    await follow.followTab(workflow, { blankWhenNoChat })
 
-    expect(deps.startBlankChat).toHaveBeenCalledOnce()
+    expect(deps.startBlankChat).toHaveBeenCalledTimes(blankChats)
     expect(deps.loadThread).not.toHaveBeenCalled()
-  })
-
-  it('shows a blank chat for a saved tab the cloud listing has no record of', async () => {
-    const workflow = savedWorkflow('workflows/unsynced.json')
-    const { deps, follow } = setup(workflow, { cloudIdFor: () => undefined })
-
-    await follow.followTab(workflow)
-
-    expect(deps.startBlankChat).toHaveBeenCalledOnce()
-  })
-
-  it('keeps the current chat for a tab with no chat when the panel mounts', async () => {
-    const workflow = savedWorkflow('workflows/landscape.json')
-    const { deps, follow } = setup(workflow, {
-      cloudIdFor: () => 'wf-landscape'
-    })
-
-    await follow.followTab(workflow, { blankWhenNoChat: false })
-
-    expect(deps.startBlankChat).not.toHaveBeenCalled()
-  })
-
-  it('keeps the current chat when the cloud listing fails', async () => {
-    const workflow = savedWorkflow('workflows/unsynced.json')
-    const { deps, follow } = setup(workflow, {
-      cloudIdFor: () => undefined,
-      refreshCloudWorkflowIds: async () => false
-    })
-
-    await follow.followTab(workflow)
-
-    expect(deps.startBlankChat).not.toHaveBeenCalled()
-  })
-
-  it('shows a blank chat for a new, unsaved tab', async () => {
-    const workflow = unsavedWorkflow('workflows/Unsaved Workflow.json')
-    const { deps, follow } = setup(workflow, { cloudIdFor: () => undefined })
-
-    await follow.followTab(workflow)
-
-    expect(deps.startBlankChat).toHaveBeenCalledOnce()
-    expect(deps.loadThread).not.toHaveBeenCalled()
-  })
-
-  it('leaves an unsaved tab the agent bound to a chat alone', async () => {
-    const workflow = unsavedWorkflow('workflows/second.json')
-    const { deps, follow } = setup(workflow, { cloudIdFor: () => 'wf-second' })
-
-    await follow.followTab(workflow)
-
-    expect(deps.startBlankChat).not.toHaveBeenCalled()
-    expect(deps.loadThread).not.toHaveBeenCalled()
-  })
-
-  it('does not reset a blank chat that already follows the visible tab', async () => {
-    const workflow = unsavedWorkflow('workflows/Unsaved Workflow (2).json')
-    const { deps, follow } = setup(workflow, {
-      cloudIdFor: () => undefined,
-      currentThreadId: () => null,
-      followsVisibleWorkflow: () => true
-    })
-
-    await follow.followTab(workflow)
-
-    expect(deps.startBlankChat).not.toHaveBeenCalled()
-  })
-
-  it('keeps the current chat while the user has a draft or a send in flight', async () => {
-    const workflow = unsavedWorkflow('workflows/Unsaved Workflow.json')
-    const { deps, follow } = setup(workflow, {
-      cloudIdFor: () => undefined,
-      userEngaged: () => true
-    })
-
-    await follow.followTab(workflow)
-
-    expect(deps.startBlankChat).not.toHaveBeenCalled()
   })
 })
