@@ -388,7 +388,8 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
+      shownPlanAction.value === 'subscribe' ||
+      (shownPlanAction.value === 'choosePlan' && isCloud)
   })
 )
 

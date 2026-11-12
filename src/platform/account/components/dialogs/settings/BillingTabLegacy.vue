@@ -265,6 +265,12 @@ const action = computed(() =>
   })
 )
 
+const shownPlanAction = computed(() =>
+  action.value === 'contactSales' || handoffAvailable.value
+    ? action.value
+    : null
+)
+
 const { state: autoTopUp } = useBillingAutoTopUpCard()
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
@@ -278,7 +284,8 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
+      shownPlanAction.value === 'subscribe' ||
+      (shownPlanAction.value === 'choosePlan' && isCloud)
   })
 )
 

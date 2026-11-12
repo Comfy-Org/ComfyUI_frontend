@@ -28,10 +28,10 @@ export function useAutoTopUpSetupOffer() {
       canManageAutoTopUp: canManageAutoTopUp.value,
       setup: autoTopUpSetup.value
     })
-    if (!available.value) return null
     if (!canSetUp) return null
     const settings = await billingApi.getBillingAutoReload()
     if (settings.status !== 'off') return null
+    if (!available.value) return null
     trackOffer('viewed')
     return href.value
   }
