@@ -1,5 +1,13 @@
 import { cloneDeep } from 'es-toolkit'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 vi.mock(import('@/scripts/app'))
 
@@ -8,6 +16,8 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { resetComfyApi, useComfyApi } from '@/platform/nodeApi/comfyApi'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetStore } from '@/stores/widgetStore'
 
@@ -58,6 +68,43 @@ describe('useLitegraphService().getCanvasCenter', () => {
       expect(useLitegraphService().getCanvasCenter()).toEqual(center)
     }
   )
+})
+
+describe('useLitegraphService().registerNodeDef public extensions', () => {
+  it('applies public extensions after awaited legacy definition edits', async () => {
+    resetComfyApi()
+    onTestFinished(resetComfyApi)
+    const nodeName = 'PublicDefinitionOrderProbe'
+    const seen: string[] = []
+    onTestFinished(
+      useExtensionService().registerExtension({
+        name: 'test.legacy-definition-order',
+        beforeRegisterNodeDef: async (_nodeType, definition) => {
+          await Promise.resolve()
+          definition.display_name = 'Legacy title'
+          seen.push('legacy')
+        }
+      })
+    )
+    const comfy = useComfyApi(() => app.rootGraph)
+    onTestFinished(
+      comfy.defs.extend(nodeName, (builder) => {
+        seen.push(builder.def.title)
+        builder.setTitle('Public title')
+      })
+    )
+
+    await useLitegraphService().registerNodeDef(
+      nodeName,
+      createNodeDefV1({
+        name: nodeName,
+        display_name: 'Backend title'
+      })
+    )
+
+    expect(seen).toEqual(['legacy', 'Legacy title'])
+    expect(LiteGraph.registered_node_types[nodeName].title).toBe('Public title')
+  })
 })
 
 describe('useLitegraphService().registerNodeDef slot text', () => {

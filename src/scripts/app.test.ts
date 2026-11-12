@@ -5192,6 +5192,70 @@ describe('ComfyApp', () => {
   })
 
   describe('refreshComboInNodes', () => {
+    it('notifies public listeners once, after loaded definitions update the graph', async () => {
+      resetComfyApi()
+      onTestFinished(resetComfyApi)
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const nodeName = 'PublicRefreshProbe'
+      const node = new LGraphNode('Refresh probe', nodeName)
+      const combo = node.addWidget('combo', 'model', 'old', () => {}, {
+        values: ['old']
+      })
+      graph.add(node)
+      const comfy = useComfyApi(() => graph)
+      const observed: unknown[] = []
+      onTestFinished(
+        comfy.defs.onRefreshed(() => {
+          observed.push(combo.options.values)
+        })
+      )
+      let finish: ((defs: Record<string, ComfyNodeDef>) => void) | undefined
+      const definitions = new Promise<Record<string, ComfyNodeDef>>(
+        (resolve) => {
+          finish = resolve
+        }
+      )
+      vi.spyOn(app, 'getNodeDefs').mockReturnValue(definitions)
+
+      const refresh = app.refreshComboInNodes()
+
+      expect(observed).toEqual([])
+      expect(combo.options.values).toEqual(['old'])
+      assert.exists(finish)
+      finish({
+        [nodeName]: {
+          name: nodeName,
+          display_name: 'Refresh probe',
+          category: 'testing',
+          python_module: 'nodes',
+          description: '',
+          input: { required: { model: [['old', 'new'], {}] } },
+          output: [],
+          output_name: [],
+          output_node: false
+        }
+      })
+      await refresh
+
+      expect(observed).toEqual([['old', 'new']])
+      expect(LiteGraph.registered_node_types[nodeName]).toBeDefined()
+    })
+
+    it('does not notify public listeners when definition loading fails', async () => {
+      resetComfyApi()
+      onTestFinished(resetComfyApi)
+      const comfy = useComfyApi(() => app.rootGraph)
+      const refreshed = vi.fn<() => void>()
+      onTestFinished(comfy.defs.onRefreshed(refreshed))
+      const error = new Error('object_info failed')
+      vi.spyOn(app, 'getNodeDefs').mockRejectedValue(error)
+
+      await expect(app.refreshComboInNodes()).rejects.toThrow(error)
+
+      expect(refreshed).not.toHaveBeenCalled()
+    })
+
     it('shows success toast and removes the pending toast after node defs reload', async () => {
       app.vueAppReady = true
       vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue(true)
