@@ -51,7 +51,7 @@ import {
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
-import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
+import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const mockReportError = vi.hoisted(() => vi.fn())
@@ -76,7 +76,11 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
-vi.mock(import('@/platform/billing/composables/useBillingAutoTopUpCard'))
+vi.mock(
+  import('@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'),
+  () =>
+    import('@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard')
+)
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
@@ -459,6 +463,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
     expect(phases.filter((phase) => phase === 'entered')).toHaveLength(1)
 
+    // One denominator: every phase of a top-up must carry the same journey.
     const journeyIds = new Set(
       (
         vi.mocked(useTelemetry()?.trackCheckoutJourneyEvent)?.mock.calls ?? []
@@ -484,6 +489,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       )
     )
 
+    // A different journey takes the slot while the request is pending, so the
+    // response must not bind to whatever happens to be active when it lands.
     clearCheckoutJourney()
     const replacement = resolveCheckoutJourney({
       actorUid: 'user-1',
@@ -1508,7 +1515,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         )
       }
 
-      it('re-sends Pay for the same amount when the customer returns from the portal', async () => {
+      it('offers Pay again without charging when the customer returns from the portal', async () => {
         refuseForNoPaymentMethod()
         const listCards = vi.spyOn(billingApi, 'listSavedPaymentMethods')
         const getPortal = portalOpensAt(portalUrl)
@@ -1523,29 +1530,62 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           window.location.href,
           'payment_method_update'
         )
-        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
 
         vi.mocked(mockBillingContext().topup).mockResolvedValue(
           topupResponse('completed')
         )
         window.dispatchEvent(new Event('focus'))
 
+        const pay = await screen.findByRole('button', { name: 'Pay $50.00' })
+        expect(mockBillingContext().topup).toHaveBeenCalledOnce()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+
+        await userEvent.click(pay)
+
         await waitFor(() =>
           expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
             key: 'top-up-credits'
           })
         )
+        expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
         expect(mockBillingContext().topup).toHaveBeenLastCalledWith(5000)
-        expect(useToast().success).toHaveBeenCalledWith(
-          'Credits added successfully!',
-          { duration: 5000 }
-        )
         expect(listCards).not.toHaveBeenCalled()
       })
 
-      it('keeps the refusal when the retried Pay still has no default card', async () => {
+      it('never charges on later returns to a dialog left open behind another tab', async () => {
         refuseForNoPaymentMethod()
-        const listCards = vi.spyOn(billingApi, 'listSavedPaymentMethods')
+        portalOpensAt(portalUrl)
+        const createCheckout = vi.spyOn(billingApi, 'createTopupCheckout')
+        const { tab } = stubCheckoutTab()
+        await payAndGetRefused()
+        await clickSetDefaultCard()
+        await waitFor(() => expect(tab.location.href).toBe(portalUrl))
+        const visibility = vi.spyOn(document, 'visibilityState', 'get')
+
+        const returns = [
+          () => {
+            window.dispatchEvent(new Event('blur'))
+            window.dispatchEvent(new Event('focus'))
+          },
+          () => {
+            visibility.mockReturnValue('hidden')
+            document.dispatchEvent(new Event('visibilitychange'))
+            visibility.mockReturnValue('visible')
+            document.dispatchEvent(new Event('visibilitychange'))
+          }
+        ]
+        for (const returnToTab of [...returns, ...returns]) {
+          returnToTab()
+          await screen.findByRole('button', { name: 'Pay $50.00' })
+        }
+
+        expect(mockBillingContext().topup).toHaveBeenCalledOnce()
+        expect(createCheckout).not.toHaveBeenCalled()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+      })
+
+      it('shows the refusal again when Pay after the portal still finds no default card', async () => {
+        refuseForNoPaymentMethod()
         portalOpensAt(portalUrl)
         const { tab } = stubCheckoutTab()
         await payAndGetRefused()
@@ -1553,30 +1593,17 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         await waitFor(() => expect(tab.location.href).toBe(portalUrl))
 
         window.dispatchEvent(new Event('focus'))
-        await waitFor(() =>
-          expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Pay $50.00' })
         )
+
         await waitFor(() =>
           expect(
             screen.getByRole('button', { name: 'Set a default card' })
           ).toBeEnabled()
         )
-        expect(useToast().error).not.toHaveBeenCalled()
-        expect(listCards).not.toHaveBeenCalled()
-        window.dispatchEvent(new Event('focus'))
         expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
-
-        vi.mocked(mockBillingContext().topup).mockResolvedValue(
-          topupResponse('completed')
-        )
-        window.dispatchEvent(new Event('blur'))
-        window.dispatchEvent(new Event('focus'))
-        await waitFor(() =>
-          expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-            key: 'top-up-credits'
-          })
-        )
-        expect(mockBillingContext().topup).toHaveBeenCalledTimes(3)
+        expect(useToast().error).not.toHaveBeenCalled()
       })
 
       it('does not retry Pay after this tab switches workspace', async () => {
@@ -1732,9 +1759,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(useToast().error).not.toHaveBeenCalled()
       })
 
-      it('re-sends Pay once a customer who followed the blocked portal link comes back', async () => {
+      it('offers Pay without charging once a customer who followed the blocked portal link comes back', async () => {
         refuseForNoPaymentMethod()
-        const listCards = vi.spyOn(billingApi, 'listSavedPaymentMethods')
         portalOpensAt(portalUrl)
         blockNewTabs()
         stopBrowserFollowingLinks()
@@ -1744,18 +1770,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         await userEvent.click(
           await screen.findByRole('link', { name: 'Open payment page' })
         )
-        vi.mocked(mockBillingContext().topup).mockResolvedValue(
-          topupResponse('completed')
-        )
         window.dispatchEvent(new Event('focus'))
 
-        await waitFor(() =>
-          expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-            key: 'top-up-credits'
-          })
-        )
-        expect(mockBillingContext().topup).toHaveBeenLastCalledWith(5000)
-        expect(listCards).not.toHaveBeenCalled()
+        await screen.findByRole('button', { name: 'Pay $50.00' })
+        expect(mockBillingContext().topup).toHaveBeenCalledOnce()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       })
 
       it.for([
@@ -1901,6 +1920,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.queryByText('Select amount')).not.toBeInTheDocument()
   })
 
+  // The server holds the invoice open and refuses a replacement purchase while
+  // it is, so a restart here would be rejected. Say what is true instead, and
+  // never offer an action the server will turn down.
   it('explains a top-up parked with no link instead of offering a restart', async () => {
     setIsAddingCredits(true)
     setTopupActionOperation({
@@ -1934,6 +1956,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(useBillingOperationStore().dismissOperation).not.toHaveBeenCalled()
   })
 
+  // Reachable whenever a purchase is submitted while the previous operation is
+  // still open — after Start over on a failed challenge, or from a second tab.
   it('names the still-open purchase when the server refuses a replacement', async () => {
     vi.mocked(mockBillingContext().topup).mockRejectedValue(
       new WorkspaceApiError('conflict', 409, 'SUBSCRIPTION_CHANGE_IN_PROGRESS')
@@ -2230,6 +2254,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
+  // Asserting the whole projected collection rather than one stage: a source
+  // dropped from any single emit site leaves the others green, and a funnel
+  // whose terminal events are attributed while its `started` is not reads as
+  // a conversion cliff rather than a gap.
   it.for([
     { outcome: 'completed', stages: ['intent', 'started', 'succeeded'] },
     { outcome: 'failed', stages: ['intent', 'started', 'failed'] },
@@ -2259,6 +2287,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     }
   )
 
+  // A real payment usually settles on the poller, not synchronously, so this
+  // hand-off is what carries the source onto the poller's own terminal events.
   it('hands the opening surface to the poller for a pending top-up', async () => {
     vi.mocked(mockBillingContext().topup).mockResolvedValue(
       topupResponse('pending')
@@ -2278,6 +2308,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
   })
 
+  // Completing out of band is the expected outcome here — the copy sends the
+  // customer to their bank — and the marker is what refreshes the balance when
+  // they come back, so neither exit may discard it.
   it.for([{ control: 'OK' }, { control: 'Close' }])(
     'keeps the pending top-up marker when leaving a parked purchase via $control',
     async ({ control }) => {

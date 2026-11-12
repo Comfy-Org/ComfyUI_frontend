@@ -2611,10 +2611,10 @@
     "noClips": "Connect videos to preview and order them",
     "clips": "Clips",
     "clipLabel": "Clip {position}",
+    "previewClips": "Clips",
+    "previewResult": "Last run",
     "reorderHint": "Drag clips or press Alt + arrow keys to reorder, click to jump",
-    "mixedDimensions": "Mixed sizes",
-    "mixedDimensionsWarning": "All clips must match clip {position} ({width} × {height}) to concatenate: {clips}.",
-    "clipSize": "clip {position} is {width} × {height}"
+    "mixedDimensions": "Mixed sizes"
   },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
@@ -5362,7 +5362,17 @@
       "downloadAll": "Download all",
       "refresh": "Refresh",
       "refreshing": "Refreshing missing models.",
-      "refreshFailed": "Failed to refresh missing models. Please try again."
+      "refreshFailed": "Failed to refresh missing models. Please try again.",
+      "downloadQueued": "Queued",
+      "downloadStarting": "Starting",
+      "downloadingModel": "Downloading {model}",
+      "downloadPaused": "Paused",
+      "downloadPausedProgress": "Paused · {progress}",
+      "downloaded": "Downloaded",
+      "retryDownload": "Retry",
+      "retryDownloadModel": "Retry download for {model}",
+      "downloadFailedHint": "The download couldn't be completed. Use Retry to try again.",
+      "downloading": "Downloading"
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"

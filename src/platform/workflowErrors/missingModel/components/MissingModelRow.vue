@@ -148,7 +148,7 @@
           <i aria-hidden="true" class="icon-[lucide--lock]" />
         </Button>
         <Button
-          v-if="showDownloadAction"
+          v-if="showDownloadAction && hostDownloadState.status === 'idle'"
           data-testid="missing-model-download"
           variant="secondary"
           size="sm"
@@ -167,6 +167,36 @@
         >
           {{ t('g.download') }}
         </Button>
+        <Button
+          v-else-if="
+            showDownloadAction && hostDownloadState.status === 'failed'
+          "
+          data-testid="missing-model-download-retry"
+          variant="secondary"
+          size="sm"
+          class="shrink-0 focus-visible:ring-inset"
+          :aria-label="
+            t(
+              'rightSidePanel.missingModels.retryDownloadModel',
+              { model: model.name },
+              { escapeParameter: false }
+            )
+          "
+          :title="t('rightSidePanel.missingModels.downloadFailedHint')"
+          @click="handleDownload"
+        >
+          {{ t('rightSidePanel.missingModels.retryDownload') }}
+        </Button>
+        <Badge
+          v-else-if="showDownloadAction && hostDownloadState.status === 'done'"
+          data-testid="missing-model-downloaded"
+          role="status"
+          variant="compact"
+          severity="success"
+          class="shrink-0"
+        >
+          {{ t('rightSidePanel.missingModels.downloaded') }}
+        </Badge>
         <span
           v-if="showGatedRepoAction"
           :id="gatedDownloadDescriptionId"
@@ -188,6 +218,13 @@
         <i aria-hidden="true" class="icon-[lucide--locate]" />
       </Button>
     </div>
+
+    <MissingModelDownloadProgress
+      v-if="showDownloadAction && activeHostDownload"
+      :state="activeHostDownload"
+      :model-name="model.name"
+      :class="hasMultipleReferences && 'pl-5'"
+    />
 
     <div
       v-if="model.replacements?.length"
@@ -294,6 +331,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectionEmphasis'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import type { MissingModelViewModel } from '@/platform/workflowErrors/missingModel/types'
@@ -306,6 +344,9 @@ import {
   getNodeDisplayLabel
 } from '@/platform/workflowErrors/missingModel/composables/useMissingModelInteractions'
 import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
+import { formatDownloadedBytes } from '@/platform/workflowErrors/missingModel/missingModelDownloadProgress'
+import MissingModelDownloadProgress from '@/platform/workflowErrors/missingModel/components/MissingModelDownloadProgress.vue'
+import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
@@ -416,6 +457,21 @@ const downloadable = computed(() => {
 })
 
 const showDownloadAction = computed(() => !isCloud && downloadable.value)
+const missingModelDownloadStore = useMissingModelDownloadStore()
+const hostDownloadState = computed(() => {
+  const { name, url, directory } = model.representative
+  return url && directory
+    ? missingModelDownloadStore.stateFor({ name, url, directory })
+    : { status: 'idle' as const }
+})
+const activeHostDownload = computed(() => {
+  const state = hostDownloadState.value
+  return state.status === 'requested' ||
+    state.status === 'pending' ||
+    state.status === 'downloading'
+    ? state
+    : undefined
+})
 const gatedRepoUrl = computed(() => {
   const url = model.representative.url
   const repoUrl = url ? gatedRepoUrlFor(url) : undefined
@@ -429,6 +485,9 @@ const gatedDownloadDescriptionId = useId()
 
 const downloadSizeLabel = computed(() => {
   if (!showDownloadAction.value) return undefined
+
+  const downloaded = formatDownloadedBytes(hostDownloadState.value)
+  if (downloaded) return downloaded
 
   const url = model.representative.url
   const size = url ? fileSizeFor(url) : undefined
