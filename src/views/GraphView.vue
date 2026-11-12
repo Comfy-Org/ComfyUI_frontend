@@ -91,7 +91,7 @@ import { useDeploymentCompatibility } from '@/platform/workspace/composables/use
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -464,7 +464,7 @@ const onGraphReady = () => {
         getShellLayoutSnapshot({
           view_mode: mode.value,
           is_app_mode: isAppMode.value,
-          right_side_panel_open: useRightSidePanelStore().isOpen
+          right_side_panel_open: usePropertiesPanelStore().isOpen
         })
       )
     }

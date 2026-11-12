@@ -79,7 +79,7 @@ import {
 } from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
@@ -774,7 +774,7 @@ export const useLitegraphService = () => {
           {
             content: 'Edit Subgraph Widgets',
             callback: () => {
-              useRightSidePanelStore().openPanel('subgraph')
+              usePropertiesPanelStore().openPanel('subgraph')
             }
           },
           {

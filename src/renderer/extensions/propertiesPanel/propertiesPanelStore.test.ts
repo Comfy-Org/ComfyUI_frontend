@@ -2,7 +2,7 @@ import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 
 vi.mock(import('@/scripts/api'))
 
@@ -15,10 +15,10 @@ function useMenu(mode: 'Top' | 'Disabled') {
   })
 }
 
-describe('useRightSidePanelStore', () => {
+describe('usePropertiesPanelStore', () => {
   it('opens on the requested tab', () => {
     useMenu('Top')
-    const store = useRightSidePanelStore()
+    const store = usePropertiesPanelStore()
 
     store.openPanel('info')
 
@@ -28,7 +28,7 @@ describe('useRightSidePanelStore', () => {
 
   it('stays closed while the legacy menu is enabled', () => {
     useMenu('Disabled')
-    const store = useRightSidePanelStore()
+    const store = usePropertiesPanelStore()
 
     store.openPanel('info')
 
@@ -38,7 +38,7 @@ describe('useRightSidePanelStore', () => {
 
   it('closes when the user switches to the legacy menu', async () => {
     useMenu('Top')
-    const store = useRightSidePanelStore()
+    const store = usePropertiesPanelStore()
     store.openPanel()
 
     await useSettingStore().set('Comfy.UseNewMenu', 'Disabled')
@@ -49,7 +49,7 @@ describe('useRightSidePanelStore', () => {
 
   it('focuses a section on the parameters tab until it is cleared', () => {
     useMenu('Top')
-    const store = useRightSidePanelStore()
+    const store = usePropertiesPanelStore()
     store.openPanel('settings')
 
     store.focusSection('advanced-inputs')
@@ -65,7 +65,7 @@ describe('useRightSidePanelStore', () => {
 
   it('toggles open and closed', () => {
     useMenu('Top')
-    const store = useRightSidePanelStore()
+    const store = usePropertiesPanelStore()
 
     store.togglePanel()
     expect(store.isOpen).toBe(true)

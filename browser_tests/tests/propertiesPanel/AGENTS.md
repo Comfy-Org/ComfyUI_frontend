@@ -1,6 +1,6 @@
 # Properties Panel E2E Tests
 
-Tests for the right-side properties panel (`RightSidePanel.vue`).
+Tests for the properties panel (`src/renderer/extensions/propertiesPanel/PropertiesPanel.vue`).
 
 ## Structure
 

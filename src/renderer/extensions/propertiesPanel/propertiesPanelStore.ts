@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useErrorsTabRequestStore } from '@/platform/workflowErrors/panel/errorsTabRequestStore'
 
-export type RightSidePanelTab =
+export type PropertiesPanelTab =
   | 'parameters'
   | 'nodes'
   | 'settings'
@@ -12,13 +12,13 @@ export type RightSidePanelTab =
   | 'subgraph'
   | 'errors'
 
-type RightSidePanelSection = 'advanced-inputs'
+type PropertiesPanelSection = 'advanced-inputs'
 
 /**
- * Store for managing the right side panel state.
+ * Store for managing the properties panel state.
  * This panel displays properties and settings for selected nodes.
  */
-export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
+export const usePropertiesPanelStore = defineStore('propertiesPanel', () => {
   const settingStore = useSettingStore()
   const errorsTabRequestStore = useErrorsTabRequestStore()
 
@@ -32,9 +32,9 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     set: (value: boolean) =>
       settingStore.set('Comfy.RightSidePanel.IsOpen', value)
   })
-  const activeTab = ref<RightSidePanelTab>('parameters')
+  const activeTab = ref<PropertiesPanelTab>('parameters')
   const isEditingSubgraph = computed(() => activeTab.value === 'subgraph')
-  const focusedSection = ref<RightSidePanelSection | null>(null)
+  const focusedSection = ref<PropertiesPanelSection | null>(null)
 
   watch(isAvailable, (available) => {
     if (!available) void settingStore.set('Comfy.RightSidePanel.IsOpen', false)
@@ -45,7 +45,7 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   })
 
   /** Opens the panel, optionally on a tab; returns false when it cannot open. */
-  function openPanel(tab?: RightSidePanelTab): boolean {
+  function openPanel(tab?: PropertiesPanelTab): boolean {
     if (!isAvailable.value) return false
     isOpen.value = true
     if (tab) activeTab.value = tab
@@ -61,11 +61,11 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
   }
 
   /**
-   * Focus on a specific section in the right side panel.
+   * Focus on a specific section in the properties panel.
    * This will open the panel, switch to the parameters tab, and signal
    * the component to expand and scroll to the section.
    */
-  function focusSection(section: RightSidePanelSection) {
+  function focusSection(section: PropertiesPanelSection) {
     openPanel('parameters')
     focusedSection.value = section
   }

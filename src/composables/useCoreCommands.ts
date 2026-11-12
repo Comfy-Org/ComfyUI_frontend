@@ -64,7 +64,7 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
@@ -1197,7 +1197,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--settings-2]',
       versionAdded: '1.28.5',
       function: () => {
-        useRightSidePanelStore().openPanel('subgraph')
+        usePropertiesPanelStore().openPanel('subgraph')
       }
     },
     {

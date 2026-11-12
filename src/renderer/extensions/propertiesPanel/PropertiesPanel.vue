@@ -15,8 +15,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
-import type { RightSidePanelTab } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import type { PropertiesPanelTab } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -25,7 +25,7 @@ import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
 import TabNormalInputs from './parameters/TabNormalInputs.vue'
 import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
-import { trackRightSidePanelTabOpened } from './propertiesPanelTabTelemetry'
+import { trackPropertiesPanelTabOpened } from './propertiesPanelTabTelemetry'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
 import {
@@ -44,7 +44,7 @@ provide(WorkflowErrorManagerKey, createWorkflowErrorManager())
 provide(AskAgentPortKey, useAskAgentAboutIssues())
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
@@ -52,7 +52,7 @@ const { findParentGroup } = useGraphHierarchy()
 const { focusNode } = useFocusNode()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
-const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
+const { activeTab, isEditingSubgraph } = storeToRefs(propertiesPanelStore)
 
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -111,17 +111,17 @@ function closePanel() {
     button_id: 'right_side_panel_closed',
     element_group: 'right_side_panel'
   })
-  rightSidePanelStore.closePanel()
+  propertiesPanelStore.closePanel()
 }
 
-function handleTabChange(newTab: RightSidePanelTab) {
-  trackRightSidePanelTabOpened(newTab)
-  rightSidePanelStore.openPanel(newTab)
+function handleTabChange(newTab: PropertiesPanelTab) {
+  trackPropertiesPanelTabOpened(newTab)
+  propertiesPanelStore.openPanel(newTab)
 }
 
-type RightSidePanelTabList = Array<{
+type PropertiesPanelTabList = Array<{
   label: () => string
-  value: RightSidePanelTab
+  value: PropertiesPanelTab
   icon?: {
     className: string
     label: () => string
@@ -135,8 +135,8 @@ const { hasRelevantErrors, hasPendingErrorScanSelected, hasBlockingError } =
     currentGraph: () => canvasStore.currentGraph
   })
 
-const tabs = computed<RightSidePanelTabList>(() => {
-  const list: RightSidePanelTabList = []
+const tabs = computed<PropertiesPanelTabList>(() => {
+  const list: PropertiesPanelTabList = []
 
   if (
     settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
@@ -209,7 +209,7 @@ function isActiveTabAvailable() {
 
 watchEffect(() => {
   if (!isActiveTabAvailable()) {
-    rightSidePanelStore.openPanel(tabs.value[0].value)
+    propertiesPanelStore.openPanel(tabs.value[0].value)
   }
 })
 
@@ -313,7 +313,7 @@ function handleTitleCancel() {
             :aria-label="t('rightSidePanel.editSubgraph')"
             :class="cn(isEditingSubgraph && 'bg-muted')"
             @click="
-              rightSidePanelStore.openPanel(
+              propertiesPanelStore.openPanel(
                 isEditingSubgraph ? 'parameters' : 'subgraph'
               )
             "
@@ -323,7 +323,7 @@ function handleTitleCancel() {
           <Button
             variant="secondary"
             size="icon"
-            :aria-pressed="rightSidePanelStore.isOpen"
+            :aria-pressed="propertiesPanelStore.isOpen"
             :aria-label="t('rightSidePanel.togglePanel')"
             @click="closePanel"
           >

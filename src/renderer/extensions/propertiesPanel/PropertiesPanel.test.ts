@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import RightSidePanel from '@/renderer/extensions/propertiesPanel/PropertiesPanel.vue'
+import PropertiesPanel from '@/renderer/extensions/propertiesPanel/PropertiesPanel.vue'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
@@ -17,7 +17,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
@@ -109,8 +109,8 @@ function renderPanel(
   canvasStore.currentGraph = currentGraph
   setCanvasSelection([markRaw(node)])
 
-  const rightSidePanelStore = useRightSidePanelStore()
-  rightSidePanelStore.activeTab = activeTab
+  const propertiesPanelStore = usePropertiesPanelStore()
+  propertiesPanelStore.activeTab = activeTab
   const executionErrorStore = useExecutionErrorStore()
   const executionId = getExecutionIdByNode(rootGraph, node)
   if (!executionId) throw new Error('Expected selected node execution ID')
@@ -118,9 +118,9 @@ function renderPanel(
     rootGraph,
     executionId
   )
-  const openPanel = vi.spyOn(rightSidePanelStore, 'openPanel')
+  const openPanel = vi.spyOn(propertiesPanelStore, 'openPanel')
 
-  const rendered = render(RightSidePanel, {
+  const rendered = render(PropertiesPanel, {
     global: {
       plugins: [pinia, createPanelI18n()],
       stubs: panelStubs
@@ -135,32 +135,32 @@ function renderPanel(
     graph: rootGraph,
     node,
     openPanel,
-    rightSidePanelStore
+    propertiesPanelStore
   }
 }
 
-describe('RightSidePanel active tab fallback', () => {
+describe('PropertiesPanel active tab fallback', () => {
   beforeEach(() => {
     mockApp.rootGraph = null
   })
 
   it('keeps the active errors tab until the selected node scan settles', async () => {
-    const { finishScan, openPanel, rightSidePanelStore } = renderPanel()
+    const { finishScan, openPanel, propertiesPanelStore } = renderPanel()
 
     expect(screen.getByTestId('panel-tab-errors')).toBeInTheDocument()
-    expect(rightSidePanelStore.activeTab).toBe('errors')
+    expect(propertiesPanelStore.activeTab).toBe('errors')
     expect(openPanel).not.toHaveBeenCalled()
 
     vi.spyOn(globalThis, 'queueMicrotask').mockImplementation(() => undefined)
     finishScan()
     await nextTick()
 
-    expect(rightSidePanelStore.activeTab).toBe('parameters')
+    expect(propertiesPanelStore.activeTab).toBe('parameters')
     expect(openPanel).toHaveBeenCalledWith('parameters')
   })
 
   it('keeps errors active when the scan surfaces an error before settling', async () => {
-    const { executionId, finishScan, openPanel, rightSidePanelStore } =
+    const { executionId, finishScan, openPanel, propertiesPanelStore } =
       renderPanel()
 
     useMissingModelStore().addMissingModels([
@@ -177,7 +177,7 @@ describe('RightSidePanel active tab fallback', () => {
     finishScan()
     await nextTick()
 
-    expect(rightSidePanelStore.activeTab).toBe('errors')
+    expect(propertiesPanelStore.activeTab).toBe('errors')
     expect(openPanel).not.toHaveBeenCalled()
   })
 
@@ -216,19 +216,27 @@ describe('RightSidePanel active tab fallback', () => {
     const rootGraph = host.graph as LGraph
     rootGraph.add(host)
 
-    const { executionErrorStore, executionId, openPanel, rightSidePanelStore } =
-      renderPanel('errors', { rootGraph, currentGraph: subgraph, node }, pinia)
+    const {
+      executionErrorStore,
+      executionId,
+      openPanel,
+      propertiesPanelStore
+    } = renderPanel(
+      'errors',
+      { rootGraph, currentGraph: subgraph, node },
+      pinia
+    )
 
     expect(
       executionErrorStore.hasPendingAddedNodeErrorScan(rootGraph, executionId)
     ).toBe(true)
     expect(screen.getByTestId('panel-tab-errors')).toBeInTheDocument()
-    expect(rightSidePanelStore.activeTab).toBe('errors')
+    expect(propertiesPanelStore.activeTab).toBe('errors')
     expect(openPanel).not.toHaveBeenCalled()
   })
 })
 
-describe('RightSidePanel errors tab icon', () => {
+describe('PropertiesPanel errors tab icon', () => {
   beforeEach(() => {
     mockApp.rootGraph = null
   })
@@ -271,7 +279,7 @@ describe('RightSidePanel errors tab icon', () => {
   })
 })
 
-describe('RightSidePanel global parameters tab', () => {
+describe('PropertiesPanel global parameters tab', () => {
   beforeEach(() => {
     mockApp.rootGraph = null
   })
@@ -297,15 +305,15 @@ describe('RightSidePanel global parameters tab', () => {
     canvasStore.currentGraph = rootGraph
     setCanvasSelection([])
 
-    const rightSidePanelStore = useRightSidePanelStore()
-    rightSidePanelStore.activeTab = 'parameters'
+    const propertiesPanelStore = usePropertiesPanelStore()
+    propertiesPanelStore.activeTab = 'parameters'
 
     const workflowStore = useWorkflowStore()
     workflowStore.activeWorkflow = activeWorkflowPath
       ? ({ path: activeWorkflowPath } as LoadedComfyWorkflow)
       : null
 
-    const rendered = render(RightSidePanel, {
+    const rendered = render(PropertiesPanel, {
       global: {
         plugins: [pinia, createPanelI18n()],
         stubs: {

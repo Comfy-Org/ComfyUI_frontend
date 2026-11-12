@@ -54,7 +54,7 @@ interface FavoritedWidgetStorage {
 /**
  * Store for managing favorited/starred widgets.
  *
- * Favorited widgets can be accessed and edited from the right side panel
+ * Favorited widgets can be accessed and edited from the properties panel
  * without needing to select the corresponding node. This store manages:
  * - Persisting favorited widget IDs per workflow
  * - Resolving widget IDs to actual widget instances

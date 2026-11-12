@@ -6,7 +6,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import {
   isImageNode,
   isLGraphGroup,
@@ -28,7 +28,7 @@ export function useSelectionState() {
   const canvasStore = useCanvasStore()
   const nodeDefStore = useNodeDefStore()
   const settingStore = useSettingStore()
-  const rightSidePanelStore = useRightSidePanelStore()
+  const propertiesPanelStore = usePropertiesPanelStore()
 
   const { selectedItems } = storeToRefs(canvasStore)
 
@@ -101,12 +101,12 @@ export function useSelectionState() {
     computeSelectionStatesFromNodes(selectedNodes.value)
 
   const canOpenNodeInfo = computed(
-    () => Boolean(nodeDef.value) && rightSidePanelStore.isAvailable
+    () => Boolean(nodeDef.value) && propertiesPanelStore.isAvailable
   )
 
   const openNodeInfo = () => {
     if (!canOpenNodeInfo.value) return false
-    rightSidePanelStore.openPanel('info')
+    propertiesPanelStore.openPanel('info')
     return true
   }
 

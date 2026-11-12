@@ -111,7 +111,7 @@
               >
                 <i class="icon-[comfy--send]" />
               </Button>
-              <div v-if="!isRightSidePanelOpen" class="relative">
+              <div v-if="!isPropertiesPanelOpen" class="relative">
                 <Button
                   :tooltip="t('rightSidePanel.togglePanel')"
                   tooltip-side="bottom"
@@ -124,7 +124,7 @@
                   variant="secondary"
                   size="icon"
                   :aria-label="t('rightSidePanel.togglePanel')"
-                  @click="openRightSidePanel"
+                  @click="openPropertiesPanel"
                 >
                   <i class="icon-[lucide--panel-right]" />
                 </Button>
@@ -217,7 +217,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { isCloud } from '@/platform/distribution/types'
@@ -237,7 +237,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const canvasStore = useCanvasStore()
 const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
@@ -287,7 +287,7 @@ const hasDockedButtons = computed(() => {
   if (managerState.shouldShowExtensionsButton.value) return true
   if (isCloudButtonShown.value || isDeployButtonShown.value) return true
   if (isCloud) return true
-  if (!isRightSidePanelOpen.value) return true
+  if (!isPropertiesPanelOpen.value) return true
   return false
 })
 const isActionbarContainerEmpty = computed(
@@ -338,19 +338,18 @@ const showErrorIndicatorOnPanelButton = computed(
   () =>
     isErrorsTabEnabled.value &&
     hasAnyError.value &&
-    !isRightSidePanelOpen.value &&
+    !isPropertiesPanelOpen.value &&
     !isErrorOverlayOpen.value
 )
 
-// Right side panel toggle
-const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
+const { isOpen: isPropertiesPanelOpen } = storeToRefs(propertiesPanelStore)
 
-function openRightSidePanel() {
+function openPropertiesPanel() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'right_side_panel_opened',
     element_group: 'top_menu'
   })
-  rightSidePanelStore.togglePanel()
+  propertiesPanelStore.togglePanel()
 }
 
 const legacyCommandsContainerRef = ref<HTMLElement>()

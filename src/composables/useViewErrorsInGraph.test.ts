@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useErrorsTabRequestStore } from '@/platform/workflowErrors/panel/errorsTabRequestStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -40,7 +40,7 @@ describe('useViewErrorsInGraph', () => {
   it('opens graph errors and clears app-mode error UI state', async () => {
     const canvasStore = useCanvasStore()
     const executionErrorStore = useExecutionErrorStore()
-    const rightSidePanelStore = useRightSidePanelStore()
+    const propertiesPanelStore = usePropertiesPanelStore()
     const workflowStore = useWorkflowStore()
     const { canvas, node } = createSelectedCanvas()
     workflowStore.activeWorkflow = {
@@ -56,8 +56,8 @@ describe('useViewErrorsInGraph', () => {
     expect(node.selected).toBe(false)
     expect(canvasStore.linearMode).toBe(false)
     expect(canvasStore.selectedItems).toEqual([])
-    expect(rightSidePanelStore.activeTab).toBe('errors')
-    expect(rightSidePanelStore.isOpen).toBe(true)
+    expect(propertiesPanelStore.activeTab).toBe('errors')
+    expect(propertiesPanelStore.isOpen).toBe(true)
     expect(useErrorsTabRequestStore().detailsRequest).toEqual([
       'execution:out_of_memory'
     ])
@@ -67,23 +67,23 @@ describe('useViewErrorsInGraph', () => {
   it('opens graph errors when the canvas is not initialized', () => {
     const canvasStore = useCanvasStore()
     const executionErrorStore = useExecutionErrorStore()
-    const rightSidePanelStore = useRightSidePanelStore()
+    const propertiesPanelStore = usePropertiesPanelStore()
     canvasStore.canvas = null
     executionErrorStore.showErrorOverlay()
 
     expect(() => useViewErrorsInGraph().viewErrorsInGraph([])).not.toThrow()
 
-    expect(rightSidePanelStore.activeTab).toBe('errors')
-    expect(rightSidePanelStore.isOpen).toBe(true)
+    expect(propertiesPanelStore.activeTab).toBe('errors')
+    expect(propertiesPanelStore.isOpen).toBe(true)
     expect(useErrorsTabRequestStore().detailsRequest).toEqual([])
     expect(executionErrorStore.isErrorOverlayOpen).toBe(false)
   })
 
   it('drops a details request when the user leaves the errors tab before it opens', async () => {
-    const rightSidePanelStore = useRightSidePanelStore()
+    const propertiesPanelStore = usePropertiesPanelStore()
 
     useViewErrorsInGraph().viewErrorsInGraph(['missing_node'])
-    rightSidePanelStore.activeTab = 'parameters'
+    propertiesPanelStore.activeTab = 'parameters'
     await nextTick()
 
     expect(useErrorsTabRequestStore().detailsRequest).toBeNull()
@@ -96,7 +96,7 @@ describe('useViewErrorsInGraph', () => {
 
     useViewErrorsInGraph().viewErrorsInGraph(['missing_node'])
 
-    expect(useRightSidePanelStore().isOpen).toBe(false)
+    expect(usePropertiesPanelStore().isOpen).toBe(false)
     expect(useErrorsTabRequestStore().detailsRequest).toBeNull()
   })
 })

@@ -22,7 +22,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useErrorsTabRequestStore } from '@/platform/workflowErrors/panel/errorsTabRequestStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -119,7 +119,7 @@ provide(WidgetHeightKey, 'h-7')
 
 const canvasStore = useCanvasStore()
 const executionErrorStore = useExecutionErrorStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const errorsTabRequestStore = useErrorsTabRequestStore()
 const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
@@ -197,7 +197,7 @@ function navigateToErrorTab() {
   if (!targetNode.value) return
   if (!useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) return
   errorsTabRequestStore.focusNode(String(targetNode.value.id))
-  rightSidePanelStore.openPanel('errors')
+  propertiesPanelStore.openPanel('errors')
 }
 
 function clearWidgetErrors(

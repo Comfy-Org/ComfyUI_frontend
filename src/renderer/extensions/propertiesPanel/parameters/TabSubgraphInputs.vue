@@ -13,7 +13,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { useRightSidePanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
@@ -30,9 +30,9 @@ const { node } = defineProps<{
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const widgetValueStore = useWidgetValueStore()
-const { focusedSection } = storeToRefs(rightSidePanelStore)
+const { focusedSection } = storeToRefs(propertiesPanelStore)
 const searchQuery = ref('')
 
 const advancedInputsCollapsed = ref(true)
@@ -56,7 +56,7 @@ watch(
   async (section) => {
     if (section === 'advanced-inputs') {
       advancedInputsCollapsed.value = false
-      rightSidePanelStore.clearFocusedSection()
+      propertiesPanelStore.clearFocusedSection()
 
       await nextTick()
 
