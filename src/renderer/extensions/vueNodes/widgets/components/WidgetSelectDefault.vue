@@ -349,9 +349,7 @@ const filterPlaceholder = computed(
 )
 
 const folderPath = computed(
-  () =>
-    (lockedDirectory.value ?? directory.value).join(' / ') ||
-    t('widgets.allFolders')
+  () => directory.value.join(' / ') || t('widgets.allFolders')
 )
 const lockIcon = computed(() =>
   lockedDirectory.value ? 'icon-[lucide--lock]' : 'icon-[lucide--lock-open]'
@@ -378,7 +376,7 @@ const lockLabel = computed(() =>
   lockedDirectory.value
     ? t(
         'widgets.unlockFolder',
-        { name: folderPath.value },
+        { name: lockedDirectory.value.join(' / ') },
         { escapeParameter: false }
       )
     : directory.value.length

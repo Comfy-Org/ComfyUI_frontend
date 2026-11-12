@@ -420,6 +420,10 @@ describe('WidgetSelectDefault', () => {
         screen.queryByRole('option', { name: 'Back: MOSS / image' })
       ).not.toBeInTheDocument()
       await user.click(screen.getByRole('option', { name: 'Folder: nested' }))
+      expect(screen.getByTitle('MOSS / image / nested')).toBeVisible()
+      expect(
+        screen.getByRole('button', { name: 'Unlock folder: MOSS / image' })
+      ).toHaveAttribute('aria-pressed', 'true')
       await user.click(
         screen.getByRole('option', { name: 'Back: MOSS / image / nested' })
       )
