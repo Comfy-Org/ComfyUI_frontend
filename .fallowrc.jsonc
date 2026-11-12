@@ -198,17 +198,6 @@
   // per-analysis baselines so `fallow audit` fails only on NEWLY introduced issues
   // in changed files. Baselines are a migration aid, not the desired steady state;
   // shrink them as the underlying code is cleaned up, then re-save.
-  "health": {
-    "thresholdOverrides": [
-      {
-        "files": ["src/lib/litegraph/src/LGraphCanvas.ts"],
-        "functions": ["paintBackground"],
-        "maxUnitSize": 130,
-        "reason": "Legacy drawBackCanvas body moved verbatim so drawGraphImage can paint the background into an export context."
-      }
-    ]
-  },
-
   "audit": {
     "gate": "new-only",
     "deadCodeBaseline": ".fallow-baselines/dead-code.json",

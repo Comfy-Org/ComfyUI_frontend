@@ -1,7 +1,10 @@
-import type { HasBoundingRect } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  HasBoundingRect,
+  RectTuple
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 import { createBounds } from '@/lib/litegraph/src/measure'
-import { parseUrl } from '@/utils/urlSafety'
+import { parseUrl } from '@comfyorg/shared-frontend-utils/urlSafety'
 
 const XHTML_NS = 'http://www.w3.org/1999/xhtml'
 const SVG_NS = 'http://www.w3.org/2000/svg'
@@ -16,9 +19,27 @@ export interface PositionedElement {
   element: HTMLElement
   x: number
   y: number
+  width: number
+  height: number
 }
 
-function serializeRules(rules: CSSRuleList): string {
+type ImageLoad =
+  | { ok: true; image: HTMLImageElement }
+  | { ok: false; cause?: unknown }
+
+type RasterizedElement =
+  | { ok: true; image: HTMLImageElement; bounds: RectTuple }
+  | Extract<ImageLoad, { ok: false }>
+
+function readableRules(sheet: CSSStyleSheet): CSSRule[] {
+  try {
+    return [...sheet.cssRules]
+  } catch {
+    return []
+  }
+}
+
+function serializeRules(rules: Iterable<CSSRule>): string {
   let css = ''
   for (const rule of rules) css += serializeRule(rule)
   return css
@@ -31,7 +52,7 @@ function serializeRule(rule: CSSRule): string {
       ? serializeRules(rule.cssRules)
       : ''
   if (rule instanceof CSSImportRule)
-    return rule.styleSheet ? serializeRules(rule.styleSheet.cssRules) : ''
+    return rule.styleSheet ? serializeRules(readableRules(rule.styleSheet)) : ''
   if (rule instanceof CSSStyleRule)
     return `${rule.selectorText}{${rule.style.cssText}${serializeRules(rule.cssRules)}}`
   if (rule instanceof CSSGroupingRule)
@@ -39,25 +60,13 @@ function serializeRule(rule: CSSRule): string {
   return rule.cssText
 }
 
-function* flattenRules(rules: CSSRuleList): Generator<CSSRule> {
+function* flattenRules(rules: Iterable<CSSRule>): Generator<CSSRule> {
   for (const rule of rules) {
     yield rule
     if (rule instanceof CSSGroupingRule) yield* flattenRules(rule.cssRules)
     if (rule instanceof CSSImportRule && rule.styleSheet)
-      yield* flattenRules(rule.styleSheet.cssRules)
+      yield* flattenRules(readableRules(rule.styleSheet))
   }
-}
-
-function readableSheets(): CSSStyleSheet[] {
-  return [...document.styleSheets, ...document.adoptedStyleSheets].filter(
-    (sheet) => {
-      try {
-        return sheet.cssRules.length >= 0
-      } catch {
-        return false
-      }
-    }
-  )
 }
 
 async function toDataUrl(url: string): Promise<string | undefined> {
@@ -102,7 +111,7 @@ async function embeddedFontFaces(sheets: CSSStyleSheet[]): Promise<string> {
       .map(({ family }) => unquote(family))
   )
   const faces = sheets.flatMap((sheet) =>
-    [...flattenRules(sheet.cssRules)]
+    [...flattenRules(readableRules(sheet))]
       .filter((rule) => rule instanceof CSSFontFaceRule)
       .filter((rule) =>
         loadedFamilies.has(unquote(rule.style.getPropertyValue('font-family')))
@@ -113,8 +122,10 @@ async function embeddedFontFaces(sheets: CSSStyleSheet[]): Promise<string> {
 }
 
 async function collectStyles(): Promise<string> {
-  const sheets = readableSheets()
-  const css = sheets.map((sheet) => serializeRules(sheet.cssRules)).join('')
+  const sheets = [...document.styleSheets, ...document.adoptedStyleSheets]
+  const css = sheets
+    .map((sheet) => serializeRules(readableRules(sheet)))
+    .join('')
   return (await embeddedFontFaces(sheets)) + css
 }
 
@@ -127,13 +138,14 @@ function ancestorShells(inert: Document, element: Element) {
   )
     chain.unshift(ancestor)
 
+  if (chain.length === 0) chain.push(inert.createElementNS(XHTML_NS, 'div'))
   const shells = chain.map((ancestor) => {
     const shell = inert.createElementNS(XHTML_NS, ancestor.localName)
     for (const { name, value } of ancestor.attributes)
       shell.setAttribute(name, value)
     shell.setAttribute(
       'style',
-      `${ancestor.getAttribute('style') ?? ''};display:contents`
+      `${ancestor.getAttribute('style') ?? ''};display:contents;visibility:visible;clip-path:none`
     )
     return shell
   })
@@ -145,8 +157,8 @@ function ancestorShells(inert: Document, element: Element) {
 }
 
 function copyFormState(source: Element, clone: Element) {
-  const sources = source.querySelectorAll('textarea, input')
-  const clones = clone.querySelectorAll('textarea, input')
+  const sources = [source, ...source.querySelectorAll('textarea, input')]
+  const clones = [clone, ...clone.querySelectorAll('textarea, input')]
   for (const [index, field] of sources.entries()) {
     const target = clones[index]
     if (field instanceof HTMLTextAreaElement) target.textContent = field.value
@@ -159,34 +171,34 @@ function copyFormState(source: Element, clone: Element) {
 }
 
 function hideReplacedElements(clone: Element) {
-  for (const element of clone.querySelectorAll(REPLACED_ELEMENTS))
+  const elements = [...clone.querySelectorAll(REPLACED_ELEMENTS)]
+  if (clone.matches(REPLACED_ELEMENTS)) elements.unshift(clone)
+  for (const element of elements)
     element.setAttribute(
       'style',
       `${element.getAttribute('style') ?? ''};visibility:hidden`
     )
 }
 
-async function loadSvgWithEmbeddedFonts(
-  src: string
-): Promise<HTMLImageElement | undefined> {
+async function loadSvgWithEmbeddedFonts(src: string): Promise<ImageLoad> {
   const image = new Image()
   image.src = src
   try {
     await image.decode()
     const ctx = new OffscreenCanvas(1, 1).getContext('2d')
-    if (!ctx) return undefined
+    if (!ctx) return { ok: false }
     ctx.drawImage(image, 0, 0)
     await new Promise<void>((resolve) => setTimeout(resolve, 0))
-    return image
-  } catch {
-    return undefined
+    return { ok: true, image }
+  } catch (cause) {
+    return { ok: false, cause }
   }
 }
 
 function paddedBounds(elements: readonly PositionedElement[], padding: number) {
   const bounds = createBounds(
-    elements.map<HasBoundingRect>(({ x, y, element }) => ({
-      boundingRect: [x, y, element.offsetWidth, element.offsetHeight]
+    elements.map<HasBoundingRect>(({ x, y, width, height }) => ({
+      boundingRect: [x, y, width, height]
     })),
     padding
   )
@@ -222,38 +234,53 @@ export function createElementRasterizer() {
   async function rasterize(
     elements: readonly PositionedElement[],
     { padding, pixelRatio }: RasterizeOptions
-  ) {
+  ): Promise<RasterizedElement> {
     const bounds = paddedBounds(elements, padding)
-    if (!bounds) return undefined
+    if (!bounds) return { ok: false }
     const { left, top, width, height } = bounds
 
-    const shells = ancestorShells(inert, elements[0].element)
-    for (const { element, x, y } of elements) {
-      const clone = inert.importNode(element, true)
-      if (!(clone instanceof HTMLElement)) continue
-      copyFormState(element, clone)
-      hideReplacedElements(clone)
-      clone.style.setProperty(
-        'transform',
-        `translate(${x - left}px, ${y - top}px)`
+    try {
+      const shells = ancestorShells(inert, elements[0].element)
+      for (const positioned of elements) {
+        const { element, x, y } = positioned
+        const clone = inert.importNode(element, true)
+        if (!(clone instanceof HTMLElement)) return { ok: false }
+        copyFormState(element, clone)
+        clone.style.removeProperty('display')
+        clone.style.setProperty('position', 'absolute')
+        clone.style.setProperty('left', '0')
+        clone.style.setProperty('top', '0')
+        clone.style.setProperty('visibility', 'visible')
+        clone.style.setProperty('clip-path', 'none')
+        clone.style.setProperty('width', `${positioned.width}px`)
+        clone.style.setProperty('height', `${positioned.height}px`)
+        hideReplacedElements(clone)
+        clone.style.setProperty(
+          'transform',
+          `translate(${x - left}px, ${y - top}px)`
+        )
+        shells.innermost.append(clone)
+      }
+
+      const container = inert.createElementNS(XHTML_NS, 'div')
+      container.setAttribute(
+        'style',
+        `position:relative;width:${width}px;height:${height}px;overflow:hidden;`
       )
-      shells.innermost.append(clone)
+      const style = inert.createElementNS(XHTML_NS, 'style')
+      style.textContent = await styles
+      container.append(style, shells.outermost)
+
+      const markup = toSvgMarkup(inert, container, width, height, pixelRatio)
+      const loaded = await loadSvgWithEmbeddedFonts(
+        `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`
+      )
+      return loaded.ok
+        ? { ...loaded, bounds: [left, top, width, height] }
+        : loaded
+    } catch (cause) {
+      return { ok: false, cause }
     }
-
-    const container = inert.createElementNS(XHTML_NS, 'div')
-    container.setAttribute(
-      'style',
-      `position:relative;width:${width}px;height:${height}px;overflow:hidden;`
-    )
-    const style = inert.createElementNS(XHTML_NS, 'style')
-    style.textContent = await styles
-    container.append(style, shells.outermost)
-
-    const markup = toSvgMarkup(inert, container, width, height, pixelRatio)
-    const image = await loadSvgWithEmbeddedFonts(
-      `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`
-    )
-    return image && { image, x: left, y: top, width, height }
   }
 
   return { rasterize }

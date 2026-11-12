@@ -105,19 +105,15 @@ export async function insertPngTextChunk(
   keyword: string,
   text: string
 ): Promise<Blob> {
-  const bytes = new Uint8Array(await png.arrayBuffer())
+  const ihdrLength = await png
+    .slice(PNG_SIGNATURE.length, PNG_SIGNATURE.length + 4)
+    .arrayBuffer()
   const ihdrEnd =
-    PNG_SIGNATURE.length +
-    12 +
-    new DataView(bytes.buffer).getUint32(PNG_SIGNATURE.length)
+    PNG_SIGNATURE.length + 12 + new DataView(ihdrLength).getUint32(0)
   const data = new TextEncoder().encode(`${keyword}\0\0\0\0\0${text}`)
 
   return new Blob(
-    [
-      bytes.subarray(0, ihdrEnd),
-      ...pngChunk('iTXt', data),
-      bytes.subarray(ihdrEnd)
-    ],
+    [png.slice(0, ihdrEnd), ...pngChunk('iTXt', data), png.slice(ihdrEnd)],
     { type: 'image/png' }
   )
 }

@@ -40,10 +40,11 @@ async function alignCanvasWithExport(comfyPage: ComfyPage, exported: Buffer) {
   return { x: canvasBox.x, y: canvasBox.y, width, height }
 }
 
-test.describe(
-  'Workflow image export',
-  { tag: ['@vue-nodes', '@canvas'] },
-  () => {
+for (const { renderer, tags } of [
+  { renderer: 'classic', tags: ['@canvas'] },
+  { renderer: 'Vue', tags: ['@vue-nodes', '@canvas'] }
+]) {
+  test.describe(`Workflow image export: ${renderer}`, { tag: tags }, () => {
     test.use({
       viewport: { width: 1920, height: 1080 },
       initialSettings: { 'Comfy.Minimap.Visible': false }
@@ -53,6 +54,7 @@ test.describe(
       comfyPage
     }, testInfo) => {
       await comfyPage.workflow.loadWorkflow('default')
+      const navigation = await comfyPage.canvasOps.snapshotNavigation()
 
       const exported =
         await test.step('export the workflow image', async () => {
@@ -63,12 +65,118 @@ test.describe(
           return readFile(await file.path())
         })
 
+      await expect
+        .poll(() => comfyPage.canvasOps.snapshotNavigation())
+        .toEqual(navigation)
+
       await test.step('pixels match the canvas at the same view', async () => {
         await comfyPage.setFocusMode(true)
         const clip = await alignCanvasWithExport(comfyPage, exported)
         const live = await comfyPage.page.screenshot({ clip })
+        await testInfo.attach('exported-workflow.png', {
+          body: exported,
+          contentType: 'image/png'
+        })
         await expectPngsToMatch(testInfo, 'workflow-image', exported, live)
       })
+    })
+  })
+}
+
+test.describe(
+  'Workflow image export failures',
+  { tag: ['@vue-nodes', '@canvas'] },
+  () => {
+    test.use({ initialSettings: { 'Comfy.PromptFilename': false } })
+
+    test('refuses an undecodable node instead of downloading a partial graph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+      await comfyPage.page
+        .getByRole('textbox', { name: 'text', exact: true })
+        .first()
+        .fill('invalid XML: \u0001')
+      const downloads: string[] = []
+      comfyPage.page.on('download', (download) =>
+        downloads.push(download.suggestedFilename())
+      )
+
+      await comfyPage.command.executeCommand('Comfy.ExportWorkflowImage')
+
+      await expect(
+        comfyPage.toast.withText('Failed to export workflow image')
+      ).toBeVisible()
+      expect(downloads).toEqual([])
+    })
+
+    test('refuses a graph cleared by a drawing callback', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+      const downloads: string[] = []
+      comfyPage.page.on('download', (download) =>
+        downloads.push(download.suggestedFilename())
+      )
+
+      await comfyPage.page.evaluate(() => {
+        const app = window.app!
+        app.canvas.onRenderBackground = () => {
+          app.canvas.graph = null
+          return false
+        }
+        return app.extensionManager.command.execute('Comfy.ExportWorkflowImage')
+      })
+
+      await expect(
+        comfyPage.toast.withText('Failed to export workflow image')
+      ).toBeVisible()
+      expect(downloads).toEqual([])
+    })
+
+    test('exports when a readable stylesheet imports inaccessible CSS', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+      const url = 'https://workflow-export.invalid/import.css'
+      await comfyPage.page.route(url, (route) =>
+        route.fulfill({
+          contentType: 'text/css',
+          body: 'body { --export-test: 1; }'
+        })
+      )
+      await comfyPage.page.addStyleTag({ content: `@import url("${url}");` })
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const sheets = [...document.styleSheets]
+            const imported = sheets
+              .flatMap((sheet) => [...sheet.cssRules])
+              .find((rule) => rule instanceof CSSImportRule)
+            if (!(imported instanceof CSSImportRule) || !imported.styleSheet)
+              return false
+            try {
+              void imported.styleSheet.cssRules
+              return false
+            } catch (error) {
+              return (
+                error instanceof DOMException && error.name === 'SecurityError'
+              )
+            }
+          })
+        )
+        .toBe(true)
+
+      const downloading = comfyPage.page.waitForEvent('download')
+      await comfyPage.command.executeCommand('Comfy.ExportWorkflowImage')
+
+      const download = await downloading
+      const png = await readFile(await download.path())
+      expect(download.suggestedFilename()).toBe('default.png')
+      expect(png.subarray(1, 4).toString()).toBe('PNG')
+      await expect(
+        comfyPage.toast.withText('Failed to export workflow image')
+      ).toBeHidden()
     })
   }
 )

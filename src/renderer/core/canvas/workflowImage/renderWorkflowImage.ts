@@ -1,21 +1,33 @@
 import type {
   HasBoundingRect,
   PointTuple,
-  ReadOnlyRect
+  ReadOnlyRect,
+  RectTuple
 } from '@comfyorg/shared-frontend-utils/geometry'
 
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createBounds } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createBounds } from '@/lib/litegraph/src/measure'
+import type { WorkflowImageRender } from '@/platform/workflow/core/services/workflowService'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { drawGraphBackground } from '@/lib/litegraph/src/canvas/drawGraphBackground'
 import { createElementRasterizer } from '@/renderer/core/canvas/workflowImage/rasterizeElement'
 import type { PositionedElement } from '@/renderer/core/canvas/workflowImage/rasterizeElement'
+import { isDOMWidget } from '@/scripts/domWidget'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 
 const GRAPH_PADDING = 64
 const NODE_PADDING = 32
 const MAX_CANVAS_SIDE = 16_384
-const MAX_CANVAS_AREA = 16_384 * 16_384
 
 type DrawableMedia = HTMLImageElement | HTMLVideoElement | HTMLCanvasElement
+type Failure = Extract<WorkflowImageRender, { ok: false }>
+type MediaSnapshot = {
+  image: HTMLCanvasElement
+  bounds: RectTuple
+  opacity: number
+}
 
 function graphBounds(canvas: LGraphCanvas): ReadOnlyRect | undefined {
   const { graph, subgraph } = canvas
@@ -29,24 +41,79 @@ function exportPixelRatio(width: number, height: number): number {
   return Math.min(
     window.devicePixelRatio || 1,
     MAX_CANVAS_SIDE / width,
-    MAX_CANVAS_SIDE / height,
-    Math.sqrt(MAX_CANVAS_AREA / (width * height))
+    MAX_CANVAS_SIDE / height
   )
 }
 
-function nodeElements(canvas: LGraphCanvas): HTMLElement[] {
-  const root = canvas.canvas.parentElement
-  if (!root) return []
+function positionedNodes(
+  root: HTMLElement,
+  graph: LGraph
+): PositionedElement[] | undefined {
   const elements = [
     ...root.querySelectorAll<HTMLElement>('.lg-node[data-node-id]')
   ]
+  const ids = new Set(elements.map((element) => element.dataset.nodeId))
+  if (graph._nodes.some((node) => !ids.has(String(node.id)))) return undefined
   const zIndex = (element: HTMLElement) => Number(element.style.zIndex) || 0
-  return elements.sort((a, b) => zIndex(a) - zIndex(b))
+  return elements
+    .sort((a, b) => zIndex(a) - zIndex(b))
+    .map((element) => {
+      const transform = new DOMMatrixReadOnly(
+        getComputedStyle(element).transform
+      )
+      return {
+        element,
+        x: transform.m41,
+        y: transform.m42,
+        width: element.offsetWidth,
+        height: element.offsetHeight
+      }
+    })
 }
 
-function graphPosition(element: HTMLElement): [number, number] {
-  const transform = new DOMMatrixReadOnly(getComputedStyle(element).transform)
-  return [transform.m41, transform.m42]
+function positionedWidgets(
+  root: HTMLElement,
+  graph: LGraph
+): PositionedElement[] | undefined {
+  const positioned: PositionedElement[] = []
+  const states = [...useDomWidgetStore().widgetStates.values()]
+    .filter(
+      ({ widget, active }) =>
+        active &&
+        widget.node.graph === graph &&
+        !widget.node.flags.collapsed &&
+        widget.isVisible()
+    )
+    .sort((a, b) => a.zIndex - b.zIndex)
+  for (const { widget } of states) {
+    const element = isDOMWidget(widget)
+      ? widget.element
+      : root.querySelector<HTMLElement>(
+          `[data-widget-id="${CSS.escape(widget.id)}"]`
+        )
+    if (!element) return undefined
+    const margin = widget.margin
+    const width = (widget.width ?? widget.node.width) - margin * 2
+    const height = (widget.computedHeight ?? 50) - margin * 2
+    if (width <= 0 || height <= 0) continue
+    positioned.push({
+      element,
+      x: widget.node.pos[0] + margin,
+      y: widget.node.pos[1] + margin + widget.y,
+      width,
+      height
+    })
+  }
+  return positioned
+}
+
+function positionedElements(canvas: LGraphCanvas) {
+  const { graph } = canvas
+  const root = canvas.canvas.parentElement
+  if (!graph || !root) return undefined
+  return LiteGraph.vueNodesMode
+    ? positionedNodes(root, graph)
+    : positionedWidgets(root, graph)
 }
 
 function mediaSize(media: DrawableMedia): [number, number] {
@@ -61,10 +128,9 @@ function fitMedia(
   objectFit: string,
   [mediaWidth, mediaHeight]: [number, number],
   [x, y, width, height]: ReadOnlyRect
-): ReadOnlyRect {
+): RectTuple {
   if (objectFit !== 'contain' && objectFit !== 'cover')
     return [x, y, width, height]
-
   const scale = (objectFit === 'contain' ? Math.min : Math.max)(
     width / mediaWidth,
     height / mediaHeight
@@ -79,38 +145,57 @@ function fitMedia(
   ]
 }
 
-function drawNodeMedia(
-  ctx: CanvasRenderingContext2D,
-  element: HTMLElement,
-  [nodeX, nodeY]: [number, number],
+function isDrawableMedia(element: Element): element is DrawableMedia {
+  return (
+    element instanceof HTMLImageElement ||
+    element instanceof HTMLVideoElement ||
+    element instanceof HTMLCanvasElement
+  )
+}
+
+function snapshotNodeMedia(
+  positioned: PositionedElement,
   scale: number
-) {
-  const elementRect = element.getBoundingClientRect()
-  const media = element.querySelectorAll<DrawableMedia>('img, video, canvas')
-
-  ctx.save()
-  ctx.globalAlpha = Number(getComputedStyle(element).opacity)
-  for (const item of media) {
-    const size = mediaSize(item)
-    if (!size[0] || !size[1]) continue
-
-    const rect = item.getBoundingClientRect()
-    if (!rect.width || !rect.height) continue
-
-    const box: ReadOnlyRect = [
-      nodeX + (rect.left - elementRect.left) / scale,
-      nodeY + (rect.top - elementRect.top) / scale,
-      rect.width / scale,
-      rect.height / scale
-    ]
-    const [x, y, width, height] = fitMedia(
-      getComputedStyle(item).objectFit,
-      size,
-      box
-    )
-    ctx.drawImage(item, x, y, width, height)
+): { ok: true; media: MediaSnapshot[] } | Failure {
+  const { element, x, y, width, height } = positioned
+  const media = [
+    ...element.querySelectorAll<DrawableMedia>('img, video, canvas')
+  ]
+  if (isDrawableMedia(element)) media.unshift(element)
+  const snapshots: MediaSnapshot[] = []
+  try {
+    const elementRect = element.getBoundingClientRect()
+    const opacity = Number(getComputedStyle(element).opacity)
+    for (const item of media) {
+      const size = mediaSize(item)
+      if (size.includes(0)) continue
+      const rect = item.getBoundingClientRect()
+      const box: ReadOnlyRect =
+        item === element
+          ? [x, y, width, height]
+          : [
+              x + (rect.left - elementRect.left) / scale,
+              y + (rect.top - elementRect.top) / scale,
+              rect.width / scale,
+              rect.height / scale
+            ]
+      if (!box[2] || !box[3]) continue
+      const image = document.createElement('canvas')
+      image.width = size[0]
+      image.height = size[1]
+      const ctx = image.getContext('2d')
+      if (!ctx) return { ok: false }
+      ctx.drawImage(item, 0, 0)
+      snapshots.push({
+        image,
+        bounds: fitMedia(getComputedStyle(item).objectFit, size, box),
+        opacity
+      })
+    }
+    return { ok: true, media: snapshots }
+  } catch (cause) {
+    return { ok: false, cause }
   }
-  ctx.restore()
 }
 
 function batchBelowMedia(
@@ -119,35 +204,77 @@ function batchBelowMedia(
   const batches: PositionedElement[][] = [[]]
   let mediaInBatch: { pos: PointTuple; size: PointTuple }[] = []
   for (const positioned of elements) {
-    const { x, y, element } = positioned
-    const size: PointTuple = [element.offsetWidth, element.offsetHeight]
+    const { x, y, width, height, element } = positioned
+    const size: PointTuple = [width, height]
     if (anyItemOverlapsRect(mediaInBatch, [x, y, ...size])) {
       batches.push([])
       mediaInBatch = []
     }
     batches[batches.length - 1].push(positioned)
-    if (element.querySelector('img, video, canvas'))
+    if (isDrawableMedia(element) || element.querySelector('img, video, canvas'))
       mediaInBatch.push({ pos: [x, y], size })
   }
-  return batches
+  return batches.filter((batch) => batch.length > 0)
 }
-
-type Failure = { ok: false; cause?: unknown }
-
-type WorkflowImageRender = { ok: true; image: Blob } | Failure
 
 function drawGraph(
   canvas: LGraphCanvas,
   ctx: CanvasRenderingContext2D,
-  bounds: ReadOnlyRect,
+  area: ReadOnlyRect,
   pixelRatio: number
 ): { ok: true } | Failure {
+  const { graph, ds, visible_area } = canvas
+  if (!graph) return { ok: false }
+  const scale = ds.scale
+  const offset: PointTuple = [ds.offset[0], ds.offset[1]]
+  const visibleArea = Array.from(visible_area)
+  const minimumFontSize = canvas.min_font_size_for_lod
   try {
-    canvas.drawGraphImage(ctx, bounds, pixelRatio)
-    return { ok: true }
+    ds.scale = 1
+    ds.offset = [-area[0], -area[1]]
+    visible_area.set(area)
+    canvas.min_font_size_for_lod = 0
+    const nodes = nodesInRenderOrder(graph)
+    drawGraphBackground(canvas, ctx, pixelRatio, undefined, nodes, graph)
+    if (canvas.graph !== graph) return { ok: false }
+    ctx.save()
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
+    ds.toCanvasContext(ctx)
+    for (const node of nodes) {
+      ctx.save()
+      ctx.translate(node.pos[0], node.pos[1])
+      canvas.drawNode(node, ctx)
+      ctx.restore()
+      if (canvas.graph !== graph) return { ok: false }
+    }
+    canvas.subgraph?.draw(
+      ctx,
+      canvas.colourGetter,
+      undefined,
+      canvas.editor_alpha
+    )
+    ctx.restore()
+    return canvas.graph === graph ? { ok: true } : { ok: false }
   } catch (cause) {
     return { ok: false, cause }
+  } finally {
+    ds.scale = scale
+    ds.offset = offset
+    visible_area.set(visibleArea)
+    canvas.min_font_size_for_lod = minimumFontSize
+    canvas.setDirty(true, true)
   }
+}
+
+function drawMedia(
+  ctx: CanvasRenderingContext2D,
+  snapshots: MediaSnapshot[]
+): void {
+  for (const { image, bounds, opacity } of snapshots) {
+    ctx.globalAlpha = opacity
+    ctx.drawImage(image, ...bounds)
+  }
+  ctx.globalAlpha = 1
 }
 
 async function encodePng(
@@ -168,7 +295,6 @@ export async function renderWorkflowImage(
 ): Promise<WorkflowImageRender> {
   const bounds = graphBounds(canvas)
   if (!bounds) return { ok: false }
-
   const [left, top, width, height] = bounds
   const pixelRatio = exportPixelRatio(width, height)
   const output = document.createElement('canvas')
@@ -176,7 +302,6 @@ export async function renderWorkflowImage(
   output.height = Math.ceil(height * pixelRatio)
   const ctx = output.getContext('2d')
   if (!ctx) return { ok: false }
-
   const area: ReadOnlyRect = [
     left,
     top,
@@ -185,13 +310,18 @@ export async function renderWorkflowImage(
   ]
   const drawn = drawGraph(canvas, ctx, area, pixelRatio)
   if (!drawn.ok) return drawn
-
-  const positioned = nodeElements(canvas).map((element) => {
-    const [x, y] = graphPosition(element)
-    return { element, x, y }
-  })
-  const viewScale = canvas.ds.scale
+  const positioned = positionedElements(canvas)
+  if (!positioned) return { ok: false }
+  const batches = batchBelowMedia(positioned)
+  if (batches.length === 0) return encodePng(output)
   const rasterizer = createElementRasterizer()
+  const captures = batches.map((batch) => ({
+    rasterized: rasterizer.rasterize(batch, {
+      padding: NODE_PADDING,
+      pixelRatio
+    }),
+    media: batch.map((element) => snapshotNodeMedia(element, canvas.ds.scale))
+  }))
   ctx.setTransform(
     pixelRatio,
     0,
@@ -200,18 +330,14 @@ export async function renderWorkflowImage(
     -left * pixelRatio,
     -top * pixelRatio
   )
-  for (const batch of batchBelowMedia(positioned)) {
-    const rasterized = await rasterizer.rasterize(batch, {
-      padding: NODE_PADDING,
-      pixelRatio
-    })
-    if (rasterized) {
-      const { image, x, y, width, height } = rasterized
-      ctx.drawImage(image, x, y, width, height)
+  for (const capture of captures) {
+    const rasterized = await capture.rasterized
+    if (!rasterized.ok) return rasterized
+    ctx.drawImage(rasterized.image, ...rasterized.bounds)
+    for (const result of capture.media) {
+      if (!result.ok) return result
+      drawMedia(ctx, result.media)
     }
-    for (const { element, x, y } of batch)
-      drawNodeMedia(ctx, element, [x, y], viewScale)
   }
-
   return encodePng(output)
 }
