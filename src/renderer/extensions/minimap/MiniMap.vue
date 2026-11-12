@@ -49,7 +49,7 @@
       </Button>
 
       <hr
-        class="absolute top-6 h-px border-0 bg-border"
+        class="absolute top-8 h-px border-0 bg-border"
         :style="{
           width: containerStyles.width
         }"

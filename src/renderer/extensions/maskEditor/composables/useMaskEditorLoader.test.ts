@@ -51,9 +51,9 @@ const GRAPH_ID = 'maskeditor-loader-test'
 
 function createLoadImageNode(
   widgetValue: string,
-  images?: LGraphNode['images']
+  images?: LGraphNode['images'],
+  nodeId = toNodeId(7)
 ): LGraphNode {
-  const nodeId = toNodeId(7)
   useWidgetValueStore().registerWidget(widgetId(GRAPH_ID, nodeId, 'image'), {
     type: 'string',
     value: widgetValue,
@@ -62,7 +62,12 @@ function createLoadImageNode(
   return fromAny<LGraphNode, unknown>({
     id: nodeId,
     type: 'LoadImage',
-    imgs: [{ src: 'http://localhost:8188/api/view?filename=whatever.png' }],
+    imgs: [
+      {
+        src: 'http://localhost:8188/api/view?filename=whatever.png',
+        dataset: {}
+      }
+    ],
     images,
     graph: { rootGraph: { id: GRAPH_ID } }
   })
@@ -98,6 +103,33 @@ describe('useMaskEditorLoader', () => {
     mockDataStore.inputData = null
     mockDataStore.sourceNode = null
     vi.stubGlobal('Image', MockImage)
+  })
+
+  it('does not publish a closed editor load after the next editor has loaded', async () => {
+    const pending: VoidFunction[] = []
+    vi.spyOn(globalThis, 'queueMicrotask').mockImplementation((callback) => {
+      pending.push(callback)
+    })
+    const controller = new AbortController()
+    const oldNode = createLoadImageNode('old.png [input]')
+    const oldLoad = useMaskEditorLoader().loadFromNode(
+      oldNode,
+      controller.signal
+    )
+    controller.abort()
+    vi.mocked(globalThis.queueMicrotask).mockRestore()
+    const currentNode = createLoadImageNode(
+      'current.png [input]',
+      undefined,
+      toNodeId(8)
+    )
+    await useMaskEditorLoader().loadFromNode(currentNode)
+
+    pending.forEach((complete) => complete())
+    await oldLoad
+
+    expect(mockDataStore.inputData?.sourceRef.filename).toBe('current.png')
+    expect(mockDataStore.sourceNode).toBe(currentNode)
   })
 
   it('loads layer files from the input root for saves without a subfolder prefix', async () => {
@@ -219,6 +251,24 @@ describe('useMaskEditorLoader', () => {
     expect(mockDataStore.inputData).toMatchObject({
       sourceRef: { filename: 'whatever.png' }
     })
+  })
+
+  it('loads the full-resolution file behind a downscaled preview', async () => {
+    const node = createLoadImageNode('$35-0', [{ type: 'output' }])
+    const image = document.createElement('img')
+    image.src = 'blob:http://localhost:8188/display-copy'
+    image.dataset.fullSrc =
+      'http://localhost:8188/api/view?filename=original.png'
+    node.imgs = [image]
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'original.png' },
+      baseLayer: { url: expect.stringContaining('filename=original.png') },
+      maskLayer: { url: expect.stringContaining('filename=original.png') }
+    })
+    expect(requestedUrls.some((url) => url.startsWith('blob:'))).toBe(false)
   })
 
   it('still fails when the node image itself cannot be loaded', async () => {

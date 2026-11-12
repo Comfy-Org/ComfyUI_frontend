@@ -21,6 +21,46 @@ function previews(...sources: string[]) {
 }
 
 describe('clipspace image paste', () => {
+  it('copies and pastes the selected original behind a display preview', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    const target = new LGraphNode('target')
+    graph.add(source)
+    graph.add(target)
+    const first = document.createElement('img')
+    first.src = 'blob:first-display'
+    first.dataset.fullSrc = 'http://localhost/view?filename=first.png'
+    const selected = document.createElement('img')
+    selected.src = 'blob:second-display'
+    selected.dataset.fullSrc = 'http://localhost/view?filename=second.png'
+    source.imgs = [first, selected]
+    source.imageIndex = 1
+    target.imgs = []
+    useNodeOutputStore().setNodeOutputImages(source, [
+      { filename: 'first.png' },
+      { filename: 'second.png' }
+    ])
+
+    copyToClipspace(source)
+
+    assert.exists(clipspace.current)
+    expect(clipspace.current.selectedIndex).toBe(1)
+    expect(clipspace.current.original_imgs?.map((img) => img.src)).toEqual([
+      'http://localhost/view?filename=first.png',
+      'http://localhost/view?filename=second.png'
+    ])
+
+    pasteFromClipspace(target)
+
+    expect(target.imgs.map((img) => img.src)).toEqual([
+      'http://localhost/view?filename=second.png'
+    ])
+    expect(target.imageIndex).toBe(0)
+    expect(useNodeOutputStore().getNodeOutputs(target)?.images).toEqual([
+      { filename: 'second.png' }
+    ])
+  })
+
   it.for([
     { mode: 'selected', expected: [{ filename: 'second.png' }] },
     {

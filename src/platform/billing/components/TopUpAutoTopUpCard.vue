@@ -23,24 +23,26 @@
 </template>
 
 <script setup lang="ts">
+import { canSetUpAutoTopUp } from '@comfyorg/account-core/billing'
 import Button from '@comfyorg/design-system/button/Button'
 import { computed, watch } from 'vue'
 
-import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
+import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 
 const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
   useBillingCapabilities()
 const { state, ensureRead } = useBillingAutoTopUpCard()
 
-const canSetUp = computed(() => {
-  if (!autoTopUpEnabled.value) return false
-  if (!canManageAutoTopUp.value) return false
-  const setup = autoTopUpSetup.value
-  if (setup === null || setup.state === 'unavailable') return false
-  return !(setup.state === 'frozen' && setup.reason === 'payment_past_due')
-})
+const canSetUp = computed(() =>
+  canSetUpAutoTopUp({
+    autoTopUpEnabled: autoTopUpEnabled.value,
+    canManageAutoTopUp: canManageAutoTopUp.value,
+    setup: autoTopUpSetup.value
+  })
+)
 
 watch(
   canSetUp,
@@ -56,7 +58,7 @@ const visible = computed(() => {
   return read.kind === 'loaded' && read.settings.status === 'off'
 })
 
-const { href, track } = usePlatformHandoff('/profile/billing', {
+const { href, track } = usePlatformHandoff(platformAutoTopUpPath('turn_on'), {
   target: 'auto_top_up',
   action: 'turn_on'
 })

@@ -1292,11 +1292,12 @@
       "retryDownloadNamed": "Retry download for {model}",
       "getItManually": "Get it manually",
       "usedBy": "Used by {nodes}",
-      "downloadModelsAndOpen": "Download models & open",
-      "downloadModelsAndOpenWithSize": "Download models & open ({size})",
+      "downloadAssetsAndOpen": "Download assets & open",
+      "downloadAssetsAndOpenWithSize": "Download assets & open ({size})",
       "descriptionMore": "Show more",
       "descriptionLess": "Show less",
-      "openNow": "Open now",
+      "justOpen": "Just open",
+      "open": "Open",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"
     },
@@ -1364,7 +1365,11 @@
     "enterFilenamePrompt": "Enter the filename:",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
-    "savedAsWorkflow": "Converted to node graph only workflow"
+    "savedAsWorkflow": "Converted to node graph only workflow",
+    "unreadableWorkflowTitle": "Can't open this workflow",
+    "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows.",
+    "unsavedChangesLostTitle": "Unsaved changes were not saved",
+    "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -2523,6 +2528,7 @@
     "angle": "Angle"
   },
   "boundingBoxes": {
+    "boxCount": "{current} of {max} box | {current} of {max} boxes",
     "clearAll": "Clear all",
     "clickRegionToEdit": "Click a region to edit it.",
     "typeObj": "obj",
@@ -2606,10 +2612,10 @@
     "noClips": "Connect videos to preview and order them",
     "clips": "Clips",
     "clipLabel": "Clip {position}",
-    "previewClips": "Clips",
-    "previewResult": "Last run",
     "reorderHint": "Drag clips or press Alt + arrow keys to reorder, click to jump",
-    "mixedDimensions": "Mixed sizes"
+    "mixedDimensions": "Mixed sizes",
+    "mixedDimensionsWarning": "All clips must match clip {position} ({width} × {height}) to concatenate: {clips}.",
+    "clipSize": "clip {position} is {width} × {height}"
   },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
@@ -2625,6 +2631,8 @@
     "nothingToQueue": "Nothing to queue",
     "pleaseSelectOutputNodes": "Please select output nodes",
     "failedToQueue": "Failed to queue",
+    "linkedWorkflowNotOpened": "Couldn't open this workflow",
+    "linkedWorkflowLoadFailed": "Couldn't open this workflow. Please try again.",
     "failedToSaveDraft": "Failed to save workflow draft",
     "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
@@ -2733,7 +2741,10 @@
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
       "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
       "sessionError": "Failed to establish session. Please try again.",
-      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in"
+      "sessionErrorToastSummary": "Couldn't continue OAuth sign-in",
+      "signedInAs": "Signed in as",
+      "notYou": "Not you?",
+      "switchAccount": "Switch account"
     },
     "scopes": {
       "mcp:tools:read": {
@@ -2986,6 +2997,11 @@
   },
   "credits": {
     "activity": "Activity",
+    "addCreditsRefusal": {
+      "topupPurchasesPaused": "Buying credits isn't available right now. Try again later.",
+      "paymentPastDue": "Update your payment method to add credits.",
+      "unavailable": "Adding credits isn't available for this workspace right now."
+    },
     "workspaceCredits": "Workspace credits",
     "insufficient": {
       "memberTitle": "This workspace is out of credits",
@@ -3050,10 +3066,6 @@
       "verifyTitle": "Verify your payment",
       "startOver": "Start over",
       "viewPricing": "View pricing details",
-      "autoTopUp": {
-        "prompt": "Running low on credits? Turn on auto top-up.",
-        "setUp": "Set up"
-      },
       "youPay": "Amount (USD)",
       "youGet": "Credits",
       "buyCredits": "Continue to payment",
@@ -3071,16 +3083,23 @@
       "paymentProcessingFlyout": "Payment processing. You don't need to pay again.",
       "paymentProcessingTitle": "A {amount} payment is still processing",
       "paymentProcessingTitleNoAmount": "A payment is still processing",
-      "paymentProcessingBody": "No need to pay again."
+      "paymentProcessingBody": "No need to pay again.",
+      "autoTopUp": {
+        "prompt": "Running low on credits? Turn on auto top-up.",
+        "setUp": "Set up"
+      }
     },
     "creditsAvailable": "Credits available",
     "refreshes": "Refreshes {date}",
     "eventType": "Event Type",
     "details": "Details",
     "time": "Time",
+    "member": "Member",
+    "formerMember": "{name} (former member)",
     "additionalInfo": "Additional Info",
     "charge": "Charge",
     "lessThanOne": "<1",
+    "creditUnit": "Credit | Credits",
     "model": "Model",
     "api": "API",
     "added": "Added",
@@ -3202,7 +3221,7 @@
       "appliedBadge": "Applied",
       "pricePerMonth": "{price}/mo",
       "savings": "You'll save {savings} on this payment. | You'll save {savings} across these {months} payments.",
-      "renewsAt": "Renews at {regular} on {date}.",
+      "renewsAfterOffer": "After the offer ends, your plan renews at {regular}/mo.",
       "failedTitle": "We couldn't apply your discount",
       "failedBody": "Something went wrong on our end, and your {plan} plan hasn't changed. Try again, or continue cancelling.",
       "declinedBody": "Your {plan} plan hasn't changed. You can keep it at its current price or continue cancelling.",
@@ -3350,6 +3369,16 @@
       "runLabel": "Run",
       "badge": "Inactive"
     },
+    "plansLink": {
+      "blockedTitle": "Plans page didn't open",
+      "blockedBody": "Your browser blocked the new tab. Open the Plans page to choose a plan.",
+      "openPlansPage": "Open Plans page",
+      "runRefusedTitle": "Your workflow didn't run",
+      "runRefusedNoPlan": "Running workflows on Cloud needs a plan.",
+      "runRefusedEnded": "Your plan has ended. Resubscribe to keep running workflows on Cloud.",
+      "runRefusedFreeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows on Cloud.",
+      "choosePlan": "Choose a plan"
+    },
     "paymentRecovery": {
       "title": "Subscription paused",
       "ownerDescription": "Update your payment method to restore the workspace's subscription and run workflows.",
@@ -3390,6 +3419,14 @@
     "pastDueNoticeOwner": "You have an outstanding payment — update your payment method to change plans.",
     "pastDueNoticeMember": "This workspace has an outstanding payment — ask your workspace owner to update the payment method.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
+    "signupPaymentRecovery": {
+      "title": "Your {plan} payment didn't go through.",
+      "titleNoPlan": "Your plan payment didn't go through.",
+      "body": "Finish paying to start your plan.",
+      "contactSupport": "Contact support",
+      "finishPayment": "Finish payment",
+      "unavailable": "We couldn't open the payment page. Try again, or contact support."
+    },
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
     "yearlyCredits": "credits per year",
@@ -3639,6 +3676,7 @@
     "billingTab": {
       "autoTopUp": {
         "actions": {
+          "addPaymentMethod": "Add payment method",
           "manage": "Manage",
           "turnOn": "Turn on",
           "updatePayment": "Update payment"
@@ -3648,7 +3686,9 @@
         "limit": "Monthly limit: {spent} of {limit} used",
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
-        "off": "Refills credits when your balance runs low",
+        "off": "Refills credits when your balance runs low.",
+        "noPaymentMethod": "Auto top-up needs a payment method. Add one to turn it on.",
+        "noDefaultPaymentMethod": "Auto top-up needs a default payment method. Set one to turn it on.",
         "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
@@ -3656,6 +3696,17 @@
         "pausedByRemainderNoDate": "Next top-up would go over your monthly limit.",
         "maximumReached": "Monthly maximum reached. Resets {date}.",
         "maximumReachedNoDate": "Monthly maximum reached.",
+        "member": "Credits can top up automatically when they run low. Contact a workspace owner to manage this.",
+        "memberStatus": {
+          "on": "Tops up to {target} credits when below {threshold} credits. Contact a workspace owner to manage this.",
+          "limitReached": "Monthly limit reached. Resets {date}. Contact a workspace owner to manage this.",
+          "limitReachedNoDate": "Monthly limit reached. Contact a workspace owner to manage this.",
+          "maximumReached": "Monthly maximum reached. Resets {date}. Contact a workspace owner to manage this.",
+          "maximumReachedNoDate": "Monthly maximum reached. Contact a workspace owner to manage this.",
+          "failed": "The last top-up didn't go through. Contact a workspace owner to manage this.",
+          "turnedOff": "Turned off after 3 declined charges. Contact a workspace owner to manage this.",
+          "onHold": "Needs a default payment method. Contact a workspace owner to manage this."
+        },
         "rule": "Tops up to {target} credits when below {threshold} credits.",
         "status": {
           "failed": "Failed",
@@ -3678,12 +3729,12 @@
         "plan": "Plan",
         "planOfPool": "{remaining} of {total}",
         "planUsed": "{percent}% used",
-        "planTooltip": "Credits included with your plan. They refill each billing period.",
-        "rateInfo": "About credits",
-        "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
+        "planTooltip": "Plan credits are spent before top-up credits.",
+        "tooltipLabel": "About credits",
+        "tooltip": "Credits work across Comfy Cloud, ComfyUI, and Comfy API.",
         "title": "Credits",
         "topUp": "Top-up",
-        "topUpTooltip": "Credits you added. They're used once plan credits run out.",
+        "topUpTooltip": "Used after plan credits run out.",
         "unavailable": "Couldn't load your balance."
       },
       "footer": {
@@ -3740,6 +3791,7 @@
         },
         "scheduledChange": "Changes to {plan} on {date}.",
         "stayConfirm": {
+          "body": "You'll stay on {current}, which renews on {date}. You can schedule a change again anytime.",
           "bodyNoAmount": "You'll stay on {current}. You can schedule a change again anytime.",
           "title": "Cancel your change to {plan}?"
         },
@@ -3777,6 +3829,12 @@
         "pastDuePersonalBody": "You've used all your credits. Update your payment method to add more.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
+        "refusedBody": "Your team has used all its credits.",
+        "refusedPersonalBody": "You've used all your credits.",
+        "pausedBody": "Your team has used all its credits. Buying credits isn't available right now. Credits refill on {date}.",
+        "pausedBodyNoDate": "Your team has used all its credits. Buying credits isn't available right now. Try again later, or message support.",
+        "pausedPersonalBody": "You've used all your credits. Buying credits isn't available right now. Credits refill on {date}.",
+        "pausedPersonalBodyNoDate": "You've used all your credits. Buying credits isn't available right now. Try again later, or message support.",
         "addCredits": "Add credits",
         "dismiss": "Dismiss"
       },
@@ -3793,14 +3851,15 @@
         "localBody": "You have {credits} credit left. Add credits to keep running Partner Nodes. | You have {credits} credits left. Add credits to keep running Partner Nodes.",
         "personalBody": "You have {credits} credit left. Add credits before you run out. | You have {credits} credits left. Add credits before you run out.",
         "ownerBody": "This workspace has {credits} credit left. Add credits before you run out. | This workspace has {credits} credits left. Add credits before you run out.",
-        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out."
+        "memberBody": "This workspace has {credits} credit left. Ask the workspace owner to add credits before you run out. | This workspace has {credits} credits left. Ask the workspace owner to add credits before you run out.",
+        "pausedBody": "You have {credits} credit left. Buying credits isn't available right now. | You have {credits} credits left. Buying credits isn't available right now."
       },
       "ending": {
         "title": "Your Team plan ends on {date}",
         "body": "You won't be charged again. Members keep full access until then. Resume your plan to keep your team's shared credits.",
         "memberBody": "You can run workflows until then.",
         "personalTitle": "Your {plan} plan ends on {date}",
-        "personalBody": "You won't be charged again. Resume your plan to keep your monthly credits.",
+        "personalBody": "You won't be charged again. Resume your plan to keep getting credits.",
         "enterpriseTitle": "Your Enterprise plan ends on {date}",
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume plan",
@@ -3832,7 +3891,7 @@
         "teamMemberBody": "Ask your workspace owner to resubscribe.",
         "personalTitle": "Your {plan} plan ended on {date}",
         "personalTitleNoDate": "Your {plan} plan has ended",
-        "personalBody": "Resubscribe to run workflows and get monthly credits again.",
+        "personalBody": "Resubscribe to run workflows and get credits again.",
         "enterpriseTitle": "Your Enterprise plan ended on {date}",
         "enterpriseBody": "Contact sales to start a new Enterprise plan.",
         "planTitle": "Your plan ended on {date}",
@@ -4107,10 +4166,22 @@
     "roleOwner": "Owner",
     "roleMember": "Member",
     "createWorkspace": "Create a workspace",
-    "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
+    "maxWorkspacesReached": "You can only own {max} workspace. Delete it to create a new one. | You can only own {max} workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
     "failedToSwitch": "Failed to switch workspace"
+  },
+  "profileMenu": {
+    "switchWorkspace": "Switch workspace",
+    "credits": "Credits",
+    "balanceUnavailable": "Couldn't load your balance.",
+    "billingSettings": "Billing settings",
+    "planStatus": {
+      "noPlan": "No plan",
+      "paused": "Paused",
+      "paymentDue": "Payment due",
+      "ended": "Plan ended"
+    }
   },
   "deploymentSwitcher": {
     "runOn": "Run on",
@@ -4225,6 +4296,47 @@
     "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
     "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
   },
+  "openOnCloud": {
+    "deploySetup": "Deploy your setup to Comfy Cloud",
+    "deployWithAgent": "Deploy with your agent",
+    "deploySetupDialog": {
+      "body": "This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.",
+      "pointGpu": "Work in ComfyUI on the GPU you choose",
+      "pointApi": "Call it from your product as an autoscaling API",
+      "pointNodes": "Bring your custom nodes and models"
+    },
+    "openedFromLocal": "Opened from ComfyUI on your computer",
+    "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
+    "handoffFailed": "Couldn't open the workflow from ComfyUI on your computer",
+    "handoffMissing": "Your workflow didn't arrive",
+    "handoffMissingDetail": "ComfyUI stops waiting after 10 minutes. Click Open on Comfy Cloud in ComfyUI again.",
+    "popupBlocked": "Your browser blocked the Comfy Cloud tab. Allow pop-ups for this page and try again.",
+    "prepareFailed": "Couldn't prepare this workflow for Comfy Cloud",
+    "prepareFailedDetail": "Check the workflow for errors, save it, and try again.",
+    "downloaded": "Workflow downloaded",
+    "desktopTransferFailed": "Your workflow could not be transferred. Click Open on Comfy Cloud in Desktop again.",
+    "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
+    "cloudButton": {
+      "tooltip": "Run on Comfy Cloud",
+      "checking": "Checking Comfy Cloud…"
+    },
+    "runDialog": {
+      "title": "Run on Comfy Cloud",
+      "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
+      "asksToSignIn": "Comfy Cloud will ask you to sign in.",
+      "openOnCloud": "Open on Comfy Cloud"
+    },
+    "agentMenu": {
+      "openInClaude": "Open in Claude desktop",
+      "openInCodex": "Open in Codex",
+      "copyPrompt": "Copy prompt"
+    },
+    "missingModels": {
+      "title": "Missing {count} model | Missing {count} models",
+      "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
+    },
+    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again."
+  },
   "selectionToolbox": {
     "executeButton": {
       "tooltip": "Execute to selected output nodes (Highlighted with orange border)",
@@ -4251,6 +4363,7 @@
     },
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
+    "precisionLimit": "Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)",
     "uploadSelect": {
       "placeholder": "Select...",
       "placeholderImage": "Select image...",
@@ -4499,6 +4612,8 @@
   "cloudSurvey_steps_source": "How did you find us?",
   "cloudSurvey_steps_source_social": "Which platform?",
   "assetBrowser": {
+    "library": "Library",
+    "errorLoadingModels": "Some models couldn’t load. Reopen the Model Library to try again.",
     "allCategory": "All {category}",
     "allModels": "All Models",
     "byType": "By type",
@@ -4570,8 +4685,11 @@
       "planUnavailable": "Couldn't check your plan. Try again.",
       "privateModelsDisabled": "Your plan doesn't include private models.",
       "progress": "{sent} of {total}",
+      "reconnecting": "Reconnecting...",
       "saving": "Saving to your library...",
+      "sessionExpired": "This upload expired. Try again to start a new upload.",
       "stopping": "Stopping the earlier upload...",
+      "transferEstimate": "{rate}/s · {time} left",
       "tryAgain": "Try again",
       "unsupportedType": "Cloud can't store this model type yet. Choose another type.",
       "upload": "Upload",
@@ -4657,6 +4775,7 @@
       "loadingAsset": "Loading asset"
     },
     "modelInfo": {
+      "saveFailed": "Couldn't save model details. Try again.",
       "title": "Model Info",
       "selectModelPrompt": "Select a model to see its information",
       "basicInfo": "Basic Info",
@@ -5195,6 +5314,9 @@
     "errorHelp": "For more help, {github} or {support}",
     "errorHelpGithub": "submit a GitHub issue",
     "errorHelpSupport": "contact our support",
+    "askAgent": "Ask agent",
+    "askAgentAbout": "Ask agent about {title}",
+    "askAgentAboutAll": "Ask agent about {count} issue | Ask agent about all {count} issues",
     "resetToDefault": "Reset to default",
     "resetAllParameters": "Reset all parameters",
     "missingNodePacks": {
@@ -5233,12 +5355,28 @@
       "expandNodes": "Show referencing nodes",
       "collapseNodes": "Hide referencing nodes",
       "unknownCategory": "Unknown",
+      "availableReplacements": "Available instead",
+      "use": "Use",
+      "useReplacement": "Use {model} instead",
       "missingModelsTitle": "Missing Models",
       "downloadModel": "Download {model}",
       "downloadAll": "Download all",
       "refresh": "Refresh",
       "refreshing": "Refreshing missing models.",
-      "refreshFailed": "Failed to refresh missing models. Please try again."
+      "refreshFailed": "Failed to refresh missing models. Please try again.",
+      "downloadQueued": "Queued",
+      "downloadStarting": "Starting",
+      "downloadingModel": "Downloading {model}",
+      "downloadPaused": "Paused",
+      "downloadPausedProgress": "Paused · {progress}",
+      "downloaded": "Downloaded",
+      "retryDownload": "Retry",
+      "retryDownloadModel": "Retry download for {model}",
+      "downloadFailedHint": "The download couldn't be completed. Use Retry to try again.",
+      "downloading": "Downloading",
+      "pauseDownloadModel": "Pause download for {model}",
+      "resumeDownloadModel": "Resume download for {model}",
+      "cancelDownloadModel": "Cancel download for {model}"
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"
@@ -5248,6 +5386,7 @@
     "multipleIssueCount": "{count} issue found | {count} issues found",
     "multipleIssuesMessage": "Resolve these issues before running the workflow.",
     "viewDetails": "View details",
+    "askAgent": "Ask agent",
     "runsOn": "Runs on {deployment}",
     "switchDeployment": "Switch",
     "moreDeployments": "{count} more",
@@ -5464,6 +5603,13 @@
         "itemLabel": "{nodeName}",
         "toastTitle": "Generation failed",
         "toastMessage": "Not enough GPU memory. Try reducing image resolution or batch size and run again."
+      },
+      "server_out_of_memory": {
+        "title": "Ran out of memory",
+        "message": "This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again.",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Ran out of memory",
+        "toastMessage": "This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again."
       },
       "content_blocked": {
         "title": "Content blocked",
@@ -6061,6 +6207,12 @@
       "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
     },
     "askUnavailable": "The agent is waiting on a step this panel can't show.",
+    "extensionChange": {
+      "disabled": "Turned off the node pack {pack}",
+      "enabled": "Turned on the node pack {pack}",
+      "removed": "Removed the node pack {pack}",
+      "restartHint": "This takes effect after ComfyUI restarts. Reload this page after the restart."
+    },
     "askUser": {
       "card": "Question from the agent",
       "chooseUpTo": "Choose up to {max}",
@@ -6121,6 +6273,13 @@
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Describe what you want to create",
     "placeholderWithoutSkills": "Describe what you want to create",
+    "errorContext": {
+      "remove": "Remove attached issue",
+      "problemCount": "{count} problem | {count} problems",
+      "allLabel": "All issues",
+      "draftBlocked": "Send or clear your current message first, then ask the agent about these errors.",
+      "workflowChanged": "The workflow with these errors is no longer open, so nothing was attached."
+    },
     "skills": "Skills",
     "typeToSearch": "type to search",
     "skillNotAvailable": "Not available",
@@ -6225,6 +6384,8 @@
     "worked": "Worked",
     "workedNotConfirmedOnCanvas": "Changes not confirmed on your canvas",
     "toolNotConfirmedOnCanvas": "{tool} — not confirmed on your canvas",
+    "toolOutcomeUnknown": "{tool} — outcome unknown",
+    "toolFailed": "{tool} failed",
     "workedForSeconds": "Worked for {seconds} seconds",
     "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",
@@ -6265,11 +6426,16 @@
     "toolSavingPreference": "Saving a preference",
     "toolForgotPreference": "Forgot a preference",
     "toolForgettingPreference": "Forgetting a preference",
+    "toolRemovedNodePack": "Removed a node pack",
+    "toolRemovingNodePack": "Removing a node pack",
+    "toolSwitchedNodePack": "Switched a node pack",
+    "toolSwitchingNodePack": "Switching a node pack",
     "openWorkflowTab": "Open {name}",
     "unavailableWorkflowReference": "{name} (unavailable)",
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
     "removeWorkflowReference": "Remove {name} reference",
     "targetNavigationUnavailable": "This workflow target is no longer available.",
+    "canvasNotReadyForSend": "This tab's canvas isn't ready yet, so your message wasn't sent. Try again in a moment.",
     "workflowSyncFailedTitle": "This workflow can't sync",
     "workflowSyncFailedDetail": "This workflow was created with an incompatible document version. Your canvas has been left unchanged.",
     "workflowSyncFailedDetailCatalogMismatch": "A node in this workflow has changed since the agent last saw it. Your canvas has been left unchanged. Your next message sends your canvas so the agent can rebuild its copy of the workflow.",
@@ -6280,6 +6446,8 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "editRejected": {
+      "overwritten": "Your edit conflicted with a newer change and was not saved. The workflow was refreshed to show the saved version.",
+      "unconfirmed": "Your edit could not be confirmed as saved. The workflow was refreshed to show the saved version.",
       "widgetWrite": "Widget edit was rejected and was not saved. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
       "generic": "Your edit was rejected and was not saved. Reload the workflow if the canvas still shows it.",
       "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
@@ -6379,5 +6547,135 @@
     "failed": "Some custom nodes didn't start",
     "failedDetail": "Reload the page to turn on: {packs}",
     "reload": "Reload"
+  },
+  "addCreditsDialog": {
+    "title": "Add credits",
+    "customAmountLabel": "Or enter an amount",
+    "amountError": {
+      "below_min": "Minimum is {amount}.",
+      "above_max": "The largest top-up is {amount}. Add more with another top-up.",
+      "whole_dollars": "Whole dollars only."
+    },
+    "negativeBalance": "Your balance is −{credits} credits. This top-up covers that first.",
+    "planLine": {
+      "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
+      "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "free_runs": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
+    },
+    "credits": "{credits} credits",
+    "creditsUnavailable": "— credits",
+    "paidAtCheckout": "{amount}, paid at checkout",
+    "continue": "Continue",
+    "opening": "Opening…",
+    "processing": {
+      "title": "A {amount} payment is still processing",
+      "titleNoAmount": "A payment is still processing",
+      "body": "No need to pay again."
+    },
+    "needsVerification": {
+      "title": "Your {amount} payment needs verification",
+      "titleNoAmount": "Your payment needs verification",
+      "body": "Your bank is waiting for you to confirm it. Verify it to finish this top-up.",
+      "footer": "{amount}, unverified",
+      "action": "Verify payment"
+    },
+    "notVerified": {
+      "title": "Your {amount} payment wasn't verified",
+      "titleNoAmount": "Your payment wasn't verified",
+      "body": "Your bank didn't confirm it. Try again later, or contact support.",
+      "footerTitle": "{amount} top-up",
+      "footer": "Not verified",
+      "action": "Contact support"
+    },
+    "checkoutFailed": {
+      "title": "Couldn't open checkout",
+      "body": "Nothing was charged. Try again."
+    },
+    "notAllowed": {
+      "title": "You can't add credits right now",
+      "body": "Check Billing settings to see why."
+    },
+    "rateLimited": {
+      "title": "You've hit the top-up limit for now",
+      "body": "Try again in {wait}, or {support}.",
+      "bodyNoWait": "Try again later, or {support}."
+    },
+    "purchasesPaused": {
+      "title": "Buying credits isn't available right now",
+      "body": "Try again later, or {support}."
+    },
+    "messageSupport": "message support",
+    "wait": {
+      "minute": "a minute",
+      "minutes": "{count} minutes",
+      "hour": "an hour",
+      "hours": "{count} hours",
+      "day": "a day",
+      "days": "{count} days"
+    },
+    "opened": {
+      "title": "Checkout opened in a new tab",
+      "titleBrowser": "Checkout opened in your browser",
+      "body": "Credits are added to this workspace as soon as your payment goes through.",
+      "credits": "Credits",
+      "amount": "Amount",
+      "reopen": "Reopen checkout"
+    },
+    "close": "Close",
+    "blocked": {
+      "title": "Checkout didn't open",
+      "body": "Your browser blocked the new tab. Open checkout to finish paying.",
+      "action": "Open checkout"
+    },
+    "autoTopUpOffer": {
+      "body": "Buy credits automatically when you run low, so workflows and API calls keep running.",
+      "setUp": "Set up",
+      "notNow": "Not now"
+    },
+    "autoTopUp": {
+      "label": "Turn on auto top-up",
+      "body": "Buy credits automatically when you run low, so workflows keep running.",
+      "threshold": "When credits drop below",
+      "thresholdHint": "Counts plan credits and credits you’ve bought.",
+      "target": "Top up to",
+      "targetHint": "{target} credits. Each top-up is at least {amount}.",
+      "limit": "Monthly limit",
+      "limitOff": "Up to {max} a month, the maximum. Turn on to set a lower limit.",
+      "limitHint": "Most you can set here: {max} a month.",
+      "consentNoCard": "Top-ups are charged to the card you pay with at checkout, up to {max} a month. Turn this off anytime in {billing}.",
+      "consentDefaultCard": "Top-ups are charged to your default card, {card}, up to {max} a month. Turn this off anytime in {billing}.",
+      "card": "{brand} ···· {last4}",
+      "billing": "Billing",
+      "invalid": "Enter a valid value.",
+      "fieldError": {
+        "notWhole": "Enter a whole number of credits.",
+        "belowMinimum": "Must be at least 1 credit.",
+        "belowTarget": "Must be at least {minimum} credits, about {usd} above your threshold.",
+        "aboveTarget": "Can’t be more than {max} credits (about {usd}).",
+        "belowTopUp": "Can’t cover one top-up. Set at least {amount}."
+      },
+      "isOn": "Auto top-up is on.",
+      "manage": "Manage"
+    },
+    "autoTopUpOn": {
+      "title": "Auto top-up is on",
+      "summary": "Below {threshold} credits, tops up to {target}.",
+      "limit": "Up to {limit} a month.",
+      "noLimit": "No monthly limit.",
+      "done": "Done"
+    },
+    "autoTopUpFailed": {
+      "title": "Auto top-up didn't turn on",
+      "body": "Your credits were added. Set up auto top-up in Billing to try again."
+    }
+  },
+  "billingHandoff": {
+    "failed": "Could not open billing. Try again.",
+    "superseded": "Your account or workspace changed while billing was opening. Try again.",
+    "signInAgain": "Sign in again to open billing.",
+    "popupBlocked": "Your browser blocked the billing tab.",
+    "openBilling": "Open billing",
+    "opening": "Opening checkout…",
+    "openingDetail": "This takes a few seconds."
   }
 }

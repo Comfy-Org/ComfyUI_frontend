@@ -34,6 +34,7 @@
             :src="url"
             :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
             draggable="false"
+            decoding="async"
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
             @error="failedHdrPreviews[index] = true"
@@ -116,10 +117,12 @@
         v-if="!imageError && !isHdrPlaceholder(currentIndex)"
         :key="currentImageUrl"
         data-testid="main-image"
-        :src="currentHdrPreviewUrl ?? currentImageUrl"
+        :src="mainImageSrc"
         :data-file-url="currentHdrPreviewUrl ? currentImageUrl : undefined"
+        :data-full-src="isDownscaled ? currentImageUrl : undefined"
         :alt="imageAltText"
         draggable="false"
+        decoding="async"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
         @error="handleImageError"
@@ -247,8 +250,20 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize, useTimeoutFn } from '@vueuse/core'
-import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import {
+  computedAsync,
+  useElementSize,
+  useObjectUrl,
+  useTimeoutFn
+} from '@vueuse/core'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -267,7 +282,12 @@ import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
 import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
+
+const DISPLAY_MAX_EDGE = 1024
+const PRELOAD_MIN_SCALE = 1
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -281,6 +301,7 @@ const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
+const { getDisplayImage } = useImagePreviewStore()
 const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 const toast = useToast()
 
@@ -321,6 +342,26 @@ const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
 const currentHdrPreviewUrl = computed(() =>
   getHdrPreviewUrl(currentImageUrl.value)
 )
+const displayImage = computedAsync(async () => {
+  const source = currentImageUrl.value
+  if (viewMode.value !== 'gallery' || !source || currentHdrPreviewUrl.value)
+    return undefined
+  return getDisplayImage(source, DISPLAY_MAX_EDGE)
+})
+const currentDisplayImage = computed(() =>
+  displayImage.value?.source === currentImageUrl.value
+    ? displayImage.value
+    : undefined
+)
+const displayImageUrl = useObjectUrl(() => currentDisplayImage.value?.blob)
+const mainImageSrc = computed(
+  () =>
+    currentHdrPreviewUrl.value ??
+    (currentDisplayImage.value?.blob
+      ? displayImageUrl.value
+      : currentDisplayImage.value?.source)
+)
+const isDownscaled = computed(() => !!currentDisplayImage.value?.blob)
 const gridImageUrls = computed(() =>
   imageUrls.map((url) => getHdrPreviewUrl(url) ?? getGridThumbnailUrl(url))
 )
@@ -339,6 +380,28 @@ const gridCols = computed(() => {
   const bias = gridWidth.value / gridHeight.value / imageAspectRatio.value
   return Math.max(Math.round(Math.sqrt(imageUrls.length * bias)), 1)
 })
+
+const { camera } = useTransformState()
+const isZoomedIn = computed(() => camera.z >= PRELOAD_MIN_SCALE)
+const preloadUrls = computed(() => {
+  if (!hasMultipleImages.value || !isZoomedIn.value) return []
+  const count = imageUrls.length
+  const candidates =
+    viewMode.value === 'grid'
+      ? imageUrls
+      : [
+          imageUrls[(currentIndex.value + 1) % count],
+          imageUrls[(currentIndex.value - 1 + count) % count]
+        ]
+  return candidates.filter((url) => !getHdrPreviewUrl(url))
+})
+watch(
+  preloadUrls,
+  (urls) => {
+    for (const url of urls) void getDisplayImage(url, DISPLAY_MAX_EDGE)
+  },
+  { immediate: true }
+)
 
 watch(
   () => imageUrls,
@@ -366,17 +429,24 @@ watch(
   { immediate: true }
 )
 
+let isUnmounted = false
+onBeforeUnmount(() => {
+  isUnmounted = true
+})
+
 function handleImageLoad(event: Event) {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = false
-  if (img.naturalWidth && img.naturalHeight) {
-    actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
+  const { width, height } = currentDisplayImage.value?.originalSize ?? {
+    width: img.naturalWidth,
+    height: img.naturalHeight
   }
+  if (width && height) actualDimensions.value = `${width} x ${height}`
 
-  if (nodeId) {
+  if (nodeId && !isUnmounted) {
     nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
   }
 }

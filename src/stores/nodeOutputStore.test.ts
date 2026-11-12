@@ -1070,6 +1070,29 @@ describe('nodeOutputStore merge mode interactions', () => {
   )
 })
 
+describe('nodeOutputStore image url cache busting', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+    let calls = 0
+    vi.mocked(app.getRandParam).mockImplementation(() => `&rand=${calls++}`)
+  })
+
+  it('reuses one url for the same outputs and a fresh one for new outputs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+
+    store.setNodeOutputs(node, 'same-name.png')
+    const first = store.getNodeImageUrls(node)
+    const again = store.getNodeImageUrls(node)
+    store.setNodeOutputs(node, 'same-name.png')
+    const afterReload = store.getNodeImageUrls(node)
+
+    expect(again).toEqual(first)
+    expect(afterReload).not.toEqual(first)
+  })
+})
+
 describe('nodeOutputStore setNodeOutputs (widget path)', () => {
   beforeEach(() => {
     app.nodeOutputs = {}

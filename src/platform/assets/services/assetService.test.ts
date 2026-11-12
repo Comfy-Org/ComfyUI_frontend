@@ -385,16 +385,21 @@ describe(assetService.deleteAsset, () => {
     await expect(assetService.deleteAsset('asset-1')).rejects.toThrow(/503/)
   })
 
-  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(null))
+  it.for([204, 404])(
+    'confirms the record is absent after DELETE returns %s',
+    async (status) => {
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(null, { status })
+      )
 
-    await assetService.deleteAsset('asset-1')
+      await expect(assetService.deleteAsset('asset-1')).resolves.toBeUndefined()
 
-    expect(api.fetchApi).toHaveBeenCalledWith(
-      '/assets/asset-1',
-      expect.objectContaining({ method: 'DELETE' })
-    )
-  })
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets/asset-1',
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    }
+  )
 })
 
 describe('asset tag changes', () => {
@@ -1472,3 +1477,34 @@ describe(assetService.getAssetsForNodeType, () => {
 })
 
 vi.mock(import('@/scripts/app'))
+
+describe(assetService.getWorkspaceLibraryAssetsPage, () => {
+  it('requests workspace models with its own cursor and preserves loader paths and permissions', async () => {
+    const row = validAsset({
+      loader_path: 'artist/style.safetensors',
+      is_immutable: true
+    })
+    const controller = new AbortController()
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      Response.json({
+        assets: [row],
+        total: 2,
+        has_more: true,
+        next_cursor: 'library-next'
+      })
+    )
+    const response = await assetService.getWorkspaceLibraryAssetsPage({
+      after: 'library-first',
+      signal: controller.signal
+    })
+    expect(response.assets).toEqual([row])
+    expect(response.next_cursor).toBe('library-next')
+    const [url, options] = vi.mocked(api.fetchApi).mock.calls[0]
+    const params = new URL(url, 'http://localhost').searchParams
+    expect(params.get('include_tags')).toBe('models')
+    expect(params.get('workspace_library')).toBe('true')
+    expect(params.get('include_public')).toBe('false')
+    expect(params.get('after')).toBe('library-first')
+    expect(options?.signal).toBe(controller.signal)
+  })
+})

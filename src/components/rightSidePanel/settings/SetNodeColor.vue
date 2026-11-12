@@ -9,7 +9,7 @@ import { useI18n } from 'vue-i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ColorOption } from '@/lib/litegraph/src/litegraph'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -27,7 +27,7 @@ const emit = defineEmits<{ (e: 'changed'): void }>()
 
 const { t } = useI18n()
 
-const colorPaletteStore = useColorPaletteStore()
+const themeStore = useThemeStore()
 
 type NodeColorOption = {
   name: string
@@ -66,7 +66,7 @@ const colorOptions: NodeColorOption[] = [
   }))
 ]
 
-const isLightTheme = computed(() => colorPaletteStore.colorScheme === 'light')
+const isLightTheme = computed(() => themeStore.colorScheme === 'light')
 
 const nodeColor = computed<NodeColorOption['name'] | null>({
   get() {
