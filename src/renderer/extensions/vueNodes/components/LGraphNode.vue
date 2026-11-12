@@ -698,7 +698,7 @@ const nodeMedia = computed(() => {
   if (node instanceof SubgraphNode) return undefined
 
   const outputs = nodeOutputs.getNodeOutputs(node)
-  if (!outputs) return undefined
+  if (!outputs?.images?.length) return undefined
 
   if (shouldHideLinkedCoreMediaInputPreview(node, outputs)) return undefined
 
