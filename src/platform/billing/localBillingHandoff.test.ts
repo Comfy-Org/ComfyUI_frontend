@@ -113,11 +113,19 @@ describe('launchLocalBillingHandoff', () => {
   it('sends the tab opened on click to the issued entry URL', async () => {
     const tab = fakeTab()
     openTabs(tab)
-    respondToFetch(HANDOFFS, issued)
+    let answer: (response: Response) => void = () => {}
+    respondToFetch(
+      HANDOFFS,
+      () => new Promise<Response>((resolve) => (answer = resolve))
+    )
 
-    await expect(launchLocalBillingHandoff(retry)).resolves.toBe('opened')
-
+    const launch = launchLocalBillingHandoff(retry)
+    await vi.waitFor(() => expect(fetchRequests(HANDOFFS)).toHaveLength(1))
     expect(tab.document.title).toBe(t('billingHandoff.opening'))
+    expect(tab.location.href).toBe('')
+    answer(issued())
+
+    await expect(launch).resolves.toBe('opened')
     expect(tab.location.href).toBe(ENTRY_URL)
     expect(tab.closed).toBe(false)
     const [request] = fetchRequests(HANDOFFS)

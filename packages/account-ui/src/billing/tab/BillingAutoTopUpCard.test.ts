@@ -285,6 +285,24 @@ describe('BillingAutoTopUpCard', () => {
     )
   })
 
+  it('keeps the status but no action when the host hides it', () => {
+    render(BillingAutoTopUpCard, {
+      props: {
+        state: loaded({ status: 'failed' }),
+        offView: 'off',
+        setup: null,
+        copy: autoTopUpCardCopy,
+        locale: 'en',
+        actionHref: 'https://billing.test/profile/billing',
+        actionHidden: true
+      }
+    })
+
+    expect(screen.getByTestId('billing-auto-top-up-status')).toBeTruthy()
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
   it('opens the host link in a new tab and reports the action', async () => {
     const onAction = vi.fn()
     render(BillingAutoTopUpCard, {

@@ -7,7 +7,7 @@ import { watch } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
-import { t } from '@/i18n'
+import { i18n, t } from '@/i18n'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { refreshBilling } from '@/platform/billing/billingRefresh'
 import type { BillingTab } from '@/platform/billing/billingTab'
@@ -157,6 +157,7 @@ export async function launchLocalBillingHandoff(
 ): Promise<HandoffLaunch> {
   if (inFlight) return 'busy'
   const tab = reserveBillingTab({
+    lang: i18n.global.locale.value,
     title: t('billingHandoff.opening'),
     detail: t('billingHandoff.openingDetail')
   })

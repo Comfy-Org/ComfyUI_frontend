@@ -45,10 +45,12 @@ describe('reserveBillingTab', () => {
       vi.spyOn(window, 'open').mockReturnValue(tab as never)
 
       reserveBillingTab({
+        lang: 'ko',
         title: 'Opening checkout…',
         detail: 'This takes a few seconds.'
       })
 
+      expect(tab.document.documentElement.lang).toBe('ko')
       expect(tab.document.title).toBe('Opening checkout…')
       expect(
         tab.document
