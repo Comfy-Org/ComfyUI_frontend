@@ -9,12 +9,15 @@ const PANEL_ANCHORS = [
   'bottom-right'
 ] as const
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export type ViewportPanelAnchor = (typeof PANEL_ANCHORS)[number]
+
 /** A panel the pack renders over the graph view. */
 export interface ViewportPanelDef {
   /** Namespaced to the pack. */
   readonly id: string
   /** The edge or corner the panel sits against. Defaults to `'top-left'`. */
-  readonly anchor?: (typeof PANEL_ANCHORS)[number]
+  readonly anchor?: ViewportPanelAnchor
   /** Pixels in from the anchored side, or along from the centre. */
   readonly offsetX?: number
   /** Pixels in from the anchored top or bottom. */

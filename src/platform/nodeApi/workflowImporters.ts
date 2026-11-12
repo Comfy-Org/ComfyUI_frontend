@@ -8,11 +8,9 @@ export interface WorkflowImportContext {
   readonly type: string
 }
 
-type ImportedData = Readonly<Record<string, unknown>>
-
 export type WorkflowImportResult =
-  | { readonly workflow: ImportedData | string }
-  | { readonly prompt: ImportedData | string }
+  | { readonly workflow: Readonly<Record<string, unknown>> | string }
+  | { readonly prompt: Readonly<Record<string, unknown>> | string }
 
 /** Reads a workflow or prompt out of a file the host cannot read itself. */
 export interface WorkflowImporter {
@@ -82,7 +80,9 @@ function toImportResult(value: unknown): WorkflowImportResult | undefined {
   return undefined
 }
 
-function isImported(value: unknown): value is ImportedData | string {
+function isImported(
+  value: unknown
+): value is Readonly<Record<string, unknown>> | string {
   return (
     typeof value === 'string' ||
     (value !== null && typeof value === 'object' && !Array.isArray(value))
