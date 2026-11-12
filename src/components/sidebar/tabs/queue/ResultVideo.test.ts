@@ -9,9 +9,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 
 import ResultVideo from './ResultVideo.vue'
 
-const distribution = vi.hoisted(() => ({ isCloud: false }))
-vi.mock(import('@/platform/distribution/types'), () => distribution)
-
 function setVhsAdvancedPreviews(enabled: boolean) {
   const extensionStore = useExtensionStore()
   vi.mocked(extensionStore.isExtensionInstalled).mockReturnValue(enabled)
@@ -46,12 +43,12 @@ const jobOutput: AugmentedResultItem = {
 const assetPanelItem: AugmentedResultItem = {
   ...jobOutput,
   filename: 'QATEST_c45_00002_.mp4',
-  url: '/api/view?filename=blake3%3Aabc&type=output'
+  url: '/api/view?filename=blake3%3Aabc&type=output',
+  filenameIsDisplayName: true
 }
 
 describe('ResultVideo', () => {
   beforeEach(() => {
-    distribution.isCloud = false
     setVhsAdvancedPreviews(false)
   })
 
@@ -61,8 +58,7 @@ describe('ResultVideo', () => {
     )
   })
 
-  it('plays the resolved url on Cloud with VHS advanced previews on', () => {
-    distribution.isCloud = true
+  it('plays the resolved url of a display-name item with VHS previews on', () => {
     setVhsAdvancedPreviews(true)
 
     const source = renderVideo(assetPanelItem)
@@ -71,8 +67,7 @@ describe('ResultVideo', () => {
     expect(source.getAttribute('type')).toBe('video/mp4')
   })
 
-  it('falls back to the VHS preview on Cloud when the url is empty', () => {
-    distribution.isCloud = true
+  it('falls back to the VHS preview when the url is empty', () => {
     setVhsAdvancedPreviews(true)
 
     expect(
@@ -80,16 +75,18 @@ describe('ResultVideo', () => {
     ).toMatch(/^\/api\/viewvideo\?/)
   })
 
-  it('keeps the VHS preview off Cloud, where the filename is on disk', () => {
+  it('keeps the VHS preview when the filename is a file name', () => {
     setVhsAdvancedPreviews(true)
 
-    expect(renderVideo(assetPanelItem).getAttribute('src')).toMatch(
-      /^\/api\/viewvideo\?filename=QATEST_c45_00002_\.mp4&/
-    )
+    expect(
+      renderVideo({
+        ...assetPanelItem,
+        filenameIsDisplayName: false
+      }).getAttribute('src')
+    ).toMatch(/^\/api\/viewvideo\?filename=QATEST_c45_00002_\.mp4&/)
   })
 
   it('uses the VHS advanced preview for a job output without a url', () => {
-    distribution.isCloud = true
     setVhsAdvancedPreviews(true)
 
     const source = renderVideo(jobOutput)

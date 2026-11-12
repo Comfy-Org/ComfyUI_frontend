@@ -39,6 +39,8 @@ export type OAuthConsentChallenge = Omit<
      * Not in the spec yet.
      */
     client_application_type?: 'native' | 'web'
+    user_email?: string
+    user_display_name?: string
   }
 
 export function isFirstPartyClient(
@@ -124,10 +126,16 @@ function assertChallenge(
     !Array.isArray(challenge.scopes) ||
     !challenge.scopes.every((scope) => typeof scope === 'string') ||
     !Array.isArray(challenge.workspaces) ||
-    !challenge.workspaces.every(isValidWorkspace)
+    !challenge.workspaces.every(isValidWorkspace) ||
+    !isOptionalString(challenge.user_email) ||
+    !isOptionalString(challenge.user_display_name)
   ) {
     throw new Error('OAuth consent challenge is invalid')
   }
+}
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string'
 }
 
 function isValidWorkspace(value: unknown): value is OAuthWorkspace {

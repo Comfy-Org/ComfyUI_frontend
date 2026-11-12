@@ -143,7 +143,8 @@
       :pay-amount
       :credits="creditsModel"
       :selected-preset
-      :max-amount="MAX_AMOUNT"
+      :max-amount="maxTopup.usd"
+      :max-credits="maxTopup.credits"
       :plan-credit-copy
       @preset="handlePresetClick"
       @pay-amount="handlePayAmountChange"
@@ -171,7 +172,7 @@
       <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.minRequired', {
-          credits: formatNumber(usdToCredits(MIN_AMOUNT))
+          credits: formatNumber(minTopup.credits)
         })
       }}
     </p>
@@ -182,7 +183,7 @@
       <i class="icon-[lucide--coins]" />
       {{
         $t('credits.topUp.maxAllowed', {
-          credits: formatNumber(usdToCredits(MAX_AMOUNT))
+          credits: formatNumber(maxTopup.credits)
         })
       }}
       <span>{{ $t('credits.topUp.needMore') }}</span>
@@ -384,10 +385,10 @@ import {
 } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import TopUpAmountFields from './TopUpAmountFields.vue'
-import TopUpAutoTopUpCard from './TopUpAutoTopUpCard.vue'
+import TopUpAmountFields from '@/platform/billing/components/TopUpAmountFields.vue'
+import TopUpAutoTopUpCard from '@/platform/billing/components/TopUpAutoTopUpCard.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
-import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
+import { useTopUpPlanCreditCopy } from '@/platform/billing/legacy160/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -596,8 +597,35 @@ const creditsModel = computed({
   }
 })
 
+function servedBoundOr(
+  fallbackUsd: number,
+  cents: number | undefined,
+  credits: number | undefined
+) {
+  return cents === undefined || credits === undefined
+    ? { usd: fallbackUsd, credits: usdToCredits(fallbackUsd) }
+    : { usd: cents / 100, credits }
+}
+
+const minTopup = computed(() =>
+  servedBoundOr(
+    MIN_AMOUNT,
+    balance.value?.minTopupCents,
+    balance.value?.minTopupCredits
+  )
+)
+const maxTopup = computed(() =>
+  servedBoundOr(
+    MAX_AMOUNT,
+    balance.value?.maxTopupCents,
+    balance.value?.maxTopupCredits
+  )
+)
+
 const isValidAmount = computed(
-  () => payAmount.value >= MIN_AMOUNT && payAmount.value <= MAX_AMOUNT
+  () =>
+    payAmount.value >= minTopup.value.usd &&
+    payAmount.value <= maxTopup.value.usd
 )
 
 const negativeBalanceCredits = computed(() => {
@@ -608,8 +636,8 @@ const negativeBalanceCredits = computed(() => {
   return centsToCredits(-cents)
 })
 
-const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
-const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
+const isBelowMin = computed(() => payAmount.value < minTopup.value.usd)
+const showCeilingWarning = computed(() => payAmount.value >= maxTopup.value.usd)
 
 const displayTotal = computed(() =>
   n(payAmount.value, {
@@ -686,7 +714,7 @@ function openTopupVerification() {
 }
 
 function showAmountStep() {
-  stopPayRetryOnCardReturn()
+  stopPayOfferOnCardReturn()
   checkoutRecovery.value = null
   step.value = 'amount'
 }
@@ -854,14 +882,14 @@ watch(
   () => workspaceStore.workspaceTransitionGeneration,
   () => {
     checkoutScope?.abort()
-    stopPayRetryOnCardReturn()
+    stopPayOfferOnCardReturn()
   },
   { flush: 'sync' }
 )
 onUnmounted(() => {
   unmounted = true
   checkoutScope?.abort()
-  stopPayRetryOnCardReturn()
+  stopPayOfferOnCardReturn()
 })
 
 function watchCheckoutCompletion() {
@@ -886,50 +914,21 @@ function watchCheckoutCompletion() {
   })
 }
 
-function stopPayRetryOnCardReturn() {
+function stopPayOfferOnCardReturn() {
   stopDefaultCardReturnRefresh?.()
   stopDefaultCardReturnRefresh = null
 }
 
-function armPayRetryAfterNextDeparture() {
-  stopPayRetryOnCardReturn()
-  const arm = () => {
-    stopPayRetryOnCardReturn()
-    armPayRetryOnCardReturn()
-  }
-  const onVisibility = () => {
-    if (document.visibilityState === 'hidden') arm()
-  }
-  window.addEventListener('blur', arm)
-  document.addEventListener('visibilitychange', onVisibility)
-  stopDefaultCardReturnRefresh = () => {
-    window.removeEventListener('blur', arm)
-    document.removeEventListener('visibilitychange', onVisibility)
-  }
-}
-
-function armPayRetryOnCardReturn() {
-  stopPayRetryOnCardReturn()
+function offerPayOnCardReturn() {
+  stopPayOfferOnCardReturn()
   const launchedGeneration = workspaceStore.workspaceTransitionGeneration
   stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
-    const stop = stopDefaultCardReturnRefresh
-    stopDefaultCardReturnRefresh = null
-    stop?.()
+    stopPayOfferOnCardReturn()
     if (step.value !== 'confirm') return
     if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
       return
     }
-    const attempt = purchaseAttempt
-    await handleBuy()
-    if (unmounted) return
-    if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
-      return
-    }
-    if (checkoutRecovery.value === 'refused') {
-      armPayRetryAfterNextDeparture()
-      return
-    }
-    if (purchaseAttempt === attempt) armPayRetryOnCardReturn()
+    checkoutRecovery.value = null
   })
 }
 
@@ -953,7 +952,7 @@ async function setDefaultCard() {
       return
     }
     portalTab.navigate(url)
-    armPayRetryOnCardReturn()
+    offerPayOnCardReturn()
   } catch {
     reportDefaultCardPortalFailure(portalTab)
   } finally {
@@ -963,7 +962,7 @@ async function setDefaultCard() {
 
 function followBlockedDefaultCardLink() {
   step.value = 'confirm'
-  armPayRetryOnCardReturn()
+  offerPayOnCardReturn()
 }
 
 function reportDefaultCardPortalFailure(portalTab: BillingTab | null) {
