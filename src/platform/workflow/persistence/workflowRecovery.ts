@@ -49,10 +49,15 @@ export function checkpointWorkflowRecovery(): boolean {
     )
     if (
       current?.data &&
-      !draftStore.saveDraft(active.path, current.data, {
-        name: active.key,
-        isTemporary: active.isTemporary
-      })
+      !draftStore.saveDraft(
+        active.path,
+        current.data,
+        {
+          name: active.key,
+          isTemporary: active.isTemporary
+        },
+        { evict: false }
+      )
     )
       return false
 

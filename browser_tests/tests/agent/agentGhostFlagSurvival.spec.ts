@@ -56,8 +56,6 @@ test.describe(
           expect(
             outcomes.some((outcome) => outcome.outcome === 'applied')
           ).toBe(true)
-          // The node really was a ghost at the moment the op was minted from
-          // it; without this the rest of the test proves nothing.
           expect(agentConversation.placementWasGhosted).toBe(true)
           return added
         })
@@ -77,6 +75,9 @@ test.describe(
       await test.step('reload with no local workflow, so the node can only come back from the document', async () => {
         const before = agentConversation.subscribeCount()
         await agentConversation.reloadWithoutLocalWorkflow()
+        await expect(
+          agentConversation.vueNodes.getNodeLocator(nodeId)
+        ).not.toBeAttached()
         await agentConversation.sendPrompt()
         await expect
           .poll(() => agentConversation.subscribeCount())
@@ -90,6 +91,7 @@ test.describe(
         await expect(node).not.toHaveAttribute('data-ghost')
         await expect(node).not.toHaveClass(/pointer-events-none/)
 
+        await agentConversation.fitCanvasToGraph()
         await agentConversation.vueNodes.selectNode(nodeId)
         await expect(agentConversation.vueNodes.emphasizedNodes).toHaveCount(1)
         await expect(node).toHaveAttribute('data-emphasized', 'true')

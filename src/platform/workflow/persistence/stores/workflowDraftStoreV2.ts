@@ -141,14 +141,29 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Saves a draft (data + metadata).
    * Primes index cache, writes payload, then persists updated index.
    */
-  function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
+  function saveDraft(
+    path: string,
+    data: string,
+    meta: DraftMeta,
+    { evict = true } = {}
+  ): boolean {
     if (!isStorageAvailable()) return false
 
     const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
     const now = Date.now()
 
-    const index = loadIndex()
+    const index = evict
+      ? loadIndex()
+      : (readIndex(workspaceId) ?? createEmptyIndex())
+    const { index: newIndex, evicted } = upsertEntry(
+      index,
+      path,
+      { ...meta, updatedAt: now },
+      MAX_DRAFTS
+    )
+    if (!evict && evicted.length > 0) return false
+    const previousPayload = readPayload(workspaceId, draftKey)
 
     const payloadWritten = writePayload(
       workspaceId,
@@ -157,20 +172,21 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     )
 
     if (!payloadWritten) {
-      return handleQuotaExceeded(path, data, meta)
+      return evict && handleQuotaExceeded(path, data, meta)
     }
-    const { index: newIndex, evicted } = upsertEntry(
-      index,
-      path,
-      { ...meta, updatedAt: now },
-      MAX_DRAFTS
-    )
 
-    if (!persistIndex(newIndex)) {
-      deletePayload(workspaceId, draftKey)
-      persistIndex(index)
-      return false
+    let indexWritten = false
+    try {
+      indexWritten = persistIndex(newIndex)
+    } finally {
+      if (!indexWritten) {
+        if (previousPayload)
+          writePayload(workspaceId, draftKey, previousPayload)
+        else deletePayload(workspaceId, draftKey)
+        persistIndex(index)
+      }
     }
+    if (!indexWritten) return false
 
     deletePayloads(workspaceId, evicted)
     deleteLineages(workspaceId, evicted)
@@ -368,7 +384,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     if (fresh && !index.order.includes(draftKey)) return null
     const payload = readPayload(workspaceId, draftKey)
     if (!payload) {
-      removeDraft(path)
+      if (!fresh) removeDraft(path)
       return null
     }
     if (payload.lineage)

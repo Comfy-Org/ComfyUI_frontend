@@ -9,6 +9,7 @@ import {
 } from '@/platform/workflow/management/leavePrompt'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import { resetStorageAvailable } from '@/platform/workflow/persistence/base/storageIO'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -30,6 +31,15 @@ function leavePage() {
   const event = new Event('beforeunload', { cancelable: true })
   window.dispatchEvent(event)
   return event
+}
+
+function seedRecoveryDrafts(workflows: ComfyWorkflow[]) {
+  const store = useWorkflowDraftStoreV2()
+  for (const workflow of workflows)
+    store.saveDraft(workflow.path, JSON.stringify(blankGraph), {
+      name: workflow.key,
+      isTemporary: true
+    })
 }
 
 describe('UnloadWindowConfirmDialog', () => {
@@ -223,6 +233,83 @@ describe('UnloadWindowConfirmDialog', () => {
         render(UnloadWindowConfirmDialog)
 
         expect(leavePage().defaultPrevented).toBe(asks)
+      }
+    )
+
+    it.for(['QuotaExceededError', 'SecurityError'])(
+      'keeps the previous active draft when its checkpoint index write fails with %s',
+      (errorName) => {
+        const store = useWorkflowDraftStoreV2()
+        const path = 'workflows/active.json'
+        store.saveDraft(path, JSON.stringify(blankGraph), {
+          name: 'active.json',
+          isTemporary: true
+        })
+        const payloadKey = StorageKeys.draftPayload(path, 'personal')
+        const previousPayload = localStorage.getItem(payloadKey)
+        const setItem = localStorage.setItem.bind(localStorage)
+        vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+          if (key === StorageKeys.draftIndex('personal'))
+            throw new DOMException('Blocked', errorName)
+          setItem(key, value)
+        })
+        render(UnloadWindowConfirmDialog)
+
+        expect(leavePage().defaultPrevented).toBe(true)
+        expect(localStorage.getItem(payloadKey)).toBe(previousPayload)
+      }
+    )
+
+    it.for([
+      { reason: 'capacity', count: MAX_DRAFTS, blockPayload: false },
+      { reason: 'quota', count: 2, blockPayload: true }
+    ])(
+      'keeps inactive recovery drafts when checkpointing fails at $reason',
+      ({ count, blockPayload }) => {
+        const inactive = Array.from({ length: count }, (_, index) =>
+          fromPartial<ComfyWorkflow>({
+            path: `workflows/inactive${index}.json`,
+            key: `inactive${index}.json`,
+            isModified: true,
+            isTemporary: true,
+            lastModified: 0,
+            activeState: structuredClone(blankGraph)
+          })
+        )
+        seedRecoveryDrafts(inactive)
+        const active = useWorkflowStore().activeWorkflow
+        Object.assign(useWorkflowStore(), {
+          openWorkflows: [...inactive, active],
+          modifiedWorkflows: [...inactive, active]
+        })
+        const indexKey = StorageKeys.draftIndex('personal')
+        const previousIndex = localStorage.getItem(indexKey)
+        const previousPayloads = inactive.map((workflow) =>
+          localStorage.getItem(
+            StorageKeys.draftPayload(workflow.path, 'personal')
+          )
+        )
+        const setItem = localStorage.setItem.bind(localStorage)
+        vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+          if (
+            blockPayload &&
+            key ===
+              StorageKeys.draftPayload('workflows/active.json', 'personal')
+          )
+            throw new DOMException('Full', 'QuotaExceededError')
+          setItem(key, value)
+        })
+        render(UnloadWindowConfirmDialog)
+
+        expect(leavePage().defaultPrevented).toBe(true)
+        expect(localStorage.getItem(indexKey)).toBe(previousIndex)
+        expect(
+          inactive.map((workflow) =>
+            localStorage.getItem(
+              StorageKeys.draftPayload(workflow.path, 'personal')
+            )
+          )
+        ).toEqual(previousPayloads)
       }
     )
 
