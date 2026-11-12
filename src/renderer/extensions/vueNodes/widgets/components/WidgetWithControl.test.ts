@@ -45,9 +45,11 @@ const RenderedComponent = defineComponent({
     modelValue: { type: Number, default: 0 }
   },
   template: `
-    <div data-testid="rendered"
-         :data-widget-name="widget?.name"
-         :data-model-value="String(modelValue)">
+    <div
+      data-testid="rendered"
+      :data-widget-name="widget?.name"
+      :data-model-value="String(modelValue)"
+    >
       <slot name="between" />
     </div>
   `
