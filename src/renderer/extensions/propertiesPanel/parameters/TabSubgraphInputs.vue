@@ -19,8 +19,8 @@ import {
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 
-import { searchWidgets } from '@/renderer/extensions/propertiesPanel/shared'
-import type { NodeWidgetsList } from '@/renderer/extensions/propertiesPanel/shared'
+import { searchWidgets } from './widgetSearch'
+import type { NodeWidgetsList } from './widgetSections'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 

@@ -7,11 +7,9 @@ import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseTogg
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
-import {
-  computedSectionDataList,
-  searchWidgetsAndNodes
-} from '@/renderer/extensions/propertiesPanel/shared'
-import type { NodeWidgetsListList } from '@/renderer/extensions/propertiesPanel/shared'
+import { computedSectionDataList } from './widgetSections'
+import type { NodeWidgetsListList } from './widgetSections'
+import { searchWidgetsAndNodes } from './widgetSearch'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 

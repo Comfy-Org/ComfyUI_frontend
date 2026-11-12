@@ -7,7 +7,6 @@ import EditableText from '@comfyorg/design-system/common/EditableText'
 import Tab from '@comfyorg/design-system/tab/Tab'
 import TabList from '@comfyorg/design-system/tab/TabList'
 import Button from '@comfyorg/design-system/button/Button'
-import { useGraphHierarchy } from '@/renderer/extensions/propertiesPanel/useGraphHierarchy'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -28,10 +27,8 @@ import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
 import { trackPropertiesPanelTabOpened } from './propertiesPanelTabTelemetry'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
-import {
-  GetNodeParentGroupKey,
-  useFlatAndCategorizeSelectedItems
-} from './shared'
+import { findParentGroup, GetNodeParentGroupKey } from './parentGroup'
+import { useFlatAndCategorizeSelectedItems } from './selectedItems'
 import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from '@/platform/workflowErrors/panel/TabErrors.vue'
@@ -48,7 +45,6 @@ const propertiesPanelStore = usePropertiesPanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const { findParentGroup } = useGraphHierarchy()
 const { focusNode } = useFocusNode()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
@@ -77,7 +73,10 @@ const shouldShowGroupNames = computed(() => {
 
 provide(GetNodeParentGroupKey, (node: LGraphNode) => {
   if (!shouldShowGroupNames.value) return null
-  return nodeToParentGroup.value.get(node) ?? findParentGroup(node)
+  return (
+    nodeToParentGroup.value.get(node) ??
+    findParentGroup(canvasStore.canvas?.graph?.groups ?? [], node)
+  )
 })
 
 const hasSelection = computed(() => flattedItems.value.length > 0)

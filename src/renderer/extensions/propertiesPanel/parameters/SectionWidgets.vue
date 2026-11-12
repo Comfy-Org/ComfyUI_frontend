@@ -34,7 +34,7 @@ import type { WidgetValue } from '@/utils/widgetUtil'
 import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 
-import { GetNodeParentGroupKey } from '@/renderer/extensions/propertiesPanel/shared'
+import { GetNodeParentGroupKey } from '@/renderer/extensions/propertiesPanel/parentGroup'
 import WidgetItem from './WidgetItem.vue'
 import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 

@@ -44,13 +44,6 @@ vi.mock(
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
 
-vi.mock(
-  import('@/renderer/extensions/propertiesPanel/useGraphHierarchy'),
-  () => ({
-    useGraphHierarchy: () => ({ findParentGroup: vi.fn(() => null) })
-  })
-)
-
 vi.mock(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: () => ({
     focusNode: vi.fn(),

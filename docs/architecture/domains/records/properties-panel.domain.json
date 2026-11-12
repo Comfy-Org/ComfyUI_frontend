@@ -31,7 +31,10 @@
         "src/renderer/extensions/propertiesPanel/parameters/TabSubgraphInputs.test.ts",
         "src/renderer/extensions/propertiesPanel/parameters/SectionWidgets.test.ts",
         "src/renderer/extensions/propertiesPanel/parameters/WidgetItem.test.ts",
-        "src/renderer/extensions/propertiesPanel/shared.test.ts"
+        "src/renderer/extensions/propertiesPanel/parameters/widgetSearch.test.ts",
+        "src/renderer/extensions/propertiesPanel/parameters/widgetSections.test.ts",
+        "src/renderer/extensions/propertiesPanel/selectedItems.test.ts",
+        "src/renderer/extensions/propertiesPanel/parentGroup.test.ts"
       ]
     },
     {

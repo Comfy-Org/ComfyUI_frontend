@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
 import type { ValidFavoritedWidget } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
 
-import { searchWidgets } from '@/renderer/extensions/propertiesPanel/shared'
+import { searchWidgets } from './widgetSearch'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 

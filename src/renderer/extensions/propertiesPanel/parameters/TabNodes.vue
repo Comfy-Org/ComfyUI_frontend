@@ -7,11 +7,9 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import {
-  computedSectionDataList,
-  searchWidgetsAndNodes
-} from '@/renderer/extensions/propertiesPanel/shared'
-import type { NodeWidgetsListList } from '@/renderer/extensions/propertiesPanel/shared'
+import { computedSectionDataList } from './widgetSections'
+import type { NodeWidgetsListList } from './widgetSections'
+import { searchWidgetsAndNodes } from './widgetSearch'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
