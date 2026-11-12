@@ -123,11 +123,16 @@ describe('useSubgraphStore', () => {
     { confirmed: true, storeCalls: 1 },
     { confirmed: false, storeCalls: 0 }
   ])(
-    'should publish over an existing blueprint only when overwrite is confirmed (confirmed: $confirmed)',
+    'requires confirmation before replacing an unloaded blueprint (confirmed: $confirmed)',
     async ({ confirmed, storeCalls }) => {
       selectSubgraphNodeToPublish()
       vi.mocked(useDialogService().confirm).mockResolvedValue(confirmed)
-      await mockFetch({ 'testname.json': mockGraph })
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+        { path: 'testname.json', modified: 1, size: 1 }
+      ])
+      vi.mocked(api.getUserData).mockImplementation(async () =>
+        Response.json(mockGraph)
+      )
       await store.publishSubgraph()
       expect(useDialogService().confirm).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -138,6 +143,38 @@ describe('useSubgraphStore', () => {
       expect(api.storeUserData).toHaveBeenCalledTimes(storeCalls)
     }
   )
+  it('publishes a new filename without overwrite confirmation', async () => {
+    selectSubgraphNodeToPublish()
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+      { path: 'another-blueprint.json', modified: 1, size: 1 }
+    ])
+    vi.mocked(api.getUserData).mockImplementation(async () =>
+      Response.json(mockGraph)
+    )
+
+    await store.publishSubgraph()
+
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
+    expect(api.storeUserData).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not publish when existing filenames cannot be checked', async () => {
+    selectSubgraphNodeToPublish()
+    vi.mocked(api.listUserDataFullInfo).mockRejectedValue(
+      new Error('Blueprint listing unavailable')
+    )
+
+    await store.publishSubgraph()
+
+    expect(api.storeUserData).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Blueprint listing unavailable'
+      })
+    ])
+  })
+
   it('should display published nodes in the node library', async () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(userBlueprintNames()).toEqual(['SubgraphBlueprint.test'])
