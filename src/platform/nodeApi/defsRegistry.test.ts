@@ -421,6 +421,38 @@ describe('defs.extend', () => {
       })
     })
 
+    it('names the slot whose connection changed, on both sides and on disconnect', () => {
+      const seen: [string, string | undefined, boolean][] = []
+      const target = addNode((registry) =>
+        registry
+          .forMajor((id) => comfy.graph.node(id)!)
+          .extend('KSampler', (b) =>
+            b.onConnectionsChanged((_n, e) =>
+              seen.push([e.side, e.name, e.connected])
+            )
+          )
+      )
+      target.addInput('first', 'IMAGE')
+      target.addInput('input_image', 'IMAGE')
+      target.addOutput('result', 'IMAGE')
+      const source = new LGraphNode('Src')
+      source.addOutput('out', 'IMAGE')
+      const sink = new LGraphNode('Sink')
+      sink.addInput('in', 'IMAGE')
+      graph.add(source)
+      graph.add(sink)
+
+      source.connect(0, target, 1)
+      target.connect(0, sink, 0)
+      target.disconnectInput(1)
+
+      expect(seen).toEqual([
+        ['input', 'input_image', true],
+        ['output', 'result', true],
+        ['input', 'input_image', false]
+      ])
+    })
+
     it('reports a resize', () => {
       const sizes: unknown[] = []
       const node = addNode((registry) =>

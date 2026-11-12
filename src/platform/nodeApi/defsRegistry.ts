@@ -121,6 +121,8 @@ export interface PreviewFrame {
 export interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   readonly index: number
+  /** The changed slot's name, or `undefined` if the slot is already gone. */
+  readonly name?: string
   readonly connected: boolean
   /**
    * The node at the other end, or `undefined` on a disconnect.
@@ -1940,6 +1942,7 @@ export function createDefRegistry(refreshDefinitions?: () => Promise<void>): {
               const event: ConnectionChangeEvent = Object.freeze({
                 side: input ? 'input' : 'output',
                 index,
+                name: (input ? node.inputs : node.outputs).at(index)?.name,
                 connected,
                 peerNodeId: peer ? String(peer.id) : undefined,
                 peerIndex: peer?.slot
