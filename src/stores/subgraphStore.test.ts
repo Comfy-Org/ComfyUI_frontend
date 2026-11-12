@@ -9,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
@@ -160,12 +161,15 @@ describe('useSubgraphStore', () => {
 
   it('does not publish when existing filenames cannot be checked', async () => {
     selectSubgraphNodeToPublish()
-    vi.mocked(api.listUserDataFullInfo).mockRejectedValue(
-      new Error('Blueprint listing unavailable')
-    )
+    const listingError = new Error('Blueprint listing unavailable')
+    vi.mocked(api.listUserDataFullInfo).mockRejectedValue(listingError)
 
     await store.publishSubgraph()
 
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(listingError, {
+      errorType: 'error_checking_blueprint_overwrite',
+      surface: 'graph'
+    })
     expect(api.storeUserData).not.toHaveBeenCalled()
     expect(useToast().toasts).toEqual([
       expect.objectContaining({
