@@ -39,6 +39,7 @@ import type {
   SubscriptionTier,
   TeamCreditStops,
   TeamCreditStopSummary,
+  TopupAutoTopUpSettings,
   TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 import {
@@ -101,7 +102,7 @@ export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
 export type BillingCapabilitiesRead = Omit<
   BillingCapabilitiesResponse,
-  'denied_reasons' | 'auto_top_up_enabled'
+  'denied_reasons' | 'auto_top_up_enabled' | 'billing_web_checkout_ui'
 > &
   Partial<Pick<BillingCapabilitiesResponse, 'auto_top_up_enabled'>> & {
     denied_reasons?: Readonly<Partial<Record<string, string>>>
@@ -458,7 +459,8 @@ export function createBillingApi({
     async createTopupCheckout(
       amountCents: number,
       returnUrl: string,
-      signal?: AbortSignal
+      signal?: AbortSignal,
+      autoTopUp?: TopupAutoTopUpSettings
     ): Promise<CreateTopupCheckoutResponse> {
       const auth = await requestAuth()
       signal?.throwIfAborted()
@@ -468,7 +470,8 @@ export function createBillingApi({
           {
             amount_cents: amountCents,
             return_url: returnUrl,
-            idempotency_key: crypto.randomUUID()
+            idempotency_key: crypto.randomUUID(),
+            ...(autoTopUp === undefined ? {} : { auto_top_up: autoTopUp })
           } satisfies CreateTopupCheckoutRequest,
           { ...auth, signal }
         )
@@ -505,14 +508,18 @@ export function createBillingApi({
         handleAxiosError(err, 'listTopupCheckouts')
       }
     },
-    async getTopupCheckout(sessionId: string): Promise<HostedTopupCheckout> {
+    async getTopupCheckout(
+      sessionId: string,
+      signal?: AbortSignal
+    ): Promise<HostedTopupCheckout> {
       const auth = await requestAuth()
+      signal?.throwIfAborted()
       try {
         const response = await client.get<HostedTopupCheckout>(
           resolveUrl(
             `/billing/topup/checkouts/${encodeURIComponent(sessionId)}`
           ),
-          { ...auth, timeout: 10_000 }
+          { ...auth, timeout: 10_000, signal }
         )
         return response.data
       } catch (err) {

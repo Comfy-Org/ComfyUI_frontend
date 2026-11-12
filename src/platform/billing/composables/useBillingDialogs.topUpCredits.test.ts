@@ -18,6 +18,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 
+vi.mock(import('firebase/auth'))
 vi.mock(import('@/i18n'))
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -32,6 +33,7 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
+  isDesktop: false,
   get isCloud() {
     return mockIsCloud.value
   }
