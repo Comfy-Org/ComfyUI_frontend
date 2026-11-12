@@ -193,6 +193,7 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal',
       initialCheckout: {
         planMode: 'personal',
@@ -249,6 +250,7 @@ describe('usePricingTableUrlLoader', () => {
     )
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team',
       initialCheckout: {
         planMode: 'team',
@@ -370,6 +372,7 @@ describe('usePricingTableUrlLoader', () => {
 
       expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
         reason: 'deep_link',
+        sameTab: true,
         planMode: 'team',
         initialCheckout: {
           planMode: 'team',
@@ -533,6 +536,7 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team'
     })
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
@@ -551,6 +555,7 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team'
     })
   })
@@ -567,6 +572,7 @@ describe('usePricingTableUrlLoader', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team'
     })
     expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })

@@ -21,3 +21,9 @@ export function showNativeSystemMenu() {
 export function isNativeWindow() {
   return isDesktop && !!window.navigator.windowControlsOverlay?.visible
 }
+
+export function isLocalDesktopHost() {
+  const bridge = window.__comfyDesktop2
+  const isRemote = bridge?.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
+  return !isRemote && (isDesktop || bridge !== undefined)
+}

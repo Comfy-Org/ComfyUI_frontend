@@ -7,7 +7,8 @@
  */
 import {
   zGetBillingPlansResponse,
-  zPlanFeatureItem
+  zPlanFeatureItem,
+  zSubscriptionPaymentRecovery
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
@@ -26,8 +27,20 @@ const CompatiblePlanSchema = z.looseObject({
     .optional()
 })
 
+const RecognizedPaymentRecoverySchema = z
+  .unknown()
+  .transform((recovery) =>
+    zSubscriptionPaymentRecovery.safeParse(recovery).success
+      ? recovery
+      : undefined
+  )
+  .optional()
+
 const BillingPlansBodySchema = z
-  .looseObject({ plans: z.array(CompatiblePlanSchema) })
+  .looseObject({
+    plans: z.array(CompatiblePlanSchema),
+    subscription_payment_recovery: RecognizedPaymentRecoverySchema
+  })
   .pipe(zGetBillingPlansResponse)
 
 export type BillingPlansData = z.infer<typeof BillingPlansBodySchema>

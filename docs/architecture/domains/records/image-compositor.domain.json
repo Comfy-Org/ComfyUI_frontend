@@ -13,9 +13,6 @@
       "path": "src/lib/litegraph/src/widgets/CompositorWidget.ts"
     },
     {
-      "path": "src/renderer/extensions/compositor/**"
-    },
-    {
       "path": "src/renderer/extensions/layerEditor/**"
     },
     {
@@ -23,20 +20,38 @@
     },
     {
       "path": "packages/layer-editor/src/**"
+    },
+    {
+      "path": "packages/layer-editor-ui/src/**"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/extensions/core/imageCompositor.ts",
+    "src/extensions/core/layerEditor.ts",
+    "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+    "src/renderer/extensions/layerEditor/compositor/WidgetCompositor.vue",
+    "src/renderer/extensions/layerEditor/composables/useLayerEditor.ts",
+    "src/renderer/extensions/layerEditor/layerEditorDialogKey.ts",
+    "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
+    "packages/layer-editor/src/mode.ts",
+    "packages/layer-editor/src/node.ts",
+    "packages/layer-editor/src/persistence/compositorTypes.ts",
+    "packages/layer-editor-ui/src/LayerEditorCanvas.vue",
+    "packages/layer-editor-ui/src/LayerEditorToolbar.vue",
+    "packages/layer-editor-ui/src/LayerPanel.vue",
+    "packages/layer-editor-ui/src/LayerPropertiesPanel.vue"
+  ],
   "characterizationScenarios": [
     {
       "name": "Compositor sessions preserve layer state and save behavior",
       "checks": [
-        "src/renderer/extensions/compositor/composables/compositorSession.test.ts",
-        "src/renderer/extensions/compositor/composables/compositorSave.test.ts",
-        "src/renderer/extensions/compositor/composables/useCompositorAutoSave.test.ts",
-        "src/renderer/extensions/compositor/composables/compositorLayerState.test.ts",
-        "src/renderer/extensions/compositor/composables/useCompositorLayers.test.ts",
-        "src/renderer/extensions/compositor/composables/compositorWidgets.test.ts",
-        "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
+        "src/renderer/extensions/layerEditor/compositor/compositorSession.test.ts",
+        "src/renderer/extensions/layerEditor/compositor/compositorSave.test.ts",
+        "src/renderer/extensions/layerEditor/compositor/useCompositorAutoSave.test.ts",
+        "packages/layer-editor/src/persistence/compositorLayerState.test.ts",
+        "src/renderer/extensions/layerEditor/compositor/useCompositorLayers.test.ts",
+        "src/renderer/extensions/layerEditor/compositor/compositorWidgets.test.ts",
+        "src/renderer/extensions/layerEditor/compositor/WidgetCompositor.test.ts",
         "src/extensions/core/imageCompositor.test.ts"
       ]
     },
@@ -48,7 +63,8 @@
         "packages/layer-editor/src/commands/structure.test.ts",
         "packages/layer-editor/src/kinds/kinds.test.ts",
         "packages/layer-editor/src/tools/tools.test.ts",
-        "packages/layer-editor/src/editor/editor.test.ts"
+        "packages/layer-editor/src/editor/editor.test.ts",
+        "packages/layer-editor/src/node.test.ts"
       ]
     },
     {
@@ -56,8 +72,8 @@
       "checks": [
         "packages/layer-editor/src/render/renderStack.test.ts",
         "packages/layer-editor/src/render/place.test.ts",
-        "src/renderer/extensions/layerEditor/psdExport.test.ts",
-        "src/renderer/extensions/layerEditor/psdMapping.test.ts",
+        "packages/layer-editor/src/export/psdExport.test.ts",
+        "packages/layer-editor/src/export/psdMapping.test.ts",
         "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.test.ts"
       ]
     },
@@ -65,12 +81,20 @@
       "name": "Layer editor dialog opens from node outputs and drives the editing session",
       "checks": [
         "src/renderer/extensions/layerEditor/composables/useLayerEditor.test.ts",
-        "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.test.ts",
+        "packages/layer-editor/src/vue/useLayerEditorSession.test.ts",
+        "packages/layer-editor-ui/src/editorUi.test.ts",
         "src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts"
+      ]
+    },
+    {
+      "name": "Core extensions register the compositor and layer editor, and the compositor widget renders on node bodies only",
+      "checks": [
+        "src/extensions/core/index.test.ts",
+        "src/renderer/extensions/vueNodes/widgets/composables/richWidgetPanelVisibility.test.ts"
       ]
     }
   ],
-  "adrs": [],
+  "adrs": ["docs/adr/LAYEREDITOR-0055-optional-vue-session.md"],
   "compatibilityPromises": [
     "The core extension, Vue-node adapter, and LiteGraph widget remain the host integration seams.",
     "Layer state and save behavior remain characterized independently of presentation."

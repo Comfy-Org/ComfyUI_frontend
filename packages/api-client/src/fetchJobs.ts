@@ -128,7 +128,6 @@ export async function fetchHistoryPage(
     options
   )
 
-  // History gets priority based on total count (lower than queue)
   return {
     jobs: assignPriority(result.jobs, result.total - result.offset),
     total: result.total,

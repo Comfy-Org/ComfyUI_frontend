@@ -41,13 +41,16 @@ import {
   GetNodeParentGroupKey,
   useFlatAndCategorizeSelectedItems
 } from './shared'
+import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from '@/platform/workflowErrors/panel/TabErrors.vue'
 import { useHasBlockingError } from '@/platform/workflowErrors/panel/useHasBlockingError'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
 
 provide(WorkflowErrorManagerKey, createWorkflowErrorManager())
+provide(AskAgentPortKey, useAskAgentAboutIssues())
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -419,7 +422,7 @@ function handleTitleCancel() {
           <Tab
             v-for="tab in tabs"
             :key="tab.value"
-            class="px-2 py-1 font-inter text-sm transition-all active:scale-95"
+            class="px-2 py-1 font-inter active:scale-95"
             :value="tab.value"
             :data-testid="`panel-tab-${tab.value}`"
           >

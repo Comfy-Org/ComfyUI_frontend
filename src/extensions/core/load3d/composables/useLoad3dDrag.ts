@@ -1,7 +1,7 @@
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { SUPPORTED_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
+import { isSupportedModelFilename } from '@/extensions/core/load3d/supportedModelFile'
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 
@@ -16,23 +16,22 @@ export function useLoad3dDrag(options: UseLoad3dDragOptions) {
 
   const isDisabled = computed(() => toValue(options.disabled) ?? false)
 
-  function isValidModelFile(file: File): boolean {
-    const fileName = file.name.toLowerCase()
-    const extension = fileName.substring(fileName.lastIndexOf('.'))
-    return SUPPORTED_EXTENSIONS.has(extension)
+  function claimFileDrag(event: DragEvent): DataTransfer | null {
+    const { dataTransfer } = event
+    const carriesFiles = !!dataTransfer?.types.includes('Files')
+    if (isDisabled.value || carriesFiles) {
+      event.preventDefault()
+      event.stopPropagation()
+    }
+    return isDisabled.value || !carriesFiles ? null : dataTransfer
   }
 
   function handleDragOver(event: DragEvent) {
-    if (isDisabled.value) return
-
-    if (!event.dataTransfer) return
-
-    const hasFiles = event.dataTransfer.types.includes('Files')
-
-    if (!hasFiles) return
+    const dataTransfer = claimFileDrag(event)
+    if (!dataTransfer) return
 
     isDragging.value = true
-    event.dataTransfer.dropEffect = 'copy'
+    dataTransfer.dropEffect = 'copy'
     dragMessage.value = t('load3d.dropToLoad')
   }
 
@@ -43,15 +42,14 @@ export function useLoad3dDrag(options: UseLoad3dDragOptions) {
   async function handleDrop(event: DragEvent) {
     isDragging.value = false
 
-    if (isDisabled.value) return
+    const dataTransfer = claimFileDrag(event)
+    if (!dataTransfer) return
 
-    if (!event.dataTransfer) return
-
-    const files = Array.from(event.dataTransfer.files)
+    const files = Array.from(dataTransfer.files)
 
     if (files.length === 0) return
 
-    const modelFile = files.find(isValidModelFile)
+    const modelFile = files.find((file) => isSupportedModelFilename(file.name))
 
     if (modelFile) {
       await options.onModelDrop(modelFile)

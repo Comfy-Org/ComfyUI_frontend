@@ -156,4 +156,14 @@ describe('watchForTopupBalanceUpdate', () => {
     expect(fetchBalance).toHaveBeenCalledTimes(1)
     expect(console.warn).toHaveBeenCalled()
   })
+
+  it('stops refreshing once the caller stops the watch', async () => {
+    const stop = watchForTopupBalanceUpdate({ source })
+
+    stop()
+    returnToApp()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(fetchBalance).not.toHaveBeenCalled()
+  })
 })
