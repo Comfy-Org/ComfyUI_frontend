@@ -5,7 +5,7 @@ import type { ValueSourceGraph } from '@/core/graph/subgraph/resolveInputValueSo
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { useSubgraphInputValuesStore } from '@/stores/subgraphInputValuesStore'
+import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 export function useSubgraphInputValues() {
