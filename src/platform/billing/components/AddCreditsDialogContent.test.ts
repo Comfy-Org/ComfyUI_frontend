@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
@@ -38,6 +38,7 @@ const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_1'
 
 const hoisted = vi.hoisted(() => ({
   createHostedCheckout: vi.fn(),
+  setupUrl: vi.fn<() => Promise<string | null>>(),
   balanceIncreased: undefined as BalanceIncreased
 }))
 
@@ -84,7 +85,7 @@ vi.mock(
   import('@/platform/billing/composables/useAutoTopUpSetupOffer'),
   () => ({
     useAutoTopUpSetupOffer: () => ({
-      setupUrl: async () => null,
+      setupUrl: hoisted.setupUrl,
       track: vi.fn(),
       trackDeclined: vi.fn()
     })
@@ -171,8 +172,20 @@ function switchWorkspaceInThisTab() {
   const workspaces = useTeamWorkspaceStore()
   const identity = workspaces.identityGeneration
   const transition = workspaces.workspaceTransitionGeneration
-  vi.spyOn(workspaceApi, 'list').mockReturnValue(new Promise(() => {}))
-  void workspaces.switchWorkspace('ws-other')
+  const listClosed = new Error('workspace list closed by the test')
+  let closeList!: (error: Error) => void
+  vi.spyOn(workspaceApi, 'list').mockReturnValue(
+    new Promise((_, reject) => {
+      closeList = reject
+    })
+  )
+  const switching = workspaces
+    .switchWorkspace('ws-other')
+    .catch((error: unknown) => error)
+  onTestFinished(async () => {
+    closeList(listClosed)
+    expect(await switching).toBe(listClosed)
+  })
   expect(workspaces.identityGeneration).toBe(identity)
   expect(workspaces.workspaceTransitionGeneration).toBe(transition + 1)
 }
@@ -198,6 +211,7 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
   beforeEach(() => {
     stubFirebaseAuthHarness()
     hoisted.balanceIncreased = undefined
+    hoisted.setupUrl.mockResolvedValue(null)
     hoisted.createHostedCheckout.mockResolvedValue({
       url: CHECKOUT_URL,
       sessionId: 'cs_1'
@@ -312,6 +326,24 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
     expect(billingApi.getTopupCheckout).toHaveBeenCalledOnce()
   })
 
+  it('drops a failed activation once this tab switches workspace while its setup link is read', async () => {
+    let serveLink!: (url: string | null) => void
+    hoisted.setupUrl.mockReturnValue(
+      new Promise((resolve) => {
+        serveLink = resolve
+      })
+    )
+    await payWithAutoTopUp({ auto_top_up_activation: 'failed' })
+    await hoisted.balanceIncreased!()
+    await waitFor(() => expect(hoisted.setupUrl).toHaveBeenCalledOnce())
+
+    switchWorkspaceInThisTab()
+    serveLink('https://platform.test/profile/billing?auto_top_up=setup')
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(screen.queryByTestId('add-credits-auto-top-up-failed')).toBeNull()
+  })
+
   it('publishes no activation when the identity resets after the read settles', async () => {
     await payWithAutoTopUp({})
     vi.mocked(readAutoTopUpActivation).mockImplementationOnce(async () => {
@@ -327,7 +359,7 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
     })
 
     await hoisted.balanceIncreased!()
-    await new Promise((resolve) => setTimeout(resolve))
+    await nextTick()
 
     expect(screen.queryByTestId('add-credits-auto-top-up-on')).toBeNull()
   })
