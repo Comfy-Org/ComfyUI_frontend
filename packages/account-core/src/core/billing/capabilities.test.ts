@@ -315,6 +315,33 @@ describe('createCapabilitiesReader', () => {
     }
   )
 
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: undefined }
+  ])(
+    'keeps cancel_takes_effect_immediately $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined
+              ? {}
+              : { cancel_takes_effect_immediately: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.cancelTakesEffectImmediately).toBe(expected)
+    }
+  )
+
   it.for([true, false])(
     'preserves can_manage_members=%s from the server',
     async (allowed) => {
