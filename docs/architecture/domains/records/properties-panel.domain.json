@@ -7,7 +7,11 @@
       "path": "src/renderer/extensions/propertiesPanel/**"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/renderer/extensions/propertiesPanel/PropertiesPanel.vue",
+    "src/renderer/extensions/propertiesPanel/propertiesPanelStore.ts",
+    "src/renderer/extensions/propertiesPanel/favoritedWidgetsStore.ts"
+  ],
   "characterizationScenarios": [
     {
       "name": "Panel routes between tabs for the current selection and reports tab telemetry",
@@ -53,9 +57,13 @@
       ]
     }
   ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  "adrs": [
+    "docs/adr/PROPERTIESPANEL-0056-renderer-home-and-hosted-domain-seams.md"
   ],
-  "deepImports": "inventory"
+  "compatibilityPromises": [
+    "Other modules open, toggle, and focus the panel only through the panel store and mount it only through PropertiesPanel.vue.",
+    "Favorited widgets keep the workflow.extra.favoritedWidgets format, including legacy entries.",
+    "Setting ids, telemetry identifiers, and locale keys named rightSidePanel keep their names."
+  ],
+  "deepImports": "enforced"
 }
