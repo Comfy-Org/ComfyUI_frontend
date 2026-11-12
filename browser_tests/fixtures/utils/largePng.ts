@@ -9,7 +9,6 @@ function chunk(type: string, data: Buffer): Buffer {
   return Buffer.concat([length, typeAndData, crc])
 }
 
-/** Encodes a noisy RGB gradient PNG whose size and entropy resemble a real upscaled output. */
 export function createLargePng(
   width: number,
   height: number,

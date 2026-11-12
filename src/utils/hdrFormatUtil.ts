@@ -35,7 +35,6 @@ export function getHdrPreviewUrl(url: string | undefined): string | undefined {
   return previewId ? hdrPreviewAssetUrl(previewId) : undefined
 }
 
-/** The full-resolution source of an image that may display a downscaled copy. */
 export function fullResolutionSrc(img: HTMLImageElement): string {
   return img.dataset.fullSrc ?? img.src
 }

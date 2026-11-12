@@ -18,7 +18,6 @@ let workers: Worker[] | undefined
 let workersFailed = false
 let nextId = 0
 
-/** Whether this browser can produce downscaled display copies. */
 export function canDownscaleImages(): boolean {
   return (
     typeof Worker === 'function' &&

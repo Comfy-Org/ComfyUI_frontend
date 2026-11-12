@@ -5,13 +5,11 @@ import { createLargePng } from '@e2e/fixtures/utils/largePng'
 
 const GRID_NODE_COUNT = 12
 
-/** Input filenames the `vueNodes/load-image-grid-4x3` workflow asset references. */
 export const GRID_IMAGE_NAMES = Array.from(
   { length: GRID_NODE_COUNT },
   (_, i) => `perf_grid_${i}.png`
 )
 
-/** Measurement fields the image preview benchmark logs per phase. */
 export const GRID_LOGGED_FIELDS = [
   'durationMs',
   'frameDurationMs',
@@ -21,7 +19,6 @@ export const GRID_LOGGED_FIELDS = [
   'heapUsedBytes'
 ] as const
 
-/** Uploads one `size`² PNG under each of {@link GRID_IMAGE_NAMES}. */
 export async function uploadGridImages(comfyPage: ComfyPage, size: number) {
   for (const [i, name] of GRID_IMAGE_NAMES.entries()) {
     const response = await comfyPage.page.request.post(
@@ -42,7 +39,6 @@ export async function uploadGridImages(comfyPage: ComfyPage, size: number) {
   }
 }
 
-/** Resolves once every grid preview has loaded and decoded. */
 export async function waitForGridImagesDecoded(comfyPage: ComfyPage) {
   await expect(comfyPage.page.getByTestId('main-image')).toHaveCount(
     GRID_NODE_COUNT,
@@ -66,7 +62,6 @@ export async function waitForGridImagesDecoded(comfyPage: ComfyPage) {
   )
 }
 
-/** Middle-drags the canvas through a 60-frame sweep around its center. */
 export async function panSweep(comfyPage: ComfyPage) {
   const { page } = comfyPage
   const { cx, cy } = await canvasCenter(comfyPage)
@@ -79,7 +74,6 @@ export async function panSweep(comfyPage: ComfyPage) {
   await page.mouse.up({ button: 'middle' })
 }
 
-/** Wheels 15 steps in then 15 steps out at the canvas center. */
 export async function zoomSweep(comfyPage: ComfyPage) {
   const { page } = comfyPage
   const { cx, cy } = await canvasCenter(comfyPage)

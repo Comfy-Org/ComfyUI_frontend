@@ -3,11 +3,11 @@ import type { Page } from '@playwright/test'
 type TrackedImage = { src: string; handled: boolean }
 
 type ImageLoadWindow = Window & {
-  __trackedImages?: Map<HTMLImageElement, TrackedImage>
+  __trackedImages?: Map<object, TrackedImage>
   __restoreImageSrc?: () => void
 }
 
-/** Tracks each image's latest `src` and whether all its `load` listeners have run. */
+/** Tracks image `src` loads and downscale worker requests, and whether each has been handled. */
 export async function trackHandledImageLoads(page: Page) {
   await page.evaluate(() => {
     const w = window as ImageLoadWindow
@@ -15,7 +15,7 @@ export async function trackHandledImageLoads(page: Page) {
       HTMLImageElement.prototype,
       'src'
     )!
-    const tracked = new Map<HTMLImageElement, TrackedImage>()
+    const tracked = new Map<object, TrackedImage>()
     w.__trackedImages = tracked
     Object.defineProperty(HTMLImageElement.prototype, 'src', {
       ...src,
@@ -33,12 +33,41 @@ export async function trackHandledImageLoads(page: Page) {
         src.set!.call(this, value)
       }
     })
-    w.__restoreImageSrc = () =>
+    const nativePostMessage = Worker.prototype.postMessage
+    Worker.prototype.postMessage = function (
+      this: Worker,
+      ...args: [unknown, (StructuredSerializeOptions | Transferable[])?]
+    ) {
+      const [message] = args
+      if (
+        message &&
+        typeof message === 'object' &&
+        'id' in message &&
+        'source' in message &&
+        typeof message.source === 'string'
+      ) {
+        const entry = { src: message.source, handled: false }
+        const { id } = message
+        tracked.set(message, entry)
+        const onReply = (event: MessageEvent) => {
+          if (event.data?.id !== id) return
+          this.removeEventListener('message', onReply)
+          setTimeout(() => {
+            entry.handled = true
+          })
+        }
+        this.addEventListener('message', onReply)
+      }
+      Reflect.apply(nativePostMessage, this, args)
+    }
+    w.__restoreImageSrc = () => {
       Object.defineProperty(HTMLImageElement.prototype, 'src', src)
+      Worker.prototype.postMessage = nativePostMessage
+    }
   })
 }
 
-/** Counts images whose `src` contains `urlPart`, and how many of them have had their `load` handled. */
+/** Counts tracked loads whose source contains `urlPart`, and how many have been handled. */
 export function imageLoadProgress(page: Page, urlPart: string) {
   return page.evaluate((part) => {
     const images = [
