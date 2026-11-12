@@ -1297,6 +1297,7 @@
       "descriptionMore": "Show more",
       "descriptionLess": "Show less",
       "justOpen": "Just open",
+      "open": "Open",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"
     },

@@ -1,4 +1,7 @@
-import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
+import type {
+  ComfyDownloadProgress,
+  ComfyDesktop2Bridge
+} from '@comfyorg/comfyui-desktop-bridge-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
@@ -96,6 +99,47 @@ describe(useTemplateModelDownloads, () => {
     downloads.request(model)
 
     expect(useTemplateModelRowDownloads).toHaveBeenCalledOnce()
+  })
+
+  function pausedOnCanvas(bridge: Partial<ComfyDesktop2Bridge>) {
+    installDesktopHost()
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, ...bridge }
+    const stopTracking = useMissingModelDownloadStore().startTracking()
+    const downloads = useTemplateModelDownloads({ folderPaths: {} })
+    emitHostProgress({
+      id: 'canvas-job',
+      url: model.url,
+      filename: model.name,
+      directory: model.directory,
+      status: 'paused',
+      progress: 0.5
+    })
+    return { downloads, stopTracking }
+  }
+
+  it.for([
+    {
+      name: 'the host can resume it',
+      bridge: { resumeDownload: vi.fn().mockResolvedValue(true) },
+      resumable: true
+    },
+    { name: 'the host has no resume', bridge: {}, resumable: false }
+  ])(
+    'offers a paused download for resuming only when $name',
+    ({ bridge, resumable }) => {
+      const { downloads } = pausedOnCanvas(bridge)
+
+      expect(downloads.canResume(model)).toBe(resumable)
+    }
+  )
+
+  it('does not offer resuming once the dialog tracks downloads itself', () => {
+    const { downloads, stopTracking } = pausedOnCanvas({
+      resumeDownload: vi.fn().mockResolvedValue(true)
+    })
+    stopTracking()
+
+    expect(downloads.canResume(model)).toBe(false)
   })
 
   it('requests nothing after the dialog is disposed', () => {
