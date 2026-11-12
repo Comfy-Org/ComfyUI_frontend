@@ -129,6 +129,34 @@ describe('projectBillingPlans', () => {
     expect(projectBillingPlans(withGrant)?.plans[0].credits).toBe(7_400)
   })
 
+  it('reads the served list price as a number beside its served discount', () => {
+    const withListPrice: BillingPlansData = {
+      ...DECODED,
+      plans: [
+        { ...DECODED.plans[0], discount_percent: 17, list_price_cents: 33_600n }
+      ]
+    }
+
+    const plan = projectBillingPlans(withListPrice)?.plans[0]
+
+    expect(plan?.list_price_cents).toBe(33_600)
+    expect(plan?.discount_percent).toBe(17)
+  })
+
+  it('refuses a catalog with a list price a number cannot hold exactly', () => {
+    const tooLarge: BillingPlansData = {
+      ...DECODED,
+      plans: [
+        {
+          ...DECODED.plans[0],
+          list_price_cents: BigInt(Number.MAX_SAFE_INTEGER) + 1n
+        }
+      ]
+    }
+
+    expect(projectBillingPlans(tooLarge)).toBeUndefined()
+  })
+
   it('leaves an absent feature list absent', () => {
     const withoutFeatures: BillingPlansData = {
       ...DECODED,

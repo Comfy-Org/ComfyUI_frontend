@@ -44,7 +44,7 @@
         align="end"
         :class="
           cn(
-            'overflow-visible border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
+            'overflow-visible border-border p-0 data-[state=closed]:animate-none data-[state=open]:animate-none',
             popoverSizeClass
           )
         "
