@@ -267,15 +267,12 @@ describe('comfy.queue', () => {
     const seen: unknown[] = []
     track(comfy.queue.onAfterRun((event) => seen.push(event)))
 
-    Reflect.apply(api.dispatchCustomEvent, api, [
-      'promptQueued',
-      {
-        number: 0,
-        batchCount: 1,
-        promptIds: ['abc'],
-        submissions: [{ promptId: 'abc', nodeCount: 3 }]
-      }
-    ])
+    api.dispatchCustomEvent('promptQueued', {
+      number: 0,
+      batchCount: 1,
+      promptIds: ['abc'],
+      submissions: [{ promptId: 'abc', nodeCount: 3 }]
+    })
 
     expect(seen).toEqual([
       {
@@ -292,33 +289,30 @@ describe('comfy.queue', () => {
       const comfy = createComfyApi(() => graphWith('A'))
       const seen: RunRejectedEvent[] = []
       track(comfy.queue.onRejected((event) => seen.push(event)))
-      Reflect.apply(api.dispatchCustomEvent, api, [
-        'promptRejected',
-        {
-          status: 400,
-          response: {
-            error: {
-              type: 'prompt_outputs_failed_validation',
-              message: 'Prompt outputs failed validation',
-              details: 'See node errors'
-            },
-            node_errors: {
-              '12': {
-                class_type: 'KSampler',
-                dependent_outputs: [],
-                errors: [
-                  {
-                    type: 'required_input_missing',
-                    message: 'Required input is missing: positive',
-                    ...(details === undefined ? {} : { details }),
-                    extra_info: { input_name: 'positive' }
-                  }
-                ]
-              }
+      api.dispatchCustomEvent('promptRejected', {
+        status: 400,
+        response: {
+          error: {
+            type: 'prompt_outputs_failed_validation',
+            message: 'Prompt outputs failed validation',
+            details: 'See node errors'
+          },
+          node_errors: {
+            '12': {
+              class_type: 'KSampler',
+              dependent_outputs: [],
+              errors: [
+                {
+                  type: 'required_input_missing',
+                  message: 'Required input is missing: positive',
+                  ...(details === undefined ? {} : { details }),
+                  extra_info: { input_name: 'positive' }
+                }
+              ]
             }
           }
         }
-      ])
+      })
 
       expect(seen).toEqual([
         {

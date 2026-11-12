@@ -317,22 +317,17 @@ export function toLinkInfo(graph: LGraph, link: LLink): LinkInfo | undefined {
   })
 }
 
-function applySlotIdentityPatch(
-  slot: INodeInputSlot | INodeOutputSlot,
+function applyPatch(
+  slot: INodeInputSlot | INodeOutputSlot | undefined,
   patch: SlotPatch
 ): void {
+  if (!slot) return
   if (patch.name !== undefined) slot.name = patch.name
   if ('label' in patch) slot.label = patch.label
   if ('localizedName' in patch) {
     slot.localized_name = patch.localizedName ?? undefined
   }
   if (patch.type !== undefined) slot.type = normaliseType(patch.type)
-}
-
-function applySlotLayoutPatch(
-  slot: INodeInputSlot | INodeOutputSlot,
-  patch: SlotPatch
-): void {
   if ('position' in patch) {
     slot.pos = patch.position ? [patch.position.x, patch.position.y] : undefined
   }
@@ -346,26 +341,10 @@ function applySlotLayoutPatch(
     slot.shape =
       patch.shape === 'default' ? undefined : SLOT_SHAPES[patch.shape]
   }
-}
-
-function applySlotColorPatch(
-  slot: INodeInputSlot | INodeOutputSlot,
-  patch: SlotPatch
-): void {
   if ('color' in patch) slot.color_on = patch.color ?? undefined
   if ('colorWhenUnconnected' in patch) {
     slot.color_off = patch.colorWhenUnconnected ?? undefined
   }
-}
-
-function applyPatch(
-  slot: INodeInputSlot | INodeOutputSlot | undefined,
-  patch: SlotPatch
-): void {
-  if (!slot) return
-  applySlotIdentityPatch(slot, patch)
-  applySlotLayoutPatch(slot, patch)
-  applySlotColorPatch(slot, patch)
 }
 
 function toInputSpec(config: InputWidgetConfig): InputSpec {
@@ -864,25 +843,9 @@ export function slotShapeOf(shape?: SlotShape) {
 function slotProperties(options?: SlotOptions) {
   if (!options) return undefined
   const properties: Partial<INodeInputSlot> = {}
-  applySlotShape(properties, options)
-  applySlotPlacement(properties, options)
-  applySlotWidget(properties, options)
-  return Object.keys(properties).length ? properties : undefined
-}
-
-function applySlotShape(
-  properties: Partial<INodeInputSlot>,
-  options: SlotOptions
-): void {
   if (options.shape && options.shape !== 'default') {
     properties.shape = SLOT_SHAPES[options.shape]
   }
-}
-
-function applySlotPlacement(
-  properties: Partial<INodeInputSlot>,
-  options: SlotOptions
-): void {
   if (options.localizedName !== undefined) {
     properties.localized_name = options.localizedName
   }
@@ -892,12 +855,6 @@ function applySlotPlacement(
   if (options.direction) {
     properties.dir = SLOT_DIRECTIONS[options.direction]
   }
-}
-
-function applySlotWidget(
-  properties: Partial<INodeInputSlot>,
-  options: SlotOptions
-): void {
   if (options.widget) {
     const widget: NonNullable<INodeInputSlot['widget']> = {
       name: options.widget
@@ -908,18 +865,9 @@ function applySlotWidget(
     }
     properties.widget = widget
   }
+  return Object.keys(properties).length ? properties : undefined
 }
 
-/**
- * Puts a node's slots in a new order and re-points every affected link.
- *
- * A link stores its endpoint as a slot *index*, so permuting the array alone
- * silently re-points every connection, and the damage only surfaces the next
- * time the workflow runs. The store patches endpoints in one batch — it
- * displaces all of them before re-placing — so a swap cannot collide with
- * itself mid-permutation, and link ids survive, which keeps the saved
- * `links` array unchanged.
- */
 function reorderSlots(
   graph: LGraph | null | undefined,
   node: LGraphNode | undefined,
@@ -934,48 +882,23 @@ function reorderSlots(
   const moved = names.map((name) => slots[from.get(name)!])
   const store = useLinkStore()
   const scope = graphScopeOf(graph)
-  const patches = reorderedEndpointPatches(
-    store,
-    scope,
-    node,
-    side,
-    names,
-    from
-  )
-  applyEndpointUpdates(store, scope, patches)
-
-  slots.length = 0
-  slots.push(...moved)
-}
-
-function reorderedEndpointPatches(
-  store: ReturnType<typeof useLinkStore>,
-  scope: ReturnType<typeof graphScopeOf>,
-  node: LGraphNode,
-  side: 'input' | 'output',
-  names: readonly string[],
-  from: ReadonlyMap<string, number>
-): EndpointUpdate[] {
   const patches: EndpointUpdate[] = []
   for (const [to, name] of names.entries()) {
     const wasAt = from.get(name)!
     if (wasAt === to) continue
     patches.push(...endpointPatches(store, scope, node, side, wasAt, to))
   }
-  return patches
-}
+  if (patches.length) {
+    const result = store.updateEndpoints(scope, patches)
+    if (!result.ok) {
+      throw new ComfyApiError(
+        `Could not re-point links while reordering slots: ${String(result.error)}`
+      )
+    }
+  }
 
-function applyEndpointUpdates(
-  store: ReturnType<typeof useLinkStore>,
-  scope: ReturnType<typeof graphScopeOf>,
-  patches: readonly EndpointUpdate[]
-): void {
-  if (!patches.length) return
-  const result = store.updateEndpoints(scope, [...patches])
-  if (result.ok) return
-  throw new ComfyApiError(
-    `Could not re-point links while reordering slots: ${String(result.error)}`
-  )
+  slots.length = 0
+  slots.push(...moved)
 }
 
 function endpointPatches(

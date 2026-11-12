@@ -88,6 +88,7 @@ export interface LoadGraphDataOptions {
   silentAssetErrors?: boolean
   workflowNavigationId?: number
   restoreDocumentId?: UUID
+  isCurrent?: () => boolean
 }
 
 /**

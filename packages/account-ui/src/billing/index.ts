@@ -84,6 +84,7 @@ export type {
 export {
   planCheckoutBannerView,
   selectBillingBanners,
+  suppressesCreditBanners,
   topupCheckoutBannerView
 } from './tab/billingBannerView'
 export { default as BillingBanner } from './tab/BillingBanner.vue'
