@@ -6,7 +6,7 @@ import type {
   DownscaleResponse
 } from '@/renderer/extensions/vueNodes/utils/downscaleImageMessages'
 
-export type DisplayImage = {
+type DisplayImage = {
   readonly source: string
 } & Partial<NonNullable<DownscaleResponse['result']>>
 
