@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { computedWithControl, useEventListener } from '@vueuse/core'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
@@ -11,22 +13,19 @@ import NodeBody from '@/renderer/extensions/vueNodes/components/NodeBody.vue'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
-import { useSubgraphInputNode } from './useSubgraphInputNode'
+import type { NodeBadgeGroup } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
+import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 import SubgraphInputValuesContent from './SubgraphInputValuesContent.vue'
 import { useSubgraphInputLayout } from './useSubgraphInputLayout'
 import NodeResizeHandle from '@/renderer/extensions/vueNodes/components/NodeResizeHandle.vue'
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
+const badges: NodeBadgeGroup[] = [
+  { kind: 'core', badges: [{ text: '', cssIcon: 'icon-[comfy--workflow]' }] }
+]
+
 const { t } = useI18n()
-const {
-  context,
-  collapsed,
-  slots,
-  title,
-  badges,
-  leaveSubgraph,
-  handleKeydown
-} = useSubgraphInputNode()
+const context = useSubgraphInputValuesStore()
 const canvasStore = useCanvasStore()
 const {
   handleWheel,
@@ -35,6 +34,32 @@ const {
   handlePointerUp,
   forwardEventToCanvas
 } = useCanvasInteractions()
+
+const collapsed = ref(false)
+const slots = computedWithControl(
+  () => context.graph,
+  () => context.graph?.inputNode.allSlots ?? []
+)
+useEventListener(
+  () => context.graph?.events,
+  [
+    'input-added',
+    'removing-input',
+    'renaming-input',
+    'inputs-reordered',
+    'configured'
+  ],
+  slots.trigger
+)
+const title = computed(() =>
+  context.selected
+    ? t('subgraphInputValues.instance', {
+        title: context.selected.title,
+        id: context.selected.id
+      })
+    : context.graph?.name
+)
+
 const nodeView = useTemplateRef('nodeView')
 const panel = computed(() => nodeView.value?.element ?? null)
 const header = useTemplateRef('header')
@@ -43,6 +68,23 @@ const { style, startResize } = useSubgraphInputLayout(
   header,
   () => collapsed.value
 )
+
+function leaveSubgraph() {
+  if (!canvasStore.isPickingNodes) {
+    void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
+  }
+}
+
+function stopUnmodifiedKeys(event: KeyboardEvent) {
+  if (
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey &&
+    event.key !== 'Escape'
+  ) {
+    event.stopPropagation()
+  }
+}
 
 function forwardUnlessOnButton(event: PointerEvent) {
   if (event.target instanceof Element && event.target.closest('button')) return
@@ -65,7 +107,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
     @pointermove.capture="handlePointerMove"
     @pointerup.capture="handlePointerUp"
     @pointerdown.self.stop="forwardEventToCanvas"
-    @keydown="handleKeydown"
+    @keydown="stopUnmodifiedKeys"
   >
     <template #before>
       <NodeBadges :groups="badges" role="img" :aria-label="t('g.subgraph')" />
