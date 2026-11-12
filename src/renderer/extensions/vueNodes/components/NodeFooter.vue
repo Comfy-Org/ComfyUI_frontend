@@ -211,8 +211,8 @@ const { t } = useI18n()
 
 interface Props {
   subgraphAction?: 'enter' | 'leave'
-  errorSeverity?: 'none' | 'missing' | 'error'
-  showErrorsTabEnabled?: boolean
+  errorSeverity: 'none' | 'missing' | 'error'
+  showErrorsTabEnabled: boolean
   showAdvancedInputsButton?: boolean
   showAdvancedState?: boolean
   headerColor?: string
@@ -221,8 +221,8 @@ interface Props {
 
 const {
   subgraphAction,
-  errorSeverity = 'none',
-  showErrorsTabEnabled = false,
+  errorSeverity,
+  showErrorsTabEnabled,
   showAdvancedInputsButton,
   showAdvancedState,
   headerColor,

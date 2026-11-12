@@ -117,11 +117,10 @@ const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
 }
 
 describe('NodeHeader.vue', () => {
-  it('displays an explicit read-only title without enabling rename', async () => {
+  it('displays an explicit title without enabling rename when there is no node', async () => {
     const { user, onUpdateTitle } = renderHeader({
       nodeData: undefined,
-      title: 'Host A · #11',
-      editable: false
+      title: 'Host A · #11'
     })
     const title = screen.getByRole('heading', { name: 'Host A · #11' })
 

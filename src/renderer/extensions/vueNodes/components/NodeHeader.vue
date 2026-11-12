@@ -23,9 +23,6 @@
             data-testid="node-collapse-button"
             :aria-label="$t(collapsed ? 'g.expand' : 'g.collapse')"
             :aria-expanded="!collapsed"
-            @pointerdown.left.stop
-            @pointermove.left.stop
-            @pointerup.left.stop
             @click.stop="handleCollapse"
             @dblclick.stop
           >
@@ -110,18 +107,12 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 interface NodeHeaderProps {
   nodeData?: NodeState
   title?: string
-  editable?: boolean
   collapsed?: boolean
   showMissingWarning?: boolean
 }
 
-const {
-  nodeData,
-  title,
-  editable = true,
-  collapsed,
-  showMissingWarning
-} = defineProps<NodeHeaderProps>()
+const { nodeData, title, collapsed, showMissingWarning } =
+  defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
   collapse: []
@@ -199,7 +190,7 @@ const handleCollapse = () => {
 }
 
 const handleDoubleClick = () => {
-  if (editable) isEditing.value = true
+  if (nodeData) isEditing.value = true
 }
 
 const handleTitleEdit = (newTitle: string) => {

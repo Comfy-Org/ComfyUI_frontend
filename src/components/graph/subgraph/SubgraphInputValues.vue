@@ -43,6 +43,11 @@ const { style, startResize } = useSubgraphInputLayout(
   header,
   () => collapsed.value
 )
+
+function forwardUnlessOnButton(event: PointerEvent) {
+  if (event.target instanceof Element && event.target.closest('button')) return
+  forwardEventToCanvas(event)
+}
 </script>
 
 <template>
@@ -61,8 +66,6 @@ const { style, startResize } = useSubgraphInputLayout(
     @pointermove.capture="handlePointerMove"
     @pointerup.capture="handlePointerUp"
     @pointerdown.self.stop="forwardEventToCanvas"
-    @pointermove.stop
-    @pointerup.stop
     @keydown="handleKeydown"
   >
     <template #before>
@@ -70,16 +73,11 @@ const { style, startResize } = useSubgraphInputLayout(
     </template>
     <div
       ref="header"
-      @pointerdown="forwardEventToCanvas"
-      @pointermove="forwardEventToCanvas"
-      @pointerup="forwardEventToCanvas"
+      @pointerdown="forwardUnlessOnButton"
+      @pointermove="forwardUnlessOnButton"
+      @pointerup="forwardUnlessOnButton"
     >
-      <NodeHeader
-        :title
-        :editable="false"
-        :collapsed
-        @collapse="collapsed = !collapsed"
-      />
+      <NodeHeader :title :collapsed @collapse="collapsed = !collapsed" />
     </div>
     <NodeBody
       data-testid="subgraph-input-body"
@@ -116,7 +114,12 @@ const { style, startResize } = useSubgraphInputLayout(
       />
     </NodeBody>
     <template #after>
-      <NodeFooter subgraph-action="leave" @navigate-subgraph="leaveSubgraph" />
+      <NodeFooter
+        subgraph-action="leave"
+        error-severity="none"
+        :show-errors-tab-enabled="false"
+        @navigate-subgraph="leaveSubgraph"
+      />
       <NodeResizeHandle
         v-if="!collapsed"
         :handle="RESIZE_HANDLES[0]"
