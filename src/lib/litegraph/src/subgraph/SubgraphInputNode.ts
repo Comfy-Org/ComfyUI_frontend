@@ -74,7 +74,7 @@ export class SubgraphInputNode
     if (e.button === 0) {
       for (const slot of this.allSlots) {
         if (slot.boundingRect.containsXy(e.canvasX, e.canvasY)) {
-          if (e.ctrlKey && e.altKey) {
+          if ((e.ctrlKey || e.metaKey) && e.altKey && !e.shiftKey) {
             pointer.onClick = () => {
               this.subgraph.beforeChange()
               slot.disconnect()
