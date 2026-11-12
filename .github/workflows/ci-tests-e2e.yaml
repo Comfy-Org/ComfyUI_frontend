@@ -364,11 +364,8 @@ jobs:
       - name: Generate HTML and JSON reports
         if: always()
         run: |
-          # Generate HTML report from blob
-          pnpm exec playwright merge-reports --reporter=html ./blob-report
-          # Generate JSON report separately with explicit output path
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-          pnpm exec playwright merge-reports --reporter=json ./blob-report
+          pnpm exec playwright merge-reports --reporter=html,json ./blob-report
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
@@ -435,11 +432,8 @@ jobs:
         env:
           PLAYWRIGHT_VERSION: ${{ steps.playwright-version.outputs.version }}
         run: |
-          # Generate HTML report
-          pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=html ./all-blob-reports
-          # Generate JSON report separately with explicit output path
           PLAYWRIGHT_JSON_OUTPUT_NAME=playwright-report/report.json \
-          pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=json ./all-blob-reports
+          pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=html,json ./all-blob-reports
 
       - name: Upload HTML report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
