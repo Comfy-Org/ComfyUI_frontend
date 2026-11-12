@@ -311,7 +311,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     if (toValue(options.isAssetMode) && assetData) {
       const existsInAssets = assetData.assets.value.some(
-        (asset) => getAssetFilename(asset) === currentValue
+        (asset) =>
+          (asset.loader_path ?? getAssetFilename(asset)) === currentValue
       )
       if (existsInAssets) return undefined
 
@@ -344,7 +345,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     if (!toValue(options.isAssetMode) || !assetData) return []
     return assetData.assets.value.map((asset) => ({
       id: asset.id,
-      name: getAssetFilename(asset),
+      name: asset.loader_path ?? getAssetFilename(asset),
       label: getAssetDisplayName(asset),
       preview_url: asset.preview_url,
       is_immutable: asset.is_immutable,

@@ -353,6 +353,72 @@ describe('useWidgetSelectItems', () => {
         tags: []
       })
 
+    it.for([
+      {
+        scenario: 'loader path without filename metadata',
+        loader_path: 'flux/model.safetensors',
+        metadata: {},
+        expected: 'flux/model.safetensors'
+      },
+      {
+        scenario: 'loader path overrides filename metadata',
+        loader_path: 'flux/model.safetensors',
+        metadata: { filename: 'download/model.safetensors' },
+        expected: 'flux/model.safetensors'
+      },
+      {
+        scenario: 'null loader path falls back to canonical filename',
+        loader_path: null,
+        metadata: { filename: 'legacy/model.safetensors' },
+        expected: 'legacy/model.safetensors'
+      },
+      {
+        scenario: 'absent loader path falls back to canonical filename',
+        loader_path: undefined,
+        metadata: { filename: 'legacy/model.safetensors' },
+        expected: 'legacy/model.safetensors'
+      },
+      {
+        scenario: 'legacy asset without filename metadata',
+        loader_path: undefined,
+        metadata: {},
+        expected: 'model.safetensors'
+      }
+    ])(
+      'preserves model selection identity: $scenario',
+      ({ loader_path, metadata, expected }) => {
+        const asset = fromPartial<AssetItem>({
+          id: 'model-asset',
+          name: 'model.safetensors',
+          hash: 'blake3:model-content',
+          loader_path,
+          metadata,
+          tags: ['models', 'checkpoints']
+        })
+        const { dropdownItems, displayItems, selectedSet } =
+          useWidgetSelectItems(
+            createDefaultOptions({
+              values: () => [],
+              modelValue: ref(expected),
+              assetKind: () => 'model',
+              isAssetMode: () => true,
+              assetData: {
+                category: computed(() => 'checkpoints'),
+                assets: computed(() => [asset]),
+                isLoading: computed(() => false),
+                error: computed(() => null)
+              }
+            })
+          )
+
+        expect(dropdownItems.value.map((item) => item.name)).toEqual([expected])
+        expect(displayItems.value.map((item) => item.id)).toEqual([
+          'model-asset'
+        ])
+        expect(selectedSet.value).toEqual(new Set(['model-asset']))
+      }
+    )
+
     it('excludes missing items from cloud dropdown', () => {
       mockAssetsData.items = [
         createTestAsset(
