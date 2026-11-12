@@ -32,6 +32,15 @@ export class CloudAuthHelper {
     this.appUrl = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
   }
 
+  /** Answers the Cloud `local_billing_web` read a local sign-in triggers, with the flag off. */
+  private async mockLocalBillingWebFlagRead(): Promise<void> {
+    const appOrigin = new URL(this.appUrl).origin
+    await this.page.route(
+      (url) => url.pathname === '/api/features' && url.origin !== appOrigin,
+      (route) => route.fulfill({ json: { local_billing_web: false } })
+    )
+  }
+
   /**
    * Set up all auth mocks. Must be called before `comfyPage.setup()`.
    */
@@ -139,6 +148,7 @@ export class CloudAuthHelper {
    * "refresh" the mock user's token without real credentials.
    */
   async mockFirebaseEndpoints(email = CLOUD_SELF_EMAIL): Promise<void> {
+    await this.mockLocalBillingWebFlagRead()
     await this.page.route('**/securetoken.googleapis.com/**', (route) =>
       route.fulfill({
         status: 200,
@@ -197,6 +207,7 @@ export class CloudAuthHelper {
     email = CLOUD_SELF_EMAIL,
     displayName = 'E2E Test User'
   ): Promise<void> {
+    await this.mockLocalBillingWebFlagRead()
     const uid = 'test-user-e2e'
     await this.page.route(
       '**/identitytoolkit.googleapis.com/**',
@@ -338,6 +349,7 @@ export class CloudAuthHelper {
     email = CLOUD_SELF_EMAIL,
     displayName = 'E2E Test User'
   ): Promise<void> {
+    await this.mockLocalBillingWebFlagRead()
     const uid = 'test-user-e2e-new'
     await this.page.route(
       '**/identitytoolkit.googleapis.com/**',
