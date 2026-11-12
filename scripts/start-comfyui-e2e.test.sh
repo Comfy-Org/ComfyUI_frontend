@@ -17,6 +17,13 @@ chmod 750 "$fixture/tools/devtools"
 chmod 640 "$fixture/tools/devtools/fixture.txt"
 chmod 750 "$fixture/tools/devtools/nested"
 chmod 640 "$fixture/tools/devtools/nested/fixture.bin"
+example_packs=(how_to_frontend_nodes how_to_widgets how_to_graph_interaction how_to_execution)
+for pack in "${example_packs[@]}"; do
+  mkdir -p "$fixture/examples/node-api/$pack/web"
+  printf '%s\n' "$pack" > "$fixture/examples/node-api/$pack/web/pack.js"
+  chmod 750 "$fixture/examples/node-api/$pack" "$fixture/examples/node-api/$pack/web"
+  chmod 640 "$fixture/examples/node-api/$pack/web/pack.js"
+done
 
 cat > "$test_root/bin/docker" <<'EOF'
 #!/usr/bin/env bash
@@ -30,18 +37,28 @@ case "${1:-}" in
     ;;
   run)
     mount_source=""
+    example_mounts=0
     while (($#)); do
-      if [[ "$1" == type=bind,src=*,dst=/ComfyUI/custom_nodes/ComfyUI_devtools,readonly ]]; then
-        mount_source="${1#type=bind,src=}"
-        mount_source="${mount_source%,dst=*}"
+      if [[ "$1" == type=bind,src=*,dst=/ComfyUI/custom_nodes/*,readonly ]]; then
+        source="${1#type=bind,src=}"
+        source="${source%,dst=*}"
+        name="${1##*/custom_nodes/}"
+        name="${name%,readonly}"
+        [[ "$source" != "$SOURCE_REPO"/* ]]
+        [[ -z "$(find "$source" \( \( -type f ! -perm -o=r \) -o \( -type d ! -perm -o=rx \) \) -print -quit)" ]]
+        if [[ "$name" == ComfyUI_devtools ]]; then
+          mount_source="$source"
+        else
+          [[ "$(cat "$source/web/pack.js")" == "$name" ]]
+          example_mounts=$((example_mounts + 1))
+        fi
       fi
       shift
     done
     [[ -n "$mount_source" ]]
-    [[ "$mount_source" != "$SOURCE_DEVTOOLS" ]]
-    [[ -z "$(find "$mount_source" \( \( -type f ! -perm -o=r \) -o \( -type d ! -perm -o=rx \) \) -print -quit)" ]]
+    [[ $example_mounts == 4 ]]
     [[ "$(cat "$mount_source/fixture.txt")" == fixture ]]
-    cmp "$SOURCE_DEVTOOLS/nested/fixture.bin" "$mount_source/nested/fixture.bin"
+    cmp "$SOURCE_REPO/tools/devtools/nested/fixture.bin" "$mount_source/nested/fixture.bin"
     printf '%s\n' "$mount_source" > "$CAPTURE_MOUNT"
     exit "${DOCKER_RUN_STATUS:-0}"
     ;;
@@ -58,7 +75,7 @@ run_launcher() {
   mkdir -p "$tmpdir"
   PATH="$test_root/bin:$PATH" \
     TMPDIR="$tmpdir" \
-    SOURCE_DEVTOOLS="$fixture/tools/devtools" \
+    SOURCE_REPO="$fixture" \
     CAPTURE_MOUNT="$test_root/mount" \
     DOCKER_RUN_STATUS="$status" \
     AMP_ORB='' \
