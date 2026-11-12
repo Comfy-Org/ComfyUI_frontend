@@ -197,8 +197,31 @@ const stop = comfy.onWorkflowLoaded(() => {
 })
 ```
 
-This fires after every workflow load. It is the replacement for a one-time setup
-hook when behavior belongs to each document.
+This fires after every workflow load, and after an undo or redo, which rebuilds
+the same document. It is the replacement for a one-time setup hook when behavior
+belongs to each document. The listener receives the open document; its `id` is
+unchanged when the same document was rebuilt.
+
+### Document sessions
+
+```js
+const notes = new Map()
+
+comfy.onDocumentClosed((document) => notes.delete(document.id))
+
+function notesForOpenDocument() {
+  const id = comfy.workflow.documentId()
+  if (id === undefined) return undefined
+  if (!notes.has(id)) notes.set(id, [])
+  return notes.get(id)
+}
+```
+
+A document's `id` identifies its editing session: the same through undo, redo
+and tab switches while the workflow stays open, and never reused. Use
+`onDocumentActivated` and `onDocumentDeactivated` for anything tied to being on
+screen, and `onDocumentOpened` and `onDocumentClosed` for state that lives as
+long as the workflow is open.
 
 ### Definition lifecycle
 

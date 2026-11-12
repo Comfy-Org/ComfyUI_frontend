@@ -59,19 +59,23 @@ See [Registration, lifecycle, and globals](./registration.md).
 
 ### Lifecycle and observation
 
-| Member                   | Signature                                                            |
-| ------------------------ | -------------------------------------------------------------------- |
-| `isInteracting`          | `() => boolean`                                                      |
-| `onNodeMoved`            | `(listener: (event: NodeMoveEvent) => void) => Unsubscribe`          |
-| `onNodeDragEnd`          | `(listener: (nodes: readonly NodeHandle[]) => void) => Unsubscribe`  |
-| `onViewportChanged`      | `(listener: () => void) => Unsubscribe`                              |
-| `onSelectionChanged`     | `(listener: (nodes: readonly NodeHandle[]) => void) => Unsubscribe`  |
-| `onNodeChanged`          | `(listener, options?: NodeChangeOptions) => Unsubscribe`             |
-| `onReady`                | `(listener: () => void) => Unsubscribe`                              |
-| `onWorkflowLoaded`       | `(listener: () => void) => Unsubscribe`                              |
-| `executingNode`          | `() => NodeHandle \| undefined`                                      |
-| `executionNode`          | `(executionId: string) => NodeHandle \| undefined`                   |
-| `onExecutingNodeChanged` | `(listener: (node: NodeHandle \| undefined) => void) => Unsubscribe` |
+| Member                   | Signature                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------- |
+| `isInteracting`          | `() => boolean`                                                              |
+| `onNodeMoved`            | `(listener: (event: NodeMoveEvent) => void) => Unsubscribe`                  |
+| `onNodeDragEnd`          | `(listener: (nodes: readonly NodeHandle[]) => void) => Unsubscribe`          |
+| `onViewportChanged`      | `(listener: () => void) => Unsubscribe`                                      |
+| `onSelectionChanged`     | `(listener: (nodes: readonly NodeHandle[]) => void) => Unsubscribe`          |
+| `onNodeChanged`          | `(listener, options?: NodeChangeOptions) => Unsubscribe`                     |
+| `onReady`                | `(listener: () => void) => Unsubscribe`                                      |
+| `onWorkflowLoaded`       | `(listener: (document: DocumentHandle \| undefined) => void) => Unsubscribe` |
+| `onDocumentOpened`       | `(listener: (document: DocumentHandle) => void) => Unsubscribe`              |
+| `onDocumentActivated`    | `(listener: (document: DocumentHandle) => void) => Unsubscribe`              |
+| `onDocumentDeactivated`  | `(listener: (document: DocumentHandle) => void) => Unsubscribe`              |
+| `onDocumentClosed`       | `(listener: (document: DocumentHandle) => void) => Unsubscribe`              |
+| `executingNode`          | `() => NodeHandle \| undefined`                                              |
+| `executionNode`          | `(executionId: string) => NodeHandle \| undefined`                           |
+| `onExecutingNodeChanged` | `(listener: (node: NodeHandle \| undefined) => void) => Unsubscribe`         |
 
 `onNodeDragEnd` is Nodes 2.0 only. See
 [Graphs and groups](./graph.md#node-and-graph-observation).
@@ -665,13 +669,25 @@ library path indexes or arbitrary file reads. See
 
 - `open(data: WorkflowData): Promise<void>`
 - `applyTextReplacements(value: string): string`
+- `current(): DocumentHandle | undefined`
 - `documentId(): string | undefined`
 - `registerImporter(importer: WorkflowImporter): Unsubscribe`
 
 `WorkflowData` is parsed workflow JSON represented as a readonly record.
-`documentId()` is a process-local identity minted each time a workflow finishes
-loading. It changes when the document is replaced, even by a second load of the
-same file, and is absent before the first workflow load.
+
+`current()` is the workflow on screen, as a `DocumentHandle`: `id`, `name`,
+`path`, `isModified` and `isDeleted`. Its `id` identifies the editing session.
+It stays the same for as long as the workflow is open, through undo, redo, tab
+switches and renames, and is never reused: closing a workflow and opening it
+again starts a new session with a new id. It means nothing after a page reload,
+so do not save it. `documentId()` is `current()?.id`, and is absent before a
+workflow is open.
+
+Key per-document pack state on that id. Allocate it in `onDocumentOpened` or
+on first use, and release it in `onDocumentClosed`, whose handle reports
+`isDeleted`. Node, widget and slot handles have a shorter life than the
+session: they stop resolving when another workflow loads into the graph,
+including on a tab switch.
 
 `registerImporter` adds a reader for files the host cannot load a workflow
 from, such as a JPEG that carries one in its metadata. A `WorkflowImporter` has

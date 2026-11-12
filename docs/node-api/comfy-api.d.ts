@@ -244,13 +244,25 @@ declare module '*/comfy/api/v2.js' {
       listener: (node: NodeHandle | undefined) => void
     ): Unsubscribe
     /**
-     * A workflow finished loading, and the graph is the new one.
-     *
-     * This is `afterConfigureGraph`. Unlike {@link onReady} it fires again for
-     * every workflow the user opens, which is what a pack re-attaching itself to
-     * the document needs — `onReady` fires once and misses every later open.
+     * A workflow finished loading, and the graph is the new one. Also fires
+     * for undo, redo and a reload; the document's `id` is unchanged when the
+     * same document was rebuilt.
      */
-    onWorkflowLoaded(listener: () => void): Unsubscribe
+    onWorkflowLoaded(
+      listener: (document: DocumentHandle | undefined) => void
+    ): Unsubscribe
+    /** A document was opened, in the foreground or in a background tab. */
+    onDocumentOpened(listener: (document: DocumentHandle) => void): Unsubscribe
+    /** A document became the one on screen. */
+    onDocumentActivated(
+      listener: (document: DocumentHandle) => void
+    ): Unsubscribe
+    /** A document stopped being the one on screen. It may still be open. */
+    onDocumentDeactivated(
+      listener: (document: DocumentHandle) => void
+    ): Unsubscribe
+    /** A document's session ended. The handle now reports `isDeleted`. */
+    onDocumentClosed(listener: (document: DocumentHandle) => void): Unsubscribe
   }
 
   /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -896,6 +908,22 @@ declare module '*/comfy/api/v2.js' {
     setValue(value: unknown): void
     /** Discards the edit, restoring `previous`. */
     reject(): void
+  }
+
+  /** One open workflow: an editing session, not the file behind it. */
+  export interface DocumentHandle extends HandleCommon {
+    /**
+     * Identity of this editing session. The same for as long as the document
+     * is open, through undo, redo and tab switches, and never reused. It means
+     * nothing after a page reload, so do not save it.
+     */
+    readonly id: string
+    /** Display name, without directory or extension. */
+    readonly name: string | undefined
+    /** Storage path. Changes on rename; undefined once the session has ended. */
+    readonly path: string | undefined
+    /** Whether there are edits the user has not saved. */
+    readonly isModified: boolean
   }
 
   /** @knipIgnoreUnusedButUsedByCustomNodes */
@@ -3058,20 +3086,9 @@ declare module '*/comfy/api/v2.js' {
     open(data: WorkflowData): Promise<void>
     /** Expands the active document's `%date:...%` and `%Node.widget%` tokens. */
     applyTextReplacements(value: string): string
-    /**
-     * The active document's identity: a process-local id minted fresh each time
-     * a workflow finishes loading — including a second load of the same file,
-     * which gets a different id from the first. `undefined` before the first
-     * workflow has loaded this page load.
-     *
-     * Distinct from the workflow's own saved identity (its file path, or the
-     * `id` written into the workflow JSON): that one is meant to survive a
-     * reload and compare equal across sessions. This one is the opposite by
-     * design — it exists so a pack can tell "the document I was looking at got
-     * replaced" from "the document I was looking at got edited", which
-     * comparing graph contents cannot do, since editing IS mutating the graph
-     * contents of the very document that is still current.
-     */
+    /** The document on screen, or `undefined` before one is open. */
+    current(): DocumentHandle | undefined
+    /** `current()?.id`: the identity of the open document's editing session. */
     documentId(): string | undefined
     /**
      * Adds a reader for files the host cannot load a workflow from. It is asked

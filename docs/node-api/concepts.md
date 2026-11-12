@@ -139,7 +139,11 @@ module evaluation:
 | Signal                        | Meaning                                                                                                                      |
 | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `comfy.onReady`               | The application, definitions, settings, and graph have finished initial setup. Fires on the next microtask if already ready. |
-| `comfy.onWorkflowLoaded`      | A new workflow has finished loading. Fires for every load.                                                                   |
+| `comfy.onWorkflowLoaded`      | A workflow has finished loading. Fires for every load, and for undo and redo, which rebuild the same document.               |
+| `comfy.onDocumentOpened`      | A workflow was opened, on screen or in a background tab.                                                                     |
+| `comfy.onDocumentActivated`   | A workflow became the one on screen.                                                                                         |
+| `comfy.onDocumentDeactivated` | A workflow stopped being the one on screen. It may still be open.                                                            |
+| `comfy.onDocumentClosed`      | A workflow's editing session ended. Release anything keyed to its id.                                                        |
 | `NodeDefBuilder.onCreated`    | One matching node has joined a graph and can be addressed.                                                                   |
 | `NodeDefBuilder.onConfigured` | Saved node data was applied.                                                                                                 |
 | `NodeDefBuilder.onRemoved`    | One matching node left its graph.                                                                                            |
