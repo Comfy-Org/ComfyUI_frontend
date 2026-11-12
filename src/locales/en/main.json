@@ -5372,7 +5372,10 @@
       "retryDownload": "Retry",
       "retryDownloadModel": "Retry download for {model}",
       "downloadFailedHint": "The download couldn't be completed. Use Retry to try again.",
-      "downloading": "Downloading"
+      "downloading": "Downloading",
+      "pauseDownloadModel": "Pause download for {model}",
+      "resumeDownloadModel": "Resume download for {model}",
+      "cancelDownloadModel": "Cancel download for {model}"
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"

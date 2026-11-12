@@ -187,6 +187,53 @@
         >
           {{ t('rightSidePanel.missingModels.retryDownload') }}
         </Button>
+        <template
+          v-else-if="showDownloadAction && (canToggleHostPause || canCancel)"
+        >
+          <Button
+            v-if="canToggleHostPause"
+            data-testid="missing-model-download-pause"
+            variant="muted-textonly"
+            size="icon-sm"
+            class="size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
+            :aria-label="
+              t(
+                isHostDownloadPaused
+                  ? 'rightSidePanel.missingModels.resumeDownloadModel'
+                  : 'rightSidePanel.missingModels.pauseDownloadModel',
+                { model: model.name },
+                { escapeParameter: false }
+              )
+            "
+            @click="toggleHostDownloadPause"
+          >
+            <i
+              aria-hidden="true"
+              :class="
+                isHostDownloadPaused
+                  ? 'icon-[lucide--play]'
+                  : 'icon-[lucide--pause]'
+              "
+            />
+          </Button>
+          <Button
+            v-if="canCancel"
+            data-testid="missing-model-download-cancel"
+            variant="muted-textonly"
+            size="icon-sm"
+            class="size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
+            :aria-label="
+              t(
+                'rightSidePanel.missingModels.cancelDownloadModel',
+                { model: model.name },
+                { escapeParameter: false }
+              )
+            "
+            @click="cancelHostDownload"
+          >
+            <i aria-hidden="true" class="icon-[lucide--x]" />
+          </Button>
+        </template>
         <Badge
           v-else-if="showDownloadAction && hostDownloadState.status === 'done'"
           data-testid="missing-model-downloaded"
@@ -458,12 +505,51 @@ const downloadable = computed(() => {
 
 const showDownloadAction = computed(() => !isCloud && downloadable.value)
 const missingModelDownloadStore = useMissingModelDownloadStore()
-const hostDownloadState = computed(() => {
+const hostDownloadModel = computed(() => {
   const { name, url, directory } = model.representative
-  return url && directory
-    ? missingModelDownloadStore.stateFor({ name, url, directory })
-    : { status: 'idle' as const }
+  return url && directory ? { name, url, directory } : undefined
 })
+const hostDownloadState = computed(() =>
+  hostDownloadModel.value
+    ? missingModelDownloadStore.stateFor(hostDownloadModel.value)
+    : { status: 'idle' as const }
+)
+const isHostDownloadPaused = computed(
+  () =>
+    hostDownloadState.value.status === 'downloading' &&
+    hostDownloadState.value.paused
+)
+const canToggleHostPause = computed(() => {
+  const target = hostDownloadModel.value
+  const state = hostDownloadState.value
+  return (
+    !!target &&
+    state.status === 'downloading' &&
+    missingModelDownloadStore.canControl(target, 'pauseDownload') &&
+    missingModelDownloadStore.canControl(target, 'resumeDownload')
+  )
+})
+const canCancel = computed(
+  () =>
+    !!hostDownloadModel.value &&
+    missingModelDownloadStore.canControl(
+      hostDownloadModel.value,
+      'cancelDownload'
+    )
+)
+
+function cancelHostDownload() {
+  if (hostDownloadModel.value)
+    missingModelDownloadStore.cancel(hostDownloadModel.value)
+}
+
+function toggleHostDownloadPause() {
+  const target = hostDownloadModel.value
+  const state = hostDownloadState.value
+  if (!target || state.status !== 'downloading') return
+  if (state.paused) missingModelDownloadStore.resume(target)
+  else missingModelDownloadStore.pause(target)
+}
 const activeHostDownload = computed(() => {
   const state = hostDownloadState.value
   return state.status === 'requested' ||
