@@ -274,11 +274,19 @@ jobs:
         with:
           node_cache: 'false'
 
+      - name: Plan cloud shards by historical duration
+        run: pnpm exec playwright test --project=cloud --list --reporter=./scripts/cicd/plan-playwright-shards.ts
+        env:
+          PLAYWRIGHT_SHARD_TOTAL: ${{ matrix.shardTotal }}
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/cloud-shards
+
       - name: Run Playwright tests (cloud, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
+        run: pnpm exec playwright test --project=cloud --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/cloud-shards
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-cloud-${{ matrix.shardIndex }}.zip
 
       - name: Upload blob report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
