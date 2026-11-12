@@ -20,6 +20,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SerialisableGraph } from '@comfyorg/graph-model/serialisation'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
@@ -364,6 +365,31 @@ describe('Autogrow', () => {
     node.disconnectInput(1)
     await nextTick()
     expect(node.inputs.length).toBe(6)
+  })
+  test('rejects a link to the group input from a node output', () => {
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+    addAutogrow(node, { input: inputsSpec, prefix: 'test' })
+
+    expect(() => connectInput(node, 0, graph)).toThrow()
+    expect(node.isInputConnected(0)).toBe(false)
+  })
+  test('a subgraph input link to the group input replaces the group members until it is removed', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'images', type: 'COMFY_AUTOGROW_V3' }]
+    })
+    const node = testNode()
+    subgraph.add(node)
+    addAutogrow(node, { min: 2, input: inputsSpec, prefix: 'test' })
+    const members = ['0', '0.test0', '0.test1', '0.test2']
+    expect(node.inputs.map((input) => input.name)).toEqual(members)
+
+    assert.exists(subgraph.inputs[0].connect(node.inputs[0], node))
+    expect(node.inputs.map((input) => input.name)).toEqual(['0'])
+
+    subgraph.inputs[0].disconnect()
+    expect(node.inputs.map((input) => input.name)).toEqual(members)
   })
   test(
     'Disconnecting a just-connected slot still compacts to one spare slot ' +
