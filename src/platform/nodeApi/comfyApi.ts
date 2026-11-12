@@ -34,7 +34,9 @@ import { useSelectionStore } from '@/core/selection/selectionStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
-import { currentDocumentId, onAppReady, onWorkflowLoaded } from './appReady'
+import { onAppReady, onWorkflowLoaded } from './appReady'
+import { createDocuments } from './documents'
+import type { DocumentHandle, DocumentReader, Documents } from './documents'
 import { createNodeChangeObserver } from './nodeChanges'
 import type { NodeChangeEvent, NodeChangeOptions } from './nodeChanges'
 import { createQueueApi } from './queueHandle'
@@ -59,6 +61,7 @@ import type { WorkflowData, WorkflowHandle } from './workflowHandle'
 
 type ComfyApiHost = {
   openWorkflow?: (data: WorkflowData) => Promise<void>
+  documents?: DocumentReader
   refreshDefinitions?: () => Promise<void>
 }
 
@@ -353,13 +356,23 @@ export interface Comfy {
     listener: (node: NodeHandle | undefined) => void
   ): Unsubscribe
   /**
-   * A workflow finished loading, and the graph is the new one.
-   *
-   * This is `afterConfigureGraph`. Unlike {@link onReady} it fires again for
-   * every workflow the user opens, which is what a pack re-attaching itself to
-   * the document needs — `onReady` fires once and misses every later open.
+   * A workflow finished loading, and the graph is the new one. Also fires
+   * for undo, redo and a reload; the document's `id` is unchanged when the
+   * same document was rebuilt.
    */
-  onWorkflowLoaded(listener: () => void): Unsubscribe
+  onWorkflowLoaded(
+    listener: (document: DocumentHandle | undefined) => void
+  ): Unsubscribe
+  /** A document was opened, in the foreground or in a background tab. */
+  onDocumentOpened(listener: (document: DocumentHandle) => void): Unsubscribe
+  /** A document became the one on screen. */
+  onDocumentActivated(listener: (document: DocumentHandle) => void): Unsubscribe
+  /** A document stopped being the one on screen. It may still be open. */
+  onDocumentDeactivated(
+    listener: (document: DocumentHandle) => void
+  ): Unsubscribe
+  /** A document's session ended. The handle now reports `isDeleted`. */
+  onDocumentClosed(listener: (document: DocumentHandle) => void): Unsubscribe
 }
 
 function selectedNodeIds(visible: LGraph | null | undefined): string[] {
@@ -394,6 +407,7 @@ function buildMajor(
   getGraph: () => LGraph | null | undefined,
   forMajor: (m: number) => Comfy,
   defs: ReturnType<typeof createDefRegistry>,
+  documents: Documents,
   openWorkflow?: (data: WorkflowData) => Promise<void>
 ): Comfy {
   const graph = createGraphApi(
@@ -415,7 +429,7 @@ function buildMajor(
   const ui = createUiHandle()
   const commands = createCommandsApi()
   const backend = createBackendApi()
-  const workflow = createWorkflowApi(getGraph, openWorkflow, currentDocumentId)
+  const workflow = createWorkflowApi(getGraph, openWorkflow, documents.current)
   const definitionScopes = new WeakMap<LGraph, GraphHandle>()
   const capabilities = new Map(CAPABILITIES)
   if (!openWorkflow) capabilities.delete('workflow.open')
@@ -539,7 +553,13 @@ function buildMajor(
         (id) => listener(id ? executionNode(id) : undefined)
       )
     },
-    onWorkflowLoaded,
+    onWorkflowLoaded: (
+      listener: (document: DocumentHandle | undefined) => void
+    ) => onWorkflowLoaded(() => listener(documents.current())),
+    onDocumentOpened: documents.onOpened,
+    onDocumentActivated: documents.onActivated,
+    onDocumentDeactivated: documents.onDeactivated,
+    onDocumentClosed: documents.onClosed,
     defs: defs.forMajor(
       (nodeId) => graph.node(nodeId)!,
       handleForDefinitionNode
@@ -556,6 +576,7 @@ export function createComfyApi(
   // One registry across all majors: a def is registered once, so every major's
   // extensions have to be applied in that single pass.
   const defs = createDefRegistry(host.refreshDefinitions)
+  const documents = createDocuments(host.documents)
 
   const forMajor = (requested: number): Comfy => {
     if (!SUPPORTED_MAJORS.includes(requested)) {
@@ -571,6 +592,7 @@ export function createComfyApi(
         getGraph,
         forMajor,
         defs,
+        documents,
         host.openWorkflow
       )
       byMajor.set(requested, instance)
