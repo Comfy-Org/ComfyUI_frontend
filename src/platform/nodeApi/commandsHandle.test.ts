@@ -132,6 +132,32 @@ describe('pack commands', () => {
     expect(bound).toHaveLength(1)
   })
 
+  it('registers the command and leaves a taken key with its owner', () => {
+    commands.register({
+      id: 'Core.save',
+      label: 'Save',
+      run: () => {},
+      keybinding: { key: 's', ctrl: true }
+    })
+    const run = vi.fn()
+
+    commands.register({
+      id: 'Pack.snapshot',
+      label: 'Snapshot',
+      run,
+      keybinding: { key: 's', ctrl: true }
+    })
+
+    const store = useKeybindingStore()
+    expect(commands.has('Pack.snapshot')).toBe(true)
+    expect(store.getKeybindingsByCommandId('Pack.snapshot')).toHaveLength(0)
+    expect(store.getKeybindingsByCommandId('Core.save')).toHaveLength(1)
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining("'Pack.snapshot'"),
+      expect.stringContaining('Core.save')
+    )
+  })
+
   it('leaves a command unbound when no key is given', () => {
     commands.register({ id: 'KJNodes.doIt', label: 'Do it', run: () => {} })
 
