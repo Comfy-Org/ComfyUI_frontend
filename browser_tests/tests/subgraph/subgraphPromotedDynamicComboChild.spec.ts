@@ -68,10 +68,13 @@ test.describe(
       `${COMBO}.crop`
     ]
 
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('inputs/dynamic_combo')
+    })
+
     test('moves its option inputs to the subgraph node until it is disconnected', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('inputs/dynamic_combo')
       const resizeNode = await comfyPage.nodeOps.getNodeRefById(INTERIOR_ID)
       await resizeNode.click('title')
       const hostId = String((await resizeNode.convertToSubgraph()).id)
