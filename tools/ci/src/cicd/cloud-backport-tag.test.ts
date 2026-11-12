@@ -148,35 +148,39 @@ function runTagScript(
   writeFileSync(join(directory, 'sleep'), fakeSleep)
   chmodSync(join(directory, 'sleep'), 0o755)
 
-  const result = spawnSync('bash', ['scripts/cicd/cloud-backport-tag.sh'], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-    env: {
-      ...process.env,
-      ...installFakeClock(directory, options.elapsed),
-      BRANCH: 'cloud/1.54',
-      EVENT_NAME: options.event ?? 'workflow_dispatch',
-      GH_TOKEN: options.token ?? 'test-token',
-      FAKE_CONTAINMENT: options.containment ?? 'behind',
-      FAKE_GH_COUNT_FILE: count,
-      FAKE_GH_LIMITED_FILE: join(directory, 'limited'),
-      FAKE_RATE_LIMIT_MESSAGE: options.rateLimitMessage,
-      FAKE_RATE_LIMITED_CALLS: String(options.rateLimitedCalls ?? ''),
-      FAKE_RESET_IN:
-        options.resetIn === undefined ? '' : String(options.resetIn),
-      FAKE_SLEEP_LOG: sleepLog,
-      FAKE_SCENARIO: scenario,
-      GH_API_RETRY_BUDGET_SECONDS: String(options.retryBudget ?? 300),
-      GITHUB_OUTPUT: output,
-      GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
-      GITHUB_STEP_SUMMARY: summary,
-      PATH: `${directory}:${process.env.PATH}`,
-      SHA: options.sha ?? targetSha,
-      TAG_OBJECT_SHA: tagObjectSha,
-      TARGET_SHA: targetSha,
-      OTHER_SHA: otherSha
+  const result = spawnSync(
+    'bash',
+    ['tools/ci/src/cicd/cloud-backport-tag.sh'],
+    {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        ...installFakeClock(directory, options.elapsed),
+        BRANCH: 'cloud/1.54',
+        EVENT_NAME: options.event ?? 'workflow_dispatch',
+        GH_TOKEN: options.token ?? 'test-token',
+        FAKE_CONTAINMENT: options.containment ?? 'behind',
+        FAKE_GH_COUNT_FILE: count,
+        FAKE_GH_LIMITED_FILE: join(directory, 'limited'),
+        FAKE_RATE_LIMIT_MESSAGE: options.rateLimitMessage,
+        FAKE_RATE_LIMITED_CALLS: String(options.rateLimitedCalls ?? ''),
+        FAKE_RESET_IN:
+          options.resetIn === undefined ? '' : String(options.resetIn),
+        FAKE_SLEEP_LOG: sleepLog,
+        FAKE_SCENARIO: scenario,
+        GH_API_RETRY_BUDGET_SECONDS: String(options.retryBudget ?? 300),
+        GITHUB_OUTPUT: output,
+        GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
+        GITHUB_STEP_SUMMARY: summary,
+        PATH: `${directory}:${process.env.PATH}`,
+        SHA: options.sha ?? targetSha,
+        TAG_OBJECT_SHA: tagObjectSha,
+        TARGET_SHA: targetSha,
+        OTHER_SHA: otherSha
+      }
     }
-  })
+  )
   const sleeps = existsSync(sleepLog)
     ? readFileSync(sleepLog, 'utf8').trim().split('\n').map(Number)
     : []

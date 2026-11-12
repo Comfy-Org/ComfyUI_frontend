@@ -36,7 +36,7 @@ jobs:
           fetch-depth: 0
 
       - name: Block oversized binary files
-        run: ./scripts/cicd/check-binary-size.sh
+        run: ./tools/ci/src/cicd/check-binary-size.sh
         env:
           BASE_REF: ${{ github.event.pull_request.base.sha }}
           HEAD_REF: ${{ github.event.pull_request.head.sha }}

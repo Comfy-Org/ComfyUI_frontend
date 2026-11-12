@@ -5,7 +5,7 @@ import { join } from 'node:path'
 
 import { describe, expect, it } from 'vitest'
 
-const ROOT = join(import.meta.dirname, '..')
+const ROOT = join(import.meta.dirname, '../../..')
 const TSX = join(ROOT, 'node_modules/.bin/tsx')
 const SCRIPT = join(import.meta.dirname, 'coverage-report.ts')
 

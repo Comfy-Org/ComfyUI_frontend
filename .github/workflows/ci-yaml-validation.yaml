@@ -30,7 +30,7 @@ jobs:
           python -m pip install yamllint
 
       - name: Validate YAML syntax and style
-        run: ./scripts/cicd/check-yaml.sh
+        run: ./tools/ci/src/cicd/check-yaml.sh
 
       - name: Check ComfyUI container versions
-        run: ./scripts/cicd/check-comfyui-container-version.sh
+        run: ./tools/ci/src/cicd/check-comfyui-container-version.sh

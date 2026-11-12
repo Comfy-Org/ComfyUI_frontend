@@ -7,7 +7,12 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "vitest/globals", "vite/client"]
   },
-  "include": ["**/*.ts"]
+  "include": [
+    "**/*.ts",
+    "../browser_tests/types/**/*.d.ts",
+    "../src/types/**/*.d.ts",
+    "../global.d.ts"
+  ]
 }

@@ -178,7 +178,7 @@ test('canvas text rendering with many nodes', async ({ comfyPage }) => {
 | PerformanceHelper | `browser_tests/fixtures/helpers/PerformanceHelper.ts` |
 | Perf reporter     | `browser_tests/fixtures/utils/perfReporter.ts`        |
 | CI workflow       | `.github/workflows/ci-perf-report.yaml`               |
-| Report generator  | `scripts/perf-report.ts`                              |
-| Stats utilities   | `scripts/perf-stats.ts`                               |
+| Report generator  | `tools/ci/src/perf-report.ts`                         |
+| Stats utilities   | `tools/ci/src/perf-stats.ts`                          |
 | Backlog           | `docs/perf/BACKLOG.md` (local only, not committed)    |
 | Playbook          | `docs/perf/PLAYBOOK.md` (local only, not committed)   |

@@ -19,7 +19,7 @@ import {
   customNodesManifest,
   loadApplicableAutogrowCases,
   loadManifest
-} from '../browser_tests/fixtures/customNode/manifest'
+} from '@e2e/fixtures/customNode/manifest'
 
 // Tests every run registers whatever the slice holds: allNodes's
 // manifest-coverage test, connectivity (three), coreSmoke (two), the regression

@@ -28,11 +28,11 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: main
-          sparse-checkout: scripts/cicd/reconcile-latest-release.sh
+          sparse-checkout: tools/ci/src/cicd/reconcile-latest-release.sh
           sparse-checkout-cone-mode: false
 
       - name: Reconcile Latest to the highest stable semver release
         env:
           GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
           REPO: ${{ github.repository }}
-        run: ./scripts/cicd/reconcile-latest-release.sh
+        run: ./tools/ci/src/cicd/reconcile-latest-release.sh

@@ -498,7 +498,11 @@
       }
     },
     {
-      "files": ["scripts/**", "tools/test-recorder/**/*.ts"],
+      "files": [
+        "scripts/**",
+        "tools/ci/**/*.ts",
+        "tools/test-recorder/**/*.ts"
+      ],
       "rules": {
         "no-console": "allow"
       }

@@ -139,7 +139,7 @@ jobs:
       - name: Generate unified report
         if: steps.pr-meta.outputs.skip != 'true'
         run: >
-          pnpm exec tsx scripts/unified-report.ts
+          pnpm exec tsx tools/ci/src/unified-report.ts
           --size-status=${{ steps.find-size.outputs.status || 'skip' }}
           --perf-status=${{ steps.find-perf.outputs.status }}
           --coverage-status=${{ steps.find-coverage.outputs.status }}

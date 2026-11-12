@@ -1,9 +1,12 @@
-import { execFile, spawnSync } from 'node:child_process'
+import { execFile, execFileSync, spawnSync } from 'node:child_process'
 import {
+  copyFileSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync
 } from 'node:fs'
 import { createServer } from 'node:http'
@@ -32,9 +35,29 @@ it.for([
   ).toBe(row.expected)
 })
 
-async function runAgainstRegistry(status: number, body: unknown) {
+async function runAgainstRegistry(
+  status: number,
+  body: unknown,
+  {
+    command = 'pnpm exec tsx tools/ci/src/cicd/resolve-npm-dist-tag.ts',
+    scriptDirectory = 'tools/ci/src/cicd'
+  } = {}
+) {
   const root = mkdtempSync(join(tmpdir(), 'npm-dist-tag-'))
   onTestFinished(() => rmSync(root, { recursive: true, force: true }))
+  mkdirSync(join(root, scriptDirectory), { recursive: true })
+  copyFileSync(
+    resolve('tools/ci/src/cicd/resolve-npm-dist-tag.ts'),
+    join(root, scriptDirectory, 'resolve-npm-dist-tag.ts')
+  )
+  copyFileSync(
+    resolve('tools/ci/src/cicd/actions-output.ts'),
+    join(root, scriptDirectory, 'actions-output.ts')
+  )
+  writeFileSync(join(root, 'package.json'), JSON.stringify({ type: 'module' }))
+  symlinkSync(resolve('node_modules'), join(root, 'node_modules'))
+  execFileSync('git', ['init', '--quiet', root])
+  execFileSync('git', ['add', scriptDirectory], { cwd: root })
   const server = createServer((_request, response) => {
     response.writeHead(status, { 'content-type': 'application/json' })
     response.end(JSON.stringify(body))
@@ -47,21 +70,18 @@ async function runAgainstRegistry(status: number, body: unknown) {
     throw new Error('Registry must listen on a TCP port')
   }
   const output = join(root, 'output')
-  await promisify(execFile)(
-    process.execPath,
-    ['--import', 'tsx', resolve('scripts/cicd/resolve-npm-dist-tag.ts')],
-    {
-      env: {
-        ...process.env,
-        NAME: 'publish-test-fixture',
-        VERSION: '1.57.7',
-        DIST_TAG: 'latest',
-        GITHUB_OUTPUT: output,
-        npm_config_registry: `http://127.0.0.1:${address.port}`,
-        npm_config_fetch_retries: '0'
-      }
+  await promisify(execFile)('bash', ['-e', '-o', 'pipefail', '-c', command], {
+    cwd: root,
+    env: {
+      ...process.env,
+      NAME: 'publish-test-fixture',
+      VERSION: '1.57.7',
+      DIST_TAG: 'latest',
+      GITHUB_OUTPUT: output,
+      npm_config_registry: `http://127.0.0.1:${address.port}`,
+      npm_config_fetch_retries: '0'
     }
-  )
+  })
   return readFileSync(output, 'utf8')
 }
 
@@ -128,9 +148,41 @@ it.for(publishers)(
       /\b(?:pnpm|npm) publish\b/.test(step.run ?? '')
     )
     expect(publish?.env?.DIST_TAG).toBe('${{ steps.dist_tag.outputs.tag }}')
-    expect(steps.find((step) => step.id === 'dist_tag')?.run).toBe(
-      'pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts'
-    )
+  }
+)
+
+it.for(
+  publishers.flatMap((publisher) =>
+    ['scripts/cicd', 'tools/ci/src/cicd'].map((scriptDirectory) => ({
+      ...publisher,
+      scriptDirectory
+    }))
+  )
+)(
+  '$file guards the tag when the selected ref stores scripts in $scriptDirectory',
+  async ({ source, scriptDirectory }) => {
+    const workflow = z
+      .object({
+        jobs: z.record(z.string(), z.object({ steps: stepsSchema }))
+      })
+      .parse(parse(source))
+    const resolver = Object.values(workflow.jobs)
+      .flatMap((job) => job.steps)
+      .find((step) => step.id === 'dist_tag')
+    expect(
+      await runAgainstRegistry(
+        200,
+        {
+          name: 'publish-test-fixture',
+          'dist-tags': { latest: '1.57.6' },
+          versions: {
+            '1.57.6': { name: 'publish-test-fixture', version: '1.57.6' },
+            '1.60.0': { name: 'publish-test-fixture', version: '1.60.0' }
+          }
+        },
+        { command: z.string().parse(resolver?.run), scriptDirectory }
+      )
+    ).toBe('tag=backport\n')
   }
 )
 

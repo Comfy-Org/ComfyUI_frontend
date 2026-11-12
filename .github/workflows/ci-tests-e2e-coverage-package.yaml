@@ -27,7 +27,7 @@ jobs:
           sparse-checkout: |
             src
             packages
-            scripts/cicd/package-e2e-coverage.sh
+            tools/ci/src/cicd/package-e2e-coverage.sh
 
       - name: Download all shard coverage data
         uses: actions/download-artifact@v8
@@ -41,7 +41,7 @@ jobs:
       - name: Package shard coverage
         id: coverage
         run: |
-          scripts/cicd/package-e2e-coverage.sh \
+          tools/ci/src/cicd/package-e2e-coverage.sh \
             temp/coverage-shards \
             coverage/playwright \
             coverage/html \

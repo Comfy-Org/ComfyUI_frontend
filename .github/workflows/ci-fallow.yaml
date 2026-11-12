@@ -63,7 +63,7 @@ jobs:
           # renderer already makes for an error envelope.
           completed=true
           if [ -s "$RESULTS" ]; then
-            npx tsx scripts/cicd/fallow-findings.ts "$RESULTS" > fallow-findings.md
+            npx tsx tools/ci/src/cicd/fallow-findings.ts "$RESULTS" > fallow-findings.md
             if grep -q '"error"[[:space:]]*:[[:space:]]*true' "$RESULTS"; then
               completed=false
             fi

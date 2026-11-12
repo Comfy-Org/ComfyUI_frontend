@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 import type { CoverageMetadata } from './coverage-metadata'
 import { buildPayload, parseLcovContent } from './coverage-slack-notify'
 
-const ROOT = join(import.meta.dirname, '..')
+const ROOT = join(import.meta.dirname, '../../..')
 const TSX = join(ROOT, 'node_modules/.bin/tsx')
 const SCRIPT = join(import.meta.dirname, 'coverage-slack-notify.ts')
 

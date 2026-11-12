@@ -43,7 +43,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          bash scripts/cicd/select-pr-playwright-specs.sh "$BASE_SHA" "$HEAD_SHA" > /tmp/video-specs.txt
+          bash tools/ci/src/cicd/select-pr-playwright-specs.sh "$BASE_SHA" "$HEAD_SHA" > /tmp/video-specs.txt
           echo "files=$(jq -Rsc 'split("\n") | map(select(length > 0))' /tmp/video-specs.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Find previous recordings
@@ -86,7 +86,7 @@ jobs:
           } | sha256sum | cut -c1-32)
           export VIDEO_CACHE_SALT
           mapfile -t FILES < /tmp/video-specs.txt
-          PLAN=$(bash scripts/cicd/plan-playwright-videos.sh "${FILES[@]}")
+          PLAN=$(bash tools/ci/src/cicd/plan-playwright-videos.sh "${FILES[@]}")
           echo "matrix=$(jq -c .matrix <<< "$PLAN")" >> "$GITHUB_OUTPUT"
           echo "hits=$(jq -c .hits <<< "$PLAN")" >> "$GITHUB_OUTPUT"
           echo "has-specs=$(jq '.hits + .matrix.include | length > 0' <<< "$PLAN")" >> "$GITHUB_OUTPUT"

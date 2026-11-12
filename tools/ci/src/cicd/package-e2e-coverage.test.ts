@@ -430,12 +430,14 @@ describe('per-merge measurement wiring', () => {
     )
 
     expect(commands).toContain(
-      'pnpm exec tsx scripts/cicd/coverage-unit-baseline.ts'
+      'pnpm exec tsx tools/ci/src/cicd/coverage-unit-baseline.ts'
     )
     expect(commands).toContain(
-      'pnpm exec tsx scripts/cicd/coverage-e2e-order.ts'
+      'pnpm exec tsx tools/ci/src/cicd/coverage-e2e-order.ts'
     )
-    expect(commands).toContain('scripts/cicd/post-slack-coverage-report.sh')
+    expect(commands).toContain(
+      'tools/ci/src/cicd/post-slack-coverage-report.sh'
+    )
   })
 
   // Calling the scripts is not enough: the walk must be skipped when no PR
