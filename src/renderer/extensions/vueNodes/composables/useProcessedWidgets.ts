@@ -22,6 +22,12 @@ import { getNodeByState } from '@/utils/graphTraversalUtil'
 export { computeProcessedWidgets }
 export type { ProcessedWidget }
 
+export interface ProcessedWidgetModel {
+  processedWidgets: ProcessedWidget[]
+  nodeType: string
+  canSelectInputs: boolean
+}
+
 function getHostNode(nodeData: NodeState): LGraphNode | null {
   if (!app.isGraphReady) return null
   return getNodeByState(app.rootGraph, nodeData)
@@ -61,17 +67,24 @@ export function useProcessedWidgets(
     )
   })
 
-  const processedWidgets = computed((): ProcessedWidget[] =>
-    computeProcessedWidgets({
-      nodeData: nodeDataGetter(),
+  const processedWidgets = computed((): ProcessedWidget[] => {
+    const nodeData = nodeDataGetter()
+    const graphId = canvasStore.rootGraphId
+    return computeProcessedWidgets({
+      nodeData,
       widgetIds: widgetIdsGetter(),
-      graphId: canvasStore.rootGraphId,
+      graphId,
       showAdvanced: showAdvanced.value,
       isGraphReady: app.isGraphReady,
       rootGraph: app.isGraphReady ? app.rootGraph : null,
-      ui
+      ui,
+      canUpdate: (id) =>
+        nodeDataGetter() === nodeData &&
+        canvasStore.rootGraphId === graphId &&
+        !canvasStore.isEditingBlocked &&
+        (widgetIdsGetter()?.includes(id) ?? true)
     })
-  )
+  })
 
   return {
     canSelectInputs,

@@ -15,6 +15,7 @@ import type {
 } from '@comfyorg/graph-model/interfaces'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
+import { getSubgraphIoLayout } from '@/lib/litegraph/src/subgraph/subgraphIoLayout'
 
 import {
   LinkMarkerShape,
@@ -49,10 +50,13 @@ export function resolvePointerTarget(
   e: CanvasPointerEvent,
   node: LGraphNode | undefined
 ): PointerTarget {
+  const point: Point = [e.canvasX, e.canvasY]
+  const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
+  if (ioNode && getSubgraphIoLayout(ioNode.subgraph.id, ioNode.id))
+    return { kind: 'subgraphIO', ioNode }
+
   if (node && (canvas.allow_interaction || node.flags.allow_interaction))
     return { kind: 'node', node }
-
-  const point: Point = [e.canvasX, e.canvasY]
 
   const stack = queryHiddenLinkStackAtPoint(canvas, graph, ...point)
   if (stack) return { kind: 'linkBadgeStack', stackKey: stack.stackKey }
@@ -65,7 +69,6 @@ export function resolvePointerTarget(
   )
   if (badgeLink) return { kind: 'linkBadge', link: badgeLink }
 
-  const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
   if (ioNode) return { kind: 'subgraphIO', ioNode }
 
   if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {

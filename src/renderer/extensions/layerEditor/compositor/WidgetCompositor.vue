@@ -72,13 +72,14 @@ import {
   hasCompositorLayers
 } from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import { useCompositorPsdDownload } from '@/renderer/extensions/layerEditor/compositor/useCompositorPsdDownload'
-import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
-import { app } from '@/scripts/app'
+import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-const { nodeId } = defineProps<{
+const { nodeId, widget } = defineProps<{
   nodeId: NodeId
+  widget?: SimplifiedWidget
 }>()
 
 const { t } = useI18n()
@@ -89,8 +90,9 @@ const { exporting, downloadPsd } = useCompositorPsdDownload()
 const naturalSize = ref<CompactSize | null>(null)
 const outputUrl = ref<string | null>(null)
 
-const litegraphNode = useLiveGraphNode(() =>
-  nodeId ? app.canvas.graph?.getNodeById(nodeId) : null
+const litegraphNode = useWidgetHostNode(
+  () => widget?.nodeLocatorId ?? widget?.hostNodeLocatorId,
+  () => nodeId
 )
 
 function updateOutputUrl(): void {

@@ -214,6 +214,66 @@ describe('ChangeTracker', () => {
   })
 
   describe('undoRedo', () => {
+    it.for(['disabled', 'change'] as const)(
+      'leaves native text undo to the editor with auto-queue %s',
+      (mode) => {
+        useQueueSettingsStore().mode = mode
+        vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+          document.createElement('textarea')
+        )
+        const events = new EventTarget()
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        const frame = vi
+          .spyOn(window, 'requestAnimationFrame')
+          .mockReturnValue(1)
+        ChangeTracker.init()
+        const event = new KeyboardEvent('keydown', {
+          key: 'z',
+          ctrlKey: true,
+          cancelable: true
+        })
+
+        events.dispatchEvent(event)
+
+        expect(event.defaultPrevented).toBe(false)
+        expect(frame).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { name: 'undo', key: 'z', shiftKey: false, repeat: false },
+      { name: 'redo', key: 'y', shiftKey: false, repeat: false },
+      { name: 'shift redo', key: 'z', shiftKey: true, repeat: false },
+      { name: 'held undo', key: 'z', shiftKey: false, repeat: true }
+    ])(
+      'prevents native $name synchronously while a toolbar control has focus',
+      ({ key, shiftKey, repeat }) => {
+        const button = document.createElement('button')
+        vi.spyOn(document, 'activeElement', 'get').mockReturnValue(button)
+        const events = new EventTarget()
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+        ChangeTracker.init()
+        const event = new KeyboardEvent('keydown', {
+          key,
+          ctrlKey: true,
+          shiftKey,
+          repeat,
+          cancelable: true
+        })
+
+        events.dispatchEvent(event)
+
+        expect(event.defaultPrevented).toBe(true)
+      }
+    )
+
     it.for([
       {
         key: 'z',

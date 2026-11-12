@@ -477,9 +477,13 @@ describe('promoted subgraph widgets', () => {
 
   it('resolves the widget locator to the interior source node', () => {
     const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
+    const widget = processHostWidget(graph, hostNode).simplified
 
-    expect(processHostWidget(graph, hostNode).simplified.nodeLocatorId).toBe(
+    expect(widget.nodeLocatorId).toBe(
       createNodeLocatorId(subgraph.id, INTERIOR_ID)
+    )
+    expect(widget.hostNodeLocatorId).toBe(
+      createNodeLocatorId(null, hostNode.id)
     )
   })
 

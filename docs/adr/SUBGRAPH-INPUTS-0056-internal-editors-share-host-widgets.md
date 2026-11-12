@@ -19,26 +19,43 @@ updates. Those contracts already belong to the widget rendering system.
 
 ## Decision
 
-The prototype renders an input-values panel beside the boundary. Its instance
-picker identifies the host by title and node ID and shows its containing graph.
+The prototype renders the existing input boundary through LGraphNode.vue with
+outputs and native widgets. Its title is an instance picker identifying the host
+by title and node ID. The final empty output creates a new external input through
+the existing connection handlers. Widgets display their own labels.
 Explicit entry records a graph-scoped host locator. Direct entry infers a host
 only when there is one candidate. Removing an explicitly selected host leaves
 the context unresolved rather than selecting another host implicitly.
+
+LGraphNode.vue owns the shared frame, NodeBody the shared body spacing, and
+NodeResizeHandle the resize affordance. GraphNode.vue owns the ordinary node's
+rendering integration. State and behavior belong to shared composables:
+useGraphNodePresentation coordinates existing entity stores, useGraphNodeActions
+owns commands, useGraphNodeWidgets resolves native widget/media presentation, and
+useNodeShape derives shape tokens. Header and body components only render their
+typed inputs and emit user events. Input-boundary selection, port projection and
+widget-source ownership likewise live in composables, outside their views.
+Virtual IO IDs are reused across definitions, so registering
+them as ordinary node entities would collide. Sharing presentation preserves
+their existing identity and connection lifecycle without fake entity records.
 
 Host candidates are NodeState records from nodeDataStore. Input connectivity
 comes from linkStore. Values, widget metadata, and widget identities remain in
 WidgetValueStore. The context store owns only ephemeral navigation selection.
 
-The panel uses the same useProcessedWidgets model and WidgetGrid as the external
-Vue SubgraphNode. It does not create widget entities, clone values, or implement
-replacement controls. Native widget adapters can receive an ECS owner context
-when their owner is outside the displayed graph. Their live compatibility
-objects are resolved only at the adapter boundary.
+The input node uses the same useProcessedWidgets model and WidgetGrid as the external
+Vue SubgraphNode. It does not create widget entities, clone values, or replace
+widget callbacks. Processed widgets carry an explicit hostNodeLocatorId alongside
+the interior source's nodeLocatorId. The existing useWidgetHostNode resolver
+handles both roles at the adapter boundary and follows owner changes and graph
+configuration. There is no separate injected owner mechanism.
 
-Graph action menus are suppressed on panel controls. The existing node menu
+WidgetGrid provides node and form presentations. Form presentation omits sockets,
+layout measurements, input-selection actions, and graph action menus. The node menu
 resolves selection in the displayed graph and cannot safely target a host or
 Primitive in another graph. Native text-field menus remain owned by their
-controls. Users can locate the source to access its graph actions.
+controls. Users can locate the source to access its graph actions. The shared
+editor and the panel respect node-picking and read-only interaction modes.
 
 Unconnected promoted inputs address the host's existing widget ID. Recognized
 Primitive chains and reroutes resolve to the upstream widget's existing ID.
@@ -46,26 +63,65 @@ Computed, muted, and bypassed sources remain read-only. Ancestor-boundary inputs
 are unavailable in this prototype; cross-boundary editing requires a separate
 decision about nested invocation ownership.
 
-Input names identify rows across reordering. A commit revalidates the resolved
-node and widget ID against its rendered target. Removed inputs and changed
-sources cannot redirect a retained update handler to another widget.
+Input names identify rows across reordering. The shared model revalidates the
+current node, widget ID, workflow, connectivity, and editing mode before applying a retained
+update. The shared value binding also checks widget lifetime and disabled state,
+including value-control updates. Removed inputs and changed sources cannot
+redirect an update to another widget.
 
-Edits use the shared model's update handler, then request a canvas redraw and a
-workflow history snapshot. WidgetValueStore emits the existing value intents.
-The feature does not add graph-version writes or graph mutation callbacks.
+WidgetValueStore supplies the existing state, render metadata, and visibility
+together, so the renderer does not invent defaults for metadata belonging to a
+registered widget. Shared value bindings own value updates, legacy callbacks,
+and error clearing. WidgetValueStore emits the existing value intents.
 
-The panel's size and position are transient presentation data. It follows the
-existing boundary and camera without changing the boundary's saved geometry.
-The actual sockets keep their existing layout and interaction behavior.
+Text edits are checkpointed when focus leaves the shared editor. Pointer edits
+use the existing interaction history path. Individual keystrokes and scrub steps
+do not request full workflow snapshots. Native browser undo is suppressed
+synchronously in the existing global history listener; text editors retain their
+own undo even when auto-queue-on-change is enabled. The feature adds no separate
+history shortcut policy, graph-version writes, or graph mutation callbacks.
+
+Shared-source attribution accumulates fanout along the source-resolution path.
+A branch at an intervening reroute or Primitive is therefore reported without a
+second traversal or a separate sharing heuristic.
+
+Renderer measurements live in subgraphIoLayoutStore, scoped by definition and IO
+node IDs. The existing IO arrangement uses the measured width, height, and port
+offset to align connection anchors and hit targets with the rendered unit.
+Projected bounds preserve the original port anchor and never overwrite saved
+geometry. Registration occurs before the first canvas frame. The port view
+invalidates on existing interface-edit events, including reordering, without
+creating another source of port declarations.
+Unmount removes those measurements and restores the canvas presentation. No
+instance fields or methods are added. The view follows canvas coordinates without
+viewport clamping. Existing selection, dragging, connection, and port-renaming
+handlers remain authoritative.
+
+Explicit resizing uses the shared useNodeResize interaction and serializable
+BatchUpdateBoundsOperation. A focused IO adapter applies it through the existing
+configuration boundary to saved bounding geometry. Renderer measurements remain
+transient. Existing bounds retain the requested size as a minimum, allowing
+textarea controls to grow and preserving size across save/reload without new
+workflow fields. Pinned, read-only, and picking modes block resizing. Changing
+the definition during a gesture invalidates its target.
+
+Disconnect iterates a snapshot of the links so removing one cannot skip another.
+Final widget demotion excludes the departing input from its own orphan check.
+Same-tick rewires and remaining fanout retain their widget; a completed disconnect
+followed by reconnect resolves a fresh widget and target defaults.
+
+The renderer supplies the existing measured-slot lookup to link drops through a
+lifetime-scoped adapter. A visible socket can lie outside the node body, so a
+drop cannot rely only on body hit testing. This reuses the canonical slot lookup
+without adding methods or renderer dependencies to graph entities.
 
 ## Alternatives considered
 
 ### One control aligned to each socket
 
 Real widgets have different heights, including multiline and custom widgets.
-Forcing fixed-height rows would alter their behavior or require boundary layout
-changes. The adjacent panel preserves complete controls and existing socket
-geometry for the prototype.
+Forcing fixed-height rows would alter their behavior. Outputs appear together
+above the complete widget controls, following the existing node layout.
 
 ### A separate implementation of boundary widgets
 
@@ -83,10 +139,19 @@ Both renderer modes use the existing Vue controls in the panel. The prototype
 adds no workflow fields or migration. Switching the instance changes the editing
 target without changing the definition.
 
-The panel can occupy more space than socket-aligned rows. It can collapse and
-scroll, and its transient bounds keep it accessible when the canvas is zoomed.
+The input node can occupy more space than the previous boundary. Its widgets can
+collapse, and the whole unit pans and zooms with the canvas.
 Primitive edits affect all consumers of the source; the UI names that source
 and provides a locate action.
+
+## Integration guidance
+
+Internal Vue callers that supply NodeState now use GraphNode.vue. LGraphNode.vue
+is the shared presentation frame. Entity callback signatures are unchanged;
+disconnecting a fanout now delivers every expected removal callback. Extensions
+retaining widget entities across a completed disconnect must resolve them again
+after reconnect, even when a WidgetId is reused. Existing workflow files need no
+migration.
 
 ## References
 

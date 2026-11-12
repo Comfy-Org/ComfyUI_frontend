@@ -74,12 +74,47 @@ function fixture(
       links.find(
         (link) => link.targetNodeId === node.id && link.targetSlot === index
       ),
+    outputLinkCount: (node, index) =>
+      links.filter(
+        (link) => link.originNodeId === node.id && link.originSlot === index
+      ).length,
     widgetIds: (node) => [widgetId(rootId, node.id, 'value')],
     widget: (id) => widgets.get(id)
   }
 }
 
 describe('subgraph input value source', () => {
+  it.for(['source', 'reroute', 'downstream Primitive'] as const)(
+    'identifies shared values when the %s branches',
+    (branch) => {
+      const host = node(29, 'subgraph')
+      const source = node(3, 'PrimitiveInt')
+      const reroute = node(7, 'Reroute')
+      const downstream = node(11, 'PrimitiveInt')
+      const other = node(37, 'subgraph')
+      const branchingNode = {
+        source,
+        reroute,
+        'downstream Primitive': downstream
+      }[branch]
+      const graph = fixture(
+        [host, source, reroute, downstream, other],
+        [
+          link(source, reroute),
+          link(reroute, downstream),
+          link(downstream, host),
+          link(branchingNode, other)
+        ]
+      )
+
+      expect(resolveInputValueSource(graph, host, 'value')).toMatchObject({
+        kind: 'editable',
+        node: source,
+        shared: true
+      })
+    }
+  )
+
   it('refuses a removed input instead of addressing its replacement by index', () => {
     const host = node(29, 'subgraph')
     expect(resolveInputValueSource(fixture([host]), host, 'removed')).toEqual({
@@ -93,7 +128,8 @@ describe('subgraph input value source', () => {
     expect(resolveInputValueSource(fixture([host]), host, 'value')).toEqual({
       kind: 'editable',
       node: host,
-      widgetId: id
+      widgetId: id,
+      shared: false
     })
   })
 
@@ -111,7 +147,8 @@ describe('subgraph input value source', () => {
     expect(resolveInputValueSource(graph, host, 'value')).toEqual({
       kind: 'editable',
       node: source,
-      widgetId: widgetId(rootId, source.id, 'value')
+      widgetId: widgetId(rootId, source.id, 'value'),
+      shared: false
     })
   })
 
@@ -127,7 +164,8 @@ describe('subgraph input value source', () => {
     expect(resolveInputValueSource(graph, host, 'value')).toEqual({
       kind: 'editable',
       node: source,
-      widgetId: widgetId(rootId, source.id, 'value')
+      widgetId: widgetId(rootId, source.id, 'value'),
+      shared: false
     })
   })
 

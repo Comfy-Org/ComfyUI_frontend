@@ -2,7 +2,7 @@ import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
@@ -12,7 +12,6 @@ import type {
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -36,19 +35,22 @@ import { getControlWidget } from '@/types/simplifiedWidget'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import type {
-  LinkedUpstreamInfo,
   SafeControlWidget,
   SimplifiedWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import {
   executionIdFromState,
   executionIdToNodeLocatorId,
   getNodeByState,
+  locatorIdFromState,
   subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
+import { createWidgetValueBinding } from './widgetValueBinding'
+import type { WidgetErrorTarget } from './widgetValueBinding'
 
 type TooltipValueType = 'asset' | 'combo' | 'number' | 'text'
 function isTooltipValueType(val: unknown): val is TooltipValueType {
@@ -60,11 +62,6 @@ function isTooltipValueType(val: unknown): val is TooltipValueType {
 interface WidgetTooltipSource {
   name: string
   tooltip?: string
-}
-
-interface WidgetErrorTarget {
-  executionId: NodeExecutionId
-  widgetName: string
 }
 
 export interface ProcessedWidget extends WidgetGridItem {
@@ -89,25 +86,7 @@ export interface ComputeProcessedWidgetsOptions {
   isGraphReady: boolean
   rootGraph: LGraph | null
   ui: WidgetUiCallbacks
-}
-
-function normalizeWidgetValue(value: unknown): WidgetValue {
-  if (value === undefined) {
-    return undefined
-  }
-  if (value === null) {
-    return null
-  }
-  if (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) {
-    return value
-  }
-  if (typeof value === 'object') return value
-  console.warn(`Invalid widget value type: ${typeof value}`, value)
-  return undefined
+  canUpdate?: (id: WidgetId) => boolean
 }
 
 function createSlotMetadata(
@@ -120,9 +99,11 @@ function createSlotMetadata(
   return {
     index,
     linked: link !== undefined,
-    originNodeId: link?.originNodeId,
-    originOutputName: link
-      ? originNode?.outputs[link.originSlot]?.name
+    linkedUpstream: link
+      ? {
+          nodeId: link.originNodeId,
+          outputName: originNode?.outputs[link.originSlot]?.name
+        }
       : undefined,
     promoted: input.widgetId !== undefined,
     type: String(input.type)
@@ -164,13 +145,13 @@ function getHostNode(
 }
 
 function isWidgetVisible(
-  visibility: WidgetVisibilityComponent | undefined,
+  visibility: WidgetVisibilityComponent,
   showAdvanced: boolean,
-  ignoreAdvanced = false
+  slotInfo: WidgetSlotMetadata | undefined
 ): boolean {
-  if (!visibility) return true
   return isWidgetVisibleOnSurface(visibility, 'vueNode', {
-    showAdvanced: showAdvanced || ignoreAdvanced
+    showAdvanced:
+      showAdvanced || slotInfo?.linked || slotInfo?.promoted || false
   })
 }
 
@@ -205,56 +186,6 @@ function hasWidgetError(
       target.widgetName
     )
   )
-}
-
-function createWidgetUpdateHandler({
-  id,
-  live,
-  errorTarget,
-  nodeExecId,
-  widgetName,
-  widgetOptions,
-  executionErrorStore,
-  widgetValueStore
-}: {
-  id: WidgetId
-  live?: { node: LGraphNode; widget: IBaseWidget }
-  errorTarget?: WidgetErrorTarget
-  nodeExecId: NodeExecutionId | null
-  widgetName: string
-  widgetOptions: IWidgetOptions
-  executionErrorStore: ReturnType<typeof useExecutionErrorStore>
-  widgetValueStore: ReturnType<typeof useWidgetValueStore>
-}): (newValue: WidgetValue) => void {
-  return (newValue: WidgetValue) => {
-    widgetValueStore.setValue(id, newValue)
-    if (live) {
-      const normalized = normalizeWidgetValue(newValue)
-      live.widget.value = normalized
-      live.widget.callback?.(normalized, app.canvas, live.node)
-      live.node.widgets?.forEach((w) => w.triggerDraw?.())
-    }
-
-    const options = { min: widgetOptions.min, max: widgetOptions.max }
-    if (errorTarget) {
-      executionErrorStore.clearWidgetRelatedErrors(
-        errorTarget.executionId,
-        errorTarget.widgetName,
-        errorTarget.widgetName,
-        newValue,
-        options
-      )
-    }
-    if (nodeExecId) {
-      executionErrorStore.clearWidgetRelatedErrors(
-        nodeExecId,
-        widgetName,
-        widgetName,
-        newValue,
-        options
-      )
-    }
-  }
 }
 
 function resolveWidgetIds(
@@ -355,52 +286,79 @@ interface WidgetProcessingContext {
   missingMediaStore: ReturnType<typeof useMissingMediaStore>
   nodeDefStore: ReturnType<typeof useNodeDefStore>
   ui: WidgetUiCallbacks
+  canUpdate?: (id: WidgetId) => boolean
+}
+
+function widgetRenderer(
+  state: WidgetState,
+  liveWidget: IBaseWidget | undefined,
+  isDOMWidget: boolean | undefined
+) {
+  const type = liveWidget?.type ?? state.type
+  if (!type) return
+  const component =
+    !isDOMWidget && typeof liveWidget?.draw === 'function'
+      ? WidgetLegacy
+      : getComponent(type) || (isDOMWidget ? WidgetDOM : WidgetLegacy)
+  return { type, component }
+}
+
+function widgetTooltip(
+  ui: WidgetUiCallbacks,
+  widget: SimplifiedWidget,
+  tooltip: string | undefined
+): string {
+  const fullValue =
+    isTooltipValueType(widget.type) && String(widget.value).length > 10
+      ? String(widget.value)
+      : undefined
+  return ui.getTooltipText({ name: widget.name, tooltip }, fullValue)
 }
 
 function processWidget(
   id: WidgetId,
   ctx: WidgetProcessingContext
 ): ProcessedWidget | null {
-  const widgetState = ctx.widgetValueStore.getWidget(id)
-  if (!widgetState) return null
+  const entity = ctx.widgetValueStore.getWidgetEntity(id)
+  if (!entity) return null
+  const { state: widgetState, render: renderState, visibility } = entity
 
   const liveWidget = ctx.liveWidgets.get(id)
-  const type = liveWidget?.type ?? widgetState.type
-  const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
-  const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
-  if (!type) return null
-  const options: IWidgetOptions = { ...widgetState.options }
+  const renderer = widgetRenderer(
+    widgetState,
+    liveWidget,
+    renderState.isDOMWidget
+  )
+  if (!renderer) return null
+  const { type, component } = renderer
 
   const { live, errorTarget, controlWidget, sourceExecutionId } =
     resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
-  const visible = isWidgetVisible(
-    visibility,
-    ctx.showAdvanced,
-    slotInfo?.linked || slotInfo?.promoted
-  )
-  const advanced = visibility
-    ? visibility.surfaces.vueNode === 'advanced'
-    : (options.advanced ?? false)
-  const isDisabled = slotInfo?.linked || widgetState.disabled
-  const widgetOptions = isDisabled ? { ...options, disabled: true } : options
-  const value = normalizeWidgetValue(widgetState.value)
+  const visible = isWidgetVisible(visibility, ctx.showAdvanced, slotInfo)
+  const advanced = visibility.surfaces.vueNode === 'advanced'
   const bareWidgetId = stripGraphPrefix(widgetState.nodeId)
-  const linkedUpstream: LinkedUpstreamInfo | undefined =
-    slotInfo?.linked && slotInfo.originNodeId
-      ? { nodeId: slotInfo.originNodeId, outputName: slotInfo.originOutputName }
-      : undefined
 
-  const updateHandler = createWidgetUpdateHandler({
+  const {
+    value,
+    options,
+    updateHandler,
+    controlWidget: guardedControlWidget
+  } = createWidgetValueBinding({
     id,
+    state: widgetState,
     live,
     errorTarget,
     nodeExecId: ctx.nodeExecId,
-    widgetName: widgetState.name,
-    widgetOptions,
-    executionErrorStore: ctx.executionErrorStore,
-    widgetValueStore: ctx.widgetValueStore
+    controlWidget,
+    linked: () =>
+      buildSlotMetadata(
+        ctx.nodeData.inputs,
+        ctx.hostNode?.graph,
+        ctx.nodeData.id
+      ).get(widgetState.name)?.linked === true,
+    canUpdate: ctx.canUpdate
   })
 
   const simplified: SimplifiedWidget = {
@@ -409,24 +367,18 @@ function processWidget(
     value,
     borderStyle: advanced ? 'ring ring-primary' : undefined,
     callback: updateHandler,
-    controlWidget,
+    controlWidget: guardedControlWidget,
     label: widgetState.label,
-    linkedUpstream,
+    linkedUpstream: slotInfo?.linkedUpstream,
     nodeLocatorId: widgetNodeLocatorId(ctx, bareWidgetId, sourceExecutionId),
-    options: widgetOptions,
+    hostNodeLocatorId:
+      locatorIdFromState(ctx.nodeData, ctx.rootGraphId) ?? undefined,
+    options,
     spec: live
       ? ctx.nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
       : undefined
   }
 
-  const fullValue =
-    isTooltipValueType(type) && String(value).length > 10
-      ? String(value)
-      : undefined
-  const tooltipText = ctx.ui.getTooltipText(
-    { name: widgetState.name, tooltip: renderState?.tooltip },
-    fullValue
-  )
   const handleContextMenu = (e: PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -439,7 +391,7 @@ function processWidget(
 
   return {
     handleContextMenu,
-    hasLayoutSize: renderState?.hasLayoutSize ?? false,
+    hasLayoutSize: renderState.hasLayoutSize ?? false,
     hasError: hasWidgetError(
       { name: widgetState.name, errorTarget },
       ctx.nodeExecId,
@@ -450,16 +402,12 @@ function processWidget(
     ),
     widgetId: id,
     renderKey: `${id}:${type}`,
-    vueComponent:
-      !renderState?.isDOMWidget && typeof liveWidget?.draw === 'function'
-        ? WidgetLegacy
-        : getComponent(type) ||
-          (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
+    vueComponent: component,
     simplified,
     visible,
-    suppressedByConnection: visibility?.suppression.byConnection ?? false,
+    suppressedByConnection: visibility.suppression.byConnection,
     updateHandler,
-    tooltipText,
+    tooltipText: widgetTooltip(ctx.ui, simplified, renderState.tooltip),
     slotMetadata: slotInfo
   }
 }
@@ -471,7 +419,8 @@ export function computeProcessedWidgets({
   showAdvanced,
   isGraphReady,
   rootGraph,
-  ui
+  ui,
+  canUpdate
 }: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData) return []
 
@@ -496,8 +445,6 @@ export function computeProcessedWidgets({
     widgetIds,
     widgetValueStore
   )
-  // Drop ids whose live widget is gone (e.g. removed directly on node.widgets);
-  // when the host node isn't resolvable yet, fall back to the stored order.
   const ids = hostNode
     ? orderedIds.filter((id) => liveWidgets.has(id))
     : orderedIds
@@ -524,7 +471,8 @@ export function computeProcessedWidgets({
     missingModelStore,
     missingMediaStore,
     nodeDefStore,
-    ui
+    ui,
+    canUpdate
   }
 
   return Array.from(new Set(ids))

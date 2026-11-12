@@ -5,7 +5,6 @@
       ref="canvasRef"
       tabindex="1"
       class="absolute inset-0 size-full touch-none"
-      @keydown="preventNativeCanvasHistory"
     />
     <TransformPane
       v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
@@ -113,7 +112,6 @@ let activeStartup: symbol | undefined
 
 <script setup lang="ts">
 import { LIGHT_THEME_NODE_LIGHTNESS } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import { preventNativeCanvasHistory } from '@/base/canvasHistoryShortcut'
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
@@ -189,7 +187,7 @@ import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
-import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import LGraphNode from '@/renderer/extensions/vueNodes/components/GraphNode.vue'
 import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'

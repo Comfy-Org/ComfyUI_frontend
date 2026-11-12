@@ -33,6 +33,9 @@ for (const renderer of [
             if (!root) throw new Error('Expected an active workflow')
             const workflow = root.asSerialisable()
             return {
+              inputBounds: workflow.definitions?.subgraphs?.map(
+                (definition) => definition.inputNode.bounding
+              ),
               hosts: workflow.nodes.map((node) => ({
                 id: String(node.id),
                 values: node.widgets_values
@@ -52,7 +55,7 @@ for (const renderer of [
         const initial = await savedValues()
         const panel = comfyPage.page.getByTestId('subgraph-input-values')
         const hostPicker = panel.getByRole('combobox', {
-          name: 'Editing values for'
+          name: 'Choose a subgraph instance'
         })
         const input = panel.getByRole('textbox', { name: 'text', exact: true })
 
@@ -74,6 +77,13 @@ for (const renderer of [
               { id: '12', values: [''] }
             ])
           expect((await savedValues()).defaults).toEqual(initial.defaults)
+          await panel
+            .getByRole('button', { name: 'Collapse input values', exact: true })
+            .click()
+          expect((await savedValues()).inputBounds).toEqual(initial.inputBounds)
+          await panel
+            .getByRole('button', { name: 'Expand input values', exact: true })
+            .click()
         })
 
         await test.step('Selecting Host B changes the editing target without leaving the definition', async () => {
@@ -94,14 +104,16 @@ for (const renderer of [
         })
 
         await test.step('Workflow undo and redo restore the host values', async () => {
-          await comfyPage.keyboard.undo()
+          await hostPicker.press('Control+z')
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
               { id: '11', values: ['boundary-host-a'] },
               { id: '12', values: [''] }
             ])
-          await comfyPage.keyboard.redo()
+          await panel
+            .getByRole('button', { name: 'Collapse input values', exact: true })
+            .press('Control+y')
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
@@ -119,7 +131,7 @@ for (const renderer of [
           expect((await savedValues()).defaults).toEqual(initial.defaults)
         })
 
-        await test.step('Panning and zooming past the boundary keeps the editing controls onscreen', async () => {
+        await test.step('Panning and zooming move the input node with the canvas beyond the viewport', async () => {
           {
             await using _pan = await comfyPage.keyboard.hold('Space')
             await comfyPage.canvasOps.pan(
@@ -135,8 +147,8 @@ for (const renderer of [
               throw new Error('Expected the entered subgraph')
             }
             const [x, y] = app.canvasPosToClientPos([
-              graph.inputNode.pos[0],
-              graph.inputNode.pos[1]
+              graph.inputNode.boundingRect[0],
+              graph.inputNode.boundingRect[1]
             ])
             return {
               x,
@@ -160,27 +172,24 @@ for (const renderer of [
             await comfyPage.page.mouse.wheel(0, -120)
           }
           await expect.poll(readScale).not.toBe(scale)
+          await expect(panel).not.toBeInViewport()
           await expect
             .poll(() =>
-              panel
-                .or(hostPicker)
-                .or(input)
-                .evaluateAll((elements) =>
-                  elements.map((element) => {
-                    const { left, top, right, bottom } =
-                      element.getBoundingClientRect()
-                    return (
-                      Math.min(
-                        left,
-                        top,
-                        window.innerWidth - right,
-                        window.innerHeight - bottom
-                      ) >= 0
-                    )
-                  })
-                )
+              panel.evaluate((element) => {
+                const app = window.app
+                const graph = app?.canvas.graph
+                if (!app || !graph || !('inputNode' in graph)) {
+                  throw new Error('Expected an entered subgraph')
+                }
+                const [x, y] = app.canvasPosToClientPos([
+                  graph.inputNode.boundingRect[0],
+                  graph.inputNode.boundingRect[1]
+                ])
+                const bounds = element.getBoundingClientRect()
+                return Math.abs(bounds.x - x) < 1 && Math.abs(bounds.y - y) < 1
+              })
             )
-            .toEqual([true, true, true])
+            .toBe(true)
           await expect(hostPicker).toHaveText('Host B · #12')
           await expect(input).toHaveValue('boundary-host-b')
         })

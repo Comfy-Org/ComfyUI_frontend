@@ -1,4 +1,8 @@
 import { computed } from 'vue'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { getNodeByState } from '@/utils/graphTraversalUtil'
 
 import { resolveInputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import type { ValueSourceGraph } from '@/core/graph/subgraph/resolveInputValueSource'
@@ -13,6 +17,8 @@ export function useSubgraphInputValues() {
   const nodeStore = useNodeDataStore()
   const linkStore = useLinkStore()
   const widgetStore = useWidgetValueStore()
+  const canvasStore = useCanvasStore()
+  const navigation = useSubgraphNavigationStore()
 
   const sourceGraph = computed<ValueSourceGraph | undefined>(() => {
     const { graph, selected } = context
@@ -32,7 +38,9 @@ export function useSubgraphInputValues() {
       inputLink: (node, index) =>
         linkStore.getInputSlotLink(scope, node.id, index),
       widgetIds: (node) => widgetStore.getNodeWidgetIds(root.id, node.id),
-      widget: (id) => widgetStore.getWidget(id)
+      widget: (id) => widgetStore.getWidget(id),
+      outputLinkCount: (node, index) =>
+        linkStore.getOutputSlotLinks(scope, node.id, index).size
     }
   })
 
@@ -53,16 +61,15 @@ export function useSubgraphInputValues() {
       : ({ kind: 'unavailable' } as const)
   }
 
-  function isShared(inputName: string): boolean {
-    const source = resolve(inputName)
-    const graph = sourceGraph.value
-    return (
-      !!graph &&
-      source.kind === 'editable' &&
-      source.node !== context.selected &&
-      linkStore.getOutputSlotLinks(graph.scope, source.node.id, 0).size > 1
-    )
+  async function locate(node: NodeState) {
+    const root = context.graph?.rootGraph
+    const owner = root && getNodeByState(root, node)
+    const canvas = canvasStore.canvas
+    if (!owner?.graph || !canvas) return
+    if (await navigation.navigateToGraph(owner.graph)) {
+      canvas.animateToBounds(owner.boundingRect)
+    }
   }
 
-  return { rows, resolve, isShared }
+  return { rows, resolve, locate }
 }

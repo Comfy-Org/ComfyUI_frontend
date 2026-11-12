@@ -1,6 +1,14 @@
 import type { MockInstance } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -169,6 +177,55 @@ describe('useNodeResize', () => {
       corner: CompassCorners
     ) => void
   }
+
+  it('receives resize moves and release through a node that stops bubbling', () => {
+    document.body.append(nodeElement)
+    onTestFinished(() => nodeElement.remove())
+    nodeElement.addEventListener('pointermove', (event) =>
+      event.stopPropagation()
+    )
+    nodeElement.addEventListener('pointerup', (event) =>
+      event.stopPropagation()
+    )
+    handle.addEventListener('pointerdown', (event) =>
+      getStartResize()(event, 'SE')
+    )
+    handle.dispatchEvent(
+      new PointerEvent('pointerdown', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: 500,
+        clientY: 500
+      })
+    )
+
+    handle.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: 620,
+        clientY: 600
+      })
+    )
+
+    expect(callback).toHaveBeenCalledWith(
+      { size: { width: 420, height: 500 } },
+      nodeElement
+    )
+    handle.dispatchEvent(
+      new PointerEvent('pointerup', { bubbles: true, pointerId: 1 })
+    )
+    callback.mockClear()
+    handle.dispatchEvent(
+      new PointerEvent('pointermove', {
+        bubbles: true,
+        pointerId: 1,
+        clientX: 650,
+        clientY: 650
+      })
+    )
+    expect(callback).not.toHaveBeenCalled()
+  })
 
   describe('SE corner (default)', () => {
     it('increases size when dragging right and down', () => {

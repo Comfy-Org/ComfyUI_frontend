@@ -51,6 +51,7 @@ import { ToInputRenderLink } from './ToInputRenderLink'
 import { ToOutputFromIoNodeLink } from './ToOutputFromIoNodeLink'
 import { ToOutputFromRerouteLink } from './ToOutputFromRerouteLink'
 import { ToOutputRenderLink } from './ToOutputRenderLink'
+import { nodeSlotHitTests } from './nodeSlotHitTests'
 
 /**
  * A Litegraph state object for the {@link LinkConnector}.
@@ -719,13 +720,14 @@ export class LinkConnector {
         return
       }
 
-      const node = locator.getNodeOnPos(canvasX, canvasY) ?? undefined
+      const node =
+        locator.getNodeOnPos(canvasX, canvasY) ??
+        nodeSlotHitTests.get(locator)?.(canvasX, canvasY) ??
+        undefined
       if (node) {
         this.dropOnNode(node, event)
       } else {
-        // Get reroute if no node is found
         const reroute = locator.getRerouteOnPos(canvasX, canvasY)
-        // Drop output->input link on reroute is not impl.
         if (reroute && this.isRerouteValidDrop(reroute)) {
           this.dropOnReroute(reroute, event)
         } else {

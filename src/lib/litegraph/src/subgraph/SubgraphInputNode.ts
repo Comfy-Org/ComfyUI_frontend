@@ -61,11 +61,17 @@ export class SubgraphInputNode
     pointer: CanvasPointer,
     linkConnector: LinkConnector
   ): void {
-    // Left-click handling for dragging connections
     if (e.button === 0) {
       for (const slot of this.allSlots) {
-        // Check if click is within the full slot area (including label)
         if (slot.boundingRect.containsXy(e.canvasX, e.canvasY)) {
+          if (e.ctrlKey && e.altKey) {
+            pointer.onClick = () => {
+              this.subgraph.beforeChange()
+              slot.disconnect()
+              this.subgraph.afterChange()
+            }
+            return
+          }
           pointer.onDragStart = () => {
             linkConnector.dragNewFromSubgraphInput(this.subgraph, this, slot)
           }
@@ -80,7 +86,6 @@ export class SubgraphInputNode
           }
         }
       }
-      // Check for right-click
     } else if (e.button === 2) {
       const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
       if (slot) this.showSlotContextMenu(slot, e)

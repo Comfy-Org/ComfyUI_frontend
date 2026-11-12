@@ -1,6 +1,6 @@
 import { useEventListener } from '@vueuse/core'
 import type { ComputedRef } from 'vue'
-import { computed, shallowRef } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { app } from '@/scripts/app'
@@ -10,6 +10,7 @@ export function useLiveGraphNode(
   resolve: () => LGraphNode | null | undefined
 ): ComputedRef<LGraphNode | null> {
   const node = shallowRef(resolve() ?? null)
+  watch(resolve, (current) => (node.value = current ?? null), { flush: 'sync' })
   useEventListener(
     () => app.rootGraphOrUndefined?.events,
     'configured',

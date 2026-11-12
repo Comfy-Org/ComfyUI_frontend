@@ -1,4 +1,5 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
@@ -151,4 +152,14 @@ export const resolveNodeSurfaceSlotCandidate = (
   session.preferredSlotForNode.set(nodeId, preferred)
 
   return { layout, compatible: true }
+}
+
+export function isCanvasDropTarget(
+  target: EventTarget | null,
+  canvas: HTMLCanvasElement
+): boolean {
+  return (
+    target === canvas ||
+    (target instanceof Element && target.closest('[data-subgraph-io]') !== null)
+  )
 }

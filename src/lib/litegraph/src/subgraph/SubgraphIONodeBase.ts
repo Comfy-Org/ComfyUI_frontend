@@ -5,6 +5,7 @@ import type {
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
 import { toSelectableKey } from '@/core/selection/selectionState'
+import { getSubgraphIoLayout } from './subgraphIoLayout'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
@@ -52,7 +53,17 @@ export abstract class SubgraphIONodeBase<
   abstract readonly id: NodeId
 
   get boundingRect(): Rectangle {
-    return this._boundingRect
+    const measured = getSubgraphIoLayout(this.subgraph.id, this.id)
+    if (!measured) return this._boundingRect
+    const [x, y, width] = this._boundingRect
+    const socketInset =
+      SubgraphIONodeBase.roundedRadius + LiteGraph.NODE_SLOT_HEIGHT / 2
+    return new Rectangle(
+      x + width - socketInset - measured.width,
+      y,
+      measured.width + socketInset,
+      measured.height
+    )
   }
 
   get selected(): boolean {
@@ -78,11 +89,11 @@ export abstract class SubgraphIONodeBase<
   abstract readonly emptySlot: EmptySubgraphInput | EmptySubgraphOutput
 
   get pos() {
-    return this.boundingRect.pos
+    return this._boundingRect.pos
   }
 
   set pos(value) {
-    this.boundingRect.pos = value
+    this._boundingRect.pos = value
   }
 
   get size() {
@@ -90,7 +101,7 @@ export abstract class SubgraphIONodeBase<
   }
 
   set size(value) {
-    this.boundingRect.size = value
+    this._boundingRect.size = value
   }
 
   protected get sideLineWidth(): number {
@@ -315,14 +326,16 @@ export abstract class SubgraphIONodeBase<
     )
   }
 
-  /** Arrange the slots in this node. */
   arrange(): void {
     const { minWidth, roundedRadius } = SubgraphIONodeBase
-    const [, y] = this.boundingRect
-    const x = this.slotAnchorX
+    const [left, y] = this.boundingRect
+    const measured = getSubgraphIoLayout(this.subgraph.id, this.id)
+    const x = measured
+      ? left + measured.width + LiteGraph.NODE_SLOT_HEIGHT / 2
+      : this.slotAnchorX
 
     let maxWidth = minWidth
-    let currentY = y + roundedRadius
+    let currentY = y + (measured?.slotTop ?? roundedRadius)
 
     for (const slot of this.allSlots) {
       const [slotWidth, slotHeight] = slot.measure()
@@ -332,7 +345,11 @@ export abstract class SubgraphIONodeBase<
       if (slotWidth > maxWidth) maxWidth = slotWidth
     }
 
-    this.size = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
+    if (!measured)
+      this.size = [
+        Math.max(this._boundingRect[2], maxWidth + 2 * roundedRadius),
+        Math.max(this._boundingRect[3], currentY - y + roundedRadius)
+      ]
   }
 
   draw(
@@ -345,6 +362,7 @@ export abstract class SubgraphIONodeBase<
       | SubgraphOutput,
     editorAlpha?: number
   ): void {
+    if (getSubgraphIoLayout(this.subgraph.id, this.id)) return
     const { lineWidth, strokeStyle, fillStyle, font, textBaseline } = ctx
     this.drawProtected(ctx, colorContext, fromSlot, editorAlpha)
     Object.assign(ctx, {
@@ -396,7 +414,7 @@ export abstract class SubgraphIONodeBase<
   asSerialisable(): ExportedSubgraphIONode {
     return {
       id: serializeNodeId(this.id),
-      bounding: this.boundingRect.export(),
+      bounding: this._boundingRect.export(),
       pinned: this.pinned ? true : undefined
     }
   }

@@ -15,6 +15,7 @@ export interface ValueSourceGraph {
   ) => LinkTopology | undefined
   readonly widgetIds: (node: NodeState) => readonly WidgetId[]
   readonly widget: (id: WidgetId) => WidgetState | undefined
+  readonly outputLinkCount: (node: NodeState, index: number) => number
 }
 
 export type InputValueSource =
@@ -22,8 +23,9 @@ export type InputValueSource =
       readonly kind: 'editable'
       readonly node: NodeState
       readonly widgetId: WidgetId
+      readonly shared: boolean
     }
-  | { readonly kind: 'linked'; readonly node?: NodeState }
+  | { readonly kind: 'linked'; readonly node: NodeState }
   | { readonly kind: 'unavailable' }
 
 const primitiveTypes = new Set([
@@ -35,7 +37,10 @@ const primitiveTypes = new Set([
   'PrimitiveNode'
 ])
 
-type SourceStep = InputValueSource | { kind: 'upstream'; link: LinkTopology }
+type SourceStep =
+  | Exclude<InputValueSource, { kind: 'editable' }>
+  | { kind: 'widget'; node: NodeState; widgetId: WidgetId }
+  | { kind: 'upstream'; link: LinkTopology }
 
 function resolvePrimitiveSource(
   graph: ValueSourceGraph,
@@ -55,7 +60,7 @@ function resolvePrimitiveSource(
   const upstream = index < 0 ? undefined : graph.inputLink(node, index)
   return upstream
     ? { kind: 'upstream', link: upstream }
-    : { kind: 'editable', node, widgetId: id }
+    : { kind: 'widget', node, widgetId: id }
 }
 
 function resolveNodeSource(
@@ -87,18 +92,42 @@ export function resolveInputValueSource(
   let link = graph.inputLink(host, host.inputs.indexOf(input))
   if (!link)
     return input.widgetId
-      ? { kind: 'editable', node: host, widgetId: input.widgetId }
+      ? {
+          kind: 'editable',
+          node: host,
+          widgetId: input.widgetId,
+          shared: false
+        }
       : { kind: 'unavailable' }
 
   const seen = new Set<NodeState>()
+  let shared = false
   for (;;) {
     const node = graph.nodes.get(link.originNodeId)
     if (!node || node.graphId !== graph.scope.owningGraphId || seen.has(node)) {
       return { kind: 'unavailable' }
     }
     seen.add(node)
+    shared ||= graph.outputLinkCount(node, link.originSlot) > 1
     const step = resolveNodeSource(graph, node, link)
-    if (step.kind !== 'upstream') return step
-    link = step.link
+    switch (step.kind) {
+      case 'widget':
+        return {
+          kind: 'editable',
+          node: step.node,
+          widgetId: step.widgetId,
+          shared
+        }
+      case 'upstream':
+        link = step.link
+        break
+      case 'linked':
+      case 'unavailable':
+        return step
+      default: {
+        const exhaustive: never = step
+        return exhaustive
+      }
+    }
   }
 }

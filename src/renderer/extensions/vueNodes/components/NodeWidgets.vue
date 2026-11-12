@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import type { ProcessedWidgetModel } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -35,11 +35,7 @@ import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/
 interface NodeWidgetsProps {
   nodeData?: NodeState
   widgetIds?: readonly WidgetId[]
-  processedWidgetModel?: {
-    processedWidgets: ProcessedWidget[]
-    nodeType: string
-    canSelectInputs: boolean
-  }
+  processedWidgetModel?: ProcessedWidgetModel
 }
 
 const { nodeData, widgetIds, processedWidgetModel } =

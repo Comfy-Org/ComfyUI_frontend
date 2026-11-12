@@ -2,11 +2,10 @@
   <div
     ref="grid"
     data-testid="node-widgets"
+    :inert="canvasStore.isEditingBlocked"
     class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] gap-y-(--node-widget-gap) pr-3 text-xs text-node-foreground"
-    :style="{
-      'grid-template-rows': gridTemplateRows,
-      flex: gridTemplateRows.includes('auto') ? 1 : undefined
-    }"
+    :style="gridStyle"
+    @focusout="captureWidgetChanges"
   >
     <div
       v-for="section in sections"
@@ -29,7 +28,7 @@
         >
           <div :class="row.slotClass">
             <InputSlot
-              v-if="row.widget.slotMetadata"
+              v-if="presentation === 'node' && row.widget.slotMetadata"
               :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
               :slot-data="{
                 name: row.widget.simplified.name,
@@ -50,12 +49,19 @@
             :widget-id="row.widget.widgetId"
             :name="row.widget.simplified.name"
             :enable="
-              canSelectInputs && !row.widget.simplified.options?.disabled
+              presentation === 'node' &&
+              canSelectInputs &&
+              !row.widget.simplified.options?.disabled
             "
           >
             <Tooltip :disabled="!row.widget.tooltipText">
               <TooltipTrigger as-child>
                 <div
+                  data-testid="widget-control-shell"
+                  :inert="
+                    row.widget.simplified.options?.disabled ||
+                    row.widget.simplified.options?.read_only
+                  "
                   :class="
                     cn(
                       'grid min-w-0 grid-cols-1',
@@ -76,7 +82,7 @@
                       cn('col-span-full', row.widget.hasError && 'font-bold')
                     "
                     @update:model-value="row.widget.updateHandler"
-                    @contextmenu="row.widget.handleContextMenu"
+                    @contextmenu="handleContextMenu($event, row.widget)"
                     @removed="restoreRowFocus"
                   />
                 </div>
@@ -98,6 +104,7 @@ import { computed, nextTick, useTemplateRef, watch } from 'vue'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
@@ -120,7 +127,8 @@ const {
   canSelectInputs = false,
   nodeId,
   nodeTitle,
-  syncLayout = true
+  syncLayout = true,
+  presentation = 'node'
 } = defineProps<{
   processedWidgets: WidgetGridItem[]
   nodeType: string
@@ -128,19 +136,48 @@ const {
   nodeId?: NodeId
   nodeTitle?: string
   syncLayout?: boolean
+  presentation?: 'node' | 'form'
 }>()
 
-useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
+useVueElementTracking(
+  syncLayout && presentation === 'node' ? String(nodeId ?? '') : '',
+  'widgets-grid'
+)
 const canvasStore = useCanvasStore()
+
+function captureWidgetChanges() {
+  useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+}
+
+function handleContextMenu(event: PointerEvent, widget: WidgetGridItem) {
+  if (presentation === 'form') {
+    event.preventDefault()
+    event.stopPropagation()
+    return
+  }
+  widget.handleContextMenu?.(event)
+}
+
+function rowKind(
+  widget: WidgetGridItem
+): 'expanded' | 'compact' | 'socket' | 'hidden' {
+  const hasSocket = presentation === 'node' && !!widget.slotMetadata
+  if (isConvertedWidgetType(widget.simplified.type)) {
+    return hasSocket ? 'socket' : 'hidden'
+  }
+  if (widget.visible) {
+    return shouldExpand(widget.simplified.type) || widget.hasLayoutSize
+      ? 'expanded'
+      : 'compact'
+  }
+  return widget.suppressedByConnection && hasSocket ? 'socket' : 'hidden'
+}
+
 const renderedRows = computed(() =>
   processedWidgets.flatMap((widget) => {
-    const isConverted = isConvertedWidgetType(widget.simplified.type)
-    const showsControl = !isConverted && widget.visible
-    const shouldRender = isConverted
-      ? !!widget.slotMetadata
-      : widget.visible ||
-        (!!widget.suppressedByConnection && !!widget.slotMetadata)
-    if (!shouldRender) return []
+    const kind = rowKind(widget)
+    if (kind === 'hidden') return []
+    const showsControl = kind !== 'socket'
 
     return [
       {
@@ -155,11 +192,7 @@ const renderedRows = computed(() =>
         ),
         standalone: !showsControl && !!widget.suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,
-        rowSize:
-          showsControl &&
-          (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
-            ? 'auto'
-            : 'min-content'
+        rowSize: kind === 'expanded' ? 'auto' : 'min-content'
       }
     ]
   })
@@ -237,9 +270,13 @@ async function restoreRowFocus(name: string) {
   }
 }
 
-const gridTemplateRows = computed(() =>
-  renderedRows.value.map((row) => row.rowSize).join(' ')
-)
+const gridStyle = computed(() => {
+  const rows = renderedRows.value.map((row) => row.rowSize).join(' ')
+  return {
+    'grid-template-rows': rows,
+    flex: rows.includes('auto') ? 1 : undefined
+  }
+})
 
 const layoutKey = computed(() =>
   renderedRows.value
@@ -254,7 +291,13 @@ watch(
   layoutKey,
   () => {
     const rootGraphId = canvasStore.rootGraphId
-    if (syncLayout && grid.value && rootGraphId && nodeId) {
+    if (
+      presentation === 'node' &&
+      syncLayout &&
+      grid.value &&
+      rootGraphId &&
+      nodeId
+    ) {
       syncSlotOffsets(grid.value, rootGraphId, nodeId)
     }
   },

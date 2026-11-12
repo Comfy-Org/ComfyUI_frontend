@@ -41,10 +41,8 @@ export function useNodeResize(
   const resizeStartPosition = ref<Point | null>(null)
   const resizeCorner = ref<CompassCorners>('SE')
 
-  // Snap-to-grid functionality
   const { shouldSnap, applySnapToPosition, applySnapToSize } = useNodeSnap()
 
-  // Shift key sync for LiteGraph canvas preview
   const { trackShiftKey } = useShiftKeySync()
 
   const startResize = (event: PointerEvent, corner: CompassCorners = 'SE') => {
@@ -88,13 +86,10 @@ export function useNodeResize(
       ? { ...nodeLayout.position }
       : { x: 0, y: 0 }
 
-    // Track shift key state and sync to canvas for snap preview
     const stopShiftSync = trackShiftKey(event.shiftKey)
 
-    // Capture pointer to ensure we get all move/up events
     target.setPointerCapture(event.pointerId)
 
-    // Mark as resizing to prevent drag from activating
     layoutStore.isResizingVueNodes.value = true
     isResizing.value = true
     resizeStartPointer.value = { x: event.clientX, y: event.clientY }
@@ -141,7 +136,7 @@ export function useNodeResize(
           newWidth = resizeStartSize.value.width - deltaX
           newHeight = resizeStartSize.value.height - deltaY
           break
-        default: // SE
+        default:
           newWidth = resizeStartSize.value.width + deltaX
           newHeight = resizeStartSize.value.height + deltaY
           break
@@ -150,9 +145,7 @@ export function useNodeResize(
       const isWestCorner = hasWestEdge(activeCorner)
       const isNorthCorner = hasNorthEdge(activeCorner)
 
-      // Apply snap-to-grid
       if (shouldSnap(moveEvent)) {
-        // Snap position first for N/W corners, then compensate size
         if (isNorthCorner || isWestCorner) {
           const originalX = newX
           const originalY = newY
@@ -176,7 +169,6 @@ export function useNodeResize(
         newHeight = snappedSize.height
       }
 
-      // Enforce minimum size with position compensation (matching litegraph)
       const minWidth =
         parseFloat(nodeElement.style.getPropertyValue('min-width') || '0') ||
         MIN_NODE_WIDTH
@@ -187,11 +179,7 @@ export function useNodeResize(
         }
         newWidth = minWidth
       }
-      // Re-measure on each move with the candidate width applied: widget
-      // content (e.g. painter controls) can re-flow taller as width shrinks,
-      // raising the true minimum. Probing with newWidth — not the DOM's
-      // current width — keeps the clamp accurate on the frame that crosses
-      // a responsive breakpoint.
+
       const minContentHeight = measureMinContentHeight(newWidth)
       if (newHeight < minContentHeight) {
         if (isNorthCorner) {
@@ -207,7 +195,6 @@ export function useNodeResize(
         size: { width: newWidth, height: newHeight }
       }
 
-      // Only include position for non-SE corners
       if (activeCorner !== 'SE') {
         payload.position = { x: newX, y: newY }
       }
@@ -226,7 +213,6 @@ export function useNodeResize(
       resizeStartSize.value = null
       resizeStartPosition.value = null
 
-      // Stop tracking shift key state
       stopShiftSync()
 
       stopMoveListen()
@@ -239,15 +225,22 @@ export function useNodeResize(
         try {
           target.releasePointerCapture(upEvent.pointerId)
         } catch {
-          // Pointer capture may already be released
+          return
+        } finally {
+          cleanup()
         }
-        cleanup()
       }
     }
 
-    const stopMoveListen = useEventListener('pointermove', handlePointerMove)
-    const stopUpListen = useEventListener('pointerup', handlePointerUp)
-    const stopCancelListen = useEventListener('pointercancel', cleanup)
+    const stopMoveListen = useEventListener('pointermove', handlePointerMove, {
+      capture: true
+    })
+    const stopUpListen = useEventListener('pointerup', handlePointerUp, {
+      capture: true
+    })
+    const stopCancelListen = useEventListener('pointercancel', cleanup, {
+      capture: true
+    })
   }
 
   return {

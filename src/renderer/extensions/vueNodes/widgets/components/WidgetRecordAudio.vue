@@ -86,12 +86,12 @@ import { useIntervalFn } from '@vueuse/core'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
@@ -103,6 +103,7 @@ const { t } = useI18n()
 const props = defineProps<{
   readonly?: boolean
   nodeId: NodeId
+  widget?: SimplifiedWidget
 }>()
 
 // Audio element ref
@@ -154,8 +155,9 @@ const { isPlaying, audioElementKey } = playback
 // Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
-const litegraphNode = useLiveGraphNode(() =>
-  props.nodeId ? app.canvas.graph?.getNodeById(props.nodeId) : null
+const litegraphNode = useWidgetHostNode(
+  () => props.widget?.nodeLocatorId ?? props.widget?.hostNodeLocatorId,
+  () => props.nodeId
 )
 
 function handleRecordingComplete(blob: Blob) {
