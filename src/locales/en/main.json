@@ -2611,10 +2611,10 @@
     "noClips": "Connect videos to preview and order them",
     "clips": "Clips",
     "clipLabel": "Clip {position}",
-    "previewClips": "Clips",
-    "previewResult": "Last run",
     "reorderHint": "Drag clips or press Alt + arrow keys to reorder, click to jump",
-    "mixedDimensions": "Mixed sizes"
+    "mixedDimensions": "Mixed sizes",
+    "mixedDimensionsWarning": "All clips must match clip {position} ({width} × {height}) to concatenate: {clips}.",
+    "clipSize": "clip {position} is {width} × {height}"
   },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
@@ -5372,7 +5372,10 @@
       "retryDownload": "Retry",
       "retryDownloadModel": "Retry download for {model}",
       "downloadFailedHint": "The download couldn't be completed. Use Retry to try again.",
-      "downloading": "Downloading"
+      "downloading": "Downloading",
+      "pauseDownloadModel": "Pause download for {model}",
+      "resumeDownloadModel": "Resume download for {model}",
+      "cancelDownloadModel": "Cancel download for {model}"
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"
@@ -6627,6 +6630,42 @@
       "body": "Buy credits automatically when you run low, so workflows and API calls keep running.",
       "setUp": "Set up",
       "notNow": "Not now"
+    },
+    "autoTopUp": {
+      "label": "Turn on auto top-up",
+      "body": "Buy credits automatically when you run low, so workflows keep running.",
+      "threshold": "When credits drop below",
+      "thresholdHint": "Counts plan credits and credits you’ve bought.",
+      "target": "Top up to",
+      "targetHint": "{target} credits. Each top-up is at least {amount}.",
+      "limit": "Monthly limit",
+      "limitOff": "Up to {max} a month, the maximum. Turn on to set a lower limit.",
+      "limitHint": "Most you can set here: {max} a month.",
+      "consentNoCard": "Top-ups are charged to the card you pay with at checkout, up to {max} a month. Turn this off anytime in {billing}.",
+      "consentDefaultCard": "Top-ups are charged to your default card, {card}, up to {max} a month. Turn this off anytime in {billing}.",
+      "card": "{brand} ···· {last4}",
+      "billing": "Billing",
+      "invalid": "Enter a valid value.",
+      "fieldError": {
+        "notWhole": "Enter a whole number of credits.",
+        "belowMinimum": "Must be at least 1 credit.",
+        "belowTarget": "Must be at least {minimum} credits, about {usd} above your threshold.",
+        "aboveTarget": "Can’t be more than {max} credits (about {usd}).",
+        "belowTopUp": "Can’t cover one top-up. Set at least {amount}."
+      },
+      "isOn": "Auto top-up is on.",
+      "manage": "Manage"
+    },
+    "autoTopUpOn": {
+      "title": "Auto top-up is on",
+      "summary": "Below {threshold} credits, tops up to {target}.",
+      "limit": "Up to {limit} a month.",
+      "noLimit": "No monthly limit.",
+      "done": "Done"
+    },
+    "autoTopUpFailed": {
+      "title": "Auto top-up didn't turn on",
+      "body": "Your credits were added. Set up auto top-up in Billing to try again."
     }
   }
 }

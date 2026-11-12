@@ -181,6 +181,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(
   import('@/platform/workflowErrors/missingModel/missingModelDownload'),
   () => ({
+    hostReportsModelDownloadProgress: () => false,
     isModelDownloadable: mocks.isModelDownloadable,
     modelDownloadNeedsFolderPaths: mocks.modelDownloadNeedsFolderPaths
   })
