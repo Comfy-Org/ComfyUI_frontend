@@ -110,13 +110,13 @@ function forwardUnlessOnButton(event: PointerEvent) {
     :aria-label="title"
     :class="
       cn(
-        'pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) origin-top-left rounded-(--node-radius) bg-node/60 drop-shadow-none',
+        'pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) origin-top-left rounded-(--node-radius) bg-node/60 drop-shadow-none [--node-header:transparent]',
         isInput && !collapsed
           ? 'w-(--node-width)'
           : 'w-fit max-w-(--node-width)'
       )
     "
-    container-class="w-full bg-transparent"
+    container-class="w-full"
     :style
     @wheel="handleWheel"
     @pointerdown.capture="handlePointerDown"
@@ -153,7 +153,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
       :data-testid="isInput ? 'subgraph-input-body' : 'subgraph-output-body'"
       :class="
         cn(
-          'flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) pt-1 pb-3',
+          'flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) pt-1 pb-5',
           isInput ? 'pr-4' : 'pl-4'
         )
       "
@@ -166,7 +166,6 @@ function forwardUnlessOnButton(event: PointerEvent) {
         subgraph-action="exit"
         error-severity="none"
         :show-errors-tab-enabled="false"
-        header-color="transparent"
         @navigate-subgraph="exitSubgraph"
       />
       <NodeResizeHandle
