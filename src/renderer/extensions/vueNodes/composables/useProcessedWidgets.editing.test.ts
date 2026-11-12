@@ -47,6 +47,14 @@ function pendingEdit() {
 }
 
 describe('shared widget editing', () => {
+  it('applies a retained update while its owner and local value are unchanged', async () => {
+    const { firstId } = pendingEdit()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Finish edit' }))
+
+    expect(useWidgetValueStore().getWidget(firstId)?.value).toBe(99)
+  })
+
   it('rejects a retained update after a connection replaces its local value', async () => {
     const { first, second, firstId } = pendingEdit()
     second.connect(0, first, 0)

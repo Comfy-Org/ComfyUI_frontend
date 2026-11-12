@@ -1,3 +1,4 @@
+import { omit } from 'es-toolkit'
 import { describe, expect, it } from 'vitest'
 
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -11,7 +12,11 @@ describe('subgraph input layout commands', () => {
     const graph = createTestSubgraph({
       inputs: [{ name: 'value', type: 'STRING' }]
     })
-    const before = graph.inputs.map((slot) => slot.asSerialisable())
+    const declarations = () =>
+      structuredClone(
+        graph.inputs.map((slot) => omit(slot.asSerialisable(), ['pos']))
+      )
+    const before = declarations()
     const node = graph.inputNode
     node.pinned = true
     const operation: BatchUpdateBoundsOperation = {
@@ -28,7 +33,7 @@ describe('subgraph input layout commands', () => {
 
     expect(node.asSerialisable().bounding).toEqual([10, 20, 424, 500])
     expect(node.pinned).toBe(true)
-    expect(graph.inputs.map((slot) => slot.asSerialisable())).toEqual(before)
+    expect(declarations()).toEqual(before)
   })
 
   it('rejects a command addressed to another definition without mutation', () => {
