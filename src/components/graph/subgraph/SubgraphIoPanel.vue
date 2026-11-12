@@ -153,7 +153,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
       :data-testid="isInput ? 'subgraph-input-body' : 'subgraph-output-body'"
       :class="
         cn(
-          'flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) pt-1 pb-5',
+          'flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) pt-1 pb-1',
           isInput ? 'pr-4' : 'pl-4'
         )
       "
@@ -163,6 +163,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
     </div>
     <template #after>
       <NodeFooter
+        class="[clip-path:inset(1.25rem_-0.25rem_-0.25rem)] [&_button:focus-visible]:bg-accent"
         subgraph-action="exit"
         error-severity="none"
         :show-errors-tab-enabled="false"

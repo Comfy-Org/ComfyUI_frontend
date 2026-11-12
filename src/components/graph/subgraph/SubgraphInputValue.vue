@@ -74,13 +74,13 @@ const sourceTitle = computed(() =>
   <div
     data-subgraph-port
     :class="
-      cn('relative flex min-w-0 items-start', expands && 'min-h-0 flex-1')
+      cn('relative flex min-w-0 items-center', expands && 'min-h-0 flex-1')
     "
   >
     <button
       v-if="upstream"
       type="button"
-      class="absolute top-0 right-full mr-1 flex h-(--node-widget-height) cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-2xs whitespace-nowrap text-muted-foreground hover:text-foreground"
+      class="absolute inset-y-0 right-full mr-1 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-2xs whitespace-nowrap text-muted-foreground hover:text-foreground"
       :title="sourceTitle"
       :aria-label="t('subgraphInputValues.locateSource')"
       @click="emit('locate', upstream)"
