@@ -19,6 +19,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
 
+import { getJobDetail } from '@/services/jobOutputCache'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -193,6 +194,30 @@ describe('assetsStore - resolved history outputs', () => {
         toValue(store.flatOutputAssets.items).map(({ name }) => name)
       ).toEqual(['recovered-b.png', 'recovered-a.png'])
     )
+  })
+
+  it('retains known children when refreshed detail is unavailable after eviction', async () => {
+    vi.mocked(api.getHistory).mockResolvedValue([job('known')])
+    vi.mocked(api.getJobDetail).mockImplementation(async (id) => detail(id))
+    const store = useAssetsStore()
+    await vi.waitFor(() =>
+      expect(
+        toValue(store.flatOutputAssets.items).map(({ name }) => name)
+      ).toEqual(['known-b.png', 'known-a.png'])
+    )
+    await Promise.all(
+      Array.from({ length: 110 }, (_, index) =>
+        getJobDetail(`evicted-${index}`)
+      )
+    )
+    vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
+
+    await store.outputAssets.invalidate()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(
+      toValue(store.flatOutputAssets.items).map(({ name }) => name)
+    ).toEqual(['known-b.png', 'known-a.png'])
   })
 
   it('keeps children from independently completed jobs with their parent timestamps', async () => {

@@ -138,7 +138,8 @@ export const useAssetsStore = defineStore('assets', () => {
           const jobId = metadata?.jobId
           if (!jobId || previousItems?.includes(asset)) continue
           void resolveOutputAssetItems(metadata, {
-            createdAt: asset.created_at
+            createdAt: asset.created_at,
+            fallbackItems: currentAssetsCache[jobId]
           }).then((assets) => {
             if (toValue(history.items).includes(asset)) {
               currentAssetsCache[jobId] = assets
