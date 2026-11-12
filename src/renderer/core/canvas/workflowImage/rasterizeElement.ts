@@ -163,11 +163,17 @@ function hideReplacedElements(clone: Element) {
     )
 }
 
-async function loadImage(src: string): Promise<HTMLImageElement | undefined> {
+async function loadSvgWithEmbeddedFonts(
+  src: string
+): Promise<HTMLImageElement | undefined> {
   const image = new Image()
   image.src = src
   try {
     await image.decode()
+    const ctx = new OffscreenCanvas(1, 1).getContext('2d')
+    if (!ctx) return undefined
+    ctx.drawImage(image, 0, 0)
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
     return image
   } catch {
     return undefined
@@ -244,7 +250,7 @@ export function createElementRasterizer() {
     container.append(style, shells.outermost)
 
     const markup = toSvgMarkup(inert, container, width, height, pixelRatio)
-    const image = await loadImage(
+    const image = await loadSvgWithEmbeddedFonts(
       `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`
     )
     return image && { image, x: left, y: top, width, height }
