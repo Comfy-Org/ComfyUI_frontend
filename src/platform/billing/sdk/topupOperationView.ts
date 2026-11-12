@@ -186,10 +186,10 @@ export function projectTopupResult(
   }
 }
 
-export interface HostedCheckoutSession {
-  readonly url: string
-  readonly sessionId?: string
-}
+export type HostedCheckoutSession = Pick<
+  Extract<HostedTopupCheckoutResult, { status: 'ok' }>,
+  'url' | 'sessionId'
+>
 
 /** The hosted Checkout session, or the failure as the error the dialog handles. */
 export function projectHostedTopupCheckoutResult(

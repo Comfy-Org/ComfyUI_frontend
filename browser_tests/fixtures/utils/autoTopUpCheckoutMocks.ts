@@ -16,7 +16,6 @@ import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const PERSONAL_WORKSPACE = workspace('personal', 'owner')
 
-/** Boots the cloud app for a hosted top-up whose checkout read serves `activation`; returns the checkout requests sent. */
 export async function mockAutoTopUpPurchase(
   page: Page,
   {

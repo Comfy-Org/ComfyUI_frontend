@@ -72,13 +72,11 @@ export class TopUpCreditsDialog extends BaseDialog {
     })
   }
 
-  /** Opens the dialog through the cloud app's `?topup=1` link. */
   async openFromTopupLink() {
     await this.page.goto(`${APP_URL}/?topup=1`)
     await expect(this.heading).toBeVisible({ timeout: 45_000 })
   }
 
-  /** Continues to checkout, waits for its tab, then returns with `balance` served. */
   async payAndReturn(checkoutUrl: string, balance: BillingBalanceResponse) {
     const checkoutPage = this.page.context().waitForEvent('page')
     await this.continueButton.click()
