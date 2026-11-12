@@ -10,7 +10,7 @@ import {
   localWebBillingHandoffTest as test
 } from '@e2e/fixtures/localWebBillingHandoffFixture'
 
-test.describe('Local web billing handoff', { tag: '@auth' }, () => {
+test.describe('Local web billing handoff', () => {
   test.describe.configure({ timeout: 60_000 })
   test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
 

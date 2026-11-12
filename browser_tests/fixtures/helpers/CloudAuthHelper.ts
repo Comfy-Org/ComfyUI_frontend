@@ -32,7 +32,6 @@ export class CloudAuthHelper {
     this.appUrl = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
   }
 
-  /** Answers the Cloud `local_billing_web` read a local sign-in triggers, with the flag off. */
   private async mockLocalBillingWebFlagRead(): Promise<void> {
     const appOrigin = new URL(this.appUrl).origin
     await this.page.route(
