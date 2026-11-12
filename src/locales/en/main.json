@@ -5362,7 +5362,17 @@
       "downloadAll": "Download all",
       "refresh": "Refresh",
       "refreshing": "Refreshing missing models.",
-      "refreshFailed": "Failed to refresh missing models. Please try again."
+      "refreshFailed": "Failed to refresh missing models. Please try again.",
+      "downloadQueued": "Queued",
+      "downloadStarting": "Starting",
+      "downloadingModel": "Downloading {model}",
+      "downloadPaused": "Paused",
+      "downloadPausedProgress": "Paused · {progress}",
+      "downloaded": "Downloaded",
+      "retryDownload": "Retry",
+      "retryDownloadModel": "Retry download for {model}",
+      "downloadFailedHint": "The download couldn't be completed. Use Retry to try again.",
+      "downloading": "Downloading"
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"
