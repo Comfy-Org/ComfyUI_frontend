@@ -161,10 +161,11 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
   mkdirSync(join(directory, 'tests/goldens'), { recursive: true })
   writeFileSync(join(directory, 'tests/goldens/stale.txt'), 'old')
   const specs = {
-    a: `test.describe.configure({mode: 'serial'}); test('first @${project}', () => {}); test('second @${project}', () => {})`,
+    a: `test.describe.configure({mode: 'serial'}); let state = 0; test('first @${project}', () => { state = 1 }); test('second @${project}', () => expect(state).toBe(1))`,
     b: `test('retry @${project}', ({}, info) => expect(info.retry).toBeGreaterThan(0))`,
     c: `test('snapshot @${project}', () => expect('new').toMatchSnapshot('stale.txt'))`,
-    d: `test('pass @${project}', () => {}); test.skip('skip @${project}', () => {})`
+    d: `test('pass @${project}', () => {}); test.skip('skip @${project}', () => {})`,
+    e: `test.describe('default', () => { test.describe.configure({mode: 'default'}); let state = 0; test('first @${project}', () => { state = 1 }); test('second @${project}', () => expect(state).toBe(1)) })`
   }
   for (const [file, body] of Object.entries(specs)) {
     writeFileSync(
@@ -200,7 +201,14 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
       })
       assert.equal(
         result.status,
-        step === plan ? 0 : shard === 4 ? 1 : 0,
+        step === plan
+          ? 0
+          : Number(
+              readFileSync(
+                join(directory, `${project}-shards`, `${shard}.txt`),
+                'utf8'
+              ).includes('snapshot @')
+            ),
         result.stdout + result.stderr
       )
     }
@@ -213,6 +221,10 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
     )
   }
   const blobs = readdirSync(merged)
+  const lists = [1, 2, 3, 4].map((shard) =>
+    readFileSync(join(directory, `${project}-shards`, `${shard}.txt`), 'utf8')
+  )
+  expect(lists.filter((list) => list.includes('d.spec.ts'))).toHaveLength(2)
   const result = spawnSync(
     join(root, 'node_modules/.bin/playwright'),
     ['merge-reports', '--reporter=html,json', merged],
@@ -257,7 +269,7 @@ it.for(['cloud', 'chromium'] as const)(
       `report-${project}-4.zip`
     ])
     expect(result.report).toMatchObject({
-      stats: { expected: 3, flaky: 1, unexpected: 1, skipped: 1 }
+      stats: { expected: 5, flaky: 1, unexpected: 1, skipped: 1 }
     })
     expect(result.manifests.flat()).toEqual(['tests/goldens/stale.txt'])
     expect(result.snapshot).toBe('new')
