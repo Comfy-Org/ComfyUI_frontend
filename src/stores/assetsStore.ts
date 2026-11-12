@@ -5,6 +5,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   computed,
   effectScope,
+  onScopeDispose,
   reactive,
   ref,
   shallowReactive,
@@ -31,8 +32,11 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import {
   useAssetsQuery,
-  invalidateAll
+  invalidateAll,
+  loadNewAll
 } from '@/platform/assets/composables/useAssetsQuery'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import {
@@ -160,106 +164,62 @@ export const useAssetsStore = defineStore('assets', () => {
     loadNew: async () => undefined
   }
 
-  function useHistoryAssets(): PagedList<AssetItem> {
-    // Pagination state
+  function useHistoryAssets(): [PagedList<AssetItem>, PagedList<AssetItem>] {
     const historyOffset = ref(0)
     const hasMoreHistory = ref(true)
     const isLoadingMore = ref(false)
-    const allHistoryItems = ref<AssetItem[]>([])
-    const loadedIds = shallowReactive(new Set<string>())
+    const historyAssets = ref<AssetItem[]>([])
+    const resolvedAssetsCache = ref<Partial<Record<string, AssetItem[]>>>({})
 
-    /**
-     * Fetch history assets with pagination support
-     * @param loadMore - true for pagination (append), false for initial load (replace)
-     */
     const fetchHistoryAssets = async (
       loadMore = false
     ): Promise<AssetItem[]> => {
-      // Reset state for initial load
-      if (!loadMore) {
-        historyOffset.value = 0
-        hasMoreHistory.value = true
-        allHistoryItems.value = []
-        loadedIds.clear()
-      }
-
-      // Fetch from server with offset
+      const offset = loadMore ? historyOffset.value : 0
       const history = await api.getHistory(BATCH_SIZE, {
-        offset: historyOffset.value
+        offset
       })
-
-      // Convert JobListItems to AssetItems
       const newAssets = mapHistoryToAssets(history)
+      const items = loadMore ? [...historyAssets.value] : []
+      const loadedIds = new Set(items.map(({ id }) => id))
 
-      if (loadMore) {
-        // Filter out duplicates and insert in sorted order
-        for (const asset of newAssets) {
-          if (loadedIds.has(asset.id)) {
-            continue // Skip duplicates
-          }
-          loadedIds.add(asset.id)
+      for (const asset of newAssets) {
+        if (loadedIds.has(asset.id)) continue
+        loadedIds.add(asset.id)
 
-          // Find insertion index to maintain sorted order (newest first)
-          const assetTime = new Date(asset.created_at).getTime()
-          const insertIndex = allHistoryItems.value.findIndex(
-            (item) => new Date(item.created_at).getTime() < assetTime
-          )
-
-          if (insertIndex === -1) {
-            // Asset is oldest, append to end
-            allHistoryItems.value.push(asset)
-          } else {
-            // Insert at the correct position
-            allHistoryItems.value.splice(insertIndex, 0, asset)
-          }
-        }
-      } else {
-        // Initial load: replace all
-        allHistoryItems.value = newAssets
-        newAssets.forEach((asset) => loadedIds.add(asset.id))
-      }
-
-      // Update pagination state
-      historyOffset.value += BATCH_SIZE
-      hasMoreHistory.value = history.length === BATCH_SIZE
-
-      if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-        const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-        allHistoryItems.value = allHistoryItems.value.slice(
-          0,
-          MAX_HISTORY_ITEMS
+        const assetTime = new Date(asset.created_at).getTime()
+        const insertIndex = items.findIndex(
+          (item) => new Date(item.created_at).getTime() < assetTime
         )
 
-        // Clean up Set
-        removed.forEach((item) => loadedIds.delete(item.id))
+        if (insertIndex === -1) {
+          items.push(asset)
+        } else {
+          items.splice(insertIndex, 0, asset)
+        }
       }
 
-      return allHistoryItems.value
+      historyOffset.value = offset + BATCH_SIZE
+      hasMoreHistory.value = history.length === BATCH_SIZE
+
+      return items.slice(0, MAX_HISTORY_ITEMS)
     }
 
-    const historyAssets = ref<AssetItem[]>([])
     const historyLoading = ref(false)
     const historyError = ref<unknown>(null)
     let historyQueue = Promise.resolve()
     let refreshPromise: Promise<void> | undefined
     let loadMorePromise: Promise<boolean> | undefined
 
-    /**
-     * Initial load of history assets
-     */
     const doUpdateHistory = async () => {
       historyLoading.value = true
       historyError.value = null
       try {
-        await fetchHistoryAssets(false)
-        historyAssets.value = allHistoryItems.value
+        const items = await fetchHistoryAssets(false)
+        resolvedAssetsCache.value = {}
+        historyAssets.value = items
       } catch (err) {
         console.error('Error fetching history assets:', err)
         historyError.value = err
-        // Keep existing data when error occurs
-        if (!historyAssets.value.length) {
-          historyAssets.value = []
-        }
       } finally {
         historyLoading.value = false
       }
@@ -275,24 +235,16 @@ export const useAssetsStore = defineStore('assets', () => {
       return refreshPromise
     }
 
-    /**
-     * Load more history items (infinite scroll)
-     */
     const doLoadMoreHistory = async () => {
       isLoadingMore.value = true
       historyError.value = null
 
       try {
-        await fetchHistoryAssets(true)
-        historyAssets.value = allHistoryItems.value
+        historyAssets.value = await fetchHistoryAssets(true)
         return true
       } catch (err) {
         console.error('Error loading more history:', err)
         historyError.value = err
-        // Keep existing data when error occurs (consistent with updateHistory)
-        if (!historyAssets.value.length) {
-          historyAssets.value = []
-        }
         return false
       } finally {
         isLoadingMore.value = false
@@ -312,7 +264,7 @@ export const useAssetsStore = defineStore('assets', () => {
       return loadMorePromise
     }
 
-    return {
+    const outputAssets = {
       hasMore: hasMoreHistory,
       invalidate: updateHistory,
       isLoading: computed(() => historyLoading.value || isLoadingMore.value),
@@ -320,31 +272,75 @@ export const useAssetsStore = defineStore('assets', () => {
       loadMore: loadMoreHistory,
       loadNew: updateHistory
     }
+    watch(
+      historyAssets,
+      (items) => {
+        const currentAssetsCache = resolvedAssetsCache.value
+        const currentIds = new Set(items.map(({ id }) => id))
+        for (const jobId of Object.keys(currentAssetsCache)) {
+          if (!currentIds.has(jobId)) delete currentAssetsCache[jobId]
+        }
+        for (const asset of items) {
+          const metadata = getOutputAssetMetadata(asset.user_metadata)
+          const jobId = metadata?.jobId
+          if (!jobId || currentAssetsCache[jobId]) continue
+
+          void resolveOutputAssetItems(metadata, {
+            createdAt: asset.created_at
+          }).then((assets) => {
+            if (historyAssets.value.includes(asset)) {
+              currentAssetsCache[jobId] = assets
+            }
+          })
+        }
+      },
+      { immediate: true }
+    )
+    const flatOutputs = new WrappedList(outputAssets, (items) =>
+      items.flatMap((asset) => {
+        const jobId = getOutputAssetMetadata(asset.user_metadata)?.jobId
+        if (!jobId) return [asset]
+        return resolvedAssetsCache.value[jobId] ?? [asset]
+      })
+    )
+    void loadMoreHistory()
+    return [outputAssets, flatOutputs]
   }
 
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
   const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const flatOutputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const allAssets = ref<PagedList<AssetItem>>(undefined!)
   let assetsScope: EffectScope | undefined
+  onScopeDispose(() => assetsScope?.stop())
   watch(
     () => flags.assetsEnabled,
     (isAssets) => {
-      if (assetsScope) assetsScope.stop()
-      assetsScope = undefined
-
-      if (isAssets) {
-        assetsScope = effectScope()
-        assetsScope.run(() => {
+      assetsScope?.stop()
+      assetsScope = effectScope()
+      assetsScope.run(() => {
+        if (isAssets) {
           inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
-          const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
+          flatOutputAssets.value = useAssetsQuery({
+            tags_any: ['output', 'temp']
+          })
           outputAssets.value = new WrappedList(
-            flatAssets,
+            flatOutputAssets.value,
             unflattenOutputAssets
           )
-        })
-      } else {
-        inputAssets.value = historyInputs
-        outputAssets.value = useHistoryAssets()
-      }
+          allAssets.value = useAssetsQuery({
+            tags_any: ['input', 'output', 'temp']
+          })
+        } else {
+          inputAssets.value = historyInputs
+          ;[outputAssets.value, flatOutputAssets.value] = useHistoryAssets()
+          allAssets.value = new WrappedList(
+            flatOutputAssets.value,
+            (outputItems) => [...toValue(historyInputs.items), ...outputItems]
+          )
+          void executeUpdateInputs()
+        }
+      })
     },
     { immediate: true }
   )
@@ -368,6 +364,11 @@ export const useAssetsStore = defineStore('assets', () => {
     api,
     'assets.seed.completed',
     async ({ detail }: CustomEvent<AssetSeedCompletedWsMessage>) => {
+      if (flags.assetsEnabled) {
+        if (detail.phase !== 'fast') await invalidateAll()
+        else if (detail.created) await loadNewAll()
+        return
+      }
       if (detail.phase !== 'fast') {
         await outputAssets.value.invalidate()
         await inputAssets.value.invalidate()
@@ -1095,6 +1096,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
   return {
     // States
+    allAssets,
+    flatOutputAssets,
     inputAssets,
     outputAssets,
     invalidateAll,

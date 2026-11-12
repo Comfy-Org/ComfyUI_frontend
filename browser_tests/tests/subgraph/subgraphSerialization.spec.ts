@@ -440,20 +440,16 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         await comfyPage.workflow.loadWorkflow(
           'subgraphs/subgraph-with-legacy-reordered-links'
         )
-        const width = comfyPage.vueNodes.getWidgetByName(
+        const widthInput = comfyPage.vueNodes.getWidgetByName(
           'New Subgraph',
           'width'
         )
-        await expect(width).toBeVisible()
-        const widthInput =
-          comfyPage.vueNodes.getInputNumberControls(width).input
+        await expect(widthInput).toBeVisible()
         await expect(widthInput).toHaveValue('512')
-        const batch = comfyPage.vueNodes.getWidgetByName(
+        const batchInput = comfyPage.vueNodes.getWidgetByName(
           'New Subgraph',
           'batch_size'
         )
-        const batchInput =
-          comfyPage.vueNodes.getInputNumberControls(batch).input
         await expect(batchInput).toHaveValue('1')
       }
     )

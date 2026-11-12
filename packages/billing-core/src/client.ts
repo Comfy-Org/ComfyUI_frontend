@@ -101,7 +101,7 @@ export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
 export type BillingCapabilitiesRead = Omit<
   BillingCapabilitiesResponse,
-  'denied_reasons' | 'auto_top_up_enabled'
+  'denied_reasons' | 'auto_top_up_enabled' | 'billing_web_checkout_ui'
 > &
   Partial<Pick<BillingCapabilitiesResponse, 'auto_top_up_enabled'>> & {
     denied_reasons?: Readonly<Partial<Record<string, string>>>

@@ -19,7 +19,10 @@ import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import {
+  createNodeLocatorId,
+  parseNodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import type {
   NodeExecutionId,
   NodeLocatorId
@@ -92,6 +95,14 @@ interface SetOutputOptions {
 type NodePreviewMap = Partial<Record<string, string[]>>
 type RuntimeOutput = Pick<ExecutedWsMessage['output'], 'animated'> & {
   images?: (ResultItem | null)[]
+}
+
+function locatesInGraph(
+  rootGraph: LGraph | undefined,
+  nodeLocatorId: string
+): boolean {
+  const subgraphUuid = parseNodeLocatorId(nodeLocatorId)?.subgraphUuid
+  return !subgraphUuid || !!rootGraph?.subgraphs.has(subgraphUuid)
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
@@ -475,6 +486,28 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     useApp().nodePreviewImages = {}
   }
 
+  function addLivePreviewsToStash(workflowPath: string) {
+    const stashed = stashedPreviews.get(workflowPath)
+    if (!stashed) {
+      stashPreviewsForWorkflow(workflowPath)
+      return
+    }
+
+    const superseded: Record<string, string[]> = {}
+    for (const [nodeLocatorId, urls] of Object.entries(
+      nodePreviewImages.value
+    )) {
+      if (!urls) continue
+
+      const replaced = stashed[nodeLocatorId]
+      if (replaced) superseded[nodeLocatorId] = replaced
+      stashed[nodeLocatorId] = urls
+    }
+    releasePreviewUrls(superseded)
+    nodePreviewImages.value = {}
+    useApp().nodePreviewImages = {}
+  }
+
   function restorePreviewsForWorkflow(workflowPath: string | undefined) {
     if (!workflowPath) return
 
@@ -483,16 +516,16 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     stashedPreviews.delete(workflowPath)
 
     const live = nodePreviewImages.value
-    const superseded: Record<string, string[]> = {}
+    const rootGraph = useApp().rootGraphOrUndefined
+    const released: Record<string, string[]> = {}
     for (const [nodeLocatorId, urls] of Object.entries(stashed)) {
       if (!urls) continue
 
-      // A preview that arrived while the graph was loading wins; the stashed
-      // copy for that node then has no owner left to release it.
-      if (live[nodeLocatorId]) superseded[nodeLocatorId] = urls
+      if (live[nodeLocatorId] || !locatesInGraph(rootGraph, nodeLocatorId))
+        released[nodeLocatorId] = urls
       else live[nodeLocatorId] = urls
     }
-    releasePreviewUrls(superseded)
+    releasePreviewUrls(released)
     nodePreviewImages.value = { ...live }
     useApp().nodePreviewImages = clone(nodePreviewImages.value)
   }
@@ -630,6 +663,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     revokeAllPreviews,
     revokeSubgraphPreviews,
     stashPreviewsForWorkflow,
+    addLivePreviewsToStash,
     restorePreviewsForWorkflow,
     discardPreviewsForWorkflow,
     removeNodeOutputs,

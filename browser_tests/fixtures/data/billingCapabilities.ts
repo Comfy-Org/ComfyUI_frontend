@@ -11,6 +11,7 @@ export function createBillingCapabilities(
 ): BillingCapabilitiesResponse {
   return {
     auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'embedded',
     resolved_for: {
       // The signed-in uid `CloudAuthHelper` mocks. Capabilities resolve per
       // (user, workspace) and the SDK reader checks both halves
