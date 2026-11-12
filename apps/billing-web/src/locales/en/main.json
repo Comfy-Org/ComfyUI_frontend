@@ -595,5 +595,28 @@
   "topupReturn": {
     "title": "Return to ComfyUI",
     "body": "Your balance updates in the app once the payment is confirmed. If you canceled, nothing was charged."
+  },
+  "handoff": {
+    "closeTab": "You can close this tab.",
+    "link": {
+      "title": "This checkout link no longer works",
+      "body": "Links from ComfyUI work once and expire after a minute. Nothing was charged.",
+      "step": "Go back to ComfyUI and open checkout again from Settings → Billing."
+    },
+    "browser": {
+      "title": "Checkout can't open in this browser",
+      "body": "Your browser settings are blocking it. Nothing was charged.",
+      "step": "Turn off private browsing or try another browser, then open checkout again from ComfyUI."
+    },
+    "checking": {
+      "title": "Checking your payment",
+      "body": "This can take a minute. Don't pay again while we check, you could be charged twice.",
+      "codeLabel": "If this page still can't confirm it after a few minutes, contact support with this code:",
+      "closeLine": "You can close this tab. We'll email your invoice once the payment goes through."
+    },
+    "session": {
+      "title": "This checkout session has ended",
+      "body": "Return to ComfyUI and try again."
+    }
   }
 }

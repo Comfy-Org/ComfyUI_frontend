@@ -40,6 +40,8 @@ const defaultFlags: FeatureFlags = {
   localWebSsoEnabled: false,
   billingControlEnabled: false,
   memberCreditLimitsEnabled: false,
+  billingNewUxEnabled: false,
+  billingAutoTopUpAtCheckoutEnabled: false,
   billingSdkTopupEnabled: false,
   billingSdkTopupRailEnabled: false,
   billingSdkSubscriptionEnabled: false,

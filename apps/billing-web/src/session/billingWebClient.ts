@@ -88,6 +88,37 @@ export function createBillingWebClient(
   return composeBillingWebClient(transport, sessionBillingScopeSource(session))
 }
 
+async function isScopedSessionRefusal(response: Response): Promise<boolean> {
+  if (response.status !== 401) return false
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined)
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'code' in body &&
+    body.code === 'INVALID_CREDENTIAL'
+  )
+}
+
+export function createHandoffBillingClient(
+  session: BillingSession,
+  onSessionRefused: () => void
+): BillingWebClient {
+  const transport = createSessionBillingTransport({
+    session,
+    resolveUrl,
+    workspaceId: () => pinnedWorkspaceId(session),
+    fetchImpl: async (...args) => {
+      const response = await globalThis.fetch(...args)
+      if (await isScopedSessionRefusal(response)) onSessionRefused()
+      return response
+    }
+  })
+  return composeBillingWebClient(transport, sessionBillingScopeSource(session))
+}
+
 /**
  * On the shared web session: the cookie authorizes each request, and the
  * resolved workspace, which the entry link named, is its workspace header.

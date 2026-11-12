@@ -69,6 +69,7 @@ import { projectBillingPlans } from './billingPlansView'
 import { projectBillingStatus } from './billingStatusView'
 import type { BillingSdkOptions } from '@comfyorg/billing-core/sdk'
 import { createBillingSdk } from '@comfyorg/billing-core/sdk'
+import type { TopupAutoTopUpSettings } from '@comfyorg/ingest-types'
 import type { BillingOperationRecordView } from './operationRecordView'
 import { projectOperationRecord } from './operationRecordView'
 import type {
@@ -83,6 +84,7 @@ import {
   projectSubscribeResult,
   projectSubscriptionResult
 } from './subscriptionOperationView'
+import type { HostedCheckoutSession } from './topupOperationView'
 import {
   declineDetail,
   projectHostedTopupCheckoutResult,
@@ -423,13 +425,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   async function createHostedTopupCheckout(
     amountCents: number,
     returnUrl: string,
-    signal?: AbortSignal
-  ): Promise<string> {
+    signal?: AbortSignal,
+    autoTopUp?: TopupAutoTopUpSettings
+  ): Promise<HostedCheckoutSession> {
     return projectHostedTopupCheckoutResult(
       await sdk.topup.createHostedTopupCheckout({
         amountCents,
         returnUrl,
-        ...(signal === undefined ? {} : { signal })
+        ...(signal === undefined ? {} : { signal }),
+        ...(autoTopUp === undefined ? {} : { autoTopUp })
       })
     )
   }
