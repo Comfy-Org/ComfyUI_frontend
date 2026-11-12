@@ -64,11 +64,12 @@ export function usePromotedPreviews(
       nodeOutputStore.getNodeOutputByExecutionId(leafExecutionId)
     const reactiveExecutionPreviews =
       nodeOutputStore.getNodePreviewImagesByExecutionId(leafExecutionId)
-    const hasAnySource =
-      reactiveOutputs?.images?.length ||
-      reactivePreviews?.length ||
-      reactiveExecutionOutputs?.images?.length ||
-      reactiveExecutionPreviews?.length
+    const hasAnySource = [
+      reactiveOutputs?.images,
+      reactivePreviews,
+      reactiveExecutionOutputs?.images,
+      reactiveExecutionPreviews
+    ].some((source) => source?.length)
     if (!hasAnySource) return undefined
 
     const type = getPreviewMediaType(interiorNode)
