@@ -277,6 +277,28 @@ export const useMissingModelDownloadStore = defineStore(
       flushRefresh()
     }
 
+    function seedFromHost(subscription: number) {
+      const list = window.__comfyDesktop2?.listModelDownloads
+      if (typeof list !== 'function') return
+      const reportSeedFailure = (error: unknown) =>
+        reportError(error, {
+          surface: 'platform',
+          errorType: 'error_listing_model_downloads'
+        })
+      try {
+        void list().then((jobs) => {
+          if (subscription !== trackingGeneration) return
+          for (const progress of jobs) {
+            const key = keyFor(progress)
+            if (key !== undefined && !downloads.has(key))
+              applyHostProgress(progress)
+          }
+        }, reportSeedFailure)
+      } catch (error) {
+        reportSeedFailure(error)
+      }
+    }
+
     function startTracking(): () => void {
       if (!hostReportsModelDownloadProgress()) return () => undefined
       const subscription = ++trackingGeneration
@@ -288,6 +310,7 @@ export const useMissingModelDownloadStore = defineStore(
         return () => undefined
       }
       tracking.value = true
+      seedFromHost(subscription)
       return () => {
         tracking.value = false
         trackingGeneration++

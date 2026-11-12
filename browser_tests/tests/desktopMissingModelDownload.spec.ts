@@ -177,4 +177,42 @@ test.describe('Desktop missing model download', { tag: '@desktop' }, () => {
         ])
     })
   })
+
+  test.describe('with a paused download the host already holds', () => {
+    test.use({
+      heldModelDownloads: [
+        {
+          id: 'held-job',
+          url: 'http://localhost:8188/api/devtools/fake_model.safetensors',
+          filename: 'fake_model.safetensors',
+          directory: 'checkpoints',
+          status: 'paused',
+          progress: 0.5,
+          receivedBytes: 512,
+          totalBytes: 1024
+        }
+      ]
+    })
+
+    test('shows it as paused and resumes it from the missing model row', async ({
+      comfyPage,
+      modelDownloadHost
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+      const group = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+
+      await group
+        .getByRole('button', {
+          name: 'Resume download for fake_model.safetensors'
+        })
+        .click()
+
+      await expect
+        .poll(() => modelDownloadHost.controls())
+        .toEqual([{ action: 'resume', ref: 'held-job' }])
+      expect(await modelDownloadHost.downloads()).toEqual([])
+    })
+  })
 })
