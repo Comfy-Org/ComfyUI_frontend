@@ -281,7 +281,7 @@ describe('useMaskEditorSaver', () => {
         ref: { filename: 'server-clipspace-painted-masked-456.png' }
       }
     })
-    expect(mockNode.images?.[0].filename).toBe(
+    expect(mockNode.images?.[0]?.filename).toBe(
       'server-clipspace-painted-masked-456.png'
     )
   })

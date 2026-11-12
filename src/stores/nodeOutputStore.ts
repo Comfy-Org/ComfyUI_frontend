@@ -186,7 +186,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     node: LGraphNode,
     outputs: ExecutedWsMessage['output'] | undefined
   ): string[] | undefined {
-    const images = viewableResultItems(outputs?.images)
+    if (!outputs) return
+    const images = viewableResultItems(outputs.images)
     if (!images.length) return
 
     const rand = randParamFor(outputs)

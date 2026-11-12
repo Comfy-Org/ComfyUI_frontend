@@ -77,7 +77,12 @@ function createOutputNode(images: unknown[]): LGraphNode {
   return fromAny<LGraphNode, unknown>({
     id: 9,
     type: 'PreviewImage',
-    imgs: [{ src: 'http://localhost:8188/api/view?filename=rendered.png' }],
+    imgs: [
+      {
+        src: 'http://localhost:8188/api/view?filename=rendered.png',
+        dataset: {}
+      }
+    ],
     images,
     widgets: []
   })
