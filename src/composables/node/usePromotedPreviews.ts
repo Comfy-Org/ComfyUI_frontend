@@ -16,7 +16,7 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
-export interface PromotedPreview {
+interface PromotedPreview {
   sourceNodeId: NodeId
   sourceWidgetName: string
   type: 'image' | 'video' | 'audio'

@@ -6,7 +6,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
-import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import NodeFrame from '@/renderer/extensions/vueNodes/components/NodeFrame.vue'
 import NodeBody from '@/renderer/extensions/vueNodes/components/NodeBody.vue'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
@@ -46,7 +46,7 @@ const { style, startResize } = useSubgraphInputLayout(
 </script>
 
 <template>
-  <LGraphNode
+  <NodeFrame
     v-if="context.graph && !canvasStore.linearMode"
     ref="nodeView"
     data-testid="subgraph-input-values"
@@ -123,5 +123,5 @@ const { style, startResize } = useSubgraphInputLayout(
         @resize="startResize"
       />
     </template>
-  </LGraphNode>
+  </NodeFrame>
 </template>

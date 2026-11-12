@@ -4,17 +4,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import type { NodeBadgeGroup } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 
-const { groups, outlineOffset = 0 } = defineProps<{
+defineProps<{
   groups: NodeBadgeGroup[]
-  outlineOffset?: number
 }>()
 </script>
 <template>
   <div
     v-if="groups.length"
     data-testid="node-badges"
-    class="pointer-events-none absolute right-0 bottom-full flex w-max items-center gap-2 text-muted-foreground"
-    :style="{ marginBottom: `calc(var(--spacing) + ${outlineOffset}px)` }"
+    class="pointer-events-none absolute right-0 bottom-full mb-1 flex w-max items-center gap-2 text-muted-foreground"
   >
     <div
       v-for="group in groups"

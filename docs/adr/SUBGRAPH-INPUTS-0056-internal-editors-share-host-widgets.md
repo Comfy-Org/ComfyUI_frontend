@@ -19,7 +19,7 @@ updates. Those contracts already belong to the widget rendering system.
 
 ## Decision
 
-The prototype renders the existing input boundary through LGraphNode.vue with
+The prototype renders the existing input boundary through NodeFrame.vue with
 outputs and native widgets. Its title identifies the host by title and node ID.
 A Leave Subgraph footer uses the existing exit command to return to the parent
 context. Users enter a different SubgraphNode to edit another instance.
@@ -29,16 +29,12 @@ Explicit entry records a graph-scoped host locator. Direct entry infers a host
 only when there is one candidate. Removing an explicitly selected host leaves
 the context unresolved rather than selecting another host implicitly.
 
-LGraphNode.vue owns the shared frame, NodeHeader the title and collapse control,
+NodeFrame.vue owns the shared frame, NodeHeader the title and collapse control,
 NodeBody the shared body spacing, NodeFooter the subgraph navigation action, and
 NodeResizeHandle the resize affordance. The same footer renders enter and leave
-actions; the header supports a read-only instance title. GraphNode.vue owns the
-ordinary node's rendering integration. State and behavior belong to shared composables:
-useGraphNodePresentation coordinates existing entity stores, useGraphNodeActions
-owns commands, useGraphNodeWidgets resolves native widget/media presentation, and
-useNodeShape derives shape tokens. Header and body components only render their
-typed inputs and emit user events. Input-boundary selection, port projection and
-widget-source ownership likewise live in composables, outside their views.
+actions; the header supports a read-only instance title. LGraphNode.vue remains
+the ordinary node and composes the same parts. Input-boundary selection, port
+projection and widget-source ownership live in composables, outside their views.
 Virtual IO IDs are reused across definitions, so registering
 them as ordinary node entities would collide. Sharing presentation preserves
 their existing identity and connection lifecycle without fake entity records.
@@ -150,8 +146,7 @@ and provides a locate action.
 
 ## Integration guidance
 
-Internal Vue callers that supply NodeState now use GraphNode.vue. LGraphNode.vue
-is the shared presentation frame. Entity callback signatures are unchanged;
+Entity callback signatures are unchanged;
 disconnecting a fanout now delivers every expected removal callback. Extensions
 retaining widget entities across a completed disconnect must resolve them again
 after reconnect, even when a WidgetId is reused. Existing workflow files need no

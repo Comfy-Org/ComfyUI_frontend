@@ -36,7 +36,6 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
-import type { NodeMedia } from '@/renderer/extensions/vueNodes/types/nodeMedia'
 
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 import AudioPreview from '@comfyorg/design-system/media/AudioPreview'
@@ -45,7 +44,10 @@ import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 
 interface NodeContentProps {
   nodeData?: NodeState
-  media?: NodeMedia
+  media?: {
+    type: 'image' | 'video' | 'audio'
+    urls: string[]
+  }
 }
 
 const props = defineProps<NodeContentProps>()

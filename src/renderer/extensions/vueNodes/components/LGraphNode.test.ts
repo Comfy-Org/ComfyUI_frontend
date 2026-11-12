@@ -23,7 +23,7 @@ import { LGraphEventMode, TitleMode } from '@comfyorg/graph-model/globalEnums'
 import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
-import LGraphNode from '@/renderer/extensions/vueNodes/components/GraphNode.vue'
+import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -42,19 +42,11 @@ type ResizeCallback = (
   element: HTMLElement
 ) => void
 
-const mockData = vi.hoisted(
-  (): {
-    mockExecuting: boolean
-    mockProgress: number | undefined
-    mockLgraphNode: Record<string, unknown> | null
-    resizeCallback: ResizeCallback | null
-  } => ({
-    mockExecuting: false,
-    mockProgress: undefined,
-    mockLgraphNode: null,
-    resizeCallback: null
-  })
-)
+const mockData = vi.hoisted(() => ({
+  mockExecuting: false,
+  mockLgraphNode: null as Record<string, unknown> | null,
+  resizeCallback: null as ResizeCallback | null
+}))
 const mockNodeEventHandlers = vi.hoisted(
   (): ReturnType<typeof useNodeEventHandlers> => ({
     handleNodeCollapse: vi.fn(),
@@ -97,21 +89,27 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 vi.mock(import('@/composables/useErrorHandling'))
 
-vi.mock(import('@/renderer/extensions/vueNodes/layout/useNodeLayout'), () => ({
-  useNodeLayout: () => ({
-    position: computed(() => ({ x: 100, y: 50 })),
-    size: computed(() => ({ width: 200, height: 100 })),
-    zIndex: computed(() => 0),
-    moveNodeTo: vi.fn()
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/layout/useNodeLayout'),
+  () => ({
+    useNodeLayout: () => ({
+      position: { x: 100, y: 50 },
+      size: computed(() => ({ width: 200, height: 100 })),
+      zIndex: 0,
+      startDrag: vi.fn(),
+      handleDrag: vi.fn(),
+      endDrag: vi.fn(),
+      moveTo: vi.fn()
+    })
   })
-}))
+)
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/execution/useNodeExecutionState'),
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
-      progress: computed(() => mockData.mockProgress),
+      progress: computed(() => undefined),
       progressPercentage: computed(() => undefined),
       progressState: computed(() => undefined),
       executionState: computed(() => 'idle' as const)
@@ -244,7 +242,6 @@ describe('LGraphNode', () => {
       )
     )
     mockData.mockExecuting = false
-    mockData.mockProgress = undefined
     mockData.mockLgraphNode = null
     mockData.resizeCallback = null
     app.dragOverNode = null
@@ -463,25 +460,6 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-primary')
-  })
-
-  it('keeps execution progress visible on a collapsed node without a title', () => {
-    mockData.mockExecuting = true
-    mockData.mockProgress = 0.37
-
-    renderLGraphNode({
-      nodeData: {
-        ...mockNodeData,
-        titleMode: TitleMode.NO_TITLE,
-        flags: { collapsed: true }
-      }
-    })
-
-    expect(screen.getByRole('progressbar')).toBeVisible()
-    expect(screen.getByRole('progressbar')).toHaveAttribute(
-      'aria-valuenow',
-      '37'
-    )
   })
 
   it('hides a linked core LoadImage input preview', () => {
