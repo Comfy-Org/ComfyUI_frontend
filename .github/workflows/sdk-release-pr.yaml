@@ -69,6 +69,15 @@ jobs:
           SDK_RELEASE_REF: ${{ steps.open.outputs.ref }}
         run: node scripts/sdk-release-plan.ts
 
+      # A revert since the release PR opened can leave nothing to release.
+      - name: Close the stale release PR
+        if: steps.plan.outputs.plan == '[]' && steps.open.outputs.ref != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr close sdk-release/auto --repo "$GITHUB_REPOSITORY" --delete-branch \
+            --comment 'Closing: no package changes remain since the last release.'
+
       - name: Bump versions
         id: bump
         if: steps.plan.outputs.plan != '[]'
