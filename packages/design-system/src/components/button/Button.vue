@@ -8,7 +8,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip.vue'
 
 defineOptions({ inheritAttrs: false })
 

@@ -6,7 +6,7 @@
         v-bind="$attrs"
         :class="
           cn(
-            'relative isolate flex min-w-0 items-center overflow-visible rounded-md bg-input text-xs text-foreground focus-within:ring focus-within:ring-ring',
+            'relative isolate flex min-w-0 items-center overflow-visible rounded-(--node-widget-radius) border-(length:--node-widget-border-width) border-node-border bg-input text-xs text-foreground focus-within:ring focus-within:ring-ring',
             useWidgetHeight(),
             className
           )
@@ -17,14 +17,16 @@
           v-if="!hideButtons"
           :aria-label="t('g.decrement')"
           data-testid="decrement"
-          class="h-full w-6 shrink-0 rounded-none"
+          class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
           variant="muted-textonly"
           size="icon-sm"
           :disabled="!canDecrement"
           tabindex="-1"
           @click="updateValueBy(-step)"
         >
-          <i class="icon-[lucide--minus]" />
+          <i
+            class="icon-[lucide--minus] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5 triangle-icons:rotate-180"
+          />
         </Button>
         <slot name="label" />
         <slot name="between" />
@@ -46,13 +48,13 @@
             spellcheck="false"
             @input="handleInput"
             @focus="valueBeforeEditing = modelValue"
-            @blur="handleBlur"
-            @keyup.enter="handleBlur"
+            @blur="commitDraft"
+            @keyup.enter="commitDraft"
             @keydown.esc.prevent.stop="cancelTextEdit"
-            @keydown.up.prevent="stepFromInput($event, step)"
-            @keydown.down.prevent="stepFromInput($event, -step)"
-            @keydown.page-up.prevent="stepFromInput($event, 10 * step)"
-            @keydown.page-down.prevent="stepFromInput($event, -10 * step)"
+            @keydown.up.prevent="stepFromInput(step)"
+            @keydown.down.prevent="stepFromInput(-step)"
+            @keydown.page-up.prevent="stepFromInput(10 * step)"
+            @keydown.page-down.prevent="stepFromInput(-10 * step)"
           />
           <div
             class="absolute inset-0 z-10 cursor-ew-resize touch-pan-y peer-focus:hidden"
@@ -63,14 +65,16 @@
           v-if="!hideButtons"
           :aria-label="t('g.increment')"
           data-testid="increment"
-          class="h-full w-6 shrink-0 rounded-none"
+          class="h-full w-6 shrink-0 rounded-(--node-widget-radius)"
           variant="muted-textonly"
           size="icon-sm"
           :disabled="!canIncrement"
           tabindex="-1"
           @click="updateValueBy(step)"
         >
-          <i class="icon-[lucide--plus]" />
+          <i
+            class="icon-[lucide--plus] triangle-icons:icon-[comfy--play] triangle-icons:size-2.5"
+          />
         </Button>
       </div>
     </TooltipTrigger>
@@ -81,6 +85,7 @@
 </template>
 
 <script setup lang="ts">
+import { useFocus } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -123,6 +128,7 @@ let valueBeforeEditing = modelValue.value
 
 const scrubElement = useTemplateRef<HTMLDivElement>('scrubElement')
 const inputField = useTemplateRef<HTMLInputElement>('inputField')
+const { focused } = useFocus(inputField)
 
 function clamp(value: number): number {
   return Math.min(max, Math.max(min, value))
@@ -146,22 +152,21 @@ function handleInput(event: Event) {
   if (event.target instanceof HTMLInputElement) draft.value = event.target.value
 }
 
-function handleBlur(e: Event) {
-  if (draft.value === undefined) return
-  const target = e.target
-  if (!(target instanceof HTMLInputElement)) return
-  const raw = target.value.trim()
+function commitDraft(): number {
+  if (draft.value === undefined) return modelValue.value
+  const raw = draft.value.trim()
   const parsed = parseValue
     ? parseValue(raw)
     : raw === ''
       ? undefined
       : Number(raw)
-  if (parsed != null && !isNaN(parsed)) {
-    modelValue.value = clamp(parsed)
-  } else {
-    target.value = displayValue ?? String(modelValue.value)
-  }
   draft.value = undefined
+  if (parsed != null && !isNaN(parsed)) {
+    const value = clamp(parsed)
+    modelValue.value = value
+    return value
+  }
+  return modelValue.value
 }
 
 function cancelTextEdit() {
@@ -180,13 +185,13 @@ useNumberScrub(scrubElement, {
   min: stepMin,
   max: stepMax,
   step: () => step,
-  disabled: () => disabled,
+  disabled: () => disabled || focused.value,
   onScrub: updateIncrementalValue,
   onClick: startTextEdit
 })
 
-async function stepFromInput(event: Event, delta: number) {
-  handleBlur(event)
+async function stepFromInput(delta: number) {
+  commitDraft()
   await nextTick()
   updateValueBy(delta)
 }

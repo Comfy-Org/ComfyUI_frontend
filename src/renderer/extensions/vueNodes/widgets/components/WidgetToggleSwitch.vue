@@ -4,6 +4,7 @@
     :widget
     :input-id
     :no-border="!hasLabels"
+    :root-class="cn(hasLabels && 'h-auto')"
   >
     <ToggleGroup
       v-if="hasLabels"
