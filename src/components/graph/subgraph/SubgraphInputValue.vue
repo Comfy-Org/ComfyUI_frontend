@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSubgraphInputWidget } from './useSubgraphInputWidget'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import Button from '@comfyorg/design-system/button/Button'
@@ -15,8 +16,11 @@ const { label, resolve, host } = defineProps<{
 }>()
 const emit = defineEmits<{ locate: [node: NodeState] }>()
 const { t } = useI18n()
-const { source, upstream, owner, processedWidgets, widget, expands } =
-  useSubgraphInputWidget(resolve, () => host)
+const canvasStore = useCanvasStore()
+const { source, upstream, owner, widgets, expands } = useSubgraphInputWidget(
+  resolve,
+  () => host
+)
 </script>
 
 <template>
@@ -51,15 +55,18 @@ const { source, upstream, owner, processedWidgets, widget, expands } =
         <i class="icon-[lucide--locate-fixed]" />
       </Button>
     </div>
-    <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+    <div
+      class="flex min-h-0 min-w-0 flex-1 flex-col"
+      :inert="canvasStore.isReadOnly"
+    >
       <WidgetGrid
-        v-if="owner && widget"
+        v-if="owner && widgets.length"
         :key="owner.widgetId"
-        :processed-widgets="processedWidgets"
+        :processed-widgets="widgets"
         :node-id="owner.node.id"
         :node-type="owner.node.type"
         :node-title="owner.node.title"
-        presentation="form"
+        :sync-layout="false"
       />
       <p v-else class="m-0 text-xs text-muted-foreground">
         {{ label }}:

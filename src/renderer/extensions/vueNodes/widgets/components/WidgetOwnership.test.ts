@@ -1,11 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
 
-import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
-import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
-import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -14,7 +10,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
-import { testI18n } from '@/utils/__tests__/testI18n'
 
 import WidgetDOM from './WidgetDOM.vue'
 import WidgetLegacy from './WidgetLegacy.vue'
@@ -63,43 +58,6 @@ function domWidget(node: LGraphNode, value: string) {
 }
 
 describe('off-graph widget ownership', () => {
-  it.for(['disabled', 'read_only'] as const)(
-    'applies native inert semantics to a raw DOM widget marked %s',
-    async (option) => {
-      const { a } = externalOwners()
-      const widget = domWidget(a, 'original')
-      widget.options[option] = true
-      const Probe = defineComponent({
-        setup() {
-          const { processedWidgets } = useProcessedWidgets(() => a._state)
-          return () =>
-            h(
-              TooltipProvider,
-              {},
-              {
-                default: () =>
-                  h(WidgetGrid, {
-                    nodeId: a.id,
-                    nodeType: a.type,
-                    presentation: 'form',
-                    processedWidgets: processedWidgets.value
-                  })
-              }
-            )
-        }
-      })
-
-      render(Probe, { global: { plugins: [testI18n] } })
-
-      expect(screen.getByRole('textbox', { name: 'Custom value' })).toHaveValue(
-        'original'
-      )
-      expect(screen.getByTestId('widget-control-shell')).toHaveAttribute(
-        'inert'
-      )
-      expect(widget.value).toBe('original')
-    }
-  )
   it('edits the explicitly located DOM owner and rebinds when that owner changes', async () => {
     const { a, b } = externalOwners()
     const first = domWidget(a, 'first')

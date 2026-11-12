@@ -338,29 +338,29 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return registered
   }
 
-  function getWidgetEntity(
-    widgetId: WidgetId
-  ): Readonly<WidgetEntity> | undefined {
+  function getWidget(widgetId: WidgetId): WidgetState | undefined {
     if (!isWidgetId(widgetId)) return undefined
 
     const { graphId } = parseWidgetId(widgetId)
-    return graphWidgets.value.get(graphId)?.get(widgetId)
-  }
-
-  function getWidget(widgetId: WidgetId): WidgetState | undefined {
-    return getWidgetEntity(widgetId)?.state
+    return graphWidgets.value.get(graphId)?.get(widgetId)?.state
   }
 
   function getWidgetRenderState(
     widgetId: WidgetId
   ): WidgetRenderState | undefined {
-    return getWidgetEntity(widgetId)?.render
+    if (!isWidgetId(widgetId)) return undefined
+
+    const { graphId } = parseWidgetId(widgetId)
+    return graphWidgets.value.get(graphId)?.get(widgetId)?.render
   }
 
   function getWidgetVisibility(
     widgetId: WidgetId
   ): WidgetVisibilityComponent | undefined {
-    return getWidgetEntity(widgetId)?.visibility
+    if (!isWidgetId(widgetId)) return undefined
+
+    const { graphId } = parseWidgetId(widgetId)
+    return graphWidgets.value.get(graphId)?.get(widgetId)?.visibility
   }
 
   function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
@@ -609,7 +609,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     clearNodeWidgetRestoration,
     getRestoredWidgetValue,
     getWidget,
-    getWidgetEntity,
     getWidgetRenderState,
     getWidgetVisibility,
     setValue,
