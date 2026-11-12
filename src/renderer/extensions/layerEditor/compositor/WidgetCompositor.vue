@@ -91,7 +91,7 @@ const naturalSize = ref<CompactSize | null>(null)
 const outputUrl = ref<string | null>(null)
 
 const litegraphNode = useWidgetHostNode(
-  () => widget?.nodeLocatorId ?? widget?.hostNodeLocatorId,
+  () => widget?.hostNodeLocatorId,
   () => nodeId
 )
 

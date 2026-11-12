@@ -152,11 +152,10 @@ const { isRecording, recordedURL } = recorder
 const { waveformBars } = waveform
 const { isPlaying, audioElementKey } = playback
 
-// Computed for waveform animation
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
 const litegraphNode = useWidgetHostNode(
-  () => props.widget?.nodeLocatorId ?? props.widget?.hostNodeLocatorId,
+  () => props.widget?.hostNodeLocatorId,
   () => props.nodeId
 )
 
