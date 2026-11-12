@@ -301,6 +301,74 @@ it('does not expose a disposed canvas after custom themes finish loading', async
   expect(useCanvasStore().canvas).toBeNull()
 })
 
+describe('GraphCanvas node API', () => {
+  beforeEach(() => {
+    delete window.comfy_v4
+  })
+
+  it('publishes the node API before extension modules load', async () => {
+    const seenWhileLoading = vi.fn()
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      seenWhileLoading(window.comfy_v4?.getApiVersion())
+    })
+
+    await mountGraphCanvas()
+
+    expect(seenWhileLoading).toHaveBeenCalledExactlyOnceWith([4, 0, 0])
+  })
+
+  it('tells a pack the app is ready only once setup has run', async () => {
+    const setupCallsWhenReady: number[] = []
+    const setupCallsWhileLoading: number[] = []
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      setupCallsWhileLoading.push(vi.mocked(app.setup).mock.calls.length)
+      window.comfy_v4?.onReady(() =>
+        setupCallsWhenReady.push(vi.mocked(app.setup).mock.calls.length)
+      )
+    })
+
+    await mountGraphCanvas()
+
+    expect(setupCallsWhileLoading).toEqual([0])
+    expect(setupCallsWhenReady).toEqual([1])
+  })
+
+  it('tells a pack the app is ready before the first workflow loads', async () => {
+    const order: string[] = []
+    mocks.initializeWorkflow.mockImplementationOnce(async () => {
+      order.push('first workflow loads')
+    })
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      window.comfy_v4?.onReady(() => order.push('ready'))
+    })
+
+    await mountGraphCanvas()
+
+    expect(order).toEqual(['ready', 'first workflow loads'])
+  })
+
+  it('does not tell packs the app is ready when the canvas unmounts during setup', async () => {
+    const ready = vi.fn()
+    let finishLoading = () => {}
+    mocks.loadCustomThemePresets.mockReturnValue(
+      new Promise<void>((resolve) => {
+        finishLoading = resolve
+      })
+    )
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      window.comfy_v4?.onReady(ready)
+    })
+    await mountGraphCanvas()
+
+    cleanup()
+    finishLoading()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(app.setup).toHaveBeenCalledOnce()
+    expect(ready).not.toHaveBeenCalled()
+  })
+})
+
 describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
     mocks.initializeWorkflow.mockResolvedValue('url-intent')

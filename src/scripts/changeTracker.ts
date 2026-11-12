@@ -388,6 +388,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
    */
   _restoringState: boolean = false
   private restoreChain?: Promise<void>
+  private readonly statesAcrossALoad = new WeakSet<ComfyWorkflowJSON>()
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -633,10 +634,13 @@ export class ChangeTracker implements WorkflowChangeTracker {
   }
 
   async updateState(source: ComfyWorkflowJSON[], target: ComfyWorkflowJSON[]) {
+    const fromOwnHistory =
+      source === this.undoQueue || source === this.redoQueue
     const restore = async () => {
       if (this._restoringState || source.length === 0) return
       const prevState = source.pop()
       if (prevState) {
+        const restoresHistory = this.restoresHistory(fromOwnHistory, prevState)
         const previousState = this.activeState
         const targetState = keepingLiveNodeHistoryValues(prevState)
         const restoresSavedState = ChangeTracker.graphEqual(
@@ -654,7 +658,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
             {
               checkForRerouteMigration: false,
               silentAssetErrors: true,
-              restoreHistory: true
+              restoreHistory: true,
+              restoresHistory
             }
           )
           restored = result !== false && result !== undefined
@@ -664,7 +669,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
             !ChangeTracker.graphEqual(this.activeState, previousState) &&
             matchesRestoredTarget(this.activeState, targetState, previousState)
           if (restored) {
-            target.push(previousState)
+            this.pushRestored(target, previousState, restoresHistory)
             if (restoresSavedState) this.initialState = clone(this.activeState)
           } else {
             source.push(prevState)
@@ -683,6 +688,19 @@ export class ChangeTracker implements WorkflowChangeTracker {
       restore
     )
     return this.restoreChain
+  }
+
+  private restoresHistory(fromOwnHistory: boolean, state: ComfyWorkflowJSON) {
+    return fromOwnHistory && !this.statesAcrossALoad.has(state)
+  }
+
+  private pushRestored(
+    target: ComfyWorkflowJSON[],
+    state: ComfyWorkflowJSON,
+    restoredHistory: boolean
+  ) {
+    target.push(state)
+    if (!restoredHistory) this.statesAcrossALoad.add(state)
   }
 
   async undo() {

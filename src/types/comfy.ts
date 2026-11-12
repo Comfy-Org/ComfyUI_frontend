@@ -92,6 +92,8 @@ export interface LoadGraphDataOptions {
   isReady?: () => boolean
   /** Graph to load, produced at the front of the queue; undefined skips the load. */
   resolveGraphData?: () => ComfyWorkflowJSON | undefined
+  /** Set by the change tracker for its own undo and redo. Extensions must not set it. */
+  restoresHistory?: boolean
 }
 
 /**
