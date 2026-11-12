@@ -2,6 +2,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
+import type { DocumentHandle } from './documents'
 import { ComfyApiError } from './errors'
 import { registerWorkflowImporter } from './workflowImporters'
 import type { WorkflowImporter } from './workflowImporters'
@@ -15,20 +16,9 @@ export interface WorkflowHandle {
   open(data: WorkflowData): Promise<void>
   /** Expands the active document's `%date:...%` and `%Node.widget%` tokens. */
   applyTextReplacements(value: string): string
-  /**
-   * The active document's identity: a process-local id minted fresh each time
-   * a workflow finishes loading — including a second load of the same file,
-   * which gets a different id from the first. `undefined` before the first
-   * workflow has loaded this page load.
-   *
-   * Distinct from the workflow's own saved identity (its file path, or the
-   * `id` written into the workflow JSON): that one is meant to survive a
-   * reload and compare equal across sessions. This one is the opposite by
-   * design — it exists so a pack can tell "the document I was looking at got
-   * replaced" from "the document I was looking at got edited", which
-   * comparing graph contents cannot do, since editing IS mutating the graph
-   * contents of the very document that is still current.
-   */
+  /** The document on screen, or `undefined` before one is open. */
+  current(): DocumentHandle | undefined
+  /** `current()?.id`: the identity of the open document's editing session. */
   documentId(): string | undefined
   /**
    * Adds a reader for files the host cannot load a workflow from. It is asked
@@ -40,7 +30,7 @@ export interface WorkflowHandle {
 export function createWorkflowApi(
   getGraph: () => LGraph | null | undefined,
   openWorkflow?: (data: WorkflowData) => Promise<void>,
-  getDocumentId?: () => string | undefined
+  current: () => DocumentHandle | undefined = () => undefined
 ): WorkflowHandle {
   return Object.freeze({
     async open(data: WorkflowData) {
@@ -67,8 +57,9 @@ export function createWorkflowApi(
       }
       return applyTextReplacements(graph, value)
     },
+    current,
     documentId() {
-      return getDocumentId?.()
+      return current()?.id
     },
     registerImporter: registerWorkflowImporter
   })

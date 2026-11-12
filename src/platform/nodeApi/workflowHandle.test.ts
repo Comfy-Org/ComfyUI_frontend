@@ -2,24 +2,26 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
+import { createDocuments } from './documents'
 import { createWorkflowApi } from './workflowHandle'
 
 const noGraph = () => undefined as unknown as LGraph | null | undefined
 
-describe('WorkflowHandle.documentId', () => {
-  it('reads through to the host-supplied reader', () => {
-    // The handle does not mint or track anything itself. The loaded-workflow
-    // lifecycle belongs to `appReady`, and this is only a read of it.
-    const reader = vi.fn(() => 'doc-1')
-    const api = createWorkflowApi(noGraph, undefined, reader)
+describe('WorkflowHandle.current', () => {
+  it('reports the open document and its session id', () => {
+    const { current } = createDocuments(() => [
+      { sessionId: 'doc-1', name: 'portrait', isActive: true }
+    ])
+    const api = createWorkflowApi(noGraph, undefined, current)
 
+    expect(api.current()?.name).toBe('portrait')
     expect(api.documentId()).toBe('doc-1')
-    expect(reader).toHaveBeenCalledTimes(1)
   })
 
-  it('is undefined before any workflow has loaded', () => {
-    const api = createWorkflowApi(noGraph, undefined, () => undefined)
+  it('has no document or id before one is open', () => {
+    const api = createWorkflowApi(noGraph)
 
+    expect(api.current()).toBeUndefined()
     expect(api.documentId()).toBeUndefined()
   })
 })

@@ -1,6 +1,6 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import {
   LGraph,
@@ -705,6 +705,42 @@ describe('comfy API root', () => {
       await nextTick()
 
       expect(listener).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('documents', () => {
+    it('hands onWorkflowLoaded the open document on a load and on an undo', () => {
+      const comfy = createComfyApi(() => graph, LATEST_MAJOR, {
+        documents: () => [{ sessionId: 'doc-1', isActive: true }]
+      })
+      const seen: (string | undefined)[] = []
+      onTestFinished(
+        comfy.onWorkflowLoaded((document) => seen.push(document?.id))
+      )
+
+      notifyWorkflowLoaded()
+      notifyWorkflowLoaded(true)
+
+      expect(seen).toEqual(['doc-1', 'doc-1'])
+      expect(comfy.workflow.documentId()).toBe('doc-1')
+    })
+
+    it('tells a pack when a document closes', async () => {
+      const open = ref([{ sessionId: 'doc-1', isActive: true }])
+      const comfy = createComfyApi(() => graph, LATEST_MAJOR, {
+        documents: () => open.value
+      })
+      const closed: [string, boolean][] = []
+      onTestFinished(
+        comfy.onDocumentClosed((document) =>
+          closed.push([document.id, document.isDeleted])
+        )
+      )
+
+      open.value = []
+      await nextTick()
+
+      expect(closed).toEqual([['doc-1', true]])
     })
   })
 

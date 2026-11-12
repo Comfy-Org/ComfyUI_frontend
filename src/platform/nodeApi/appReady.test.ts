@@ -64,6 +64,18 @@ describe('currentDocumentId', () => {
     expect(second).not.toBe(first)
   })
 
+  it('keeps the id and still notifies when the same document is rebuilt', () => {
+    const listener = vi.fn()
+    onWorkflowLoaded(listener)
+    notifyWorkflowLoaded()
+    const loaded = currentDocumentId()
+
+    notifyWorkflowLoaded(true)
+
+    expect(currentDocumentId()).toBe(loaded)
+    expect(listener).toHaveBeenCalledTimes(2)
+  })
+
   it('is visible to a listener registered before the load it describes', () => {
     // The id must be current by the time onWorkflowLoaded listeners run, not
     // settled a tick later — a listener reading it during its own callback is
