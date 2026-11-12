@@ -38,7 +38,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     canvas: {
       _deserializeItems: vi.fn((i) => i),
       ds: { visible_area: [0, 0, 0, 0] },
-      selected_nodes: null
+      selected_nodes: null,
+      setGraph: vi.fn()
     },
     loadGraphData: vi.fn()
   }
@@ -154,6 +155,29 @@ describe('useSubgraphStore', () => {
     //check active graph
     expect(comfyApp.loadGraphData).toHaveBeenCalled()
   })
+  it.fails('should not access the canvas when a blueprint fails to open', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    vi.mocked(comfyApp.loadGraphData).mockResolvedValueOnce(false)
+    vi.mocked(useCanvasStore().getCanvas).mockClear()
+
+    expect(await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')).toBe(
+      false
+    )
+    expect(useCanvasStore().getCanvas).not.toHaveBeenCalled()
+    expect(comfyApp.canvas.setGraph).not.toHaveBeenCalled()
+  })
+  it.fails('should reject stale edit and delete requests without mutating', async () => {
+    await store.editBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
+    await store.deleteBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
+    expect(comfyApp.loadGraphData).not.toHaveBeenCalled()
+    expect(api.storeUserData).not.toHaveBeenCalled()
+    expect(console.error).toHaveBeenCalledWith(
+      `Cannot edit missing subgraph blueprint: ${BLUEPRINT_TYPE_PREFIX}missing`
+    )
+    expect(console.error).toHaveBeenCalledWith(
+      `Cannot delete missing subgraph blueprint: ${BLUEPRINT_TYPE_PREFIX}missing`
+    )
+  })
   it('should allow subgraphs to be added to graph', async () => {
     //mock
     await mockFetch({ 'test.json': mockGraph })
@@ -161,6 +185,17 @@ describe('useSubgraphStore', () => {
       name: 'SubgraphBlueprint.test'
     } as ComfyNodeDefV1)
     expect(res).toBeTruthy()
+  })
+  it.fails('should reject blueprints with multiple root nodes before registration', async () => {
+    await mockFetch({
+      'invalid.json': {
+        nodes: [{ type: '123' }, { type: '123' }],
+        definitions: { subgraphs: [{ id: '123' }] }
+      }
+    })
+
+    expect(userBlueprintNames()).toHaveLength(0)
+    expect(console.error).toHaveBeenCalledWith(expect.any(Error))
   })
   it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -171,6 +206,14 @@ describe('useSubgraphStore', () => {
     const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     expect(second.nodes[0].id).not.toBe(-1)
     expect(second.definitions!.subgraphs[0].id).toBe('123')
+  })
+  it.fails('should return undefined and log a stale blueprint lookup', () => {
+    expect(
+      store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'missing')
+    ).toBeUndefined()
+    expect(console.error).toHaveBeenCalledWith(
+      'Cannot find subgraph blueprint: SubgraphBlueprint.missing'
+    )
   })
   it('should identify user blueprints as non-global', async () => {
     await mockFetch({ 'test.json': mockGraph })
