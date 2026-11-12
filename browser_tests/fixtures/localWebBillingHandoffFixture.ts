@@ -12,6 +12,7 @@ import type {
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
+import type { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { WORKSPACE_SWITCHER_REMOTE_CONFIG } from '@e2e/fixtures/data/workspaceSwitcher'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspaceSwitcherTest } from '@e2e/fixtures/workspaceSwitcherFixture'
@@ -61,6 +62,7 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
   handoffRequests: Request[]
   cloudFlagReads: Request[]
   openAddCredits: () => Promise<void>
+  openSettings: () => Promise<SettingDialog>
 }>({
   localBillingWeb: [false, { option: true }],
   handoffReply: [ISSUED, { option: true }],
@@ -78,6 +80,15 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
       await page.getByRole('button', { name: 'Current user' }).click()
       await page.getByRole('button', { name: /^Credits/ }).hover()
       await page.getByRole('button', { name: 'Add credits' }).click()
+    })
+  },
+  openSettings: async ({ comfyPage, cloudFlagReads }, use) => {
+    await use(async () => {
+      await expect
+        .poll(() => cloudFlagReads.length, 'Cloud flag never read')
+        .toBeGreaterThan(0)
+      await comfyPage.settingDialog.open()
+      return comfyPage.settingDialog
     })
   },
   page: async (
