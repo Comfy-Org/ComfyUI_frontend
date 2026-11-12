@@ -106,6 +106,42 @@ describe('whole-file duration sharding', () => {
   )
 })
 
+function cloudWorkflowSteps(root: string) {
+  const workflow = z
+    .object({
+      jobs: z.object({
+        'playwright-tests-cloud-sharded': z.object({
+          steps: z.array(
+            z.object({
+              name: z.string().optional(),
+              run: z.string().optional(),
+              env: z
+                .record(z.string(), z.union([z.string(), z.number()]))
+                .optional()
+            })
+          )
+        })
+      })
+    })
+    .parse(
+      parse(
+        readFileSync(join(root, '.github/workflows/ci-tests-e2e.yaml'), 'utf8')
+      )
+    )
+  const steps = workflow.jobs['playwright-tests-cloud-sharded'].steps
+  const plan = steps.find(
+    (step) => step.name === 'Plan cloud shards by historical duration'
+  )
+  const run = steps.find((step) =>
+    step.name?.startsWith('Run Playwright tests')
+  )
+  const runnable = z.object({
+    run: z.string(),
+    env: z.record(z.string(), z.union([z.string(), z.number()]))
+  })
+  return { plan: runnable.parse(plan), run: runnable.parse(run) }
+}
+
 function runWorkflowPilot() {
   const root = resolve(import.meta.dirname, '../..')
   const directory = mkdtempSync(join(tmpdir(), 'cloud-shards-'))
@@ -135,36 +171,7 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
       `import { test, expect } from '@playwright/test'\n${body}\n`
     )
   }
-  const workflow = z
-    .object({
-      jobs: z.object({
-        'playwright-tests-cloud-sharded': z.object({
-          steps: z.array(
-            z.object({
-              name: z.string().optional(),
-              run: z.string().optional(),
-              env: z
-                .record(z.string(), z.union([z.string(), z.number()]))
-                .optional()
-            })
-          )
-        })
-      })
-    })
-    .parse(
-      parse(
-        readFileSync(join(root, '.github/workflows/ci-tests-e2e.yaml'), 'utf8')
-      )
-    )
-  const steps = workflow.jobs['playwright-tests-cloud-sharded'].steps
-  const plan = steps.find(
-    (step) => step.name === 'Plan cloud shards by historical duration'
-  )
-  const run = steps.find((step) =>
-    step.name?.startsWith('Run Playwright tests')
-  )
-  expect(plan?.run).toBeDefined()
-  expect(run?.run).toBeDefined()
+  const { plan, run } = cloudWorkflowSteps(root)
   const merged = join(directory, 'merged')
   mkdirSync(merged)
   const manifests: unknown[] = []
@@ -175,7 +182,7 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
         .replaceAll('${{ matrix.shardTotal }}', '4')
         .replaceAll('${{ runner.temp }}', directory)
     for (const step of shard === 1 ? [plan, run] : [run]) {
-      const result = spawnSync('bash', ['-c', expand(step?.run ?? '')], {
+      const result = spawnSync('bash', ['-c', expand(step.run)], {
         cwd: directory,
         encoding: 'utf8',
         env: {
@@ -183,7 +190,7 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
           CI: 'true',
           PATH: `${join(root, 'node_modules/.bin')}:${process.env.PATH}`,
           ...Object.fromEntries(
-            Object.entries(step?.env ?? {}).map(([key, value]) => [
+            Object.entries(step.env).map(([key, value]) => [
               key,
               expand(String(value))
             ])
