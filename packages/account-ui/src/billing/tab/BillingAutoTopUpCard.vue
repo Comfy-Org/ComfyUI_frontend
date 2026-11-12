@@ -84,6 +84,7 @@
         </p>
       </div>
       <slot
+        v-if="!actionHidden"
         name="action"
         :action="view.action"
         :label="copy.actions[view.actionLabel]"
@@ -162,6 +163,7 @@ const {
   copy,
   locale,
   actionHref = null,
+  actionHidden = false,
   variants,
   classes
 } = defineProps<{
@@ -171,6 +173,7 @@ const {
   copy: AutoTopUpCardCopy
   locale: string
   actionHref?: string | null
+  actionHidden?: boolean
   variants?: Partial<Record<AutoTopUpViewKey, ActionVariant>>
   classes?: Partial<
     Record<

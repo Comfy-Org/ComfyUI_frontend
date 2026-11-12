@@ -107,6 +107,11 @@ test.describe('Local web billing handoff', () => {
       await expect(billingTab.getByTestId('billing-handoff')).toHaveCount(0)
       await expect(billingTab.locator('a[href*="/profile/"]')).toHaveCount(0)
       await expect(
+        billingTab
+          .getByTestId('billing-plan-section')
+          .getByRole('button', { name: /plan/i })
+      ).toHaveCount(0)
+      await expect(
         settings.category('Plan & Credits', { exact: true })
       ).toHaveCount(0)
     })

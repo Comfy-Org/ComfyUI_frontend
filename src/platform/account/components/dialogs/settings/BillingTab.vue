@@ -77,7 +77,7 @@
       <BillingPlanRow
         v-else
         :state="planRow"
-        :action
+        :action="shownPlanAction"
         :copy="planRowCopy"
         :locale
         :sales-variant="salesVariant"
@@ -89,7 +89,6 @@
         </template>
         <template #action="{ action: shown, label, variant }">
           <Button
-            v-if="shown === 'contactSales' || plansAvailable"
             as="a"
             :href="planActionHref(shown)"
             target="_blank"
@@ -135,11 +134,10 @@
         :copy="autoTopUpCardCopy"
         :locale
         :action-href="autoTopUpHref"
+        :action-hidden="!autoTopUpAvailable"
         @action="trackAutoTopUp"
         @retry="retryAutoTopUp"
-      >
-        <template v-if="!autoTopUpAvailable" #action />
-      </BillingAutoTopUpCard>
+      />
       <BillingAutoTopUpMemberBlock
         v-else-if="autoTopUpSection.kind === 'memberBlock'"
         :copy="autoTopUpMemberCopy"
@@ -347,6 +345,10 @@ const action = computed(() =>
     canOpenPlans: capabilities.canOpenPlans.value,
     planKind: capabilities.planKind.value
   })
+)
+
+const shownPlanAction = computed(() =>
+  action.value === 'contactSales' || plansAvailable.value ? action.value : null
 )
 
 const { state: autoTopUp } = useBillingAutoTopUpCard()
