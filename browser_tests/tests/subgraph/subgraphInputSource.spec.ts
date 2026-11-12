@@ -55,7 +55,7 @@ test.describe(
         await expect(input).toHaveValue('external prompt')
         await input.fill('edited upstream source')
         await panel
-          .getByRole('button', { name: 'Leave Subgraph', exact: true })
+          .getByRole('button', { name: 'Exit subgraph', exact: true })
           .focus()
       })
 

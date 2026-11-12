@@ -69,7 +69,7 @@ const { style, startResize } = useSubgraphInputLayout(
   () => collapsed.value
 )
 
-function leaveSubgraph() {
+function exitSubgraph() {
   if (!canvasStore.isPickingNodes) {
     void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
   }
@@ -156,10 +156,10 @@ function forwardUnlessOnButton(event: PointerEvent) {
     </NodeBody>
     <template #after>
       <NodeFooter
-        subgraph-action="leave"
+        subgraph-action="exit"
         error-severity="none"
         :show-errors-tab-enabled="false"
-        @navigate-subgraph="leaveSubgraph"
+        @navigate-subgraph="exitSubgraph"
       />
       <NodeResizeHandle
         v-if="!collapsed"

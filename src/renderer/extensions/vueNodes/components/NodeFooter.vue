@@ -210,7 +210,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { t } = useI18n()
 
 interface Props {
-  subgraphAction?: 'enter' | 'leave'
+  subgraphAction?: 'enter' | 'exit'
   errorSeverity: 'none' | 'missing' | 'error'
   showErrorsTabEnabled: boolean
   showAdvancedInputsButton?: boolean
@@ -237,8 +237,8 @@ const emit = defineEmits<{
 
 const hasAnyError = computed(() => errorSeverity !== 'none')
 const subgraphLabel = computed(() =>
-  subgraphAction === 'leave'
-    ? t('g.leaveSubgraph')
+  subgraphAction === 'exit'
+    ? t('g.exitSubgraph')
     : t(
         hasAnyError.value && showErrorsTabEnabled
           ? 'g.enter'

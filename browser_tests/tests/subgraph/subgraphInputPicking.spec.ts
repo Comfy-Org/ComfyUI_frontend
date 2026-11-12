@@ -21,8 +21,8 @@ test.describe(
         includeHidden: true
       })
       const heading = panel.getByRole('heading', { includeHidden: true })
-      const leave = panel.getByRole('button', {
-        name: 'Leave Subgraph',
+      const exit = panel.getByRole('button', {
+        name: 'Exit subgraph',
         exact: true,
         includeHidden: true
       })
@@ -52,7 +52,7 @@ test.describe(
         await comfyPage.vueNodes.enterSubgraph('11')
         await expect(heading).toHaveText('Host A · #11')
         await input.fill('before-picking')
-        await leave.focus()
+        await exit.focus()
       })
 
       const before = await comfyPage.nodeOps.getSerializedGraphWithoutViewport()
@@ -80,7 +80,7 @@ test.describe(
         await expect(input).toHaveValue('before-picking')
         const graphId = await comfyPage.subgraph.getActiveGraphId()
         await clickThroughInertLayer(
-          leave.getByText('Leave Subgraph', { exact: true })
+          exit.getByText('Exit subgraph', { exact: true })
         )
         expect(await comfyPage.subgraph.getActiveGraphId()).toBe(graphId)
         await expect(heading).toHaveText('Host A · #11')
@@ -95,13 +95,13 @@ test.describe(
       await test.step('Exiting restores editing and panel controls', async () => {
         await agentPanel.exitNodeSelectionMode()
         await input.fill('after-picking')
-        await leave.focus()
+        await exit.focus()
         await expect(input).toHaveValue('after-picking')
         await collapse.click()
         await expect(input).toHaveCount(0)
         await panel.getByRole('button', { name: 'Expand', exact: true }).click()
         await expect(input).toHaveValue('after-picking')
-        await leave.getByText('Leave Subgraph', { exact: true }).click()
+        await exit.getByText('Exit subgraph', { exact: true }).click()
         await expect(panel).toBeHidden()
         await comfyPage.vueNodes.enterSubgraph('12')
         await expect(heading).toHaveText('Host B · #12')

@@ -24,7 +24,7 @@ const i18n = createI18n({
       g: {
         enter: 'Enter',
         enterSubgraph: 'Enter Subgraph',
-        leaveSubgraph: 'Leave Subgraph',
+        exitSubgraph: 'Exit subgraph',
         error: 'Error'
       },
       rightSidePanel: {
@@ -63,10 +63,10 @@ function allButtonClasses(): string {
 describe('NodeFooter', () => {
   describe('rendering branches', () => {
     it('offers leaving through the same navigation action', async () => {
-      const { emitted } = renderFooter({ subgraphAction: 'leave' })
+      const { emitted } = renderFooter({ subgraphAction: 'exit' })
       const user = userEvent.setup()
 
-      await user.click(screen.getByRole('button', { name: 'Leave Subgraph' }))
+      await user.click(screen.getByRole('button', { name: 'Exit subgraph' }))
 
       expect(emitted()).toHaveProperty('navigateSubgraph')
       expect(screen.queryByText('Enter Subgraph')).not.toBeInTheDocument()

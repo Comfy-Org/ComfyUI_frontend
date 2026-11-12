@@ -56,8 +56,8 @@ for (const renderer of [
         const initial = await savedValues()
         const panel = comfyPage.page.getByTestId('subgraph-input-values')
         const heading = panel.getByRole('heading')
-        const leave = panel.getByRole('button', {
-          name: 'Leave Subgraph',
+        const exit = panel.getByRole('button', {
+          name: 'Exit subgraph',
           exact: true
         })
         const input = panel.getByRole('textbox', { name: 'text', exact: true })
@@ -73,7 +73,7 @@ for (const renderer of [
 
         await test.step('Editing inside Host A changes only its promoted value', async () => {
           await input.fill('boundary-host-a')
-          await leave.focus()
+          await exit.focus()
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
@@ -91,13 +91,13 @@ for (const renderer of [
         })
 
         await test.step('Leaving the subgraph and entering Host B changes the editing target', async () => {
-          await leave.getByText('Leave Subgraph', { exact: true }).click()
+          await exit.getByText('Exit subgraph', { exact: true }).click()
           await expect(panel).toBeHidden()
           await renderer.enter(comfyPage, '12')
           await expect(heading).toHaveText('Host B · #12')
           await expect(input).toHaveValue('')
           await input.fill('boundary-host-b')
-          await leave.focus()
+          await exit.focus()
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
@@ -107,7 +107,7 @@ for (const renderer of [
         })
 
         await test.step('Workflow undo and redo restore the host values', async () => {
-          await leave.press('Control+z')
+          await exit.press('Control+z')
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([

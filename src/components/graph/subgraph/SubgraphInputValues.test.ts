@@ -95,7 +95,7 @@ async function renderInputNode() {
 }
 
 describe('subgraph input node ports', () => {
-  it('identifies the current instance without a picker and offers a leave action', async () => {
+  it('identifies the current instance without a picker and offers an exit action', async () => {
     const { host } = await renderInputNode()
 
     expect(
@@ -103,7 +103,7 @@ describe('subgraph input node ports', () => {
     ).toBeVisible()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(screen.getByRole('img', { name: 'Subgraph' })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Leave Subgraph' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Exit subgraph' })).toBeVisible()
   })
 
   it('does not start resizing a pinned input node', async () => {
