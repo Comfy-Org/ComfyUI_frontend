@@ -44,15 +44,20 @@
 import { computed, onErrorCaptured, ref, useTemplateRef, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
 import { st } from '@/i18n'
-import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import type { INodeSlot, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
+  isAdvancedSocketInput,
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
+import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
@@ -61,7 +66,7 @@ import {
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
-import { locatorIdFromState } from '@/utils/graphTraversalUtil'
+import { getNodeByState, locatorIdFromState } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
@@ -111,10 +116,26 @@ function isOutputConnected(index: number): boolean {
   return linkStore.isOutputSlotConnected(scope, nodeData.id, index)
 }
 
-const filteredInputs = computed(() => [
-  ...nonWidgetedInputs(nodeData.inputs),
-  ...linkedWidgetInputs.value
-])
+const settingStore = useSettingStore()
+
+function isListedInput(node: LGraphNode, input: INodeInputSlot, index: number) {
+  if (autogrowInputRole(node, input)) return false
+  return (
+    !!nodeData.showAdvanced ||
+    settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets') ||
+    isInputConnected(index) ||
+    !isAdvancedSocketInput(node, input)
+  )
+}
+
+const filteredInputs = computed(() => {
+  const node = app.isGraphReady ? getNodeByState(app.rootGraph, nodeData) : null
+  const inputs =
+    unified || !node
+      ? nodeData.inputs
+      : nodeData.inputs.filter((input, i) => isListedInput(node, input, i))
+  return [...nonWidgetedInputs(inputs), ...linkedWidgetInputs.value]
+})
 
 const layoutKey = computed(() =>
   [
