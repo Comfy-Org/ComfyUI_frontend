@@ -5,6 +5,7 @@
       ref="canvasRef"
       tabindex="1"
       class="absolute inset-0 size-full touch-none"
+      @keydown="preventNativeCanvasHistory"
     />
     <TransformPane
       v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
@@ -30,6 +31,7 @@
       @ready="onLinkOverlayReady"
       @dispose="onLinkOverlayDispose"
     />
+    <SubgraphInputValues v-if="comfyApp.canvas && comfyAppReady" />
     <SelectionRectangle v-if="comfyAppReady" />
     <NodeTooltip v-if="tooltipEnabled" />
     <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -111,6 +113,7 @@ let activeStartup: symbol | undefined
 
 <script setup lang="ts">
 import { LIGHT_THEME_NODE_LIGHTNESS } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
+import { preventNativeCanvasHistory } from '@/base/canvasHistoryShortcut'
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
@@ -137,6 +140,7 @@ import AppBuilder from '@/components/builder/AppBuilder.vue'
 import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
+import SubgraphInputValues from '@/components/graph/subgraph/SubgraphInputValues.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'

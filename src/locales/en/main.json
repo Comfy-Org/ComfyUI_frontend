@@ -1370,6 +1370,24 @@
     "unsavedChangesLostTitle": "Unsaved changes were not saved",
     "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
   },
+  "subgraphInputValues": {
+    "title": "Input values",
+    "editingInstance": "Editing values for",
+    "instance": "{title} · #{id}",
+    "chooseInstance": "Choose a subgraph instance",
+    "chooseInstanceHint": "Choose the subgraph node whose values you want to edit.",
+    "inGraph": "In {graph}",
+    "workflow": "Workflow",
+    "linked": "Linked value · read-only",
+    "fromSource": "Source: {title} · #{id}",
+    "sourceHint": "Editing this source also changes the other inputs connected to it.",
+    "sharedSource": "Shared source",
+    "locateSource": "Locate source node",
+    "unavailable": "Value unavailable",
+    "noInputs": "Promote inputs to edit their values here.",
+    "expand": "Expand input values",
+    "collapse": "Collapse input values"
+  },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
     "confirmDelete": "This action will permanently remove the blueprint from your library",

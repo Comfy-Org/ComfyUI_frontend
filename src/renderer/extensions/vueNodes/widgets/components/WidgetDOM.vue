@@ -6,6 +6,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { DOMWidget } from '@/types/domWidget'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
+import { useWidgetRenderOwner } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetRenderOwner'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -17,12 +18,11 @@ const props = defineProps<{
 
 const domEl = ref<HTMLElement>()
 
+const owner = useWidgetRenderOwner(() => props.nodeId)
 const canvasStore = useCanvasStore()
-const { canvas } = canvasStore
 
 function findDOMWidget(): DOMWidget<HTMLElement, object | string> | undefined {
-  const hostNode = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
-  const resolved = resolveWidgetFromHostNode(hostNode, props.widget.name)
+  const resolved = resolveWidgetFromHostNode(owner.value, props.widget.name)
   if (resolved && isDOMWidget(resolved.widget)) return resolved.widget
 
   return undefined
