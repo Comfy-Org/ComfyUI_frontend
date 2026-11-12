@@ -1073,7 +1073,7 @@ test.describe('Workflow Persistence', () => {
     })
   })
 
-  test('Flushes a pending draft edit before an immediate reload', async ({
+  test('Restores a pending edit after reload without an unload warning', async ({
     comfyPage
   }) => {
     test.info().annotations.push({
@@ -1083,6 +1083,7 @@ test.describe('Workflow Persistence', () => {
     })
 
     await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting('Comfy.Window.UnloadConfirmation', true)
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await fitToViewInstant(comfyPage)
 
@@ -1099,9 +1100,15 @@ test.describe('Workflow Persistence', () => {
       baselineSaveStartedAt
     )
 
+    const dialogs: string[] = []
+    comfyPage.page.on('dialog', async (dialog) => {
+      dialogs.push(dialog.type())
+      await dialog.accept()
+    })
     await firstNode.toggleCollapse()
     await comfyPage.workflow.reloadAndWaitForApp()
 
+    expect(dialogs).toEqual([])
     const restoredNode = await getRequiredFirstNodeRef(
       comfyPage,
       'First node should be restored after the immediate reload'
