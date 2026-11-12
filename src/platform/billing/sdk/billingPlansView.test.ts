@@ -129,15 +129,15 @@ describe('projectBillingPlans', () => {
     expect(projectBillingPlans(withGrant)?.plans[0].credits).toBe(7_400)
   })
 
-  it('reads the annual list price back as a number beside its served discount', () => {
-    const annual: BillingPlansData = {
+  it('reads the served list price as a number beside its served discount', () => {
+    const withListPrice: BillingPlansData = {
       ...DECODED,
       plans: [
         { ...DECODED.plans[0], discount_percent: 17, list_price_cents: 33_600n }
       ]
     }
 
-    const plan = projectBillingPlans(annual)?.plans[0]
+    const plan = projectBillingPlans(withListPrice)?.plans[0]
 
     expect(plan?.list_price_cents).toBe(33_600)
     expect(plan?.discount_percent).toBe(17)
