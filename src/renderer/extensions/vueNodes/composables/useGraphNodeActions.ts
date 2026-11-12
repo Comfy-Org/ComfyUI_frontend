@@ -16,7 +16,7 @@ import type { Ref } from 'vue'
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
 interface GraphNodeActions {
-  node: Readonly<Ref<LGraphNode | null>>
+  resolveNode: () => LGraphNode | null
   collapsed: Readonly<Ref<boolean>>
   imagePreviewGrowth: Readonly<Ref<number>>
   interactive: Readonly<Ref<boolean>>
@@ -25,7 +25,7 @@ interface GraphNodeActions {
 export function useGraphNodeActions(
   nodeData: Readonly<Ref<NodeState>>,
   {
-    node: lgraphNode,
+    resolveNode,
     collapsed: isCollapsed,
     imagePreviewGrowth,
     interactive: shouldHandleNodePointerEvents
@@ -43,7 +43,7 @@ export function useGraphNodeActions(
 
   const { startResize } = useNodeResize((result) => {
     if (isCollapsed.value) return
-    const node = lgraphNode.value
+    const node = resolveNode()
     if (!node) return
 
     resizeNodeLayout(
@@ -86,7 +86,7 @@ export function useGraphNodeActions(
   }
 
   const handleToggleAdvanced = () => {
-    const node = lgraphNode.value
+    const node = resolveNode()
     if (!node) return
     if (node instanceof SubgraphNode) {
       if (rightSidePanelStore.isOpen) rightSidePanelStore.closePanel()
@@ -102,7 +102,7 @@ export function useGraphNodeActions(
       element_group: 'graph_node'
     })
 
-    const litegraphNode = lgraphNode.value
+    const litegraphNode = resolveNode()
 
     if (!litegraphNode?.isSubgraphNode() || !('subgraph' in litegraphNode)) {
       console.warn(
@@ -120,7 +120,7 @@ export function useGraphNodeActions(
   const isDraggingOver = ref(false)
 
   function handleDragOver(event: DragEvent) {
-    const node = lgraphNode.value
+    const node = resolveNode()
     if (!node || !node.onDragOver) {
       isDraggingOver.value = false
       return
@@ -135,7 +135,7 @@ export function useGraphNodeActions(
 
   function handleDrop(event: DragEvent) {
     isDraggingOver.value = false
-    app.dragOverNode = event.defaultPrevented ? null : lgraphNode.value
+    app.dragOverNode = event.defaultPrevented ? null : resolveNode()
   }
   return {
     isDraggingOver,

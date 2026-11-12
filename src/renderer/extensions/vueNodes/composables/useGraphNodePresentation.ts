@@ -174,7 +174,7 @@ export function useGraphNodePresentation(
   } = useGraphNodeWidgets(nodeData, lgraphNode, nodeLocatorId)
 
   const actions = useGraphNodeActions(nodeData, {
-    node: lgraphNode,
+    resolveNode: resolveLGraphNode,
     collapsed: isCollapsed,
     imagePreviewGrowth,
     interactive: shouldHandleNodePointerEvents
