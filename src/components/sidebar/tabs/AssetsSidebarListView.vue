@@ -47,12 +47,7 @@
             @mouseleave="onAssetLeave(item.asset.id)"
             @contextmenu.prevent.stop="emit('context-menu', $event, item.asset)"
             @click.stop="
-              emit(
-                'select-asset',
-                item.asset,
-                toSelectionModifiers($event),
-                selectableAssets
-              )
+              emit('select-asset', item.asset, $event, selectableAssets)
             "
             @dblclick.stop="emit('preview-asset', item.asset)"
             @preview-click="emit('preview-asset', item.asset)"
@@ -88,8 +83,6 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import { toSelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
-import type { SelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
 import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -124,7 +117,7 @@ const emit = defineEmits<{
   (
     e: 'select-asset',
     asset: AssetItem,
-    modifiers: SelectionModifiers,
+    event: MouseEvent,
     assets?: AssetItem[]
   ): void
   (e: 'preview-asset', asset: AssetItem): void

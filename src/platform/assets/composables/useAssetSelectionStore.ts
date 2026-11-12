@@ -1,14 +1,7 @@
 import { defineStore } from 'pinia'
-import { computed, ref, toValue } from 'vue'
+import { computed, ref } from 'vue'
 
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  getAssetOutputCount,
-  getTotalAssetOutputCount
-} from '@/platform/assets/utils/outputAssetCountUtil'
-import type { SelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
-import { useAssetsStore } from '@/stores/assetsStore'
 
 export type AssetSource = 'output' | 'input'
 
@@ -101,7 +94,11 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     asset: AssetItem,
     index: number,
     allAssets: AssetItem[],
-    { shift, cmdOrCtrl }: SelectionModifiers
+    {
+      shiftKey,
+      ctrlKey,
+      metaKey
+    }: Pick<MouseEvent, 'shiftKey' | 'ctrlKey' | 'metaKey'>
   ) {
     if (!asset.id || index < 0 || index >= allAssets.length) {
       console.warn('Invalid asset selection parameters')
@@ -110,14 +107,14 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
 
     const assetId = asset.id
 
-    if (shift && lastSelectedIndex.value >= 0) {
+    if (shiftKey && lastSelectedIndex.value >= 0) {
       const start = Math.min(lastSelectedIndex.value, index)
       const end = Math.max(lastSelectedIndex.value, index)
       setSelection(allAssets.slice(start, end + 1).map((a) => a.id))
       return
     }
 
-    if (cmdOrCtrl) {
+    if (ctrlKey || metaKey) {
       toggleAssetSelection(asset, index, allAssets)
       return
     }
@@ -139,7 +136,7 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     }
   }
 
-  function setSelectedIds(ids: AssetId[], allAssets: AssetItem[]) {
+  function setSelectedIds(ids: AssetId[], allAssets: readonly AssetItem[]) {
     setSelection(ids)
     const selected = new Set(ids)
     const anchorIndex = allAssets.findLastIndex((asset) =>
@@ -185,45 +182,6 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     syncAnchorFromAssets(assets)
   }
 
-  async function focusAssetByJobId(
-    jobId: string,
-    options: { source: AssetSource }
-  ) {
-    setSource(options.source)
-
-    const assetsStore = useAssetsStore()
-    const pagedList =
-      options.source === 'output'
-        ? assetsStore.outputAssets
-        : assetsStore.inputAssets
-    const matchesJob = (asset: AssetItem) =>
-      getOutputAssetMetadata(asset.user_metadata)?.jobId === jobId
-
-    let items = toValue(pagedList.items)
-    let match = items.find(matchesJob)
-    let scanned = items.length
-
-    while (!match && toValue(pagedList.hasMore)) {
-      await pagedList.loadMore()
-      items = toValue(pagedList.items)
-      match = items.slice(scanned).find(matchesJob)
-      scanned = items.length
-    }
-
-    if (!match) return
-
-    setSelection([match.id])
-    setAnchor(-1, match.id)
-  }
-
-  function getOutputCount(item: AssetItem): number {
-    return getAssetOutputCount(item)
-  }
-
-  function getTotalOutputCount(assets: AssetItem[]): number {
-    return getTotalAssetOutputCount(assets)
-  }
-
   return {
     selectedAssetIds: computed(() => selectedAssetIds.value),
     lastSelectedIndex: computed(() => lastSelectedIndex.value),
@@ -242,17 +200,12 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     isSelected,
     setLastSelectedIndex,
     setLastSelectedAssetId,
-    setAnchor,
     setSource,
-    syncAnchorFromAssets,
     toggleAssetSelection,
     handleAssetClick,
     selectAll,
     setSelectedIds,
     getSelectedAssets,
-    reconcileSelection,
-    focusAssetByJobId,
-    getOutputCount,
-    getTotalOutputCount
+    reconcileSelection
   }
 })

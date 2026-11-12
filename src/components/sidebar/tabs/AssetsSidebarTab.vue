@@ -218,7 +218,10 @@ import {
   getAssetViewUrl
 } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
-import type { SelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
+import {
+  getAssetOutputCount as getOutputCount,
+  getTotalAssetOutputCount as getTotalOutputCount
+} from '@/platform/assets/utils/outputAssetCountUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { openHdrViewer } from '@/services/hdrViewerService'
@@ -325,9 +328,7 @@ const {
   setSelectedIds,
   clearSelection,
   getSelectedAssets,
-  reconcileSelection,
-  getOutputCount,
-  getTotalOutputCount
+  reconcileSelection
 } = selectionStore
 
 const panelRef = useTemplateRef('panelRef')
@@ -496,13 +497,13 @@ watch(
 
 function handleAssetSelect(
   asset: AssetItem,
-  modifiers: SelectionModifiers,
+  event: MouseEvent,
   assets?: AssetItem[]
 ) {
   const assetList = assets ?? visibleAssets.value
   const index = assetList.findIndex((a) => a.id === asset.id)
   emit('assetSelected', asset)
-  handleAssetClick(asset, index, assetList, modifiers)
+  handleAssetClick(asset, index, assetList, event)
 }
 
 function handleAssetSelectionToggle(asset: AssetItem) {

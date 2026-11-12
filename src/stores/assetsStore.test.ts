@@ -86,13 +86,13 @@ vi.mock<unknown>(
     mapTaskOutputToAssetItem: vi.fn((task, output) => {
       const index = parseInt(task.jobId.split('_')[1]) || 0
       return {
-        id: task.jobId,
+        id: `asset-${task.jobId}`,
         name: output.filename,
         size: 0,
         created_at: new Date(Date.now() - index * 1000).toISOString(),
         tags: ['output'],
         preview_url: output.url,
-        user_metadata: {}
+        user_metadata: { jobId: task.jobId, subfolder: '' }
       }
     }),
     unflattenOutputAssets: vi.fn((items: AssetItem[]) => items)
@@ -143,13 +143,16 @@ describe('assetsStore - OSS history pagination', () => {
     ).toEqual([{ offset: 0 }, { offset: 200 }])
   })
 
-  it('loads history pages until it finds the requested output asset', async () => {
+  it('finds the job output when pagination inserts it ahead of resident assets', async () => {
     vi.mocked(api.getHistory)
-      .mockResolvedValueOnce(createHistoryPage(0))
       .mockResolvedValueOnce(createHistoryPage(200))
+      .mockResolvedValueOnce(createHistoryPage(0))
     const store = useAssetsStore()
 
-    await expect(store.loadOutputAsset('job_200')).resolves.toBe(true)
+    await store.outputAssets.loadMore()
+    await expect(store.loadOutputAssetByJobId('job_0')).resolves.toEqual(
+      expect.objectContaining({ id: 'asset-job_0' })
+    )
 
     expect(
       vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
@@ -160,7 +163,22 @@ describe('assetsStore - OSS history pagination', () => {
     vi.mocked(api.getHistory).mockResolvedValueOnce([])
     const store = useAssetsStore()
 
-    await expect(store.loadOutputAsset('missing-job')).resolves.toBe(false)
+    await expect(
+      store.loadOutputAssetByJobId('missing-job')
+    ).resolves.toBeUndefined()
+
+    expect(api.getHistory).toHaveBeenCalledOnce()
+  })
+
+  it('stops lookup after a failed page without retrying the history request', async () => {
+    vi.mocked(api.getHistory)
+      .mockRejectedValueOnce(new TypeError('offline'))
+      .mockResolvedValueOnce([])
+    const store = useAssetsStore()
+
+    await expect(
+      store.loadOutputAssetByJobId('missing-job')
+    ).resolves.toBeUndefined()
 
     expect(api.getHistory).toHaveBeenCalledOnce()
   })
@@ -225,7 +243,9 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       expect(toValue(store.outputAssets.isLoading)).toBe(false)
     )
 
-    await expect(store.loadOutputAsset('missing-output')).resolves.toBe(false)
+    await expect(
+      store.loadOutputAssetByJobId('missing-output')
+    ).resolves.toBeUndefined()
 
     expect(outputPage).toBe(21)
   })

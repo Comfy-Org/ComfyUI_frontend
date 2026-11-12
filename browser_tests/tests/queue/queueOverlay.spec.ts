@@ -6,14 +6,20 @@ import {
   jobsRouteFixture
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
   mockInitialJobs: void
 }>({
   mockInitialJobs: [
-    async ({ jobsRoutes }, use) => {
+    async ({ jobsRoutes, page }, use) => {
       await jobsRoutes.mockJobsScenario({ history: MOCK_JOBS, queue: [] })
+      await jobsRoutes.mockJobsHistory(MOCK_JOBS)
+      await mockViewFiles(page, {
+        'output_job-completed-1.png': {},
+        'output_job-completed-2.png': {}
+      })
       await use()
     },
     { auto: true }
@@ -125,6 +131,38 @@ test.describe('Queue overlay', () => {
 
     await expect(comfyPage.page.locator('[data-job-id]').first()).toBeHidden()
   })
+
+  test(
+    'Inspect selects the job output after reopening the assets sidebar',
+    { tag: '@smoke' },
+    async ({ comfyPage }) => {
+      const tab = comfyPage.menu.assetsTab
+
+      await test.step('Cache Generated assets and leave the sidebar on Imported', async () => {
+        await tab.open()
+        await tab.waitForAssets(2)
+        await tab.importedTab.click()
+        await tab.close()
+      })
+
+      await test.step('Inspect the completed job through the queue', async () => {
+        await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
+        await comfyPage.page
+          .locator('[data-job-id="job-completed-2"]')
+          .dblclick()
+        await expect(comfyPage.mediaLightbox.root).toBeVisible()
+        await comfyPage.mediaLightbox.closeButton.click()
+      })
+
+      await test.step('Keep the corresponding Generated asset selected after refresh', async () => {
+        await expect(tab.generatedTab).toHaveAttribute('aria-selected', 'true')
+        await expect(tab.selectedCards).toHaveAttribute(
+          'data-asset-id',
+          'job-completed-2'
+        )
+      })
+    }
+  )
 
   test('Job details popover stays inside the viewport for bottom rows', async ({
     comfyPage

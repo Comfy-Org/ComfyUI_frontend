@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
@@ -67,6 +67,7 @@ import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTra
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
@@ -87,6 +88,7 @@ const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const sidebarTabStore = useSidebarTabStore()
 const assetSelectionStore = useAssetSelectionStore()
+const assetsStore = useAssetsStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
@@ -227,25 +229,28 @@ const toggleAssetsSidebar = () => {
   sidebarTabStore.toggleSidebarTab('assets')
 }
 
-const openAssetsSidebar = () => {
-  sidebarTabStore.activeSidebarTabId = 'assets'
-}
-
-const focusAssetInSidebar = async (item: JobListItem) => {
-  const task = item.taskRef
-  const jobId = task?.jobId
-  const preview = task?.previewOutput
-  if (!jobId || !preview) return
-
-  openAssetsSidebar()
-  await assetSelectionStore.focusAssetByJobId(jobId, { source: 'output' })
-}
-
+let inspectSequence = 0
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
+    const sequence = ++inspectSequence
     trackFeatureUsed()
     await openResultGallery(item)
-    await focusAssetInSidebar(item)
+    const jobId = item.taskRef?.jobId
+    if (sequence !== inspectSequence || !jobId || !item.taskRef?.previewOutput)
+      return
+
+    assetSelectionStore.setSource('output')
+    sidebarTabStore.activeSidebarTabId = 'assets'
+    await nextTick()
+    if (sequence !== inspectSequence) return
+
+    const asset = await assetsStore.loadOutputAssetByJobId(jobId)
+    if (sequence !== inspectSequence || !asset) return
+
+    assetSelectionStore.setSelectedIds(
+      [asset.id],
+      toValue(assetsStore.outputAssets.items)
+    )
   }
 )
 

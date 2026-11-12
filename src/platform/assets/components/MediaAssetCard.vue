@@ -124,7 +124,7 @@
       <div
         v-else-if="asset && adaptedAsset"
         class="flex items-end justify-between gap-1.5"
-        @click.stop="emit('select', toSelectionModifiers($event))"
+        @click.stop="emit('select', $event)"
       >
         <div class="flex min-w-0 flex-col gap-1">
           <MediaTitle :file-name="fileName" />
@@ -176,8 +176,6 @@ import {
   resolveMediaSrc
 } from '@/platform/assets/utils/assetUrlUtil'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
-import { toSelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
-import type { SelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetDisplayName,
@@ -228,9 +226,7 @@ const isDeleting = computed(() =>
 )
 
 const emit = defineEmits<{
-  // Image and info clicks use the standard selection rules.
-  select: [modifiers: SelectionModifiers]
-  // The selection control toggles only this asset in the current selection.
+  select: [event: MouseEvent]
   'toggle-selection': []
   zoom: [asset: AssetItem]
   'output-count-click': []
@@ -342,7 +338,7 @@ const metaInfo = computed(() => {
 function handlePreviewClick(event: MouseEvent) {
   const hasSelectionModifier = event.shiftKey || event.metaKey || event.ctrlKey
   if (fileKind.value === 'video' && !hasSelectionModifier) return
-  emit('select', toSelectionModifiers(event))
+  emit('select', event)
 }
 
 const handleZoomClick = () => {

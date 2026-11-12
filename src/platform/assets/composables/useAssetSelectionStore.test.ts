@@ -3,14 +3,12 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { SelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
-import { useAssetsStore } from '@/stores/assetsStore'
 
 import { useAssetSelectionStore } from './useAssetSelectionStore'
 
-const noMods: SelectionModifiers = { shift: false, cmdOrCtrl: false }
-const shift: SelectionModifiers = { shift: true, cmdOrCtrl: false }
-const cmdOrCtrl: SelectionModifiers = { shift: false, cmdOrCtrl: true }
+const noMods = { shiftKey: false, ctrlKey: false, metaKey: false }
+const shift = { ...noMods, shiftKey: true }
+const cmdOrCtrl = { ...noMods, ctrlKey: true }
 
 function createMockAssets(count: number): AssetItem[] {
   return Array.from({ length: count }, (_, i): AssetItem =>
@@ -257,86 +255,15 @@ describe('useAssetSelectionStore', () => {
     })
   })
 
-  describe('focusAssetByJobId', () => {
-    function outputAssetForJob(id: string, jobId: string): AssetItem {
-      return fromPartial({
-        id,
-        name: `${id}.png`,
-        tags: ['output'],
-        user_metadata: { jobId, subfolder: '', outputCount: 1 }
-      })
-    }
+  it('anchors an externally selected asset for the next Shift selection', () => {
+    const store = useAssetSelectionStore()
+    const assets = createMockAssets(3)
+    store.setSelectedIds(['asset-2'], assets)
 
-    function setOutputPages(...pages: AssetItem[][]) {
-      const [firstPage = [], ...remainingPages] = pages
-      const items = [...firstPage]
-      useAssetsStore().outputAssets = fromPartial({
-        items,
-        get hasMore() {
-          return remainingPages.length > 0
-        },
-        loadMore: async () => {
-          items.push(...(remainingPages.shift() ?? []))
-          return true
-        }
-      })
-    }
+    store.reconcileSelection(assets)
+    store.handleAssetClick(assets[0], 0, assets, shift)
 
-    it('resolves the job id to its associated resident asset and focuses it', async () => {
-      const store = useAssetSelectionStore()
-      setOutputPages([outputAssetForJob('asset-x', 'job-1')])
-
-      await store.focusAssetByJobId('job-1', { source: 'output' })
-
-      expect(store.activeSource).toBe('output')
-      expect(Array.from(store.selectedAssetIds)).toEqual(['asset-x'])
-      expect(store.lastSelectedAssetId).toBe('asset-x')
-    })
-
-    it('pages forward until the asset associated with the job id is resident', async () => {
-      const store = useAssetSelectionStore()
-      setOutputPages(
-        [],
-        [outputAssetForJob('asset-a', 'job-a')],
-        [outputAssetForJob('asset-b', 'job-b')],
-        [outputAssetForJob('asset-late', 'job-late')]
-      )
-
-      await store.focusAssetByJobId('job-late', { source: 'output' })
-
-      expect(Array.from(store.selectedAssetIds)).toEqual(['asset-late'])
-    })
-
-    it('stops paging and selects nothing when no page carries the job id', async () => {
-      const store = useAssetSelectionStore()
-      setOutputPages(
-        [],
-        [outputAssetForJob('asset-2', 'other-2')],
-        [outputAssetForJob('asset-1', 'other-1')]
-      )
-
-      await store.focusAssetByJobId('job-missing', { source: 'output' })
-
-      expect(store.selectedCount).toBe(0)
-    })
-
-    it('resolves the anchor index once the asset is paged into the view', async () => {
-      const store = useAssetSelectionStore()
-      const asset = outputAssetForJob('asset-2', 'job-2')
-      setOutputPages([asset])
-
-      await store.focusAssetByJobId('job-2', { source: 'output' })
-      expect(store.lastSelectedIndex).toBe(-1)
-
-      store.reconcileSelection([
-        fromPartial({ id: 'asset-0', name: 'a.png', tags: [] }),
-        fromPartial({ id: 'asset-1', name: 'b.png', tags: [] }),
-        asset
-      ])
-
-      expect(store.isSelected('asset-2')).toBe(true)
-      expect(store.lastSelectedIndex).toBe(2)
-    })
+    expect(store.selectedIdsArray).toEqual(['asset-0', 'asset-1', 'asset-2'])
   })
 
   describe('clearSelection', () => {

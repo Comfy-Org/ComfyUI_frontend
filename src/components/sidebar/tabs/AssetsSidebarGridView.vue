@@ -39,7 +39,6 @@ import {
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { SelectionModifiers } from '@/platform/assets/utils/selectionModifiers'
 
 const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
   defineProps<{
@@ -53,7 +52,7 @@ const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
   }>()
 
 const emit = defineEmits<{
-  (e: 'select-asset', asset: AssetItem, modifiers: SelectionModifiers): void
+  (e: 'select-asset', asset: AssetItem, event: MouseEvent): void
   (e: 'toggle-asset-selection', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'zoom', asset: AssetItem): void
