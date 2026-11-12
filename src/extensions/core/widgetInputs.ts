@@ -58,7 +58,6 @@ export class PrimitiveNode extends LGraphNode {
     )
   }
 
-  // fallow-ignore-next-line unused-class-member
   override resolveVirtualValue() {
     const widget = this.widgets?.[0]
     if (!widget) return
@@ -68,8 +67,10 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   private _applyTextReplacements<T>(value: T): T | string {
-    return value && this.properties[replacePropertyName] && this.graph
-      ? applyTextReplacements(this.graph, String(value))
+    return typeof value === 'string' &&
+      this.properties[replacePropertyName] &&
+      this.graph
+      ? applyTextReplacements(this.graph, value)
       : value
   }
 
