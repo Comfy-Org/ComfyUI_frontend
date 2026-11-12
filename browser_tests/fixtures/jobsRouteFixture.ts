@@ -138,10 +138,12 @@ export class JobsRouteMocker {
   }
 
   async mockJobsQueue(jobs: readonly RawJobListItem[]): Promise<void> {
-    await this.mockJobsList({
-      statuses: activeJobStatuses,
-      jobs
-    })
+    for (const status of activeJobStatuses) {
+      await this.mockJobsList({
+        statuses: [status],
+        jobs: jobs.filter((job) => job.status === status)
+      })
+    }
   }
 
   async mockJobsScenario({ history, queue }: JobsScenario): Promise<void> {

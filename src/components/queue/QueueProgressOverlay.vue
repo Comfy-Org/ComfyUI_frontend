@@ -112,8 +112,8 @@ const isExpanded = computed({
   }
 })
 
-const runningCount = computed(() => queueStore.runningTasks.length)
-const queuedCount = computed(() => queueStore.pendingTasks.length)
+const runningCount = computed(() => queueStore.runningJobsCount)
+const queuedCount = computed(() => queueStore.pendingJobsCount)
 const isExecuting = computed(() => !executionStore.isIdle)
 const hasActiveJob = computed(() => runningCount.value > 0 || isExecuting.value)
 
