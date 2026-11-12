@@ -106,7 +106,7 @@ test.describe(
           name: 'steps',
           exact: true
         })
-        await expect(seed).toHaveValue('0')
+        await expect(seed).toHaveValue('20')
         await expect(seed).toHaveAttribute('aria-valuemax', seedMaximum)
         await expect(
           panel.getByRole('button', { name: 'Randomize Value', exact: true })
