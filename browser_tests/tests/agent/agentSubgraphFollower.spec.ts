@@ -664,7 +664,9 @@ test.describe(
         const innerHost = nodes.getNodeLocator(String(AGENT_INNER_HOST_ID))
         await expect(innerHost).toBeVisible()
         await expect(innerHost).toContainText('New Subgraph')
-        await expect(page.getByText('Outer Agent Subgraph')).toBeVisible()
+        await expect(
+          page.getByText('Outer Agent Subgraph', { exact: true })
+        ).toBeVisible()
         await expect(page.getByText('New Subgraph')).toBeVisible()
       })
     })
