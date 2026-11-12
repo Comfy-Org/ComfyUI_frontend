@@ -156,7 +156,10 @@ export async function launchLocalBillingHandoff(
   retry: () => void
 ): Promise<HandoffLaunch> {
   if (inFlight) return 'busy'
-  const tab = reserveBillingTab()
+  const tab = reserveBillingTab({
+    title: t('billingHandoff.opening'),
+    detail: t('billingHandoff.openingDetail')
+  })
   if (!tab) {
     useToast().error(t('billingHandoff.popupBlocked'), {
       action: { label: t('billingHandoff.openBilling'), onClick: retry }

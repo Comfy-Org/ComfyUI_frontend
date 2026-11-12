@@ -2,8 +2,9 @@
 /* oxlint-disable testing-library/prefer-user-event */
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,7 +12,10 @@ import { useTelemetry } from '@comfyorg/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
+import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -29,6 +33,12 @@ vi.mock(import('@/services/hdrViewerService'), () => ({
 vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
+
+function setZoom(scale: number) {
+  useTransformState().syncWithCanvas(
+    fromPartial<LGraphCanvas>({ ds: { offset: [0, 0], scale } })
+  )
+}
 
 const i18n = createI18n({
   legacy: false,
@@ -62,6 +72,13 @@ const i18n = createI18n({
 })
 
 describe('ImagePreview', () => {
+  beforeEach(() => {
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockImplementation(
+      async (source) => ({ source })
+    )
+    setZoom(0.5)
+  })
+
   const defaultProps = {
     imageUrls: [
       '/api/view?filename=test1.png&type=output',
@@ -89,6 +106,140 @@ describe('ImagePreview', () => {
     await user.click(thumbnails[0])
     await nextTick()
   }
+
+  it('shows a downscaled copy while keeping the full-resolution source', async () => {
+    const { getDisplayImage } = useImagePreviewStore()
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    vi.mocked(getDisplayImage).mockResolvedValue({
+      source: '/api/view?filename=large.png&type=output',
+      blob: new Blob(['display pixels']),
+      originalSize: { width: 4096, height: 2048 }
+    })
+    const { unmount } = renderImagePreview({
+      imageUrls: ['/api/view?filename=large.png&type=output']
+    })
+
+    const image = await screen.findByTestId<HTMLImageElement>('main-image')
+    await vi.waitFor(() =>
+      expect(image).toHaveAttribute('src', 'blob:display-copy')
+    )
+    expect(image).toHaveAttribute(
+      'data-full-src',
+      '/api/view?filename=large.png&type=output'
+    )
+    vi.spyOn(image, 'naturalWidth', 'get').mockReturnValue(1024)
+    vi.spyOn(image, 'naturalHeight', 'get').mockReturnValue(512)
+    await fireEvent.load(image)
+    expect(screen.getByText('4096 x 2048')).toBeVisible()
+    expect(revoke).not.toHaveBeenCalledWith('blob:display-copy')
+    unmount()
+    expect(revoke).toHaveBeenCalledWith('blob:display-copy')
+  })
+
+  it('clears the previous copy while the next gallery image is pending', async () => {
+    const { getDisplayImage } = useImagePreviewStore()
+    let nextCopy = 0
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(
+      () => `blob:copy-${nextCopy++}`
+    )
+    const revoke = vi.spyOn(URL, 'revokeObjectURL')
+    let resolveNext = (
+      _image: Awaited<ReturnType<typeof getDisplayImage>>
+    ): void => {
+      throw new Error('Next image promise was not initialized')
+    }
+    const next = new Promise<Awaited<ReturnType<typeof getDisplayImage>>>(
+      (resolve) => {
+        resolveNext = resolve
+      }
+    )
+    vi.mocked(getDisplayImage)
+      .mockResolvedValueOnce({
+        source: defaultProps.imageUrls[0],
+        blob: new Blob(['first image'])
+      })
+      .mockReturnValueOnce(next)
+    renderImagePreview()
+    await nextTick()
+    expect(getDisplayImage).not.toHaveBeenCalled()
+    const user = userEvent.setup()
+    await switchToGallery(user)
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
+        'blob:copy-0'
+      )
+    )
+
+    await user.click(screen.getByRole('button', { name: 'View image 2 of 2' }))
+    expect(screen.getByTestId('main-image')).not.toHaveAttribute('src')
+    expect(screen.getByTestId('main-image')).not.toHaveAttribute(
+      'data-full-src'
+    )
+    expect(revoke).toHaveBeenCalledWith('blob:copy-0')
+    resolveNext({
+      source: defaultProps.imageUrls[1],
+      blob: new Blob(['second image'])
+    })
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
+        'blob:copy-1'
+      )
+    )
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'data-full-src',
+      defaultProps.imageUrls[1]
+    )
+    await user.keyboard('{Escape}')
+    await vi.waitFor(() => expect(revoke).toHaveBeenCalledWith('blob:copy-1'))
+    expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+    expect(getDisplayImage).toHaveBeenCalledTimes(2)
+  })
+
+  describe('background preloading', () => {
+    const batch = [0, 1, 2, 3].map(
+      (i) => `/api/view?filename=batch${i}.png&type=output`
+    )
+
+    it.for([
+      { name: 'zoomed out', zoom: 0.5, preloaded: [] },
+      { name: 'zoomed in', zoom: 1, preloaded: batch }
+    ])(
+      'preloads display copies of a grid only when $name',
+      async ({ zoom, preloaded }) => {
+        setZoom(zoom)
+        renderImagePreview({ imageUrls: batch })
+        await nextTick()
+
+        const requested = vi
+          .mocked(useImagePreviewStore().getDisplayImage)
+          .mock.calls.map(([source]) => source)
+        expect(requested).toEqual(preloaded)
+      }
+    )
+
+    it('preloads only the gallery neighbors when zoomed in', async () => {
+      setZoom(1)
+      const { getDisplayImage } = useImagePreviewStore()
+      renderImagePreview({ imageUrls: batch })
+      const user = userEvent.setup()
+      await switchToGallery(user)
+      vi.mocked(getDisplayImage).mockClear()
+
+      await user.keyboard('{ArrowRight}')
+      await nextTick()
+
+      const requested = vi
+        .mocked(getDisplayImage)
+        .mock.calls.map(([source]) => source)
+      expect(requested).toEqual(
+        expect.arrayContaining([batch[0], batch[1], batch[2]])
+      )
+      expect(requested).not.toContain(batch[3])
+    })
+  })
 
   it('does not render when no imageUrls provided', () => {
     const { container } = renderImagePreview({ imageUrls: [] })
@@ -345,101 +496,26 @@ describe('ImagePreview', () => {
   })
 
   describe('keyboard navigation', () => {
-    it('navigates to next image with ArrowRight', async () => {
-      const { container } = renderImagePreview()
+    it.for([
+      { keys: '{ArrowRight}', index: 1 },
+      { keys: '{ArrowRight}{ArrowLeft}', index: 0 },
+      { keys: '{ArrowRight}{ArrowRight}', index: 0 },
+      { keys: '{ArrowLeft}', index: 1 },
+      { keys: '{ArrowRight}{Home}', index: 0 },
+      { keys: '{End}', index: 1 }
+    ])('navigates with $keys to image $index', async ({ keys, index }) => {
+      renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
+      await user.click(screen.getByRole('region'))
 
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
-      await nextTick()
+      await user.keyboard(keys)
 
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultProps.imageUrls[1]
-      )
-    })
-
-    it('navigates to previous image with ArrowLeft', async () => {
-      const { container } = renderImagePreview()
-      const user = userEvent.setup()
-      await switchToGallery(user)
-
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
-      await nextTick()
-
-      await fireEvent.keyDown(preview, { key: 'ArrowLeft' })
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultProps.imageUrls[0]
-      )
-    })
-
-    it('wraps around from last to first with ArrowRight', async () => {
-      const { container } = renderImagePreview()
-      const user = userEvent.setup()
-      await switchToGallery(user)
-
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
-      await nextTick()
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultProps.imageUrls[0]
-      )
-    })
-
-    it('wraps around from first to last with ArrowLeft', async () => {
-      const { container } = renderImagePreview()
-      const user = userEvent.setup()
-      await switchToGallery(user)
-
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowLeft' })
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultProps.imageUrls[1]
-      )
-    })
-
-    it('navigates to first image with Home', async () => {
-      const { container } = renderImagePreview()
-      const user = userEvent.setup()
-      await switchToGallery(user)
-
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
-      await nextTick()
-
-      await fireEvent.keyDown(preview, { key: 'Home' })
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultProps.imageUrls[0]
-      )
-    })
-
-    it('navigates to last image with End', async () => {
-      const { container } = renderImagePreview()
-      const user = userEvent.setup()
-      await switchToGallery(user)
-
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'End' })
-      await nextTick()
-
-      expect(screen.getByTestId('main-image')).toHaveAttribute(
-        'src',
-        defaultProps.imageUrls[1]
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('main-image')).toHaveAttribute(
+          'src',
+          defaultProps.imageUrls[index]
+        )
       )
     })
 
@@ -459,16 +535,20 @@ describe('ImagePreview', () => {
     })
 
     it('ignores arrow keys for single image', async () => {
-      const { container } = renderImagePreview({
+      renderImagePreview({
         imageUrls: [defaultProps.imageUrls[0]]
       })
+      const user = userEvent.setup()
+      await user.click(screen.getByRole('region'))
 
-      const initialSrc = screen.getByRole('img').getAttribute('src')
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
-      await nextTick()
+      await user.keyboard('{ArrowRight}')
 
-      expect(screen.getByRole('img')).toHaveAttribute('src', initialSrc!)
+      await vi.waitFor(() =>
+        expect(screen.getByRole('img')).toHaveAttribute(
+          'src',
+          defaultProps.imageUrls[0]
+        )
+      )
     })
   })
 

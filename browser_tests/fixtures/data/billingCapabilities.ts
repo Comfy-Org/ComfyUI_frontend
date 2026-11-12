@@ -11,7 +11,7 @@ export function createBillingCapabilities(
 ): BillingCapabilitiesResponse {
   return {
     auto_top_up_enabled: false,
-    billing_web_checkout_ui: 'embedded',
+    billing_web_checkout_ui: 'full_page',
     resolved_for: {
       user_id: 'test-user-e2e',
       workspace_id: workspaceId

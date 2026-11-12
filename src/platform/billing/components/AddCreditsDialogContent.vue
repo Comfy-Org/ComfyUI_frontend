@@ -12,7 +12,7 @@
     :auto-top-up="autoTopUpChoice.offer.value"
     :billing-url="autoTopUpChoice.billingUrl.value"
     :opens-in="handsPopupsToSystemBrowser() ? 'browser' : 'tab'"
-    :support-url="BILLING_SUPPORT_URL"
+    :support-url="billingSupportUrl"
     :locale
     :translate
     :title-as="DialogTitle"
@@ -73,6 +73,7 @@ import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdenti
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { buildSupportFormUrl } from '@/utils/supportFormUrl'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
@@ -81,6 +82,14 @@ const { isInsufficientCredits = false, source } = defineProps<{
 
 const BILLING_SUPPORT_URL =
   'https://comfysupport.portal.usepylon.com/forms/billing-refund-issue'
+
+const authStore = useAuthStore()
+const billingSupportUrl = computed(() =>
+  buildSupportFormUrl(BILLING_SUPPORT_URL, {
+    email: authStore.userEmail,
+    userId: authStore.userId
+  })
+)
 
 const { t, locale } = useI18n()
 const translate: AddCreditsTranslate = (key, params = {}) =>

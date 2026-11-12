@@ -207,6 +207,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -646,6 +647,8 @@ onMounted(async () => {
   void releaseStore.initialize()
 
   emit('ready')
+
+  void useSubgraphStore().fetchSubgraphs()
 
   await nextTick()
   try {
