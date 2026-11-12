@@ -36,7 +36,7 @@ describe('subgraph input widget lifecycle', () => {
     expect(slot.linkIds).toEqual([])
   })
 
-  it('creates fresh promoted state and constraints after a genuine disconnect', async () => {
+  it('keeps the host value and adopts the new target constraints when a disconnected input is reconnected', async () => {
     const graph = createTestSubgraph({
       inputs: [{ name: 'number', type: 'INT' }]
     })
@@ -51,21 +51,17 @@ describe('subgraph input widget lifecycle', () => {
     const id = host.inputs[0].widgetId
     assert.exists(id)
     const store = useWidgetValueStore()
-    const previous = store.getWidget(id)
-    assert.exists(previous)
     store.setValue(id, 77)
 
     slot.disconnect()
     await Promise.resolve()
 
-    expect(store.getWidget(id)).toBeUndefined()
     expect(host.inputs[0].widgetId).toBeUndefined()
     slot.connect(b.input, b.node)
     const nextId = host.inputs[0].widgetId
     assert.exists(nextId)
     const current = store.getWidget(nextId)
-    expect(current).not.toBe(previous)
-    expect(current?.value).toBe(29)
+    expect(current?.value).toBe(77)
     expect(current?.options.max).toBe(500)
     expect(graph.inputNode.allSlots.at(-1)).toBe(graph.inputNode.emptySlot)
   })
