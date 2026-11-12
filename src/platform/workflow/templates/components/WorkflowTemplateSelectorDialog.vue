@@ -487,7 +487,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
 import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
-import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
+import { useTemplateModelDownloads } from '@/platform/workflow/templates/composables/useTemplateModelDownloads'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { PreparedWorkflowTemplate } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type {
@@ -787,7 +787,7 @@ const hasActiveFilters = computed(
 const mobileFiltersOpen = ref(false)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
-type TemplateModelRowDownloads = ReturnType<typeof useTemplateModelRowDownloads>
+type TemplateModelRowDownloads = ReturnType<typeof useTemplateModelDownloads>
 
 type ActiveTemplateModelSetup = {
   result: TemplateModelSetupResult
@@ -1337,7 +1337,12 @@ async function showAssetSetupIfNeeded(
   )
     return false
 
-  const rowDownloads = useTemplateModelRowDownloads({ folderPaths })
+  const rowDownloads = useTemplateModelDownloads(
+    { folderPaths },
+    availability.flatMap(({ model, status }) =>
+      status === 'missing' ? [model] : []
+    )
+  )
   activeDetail.value = {
     template,
     prepared: markRaw(prepared),

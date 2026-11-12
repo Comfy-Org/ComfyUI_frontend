@@ -1,7 +1,7 @@
 import type { ComfyDownloadProgress } from '@comfyorg/comfyui-desktop-bridge-types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { defineStore } from 'pinia'
-import { shallowReactive, watch } from 'vue'
+import { ref, shallowReactive, watch } from 'vue'
 
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
 import {
@@ -144,18 +144,22 @@ function endedJobsAfter(
 function nextHostDownload(
   current: HostDownload | undefined,
   progress: ComfyDownloadProgress,
-  state: MissingModelDownloadState,
-  isMissing: boolean
+  state: MissingModelDownloadState
 ): HostDownload {
   return {
     name: progress.filename,
     url: progress.url,
-    state: state.status === 'done' && !isMissing ? IDLE : state,
-    jobId: progress.id ?? current?.jobId,
+    state,
+    jobId:
+      isHostTerminal(progress.status) && progress.id === undefined
+        ? undefined
+        : (progress.id ?? current?.jobId),
     jobEnded: isHostTerminal(progress.status),
     endedJobs: endedJobsAfter(current, progress)
   }
 }
+
+type DownloadControl = 'pauseDownload' | 'resumeDownload' | 'cancelDownload'
 
 /** Desktop 2 model downloads, mirrored by destination wherever they started. */
 export const useMissingModelDownloadStore = defineStore(
@@ -163,8 +167,9 @@ export const useMissingModelDownloadStore = defineStore(
   () => {
     const missingModelStore = useMissingModelStore()
     const downloads = shallowReactive(new Map<string, HostDownload>())
+    const controlsInFlight = shallowReactive(new Set<string>())
     let refreshPending = false
-    let tracking = false
+    const tracking = ref(false)
     let trackingGeneration = 0
     let nextRequest = 0
 
@@ -184,6 +189,35 @@ export const useMissingModelDownloadStore = defineStore(
       void missingModelStore.refreshMissingModels()
     }
 
+    function reopenFinished(
+      models: readonly { name: string; directory?: string }[],
+      only: (download: HostDownload) => boolean = () => true
+    ) {
+      const missing = new Set(
+        models.flatMap(({ name, directory }) =>
+          directory ? [getModelFileKey({ name, directory })] : []
+        )
+      )
+      for (const [key, download] of downloads) {
+        if (
+          download.state.status === 'done' &&
+          missing.has(key) &&
+          only(download)
+        ) {
+          downloads.set(key, { ...download, state: IDLE })
+        }
+      }
+    }
+
+    function reopenStillMissing(
+      candidates: readonly { name: string; directory?: string }[] | null
+    ) {
+      if (refreshPending || missingModelStore.isRefreshingMissingModels) return
+      reopenFinished(candidates ?? [])
+    }
+
+    watch(() => missingModelStore.missingModelCandidates, reopenStillMissing)
+
     let finishedBeforeRefresh = new Set<HostDownload>()
     watch(
       () => missingModelStore.isRefreshingMissingModels,
@@ -198,7 +232,10 @@ export const useMissingModelDownloadStore = defineStore(
         }
         const finished = finishedBeforeRefresh
         finishedBeforeRefresh = new Set()
-        resetWhere((download) => finished.has(download))
+        reopenFinished(
+          missingModelStore.missingModelCandidates ?? [],
+          (download) => finished.has(download)
+        )
         flushRefresh()
       }
     )
@@ -228,7 +265,7 @@ export const useMissingModelDownloadStore = defineStore(
         missingModelStore.missingModelCandidates,
         progress
       )
-      downloads.set(key, nextHostDownload(current, progress, state, isMissing))
+      downloads.set(key, nextHostDownload(current, progress, state))
       if (state.status === 'done' && current?.state.status !== 'done') {
         requestRefresh(isMissing)
       }
@@ -250,9 +287,9 @@ export const useMissingModelDownloadStore = defineStore(
         trackingGeneration++
         return () => undefined
       }
-      tracking = true
+      tracking.value = true
       return () => {
-        tracking = false
+        tracking.value = false
         trackingGeneration++
         try {
           stop()
@@ -287,16 +324,17 @@ export const useMissingModelDownloadStore = defineStore(
     function finishUnreportedRequest(model: ModelWithUrl, request: number) {
       const current = unreportedRequest(model, request)
       if (!current) return
-      const isMissing = isMissingCandidate(
-        missingModelStore.missingModelCandidates,
-        { filename: model.name, directory: model.directory }
-      )
       downloads.set(getModelFileKey(model), {
         ...current,
-        state: isMissing ? { status: 'done' } : IDLE,
+        state: { status: 'done' },
         jobEnded: true
       })
-      requestRefresh(isMissing)
+      requestRefresh(
+        isMissingCandidate(missingModelStore.missingModelCandidates, {
+          filename: model.name,
+          directory: model.directory
+        })
+      )
     }
 
     function reportStartFailure(error: unknown) {
@@ -308,7 +346,7 @@ export const useMissingModelDownloadStore = defineStore(
     }
 
     function download(model: ModelWithUrl): void {
-      if (!tracking || !hostReportsModelDownloadProgress()) {
+      if (!tracking.value || !hostReportsModelDownloadProgress()) {
         downloadModel(model, missingModelStore.folderPaths)
         return
       }
@@ -349,6 +387,91 @@ export const useMissingModelDownloadStore = defineStore(
       )
     }
 
-    return { stateFor, download, startTracking }
+    function controlRef(model: ModelWithUrl): string | undefined {
+      const download = downloads.get(getModelFileKey(model))
+      if (!download || !isActive(download.state)) return undefined
+      if (
+        download.jobId !== undefined &&
+        !download.endedJobs.has(download.jobId)
+      )
+        return download.jobId
+      const sharingUrl = [...downloads.values()].filter(
+        (other) => other.url === download.url && isActive(other.state)
+      )
+      return sharingUrl.length === 1 ? download.url : undefined
+    }
+
+    function canControl(model: ModelWithUrl, action: DownloadControl): boolean {
+      return (
+        tracking.value &&
+        typeof window.__comfyDesktop2?.[action] === 'function' &&
+        !controlsInFlight.has(getModelFileKey(model)) &&
+        controlRef(model) !== undefined
+      )
+    }
+
+    function reportControlFailure(error: unknown, action: DownloadControl) {
+      reportError(error, {
+        surface: 'platform',
+        errorType: 'error_controlling_model_download',
+        tags: { action }
+      })
+    }
+
+    function withdrawUnreportedRequest(
+      model: ModelWithUrl,
+      request: number | undefined
+    ) {
+      const current =
+        request === undefined ? undefined : unreportedRequest(model, request)
+      if (!current) return
+      downloads.set(getModelFileKey(model), { ...current, state: IDLE })
+    }
+
+    function control(model: ModelWithUrl, action: DownloadControl) {
+      const key = getModelFileKey(model)
+      const send = window.__comfyDesktop2?.[action]
+      const target = controlRef(model)
+      if (
+        typeof send !== 'function' ||
+        target === undefined ||
+        controlsInFlight.has(key)
+      )
+        return
+      const request = downloads.get(key)?.request
+      controlsInFlight.add(key)
+      try {
+        void Promise.resolve(send(target))
+          .then(
+            (accepted: unknown) => {
+              if (accepted === false) {
+                reportControlFailure(
+                  new Error(`Host refused ${action}`),
+                  action
+                )
+              } else if (accepted === true && action === 'cancelDownload') {
+                withdrawUnreportedRequest(model, request)
+              }
+            },
+            (error: unknown) => reportControlFailure(error, action)
+          )
+          .finally(() => controlsInFlight.delete(key))
+      } catch (error) {
+        controlsInFlight.delete(key)
+        reportControlFailure(error, action)
+      }
+    }
+
+    return {
+      stateFor,
+      download,
+      startTracking,
+      tracksHostProgress: () => tracking.value,
+      reopenFinished: reopenStillMissing,
+      canControl,
+      pause: (model: ModelWithUrl) => control(model, 'pauseDownload'),
+      resume: (model: ModelWithUrl) => control(model, 'resumeDownload'),
+      cancel: (model: ModelWithUrl) => control(model, 'cancelDownload')
+    }
   }
 )
