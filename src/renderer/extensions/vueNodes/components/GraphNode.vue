@@ -65,7 +65,7 @@
     <template #after>
       <NodeFooter
         v-if="!isRerouteNode"
-        :subgraph-action="isSubgraph ? 'enter' : undefined"
+        :subgraph-action
         :error-severity="errorSeverity"
         :show-errors-tab-enabled="showErrorsTabEnabled"
         :show-advanced-inputs-button="showAdvancedInputsButton"
@@ -134,7 +134,7 @@ const {
   previewUrl,
   isRerouteNode,
   bodyKind,
-  isSubgraph,
+  subgraphAction,
   errorSeverity,
   showErrorsTabEnabled,
   showAdvancedInputsButton,

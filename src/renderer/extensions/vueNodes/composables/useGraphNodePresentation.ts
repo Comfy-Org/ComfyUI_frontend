@@ -256,6 +256,9 @@ export function useGraphNodePresentation(
   )
 
   const isSubgraph = computed(() => !!lgraphNode.value?.isSubgraphNode())
+  const subgraphAction = computed<'enter' | undefined>(() =>
+    isSubgraph.value ? 'enter' : undefined
+  )
 
   const visibleProgress = computed(() =>
     executing.value ? progress.value : undefined
@@ -328,7 +331,7 @@ export function useGraphNodePresentation(
     previewUrl,
     isRerouteNode,
     bodyKind,
-    isSubgraph,
+    subgraphAction,
     errorSeverity,
     showErrorsTabEnabled,
     showAdvancedInputsButton,
