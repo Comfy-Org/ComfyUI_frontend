@@ -2,7 +2,6 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    :inert="isEditingBlocked"
     class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] gap-y-(--node-widget-gap) pr-3 text-xs text-node-foreground"
     :style="gridStyle"
     @focusout="captureWidgetChanges"
@@ -54,7 +53,7 @@
               <TooltipTrigger as-child>
                 <div
                   data-testid="widget-control-shell"
-                  :inert="row.readOnly"
+                  :inert="row.readOnly || isEditingBlocked"
                   :class="
                     cn(
                       'grid min-w-0 grid-cols-1',

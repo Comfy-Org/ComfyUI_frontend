@@ -134,7 +134,9 @@ describe('shared widget form presentation', () => {
       activate()
       await userEvent.tab()
 
-      expect(screen.getByTestId('node-widgets')).toHaveAttribute('inert')
+      expect(screen.getByTestId('widget-control-shell')).toHaveAttribute(
+        'inert'
+      )
     }
   )
 })
