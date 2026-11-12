@@ -209,7 +209,8 @@ const ports: AddCreditsPorts = {
       stop()
     }
   },
-  autoTopUpSetupUrl: autoTopUpOffer.setupUrl
+  autoTopUpSetupUrl: autoTopUpOffer.setupUrl,
+  ownsCheckout: () => ownsCheckout(ownedCheckout)
 }
 
 function close() {
