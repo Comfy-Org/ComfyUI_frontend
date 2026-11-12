@@ -57,15 +57,15 @@ export function useSubgraphInputLayout(
     (_, __, onCleanup) => {
       const graph = context.graph
       if (!graph || canvasStore.linearMode) return
-      const key = `${graph.id}:${graph.inputNode.id}`
-      layout.measurements.set(key, {
+      const nodeId = graph.inputNode.id
+      layout.report(graph.id, nodeId, {
         width: width.value || size.value.width,
         height: height.value || size.value.height,
         slotTop: (headerHeight.value || LiteGraph.NODE_TITLE_HEIGHT) + 4
       })
       canvasStore.canvas?.setDirty(true, true)
       onCleanup(() => {
-        layout.measurements.delete(key)
+        layout.clear(graph.id, nodeId)
         canvasStore.canvas?.setDirty(true, true)
       })
     },
@@ -100,7 +100,7 @@ export function useSubgraphInputLayout(
     node.size = [next.width + socketInset, next.height]
     graph.setDirtyCanvas(true, true)
     size.trigger()
-    layout.measurements.set(`${graph.id}:${node.id}`, {
+    layout.report(graph.id, node.id, {
       width: next.width,
       height: next.height,
       slotTop: headerHeight.value + 4

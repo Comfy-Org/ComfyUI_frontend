@@ -1,17 +1,26 @@
-import { defineStore, getActivePinia } from 'pinia'
+import { defineStore } from 'pinia'
 import { reactive } from 'vue'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { UUID } from '@comfyorg/graph-model/uuid'
 
-import { provideSubgraphIoLayout } from '@/lib/litegraph/src/subgraph/subgraphIoLayout'
-import type { SubgraphIoLayout } from '@/lib/litegraph/src/subgraph/subgraphIoLayout'
+interface SubgraphIoLayout {
+  width: number
+  height: number
+  slotTop: number
+}
 
 export const useSubgraphIoLayoutStore = defineStore('subgraphIoLayout', () => {
   const measurements = reactive(new Map<string, SubgraphIoLayout>())
-  return { measurements }
-})
+  const keyOf = (graphId: UUID, nodeId: NodeId) => `${graphId}:${nodeId}`
 
-provideSubgraphIoLayout((graphId, nodeId) => {
-  const pinia = getActivePinia()
-  return pinia
-    ? useSubgraphIoLayoutStore(pinia).measurements.get(`${graphId}:${nodeId}`)
-    : undefined
+  return {
+    measurementOf: (graphId: UUID, nodeId: NodeId) =>
+      measurements.get(keyOf(graphId, nodeId)),
+    report(graphId: UUID, nodeId: NodeId, layout: SubgraphIoLayout) {
+      measurements.set(keyOf(graphId, nodeId), layout)
+    },
+    clear(graphId: UUID, nodeId: NodeId) {
+      measurements.delete(keyOf(graphId, nodeId))
+    }
+  }
 })

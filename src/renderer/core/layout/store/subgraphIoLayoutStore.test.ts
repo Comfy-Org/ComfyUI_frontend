@@ -19,14 +19,11 @@ describe('subgraph IO renderer measurements', () => {
     )
     const graph = createTestSubgraph()
     graph.inputNode.pos = [100, 200]
-    useSubgraphIoLayoutStore().measurements.set(
-      `${graph.id}:${graph.inputNode.id}`,
-      {
-        width: 320,
-        height: 400,
-        slotTop: 36
-      }
-    )
+    useSubgraphIoLayoutStore().report(graph.id, graph.inputNode.id, {
+      width: 320,
+      height: 400,
+      slotTop: 36
+    })
     graph.inputNode.arrange()
     const canvas = new LGraphCanvas(document.createElement('canvas'), graph, {
       skip_render: true,
@@ -48,7 +45,7 @@ describe('subgraph IO renderer measurements', () => {
       kind: 'subgraphIO',
       ioNode: graph.inputNode
     })
-    useSubgraphIoLayoutStore().measurements.clear()
+    useSubgraphIoLayoutStore().clear(graph.id, graph.inputNode.id)
     expect(resolvePointerTarget(canvas, graph, event, interior)).toEqual({
       kind: 'node',
       node: interior
@@ -63,7 +60,7 @@ describe('subgraph IO renderer measurements', () => {
     node.size = [128, 100]
     const savedBounds = node.asSerialisable().bounding
     const layouts = useSubgraphIoLayoutStore()
-    layouts.measurements.set(`${graph.id}:${node.id}`, {
+    layouts.report(graph.id, node.id, {
       width: 320,
       height: 400,
       slotTop: 36
@@ -87,14 +84,17 @@ describe('subgraph IO renderer measurements', () => {
     const first = createTestSubgraph()
     const second = createTestSubgraph()
     const layouts = useSubgraphIoLayoutStore()
-    const key = `${first.id}:${first.inputNode.id}`
-    layouts.measurements.set(key, { width: 320, height: 400, slotTop: 36 })
+    layouts.report(first.id, first.inputNode.id, {
+      width: 320,
+      height: 400,
+      slotTop: 36
+    })
     first.inputNode.arrange()
     second.inputNode.arrange()
 
     expect(first.inputNode.boundingRect[3]).toBe(400)
     expect(second.inputNode.boundingRect[3]).not.toBe(400)
-    layouts.measurements.delete(key)
+    layouts.clear(first.id, first.inputNode.id)
     first.inputNode.arrange()
 
     expect(first.inputNode.boundingRect[3]).not.toBe(400)

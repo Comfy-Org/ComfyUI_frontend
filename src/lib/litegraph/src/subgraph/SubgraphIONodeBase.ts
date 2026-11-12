@@ -5,7 +5,6 @@ import type {
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
 import { toSelectableKey } from '@/core/selection/selectionState'
-import { getSubgraphIoLayout } from './subgraphIoLayout'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
@@ -28,6 +27,7 @@ import type {
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { useSubgraphIoLayoutStore } from '@/renderer/core/layout/store/subgraphIoLayoutStore'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { CanvasItem } from '@comfyorg/graph-model/globalEnums'
@@ -53,7 +53,10 @@ export abstract class SubgraphIONodeBase<
   abstract readonly id: NodeId
 
   get boundingRect(): Rectangle {
-    const measured = getSubgraphIoLayout(this.subgraph.id, this.id)
+    const measured = useSubgraphIoLayoutStore().measurementOf(
+      this.subgraph.id,
+      this.id
+    )
     if (!measured) return this._boundingRect
     const [x, y, width] = this._boundingRect
     const socketInset =
@@ -329,7 +332,10 @@ export abstract class SubgraphIONodeBase<
   arrange(): void {
     const { minWidth, roundedRadius } = SubgraphIONodeBase
     const [, y] = this.boundingRect
-    const measured = getSubgraphIoLayout(this.subgraph.id, this.id)
+    const measured = useSubgraphIoLayoutStore().measurementOf(
+      this.subgraph.id,
+      this.id
+    )
     const x = this.slotAnchorX
 
     let maxWidth = minWidth
@@ -357,7 +363,8 @@ export abstract class SubgraphIONodeBase<
       | SubgraphOutput,
     editorAlpha?: number
   ): void {
-    if (getSubgraphIoLayout(this.subgraph.id, this.id)) return
+    if (useSubgraphIoLayoutStore().measurementOf(this.subgraph.id, this.id))
+      return
     const { lineWidth, strokeStyle, fillStyle, font, textBaseline } = ctx
     this.drawProtected(ctx, colorContext, fromSlot, editorAlpha)
     Object.assign(ctx, {
