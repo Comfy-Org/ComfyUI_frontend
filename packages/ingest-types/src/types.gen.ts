@@ -4303,6 +4303,108 @@ export type DesktopLoginCodeCreateResponse = {
 }
 
 /**
+ * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
+ */
+export type BillingHandoffCreateRequest = {
+  /**
+   * Workspace the handoff and its session are bound to. An OAuth access token may name only its own workspace.
+   */
+  workspace_id: string
+  /**
+   * Billing app that will exchange the handoff; its origin is the only one the exchange accepts.
+   */
+  receiver: 'billing_web' | 'platform'
+  /**
+   * Client-asserted; stages the rollout, not a security boundary.
+   */
+  surface: 'local_web' | 'desktop'
+  /**
+   * Version of the issuing app, for logs.
+   */
+  client_version: string
+}
+
+/**
+ * An issued handoff. The token is single use and expires within 60 seconds.
+ */
+export type BillingHandoffCreateResponse = {
+  /**
+   * The receiver's handoff page with the token in the fragment. Open it, never display it.
+   */
+  entry_url: string
+  /**
+   * When the handoff can no longer be exchanged.
+   */
+  expires_at: string
+  /**
+   * Id of the stored handoff, for support and logs.
+   */
+  request_id: string
+}
+
+/**
+ * The handoff token a receiver read from its URL fragment.
+ */
+export type BillingHandoffExchangeRequest = {
+  /**
+   * The raw handoff token from the entry URL fragment.
+   */
+  token: string
+}
+
+/**
+ * A scoped billing session for the handoff's user and workspace.
+ */
+export type BillingHandoffExchangeResponse = {
+  /**
+   * Bearer for billing routes of the bound workspace only.
+   */
+  session_token: string
+  /**
+   * When the session ends; it is never extended. At most 30 minutes, and never after the source sign-in expires.
+   */
+  expires_at: string
+  user: BillingHandoffUser
+  workspace: BillingHandoffWorkspace
+  /**
+   * The user's role in the workspace at exchange time.
+   */
+  role: 'owner' | 'member'
+}
+
+/**
+ * The user a scoped billing session acts as.
+ */
+export type BillingHandoffUser = {
+  /**
+   * Comfy user id.
+   */
+  id: string
+  /**
+   * The user's email address.
+   */
+  email: string
+}
+
+/**
+ * The workspace a scoped billing session is bound to.
+ */
+export type BillingHandoffWorkspace = {
+  /**
+   * Workspace id.
+   */
+  id: string
+  /**
+   * Workspace display name.
+   */
+  name: string
+  /**
+   * Workspace type, personal or team.
+   */
+  type: string
+}
+
+/**
  * Request to exchange a redeemed login code for a custom token.
  */
 export type DesktopLoginCodeExchangeRequest = {
@@ -8725,6 +8827,24 @@ export type WorkflowResponse = {
 }
 
 /**
+ * The sidebar file a workflow was copied from, when the two agree. No content and no userdata id: open the path through the userdata API.
+ */
+export type WorkflowSidebarFileResponse = {
+  /**
+   * UNIX timestamp of the last modification in milliseconds, the same unit as GET /api/userdata?full_info=true.
+   */
+  modified: number
+  /**
+   * The userdata path, `workflows/<name>.json`.
+   */
+  path: string
+  /**
+   * File size in bytes.
+   */
+  size: number
+}
+
+/**
  * Workflow metadata captured at mint time. The subsequent PUT body is the
  * raw workflow JSON document and nothing else, so everything that would
  * normally accompany workflow_json in POST /api/workflows is declared
@@ -11911,6 +12031,88 @@ export type CreateDesktopLoginCodeResponses = {
 
 export type CreateDesktopLoginCodeResponse =
   CreateDesktopLoginCodeResponses[keyof CreateDesktopLoginCodeResponses]
+
+export type CreateBillingHandoffData = {
+  body: BillingHandoffCreateRequest
+  path?: never
+  query?: never
+  url: '/api/auth/handoffs'
+}
+
+export type CreateBillingHandoffErrors = {
+  /**
+   * `INVALID_REQUEST`
+   */
+  400: ErrorResponse
+  /**
+   * `INVALID_CREDENTIAL`: the sign-in has ended, predates the user's sign-out of all devices, or must be renewed
+   */
+  401: ErrorResponse
+  /**
+   * `CREDENTIAL_UNSUPPORTED`, `BILLING_FORBIDDEN` or `HANDOFF_DISABLED`
+   */
+  403: ErrorResponse
+  /**
+   * Too many handoffs for this user in the last hour
+   */
+  429: ErrorResponse
+  /**
+   * `SERVICE_UNAVAILABLE`: the Firebase revocation check could not be made
+   */
+  503: ErrorResponse
+}
+
+export type CreateBillingHandoffError =
+  CreateBillingHandoffErrors[keyof CreateBillingHandoffErrors]
+
+export type CreateBillingHandoffResponses = {
+  /**
+   * Handoff issued
+   */
+  201: BillingHandoffCreateResponse
+}
+
+export type CreateBillingHandoffResponse =
+  CreateBillingHandoffResponses[keyof CreateBillingHandoffResponses]
+
+export type ExchangeBillingHandoffData = {
+  body: BillingHandoffExchangeRequest
+  path?: never
+  query?: never
+  url: '/api/auth/handoffs/exchange'
+}
+
+export type ExchangeBillingHandoffErrors = {
+  /**
+   * `INVALID_REQUEST`
+   */
+  400: ErrorResponse
+  /**
+   * `BILLING_FORBIDDEN` or `HANDOFF_DISABLED`, or the request did not come from the handoff's receiver
+   */
+  403: ErrorResponse
+  /**
+   * `HANDOFF_UNAVAILABLE`: unknown, expired, revoked or already consumed
+   */
+  410: ErrorResponse
+  /**
+   * The user already holds the most live scoped sessions
+   */
+  429: ErrorResponse
+}
+
+export type ExchangeBillingHandoffError =
+  ExchangeBillingHandoffErrors[keyof ExchangeBillingHandoffErrors]
+
+export type ExchangeBillingHandoffResponses = {
+  /**
+   * Scoped session created
+   */
+  200: BillingHandoffExchangeResponse
+}
+
+export type ExchangeBillingHandoffResponse =
+  ExchangeBillingHandoffResponses[keyof ExchangeBillingHandoffResponses]
 
 export type ExchangeDesktopLoginCodeData = {
   body: DesktopLoginCodeExchangeRequest
@@ -20197,6 +20399,58 @@ export type ForkWorkflowResponses = {
 
 export type ForkWorkflowResponse =
   ForkWorkflowResponses[keyof ForkWorkflowResponses]
+
+export type GetWorkflowSidebarFileData = {
+  body?: never
+  path: {
+    /**
+     * The UUID of the workflow. Parsed by the handler, so a malformed id answers 404.
+     */
+    workflow_id: string
+  }
+  query?: never
+  url: '/api/workflows/{workflow_id}/sidebar-file'
+}
+
+export type GetWorkflowSidebarFileErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * Unauthorized
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * `code` is `NOT_FOUND`: no live workflow with this id that the caller created in this workspace.
+   */
+  404: ErrorResponse
+  /**
+   * `code` is `WORKFLOW_OUT_OF_SYNC` and `details.reason` is one of `no_sidebar_path`, `name_ambiguous`, `file_missing` or `content_mismatch`. Clients open nothing on this answer. The set of reasons may grow, and clients treat an unknown reason as out of sync.
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetWorkflowSidebarFileError =
+  GetWorkflowSidebarFileErrors[keyof GetWorkflowSidebarFileErrors]
+
+export type GetWorkflowSidebarFileResponses = {
+  /**
+   * The workflow and its sidebar file agree.
+   */
+  200: WorkflowSidebarFileResponse
+}
+
+export type GetWorkflowSidebarFileResponse =
+  GetWorkflowSidebarFileResponses[keyof GetWorkflowSidebarFileResponses]
 
 export type CreateWorkflowVersionData = {
   body: CreateWorkflowVersionRequest

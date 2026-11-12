@@ -691,11 +691,6 @@
       "count": 1
     }
   },
-  "src/platform/workflow/templates/services/templateInputService.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/platform/workflowErrors/errorCatalog/errorMessageResolver.ts": {
     "comfy/no-reexports": {
       "count": 1
@@ -806,29 +801,9 @@
       "count": 2
     }
   },
-  "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/linearMode/LinearControls.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/PointerZone.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/maskEditor/components/ToolPanel.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/maskEditor/composables/useImageLoader.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/renderer/extensions/maskEditor/composables/useMaskEditorLoader.ts": {
