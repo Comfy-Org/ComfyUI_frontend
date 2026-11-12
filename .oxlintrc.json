@@ -11,6 +11,7 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
+    "docs/node-api/comfy-api.d.ts",
     "packages/design-system/src/css/lucideStrokePlugin.js",
     "packages/ingest-types/src/*.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
@@ -516,7 +517,11 @@
       }
     },
     {
-      "files": ["packages/design-system/src/css/**", "tools/devtools/web/**"],
+      "files": [
+        "packages/design-system/src/css/**",
+        "tools/devtools/web/**",
+        "examples/node-api/**/web/*.js"
+      ],
       "rules": {
         "comfy/no-js-extension-imports": "off"
       }
@@ -639,6 +644,9 @@
       "files": ["src/**", "packages/*/src/**"],
       "excludeFiles": [
         "src/config/viteSeo.test.ts",
+        "src/platform/nodeApi/apiDts.test.ts",
+        "src/platform/nodeApi/apiSurface.test.ts",
+        "src/platform/nodeApi/capabilityDoc.test.ts",
         "src/stores/nodeDefStore.frequency.test.ts"
       ],
       "rules": {

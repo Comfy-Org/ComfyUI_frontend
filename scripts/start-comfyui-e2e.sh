@@ -31,22 +31,26 @@ fi
 runtime_root="$(mktemp -d)"
 docker_config="$runtime_root/docker-config"
 devtools_stage="$runtime_root/devtools"
+examples_stage="$runtime_root/examples"
 cleanup() {
   "${docker[@]}" rm -f "$container" >/dev/null 2>&1 || true
   rm -rf "$runtime_root"
 }
 trap cleanup EXIT
-mkdir -p "$docker_config" "$devtools_stage"
+mkdir -p "$docker_config" "$devtools_stage" "$examples_stage"
 
 cp -R "$repo_root/tools/devtools/." "$devtools_stage/"
-chmod -R a+rX "$devtools_stage"
+for pack in how_to_frontend_nodes how_to_widgets how_to_graph_interaction how_to_execution; do
+  cp -R "$repo_root/examples/node-api/$pack" "$examples_stage/$pack"
+done
+chmod -R a+rX "$devtools_stage" "$examples_stage"
 unreadable="$(
-  find "$devtools_stage" \
+  find "$devtools_stage" "$examples_stage" \
     \( \( -type f ! -perm -o=r \) -o \( -type d ! -perm -o=rx \) \) \
     -print -quit
 )"
 if [[ -n "$unreadable" ]]; then
-  echo "Staged devtools path is unreadable by the container user: $unreadable" >&2
+  echo "Staged custom-node path is unreadable by the container user: $unreadable" >&2
   echo 'Tests using the ComfyPage fixture would fail with an unrelated' >&2
   echo 'HTTP error. Aborting.' >&2
   exit 1
@@ -90,10 +94,31 @@ else
   echo "Using cached image $image"
 fi
 
+frontend_mount=()
+frontend_args=()
+if [[ -n "${COMFYUI_FRONTEND_ROOT:-}" ]]; then
+  if [[ ! -d "$COMFYUI_FRONTEND_ROOT" ]]; then
+    echo "COMFYUI_FRONTEND_ROOT is not a directory: $COMFYUI_FRONTEND_ROOT" >&2
+    exit 1
+  fi
+  frontend_mount=(--mount
+    "type=bind,src=$COMFYUI_FRONTEND_ROOT,dst=/frontend-dist,readonly")
+  frontend_args=(--front-end-root /frontend-dist)
+fi
+
 "${docker[@]}" run --rm --name "$container" \
   --publish "127.0.0.1:$port:8188" \
+  "${frontend_mount[@]}" \
   --mount \
   "type=bind,src=$devtools_stage,dst=/ComfyUI/custom_nodes/ComfyUI_devtools,readonly" \
+  --mount \
+  "type=bind,src=$examples_stage/how_to_frontend_nodes,dst=/ComfyUI/custom_nodes/how_to_frontend_nodes,readonly" \
+  --mount \
+  "type=bind,src=$examples_stage/how_to_widgets,dst=/ComfyUI/custom_nodes/how_to_widgets,readonly" \
+  --mount \
+  "type=bind,src=$examples_stage/how_to_graph_interaction,dst=/ComfyUI/custom_nodes/how_to_graph_interaction,readonly" \
+  --mount \
+  "type=bind,src=$examples_stage/how_to_execution,dst=/ComfyUI/custom_nodes/how_to_execution,readonly" \
   "$image" \
   bash -lc \
-  'cd /ComfyUI && exec python3 main.py --cpu --multi-user --listen 0.0.0.0'
+  "cd /ComfyUI && exec python3 main.py --cpu --multi-user --listen 0.0.0.0 ${frontend_args[*]}"

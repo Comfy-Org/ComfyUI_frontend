@@ -92,8 +92,6 @@ describe('widget surface', () => {
   })
 
   describe('setOptions preserves live accessors', () => {
-    // kjnodes defines `values` as a getter for dynamic combos; a spread-based
-    // merge would pin it to a one-time snapshot.
     it('keeps a getter a getter', () => {
       let calls = 0
       const w = node.widgets![0]
@@ -126,6 +124,28 @@ describe('widget surface', () => {
       const opts = widgets.get('seed')!.getOptions() as Record<string, unknown>
       expect(opts.tooltip).toBe('hi')
       expect(opts.step).toBe(2)
+    })
+
+    it('reads an incoming combo list again after its backing values change', () => {
+      let values = ['first']
+      const incoming = {
+        get values() {
+          return values
+        }
+      }
+      const combo = node.addWidget('combo', 'model', 'first', () => undefined, {
+        values: []
+      })
+      const widget = widgets.get('model')!
+      widget.setOption('values', () => incoming.values)
+
+      const readValues = () => {
+        const current = combo.options.values
+        return typeof current === 'function' ? current(combo) : current
+      }
+      expect(readValues()).toEqual(['first'])
+      values = ['second']
+      expect(readValues()).toEqual(['second'])
     })
   })
 
