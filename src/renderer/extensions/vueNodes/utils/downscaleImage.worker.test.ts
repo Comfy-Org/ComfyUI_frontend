@@ -10,6 +10,7 @@ async function createWorker(width: number, height: number, bytes = 'image') {
   const canvases: { width: number; height: number }[] = []
   const encoded = new Blob(['display pixels'], { type: 'image/webp' })
   const encode = vi.fn(async () => encoded)
+  const drawImage = vi.fn()
   const complete = vi.fn<(response: DownscaleResponse) => void>()
   const scope: {
     onmessage: ((event: MessageEvent<DownscaleRequest>) => void) | null
@@ -33,7 +34,7 @@ async function createWorker(width: number, height: number, bytes = 'image') {
         canvases.push({ width, height })
       }
       getContext() {
-        return { imageSmoothingQuality: 'low', drawImage: vi.fn() }
+        return { imageSmoothingQuality: 'low', drawImage }
       }
       convertToBlob() {
         return encode()
@@ -47,7 +48,7 @@ async function createWorker(width: number, height: number, bytes = 'image') {
         data: { id, source: `/view?${id}.png`, maxEdge: 1024 }
       })
     )
-  return { bitmap, canvases, encoded, encode, send, complete }
+  return { bitmap, canvases, encoded, encode, drawImage, send, complete }
 }
 
 describe('image downscale worker', () => {
@@ -105,6 +106,9 @@ describe('image downscale worker', () => {
       })
       expect(message.result?.blob?.type).toBe(mime)
       expect(worker.canvases).toEqual(sizes)
+      expect(worker.drawImage.mock.calls).toEqual(
+        sizes.map(({ width, height }) => [worker.bitmap, 0, 0, width, height])
+      )
       expect(worker.bitmap.close).toHaveBeenCalledOnce()
     }
   )

@@ -341,7 +341,8 @@ const currentHdrPreviewUrl = computed(() =>
 )
 const displayImage = computedAsync(async () => {
   const source = currentImageUrl.value
-  if (!source || currentHdrPreviewUrl.value) return undefined
+  if (viewMode.value !== 'gallery' || !source || currentHdrPreviewUrl.value)
+    return undefined
   return getDisplayImage(source, DISPLAY_MAX_EDGE)
 })
 const currentDisplayImage = computed(() =>

@@ -147,6 +147,8 @@ describe('ImagePreview', () => {
       })
       .mockReturnValueOnce(next)
     renderImagePreview()
+    await nextTick()
+    expect(getDisplayImage).not.toHaveBeenCalled()
     const user = userEvent.setup()
     await switchToGallery(user)
     await vi.waitFor(() =>
@@ -176,6 +178,10 @@ describe('ImagePreview', () => {
       'data-full-src',
       defaultProps.imageUrls[1]
     )
+    await user.keyboard('{Escape}')
+    await vi.waitFor(() => expect(revoke).toHaveBeenCalledWith('blob:copy-1'))
+    expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+    expect(getDisplayImage).toHaveBeenCalledTimes(2)
   })
 
   it('does not render when no imageUrls provided', () => {

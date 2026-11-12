@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createLargePng } from '@e2e/fixtures/data/largePng'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const GRID_NODE_COUNT = 12
 
@@ -28,7 +29,7 @@ export async function uploadGridImages(comfyPage: ComfyPage, size: number) {
           image: {
             name,
             mimeType: 'image/png',
-            buffer: createLargePng(size, size, i + 1)
+            buffer: await createLargePng(size, size, i + 1)
           },
           overwrite: 'true',
           type: 'input'
@@ -43,15 +44,15 @@ export async function waitForGridImagesDecoded(
   comfyPage: ComfyPage,
   displaySize: number
 ) {
-  await expect(comfyPage.page.getByTestId('main-image')).toHaveCount(
+  await expect(comfyPage.page.getByTestId(TestIds.node.mainImage)).toHaveCount(
     GRID_NODE_COUNT,
     { timeout: 30_000 }
   )
   await comfyPage.page.waitForFunction(
-    async ({ count, displaySize }) => {
+    async ({ count, displaySize, testId }) => {
       const imgs = [
         ...document.querySelectorAll<HTMLImageElement>(
-          '[data-testid="main-image"]'
+          `[data-testid="${testId}"]`
         )
       ]
       if (imgs.length !== count) return false
@@ -67,21 +68,9 @@ export async function waitForGridImagesDecoded(
       await Promise.all(imgs.map((img) => img.decode()))
       return true
     },
-    { count: GRID_NODE_COUNT, displaySize },
+    { count: GRID_NODE_COUNT, displaySize, testId: TestIds.node.mainImage },
     { timeout: 30_000, polling: 100 }
   )
-}
-
-export async function panSweep(comfyPage: ComfyPage) {
-  const { page } = comfyPage
-  const { cx, cy } = await canvasCenter(comfyPage)
-  await page.mouse.move(cx, cy)
-  await page.mouse.down({ button: 'middle' })
-  for (let i = 0; i < 60; i++) {
-    await page.mouse.move(cx + Math.sin(i / 6) * 300, cy + (i % 20) * 8)
-    await comfyPage.nextFrame()
-  }
-  await page.mouse.up({ button: 'middle' })
 }
 
 export async function zoomSweep(comfyPage: ComfyPage) {

@@ -2,7 +2,6 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   GRID_IMAGE_NAMES,
   GRID_LOGGED_FIELDS,
-  panSweep,
   uploadGridImages,
   waitForGridImagesDecoded,
   zoomSweep
@@ -42,7 +41,7 @@ for (const { size, displaySize } of [
 
         await test.step('Pan across the image grid', async () => {
           await comfyPage.perf.startMeasuring()
-          await panSweep(comfyPage)
+          await comfyPage.canvasOps.panSweep({ steps: 30, dx: 8, dy: 3 })
           const pan = await comfyPage.perf.stopMeasuring(label('pan'))
           recordMeasurement(pan)
           logMeasurement(label('pan'), pan, [...GRID_LOGGED_FIELDS])
