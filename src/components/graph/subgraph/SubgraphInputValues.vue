@@ -6,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import NodeFrame from '@/renderer/extensions/vueNodes/components/NodeFrame.vue'
@@ -19,6 +20,7 @@ import SubgraphInputValuesContent from './SubgraphInputValuesContent.vue'
 import { useSubgraphInputLayout } from './useSubgraphInputLayout'
 import NodeResizeHandle from '@/renderer/extensions/vueNodes/components/NodeResizeHandle.vue'
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const badges: NodeBadgeGroup[] = [
   { kind: 'core', badges: [{ text: '', cssIcon: 'icon-[comfy--workflow]' }] }
@@ -50,6 +52,12 @@ useEventListener(
     'configured'
   ],
   slots.trigger
+)
+const { state: linkDrag } = useSlotLinkDragUIState()
+const draggedFrom = computed(() =>
+  linkDrag.active
+    ? canvasStore.canvas?.linkConnector.renderLinks[0]?.fromSlot
+    : undefined
 )
 const title = computed(() =>
   context.selected
@@ -129,7 +137,12 @@ function forwardUnlessOnButton(event: PointerEvent) {
         <div
           v-for="slot in slots"
           :key="slot.id"
-          class="lg-slot lg-slot--output relative flex cursor-crosshair items-center justify-end pr-3"
+          :class="
+            cn(
+              'lg-slot lg-slot--output relative flex cursor-crosshair items-center justify-end pr-3',
+              draggedFrom && !slot.isValidTarget(draggedFrom) && 'opacity-40'
+            )
+          "
           :style="{ height: `${LiteGraph.NODE_SLOT_HEIGHT}px` }"
           :data-testid="
             slot === context.graph.inputNode.emptySlot
