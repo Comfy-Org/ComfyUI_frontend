@@ -372,6 +372,21 @@ describe('remainingModelDownloadTotal', () => {
       ).toEqual({ bytes: 4096, isComplete: true })
     })
 
+    it('measures what is left by the host size when the host knows it', () => {
+      const unsized = model('unsized.safetensors')
+      const rows = rowsFor([paused, 4096], [unsized, null])
+      const stateFor = (m: ModelWithUrl) => ({
+        status: 'downloading',
+        activity: 'paused',
+        receivedBytes: 1024,
+        totalBytes: m.name === paused.name ? 2048 : 3072
+      })
+
+      expect(
+        remainingModelDownloadTotal(rows, { stateFor, canResume: () => true })
+      ).toEqual({ bytes: 3072, isComplete: true })
+    })
+
     it.for([
       { canResume: true, candidate: true },
       { canResume: false, candidate: false }

@@ -121,14 +121,13 @@ function totalDeclarations(
   return { bytes, isComplete }
 }
 
-/** The state a row's own download is in, as the view's row-downloads reports it. */
 type RowDownloadStatus = {
   status: string
   activity?: string
   receivedBytes?: number | null
+  totalBytes?: number | null
 }
 
-/** What the view's row-downloads reports about a row, and whether it can resume it. */
 type RowDownloads = {
   stateFor: (model: ModelWithUrl) => RowDownloadStatus
   canResume: (model: ModelWithUrl) => boolean
@@ -165,14 +164,16 @@ export function remainingModelDownloadTotal(
 ): TemplateModelDeclarationTotal {
   return totalDeclarations(
     rows.filter((row) => isModelDownloadCandidate(row, downloads)),
-    (row) =>
-      row.fileSize === null
-        ? null
-        : Math.max(
-            0,
-            row.fileSize - (downloads.stateFor(row.model).receivedBytes ?? 0)
-          )
+    (row) => bytesLeft(row, downloads.stateFor(row.model))
   )
+}
+
+function bytesLeft(
+  row: TemplateModelSetupRow,
+  { receivedBytes, totalBytes }: RowDownloadStatus
+): number | null {
+  const size = totalBytes ?? row.fileSize
+  return size === null ? null : Math.max(0, size - (receivedBytes ?? 0))
 }
 
 export function deriveTemplateModelSetup(
