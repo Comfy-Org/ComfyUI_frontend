@@ -172,6 +172,7 @@ interface QueuePromptOptions {
 
 /** Dictionary of Frontend-generated API calls */
 interface FrontendApiCalls {
+  executing_with_metadata: ExecutingWsMessage
   graphChanged: ComfyWorkflowJSON
   /**
    * Signals that auto-queue should treat the active workflow as changed.
@@ -1137,6 +1138,7 @@ export class ComfyApi extends EventTarget {
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
             case 'executing':
+              this.dispatchCustomEvent('executing_with_metadata', msg.data)
               this.dispatchCustomEvent(
                 'executing',
                 msg.data.display_node || msg.data.node
