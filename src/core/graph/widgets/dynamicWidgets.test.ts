@@ -712,13 +712,23 @@ describe('Autogrow', () => {
       '3.b2',
       'aa'
     ])
-    for (const slot of [1, 2, 5, 6]) {
-      expect.soft(newNode.isInputConnected(slot)).toBe(true)
-      expect.soft(newNode.getInputLink(slot)?.target_slot).toBe(slot)
-    }
-    for (const slot of [0, 3, 4, 7, 8]) {
-      expect.soft(newNode.isInputConnected(slot)).toBe(false)
-    }
+    const slots = newNode.inputs.map((_, slot) => slot)
+    expect(slots.filter((slot) => newNode.isInputConnected(slot))).toEqual([
+      1, 2, 5, 6
+    ])
+    expect(
+      slots.map((slot) => newNode.getInputLink(slot)?.target_slot)
+    ).toEqual([
+      undefined,
+      1,
+      2,
+      undefined,
+      undefined,
+      5,
+      6,
+      undefined,
+      undefined
+    ])
   })
 })
 
