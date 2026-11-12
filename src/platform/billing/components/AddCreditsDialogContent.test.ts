@@ -19,6 +19,7 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -253,5 +254,52 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
     await landing
 
     expect(billingApi.getTopupCheckout).toHaveBeenCalledTimes(1)
+  })
+
+  it('mints no second checkout once the payment landed and its activation is still being read', async () => {
+    const { user } = await payWithAutoTopUp({})
+    vi.mocked(billingApi.getTopupCheckout).mockReturnValue(
+      new Promise(() => {})
+    )
+    void hoisted.balanceIncreased!()
+    await waitFor(() =>
+      expect(billingApi.getTopupCheckout).toHaveBeenCalledOnce()
+    )
+
+    await user.click(screen.getByTestId('add-credits-reopen'))
+
+    expect(hoisted.createHostedCheckout).toHaveBeenCalledOnce()
+    expect(screen.getByTestId('add-credits-reopen')).toBeDisabled()
+  })
+
+  it('drops a pending activation read once this tab switches workspace', async () => {
+    await payWithAutoTopUp({})
+    let serve!: (checkout: HostedTopupCheckout) => void
+    vi.mocked(billingApi.getTopupCheckout).mockReturnValue(
+      new Promise((resolve) => {
+        serve = resolve
+      })
+    )
+    const landing = hoisted.balanceIncreased!()
+    await waitFor(() =>
+      expect(billingApi.getTopupCheckout).toHaveBeenCalledOnce()
+    )
+
+    useTeamWorkspaceStore().resetForIdentityChange()
+    serve(
+      servedCheckout({
+        auto_top_up_activation: 'on',
+        auto_top_up: {
+          threshold_credits: 1000,
+          target_credits: 11_550,
+          monthly_budget_cents: 6_000_000,
+          monthly_budget_is_default: true
+        }
+      })
+    )
+    await landing
+
+    expect(screen.queryByTestId('add-credits-auto-top-up-on')).toBeNull()
+    expect(billingApi.getTopupCheckout).toHaveBeenCalledOnce()
   })
 })

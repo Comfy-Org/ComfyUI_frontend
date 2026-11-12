@@ -1,7 +1,7 @@
 <template>
   <AddCreditsDialog
     :ports
-    :can-top-up="canTopUp"
+    :can-top-up="canTopUp && !readingActivation"
     :top-up-denial="topUpDenial ?? undefined"
     :min-topup-cents="balance?.minTopupCents"
     :max-topup-cents="balance?.maxTopupCents"
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { AddCreditsTranslate } from '@comfyorg/account-core/billing'
@@ -111,6 +111,7 @@ const pendingTopup = computed(() =>
 )
 
 let paymentWatched = false
+const readingActivation = shallowRef(false)
 let activationSessionId: string | undefined
 
 const ports: AddCreditsPorts = {
@@ -154,10 +155,15 @@ const ports: AddCreditsPorts = {
     paymentWatched = true
     usePendingTopup().startPendingTopup()
     const scope = new AbortController()
+    const stopOnWorkspaceChange = watch(
+      () => workspaceIdentity.workspaceTransitionGeneration,
+      () => scope.abort()
+    )
     const stop = watchForTopupBalanceUpdate({
       onBalanceIncreased: async () => {
         const sessionId = activationSessionId
         if (sessionId === undefined) return landed()
+        readingActivation.value = true
         const activation = await readAutoTopUpActivation(
           (signal) => billingApi.getTopupCheckout(sessionId, signal),
           scope.signal
@@ -179,6 +185,7 @@ const ports: AddCreditsPorts = {
     })
     return () => {
       scope.abort()
+      stopOnWorkspaceChange()
       stop()
     }
   },
