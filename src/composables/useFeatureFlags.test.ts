@@ -204,6 +204,34 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('billingNewUxEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it.for([
+      { label: 'absent', value: undefined, enabled: false },
+      { label: 'false', value: false, enabled: false },
+      { label: 'a string', value: 'true', enabled: false },
+      { label: 'true', value: true, enabled: true }
+    ])(
+      'enables the 1.61 billing UX only for literal true ($label)',
+      ({ value, enabled }) => {
+        remoteConfig.value = {}
+        vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+        expect(useFeatureFlags().flags.billingNewUxEnabled).toBe(enabled)
+      }
+    )
+
+    it('reads the billing rollout from /features', () => {
+      remoteConfig.value = { billing_new_ux_enabled: true }
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+
+      expect(useFeatureFlags().flags.billingNewUxEnabled).toBe(true)
+    })
+  })
+
   describe('billingSdkTopupEnabled', () => {
     afterEach(() => {
       remoteConfig.value = {}

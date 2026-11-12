@@ -152,6 +152,13 @@ export class WorkflowHelper {
     }
   }
 
+  async loadWorkflowData(workflowName: string) {
+    const workflow = zComfyWorkflow.parse(
+      JSON.parse(readFileSync(assetPath(`${workflowName}.json`), 'utf-8'))
+    )
+    await this.loadGraphData(workflow)
+  }
+
   async loadWorkflow(workflowName: string) {
     await this.comfyPage.workflowUploadInput.setInputFiles(
       assetPath(`${workflowName}.json`)

@@ -794,14 +794,7 @@ export interface WidgetDef {
   /** Display-only widgets — replaces the readOnly/opacity DOM fiddling. */
   readonly disabled?: boolean
   readonly hidden?: boolean
-  /**
-   * Whether the value is written into the saved workflow. It is still sent in
-   * the prompt.
-   *
-   * To keep a value out of the prompt instead, as the legacy
-   * `widget.serializeValue = async () => {}` did, set `options.serialize` to
-   * `false`: the value is saved and not sent.
-   */
+  /** Whether the value is saved in the workflow; prompt inclusion uses options.serialize. */
   readonly serialize?: boolean
 }
 
@@ -930,7 +923,7 @@ function initialMountedData(def: MountDef): MountedData {
 }
 
 function connectMountedLifecycle(
-  widget: IBaseWidget,
+  widget: IBaseWidget<MountedData> & { value: MountedData },
   def: MountDef,
   holdsValue: boolean,
   listeners: ReadonlySet<(value: MountedData) => void>
@@ -946,19 +939,20 @@ function connectMountedLifecycle(
   if (!holdsValue) return
   const previousCallback = widget.callback
   widget.callback = function (this: unknown, value, ...rest) {
-    previousCallback?.apply(this as never, [value, ...rest] as never)
-    for (const listener of listeners) listener(value as MountedData)
+    previousCallback?.apply(this, [value, ...rest])
+    if (value === undefined) return
+    for (const listener of listeners) listener(value)
   }
 }
 
 function renderMountedWidget(
-  widget: IBaseWidget,
+  widget: IBaseWidget<MountedData> & { value: MountedData },
   def: MountDef,
   container: HTMLElement,
   listeners: Set<(value: MountedData) => void>
 ): void {
   def.render(container, {
-    get: () => widget.value as MountedData,
+    get: () => widget.value,
     set: (value) => {
       widget.value = value
     },

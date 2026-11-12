@@ -199,7 +199,7 @@ import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
 import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
 import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useThemeService } from '@/platform/theme/themeService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
   collapseOutsideSelectionOnPrimaryPointerDown,
@@ -212,7 +212,7 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -253,8 +253,8 @@ const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toast = useToast()
-const colorPaletteStore = useColorPaletteStore()
-const colorPaletteService = useColorPaletteService()
+const themeStore = useThemeStore()
+const themeService = useThemeService()
 const canvasInteractions = useCanvasInteractions()
 const bootstrapStore = useBootstrapStore()
 const { isI18nReady, i18nError } = storeToRefs(bootstrapStore)
@@ -366,9 +366,7 @@ watchEffect(() => {
 })
 watchEffect(() => {
   LiteGraph.nodeLightness =
-    colorPaletteStore.colorScheme === 'light'
-      ? LIGHT_THEME_NODE_LIGHTNESS
-      : undefined
+    themeStore.colorScheme === 'light' ? LIGHT_THEME_NODE_LIGHTNESS : undefined
 })
 
 watchEffect(() => {
@@ -423,7 +421,7 @@ watch(
   async ([canvas, currentPaletteId]) => {
     if (!canvas) return
 
-    await colorPaletteService.loadColorPalette(currentPaletteId)
+    await themeService.setActiveTheme(currentPaletteId)
   }
 )
 
@@ -431,17 +429,17 @@ watch(
   () => settingStore.get('Comfy.Canvas.BackgroundImage'),
   async () => {
     if (!canvasStore.canvas) return
-    const currentPaletteId = colorPaletteStore.activePaletteId
+    const currentPaletteId = themeStore.activePresetId
     if (!currentPaletteId) return
 
     // Reload color palette to apply background image
-    await colorPaletteService.loadColorPalette(currentPaletteId)
+    await themeService.setActiveTheme(currentPaletteId)
     // Mark background canvas as dirty
     canvasStore.canvas.setDirty(false, true)
   }
 )
 watch(
-  () => colorPaletteStore.activePaletteId,
+  () => themeStore.activePresetId,
   async (newValue) => {
     await settingStore.set('Comfy.ColorPalette', newValue)
   }
@@ -627,6 +625,8 @@ onMounted(async () => {
     if (disposed) return
     if (!deploymentConfirmed) showDeploymentLookupToast()
     await comfyApp.setup(canvas)
+    await themeService.loadCustomThemePresets()
+    if (disposed) return
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
@@ -643,14 +643,12 @@ onMounted(async () => {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
     }
 
-    colorPaletteStore.customPalettes = settingStore.get(
-      'Comfy.CustomColorPalettes'
-    )
-
     await bootstrapTracer.settle('bootstrap/workflow-restore', async () => {
       startupOutcome = await workflowPersistence.initializeWorkflow()
       await workflowPersistence.restoreWorkflowTabsState()
       urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
+      if (!workflowStore.activeWorkflow)
+        await useWorkflowService().loadDefaultWorkflow()
       await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     })
     bootstrapOutcome = 'completed'

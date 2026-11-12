@@ -1,12 +1,12 @@
 import type { CompactSize } from '@comfyorg/shared-frontend-utils/geometry'
-import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
-import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/compositorPaths'
-import { resetCompositorStateWidgets } from '@/renderer/extensions/compositor/composables/compositorWidgets'
+import type { CompositorBBox } from '@comfyorg/layer-editor/persistence/compositorLayerState'
+import type { ImageFileRef } from '@/renderer/extensions/layerEditor/compositor/compositorPaths'
+import { resetCompositorStateWidgets } from '@/renderer/extensions/layerEditor/compositor/compositorWidgets'
 import {
   clearCompositorLayers,
   clearCompositorPreviewOverride,
   setCompositorLayers
-} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
+} from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeOutputWith } from '@comfyorg/api-client/executionTypes'
 import type { ComfyExtension } from '@/types/comfy'

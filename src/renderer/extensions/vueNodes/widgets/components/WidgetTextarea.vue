@@ -11,7 +11,7 @@
     <div
       :class="
         cn(
-          'flex size-full flex-col overflow-hidden rounded-md',
+          'flex size-full flex-col overflow-hidden rounded-md border-(length:--node-widget-border-width) border-node-border',
           !widget.options?.disabled && (isReadOnly ? 'bg-input/50' : 'bg-input')
         )
       "
@@ -20,7 +20,10 @@
         <label
           v-if="!hideLayoutField"
           :for="id"
-          class="min-w-0 truncate text-2xs text-muted-foreground"
+          class="min-w-0 truncate text-2xs text-node-foreground"
+          @pointerdown.stop
+          @pointermove.stop
+          @pointerup.stop
         >
           {{ displayName }}
         </label>

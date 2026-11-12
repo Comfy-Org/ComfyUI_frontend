@@ -14,8 +14,8 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         data-testid="node-header"
         :title="nodeDef.display_name"
         :style="{
-          backgroundColor: litegraphColors.NODE_DEFAULT_COLOR,
-          color: litegraphColors.NODE_TITLE_COLOR
+          backgroundColor: litegraphColors.nodeDefaultColor,
+          color: litegraphColors.nodeTitleColor
         }"
       >
         <div class="_sb_dot headdot pr-3" data-testid="head-dot" />
@@ -39,7 +39,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div
           class="_sb_col _sb_inherit"
           :style="{
-            color: litegraphColors.NODE_TEXT_COLOR
+            color: litegraphColors.nodeTextColor
           }"
         >
           {{ slotOutput ? slotOutput.name : '' }}
@@ -59,7 +59,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div
           class="_sb_col"
           :style="{
-            color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR
+            color: litegraphColors.widgetSecondaryTextColor
           }"
         >
           {{ widgetInput.name }}
@@ -67,7 +67,7 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
         <div class="_sb_col middle-column" />
         <div
           class="_sb_col _sb_inherit"
-          :style="{ color: litegraphColors.WIDGET_TEXT_COLOR }"
+          :style="{ color: litegraphColors.widgetTextColor }"
         >
           {{ truncateDefaultValue(widgetInput.default) }}
         </div>
@@ -79,8 +79,8 @@ https://github.com/Nuked88/ComfyUI-N-Sidebar/blob/7ae7da4a9761009fb6629bc04c6830
       class="_sb_description"
       data-testid="node-description"
       :style="{
-        color: litegraphColors.WIDGET_SECONDARY_TEXT_COLOR,
-        backgroundColor: litegraphColors.WIDGET_BGCOLOR
+        color: litegraphColors.widgetSecondaryTextColor,
+        backgroundColor: litegraphColors.widgetBackgroundColor
       }"
       :html="renderedDescription"
     />
@@ -98,7 +98,7 @@ import LGraphNodePreview from '@/renderer/extensions/vueNodes/components/LGraphN
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { flattenInputSpecs } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 const { nodeDef, position = 'absolute' } = defineProps<{
@@ -108,10 +108,8 @@ const { nodeDef, position = 'absolute' } = defineProps<{
 
 const { shouldRenderVueNodes } = useVueFeatureFlags()
 
-const colorPaletteStore = useColorPaletteStore()
-const litegraphColors = computed(
-  () => colorPaletteStore.completedActivePalette.colors.litegraph_base
-)
+const themeStore = useThemeStore()
+const litegraphColors = computed(() => themeStore.activeTheme.canvas)
 
 const widgetStore = useWidgetStore()
 

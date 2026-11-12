@@ -1,7 +1,13 @@
 import { afterEach, assert, describe, expect, it } from 'vitest'
 
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { CurveData } from '@comfyorg/graph-model/curve'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  LGraphEventMode
+} from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraphData,
   createTestSubgraphNode
@@ -22,6 +28,32 @@ function addNode(
   Object.assign(node.properties, properties)
   graph.add(node)
   return node
+}
+
+function addResolutionSource(
+  graph: LGraph,
+  scope: Subgraph,
+  path: 'direct' | 'bypassed' | 'subgraph'
+) {
+  const sourceGraph =
+    path === 'subgraph' ? graph.createSubgraph(createTestSubgraphData()) : scope
+  const source = addNode(sourceGraph, 'ResolutionSource')
+  source.addOutput('image', 'IMAGE')
+  if (path === 'subgraph') {
+    sourceGraph.addOutput('image', 'IMAGE').connect(source.outputs[0], source)
+    const endpoint = createTestSubgraphNode(sourceGraph, { parentGraph: scope })
+    scope.add(endpoint)
+    return { endpoint, sourceId: `${endpoint.id}:${source.id}` }
+  }
+  if (path === 'bypassed') {
+    const endpoint = addNode(scope, 'BypassedResolutionSource')
+    endpoint.addInput('image', 'IMAGE')
+    endpoint.addOutput('image', 'IMAGE')
+    endpoint.mode = LGraphEventMode.BYPASS
+    source.connect(0, endpoint, 0)
+    return { endpoint, sourceId: String(source.id) }
+  }
+  return { endpoint: source, sourceId: String(source.id) }
 }
 
 function curveData(): CurveData {
@@ -117,74 +149,106 @@ describe('graphToPrompt registered projections', () => {
     ).toEqual([`${host.id}:${source.id}`, 0])
   })
 
-  it('composes async resolvers and suppliers for each placement without graph edits', async () => {
-    const graph = new LGraph()
-    const comfy = createComfyApi(() => graph)
-    const subgraph = graph.createSubgraph(createTestSubgraphData())
-    const source = addNode(subgraph, 'ResolutionSource')
-    source.addOutput('image', 'IMAGE')
-    const relay = defineNode(subgraph, comfy, {
-      type: 'PromptAsyncRelay',
-      execution: 'frontend',
-      inputs: [{ name: 'image', type: 'IMAGE' }],
-      outputs: [{ name: 'image', type: 'IMAGE' }],
-      resolve: async ({ self }) => {
-        await Promise.resolve()
-        return { image: { forwardTo: { nodeId: self.id, input: 0 } } }
-      }
-    })
-    const literal = defineNode(subgraph, comfy, {
-      type: 'PromptLiteralArray',
-      execution: 'frontend',
-      outputs: [{ name: 'values', type: 'VALUES' }],
-      resolve: () => ({ values: { literal: [10, 20] } })
-    })
-    const supplier = defineNode(subgraph, comfy, {
-      type: 'PromptImageSupplier',
-      execution: 'frontend',
-      inputs: [{ name: 'image', type: 'IMAGE' }],
-      supply: async ({ unconnectedInputs }) => {
-        await Promise.resolve()
-        return unconnectedInputs()
-          .filter((input) => input.name === 'supplied_image')
-          .map((input) => ({
-            to: { nodeId: input.nodeId, input: input.input },
-            from: { forwardInput: 0 }
-          }))
-      }
-    })
-    const target = addNode(subgraph, 'ResolutionTarget')
-    target.addInput('image', 'IMAGE')
-    target.addInput('supplied_image', 'IMAGE')
-    target.addInput('values', 'VALUES')
-    source.connect(0, relay, 0)
-    relay.connect(0, target, 0)
-    relay.connect(0, supplier, 0)
-    literal.connect(0, target, 2)
-    const first = createTestSubgraphNode(subgraph)
-    graph.add(first)
-    const second = createTestSubgraphNode(subgraph)
-    graph.add(second)
-    const before = graph.serialize()
+  it.for(['direct', 'bypassed', 'subgraph'] as const)(
+    'composes resolvers and suppliers through a %s source for each placement without graph edits',
+    async (path) => {
+      const graph = new LGraph()
+      const comfy = createComfyApi(() => graph)
+      const subgraph = graph.createSubgraph(createTestSubgraphData())
+      const { endpoint, sourceId } = addResolutionSource(graph, subgraph, path)
+      const relay = defineNode(subgraph, comfy, {
+        type: 'PromptAsyncRelay',
+        execution: 'frontend',
+        inputs: [{ name: 'image', type: 'IMAGE' }],
+        outputs: [{ name: 'image', type: 'IMAGE' }],
+        resolve: async ({ self }) => {
+          await Promise.resolve()
+          return { image: { forwardTo: { nodeId: self.id, input: 0 } } }
+        }
+      })
+      const literal = defineNode(subgraph, comfy, {
+        type: 'PromptLiteralArray',
+        execution: 'frontend',
+        outputs: [{ name: 'values', type: 'VALUES' }],
+        resolve: () => ({ values: { literal: [10, 20] } })
+      })
+      const supplier = defineNode(subgraph, comfy, {
+        type: 'PromptImageSupplier',
+        execution: 'frontend',
+        inputs: [{ name: 'image', type: 'IMAGE' }],
+        supply: async ({ unconnectedInputs }) => {
+          await Promise.resolve()
+          return unconnectedInputs()
+            .filter((input) => input.name === 'supplied_image')
+            .map((input) => ({
+              to: { nodeId: input.nodeId, input: input.input },
+              from: { forwardInput: 0 }
+            }))
+        }
+      })
+      const target = addNode(subgraph, 'ResolutionTarget')
+      target.addInput('image', 'IMAGE')
+      target.addInput('supplied_image', 'IMAGE')
+      target.addInput('values', 'VALUES')
+      endpoint.connect(0, relay, 0)
+      relay.connect(0, target, 0)
+      relay.connect(0, supplier, 0)
+      literal.connect(0, target, 2)
+      const first = createTestSubgraphNode(subgraph)
+      graph.add(first)
+      const second = createTestSubgraphNode(subgraph)
+      graph.add(second)
+      const before = graph.serialize()
 
-    const { workflow, output } = await graphToPrompt(graph)
+      const { workflow, output } = await graphToPrompt(graph)
 
-    expect(output[`${first.id}:${target.id}`].inputs).toEqual({
-      image: [`${first.id}:${source.id}`, 0],
-      supplied_image: [`${first.id}:${source.id}`, 0],
-      values: { __value__: [10, 20] }
-    })
-    expect(output[`${second.id}:${target.id}`].inputs).toEqual({
-      image: [`${second.id}:${source.id}`, 0],
-      supplied_image: [`${second.id}:${source.id}`, 0],
-      values: { __value__: [10, 20] }
-    })
-    expect(Object.keys(output)).toHaveLength(4)
-    expect(workflow.definitions?.subgraphs).toEqual(
-      before.definitions?.subgraphs
-    )
-    expect(graph.serialize()).toEqual(before)
-  })
+      expect(output[`${first.id}:${target.id}`].inputs).toEqual({
+        image: [`${first.id}:${sourceId}`, 0],
+        supplied_image: [`${first.id}:${sourceId}`, 0],
+        values: { __value__: [10, 20] }
+      })
+      expect(output[`${second.id}:${target.id}`].inputs).toEqual({
+        image: [`${second.id}:${sourceId}`, 0],
+        supplied_image: [`${second.id}:${sourceId}`, 0],
+        values: { __value__: [10, 20] }
+      })
+      expect(Object.keys(output)).toHaveLength(4)
+      expect(workflow.definitions?.subgraphs).toEqual(
+        before.definitions?.subgraphs
+      )
+      expect(graph.serialize()).toEqual(before)
+    }
+  )
+  it.for([LGraphEventMode.BYPASS, LGraphEventMode.NEVER])(
+    'omits a frontend output that resolves through a cyclic or muted node in mode %s',
+    async (mode) => {
+      const graph = new LGraph()
+      const comfy = createComfyApi(() => graph)
+      const relay = defineNode(graph, comfy, {
+        type: 'PromptCyclicRelay',
+        execution: 'frontend',
+        inputs: [{ name: 'image', type: 'IMAGE' }],
+        outputs: [{ name: 'image', type: 'IMAGE' }],
+        resolve: ({ self }) => ({
+          image: { forwardTo: { nodeId: self.id, input: 0 } }
+        })
+      })
+      const blocked = addNode(graph, 'BlockedSource')
+      blocked.addInput('image', 'IMAGE')
+      blocked.addOutput('image', 'IMAGE')
+      blocked.mode = mode
+      const target = addNode(graph, 'ResolutionTarget')
+      target.addInput('image', 'IMAGE')
+      relay.connect(0, blocked, 0)
+      blocked.connect(0, relay, 0)
+      relay.connect(0, target, 0)
+
+      const { output } = await graphToPrompt(graph)
+
+      expect(Object.keys(output)).toEqual([String(target.id)])
+      expect(output[String(target.id)].inputs).toEqual({})
+    }
+  )
 })
 
 describe('graphToPrompt widget serialization', () => {

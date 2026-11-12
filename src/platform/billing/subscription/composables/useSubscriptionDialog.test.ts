@@ -195,6 +195,7 @@ describe('useSubscriptionDialog', () => {
   describe('showPricingTable on the platform Plans page', () => {
     beforeEach(() => {
       vi.mocked(openBillingUrl).mockReturnValue(true)
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
     })
 
     function openedUrl(): URL {
@@ -270,6 +271,36 @@ describe('useSubscriptionDialog', () => {
       const [{ props }] = mockShowLayoutDialog.mock.calls[0]
       return props
     }
+
+    it.for([
+      { entry: 'refused run', options: { runRefused: true } },
+      { entry: 'page load', options: { sameTab: true } }
+    ])(
+      'keeps the 1.60 Plans hand-off for a $entry when the new UX is off',
+      async ({ options }) => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+        const assign = vi
+          .spyOn(window.location, 'assign')
+          .mockImplementation(() => {})
+
+        await useSubscriptionDialog().showPricingTable(options)
+
+        expect(openedUrl().pathname).toBe('/profile/billing/plans')
+        expect(assign).not.toHaveBeenCalled()
+        expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+      }
+    )
+
+    it('keeps the 1.60 pricing table for blocked Plans tabs when the new UX is off', async () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+      vi.mocked(openBillingUrl).mockReturnValue(false)
+
+      await useSubscriptionDialog().showPricingTable({ runRefused: true })
+
+      expect(openBillingUrl).toHaveBeenCalledOnce()
+      expect(shownDialogProps()).not.toHaveProperty('title')
+      expect(shownDialogProps()).toHaveProperty('initialPlanMode', 'personal')
+    })
 
     it('explains a blocked tab with a link to the Plans page instead of the pricing table', async () => {
       vi.mocked(openBillingUrl).mockReturnValue(false)

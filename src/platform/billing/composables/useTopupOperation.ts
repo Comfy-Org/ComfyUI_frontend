@@ -1,7 +1,12 @@
 import { delay } from 'es-toolkit'
 import { computed } from 'vue'
 
+import type { BillingClient } from '@comfyorg/account-core/billing'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
@@ -36,11 +41,22 @@ export function useTopupOperation() {
     ? useBillingSdkStore()
     : null
   const operationStore = useBillingOperationStore()
+  const billingContext = useBillingContext()
+  const billingClient: BillingClient = sdkStore ? 'sdk' : 'legacy'
+
+  const isAddingCredits = computed(() =>
+    sdkStore ? sdkStore.isAddingCredits : operationStore.isAddingCredits
+  )
   const topupOperation = computed(() =>
     sdkStore
       ? sdkStore.topupActionOperation
       : operationStore.topupActionOperation
   )
+
+  function topup(amountCents: number): Promise<CreateTopupResponse | void> {
+    if (sdkStore) return sdkStore.createTopup(amountCents)
+    return billingContext.topup(amountCents)
+  }
 
   async function createHostedCheckout(
     amountCents: number,
@@ -86,9 +102,30 @@ export function useTopupOperation() {
     }
   }
 
+  function dismissOperation(operationId: string): void {
+    if (sdkStore) sdkStore.dismissOperation(operationId)
+    else operationStore.dismissOperation(operationId)
+  }
+
+  async function adoptPendingOperation(
+    operationId: string,
+    metadata: {
+      attemptStartedAt: number
+      paymentIntentSource?: PaymentIntentSource
+    }
+  ): Promise<void> {
+    if (sdkStore) return
+    await operationStore.startOperation(operationId, 'topup', metadata)
+  }
+
   return {
+    billingClient,
+    isAddingCredits,
     topupOperation,
+    topup,
     createHostedCheckout,
+    dismissOperation,
+    adoptPendingOperation,
     quoteTopup
   }
 }

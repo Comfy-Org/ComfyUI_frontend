@@ -47,6 +47,9 @@ const config: KnipConfig = {
     'packages/settings-core': {
       project: ['src/**/*.ts']
     },
+    'packages/theme-core': {
+      project: ['src/**/*.ts']
+    },
     'packages/design-system': {
       entry: ['tests/consumer/vite.config.ts'],
       project: ['src/**/*.{css,js,ts,vue}'],

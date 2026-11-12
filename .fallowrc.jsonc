@@ -25,6 +25,7 @@
       "@comfyorg/tailwind-utils",
       "@comfyorg/telemetry",
       "@comfyorg/test-utils",
+      "@comfyorg/theme-core",
       "@comfyorg/viewport3d"
     ]
   },
@@ -65,7 +66,14 @@
     // Devtools browser-extension artifacts, loaded dynamically (mirrors knip).
     "tools/devtools/**",
     // Storybook-only mocks, reached through Storybook's vite alias, not the prod graph.
-    "src/storybook/mocks/**"
+    "src/storybook/mocks/**",
+    // The 1.60 Billing tab, restored verbatim behind billing_new_ux_enabled; deleted with the flag.
+    "src/platform/billing/legacy160/**",
+    "src/platform/account/components/dialogs/settings/BillingTabLegacy.*",
+    // Flag-off-only screens restored to their 1.60 content in place.
+    "src/platform/account/components/CurrentUserPopoverWorkspace.*",
+    "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.*",
+    "src/platform/billing/components/TopUpAutoTopUpCard.*"
   ],
 
   "ignoreDependencies": [

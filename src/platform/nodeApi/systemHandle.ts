@@ -118,33 +118,19 @@ function isAccelerator(value: unknown): value is SystemMonitorAccelerator {
   )
 }
 
-function hasValidCpu(value: Record<string, unknown>): boolean {
-  return isRecord(value.cpu) && isPercent(value.cpu.utilization_percent)
-}
-
-function hasValidVolumes(value: Record<string, unknown>): boolean {
-  return (
-    Array.isArray(value.volumes) &&
-    value.volumes.length <= MAX_ITEMS &&
-    value.volumes.every(isVolume)
-  )
-}
-
-function hasValidAccelerators(value: Record<string, unknown>): boolean {
-  return (
-    Array.isArray(value.accelerators) &&
-    value.accelerators.length <= MAX_ITEMS &&
-    value.accelerators.every(isAccelerator)
-  )
-}
-
 function isSnapshot(value: unknown): value is SystemMonitorSnapshot {
   if (!isRecord(value)) return false
+  const { cpu, memory, volumes, accelerators } = value
   return (
-    hasValidCpu(value) &&
-    isMemory(value.memory) &&
-    hasValidVolumes(value) &&
-    hasValidAccelerators(value)
+    isRecord(cpu) &&
+    isPercent(cpu.utilization_percent) &&
+    isMemory(memory) &&
+    Array.isArray(volumes) &&
+    volumes.length <= MAX_ITEMS &&
+    volumes.every(isVolume) &&
+    Array.isArray(accelerators) &&
+    accelerators.length <= MAX_ITEMS &&
+    accelerators.every(isAccelerator)
   )
 }
 

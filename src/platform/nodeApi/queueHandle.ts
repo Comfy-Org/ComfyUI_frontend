@@ -86,7 +86,7 @@ export interface RunRejectedEvent {
 }
 
 /** @knipIgnoreUnusedButUsedByCustomNodes */
-export type AutoQueueMode = 'disabled' | 'change' | 'instant'
+export type AutoQueueMode = (typeof AUTO_QUEUE_MODES)[number]
 
 export interface QueueHandle {
   /**
@@ -97,14 +97,7 @@ export interface QueueHandle {
    * one was folded into it.
    */
   run(options?: RunOptions): Promise<boolean>
-  /**
-   * A run is about to be submitted. Keep the listener synchronous: the prompt
-   * build does not wait for it.
-   *
-   * Return a function to have it run when that attempt is over, whether the
-   * run started, was refused, or threw. Attempts can overlap: each cleanup
-   * runs once, for its own attempt. Unsubscribing runs any still outstanding.
-   */
+  /** Synchronous notification; returned cleanup runs once on attempt completion or unsubscribe. */
   onBeforeRun(listener: () => (() => void) | void): Unsubscribe
   /**
    * A run was submitted. This is `afterQueued` — for advancing state that
@@ -180,14 +173,10 @@ export interface QueueHandle {
   guard(check: () => boolean | Promise<boolean>): Unsubscribe
 }
 
-const AUTO_QUEUE_MODES: readonly AutoQueueMode[] = [
-  'disabled',
-  'change',
-  'instant'
-]
+const AUTO_QUEUE_MODES = ['disabled', 'change', 'instant'] as const
 
 function assertAutoQueueMode(mode: unknown): asserts mode is AutoQueueMode {
-  if (!AUTO_QUEUE_MODES.includes(mode as AutoQueueMode)) {
+  if (!AUTO_QUEUE_MODES.some((candidate) => candidate === mode)) {
     throw new ComfyApiError(
       `Automatic queuing mode must be one of ${AUTO_QUEUE_MODES.join(', ')}.`
     )

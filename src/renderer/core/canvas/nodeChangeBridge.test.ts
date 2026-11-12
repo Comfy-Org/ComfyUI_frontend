@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -8,10 +8,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
-import type {
-  NodeChangeScope,
-  provideNodeChangeSource
-} from '@/platform/nodeApi/nodeChanges'
+import { provideNodeChangeSource } from '@/platform/nodeApi/nodeChanges'
+import type { NodeChangeScope } from '@/platform/nodeApi/nodeChanges'
 
 import { useCanvasStore } from './canvasStore'
 import { installNodeChangeBridge } from './nodeChangeBridge'
@@ -23,15 +21,8 @@ let canvasStore: CanvasStore
 type NodeChangeSource = Parameters<typeof provideNodeChangeSource>[0]
 type NodeChangeReport = Parameters<Parameters<NodeChangeSource>[1]>[0]
 
-/** Captures the provider the bridge pushes down to the API. */
-const captured = vi.hoisted(() => ({
-  provider: undefined as NodeChangeSource | undefined
-}))
-vi.mock(import('@/platform/nodeApi/nodeChanges'), () => ({
-  provideNodeChangeSource: (provider: NodeChangeSource) => {
-    captured.provider = provider
-  }
-}))
+const captured: { provider?: NodeChangeSource } = {}
+vi.mock(import('@/platform/nodeApi/nodeChanges'), { spy: true })
 
 function graphWithNode() {
   const graph = new Graph()
@@ -40,15 +31,14 @@ function graphWithNode() {
   return { graph, node }
 }
 
-/** Installs the bridge and subscribes exactly as the API does. */
 function install(scope: NodeChangeScope = 'visible') {
   installNodeChangeBridge()
   const emitted: NodeChangeReport[] = []
   const stop = captured.provider!(scope, (change) => emitted.push(change))
+  onTestFinished(stop)
   return { emitted, stop }
 }
 
-/** A definition registered the way `createSubgraph` registers one. */
 function addSubgraph(root: LGraph, name: string) {
   const definition = root.createSubgraph(
     createTestSubgraph({ rootGraph: root, name }).asSerialisable()
@@ -61,6 +51,9 @@ function addSubgraph(root: LGraph, name: string) {
 describe('nodeChangeBridge', () => {
   beforeEach(() => {
     captured.provider = undefined
+    vi.mocked(provideNodeChangeSource).mockImplementation((provider) => {
+      captured.provider = provider
+    })
     canvasStore = useCanvasStore()
     canvasStore.currentGraph = null
   })
@@ -68,7 +61,7 @@ describe('nodeChangeBridge', () => {
   it('reports a tracked change on the graph that is on screen', () => {
     const { graph, node } = graphWithNode()
     canvasStore.currentGraph = graph
-    const { emitted, stop } = install()
+    const { emitted } = install()
 
     node.mode = LGraphEventMode.NEVER
 
@@ -81,34 +74,31 @@ describe('nodeChangeBridge', () => {
         to: LGraphEventMode.NEVER
       }
     ])
-    stop()
   })
 
-  it('follows the user into a subgraph, and lets go of the graph it left', async () => {
-    // LGraph.trigger dispatches on the node's OWN graph, so a listener bound to
-    // the root reports nothing while the user is inside a subgraph.
+  it('follows a graph switch before the next Vue flush and lets go of the previous graph', async () => {
     const outer = graphWithNode()
     canvasStore.currentGraph = outer.graph
-    const { emitted, stop } = install()
+    const { emitted } = install()
 
     const inner = graphWithNode()
     canvasStore.currentGraph = inner.graph
-    await nextTick()
 
     inner.node.mode = LGraphEventMode.NEVER
     expect(emitted).toHaveLength(1)
 
     outer.node.mode = LGraphEventMode.NEVER
     expect(emitted).toHaveLength(1)
-    stop()
+
+    await nextTick()
+    inner.node.mode = LGraphEventMode.ALWAYS
+    expect(emitted).toHaveLength(2)
   })
 
   it('ignores a property the published union does not name', () => {
-    // The host may start tracking a field before the API names it; that must
-    // not leak out as an event packs cannot type.
     const { graph, node } = graphWithNode()
     canvasStore.currentGraph = graph
-    const { emitted, stop } = install()
+    const { emitted } = install()
 
     graph.trigger('node:property:changed', {
       nodeId: node.id,
@@ -118,7 +108,6 @@ describe('nodeChangeBridge', () => {
     })
 
     expect(emitted).toEqual([])
-    stop()
   })
 
   it('detaches from the graph when the subscription ends', () => {
@@ -134,13 +123,10 @@ describe('nodeChangeBridge', () => {
 
   describe('document scope', () => {
     it('reports a change inside a subgraph nobody is looking at', () => {
-      // A relay muting a group from inside a subgraph the user has left keeps
-      // asserting its last answer: silent, intermittent, and healed by
-      // navigating, which is the worst way to find a bug.
       const root = new Graph()
       canvasStore.currentGraph = root
       const { definition, node } = addSubgraph(root, 'Upscale')
-      const { emitted, stop } = install('document')
+      const { emitted } = install('document')
 
       node.mode = LGraphEventMode.NEVER
 
@@ -153,50 +139,43 @@ describe('nodeChangeBridge', () => {
           to: LGraphEventMode.NEVER
         }
       ])
-      stop()
     })
 
     it('is not what the default scope reports', () => {
       const root = new Graph()
       canvasStore.currentGraph = root
       const { node } = addSubgraph(root, 'Upscale')
-      const { emitted, stop } = install()
+      const { emitted } = install()
 
       node.mode = LGraphEventMode.NEVER
 
       expect(emitted).toEqual([])
-      stop()
     })
 
     it('picks up a definition created after the subscription', () => {
       const root = new Graph()
       canvasStore.currentGraph = root
-      const { emitted, stop } = install('document')
+      const { emitted } = install('document')
 
       const { node } = addSubgraph(root, 'Late')
       node.mode = LGraphEventMode.NEVER
 
       expect(emitted).toHaveLength(1)
-      stop()
     })
 
     it('keeps watching a definition whose last instance is removed', () => {
-      // The document owns its subgraph definitions: removing the last instance
-      // takes the node off the canvas but leaves the definition registered, so
-      // edits inside it are still the document's and are still reported.
       const root = new Graph()
       canvasStore.currentGraph = root
       const { definition, node } = addSubgraph(root, 'Doomed')
       const instance = createTestSubgraphNode(definition)
       root.add(instance)
-      const { emitted, stop } = install('document')
+      const { emitted } = install('document')
 
       root.remove(instance)
       node.mode = LGraphEventMode.NEVER
 
       expect([...root.subgraphs.values()]).toContain(definition)
       expect(emitted).toHaveLength(1)
-      stop()
     })
   })
 })

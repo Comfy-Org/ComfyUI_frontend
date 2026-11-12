@@ -165,9 +165,9 @@ describe('comfy.queue', () => {
     const settings = useQueueSettingsStore()
     settings.mode = 'change'
 
-    expect(() => comfy.queue.setAutoQueueMode('bogus' as never)).toThrow(
-      ComfyApiError
-    )
+    expect(() =>
+      Reflect.apply(comfy.queue.setAutoQueueMode, comfy.queue, ['bogus'])
+    ).toThrow(ComfyApiError)
     expect(settings.mode).toBe('change')
   })
 
@@ -267,15 +267,12 @@ describe('comfy.queue', () => {
     const seen: unknown[] = []
     track(comfy.queue.onAfterRun((event) => seen.push(event)))
 
-    Reflect.apply(api.dispatchCustomEvent, api, [
-      'promptQueued',
-      {
-        number: 0,
-        batchCount: 1,
-        promptIds: ['abc'],
-        submissions: [{ promptId: 'abc', nodeCount: 3 }]
-      }
-    ])
+    api.dispatchCustomEvent('promptQueued', {
+      number: 0,
+      batchCount: 1,
+      promptIds: ['abc'],
+      submissions: [{ promptId: 'abc', nodeCount: 3 }]
+    })
 
     expect(seen).toEqual([
       {
@@ -286,39 +283,36 @@ describe('comfy.queue', () => {
     ])
   })
 
-  it.for(['', undefined])(
+  it.for(['', undefined, 'positive input must be connected'])(
     'publishes a frozen rejection when node details are %j',
     (details) => {
       const comfy = createComfyApi(() => graphWith('A'))
       const seen: RunRejectedEvent[] = []
       track(comfy.queue.onRejected((event) => seen.push(event)))
-      Reflect.apply(api.dispatchCustomEvent, api, [
-        'promptRejected',
-        {
-          status: 400,
-          response: {
-            error: {
-              type: 'prompt_outputs_failed_validation',
-              message: 'Prompt outputs failed validation',
-              details: 'See node errors'
-            },
-            node_errors: {
-              '12': {
-                class_type: 'KSampler',
-                dependent_outputs: [],
-                errors: [
-                  {
-                    type: 'required_input_missing',
-                    message: 'Required input is missing: positive',
-                    ...(details === undefined ? {} : { details }),
-                    extra_info: { input_name: 'positive' }
-                  }
-                ]
-              }
+      api.dispatchCustomEvent('promptRejected', {
+        status: 400,
+        response: {
+          error: {
+            type: 'prompt_outputs_failed_validation',
+            message: 'Prompt outputs failed validation',
+            details: 'See node errors'
+          },
+          node_errors: {
+            '12': {
+              class_type: 'KSampler',
+              dependent_outputs: [],
+              errors: [
+                {
+                  type: 'required_input_missing',
+                  message: 'Required input is missing: positive',
+                  ...(details === undefined ? {} : { details }),
+                  extra_info: { input_name: 'positive' }
+                }
+              ]
             }
           }
         }
-      ])
+      })
 
       expect(seen).toEqual([
         {
@@ -395,11 +389,16 @@ describe('comfy.queue', () => {
   })
 
   it.for([
-    { order: 'the order they started', ended: [1, 2] },
-    { order: 'reverse order', ended: [2, 1] }
+    {
+      order: 'the order they started',
+      firstEnded: 1,
+      secondEnded: 2,
+      ended: [1, 2]
+    },
+    { order: 'reverse order', firstEnded: 2, secondEnded: 1, ended: [2, 1] }
   ])(
     'runs each overlapping attempt cleanup for its own attempt, ended in $order',
-    ({ ended }) => {
+    ({ firstEnded, secondEnded, ended }) => {
       const comfy = createComfyApi(() => graphWith('A'))
       const cleaned: number[] = []
       let attempt = 0
@@ -412,13 +411,16 @@ describe('comfy.queue', () => {
 
       api.dispatchCustomEvent('promptQueueing', { requestId: 1, batchCount: 1 })
       api.dispatchCustomEvent('promptQueueing', { requestId: 2, batchCount: 1 })
-      for (const requestId of ended) {
-        api.dispatchCustomEvent('promptQueueAttemptEnded', {
-          requestId,
-          queued: 1,
-          rejected: 0
-        })
-      }
+      api.dispatchCustomEvent('promptQueueAttemptEnded', {
+        requestId: firstEnded,
+        queued: 1,
+        rejected: 0
+      })
+      api.dispatchCustomEvent('promptQueueAttemptEnded', {
+        requestId: secondEnded,
+        queued: 1,
+        rejected: 0
+      })
 
       expect(cleaned).toEqual(ended)
     }

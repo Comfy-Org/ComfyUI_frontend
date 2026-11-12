@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -12,9 +20,11 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
+import type { offerUnplacedLink } from '@/platform/nodeApi/defsRegistry'
+
 import { installUnplacedLinkBridge } from './unplacedLinkBridge'
 
-const offer = vi.hoisted(() => vi.fn())
+const offer = vi.hoisted(() => vi.fn<typeof offerUnplacedLink>())
 vi.mock(import('@/platform/nodeApi/defsRegistry'), () => ({
   offerUnplacedLink: offer
 }))
@@ -70,6 +80,7 @@ describe('offering a link the connector could not place', () => {
     graph = new LGraph()
     const element = document.createElement('canvas')
     document.body.appendChild(element)
+    onTestFinished(() => element.remove())
     element.getContext = vi
       .fn()
       .mockReturnValue(createMockCanvasRenderingContext2D())
@@ -83,9 +94,6 @@ describe('offering a link the connector could not place', () => {
   afterEach(() => stop())
 
   it('asks the node the user aimed at first, then the drag origin', () => {
-    // The node that knows how to place the link is the drop target in one
-    // direction and the origin in the other, so both are asked; the target
-    // goes first because that is where the user let go.
     const target = node(1, 'Sampler')
     const origin = node(2, 'Bundle')
 
@@ -124,23 +132,14 @@ describe('offering a link the connector could not place', () => {
     expect(dropOnBody(node(1, 'A'), node(2, 'B'))).toBe(true)
   })
 
-  it('reports the overwrite modifier, so packs stop tracking keys themselves', () => {
-    const target = node(1, 'A')
-    const origin = node(2, 'B')
+  it.for([
+    { modifiers: {}, expected: false },
+    { modifiers: { ctrlKey: true }, expected: true },
+    { modifiers: { metaKey: true }, expected: true }
+  ])('reports overwrite modifier $modifiers', ({ modifiers, expected }) => {
+    dropOnBody(node(1, 'A'), node(2, 'B'), modifiers)
 
-    dropOnBody(target, origin)
-
-    expect(offer.mock.calls[0][2]).toMatchObject({ replaceExisting: false })
-    offer.mockClear()
-
-    dropOnBody(target, origin, { ctrlKey: true })
-
-    expect(offer.mock.calls[0][2]).toMatchObject({ replaceExisting: true })
-    offer.mockClear()
-
-    dropOnBody(target, origin, { metaKey: true })
-
-    expect(offer.mock.calls[0][2]).toMatchObject({ replaceExisting: true })
+    expect(offer.mock.calls[0][2]).toMatchObject({ replaceExisting: expected })
   })
 
   it('names each end to the other', () => {

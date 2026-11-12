@@ -1,20 +1,7 @@
-/**
- * Offers a link the connector could not place to the packs at either end.
- *
- * The API lives in `platform/` and cannot import `renderer/`, so the canvas
- * pushes the offer down rather than the API reaching up — the same seam
- * `nodeChangeBridge` uses.
- *
- * Both ends are asked, and the order is not arbitrary. The node that knows how
- * to place the link is the drop target in one direction and the drag's origin
- * in the other: dropping a bundle node's output on a sampler, the bundle is the
- * origin; dragging the sampler's input onto the bundle, it is the target. The
- * user aimed at the target, so the target is asked first.
- */
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
 import { offerUnplacedLink } from '@/platform/nodeApi/defsRegistry'
 import type { UnplacedLinkEvent } from '@/platform/nodeApi/defsRegistry'
 
@@ -36,31 +23,17 @@ function offer(
   return offerUnplacedLink(String(node.id), node.type, event)
 }
 
-/**
- * The origin of the drag, when it is an ordinary node.
- *
- * A drag can start from a subgraph IO node, which has no type to look a pack
- * up by; those simply have no listener rather than a special case.
- */
 function originNode(link: RenderLink): LGraphNode | undefined {
-  const node = link.node as Partial<LGraphNode>
-  return typeof node.type === 'string' ? (node as LGraphNode) : undefined
+  return link.node instanceof LGraphNode ? link.node : undefined
 }
 
 export function installUnplacedLinkBridge(canvas: LGraphCanvas): () => void {
   const handler = (
-    detail: CustomEvent<{
-      node: LGraphNode
-      link: RenderLink
-      side: 'input' | 'output'
-      event: CanvasPointerEvent
-    }>
+    detail: CustomEvent<LinkConnectorEventMap['link-unplaced']>
   ) => {
     const { node, link, side, event } = detail.detail
     const origin = originNode(link)
     const type = String(link.fromSlot.type)
-    // Ctrl is the host's answer to "overwrite what is already wired", so packs
-    // stop keeping a global keyboard listener of their own to find out.
     const replaceExisting = event.ctrlKey || event.metaKey
 
     const placed =

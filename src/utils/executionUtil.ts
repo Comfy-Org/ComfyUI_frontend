@@ -182,6 +182,44 @@ export const graphToPrompt = async (
     }
   }
 
+  function executableSource(
+    source: ResolvedSource | undefined,
+    type: ExecutableLGraphNode['inputs'][number]['type']
+  ):
+    | ResolvedSource
+    | { readonly kind: 'literal'; readonly value: unknown }
+    | undefined {
+    const visited = new Set<string>()
+    while (source?.kind === 'output') {
+      const key = `${source.nodeId}:${source.output}`
+      if (visited.has(key)) {
+        return { kind: 'omitted', reason: `cycle through ${key}` }
+      }
+      visited.add(key)
+      const resolved = nodeDtoMap
+        .get(source.nodeId)
+        ?.resolveOutput(source.output, type, new Set())
+      if (!resolved) {
+        return { kind: 'omitted', reason: `no executable output ${key}` }
+      }
+      if (resolved.widgetInfo) {
+        return { kind: 'literal', value: resolved.widgetInfo.value }
+      }
+      const projected = resolutions.get(
+        `${resolved.origin_id}:${resolved.origin_slot}`
+      )
+      if (!projected) {
+        return {
+          kind: 'output',
+          nodeId: resolved.origin_id,
+          output: resolved.origin_slot
+        }
+      }
+      source = projected
+    }
+    return source
+  }
+
   const output: ComfyApiWorkflow = {}
   for (const node of nodeDtoMap.values()) {
     if (
@@ -214,15 +252,16 @@ export const graphToPrompt = async (
     for (const [i, input] of node.inputs.entries()) {
       const resolvedInput = node.resolveInput(i)
       if (!resolvedInput) {
-        const offered = supplied.get(`${node.id}:${i}`)
+        const offered = executableSource(
+          supplied.get(`${node.id}:${i}`),
+          input.type
+        )
         if (offered?.kind === 'output') {
           inputs[input.name] = [offered.nodeId, offered.output]
         } else if (offered?.kind === 'literal') {
-          inputs[input.name] = (
-            Array.isArray(offered.value)
-              ? { __value__: offered.value }
-              : offered.value
-          ) as ComfyApiWorkflow[string]['inputs'][string]
+          inputs[input.name] = Array.isArray(offered.value)
+            ? { __value__: offered.value }
+            : offered.value
         }
         continue
       }
@@ -233,16 +272,17 @@ export const graphToPrompt = async (
         continue
       }
 
-      const resolved = resolutions.get(
-        `${resolvedInput.origin_id}:${resolvedInput.origin_slot}`
+      const resolved = executableSource(
+        resolutions.get(
+          `${resolvedInput.origin_id}:${resolvedInput.origin_slot}`
+        ),
+        input.type
       )
       if (resolved?.kind === 'omitted') continue
       if (resolved?.kind === 'literal') {
-        inputs[input.name] = (
-          Array.isArray(resolved.value)
-            ? { __value__: resolved.value }
-            : resolved.value
-        ) as ComfyApiWorkflow[string]['inputs'][string]
+        inputs[input.name] = Array.isArray(resolved.value)
+          ? { __value__: resolved.value }
+          : resolved.value
         continue
       }
       if (resolved?.kind === 'output') {

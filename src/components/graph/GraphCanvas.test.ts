@@ -71,6 +71,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('firebase/auth'))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/platform/workspace/deploymentHint'), () => ({
   readDeploymentHint: vi.fn<typeof readDeploymentHint>(() => 'deployment'),
@@ -94,6 +95,7 @@ const mocks = vi.hoisted(() => ({
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
   runUrlActionLoaders: vi.fn(),
+  loadCustomThemePresets: vi.fn(async () => {}),
   setDirty: vi.fn()
 }))
 
@@ -182,8 +184,12 @@ vi.mock(import('@/composables/graph/useErrorClearingHooks'), () => ({
   installErrorClearingHooks: () => vi.fn()
 }))
 
-vi.mock<unknown>(import('@/services/colorPaletteService'), () => ({
-  useColorPaletteService: () => ({ loadColorPalette: vi.fn() })
+vi.mock<unknown>(import('@/platform/theme/themeService'), () => ({
+  useThemeService: () => ({
+    setActiveTheme: vi.fn(),
+    loadCustomThemePresets: mocks.loadCustomThemePresets
+  }),
+  useLegacyColorPaletteService: () => ({ loadColorPalette: vi.fn() })
 }))
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
@@ -262,6 +268,37 @@ async function mountGraphCanvas(
   }
 }
 
+it('keeps the canvas unavailable until saved custom themes are ready', async () => {
+  let finishLoading = () => {}
+  mocks.loadCustomThemePresets.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+  )
+
+  await mountGraphCanvas()
+
+  expect(useCanvasStore().canvas).toBeNull()
+  finishLoading()
+  await vi.waitFor(() => expect(useCanvasStore().canvas).toBe(app.canvas))
+})
+
+it('does not expose a disposed canvas after custom themes finish loading', async () => {
+  let finishLoading = () => {}
+  mocks.loadCustomThemePresets.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+  )
+  await mountGraphCanvas()
+
+  cleanup()
+  finishLoading()
+  await vi.advanceTimersByTimeAsync(0)
+
+  expect(useCanvasStore().canvas).toBeNull()
+})
+
 describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
     mocks.initializeWorkflow.mockResolvedValue('url-intent')
@@ -317,8 +354,8 @@ describe('GraphCanvas first-run tour wiring', () => {
   it.for([false, undefined])(
     'rejects workflow.open when the host reports %s',
     async (result) => {
-      vi.mocked(app.loadGraphData).mockResolvedValueOnce(result)
       await mountGraphCanvas()
+      vi.mocked(app.loadGraphData).mockResolvedValueOnce(result)
       const comfy = window.comfy
       assert.exists(comfy)
 
@@ -329,8 +366,8 @@ describe('GraphCanvas first-run tour wiring', () => {
   )
 
   it('resolves workflow.open when the host opens the workflow', async () => {
-    vi.mocked(app.loadGraphData).mockResolvedValueOnce(true)
     await mountGraphCanvas()
+    vi.mocked(app.loadGraphData).mockResolvedValueOnce(true)
     const comfy = window.comfy
     assert.exists(comfy)
 
