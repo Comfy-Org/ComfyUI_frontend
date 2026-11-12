@@ -5,11 +5,9 @@ import type { Subgraph } from '@comfyorg/graph-model/entityRegistry'
 
 import { useSubgraphInputValuesStore } from '@/components/graph/subgraph/subgraphInputValuesStore'
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
-import { nodeSlotHitTests } from '@/lib/litegraph/src/canvas/nodeSlotHitTests'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useSubgraphIoLayoutStore } from '@/renderer/core/layout/store/subgraphIoLayoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -65,14 +63,9 @@ export function useSubgraphInputLayout(
         height: height.value || size.value.height,
         slotTop: (headerHeight.value || LiteGraph.NODE_TITLE_HEIGHT) + 4
       })
-      nodeSlotHitTests.set(graph, (x, y) => {
-        const slot = getSlotLayoutAtPoint(graph, { x, y })
-        return slot ? graph.getNodeById(slot.nodeId) : null
-      })
       canvasStore.canvas?.setDirty(true, true)
       onCleanup(() => {
         layout.measurements.delete(key)
-        nodeSlotHitTests.delete(graph)
         canvasStore.canvas?.setDirty(true, true)
       })
     },

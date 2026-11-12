@@ -1,4 +1,5 @@
 import type {
+  LGraph,
   LGraphNode,
   Reroute,
   SubgraphInput,
@@ -10,6 +11,7 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 
 import {
@@ -33,6 +35,7 @@ import type {
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
 
 import { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 
@@ -51,7 +54,6 @@ import { ToInputRenderLink } from './ToInputRenderLink'
 import { ToOutputFromIoNodeLink } from './ToOutputFromIoNodeLink'
 import { ToOutputFromRerouteLink } from './ToOutputFromRerouteLink'
 import { ToOutputRenderLink } from './ToOutputRenderLink'
-import { nodeSlotHitTests } from './nodeSlotHitTests'
 
 /**
  * A Litegraph state object for the {@link LinkConnector}.
@@ -702,7 +704,7 @@ export class LinkConnector {
    * Connects the links being dropped
    * @param event Contains the drop location, in canvas space
    */
-  dropLinks(locator: ItemLocator, event: CanvasPointerEvent): void {
+  dropLinks(graph: LGraph & ItemLocator, event: CanvasPointerEvent): void {
     if (!this.isConnecting) {
       const mayContinue = this.events.dispatch('before-drop-links', {
         renderLinks: this.renderLinks,
@@ -714,20 +716,21 @@ export class LinkConnector {
     try {
       const { canvasX, canvasY } = event
 
-      const ioNode = locator.getIoNodeOnPos?.(canvasX, canvasY)
+      const ioNode = graph.getIoNodeOnPos?.(canvasX, canvasY)
       if (ioNode) {
         this.dropOnIoNode(ioNode, event)
         return
       }
 
-      const node =
-        locator.getNodeOnPos(canvasX, canvasY) ??
-        nodeSlotHitTests.get(locator)?.(canvasX, canvasY) ??
-        undefined
+      let node = graph.getNodeOnPos(canvasX, canvasY)
+      if (!node && litegraph().vueNodesMode) {
+        const slot = getSlotLayoutAtPoint(graph, { x: canvasX, y: canvasY })
+        if (slot) node = graph.getNodeById(slot.nodeId)
+      }
       if (node) {
         this.dropOnNode(node, event)
       } else {
-        const reroute = locator.getRerouteOnPos(canvasX, canvasY)
+        const reroute = graph.getRerouteOnPos(canvasX, canvasY)
         if (reroute && this.isRerouteValidDrop(reroute)) {
           this.dropOnReroute(reroute, event)
         } else {
