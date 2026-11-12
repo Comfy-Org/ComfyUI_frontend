@@ -58,6 +58,17 @@ describe('getDisplayImage', () => {
     })
   })
 
+  it('shows in-memory blob sources as they are without a worker round trip', async () => {
+    const postMessage = vi.spyOn(FakeWorker.prototype, 'postMessage')
+    const { getDisplayImage } = await loadModule()
+
+    await expect(getDisplayImage('blob:live-preview', 1024)).resolves.toEqual({
+      source: 'blob:live-preview',
+      url: 'blob:live-preview'
+    })
+    expect(postMessage).not.toHaveBeenCalled()
+  })
+
   it('revokes only the copies it created when evicting', async () => {
     behavior = (worker, request) =>
       respond(worker, request, {
@@ -66,12 +77,14 @@ describe('getDisplayImage', () => {
       })
     const { getDisplayImage } = await loadModule()
 
-    const borrowed = await getDisplayImage('blob:small-original', 1024)
+    const borrowed = await getDisplayImage('/view?small-original.png', 1024)
     const created = await getDisplayImage('/view?large.png', 1024)
     for (let i = 0; i < 128; i++) await getDisplayImage(`/view?${i}.png`, 1024)
 
-    expect(borrowed.url).toBe('blob:small-original')
-    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith('blob:small-original')
+    expect(borrowed.url).toBe('/view?small-original.png')
+    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith(
+      '/view?small-original.png'
+    )
     expect(URL.revokeObjectURL).toHaveBeenCalledWith(created.url)
   })
 })

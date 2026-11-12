@@ -86,7 +86,7 @@ export async function getDisplayImage(
   maxEdge: number
 ): Promise<DisplayImage> {
   const original = { source, url: source }
-  if (!canDownscaleImages()) return original
+  if (!canDownscaleImages() || source.startsWith('blob:')) return original
   const key = `${maxEdge}:${source}`
   const cached = cache.get(key)
   if (cached) {

@@ -5,7 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
-import { getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
 
 import type { MenuOption } from './menuOption'
 
@@ -18,6 +18,17 @@ const DEFAULT_IMAGE_MENU_AVAILABILITY: ImageMenuAvailability = {
 
 function canPasteImage(node?: LGraphNode): boolean {
   return typeof node?.pasteFiles === 'function'
+}
+
+async function fullResolutionImage(
+  img: HTMLImageElement
+): Promise<HTMLImageElement> {
+  const src = fullResolutionSrc(img)
+  if (src === img.src) return img
+  const full = new Image()
+  full.src = src
+  await full.decode()
+  return full
 }
 
 async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
@@ -72,11 +83,12 @@ export function useImageMenuOptions() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    ctx.drawImage(img, 0, 0)
-
     try {
+      const source = await fullResolutionImage(img)
+      canvas.width = source.naturalWidth
+      canvas.height = source.naturalHeight
+      ctx.drawImage(source, 0, 0)
+
       const blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob(resolve, 'image/png')
       })
