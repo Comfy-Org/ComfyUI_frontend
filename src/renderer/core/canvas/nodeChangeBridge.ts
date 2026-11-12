@@ -1,39 +1,13 @@
-/**
- * Feeds node property changes from the graph to the published node API.
- *
- * The API lives in `platform/` and cannot import `renderer/`, so the source is
- * pushed down rather than pulled up — the same seam `nodeMoveBridge` uses.
- *
- * `LGraph.trigger` dispatches on the node's own graph: a subgraph's nodes emit
- * on the subgraph's event target, not the root's. So a listener is bound per
- * graph, and which graphs those are is what the subscriber's scope names:
- *
- * - `visible` binds the graph on screen and rebinds on navigation.
- * - `document` binds the root graph and every subgraph definition, re-syncing
- *   whenever the set of definitions can have changed — created, released with
- *   the last node instancing them, or replaced wholesale by a workflow load.
- *
- * Each event carries the id of the graph it came from, because node ids are
- * unique only within a graph and the API resolves the node inside the graph
- * that owns it.
- */
 import { watch } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
-import { provideNodeChangeSource } from '@/platform/nodeApi/nodeChanges'
-import type { TrackedProperty } from '@/platform/nodeApi/nodeChanges'
+import {
+  isTrackedProperty,
+  provideNodeChangeSource
+} from '@/platform/nodeApi/nodeChanges'
 
 import { useCanvasStore } from './canvasStore'
-
-const TRACKED: readonly string[] = [
-  'title',
-  'mode',
-  'color',
-  'bgcolor',
-  'shape',
-  'showAdvanced'
-]
 
 export function installNodeChangeBridge(): void {
   provideNodeChangeSource((scope, onChange) => {
@@ -65,13 +39,11 @@ export function installNodeChangeBridge(): void {
         event: CustomEvent<LGraphEventMap['node:property:changed']>
       ) => {
         const { nodeId, property, oldValue, newValue } = event.detail
-        // Only fields the API names. A property the host starts tracking later
-        // must be added to the published union deliberately, not leak out.
-        if (!TRACKED.includes(property)) return
+        if (!isTrackedProperty(property)) return
         onChange({
           graphId: graph.id,
           nodeId: String(nodeId),
-          property: property as TrackedProperty,
+          property,
           from: oldValue,
           to: newValue
         })
@@ -85,7 +57,6 @@ export function installNodeChangeBridge(): void {
       const onNodeRemoved = (
         event: CustomEvent<LGraphEventMap['node:removed']>
       ) => {
-        // Removing the last instance of a subgraph releases its definition.
         if (event.detail.node.isSubgraphNode()) sync()
       }
       graph.events.addEventListener('subgraph-created', sync)
@@ -100,7 +71,9 @@ export function installNodeChangeBridge(): void {
     }
 
     sync()
-    const stopWatching = watch(() => canvasStore.currentGraph, sync)
+    const stopWatching = watch(() => canvasStore.currentGraph, sync, {
+      flush: 'sync'
+    })
 
     return () => {
       stopWatching()

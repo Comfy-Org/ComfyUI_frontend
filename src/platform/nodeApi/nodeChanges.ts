@@ -33,14 +33,24 @@ import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
 import type { Unsubscribe } from './widgetHandle'
 
-/** A field the host tracks and reports. Not every property is one. */
-export type TrackedProperty =
-  | 'title'
-  | 'mode'
-  | 'color'
-  | 'bgcolor'
-  | 'shape'
-  | 'showAdvanced'
+const trackedProperties = [
+  'title',
+  'mode',
+  'color',
+  'bgcolor',
+  'shape',
+  'showAdvanced'
+] as const
+
+export type TrackedProperty = (typeof trackedProperties)[number]
+
+const trackedPropertySet = new Set<string>(trackedProperties)
+
+export function isTrackedProperty(
+  property: string
+): property is TrackedProperty {
+  return trackedPropertySet.has(property)
+}
 
 /**
  * Which graphs a listener hears from.
