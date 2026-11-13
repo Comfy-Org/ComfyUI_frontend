@@ -3,11 +3,9 @@ import { expect } from '@playwright/test'
 
 import type {
   BillingHandoffCreateResponse,
-  CreateTopupQuoteRequest,
   ErrorResponse,
   ListSavedPaymentMethodsResponse,
-  ListTopupCheckoutsResponse,
-  TopupQuoteResponse
+  ListTopupCheckoutsResponse
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -16,6 +14,7 @@ import type { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { WORKSPACE_SWITCHER_REMOTE_CONFIG } from '@e2e/fixtures/data/workspaceSwitcher'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspaceSwitcherTest } from '@e2e/fixtures/workspaceSwitcherFixture'
+import { mockTopupQuote } from '@e2e/fixtures/utils/topupQuoteRoute'
 
 const CLOUD_BASE_URL = 'https://cloud.local-billing.test'
 const BILLING_WEB_ORIGIN = 'https://billing.local-billing.test'
@@ -127,18 +126,7 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
         } satisfies ListTopupCheckoutsResponse
       })
     )
-    await page.route('**/api/billing/topup/quote', (route) => {
-      const { amount_cents } = route
-        .request()
-        .postDataJSON() as CreateTopupQuoteRequest
-      return route.fulfill({
-        json: {
-          amount_cents,
-          credits: Math.round(amount_cents * 2.11),
-          expires_at: '2099-01-01T00:00:00Z'
-        } satisfies TopupQuoteResponse
-      })
-    })
+    await mockTopupQuote(page)
     await page.context().route(`${BILLING_WEB_ORIGIN}/**`, (route) =>
       route.fulfill({
         contentType: 'text/html',
