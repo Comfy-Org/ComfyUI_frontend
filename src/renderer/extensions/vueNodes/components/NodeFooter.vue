@@ -1,6 +1,7 @@
 <template>
+  <!-- Case 1: Subgraph + Error (Dual Tabs) -->
   <div
-    v-if="subgraphAction && hasAnyError && showErrorsTabEnabled"
+    v-if="isSubgraph && hasAnyError && showErrorsTabEnabled"
     :class="errorWrapperStyles"
   >
     <Button
@@ -34,7 +35,7 @@
       "
       :style="headerColorStyle"
       @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('navigateSubgraph')"
+      @click.stop="emitIfNotDragged('enterSubgraph')"
     >
       <div class="flex size-full items-center justify-center gap-2">
         <span class="truncate">{{ t('g.enter') }}</span>
@@ -43,9 +44,10 @@
     </Button>
   </div>
 
+  <!-- Case 1b: Advanced + Error (Dual Tabs, Regular Nodes) -->
   <div
     v-else-if="
-      !subgraphAction &&
+      !isSubgraph &&
       hasAnyError &&
       showErrorsTabEnabled &&
       (showAdvancedInputsButton || showAdvancedState)
@@ -102,6 +104,7 @@
     </Button>
   </div>
 
+  <!-- Case 2: Error Only (Full Width) -->
   <div
     v-else-if="hasAnyError && showErrorsTabEnabled"
     :class="errorWrapperStyles"
@@ -126,8 +129,9 @@
     </Button>
   </div>
 
+  <!-- Case 3: Subgraph only (Full Width) -->
   <div
-    v-else-if="subgraphAction"
+    v-else-if="isSubgraph"
     :class="
       cn(
         footerWrapperBase,
@@ -137,7 +141,7 @@
   >
     <Button
       variant="textonly"
-      :data-testid="`subgraph-${subgraphAction}-button`"
+      data-testid="subgraph-enter-button"
       :class="
         cn(
           tabStyles,
@@ -148,15 +152,16 @@
       "
       :style="headerColorStyle"
       @pointerup="snapshotDragOnPointerUp"
-      @click.stop="emitIfNotDragged('navigateSubgraph')"
+      @click.stop="emitIfNotDragged('enterSubgraph')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ subgraphLabel }}</span>
+        <span class="truncate">{{ t('g.enterSubgraph') }}</span>
         <i class="icon-[comfy--workflow]" />
       </div>
     </Button>
   </div>
 
+  <!-- Case 4: Advanced Footer (Regular Nodes) -->
   <div
     v-else-if="showAdvancedInputsButton || showAdvancedState"
     :class="
@@ -210,7 +215,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { t } = useI18n()
 
 interface Props {
-  subgraphAction?: 'enter' | 'exit'
+  isSubgraph: boolean
   errorSeverity: 'none' | 'missing' | 'error'
   showErrorsTabEnabled: boolean
   showAdvancedInputsButton?: boolean
@@ -220,7 +225,7 @@ interface Props {
 }
 
 const {
-  subgraphAction,
+  isSubgraph,
   errorSeverity,
   showErrorsTabEnabled,
   showAdvancedInputsButton,
@@ -230,15 +235,12 @@ const {
 } = defineProps<Props>()
 
 const emit = defineEmits<{
-  navigateSubgraph: []
+  enterSubgraph: []
   openErrors: []
   toggleAdvanced: []
 }>()
 
 const hasAnyError = computed(() => errorSeverity !== 'none')
-const subgraphLabel = computed(() =>
-  t(subgraphAction === 'exit' ? 'g.exitSubgraph' : 'g.enterSubgraph')
-)
 const errorLabel = computed(() =>
   t(errorSeverity === 'missing' ? 'rightSidePanel.errors' : 'g.error')
 )
@@ -255,12 +257,12 @@ function snapshotDragOnPointerUp() {
 }
 
 function emitIfNotDragged(
-  name: 'navigateSubgraph' | 'openErrors' | 'toggleAdvanced'
+  name: 'enterSubgraph' | 'openErrors' | 'toggleAdvanced'
 ) {
   const wasDrag = suppressNextClick
   suppressNextClick = false
   if (wasDrag) return
-  if (name === 'navigateSubgraph') emit('navigateSubgraph')
+  if (name === 'enterSubgraph') emit('enterSubgraph')
   else if (name === 'openErrors') emit('openErrors')
   else emit('toggleAdvanced')
 }

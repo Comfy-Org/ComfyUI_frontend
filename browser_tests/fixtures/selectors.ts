@@ -174,8 +174,7 @@ export const TestIds = {
     inputPort: 'subgraph-input-port',
     outputPort: 'subgraph-output-port',
     addInput: 'subgraph-add-input',
-    addOutput: 'subgraph-add-output',
-    exitButton: 'subgraph-exit-button'
+    addOutput: 'subgraph-add-output'
   },
   node: {
     titleInput: 'node-title-input',

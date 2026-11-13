@@ -35,7 +35,6 @@ export class SubgraphHelper {
   public readonly outputPorts: Locator
   public readonly addInputSocket: Locator
   public readonly addOutputSocket: Locator
-  public readonly exitButton: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.editor = new SubgraphEditor(comfyPage)
@@ -50,7 +49,6 @@ export class SubgraphHelper {
     this.addOutputSocket = this.outputPanel
       .getByTestId(subgraphIo.addOutput)
       .getByTestId(node.slotConnectionDot)
-    this.exitButton = this.inputPanel.getByTestId(subgraphIo.exitButton)
   }
 
   private get page(): Page {
