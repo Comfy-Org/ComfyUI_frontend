@@ -114,11 +114,11 @@ import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readW
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { toFiniteNumber } from '@/services/customerEventParams'
-import type { AuditLog } from '@/services/customerEventsService'
+import type { AuditLog } from '@/platform/billing/api/customerEventsService'
 import {
   EventType,
   useCustomerEventsService
-} from '@/services/customerEventsService'
+} from '@/platform/billing/api/customerEventsService'
 
 const { t } = useI18n()
 const { flags } = useFeatureFlags()

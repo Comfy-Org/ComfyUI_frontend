@@ -4,7 +4,7 @@ import {
   hasParamsBeyondDetailsColumn,
   presentTooltipParamKeys
 } from '@/services/customerEventParams'
-import type * as real from '@/services/customerEventsService'
+import type * as real from '@/platform/billing/api/customerEventsService'
 
 type CustomerEventsService = ReturnType<typeof real.useCustomerEventsService>
 
