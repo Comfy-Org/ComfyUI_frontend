@@ -123,6 +123,7 @@ export function registerDefinedType(
       for (const input of inputs) this.addInput(input.name, input.type)
       for (const output of outputs) this.addOutput(output.name, output.type)
       if (execution === 'frontend') this.isVirtualNode = true
+      else this.comfyClass = definition.type
     }
   }
   LiteGraph.registerNodeType(definition.type, DefinedNode)
@@ -197,7 +198,7 @@ function checkedSlots(
 }
 
 function checkedExecution(execution: unknown): CheckedDefinition['execution'] {
-  if (execution === undefined) return 'backend'
+  if (execution === undefined) return 'frontend'
   const known = EXECUTIONS.find((name) => name === execution)
   if (known === undefined) {
     throw invalidArgument(

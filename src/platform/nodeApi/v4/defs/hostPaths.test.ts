@@ -16,6 +16,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import { graphToPrompt } from '@/utils/executionUtil'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type {
@@ -157,6 +158,24 @@ describe('node hooks on the host paths', () => {
       expect(events.map(({ name, connected }) => [name, connected])).toEqual([
         ['node_side', true],
         ['node_side', false]
+      ])
+    })
+  })
+
+  describe('a defined type in the prompt', () => {
+    it('sends a backend node to the server as its type, and leaves a frontend one out', async () => {
+      defs.define({ type: 'Pack/Backend', execution: 'backend' })
+      defs.define({ type: 'Pack/Frontend' })
+      for (const type of ['Pack/Backend', 'Pack/Frontend']) {
+        const node = LiteGraph.createNode(type)
+        assert(node)
+        graph.add(node)
+      }
+
+      const { output } = await graphToPrompt(graph)
+
+      expect(Object.values(output).map((entry) => entry.class_type)).toEqual([
+        'Pack/Backend'
       ])
     })
   })
