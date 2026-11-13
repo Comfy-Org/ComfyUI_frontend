@@ -43,6 +43,7 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
@@ -50,7 +51,8 @@ const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
-  }
+  },
+  isDesktop: false
 }))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/composables/usePausedBanner'), {
@@ -2130,6 +2132,35 @@ describe('BillingTab', () => {
           screen.queryByTestId('billing-auto-top-up-member-card')
         ).not.toBeInTheDocument()
       })
+    })
+
+    it('drops the Platform links but keeps the status once billing opens through a local handoff', async () => {
+      onTestFinished(() => setLocalBillingWebEnabled(false))
+      arrange()
+      const credits = screen.getByTestId('billing-credits-section')
+      const plan = screen.getByTestId('billing-plan-section')
+      expect(
+        await within(credits).findByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent('Off')
+      expect(
+        within(credits).getByRole('link', { name: /Turn on/ })
+      ).toBeInTheDocument()
+      expect(
+        within(plan).getByRole('link', { name: 'Manage' })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('billing-handoff')).toBeInTheDocument()
+
+      setLocalBillingWebEnabled(true)
+      await nextTick()
+
+      expect(
+        within(credits).getByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent('Off')
+      expect(
+        within(credits).queryByRole('link', { name: /Turn on/ })
+      ).toBeNull()
+      expect(within(plan).queryByRole('link', { name: 'Manage' })).toBeNull()
+      expect(screen.queryByTestId('billing-handoff')).toBeNull()
     })
 
     it('reads the auto top-up settings once for the card and the banner', async () => {

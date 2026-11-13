@@ -1,9 +1,5 @@
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
-import type {
-  CreateTopupQuoteRequest,
-  TopupQuoteResponse
-} from '@comfyorg/ingest-types'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -16,6 +12,7 @@ import {
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { mockTopupQuote } from '@e2e/fixtures/utils/topupQuoteRoute'
 
 const LOCAL_AUTH_BOOT_TIMEOUT = 45_000
 type CreateCustomerResponse =
@@ -56,18 +53,7 @@ export const localAuthFixture = base.extend<{ comfyPage: ComfyPage }>({
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill({ json: EMPTY_BILLING_PLANS })
     )
-    await page.route('**/api/billing/topup/quote', (route) => {
-      const { amount_cents } = route
-        .request()
-        .postDataJSON() as CreateTopupQuoteRequest
-      return route.fulfill({
-        json: {
-          amount_cents,
-          credits: Math.round(amount_cents * 2.11),
-          expires_at: '2099-01-01T00:00:00Z'
-        } satisfies TopupQuoteResponse
-      })
-    })
+    await mockTopupQuote(page)
     await page.route('**/customers', (route) =>
       route.fulfill({
         status: 201,
