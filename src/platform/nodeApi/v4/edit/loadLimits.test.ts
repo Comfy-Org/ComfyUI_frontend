@@ -22,7 +22,7 @@ import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
 
 const TYPE = 'EditTest/Sampler'
 
-describe('edits a load would not keep', () => {
+describe('edits and what a load keeps of them', () => {
   let graph: LGraph
   let comfy: Comfy
   let sampler: LGraphNode
@@ -65,60 +65,70 @@ describe('edits a load would not keep', () => {
     slots.map(({ name }) => name)
 
   describe('on a node of a backend type', () => {
-    it('rebuilds a declared slot from the type on a load (the host behaviour the refusals follow)', () => {
-      sampler.inputs[0].name = 'renamed'
-      sampler.outputs[0].type = 'IMAGE'
-
-      const node = reloaded()
-
-      expect(names(node.inputs)).toEqual([
-        'model',
-        'latent',
-        'steps',
-        'renamed'
-      ])
-      expect(node.outputs[0].type).toBe('LATENT')
-    })
-
     it.for([
       ['rename', { name: 'renamed' }],
       ['retype', { type: 'IMAGE' }],
       ['reshape', { shape: 'list' }],
       ['retranslate', { localizedName: 'Modell' }]
     ] as const)(
-      'refuses to %s a declared input or output, changing nothing',
+      'lets a pack %s a slot the type declares, as the host does',
       ([, patch]) => {
-        const before = JSON.stringify(graph.serialize())
-
-        expect(() => handle.inputs.at(0)?.modify(patch)).toThrow(TypeError)
-        expect(() => handle.outputs.at(0)?.modify(patch)).toThrow(TypeError)
-        expect(JSON.stringify(graph.serialize())).toBe(before)
+        expect(handle.inputs.at(0)?.modify(patch)).toBe(true)
+        expect(handle.outputs.at(0)?.modify(patch)).toBe(true)
       }
     )
 
-    it('refuses to rename the declared input of a widget, or make a declared input the socket of another', () => {
-      expect(() =>
-        handle.inputs.byName('steps')?.modify({ name: 'count' })
-      ).toThrow(TypeError)
-      expect(() => handle.inputs.at(0)?.modify({ widget: 'steps' })).toThrow(
-        TypeError
-      )
+    it("rebuilds a declared input from the type on a load: a rename comes back as the type's input plus the renamed one", () => {
+      handle.inputs.at(0)?.modify({ name: 'renamed' })
+
+      expect(names(reloaded().inputs)).toEqual([
+        'model',
+        'latent',
+        'steps',
+        'renamed'
+      ])
     })
 
-    it('treats a node whose type carries other data as a type it does not rebuild', () => {
-      class Annotated extends LGraphNode {
-        static override nodeData = { name: 'Annotated' }
-      }
-      const node = new Annotated('Annotated')
-      node.addInput('value', 'INT')
-      graph.add(node)
+    it("gives a declared slot its type's type, shape and translated name back on a load", () => {
+      handle.outputs.at(0)?.modify({
+        type: 'IMAGE',
+        shape: 'list',
+        localizedName: 'Bild'
+      })
+      handle.inputs.at(0)?.modify({ type: 'IMAGE', shape: 'list' })
 
-      expect(
-        comfy.graph
-          .node(String(node.id))
-          ?.inputs.at(0)
-          ?.modify({ name: 'renamed' })
-      ).toBe(true)
+      const node = reloaded()
+
+      expect(node.outputs[0]).toMatchObject({
+        type: 'LATENT',
+        shape: undefined
+      })
+      expect(node.outputs[0].localized_name).not.toBe('Bild')
+      expect(node.inputs[0]).toMatchObject({ type: 'MODEL', shape: undefined })
+    })
+
+    it('gives a declared input its widget back on a load, after a pack made it a plain socket', () => {
+      expect(handle.inputs.byName('steps')?.modify({ widget: null })).toBe(true)
+
+      expect(reloaded().inputs[2].widget).toEqual({ name: 'steps' })
+    })
+
+    it('removes a declared slot, which a load brings back', () => {
+      expect(handle.inputs.remove('model')).toBe(true)
+      expect(handle.outputs.remove({ index: 1 })).toBe(true)
+      expect(names(sampler.inputs)).toEqual(['latent', 'steps'])
+
+      const node = reloaded()
+
+      expect(names(node.inputs)).toEqual(['model', 'latent', 'steps'])
+      expect(node.outputs).toHaveLength(2)
+    })
+
+    it("reorders declared slots, which a load puts back in the type's order", () => {
+      expect(handle.inputs.reorder(['latent', 'model', 'steps'])).toBe(true)
+      expect(names(sampler.inputs)).toEqual(['latent', 'model', 'steps'])
+
+      expect(names(reloaded().inputs)).toEqual(['model', 'latent', 'steps'])
     })
 
     it('keeps a label, a color and a position on a declared slot across a load', () => {
@@ -138,44 +148,11 @@ describe('edits a load would not keep', () => {
       })
     })
 
-    it('refuses to remove a declared slot, which a load brings back', () => {
-      expect(() => handle.inputs.remove('model')).toThrow(TypeError)
-      expect(() => handle.outputs.remove({ index: 1 })).toThrow(TypeError)
-      expect(() => handle.inputs.remove('steps')).toThrow(TypeError)
-      expect(names(sampler.inputs)).toEqual(['model', 'latent', 'steps'])
-      expect(sampler.outputs).toHaveLength(2)
-    })
-
-    it('refuses a reorder that moves a declared slot, and keeps one that moves only added slots', () => {
-      handle.inputs.add('first', 'INT')
-      handle.inputs.add('second', 'INT')
-      handle.outputs.add('extra', 'INT')
-
-      expect(() =>
-        handle.inputs.reorder(['latent', 'model', 'steps', 'first', 'second'])
-      ).toThrow(TypeError)
-      expect(() =>
-        handle.inputs.reorder(['model', 'latent', 'first', 'steps', 'second'])
-      ).toThrow(TypeError)
-      expect(() =>
-        handle.outputs.reorder(['IMAGE', 'LATENT', 'extra'])
-      ).toThrow(TypeError)
-      expect(
-        handle.inputs.reorder(['model', 'latent', 'steps', 'second', 'first'])
-      ).toBe(true)
-
-      expect(names(reloaded().inputs)).toEqual([
-        'model',
-        'latent',
-        'steps',
-        'second',
-        'first'
-      ])
-    })
-
     it('keeps every edit of a slot a pack added across a load', () => {
+      handle.inputs.add('first', 'INT')
       const added = handle.inputs.add('extra', 'INT')
       added?.modify({ name: 'renamed', type: 'FLOAT', label: 'Shown' })
+      handle.inputs.reorder(['model', 'latent', 'steps', 'renamed', 'first'])
       const out = handle.outputs.add('more', 'INT')
       out?.modify({ name: 'moreRenamed' })
 
@@ -186,6 +163,13 @@ describe('edits a load would not keep', () => {
         type: 'FLOAT',
         label: 'Shown'
       })
+      expect(names(node.inputs)).toEqual([
+        'model',
+        'latent',
+        'steps',
+        'renamed',
+        'first'
+      ])
       expect(names(node.outputs)).toEqual(['LATENT', 'IMAGE', 'moreRenamed'])
     })
 
@@ -197,14 +181,63 @@ describe('edits a load would not keep', () => {
       expect(names(reloaded().inputs)).toEqual(['model', 'latent', 'steps'])
     })
 
-    it('refuses to stop saving the widget values, which a load would lose', () => {
-      expect(() => handle.setSerializeWidgets(false)).toThrow(TypeError)
-      expect(sampler.serialize_widgets).toBe(true)
-      expect(handle.setSerializeWidgets(true)).toBe(true)
-    })
+    it('stops saving the widget values, and a load turns saving back on with every widget at its default', () => {
+      const steps = sampler.widgets?.find(({ name }) => name === 'steps')
+      assert(steps)
+      steps.value = 37
 
-    it('lets a node of a type the backend does not declare stop saving its widget values', () => {
-      const plain = new LGraphNode('Plain')
+      expect(handle.setSerializeWidgets(false)).toBe(true)
+      expect(sampler.serialize_widgets).toBe(false)
+
+      const node = reloaded()
+
+      expect(node.serialize_widgets).toBe(true)
+      expect(node.widgets?.find(({ name }) => name === 'steps')?.value).toBe(20)
+    })
+  })
+
+  describe('on a node of a type a pack defines', () => {
+    it('removes a slot the type makes, which a load brings back beside the remaining one', () => {
+      const type = 'EditTest/Defined'
+      comfy.defs.define({
+        type,
+        inputs: [
+          { name: 'a', type: 'INT' },
+          { name: 'b', type: 'INT' }
+        ]
+      })
+      const defined = comfy.graph.add(type)
+      assert(defined)
+
+      expect(defined.inputs.remove('a')).toBe(true)
+      expect(defined.inputs.names()).toEqual(['b'])
+
+      graph.configure(JSON.parse(JSON.stringify(graph.serialize())))
+
+      expect(defined.inputs.names()).toEqual(['b', 'b'])
+    })
+  })
+
+  describe('on a Note, a MarkdownNote or a PrimitiveNode', () => {
+    it.for(['Note', 'MarkdownNote', 'PrimitiveNode'])(
+      'refuses to stop saving the widget values of a %s, whose next load would erase what the user entered',
+      (type) => {
+        const node = new LGraphNode(type, type)
+        node.serialize_widgets = true
+        graph.add(node)
+        const found = comfy.graph.node(String(node.id))
+        assert(found)
+
+        expect(() => found.setSerializeWidgets(false)).toThrow(
+          /^setSerializeWidgets needs a node that is not a Note/
+        )
+        expect(node.serialize_widgets).toBe(true)
+        expect(found.setSerializeWidgets(true)).toBe(true)
+      }
+    )
+
+    it('lets any other node stop saving its widget values', () => {
+      const plain = new LGraphNode('Plain', 'Notes')
       plain.serialize_widgets = true
       graph.add(plain)
 
