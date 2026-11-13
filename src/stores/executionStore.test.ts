@@ -1238,6 +1238,31 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.isErrorOverlayOpen).toBe(true)
   })
 
+  it('ignores a skipped-outputs message with no error to show', () => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    errorStore.dismissErrorOverlay()
+
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: 'job-a',
+          node_errors: {
+            '5': {
+              class_type: 'SaveImage',
+              dependent_outputs: ['5'],
+              errors: [42]
+            }
+          }
+        }
+      })
+    )
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+    expect(errorStore.isErrorOverlayOpen).toBe(false)
+  })
+
   it('does not route an unattributable failure to the visible workflow', () => {
     fireExecutionError('job-unknown')
 

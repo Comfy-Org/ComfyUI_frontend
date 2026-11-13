@@ -900,10 +900,9 @@ export const useExecutionStore = defineStore('execution', () => {
   function handlePromptOutputsSkipped(
     e: CustomEvent<PromptOutputsSkippedWsMessage>
   ) {
-    recordSkippedOutputs(
-      e.detail.prompt_id,
-      normalizeRelayedNodeErrors(e.detail.node_errors)
-    )
+    const nodeErrors = normalizeRelayedNodeErrors(e.detail.node_errors)
+    if (Object.keys(nodeErrors).length === 0) return
+    recordSkippedOutputs(e.detail.prompt_id, nodeErrors)
   }
 
   function recordSkippedOutputs(

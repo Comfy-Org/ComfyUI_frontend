@@ -107,18 +107,17 @@ function toNodeValidationErrors(error: unknown): NodeValidationError[] {
 /**
  * Turns relayed node errors into `NodeError`s: a string entry becomes an
  * error whose message is that string, and any other non-object is dropped.
+ * A node left with no errors is dropped too, so it is not marked red with
+ * nothing to show.
  */
 export function normalizeRelayedNodeErrors(
   nodeErrors: Record<string, RelayedNodeError>
 ): Record<string, NodeError> {
   return Object.fromEntries(
-    Object.entries(nodeErrors).map(([nodeId, nodeError]) => [
-      nodeId,
-      {
-        ...nodeError,
-        errors: nodeError.errors.flatMap(toNodeValidationErrors)
-      }
-    ])
+    Object.entries(nodeErrors).flatMap(([nodeId, nodeError]) => {
+      const errors = nodeError.errors.flatMap(toNodeValidationErrors)
+      return errors.length > 0 ? [[nodeId, { ...nodeError, errors }]] : []
+    })
   )
 }
 

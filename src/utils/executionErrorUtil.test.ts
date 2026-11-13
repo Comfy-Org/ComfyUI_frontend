@@ -4,7 +4,8 @@ import {
   isCloudValidationError,
   tryExtractValidationError,
   classifyCloudValidationError,
-  isValueStillOutOfRange
+  isValueStillOutOfRange,
+  normalizeRelayedNodeErrors
 } from '@/utils/executionErrorUtil'
 
 describe('executionErrorUtil', () => {
@@ -369,6 +370,37 @@ describe('executionErrorUtil', () => {
         }
       ]
       expect(isValueStillOutOfRange(5, errors, { min: 1, max: 10 })).toBe(false)
+    })
+  })
+
+  describe('normalizeRelayedNodeErrors', () => {
+    it('drops a node none of whose errors can be shown', () => {
+      const inputError = {
+        type: 'required_input_missing',
+        message: 'Required input is missing',
+        details: 'images'
+      }
+
+      expect(
+        normalizeRelayedNodeErrors({
+          '9': {
+            class_type: 'SaveImage',
+            dependent_outputs: ['9'],
+            errors: [inputError]
+          },
+          '10': {
+            class_type: 'SaveImage',
+            dependent_outputs: ['10'],
+            errors: [42, null]
+          }
+        })
+      ).toEqual({
+        '9': {
+          class_type: 'SaveImage',
+          dependent_outputs: ['9'],
+          errors: [inputError]
+        }
+      })
     })
   })
 })
