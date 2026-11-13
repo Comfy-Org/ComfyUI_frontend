@@ -88,6 +88,32 @@ describe('a frontend node type with a resolver', () => {
     return { source, wire, consumer }
   }
 
+  function bypassedChoiceFeeding(type: string) {
+    const text = addBackendNode(graph, 'Text', { outputs: ['text'] })
+    const wanted = new LGraphNode('Number')
+    wanted.type = 'Number'
+    wanted.addOutput('number', 'INT')
+    graph.add(wanted)
+    const choice = new LGraphNode('Choice')
+    choice.type = 'Choice'
+    choice.addInput('text', 'STRING')
+    choice.addInput('number', 'INT')
+    choice.addOutput('out', 'INT')
+    graph.add(choice)
+    choice.mode = LGraphEventMode.BYPASS
+    text.connect(0, choice, 0)
+    wanted.connect(0, choice, 1)
+    const through = addNodeOfType(graph, type)
+    choice.connect(0, through, 0)
+    const consumer = new LGraphNode('Consumer')
+    consumer.type = 'Consumer'
+    consumer.comfyClass = 'Consumer'
+    consumer.addInput('x', 'INT')
+    graph.add(consumer)
+    through.connect(0, consumer, 0)
+    return { consumer, wanted }
+  }
+
   async function consumerInput(consumer: LGraphNode, target = graph) {
     const output = await promptOf(target)
     return output[String(consumer.id)].inputs.x
@@ -150,7 +176,22 @@ describe('a frontend node type with a resolver', () => {
       expect(await consumerInput(consumer)).toBeUndefined()
     })
 
-    it('fails the build on a cycle through resolvers, as a cycle of links does', async () => {
+    it("passes the consumer's type on, so a bypassed node behind a forward picks the input of that type", async () => {
+      comfy.defs.define({
+        type: 'Pack/AnyWire',
+        execution: 'frontend',
+        inputs: [{ name: 'in', type: '*' }],
+        outputs: [{ name: 'out', type: '*' }],
+        resolve: ({ self }) => ({
+          0: { forwardTo: { nodeId: self.id, input: 0 } }
+        })
+      })
+      const { consumer, wanted } = bypassedChoiceFeeding('Pack/AnyWire')
+
+      expect(await consumerInput(consumer)).toEqual([String(wanted.id), 0])
+    })
+
+    it('fails the build with the circular reference error of the host on a cycle through resolvers', async () => {
       defineWire(({ self }) => ({
         0: { forwardTo: { nodeId: self.id, input: 0 } }
       }))
@@ -223,7 +264,7 @@ describe('a frontend node type with a resolver', () => {
       expect(await consumerInput(consumer)).toEqual([String(source.id), 0])
     })
 
-    it('matches a frontend node with no resolver at all', async () => {
+    it('passes the input through for a frontend node with no resolver at all', async () => {
       comfy.defs.define({
         type: WIRE,
         execution: 'frontend',
@@ -345,7 +386,11 @@ describe('a frontend node type with a resolver', () => {
       { name: 'a list', answer: () => [{ omit: true }] },
       {
         name: 'an output it does not have',
-        answer: () => ({ 3: { omit: true } })
+        answer: () => ({ 1: { omit: true } })
+      },
+      {
+        name: 'an output index with a leading zero',
+        answer: () => ({ '00': { omit: true } })
       },
       {
         name: 'an output name it does not have',
@@ -364,6 +409,7 @@ describe('a frontend node type with a resolver', () => {
         answer: () => ({ 0: { omit: true, literal: 1 } })
       },
       { name: 'omit that is not true', answer: () => ({ 0: { omit: false } }) },
+      { name: 'omit that is truthy', answer: () => ({ 0: { omit: 1 } }) },
       {
         name: 'a resolution of no known kind',
         answer: () => ({ 0: { source: 1 } })
@@ -420,7 +466,11 @@ describe('a frontend node type with a resolver', () => {
         name: 'an undefined literal',
         answer: () => ({ 0: { literal: undefined } })
       },
-      { name: 'a literal BigInt', answer: () => ({ 0: { literal: 1n } }) }
+      {
+        name: 'a literal BigInt',
+        answer: () => ({ 0: { literal: 1n } })
+      },
+      { name: 'a literal NaN', answer: () => ({ 0: { literal: NaN } }) }
     ])(
       'reports $name, and builds the node as if it had no resolver',
       async ({ answer }) => {
@@ -429,6 +479,12 @@ describe('a frontend node type with a resolver', () => {
 
         expect(await consumerInput(consumer)).toEqual([String(source.id), 0])
         expect(reportError).toHaveBeenCalledOnce()
+        expect(reportError).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message: expect.stringContaining('resolve needs')
+          }),
+          expect.anything()
+        )
       }
     )
 
@@ -485,7 +541,7 @@ describe('a frontend node type with a resolver', () => {
       expect(resolve).toHaveBeenCalledOnce()
     })
 
-    it('gives the value of a promoted widget for a subgraph input the widget feeds (B-09)', async () => {
+    it('gives the value of a promoted widget for a subgraph input the widget feeds', async () => {
       defineWire(({ self }) => ({
         0: { forwardTo: { nodeId: self.id, input: 0 } }
       }))
@@ -568,6 +624,7 @@ describe('a frontend node type with a resolver', () => {
     it('gives the inputs with what feeds them, and the outputs', async () => {
       const { view } = await viewSeenBy((wire) => {
         wire.inputs[1].label = 'Shown'
+        wire.inputs[1].localized_name = 'Montré'
         wire.outputs[0].localized_name = 'Sortie'
       })
       const sourceId = String(graph.nodes[0].id)
@@ -596,7 +653,7 @@ describe('a frontend node type with a resolver', () => {
       expect(Object.isFrozen(view.self.outputs)).toBe(true)
     })
 
-    it('gives a frozen copy of the properties, which a change to does not reach', async () => {
+    it('gives a frozen copy of the properties, not the objects the node holds', async () => {
       const { view, wire } = await viewSeenBy((node) => {
         node.properties.choice = { value: 1 }
       })
@@ -630,6 +687,8 @@ describe('a frontend node type with a resolver', () => {
         id: String(graph.groups[0].id),
         title: 'outer'
       })
+      expect(Object.isFrozen(view.self.groups)).toBe(true)
+      expect(Object.isFrozen(view.self.groups[0])).toBe(true)
     })
 
     it('gives a frozen copy of a widget value, and nothing for a widget it lacks', async () => {
@@ -712,6 +771,28 @@ describe('a frontend node type with a resolver', () => {
     })
   })
 
+  it('leaves the executable nodes untouched when no type is resolved or supplied', () => {
+    comfy.defs.define({ type: 'Pack/Plain', execution: 'frontend' })
+    const nodes = new Map<string, ExecutableLGraphNode>()
+    const set = vi.spyOn(nodes, 'set')
+    const read = vi.spyOn(nodes, Symbol.iterator)
+
+    host.frontendExecution.adoptNodes(nodes)
+
+    expect(set).not.toHaveBeenCalled()
+    expect(read).not.toHaveBeenCalled()
+  })
+
+  it('reads the executable nodes once a type is resolved, the control for the test above', () => {
+    defineWire(() => ({ 0: { omit: true } }))
+    const nodes = new Map<string, ExecutableLGraphNode>()
+    const read = vi.spyOn(nodes, Symbol.iterator)
+
+    host.frontendExecution.adoptNodes(nodes)
+
+    expect(read).toHaveBeenCalled()
+  })
+
   it('leaves in place an executable node that is not the host DTO', () => {
     defineWire(() => ({ 0: { literal: 'x' } }))
     const stranger = fromPartial<ExecutableLGraphNode>({ id: '1' })
@@ -720,6 +801,24 @@ describe('a frontend node type with a resolver', () => {
     host.frontendExecution.adoptNodes(nodes)
 
     expect(nodes.get('1')).toBe(stranger)
+  })
+
+  it('does not resolve a node of a class registered over the defined type', async () => {
+    const resolve = vi.fn(() => ({ 0: { literal: 'x' } }))
+    defineWire(resolve)
+    class LegacyWire extends LGraphNode {
+      constructor(title: string) {
+        super(title)
+        this.addInput('in', 'STRING')
+        this.addOutput('out', 'STRING')
+        this.isVirtualNode = true
+      }
+    }
+    LiteGraph.registerNodeType(WIRE, LegacyWire)
+    const { source, consumer } = sourceWireConsumer()
+
+    expect(await consumerInput(consumer)).toEqual([String(source.id), 0])
+    expect(resolve).not.toHaveBeenCalled()
   })
 
   it('resolves only the nodes of a type with a resolver', async () => {

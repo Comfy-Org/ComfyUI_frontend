@@ -1,8 +1,12 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -198,6 +202,12 @@ describe('prompt and preview hooks', () => {
         seed: 3
       })
       expect(reportError).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('onPromptSerialize needs')
+        }),
+        expect.anything()
+      )
     })
 
     it('stops leaving names out once its extension is unsubscribed', async () => {
@@ -213,6 +223,23 @@ describe('prompt and preview hooks', () => {
         text: 'typed',
         seed: 3
       })
+    })
+
+    it('is not called for a node of a class registered over the type it extends', async () => {
+      const hook = vi.fn(() => ({ omitInputs: ['text'] }))
+      extend((builder) => builder.onPromptSerialize(hook))
+      class Legacy extends LGraphNode {}
+      LiteGraph.registerNodeType(STASH, Legacy)
+      const stash = addStash()
+      stash.comfyClass = STASH
+
+      const { output } = await promptOf()
+
+      expect(output[String(stash.id)].inputs).toEqual({
+        text: 'typed',
+        seed: 3
+      })
+      expect(hook).not.toHaveBeenCalled()
     })
 
     it('refuses a hook that is not a function', () => {
@@ -280,6 +307,17 @@ describe('prompt and preview hooks', () => {
 
       host.deliverPreview(graph, String(other.id), new Blob([]))
       expect(heard).toHaveLength(1)
+    })
+
+    it('gives nothing to a node of a class registered over the type it extends', () => {
+      const heard = previewsHeard()
+      class Legacy extends LGraphNode {}
+      LiteGraph.registerNodeType(STASH, Legacy)
+      const stash = addStash()
+
+      host.deliverPreview(graph, String(stash.id), new Blob([]))
+
+      expect(heard).toEqual([])
     })
 
     it('reports a hook that throws, and still calls the others', () => {

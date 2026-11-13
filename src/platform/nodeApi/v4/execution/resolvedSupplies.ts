@@ -2,10 +2,14 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 
-import type { ResolvedSource, Resolver } from '@/platform/nodeApi/v4/types'
+import type {
+  ResolvedSource,
+  ResolvedSupply,
+  Resolver
+} from '@/platform/nodeApi/v4/types'
 import { runs } from './nodeModes'
 import type { Resolutions } from './resolution'
-import type { Supply } from './supply'
+import type { GraphSupplies, Supply } from './supply'
 
 interface Walk {
   readonly graph: LGraph
@@ -17,8 +21,25 @@ interface Walk {
 const OMITTED: ResolvedSource = Object.freeze({ kind: 'omitted' })
 const LITERAL: ResolvedSource = Object.freeze({ kind: 'literal' })
 
-/** Where a supply comes from in its own graph: the output a link from it would start at. */
-export function sourceInGraph(
+/** The supplies of `graph`, frozen, each with the output in the graph a link from it would start at. */
+export function resolvedSuppliesIn(
+  graph: LGraph,
+  supplies: GraphSupplies,
+  resolverFor: (node: LGraphNode) => Resolver | undefined,
+  resolutions: Resolutions
+): readonly ResolvedSupply[] {
+  return Object.freeze(
+    supplies.all.map((supply) =>
+      Object.freeze({
+        supplierNodeId: String(supply.supplier.id),
+        to: Object.freeze({ nodeId: supply.nodeId, input: supply.input }),
+        from: sourceInGraph(graph, supply, resolverFor, resolutions)
+      })
+    )
+  )
+}
+
+function sourceInGraph(
   graph: LGraph,
   { supplier, from }: Supply,
   resolverFor: (node: LGraphNode) => Resolver | undefined,

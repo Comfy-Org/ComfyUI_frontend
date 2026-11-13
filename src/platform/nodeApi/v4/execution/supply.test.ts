@@ -4,9 +4,11 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   LGraph,
   LGraphEventMode,
-  LGraphGroup
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -152,6 +154,27 @@ describe('a supplier', () => {
       expect(await inputsOf(consumer)).toEqual({ x: [String(supplier.id), 0] })
     })
 
+    it("passes the fed input's type on, so a bypassed node behind the supply picks the input of that type", async () => {
+      supplyWith(everythingTo({ forwardInput: 0 }))
+      const text = addBackendNode(graph, 'Text', { outputs: ['text'] })
+      const wanted = addBackendNode(graph, 'Number')
+      wanted.addOutput('number', 'INT')
+      const choice = addBackendNode(graph, 'Choice')
+      choice.addInput('text', 'STRING')
+      choice.addInput('number', 'INT')
+      choice.addOutput('out', 'INT')
+      choice.mode = LGraphEventMode.BYPASS
+      text.connect(0, choice, 0)
+      wanted.connect(0, choice, 1)
+      const supplier = addNodeOfType(graph, EVERYWHERE)
+      supplier.addInput('anything', '*')
+      choice.connect(0, supplier, 0)
+      const consumer = addBackendNode(graph, 'Consumer')
+      consumer.addInput('x', 'INT')
+
+      expect(await inputsOf(consumer)).toEqual({ x: [String(wanted.id), 0] })
+    })
+
     it("feeds a resolved frontend node's answer when it supplies from its own output", async () => {
       comfy.defs.define({
         type: 'Pack/Constant',
@@ -220,14 +243,27 @@ describe('a supplier', () => {
       expect(await inputsOf(consumer)).toEqual({ x: [String(other.id), 0] })
     })
 
-    it('counts a claim with no priority as 0', async () => {
-      const { one, consumer } = twoSuppliers(
-        everythingTo({ output: 0 }),
-        everythingTo({ output: 0 }, -1)
-      )
+    it.for([
+      { other: -1, winner: 'the claim with no priority' },
+      { other: 0.5, winner: 'the other' }
+    ])(
+      'counts a claim with no priority as 0, so against $other $winner feeds',
+      async ({ other }) => {
+        const {
+          one,
+          other: second,
+          consumer
+        } = twoSuppliers(
+          everythingTo({ output: 0 }),
+          everythingTo({ output: 0 }, other)
+        )
+        const winner = other < 0 ? one : second
 
-      expect(await inputsOf(consumer)).toEqual({ x: [String(one.id), 0] })
-    })
+        expect(await inputsOf(consumer)).toEqual({
+          x: [String(winner.id), 0]
+        })
+      }
+    )
 
     it('feeds nothing on equal highest claims, and reports it', async () => {
       const { consumer } = twoSuppliers(
@@ -265,7 +301,8 @@ describe('a supplier', () => {
         ...everythingTo({ forwardInput: 0 })(view)
       ]
       supplyWith(claimTwoWays)
-      addEverywhere()
+      const source = addBackendNode(graph, 'Source', { outputs: ['text'] })
+      source.connect(0, addEverywhere(), 0)
       const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
 
       expect(await inputsOf(consumer)).toEqual({})
@@ -283,6 +320,18 @@ describe('a supplier', () => {
 
       expect(supply).toHaveBeenCalledOnce()
       expect(supply.mock.calls[0][0].self.id).toBe(String(supplier.id))
+    })
+
+    it('is not asked for a node of a class registered over the type it extends', async () => {
+      const supply = vi.fn(everythingTo({ output: 0 }))
+      supplyWith(supply)
+      class Legacy extends LGraphNode {}
+      LiteGraph.registerNodeType(EVERYWHERE, Legacy)
+      addEverywhere()
+      const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+
+      expect(await inputsOf(consumer)).toEqual({})
+      expect(supply).not.toHaveBeenCalled()
     })
 
     it.for([
@@ -394,6 +443,12 @@ describe('a supplier', () => {
 
       expect(await inputsOf(consumer)).toEqual({})
       expect(reportError).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('setSupply needs')
+        }),
+        expect.anything()
+      )
     })
 
     it('feeds from a well-formed edge, the control for the refusals above', async () => {
@@ -556,6 +611,21 @@ describe('a supplier', () => {
       expect(Object.isFrozen(supplies[0])).toBe(true)
       expect(Object.isFrozen(supplies[0].to)).toBe(true)
       expect(Object.isFrozen(supplies[0].from)).toBe(true)
+    })
+
+    it('gives the output that feeds a forwarded input', () => {
+      supplyWith(everythingTo({ forwardInput: 0 }))
+      const source = addBackendNode(graph, 'Source', {
+        outputs: ['first', 'second']
+      })
+      source.connect(1, addEverywhere(), 0)
+      addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+
+      expect(comfy.graph.resolvedSupplies()?.[0].from).toEqual({
+        kind: 'output',
+        nodeId: String(source.id),
+        output: 1
+      })
     })
 
     it('gives the source of a forwarded input, followed through resolved nodes', () => {
