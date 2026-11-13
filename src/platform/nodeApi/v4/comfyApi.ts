@@ -6,6 +6,7 @@ import { API_VERSION, isApiVersionAtLeast } from './apiVersion'
 import { createAppLifecycle } from './appLifecycle'
 import type { EditHistory } from './edit/editRunner'
 import { createEdits } from './edit/edits'
+import { graphHandleMembers } from './edit/graphHandleMembers'
 import { nodeHandleMembers } from './edit/nodeHandleMembers'
 import { createGraphHandle } from './graphHandle'
 import { createGraphScopes } from './graphScopeHandle'
@@ -42,7 +43,8 @@ export function createComfyApi(services: ComfyApiServices): {
   const nodes = createNodeHandles(handles, (handle) =>
     nodeHandleMembers(handle, edit, nodes)
   )
-  const edit = createEdits(nodes, () => services.history?.())
+  const scopes = createGraphScopes(handles, nodes)
+  const edit = createEdits(nodes, scopes, () => services.history?.())
 
   const comfy: Comfy = Object.freeze({
     getApiVersion: () => API_VERSION,
@@ -51,8 +53,9 @@ export function createComfyApi(services: ComfyApiServices): {
 
     graph: createGraphHandle(
       nodes,
-      createGraphScopes(handles, nodes),
-      services.getGraph
+      scopes.scopeFor,
+      services.getGraph,
+      (visible) => graphHandleMembers(visible, scopes.scopeFor, edit)
     ),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a),
     edit

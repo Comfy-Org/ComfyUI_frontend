@@ -112,13 +112,33 @@ follow-up for a command interface.
     closed, and the error is rethrown: the API cannot roll back an edit,
     because main has no inverse for most of them.
 
+### Graph edits
+
+11. `addNode(graph, type, init?)` takes the graph as a graph handle
+    (`comfy.graph.root()` or one of `comfy.graph.subgraphs()`), so a pack can add
+    to a subgraph that is not on screen and an edit never depends on what the
+    user is looking at. It makes the node with `LiteGraph.createNode`, giving
+    it its title and position before `LGraph.add` (A-18), so the graph's
+    `onNodeAdded`, the layout store and `node:added` see it where it will
+    stay. It returns the new node's handle, or `undefined`, adding nothing, if
+    the graph is gone or the type is not registered: a pack's backend nodes may
+    not be installed, so a missing type is a state of the app, not a mistake in
+    the pack.
+12. `comfy.graph.add(type, init?)` is `addNode` on the graph on screen, and
+    `comfy.graph.batch` is `comfy.edit.batch`. With no graph on screen, `add`
+    still checks its arguments and returns `undefined`.
+13. `comfy.graph.links()` lists the links of the graph on screen as frozen
+    `LinkInfo` records, sorted by link id so the order does not depend on how
+    the graph was loaded. `comfy.graph.version` is the graph's own version
+    counter, which every edit through this API advances.
+
 ### Node handle members that are not edits
 
-11. `isSerializingWidgets()`, `isResizable()` and `snapshot()` read the live
+14. `isSerializingWidgets()`, `isResizable()` and `snapshot()` read the live
     node, and return `undefined` once it is gone. `snapshot()` is a frozen copy
     of the node's identity, title, mode, flags, colors, shape, position and
     size; a shape with no name here reads as `'default'`.
-12. `addBadge(badge)` is a registration, not an edit: badges are not saved and
+15. `addBadge(badge)` is a registration, not an edit: badges are not saved and
     make no undo step. It pushes an `LGraphBadge` onto `node.badges`, the list
     extensions already use, and returns a disposer that removes that entry
     only and is safe to call twice. An object badge is read once, when it is
@@ -228,5 +248,8 @@ changes nothing a workflow saves (a title set to itself) adds no entry.
   supplies and then freezes it. `NodeHandles` gains `locator`, which gives,
   for a handle it made, the function that finds its node in the handle's own
   graph and document; every call that takes a node handle goes through it.
+  `createGraphScopes` returns the same kind of `locator` for graph handles
+  beside `scopeFor`, and `createGraphHandle` takes the members another module
+  adds to the graph handle.
 - The first `resizable` choice installs one graph-intent listener for the life
   of the API.
