@@ -54,7 +54,7 @@ Replace the loop body with the interaction that stresses the hot path.
 - `m.styleRecalcs` / `m.styleRecalcDurationMs` — style recalculation count and time
 - `m.layouts` / `m.layoutDurationMs` — forced layout count and time
 - `m.taskDurationMs` — total main-thread JS execution time
-- `m.heapDeltaBytes` — memory pressure delta
+- `m.heapDeltaBytes` — memory pressure delta. `REPORTED_METRICS` in `scripts/perf-report.ts` leaves it out of the PR report's Δ table, so it cannot prove a fix in Step 8
 
 **Key helpers** (from `ComfyPage`):
 
@@ -100,7 +100,7 @@ Needed to prove the improvement from the upcoming fix for <issue link>." \
 
 ### Step 6: Get PR1 merged
 
-Once PR1 merges, CI runs the test on main and saves the baseline to the `perf-data` branch. A failed save does not fail that job, so check `baselines/` on `perf-data` for files that contain PR1's test name. PR2 can only show a significant Δ once at least two of them exist and their values for the target metric differ: `scripts/perf-stats.ts` computes no z-score from fewer samples or zero variance.
+Once PR1 merges, CI runs the test on main and saves the baseline to the `perf-data` branch. A failed save does not fail that job, so check `baselines/` on `perf-data` for files that contain the name PR1 passes to `stopMeasuring()`. PR2 needs at least two of them: `scripts/perf-stats.ts` computes no z-score from fewer samples, nor from samples that never vary (Step 8 covers that case).
 
 ### Step 7: Create PR2 (fix) on top of main
 
@@ -116,7 +116,11 @@ Implement the fix. The `@perf` test from PR1 is now on main and will run automat
 
 ### Step 8: Verify the improvement shows in CI
 
-Read the performance section of the PR report comment. If Δ is negative for the target metric and marked significant, the fix is proven. If PR2's perf job ran before those baselines existed, rerun it once they do.
+Read the performance section of the PR report comment. The Sig column shows `z=…` for any row with a z-score and marks only regressions (`⚠️`), so read the number. The fix is proven when the target metric's Δ is negative and its z is below -2. Count metrics with a `minAbsDelta` in `REPORTED_METRICS` (`scripts/perf-report.ts`) also need an absolute change of at least that much; below it the row is neutral whatever its z.
+
+A count that never varied on main shows `—` instead of a z-score. Prove that fix with the Baseline and PR values together with the `Historical variance` section, where σ is 0 across the baselines.
+
+If PR2's perf job ran before those baselines existed, rerun it once they do.
 
 ## Test Design Guidelines
 
