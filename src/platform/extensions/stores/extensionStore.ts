@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { SettingWriteOutcome } from '@comfyorg/settings-core/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -30,6 +31,26 @@ function withReadOnlyExtensions(disabledNames: readonly string[]) {
   for (const name of ALWAYS_DISABLED_EXTENSIONS) disabled.add(name)
   for (const name of ALWAYS_ENABLED_EXTENSIONS) disabled.delete(name)
   return disabled
+}
+
+function reportUnsavedSetting(
+  result: SettingWriteOutcome,
+  subject: string,
+  errorType: string
+) {
+  switch (result.status) {
+    case 'refused':
+    case 'indeterminate':
+      reportError(
+        new Error(
+          `Failed to store ${subject}: ${result.statusCode} ${result.statusText || 'Request failed'}`
+        ),
+        { errorType, surface: 'platform' }
+      )
+      break
+    case 'unconfirmed':
+      reportError(result.cause, { errorType, surface: 'platform' })
+  }
 }
 
 type Registration =
@@ -194,12 +215,18 @@ export const useExtensionStore = defineStore('extension', () => {
     const settingStore = useSettingStore()
     const editable = new Set(names.filter((name) => !isExtensionReadOnly(name)))
     const disabled = settingStore.get('Comfy.Extension.Disabled')
-    await settingStore.set(
+    const result = await settingStore.setWithOutcome(
       'Comfy.Extension.Disabled',
       enabled
         ? disabled.filter((name) => !editable.has(name))
         : [...new Set([...disabled, ...editable])]
     )
+    reportUnsavedSetting(
+      result,
+      'disabled extension names',
+      'failure_saving_extension_name_setting'
+    )
+    return result.status
   }
 
   function loadExtensionPaths(paths: string[], disabledAtBoot: string[]) {
@@ -239,14 +266,7 @@ export const useExtensionStore = defineStore('extension', () => {
   async function setExtensionPathEnabled(
     path: string,
     enabled: boolean
-  ): Promise<
-    | 'saved'
-    | 'unchanged'
-    | 'refused'
-    | 'indeterminate'
-    | 'unconfirmed'
-    | undefined
-  > {
+  ): Promise<SettingWriteOutcome['status'] | undefined> {
     if (isSavingExtensionPaths.value) return
 
     const previousDisabledPaths = getCurrentDisabledExtensionPaths()
@@ -260,23 +280,11 @@ export const useExtensionStore = defineStore('extension', () => {
         'Comfy.Extension.DisabledPacks',
         nextDisabledPaths
       )
-      if (result.status === 'refused' || result.status === 'indeterminate') {
-        const reason = result.statusText || 'Request failed'
-        reportError(
-          new Error(
-            `Failed to store disabled extension paths: ${result.statusCode} ${reason}`
-          ),
-          {
-            errorType: 'failure_saving_extension_path_setting',
-            surface: 'platform'
-          }
-        )
-      } else if (result.status === 'unconfirmed') {
-        reportError(result.cause, {
-          errorType: 'failure_saving_extension_path_setting',
-          surface: 'platform'
-        })
-      }
+      reportUnsavedSetting(
+        result,
+        'disabled extension paths',
+        'failure_saving_extension_path_setting'
+      )
       return result.status
     } finally {
       isSavingExtensionPaths.value = false

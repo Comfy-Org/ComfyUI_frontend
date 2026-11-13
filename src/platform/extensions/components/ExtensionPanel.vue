@@ -63,7 +63,7 @@
       :actions
       @toggle-all="toggleAllVisible"
       @set-selected="setExtensionSelected"
-      @set-enabled="(name, enabled) => setExtensionsEnabled([name], enabled)"
+      @set-enabled="(name, enabled) => handleExtensionsEnabled([name], enabled)"
     />
   </div>
 </template>
@@ -86,6 +86,7 @@ import type { TableSortDirection } from '@comfyorg/design-system/lib/table/table
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { SettingWriteOutcome } from '@comfyorg/settings-core/settingStore'
 import ExtensionListTable from '@/platform/extensions/components/ExtensionListTable.vue'
 import ExtensionPathTable from '@/platform/extensions/components/ExtensionPathTable.vue'
 import { extensionNameFromPath } from '@/platform/settings/utils/extensionPath'
@@ -182,8 +183,18 @@ function toggleAllVisible(selected: CheckboxCheckedState) {
 }
 
 async function handleExtensionPathEnabled(path: string, enabled: boolean) {
-  const result = await setExtensionPathEnabled(path, enabled)
-  switch (result) {
+  warnIfUnsaved(await setExtensionPathEnabled(path, enabled))
+}
+
+async function handleExtensionsEnabled(
+  names: readonly string[],
+  enabled: boolean
+) {
+  warnIfUnsaved(await setExtensionsEnabled(names, enabled))
+}
+
+function warnIfUnsaved(status: SettingWriteOutcome['status'] | undefined) {
+  switch (status) {
     case 'refused':
       toast.warning(t('g.warning'), {
         description: t('g.extensionPathSaveRefused'),
@@ -212,12 +223,12 @@ const actions = computed<MenuItem[]>(() => [
   {
     label: t('g.enableSelected'),
     icon: 'icon-[lucide--check]',
-    command: () => setExtensionsEnabled([...selectedNames.value], true)
+    command: () => handleExtensionsEnabled([...selectedNames.value], true)
   },
   {
     label: t('g.disableSelected'),
     icon: 'icon-[lucide--x]',
-    command: () => setExtensionsEnabled([...selectedNames.value], false)
+    command: () => handleExtensionsEnabled([...selectedNames.value], false)
   },
   {
     separator: true
@@ -225,24 +236,25 @@ const actions = computed<MenuItem[]>(() => [
   {
     label: t('g.enableAll'),
     icon: 'icon-[lucide--check]',
-    command: () => setExtensionsEnabled(namesOf(extensions.value), true)
+    command: () => handleExtensionsEnabled(namesOf(extensions.value), true)
   },
   {
     label: t('g.disableAll'),
     icon: 'icon-[lucide--x]',
-    command: () => setExtensionsEnabled(namesOf(extensions.value), false)
+    command: () => handleExtensionsEnabled(namesOf(extensions.value), false)
   },
   {
     label: t('g.disableThirdParty'),
     icon: 'icon-[lucide--x]',
     command: () =>
-      setExtensionsEnabled(namesOf(thirdPartyExtensions.value), false),
+      handleExtensionsEnabled(namesOf(thirdPartyExtensions.value), false),
     disabled: !hasThirdPartyExtensions.value
   },
   {
     label: t('g.disableAgentCreated'),
     icon: 'icon-[lucide--x]',
-    command: () => setExtensionsEnabled(namesOf(agentExtensions.value), false),
+    command: () =>
+      handleExtensionsEnabled(namesOf(agentExtensions.value), false),
     disabled: !hasEditableAgentExtensions.value
   }
 ])

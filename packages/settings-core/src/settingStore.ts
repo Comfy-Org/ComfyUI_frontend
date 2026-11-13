@@ -31,10 +31,11 @@ interface AppliedSetting<TValue> {
 }
 
 type RevertibleSettingId =
+  | 'Comfy.Extension.Disabled'
   | 'Comfy.Extension.DisabledPacks'
   | 'Comfy.AgentPanel.OnboardedScopes'
 
-type SettingWriteOutcome =
+export type SettingWriteOutcome =
   | { status: 'saved' | 'unchanged' }
   | { status: 'refused'; statusCode: number; statusText: string }
   | { status: 'indeterminate'; statusCode: number; statusText: string }

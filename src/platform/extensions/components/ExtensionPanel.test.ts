@@ -313,6 +313,40 @@ describe('ExtensionPanel', () => {
     )
   })
 
+  it('restores a refused extension toggle and warns without offering reload', async () => {
+    const user = userEvent.setup()
+    registerExtensions('Alpha')
+    loadDisabledExtensionNames([])
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(
+      new Response(null, { status: 400, statusText: 'Bad Request' })
+    )
+
+    renderPanel()
+    const extensionSwitch = screen.getByRole('switch', { name: 'Alpha' })
+    await user.click(extensionSwitch)
+
+    await vi.waitFor(() => expect(extensionSwitch).toBeChecked())
+    expect(useSettingStore().get('Comfy.Extension.Disabled')).toEqual([])
+    expect(
+      screen.queryByRole('button', { name: 'Reload to apply changes' })
+    ).not.toBeInTheDocument()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Failed to store disabled extension names: 400 Bad Request'
+      }),
+      {
+        errorType: 'failure_saving_extension_name_setting',
+        surface: 'platform'
+      }
+    )
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        description: 'The extension change was not saved. Please try again.'
+      })
+    )
+  })
+
   it('keeps an indeterminate extension change and offers reload', async () => {
     const user = userEvent.setup()
     loadExtensionPaths(['/extensions/a/'], [])
