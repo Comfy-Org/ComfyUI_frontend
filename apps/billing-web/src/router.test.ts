@@ -456,27 +456,40 @@ describe('a billing handoff tab', () => {
 
   it.for([
     {
-      intent: 'top-up',
+      query: 'intent=top-up&amount_cents=2500',
+      fullPath:
+        '/v1/top-up?product=comfyui&return_to=comfyui_credits&amount_cents=2500'
+    },
+    {
+      query: 'intent=top-up',
       fullPath:
         '/v1/top-up?product=comfyui&return_to=comfyui_credits&amount_cents=5000'
     },
     {
-      intent: 'subscription',
+      query: 'intent=subscription',
       fullPath: '/v1/subscription?product=comfyui&return_to=comfyui_credits'
     },
-    { intent: 'pricing', fullPath: '/' },
-    { intent: 'constructor', fullPath: '/' }
-  ])(
-    'opens the flow the handoff intent $intent names',
-    async ({ intent, fullPath }) => {
-      handoffTab.value = liveHandoff
+    { query: 'intent=pricing', fullPath: '/' },
+    { query: 'intent=constructor', fullPath: '/' }
+  ])('opens the flow /handoff?$query names', async ({ query, fullPath }) => {
+    handoffTab.value = liveHandoff
 
-      const router = await arriveAt(`/handoff?intent=${intent}`)
+    const router = await arriveAt(`/handoff?${query}`)
 
-      expect(router.currentRoute.value.fullPath).toBe(fullPath)
-      expect(useBillingEntry().error.value).toBeUndefined()
-    }
-  )
+    expect(router.currentRoute.value.fullPath).toBe(fullPath)
+    expect(useBillingEntry().error.value).toBeUndefined()
+  })
+
+  it('leaves an unreadable handoff amount for the top-up page to explain', async () => {
+    handoffTab.value = liveHandoff
+
+    const router = await arriveAt('/handoff?intent=top-up&amount_cents=abc')
+
+    expect(router.currentRoute.value.fullPath).toBe(
+      '/v1/top-up?product=comfyui&return_to=comfyui_credits&amount_cents=abc'
+    )
+    expect(useBillingEntry().error.value).toBe('INVALID_AMOUNT')
+  })
 
   it('keeps showing how the handoff ended whatever its intent', async () => {
     handoffTab.value = { kind: 'ended', ending: 'link_unavailable' }

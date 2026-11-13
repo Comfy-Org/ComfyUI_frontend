@@ -40,9 +40,13 @@
     <AddCreditsBlockedStep
       v-if="blockedUrl !== null"
       :checkout-url="blockedUrl"
+      :reissues="
+        state.step === 'checkout_blocked' && state.checkoutUrl === undefined
+      "
       :translate
       :ui
       @follow="dialog.followBlockedLink"
+      @reissue="dialog.reopenCheckout"
     />
     <AddCreditsAmountStep
       v-else-if="dialog.amountView.value"

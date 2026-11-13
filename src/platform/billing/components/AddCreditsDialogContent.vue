@@ -49,6 +49,11 @@ import {
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
+import {
+  issueLocalBillingHandoff,
+  opensLocalBillingHandoff,
+  reserveBillingHandoffTab
+} from '@/platform/billing/localBillingHandoff'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
@@ -135,14 +140,40 @@ function ownsCheckout(
   )
 }
 
+const opensHandoff = opensLocalBillingHandoff()
+
+async function createHandoffCheckout(
+  amountCents: number
+): ReturnType<AddCreditsPorts['createCheckout']> {
+  const generation = workspaceIdentity.workspaceTransitionGeneration
+  const issued = await issueLocalBillingHandoff({
+    intent: 'top-up',
+    amountCents
+  })
+  if (issued.status === 'error') {
+    return {
+      status: 'error',
+      refusal: {
+        kind: 'checkout_failed',
+        ...(issued.message === undefined
+          ? {}
+          : { serverMessage: issued.message })
+      }
+    }
+  }
+  ownedCheckout = { generation }
+  return { status: 'ok', url: issued.url }
+}
+
 const ports: AddCreditsPorts = {
   async quote(amountCents, signal) {
     const credits = await quoteTopup(amountCents, signal)
     return credits === null ? { status: 'error' } : { status: 'ok', credits }
   },
   get activatesAutoTopUp() {
-    return flags.billingAutoTopUpAtCheckoutEnabled
+    return !opensHandoff && flags.billingAutoTopUpAtCheckoutEnabled
   },
+  singleUseCheckout: opensHandoff,
   async createCheckout(amountCents, signal, autoTopUp) {
     telemetry?.trackBillingEvent({
       operation: 'topup',
@@ -150,6 +181,7 @@ const ports: AddCreditsPorts = {
       outcome: 'pending',
       payment_intent_source: source
     })
+    if (opensHandoff) return createHandoffCheckout(amountCents)
     const returnUrl = topupCheckoutReturnUrl()
     if (!returnUrl) {
       return { status: 'error', refusal: { kind: 'checkout_failed' } }
@@ -179,7 +211,7 @@ const ports: AddCreditsPorts = {
       }
     }
   },
-  reserveTab: reserveBillingTab,
+  reserveTab: opensHandoff ? reserveBillingHandoffTab : reserveBillingTab,
   watchPayment(landed) {
     if (!ownsCheckout(ownedCheckout)) return () => {}
     paymentWatched = true

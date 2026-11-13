@@ -3,7 +3,7 @@ import { installFakeStripe } from './fixtures/stripe'
 import { expect, test } from './fixtures/test'
 
 const TOPUP_LANDING =
-  /\/v1\/top-up\?product=comfyui&return_to=comfyui_credits&amount_cents=5000$/
+  /\/v1\/top-up\?product=comfyui&return_to=comfyui_credits&amount_cents=2500$/
 
 test.beforeEach(async ({ context, cloud }) => {
   await installFakeStripe(context)
@@ -19,11 +19,13 @@ test.beforeEach(async ({ context, cloud }) => {
   }))
 })
 
-test('a handoff for Add credits opens the top-up checkout and keeps it across a reload', async ({
+test('a handoff for Add credits opens the top-up checkout for its amount and keeps it across a reload', async ({
   page,
   cloud
 }) => {
-  await page.goto('/handoff?intent=top-up#token=one-time-token')
+  await page.goto(
+    '/handoff?intent=top-up&amount_cents=2500#token=one-time-token'
+  )
 
   await expect(page).toHaveURL(TOPUP_LANDING)
   const summary = page.getByRole('region', { name: 'Order summary' })
@@ -31,7 +33,7 @@ test('a handoff for Add credits opens the top-up checkout and keeps it across a 
   const quote = cloud.requests.find(
     (request) => request.path === '/billing/topup/quote'
   )
-  expect(quote?.body).toEqual({ amount_cents: 5000 })
+  expect(quote?.body).toEqual({ amount_cents: 2500 })
   expect(quote?.authorization).toBe('Bearer handoff-scoped-session')
 
   await page.reload()

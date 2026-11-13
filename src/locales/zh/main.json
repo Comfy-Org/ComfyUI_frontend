@@ -907,11 +907,8 @@
     "index": "{current} / {total}"
   },
   "billingHandoff": {
-    "failed": "无法打开账单。请重试。",
-    "openBilling": "打开账单",
     "opening": "正在打开结账页面…",
     "openingDetail": "这需要几秒钟。",
-    "popupBlocked": "您的浏览器阻止了账单标签页。",
     "signInAgain": "请重新登录以打开账单。",
     "superseded": "打开账单时，您的账户或工作区已更改。请重试。"
   },

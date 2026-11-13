@@ -907,11 +907,8 @@
     "index": "{current} / {total}"
   },
   "billingHandoff": {
-    "failed": "無法開啟帳務。請再試一次。",
-    "openBilling": "開啟帳務",
     "opening": "正在開啟結帳頁面…",
     "openingDetail": "這需要幾秒鐘。",
-    "popupBlocked": "您的瀏覽器封鎖了帳務分頁。",
     "signInAgain": "請重新登入以開啟帳務。",
     "superseded": "開啟帳務時，您的帳戶或工作區已變更。請再試一次。"
   },

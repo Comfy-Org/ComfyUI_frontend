@@ -113,25 +113,26 @@ const routes: RouteRecordRaw[] = [
 
 export type BillingWebSessionPhase = SessionSnapshot['phase']
 
-const HANDOFF_ENTRY_QUERY = 'product=comfyui&return_to=comfyui_credits'
+const HANDOFF_ENTRY = { product: 'comfyui', return_to: 'comfyui_credits' }
 
-const HANDOFF_LANDINGS: ReadonlyMap<string, string> = new Map([
-  [
-    'top-up',
-    `${billingIntentPath('top-up')}?${HANDOFF_ENTRY_QUERY}&amount_cents=${ADD_CREDITS_DEFAULT_CENTS}`
-  ],
-  [
-    'subscription',
-    `${billingIntentPath('subscription')}?${HANDOFF_ENTRY_QUERY}`
-  ]
-])
+function handoffEntryPath(
+  intent: BillingIntent,
+  extra: Record<string, string> = {}
+): string {
+  const query = new URLSearchParams({ ...HANDOFF_ENTRY, ...extra })
+  return `${billingIntentPath(intent)}?${query}`
+}
 
-function handoffLanding(query: LocationQuery): string {
-  const { intent } = query
-  return (
-    (typeof intent === 'string' && HANDOFF_LANDINGS.get(intent)) ||
-    APP_ENTRY_PATH
-  )
+function handoffLanding({
+  intent,
+  amount_cents: amount
+}: LocationQuery): string {
+  if (intent === 'subscription') return handoffEntryPath('subscription')
+  if (intent !== 'top-up') return APP_ENTRY_PATH
+  return handoffEntryPath('top-up', {
+    amount_cents:
+      typeof amount === 'string' ? amount : String(ADD_CREDITS_DEFAULT_CENTS)
+  })
 }
 
 const isPlanlessCheckout = (entry: BillingEntry) =>

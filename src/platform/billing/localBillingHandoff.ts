@@ -4,7 +4,6 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { watch } from 'vue'
 
-import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
@@ -12,6 +11,11 @@ import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { refreshBilling } from '@/platform/billing/billingRefresh'
 import type { BillingTab } from '@/platform/billing/billingTab'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
+import {
+  localSurface,
+  useLocalBillingWebFlagStore
+} from '@/platform/billing/stores/localBillingWebFlagStore'
+import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
@@ -20,20 +24,18 @@ import { useAuthStore } from '@/stores/authStore'
 const ISSUE_TIMEOUT_MS = 15_000
 
 /** The billing flow the user started, which billing-web opens after the exchange. */
-export type BillingHandoffIntent = 'top-up' | 'subscription'
+export type BillingHandoffRequest =
+  | { readonly intent: 'top-up'; readonly amountCents: number }
+  | { readonly intent: 'subscription' }
 
 type HandoffIssue =
   | { readonly kind: 'issued'; readonly entryUrl: string }
   | { readonly kind: 'sign_in_again' }
   | { readonly kind: 'refused'; readonly message: string | undefined }
 
-export type HandoffLaunch =
-  | 'opened'
-  | 'busy'
-  | 'blocked'
-  | 'superseded'
-  | 'sign_in_again'
-  | 'refused'
+export type BillingHandoffResult =
+  | { readonly status: 'ok'; readonly url: string }
+  | { readonly status: 'error'; readonly message: string | undefined }
 
 interface HandoffScope {
   readonly userId: string
@@ -50,7 +52,7 @@ async function issueBillingHandoff(
   token: string,
   workspaceId: string,
   cloudBaseUrl: string,
-  intent: BillingHandoffIntent
+  request: BillingHandoffRequest
 ): Promise<HandoffIssue> {
   try {
     const response = await fetch(new URL('/api/auth/handoffs', cloudBaseUrl), {
@@ -64,7 +66,10 @@ async function issueBillingHandoff(
         workspace_id: workspaceId,
         receiver: 'billing_web',
         surface: 'local_web',
-        intent,
+        intent: request.intent,
+        ...('amountCents' in request
+          ? { amount_cents: request.amountCents }
+          : {}),
         client_version: __COMFYUI_FRONTEND_VERSION__.slice(0, 64)
       }),
       signal: AbortSignal.timeout(ISSUE_TIMEOUT_MS)
@@ -127,7 +132,7 @@ function armReturnRefresh(): void {
 
 async function issueForScope(
   scope: HandoffScope,
-  intent: BillingHandoffIntent
+  request: BillingHandoffRequest
 ): Promise<HandoffIssue> {
   const token = await useAuthStore().getIdToken()
   if (!token) return SIGN_IN_AGAIN
@@ -135,57 +140,54 @@ async function issueForScope(
     token,
     scope.workspaceId,
     scope.cloudBaseUrl,
-    intent
+    request
   )
 }
 
 function settle(
-  tab: BillingTab,
   issue: HandoffIssue,
   scopeChanged: boolean
-): HandoffLaunch {
-  if (scopeChanged) {
-    tab.close()
-    useToast().error(t('billingHandoff.superseded'))
-    return 'superseded'
-  }
+): BillingHandoffResult {
+  if (scopeChanged)
+    return { status: 'error', message: t('billingHandoff.superseded') }
   if (issue.kind === 'issued') {
-    tab.navigate(issue.entryUrl)
     armReturnRefresh()
-    return 'opened'
+    return { status: 'ok', url: issue.entryUrl }
   }
-  tab.close()
-  if (issue.kind === 'sign_in_again') {
-    useToast().error(t('billingHandoff.signInAgain'))
-    void useAuthDialogs().showSignInDialog()
-    return 'sign_in_again'
-  }
-  useToast().error(issue.message ?? t('billingHandoff.failed'))
-  return 'refused'
+  if (issue.kind === 'refused')
+    return { status: 'error', message: issue.message }
+  void useAuthDialogs().showSignInDialog()
+  return { status: 'error', message: t('billingHandoff.signInAgain') }
 }
 
-/** Opens billing-web at `intent` for the signed-in local web account through a one-time handoff; `retry` re-enters the caller's gate after a blocked pop-up. */
-export async function launchLocalBillingHandoff(
-  intent: BillingHandoffIntent,
-  retry: () => void
-): Promise<HandoffLaunch> {
-  if (inFlight) return 'busy'
-  const tab = reserveBillingTab({
+/** True where Add credits pays through a billing-web handoff instead of a Cloud checkout. */
+export function opensLocalBillingHandoff(): boolean {
+  return (
+    !isCloud &&
+    localSurface() === 'local_web' &&
+    useLocalBillingWebFlagStore().enabled
+  )
+}
+
+/** The tab a handoff opens in, reserved during the click and showing that checkout is opening. */
+export function reserveBillingHandoffTab(): BillingTab | null {
+  return reserveBillingTab({
     title: t('billingHandoff.opening'),
     detail: t('billingHandoff.openingDetail')
   })
-  if (!tab) {
-    useToast().error(t('billingHandoff.popupBlocked'), {
-      action: { label: t('billingHandoff.openBilling'), onClick: retry }
-    })
-    return 'blocked'
-  }
+}
+
+/** Issues a one-time billing-web handoff for the signed-in local web account; the URL works once and is never shown. */
+export async function issueLocalBillingHandoff(
+  request: BillingHandoffRequest
+): Promise<BillingHandoffResult> {
+  if (inFlight) return { status: 'error', message: undefined }
   const scope = currentScope()
   const scopeWatch = watchScopeChange()
   inFlight = true
   try {
-    const issue = scope ? await issueForScope(scope, intent) : SIGN_IN_AGAIN
-    return settle(tab, issue, scopeWatch.changed())
+    const issue = scope ? await issueForScope(scope, request) : SIGN_IN_AGAIN
+    return settle(issue, scopeWatch.changed())
   } finally {
     scopeWatch.stop()
     inFlight = false

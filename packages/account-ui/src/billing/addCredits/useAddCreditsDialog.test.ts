@@ -12,6 +12,7 @@ import {
   readBillingErrorCode
 } from '@comfyorg/account-core/billing'
 
+import type { AddCreditsCheckoutTab } from './useAddCreditsDialog'
 import {
   addCreditsClientPorts,
   useAddCreditsDialog
@@ -129,6 +130,61 @@ describe('useAddCreditsDialog', () => {
     await new Promise((resolve) => setTimeout(resolve))
 
     expect(onLanded).not.toHaveBeenCalled()
+    expect(dialog.state.value.step).toBe('checkout_opened')
+  })
+})
+
+describe('a single-use checkout', () => {
+  function singleUseDialog(tabs: (AddCreditsCheckoutTab | null)[]) {
+    const createCheckout = vi.fn(async () => ({
+      status: 'ok' as const,
+      url: 'https://billing.test/handoff#token=once'
+    }))
+    const scope = effectScope()
+    const dialog = scope.run(() =>
+      useAddCreditsDialog({
+        ports: {
+          quote: async () => ({ status: 'error' }),
+          createCheckout,
+          reserveTab: () => tabs.shift() ?? null,
+          watchPayment: () => () => {},
+          singleUseCheckout: true
+        },
+        facts: { bounds: ADD_CREDITS_FALLBACK_BOUNDS, canTopUp: true },
+        initialAmount: initialAddCreditsAmount(null)
+      })
+    )
+    assert(dialog)
+    return { dialog, createCheckout }
+  }
+
+  it('creates none while the browser blocks the tab, and never keeps its URL', async () => {
+    const { dialog, createCheckout } = singleUseDialog([null])
+
+    await dialog.continueToCheckout()
+
+    expect(createCheckout).not.toHaveBeenCalled()
+    expect(dialog.state.value).toStrictEqual({
+      step: 'checkout_blocked',
+      amount: { kind: 'preset', cents: 5000 },
+      amountCents: 5000
+    })
+  })
+
+  it('creates a fresh one in the blocked step click and opens it in that tab', async () => {
+    const navigate = vi.fn()
+    const { dialog, createCheckout } = singleUseDialog([
+      null,
+      { navigate, close: () => {} }
+    ])
+    await dialog.continueToCheckout()
+
+    await dialog.reopenCheckout()
+
+    expect(createCheckout).toHaveBeenCalledOnce()
+    expect(navigate).toHaveBeenCalledExactlyOnceWith(
+      'https://billing.test/handoff#token=once'
+    )
     expect(dialog.state.value.step).toBe('checkout_opened')
   })
 })
