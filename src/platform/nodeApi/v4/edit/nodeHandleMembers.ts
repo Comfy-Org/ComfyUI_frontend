@@ -17,41 +17,45 @@ export function nodeHandleMembers(
   nodes: NodeHandles,
   slots: SlotHandles
 ): NodeHandleMembers {
-  const update = (patch: NodePatch) => edits.updateNode(handle, patch)
+  const update = (member: string, patch: NodePatch) =>
+    edits.updateNode(handle, patch, member)
   const live = () => nodes.locator(handle)?.()?.node
 
   return {
-    setTitle: (title) => update({ title }),
-    setMode: (mode) => update({ mode }),
-    setCollapsed: (collapsed) => update({ collapsed }),
-    setColor: (color) => update({ color }),
-    setBgColor: (bgColor) => update({ bgColor }),
-    setShape: (shape) => update({ shape }),
+    setTitle: (title) => update('setTitle', { title }),
+    setMode: (mode) => update('setMode', { mode }),
+    setCollapsed: (collapsed) => update('setCollapsed', { collapsed }),
+    setColor: (color) => update('setColor', { color }),
+    setBgColor: (bgColor) => update('setBgColor', { bgColor }),
+    setShape: (shape) => update('setShape', { shape }),
     setProperty: (name, value) =>
-      update({
+      update('setProperty', {
         properties: { [checkedString('setProperty', 'name', name)]: value }
       }),
-    setSerializeWidgets: (serializeWidgets) => update({ serializeWidgets }),
-    setPosition: (position) => update({ position }),
-    setSize: (size) => update({ size }),
-    setSizeConstraints: (sizeConstraints) => update({ sizeConstraints }),
-    setResizable: (resizable) => update({ resizable }),
+    setSerializeWidgets: (serializeWidgets) =>
+      update('setSerializeWidgets', { serializeWidgets }),
+    setPosition: (position) => update('setPosition', { position }),
+    setSize: (size) => update('setSize', { size }),
+    setSizeConstraints: (sizeConstraints) =>
+      update('setSizeConstraints', { sizeConstraints }),
+    setResizable: (resizable) => update('setResizable', { resizable }),
     remove: () => edits.removeNode(handle),
 
     inputs: slotCollection(handle, nodes, {
       slotsOf: (node) => node.inputs,
       handleFor: slots.inputHandle,
-      add: (name, type, options) => edits.addInput(handle, name, type, options),
+      add: (name, type, options) =>
+        edits.addInput(handle, name, type, options, 'add'),
       remove: (slot) => edits.removeSlot(slot),
-      reorder: (names) => edits.reorderSlots(handle, 'input', names)
+      reorder: (names) => edits.reorderSlots(handle, 'input', names, 'reorder')
     }),
     outputs: slotCollection(handle, nodes, {
       slotsOf: (node) => node.outputs,
       handleFor: slots.outputHandle,
       add: (name, type, options) =>
-        edits.addOutput(handle, name, type, options),
+        edits.addOutput(handle, name, type, options, 'add'),
       remove: (slot) => edits.removeSlot(slot),
-      reorder: (names) => edits.reorderSlots(handle, 'output', names)
+      reorder: (names) => edits.reorderSlots(handle, 'output', names, 'reorder')
     }),
 
     isSerializingWidgets() {

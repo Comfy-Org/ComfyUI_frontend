@@ -145,8 +145,8 @@ export interface GraphHandle extends GraphHandleEdits {
  */
 export interface Edits {
   /**
-   * Changes the fields `patch` names. An unusable field throws a `TypeError`
-   * before anything changes. False, changing nothing, if the node is gone.
+   * Changes the fields `patch` names; an unusable one throws first. False if the node
+   * is gone (nothing changed) or kept a property's old value (the rest applied).
    */
   updateNode(node: NodeHandle, patch: NodePatch): boolean
   /** Removes the node and its links. False if it is gone or cannot be removed. */
@@ -391,7 +391,7 @@ export interface SlotPatch {
   /** The dot's color when the slot is connected. */
   readonly color?: string | null
   readonly colorWhenUnconnected?: string | null
-  readonly shape?: SlotShape
+  readonly shape?: SlotShape | null
   /** The slot's center relative to the node's body. */
   readonly position?: Point | null
   /** The direction links leave the slot in. */
@@ -399,8 +399,8 @@ export interface SlotPatch {
 }
 
 export interface InputSlotPatch extends SlotPatch {
-  /** The node's widget this input is the socket form of. */
-  readonly widget?: string
+  /** The node's widget this input is the socket of, which no other input may be; `null` for none. */
+  readonly widget?: string | null
 }
 
 export interface SlotOptions {

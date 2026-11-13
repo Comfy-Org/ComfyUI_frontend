@@ -18,7 +18,6 @@ import {
 import type { LiveSlot } from './liveSlot'
 import { SLOT_DIRECTIONS, SLOT_SHAPES } from './slotVocabulary'
 
-/** One validated change to a slot, ready to apply. */
 type SlotWrite = (live: LiveSlot) => void
 
 const PATCH_FIELDS = {
@@ -41,14 +40,15 @@ export interface CheckedSlotPatch {
   readonly fields: readonly string[]
   readonly writes: readonly SlotWrite[]
   readonly name: string | undefined
-  readonly widget: string | undefined
+  /** The widget an input becomes the socket of; `null` to stop being one, `undefined` to leave it. */
+  readonly widget: string | null | undefined
 }
 
 export function checkedSlotPatch(
   patch: unknown,
-  side: SlotSide
+  side: SlotSide,
+  member = 'updateSlot'
 ): CheckedSlotPatch {
-  const member = 'updateSlot'
   assertPatch(
     member,
     patch,
@@ -63,8 +63,10 @@ export function checkedSlotPatch(
     fields: Object.keys(patch),
     writes,
     name: name === undefined ? undefined : checkedSlotName(member, name),
-    widget:
-      widget === undefined ? undefined : checkedString(member, 'widget', widget)
+    widget: !Object.hasOwn(patch, 'widget')
+      ? undefined
+      : (clearable((given) => checkedString(member, 'widget', given))(widget) ??
+        null)
   }
 }
 
@@ -116,15 +118,16 @@ export function checkedSlotOptions(
   }
 }
 
-/**
- * Refuses a name another slot on the same side has (A-03 keeps names unique
- * so slots stay addressable by name), and a widget the node does not have.
- */
+/** Refuses a name another slot on its side has, and a widget the node lacks or another input is the socket of. */
 export function assertFitsNode(
   member: string,
   node: LGraphNode,
   side: SlotSide,
-  { name, widget, except }: { name?: string; widget?: string; except?: object }
+  {
+    name,
+    widget,
+    except
+  }: { name?: string; widget?: string | null; except?: object }
 ): void {
   const siblings: readonly { name: string }[] =
     side === 'input' ? node.inputs : node.outputs
@@ -134,11 +137,20 @@ export function assertFitsNode(
   ) {
     throw invalidArgument(member, 'a name no other slot on this side has', name)
   }
-  if (
-    widget !== undefined &&
-    !node.widgets?.some((candidate) => candidate.name === widget)
-  ) {
+  if (typeof widget !== 'string') return
+  if (!node.widgets?.some((candidate) => candidate.name === widget)) {
     throw invalidArgument(member, 'the name of a widget on the node', widget)
+  }
+  if (
+    node.inputs.some(
+      (input) => input !== except && input.widget?.name === widget
+    )
+  ) {
+    throw invalidArgument(
+      member,
+      'a widget no other input is the socket of',
+      widget
+    )
   }
 }
 
@@ -192,8 +204,10 @@ function fieldChecks(
       }
     },
     shape(value) {
-      const shape =
-        SLOT_SHAPES[checkedChoice(member, 'shape', value, SLOT_SHAPES)]
+      const shape = clearable(
+        (given) =>
+          SLOT_SHAPES[checkedChoice(member, 'shape', given, SLOT_SHAPES)]
+      )(value)
       return ({ slot }) => {
         slot.shape = shape
       }

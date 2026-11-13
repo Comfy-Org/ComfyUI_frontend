@@ -91,7 +91,6 @@ function assertOneGraph(member: string, a: LiveSlot, b: LiveSlot): void {
   }
 }
 
-/** Re-points every link of one output to another, keeping each link's id. */
 function moveOutputLinks(
   source: LiveSlot,
   destination: LiveSlot

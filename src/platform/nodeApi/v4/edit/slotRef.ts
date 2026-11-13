@@ -1,17 +1,21 @@
 import { isPlainObject } from 'es-toolkit'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import type { SlotRef } from '@/platform/nodeApi/v4/types'
 import { knownSlotId } from './slotIds'
 
-/** Refuses anything but a slot id or name, or `{ index }` with a whole index of zero or more. */
-export function assertSlotRef(
-  member: string,
-  ref: unknown
-): asserts ref is SlotRef {
-  if (typeof ref !== 'string' && !isPosition(ref)) {
+/** A pack's slot reference, read once: a slot id or name, or a position. */
+export type CheckedSlotRef =
+  | { readonly key: string }
+  | { readonly index: number }
+
+/** Refuses anything but a string, or a plain `{ index }` whose index is a whole number of zero or more. */
+export function checkedSlotRef(member: string, ref: unknown): CheckedSlotRef {
+  if (typeof ref === 'string') return { key: ref }
+  const index = positionIn(ref)
+  if (index === undefined) {
     throw invalidArgument(member, 'a slot id, a slot name or { index }', ref)
   }
+  return { index }
 }
 
 /**
@@ -21,22 +25,26 @@ export function assertSlotRef(
 export function slotIndexOf(
   member: string,
   slots: readonly { readonly name: string }[],
-  ref: SlotRef
+  ref: CheckedSlotRef
 ): number {
-  if (typeof ref !== 'string') return ref.index < slots.length ? ref.index : -1
-  const byId = slots.findIndex((slot) => knownSlotId(slot) === ref)
+  if ('index' in ref) return ref.index < slots.length ? ref.index : -1
+  const { key } = ref
+  const byId = slots.findIndex((slot) => knownSlotId(slot) === key)
   if (byId !== -1) return byId
   const named = slots.flatMap((slot, index) =>
-    slot.name === ref ? [index] : []
+    slot.name === key ? [index] : []
   )
   if (named.length > 1) {
-    throw invalidArgument(member, 'a slot name only one slot has', ref)
+    throw invalidArgument(member, 'a slot name only one slot has', key)
   }
   return named.length === 1 ? named[0] : -1
 }
 
-function isPosition(ref: unknown): boolean {
-  if (!isPlainObject(ref)) return false
-  const { index }: Readonly<Record<string, unknown>> = ref
+function positionIn(ref: unknown): number | undefined {
+  if (!isPlainObject(ref) || Object.keys(ref).join() !== 'index')
+    return undefined
+  const index: unknown = Object.getOwnPropertyDescriptors(ref).index.value
   return typeof index === 'number' && Number.isSafeInteger(index) && index >= 0
+    ? index
+    : undefined
 }

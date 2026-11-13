@@ -2,12 +2,12 @@ import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { LiveNode, NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { EditRunner } from './editRunner'
 import { checkedNodePatch } from './nodePatch'
-import { createResizableChoices } from './nodeSizing'
 import { isBackendTypeNode } from './rebuiltSlots'
 
 /** The node edits, taking anything a pack passes and checking it. */
 export interface NodeEdits {
-  updateNode(node: unknown, patch: unknown): boolean
+  /** `member` names the call a refusal blames, for a handle method that calls this. */
+  updateNode(node: unknown, patch: unknown, member?: string): boolean
   removeNode(node: unknown): boolean
 }
 
@@ -15,24 +15,21 @@ export function createNodeEdits(
   nodes: NodeHandles,
   runner: EditRunner
 ): NodeEdits {
-  const resizable = createResizableChoices()
-
   return {
-    updateNode(node, patch) {
-      const live = liveNodeOf(nodes, 'updateNode', node)
-      const { writes, stopsSavingWidgets } = checkedNodePatch(patch, resizable)
+    updateNode(node, patch, member = 'updateNode') {
+      const live = liveNodeOf(nodes, member, node)
+      const { writes, stopsSavingWidgets } = checkedNodePatch(patch, member)
       if (!live) return false
       if (stopsSavingWidgets && isBackendTypeNode(live.node)) {
         throw invalidArgument(
-          'updateNode',
+          member,
           'a node whose type does not save its widget values, to stop saving them',
           live.node.type
         )
       }
-      runner.apply(live.graph, () => {
-        for (const write of writes) write(live.node)
-      })
-      return true
+      return runner.apply(live.graph, () =>
+        writes.map((write) => write(live.node)).every((kept) => kept !== false)
+      )
     },
 
     removeNode(node) {

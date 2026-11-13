@@ -34,10 +34,12 @@ export function createEditRunner(
   return {
     apply(graph, change) {
       return asOneStep(() => {
-        const result = change()
-        graph.incrementVersion()
-        graph.setDirtyCanvas(true, true)
-        return result
+        try {
+          return change()
+        } finally {
+          graph.incrementVersion()
+          graph.setDirtyCanvas(true, true)
+        }
       })
     },
 

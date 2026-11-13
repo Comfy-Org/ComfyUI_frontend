@@ -54,7 +54,10 @@ follow-up for a command interface.
    Steps 1 and 2 finish before step 3 starts, so a refusal leaves the document
    exactly as it was. An argument that is unusable is refused even when the
    entity is gone, so a mistake in a pack shows whatever state the document is
-   in.
+   in. A hook on the node (`onResize`, `onConnectionsChange`, `onInputAdded`
+   and the like) that throws during step 3 stops the edit part way: what was
+   applied stays, step 4 still runs, the transaction closes, and the error
+   reaches the caller.
 
 3. The transaction is the change tracker's `beforeChange()` and
    `afterChange()`, which the host supplies as the optional `history` service
@@ -64,6 +67,8 @@ follow-up for a command interface.
 4. The handle methods packs call are kept, and each is one call into
    `comfy.edit`: `node.setTitle(title)` is `comfy.edit.updateNode(node,
    { title })`. They hold no edit logic. Their types say which call they are.
+   A refusal names the handle method the pack called (`setTitle needs ...`),
+   which passes its name to the `comfy.edit` call.
 5. Edits are not replayable commands of their own. They call the same host
    methods the editor's own UI calls, so an edit raises the graph intent or
    layout operation that method raises, and no other (decision 27). What undo
@@ -88,7 +93,9 @@ follow-up for a command interface.
      stored as the workflow saves it (a JSON copy), so a pack cannot keep a
      reference into the node; a value JSON cannot hold (a function,
      `undefined`, a cycle, a BigInt) is refused, and `__proto__` is refused as a
-     name.
+     name. A node may keep a property's old value (its `onPropertyChanged`
+     answers `false`, or a pack's hook rejects it); `updateNode` then answers
+     `false`, and the rest of the patch stays applied.
    - `position` and `size` need finite numbers, and a size cannot be negative
      (A-01). `size` goes through `node.setSize`, so `onResize` runs.
 7. `sizeConstraints` resizes the node into the limits once, when it is
@@ -104,7 +111,8 @@ follow-up for a command interface.
    `WeakMap` keyed by the node and, on every pin change it hears through
    `onGraphIntent` (`set_node_field`, `flags.pinned`), reapplies the choice of
    that node. The listener is installed the first time a pack sets the field.
-   `isResizable()` reads the node's flag. The choice is not saved, and a node
+   `isResizable()`, which no stored pack calls, exists because A-09 asks that
+   the choice can be read back; it reads the node's flag. The choice is not saved, and a node
    that undo or a load rebuilds has none.
 9. `removeNode(node)` removes the node through `LGraph.remove`, which removes
    its links. It returns `false` if the node is gone or the host keeps it (a
@@ -159,20 +167,24 @@ follow-up for a command interface.
     API gives the slot object the first time it is asked for, kept in a
     `WeakMap`, so nothing is written to the slot.
 15. `node.inputs` and `node.outputs` are collections over the live slots. A
-    `SlotRef` is a slot id, else a slot name, else `{ index }` with a whole
-    index of zero or more. A bare number is refused, so a position is visible
-    at the call site. A name two slots share finds nothing in `byName` and is
+    `SlotRef` is a slot id, else a slot name, else a plain `{ index }` with a
+    whole index of zero or more and nothing else, read once. A bare number, a
+    slot handle, an object of a class and an index behind a getter are
+    refused, so a position is visible at the call site. A name two slots share finds nothing in `byName` and is
     refused where a pack asked for one slot (`remove`, `connectTo`,
     `moveLinksTo`).
 16. `updateSlot(slot, patch)` changes a slot's name, label, translated name,
     type, colors, shape, position and direction, and an input's `widget`. A
     name another slot on the same side has is refused (A-03), so slots stay
     addressable by name; so is a `widget` the node does not have, which would
-    save a socket for nothing. An output's new type is applied through
+    save a socket for nothing, or one another input is already the socket of.
+    `widget: null` (or `undefined`, when the patch names it) makes the input a
+    plain socket again. An output's new type is applied through
     `setOutputDataType`, which retypes its links; an input's link is kept. A
     type given as several names is stored as the host compares it, joined by
-    commas. `null` or `undefined` clears a field that has a default, as the
-    stored V2 packs wrote it. Decisions 24 and 26 limit which slots take which
+    commas. `null` or `undefined` clears a field that has a default (label,
+    localized name, colors, shape, position, direction), as the stored V2 packs
+    wrote it. Decisions 24 and 26 limit which slots take which
     fields.
 17. `addInput` and `addOutput` add a slot after the others through
     `node.addInput` and `node.addOutput`, with the same name rule; `removeSlot`
@@ -182,8 +194,10 @@ follow-up for a command interface.
     slots with their links in one step (16790-48). Inputs go through the host's
     own `captureInputLayout` and `replaceNodeInputs`; outputs through one
     `updateEndpoints` call on the link store, which validates every re-pointed
-    link before it moves any, and then the output list. Link ids, and so the
-    saved `links` array, do not change. If the store refuses, nothing moves and
+    link before it moves any, and then the output list. Link ids do not change;
+    the saved `links` array holds the same links, in an order that may differ.
+    Floating links (links detached onto a reroute) of the reordered slots move
+    with them. If the store refuses, nothing moves and
     the call answers `false`. Decisions 24 and 26 limit which orders it takes.
 19. `connect(output, input)` links two slots of one graph through
     `LGraphNode.connect`, so the host's type check and the nodes' connection
@@ -401,9 +415,12 @@ ADR-EXTENSIONS-NODE-API-0070.
 - **Argument checks** (`edit/checkedArguments.ts`). The repository has no
   validator for untyped values that names the call and the field, and the
   checks must run before any write. `isPlainObject` comes from `es-toolkit`.
-- **A JSON copy of a property value.** The same round trip `nodeHandle.ts`
-  reads properties with, so what is stored is what is saved; here a value that
-  cannot be saved is refused rather than read as `undefined`.
+- **A JSON copy of a property value.** A second JSON round trip beside
+  `shared/savedCopy.ts`, which reads properties: that one reports a value that
+  cannot be saved once and reads it as `undefined`, and freezes the copy; a
+  write must refuse such a value at the call and store an unfrozen copy, so
+  the two do not share code.
+- **Clamping.** `fitToConstraints` uses `clamp` from `es-toolkit`.
 - **Mode names.** The table `nodeHandle.ts` reads modes with is reused in both
   directions. The shape names are new: LiteGraph's `NAMED_SHAPES` maps names to
   shapes but is not exported, so the snapshot keeps the reverse table, and the
@@ -449,9 +466,9 @@ ADR-EXTENSIONS-NODE-API-0070.
   LiteGraph's resize.
 - **Floating links on a reorder.** The host keeps a link detached from a
   reroute as a floating link with a slot index. `replaceNodeInputs`, the host's
-  own reorder for inputs, does not move them, and neither does the output
-  reorder here, so a floating link of a reordered node keeps its old index.
-  `removeInput` and `removeOutput` do move them. Ticket draft: _Title:_ "Move
+  own reorder for inputs, does not move them (`removeInput` and `removeOutput`
+  do), so the API moves them itself after a reorder (decision 18); other
+  callers of `replaceNodeInputs` still leave them behind. Ticket draft: _Title:_ "Move
   floating links when a node's inputs are replaced". _Reproduction:_ detach a
   link onto a reroute so it floats from a node's second input, reorder that
   node's inputs with `replaceNodeInputs`, and the floating link points at
@@ -496,4 +513,5 @@ ADR-EXTENSIONS-NODE-API-0070.
   members another module adds to their handles. `nodeHandle.ts` exports
   `boundsOnCanvas`, so a group measures nodes the way `getBounds` does.
 - The first `resizable` choice installs one graph-intent listener for the life
-  of the API.
+  of the page, shared by every API instance, so two instances do not apply a
+  choice twice.
