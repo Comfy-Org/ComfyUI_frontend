@@ -101,6 +101,30 @@ describe('canvas widgets', () => {
     expect(draw.mock.calls[2]?.[3]?.get()).toEqual({ level: 2 })
   })
 
+  it('gives a handle a pack cannot change, whose widget is the canvas widget', () => {
+    const { collection, handle } = canvasOf()
+
+    expect(Object.isFrozen(handle)).toBe(true)
+    expect(handle.widget).toBe(collection.get('surface'))
+  })
+
+  it('refuses a name the node already has, naming canvas', () => {
+    const { collection } = canvasOf()
+
+    expect(() =>
+      collection.canvas({ name: 'surface', draw: () => {} })
+    ).toThrow("canvas needs a name no widget of the node has, not 'surface'.")
+  })
+
+  it('stops watching the element’s size once the widget is removed', () => {
+    const disconnect = vi.spyOn(ResizeObserver.prototype, 'disconnect')
+    const { collection } = canvasOf()
+
+    collection.remove('surface')
+
+    expect(disconnect).toHaveBeenCalledOnce()
+  })
+
   it('stops drawing once the widget is removed', () => {
     const { collection, handle, draw } = canvasOf()
 
@@ -211,6 +235,18 @@ describe('canvas widgets', () => {
       expect(release).toHaveBeenCalledWith(4)
     })
 
+    it('releases nothing on release when the pointer was not captured', () => {
+      const onPointerUp = vi.fn()
+      const { element } = canvasOf({ onPointerUp })
+      vi.spyOn(element, 'hasPointerCapture').mockReturnValue(false)
+      const release = vi.spyOn(element, 'releasePointerCapture')
+
+      element.dispatchEvent(pointer('pointerup', { pointerId: 4 }))
+
+      expect(release).not.toHaveBeenCalled()
+      expect(onPointerUp).toHaveBeenCalledOnce()
+    })
+
     it('stops reporting once the widget is removed', () => {
       const onPointerMove = vi.fn()
       const { collection, element } = canvasOf({ onPointerMove })
@@ -279,6 +315,14 @@ describe('canvas widgets', () => {
       '40px'
     ])
     expect(draw.mock.calls[0]?.[1]).toEqual([100, 40])
+    expect(draw.mock.calls[0]?.[0].setTransform).toHaveBeenCalledWith(
+      2,
+      0,
+      0,
+      2,
+      0,
+      0
+    )
   })
 
   it('draws at one pixel per CSS pixel where the window reports no ratio', () => {
@@ -295,5 +339,6 @@ describe('canvas widgets', () => {
     const { draw } = canvasOf()
 
     expect(draw).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
   })
 })

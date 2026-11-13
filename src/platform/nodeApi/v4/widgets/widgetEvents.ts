@@ -42,49 +42,30 @@ function widgetListeners() {
   }
 }
 type WidgetListeners = ReturnType<typeof widgetListeners>
-type Bridge = (widget: BaseWidget, listeners: WidgetListeners) => void
+interface BridgeContext {
+  readonly copy: (value: unknown) => Copy
+  readonly isSettingValue: () => boolean
+}
+type Bridge = (
+  widget: BaseWidget,
+  listeners: WidgetListeners,
+  context: BridgeContext
+) => void
+
+const BRIDGE_FOR: Readonly<Record<WidgetEvent, Bridge>> = {
+  change: commitBridge,
+  activate: commitBridge,
+  removed: removalBridge,
+  beforeSerialize: serializeBridge
+}
 
 export function createWidgetEvents(copyOfSaved: SavedCopier): WidgetEvents {
   const listenersOf = new WeakMap<BaseWidget, WidgetListeners>()
   const bridgesOf = new WeakMap<BaseWidget, Set<Bridge>>()
-  const copy = (value: unknown): Copy => copyOfSaved('on', value ?? null)
   let settingValues = 0
-
-  function commitBridge(widget: BaseWidget, listeners: WidgetListeners) {
-    let committed = widget.value
-    widget.callback = useChainCallback(widget.callback, () => {
-      const previous = committed
-      committed = widget.value
-      if (!Object.is(previous, committed)) {
-        listeners.change.notify(copy(committed), copy(previous))
-      }
-      if (!settingValues) {
-        listeners.activate.notify(copy(committed))
-      }
-    })
-  }
-
-  function removalBridge(widget: BaseWidget, listeners: WidgetListeners) {
-    widget.onRemove = useChainCallback(widget.onRemove, () =>
-      listeners.removed.drain()
-    )
-  }
-
-  function serializeBridge(widget: BaseWidget, listeners: WidgetListeners) {
-    const serializeValue = widget.serializeValue
-    widget.serializeValue = async (node, index) => {
-      const value = serializeValue
-        ? await serializeValue.call(widget, node, index)
-        : widget.value
-      return serializedFor(listeners, value, copy)
-    }
-  }
-
-  const bridgeFor: Record<WidgetEvent, Bridge> = {
-    change: commitBridge,
-    activate: commitBridge,
-    removed: removalBridge,
-    beforeSerialize: serializeBridge
+  const context: BridgeContext = {
+    copy: (value) => copyOfSaved('on', value ?? null),
+    isSettingValue: () => settingValues > 0
   }
 
   function listenersFor(widget: BaseWidget, event: WidgetEvent) {
@@ -92,8 +73,8 @@ export function createWidgetEvents(copyOfSaved: SavedCopier): WidgetEvents {
     listenersOf.set(widget, listeners)
     const bridges = bridgesOf.get(widget) ?? new Set()
     bridgesOf.set(widget, bridges)
-    const bridge = bridgeFor[event]
-    if (!bridges.has(bridge)) bridge(widget, listeners)
+    const bridge = BRIDGE_FOR[event]
+    if (!bridges.has(bridge)) bridge(widget, listeners, context)
     bridges.add(bridge)
     return listeners
   }
@@ -112,6 +93,44 @@ export function createWidgetEvents(copyOfSaved: SavedCopier): WidgetEvents {
         settingValues--
       }
     }
+  }
+}
+
+function commitBridge(
+  widget: BaseWidget,
+  listeners: WidgetListeners,
+  { copy, isSettingValue }: BridgeContext
+): void {
+  let committed = widget.value
+  widget.callback = useChainCallback(widget.callback, () => {
+    const previous = committed
+    committed = widget.value
+    if (!Object.is(previous, committed)) {
+      listeners.change.notify(copy(committed), copy(previous))
+    }
+    if (!isSettingValue()) {
+      listeners.activate.notify(copy(committed))
+    }
+  })
+}
+
+function removalBridge(widget: BaseWidget, listeners: WidgetListeners): void {
+  widget.onRemove = useChainCallback(widget.onRemove, () =>
+    listeners.removed.drain()
+  )
+}
+
+function serializeBridge(
+  widget: BaseWidget,
+  listeners: WidgetListeners,
+  { copy }: BridgeContext
+): void {
+  const serializeValue = widget.serializeValue
+  widget.serializeValue = async (node, index) => {
+    const value = serializeValue
+      ? await serializeValue.call(widget, node, index)
+      : widget.value
+    return serializedFor(listeners, value, copy)
   }
 }
 
@@ -138,16 +157,14 @@ function serializedFor(
   copy: (value: unknown) => Copy
 ): unknown {
   let replacement: { readonly value: WidgetValue } | undefined
-  let delivering = true
   const event: WidgetSerializeEvent = Object.freeze({
     context: 'prompt',
     value: copy(value),
     setSerializedValue(next: unknown) {
       const checked = savableValue('setSerializedValue', next)
-      if (delivering) replacement = { value: checked }
+      replacement = { value: checked }
     }
   })
   listeners.beforeSerialize.notify(event)
-  delivering = false
   return replacement ? replacement.value : value
 }

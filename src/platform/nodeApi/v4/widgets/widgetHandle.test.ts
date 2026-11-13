@@ -217,6 +217,27 @@ describe('widget handles', () => {
       expect(() => handle.setValue(circular)).toThrow(TypeError)
     })
 
+    it('accepts null and a list as values', () => {
+      const { widget, handle } = nodeWithWidget('custom', {})
+
+      handle.setValue(null)
+
+      expect(widget.value).toBeNull()
+
+      handle.setValue([1, 'two', true, { three: null }])
+
+      expect(widget.value).toEqual([1, 'two', true, { three: null }])
+    })
+
+    it('redraws after a commit', () => {
+      const { handle } = nodeWithWidget()
+      const setDirtyCanvas = vi.spyOn(graph, 'setDirtyCanvas')
+
+      handle.setValue(9)
+
+      expect(setDirtyCanvas).toHaveBeenCalledWith(true, true)
+    })
+
     it('accepts an object that refers to one value twice', () => {
       const { widget, handle } = nodeWithWidget('custom', {})
       const shared = { x: 1 }
@@ -388,6 +409,14 @@ describe('widget handles', () => {
       handle.setLinked([])
 
       expect(handle.linked()).toEqual([])
+    })
+
+    it('names what it needs when the list holds something else', () => {
+      const { handle } = nodeWithWidget()
+
+      expect(() =>
+        Reflect.apply(handle.setLinked, handle, [['steps', 3]])
+      ).toThrow('setLinked needs an array of widget names')
     })
 
     it.for([

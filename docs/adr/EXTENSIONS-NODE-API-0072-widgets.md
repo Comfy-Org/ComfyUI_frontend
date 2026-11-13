@@ -176,7 +176,6 @@ This ADR records how the API reaches widgets through those owners.
 - Accept any value, as `widget.value` does. A value the workflow cannot save
   is lost on the next save or undo; refusing it shows the pack's mistake at
   the call.
-
 - Hear values through the graph intents the widget value store emits. They
   carry the root graph id, not the widget, and they also fire while a load
   or an undo restores values, when a pack reacting with an edit would fight
@@ -187,7 +186,6 @@ This ADR records how the API reaches widgets through those owners.
 - Install `beforeSerialize` for the saved workflow through the node's
   `onSerialize`. That is API behaviour on `LGraphNode`; see "Core
   limitation".
-
 - Take a Vue component from the pack and render it with the host's Vue. A
   pack is trusted code with its own tools; the host hands it an element.
 
@@ -197,6 +195,24 @@ This ADR records how the API reaches widgets through those owners.
   no stored pack uses them.
 - A number, boolean or `null` as a mounted value: 2 sites in the stored
   packs use one (`0` and `null` as `defaultValue`); see decision 18.
+- `WidgetTextEventBase.menuEvent`, `WidgetTextKeyEvent.altKey` and `repeat`,
+  and `WidgetTextWheelEvent.deltaY`, `ctrlKey` and `preventDefault`: no
+  stored pack uses them.
+
+Not built yet, and not part of this feature until they are:
+
+- The text-editor events (`on('textInteraction')`, 2 packs, 2 sites). On the
+  litegraph canvas a multiline widget's `<textarea>` is the DOM widget's
+  element, but the Vue canvas renders its own in `WidgetTextarea.vue`, which
+  the API cannot reach without a call added to that component. Shipping the
+  events for one renderer would publish a member that silently does nothing
+  on the other.
+- Declared widget types (`WidgetTypeDef`, `WidgetTypeValue`,
+  `WidgetTypeContext`, 3 packs). They are registered through
+  `DefRegistry.defineWidgetType`, which belongs to the node definitions
+  feature. The seam is one function from this folder that turns a
+  `WidgetTypeDef` into the `ComfyWidgetConstructor` the widget store holds,
+  built from `mount`'s widget; the definitions feature registers it.
 
 ## Core limitation
 
@@ -243,5 +259,14 @@ its extension hook do not reach a pack.
 - **Chaining a callback.** `useChainCallback` from the host is used for the
   `callback` and `onRemove` bridges. It has no error isolation, so the
   listeners it calls are delivered through the shared primitive.
+- **A DOM widget.** `mount` builds its widget with the host's
+  `DOMWidgetImpl` and `addWidget`, as `useProgressTextWidget` does, rather
+  than `LGraphNode.addDOMWidget`, which cannot set `serialize` before the
+  widget is added and so would give it a value meant for another widget when
+  a workflow restores.
+- **Theme colors.** `canvas` reads the design system's `--color-*` tokens
+  from the element's computed style. Nothing in the repository gives a
+  canvas these colors by intent; `LiteGraph`'s widget color constants
+  follow the litegraph palette, not the design system.
 - **The definition check.** `definitionFields.ts` refuses unknown fields as
   `queryNodes` does, for every widget definition in this feature.

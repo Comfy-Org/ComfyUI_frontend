@@ -74,34 +74,62 @@ interface LiveWidget {
   readonly widget: BaseWidget
 }
 
+interface WidgetAccess {
+  live(): LiveWidget | undefined
+  read<T>(reader: (widget: BaseWidget) => T): T | undefined
+  change(edit: (found: LiveWidget) => void): void
+}
+
 function widgetHandle(
-  { nodeId, name, resolveGraph }: WidgetIdentity,
-  { edits, events, copyOfSaved, handleFor }: WidgetServices
+  identity: WidgetIdentity,
+  services: WidgetServices
 ): WidgetHandle {
+  const access = widgetAccess(identity)
+  return Object.freeze({
+    name: identity.name,
+    get isDeleted() {
+      return !access.live()
+    },
+    get widgetType() {
+      return access.read((widget) => widget.type)
+    },
+    ...valueMembers(access, services),
+    ...displayMembers(access, services.edits),
+    ...linkMembers(access, services),
+    on: (event: unknown, listener: unknown) =>
+      services.events.listen(access.live()?.widget, event, listener)
+  })
+}
+
+function widgetAccess({
+  nodeId,
+  name,
+  resolveGraph
+}: WidgetIdentity): WidgetAccess {
   function live(): LiveWidget | undefined {
     const graph = resolveGraph()
     const node = graph?.getNodeById(nodeId)
     const widget = node && widgetNamed(node, name)
     return graph && node && widget ? { graph, node, widget } : undefined
   }
-  function read<T>(reader: (widget: BaseWidget) => T): T | undefined {
-    const found = live()
-    return found && reader(found.widget)
-  }
-  function change(edit: (found: LiveWidget) => void): void {
-    const found = live()
-    if (found) edit(found)
-  }
-
-  return Object.freeze({
-    name,
-    get isDeleted() {
-      return !live()
+  return {
+    live,
+    read(reader) {
+      const found = live()
+      return found && reader(found.widget)
     },
-    get widgetType() {
-      return read((widget) => widget.type)
-    },
+    change(edit) {
+      const found = live()
+      if (found) edit(found)
+    }
+  }
+}
 
+function valueMembers(
+  { read, change }: WidgetAccess,
+  { edits, copyOfSaved }: WidgetServices
+): Pick<WidgetHandle, 'getValue' | 'setValue' | 'getOptions' | 'setOption'> {
+  return {
     getValue: () =>
       read((widget) => copyOfSaved('getValue', widget.value ?? null)),
     setValue(value: unknown) {
@@ -118,7 +146,24 @@ function widgetHandle(
       change(({ node, widget }) =>
         edits.setOption(node, widget, checkedKey, checked)
       )
-    },
+    }
+  }
+}
+
+function displayMembers(
+  { read, change }: WidgetAccess,
+  edits: WidgetEdits
+): Pick<
+  WidgetHandle,
+  | 'setLabel'
+  | 'isHidden'
+  | 'setHidden'
+  | 'isDisabled'
+  | 'setDisabled'
+  | 'isSerialized'
+  | 'setHeight'
+> {
+  return {
     setLabel(label: unknown) {
       if (typeof label !== 'string') {
         throw invalidArgument('setLabel', 'a label', label)
@@ -139,8 +184,15 @@ function widgetHandle(
     setHeight(height: unknown) {
       const checked = requiredSize('setHeight', height)
       change(({ node, widget }) => edits.setHeight(node, widget, checked))
-    },
+    }
+  }
+}
 
+function linkMembers(
+  { live, change }: WidgetAccess,
+  { edits, handleFor }: WidgetServices
+): Pick<WidgetHandle, 'linked' | 'setLinked'> {
+  return {
     linked() {
       const found = live()
       if (!found) return undefined
@@ -160,10 +212,8 @@ function widgetHandle(
         )
         edits.setLinked(node, widget, linked)
       })
-    },
-    on: (event: unknown, listener: unknown) =>
-      events.listen(live()?.widget, event, listener)
-  })
+    }
+  }
 }
 
 const REFUSED_OPTION_KEYS = new Set(['__proto__', 'constructor', 'prototype'])

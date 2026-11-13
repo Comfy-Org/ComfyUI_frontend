@@ -85,28 +85,11 @@ function canvasSurface(
     )
   }
 
-  function listen(): void {
-    for (const [type, handler] of Object.entries(handlers)) {
-      if (!handler) continue
-      element.addEventListener(
-        type,
-        (event) => {
-          if (event instanceof PointerEvent && claims(element, event)) {
-            callListener('canvas.pointer', () =>
-              handler(pointerAt(element, event))
-            )
-          }
-        },
-        { signal: controller.signal }
-      )
-    }
-  }
-
   return {
     render(container: HTMLElement, value: MountedValue) {
       mounted = { container, value }
       container.append(element)
-      listen()
+      listenForPointers(element, handlers, controller.signal)
       observer = new ResizeObserver(redraw)
       observer.observe(container)
       redraw()
@@ -116,6 +99,27 @@ function canvasSurface(
       observer?.disconnect()
     },
     redraw
+  }
+}
+
+function listenForPointers(
+  element: HTMLCanvasElement,
+  handlers: Readonly<Record<string, PointerHandler | undefined>>,
+  signal: AbortSignal
+): void {
+  for (const [type, handler] of Object.entries(handlers)) {
+    if (!handler) continue
+    element.addEventListener(
+      type,
+      (event) => {
+        if (event instanceof PointerEvent && claims(element, event)) {
+          callListener('canvas.pointer', () =>
+            handler(pointerAt(element, event))
+          )
+        }
+      },
+      { signal }
+    )
   }
 }
 
