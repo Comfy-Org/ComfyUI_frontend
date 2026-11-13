@@ -1329,3 +1329,97 @@ export interface PromptInputProjection {
 export interface PreviewFrame {
   readonly blob: Blob
 }
+
+export interface Comfy {
+  /** Declaring, reading, writing and watching settings. */
+  readonly settings: SettingsHandle
+  /** Text the pack keeps in the current user's data on the server. */
+  readonly storage: StorageHandle
+}
+
+/** A setting's value as the settings file holds it. A value read is a frozen copy. */
+export type SettingValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly SettingValue[]
+  | { readonly [key: string]: SettingValue }
+
+/** Core's settings and the pack's own. */
+export interface SettingsHandle {
+  /**
+   * Adds a setting to the settings panel for the life of the page. A value the
+   * user stored under its id is kept. An id already declared throws.
+   */
+  declare(setting: SettingDef): void
+  /** The value, else the default; `undefined` for an undeclared id holding nothing. */
+  get(id: string): SettingValue | undefined
+  /** Applies `value` at once. The promise settles as the host's request to save it does. */
+  set(id: string, value: SettingValue): Promise<void>
+  /** Calls `listener` after a declared setting's value changes, and when it is declared. */
+  onChange(
+    id: string,
+    listener: (
+      value: SettingValue | undefined,
+      previous: SettingValue | undefined
+    ) => void
+  ): Unsubscribe
+}
+
+/** The control the settings panel shows. */
+export type SettingType =
+  | 'boolean'
+  | 'number'
+  | 'slider'
+  | 'combo'
+  | 'text'
+  | 'color'
+
+export interface SettingDef {
+  /** Shared with core and every pack, and the key the value is saved under: `MyPack.size`. */
+  readonly id: string
+  readonly name: string
+  readonly type: SettingType
+  /** A boolean; a number for `number` and `slider`; a string, or a number for `combo`. */
+  readonly defaultValue: string | number | boolean
+  readonly tooltip?: string
+  /** Where the panel lists the setting. Defaults to the id split on dots. */
+  readonly category?: readonly string[]
+  /** The choices of a `combo`. */
+  readonly options?: readonly SettingOption[]
+  /** The range of a `number` or `slider`. */
+  readonly attrs?: SettingAttrs
+  /** Called with copies after the value changes, and once when the setting is declared. */
+  readonly onChange?: (
+    value: SettingValue | undefined,
+    previous: SettingValue | undefined
+  ) => void
+}
+
+/** A choice saved and shown as one string, or a saved value with its label. */
+export type SettingOption =
+  | string
+  | { readonly value: string | number; readonly label: string }
+
+export interface SettingAttrs {
+  readonly min?: number
+  readonly max?: number
+  readonly step?: number
+}
+
+/** A name is a relative path such as `MyPack/presets.json`: no empty, `.` or `..` segment. */
+export interface StorageHandle {
+  /** `ok` is false when the server could not be read; `text` is `undefined` when nothing is stored. */
+  get(name: string): Promise<StoredText>
+  /** Stores `text` under `name`, replacing what was there. `false` if the server did not store it. */
+  set(name: string, text: string): Promise<boolean>
+  /** `true` once nothing is stored under `name`; `false` if the server did not remove it. */
+  remove(name: string): Promise<boolean>
+  /** Every name stored under `folder`, as `get` takes it; `undefined` if the server could not list them. */
+  list(folder: string): Promise<readonly string[] | undefined>
+}
+
+export type StoredText =
+  | { readonly ok: true; readonly text: string | undefined }
+  | { readonly ok: false }
