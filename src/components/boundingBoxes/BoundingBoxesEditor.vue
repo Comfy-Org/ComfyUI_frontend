@@ -22,7 +22,7 @@
             :aria-label="$t('boundingBoxes.grid')"
             :class="
               cn(
-                'shrink-0 gap-1.5 rounded-md px-2 py-1',
+                'shrink-0 gap-1.5 px-2 py-1',
                 narrowButtonClass,
                 grid && 'bg-muted'
               )
@@ -180,7 +180,7 @@ const narrowButtonClass = '@max-[20rem]:px-1.5'
 const narrowHiddenClass = '@max-[20rem]:hidden'
 
 const actionBtnClass =
-  'flex shrink-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-foreground outline-none transition-colors hover:bg-muted'
+  'flex shrink-0 gap-1.5 border-0 px-2 py-1 outline-none hover:bg-muted'
 
 const {
   nodeId,

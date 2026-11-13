@@ -16,6 +16,11 @@ const FIFTY = { kind: 'preset', cents: 5000 } as const
 const FAILED = { kind: 'checkout_failed' } as const
 const URL = 'https://billing.comfy.org/topup?session=1'
 const SETUP_URL = 'https://platform.comfy.org/profile/billing?auto_top_up=setup'
+const ACTIVATED = {
+  threshold_credits: 1000,
+  target_credits: 11550,
+  monthly_budget_cents: null
+} as const
 
 const STATES = {
   amount: { step: 'amount', amount: FIFTY },
@@ -45,9 +50,24 @@ const STATES = {
     step: 'checkout_blocked',
     amount: FIFTY,
     amountCents: 5000,
+    origin: 'amount',
     checkoutUrl: URL
   },
+  blockedBeforeIssuing: {
+    step: 'checkout_blocked',
+    amount: FIFTY,
+    amountCents: 5000,
+    origin: 'amount'
+  },
+  blockedWhileOpened: {
+    step: 'checkout_blocked',
+    amount: FIFTY,
+    amountCents: 5000,
+    origin: 'checkout_opened'
+  },
   autoTopUpOffer: { step: 'auto_top_up_offer', setupUrl: SETUP_URL },
+  autoTopUpOn: { step: 'auto_top_up_on', settings: ACTIVATED },
+  autoTopUpFailed: { step: 'auto_top_up_failed', setupUrl: SETUP_URL },
   landed: { step: 'landed' }
 } as const satisfies Record<string, AddCreditsState>
 
@@ -62,6 +82,7 @@ const EVENTS = {
     tabReserved: true
   },
   created: { type: 'checkout_created', checkoutUrl: URL },
+  tabBlocked: { type: 'tab_blocked', amountCents: 5000 },
   refused: { type: 'checkout_refused', refusal: FAILED },
   abandoned: { type: 'checkout_abandoned' },
   followed: { type: 'blocked_link_followed' },
@@ -69,6 +90,15 @@ const EVENTS = {
   landedOfferingAutoTopUp: {
     type: 'payment_landed',
     autoTopUpSetupUrl: SETUP_URL
+  },
+  landedTurningOn: {
+    type: 'payment_landed',
+    activation: { status: 'on', settings: ACTIVATED }
+  },
+  landedFailingToTurnOn: {
+    type: 'payment_landed',
+    autoTopUpSetupUrl: SETUP_URL,
+    activation: { status: 'failed' }
   }
 } as const satisfies Record<string, AddCreditsEvent>
 
@@ -80,38 +110,68 @@ const TRANSITIONS: Partial<
   amount: {
     preset: { step: 'amount', amount: { kind: 'preset', cents: 2500 } },
     typed: { step: 'amount', amount: { kind: 'custom', input: '40' } },
-    requested: STATES.openingWithTab
+    requested: STATES.openingWithTab,
+    tabBlocked: STATES.blockedBeforeIssuing
   },
   openingWithTab: {
     created: STATES.opened,
     refused: { step: 'amount', amount: FIFTY, refusal: FAILED },
     abandoned: STATES.amount,
     landed: STATES.landed,
-    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
   },
   openingWithoutTab: {
     created: STATES.blocked,
     refused: { step: 'amount', amount: FIFTY, refusal: FAILED },
     abandoned: STATES.amount,
     landed: STATES.landed,
-    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
   },
   reopening: {
     created: STATES.opened,
     refused: { ...STATES.opened, refusal: FAILED },
     abandoned: STATES.opened,
     landed: STATES.landed,
-    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
   },
   opened: {
     requested: STATES.reopening,
+    tabBlocked: STATES.blockedWhileOpened,
     landed: STATES.landed,
-    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
   },
   blocked: {
+    requested: STATES.openingWithTab,
+    tabBlocked: STATES.blockedBeforeIssuing,
     followed: STATES.opened,
     landed: STATES.landed,
-    landedOfferingAutoTopUp: STATES.autoTopUpOffer
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
+  },
+  blockedBeforeIssuing: {
+    requested: STATES.openingWithTab,
+    followed: STATES.opened,
+    landed: STATES.landed,
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
+  },
+  blockedWhileOpened: {
+    requested: STATES.reopening,
+    followed: STATES.opened,
+    landed: STATES.landed,
+    landedOfferingAutoTopUp: STATES.autoTopUpOffer,
+    landedTurningOn: STATES.autoTopUpOn,
+    landedFailingToTurnOn: STATES.autoTopUpFailed
   }
 }
 
