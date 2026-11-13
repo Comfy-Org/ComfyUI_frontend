@@ -16,7 +16,9 @@ test.describe(
 
       await expect(oauthConsent.loginRequiredAlert).toBeVisible()
       await expect(oauthConsent.signInAgainButton).toBeVisible()
-      expect(await oauthConsent.persistedFirebaseUsers()).toHaveLength(1)
+      await expect
+        .poll(() => oauthConsent.persistedFirebaseUsers())
+        .toHaveLength(1)
 
       await oauthConsent.signInAgainButton.click()
 
