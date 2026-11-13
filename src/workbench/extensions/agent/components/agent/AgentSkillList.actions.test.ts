@@ -69,6 +69,19 @@ function mount() {
   return { ...view, user }
 }
 
+const DRAFT = {
+  name: 'sunset',
+  description: 'Compose a sunset',
+  body: 'Warm light'
+}
+
+function seedDraft(
+  target: Parameters<ReturnType<typeof useSkillDraftStore>['setDraft']>[1],
+  fields = DRAFT
+) {
+  useSkillDraftStore().setDraft(useSkillPacksStore().scope, target, fields)
+}
+
 type User = ReturnType<typeof userEvent.setup>
 
 async function chooseDelete(user: User, name: string) {
@@ -277,6 +290,38 @@ describe('AgentSkillList row actions', () => {
       expect(useToast().toasts).toEqual([])
     })
 
+    it.for<[string, () => void]>([
+      [
+        'the skill is still listed',
+        () => vi.mocked(listSkillPacks).mockResolvedValue([LANDSCAPE, PORTRAIT])
+      ],
+      [
+        'the list cannot be refreshed',
+        () =>
+          vi
+            .mocked(listSkillPacks)
+            .mockRejectedValue(new SkillPacksApiError('Server error', 500))
+      ]
+    ])(
+      'keeps the draft changes after a 404 when %s',
+      async ([, arrangeRefresh]) => {
+        seedDraft(
+          { kind: 'edit', name: 'landscape' },
+          { ...DRAFT, name: 'landscape' }
+        )
+        vi.mocked(deleteSkillPack).mockRejectedValueOnce(
+          new SkillPacksApiError('missing', 404)
+        )
+        const { user } = mount()
+        await chooseDelete(user, 'landscape')
+        arrangeRefresh()
+
+        await confirmDeletion()
+
+        expect(useSkillDraftStore().editDraftFor('landscape')).toBeDefined()
+      }
+    )
+
     it('reports the failure in an error toast, keeps the skill and returns its row to normal', async () => {
       const deletion = pendingDelete()
       const { user } = mount()
@@ -304,19 +349,6 @@ describe('AgentSkillList row actions', () => {
   })
 
   describe('discarding drafts', () => {
-    const DRAFT = {
-      name: 'sunset',
-      description: 'Compose a sunset',
-      body: 'Warm light'
-    }
-
-    function seedDraft(
-      target: Parameters<ReturnType<typeof useSkillDraftStore>['setDraft']>[1],
-      fields = DRAFT
-    ) {
-      useSkillDraftStore().setDraft(useSkillPacksStore().scope, target, fields)
-    }
-
     function confirmDiscard() {
       const onConfirm = capturedOptions().footerProps?.onConfirm
       assert(typeof onConfirm === 'function')
