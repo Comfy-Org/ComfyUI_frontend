@@ -3002,7 +3002,7 @@ export type BillingEvent = {
    */
   member_user_id?: string
   /**
-   * Event-specific parameters
+   * Event-specific parameters. On a usage row, `credits_used` is what the row cost in credits. A `cloud_workflow_executed` (GPU run) row carries it when the usage ledger holds a charge for the run. Absent means the charge is unknown (a run from before the ledger began, an unpriced row, or the ledger could not be read); it must not be read as a free run.
    */
   params?: {
     [key: string]: unknown
@@ -3045,17 +3045,9 @@ export type BillingEventsResponse = {
  */
 export type BillingHandoffCreateRequest = {
   /**
-   * Workspace the handoff and its session are bound to. An OAuth access token may name only its own workspace.
+   * Credit amount the top-up checkout opens with, in cents. Whole dollars within the manual top-up limits (`min_topup_cents` to `max_topup_cents` on GET /api/billing/balance). Allowed only with intent top-up, else 400 INVALID_REQUEST; omitted, billing-web uses its default. Sent in the entry URL's query after intent. Not a credential; the checkout validates the amount again.
    */
-  workspace_id: string
-  /**
-   * Billing app that will exchange the handoff; its origin is the only one the exchange accepts.
-   */
-  receiver: 'billing_web' | 'platform'
-  /**
-   * Client-asserted; stages the rollout, not a security boundary.
-   */
-  surface: 'local_web' | 'desktop'
+  amount_cents?: number
   /**
    * Version of the issuing app, for logs.
    */
@@ -3065,9 +3057,17 @@ export type BillingHandoffCreateRequest = {
    */
   intent?: 'top-up' | 'subscription'
   /**
-   * Credit amount the top-up checkout opens with, in cents. Whole dollars within the manual top-up limits (`min_topup_cents` to `max_topup_cents` on GET /api/billing/balance). Allowed only with intent top-up, else 400 INVALID_REQUEST; omitted, billing-web uses its default. Sent in the entry URL's query after intent. Not a credential; the checkout validates the amount again.
+   * Billing app that will exchange the handoff; its origin is the only one the exchange accepts.
    */
-  amount_cents?: number
+  receiver: 'billing_web' | 'platform'
+  /**
+   * Client-asserted; stages the rollout, not a security boundary.
+   */
+  surface: 'local_web' | 'desktop'
+  /**
+   * Workspace the handoff and its session are bound to. An OAuth access token may name only its own workspace.
+   */
+  workspace_id: string
 }
 
 /**
@@ -3075,7 +3075,7 @@ export type BillingHandoffCreateRequest = {
  */
 export type BillingHandoffCreateResponse = {
   /**
-   * The receiver's handoff page with the token in the fragment. Open it, never display it.
+   * The receiver's handoff page, with the intent and amount_cents (if any) in the query and the token in the fragment. Open it, never display it.
    */
   entry_url: string
   /**
@@ -3476,7 +3476,7 @@ export type BillingStatusResponse = {
    */
   cancel_at?: string
   /**
-   * When the current billing period began. Together with renewal_date it is the range for "current billing period" views; render the pair as received rather than deriving one from the other. Present exactly when renewal_date is: omitted for a canceled plan, a never-subscribed workspace and a free plan with no subscription.
+   * When the current subscription term began. Together with renewal_date it is the term the plan renews over (a year on an annual plan); render the pair as received rather than deriving one from the other. It is not the window usage and budgets are counted over: use usage_period_start and usage_period_end for that. Present exactly when renewal_date is: omitted for a canceled plan, a never-subscribed workspace and a free plan with no subscription.
    */
   current_period_start?: string
   /**
@@ -3558,7 +3558,7 @@ export type BillingStatusResponse = {
    */
   previous_plan?: PreviousPlan
   /**
-   * When the current billing period ends and the next one begins: the end of the period current_period_start begins.
+   * When the current subscription term ends and the next one begins: the end of the term current_period_start begins.
    */
   renewal_date?: string
   renewal_invoice?: RenewalInvoice
@@ -3593,6 +3593,14 @@ export type BillingStatusResponse = {
    * The team credit stop the workspace is currently subscribed to, for per-credit Team plans (BE-1254). Lets clients tell apart team subscriptions, which all share subscription_tier=TEAM. Always present; null for personal plans (use subscription_tier to distinguish those) and for legacy team plans without a credit stop.
    */
   team_credit_stop: TeamCreditStopSummary | null
+  /**
+   * End (exclusive) of the period usage_period_start begins, and when a budget's spend next resets. Not the renewal date: on an annual plan it is the next monthly anniversary, and for a subscription set to cancel it is never later than the cancellation.
+   */
+  usage_period_end?: string
+  /**
+   * Start of the billing period that current-period usage views and workspace budgets are counted over. Together with usage_period_end it answers "which range is this period's usage?"; request usage for exactly this pair so the usage page and a budget's spend show the same number. On an annual plan it is the monthly anniversary, so it must not be read as the plan's renewal term (that is current_period_start and renewal_date). On a monthly plan the two pairs usually agree, but render each as received: they are resolved separately and can differ for a subscription whose stored period is missing or out of date. Present exactly when usage_period_end is: omitted when the workspace has no subscription, or its subscription is scheduled, ended, or canceled and past its end.
+   */
+  usage_period_start?: string
 }
 
 /**
@@ -3610,6 +3618,181 @@ export type BillingTaxId = {
    */
   type: string
   value: string
+}
+
+/**
+ * A budget with its spend in the workspace's current billing period. Amounts come in credits and in micro-USD; a client shows credits as received and never converts.
+ *
+ */
+export type Budget = {
+  /**
+   * The percentages of the limit at which an alert is sent, ascending.
+   */
+  alert_percents: Array<number>
+  /**
+   * Alerts sent for the budget in the current period. Always `[]` until alerting ships.
+   */
+  alerts: Array<BudgetAlert>
+  /**
+   * User id that created the budget.
+   */
+  created_by: string
+  /**
+   * End of the last billing period the budget applies to; null when it repeats indefinitely.
+   */
+  ends_at: string | null
+  id: string
+  /**
+   * The limit in credits, rounded to the nearest credit.
+   */
+  limit_credits: number
+  /**
+   * The limit as stored, in micro-USD of list value.
+   */
+  limit_micro_usd: number
+  mode: BudgetMode
+  /**
+   * Whole percent of the limit spent, rounded down, so 100 means the limit is reached. It can exceed 100.
+   *
+   */
+  percent_used: number
+  repeat: BudgetRepeat
+  /**
+   * When spend next resets to 0: the end of the current billing period. Null when the workspace has no billing period.
+   *
+   */
+  resets_at: string | null
+  /**
+   * The workspace id, the member's user id, the API key's prefix or the deployment id.
+   */
+  scope_id: string
+  scope_kind: BudgetScopeKind
+  /**
+   * When the totals behind spent_micro_usd were last written. Shows how fresh the spend is: a deployment's usage arrives hourly. Null when the scope has spent nothing this period.
+   *
+   */
+  spend_updated_at: string | null
+  /**
+   * spent_micro_usd in credits, rounded to the nearest credit.
+   */
+  spent_credits: number
+  /**
+   * What the scope has spent since the current billing period began: the charged usage the usage page counts for the same range. A member budget counts session spend only; spend through the member's API keys counts toward the key. 0 when the workspace has no billing period.
+   *
+   */
+  spent_micro_usd: number
+  /**
+   * User id that last changed the budget.
+   */
+  updated_by: string
+}
+
+export type BudgetAlert = {
+  percent: number
+  sent_at: string
+  status: string
+}
+
+export type BudgetChange = {
+  action: 'created' | 'updated' | 'archived' | 'downgraded'
+  /**
+   * User id that made the change, or `system` for one the platform made.
+   */
+  actor_user_id: string
+  /**
+   * The budget's settings after the change; null for `archived`.
+   */
+  after: {
+    [key: string]: unknown
+  } | null
+  /**
+   * The budget's settings before the change; null for `created`.
+   */
+  before: {
+    [key: string]: unknown
+  } | null
+  changed_at: string
+}
+
+export type BudgetCreateRequest = {
+  /**
+   * Ascending, no repeats. Defaults to [50, 80, 100].
+   */
+  alert_percents?: Array<number>
+  /**
+   * Required with `repeat: until`, and must be in the future; refused with any other repeat.
+   */
+  ends_at?: string
+  /**
+   * The limit in credits. Send exactly one of limit_credits and limit_micro_usd.
+   */
+  limit_credits?: number
+  /**
+   * The limit in micro-USD. Send exactly one of limit_credits and limit_micro_usd.
+   */
+  limit_micro_usd?: number
+  mode: BudgetMode
+  /**
+   * Defaults to current_period.
+   */
+  repeat?: BudgetRepeat
+  /**
+   * The workspace id (for `workspace`, it must be this workspace), the member's user id, the API key's prefix or the deployment id.
+   *
+   */
+  scope_id: string
+  scope_kind: BudgetScopeKind
+}
+
+export type BudgetHistory = {
+  changes: Array<BudgetChange>
+}
+
+export type BudgetList = {
+  budgets: Array<Budget>
+}
+
+/**
+ * `soft` alerts at its thresholds and never refuses spend. `hard` also refuses spend once the limit is reached; Enterprise plans only.
+ *
+ */
+export type BudgetMode = 'hard' | 'soft'
+
+/**
+ * How long a budget applies. `current_period`: until the current billing period ends. `until`: through the period holding `ends_at`. `indefinitely`: every period, with no end.
+ *
+ */
+export type BudgetRepeat = 'current_period' | 'until' | 'indefinitely'
+
+/**
+ * What a budget limits.
+ */
+export type BudgetScopeKind = 'workspace' | 'member' | 'api_key' | 'deployment'
+
+export type BudgetUpdateRequest = {
+  /**
+   * Ascending, no repeats.
+   */
+  alert_percents?: Array<number>
+  /**
+   * With `repeat: until`, or alone (which means the same): the new end, in the future. Refused with any other repeat.
+   *
+   */
+  ends_at?: string
+  /**
+   * The new limit in credits. Send at most one of limit_credits and limit_micro_usd.
+   */
+  limit_credits?: number
+  /**
+   * The new limit in micro-USD. Send at most one of limit_credits and limit_micro_usd.
+   */
+  limit_micro_usd?: number
+  mode?: BudgetMode
+  repeat?: BudgetRepeat
+}
+
+export type BudgetWriteResult = {
+  budget: Budget
 }
 
 /**
@@ -6948,7 +7131,7 @@ export type OAuthConsentChallengeWorkspace = {
 /**
  * The platform this authorization code will be delivered to, when the
  * request's validated redirect_uri is one of a known platform's own OAuth
- * callbacks (ChatGPT, Claude). Derived server-side ONLY from the
+ * callbacks (ChatGPT, Claude, Cursor). Derived server-side ONLY from the
  * redirect_uri this request was byte-matched against at GET time —
  * never from the registrant-supplied client_name — against a
  * version-controlled registry of exact callbacks and anchored callback
@@ -6956,8 +7139,10 @@ export type OAuthConsentChallengeWorkspace = {
  * clients; omitted for first-party clients and for any redirect that is
  * not a registered platform callback. It verifies the destination
  * platform, NOT that the registrant is that platform's own app (any
- * connector on the platform can hold such a callback), so consumers
- * should label it by `display_name` and still show the redirect host.
+ * connector on the platform can hold such a callback, and any local
+ * process can listen on Cursor's loopback callback or claim its
+ * `cursor://` scheme), so consumers should label it by `display_name`
+ * and still show the redirect host.
  * `client_display_name` is unchanged and remains registrant-supplied.
  *
  */
@@ -6969,7 +7154,7 @@ export type OAuthConsentVerifiedClient = {
   /**
    * Stable identifier of the verified platform.
    */
-  platform: 'chatgpt' | 'claude'
+  platform: 'chatgpt' | 'claude' | 'cursor'
 }
 
 /**
@@ -7738,6 +7923,74 @@ export type PromptInfo = {
      */
     queue_remaining?: number
   }
+}
+
+/**
+ * The `data` of a prompt_outputs_skipped WebSocket event. Sent when ComfyUI accepts a Cloud job's prompt but rejects some nodes: ComfyUI skips the outputs that depend on them and runs the rest, and the job keeps running. The inference server sends it to the user's channel (services/inference/server/services/joborchestrator/prompt_validation.go). Every string taken from ComfyUI has its lists of allowed values or file names replaced ("is not a valid value", "[list omitted]") and is capped at 512 characters.
+ */
+export type PromptOutputsSkippedData = {
+  /**
+   * The rejected nodes, keyed by node id, in the shape ComfyUI's /prompt returns. At most 50 nodes, the lowest ids kept, and 64 KiB as JSON.
+   */
+  node_errors: {
+    [key: string]: PromptOutputsSkippedNodeError
+  }
+  /**
+   * The Cloud job id.
+   */
+  prompt_id: string
+}
+
+/**
+ * Server-to-client prompt_outputs_skipped frame on /ws. ComfyUI skipped some of a Cloud job's outputs because nodes failed validation.
+ */
+export type PromptOutputsSkippedFrame = {
+  data: PromptOutputsSkippedData
+  type: 'prompt_outputs_skipped'
+}
+
+/**
+ * One rejected node in a prompt_outputs_skipped event.
+ */
+export type PromptOutputsSkippedNodeError = {
+  /**
+   * The node's type. Empty when ComfyUI sent none.
+   */
+  class_type: string
+  /**
+   * The ids of the output nodes ComfyUI skipped because of this node, at most 50. Only ids ComfyUI sent as strings are kept; any other entry is dropped.
+   */
+  dependent_outputs: Array<string>
+  /**
+   * Why ComfyUI rejected the node, at most 10. A custom node's validator may report a bare string, which is sent as that string. Can be empty when the size cap left no room for the node's errors.
+   */
+  errors: Array<string | PromptOutputsSkippedValidationError>
+}
+
+/**
+ * One validation error as ComfyUI reports it, with tracebacks and every other field removed. type, message and details are each present only when ComfyUI sent them as strings.
+ */
+export type PromptOutputsSkippedValidationError = {
+  details?: string
+  /**
+   * Only the keys the editor reads, each present when ComfyUI sent it. A list or object value becomes the string "[list omitted]".
+   */
+  extra_info?: {
+    /**
+     * The input the error belongs to.
+     */
+    input_name?: string | number | boolean
+    /**
+     * The type the node received.
+     */
+    received_type?: string | number | boolean
+    /**
+     * The value the node received.
+     */
+    received_value?: string | number | boolean
+  }
+  message?: string
+  type?: string
 }
 
 /**
@@ -12719,7 +12972,7 @@ export type CreateBillingHandoffData = {
 
 export type CreateBillingHandoffErrors = {
   /**
-   * `INVALID_REQUEST`
+   * `INVALID_REQUEST`, or `workspace_id_invalid`: X-Comfy-Workspace-ID or ?workspace_id= names another workspace than the body
    */
   400: ErrorResponse
   /**
@@ -13314,6 +13567,294 @@ export type GetBillingBalanceResponses = {
 
 export type GetBillingBalanceResponse =
   GetBillingBalanceResponses[keyof GetBillingBalanceResponses]
+
+export type ListBillingBudgetsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/budgets'
+}
+
+export type ListBillingBudgetsErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `budgets_unavailable`: budgets are not available in this environment.
+   */
+  503: ErrorResponse
+}
+
+export type ListBillingBudgetsError =
+  ListBillingBudgetsErrors[keyof ListBillingBudgetsErrors]
+
+export type ListBillingBudgetsResponses = {
+  /**
+   * Success
+   */
+  200: BudgetList
+}
+
+export type ListBillingBudgetsResponse =
+  ListBillingBudgetsResponses[keyof ListBillingBudgetsResponses]
+
+export type CreateBillingBudgetData = {
+  body: BudgetCreateRequest
+  path?: never
+  query?: never
+  url: '/api/billing/budgets'
+}
+
+export type CreateBillingBudgetErrors = {
+  /**
+   * `INVALID_REQUEST` (the body is not a JSON object), `invalid_budget`
+   * (unknown `scope_kind` or `mode`, no `scope_id`, a limit that is not
+   * positive, both or neither limit fields, bad `alert_percents`,
+   * `until` without a future `ends_at`, or `ends_at` with another
+   * `repeat`), or `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   *
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * `not_workspace_owner` (the caller is a member, not an owner),
+   * `plan_not_enterprise` (`mode: hard` on a plan without hard caps),
+   * `WORKSPACE_BLOCKED`, `api_key_not_allowed` (the request was made
+   * with an API key; budgets are changed from a signed-in session
+   * only), `INSUFFICIENT_SCOPE` (an OAuth session without the billing
+   * write scope; sent with a `WWW-Authenticate` insufficient_scope
+   * challenge), `FORBIDDEN` (the caller is no longer
+   * a member of the workspace, or a deployment budget was asked for
+   * with a credential that cannot be used to check the deployment;
+   * sign in again), or a session refusal (see SessionWriteForbidden).
+   *
+   */
+  403: ForbiddenError
+  /**
+   * `scope_not_found`: the member, API key or deployment is not in
+   * this workspace. A deployment id must be the canonical lower-case
+   * `dep-<uuid>` form.
+   *
+   */
+  404: ErrorResponse
+  /**
+   * `budget_exists` (the scope already has a live budget) or
+   * `no_billing_period` (`repeat: current_period` on a workspace with
+   * no open paid subscription term).
+   *
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `budgets_unavailable` (budgets are not available in this
+   * environment) or `deployment_check_unavailable` (the deployment
+   * service could not be asked about a deployment scope; retry).
+   *
+   */
+  503: ErrorResponse
+}
+
+export type CreateBillingBudgetError =
+  CreateBillingBudgetErrors[keyof CreateBillingBudgetErrors]
+
+export type CreateBillingBudgetResponses = {
+  /**
+   * The new budget
+   */
+  201: BudgetWriteResult
+}
+
+export type CreateBillingBudgetResponse =
+  CreateBillingBudgetResponses[keyof CreateBillingBudgetResponses]
+
+export type DeleteBillingBudgetData = {
+  body?: never
+  path: {
+    /**
+     * Budget id (`bud_…`).
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/billing/budgets/{id}'
+}
+
+export type DeleteBillingBudgetErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * `not_workspace_owner`, `api_key_not_allowed` (the request was made with an API key), `INSUFFICIENT_SCOPE`, `FORBIDDEN` (the caller is no longer a member of the workspace), or a session refusal (see SessionWriteForbidden).
+   */
+  403: ForbiddenError
+  /**
+   * `budget_not_found`: unknown or already archived budget id.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `budgets_unavailable`: budgets are not available in this environment.
+   */
+  503: ErrorResponse
+}
+
+export type DeleteBillingBudgetError =
+  DeleteBillingBudgetErrors[keyof DeleteBillingBudgetErrors]
+
+export type DeleteBillingBudgetResponses = {
+  /**
+   * Archived
+   */
+  204: void
+}
+
+export type DeleteBillingBudgetResponse =
+  DeleteBillingBudgetResponses[keyof DeleteBillingBudgetResponses]
+
+export type UpdateBillingBudgetData = {
+  body: BudgetUpdateRequest
+  path: {
+    /**
+     * Budget id (`bud_…`).
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/billing/budgets/{id}'
+}
+
+export type UpdateBillingBudgetErrors = {
+  /**
+   * `INVALID_REQUEST` (the body is not a JSON object), `invalid_budget`
+   * (as on create), or `workspace_id_invalid` (see
+   * SessionWorkspaceIDInvalid).
+   *
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * `not_workspace_owner`, `plan_not_enterprise` (changing a soft
+   * budget to hard on a plan without hard caps), `WORKSPACE_BLOCKED`,
+   * `api_key_not_allowed` (the request was made with an API key),
+   * `INSUFFICIENT_SCOPE` (sent with a `WWW-Authenticate`
+   * insufficient_scope challenge), `FORBIDDEN` (the caller is no
+   * longer a member of the workspace), or a session refusal (see
+   * SessionWriteForbidden).
+   *
+   */
+  403: ForbiddenError
+  /**
+   * `budget_not_found`: unknown or archived budget id.
+   */
+  404: ErrorResponse
+  /**
+   * `no_billing_period`: `repeat: current_period` on a workspace with no open paid subscription term.
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `budgets_unavailable`: budgets are not available in this environment.
+   */
+  503: ErrorResponse
+}
+
+export type UpdateBillingBudgetError =
+  UpdateBillingBudgetErrors[keyof UpdateBillingBudgetErrors]
+
+export type UpdateBillingBudgetResponses = {
+  /**
+   * The budget after the change
+   */
+  200: BudgetWriteResult
+}
+
+export type UpdateBillingBudgetResponse =
+  UpdateBillingBudgetResponses[keyof UpdateBillingBudgetResponses]
+
+export type GetBillingBudgetHistoryData = {
+  body?: never
+  path: {
+    /**
+     * Budget id (`bud_…`).
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/billing/budgets/{id}/history'
+}
+
+export type GetBillingBudgetHistoryErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * `not_workspace_owner`, `FORBIDDEN` (the caller is no longer a member of the workspace), or a session refusal (see SessionForbidden).
+   */
+  403: ForbiddenError
+  /**
+   * `budget_not_found`: unknown or archived budget id.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `budgets_unavailable`: budgets are not available in this environment.
+   */
+  503: ErrorResponse
+}
+
+export type GetBillingBudgetHistoryError =
+  GetBillingBudgetHistoryErrors[keyof GetBillingBudgetHistoryErrors]
+
+export type GetBillingBudgetHistoryResponses = {
+  /**
+   * Success
+   */
+  200: BudgetHistory
+}
+
+export type GetBillingBudgetHistoryResponse =
+  GetBillingBudgetHistoryResponses[keyof GetBillingBudgetHistoryResponses]
 
 export type GetBillingCapabilitiesData = {
   body?: never
@@ -23215,6 +23756,10 @@ export type GetOAuthAuthorizeErrors = {
    * Invalid authorize request (pre-redirect failure — unknown client, redirect mismatch, malformed params). Content-negotiated; browser navigations (Accept includes text/html without application/json) receive a self-contained HTML error page instead of JSON. Or, always as JSON, `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid) for a token or API key whose workspace selector is malformed or names another workspace than its own, while `web_session_enabled` is on for its user.
    */
   400: ErrorResponse
+  /**
+   * `code` `login_required`: a resume request (`oauth_request_id` present) that is not a browser top-level navigation (Accept does not prefer text/html, as with the consent page's fetch) and has no signed-in session, or one whose email is unverified while email verification is on. The request stays open, so the client sends the user to sign in and resumes it. A browser navigation in the same state gets the 302 to login instead.
+   */
+  401: ErrorResponse
   /**
    * OAuth disabled
    */
