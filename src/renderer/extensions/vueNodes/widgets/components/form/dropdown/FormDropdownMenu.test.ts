@@ -22,7 +22,7 @@ beforeEach(() => {
 function createItem(id: string, name: string): FormDropdownItem {
   return {
     id,
-    preview_url: '',
+    thumbnail: { icon: '', isVideo: false },
     name,
     label: name
   }

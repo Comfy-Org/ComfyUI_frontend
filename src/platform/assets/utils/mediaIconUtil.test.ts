@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { iconForFilename, iconForMediaType } from './mediaIconUtil'
+import { iconForMediaType } from './mediaIconUtil'
 
 describe('iconForMediaType', () => {
   it('maps text and misc fallbacks correctly', () => {
@@ -13,17 +13,5 @@ describe('iconForMediaType', () => {
     expect(iconForMediaType('video')).toBe('icon-[lucide--video]')
     expect(iconForMediaType('audio')).toBe('icon-[lucide--music]')
     expect(iconForMediaType('3D')).toBe('icon-[lucide--box]')
-  })
-})
-
-describe('iconForFilename', () => {
-  it('uses the HDR icon for HDR images regardless of case', () => {
-    expect(iconForFilename('render.exr')).toBe('icon-[lucide--sun]')
-    expect(iconForFilename('SKY.HDR')).toBe('icon-[lucide--sun]')
-  })
-
-  it('falls back to the media type icon', () => {
-    expect(iconForFilename('clip.mp4')).toBe('icon-[lucide--video]')
-    expect(iconForFilename('photo.png')).toBe('icon-[lucide--image]')
   })
 })

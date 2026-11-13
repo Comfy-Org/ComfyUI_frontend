@@ -39,9 +39,9 @@
         </div>
         <div
           v-else
-          class="flex size-full flex-col items-center justify-center gap-1 text-foreground"
+          class="flex size-full items-center justify-center text-foreground"
         >
-          <i class="icon-[lucide--sun] size-6" />
+          <i :class="cn('size-6', iconForFilename(items[index].filename))" />
         </div>
       </Button>
       <div
@@ -286,6 +286,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { iconForFilename } from '@/platform/assets/utils/mediaIconUtil'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { openHdrViewer } from '@/services/hdrViewerService'

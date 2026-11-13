@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useIntersectionObserver } from '@vueuse/core'
-import { computed, inject, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -12,10 +12,8 @@ import {
   findServerPreviewUrl,
   isAssetPreviewSupported
 } from '@/platform/assets/utils/assetPreviewUtil'
-import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-import { AssetKindKey } from './types'
 import type { FormDropdownMenuItemProps } from './types'
 
 const props = defineProps<FormDropdownMenuItemProps>()
@@ -29,20 +27,20 @@ const emit = defineEmits<{
 
 const actualDimensions = ref<string | null>(null)
 
-const assetKind = inject(AssetKindKey)
-
-const isVideo = computed(() => assetKind?.value === 'video')
-const isMesh = computed(() => assetKind?.value === 'mesh')
-
-const mediaContainerRef = ref<HTMLElement>()
-const resolvedMeshPreview = ref<string | null>(null)
-const meshPreviewAttempted = ref(false)
-
 function toLookupName(name: string): string {
   const stripped = name.replace(/ \[output\]$/, '')
   const slash = stripped.lastIndexOf('/')
   return slash === -1 ? stripped : stripped.substring(slash + 1)
 }
+
+const isMesh = computed(
+  () => getMediaTypeFromFilename(toLookupName(props.name)) === '3D'
+)
+
+const mediaContainerRef = ref<HTMLElement>()
+const resolvedMeshPreview = ref<string | null>(null)
+const meshPreviewAttempted = ref(false)
+const failedSrc = ref<string>()
 
 async function resolveMeshPreview() {
   if (!isAssetPreviewSupported()) return
@@ -65,14 +63,10 @@ watch(
   }
 )
 
-const failedPreviewUrl = ref<string>()
-const displayedPreviewUrl = computed(() => {
-  const url = isMesh.value ? resolvedMeshPreview.value : props.previewUrl
-  return url && url !== failedPreviewUrl.value ? url : undefined
+const displayedSrc = computed(() => {
+  const src = resolvedMeshPreview.value ?? props.thumbnail.src
+  return src && src !== failedSrc.value ? src : undefined
 })
-const isHdr = computed(() =>
-  isHdrImageFilename(parseAnnotatedPath(props.name).filepath)
-)
 
 function handleClick() {
   emit('click', props.index)
@@ -150,43 +144,31 @@ function handleVideoLoad(event: Event) {
         />
       </div>
       <video
-        v-if="displayedPreviewUrl && isVideo"
-        :src="displayedPreviewUrl"
+        v-if="displayedSrc && thumbnail.isVideo"
+        :src="displayedSrc"
         :aria-label="label ?? name"
         class="size-full object-cover"
         preload="metadata"
         muted
         @loadeddata="handleVideoLoad"
-        @error="failedPreviewUrl = displayedPreviewUrl"
+        @error="failedSrc = displayedSrc"
       />
       <img
-        v-else-if="displayedPreviewUrl"
-        :src="displayedPreviewUrl"
+        v-else-if="displayedSrc"
+        :src="displayedSrc"
         :alt="name"
         draggable="false"
         class="size-full object-cover"
         @load="handleImageLoad"
-        @error="failedPreviewUrl = displayedPreviewUrl"
+        @error="failedSrc = displayedSrc"
       />
-      <div
-        v-else-if="isMesh"
-        data-testid="dropdown-item-mesh-placeholder"
-        class="flex size-full items-center justify-center bg-muted"
-      >
-        <i class="icon-[lucide--box] text-3xl text-muted-foreground" />
-      </div>
-      <div
-        v-else-if="isHdr"
-        data-testid="dropdown-item-hdr-placeholder"
-        class="flex size-full items-center justify-center bg-muted"
-      >
-        <i class="icon-[lucide--sun] size-8 text-muted-foreground" />
-      </div>
       <div
         v-else
         data-testid="dropdown-item-media-placeholder"
-        class="size-full bg-linear-to-tr from-blue-400 via-teal-500 to-green-400"
-      />
+        class="flex size-full items-center justify-center bg-muted"
+      >
+        <i :class="cn(thumbnail.icon, 'size-8 text-muted-foreground')" />
+      </div>
     </div>
     <!-- Name -->
     <div

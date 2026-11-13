@@ -103,7 +103,7 @@ describe('useWidgetSelectItems', () => {
       createDefaultOptions({ modelValue: ref(value) })
     )
     const item = pagedItems(dropdownItems.value)[0]
-    const url = new URL(item.preview_url ?? '', 'http://localhost')
+    const url = new URL(item.thumbnail.src ?? '', 'http://localhost')
     expect(url.pathname).toBe('/api/view')
     expect(Object.fromEntries(url.searchParams)).toEqual({
       filename,
@@ -124,7 +124,7 @@ describe('useWidgetSelectItems', () => {
     const { dropdownItems } = useWidgetSelectItems(
       createDefaultOptions({ modelValue: ref(value) })
     )
-    expect(pagedItems(dropdownItems.value)[0].preview_url).toBe('')
+    expect(pagedItems(dropdownItems.value)[0].thumbnail.src).toBeUndefined()
   })
 
   it('keeps identically named outputs in distinct subfolders', () => {
@@ -217,11 +217,11 @@ describe('useWidgetSelectItems', () => {
       expect(pagedItems(dropdownItems.value)[0].label).toBe('Friendly Name')
     })
 
-    it('passes the asset preview_url through unchanged', () => {
+    it('uses the asset preview_url as the thumbnail src', () => {
       const previewUrl = '/api/view?filename=img_001.png&type=input'
       storeAssets.input = [makeInput('input-0', 'img_001.png', previewUrl)]
       const { dropdownItems } = useWidgetSelectItems(createDefaultOptions())
-      expect(pagedItems(dropdownItems.value)[0].preview_url).toBe(previewUrl)
+      expect(pagedItems(dropdownItems.value)[0].thumbnail.src).toBe(previewUrl)
     })
 
     it.for([
@@ -240,7 +240,7 @@ describe('useWidgetSelectItems', () => {
       {
         source: 'raw HDR only',
         preview: {},
-        expectedPreview: ''
+        expectedPreview: undefined
       }
     ])(
       'uses a browser-safe image for $source',
@@ -259,7 +259,7 @@ describe('useWidgetSelectItems', () => {
         )
 
         expect(pagedItems(dropdownItems.value)).toMatchObject([
-          { id: 'hdr-output', preview_url: expectedPreview }
+          { id: 'hdr-output', thumbnail: { src: expectedPreview } }
         ])
       }
     )
@@ -403,24 +403,18 @@ describe('useWidgetSelectItems', () => {
       )
     })
 
-    it('leaves the fallback preview empty for mesh kind', () => {
+    it('gives the fallback for a mesh an icon instead of a src', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({
           modelValue: ref('3d/model.glb'),
           assetKind: () => 'mesh'
         })
       )
-      expect(pagedItems(dropdownItems.value)[0].preview_url).toBe('')
-    })
-
-    it('does not request the raw file as the fallback preview for HDR values', () => {
-      const { dropdownItems } = useWidgetSelectItems(
-        createDefaultOptions({
-          modelValue: ref('render.exr [output]'),
-          assetKind: () => 'image'
-        })
-      )
-      expect(pagedItems(dropdownItems.value)[0].preview_url).toBe('')
+      expect(pagedItems(dropdownItems.value)[0].thumbnail).toEqual({
+        src: undefined,
+        icon: 'icon-[lucide--box]',
+        isVideo: false
+      })
     })
 
     it('does not add a fallback when modelValue matches a base asset', () => {

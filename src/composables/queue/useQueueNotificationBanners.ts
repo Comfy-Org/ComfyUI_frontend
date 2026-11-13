@@ -7,7 +7,7 @@ import type {
 } from '@comfyorg/api-client/ComfyApi'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
+import { resultItemUrlWithTimestamp } from '@/utils/resultItemUrl'
 import { isImageResult } from '@/utils/resultItem'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
@@ -261,9 +261,9 @@ export const useQueueNotificationBanners = () => {
       if (state === 'completed') {
         completedCount++
         const preview = task.previewOutput
-        const previewUrl =
-          preview && isImageResult(preview) && resultItemPreviewUrl(preview)
-        if (previewUrl) imagePreviews.push(previewUrl)
+        if (preview && isImageResult(preview)) {
+          imagePreviews.push(resultItemUrlWithTimestamp(preview))
+        }
       } else if (state === 'failed') {
         failedCount++
       }

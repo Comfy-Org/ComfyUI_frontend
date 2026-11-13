@@ -18,6 +18,7 @@ import {
   getAssetUrlFilename,
   getOutputSubfolder
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { assetThumbnail } from '@/platform/assets/utils/assetThumbnailUtil'
 import type {
   FilterOption,
   OwnershipOption
@@ -32,11 +33,7 @@ import {
   parseAnnotatedPath
 } from '@/utils/createAnnotatedPath'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import {
-  hdrPreviewAssetUrl,
-  isHdrImageFilename,
-  isHdrImageUrl
-} from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
@@ -53,10 +50,8 @@ function getDisplayLabel(value: string, getLabel?: (v: string) => string) {
 function getMediaUrl(
   filename: string,
   type: string,
-  assetKind: AssetKind | undefined,
   subfolder?: string
 ): string {
-  if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
   if (subfolder) params.set('subfolder', subfolder)
   appendCloudResParam(params, filename)
@@ -69,10 +64,7 @@ function assetRoot(asset: AssetItem): 'input' | 'output' | 'temp' | undefined {
   }
 }
 
-function getAnnotatedValueMediaUrl(
-  value: string,
-  assetKind: AssetKind | undefined
-): string {
+function getAnnotatedValueMediaUrl(value: string): string {
   const { filepath } = parseAnnotatedPath(value)
   if (
     /^[^\\/]:/.test(filepath) ||
@@ -82,8 +74,7 @@ function getAnnotatedValueMediaUrl(
   )
     return ''
   const { filename, subfolder, type } = parseImageWidgetValue(value)
-  if (isHdrImageFilename(filename)) return ''
-  return getMediaUrl(filename, type, assetKind, subfolder)
+  return getMediaUrl(filename, type, subfolder)
 }
 
 export interface UseWidgetSelectItemsOptions {
@@ -145,7 +136,6 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     const currentValue = toValue(modelValue)
     if (!currentValue) return undefined
     const labelFn = toValue(options.getOptionLabel)
-    const kind = toValue(options.assetKind)
 
     if (missingMediaValues.value.has(currentValue)) return undefined
     if (availableItems.value.some((item) => item.name === currentValue))
@@ -153,10 +143,13 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
     return {
       id: `missing-${currentValue}`,
-      preview_url:
-        toValue(options.isAssetMode) && assetData
-          ? ''
-          : getAnnotatedValueMediaUrl(currentValue, kind),
+      thumbnail: assetThumbnail({
+        name: parseImageWidgetValue(currentValue).filename,
+        preview_url:
+          toValue(options.isAssetMode) && assetData
+            ? undefined
+            : getAnnotatedValueMediaUrl(currentValue)
+      }),
       name: currentValue,
       label: getDisplayLabel(currentValue, labelFn)
     }
@@ -172,22 +165,11 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   }
 
   function assetToForm(asset: AssetItem): FormDropdownItem {
-    const name = itemNameFor(asset)
-    const kind = toValue(options.assetKind)
     return {
       id: asset.id,
-      name,
+      name: itemNameFor(asset),
       label: getAssetDisplayName(asset),
-      preview_url:
-        kind === 'mesh'
-          ? ''
-          : isHdrImageFilename(asset.name)
-            ? asset.preview_id
-              ? hdrPreviewAssetUrl(asset.preview_id)
-              : ([asset.thumbnail_url, asset.preview_url].find(
-                  (url) => url && !isHdrImageUrl(url)
-                ) ?? '')
-            : asset.preview_url || getAnnotatedValueMediaUrl(name, kind),
+      thumbnail: assetThumbnail(asset),
       is_immutable: asset.is_immutable,
       base_models: getAssetBaseModels(asset)
     }
