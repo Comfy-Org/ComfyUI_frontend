@@ -1470,3 +1470,23 @@ export interface NotifyDef {
   /** Milliseconds before it closes. Omitted, it stays until the user closes it. */
   readonly life?: number
 }
+
+export interface Comfy {
+  /** Calls to the backend and the messages it sends. */
+  readonly backend: BackendHandle
+}
+
+/** A route starts with exactly one `/`. */
+export interface BackendHandle {
+  /** The URL of an API route, such as `/view?filename=a.png`, under the host's base path. */
+  url(route: string): string
+  /** The URL of a file the server serves outside its API, such as `/extensions/MyPack/icon.png`. */
+  assetUrl(route: string): string
+  /**
+   * Calls an API route with the host's credentials. Resolves with the response
+   * whatever its status, and rejects as `fetch` does when the server cannot be reached.
+   */
+  fetch(route: string, init?: RequestInit): Promise<Response>
+  /** Calls `listener` with a frozen copy of each payload the backend sends as `event`. */
+  on(event: string, listener: (detail: unknown) => void): Unsubscribe
+}

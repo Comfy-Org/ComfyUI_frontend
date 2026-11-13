@@ -36,6 +36,7 @@ import { createGraphScopes } from './graphScopeHandle'
 import { createNodeHandles } from './nodeHandle'
 import { createPacks } from './packs'
 import type { Comfy } from './types'
+import { createBackendHandle } from './utilities/backendHandle'
 import { createCommandsHandle } from './utilities/commandsHandle'
 import { createSettingsHandle } from './utilities/settingsHandle'
 import { createStorageHandle } from './utilities/storageHandle'
@@ -168,6 +169,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     settings: createSettingsHandle(),
     storage: createStorageHandle(),
     commands: createCommandsHandle(),
+    backend: createBackendHandle(),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
   } satisfies Comfy)
 
