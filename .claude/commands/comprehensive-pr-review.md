@@ -6,7 +6,7 @@ Review the pull request in `$PR_NUMBER` as a senior engineer would: design, corr
 
 - Post every finding as its own inline comment on the changed line. Do not post a summary comment.
 - `GITHUB_TOKEN` grants `pull-requests: write`. Use `gh api` to post; do not report that you lack permission.
-- Comment only on lines the diff adds or changes, and only when you can name a concrete fix.
+- Comment only on lines the diff adds, changes or removes, and only when you can name a concrete fix.
 - Keep comments short. No Markdown headers and no emojis inside a comment.
 
 ## 1. Gather context
@@ -15,8 +15,8 @@ The workflow provides `PR_NUMBER`, `COMMIT_SHA`, `BASE_SHA` and `REPOSITORY` (`o
 
 ```bash
 gh pr view "$PR_NUMBER" --json title,body,files,additions,deletions
-git diff --name-status "$BASE_SHA" "$COMMIT_SHA"
-git diff "$BASE_SHA" "$COMMIT_SHA"
+git diff --name-status "$BASE_SHA...$COMMIT_SHA"
+git diff "$BASE_SHA...$COMMIT_SHA"
 ```
 
 ## 2. Load the repository's standards
@@ -32,7 +32,7 @@ These files are the review criteria. Read them before judging the diff, and cite
 
 Beyond the lenses, check these repository-specific points, all from root `AGENTS.md`:
 
-- **Comments.** Any comment added by the diff, other than curt JSDoc on an exported API, is a finding. Run the `comment-sicko` skill (`.claude/skills/comment-sicko/SKILL.md`) and fold its triaged findings into this review.
+- **Comments.** Any comment added by the diff, other than curt JSDoc on an exported API, is a finding. Tool directives such as `eslint-disable-next-line` or `@vitest-environment` are not comments; the Suppressions rule below judges them. Run the `comment-sicko` skill (`.claude/skills/comment-sicko/SKILL.md`) and fold its triaged findings into this review.
 - **Suppressions.** Search added lines for `eslint-disable`, `oxlint-disable`, `@ts-ignore`, `@ts-nocheck`, `@ts-expect-error`, `as any`, double assertions and non-null assertions. Request changes for every `@ts-ignore`, `@ts-nocheck` and `as any`, for `@ts-expect-error` outside a test that verifies a compiler error, and for file-wide or multi-rule lint disables. Accept a narrow exception only when the PR description names an external constraint you can verify, and say what you verified.
 - **Server and API types.** A hand-declared response type that duplicates one from `@comfyorg/ingest-types` or `@comfyorg/registry-types` is a finding.
 - **Server facts.** A gate that derives a server fact on the client is a finding (`docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md`).
@@ -68,4 +68,4 @@ COMMENT_BODY="**[quality] medium Priority**
 gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" "/repos/$REPOSITORY/pulls/$PR_NUMBER/comments" -f body="$COMMENT_BODY" -f commit_id="$COMMIT_SHA" -f path="src/path/to/file.ts" -F line=42 -f side="RIGHT"
 ```
 
-`line` is the line number in the new version of the file and must be inside a diff hunk.
+`line` must be inside a diff hunk. For an added or changed line, use `side="RIGHT"` and the line number in the new version of the file. For a removed line, use `side="LEFT"` and the line number in the old version.
