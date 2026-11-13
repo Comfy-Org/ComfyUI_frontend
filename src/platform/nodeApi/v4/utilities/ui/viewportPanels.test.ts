@@ -69,6 +69,7 @@ describe('viewport panels', () => {
 
     expect(renderedInDocument).toBe(true)
     const mounted = mountedPanel(view, 'MyPack.progress')
+    expect(mounted.parentElement).toBe(view)
     expect(mounted.getAttribute('role')).toBe('region')
     expect(mounted.getAttribute('aria-label')).toBe('Progress')
     expect(mounted.textContent).toBe('pack panel')
