@@ -539,15 +539,11 @@ ADR-EXTENSIONS-NODE-API-0070.
   another input. _Direction:_ update floating links in `replaceNodeInputs` as
   `removeInput` does.
 - **No intent for re-pointed links or slot edits (a requirement for release).**
-  `moveLinks` and the
-  output reorder update link endpoints in the link store, and slot fields and
-  slot structure change without an intent, so none of them reaches the shared
-  document's operations (decision 27). Ticket draft: _Title:_ "Announce link
-  endpoint changes and slot edits as graph intents". _Reproduction:_ bind a
-  shared document, re-point a link with `useLinkStore().updateEndpoints`, and
-  no operation is minted. _Direction:_ intent kinds for an endpoint update and
-  for slot field and structure changes, raised by the link store and the slot
-  methods, and minted into operations.
+  `moveLinks` and the output reorder update link endpoints in the link store,
+  and slot fields and slot structure change without an intent, so none of them
+  reaches the shared document's operations (decision 27). Filed as
+  [#23382](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23382); the API
+  keeps the host's behavior and is correct once the ticket is fixed.
 - **Badges under Vue nodes.** `usePartitionedBadges` computes a node's badges
   from `node.badges`, a plain array no reactive state depends on, so a badge an
   extension adds or removes after the node is drawn shows or goes only when
