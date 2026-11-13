@@ -58,7 +58,7 @@ export function createComfyApi(services: ComfyApiServices): {
     }
   }))
   const edit = createEdits(nodes, scopes, slots, () => services.history?.())
-  const definitions = createDefRegistry()
+  const definitions = createDefRegistry(nodes)
 
   const comfy: Comfy = Object.freeze({
     getApiVersion: () => API_VERSION,

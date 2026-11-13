@@ -108,6 +108,53 @@ registered, so `extend` cannot depend on the order.
     through the listener primitive of ADR-EXTENSIONS-NODE-API-0070, which gains `notify()` for
     delivery that keeps its listeners.
 
+### Lifecycle hooks
+
+15. The builder offers `onCreated`, `onConfigured`, `onRemoved`, `onExecuted`,
+    `onSerialize` and `onResized`. Each takes a function, refused with a
+    `TypeError` otherwise. The builder's methods throw a `TypeError` once the
+    `apply` callback returns: no stored pack registers a hook later, and a
+    hook added then would have no owner to remove it with. The hooks of an
+    `apply` that throws are dropped with it.
+16. Each hook is called with the node's handle, resolved in the node's own
+    graph, so a node in a subgraph has a handle there. A hook is called only
+    for a node that is in a graph; a node being built, or one configured before
+    it joins, has no handle yet.
+17. The API reaches a type's nodes the way packs do through
+    `beforeRegisterNodeDef`: it puts a dispatcher on the prototype of the class
+    the host made for the type, calling what was there first. A dispatcher is
+    put on a class the first time a hook needs it and stays, so extending and
+    unsubscribing any number of times leaves one dispatcher per method and
+    class. It looks up the callbacks for its type at each call, so a callback
+    an extension removed is not called. A type the host registers again gets a
+    new class; its extensions are applied again and their dispatchers are put
+    on the new class.
+18. `onCreated` hears a node join a graph through the host's graph intents: the
+    `add_node` intent `LGraph.add` announces, whose source is `load` while a
+    workflow loads (`LGraph.configure`) and while API-JSON and A1111 imports
+    add their nodes. That source is the event's `loading` (review finding
+    B-07). `restored` is true while loading and for a node configured before
+    it joined, as a paste or a duplicate is. The API listens for intents only
+    while some extension has an `onCreated` or `onConfigured` hook.
+19. `onConfigured` gives a frozen JSON copy of the saved node. A node
+    configured before it joined a graph is told once it joins, after
+    `onCreated`. During a load a node joins first and is configured after, so
+    `onCreated` comes first there too.
+20. `onRemoved` is called before the node leaves its graph, so its handle still
+    reads it.
+21. `onExecuted` gives the texts and images of the server's output and a frozen
+    JSON copy of all of it (`raw`). A text that is not a string and an image
+    that is not an object are left out of the lists, not of `raw`.
+22. `onSerialize` returns fields to add to the saved node; they come back in
+    the data `onConfigured` gives, through the host's extension payload. A
+    result that is not a plain object, or that names a field the node saves
+    itself (`isNodeCanonicalField`) or `extensions`, is refused whole and
+    reported.
+23. `onResized` gives the node's new size, frozen.
+24. A defined type's definition may declare `onCreated`, `onConfigured`,
+    `onRemoved` and `onSerialize`; they are applied as an extension of that
+    type, made by `define` and removed by its disposer.
+
 ## Alternatives considered
 
 - Call the API from `litegraphService.registerNodeDef`, as the earlier
@@ -119,6 +166,14 @@ registered, so `extend` cannot depend on the order.
   lists frontend-only types with inputs and outputs it does not know, for
   which a definition with none would be wrong. The API's index holds only
   references, so it costs one entry per type.
+- Hear `onCreated` through the prototype's `onAdded`. It runs before the
+  host's graph intent, so it cannot tell a load from an import, and
+  `ChangeTracker.isLoadingGraph` is set only for `loadGraphData`.
+- Hear node lifecycle through each graph's `node:added` and `node:removed`
+  events. A listener per graph would have to follow every graph the host
+  makes and replaces, and `node:removed` fires after the node has left.
+- Remove a dispatcher when its last callback goes. Another pack may have
+  wrapped the method since, and taking ours out would drop theirs.
 - Index extensions by type name so registration does not test every
   extension. Registration tests each extension once per type, which is a
   string comparison for most selectors; nobody has measured a cost that an
@@ -139,6 +194,12 @@ registered, so `extend` cannot depend on the order.
   extends one.
 - Extensions apply to a type in the order they were made, so the hooks of a
   type run in that order however the pack modules loaded.
+- A dispatcher reaches the nodes made from the class it is on. Nodes made
+  before the host registered their type again keep the old class, which has
+  the dispatchers it had then.
+- A legacy pack that replaces a prototype method without calling the one it
+  replaced drops the API's dispatcher for that type, as it drops another
+  pack's today.
 - Host changes: `useComfyApiStore().publish()` registers the extension.
 
 ## What this feature replaces or duplicates, and why
@@ -153,6 +214,11 @@ registered, so `extend` cannot depend on the order.
   come from `getInputSpecType` and `getComboSpecComboOptions` in
   `@comfyorg/object-info-parser`, and the shown names from the host's own
   `resolveNodeDefText` and `resolveNodeDefSlotText`.
+- **Reading the load state** uses the source the host's graph intents carry
+  (`onGraphIntent`), not a new flag.
+- **Saved fields** go through the host's extension payload in
+  `extensionPersistence.ts`, and the fields it saves itself are its own list
+  (`isNodeCanonicalField`).
 - **Calling a pack callback** goes through `callListener`, the error isolation
   the listener primitive already had, now exported so every callback the API
   calls is reported the same way.

@@ -10,7 +10,9 @@ import { savedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 import type { DefRegistry, Unsubscribe } from '@/platform/nodeApi/v4/types'
+import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import {
+  addDefinitionHooks,
   checkedDefinition,
   nodeDefFromDefinition,
   registerDefinedType
@@ -18,6 +20,7 @@ import {
 import { checkedSelector } from './defSelector'
 import { createExtensions } from './extensions'
 import type { NodeType } from './extensions'
+import { createHookDispatch } from './hookDispatch'
 import { nodeDefFromHost } from './nodeDef'
 
 /** The extension through which the host tells the API about node types. */
@@ -36,18 +39,27 @@ interface DefRegistryParts {
 
 export const NODE_TYPE_HOOKS_NAME = 'Comfy.NodeApi.v4.NodeTypes'
 
-export function createDefRegistry(): DefRegistryParts {
+export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
   const copyOfSaved = savedCopier()
-  const extensions = createExtensions()
+  const dispatch = createHookDispatch(
+    nodes,
+    {
+      callbacksFor: (type, hook) => extensions.callbacksFor(type, hook),
+      demand: (hook) => extensions.demand(hook)
+    },
+    copyOfSaved
+  )
+  const extensions = createExtensions(dispatch)
   const refreshed = createListeners('onRefreshed')
 
   function registerHostType(
-    _nodeClass: typeof LGraphNode,
+    nodeClass: typeof LGraphNode,
     hostDef: ComfyNodeDefV1
   ): void {
     extensions.typeRegistered({
       type: hostDef.name,
       category: hostDef.category,
+      nodeClass,
       def: () => nodeDefFromHost(hostDef, copyOfSaved)
     })
   }
@@ -58,10 +70,16 @@ export function createDefRegistry(): DefRegistryParts {
     const nodeType: NodeType = {
       type: checked.type,
       category: checked.category,
+      nodeClass,
       def: () => nodeDefFromDefinition(checked)
     }
+    const stopHooks = extensions.extend(
+      (candidate) => candidate.type === checked.type,
+      (builder) => addDefinitionHooks(builder, checked)
+    )
     extensions.typeRegistered(nodeType)
     return once(() => {
+      stopHooks()
       extensions.typeUnregistered(nodeType)
       if (LiteGraph.registered_node_types[checked.type] === nodeClass) {
         LiteGraph.unregisterNodeType(checked.type)

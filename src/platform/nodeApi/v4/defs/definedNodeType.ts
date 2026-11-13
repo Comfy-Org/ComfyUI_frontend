@@ -5,9 +5,18 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type {
   NodeDef,
+  NodeDefBuilder,
   NodeDefinition,
   NodeDefinitionSlot
 } from '@/platform/nodeApi/v4/types'
+import type { HookCallbacks } from './nodeHooks'
+
+type DefinitionHooks = Partial<
+  Pick<
+    HookCallbacks,
+    'onCreated' | 'onConfigured' | 'onRemoved' | 'onSerialize'
+  >
+>
 
 /** A definition every field of which has been checked, with its defaults filled in. */
 export interface CheckedDefinition {
@@ -18,6 +27,7 @@ export interface CheckedDefinition {
   readonly inputs: readonly NodeDefinitionSlot[]
   readonly outputs: readonly NodeDefinitionSlot[]
   readonly execution: 'backend' | 'frontend'
+  readonly hooks: DefinitionHooks
 }
 
 const DEFINITION_FIELDS = {
@@ -27,7 +37,11 @@ const DEFINITION_FIELDS = {
   description: true,
   inputs: true,
   outputs: true,
-  execution: true
+  execution: true,
+  onCreated: true,
+  onConfigured: true,
+  onRemoved: true,
+  onSerialize: true
 } satisfies Record<keyof NodeDefinition, true>
 
 const EXECUTIONS = ['backend', 'frontend'] as const
@@ -55,8 +69,25 @@ export function checkedDefinition(definition: unknown): CheckedDefinition {
     description: optionalText('description', definition.description) ?? '',
     inputs: checkedSlots('inputs', definition.inputs),
     outputs: checkedSlots('outputs', definition.outputs),
-    execution: checkedExecution(definition.execution)
+    execution: checkedExecution(definition.execution),
+    hooks: {
+      onCreated: optionalHook('onCreated', definition.onCreated),
+      onConfigured: optionalHook('onConfigured', definition.onConfigured),
+      onRemoved: optionalHook('onRemoved', definition.onRemoved),
+      onSerialize: optionalHook('onSerialize', definition.onSerialize)
+    }
   }
+}
+
+/** Adds the hooks a definition declares, as an extension of its own type. */
+export function addDefinitionHooks(
+  builder: NodeDefBuilder,
+  { hooks }: CheckedDefinition
+): void {
+  if (hooks.onCreated) builder.onCreated(hooks.onCreated)
+  if (hooks.onConfigured) builder.onConfigured(hooks.onConfigured)
+  if (hooks.onRemoved) builder.onRemoved(hooks.onRemoved)
+  if (hooks.onSerialize) builder.onSerialize(hooks.onSerialize)
 }
 
 /** Registers the node type a definition describes, and returns its class. */
@@ -112,6 +143,11 @@ function availableTypeName(type: unknown): string {
     throw invalidArgument('define', 'a type name no node type has yet', type)
   }
   return type
+}
+
+function optionalHook<T>(name: string, hook: T): T | undefined {
+  if (hook === undefined || typeof hook === 'function') return hook
+  throw invalidArgument('define', `an ${name} that is a function`, hook)
 }
 
 function optionalText(field: string, value: unknown): string | undefined {
