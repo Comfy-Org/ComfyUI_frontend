@@ -69,6 +69,8 @@ const i18n = createI18n({
           errorOriginRefused: ORIGIN_REFUSED,
           errorUnavailable: "This feature isn't available right now.",
           sessionError: 'Failed to establish session. Please try again.',
+          loginRequired: 'Sign in to continue.',
+          signInAgain: 'Sign in again',
           signedInAs: 'Signed in as',
           notYou: 'Not you?',
           switchAccount: 'Switch account'
@@ -476,6 +478,90 @@ describe('OAuthConsentView', () => {
       ).toBeVisible()
     })
   })
+})
+
+describe('OAuthConsentView when the request does not load', () => {
+  async function renderConsentFromUrl() {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/oauth/consent', component: OAuthConsentView }]
+    })
+    await router.push(
+      `/oauth/consent?oauth_request_id=${challenge.oauth_request_id}`
+    )
+    render(OAuthConsentView, { global: { plugins: [i18n, router] } })
+  }
+
+  it('offers to sign in again for the same request without signing out', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json(
+        {
+          code: 'login_required',
+          message: 'sign in again to approve this request'
+        },
+        { status: 401 }
+      )
+    )
+    const user = userEvent.setup()
+    await renderConsentFromUrl()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Sign in to continue.'
+    )
+    await user.click(screen.getByRole('button', { name: 'Sign in again' }))
+
+    expect(assign).toHaveBeenCalledExactlyOnceWith(
+      `/cloud/login?switchAccount=true&oauth_request_id=${challenge.oauth_request_id}`
+    )
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      case: 'an expired request',
+      status: 400,
+      body: { message: 'expired' },
+      message: 'This consent request has expired or has already been used.'
+    },
+    {
+      case: 'a 401 without login_required',
+      status: 401,
+      body: { message: 'unauthorized' },
+      message: 'Failed to establish session. Please try again.'
+    },
+    {
+      case: 'a refused origin',
+      status: 403,
+      body: { code: 'origin_not_allowed', message: 'refused' },
+      message: ORIGIN_REFUSED
+    },
+    {
+      case: 'OAuth turned off',
+      status: 404,
+      body: { message: 'disabled' },
+      message: "This feature isn't available right now."
+    },
+    {
+      case: 'a server error',
+      status: 500,
+      body: { message: 'internal' },
+      message: 'OAuth request failed.'
+    }
+  ])(
+    'shows $case with no way to sign in again',
+    async ({ status, body, message }) => {
+      vi.mocked(fetch).mockResolvedValueOnce(Response.json(body, { status }))
+      await renderConsentFromUrl()
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(message)
+      expect(
+        screen.queryByRole('button', { name: 'Sign in again' })
+      ).not.toBeInTheDocument()
+    }
+  )
 })
 
 describe('OAuthConsentView signed-in account', () => {

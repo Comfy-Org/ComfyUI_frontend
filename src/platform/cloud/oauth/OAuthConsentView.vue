@@ -240,13 +240,23 @@
       </footer>
     </section>
 
-    <p
-      v-else-if="errorMessage"
-      role="alert"
-      class="m-0 rounded-md border border-destructive bg-destructive/10 p-3 text-center text-sm text-destructive"
-    >
-      {{ errorMessage }}
-    </p>
+    <div v-else-if="errorMessage" class="flex flex-col gap-4">
+      <p
+        role="alert"
+        class="m-0 rounded-md border border-destructive bg-destructive/10 p-3 text-center text-sm text-destructive"
+      >
+        {{ errorMessage }}
+      </p>
+      <Button
+        v-if="signInAgainPath"
+        variant="secondary"
+        size="lg"
+        class="w-full bg-ink-500 hover:bg-ink-400"
+        @click="signInAgain"
+      >
+        {{ t('oauth.consent.signInAgain') }}
+      </Button>
+    </div>
     <p v-else class="m-0 text-center text-sm text-muted-foreground">
       {{ t('oauth.consent.loading') }}
     </p>
@@ -309,6 +319,7 @@ const errorMessage = ref('')
 const submitting = ref<'allow' | 'deny' | null>(null)
 const isSubmitting = computed(() => submitting.value !== null)
 const switchingAccount = ref(false)
+const signInAgainPath = ref<string>()
 
 const signedInAccount = computed(() => {
   if (!flags.oauthConsentSwitchAccountEnabled) return null
@@ -380,8 +391,17 @@ async function loadChallenge() {
     challenge.value = next
     selectedWorkspaceId.value = getDefaultWorkspaceId(next)
   } catch (error) {
+    if (error instanceof OAuthApiError && error.code === 'login_required') {
+      errorMessage.value = t('oauth.consent.loginRequired')
+      signInAgainPath.value = switchAccountSignInPath(oauthRequestId)
+      return
+    }
     errorMessage.value = messageForError(error)
   }
+}
+
+function signInAgain() {
+  if (signInAgainPath.value) window.location.assign(signInAgainPath.value)
 }
 
 function messageForError(error: unknown): string {
