@@ -66,7 +66,8 @@ describe('findBrokenReferences', () => {
     ['pnpm in prose', 'pnpm warns when engines differ'],
     ['pnpm builtin', '`pnpm install`'],
     ['pnpm binary', '`pnpm vitest run`'],
-    ['pnpm placeholder', '`pnpm <script>`']
+    ['pnpm placeholder', '`pnpm <script>`'],
+    ['pnpm line continuation', '`pnpm --filter @comfyorg/x \\`']
   ])('accepts %s', ([, markdown]) => {
     expect(lines('packages/graph-model/README.md', markdown)).toEqual([])
   })

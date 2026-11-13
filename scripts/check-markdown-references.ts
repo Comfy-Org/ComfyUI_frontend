@@ -155,7 +155,7 @@ function checkCodePath(
 }
 
 function findUndefinedPnpmCommands(code: string, index: RepoIndex): string[] {
-  return [...code.matchAll(/(?:^|[\s;&|(])pnpm\s+([^;&|\n]*)/g)].flatMap(
+  return [...code.matchAll(/(?:^|[\s;&|(])pnpm\s+([^;&|\\\n]*)/g)].flatMap(
     ([, argumentText]) => {
       const command = pnpmCommand(argumentText.trim().split(/\s+/))
       if (!command || PLACEHOLDER_CHARACTERS.test(command)) return []
