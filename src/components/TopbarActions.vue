@@ -55,6 +55,7 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useAppMode } from '@/composables/useAppMode'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -71,14 +72,14 @@ const { withConsent, isChecking } = useAgentConsent()
 const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
 const { flags } = useFeatureFlags()
+const { isBuilderMode } = useAppMode()
 
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
 const isSignedIn = computed(() => isCloud || isLoggedIn.value)
-// billing_new_ux_enabled mounts the profile button in the sidebar instead.
 const showCurrentUser = computed(
-  () => isSignedIn.value && !flags.billingNewUxEnabled
+  () => isSignedIn.value && (!flags.billingNewUxEnabled || isBuilderMode.value)
 )
 const showLoginButton = computed(() => !isSignedIn.value)
 const comfyAgentNotReady = computed(() =>

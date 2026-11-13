@@ -255,6 +255,19 @@ describe('WorkflowTabs profile button', () => {
     expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
   })
 
+  it('keeps the profile button in the top bar in builder mode, where the sidebar is hidden', async () => {
+    setBillingNewUx(true)
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('Builder workflow.json')
+      .load()
+    workflow.activeMode = 'builder:inputs'
+    workflowStore.activeWorkflow = workflow
+    renderComponent()
+
+    expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+  })
+
   it('keeps the login button in the top bar when signed out with billing_new_ux_enabled on', () => {
     setBillingNewUx(true)
     useCurrentUser().isLoggedIn = computed(() => false)
