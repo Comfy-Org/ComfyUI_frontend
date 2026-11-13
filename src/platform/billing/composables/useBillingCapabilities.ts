@@ -33,7 +33,6 @@ type CapabilityReadState =
       status: 'denied'
       authUid: string
       workspaceId: string
-      /** A 401, which restoring the web session can fix. */
       sessionLapsed: boolean
     }
   | {
@@ -540,7 +539,6 @@ function useBillingCapabilitiesInternal() {
             : unavailableState(userId, workspaceId)
         }
         scheduleRefresh()
-        // A flag that arrived mid-flight missed the fetch layer's 401 replay.
         refetchAfterSettle =
           sessionLapsed &&
           !recoveryEnabledAtStart &&
