@@ -42,14 +42,28 @@ The default is Playwright's bundled browser.
 
 ## Evidence
 
-Three cases run five times each, with one worker and zero retries:
+Four cases run five times each, with one worker and zero retries:
 
 1. A single workflow completes with matching backend history and canvas output.
 2. Two real runs of one workflow overlap; the earlier run finishes while the
    later run is still active, and its running node remains visible. Each job's
    backend output is checked, followed by the final canvas output.
-3. Independent async branches appear running together in a real server
+3. Two different workflow tabs overlap, with distinct submitted workflow IDs
+   and running async nodes. Switching tabs preserves each run, the earlier
+   completion leaves the foreground run active, and each canvas retains its
+   own output.
+4. Independent async branches appear running together in a real server
    snapshot and retain their distinct outputs.
+
+For a manual check, import `execution/parallel_sleep.json` and
+`execution/parallel_sleep_other_workflow.json` into two workflow tabs. Prepare
+both tabs, run the first, then immediately run the second and keep its tab
+visible. The first sleeps for six seconds and outputs `first-run`; the second
+sleeps for ten seconds and outputs `other-workflow`. The second node must start
+before the first job completes, and remain visibly running after that
+completion. Switch back after both finish and check both canvas outputs.
+The two files deliberately share node IDs while using different workflow IDs.
+Change the string inputs between repetitions when backend caching is enabled.
 
 Open `playwright-report/m1-live/index.html`, or run:
 

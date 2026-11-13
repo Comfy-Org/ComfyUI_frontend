@@ -64,6 +64,81 @@ test.describe('M1 real backend smoke', { tag: ['@smoke', '@workflow'] }, () => {
     ).toEqual([])
   })
 
+  test('different workflow tabs overlap without clearing the foreground run or mixing outputs', async ({
+    comfyPage,
+    liveExecution
+  }) => {
+    await comfyPage.workflow.loadWorkflow('execution/parallel_sleep')
+    const firstTab = await comfyPage.menu.topbar.getActiveTabName()
+    const first = await liveExecution.run(comfyPage)
+    await expect
+      .poll(() => liveExecution.hasConcurrentNodes(first, ['2']))
+      .toBe(true)
+
+    await comfyPage.workflow.loadWorkflow(
+      'execution/parallel_sleep_other_workflow'
+    )
+    const secondTab = await comfyPage.menu.topbar.getActiveTabName()
+    expect(secondTab).not.toBe(firstTab)
+    const second = await liveExecution.run(comfyPage)
+    expect(liveExecution.workflowIdsByJob[first]).toBeDefined()
+    expect(liveExecution.workflowIdsByJob[second]).toBeDefined()
+    expect(liveExecution.workflowIdsByJob[second]).not.toBe(
+      liveExecution.workflowIdsByJob[first]
+    )
+    await expect
+      .poll(() => liveExecution.hasConcurrentNodes(second, ['2']))
+      .toBe(true)
+    expect(liveExecution.hasEvent(first, 'execution_success')).toBe(false)
+
+    await comfyPage.workflow.switchToTab(firstTab)
+    await comfyPage.nextFrame()
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => String(window.app!.runningNodeId))
+      )
+      .toBe('2')
+    await comfyPage.workflow.switchToTab(secondTab)
+    await comfyPage.nextFrame()
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => String(window.app!.runningNodeId))
+      )
+      .toBe('2')
+
+    await expect
+      .poll(() => liveExecution.hasEvent(first, 'execution_success'))
+      .toBe(true)
+    expect((await liveExecution.job(second)).status).toBe('in_progress')
+    await expect
+      .poll(() =>
+        comfyPage.page.evaluate(() => String(window.app!.runningNodeId))
+      )
+      .toBe('2')
+    await expect
+      .poll(() => liveExecution.hasEvent(second, 'execution_success'))
+      .toBe(true)
+    expect((await liveExecution.job(first)).outputs?.['3'].text).toEqual([
+      'first-run'
+    ])
+    expect((await liveExecution.job(second)).outputs?.['3'].text).toEqual([
+      'other-workflow'
+    ])
+    const secondOutput = await comfyPage.nodeOps.getNodeRefById(3)
+    await expect
+      .poll(async () => (await secondOutput.getWidget(0)).getValue())
+      .toBe('other-workflow')
+    await comfyPage.workflow.switchToTab(firstTab)
+    await comfyPage.nextFrame()
+    const firstOutput = await comfyPage.nodeOps.getNodeRefById(3)
+    await expect
+      .poll(async () => (await firstOutput.getWidget(0)).getValue())
+      .toBe('first-run')
+    expect(
+      liveExecution.frames.filter((frame) => frame.type === 'execution_error')
+    ).toEqual([])
+  })
+
   test('independent async branches overlap and preserve both outputs', async ({
     comfyPage,
     liveExecution

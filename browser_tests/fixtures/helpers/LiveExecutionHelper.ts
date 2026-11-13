@@ -15,6 +15,7 @@ export class LiveExecutionHelper {
   readonly frames: (z.infer<typeof frameSchema> & { receivedAt: number })[] = []
   readonly requests: { method: string; url: string }[] = []
   readonly jobIds: string[] = []
+  readonly workflowIdsByJob: Record<string, string> = {}
   readonly historyByJob: Record<string, JobDetail> = {}
 
   constructor(
@@ -49,6 +50,15 @@ export class LiveExecutionHelper {
     const { prompt_id: jobId } = z
       .object({ prompt_id: z.string().min(1) })
       .parse(data)
+    const body: unknown = submitted.request().postDataJSON()
+    const { workflow_metadata: metadata } = z
+      .object({
+        workflow_metadata: z.record(z.string(), z.string()).optional()
+      })
+      .parse(body)
+    if (metadata?.workflow_id) {
+      this.workflowIdsByJob[jobId] = metadata.workflow_id
+    }
     this.jobIds.push(jobId)
     return jobId
   }

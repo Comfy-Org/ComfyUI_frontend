@@ -25,6 +25,7 @@ export const test = base.extend<{
           {
             mocks: false,
             jobs: execution.jobIds,
+            workflowIdsByJob: execution.workflowIdsByJob,
             history: execution.historyByJob,
             requests: execution.requests,
             frames: execution.frames
