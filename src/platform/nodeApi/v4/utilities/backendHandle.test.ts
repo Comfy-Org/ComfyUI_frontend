@@ -113,6 +113,7 @@ describe('backend messages', () => {
     expect(delivered).toEqual(payload)
     expect(delivered).not.toBe(payload)
     expect(Object.isFrozen(delivered)).toBe(true)
+    expect(Object.isFrozen(delivered.images)).toBe(true)
     expect(Object.isFrozen(delivered.images[0])).toBe(true)
   })
 
