@@ -35,49 +35,45 @@ const primitiveTypes = new Set([
   'PrimitiveNode'
 ])
 
-type SourceStep =
-  | Exclude<InputValueSource, { kind: 'editable' }>
-  | { kind: 'widget'; node: NodeState; widgetId: WidgetId }
-  | { kind: 'upstream'; link: LinkTopology }
+interface ValueStep {
+  readonly widgetId?: WidgetId
+  readonly upstream?: LinkTopology
+}
 
-function resolvePrimitiveSource(
+function primitiveValueStep(
   graph: ValueSourceGraph,
   node: NodeState
-): SourceStep {
-  const id = graph
+): ValueStep | undefined {
+  const widgetId = graph
     .widgetIds(node)
     .find(
       (id) =>
         node.type === 'PrimitiveNode' || graph.widget(id)?.name === 'value'
     )
-  const widget = id ? graph.widget(id) : undefined
-  if (!widget || !id) return { kind: 'unavailable' }
-  const index = node.inputs.findIndex(
-    (entry) => entry.widget?.name === widget.name
-  )
-  const upstream = index < 0 ? undefined : graph.inputLink(node, index)
-  return upstream
-    ? { kind: 'upstream', link: upstream }
-    : { kind: 'widget', node, widgetId: id }
+  const name = widgetId && graph.widget(widgetId)?.name
+  if (!widgetId || !name) return undefined
+  const index = node.inputs.findIndex((entry) => entry.widget?.name === name)
+  return {
+    widgetId,
+    upstream: index < 0 ? undefined : graph.inputLink(node, index)
+  }
 }
 
-function resolveNodeSource(
+function valueStep(
   graph: ValueSourceGraph,
-  node: NodeState,
-  link: LinkTopology
-): SourceStep {
-  if (node.mode !== LGraphEventMode.ALWAYS || link.originSlot !== 0) {
-    return { kind: 'linked', node }
-  }
-  if (node.type === 'Reroute') {
-    const upstream = graph.inputLink(node, 0)
-    return upstream
-      ? { kind: 'upstream', link: upstream }
-      : { kind: 'unavailable' }
-  }
-  return primitiveTypes.has(node.type)
-    ? resolvePrimitiveSource(graph, node)
-    : { kind: 'linked', node }
+  node: NodeState
+): ValueStep | undefined {
+  return node.type === 'Reroute'
+    ? { upstream: graph.inputLink(node, 0) }
+    : primitiveValueStep(graph, node)
+}
+
+function passesValueThrough(node: NodeState, link: LinkTopology): boolean {
+  return (
+    node.mode === LGraphEventMode.ALWAYS &&
+    link.originSlot === 0 &&
+    (node.type === 'Reroute' || primitiveTypes.has(node.type))
+  )
 }
 
 export function resolveInputValueSource(
@@ -105,25 +101,14 @@ export function resolveInputValueSource(
     if (!node || seen.has(node)) return { kind: 'unavailable' }
     seen.add(node)
     shared ||= graph.outputLinkCount(node, link.originSlot) > 1
-    const step = resolveNodeSource(graph, node, link)
-    switch (step.kind) {
-      case 'widget':
-        return {
-          kind: 'editable',
-          node: step.node,
-          widgetId: step.widgetId,
-          shared
-        }
-      case 'upstream':
-        link = step.link
-        break
-      case 'linked':
-      case 'unavailable':
-        return step
-      default: {
-        const exhaustive: never = step
-        return exhaustive
-      }
+    if (!passesValueThrough(node, link)) return { kind: 'linked', node }
+    const step = valueStep(graph, node)
+    if (step?.upstream) {
+      link = step.upstream
+      continue
     }
+    return step?.widgetId
+      ? { kind: 'editable', node, widgetId: step.widgetId, shared }
+      : { kind: 'unavailable' }
   }
 }

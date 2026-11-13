@@ -160,8 +160,7 @@ export abstract class SubgraphSlot
   disconnect(): void {
     const { subgraph } = this.parent
 
-    const linksToDisconnect = this.linkIds.slice()
-    for (const linkId of linksToDisconnect) {
+    for (const linkId of this.linkIds.slice()) {
       subgraph.removeLink(linkId)
     }
 

@@ -120,9 +120,6 @@ export const useCanvasStore = defineStore('canvas', () => {
   const isInSubgraph = ref(false)
   const isGhostPlacing = ref(false)
   const isPickingNodes = ref(false)
-  const isEditingBlocked = computed(
-    () => isReadOnly.value || isPickingNodes.value
-  )
   const toast = useToast()
 
   function startNodePicking(): void {
@@ -240,7 +237,6 @@ export const useCanvasStore = defineStore('canvas', () => {
     isInSubgraph,
     isGhostPlacing,
     isPickingNodes,
-    isEditingBlocked,
     startNodePicking,
     stopNodePicking
   }

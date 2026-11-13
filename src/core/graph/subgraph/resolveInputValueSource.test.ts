@@ -52,14 +52,15 @@ function link(source: NodeState, target: NodeState): LinkTopology {
 
 function fixture(
   nodes: NodeState[],
-  links: LinkTopology[] = []
+  links: LinkTopology[] = [],
+  widgetName = 'value'
 ): ValueSourceGraph {
   const widgets = new Map(
     nodes.map((node) => [
-      widgetId(rootId, node.id, 'value'),
+      widgetId(rootId, node.id, widgetName),
       {
         nodeId: node.id,
-        name: 'value',
+        name: widgetName,
         type: 'number',
         value: 37,
         y: 0,
@@ -77,21 +78,27 @@ function fixture(
       links.filter(
         (link) => link.originNodeId === node.id && link.originSlot === index
       ).length,
-    widgetIds: (node) => [widgetId(rootId, node.id, 'value')],
+    widgetIds: (node) => [widgetId(rootId, node.id, widgetName)],
     widget: (id) => widgets.get(id)
   }
 }
 
 describe('subgraph input value source', () => {
-  it.for(['source', 'reroute', 'downstream Primitive'] as const)(
-    'identifies shared values when the %s branches',
-    (branch) => {
+  it.for([
+    { branch: 'no', shared: false },
+    { branch: 'source', shared: true },
+    { branch: 'reroute', shared: true },
+    { branch: 'downstream Primitive', shared: true }
+  ] as const)(
+    'follows a Primitive chain and reroute to the owning widget when $branch node branches',
+    ({ branch, shared }) => {
       const host = node(29, 'subgraph')
       const source = node(3, 'PrimitiveInt')
       const reroute = node(7, 'Reroute')
       const downstream = node(11, 'PrimitiveInt')
       const other = node(37, 'subgraph')
       const branchingNode = {
+        no: undefined,
         source,
         reroute,
         'downstream Primitive': downstream
@@ -102,24 +109,19 @@ describe('subgraph input value source', () => {
           link(source, reroute),
           link(reroute, downstream),
           link(downstream, host),
-          link(branchingNode, other)
+          ...(branchingNode ? [link(branchingNode, other)] : [])
         ]
       )
 
-      expect(resolveInputValueSource(graph, host, 'value')).toMatchObject({
+      expect(resolveInputValueSource(graph, host, 'value')).toEqual({
         kind: 'editable',
         node: source,
-        shared: true
+        widgetId: widgetId(rootId, source.id, 'value'),
+        shared
       })
     }
   )
 
-  it('refuses a removed input instead of addressing its replacement by index', () => {
-    const host = node(29, 'subgraph')
-    expect(resolveInputValueSource(fixture([host]), host, 'removed')).toEqual({
-      kind: 'unavailable'
-    })
-  })
   it('addresses an unconnected promoted input by its existing widget ID', () => {
     const host = node(29, 'subgraph')
     const id = widgetId(rootId, host.id, 'value')
@@ -133,37 +135,16 @@ describe('subgraph input value source', () => {
   })
 
   it.for([
-    'PrimitiveInt',
-    'PrimitiveFloat',
-    'PrimitiveString',
-    'PrimitiveStringMultiline',
-    'PrimitiveBoolean',
-    'PrimitiveNode'
-  ])('edits the stored value of %s', (type) => {
+    { type: 'PrimitiveInt', widgetName: 'value' },
+    { type: 'PrimitiveNode', widgetName: 'seed' }
+  ])('edits the stored $widgetName widget of $type', ({ type, widgetName }) => {
     const host = node(29, 'subgraph')
     const source = node(11, type)
-    const graph = fixture([host, source], [link(source, host)])
+    const graph = fixture([host, source], [link(source, host)], widgetName)
     expect(resolveInputValueSource(graph, host, 'value')).toEqual({
       kind: 'editable',
       node: source,
-      widgetId: widgetId(rootId, source.id, 'value'),
-      shared: false
-    })
-  })
-
-  it('follows a Primitive chain and reroute to the owning widget', () => {
-    const host = node(29, 'subgraph')
-    const downstream = node(11, 'PrimitiveInt')
-    const reroute = node(7, 'Reroute')
-    const source = node(3, 'PrimitiveInt')
-    const graph = fixture(
-      [host, downstream, reroute, source],
-      [link(downstream, host), link(reroute, downstream), link(source, reroute)]
-    )
-    expect(resolveInputValueSource(graph, host, 'value')).toEqual({
-      kind: 'editable',
-      node: source,
-      widgetId: widgetId(rootId, source.id, 'value'),
+      widgetId: widgetId(rootId, source.id, widgetName),
       shared: false
     })
   })

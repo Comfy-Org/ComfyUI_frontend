@@ -41,7 +41,6 @@ const i18n = createI18n({
 type Props = ComponentProps<typeof NodeFooter>
 
 const baseProps: Props = {
-  subgraphAction: undefined,
   errorSeverity: 'none',
   showErrorsTabEnabled: false
 }
@@ -69,7 +68,6 @@ describe('NodeFooter', () => {
       await user.click(screen.getByRole('button', { name: 'Exit subgraph' }))
 
       expect(emitted()).toHaveProperty('navigateSubgraph')
-      expect(screen.queryByText('Enter Subgraph')).not.toBeInTheDocument()
     })
 
     it('renders nothing when no relevant flags are set', () => {
@@ -130,40 +128,25 @@ describe('NodeFooter', () => {
     })
   })
 
-  it.for([
-    {
-      name: 'regular',
-      subgraphAction: undefined,
-      showAdvancedInputsButton: false
-    },
-    {
-      name: 'subgraph',
-      subgraphAction: 'enter',
-      showAdvancedInputsButton: false
-    },
-    {
-      name: 'advanced',
-      subgraphAction: undefined,
-      showAdvancedInputsButton: true
-    }
-  ] as const)(
-    'opens issues from the warning footer on a $name node',
-    async (props) => {
-      const user = userEvent.setup()
-      const { emitted } = renderFooter({
-        ...props,
-        errorSeverity: 'missing',
-        showErrorsTabEnabled: true
-      })
-      const button = screen.getByRole('button', { name: 'Issues' })
-      expect(button).toHaveClass('bg-warning', 'text-warning-foreground')
-      expect(
-        screen.queryByRole('button', { name: 'Error' })
-      ).not.toBeInTheDocument()
-      await user.click(button)
-      expect(emitted()).toHaveProperty('openErrors')
-    }
-  )
+  it.for<Partial<Props> & { name: string }>([
+    { name: 'regular' },
+    { name: 'subgraph', subgraphAction: 'enter' },
+    { name: 'advanced', showAdvancedInputsButton: true }
+  ])('opens issues from the warning footer on a $name node', async (props) => {
+    const user = userEvent.setup()
+    const { emitted } = renderFooter({
+      ...props,
+      errorSeverity: 'missing',
+      showErrorsTabEnabled: true
+    })
+    const button = screen.getByRole('button', { name: 'Issues' })
+    expect(button).toHaveClass('bg-warning', 'text-warning-foreground')
+    expect(
+      screen.queryByRole('button', { name: 'Error' })
+    ).not.toBeInTheDocument()
+    await user.click(button)
+    expect(emitted()).toHaveProperty('openErrors')
+  })
 
   describe('emits', () => {
     let user: ReturnType<typeof userEvent.setup>

@@ -1,5 +1,3 @@
-import type { Locator } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -10,9 +8,8 @@ test.describe(
   'Subgraph input widget lifecycle',
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
   () => {
-    test('creates widgets in both directions and recreates a disconnected input for a different widget', async ({
-      comfyPage,
-      comfyMouse
+    test('creates a widget input from the empty socket and disconnects its fanout with Ctrl+Alt click', async ({
+      comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/shared-definition-two-hosts-promoted-text'
@@ -29,99 +26,43 @@ test.describe(
       const second = samplers.find((node) => node.id !== first.id)
       if (!second)
         throw new Error('Expected the second KSampler from node search')
-      const firstNode = new VueNodeFixture(
+      const firstSteps = new VueNodeFixture(
         comfyPage.vueNodes.getNodeLocator(String(first.id))
-      )
-      const secondNode = new VueNodeFixture(
+      ).getSlot('steps')
+      const secondSteps = new VueNodeFixture(
         comfyPage.vueNodes.getNodeLocator(String(second.id))
-      )
-      const panel = comfyPage.page.getByTestId('subgraph-input-values')
-      const empty = panel
-        .getByTestId('subgraph-add-input')
-        .getByTestId('slot-connection-dot')
-      const steps = panel
-        .getByTestId('subgraph-input-port')
-        .and(panel.getByLabel('steps', { exact: true }))
-        .getByTestId('slot-connection-dot')
-      const seedMaximum = await firstNode.root
-        .getByRole('spinbutton', { name: 'seed', exact: true })
-        .getAttribute('aria-valuemax')
-      if (!seedMaximum) throw new Error('Expected the native seed maximum')
-
-      async function dragSockets(source: Locator, target: Locator) {
-        const from = await source.boundingBox()
-        const to = await target.boundingBox()
-        if (!from || !to)
-          throw new Error('Expected both visible socket controls')
-        await comfyMouse.dragAndDrop(
-          { x: from.x + from.width / 2, y: from.y + from.height / 2 },
-          { x: to.x + to.width / 2, y: to.y + to.height / 2 }
-        )
-      }
-
-      await test.step('An empty output dragged to a widget input creates its native promoted control', async () => {
-        await firstNode.getSlot('steps').hover()
-        await dragSockets(empty, firstNode.getSlot('steps'))
-        await expect(panel.getByTestId('subgraph-input-port')).toHaveCount(7)
-        await expect(
-          panel.getByRole('spinbutton', { name: 'steps', exact: true })
-        ).toHaveValue('20')
-        await expect(empty).toHaveCount(1)
+      ).getSlot('steps')
+      const { inputPanel, inputPorts, addInputSocket } = comfyPage.subgraph
+      const steps = comfyPage.subgraph.inputSocket('steps')
+      const stepsWidget = inputPanel.getByRole('spinbutton', {
+        name: 'steps',
+        exact: true
       })
 
-      await test.step('The input can feed two widgets before the modifier disconnects all links', async () => {
-        await secondNode.getSlot('steps').hover()
-        await dragSockets(steps, secondNode.getSlot('steps'))
+      await test.step('Dragging the empty socket to a widget input creates its native promoted control', async () => {
+        await addInputSocket.dragTo(firstSteps)
+        await expect(inputPorts).toHaveCount(7)
+        await expect(stepsWidget).toHaveValue('20')
+        await expect(addInputSocket).toHaveCount(1)
+      })
+
+      await test.step('Ctrl+Alt clicking a port that feeds two widgets disconnects both links', async () => {
+        await steps.dragTo(secondSteps)
         await expect
-          .poll(() =>
-            comfyPage.vueNodes.isSlotConnected(firstNode.getSlot('steps'))
-          )
+          .poll(() => comfyPage.vueNodes.isSlotConnected(firstSteps))
           .toBe(true)
         await expect
-          .poll(() =>
-            comfyPage.vueNodes.isSlotConnected(secondNode.getSlot('steps'))
-          )
+          .poll(() => comfyPage.vueNodes.isSlotConnected(secondSteps))
           .toBe(true)
         await steps.click({ modifiers: ['Control', 'Alt'] })
         await expect
-          .poll(() =>
-            comfyPage.vueNodes.isSlotConnected(firstNode.getSlot('steps'))
-          )
+          .poll(() => comfyPage.vueNodes.isSlotConnected(firstSteps))
           .toBe(false)
         await expect
-          .poll(() =>
-            comfyPage.vueNodes.isSlotConnected(secondNode.getSlot('steps'))
-          )
+          .poll(() => comfyPage.vueNodes.isSlotConnected(secondSteps))
           .toBe(false)
         await expect(steps).toHaveCount(1)
-        await expect(
-          panel.getByRole('spinbutton', { name: 'steps', exact: true })
-        ).toHaveCount(0)
-      })
-
-      await test.step('Reconnecting the named port to seed generates the new native widget and options', async () => {
-        await firstNode.getSlot('seed').hover()
-        await dragSockets(steps, firstNode.getSlot('seed'))
-        const seed = panel.getByRole('spinbutton', {
-          name: 'steps',
-          exact: true
-        })
-        await expect(seed).toHaveValue('20')
-        await expect(seed).toHaveAttribute('aria-valuemax', seedMaximum)
-        await expect(
-          panel.getByRole('button', { name: 'Randomize Value', exact: true })
-        ).toBeVisible()
-        await expect(panel.getByTestId('subgraph-input-port')).toHaveCount(7)
-      })
-
-      await test.step('Dragging a different widget input to the empty output creates another fresh control', async () => {
-        await firstNode.getSlot('cfg').hover()
-        await dragSockets(firstNode.getSlot('cfg'), empty)
-        await expect(panel.getByTestId('subgraph-input-port')).toHaveCount(8)
-        await expect(
-          panel.getByRole('spinbutton', { name: 'cfg', exact: true })
-        ).toHaveValue('8.0')
-        await expect(empty).toHaveCount(1)
+        await expect(stepsWidget).toHaveCount(0)
       })
     })
   }

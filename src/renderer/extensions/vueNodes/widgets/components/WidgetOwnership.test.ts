@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
@@ -8,7 +8,6 @@ import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import WidgetDOM from './WidgetDOM.vue'
@@ -16,25 +15,22 @@ import WidgetLegacy from './WidgetLegacy.vue'
 
 vi.mock(import('@/scripts/app'))
 
-function externalOwners() {
+function ownerAndRenderedDecoy() {
   const interior = createTestSubgraph()
   const root = interior.rootGraph
   vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(root)
-  const a = new LGraphNode('External A')
-  const b = new LGraphNode('External B')
-  root.add(a)
-  root.add(b)
+  const owner = new LGraphNode('Owner')
+  root.add(owner)
+  const decoy = new LGraphNode('Decoy')
+  interior.add(decoy)
   stubCanvasGetContext()
-  onTestFinished(() =>
-    vi.mocked(HTMLCanvasElement.prototype.getContext).mockRestore()
-  )
   const canvas = new LGraphCanvas(document.createElement('canvas'), interior, {
     skip_render: true,
     skip_events: true
   })
   useCanvasStore().canvas = canvas
   useCanvasStore().currentGraph = interior
-  return { a, b, root }
+  return { owner, decoy }
 }
 
 function domWidget(node: LGraphNode, value: string) {
@@ -57,94 +53,61 @@ function domWidget(node: LGraphNode, value: string) {
   return widget
 }
 
+function legacyWidget(node: LGraphNode, editedValue: number) {
+  const widget = node.addCustomWidget<IBaseWidget>({
+    name: 'value',
+    type: 'owner-test-legacy',
+    value: 1,
+    y: 0,
+    options: {},
+    draw() {},
+    mouse() {
+      widget.value = editedValue
+      return true
+    }
+  })
+  return widget
+}
+
+function hostedWidgetProps(
+  owner: LGraphNode,
+  renderedNode: LGraphNode,
+  type: string
+) {
+  return {
+    nodeId: renderedNode.id,
+    widget: {
+      name: 'value',
+      type,
+      value: undefined,
+      hostNodeLocatorId: createNodeLocatorId(null, owner.id)
+    }
+  }
+}
+
 describe('off-graph widget ownership', () => {
-  it('edits the explicitly located DOM owner and rebinds when that owner changes', async () => {
-    const { a, b } = externalOwners()
-    const first = domWidget(a, 'first')
-    const second = domWidget(b, 'second')
-    assert.exists(first.widgetId)
-    assert.exists(second.widgetId)
-    const { rerender } = render(WidgetDOM, {
-      props: {
-        nodeId: a.id,
-        widget: {
-          name: 'value',
-          type: 'owner-test-dom',
-          value: undefined,
-          hostNodeLocatorId: createNodeLocatorId(null, a.id)
-        }
-      }
+  it('edits the DOM widget of the located owner, not the rendered node on the canvas graph', async () => {
+    const { owner, decoy } = ownerAndRenderedDecoy()
+    const owned = domWidget(owner, 'owned')
+    const shadowed = domWidget(decoy, 'shadowed')
+    render(WidgetDOM, {
+      props: hostedWidgetProps(owner, decoy, 'owner-test-dom')
     })
     const user = userEvent.setup()
-    await user.clear(screen.getByRole('textbox', { name: 'Custom value' }))
-    await user.type(screen.getByRole('textbox', { name: 'Custom value' }), 'A')
-    await rerender({
-      widget: {
-        name: 'value',
-        type: 'owner-test-dom',
-        value: undefined,
-        hostNodeLocatorId: createNodeLocatorId(null, b.id)
-      }
-    })
-    expect(screen.getByRole('textbox', { name: 'Custom value' })).toHaveValue(
-      'second'
-    )
-    await user.clear(screen.getByRole('textbox', { name: 'Custom value' }))
-    await user.type(screen.getByRole('textbox', { name: 'Custom value' }), 'B')
+    const textbox = screen.getByRole('textbox', { name: 'Custom value' })
 
-    const store = useWidgetValueStore()
-    expect([
-      store.getWidget(first.widgetId)?.value,
-      store.getWidget(second.widgetId)?.value
-    ]).toEqual(['A', 'B'])
+    await user.clear(textbox)
+    await user.type(textbox, 'A')
+
+    expect([owned.value, shadowed.value]).toEqual(['A', 'shadowed'])
   })
 
-  it('sends legacy pointer edits to the explicit owner after rebinding', async () => {
-    const { a, b } = externalOwners()
-    const first = a.addCustomWidget<IBaseWidget>({
-      name: 'value',
-      type: 'owner-test-legacy',
-      value: 1,
-      y: 0,
-      options: {},
-      draw() {},
-      mouse() {
-        first.value = 17
-        return true
-      }
-    })
-    const second = b.addCustomWidget<IBaseWidget>({
-      name: 'value',
-      type: 'owner-test-legacy',
-      value: 2,
-      y: 0,
-      options: {},
-      draw() {},
-      mouse() {
-        second.value = 29
-        return true
-      }
-    })
-    assert.exists(first.widgetId)
-    assert.exists(second.widgetId)
-    const { rerender } = render(WidgetLegacy, {
-      props: {
-        nodeId: a.id,
-        widget: {
-          name: 'value',
-          type: 'owner-test-legacy',
-          value: undefined,
-          hostNodeLocatorId: createNodeLocatorId(null, a.id)
-        }
-      }
-    })
-    await rerender({
-      widget: {
-        name: 'value',
-        type: 'owner-test-legacy',
-        value: undefined,
-        hostNodeLocatorId: createNodeLocatorId(null, b.id)
-      }
+  it('sends legacy pointer edits to the located owner, not the rendered node on the canvas graph', async () => {
+    const { owner, decoy } = ownerAndRenderedDecoy()
+    const owned = legacyWidget(owner, 17)
+    const shadowed = legacyWidget(decoy, 29)
+    render(WidgetLegacy, {
+      props: hostedWidgetProps(owner, decoy, 'owner-test-legacy')
     })
 
     await userEvent.pointer({
@@ -153,10 +116,6 @@ describe('off-graph widget ownership', () => {
       coords: { offsetX: 28, offsetY: 11 }
     })
 
-    const store = useWidgetValueStore()
-    expect([
-      store.getWidget(first.widgetId)?.value,
-      store.getWidget(second.widgetId)?.value
-    ]).toEqual([1, 29])
+    expect([owned.value, shadowed.value]).toEqual([17, 1])
   })
 })

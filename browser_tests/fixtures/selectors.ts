@@ -168,6 +168,15 @@ export const TestIds = {
     widgetLabel: 'subgraph-widget-label',
     widgetToggle: 'subgraph-widget-toggle'
   },
+  subgraphIo: {
+    inputPanel: 'subgraph-input-values',
+    outputPanel: 'subgraph-output-ports',
+    inputPort: 'subgraph-input-port',
+    outputPort: 'subgraph-output-port',
+    addInput: 'subgraph-add-input',
+    addOutput: 'subgraph-add-output',
+    exitButton: 'subgraph-exit-button'
+  },
   node: {
     titleInput: 'node-title-input',
     pinIndicator: 'node-pin-indicator',

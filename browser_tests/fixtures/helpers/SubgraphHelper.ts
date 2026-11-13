@@ -29,13 +29,44 @@ type SubgraphDefinitionInventory = SubgraphDefinitionRow[]
 
 export class SubgraphHelper {
   public readonly editor: SubgraphEditor
+  public readonly inputPanel: Locator
+  public readonly outputPanel: Locator
+  public readonly inputPorts: Locator
+  public readonly outputPorts: Locator
+  public readonly addInputSocket: Locator
+  public readonly addOutputSocket: Locator
+  public readonly exitButton: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.editor = new SubgraphEditor(comfyPage)
+    const { subgraphIo, node } = TestIds
+    this.inputPanel = comfyPage.page.getByTestId(subgraphIo.inputPanel)
+    this.outputPanel = comfyPage.page.getByTestId(subgraphIo.outputPanel)
+    this.inputPorts = this.inputPanel.getByTestId(subgraphIo.inputPort)
+    this.outputPorts = this.outputPanel.getByTestId(subgraphIo.outputPort)
+    this.addInputSocket = this.inputPanel
+      .getByTestId(subgraphIo.addInput)
+      .getByTestId(node.slotConnectionDot)
+    this.addOutputSocket = this.outputPanel
+      .getByTestId(subgraphIo.addOutput)
+      .getByTestId(node.slotConnectionDot)
+    this.exitButton = this.inputPanel.getByTestId(subgraphIo.exitButton)
   }
 
   private get page(): Page {
     return this.comfyPage.page
+  }
+
+  inputSocket(name: string): Locator {
+    return this.inputPorts
+      .and(this.inputPanel.getByLabel(name, { exact: true }))
+      .getByTestId(TestIds.node.slotConnectionDot)
+  }
+
+  async fillInput(name: string, value: string): Promise<void> {
+    const input = this.inputPanel.getByRole('textbox', { name, exact: true })
+    await input.fill(value)
+    await input.blur()
   }
 
   /**

@@ -49,8 +49,6 @@
             <div
               class="flex min-w-0 flex-1 items-center gap-2"
               data-testid="node-title"
-              role="heading"
-              aria-level="2"
             >
               <div class="flex-1 truncate">
                 <EditableText
@@ -106,12 +104,11 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 
 interface NodeHeaderProps {
   nodeData?: NodeState
-  title?: string
   collapsed?: boolean
   showMissingWarning?: boolean
 }
 
-const { nodeData, title, collapsed, showMissingWarning } =
+const { nodeData, collapsed, showMissingWarning } =
   defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
@@ -146,7 +143,7 @@ const resolveTitle = (info: NodeState | undefined) => {
   })
 }
 
-const displayTitle = computed(() => title ?? resolveTitle(nodeData))
+const displayTitle = computed(() => resolveTitle(nodeData))
 
 const bypassed = computed(
   (): boolean => nodeData?.mode === LGraphEventMode.BYPASS
@@ -190,7 +187,7 @@ const handleCollapse = () => {
 }
 
 const handleDoubleClick = () => {
-  if (nodeData) isEditing.value = true
+  isEditing.value = true
 }
 
 const handleTitleEdit = (newTitle: string) => {

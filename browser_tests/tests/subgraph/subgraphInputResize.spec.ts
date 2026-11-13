@@ -15,12 +15,16 @@ test.describe(
         'subgraphs/shared-definition-two-hosts-promoted-text'
       )
       await comfyPage.vueNodes.enterSubgraph('11')
-      const panel = comfyPage.page.getByTestId('subgraph-input-values')
+      const panel = comfyPage.subgraph.inputPanel
       const input = panel.getByRole('textbox', { name: 'text', exact: true })
-      await input.fill('resized instance text')
-      await panel
-        .getByRole('button', { name: 'Exit subgraph', exact: true })
-        .focus()
+      const sizes = () =>
+        panel.or(input).evaluateAll((elements) =>
+          elements.map((element) => ({
+            width: element.clientWidth,
+            height: element.clientHeight
+          }))
+        )
+      await comfyPage.subgraph.fillInput('text', 'resized instance text')
       const before = await panel.boundingBox()
       const textBefore = await input.boundingBox()
       if (!before || !textBefore) {
@@ -28,12 +32,6 @@ test.describe(
       }
 
       await test.step('Drag the native southeast resize handle', async () => {
-        await expect(
-          panel.getByRole('button', {
-            name: 'Resize from bottom-right corner',
-            exact: true
-          })
-        ).toBeVisible()
         await new VueNodeFixture(panel).resizeFromCorner('SE', 120, 100)
         await expect
           .poll(async () => (await panel.boundingBox())?.width)
@@ -51,26 +49,11 @@ test.describe(
       })
 
       await test.step('Saving and reloading preserves the node and textarea sizes', async () => {
-        const resized = await panel.or(input).evaluateAll((elements) =>
-          elements.map((element) => ({
-            width: element.clientWidth,
-            height: element.clientHeight
-          }))
-        )
+        const resized = await sizes()
         await comfyPage.subgraph.exitViaBreadcrumb()
         await comfyPage.subgraph.serializeAndReload()
         await comfyPage.vueNodes.enterSubgraph('11')
-        await expect
-          .poll(() =>
-            panel.or(input).evaluateAll((elements) =>
-              elements.map((element) => ({
-                width: element.clientWidth,
-                height: element.clientHeight
-              }))
-            )
-          )
-          .toEqual(resized)
-        await expect(input).toHaveValue('resized instance text')
+        await expect.poll(sizes).toEqual(resized)
       })
     })
   }

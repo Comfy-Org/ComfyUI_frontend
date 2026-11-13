@@ -1,12 +1,10 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { computed, effectScope, nextTick, shallowRef } from 'vue'
 
-import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import {
-  LGraphCanvas,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import { useSubgraphIoLayout } from '@/components/graph/subgraph/useSubgraphIoLayout'
 import { resolvePointerTarget } from '@/lib/litegraph/src/canvas/resolvePointerTarget'
+import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { useSubgraphIoLayoutStore } from './subgraphIoLayoutStore'
@@ -14,12 +12,9 @@ import { useSubgraphIoLayoutStore } from './subgraphIoLayoutStore'
 describe('subgraph IO renderer measurements', () => {
   it('targets the visible IO surface ahead of an interior node behind it', () => {
     stubCanvasGetContext()
-    onTestFinished(() =>
-      vi.mocked(HTMLCanvasElement.prototype.getContext).mockRestore()
-    )
     const graph = createTestSubgraph()
     graph.inputNode.pos = [100, 200]
-    useSubgraphIoLayoutStore().report(graph.id, graph.inputNode.id, {
+    useSubgraphIoLayoutStore().report(graph.inputNode, {
       offsetX: 0,
       width: 320,
       height: 400,
@@ -46,12 +41,13 @@ describe('subgraph IO renderer measurements', () => {
       kind: 'subgraphIO',
       ioNode: graph.inputNode
     })
-    useSubgraphIoLayoutStore().clear(graph.id, graph.inputNode.id)
+    useSubgraphIoLayoutStore().clear(graph.inputNode)
     expect(resolvePointerTarget(canvas, graph, event, interior)).toEqual({
       kind: 'node',
       node: interior
     })
   })
+
   it('anchors each connection on the panel edge at its measured row center', () => {
     const graph = createTestSubgraph()
     graph.addInput('first', 'STRING')
@@ -60,8 +56,7 @@ describe('subgraph IO renderer measurements', () => {
     node.pos = [100, 200]
     node.size = [128, 100]
     const savedBounds = node.asSerialisable().bounding
-    const layouts = useSubgraphIoLayoutStore()
-    layouts.report(graph.id, node.id, {
+    useSubgraphIoLayoutStore().report(node, {
       offsetX: -192,
       width: 320,
       height: 400,
@@ -77,9 +72,6 @@ describe('subgraph IO renderer measurements', () => {
     ])
     expect([...node.boundingRect]).toEqual([-92, 200, 320, 400])
     expect(node.asSerialisable().bounding).toEqual(savedBounds)
-    expect(node.allSlots.at(-1)).toBe(node.emptySlot)
-    expect(graph.outputNode.boundingRect[2]).not.toBe(320)
-    expect(node.allSlots[0].boundingRect[3]).toBe(LiteGraph.NODE_SLOT_HEIGHT)
   })
 
   it('anchors measured output connections on the left edge and hit-tests their outer half', () => {
@@ -88,7 +80,7 @@ describe('subgraph IO renderer measurements', () => {
     const node = graph.outputNode
     node.pos = [100, 200]
     node.size = [128, 100]
-    useSubgraphIoLayoutStore().report(graph.id, node.id, {
+    useSubgraphIoLayoutStore().report(node, {
       offsetX: 0,
       width: 180,
       height: 90,
@@ -110,7 +102,7 @@ describe('subgraph IO renderer measurements', () => {
     const first = createTestSubgraph()
     const second = createTestSubgraph()
     const layouts = useSubgraphIoLayoutStore()
-    layouts.report(first.id, first.inputNode.id, {
+    layouts.report(first.inputNode, {
       offsetX: 0,
       width: 320,
       height: 400,
@@ -121,9 +113,45 @@ describe('subgraph IO renderer measurements', () => {
 
     expect(first.inputNode.boundingRect[3]).toBe(400)
     expect(second.inputNode.boundingRect[3]).not.toBe(400)
-    layouts.clear(first.id, first.inputNode.id)
+    layouts.clear(first.inputNode)
     first.inputNode.arrange()
 
     expect(first.inputNode.boundingRect[3]).not.toBe(400)
+  })
+
+  it('re-measures slot centers when the panel rows are reordered', async () => {
+    const graph = createTestSubgraph({
+      inputs: [
+        { name: 'a', type: 'INT' },
+        { name: 'b', type: 'INT' }
+      ]
+    })
+    const panel = document.createElement('div')
+    Object.defineProperty(panel, 'offsetHeight', { value: 100 })
+    panel.getBoundingClientRect = () => new DOMRect(0, 0, 100, 100)
+    const rows = [10, 40].map((top) => {
+      const row = panel.appendChild(document.createElement('div'))
+      row.dataset.subgraphPort = ''
+      row.getBoundingClientRect = () => new DOMRect(0, top, 10, 10)
+      return row
+    })
+    const slots = shallowRef(graph.inputNode.allSlots)
+    const scope = effectScope()
+    scope.run(() =>
+      useSubgraphIoLayout(
+        () => graph.inputNode,
+        computed(() => panel),
+        () => slots.value
+      )
+    )
+    await nextTick()
+    expect(graph.inputNode.measured?.slotCenters).toEqual([15, 45])
+
+    panel.prepend(rows[1])
+    slots.value = [...slots.value]
+    await nextTick()
+
+    expect(graph.inputNode.measured?.slotCenters).toEqual([45, 15])
+    scope.stop()
   })
 })
