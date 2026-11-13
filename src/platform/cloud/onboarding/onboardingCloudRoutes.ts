@@ -5,16 +5,6 @@ import { getOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 // `oauth_request_id` capture lives in the global router.beforeEach guard
 // (src/router.ts), which runs before any per-route beforeEnter. Per-route
 // guards read it back via getOAuthRequestId().
-//
-// When an already-signed-in user is bounced to login/signup mid-OAuth, we skip
-// the sign-in step and jump straight to consent. The consent challenge fetch
-// (GET /oauth/authorize) is authenticated by the Cloud *session cookie*, which
-// is a separate credential from the Firebase client login that `isLoggedIn`
-// reflects. The post-login resume path mints that cookie via
-// `createSessionOrThrow` (see useOAuthPostLoginRedirect); the already-signed-in
-// path must do the same. Without it the backend 302s the consent fetch to
-// login, and the consent view has to mint the cookie itself or send the user
-// to sign in again.
 export async function oauthConsentRedirect() {
   const oauthRequestId = getOAuthRequestId()
   if (!oauthRequestId) return { name: 'cloud-user-check' }
@@ -24,10 +14,6 @@ export async function oauthConsentRedirect() {
       await import('@/platform/auth/session/useSessionCookie')
     await useSessionCookie().createSessionOrThrow()
   } catch (error) {
-    // Best effort: if the cookie can't be minted (e.g. an expired Firebase
-    // token), still land on the consent view, which tries once more and then
-    // sends the user to sign in again with the same request, rather than
-    // silently dropping the OAuth flow.
     console.warn(
       'Failed to establish Cloud session cookie before OAuth consent:',
       error
