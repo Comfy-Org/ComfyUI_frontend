@@ -322,6 +322,29 @@ describe('AgentSkillList row actions', () => {
       }
     )
 
+    it('keeps the draft changes after a 404 when the workspace changes during the refresh', async () => {
+      const workspace = useTeamWorkspaceStore()
+      const shownWorkspaceId = workspace.workspaceId
+      seedDraft(
+        { kind: 'edit', name: 'landscape' },
+        { ...DRAFT, name: 'landscape' }
+      )
+      vi.mocked(deleteSkillPack).mockRejectedValueOnce(
+        new SkillPacksApiError('missing', 404)
+      )
+      const { user } = mount()
+      await chooseDelete(user, 'landscape')
+      vi.mocked(listSkillPacks).mockImplementation(async () => {
+        Object.assign(workspace, { workspaceId: 'workspace-b' })
+        return [PORTRAIT]
+      })
+
+      await confirmDeletion()
+
+      Object.assign(workspace, { workspaceId: shownWorkspaceId })
+      expect(useSkillDraftStore().editDraftFor('landscape')).toBeDefined()
+    })
+
     it('reports the failure in an error toast, keeps the skill and returns its row to normal', async () => {
       const deletion = pendingDelete()
       const { user } = mount()

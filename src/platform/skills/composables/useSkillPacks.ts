@@ -54,6 +54,7 @@ export function useSkillPacks() {
         store.removePack(pack.name, requestScope)
         const refreshed = await fetchSkillPacks()
         return (
+          store.isCurrentScope(requestScope) &&
           refreshed &&
           store.routesAvailable &&
           !store.packs.some((existing) => existing.name === pack.name)
