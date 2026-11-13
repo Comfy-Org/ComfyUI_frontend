@@ -638,14 +638,14 @@ export interface BeforeConnectEvent {
 
 export interface PropertyChangeEvent {
   readonly name: string
-  /** A frozen copy of the new value. */
+  /** A frozen copy of the new value, as a workflow would save it. */
   readonly value: unknown
   /**
-   * Stores `value` instead, as a frozen copy. The last call by any pack wins.
-   * Throws a `TypeError` for a value a workflow cannot save.
+   * Stores `value` instead, frozen, as a workflow would save it; the last call wins. Throws a
+   * `TypeError` for `undefined` or a value a workflow cannot save, and once the hook has returned.
    */
   setValue(value: unknown): void
-  /** Keeps the value the property had. A value restored from a saved workflow is kept. */
+  /** Keeps the property's earlier value, or a restored one. Throws a `TypeError` once the hook has returned. */
   reject(): void
 }
 

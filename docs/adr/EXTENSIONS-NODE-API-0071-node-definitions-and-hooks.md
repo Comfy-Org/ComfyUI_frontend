@@ -175,8 +175,12 @@ registered, so `extend` cannot depend on the order.
     method as it was when the copy was made. A node that copied the method
     after the dispatcher was there already calls it, so no node hears a hook
     twice. It looks up the callbacks for its type at each call, and again
-    before each callback, so a callback an extension removed, even by an
-    earlier hook of the same delivery, is not called. A type the host
+    when an extension was added or removed since, so a callback an extension
+    removed, even by an earlier hook of the same delivery, is not called, and
+    delivering to k callbacks costs k, not k squared. A dispatcher put on a
+    prototype delivers only for a node whose type is the type it was made
+    for, so a class registered under another name that extends a registered
+    class hears none of that class's hooks. A type the host
     registers again gets a new class; its extensions are applied again and
     their dispatchers are put on the new class. `onCreated` and menus are
     found by the node's type name, not through a prototype, so they are given
@@ -209,7 +213,7 @@ registered, so `extend` cannot depend on the order.
     every node and add it again: `onRemoved` does not mean the user deleted
     the node, and the JSDoc says so.
 21. `onExecuted` gives the texts and images of the server's output and a frozen
-    JSON copy of all of it (`raw`). A text that is not a string and an image
+    JSON copy of all of it (`raw`), made only when a hook will receive it. A text that is not a string and an image
     that is not an object are left out of the lists, not of `raw`.
 22. `onSerialize` returns fields to add to the saved node; they come back in
     the data `onConfigured` gives, through the host's extension payload. A
@@ -248,9 +252,13 @@ registered, so `extend` cannot depend on the order.
     reads them.
 27. `onPropertyChanged` hears every call of the node's `onPropertyChanged`:
     `setProperty`, and each property a saved workflow restores in `configure`.
-    `value` is a frozen copy. `setValue` stores a frozen copy of the pack's
-    value in the node's properties, where `setProperty` has just stored the
-    edited one; a value a workflow cannot save is refused with a `TypeError`.
+    `value` is a frozen copy as a workflow would save it, made when a hook
+    first reads it. `setValue` stores a frozen copy of the pack's value in the
+    node's properties, where `setProperty` has just stored the edited one;
+    `undefined` and a value a workflow cannot save are refused with a
+    `TypeError`, as `setProperty` refuses them, and nothing is reported. The
+    event is settled only while the hook that received it runs: afterwards
+    `setValue` and `reject` throw a `TypeError`, as the builder does.
     `reject()` answers `false`, so `setProperty` puts the earlier value back;
     `configure` ignores the answer, so a restored value is kept. When several
     hooks answer, the last one wins. A refusal by the type's own method

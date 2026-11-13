@@ -55,7 +55,8 @@ export function createDefRegistry(
     nodes,
     {
       callbacksFor: (type, hook) => extensions.callbacksFor(type, hook),
-      demand: (hook) => extensions.demand(hook)
+      demand: (hook) => extensions.demand(hook),
+      revision: () => extensions.revision()
     },
     copyOfSaved,
     openGraph

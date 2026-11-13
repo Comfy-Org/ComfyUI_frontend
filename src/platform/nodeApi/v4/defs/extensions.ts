@@ -71,6 +71,8 @@ export interface Extensions {
   ): readonly HookCallbacks[K][]
   /** How many applied extensions have a callback for `hook`. */
   demand(hook: HookName): number
+  /** Changes each time an extension's hooks are added to or removed from a type. */
+  revision(): number
 }
 
 export function createExtensions(installer: HookInstaller): Extensions {
@@ -78,6 +80,7 @@ export function createExtensions(installer: HookInstaller): Extensions {
   const nodeTypes = new Map<string, NodeType>()
   const applications = new Map<string, Application[]>()
   const demand = new Map<HookName, number>()
+  let revision = 0
 
   function countDemand(callbacks: HookCallbackLists, change: 1 | -1): void {
     for (const hook of HOOK_NAMES) {
@@ -96,6 +99,7 @@ export function createExtensions(installer: HookInstaller): Extensions {
       countDemand(application.callbacks, -1)
     }
     const kept = list.filter((application) => !remove(application))
+    if (kept.length !== list.length) revision++
     if (kept.length) applications.set(type, kept)
     else applications.delete(type)
   }
@@ -126,6 +130,7 @@ export function createExtensions(installer: HookInstaller): Extensions {
         (first, second) => first.extension.sequence - second.extension.sequence
       )
     )
+    revision++
     extension.appliedTo.add(nodeType.type)
     countDemand(applied, 1)
     installer.install(nodeType, hooks)
@@ -193,7 +198,8 @@ export function createExtensions(installer: HookInstaller): Extensions {
         ({ callbacks }) => callbacks[hook]
       )
     },
-    demand: (hook) => demand.get(hook) ?? 0
+    demand: (hook) => demand.get(hook) ?? 0,
+    revision: () => revision
   }
 }
 
