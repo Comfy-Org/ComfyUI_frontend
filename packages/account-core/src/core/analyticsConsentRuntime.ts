@@ -26,7 +26,7 @@ export function createAnalyticsConsentTransport(
 ): ConsentReceiptTransport {
   const { token, uid, expiresAt } = credential
   const workspaceId = credential.workspace.id
-  const url = `${apiBaseUrl.replace(/\/$/, '')}/global-settings`
+  const url = `${apiBaseUrl.replace(/\/$/, '')}/global-settings/analytics/posthog-consent`
   const usable = () =>
     isCurrent() &&
     Date.now() < expiresAt &&
@@ -85,10 +85,7 @@ export function createAnalyticsConsentTransport(
       return true
     },
     async revoke() {
-      const response = await send(
-        `${url}/${encodeURIComponent(analyticsConsentReceiptKey)}`,
-        { method: 'DELETE' }
-      )
+      const response = await send(url, { method: 'DELETE' })
       if (response?.status === 204) return true
       if (response?.status === 404) {
         const parsed = zErrorResponse.safeParse(await body(response))
