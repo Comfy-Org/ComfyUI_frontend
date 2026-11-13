@@ -155,10 +155,13 @@ follow-up for a command interface.
 13. `comfy.graph.links()` lists the links of the graph on screen as frozen
     `LinkInfo` records, sorted by link id so the order does not depend on how
     the graph was loaded. `comfy.graph.version` is the graph's own version
-    counter. Every edit through this API advances it; the host advances it
-    when nodes or links are added or removed and a node is collapsed or
-    pinned, but not for a move, a resize, a color, a property or a widget
-    value, so it says that something changed, not that nothing did.
+    counter. Every edit through this API that is applied advances it (a
+    `disconnect` of an unlinked slot, or a call on an entity that is gone, is
+    not applied); the host advances it when nodes or links are added or
+    removed and a node is collapsed or pinned, but not for a move, a resize, a
+    color, a property or a widget value, and an undo or a load starts it
+    again from what the rebuild counts. So a different reading says that something
+    changed; an equal one does not say that nothing did.
 
 ### Slots and links
 
@@ -262,9 +265,11 @@ follow-up for a command interface.
     isolation as listeners. A badge lives on the node object, so it is gone
     when undo or a load rebuilds the node; a removed node gets nothing and a
     disposer that does nothing. Vue nodes compute a node's badges from
-    `node.badges` once, when the node first renders, so under Vue nodes a badge
-    added or removed after that changes nothing on screen, and a function
-    badge is not called again (see "Core limitations").
+    `node.badges` in a computed value that does not track the array, so under
+    Vue nodes a badge added or removed after the node is first drawn shows or
+    goes only when the node's badges are next recomputed (a setting or a graph
+    change the computation reads), and a function badge is called only then
+    (see "Core limitations").
 
 ### Edits a load does not keep
 
@@ -553,7 +558,8 @@ ADR-EXTENSIONS-NODE-API-0070.
   methods, and minted into operations.
 - **Badges under Vue nodes.** `usePartitionedBadges` computes a node's badges
   from `node.badges`, a plain array no reactive state depends on, so a badge an
-  extension adds or removes after the node is drawn neither shows nor goes.
+  extension adds or removes after the node is drawn shows or goes only when
+  something else makes the computation run again.
   The API cannot make that array reactive without changing a host object's
   field. Ticket draft: _Title:_ "Vue nodes do not show a badge added after the
   node is drawn". _Reproduction:_ with Nodes 2.0 on, push an `LGraphBadge`

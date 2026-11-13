@@ -49,7 +49,7 @@ export interface SlotEdits {
     options?: unknown,
     member?: string
   ): OutputSlotHandle | undefined
-  removeSlot(slot: unknown): boolean
+  removeSlot(slot: unknown, member?: string): boolean
   reorderSlots(
     node: unknown,
     side: unknown,
@@ -138,10 +138,10 @@ export function createSlotEdits(
       )
     },
 
-    removeSlot(slot) {
-      const live = slotLocatorOf(slots, 'removeSlot', slot).locate()
+    removeSlot(slot, member = 'removeSlot') {
+      const live = slotLocatorOf(slots, member, slot).locate()
       if (!live) return false
-      assertNotSubgraphNode('removeSlot', live.node)
+      assertNotSubgraphNode(member, live.node)
       runner.apply(live.graph, () => {
         if (live.side === 'input') live.node.removeInput(live.index)
         else live.node.removeOutput(live.index)

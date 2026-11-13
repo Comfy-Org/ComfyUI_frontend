@@ -17,8 +17,8 @@ export function graphHandleMembers(
   return {
     add(type, init) {
       const graph = visible()
-      if (graph) return edits.addNode(graphScopeFor(graph), type, init)
-      checkedNodeCreation(type, init)
+      if (graph) return edits.addNode(graphScopeFor(graph), type, init, 'add')
+      checkedNodeCreation('add', type, init)
       return undefined
     },
     batch: (fn) => edits.batch(fn),

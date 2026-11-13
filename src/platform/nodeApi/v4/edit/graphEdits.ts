@@ -9,10 +9,14 @@ import type { EditRunner } from './editRunner'
 
 /** The graph edits, taking anything a pack passes and checking it. */
 export interface GraphEdits {
-  addNode(graph: unknown, type: unknown, init?: unknown): NodeHandle | undefined
+  /** `member` names the call a refusal blames, for a handle method that calls this. */
+  addNode(
+    graph: unknown,
+    type: unknown,
+    init?: unknown,
+    member?: string
+  ): NodeHandle | undefined
 }
-
-const MEMBER = 'addNode'
 
 const INIT_FIELDS = {
   title: true,
@@ -25,10 +29,10 @@ export function createGraphEdits(
   runner: EditRunner
 ): GraphEdits {
   return {
-    addNode(graph, type, init) {
+    addNode(graph, type, init, member = 'addNode') {
       const locate = scopes.locator(graph)
-      if (!locate) throw invalidArgument(MEMBER, 'a graph handle', graph)
-      const create = checkedNodeCreation(type, init)
+      if (!locate) throw invalidArgument(member, 'a graph handle', graph)
+      const create = checkedNodeCreation(member, type, init)
       const target = locate()
       const node = target && create()
       if (!target || !node) return undefined
@@ -39,20 +43,24 @@ export function createGraphEdits(
 }
 
 /** Checks what a node is to be made from, and gives what makes it. */
-export function checkedNodeCreation(type: unknown, init: unknown = {}) {
-  const nodeType = checkedString(MEMBER, 'type', type)
+export function checkedNodeCreation(
+  member: string,
+  type: unknown,
+  init: unknown = {}
+) {
+  const nodeType = checkedString(member, 'type', type)
   const { title: givenTitle, position } = checkedFields(
-    MEMBER,
+    member,
     init,
     INIT_FIELDS
   )
   const title =
     givenTitle === undefined
       ? undefined
-      : checkedString(MEMBER, 'title', givenTitle)
+      : checkedString(member, 'title', givenTitle)
   const pos =
     position === undefined
       ? undefined
-      : checkedPoint(MEMBER, 'position', position)
+      : checkedPoint(member, 'position', position)
   return () => LiteGraph.createNode(nodeType, title, pos && { pos })
 }
