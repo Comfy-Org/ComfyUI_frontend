@@ -126,6 +126,8 @@ export function bindAnalyticsConsentRuntime(
   let consent: boolean | undefined
   let expiry: ReturnType<typeof setTimeout> | undefined
   let bridge: ReturnType<typeof createAnalyticsConsentReceiptBridge> | undefined
+  const pendingRevocations = new Set<string>()
+  let revocationOverflow = false
   ports.setEligible(false)
   if (!configuration.enabled) return { dispose: () => ports.setEligible(false) }
   const stopConsent = ports.onPostHogConsent((value) => {
@@ -140,14 +142,34 @@ export function bindAnalyticsConsentRuntime(
     ports.setEligible(false)
     if (disposed || !credential) return
     const isCurrent = () => !disposed && revision === generation
+    const scopeKey = JSON.stringify([credential.uid, credential.workspace.id])
+    const transport = createAnalyticsConsentTransport(
+      ports.apiBaseUrl,
+      credential,
+      isCurrent,
+      ports.fetchImpl
+    )
+    const revoke = async () => {
+      if (pendingRevocations.size < 32 || pendingRevocations.has(scopeKey)) {
+        pendingRevocations.add(scopeKey)
+      } else {
+        revocationOverflow = true
+      }
+      const result = await transport.revoke()
+      if (result !== false) pendingRevocations.delete(scopeKey)
+      return result
+    }
     bridge = createAnalyticsConsentReceiptBridge(
       configuration,
-      createAnalyticsConsentTransport(
-        ports.apiBaseUrl,
-        credential,
-        isCurrent,
-        ports.fetchImpl
-      ),
+      {
+        revoke,
+        async grant(receipt) {
+          if (revocationOverflow) return false
+          if (pendingRevocations.has(scopeKey) && (await revoke()) === false)
+            return false
+          return transport.grant(receipt)
+        }
+      },
       ports.setEligible
     )
     expiry = setTimeout(
@@ -169,6 +191,7 @@ export function bindAnalyticsConsentRuntime(
       ++generation
       clearTimeout(expiry)
       bridge?.dispose()
+      pendingRevocations.clear()
       stopConsent()
       stopSession()
       ports.setEligible(false)

@@ -218,3 +218,36 @@ it('credential expiry immediately ends local eligibility', async () => {
     vi.useRealTimers()
   }
 })
+
+it('credential replacement cannot forget a failed revocation for the same account scope', async () => {
+  const state = runtime()
+  let offline = true
+  state.send.mockImplementation(async (_url, init) =>
+    init?.method === 'DELETE'
+      ? new Response(null, { status: offline ? 503 : 204 })
+      : ack()
+  )
+  state.consent(false)
+  state.session(credential())
+  await vi.waitFor(() => expect(state.send).toHaveBeenCalledTimes(1))
+  state.consent(true)
+  await vi.waitFor(() => expect(state.send).toHaveBeenCalledTimes(2))
+  state.session(undefined)
+  state.session({ ...credential(), token: 'replacement.jwt.token' })
+  await vi.waitFor(() => expect(state.send).toHaveBeenCalledTimes(3))
+  expect(state.send.mock.calls.map(([, init]) => init?.method)).toEqual([
+    'DELETE',
+    'DELETE',
+    'DELETE'
+  ])
+  expect(state.setEligible).toHaveBeenLastCalledWith(false)
+  offline = false
+  state.consent(true)
+  await vi.waitFor(() =>
+    expect(state.setEligible).toHaveBeenLastCalledWith(true)
+  )
+  expect(
+    state.send.mock.calls.slice(-2).map(([, init]) => init?.method)
+  ).toEqual(['DELETE', 'POST'])
+  state.bound.dispose()
+})

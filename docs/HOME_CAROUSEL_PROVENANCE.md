@@ -56,5 +56,15 @@ credential expiry disables eligibility; API-key credentials cannot grant. Neithe
 identity is sent in the grant body or captured in analytics. The production
 configuration is frozen off with empty policy/notice and subscribes to nothing.
 The installer requires actual configured PostHog service events and minted
-credentials from the existing account layer; no active Klaro host exists to bind
-in this preparation. It does not replace existing telemetry initialization.
+credentials from the existing account layer. The consent source is vendor-neutral;
+Klaro installation is not a prerequisite. This preparation does not select or
+configure the applicable consent source and does not replace existing telemetry
+initialization.
+
+The Cloud bootstrap now calls `installCloudHomepageConsentHost()` with no source,
+which returns before auth-store access, watchers or requests. Its explicitly
+supplied-source path uses the existing web-session request scope and workspace
+token mint. Account, workspace, session epoch or request-provider replacement
+during an await rejects the result. Legacy/API-key sessions without that validated
+web-session scope remain excluded. The host installs neither a consent UI nor a
+vendor script; reviewed policy/notice values and a real consent source are absent.
