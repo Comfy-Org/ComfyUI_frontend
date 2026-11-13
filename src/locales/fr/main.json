@@ -907,11 +907,8 @@
     "index": "{current} / {total}"
   },
   "billingHandoff": {
-    "failed": "Impossible d’ouvrir la facturation. Réessayez.",
-    "openBilling": "Ouvrir la facturation",
     "opening": "Ouverture du paiement…",
     "openingDetail": "Cela prend quelques secondes.",
-    "popupBlocked": "Votre navigateur a bloqué l’onglet de facturation.",
     "signInAgain": "Reconnectez-vous pour ouvrir la facturation.",
     "superseded": "Votre compte ou espace de travail a changé pendant l’ouverture de la facturation. Réessayez."
   },

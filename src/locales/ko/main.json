@@ -907,11 +907,8 @@
     "index": "{current} / {total}"
   },
   "billingHandoff": {
-    "failed": "결제를 열 수 없습니다. 다시 시도하세요.",
-    "openBilling": "결제 열기",
     "opening": "결제 페이지를 여는 중…",
     "openingDetail": "몇 초 정도 걸립니다.",
-    "popupBlocked": "브라우저에서 결제 탭을 차단했습니다.",
     "signInAgain": "결제를 열려면 다시 로그인하세요.",
     "superseded": "결제를 여는 동안 계정 또는 워크스페이스가 변경되었습니다. 다시 시도하세요."
   },
