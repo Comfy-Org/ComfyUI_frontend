@@ -5,22 +5,35 @@ import { useSubgraphIoLayout } from '@/components/graph/subgraph/useSubgraphIoLa
 import { resolvePointerTarget } from '@/lib/litegraph/src/canvas/resolvePointerTarget'
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
-import { useSubgraphIoLayoutStore } from './subgraphIoLayoutStore'
+function reportPanel(
+  node: SubgraphInputNode | SubgraphOutputNode,
+  width: number,
+  height: number,
+  slotCenters: number[] = []
+) {
+  layoutStore.reportContentSize(node.subgraph.id, node.id, { width, height })
+  layoutStore.updateNodeSlotOffsets(
+    node.subgraph.id,
+    node.id,
+    slotCenters.map((y, index) => ({
+      index,
+      type: node.slotDirection,
+      position: { x: 0, y }
+    })),
+    'expanded'
+  )
+}
 
 describe('subgraph IO renderer measurements', () => {
   it('targets the visible IO surface ahead of an interior node behind it', () => {
     stubCanvasGetContext()
     const graph = createTestSubgraph()
     graph.inputNode.pos = [100, 200]
-    useSubgraphIoLayoutStore().report(graph.inputNode, {
-      offsetX: 0,
-      width: 320,
-      height: 400,
-      slotCenters: []
-    })
-    graph.inputNode.arrange()
     const canvas = new LGraphCanvas(document.createElement('canvas'), graph, {
       skip_render: true,
       skip_events: true
@@ -38,13 +51,14 @@ describe('subgraph IO renderer measurements', () => {
     })
 
     expect(resolvePointerTarget(canvas, graph, event, interior)).toEqual({
-      kind: 'subgraphIO',
-      ioNode: graph.inputNode
-    })
-    useSubgraphIoLayoutStore().clear(graph.inputNode)
-    expect(resolvePointerTarget(canvas, graph, event, interior)).toEqual({
       kind: 'node',
       node: interior
+    })
+    reportPanel(graph.inputNode, 320, 400)
+    graph.inputNode.arrange()
+    expect(resolvePointerTarget(canvas, graph, event, interior)).toEqual({
+      kind: 'subgraphIO',
+      ioNode: graph.inputNode
     })
   })
 
@@ -56,12 +70,7 @@ describe('subgraph IO renderer measurements', () => {
     node.pos = [100, 200]
     node.size = [128, 100]
     const savedBounds = node.asSerialisable().bounding
-    useSubgraphIoLayoutStore().report(node, {
-      offsetX: -192,
-      width: 320,
-      height: 400,
-      slotCenters: [40, 72, 140]
-    })
+    reportPanel(node, 320, 400, [40, 72, 140])
 
     node.arrange()
 
@@ -80,12 +89,7 @@ describe('subgraph IO renderer measurements', () => {
     const node = graph.outputNode
     node.pos = [100, 200]
     node.size = [128, 100]
-    useSubgraphIoLayoutStore().report(node, {
-      offsetX: 0,
-      width: 180,
-      height: 90,
-      slotCenters: [30, 66]
-    })
+    reportPanel(node, 180, 90, [30, 66])
 
     node.arrange()
 
@@ -98,25 +102,15 @@ describe('subgraph IO renderer measurements', () => {
     expect(graph.getIoNodeOnPos(95, 248)).toBeUndefined()
   })
 
-  it('isolates measurements by definition and restores the canvas layout on unmount', () => {
+  it('keeps each subgraph definition measurement to its own IO node', () => {
     const first = createTestSubgraph()
     const second = createTestSubgraph()
-    const layouts = useSubgraphIoLayoutStore()
-    layouts.report(first.inputNode, {
-      offsetX: 0,
-      width: 320,
-      height: 400,
-      slotCenters: []
-    })
+    reportPanel(first.inputNode, 320, 400)
     first.inputNode.arrange()
     second.inputNode.arrange()
 
     expect(first.inputNode.boundingRect[3]).toBe(400)
     expect(second.inputNode.boundingRect[3]).not.toBe(400)
-    layouts.clear(first.inputNode)
-    first.inputNode.arrange()
-
-    expect(first.inputNode.boundingRect[3]).not.toBe(400)
   })
 
   it('re-measures slot centers when the panel rows are reordered', async () => {
@@ -126,6 +120,7 @@ describe('subgraph IO renderer measurements', () => {
         { name: 'b', type: 'INT' }
       ]
     })
+    graph.inputNode.pos = [0, 0]
     const panel = document.createElement('div')
     Object.defineProperty(panel, 'offsetHeight', { value: 100 })
     panel.getBoundingClientRect = () => new DOMRect(0, 0, 100, 100)
@@ -145,13 +140,15 @@ describe('subgraph IO renderer measurements', () => {
       )
     )
     await nextTick()
-    expect(graph.inputNode.measured?.slotCenters).toEqual([15, 45])
+    graph.inputNode.arrange()
+    expect(graph.inputNode.slots.map((slot) => slot.pos[1])).toEqual([15, 45])
 
     panel.prepend(rows[1])
     slots.value = [...slots.value]
     await nextTick()
+    graph.inputNode.arrange()
 
-    expect(graph.inputNode.measured?.slotCenters).toEqual([45, 15])
+    expect(graph.inputNode.slots.map((slot) => slot.pos[1])).toEqual([45, 15])
     scope.stop()
   })
 })
