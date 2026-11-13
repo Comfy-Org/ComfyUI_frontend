@@ -539,9 +539,9 @@ export function moveRerouteLayout(reroute: Reroute, position: Point): void {
  */
 export function detachGraphLayouts(
   graphs: readonly GraphLayoutOwner[],
-  { removeLayouts = true }: { removeLayouts?: boolean } = {}
+  { removeRootKeyedLayouts = true }: { removeRootKeyedLayouts?: boolean } = {}
 ): void {
-  const meta = removeLayouts ? canvasOperationMeta() : undefined
+  const meta = canvasOperationMeta()
   const operations: LayoutOperation[] = []
   const visited = new Set<GraphLayoutOwner>()
 
@@ -552,7 +552,7 @@ export function detachGraphLayouts(
       const attachment = ioNode && takeNodeLayoutAttachment(ioNode)
       if (!attachment) continue
       operations.push({
-        ...canvasOperationMeta(),
+        ...meta,
         graphId: attachment.graphId,
         nodeId: attachment.id,
         type: 'deleteNode'
@@ -568,7 +568,7 @@ export function detachGraphLayouts(
       )
       nodeAttachments.delete(node)
       const owned = deleteNodeAttachmentOwner(attachment.graphId, node)
-      if (meta && owned) {
+      if (removeRootKeyedLayouts && owned) {
         operations.push({
           ...meta,
           graphId: attachment.graphId,
@@ -582,7 +582,7 @@ export function detachGraphLayouts(
       if (!attachment) continue
       group.syncBoundsFromStore()
       groupAttachments.delete(group)
-      if (meta) {
+      if (removeRootKeyedLayouts) {
         operations.push({
           ...meta,
           graphId: attachment.graphId,
@@ -596,7 +596,7 @@ export function detachGraphLayouts(
       if (!attachment) continue
       reroute.syncPosition()
       rerouteAttachments.delete(reroute)
-      if (meta) {
+      if (removeRootKeyedLayouts) {
         operations.push({
           ...meta,
           graphId: attachment.graphId,
@@ -609,5 +609,5 @@ export function detachGraphLayouts(
   }
 
   for (const graph of graphs) collect(graph)
-  if (operations.length > 0) layoutStore.applyOperations(operations)
+  layoutStore.applyOperations(operations)
 }

@@ -538,6 +538,23 @@ describe('SubgraphIO - Definition-keyed layout', () => {
     expect([...b.inputNode.pos]).toEqual([300, 400])
   })
 
+  it('moves pseudo-node layout to the new key when an empty definition is renamed', () => {
+    const root = createTestRootGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const previousId = subgraph.id
+    subgraph.inputNode.pos = [30, 40]
+
+    subgraph.id = '00000000-0000-4000-8000-0000000000aa'
+    subgraph.inputNode.pos = [50, 60]
+
+    expect(
+      layoutStore.getNodeLayout(subgraph.id, subgraph.inputNode.id)?.position
+    ).toEqual({ x: 50, y: 60 })
+    expect(
+      layoutStore.getNodeLayout(previousId, subgraph.inputNode.id)
+    ).toBeNull()
+  })
+
   it('drops pseudo-node layout and measurements when the root graph is cleared', () => {
     const root = createTestRootGraph()
     const subgraph = root.createSubgraph(createTestSubgraphData())

@@ -8,7 +8,6 @@ import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -96,9 +95,7 @@ export function useSubgraphIoLayout(
   )
 
   const { startResize: resize } = useNodeResize(({ size: next }) => {
-    const node = ioNode()
-    const [x, y] = node.boundingRect
-    resizeNodeLayout(node, next, { position: { x, y } })
+    ioNode().size = [next.width, next.height]
     report(next)
   })
 
