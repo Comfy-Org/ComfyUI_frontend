@@ -3,12 +3,18 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { GraphScopeFor } from './graphScopeHandle'
 import type { NodeHandles } from './nodeHandle'
 import { checkedNodeQuery, nodeOfExactType } from './nodeQuery'
-import type { GraphHandle, NodeQuery, NodeQueryScope } from './types'
+import type {
+  GraphHandle,
+  GraphHandleEdits,
+  NodeQuery,
+  NodeQueryScope
+} from './types'
 
 export function createGraphHandle(
   nodes: NodeHandles,
   graphScopeFor: GraphScopeFor,
-  getVisibleGraph: () => LGraph | null
+  getVisibleGraph: () => LGraph | null,
+  members: (visible: () => LGraph | undefined) => GraphHandleEdits
 ): GraphHandle {
   const visible = () => getVisibleGraph() ?? undefined
 
@@ -19,9 +25,12 @@ export function createGraphHandle(
     return [graph.rootGraph, ...graph.rootGraph.subgraphs.values()]
   }
 
-  return Object.freeze({
+  const reads = {
     get id() {
       return visible()?.id
+    },
+    get version() {
+      return visible()?._version
     },
 
     node: (id: string) => nodes.find(visible(), id),
@@ -41,5 +50,6 @@ export function createGraphHandle(
       const definitions = visible()?.rootGraph.subgraphs.values() ?? []
       return Object.freeze(Array.from(definitions, graphScopeFor))
     }
-  })
+  }
+  return Object.freeze(Object.assign(reads, members(visible)))
 }

@@ -129,6 +129,14 @@ export interface Comfy {
 
 export interface NodeHandle extends NodeHandleEdits {}
 
+export interface GraphHandle extends GraphHandleEdits {
+  /**
+   * Changes whenever the graph on screen does, edits through this API
+   * included. Compare two readings; the number itself means nothing.
+   */
+  readonly version: number | undefined
+}
+
 /**
  * The one place a pack changes the document; every handle edit method calls
  * one of these. Each call is one undo step, or part of `batch`'s.
@@ -141,6 +149,15 @@ export interface Edits {
   updateNode(node: NodeHandle, patch: NodePatch): boolean
   /** Removes the node and its links. False if it is gone or cannot be removed. */
   removeNode(node: NodeHandle): boolean
+  /**
+   * Adds a node of a registered type to `graph`, placed before it joins.
+   * `undefined` if the graph is gone or no such type is registered.
+   */
+  addNode(
+    graph: GraphScopeHandle,
+    type: string,
+    init?: NodeInit
+  ): NodeHandle | undefined
   /**
    * Runs `edits` now, as one undo step, and returns what it returns. Edits it
    * made before throwing stay. Edits after it returns are not in the step.
@@ -234,4 +251,34 @@ export interface NodeHandleEdits {
    * rebuilds it. A function is called each time the badge is drawn.
    */
   addBadge(badge: BadgeDef | (() => BadgeDef)): Unsubscribe
+}
+
+/** How `addNode` starts a node. */
+export interface NodeInit {
+  /** The type's own title when left out. */
+  readonly title?: string
+  /** The top-left corner of the node's body, in graph space. */
+  readonly position?: Point
+}
+
+/** A link between two slots, as plain data at the moment it was read. */
+export interface LinkInfo {
+  readonly id: string
+  /** In a subgraph, a link from the subgraph's own input has that input's node id. */
+  readonly sourceNodeId: string
+  /** The output's position on its node; it shifts when slots are added or removed. */
+  readonly sourceIndex: number
+  readonly targetNodeId: string
+  readonly targetIndex: number
+  readonly type: string
+}
+
+/** Each edit method is a call to `comfy.edit` on the graph on screen. */
+export interface GraphHandleEdits {
+  /** `comfy.edit.addNode` on the graph on screen. */
+  add(type: string, init?: NodeInit): NodeHandle | undefined
+  /** `comfy.edit.batch`. */
+  batch<T>(edits: () => T): T
+  /** Every link in the graph on screen, in id order. */
+  links(): readonly LinkInfo[] | undefined
 }
