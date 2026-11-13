@@ -53,11 +53,19 @@ export function isFirstPartyClient(
   return challenge.client_provenance === 'first_party'
 }
 
-export const verifiedClientIcons: Partial<
+// Partial: not every verified platform has a brand icon in the comfy icon set
+// (cursor has none yet), and those render the notice without one.
+const verifiedClientIcons: Partial<
   Record<OAuthConsentVerifiedClient['platform'], string>
 > = {
   chatgpt: 'icon-[comfy--openai]',
   claude: 'icon-[comfy--anthropic]'
+}
+
+export function verifiedClientIcon(
+  platform: OAuthConsentVerifiedClient['platform']
+): string | undefined {
+  return verifiedClientIcons[platform]
 }
 
 export function verifiedClient(
