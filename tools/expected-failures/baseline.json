@@ -140,7 +140,7 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/assets/services/assetService.test.ts:issues a DELETE to the asset endpoint when the response is ok:1",
+    "id": "vitest:src/platform/assets/services/assetService.test.ts:confirms the record is absent after DELETE returns %s:1",
     "classification": "live-defect"
   },
   {

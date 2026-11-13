@@ -370,7 +370,8 @@ vi.mock<unknown>(
 
 provideBillingDialogs(() => ({
   showSubscriptionRequiredDialog: vi.fn(),
-  showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
+  showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog,
+  showTopUpCreditsDialog: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/platform/billing/api/billingApi'), () => ({

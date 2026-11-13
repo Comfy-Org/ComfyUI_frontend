@@ -220,6 +220,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
       if (!node) throw new Error('KSampler node not found')
       const clipboardNode = {
         ...node,
+        widgets_values_named: undefined,
         widgets_values: { 0: 123, 2: 47, length: 3 }
       }
       const encoded = btoa(JSON.stringify({ nodes: [clipboardNode] }))
