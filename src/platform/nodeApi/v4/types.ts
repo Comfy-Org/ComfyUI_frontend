@@ -545,6 +545,22 @@ export interface NodeDefBuilder {
     callback: (node: NodeHandle) => Readonly<Record<string, unknown>> | void
   ): void
   onResized(callback: (node: NodeHandle, size: Size) => void): void
+  /** A link to or from one of a node's slots was made or removed. */
+  onConnectionsChanged(
+    callback: (node: NodeHandle, event: ConnectionChangeEvent) => void
+  ): void
+  /** A link is about to be made to or from a node. Returning `false` refuses it. */
+  onBeforeConnect(
+    callback: (node: NodeHandle, event: BeforeConnectEvent) => boolean | void
+  ): void
+  /** One of a node's properties was set, or restored from a saved workflow. */
+  onPropertyChanged(
+    callback: (node: NodeHandle, event: PropertyChangeEvent) => void
+  ): void
+  /** The pointer entered or left a node. Called by the canvas renderer, not by Vue nodes. */
+  onHover(callback: (node: NodeHandle, hovering: boolean) => void): void
+  /** A node was double-clicked. Called by the canvas renderer, not by Vue nodes. */
+  onDoubleClick(callback: (node: NodeHandle) => void): void
 }
 
 export interface NodeCreatedEvent {
@@ -552,6 +568,37 @@ export interface NodeCreatedEvent {
   readonly restored: boolean
   /** True while a workflow is being loaded or imported. */
   readonly loading: boolean
+}
+
+export interface ConnectionChangeEvent {
+  readonly side: 'input' | 'output'
+  /** The slot's index when the link changed. */
+  readonly index: number
+  /** The slot's name, also when the slot was removed with its link. */
+  readonly name: string
+  readonly connected: boolean
+  /** The node at the other end of the link, when the host reports one. */
+  readonly peerNodeId: string | undefined
+  readonly peerIndex: number | undefined
+}
+
+export interface BeforeConnectEvent {
+  /** Which of the node's own slots the link would use. */
+  readonly side: 'input' | 'output'
+  readonly index: number
+}
+
+export interface PropertyChangeEvent {
+  readonly name: string
+  /** A frozen copy of the new value. */
+  readonly value: unknown
+  /**
+   * Stores `value` instead, as a frozen copy. The last call by any pack wins.
+   * Throws a `TypeError` for a value a workflow cannot save.
+   */
+  setValue(value: unknown): void
+  /** Keeps the value the property had. A value restored from a saved workflow is kept. */
+  reject(): void
 }
 
 export interface ExecutionResult {
@@ -605,6 +652,8 @@ export interface NodeDefinition {
   onConfigured?(node: NodeHandle, data: Readonly<Record<string, unknown>>): void
   onRemoved?(node: NodeHandle): void
   onSerialize?(node: NodeHandle): Readonly<Record<string, unknown>> | void
+  onConnectionsChanged?(node: NodeHandle, event: ConnectionChangeEvent): void
+  onPropertyChanged?(node: NodeHandle, event: PropertyChangeEvent): void
 }
 
 export interface NodeDefinitionSlot {

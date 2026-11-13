@@ -10,8 +10,26 @@ import type {
   MethodInstaller
 } from './dispatchContext'
 import type { HookInstaller, NodeType } from './extensions'
+import { connectionInstallers } from './connectionDispatch'
 import { createLifecycleDispatch } from './lifecycleDispatch'
+import { pointerInstallers } from './pointerDispatch'
+import { propertyInstallers } from './propertyDispatch'
 import type { HookName } from './nodeHooks'
+
+/** The prototype methods each hook needs a dispatcher on. */
+const METHODS_FOR: Readonly<Record<HookName, readonly string[]>> = {
+  onCreated: ['onConfigure'],
+  onConfigured: ['onConfigure'],
+  onRemoved: ['onRemoved'],
+  onExecuted: ['onExecuted'],
+  onSerialize: ['onSerialize'],
+  onResized: ['onResize'],
+  onConnectionsChanged: ['onConnectionsChange'],
+  onBeforeConnect: ['onConnectInput', 'onConnectOutput'],
+  onPropertyChanged: ['onPropertyChanged'],
+  onHover: ['onMouseEnter', 'onMouseLeave'],
+  onDoubleClick: ['onDblClick']
+}
 
 export function createHookDispatch(
   nodes: NodeHandles,
@@ -36,15 +54,18 @@ export function createHookDispatch(
 
   const context: DispatchContext = { deliver, source, copyOfSaved, isInGraph }
   const lifecycle = createLifecycleDispatch(context)
-  const methodsFor: Record<HookName, readonly string[]> = lifecycle.methodsFor
-  const installers: Readonly<Record<string, MethodInstaller>> =
-    lifecycle.installers
+  const installers: Readonly<Record<string, MethodInstaller>> = {
+    ...lifecycle.installers,
+    ...connectionInstallers(deliver),
+    ...propertyInstallers(context),
+    ...pointerInstallers(deliver)
+  }
 
   return {
     install(nodeType: NodeType, hooks: readonly HookName[]) {
       const done = installed.get(nodeType.nodeClass) ?? new Set<string>()
       installed.set(nodeType.nodeClass, done)
-      for (const method of hooks.flatMap((hook) => methodsFor[hook])) {
+      for (const method of hooks.flatMap((hook) => METHODS_FOR[hook])) {
         if (done.has(method)) continue
         done.add(method)
         installers[method](nodeType.nodeClass, nodeType.type)

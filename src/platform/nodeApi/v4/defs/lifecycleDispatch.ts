@@ -11,7 +11,6 @@ import type {
   NodeCreatedEvent
 } from '@/platform/nodeApi/v4/types'
 import type { DispatchContext, MethodInstaller } from './dispatchContext'
-import type { HookName } from './nodeHooks'
 
 const NO_FIELDS: Readonly<Record<string, unknown>> = Object.freeze({})
 
@@ -121,18 +120,8 @@ export function createLifecycleDispatch({
     return copyOfSaved('onSerialize', fields) ?? NO_FIELDS
   }
 
-  const methodsFor: Record<HookName, readonly string[]> = {
-    onCreated: ['onConfigure'],
-    onConfigured: ['onConfigure'],
-    onRemoved: ['onRemoved'],
-    onExecuted: ['onExecuted'],
-    onSerialize: ['onSerialize'],
-    onResized: ['onResize']
-  }
-
   return {
     installers,
-    methodsFor,
     demandChanged() {
       const needed =
         source.demand('onCreated') + source.demand('onConfigured') > 0
