@@ -2,7 +2,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 
 const COMFYUI_ROOT_ROUTE =
-  /^\/(prompt|queue|history|interrupt|free|system_stats|features|object_info|embeddings|models|experiment|upload|view_metadata|view|userdata|v2\/userdata|users|settings|i18n|global_subgraphs|node_replacements)(\/|$)/
+  /^\/(prompt|queue|history|interrupt|free|system_stats|features|object_info|embeddings|models|experiment|upload|view_metadata|userdata|v2\/userdata|users|settings|i18n|global_subgraphs|node_replacements)(\/|$)/
 
 let installed = false
 
@@ -26,11 +26,14 @@ export function coreRoutePath(
   return url.pathname + url.search
 }
 
-/** A `fetch` that sends ComfyUI routes at the site root through the API and everything else to `sendToPage`. */
+/** A `fetch` that sends ComfyUI routes at the site root through the API and everything else, including anonymous requests, to `sendToPage`. */
 export function coreRouteFetch(sendToPage: typeof fetch): typeof fetch {
   return (input, init) => {
     const route = coreRoutePath(input)
-    return route === null ? sendToPage(input, init) : api.fetchApi(route, init)
+    if (route === null || init?.credentials === 'omit') {
+      return sendToPage(input, init)
+    }
+    return api.fetchApi(route, { ...init, headers: new Headers(init?.headers) })
   }
 }
 
