@@ -84,6 +84,27 @@ describe(getAssetPreviewUrl, () => {
       preview_id: undefined,
       preview_url: '/view?filename=sound.wav',
       thumbnail_url: undefined,
+      expected: 'http://localhost:8188/api/view?filename=sound.wav'
+    },
+    {
+      name: 'render.exr',
+      preview_id: undefined,
+      preview_url: '/view?filename=render.exr',
+      thumbnail_url: undefined,
+      expected: ''
+    },
+    {
+      name: 'render.exr',
+      preview_id: undefined,
+      preview_url: '/view?filename=preview.png',
+      thumbnail_url: '/view?filename=render.exr',
+      expected: 'http://localhost:8188/api/view?filename=preview.png'
+    },
+    {
+      name: 'scene.glb',
+      preview_id: undefined,
+      preview_url: '/view?filename=scene.glb',
+      thumbnail_url: undefined,
       expected: ''
     }
   ])('selects the display source for $name', ({ expected, ...asset }) => {

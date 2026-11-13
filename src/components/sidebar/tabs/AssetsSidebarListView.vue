@@ -32,7 +32,11 @@
                 item.isChild && 'pl-6'
               )
             "
-            :preview-url="getAssetPreviewUrl(item.asset)"
+            :preview-url="
+              getAssetMediaType(item.asset) === 'audio'
+                ? ''
+                : getAssetPreviewUrl(item.asset)
+            "
             :preview-alt="getAssetDisplayName(item.asset)"
             :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
             :is-video-preview="isVideoAsset(item.asset)"

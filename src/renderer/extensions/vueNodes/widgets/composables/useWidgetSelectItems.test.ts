@@ -226,12 +226,16 @@ describe('useWidgetSelectItems', () => {
 
     it.for([
       {
-        source: 'stored preview',
+        source: 'stored HDR preview',
+        kind: 'image',
+        filename: 'sky.exr',
         preview: { preview_id: 'hdr-poster' },
         expectedPreview: '/api/assets/hdr-poster/content?disposition=inline'
       },
       {
         source: 'safe thumbnail',
+        kind: 'image',
+        filename: 'sky.exr',
         preview: {
           thumbnail_url: '/api/view?filename=sky-thumb.png&type=output'
         },
@@ -239,27 +243,53 @@ describe('useWidgetSelectItems', () => {
       },
       {
         source: 'raw HDR only',
+        kind: 'image',
+        filename: 'sky.exr',
         preview: {},
         expectedPreview: ''
+      },
+      {
+        source: 'stored MOV preview',
+        kind: 'video',
+        filename: 'clip.mov',
+        preview: { preview_id: 'video-proxy' },
+        expectedPreview: '/api/assets/video-proxy/content?disposition=inline'
+      },
+      {
+        source: 'ordinary image thumbnail',
+        kind: 'image',
+        filename: 'image.png',
+        preview: {
+          thumbnail_url: '/api/view?filename=image-thumb.webp&type=output'
+        },
+        expectedPreview: '/api/view?filename=image-thumb.webp&type=output'
+      },
+      {
+        source: 'annotated audio fallback',
+        kind: 'audio',
+        filename: 'sound.wav',
+        preview: { preview_url: '' },
+        expectedPreview: '/api/view?filename=sound.wav&type=output'
       }
-    ])(
-      'uses a browser-safe image for $source',
-      ({ preview, expectedPreview }) => {
+    ] as const)(
+      'uses the shared display source for $source',
+      ({ kind, filename, preview, expectedPreview }) => {
         storeAssets.flatOutput = [
-          makeOutput('hdr-output', 'sky.exr', {
-            preview_url: '/api/view?filename=sky.exr&type=output',
+          makeOutput('media-output', filename, {
+            preview_url: `/api/view?filename=${filename}&type=output`,
             ...preview
           })
         ]
         const { dropdownItems } = useWidgetSelectItems(
           createDefaultOptions({
+            assetKind: kind,
             filterSelected: 'outputs',
             modelValue: undefined
           })
         )
 
         expect(pagedItems(dropdownItems.value)).toMatchObject([
-          { id: 'hdr-output', preview_url: expectedPreview }
+          { id: 'media-output', preview_url: expectedPreview }
         ])
       }
     )
