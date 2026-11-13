@@ -142,6 +142,7 @@ const {
   mockValidateWorkflow
 } = vi.hoisted(() => ({
   mockExtensionService: {
+    registerExtension: vi.fn(),
     invokeExtensions: vi.fn(),
     invokeExtensionsAsync: vi.fn()
   },

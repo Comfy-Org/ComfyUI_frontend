@@ -1,7 +1,7 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createListeners } from './listeners'
+import { callListener, createListeners } from './listeners'
 
 describe('listener sets', () => {
   it('calls listeners in the order they were added', () => {
@@ -84,5 +84,60 @@ describe('listener sets', () => {
 
     expect(later).not.toHaveBeenCalled()
     expect(control).toHaveBeenCalledOnce()
+  })
+
+  it('keeps each listener when notifying, and calls it each time', () => {
+    const listeners = createListeners('test')
+    const listener = vi.fn()
+    const stop = listeners.add(listener)
+
+    listeners.notify()
+    listeners.notify()
+    stop()
+    listeners.notify()
+
+    expect(listener).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps a listener added while notifying for the next notice, and skips one removed', () => {
+    const listeners = createListeners('test')
+    const added = vi.fn()
+    const later = vi.fn()
+    listeners.add(() => {
+      listeners.add(added)
+      stopLater()
+    })
+    const stopLater = listeners.add(later)
+
+    listeners.notify()
+
+    expect(added).not.toHaveBeenCalled()
+    expect(later).not.toHaveBeenCalled()
+
+    listeners.notify()
+
+    expect(added).toHaveBeenCalledOnce()
+  })
+})
+
+describe('calling a pack callback', () => {
+  it('gives what the callback returns', () => {
+    expect(callListener('test', () => 7)).toBe(7)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports a callback that throws, once, and gives undefined', () => {
+    const broken = new Error('callback failed')
+
+    expect(
+      callListener('onCreated', () => {
+        throw broken
+      })
+    ).toBeUndefined()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(broken, {
+      errorType: 'node_api_listener_failure',
+      surface: 'platform',
+      tags: { event: 'onCreated' }
+    })
   })
 })

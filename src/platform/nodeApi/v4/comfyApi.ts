@@ -10,6 +10,8 @@ import { graphHandleMembers } from './edit/graphHandleMembers'
 import { createGroupHandles } from './edit/groupHandles'
 import { nodeHandleMembers } from './edit/nodeHandleMembers'
 import { createSlotHandles } from './edit/slotHandles'
+import { createDefRegistry } from './defs/defRegistry'
+import type { NodeTypeHooks } from './defs/defRegistry'
 import { createGraphHandle } from './graphHandle'
 import { createGraphScopes } from './graphScopeHandle'
 import { createNodeHandles } from './nodeHandle'
@@ -34,6 +36,8 @@ export interface ComfyApiHost {
   beginDocument(): void
   /** Retires each handle whose entity an undo or redo removed. */
   afterHistoryRestore(): void
+  /** The extension through which the host tells the API about node types. */
+  readonly nodeTypeHooks: NodeTypeHooks
 }
 
 export function createComfyApi(services: ComfyApiServices): {
@@ -54,11 +58,13 @@ export function createComfyApi(services: ComfyApiServices): {
     }
   }))
   const edit = createEdits(nodes, scopes, slots, () => services.history?.())
+  const definitions = createDefRegistry()
 
   const comfy: Comfy = Object.freeze({
     getApiVersion: () => API_VERSION,
     isApiVersionAtLeast,
     onReady: lifecycle.onReady,
+    defs: definitions.defs,
 
     graph: createGraphHandle(
       nodes,
@@ -73,6 +79,7 @@ export function createComfyApi(services: ComfyApiServices): {
   return {
     comfy,
     host: {
+      nodeTypeHooks: definitions.nodeTypeHooks,
       markReady: lifecycle.markReady,
       beginDocument: handles.beginDocument,
       afterHistoryRestore: handles.afterHistoryRestore

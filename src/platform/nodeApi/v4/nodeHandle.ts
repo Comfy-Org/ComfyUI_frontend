@@ -2,7 +2,6 @@ import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
-import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -12,6 +11,8 @@ import type {
   GraphResolver
 } from '@/platform/nodeApi/shared/documentHandles'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { savedCopier } from '@/platform/nodeApi/shared/savedCopy'
+import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { Bounds, NodeHandle, NodeMode } from './types'
 
 export interface NodeHandles {
@@ -156,36 +157,6 @@ function property(
   return Object.hasOwn(properties, name)
     ? copyOfSaved('getProperty', properties[name])
     : undefined
-}
-
-type SavedCopier = <T>(member: string, value: T) => T | undefined
-
-function savedCopier(): SavedCopier {
-  const reported = new Set<string>()
-  return (member, value) => {
-    let saved: { value: typeof value }
-    try {
-      saved = JSON.parse(JSON.stringify({ value }))
-    } catch (error) {
-      if (!reported.has(member)) {
-        reported.add(member)
-        reportError(error, {
-          errorType: 'node_api_property_not_savable',
-          surface: 'platform',
-          level: 'warning',
-          tags: { member }
-        })
-      }
-      return undefined
-    }
-    return deepFreeze(saved.value)
-  }
-}
-
-function deepFreeze<T>(value: T): T {
-  if (typeof value !== 'object' || value === null) return value
-  for (const child of Object.values(value)) deepFreeze(child)
-  return Object.freeze(value)
 }
 
 export function boundsOnCanvas(node: LGraphNode): Bounds {

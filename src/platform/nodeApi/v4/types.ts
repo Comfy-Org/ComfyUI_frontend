@@ -24,6 +24,8 @@ export interface Comfy {
    * per entity, so `a === b` gives the same answer for two handles.
    */
   sameEntity(a: unknown, b: unknown): boolean
+  /** Node types: their definitions, and the hooks a pack adds to them. */
+  readonly defs: DefRegistry
 }
 
 /** The graph on screen. An argument a member cannot use throws a `TypeError`. */
@@ -477,4 +479,90 @@ export interface SlotCollection<THandle> {
   remove(ref: SlotRef): boolean
   /** `comfy.edit.reorderSlots` on this node and side. */
   reorder(names: readonly string[]): boolean
+}
+
+/** Node types: read their definitions, define new ones, and extend any. */
+export interface DefRegistry {
+  /**
+   * Calls `apply` once for each node type `selector` picks: now for the types
+   * already registered, and later for each one as it registers.
+   */
+  extend(
+    selector: DefSelector,
+    apply: (builder: NodeDefBuilder) => void
+  ): Unsubscribe
+  /** Registers a node type the pack owns. Unsubscribing unregisters it. */
+  define(definition: NodeDefinition): Unsubscribe
+  /** A copy of a node type's definition, or `undefined` if there is none. */
+  get(type: string): NodeDef | undefined
+  has(type: string): boolean
+  /** Every node definition, in the order its type first registered. */
+  all(): readonly NodeDef[]
+  /** Reloads the node definitions. Resolves `false` if the host did not apply them. */
+  refresh(): Promise<boolean>
+  /** Calls `listener` after each reload of the node definitions, whoever asked. */
+  onRefreshed(listener: () => void): Unsubscribe
+}
+
+/**
+ * Picks node types: by type name, by any of several names, by a pattern the
+ * name matches, by category, or by a test of the definition.
+ */
+export type DefSelector =
+  | string
+  | readonly string[]
+  | RegExp
+  | { readonly category: string | RegExp }
+  | ((def: NodeDef) => boolean)
+
+/** Extends one node type. Usable only until the callback given to `extend` returns. */
+export interface NodeDefBuilder {
+  /** The definition of the type being extended. */
+  readonly def: NodeDef
+}
+
+export interface NodeDef {
+  readonly type: string
+  readonly title: string
+  readonly category: string
+  readonly description: string
+  readonly inputs: readonly NodeDefInput[]
+  readonly outputs: readonly NodeDefOutput[]
+  /** The hidden inputs the server fills in, as the type declares them. */
+  readonly hidden: Readonly<Record<string, unknown>>
+  readonly isOutputNode: boolean
+}
+
+export interface NodeDefInput {
+  readonly name: string
+  readonly type: string
+  /** The name the editor shows, in the user's language. */
+  readonly localizedName: string
+  /** The choices of a combo input, in the server's order. */
+  readonly values?: readonly (string | number)[]
+  /** The options the input declares, such as `default`, `min` and `max`. */
+  readonly options: Readonly<Record<string, unknown>>
+}
+
+export interface NodeDefOutput {
+  readonly name: string
+  readonly type: string
+}
+
+/** A node type a pack owns. */
+export interface NodeDefinition {
+  readonly type: string
+  /** Defaults to `type`. */
+  readonly title?: string
+  readonly category?: string
+  readonly description?: string
+  readonly inputs?: readonly NodeDefinitionSlot[]
+  readonly outputs?: readonly NodeDefinitionSlot[]
+  /** `'frontend'` leaves the node out of the prompt sent to the server. Defaults to `'backend'`. */
+  readonly execution?: 'backend' | 'frontend'
+}
+
+export interface NodeDefinitionSlot {
+  readonly name: string
+  readonly type: string
 }
