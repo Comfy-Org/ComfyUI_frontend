@@ -89,7 +89,7 @@ import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
-import { getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -103,15 +103,7 @@ import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 
-async function reencodeAsPngBlob(
-  blob: Blob,
-  width: number,
-  height: number
-): Promise<Blob> {
-  const canvas = $el('canvas', { width, height })
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('Could not get canvas context')
-
+async function reencodeAsPngBlob(blob: Blob): Promise<Blob> {
   let image: ImageBitmap | HTMLImageElement
   if (typeof window.createImageBitmap === 'undefined') {
     const img = new Image()
@@ -130,7 +122,10 @@ async function reencodeAsPngBlob(
     image = await createImageBitmap(blob)
   }
 
+  const canvas = $el('canvas', { width: image.width, height: image.height })
   try {
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Could not get canvas context')
     ctx.drawImage(image, 0, 0)
   } finally {
     if ('close' in image && typeof image.close === 'function') {
@@ -676,7 +671,7 @@ export const useLitegraphService = () => {
         {
           content: 'Copy Image',
           callback: markCoreMediaMenuCallback(async () => {
-            const url = new URL(img.src)
+            const url = new URL(fullResolutionSrc(img), img.baseURI)
             url.searchParams.delete('preview')
 
             try {
@@ -687,13 +682,8 @@ export const useLitegraphService = () => {
                   new ClipboardItem({ [blob.type]: blob })
                 ])
               } catch (error) {
-                // Chrome seems to only support PNG on write, convert and try again
                 if (blob.type !== 'image/png') {
-                  const pngBlob = await reencodeAsPngBlob(
-                    blob,
-                    img.naturalWidth,
-                    img.naturalHeight
-                  )
+                  const pngBlob = await reencodeAsPngBlob(blob)
                   await navigator.clipboard.write([
                     new ClipboardItem({ 'image/png': pngBlob })
                   ])
