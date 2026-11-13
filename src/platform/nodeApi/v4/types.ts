@@ -303,8 +303,8 @@ export interface NodeHandleEdits {
   readonly inputs: SlotCollection<InputSlotHandle>
   readonly outputs: SlotCollection<OutputSlotHandle>
   /**
-   * Adds a badge until the disposer is called or the node is rebuilt, as undo
-   * rebuilds it. A function is called each time the badge is drawn.
+   * Adds a badge until the disposer is called or undo rebuilds the node. Vue nodes
+   * show only the badges a node had when it was first drawn.
    */
   addBadge(badge: BadgeDef | (() => BadgeDef)): Unsubscribe
 }
