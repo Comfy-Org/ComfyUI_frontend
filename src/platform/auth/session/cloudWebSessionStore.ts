@@ -78,6 +78,8 @@ interface InteractiveSignIn {
 
 type Phase = WebSessionIdentityState['phase']
 
+export type SessionRecreation = 'created' | 'identity_changed' | 'failed'
+
 /** Why this tab holds no session; `lapsed` is the server's, not a person's, doing. */
 export type WebSessionEnd =
   | 'lapsed'
@@ -419,6 +421,18 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     })
   }
 
+  /** Reads the session again and restores a missing cookie from the remembered login. */
+  async function restoreSession(): Promise<SessionRecreation> {
+    await ready
+    const held = currentSession()
+    if (!identity || !held) return 'failed'
+    const next = await identity.refresh(held.user.id)
+    if (next.phase !== 'signed_in' || next.session === held) return 'failed'
+    return next.session.user.id === held.user.id
+      ? 'created'
+      : 'identity_changed'
+  }
+
   async function revokeAllSessions(): Promise<WebSessionCommandResult> {
     const session = currentSession()
     if (!session) {
@@ -525,6 +539,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     onSignedOutElsewhere: signedOutElsewhere.on,
     signedInInteractively,
     signOut,
+    restoreSession,
     revokeAllSessions
   }
 })

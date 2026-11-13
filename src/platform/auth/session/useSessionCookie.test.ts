@@ -422,6 +422,54 @@ describe('useSessionCookie', () => {
     }
   )
 
+  it('recreateSession posts again for an owner whose session was already confirmed', async () => {
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(null, { status: 204 })
+    )
+    const { useSessionCookie } = await loadUseSessionCookie()
+    await useSessionCookie().ensureSessionCookie()
+
+    expect(await useSessionCookie().recreateSession()).toBe('created')
+    expect(globalThis.fetch).toHaveBeenCalledTimes(2)
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
+
+  it('recreateSession reports a failed creation once, without the server message', async () => {
+    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      Response.json(
+        { message: 'denied for user-a@example.com' },
+        { status: 500 }
+      )
+    )
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    expect(await useSessionCookie().recreateSession()).toBe('failed')
+    expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('Session cookie recreation failed'),
+      {
+        surface: 'auth',
+        errorType: 'session_cookie_creation_failure',
+        level: 'warning',
+        tags: { outcome: 'gave_up' },
+        context: { web_session: false }
+      }
+    )
+  })
+
+  it('recreateSession answers identity_changed without reporting when the user changes during creation', async () => {
+    vi.mocked(useAuthStore().getIdToken).mockImplementation(async () => {
+      useAuthStore().currentUser = fromPartial({ uid: 'user-b' })
+      return 'firebase-id-token'
+    })
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    expect(await useSessionCookie().recreateSession()).toBe('identity_changed')
+    expect(globalThis.fetch).not.toHaveBeenCalled()
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
+
   it('sessionRequiresSso is false once the session is created', async () => {
     vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')
     vi.mocked(globalThis.fetch).mockResolvedValue(

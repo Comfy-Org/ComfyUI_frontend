@@ -4,6 +4,7 @@ import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import type { SessionRecreation } from '@/platform/auth/session/cloudWebSessionStore'
 import {
   SessionRevokedError,
   revokedCodeOf
@@ -184,6 +185,39 @@ export const useSessionCookie = () => {
     await establishSession(currentOwnerUidOrThrow(), true)
   }
 
+  const recreateFirebaseSession = async (): Promise<SessionRecreation> => {
+    const ownerUid = useAuthStoreAccess().currentUser?.uid
+    if (!ownerUid) return 'failed'
+    try {
+      await establishSession(ownerUid, true)
+      return 'created'
+    } catch {
+      const currentUid = useAuthStoreAccess().currentUser?.uid
+      return currentUid !== undefined && currentUid !== ownerUid
+        ? 'identity_changed'
+        : 'failed'
+    }
+  }
+
+  /** After a request was refused for a missing cookie; unlike `createSessionOrThrow`, it never trusts a live web session. */
+  const recreateSession = async (): Promise<SessionRecreation> => {
+    if (!isCloud) return 'created'
+    const webSession = useCloudWebSessionStore()
+    const recreated = webSession.isActive()
+      ? await webSession.restoreSession()
+      : await recreateFirebaseSession()
+    if (recreated === 'failed') {
+      reportError(new Error('Session cookie recreation failed'), {
+        surface: 'auth',
+        errorType: 'session_cookie_creation_failure',
+        level: 'warning',
+        tags: { outcome: 'gave_up' },
+        context: { web_session: webSession.isActive() }
+      })
+    }
+    return recreated
+  }
+
   /**
    * Deletes the session cookie.
    * Called on logout.
@@ -238,6 +272,7 @@ export const useSessionCookie = () => {
   return {
     createSession,
     createSessionOrThrow,
+    recreateSession,
     sessionRequiresSso,
     ensureSessionCookie,
     deleteSession

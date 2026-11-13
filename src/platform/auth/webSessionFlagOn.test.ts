@@ -594,6 +594,56 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
       })
     ])
   })
+
+  it('creates the cookie again when it is gone under a signed-in tab, so a refused request can retry', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    server.requests.length = 0
+
+    server.session = 'none'
+
+    expect(await useSessionCookie().recreateSession()).toBe('created')
+    expect(server.requests[1]).toEqual({
+      method: 'POST',
+      authorization: 'Bearer firebase-id-token',
+      credentials: 'include'
+    })
+    expect(server.session).toEqual({ userId: 'user-a' })
+    expect(useCloudWebSessionStore().state.phase).toBe('signed_in')
+  })
+
+  it('reports once when the cookie cannot be created again under a signed-in tab', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+
+    server.session = 'restore_token_revoked'
+
+    expect(await useSessionCookie().recreateSession()).toBe('failed')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      expect.objectContaining({
+        surface: 'auth',
+        errorType: 'session_cookie_creation_failure'
+      })
+    )
+  })
+
+  it('answers identity_changed without reporting when another account holds the session', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    firebaseSignOut.mockResolvedValue()
+
+    server.session = { userId: 'user-b' }
+
+    expect(await useSessionCookie().recreateSession()).toBe('identity_changed')
+    expect(reportError).not.toHaveBeenCalled()
+  })
 })
 
 interface ApiRequest {
