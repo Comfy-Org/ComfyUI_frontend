@@ -648,6 +648,23 @@ describe('AgentSkillsScreen', () => {
       expect(screen.queryByRole('list', { name: 'Drafts' })).toBeNull()
     })
 
+    it('removes the draft when the save happens before the draft was written again', async () => {
+      const { user } = mount()
+      await openAddForm(user)
+      await fillField(user, 'Name', 'portrait')
+      await fillField(user, 'When to use', 'Compose a portrait')
+      await fillField(user, 'Instructions', 'Old draft')
+      await user.click(screen.getByRole('button', { name: 'Cancel' }))
+      await user.click(await screen.findByRole('button', { name: 'portrait' }))
+      await fillField(user, 'Instructions', ' and saved text')
+      vi.mocked(publishSkillPack).mockResolvedValueOnce(PORTRAIT)
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      await screen.findByRole('list', { name: 'Skills' })
+      expect(screen.queryByRole('list', { name: 'Drafts' })).toBeNull()
+    })
+
     it('removes the draft of a save that completes after the screen was closed', async () => {
       const save = pendingSave()
       const first = mount()

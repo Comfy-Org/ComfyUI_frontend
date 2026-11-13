@@ -22,6 +22,15 @@ type SkillDrafts = z.infer<typeof zSkillDrafts>
 
 export type SkillDraftTarget = { kind: 'new' } | { kind: 'edit'; name: string }
 
+export function sameDraftFields(
+  a: SkillDraftFields,
+  b: SkillDraftFields
+): boolean {
+  return (
+    a.name === b.name && a.description === b.description && a.body === b.body
+  )
+}
+
 function editKey(name: string): string {
   return `skill:${name}`
 }
@@ -84,5 +93,21 @@ export const useSkillDraftStore = defineStore('skillDrafts', () => {
     if (scope === skills.scope) drafts.value = next
   }
 
-  return { newSkillDraft, editDraftFor, setDraft }
+  function clearDraftIfUnchanged(
+    scope: string,
+    target: SkillDraftTarget,
+    submitted: SkillDraftFields
+  ): void {
+    const next = readDrafts(scope)
+    const stored =
+      target.kind === 'new' ? next.newSkill : next.edits[editKey(target.name)]
+    if (stored && sameDraftFields(stored, submitted)) {
+      if (target.kind === 'new') next.newSkill = null
+      else delete next.edits[editKey(target.name)]
+      writeDrafts(scope, next)
+    }
+    if (scope === skills.scope) drafts.value = next
+  }
+
+  return { newSkillDraft, editDraftFor, setDraft, clearDraftIfUnchanged }
 })

@@ -73,21 +73,16 @@ function deferred<T>() {
 
 function mountForm(pack?: SkillPack) {
   let api!: ReturnType<typeof useSkillPackForm>
-  const closed = vi.fn()
-  const view = render(
+  render(
     defineComponent({
       setup() {
-        api = useSkillPackForm({
-          pack: () => pack,
-          onSaved: () => closed('saved'),
-          onUnavailable: () => closed('unavailable')
-        })
+        api = useSkillPackForm({ pack: () => pack })
         return () => null
       }
     }),
     { global: { plugins: [i18n] } }
   )
-  return { ...api, closed, unmount: view.unmount }
+  return api
 }
 
 describe('useSkillPackForm', () => {
@@ -247,7 +242,7 @@ describe('useSkillPackForm', () => {
       new SkillPacksApiError('not found', 404)
     )
     const store = useSkillPacksStore()
-    const { form, closed, handleSubmit } = mountForm()
+    const { form, handleSubmit } = mountForm()
     form.name = 'my-pack'
     form.description = 'load me'
     form.body = 'do the thing'
@@ -255,7 +250,6 @@ describe('useSkillPackForm', () => {
     await handleSubmit()
 
     expect(store.routesAvailable).toBe(false)
-    expect(closed).toHaveBeenCalledExactlyOnceWith('unavailable')
   })
 
   it('reports an unexpected publish failure and shows a fallback', async () => {
@@ -279,7 +273,7 @@ describe('useSkillPackForm', () => {
     const saved = makePack({ name: 'my-pack' })
     vi.mocked(publishSkillPack).mockResolvedValue(saved)
     const store = useSkillPacksStore()
-    const { form, handleSubmit, closed } = mountForm()
+    const { form, handleSubmit } = mountForm()
     form.name = '  my-pack  '
     form.description = 'load me'
     form.body = 'do the thing'
@@ -292,7 +286,6 @@ describe('useSkillPackForm', () => {
       body: 'do the thing'
     })
     expect(store.packs).toEqual([saved])
-    expect(closed).toHaveBeenCalledExactlyOnceWith('saved')
   })
 
   it('submits once when publish is repeated while pending', async () => {
@@ -318,7 +311,7 @@ describe('useSkillPackForm', () => {
     vi.mocked(publishSkillPack)
       .mockRejectedValueOnce(new SkillPacksApiError('correct the request', 400))
       .mockResolvedValueOnce(saved)
-    const { form, handleSubmit, fieldError, closed } = mountForm()
+    const { form, handleSubmit, fieldError } = mountForm()
     Object.assign(form, {
       name: 'my-pack',
       description: 'load me',
@@ -331,31 +324,10 @@ describe('useSkillPackForm', () => {
       description: 'load me',
       body: 'keep this draft'
     })
-    expect(closed).not.toHaveBeenCalled()
     expect(fieldError.value).toBe('correct the request')
 
     await handleSubmit()
     expect(fieldError.value).toBeNull()
-    expect(closed).toHaveBeenCalledExactlyOnceWith('saved')
     expect(useSkillPacksStore().packs).toEqual([saved])
-  })
-
-  it('still reports a save that completes after the form unmounted', async () => {
-    const pending = deferred<SkillPack>()
-    vi.mocked(publishSkillPack).mockReturnValue(pending.promise)
-    const { form, handleSubmit, closed, unmount } = mountForm()
-    Object.assign(form, {
-      name: 'my-pack',
-      description: 'load me',
-      body: 'do it'
-    })
-    const submit = handleSubmit()
-
-    unmount()
-    pending.resolve(makePack())
-    await submit
-
-    expect(useSkillPacksStore().packs).toEqual([makePack()])
-    expect(closed).toHaveBeenCalledExactlyOnceWith('saved')
   })
 })

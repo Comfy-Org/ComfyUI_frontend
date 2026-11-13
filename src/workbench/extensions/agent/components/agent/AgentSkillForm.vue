@@ -65,6 +65,7 @@ function firstInvalidFieldId(): string | undefined {
 }
 
 async function onSubmit(): Promise<void> {
+  draft.flush()
   await handleSubmit()
   await nextTick()
   const serverRefused = fieldError.value || budgetError.value
@@ -92,10 +93,6 @@ function keepShortcutEnterInForm(event: KeyboardEvent): void {
   if (event.ctrlKey || event.metaKey || event.altKey) event.stopPropagation()
 }
 
-function requestClose(): void {
-  emit('close')
-}
-
 onMounted(async () => {
   await nextTick()
   focusElement(isEditing.value ? descriptionId : nameId)
@@ -118,7 +115,7 @@ onMounted(async () => {
         :aria-label="t('agent.backToSkills')"
         :disabled="loading"
         class="size-6 shrink-0"
-        @click="requestClose"
+        @click="emit('close')"
       >
         <i aria-hidden="true" class="icon-[lucide--chevron-left]" />
       </Button>
@@ -249,7 +246,7 @@ onMounted(async () => {
         variant="secondary"
         size="md"
         :disabled="loading"
-        @click="requestClose"
+        @click="emit('close')"
       >
         {{ t('g.cancel') }}
       </Button>

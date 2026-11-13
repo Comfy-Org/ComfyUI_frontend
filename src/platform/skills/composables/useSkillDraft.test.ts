@@ -34,18 +34,32 @@ describe('useSkillDraft', () => {
     expect(useSkillDraftStore().newSkillDraft).toBeNull()
   })
 
-  it('keeps newer edits when a save of older text completes', async () => {
-    const form = openAddForm()
-    onTestFinished(form.close)
-    form.form.body = 'edited after the save started'
-    await vi.advanceTimersByTimeAsync(1000)
+  it.for(['name', 'description', 'body'] as const)(
+    'keeps newer %s when a save of older text completes',
+    async (field) => {
+      const submitted = {
+        name: 'portrait',
+        description: 'Compose a portrait',
+        body: 'Saved instructions'
+      }
+      const first = openAddForm()
+      onTestFinished(first.close)
+      Object.assign(first.form, submitted)
+      await nextTick()
+      first.close()
+      const reopened = openAddForm()
+      onTestFinished(reopened.close)
+      reopened.form[field] = 'newer text'
+      await vi.advanceTimersByTimeAsync(1000)
 
-    form.settle({ name: '', description: '', body: 'text that was saved' })
+      first.settle(submitted)
 
-    expect(useSkillDraftStore().newSkillDraft?.body).toBe(
-      'edited after the save started'
-    )
-  })
+      expect(useSkillDraftStore().newSkillDraft).toEqual({
+        ...submitted,
+        [field]: 'newer text'
+      })
+    }
+  )
 
   it('writes the typed text when the page is being left before the save delay has passed', async () => {
     const form = openAddForm()

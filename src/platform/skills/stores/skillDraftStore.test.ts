@@ -51,6 +51,37 @@ describe('skillDraftStore', () => {
     expect(drafts.newSkillDraft).toBeNull()
   })
 
+  it('keeps a newer draft that another window wrote when clearing the submitted one', () => {
+    const skills = useSkillPacksStore()
+    const drafts = useSkillDraftStore()
+    const scope = skills.scope
+    drafts.setDraft(scope, { kind: 'new' }, PORTRAIT)
+    localStorage.setItem(
+      StorageKeys.agentSkillDrafts(scope),
+      JSON.stringify({
+        newSkill: { ...PORTRAIT, body: 'Edited in another window' },
+        edits: {}
+      })
+    )
+
+    drafts.clearDraftIfUnchanged(scope, { kind: 'new' }, PORTRAIT)
+
+    expect(drafts.newSkillDraft?.body).toBe('Edited in another window')
+    expect(localStorage.getItem(StorageKeys.agentSkillDrafts(scope))).toContain(
+      'Edited in another window'
+    )
+  })
+
+  it('clears the draft when it still equals the submitted one', () => {
+    const skills = useSkillPacksStore()
+    const drafts = useSkillDraftStore()
+    drafts.setDraft(skills.scope, { kind: 'new' }, PORTRAIT)
+
+    drafts.clearDraftIfUnchanged(skills.scope, { kind: 'new' }, PORTRAIT)
+
+    expect(drafts.newSkillDraft).toBeNull()
+  })
+
   it.for(['landscape', '__proto__', 'constructor', 'toString'])(
     'reads back the edit draft of a skill named %s from storage',
     (name) => {

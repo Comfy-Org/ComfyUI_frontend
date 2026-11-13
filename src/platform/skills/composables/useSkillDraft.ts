@@ -1,7 +1,10 @@
 import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import { onScopeDispose, watch } from 'vue'
 
-import { useSkillDraftStore } from '@/platform/skills/stores/skillDraftStore'
+import {
+  sameDraftFields,
+  useSkillDraftStore
+} from '@/platform/skills/stores/skillDraftStore'
 import type {
   SkillDraftFields,
   SkillDraftTarget
@@ -10,12 +13,6 @@ import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
 
 const SAVE_DELAY_MS = 300
-
-function sameFields(a: SkillDraftFields, b: SkillDraftFields): boolean {
-  return (
-    a.name === b.name && a.description === b.description && a.body === b.body
-  )
-}
 
 export function useSkillDraft(options: {
   pack: SkillPack | undefined
@@ -39,10 +36,7 @@ export function useSkillDraft(options: {
 
   function persist(): void {
     if (settled) return
-    const changed =
-      form.name !== saved.name ||
-      form.description !== saved.description ||
-      form.body !== saved.body
+    const changed = !sameDraftFields(form, saved)
     drafts.setDraft(scope, target, changed ? { ...form } : null)
   }
 
@@ -58,11 +52,8 @@ export function useSkillDraft(options: {
 
   function settle(submitted: SkillDraftFields): void {
     settled = true
-    const stored = pack ? drafts.editDraftFor(pack.name) : drafts.newSkillDraft
-    if (stored && sameFields(stored, submitted)) {
-      drafts.setDraft(scope, target, null)
-    }
+    drafts.clearDraftIfUnchanged(scope, target, submitted)
   }
 
-  return { settle }
+  return { flush: persist, settle }
 }

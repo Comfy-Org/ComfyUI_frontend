@@ -55,6 +55,7 @@ export function useSkillPacks() {
         return (
           listingApplied &&
           store.isCurrentScope(requestScope) &&
+          store.routesAvailable &&
           !store.packs.some((existing) => existing.name === pack.name)
         )
       }
