@@ -82,6 +82,7 @@ function getAnnotatedValueMediaUrl(
   )
     return ''
   const { filename, subfolder, type } = parseImageWidgetValue(value)
+  if (isHdrImageFilename(filename)) return ''
   return getMediaUrl(filename, type, assetKind, subfolder)
 }
 

@@ -117,6 +117,21 @@ describe('FormDropdownMenuItem', () => {
       expect(screen.queryByLabelText('item_name')).toBeNull()
     })
 
+    it('renders an HDR placeholder for HDR items without a preview', () => {
+      renderItem({ name: 'render.exr [output]' }, { assetKind: 'image' })
+      expect(screen.getByTestId('dropdown-item-hdr-placeholder')).toBeTruthy()
+    })
+
+    it('falls back to the placeholder when the preview fails to load', async () => {
+      renderItem(
+        { name: 'render.exr', previewUrl: '/broken.png' },
+        { assetKind: 'image' }
+      )
+      await fireEvent.error(screen.getByRole('img', { name: 'render.exr' }))
+      expect(screen.queryByRole('img', { name: 'render.exr' })).toBeNull()
+      expect(screen.getByTestId('dropdown-item-hdr-placeholder')).toBeTruthy()
+    })
+
     it('omits media area entirely for list-small layout', () => {
       renderItem(
         { previewUrl: '/p.png', layout: 'list-small' },

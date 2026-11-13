@@ -12,6 +12,8 @@ import {
   findServerPreviewUrl,
   isAssetPreviewSupported
 } from '@/platform/assets/utils/assetPreviewUtil'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import { AssetKindKey } from './types'
 import type { FormDropdownMenuItemProps } from './types'
@@ -63,8 +65,13 @@ watch(
   }
 )
 
-const displayedPreviewUrl = computed(() =>
-  isMesh.value ? resolvedMeshPreview.value : props.previewUrl
+const failedPreviewUrl = ref<string>()
+const displayedPreviewUrl = computed(() => {
+  const url = isMesh.value ? resolvedMeshPreview.value : props.previewUrl
+  return url && url !== failedPreviewUrl.value ? url : undefined
+})
+const isHdr = computed(() =>
+  isHdrImageFilename(parseAnnotatedPath(props.name).filepath)
 )
 
 function handleClick() {
@@ -143,13 +150,14 @@ function handleVideoLoad(event: Event) {
         />
       </div>
       <video
-        v-if="previewUrl && isVideo"
-        :src="previewUrl"
+        v-if="displayedPreviewUrl && isVideo"
+        :src="displayedPreviewUrl"
         :aria-label="label ?? name"
         class="size-full object-cover"
         preload="metadata"
         muted
         @loadeddata="handleVideoLoad"
+        @error="failedPreviewUrl = displayedPreviewUrl"
       />
       <img
         v-else-if="displayedPreviewUrl"
@@ -158,6 +166,7 @@ function handleVideoLoad(event: Event) {
         draggable="false"
         class="size-full object-cover"
         @load="handleImageLoad"
+        @error="failedPreviewUrl = displayedPreviewUrl"
       />
       <div
         v-else-if="isMesh"
@@ -165,6 +174,13 @@ function handleVideoLoad(event: Event) {
         class="flex size-full items-center justify-center bg-muted"
       >
         <i class="icon-[lucide--box] text-3xl text-muted-foreground" />
+      </div>
+      <div
+        v-else-if="isHdr"
+        data-testid="dropdown-item-hdr-placeholder"
+        class="flex size-full items-center justify-center bg-muted"
+      >
+        <i class="icon-[lucide--sun] size-8 text-muted-foreground" />
       </div>
       <div
         v-else

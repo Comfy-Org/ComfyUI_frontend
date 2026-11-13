@@ -413,6 +413,16 @@ describe('useWidgetSelectItems', () => {
       expect(pagedItems(dropdownItems.value)[0].preview_url).toBe('')
     })
 
+    it('does not request the raw file as the fallback preview for HDR values', () => {
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          modelValue: ref('render.exr [output]'),
+          assetKind: () => 'image'
+        })
+      )
+      expect(pagedItems(dropdownItems.value)[0].preview_url).toBe('')
+    })
+
     it('does not add a fallback when modelValue matches a base asset', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({ modelValue: ref('img_001.png') })
