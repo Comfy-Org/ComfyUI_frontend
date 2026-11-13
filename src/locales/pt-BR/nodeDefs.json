@@ -497,6 +497,50 @@
       }
     }
   },
+  "BakeTextureFromViews": {
+    "description": "Projeta imagens de volta no layout UV da malha: renderize com Render Mesh, edite ou regenere as imagens e, em seguida, asse-as usando a mesma malha e câmeras. Os texels não cobertos por nenhuma vista mantêm a própria textura da malha (ou as cores dos vértices). Produz a base_color para Apply Texture to Mesh e uma mask de confiança indicando quão bem as vistas enxergaram cada texel. Renderizações feitas com uma transformação de modelo do visualizador não se alinham.",
+    "display_name": "Assar Textura a Partir de Vistas",
+    "inputs": {
+      "blend_exponent": {
+        "name": "blend_exponent",
+        "tooltip": "As vistas são ponderadas por cos(ângulo de visão)^expoente. Valores maiores favorecem a vista mais frontal (mais nítida, com emendas mais marcadas); valores menores fazem a média de mais vistas (mais suave)."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "As câmeras com as quais as imagens foram renderizadas, conforme conectadas a Render Mesh. Una rigs com Batch Cameras. Nenhuma: vista frontal enquadrada automaticamente de Render Mesh."
+      },
+      "fill_unseen": {
+        "name": "fill_unseen",
+        "tooltip": "Os texels que nenhuma vista enxerga recebem cor expandida a partir da superfície vista, em vez da própria textura da malha ou das cores dos vértices. Para vistas que substituem a textura inteira."
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Uma imagem por câmera, na ordem das câmeras (Batch Images). Qualquer resolução com a proporção da renderização; resoluções maiores resultam em um bake mais nítido."
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "Áreas editadas por vista; somente pixels com mask são projetados. Uma única mask é aplicada a todas as vistas."
+      },
+      "mesh": {
+        "name": "malha",
+        "tooltip": "A malha com UV desdobrada que foi renderizada."
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "Resolução quadrada da textura. 0 = o tamanho atual da textura da malha (2048 se ela não tiver nenhuma); caso contrário, a textura atual é reamostrada para essa resolução."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "confiança",
+        "tooltip": "Por texel, quão frontalmente a melhor vista o enxergou; 0 = não visto. Renderize-a como a textura de outro rig para ver o que essas vistas ainda precisam cobrir."
+      }
+    }
+  },
   "BakeTextureFromVoxel": {
     "description": "Gera texturas PBR no layout UV existente da malha (amostragem trilinear do volume esparso de voxels). NÃO desdobra UV — conecte antes um nó de desdobramento UV. Produz IMAGEs de base_color + metallic/roughness em escala de cinza (pretas se não houver PBR); forneça-as a Aplicar Textura à Malha (a MESMA malha) para SaveGLB.",
     "display_name": "Gerar Textura a Partir de Voxel",
@@ -565,6 +609,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchCameras": {
+    "description": "Une câmeras e órbitas em uma única lista de câmeras, na ordem das entradas.",
+    "display_name": "Agrupar Câmeras",
+    "inputs": {
+      "cameras": {
+        "name": "câmeras"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
         "tooltip": null
       }
     }
@@ -838,6 +897,204 @@
     "outputs": {
       "0": {
         "name": "output",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeTextToSpeech": {
+    "description": "Converta texto em fala com o Breeze TTS 2.",
+    "display_name": "Breeze Texto para Fala",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "delivery": {
+        "name": "entonação"
+      },
+      "delivery_speaker_boost": {
+        "name": "speaker_boost"
+      },
+      "language": {
+        "name": "idioma",
+        "tooltip": "Idioma do texto. Inglês e chinês podem usar qualquer um dos modelos; outros idiomas usam Breeze TTS 2 Multilingual. Uma voz soa melhor no próprio idioma: para outro idioma, use uma cópia criada com Breeze Voice Localize."
+      },
+      "language_model": {
+        "name": "modelo"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "A seed controla se o nó deve ser executado novamente; os resultados não são determinísticos, independentemente da seed."
+      },
+      "speed": {
+        "name": "velocidade",
+        "tooltip": "Altera o ritmo sem alterar o tom."
+      },
+      "text": {
+        "name": "texto",
+        "tooltip": "Até 1000 caracteres. Tags de áudio, como (laughs) ou (sighs), são interpretadas, não lidas."
+      },
+      "voice": {
+        "name": "voz"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceClone": {
+    "description": "Crie uma voz a partir de uma gravação de um único locutor.",
+    "display_name": "Breeze Clonagem de Voz",
+    "inputs": {
+      "audio": {
+        "name": "áudio",
+        "tooltip": "Um falante, pelo menos 3 segundos. Apenas os primeiros 60 segundos são usados."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "remove_background_noise": {
+        "name": "remover_ruído_de_fundo"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados não são determinísticos independentemente da semente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voz",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prévia",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceDesign": {
+    "description": "Crie uma nova voz a partir de uma descrição de texto.",
+    "display_name": "Design de Voz Breeze",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "description": {
+        "name": "descrição",
+        "tooltip": "Descreva a voz, de 3 a 500 caracteres: idade, gênero, sotaque, tom, ritmo."
+      },
+      "language": {
+        "name": "idioma",
+        "tooltip": "Idioma do texto de prévia. Inglês e chinês podem usar qualquer um dos modelos; outros idiomas usam Breeze TTS 2 Multilingual."
+      },
+      "language_model": {
+        "name": "modelo"
+      },
+      "preview_text": {
+        "name": "texto_de_prévia",
+        "tooltip": "A frase que a nova voz fala na prévia, com até 500 caracteres. Escreva-a no idioma selecionado: a voz é criada a partir dessa prévia."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados não são determinísticos independentemente da semente."
+      },
+      "strength": {
+        "name": "intensidade",
+        "tooltip": "O quanto a voz segue de perto a descrição."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voz",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prévia",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceLocalize": {
+    "description": "Crie uma cópia de uma voz que fale outro idioma nativamente.",
+    "display_name": "Localização de Voz Breeze",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "language": {
+        "name": "idioma",
+        "tooltip": "Idioma que a nova voz fala."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados não são determinísticos independentemente da semente."
+      },
+      "voice": {
+        "name": "voz"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voz",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prévia",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceRemix": {
+    "description": "Crie uma cópia modificada de uma voz no mesmo idioma, a partir de uma descrição ou predefinição.",
+    "display_name": "Remix de Voz Breeze",
+    "inputs": {
+      "change": {
+        "name": "alteração"
+      },
+      "change_prompt": {
+        "name": "prompt"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados não são determinísticos, independentemente da semente."
+      },
+      "strength": {
+        "name": "intensidade",
+        "tooltip": "Valores mais altos alteram mais a voz."
+      },
+      "voice": {
+        "name": "voz"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voz",
+        "tooltip": null
+      },
+      "1": {
+        "name": "pré-visualização",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceSelector": {
+    "description": "Escolha uma voz Breeze em destaque ou insira qualquer ID de voz Breeze.",
+    "display_name": "Seletor de Voz Breeze",
+    "inputs": {
+      "language": {
+        "name": "idioma"
+      },
+      "language_voice": {
+        "name": "voz"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voz",
         "tooltip": null
       }
     }
@@ -1645,12 +1902,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "Renderize o vídeo final em 1080p de um rascunho do Seedance 2.5. O resultado final mantém a cena e o movimento do rascunho e reutiliza seu prompt, referências, duração, proporção e configuração de áudio.",
+    "description": "Renderize o vídeo final em 1080p ou 4k de um rascunho do Seedance 2.5. O final mantém a cena e o movimento do rascunho e reutiliza seu prompt, referências, duração, proporção de tela e configuração de áudio.",
     "display_name": "ByteDance Seedance 2.5 Rascunho para Vídeo Final",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "A saída draft_task_id de um nó Seedance 2.5 executado com o modelo Seedance 2.5 Draft, ou um ID de tarefa de rascunho colado. Defina o controle de seed desse nó como fixo; caso contrário, a próxima execução gerará um novo rascunho em vez de reutilizar o que você analisou. Um rascunho pode ser renderizado por 7 dias após sua criação."
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "Resolução do vídeo final."
       },
       "watermark": {
         "name": "watermark",
@@ -1688,7 +1949,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p cujo draft_task_id renderiza o resultado final em 1080p no nó Seedance 2.5 Rascunho para Vídeo Final; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -1720,7 +1981,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "ID da tarefa de uma execução do Seedance 2.5 Draft. Conecte-o ao nó Seedance 2.5 Rascunho para Vídeo Final para renderizar o resultado final em 1080p."
+        "tooltip": "ID da tarefa de uma execução do Seedance 2.5 Draft. Conecte-o ao nó Seedance 2.5 Draft to Final Video para renderizar o resultado final em 1080p ou 4k."
       }
     }
   },
@@ -1733,7 +1994,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p cujo draft_task_id renderiza o resultado final em 1080p no nó Seedance 2.5 Rascunho para Vídeo Final; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1786,7 +2047,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p cujo draft_task_id renderiza o resultado final em 1080p no nó Seedance 2.5 Rascunho para Vídeo Final; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1830,7 +2091,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "ID da tarefa de uma execução do Seedance 2.5 Draft. Conecte-o ao nó Seedance 2.5 Rascunho para Vídeo Final para renderizar o resultado final em 1080p."
+        "tooltip": "ID da tarefa de uma execução do Seedance 2.5 Draft. Conecte-o ao nó Seedance 2.5 Draft to Final Video para renderizar o resultado final em 1080p ou 4k."
       }
     }
   },
@@ -1843,7 +2104,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p cujo draft_task_id renderiza o resultado final em 1080p no nó Seedance 2.5 Rascunho para Vídeo Final; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -1878,7 +2139,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "ID da tarefa de uma execução do Seedance 2.5 Draft. Conecte-o ao nó Seedance 2.5 Rascunho para Vídeo Final para renderizar o resultado final em 1080p."
+        "tooltip": "ID da tarefa de uma execução do Seedance 2.5 Draft. Conecte-o ao nó Seedance 2.5 Draft to Final Video para renderizar o resultado final em 1080p ou 4k."
       }
     }
   },
@@ -2183,8 +2444,8 @@
     }
   },
   "ByteDanceSeedreamLayerSeparationNodeV2": {
-    "description": "Decomponha uma imagem em uma placa de fundo e até 16 camadas transparentes reposicionáveis, cada uma com ordem de empilhamento, caixa delimitadora, nome e descrição.",
-    "display_name": "Separação de Camadas ByteDance Seedream 5.0",
+    "description": "Decomponha uma imagem em uma camada de fundo e camadas transparentes reposicionáveis (até 99 com Seedream 5.5, até 16 com 5.0), cada uma com ordem de empilhamento, caixa delimitadora, nome e descrição.",
+    "display_name": "Separação de Camadas ByteDance Seedream 5.0 e 5.5",
     "inputs": {
       "control_after_generate": {
         "name": "controle após gerar"
@@ -2195,11 +2456,11 @@
       "model_crop_layers": {
         "name": "crop_layers"
       },
+      "model_max_images": {
+        "name": "max_images"
+      },
       "model_prompt": {
         "name": "prompt"
-      },
-      "model_prompt_optimization": {
-        "name": "prompt_optimization"
       },
       "model_seed": {
         "name": "seed"
@@ -2339,7 +2600,7 @@
   },
   "ByteDanceSeedreamNodeV3": {
     "description": "Geração unificada de texto para imagem e edição precisa em uma única frase com resolução de até 4K.",
-    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "display_name": "ByteDance Seedream 4.5, 5.0 e 5.5",
     "inputs": {
       "control_after_generate": {
         "name": "controlar após gerar"
@@ -2347,20 +2608,17 @@
       "model": {
         "name": "model"
       },
+      "model_background": {
+        "name": "fundo"
+      },
       "model_height": {
         "name": "height"
-      },
-      "model_prompt_optimization": {
-        "name": "prompt_optimization"
       },
       "model_seed": {
         "name": "seed"
       },
       "model_size_preset": {
         "name": "size_preset"
-      },
-      "model_thinking": {
-        "name": "thinking"
       },
       "model_watermark": {
         "name": "watermark"
@@ -4318,7 +4576,7 @@
       },
       "camera_type": {
         "name": "tipo_de_câmera",
-        "tooltip": "Projeção usada pelo Render Splat: perspectiva (com profundidade) ou ortográfica (paralela)."
+        "tooltip": "Projeção usada por Render Splat e Render Mesh: perspectiva (encurtamento) ou ortográfica (paralela)."
       },
       "fov": {
         "name": "fov",
@@ -4354,6 +4612,38 @@
       "zoom": {
         "name": "zoom",
         "tooltip": "Zoom digital (multiplicador da distância focal). >1 aproxima sem mover a câmera."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
+  "CreateCameraOrbit": {
+    "description": "Várias câmeras ao redor do alvo da primeira câmera: por padrão, uma rotação em plataforma giratória, inclinada se desejado, além de vistas diretamente de cima e de baixo. Render Mesh renderiza uma imagem por câmera; Bake Texture From Views as projeta de volta.",
+    "display_name": "Criar Órbita de Câmera",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Primeira câmera da órbita. Uma lista de câmeras cria uma órbita para cada câmera nela."
+      },
+      "count": {
+        "name": "quantidade",
+        "tooltip": "Câmeras espaçadas uniformemente ao longo do percurso."
+      },
+      "pitch": {
+        "name": "inclinação",
+        "tooltip": "Inclinação total sobre o alvo, positiva ascendendo como a inclinação de Create Camera Info; após 90, as câmeras passam por cima. Voltas completas fazem um loop como a guinada."
+      },
+      "poles": {
+        "name": "polos",
+        "tooltip": "Vistas diretamente de cima e/ou de baixo do alvo, adicionadas após a órbita. O topo da imagem delas aponta para longe da primeira câmera."
+      },
+      "yaw": {
+        "name": "guinada",
+        "tooltip": "Rotação total em torno do alvo, na direção de guinada de Create Camera Info. Voltas completas param um passo antes da primeira câmera; outros percursos terminam na última câmera."
       }
     },
     "outputs": {
@@ -7440,7 +7730,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "Gere um vídeo com áudio a partir de um prompt de texto usando os modelos Gemini Omni Flash do Google. Opcionalmente, forneça imagens e/ou vídeos de referência para orientar ou editar o resultado. Descreva a duração desejada (3-10s) diretamente no prompt.",
+    "description": "Gere um vídeo com áudio a partir de um prompt de texto usando os modelos Gemini Omni Flash do Google. Opcionalmente, forneça imagens e/ou vídeos de referência para orientar ou editar o resultado. Descreva a duração desejada diretamente no prompt (3-15s para Omni Flash 1.2, 3-10s para modelos mais antigos).",
     "display_name": "Google Gemini Omni (Vídeo)",
     "inputs": {
       "control_after_generate": {
@@ -7748,7 +8038,8 @@
         "name": "image"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-image-quality e grok-imagine-image-pro foram descontinuados pela xAI e agora são executados como grok-imagine-image-2.0 em baixa qualidade."
       },
       "number_of_images": {
         "name": "number_of_images",
@@ -7780,7 +8071,8 @@
         "name": "controle após gerar"
       },
       "model": {
-        "name": "modelo"
+        "name": "modelo",
+        "tooltip": "grok-imagine-image-quality e grok-imagine-image-pro foram descontinuados pela xAI e agora são executados como grok-imagine-image-2.0 em baixa qualidade."
       },
       "model_aspect_ratio": {
         "name": "proporção"
@@ -7820,7 +8112,8 @@
         "name": "control after generate"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-image-quality e grok-imagine-image-pro foram descontinuados pela xAI e agora são executados como grok-imagine-image-2.0 em baixa qualidade."
       },
       "number_of_images": {
         "name": "number_of_images",
@@ -10320,6 +10613,9 @@
       "model_aspect_ratio": {
         "name": "proporção_da_imagem"
       },
+      "model_audio": {
+        "name": "áudio"
+      },
       "model_prompt": {
         "name": "prompt"
       },
@@ -10337,7 +10633,7 @@
     }
   },
   "Kling4ImageToVideoNode": {
-    "description": "Gere um vídeo com áudio usando até 10 quadros-chave. Os quadros intermediários são espaçados uniformemente; o vídeo usa a proporção da imagem do primeiro quadro-chave.",
+    "description": "Gere um vídeo com áudio usando até 10 quadros-chave no kling-4.0 ou a partir de um primeiro quadro no kling-4.0-flash. Os quadros intermediários são espaçados uniformemente; o vídeo adota a proporção do primeiro quadro-chave.",
     "display_name": "Kling 4.0 Imagem para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -11220,8 +11516,7 @@
         "tooltip": "Imagem de referência cujo estilo influencia a geração."
       },
       "strength": {
-        "name": "força",
-        "tooltip": "Força da referência; valores negativos invertem a influência do estilo."
+        "name": "força"
       },
       "style_reference": {
         "name": "style_reference",
@@ -13328,6 +13623,106 @@
       }
     }
   },
+  "LtxApiVideoAlphaGen": {
+    "description": "Extraia um matte alfa em escala de cinza (o branco é o primeiro plano) que corresponda ao vídeo de entrada quadro a quadro. Use Obter Componentes de Vídeo e Imagem para Máscara para transformá-lo em uma máscara. O áudio não é mantido.",
+    "display_name": "LTX Video AlphaGen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais não são determinísticos, independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Até 10 segundos, no máximo 3840x2160 em qualquer orientação."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "matte",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoReframe": {
+    "description": "Reenquadre um vídeo para uma nova resolução e proporção. As áreas fora do vídeo original são geradas para combinarem com ele.",
+    "display_name": "LTX Video Reenquadrar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "placement": {
+        "name": "posicionamento",
+        "tooltip": "Onde o vídeo original fica no novo quadro. O vídeo sempre preenche um dos lados do quadro, portanto, uma âncora o move apenas ao longo do outro lado."
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais não são determinísticos, independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Até 60 segundos e 1800 quadros, com cada lado entre 64 e 4096 pixels."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoSdrToHdr": {
+    "description": "Converta um vídeo SDR em um vídeo HDR de 10 bits (BT.2020, HLG) na mesma resolução. O áudio não é mantido.",
+    "display_name": "LTX Video SDR para HDR",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais não são determinísticos, independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "No máximo 3840x2160 em qualquer orientação. Até 273 quadros em 1080p, 193 quadros em 1440p e 65 quadros em 4K."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoUpscale": {
+    "description": "Amplie um vídeo para 1080p, 4K ou 8K, mantendo sua proporção, taxa de quadros e áudio.",
+    "display_name": "LTX Video Ampliar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "A saída terá o maior tamanho que couber em 1920x1080, 3840x2160 ou 7680x4320 (invertidos para vídeos em retrato)."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais não são determinísticos, independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Lado menor de pelo menos 480 pixels, no máximo 7680x4320 em qualquer orientação. Até 2401 quadros para 1080p, 601 quadros para 4k e 241 quadros para 8k."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "LumaConceptsNode": {
     "description": "Conceitos de Câmera para uso com os nós Luma Texto para Vídeo e Luma Imagem para Vídeo.",
     "display_name": "Luma Concepts",
@@ -15186,6 +15581,42 @@
       }
     }
   },
+  "MiniMaxH3ImageConditioning": {
+    "description": "Texto para imagem ou, com imagens, uma edição orientada por elas. O prompt refere-se a elas como <Picture 1>, <Picture 2>, ...",
+    "display_name": "Condicionamento de Imagem MiniMax H3",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "0 usa a altura de image_1 após seu redimensionamento de referência, ou 2048 sem imagens."
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "O VAE MiniMax-H3-Image. Com ele, as imagens também são ancoradas como latentes de referência; sem ele, elas apenas condicionam o codificador de texto."
+      },
+      "width": {
+        "name": "largura",
+        "tooltip": "0 usa a largura de image_1 após seu redimensionamento de referência, ou 2048 sem imagens. O modelo é ajustado para uma área de 2048x2048 pixels"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 Imagem para Vídeo",
     "inputs": {
@@ -15359,6 +15790,50 @@
       },
       "1": {
         "name": "segundos",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxH3ImageNode": {
+    "description": "Gere imagens a partir de texto ou edite e combine até 16 imagens de referência com o MiniMax H3-Image. Faça referência às imagens no prompt pela ordem delas: {'@'}Image1, {'@'}Image2 e assim por diante.",
+    "display_name": "Imagem MiniMax H3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "O MiniMax reescreve o prompt como uma descrição detalhada da cena antes de gerar. As edições de imagem são sempre aprimoradas. Quando desativado, escolha uma proporção ou um tamanho personalizado."
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagens de referência opcionais para editar ou combinar, referidas no prompt como @Image1..@Image16 na ordem de conexão. Até 16."
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Com imagens de referência conectadas, o prompt pode ter no máximo 8.000 caracteres."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados não são determinísticos independentemente da semente."
+      },
+      "size": {
+        "name": "tamanho",
+        "tooltip": "2K e 4K definem o tamanho a partir da proporção; personalizado define uma largura e altura exatas."
+      },
+      "size_aspect_ratio": {
+        "name": "aspect_ratio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "revised_prompt",
         "tooltip": null
       }
     }
@@ -18750,7 +19225,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quanto o modelo raciocina antes de responder. 'default' deixa a escolha para o modelo. Os níveis compatíveis variam por modelo: GPT-6 Astra low-max, GPT-6 Sol/Luna e GPT-5.6 none-max (sem minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, série o low-high; GPT-4.1 não tem raciocínio. Níveis não compatíveis são rejeitados antes de a solicitação ser enviada."
+        "tooltip": "Os níveis compatíveis variam conforme o modelo. Um nível não compatível interrompe a execução e lista os níveis válidos. 'default' permite que o modelo escolha."
       },
       "truncation": {
         "name": "truncation",
@@ -18855,9 +19330,9 @@
       }
     }
   },
-  "OpenAIGPTImageNodeV2": {
-    "description": "Gera imagens via endpoint GPT Image da OpenAI.",
-    "display_name": "OpenAI GPT Image 2.5",
+  "OpenAIGPTImageGIFNode": {
+    "description": "Gera um GIF animado por meio do endpoint GPT Image da OpenAI e produz seus quadros e sua taxa de quadros.",
+    "display_name": "GIF OpenAI GPT Image 2.6",
     "inputs": {
       "control_after_generate": {
         "name": "controle após gerar"
@@ -18867,6 +19342,55 @@
       },
       "model_background": {
         "name": "fundo"
+      },
+      "model_complexity": {
+        "name": "complexidade"
+      },
+      "model_frame_count": {
+        "name": "frame_count"
+      },
+      "model_frame_duration_ms": {
+        "name": "frame_duration_ms"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualidade"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_size": {
+        "name": "tamanho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadros",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "Gera imagens via endpoint GPT Image da OpenAI.",
+    "display_name": "Imagem GPT da OpenAI",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_background": {
+        "name": "fundo"
+      },
+      "model_complexity": {
+        "name": "complexidade"
       },
       "model_custom_height": {
         "name": "altura_personalizada"
@@ -18891,6 +19415,82 @@
       "seed": {
         "name": "semente",
         "tooltip": "ainda não implementado no backend"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV3": {
+    "description": "Gera e edita imagens pelo endpoint GPT Image da OpenAI, com edições orientadas por anotações.",
+    "display_name": "Imagem GPT 2.6 da OpenAI",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_background": {
+        "name": "plano de fundo"
+      },
+      "model_complexity": {
+        "name": "complexidade"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualidade"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_size": {
+        "name": "tamanho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageSVGNode": {
+    "description": "Gera um SVG pelo endpoint GPT Image da OpenAI.",
+    "display_name": "Imagem GPT 2.6 SVG da OpenAI",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_background": {
+        "name": "plano de fundo"
+      },
+      "model_complexity": {
+        "name": "complexidade"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualidade"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_size": {
+        "name": "tamanho"
       }
     },
     "outputs": {
@@ -19010,6 +19610,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "Texto para imagem ou, com imagens, uma edição de image_1 usando as demais como referências. O prompt se refere a elas como <Picture 1>, <Picture 2>, ... O modelo precisa de ModelSamplingMiniMaxH3 em 1.0/1.0.",
+    "display_name": "Condicionamento de imagem p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "altura",
+        "tooltip": "0 usa a altura de image_1 após o redimensionamento, ou 2912 sem imagens."
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Com imagens, uma instrução curta recebe \"Edite <Picture 1>. \" antes; uma instrução que começa com \"Edite <Picture\" e uma descrição de edição do ampliador de prompt são usadas como estão."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "O VAE p-h3-image. Com ele, as imagens também são ancoradas como latentes de referência; sem ele, elas apenas condicionam o codificador de texto."
+      },
+      "width": {
+        "name": "largura",
+        "tooltip": "0 usa a largura de image_1 após o redimensionamento, ou 2912 sem imagens."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +20298,183 @@
       },
       "positive": {
         "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex, o MiniMax H3 pós-treinado da Pika. Gere ou edite vídeos com áudio sincronizado, guiado por imagens, vídeos e áudio de referência.",
+    "display_name": "Pika H3 Flex: Referência para Vídeo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto segue um vídeo de referência; caso contrário, segue o prompt. Imagens de referência não o afetam."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "A duração da saída segue uma grade de quadros: 5 segundos geram 124 quadros, cerca de 5,17 segundos."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Consulte as referências como @Image1, @Video1, @Audio1 ou como <Picture 1>, <Video 1>, <Audio 1>."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Até 3 clipes, referidos no prompt como @Audio1..@Audio3. De 2 a 15 segundos cada, 15 segundos no total. Quando copiados para a saída, os clipes são reproduzidos na ordem de conexão, antes do som dos vídeos conectados, independentemente do número citado no prompt."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Até 9 imagens, referidas no prompt como @Image1..@Image9 na ordem de conexão. É necessária pelo menos uma imagem ou vídeo."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "O som dos vídeos conectados é copiado para a saída. Desative esta opção para criar uma nova ambiência ou transferir movimento com música nova. Uma cabeça falante sem diálogo no prompt receberá uma fala inventada."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Até 3 vídeos, referidos no prompt como @Video1..@Video3 na ordem de conexão. De 2 a 15 segundos cada, 15 segundos no total. Cobrado por segundo."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "1080p e resoluções superiores são renderizadas em 768p e ampliadas uma vez. A mesma seed em 480p gera um vídeo diferente."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Permita que a Pika expanda o prompt primeiro. A mesma seed gera um vídeo diferente a cada execução."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Com rewrite_prompt desativado, a mesma seed repete o vídeo exatamente. Uma execução local com a mesma seed gera um resultado diferente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex, o MiniMax H3 pós-treinado da Pika. Gere vídeos com áudio sincronizado a partir de texto e de quadros inicial e final opcionais.",
+    "display_name": "Vídeo Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto segue o primeiro quadro conectado; caso contrário, segue o prompt."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "A duração da saída segue uma grade de quadros: 5 segundos geram 124 quadros, cerca de 5,17 segundos."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "1080p e resoluções superiores são renderizadas em 768p e ampliadas uma vez. A mesma seed em 480p gera um vídeo diferente."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "Permita que a Pika expanda o prompt primeiro. A mesma seed gera um vídeo diferente a cada execução."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Com rewrite_prompt desativado, a mesma seed repete o vídeo exatamente. Uma execução local com a mesma seed gera um resultado diferente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "Gere música a partir de uma descrição de texto e letras opcionais, ou faça um cover de uma música, com o Pika.",
+    "display_name": "Música Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "mode": {
+        "name": "modo"
+      },
+      "mode_duration": {
+        "name": "duração"
+      },
+      "mode_lyrics": {
+        "name": "letra"
+      },
+      "mode_prompt": {
+        "name": "prompt"
+      },
+      "mode_rewrite_prompt": {
+        "name": "rewrite_prompt"
+      },
+      "mode_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "Gere um efeito sonoro a partir de uma descrição de texto com o Pika.",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "Gere uma trilha sonora sincronizada para um vídeo com o Pika. A imagem e a duração são mantidas; apenas o áudio é substituído.",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "instruction": {
+        "name": "instrução",
+        "tooltip": "O que o áudio deve ser: efeitos sonoros, ambiência, música ou estilo. Deixe em branco para derivá-lo da imagem."
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Até 10 minutos."
       }
     },
     "outputs": {
@@ -21713,8 +22527,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "Condicionamento e latent vazio para ampliação de vídeo com RelayVSR; faça a amostragem com 1 etapa em cfg 1. Apenas cada 15º quadro passa pelo modelo; VSR Decode restaura todos eles.",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "imagens",
+        "tooltip": "O vídeo de baixa qualidade em sua resolução nativa; o modelo decide o fator de ampliação."
+      },
+      "model": {
+        "name": "modelo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "Reextrai uma malha uniformemente tessselada por meio de um campo de distância de banda estreita + Dual Contouring, no dispositivo de computação ativo. Normaliza topologia desorganizada / não manifold / auto-intersectante; execute antes de Decimate Mesh para atingir uma contagem exata de faces. A saída permanece soldada.",
+    "description": "Reextrai uma malha com tesselação uniforme por meio de um campo de distância de banda estreita + Dual Contouring, no dispositivo de computação ativo. Normaliza topologia desorganizada / não manifold / autointersectante; execute antes de Decimate Mesh para atingir uma contagem exata de faces. A saída permanece soldada. Malhas que ultrapassam 0.51 ou cuja extensão é inferior a 0.5 são primeiro ajustadas ao cubo [-0.5,0.5] e depois remapeadas.",
     "display_name": "Remesh Mesh (Narrow-Band DC)",
     "inputs": {
       "band": {
@@ -21790,7 +22627,7 @@
     }
   },
   "RenderMesh": {
-    "description": "Traça raios para uma única visualização de uma malha. A câmera e a transformação opcional do modelo podem vir de um visualizador Load3D / Preview3D.",
+    "description": "Renderiza uma malha, uma imagem por câmera. As câmeras vêm de um visualizador Load3D / Preview3D (com sua transformação de modelo), Create Camera Info ou Create Camera Orbit; sem uma delas, é usada uma vista frontal com enquadramento automático.",
     "display_name": "Renderizar Malha",
     "inputs": {
       "background": {
@@ -21798,7 +22635,7 @@
       },
       "camera_info": {
         "name": "camera_info",
-        "tooltip": "Câmera de um visualizador Load3D / Preview3D ou de um nó Create Camera Info. Se nenhuma estiver conectada, uma visualização frontal padrão será enquadrada automaticamente."
+        "tooltip": "Uma câmera ou uma lista de Create Camera Orbit / Batch Cameras. Nenhuma: uma vista frontal com enquadramento automático."
       },
       "height": {
         "name": "height"
@@ -21808,11 +22645,15 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "O que renderizar. auto: textura, se presente; caso contrário, cores de vértice; caso contrário, argila sombreada."
+        "tooltip": "O que renderizar. auto: textura, se presente; caso contrário, cores de vértice; caso contrário, argila sombreada. normal: normais no espaço da vista. world normal: normais no espaço do mundo giradas pela guinada da primeira câmera, como se a malha girasse em vez da câmera."
       },
       "model_3d_info": {
         "name": "model_3d_info",
         "tooltip": "Transformação do modelo do mesmo visualizador Load3D / Preview3D. Conecte-a com camera_info para corresponder ao enquadramento do visualizador."
+      },
+      "texture": {
+        "name": "textura",
+        "tooltip": "Exibida em vez da textura da própria malha, por exemplo, uma saída de Bake Texture From Views sem Apply Texture to Mesh."
       },
       "width": {
         "name": "width"
@@ -21830,7 +22671,7 @@
     }
   },
   "RenderSplat": {
-    "description": "Renderize um gaussian splat como uma imagem com um rasterizador EWA anisotrópico (splats elípticos orientados, antialiasing, ordenados por profundidade do mais próximo para o mais distante). A câmera vem de uma entrada camera_info (Load / Preview 3D, ou um nó Create Camera Info); deixe vazio para enquadrar automaticamente o splat. Defina frames maior que 1 para um lote de imagens em turntable para alimentar um nó Video.",
+    "description": "Renderize um splat gaussiano como imagem com um rasterizador EWA anisotrópico (splats elípticos orientados, antisserrilhados, ordenados por profundidade da frente para trás). A câmera vem de uma entrada camera_info (Load / Preview 3D, Create Camera Info ou uma lista de câmeras de Create Camera Orbit / Batch Cameras: uma imagem por câmera); deixe-a vazia para enquadrar automaticamente o splat. Defina frames como maior que 1 para um lote de imagens em rotação a fim de alimentar um nó Video.",
     "display_name": "Render Splat",
     "inputs": {
       "background": {
@@ -21842,7 +22683,7 @@
       },
       "camera_info": {
         "name": "camera_info",
-        "tooltip": "Câmera para renderizar - uma câmera Load3D / Preview3D ou um nó Create Camera Info. Se vazio, o splat é enquadrado automaticamente de uma visão padrão 3/4."
+        "tooltip": "Câmera a partir da qual renderizar — uma câmera Load3D / Preview3D, Create Camera Info ou uma lista de câmeras (uma imagem por câmera, cada uma girada por frames). Se estiver vazio, o splat é enquadrado automaticamente a partir de uma vista padrão de 3/4."
       },
       "frames": {
         "name": "frames",
@@ -24973,6 +25814,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "Gere uma canção com vocais cantados a partir de um prompt de texto usando Sonilo Music 1.5.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "duration": {
+        "name": "duração",
+        "tooltip": "'auto' ajusta a duração da música à letra. Uma duração personalizada corta as letras que não cabem e repete as curtas."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreva a música: gênero, clima, instrumentos e vocais. Para definir a letra, adicione um bloco 'Lyrics:' com tags [Verse] / [Chorus]; sem ele, o modelo escreve sua própria letra. Máximo: 2000 caracteres."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "A seed controla se o nó deve ser executado novamente; os resultados não são determinísticos independentemente da seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "Gere música a partir de um prompt de texto usando o modelo de IA do Sonilo. Deixe a duração em 0 para que o modelo infira a duração a partir do prompt.",
     "display_name": "Sonilo Texto para Música",
@@ -25052,6 +25919,10 @@
         "name": "nitidez_cor",
         "tooltip": "Deixa a textura dos vértices mais nítida: 1.0 = mistura fisicamente correta; valores maiores tendem a cor de cada voxel para sua gaussiana dominante ao invés de fazer média com vizinhos (reduz borrão da textura). Apenas cor - geometria não é alterada."
       },
+      "fill": {
+        "name": "preencher",
+        "tooltip": "Somente sólido. Custo de fechar uma abertura em relação a seguir a superfície. Valores menores fecham aberturas maiores: cerca de 3 sela objetos ocos, mas também coloca tampas em copos e golas."
+      },
       "kernel": {
         "name": "kernel",
         "tooltip": "Largura máxima do splat em voxels (meia-largura). Cada gaussiana é rasterizada em uma janela do seu próprio 3-sigma, limitada aqui - surfels pequenos permanecem leves, grandes não são truncados. Aumente se splats esparsos deixarem lacunas."
@@ -25075,6 +25946,10 @@
       "smooth": {
         "name": "suavizar",
         "tooltip": "Iterações de suavização de malha Taubin. Suaviza a superfície sem encolhê-la (preserva o volume), diferente do desfoque da densidade. 0 = superfície bruta."
+      },
+      "solid": {
+        "name": "sólido",
+        "tooltip": "Preenche o interior com base na orientação das gaussianas, criando uma única superfície fechada. Desativado: o contorno de densidade bruto, que mantém uma parede interna oculta atrás da superfície."
       },
       "splat": {
         "name": "splat"
@@ -25813,6 +26688,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "Gere respostas de texto com o modelo Hy4 da Tencent. Forneça um prompt de texto e, opcionalmente, uma ou mais imagens como contexto.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning": {
+        "name": "raciocínio"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: Imagem(ns) para Modelo (Pro)",
     "inputs": {
@@ -26421,7 +27331,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "Gerar texto (OBSOLETO)",
     "inputs": {
       "audio": {
         "name": "áudio"
@@ -26480,7 +27390,7 @@
       },
       "video": {
         "name": "vídeo",
-        "tooltip": "Quadros de vídeo como lote de imagens. Considera-se 24 FPS; amostrado internamente para 1 FPS."
+        "tooltip": "Quadros de vídeo como lote de imagens. Presume-se 24 FPS; internamente, é subamostrado para a taxa de quadros do modelo."
       }
     },
     "outputs": {
@@ -26554,7 +27464,80 @@
       },
       "video": {
         "name": "vídeo",
-        "tooltip": "Quadros de vídeo como lote de imagens. Considera-se 24 FPS; amostrado internamente para 1 FPS."
+        "tooltip": "Quadros de vídeo como lote de imagens. Presume-se 24 FPS; internamente, é subamostrado para a taxa de quadros do modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texto_gerado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raciocínio",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "Gerar texto",
+    "inputs": {
+      "audios": {
+        "name": "áudios"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imagens"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Decodificação especulativa com a cabeça de previsão de múltiplos tokens do checkpoint. Não tem efeito sem pesos de MTP. auto adapta a profundidade e a amplitude do rascunho às correspondências de tokens observadas e ao custo de execução; 2-5 fixa uma profundidade de rascunho constante; os modos de árvore fixam tanto a amplitude quanto a profundidade. A saída amostrada mantém a distribuição correta, mas difere da saída sem MTP para a mesma seed."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "penalidade_de_presença"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "penalidade_de_repetição"
+      },
+      "sampling_mode_seed": {
+        "name": "semente"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperatura"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Substitui o prompt de sistema no modelo de chat do modelo. Ignorado quando o template padrão não é usado."
+      },
+      "thinking": {
+        "name": "pensamento",
+        "tooltip": "Opera no modo de pensamento se o modelo oferecer suporte a ele."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "Use o prompt/template de sistema integrado se o modelo tiver um."
+      },
+      "videos": {
+        "name": "vídeos"
       }
     },
     "outputs": {
@@ -28664,6 +29647,44 @@
       }
     }
   },
+  "UltraTexConditioning": {
+    "description": "Condicionamento para FLUX.2 Klein 9B com a LoRA UltraTex: aplica a aparência de uma imagem de referência a uma malha, como uma imagem por visualização. As visualizações vêm de Render Mesh (world normal) com um Create Camera Orbit de 4, além das visualizações superior e inferior; faça o bake do resultado com Bake Texture From Views.",
+    "display_name": "Condicionamento UltraTex",
+    "inputs": {
+      "conditioning": {
+        "name": "condicionamento",
+        "tooltip": "Condicionamento de texto; UltraTex foi treinada com um prompt vazio."
+      },
+      "extra_views": {
+        "name": "visualizações_extras",
+        "tooltip": "Mais referências: o objeto visto de outras perspectivas, cada uma vinculada à sua perspectiva, assim como a referência está vinculada à perspectiva frontal."
+      },
+      "masks": {
+        "name": "máscaras",
+        "tooltip": "Máscaras do Render Mesh das mesmas visualizações."
+      },
+      "normals": {
+        "name": "normais",
+        "tooltip": "Renderizações de 'world normal' do Render Mesh: as 6 visualizações canônicas ou as 4 visualizações laterais."
+      },
+      "reference": {
+        "name": "referência",
+        "tooltip": "O objeto como deveria parecer, visto pela câmera frontal."
+      },
+      "reference_mask": {
+        "name": "máscara_de_referência",
+        "tooltip": "Máscara de objeto da referência (branco = objeto)"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "UnwrapMesh": {
     "description": "Gera um atlas UV: segmenta a superfície em ilhas, parametriza cada uma e as empacota em um atlas [0,1]. Vértices nas costuras das ilhas são duplicados (uma cópia por ilha, mesma posição, UV próprio), portanto a malha de saída tem mais vértices que a de entrada. Execute após Remesh/Decimate, antes de assar a textura.",
     "display_name": "Desembrulhar UVs da malha",
@@ -29083,6 +30104,31 @@
       },
       "steps": {
         "name": "etapas"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VSRDecode": {
+    "description": "Decodifique latentes do RelayVSR com o decodificador RelayVSR Flash, que também lê os quadros de baixa qualidade.",
+    "display_name": "Decodificação VSR",
+    "inputs": {
+      "detail": {
+        "name": "detalhe",
+        "tooltip": "Quanto do detalhe que o decodificador adiciona ao aumento bicúbico de cada quadro é mantido; 1 corresponde à saída completa do modelo."
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "O mesmo vídeo de baixa qualidade fornecido ao nó de condicionamento."
+      },
+      "samples": {
+        "name": "amostras"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -32204,6 +33250,55 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WeVisOneDetect": {
+    "display_name": "Detecção WeVisOne-VL",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "Caixas de referência para visual_prompt."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "Um codificador de texto WeVisOne-VL."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "individual_masks": {
+        "name": "máscaras_individuais",
+        "tooltip": "Produza uma mask por caixa, na ordem de bboxes e com os frames em sequência, em vez de uma união por frame."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "consulta",
+        "tooltip": "O que encontrar. freeform envia isso como o prompt inteiro."
+      },
+      "task": {
+        "name": "tarefa",
+        "tooltip": "segmentação: caixas e máscaras alfa. detecção e ponto aceitam um rótulo por linha."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "masks",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "pontos",
+        "tooltip": "Pontos como JSON [{\"x\", \"y\", \"label\", \"frame\"}] em pixels, para as tarefas point e count_point."
+      },
+      "3": {
+        "name": "texto",
+        "tooltip": "A resposta bruta."
       }
     }
   },
