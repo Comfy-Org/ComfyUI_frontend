@@ -27,6 +27,7 @@ import type {
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import type { SubgraphIoLayout } from '@/renderer/core/layout/store/subgraphIoLayoutStore'
 import { useSubgraphIoLayoutStore } from '@/renderer/core/layout/store/subgraphIoLayoutStore'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { snapPoint } from '@/lib/litegraph/src/measure'
@@ -52,7 +53,7 @@ export abstract class SubgraphIONodeBase<
 
   abstract readonly id: NodeId
 
-  get measured() {
+  get measured(): SubgraphIoLayout | undefined {
     return useSubgraphIoLayoutStore().measurementOf(this)
   }
 

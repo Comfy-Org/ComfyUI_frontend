@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import type { SubgraphIONode } from '@comfyorg/graph-model/entityRegistry'
 
-interface SubgraphIoLayout {
+export interface SubgraphIoLayout {
   offsetX: number
   width: number
   height: number
