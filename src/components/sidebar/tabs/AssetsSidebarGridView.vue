@@ -2,6 +2,7 @@
   <div class="flex h-full flex-col">
     <VirtualGrid
       class="flex-1"
+      data-asset-grid-scroller
       :items="pagedItems(assets)"
       :grid-style
       :on-load-more="loadMore"
