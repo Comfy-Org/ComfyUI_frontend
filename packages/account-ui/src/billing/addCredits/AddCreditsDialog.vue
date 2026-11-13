@@ -126,15 +126,15 @@
     />
     <AddCreditsAutoTopUpResultStep
       v-else-if="state.step === 'auto_top_up_failed'"
-      :link-url="autoTopUpSetupHidden ? undefined : state.setupUrl"
+      :link-url="failedSetupUrl"
       :translate
       :format
       :ui
       @close="emit('close')"
     />
     <AddCreditsAutoTopUpOfferStep
-      v-else-if="state.step === 'auto_top_up_offer' && !autoTopUpSetupHidden"
-      :setup-url="state.setupUrl"
+      v-else-if="offerSetupUrl"
+      :setup-url="offerSetupUrl"
       :translate
       :ui
       @set-up="setUpAutoTopUp"
@@ -265,6 +265,17 @@ const dialog = useAddCreditsDialog({
   onLanded: () => emit('close')
 })
 const state = dialog.state
+
+const failedSetupUrl = computed(() =>
+  state.value.step === 'auto_top_up_failed' && !autoTopUpSetupHidden
+    ? state.value.setupUrl
+    : undefined
+)
+const offerSetupUrl = computed(() =>
+  state.value.step === 'auto_top_up_offer' && !autoTopUpSetupHidden
+    ? state.value.setupUrl
+    : undefined
+)
 
 // Without its setup link the offer has nothing to offer: close as a landing without one does.
 watch(
