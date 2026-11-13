@@ -72,15 +72,32 @@ describe('skillDraftStore', () => {
     )
   })
 
-  it('clears the draft when it still equals the submitted one', () => {
-    const skills = useSkillPacksStore()
-    const drafts = useSkillDraftStore()
-    drafts.setDraft(skills.scope, { kind: 'new' }, PORTRAIT)
+  it.for([
+    {
+      target: { kind: 'new' },
+      read: () => useSkillDraftStore().newSkillDraft,
+      absent: null
+    },
+    {
+      target: { kind: 'edit', name: 'portrait' },
+      read: () => useSkillDraftStore().editDraftFor('portrait'),
+      absent: undefined
+    }
+  ] as const)(
+    'clears the matching submitted $target.kind draft from memory and storage',
+    ({ target, read, absent }) => {
+      const skills = useSkillPacksStore()
+      const drafts = useSkillDraftStore()
+      drafts.setDraft(skills.scope, target, PORTRAIT)
 
-    drafts.clearDraftIfUnchanged(skills.scope, { kind: 'new' }, PORTRAIT)
+      drafts.clearDraftIfUnchanged(skills.scope, target, PORTRAIT)
 
-    expect(drafts.newSkillDraft).toBeNull()
-  })
+      expect(read()).toBe(absent)
+      expect(
+        localStorage.getItem(StorageKeys.agentSkillDrafts(skills.scope))
+      ).toBeNull()
+    }
+  )
 
   it.for(['landscape', '__proto__', 'constructor', 'toString'])(
     'reads back the edit draft of a skill named %s from storage',
