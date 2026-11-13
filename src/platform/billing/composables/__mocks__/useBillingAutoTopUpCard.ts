@@ -38,7 +38,6 @@ export function loadedAutoTopUp(
   return { kind: 'loaded', settings: { ...offSettings, status } }
 }
 
-/** A card serving `state`; pass it to `vi.mocked(useBillingAutoTopUpCard).mockReturnValue`. */
 export function autoTopUpCard(
   state: AutoTopUpCardState = { kind: 'loading' }
 ): AutoTopUpCard {
@@ -53,5 +52,4 @@ export function autoTopUpCard(
 
 const card = autoTopUpCard()
 
-// The config's mockReset restores this loading card after each test.
 export const useBillingAutoTopUpCard = vi.fn(() => card)
