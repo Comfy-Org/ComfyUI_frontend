@@ -212,7 +212,6 @@ const { accountActionsOnly = false, flyoutSide = 'left' } = defineProps<{
   flyoutSide?: 'left' | 'right'
 }>()
 
-// Rows sit 5px inside the menu edge (border + p-1); flyouts open 8px from that edge.
 const menuInset = 5
 const flyoutGap = menuInset + 8
 

@@ -121,7 +121,6 @@ const { flags } = useFeatureFlags()
 const workspaceMenu = computed(() =>
   flags.billingNewUxEnabled ? ProfileMenuWorkspace : CurrentUserPopoverWorkspace
 )
-// Flyouts open on the side facing the canvas.
 const flyoutSide = computed(() => (side === 'right' ? 'right' : 'left'))
 const showWorkspacePopover = computed(
   () => isCloud || initState.value === 'ready'
@@ -142,7 +141,6 @@ const open = ref(false)
 const buttonRef = ref<InstanceType<typeof Button> | null>(null)
 usePopoverViewportDismiss(open, () => unrefElement(buttonRef))
 
-// In the sidebar the menu sits 8px from the sidebar edge, bottom-aligned with the button.
 const sidebarReference = computed(() => {
   if (side === 'bottom') return undefined
   return {
