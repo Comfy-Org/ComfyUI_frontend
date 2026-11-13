@@ -47,3 +47,14 @@ not existing telemetry globally. A server ACK permits eligibility only for the
 current generation; revoke disables immediately, serializes behind an in-flight
 grant, and must succeed before a later grant. Stored local consent may establish a
 new server receipt at handoff, never historical eligibility before that write.
+
+`analyticsConsentRuntime` supplies the session and service-event binding and a
+receipt transport using an immutable workspace JWT with cookies omitted. Grant
+ACKs must match the bound canonical actor, workspace, receipt key, policy and
+notice, and carry a server timestamp. Account/workspace replacement, disposal or
+credential expiry disables eligibility; API-key credentials cannot grant. Neither
+identity is sent in the grant body or captured in analytics. The production
+configuration is frozen off with empty policy/notice and subscribes to nothing.
+The installer requires actual configured PostHog service events and minted
+credentials from the existing account layer; no active Klaro host exists to bind
+in this preparation. It does not replace existing telemetry initialization.

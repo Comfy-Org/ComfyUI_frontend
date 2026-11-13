@@ -1,0 +1,99 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Disabled homepage consent receipt contract",
+    "version": "1"
+  },
+  "paths": {},
+  "x-source-repository": "Comfy-Org/cloud",
+  "x-source-path": "services/ingest/openapi.yaml",
+  "x-source-commit": "231f7fb7f3c3b18390d9ac69567b81193d6ce864",
+  "components": {
+    "schemas": {
+      "PostHogConsentSettingValue": {
+        "type": "object",
+        "required": ["key", "value"],
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": ["Comfy.Analytics.PostHogConsent"]
+          },
+          "value": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "accepted",
+              "service",
+              "policy_version",
+              "notice_digest"
+            ],
+            "properties": {
+              "accepted": {
+                "type": "boolean",
+                "enum": [true]
+              },
+              "service": {
+                "type": "string",
+                "enum": ["posthog"]
+              },
+              "policy_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "description": "Exact configured policy version; server also enforces a 256-byte UTF-8 bound."
+              },
+              "notice_digest": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "description": "Exact configured notice digest; server also enforces a 256-byte UTF-8 bound."
+              }
+            }
+          }
+        }
+      },
+      "GlobalSettingUpdatedAt": {
+        "type": "object",
+        "description": "The last-changed timestamp every stored setting carries.",
+        "required": ["updated_at"],
+        "properties": {
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this value was last changed. A write that stores the value already present changes nothing and leaves this alone."
+          }
+        }
+      },
+      "StoredPostHogConsentSetting": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PostHogConsentSettingValue"
+          },
+          {
+            "$ref": "#/components/schemas/GlobalSettingUpdatedAt"
+          },
+          {
+            "type": "object",
+            "required": ["scope"],
+            "properties": {
+              "scope": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Authenticated response scope, never accepted as a client grant assertion.",
+                "required": ["actor_id", "workspace_id"],
+                "properties": {
+                  "actor_id": {
+                    "type": "string"
+                  },
+                  "workspace_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -8,8 +8,8 @@ export interface AnalyticsConsentReceipt {
 }
 
 export interface ConsentReceiptTransport {
-  grant: (receipt: AnalyticsConsentReceipt) => Promise<void>
-  revoke: () => Promise<void>
+  grant: (receipt: AnalyticsConsentReceipt) => Promise<void | boolean>
+  revoke: () => Promise<void | boolean>
 }
 
 export interface ConsentReceiptConfiguration {
@@ -29,7 +29,6 @@ export function createAnalyticsConsentReceiptBridge(
   let revocationPending = false
   let tail = Promise.resolve(false)
   const configured =
-    
     configuration.enabled &&
     [configuration.policyVersion, configuration.noticeDigest].every(
       (value) =>
@@ -50,14 +49,13 @@ export function createAnalyticsConsentReceiptBridge(
   ): Promise<boolean> {
     const revision = ++generation
     setEligible(false)
-    if (disposed || ! configuration.enabled)
-      return Promise.resolve(false)
+    if (disposed || !configuration.enabled) return Promise.resolve(false)
     if (explicitPostHogConsent !== true) revocationPending = true
     if (!configured && !revocationPending) return Promise.resolve(false)
     tail = tail.then(async () => {
       if (revocationPending) {
         try {
-          await transport.revoke()
+          if ((await transport.revoke()) === false) return false
           revocationPending = false
         } catch {
           return false
@@ -70,7 +68,7 @@ export function createAnalyticsConsentReceiptBridge(
       )
         return false
       try {
-        await transport.grant({ ...receipt })
+        if ((await transport.grant({ ...receipt })) === false) return false
       } catch {
         return false
       }

@@ -124,6 +124,30 @@ test('failed grant never enrolls', async () => {
   expectTruthy(states.every((value) => !value))
 })
 
+test('explicit transport refusal cannot grant or clear pending revocation', async () => {
+  const states: boolean[] = []
+  let revokeAllowed = false
+  let grants = 0
+  const bridge = createAnalyticsConsentReceiptBridge(
+    { enabled: true, policyVersion: 'v1', noticeDigest: 'notice' },
+    {
+      grant: async () => {
+        grants++
+        return false
+      },
+      revoke: async () => revokeAllowed
+    },
+    (value) => states.push(value)
+  )
+  expectEqual(await bridge.update(false), false)
+  expectEqual(await bridge.update(true), false)
+  expectEqual(grants, 0)
+  revokeAllowed = true
+  expectEqual(await bridge.update(true), false)
+  expectEqual(grants, 1)
+  expectTruthy(states.every((value) => !value))
+})
+
 test('disposal prevents stale acknowledgment from enrolling another session', async () => {
   const { bridge, states, transport } = setup()
   const gate = deferred()
