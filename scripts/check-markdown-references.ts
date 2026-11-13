@@ -124,7 +124,7 @@ function checkLinkTarget(
   const resolved = target.startsWith('/')
     ? posix.normalize(target.slice(1))
     : posix.join(documentDirectory, target)
-  return exists(index.paths, resolved) ? undefined : [resolved]
+  return index.paths.has(resolved) ? undefined : [resolved]
 }
 
 function safeDecode(value: string): string {

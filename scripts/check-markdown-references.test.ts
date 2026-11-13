@@ -36,6 +36,7 @@ describe('findBrokenReferences', () => {
     ['path inside a command', '`pnpm test:unit src/stores/gone.test.ts`'],
     ['relative link', '[guide](guide.md)'],
     ['root link', '[guide](/docs/missing.md#intro)'],
+    ['extensionless link', '[store](../../src/stores/workspaceStore)'],
     ['reference definition', '[guide]: ../src/gone.ts'],
     ['undefined script in inline code', 'Run `pnpm oxlint:main`.'],
     ['undefined script after options', '`pnpm --filter @comfyorg/x run nope`']
