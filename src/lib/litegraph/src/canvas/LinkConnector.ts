@@ -93,6 +93,18 @@ interface LinkConnectorExport {
   network: LinkNetwork
 }
 
+export function getNodeOrSlotOwnerOnPos(
+  graph: LGraph,
+  x: number,
+  y: number,
+  nodeList?: LGraphNode[]
+): LGraphNode | undefined {
+  const node = graph.getNodeOnPos(x, y, nodeList)
+  if (node || !litegraph().vueNodesMode) return node ?? undefined
+  const slot = getSlotLayoutAtPoint(graph, { x, y })
+  return graph.getNodeById(slot?.nodeId) ?? undefined
+}
+
 /**
  * Component of {@link LGraphCanvas} that handles connecting and moving links.
  * @see {@link LLink}
@@ -704,7 +716,7 @@ export class LinkConnector {
    * Connects the links being dropped
    * @param event Contains the drop location, in canvas space
    */
-  dropLinks(graph: LGraph & ItemLocator, event: CanvasPointerEvent): void {
+  dropLinks(locator: LGraph & ItemLocator, event: CanvasPointerEvent): void {
     if (!this.isConnecting) {
       const mayContinue = this.events.dispatch('before-drop-links', {
         renderLinks: this.renderLinks,
@@ -716,21 +728,17 @@ export class LinkConnector {
     try {
       const { canvasX, canvasY } = event
 
-      const ioNode = graph.getIoNodeOnPos?.(canvasX, canvasY)
+      const ioNode = locator.getIoNodeOnPos?.(canvasX, canvasY)
       if (ioNode) {
         this.dropOnIoNode(ioNode, event)
         return
       }
 
-      let node = graph.getNodeOnPos(canvasX, canvasY)
-      if (!node && litegraph().vueNodesMode) {
-        const slot = getSlotLayoutAtPoint(graph, { x: canvasX, y: canvasY })
-        if (slot) node = graph.getNodeById(slot.nodeId)
-      }
+      const node = getNodeOrSlotOwnerOnPos(locator, canvasX, canvasY)
       if (node) {
         this.dropOnNode(node, event)
       } else {
-        const reroute = graph.getRerouteOnPos(canvasX, canvasY)
+        const reroute = locator.getRerouteOnPos(canvasX, canvasY)
         if (reroute && this.isRerouteValidDrop(reroute)) {
           this.dropOnReroute(reroute, event)
         } else {
