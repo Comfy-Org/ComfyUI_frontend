@@ -162,6 +162,63 @@ describe('node hooks on the host paths', () => {
     })
   })
 
+  describe('a node inside a subgraph, at the edges', () => {
+    function subgraphWith(slots: {
+      inputs?: { name: string; type: string }[]
+      outputs?: { name: string; type: string }[]
+    }) {
+      const subgraph = createTestSubgraph({ rootGraph: graph, ...slots })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      return subgraph
+    }
+
+    function heard() {
+      const events: ConnectionChangeEvent[] = []
+      extend((builder) =>
+        builder.onConnectionsChanged((_, event) => events.push(event))
+      )
+      return events
+    }
+
+    it('names its own output when the link to the subgraph output is removed', () => {
+      const events = heard()
+      const subgraph = subgraphWith({
+        outputs: [{ name: 'subgraph_side', type: '*' }]
+      })
+      const node = created()
+      node.addOutput('node_side', '*')
+      subgraph.add(node)
+      subgraph.outputs[0].connect(node.outputs[0], node)
+
+      subgraph.outputs[0].disconnect()
+
+      expect(
+        events.map(({ side, name, connected }) => [side, name, connected])
+      ).toEqual([
+        ['output', 'node_side', true],
+        ['output', 'node_side', false]
+      ])
+    })
+
+    it('names the subgraph input when the only input it fed is removed', () => {
+      const events = heard()
+      const subgraph = subgraphWith({
+        inputs: [{ name: 'subgraph_side', type: '*' }]
+      })
+      const node = created()
+      node.addInput('node_side', '*')
+      subgraph.add(node)
+      subgraph.inputs[0].connect(node.inputs[0], node)
+
+      node.removeInput(0)
+
+      expect(events.at(-1)).toMatchObject({
+        name: 'subgraph_side',
+        connected: false
+      })
+    })
+  })
+
   describe('a defined type in the prompt', () => {
     it('sends a backend node to the server as its type, and leaves a frontend one out', async () => {
       defs.define({ type: 'Pack/Backend', execution: 'backend' })

@@ -620,8 +620,8 @@ export interface ConnectionChangeEvent {
   /** The slot's index when the link changed. */
   readonly index: number
   /**
-   * The slot's name, also when the slot was removed with its link; for a slot
-   * linked to a subgraph's input or output, the name at `index` after the change.
+   * The slot's name, also when it was removed with its link. Removing a slot linked
+   * to a subgraph's input or output names the slot now at `index`, or that subgraph slot.
    */
   readonly name: string
   readonly connected: boolean
