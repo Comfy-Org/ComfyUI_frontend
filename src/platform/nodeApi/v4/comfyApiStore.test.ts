@@ -12,7 +12,10 @@ import {
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
 import { app } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
 
 import { useComfyApiStore } from './comfyApiStore'
 
@@ -167,5 +170,42 @@ describe("the app's node API", () => {
     handle.setTitle('After')
 
     expect(steps).toEqual(['before', 'after After'])
+  })
+
+  it('lets a pack extend the node types the host registers', async () => {
+    const comfy = publishedApi()
+    const titles: string[] = []
+    comfy.defs.extend('HostType', (builder) => titles.push(builder.def.title))
+
+    await useLitegraphService().registerNodeDef(
+      'HostType',
+      hostNodeDef('HostType', { display_name: 'From the host' })
+    )
+
+    expect(titles).toEqual(['From the host'])
+  })
+
+  it('hears the host register node types however often it is published', async () => {
+    const comfy = publishedApi()
+    publishedApi()
+    const extended = vi.fn()
+    comfy.defs.extend('HostType', extended)
+
+    await useLitegraphService().registerNodeDef(
+      'HostType',
+      hostNodeDef('HostType')
+    )
+
+    expect(extended).toHaveBeenCalledOnce()
+  })
+
+  it('tells packs when the host reloads the node definitions', async () => {
+    const comfy = publishedApi()
+    const listener = vi.fn()
+    comfy.defs.onRefreshed(listener)
+
+    await useExtensionService().invokeExtensionsAsync('refreshComboInNodes', {})
+
+    expect(listener).toHaveBeenCalledOnce()
   })
 })

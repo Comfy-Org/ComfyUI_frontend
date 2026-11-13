@@ -38,6 +38,8 @@ import {
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { NODE_TYPE_HOOKS_NAME } from '@/platform/nodeApi/v4/defs/defRegistry'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -314,6 +316,19 @@ describe('GraphCanvas node API', () => {
     await mountGraphCanvas()
 
     expect(seenWhileLoading).toHaveBeenCalledExactlyOnceWith([4, 0, 0])
+  })
+
+  it('hears the node types the host registers before extension modules load', async () => {
+    const installedWhileLoading = vi.fn()
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      installedWhileLoading(
+        useExtensionStore().isExtensionInstalled(NODE_TYPE_HOOKS_NAME)
+      )
+    })
+
+    await mountGraphCanvas()
+
+    expect(installedWhileLoading).toHaveBeenCalledExactlyOnceWith(true)
   })
 
   it('tells a pack the app is ready only once setup has run', async () => {

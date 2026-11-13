@@ -3,6 +3,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 interface Listeners {
   add(listener: () => void): () => void
   drain(): void
+  notify(): void
 }
 
 type IsolatedCall<T> = { ok: true; value: T } | { ok: false }
@@ -24,8 +25,18 @@ export function callIsolated<T>(
   }
 }
 
+/** Calls a pack's callback. One that throws is reported and gives `undefined`. */
+export function callListener<T>(
+  event: string,
+  listener: () => T
+): T | undefined {
+  const result = callIsolated(event, listener)
+  return result.ok ? result.value : undefined
+}
+
 export function createListeners(event: string): Listeners {
   const registrations = new Set<{ readonly listener: () => void }>()
+  const call = (listener: () => void) => callListener(event, listener)
 
   return {
     add(listener) {
@@ -41,6 +52,12 @@ export function createListeners(event: string): Listeners {
         if (registrations.delete(registration)) {
           callIsolated(event, registration.listener)
         }
+      }
+    },
+
+    notify() {
+      for (const registration of Array.from(registrations)) {
+        if (registrations.has(registration)) call(registration.listener)
       }
     }
   }

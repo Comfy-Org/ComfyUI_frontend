@@ -1,0 +1,597 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
+
+import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
+import type {
+  DefRegistry,
+  NodeDef,
+  NodeDefBuilder
+} from '@/platform/nodeApi/v4/types'
+import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
+
+describe('node definitions', () => {
+  let defs: DefRegistry
+  let host: ComfyApiHost
+
+  beforeEach(() => {
+    const api = createComfyApi({ getGraph: () => null })
+    defs = api.comfy.defs
+    host = api.host
+  })
+
+  function registerHost(name: string, category = 'testing') {
+    return registerHostType(host.nodeTypeHooks, hostNodeDef(name, { category }))
+  }
+
+  function typesExtended(selector: Parameters<DefRegistry['extend']>[0]) {
+    const types: string[] = []
+    const stop = defs.extend(selector, (builder) =>
+      types.push(builder.def.type)
+    )
+    return { types, stop }
+  }
+
+  describe('extend', () => {
+    it('applies to a type the host registers later', () => {
+      const { types } = typesExtended('KSampler')
+
+      registerHost('KSampler')
+
+      expect(types).toEqual(['KSampler'])
+    })
+
+    it('applies at once to a type the host has registered already', () => {
+      registerHost('KSampler')
+
+      const { types } = typesExtended('KSampler')
+
+      expect(types).toEqual(['KSampler'])
+    })
+
+    it('applies to a type a pack defines', () => {
+      const { types } = typesExtended('Pack/Label')
+
+      defs.define({ type: 'Pack/Label' })
+
+      expect(types).toEqual(['Pack/Label'])
+    })
+
+    it('applies again with the new definition when the host registers a type again', () => {
+      const titles: string[] = []
+      defs.extend('KSampler', (builder) => titles.push(builder.def.title))
+
+      registerHostType(
+        host.nodeTypeHooks,
+        hostNodeDef('KSampler', { display_name: 'Before' })
+      )
+      registerHostType(
+        host.nodeTypeHooks,
+        hostNodeDef('KSampler', { display_name: 'After' })
+      )
+
+      expect(titles).toEqual(['Before', 'After'])
+    })
+
+    it.for([
+      { name: 'a type name', selector: 'Pick', picked: ['Pick'] },
+      {
+        name: 'a list of names',
+        selector: ['Pick', 'Also'],
+        picked: ['Pick', 'Also']
+      },
+      { name: 'a pattern', selector: /^P/, picked: ['Pick'] },
+      {
+        name: 'a category',
+        selector: { category: 'mine' },
+        picked: ['Pick', 'Also']
+      },
+      {
+        name: 'a category pattern',
+        selector: { category: /^other/ },
+        picked: ['Skip']
+      },
+      {
+        name: 'a test of the definition',
+        selector: (def: NodeDef) => def.type.length === 4,
+        picked: ['Pick', 'Also', 'Skip']
+      }
+    ])('picks types by $name', ({ selector, picked }) => {
+      registerHost('Pick', 'mine')
+      registerHost('Also', 'mine')
+      registerHost('Skip', 'other/sub')
+
+      expect(typesExtended(selector).types).toEqual(picked)
+    })
+
+    it('tests a global pattern the same way for each type', () => {
+      const { types } = typesExtended(/^P/g)
+
+      registerHost('Pick')
+      registerHost('Pack')
+
+      expect(types).toEqual(['Pick', 'Pack'])
+    })
+
+    it('gives a selector test the definition, and skips a type whose test throws', () => {
+      const broken = new Error('selector failed')
+      const seen: NodeDef[] = []
+      registerHost('First')
+      registerHost('Second')
+
+      const { types } = typesExtended((def) => {
+        seen.push(def)
+        if (def.type === 'First') throw broken
+        return true
+      })
+
+      expect(seen.map((def) => def.type)).toEqual(['First', 'Second'])
+      expect(types).toEqual(['Second'])
+      expect(reportError).toHaveBeenCalledWith(
+        broken,
+        expect.objectContaining({ tags: { event: 'extend selector' } })
+      )
+    })
+
+    it('does not pick a type when a selector test returns something other than true', () => {
+      registerHost('Pick')
+      const apply = vi.fn()
+
+      Reflect.apply(defs.extend, defs, [() => 'yes', apply])
+
+      expect(apply).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { name: 'a number', selector: 5 },
+      { name: 'null', selector: null },
+      { name: 'an empty object', selector: {} },
+      { name: 'a category that is not text', selector: { category: 5 } },
+      { name: 'more than a category', selector: { category: 'a', type: 'b' } },
+      { name: 'a list holding a number', selector: ['Pick', 5] }
+    ])('refuses $name as a selector and registers nothing', ({ selector }) => {
+      const apply = vi.fn()
+
+      expect(() => Reflect.apply(defs.extend, defs, [selector, apply])).toThrow(
+        TypeError
+      )
+      registerHost('Pick', 'a')
+
+      expect(apply).not.toHaveBeenCalled()
+      expect(typesExtended('Pick').types).toEqual(['Pick'])
+    })
+
+    it('refuses an apply that is not a function and registers nothing', () => {
+      registerHost('Pick')
+
+      expect(() =>
+        Reflect.apply(defs.extend, defs, ['Pick', 'not a function'])
+      ).toThrow(TypeError)
+      registerHost('Pick')
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('stops applying once unsubscribed, and removes only that registration', () => {
+      const apply = vi.fn()
+      const stop = defs.extend('Pick', apply)
+      defs.extend('Pick', apply)
+
+      stop()
+      stop()
+      registerHost('Pick')
+
+      expect(apply).toHaveBeenCalledOnce()
+    })
+
+    it('reports an apply that throws and still runs the others', () => {
+      const broken = new Error('apply failed')
+      const after = vi.fn()
+      defs.extend('Pick', () => {
+        throw broken
+      })
+      defs.extend('Pick', after)
+
+      registerHost('Pick')
+
+      expect(after).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(
+        broken,
+        expect.objectContaining({ tags: { event: 'extend' } })
+      )
+    })
+
+    it('applies an extension made inside another apply once to each type', () => {
+      const nested = vi.fn()
+      registerHost('First')
+      defs.extend('First', () => {
+        defs.extend(/./, nested)
+      })
+
+      registerHost('Second')
+
+      expect(nested.mock.calls.map(([builder]) => builder.def.type)).toEqual([
+        'First',
+        'Second'
+      ])
+    })
+
+    it('applies to a type defined inside an apply once', () => {
+      const apply = vi.fn()
+      registerHost('First')
+
+      defs.extend(/./, (builder) => {
+        apply(builder.def.type)
+        if (builder.def.type === 'First') defs.define({ type: 'Defined' })
+      })
+
+      expect(apply.mock.calls).toEqual([['First'], ['Defined']])
+    })
+
+    it('hands a frozen builder', () => {
+      let builder: NodeDefBuilder | undefined
+      registerHost('Pick')
+
+      defs.extend('Pick', (given) => {
+        builder = given
+      })
+
+      expect(Object.isFrozen(builder)).toBe(true)
+      expect(Object.isFrozen(builder?.def)).toBe(true)
+    })
+  })
+
+  describe('reading definitions', () => {
+    it('reads what the host declares for a type', () => {
+      registerHostType(
+        host.nodeTypeHooks,
+        hostNodeDef('Sampler', {
+          display_name: 'My Sampler',
+          category: 'sampling',
+          description: 'Samples.',
+          output_node: true,
+          input: {
+            required: {
+              seed: ['INT', { default: 0, min: 0 }],
+              sampler: [['euler', 'ddim'], { default: 'euler' }]
+            },
+            optional: {
+              scheduler: ['COMBO', { options: ['normal', 1] }],
+              model: ['MODEL']
+            },
+            hidden: { prompt: 'PROMPT' }
+          },
+          output: ['LATENT', ['a', 'b']],
+          output_name: ['samples']
+        })
+      )
+
+      expect(defs.get('Sampler')).toEqual({
+        type: 'Sampler',
+        title: 'My Sampler',
+        category: 'sampling',
+        description: 'Samples.',
+        inputs: [
+          {
+            name: 'seed',
+            type: 'INT',
+            localizedName: 'seed',
+            options: { default: 0, min: 0 }
+          },
+          {
+            name: 'sampler',
+            type: 'COMBO',
+            localizedName: 'sampler',
+            values: ['euler', 'ddim'],
+            options: { default: 'euler' }
+          },
+          {
+            name: 'scheduler',
+            type: 'COMBO',
+            localizedName: 'scheduler',
+            values: ['normal', 1],
+            options: { options: ['normal', 1] }
+          },
+          { name: 'model', type: 'MODEL', localizedName: 'model', options: {} }
+        ],
+        outputs: [
+          { name: 'samples', type: 'LATENT' },
+          { name: 'COMBO', type: 'COMBO' }
+        ],
+        hidden: { prompt: 'PROMPT' },
+        isOutputNode: true
+      })
+    })
+
+    it('names an input by the label the type declares for it', () => {
+      registerHostType(
+        host.nodeTypeHooks,
+        hostNodeDef('Labelled', {
+          input: { required: { seed: ['INT', { display_name: 'Seed value' }] } }
+        })
+      )
+
+      expect(defs.get('Labelled')?.inputs[0].localizedName).toBe('Seed value')
+    })
+
+    it('titles a type with no display name by its name', () => {
+      registerHostType(
+        host.nodeTypeHooks,
+        hostNodeDef('Untitled', { display_name: '' })
+      )
+
+      expect(defs.get('Untitled')?.title).toBe('Untitled')
+    })
+
+    it('gives a frozen copy that cannot change the host definition', () => {
+      const declared = { default: { nested: [1] } }
+      registerHostType(
+        host.nodeTypeHooks,
+        hostNodeDef('Copied', {
+          input: { required: { value: ['X', declared] } }
+        })
+      )
+
+      const def = defs.get('Copied')
+      const options = def?.inputs[0].options
+
+      expect(options).toEqual(declared)
+      expect(options).not.toBe(declared)
+      expect(Object.isFrozen(def?.inputs)).toBe(true)
+      expect(Object.isFrozen(def?.outputs)).toBe(true)
+      expect(Object.isFrozen(def?.hidden)).toBe(true)
+      expect(Object.isFrozen(Reflect.get(Object(options), 'default'))).toBe(
+        true
+      )
+      expect(defs.get('Copied')).not.toBe(def)
+    })
+
+    it('says which types it knows', () => {
+      registerHost('Known')
+
+      expect(defs.has('Known')).toBe(true)
+      expect(defs.has('Unknown')).toBe(false)
+      expect(defs.get('Unknown')).toBeUndefined()
+      expect(defs.has('__proto__')).toBe(false)
+    })
+
+    it('lists every type in the order it first registered', () => {
+      registerHost('First')
+      defs.define({ type: 'Defined' })
+      registerHost('Second')
+      registerHost('First')
+
+      const all = defs.all()
+
+      expect(all.map((def) => def.type)).toEqual(['First', 'Defined', 'Second'])
+      expect(Object.isFrozen(all)).toBe(true)
+    })
+
+    it.for([5, undefined, null, {}])('refuses %j as a type name', (type) => {
+      expect(() => Reflect.apply(defs.get, defs, [type])).toThrow(TypeError)
+      expect(() => Reflect.apply(defs.has, defs, [type])).toThrow(TypeError)
+    })
+  })
+
+  describe('define', () => {
+    it('registers a node type with the slots and title it declares', () => {
+      defs.define({
+        type: 'Pack/Switch',
+        title: 'Switch',
+        category: 'utils',
+        description: 'Picks one input.',
+        inputs: [{ name: 'a', type: '*' }],
+        outputs: [{ name: 'out', type: 'STRING' }]
+      })
+
+      const node = LiteGraph.createNode('Pack/Switch')
+
+      assert(node)
+      expect(node.title).toBe('Switch')
+      expect(node.inputs.map(({ name, type }) => [name, type])).toEqual([
+        ['a', '*']
+      ])
+      expect(node.outputs.map(({ name, type }) => [name, type])).toEqual([
+        ['out', 'STRING']
+      ])
+      expect(LiteGraph.registered_node_types['Pack/Switch'].category).toBe(
+        'utils'
+      )
+      expect(defs.get('Pack/Switch')).toEqual({
+        type: 'Pack/Switch',
+        title: 'Switch',
+        category: 'utils',
+        description: 'Picks one input.',
+        inputs: [{ name: 'a', type: '*', localizedName: 'a', options: {} }],
+        outputs: [{ name: 'out', type: 'STRING' }],
+        hidden: {},
+        isOutputNode: false
+      })
+    })
+
+    it('fills in what a definition leaves out', () => {
+      defs.define({ type: 'Bare' })
+
+      const node = LiteGraph.createNode('Bare')
+
+      expect(node?.title).toBe('Bare')
+      expect(node?.isVirtualNode).toBeFalsy()
+      expect(defs.get('Bare')).toMatchObject({
+        title: 'Bare',
+        category: '',
+        description: '',
+        inputs: [],
+        outputs: []
+      })
+    })
+
+    it('keeps a frontend node out of the prompt, and a backend node in it', () => {
+      defs.define({ type: 'Frontend', execution: 'frontend' })
+      defs.define({ type: 'Backend', execution: 'backend' })
+
+      expect(LiteGraph.createNode('Frontend')?.isVirtualNode).toBe(true)
+      expect(LiteGraph.createNode('Backend')?.isVirtualNode).toBeFalsy()
+    })
+
+    it('keeps a frontend node frontend when an extension of it is disposed', () => {
+      defs.define({ type: 'Frontend', execution: 'frontend' })
+      const stop = defs.extend('Frontend', () => {})
+
+      stop()
+
+      expect(LiteGraph.createNode('Frontend')?.isVirtualNode).toBe(true)
+    })
+
+    it.for([
+      { name: 'a definition that is not an object', definition: 'Pack/Node' },
+      { name: 'a missing type', definition: {} },
+      { name: 'an empty type', definition: { type: '' } },
+      {
+        name: 'a type that is a built-in name',
+        definition: { type: '__proto__' }
+      },
+      {
+        name: 'an unknown field',
+        definition: { type: 'T', resolve: () => {} }
+      },
+      { name: 'a title that is not text', definition: { type: 'T', title: 5 } },
+      {
+        name: 'a category that is not text',
+        definition: { type: 'T', category: {} }
+      },
+      {
+        name: 'a description that is not text',
+        definition: { type: 'T', description: null }
+      },
+      {
+        name: 'inputs that are not a list',
+        definition: { type: 'T', inputs: {} }
+      },
+      {
+        name: 'an output without a type',
+        definition: { type: 'T', outputs: [{ name: 'o' }] }
+      },
+      {
+        name: 'a slot with more than a name and type',
+        definition: { type: 'T', inputs: [{ name: 'i', type: '*', shape: 1 }] }
+      },
+      {
+        name: 'a slot that is not an object',
+        definition: { type: 'T', inputs: ['i'] }
+      },
+      {
+        name: 'an unknown execution',
+        definition: { type: 'T', execution: 'worker' }
+      }
+    ])('refuses $name and registers nothing', ({ definition }) => {
+      const before = Object.keys(LiteGraph.registered_node_types)
+
+      expect(() => Reflect.apply(defs.define, defs, [definition])).toThrow(
+        TypeError
+      )
+      expect(Object.keys(LiteGraph.registered_node_types)).toEqual(before)
+      expect(defs.all()).toEqual([])
+    })
+
+    it('refuses a type that is registered already, and leaves it as it was', () => {
+      const existing = registerHost('Taken')
+
+      expect(() => defs.define({ type: 'Taken' })).toThrow(TypeError)
+      expect(LiteGraph.registered_node_types.Taken).toBe(existing)
+    })
+
+    it('unregisters the type when unsubscribed, once', () => {
+      const stop = defs.define({ type: 'Gone' })
+
+      stop()
+      stop()
+
+      expect(LiteGraph.createNode('Gone')).toBeNull()
+      expect(defs.has('Gone')).toBe(false)
+      expect(() => defs.define({ type: 'Gone' })).not.toThrow()
+      expect(defs.has('Gone')).toBe(true)
+    })
+
+    it('leaves a type the host registered since alone when unsubscribed', () => {
+      const stop = defs.define({ type: 'Shared' })
+      const hostClass = registerHost('Shared')
+
+      stop()
+
+      expect(LiteGraph.registered_node_types.Shared).toBe(hostClass)
+      expect(defs.has('Shared')).toBe(true)
+    })
+
+    it('keeps applying an extension to the type when it is defined again', () => {
+      const { types } = typesExtended('Again')
+      defs.define({ type: 'Again' })()
+
+      defs.define({ type: 'Again' })
+
+      expect(types).toEqual(['Again', 'Again'])
+    })
+  })
+
+  describe('refresh', () => {
+    it.for([true, false])(
+      'answers %s as the host does when it reloads the definitions',
+      async (applied) => {
+        const reload = vi
+          .spyOn(app, 'reloadNodeDefs')
+          .mockResolvedValue(applied)
+
+        await expect(defs.refresh()).resolves.toBe(applied)
+        expect(reload).toHaveBeenCalledExactlyOnceWith()
+      }
+    )
+
+    it('tells listeners each time the host reloads the definitions', () => {
+      const listener = vi.fn()
+      const control = vi.fn()
+      const stop = defs.onRefreshed(listener)
+      defs.onRefreshed(control)
+
+      host.nodeTypeHooks.refreshComboInNodes()
+      host.nodeTypeHooks.refreshComboInNodes()
+      stop()
+      stop()
+      host.nodeTypeHooks.refreshComboInNodes()
+
+      expect(listener).toHaveBeenCalledTimes(2)
+      expect(control).toHaveBeenCalledTimes(3)
+    })
+
+    it('reports a listener that throws and still tells the others', () => {
+      const broken = new Error('listener failed')
+      const after = vi.fn()
+      defs.onRefreshed(() => {
+        throw broken
+      })
+      defs.onRefreshed(after)
+
+      host.nodeTypeHooks.refreshComboInNodes()
+
+      expect(after).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(
+        broken,
+        expect.objectContaining({ tags: { event: 'onRefreshed' } })
+      )
+    })
+
+    it.for([undefined, 'listener', {}])(
+      'refuses %j as a listener',
+      (listener) => {
+        expect(() => Reflect.apply(defs.onRefreshed, defs, [listener])).toThrow(
+          TypeError
+        )
+      }
+    )
+  })
+
+  it('cannot be changed by a pack', () => {
+    expect(Object.isFrozen(defs)).toBe(true)
+  })
+})
