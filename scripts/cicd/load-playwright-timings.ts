@@ -107,31 +107,46 @@ function main() {
       .parse(response)
     const run = runs.workflow_runs.at(0)
     if (run) {
-      for (const project of projects) {
-        const target = path.join(directory, project)
-        execFileSync(
-          'gh',
-          [
-            'run',
-            'download',
-            String(run.id),
-            '--repo',
-            repository,
+      execFileSync(
+        'gh',
+        [
+          'run',
+          'download',
+          String(run.id),
+          '--repo',
+          repository,
+          ...projects.flatMap((project) => [
             '--name',
-            `playwright-report-${project}`,
-            '--dir',
-            target
-          ],
-          { timeout: 120_000, stdio: ['ignore', 'ignore', 'pipe'] }
-        )
-        const report: unknown = JSON.parse(
-          readFileSync(path.join(target, 'report.json'), 'utf8')
-        )
-        baselines[project] = {
-          sourceRun: run.id,
-          millisecondsPerTest: reportTimings(report, project)
+            `playwright-report-${project}`
+          ]),
+          '--dir',
+          directory
+        ],
+        { timeout: 240_000, stdio: ['ignore', 'ignore', 'pipe'] }
+      )
+      for (const project of projects) {
+        try {
+          const report: unknown = JSON.parse(
+            readFileSync(
+              path.join(
+                directory,
+                `playwright-report-${project}`,
+                'report.json'
+              ),
+              'utf8'
+            )
+          )
+          baselines[project] = {
+            sourceRun: run.id,
+            millisecondsPerTest: reportTimings(report, project)
+          }
+          console.log(`${project}: loaded timings from main run ${run.id}`)
+        } catch (error) {
+          console.warn(
+            `${project}: prior report unavailable; using equal weights`,
+            error instanceof Error ? error.message : String(error)
+          )
         }
-        console.log(`${project}: loaded timings from main run ${run.id}`)
       }
     } else {
       console.warn('No successful main E2E run found; using equal weights')

@@ -180,22 +180,118 @@ it.for([
   expect(() => reportTimings(report, 'cloud')).toThrow()
 })
 
+function timingLoaderFixture(cloudReport: string | null) {
+  const directory = mkdtempSync(join(tmpdir(), 'prior-reports-'))
+  onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
+  const reports = join(directory, 'reports')
+  mkdirSync(join(reports, 'playwright-report-chromium'), { recursive: true })
+  writeFileSync(
+    join(reports, 'playwright-report-chromium/report.json'),
+    JSON.stringify({
+      errors: [],
+      stats: { unexpected: 0 },
+      suites: [
+        {
+          specs: [
+            {
+              file: 'a.spec.ts',
+              tests: [
+                {
+                  projectName: 'chromium',
+                  results: [{ retry: 0, duration: 37, status: 'passed' }]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    })
+  )
+  if (cloudReport !== null) {
+    mkdirSync(join(reports, 'playwright-report-cloud'))
+    writeFileSync(
+      join(reports, 'playwright-report-cloud/report.json'),
+      cloudReport
+    )
+  }
+  writeFileSync(
+    join(directory, 'gh'),
+    `#!${process.execPath}
+const { cpSync, existsSync } = require('node:fs')
+const { join } = require('node:path')
+const args = process.argv.slice(2)
+if (args[0] === 'api') {
+  console.log(JSON.stringify({ workflow_runs: [{ id: 123 }] }))
+} else {
+  const names = args.flatMap((arg, index) => arg === '--name' ? [args[index + 1]] : [])
+  const destination = args[args.indexOf('--dir') + 1]
+  let downloaded = false
+  for (const name of names) {
+    const source = join(process.env.REPORTS, name)
+    if (!existsSync(source)) continue
+    cpSync(source, names.length > 1 ? join(destination, name) : destination, { recursive: true })
+    downloaded = true
+  }
+  if (!downloaded) process.exit(1)
+}
+`,
+    { mode: 0o755 }
+  )
+  const output = join(directory, 'timings')
+  return { directory, reports, output }
+}
+
+it.for([null, '{'])(
+  'keeps Chromium timings when the cloud report is unusable: %j',
+  (cloudReport) => {
+    const { directory, reports, output } = timingLoaderFixture(cloudReport)
+    const result = spawnSync(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        resolve(import.meta.dirname, 'load-playwright-timings.ts')
+      ],
+      {
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: `${directory}:${process.env.PATH}`,
+          REPORTS: reports,
+          GITHUB_REPOSITORY: 'test/repository',
+          PLAYWRIGHT_SHARD_TIMINGS_DIR: output
+        }
+      }
+    )
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+    expect(
+      JSON.parse(readFileSync(join(output, 'cloud.json'), 'utf8'))
+    ).toEqual({ sourceRun: null, millisecondsPerTest: {} })
+    expect(
+      JSON.parse(readFileSync(join(output, 'chromium.json'), 'utf8'))
+    ).toEqual({ sourceRun: 123, millisecondsPerTest: { 'a.spec.ts': 37 } })
+  }
+)
+
 function workflowSteps(root: string, project: 'cloud' | 'chromium') {
   const workflow = z
     .object({
-      jobs: z.object({
-        [`playwright-tests-${project}-sharded`]: z.object({
-          steps: z.array(
-            z.object({
-              name: z.string().optional(),
-              run: z.string().optional(),
-              env: z
-                .record(z.string(), z.union([z.string(), z.number()]))
-                .optional()
-            })
-          )
+      jobs: z.record(
+        z.string(),
+        z.object({
+          steps: z
+            .array(
+              z.object({
+                name: z.string().optional(),
+                run: z.string().optional(),
+                env: z
+                  .record(z.string(), z.union([z.string(), z.number()]))
+                  .optional()
+              })
+            )
+            .default([])
         })
-      })
+      )
     })
     .parse(
       parse(
@@ -203,7 +299,7 @@ function workflowSteps(root: string, project: 'cloud' | 'chromium') {
       )
     )
   const steps = workflow.jobs[`playwright-tests-${project}-sharded`].steps
-  const plan = steps.find(
+  const plan = workflow.jobs.setup.steps.find(
     (step) => step.name === `Plan ${project} shards by historical duration`
   )
   const run = steps.find((step) =>
@@ -274,7 +370,8 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
               key,
               expand(String(value))
             ])
-          )
+          ),
+          PLAYWRIGHT_SHARD_TOTAL: '4'
         }
       })
       assert.equal(
@@ -283,7 +380,12 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
           ? 0
           : Number(
               readFileSync(
-                join(directory, `${project}-shards`, `${shard}.txt`),
+                join(
+                  directory,
+                  'playwright-shard-plans',
+                  project,
+                  `${shard}.txt`
+                ),
                 'utf8'
               ).includes('snapshot @')
             ),
@@ -300,7 +402,10 @@ export default { ...config, testDir: './tests', globalSetup: undefined, globalTe
   }
   const blobs = readdirSync(merged)
   const lists = [1, 2, 3, 4].map((shard) =>
-    readFileSync(join(directory, `${project}-shards`, `${shard}.txt`), 'utf8')
+    readFileSync(
+      join(directory, 'playwright-shard-plans', project, `${shard}.txt`),
+      'utf8'
+    )
   )
   expect(lists.filter((list) => list.includes('d.spec.ts'))).toHaveLength(2)
   const result = spawnSync(

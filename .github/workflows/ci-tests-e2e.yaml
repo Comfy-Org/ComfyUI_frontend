@@ -84,11 +84,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
 
-      - name: Share timing snapshot with all shards
+      - name: Plan cloud shards by historical duration
+        run: pnpm exec playwright test --project=cloud --list --reporter=./scripts/cicd/plan-playwright-shards.ts
+        env:
+          PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
+          PLAYWRIGHT_SHARD_TOTAL: 4
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/cloud
+
+      - name: Plan chromium shards by historical duration
+        run: pnpm exec playwright test --project=chromium --list --reporter=./scripts/cicd/plan-playwright-shards.ts
+        env:
+          PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
+          PLAYWRIGHT_SHARD_TOTAL: 16
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/chromium
+
+      - name: Share shard plans
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
-          name: playwright-shard-timings
-          path: ${{ runner.temp }}/playwright-shard-timings
+          name: playwright-shard-plans
+          path: ${{ runner.temp }}/playwright-shard-plans
           retention-days: 1
           if-no-files-found: error
 
@@ -216,24 +230,17 @@ jobs:
         with:
           node_cache: 'false'
 
-      - name: Download timing snapshot
+      - name: Download shard plans
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
-          name: playwright-shard-timings
-          path: ${{ runner.temp }}/playwright-shard-timings
-
-      - name: Plan chromium shards by historical duration
-        run: pnpm exec playwright test --project=chromium --list --reporter=./scripts/cicd/plan-playwright-shards.ts
-        env:
-          PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
-          PLAYWRIGHT_SHARD_TOTAL: ${{ matrix.shardTotal }}
-          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/chromium-shards
+          name: playwright-shard-plans
+          path: ${{ runner.temp }}/playwright-shard-plans
 
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
         run: pnpm exec playwright test --project=chromium --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
-          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/chromium-shards
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/chromium
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-chromium-${{ matrix.shardIndex }}.zip
           COLLECT_COVERAGE: 'true'
@@ -306,24 +313,17 @@ jobs:
         with:
           node_cache: 'false'
 
-      - name: Download timing snapshot
+      - name: Download shard plans
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
-          name: playwright-shard-timings
-          path: ${{ runner.temp }}/playwright-shard-timings
-
-      - name: Plan cloud shards by historical duration
-        run: pnpm exec playwright test --project=cloud --list --reporter=./scripts/cicd/plan-playwright-shards.ts
-        env:
-          PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
-          PLAYWRIGHT_SHARD_TOTAL: ${{ matrix.shardTotal }}
-          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/cloud-shards
+          name: playwright-shard-plans
+          path: ${{ runner.temp }}/playwright-shard-plans
 
       - name: Run Playwright tests (cloud, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
         run: pnpm exec playwright test --project=cloud --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
-          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/cloud-shards
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/cloud
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-cloud-${{ matrix.shardIndex }}.zip
 
