@@ -66,6 +66,15 @@ follow-up for a command interface.
    (`useWorkflowStore().activeWorkflow?.changeTracker`). Nested transactions
    count, so the tracker captures once, when the outermost closes. A host with
    no open workflow supplies none, and the edit is applied with no undo step.
+   The capture serializes, clones and compares the whole document, so each
+   edit outside `batch` costs about as much as the document is large, and a
+   loop of separate edits is quadratic. Measured in the unit environment
+   (`happy-dom`, one tracker, 20 title edits): 6.5, 12, 27 and 52 ms per
+   separate edit at 250, 500, 1,000 and 2,000 nodes, against 4.9, 12, 26 and
+   72 ms for all 20 inside one `batch`; the API's own work is 0.008 ms per
+   edit and one `serialize()` of the graph alone is 4.5, 8.8, 17 and 33 ms,
+   so the cost is the host's capture, the same as for an edit the editor
+   makes. The `batch` JSDoc tells a pack to loop inside one batch.
 4. The handle methods packs call are kept, and each is one call into
    `comfy.edit`: `node.setTitle(title)` is `comfy.edit.updateNode(node,
    { title })`. They hold no edit logic. Their types say which call they are.

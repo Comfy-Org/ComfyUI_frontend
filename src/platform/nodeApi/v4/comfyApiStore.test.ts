@@ -153,7 +153,7 @@ describe("the app's node API", () => {
     expect(comfy.graph.node(sameId.id)).not.toBe(removedHandle)
   })
 
-  it("makes a pack's edit one undo step of the open workflow", () => {
+  it("passes a pack's edit to the open workflow's change tracker as one transaction", () => {
     const comfy = publishedApi()
     const graph = new LGraph()
     const node = new LGraphNode('Before')

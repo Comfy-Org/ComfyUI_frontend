@@ -213,8 +213,8 @@ export interface Edits {
     to: OutputSlotHandle
   ): readonly LinkInfo[] | undefined
   /**
-   * Runs `edits` now, as one undo step, and returns what it returns. Edits it
-   * made before throwing stay. Edits after it returns are not in the step.
+   * Runs `edits` now as one undo step, which re-reads the whole graph once, and returns its result.
+   * Edits made before a throw stay; edits after it returns are not in the step. Loop inside one batch.
    */
   batch<T>(edits: () => T): T
 }
