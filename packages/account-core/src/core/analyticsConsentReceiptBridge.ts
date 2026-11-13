@@ -44,6 +44,17 @@ export function createAnalyticsConsentReceiptBridge(
 
   const isCurrent = (revision: number) => !disposed && revision === generation
 
+  async function revokePending(): Promise<boolean> {
+    if (!revocationPending) return true
+    try {
+      if ((await transport.revoke()) === false) return false
+      revocationPending = false
+      return true
+    } catch {
+      return false
+    }
+  }
+
   function update(
     explicitPostHogConsent: boolean | undefined
   ): Promise<boolean> {
@@ -53,14 +64,7 @@ export function createAnalyticsConsentReceiptBridge(
     if (explicitPostHogConsent !== true) revocationPending = true
     if (!configured && !revocationPending) return Promise.resolve(false)
     tail = tail.then(async () => {
-      if (revocationPending) {
-        try {
-          if ((await transport.revoke()) === false) return false
-          revocationPending = false
-        } catch {
-          return false
-        }
-      }
+      if (revocationPending && !(await revokePending())) return false
       if (
         !isCurrent(revision) ||
         !configured ||
