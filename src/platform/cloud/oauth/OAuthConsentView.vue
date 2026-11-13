@@ -7,14 +7,7 @@
             class="flex size-14 items-center justify-center rounded-2xl bg-white"
           >
             <i
-              :class="
-                cn(
-                  verified
-                    ? verifiedClientIcons[verified.platform]
-                    : 'icon-[lucide--app-window]',
-                  'size-8 text-black'
-                )
-              "
+              class="icon-[lucide--app-window] size-8 text-black"
               aria-hidden="true"
               data-testid="client-icon"
             />
@@ -42,9 +35,14 @@
           </h1>
           <p
             v-if="verified"
-            class="m-0 text-xs wrap-anywhere text-muted-foreground"
+            class="m-0 flex items-center gap-1 text-xs wrap-anywhere text-muted-foreground"
             data-testid="client-verified"
           >
+            <i
+              :class="cn(verifiedClientIcons[verified.platform], 'shrink-0')"
+              aria-hidden="true"
+              data-testid="client-verified-icon"
+            />
             {{
               t('oauth.consent.verifiedNotice', {
                 platform: verified.display_name,

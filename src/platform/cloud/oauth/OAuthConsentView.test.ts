@@ -234,7 +234,10 @@ describe('OAuthConsentView', () => {
       expect(
         screen.getByText('Totally Legit Connector wants access')
       ).toBeVisible()
-      expect(screen.getByTestId('client-icon')).toHaveClass(icon)
+      expect(screen.getByTestId('client-icon')).toHaveClass(
+        'icon-[lucide--app-window]'
+      )
+      expect(screen.getByTestId('client-verified-icon')).toHaveClass(icon)
       expect(screen.getByTestId('client-verified')).toHaveTextContent(
         `Name not verified · Verified destination: ${displayName} · you'll return to ${host}`
       )
