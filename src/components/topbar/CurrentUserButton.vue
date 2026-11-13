@@ -41,17 +41,22 @@
       </PopoverTrigger>
 
       <PopoverContent
+        :side
         align="end"
+        :side-offset="side === 'bottom' ? undefined : 8"
+        :reference="sidebarReference"
         :class="
           cn(
-            'overflow-visible rounded-lg border-border p-0 shadow-md data-[state=closed]:animate-none data-[state=open]:animate-none',
-            showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
+            'overflow-visible border-border p-0 data-[state=closed]:animate-none data-[state=open]:animate-none',
+            popoverSizeClass
           )
         "
       >
-        <CurrentUserPopoverWorkspace
+        <component
+          :is="workspaceMenu"
           v-if="showWorkspacePopover"
           :account-actions-only="initState !== 'ready'"
+          v-bind="flags.billingNewUxEnabled ? { flyoutSide } : {}"
           @close="closePopover"
         />
         <CurrentUserPopoverLegacy v-else @close="closePopover" />
@@ -79,11 +84,18 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
+import ProfileMenuWorkspace from '@/platform/account/components/ProfileMenuWorkspace.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
-const { showArrow = true, compact = false } = defineProps<{
+const {
+  showArrow = true,
+  compact = false,
+  side = 'bottom'
+} = defineProps<{
   showArrow?: boolean
   compact?: boolean
+  side?: 'bottom' | 'left' | 'right'
 }>()
 
 const { isLoggedIn, userPhotoUrl } = useCurrentUser()
@@ -105,9 +117,20 @@ const showWorkspaceSkeleton = computed(
 const showWorkspaceIcon = computed(
   () => initState.value === 'ready' && !isInPersonalWorkspace.value
 )
+const { flags } = useFeatureFlags()
+const workspaceMenu = computed(() =>
+  flags.billingNewUxEnabled ? ProfileMenuWorkspace : CurrentUserPopoverWorkspace
+)
+const flyoutSide = computed(() => (side === 'right' ? 'right' : 'left'))
 const showWorkspacePopover = computed(
   () => isCloud || initState.value === 'ready'
 )
+const popoverSizeClass = computed(() => {
+  if (!showWorkspacePopover.value) return 'w-80 rounded-lg'
+  return flags.billingNewUxEnabled
+    ? 'w-72 rounded-xl'
+    : 'w-fit max-w-96 min-w-80 rounded-lg'
+})
 
 const workspaceName = computed(() => {
   if (!showWorkspaceIcon.value) return ''
@@ -117,6 +140,18 @@ const workspaceName = computed(() => {
 const open = ref(false)
 const buttonRef = ref<InstanceType<typeof Button> | null>(null)
 usePopoverViewportDismiss(open, () => unrefElement(buttonRef))
+
+const sidebarReference = computed(() => {
+  if (side === 'bottom') return undefined
+  return {
+    getBoundingClientRect: () => {
+      const trigger = unrefElement(buttonRef)
+      const rect = trigger?.getBoundingClientRect() ?? new DOMRect()
+      const sidebar = trigger?.closest('nav')?.getBoundingClientRect() ?? rect
+      return new DOMRect(sidebar.x, rect.y, sidebar.width, rect.height)
+    }
+  }
+})
 
 function closePopover() {
   open.value = false

@@ -13,8 +13,8 @@ export interface LocalWebTokenStore {
   writeWorkspace(workspaceId: string, tokens: OAuthTokens): boolean
   /** Forgets one workspace's kept tokens, only if they are still `stale`. */
   forgetWorkspace(workspaceId: string, stale: OAuthTokens): void
-  /** Forgets the active tokens and every workspace's tokens. */
-  clear(): void
+  /** Forgets the active tokens and every workspace's tokens, returning them. */
+  clear(): OAuthTokens[]
   /** Calls back when another tab changes the stored or kept tokens. */
   subscribe(listener: () => void): () => void
 }
@@ -52,8 +52,10 @@ export function createMemoryTokenStore(): LocalWebTokenStore {
         byWorkspace.delete(workspaceId)
     },
     clear: () => {
+      const forgotten = [...(tokens ? [tokens] : []), ...byWorkspace.values()]
       tokens = undefined
       byWorkspace.clear()
+      return forgotten
     },
     subscribe: () => () => {}
   }
@@ -104,11 +106,12 @@ export function createStorageTokenStore(
         null
       )
     )
+  const readActive = () =>
+    parseStoredTokens(
+      ignoringStorageErrors(() => storage.getItem(LOCAL_WEB_TOKENS_KEY), null)
+    )
   return {
-    read: () =>
-      parseStoredTokens(
-        ignoringStorageErrors(() => storage.getItem(LOCAL_WEB_TOKENS_KEY), null)
-      ),
+    read: readActive,
     write: (tokens) =>
       ignoringStorageErrors(() => {
         storage.setItem(LOCAL_WEB_TOKENS_KEY, JSON.stringify(tokens))
@@ -134,10 +137,16 @@ export function createStorageTokenStore(
       }, undefined)
     },
     clear() {
+      const active = readActive()
+      const forgotten = [
+        ...(active ? [active] : []),
+        ...Object.values(readWorkspaces())
+      ]
       ignoringStorageErrors(() => {
         storage.removeItem(LOCAL_WEB_TOKENS_KEY)
         storage.removeItem(LOCAL_WEB_WORKSPACE_TOKENS_KEY)
       }, undefined)
+      return forgotten
     },
     subscribe(listener) {
       const onStorage = (event: Event) => {

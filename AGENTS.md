@@ -49,6 +49,8 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 
 The project uses **pnpm workspaces** for monorepo organization and native tool CLIs for task execution
 
+- Use Vite for frontend package bundling with TypeScript `moduleResolution: "bundler"`. Fix package exports and source imports; do not patch compiler or resolver dependencies to make package builds pass.
+
 ## Package Manager
 
 This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g., `pnpm test:unit`, `pnpm lint`). To run arbitrary packages not in scripts, use `pnpx` or `pnpm dlx` — never `npx`.

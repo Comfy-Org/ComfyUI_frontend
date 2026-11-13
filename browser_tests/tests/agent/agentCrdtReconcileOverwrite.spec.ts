@@ -5,7 +5,7 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 /**
  * The color and title specs cover a follower rebind: returning to a workflow
@@ -127,7 +127,7 @@ test.describe(
       test.setTimeout(90_000)
       const topbar = new Topbar(page)
       const actionbar = new ComfyActionbar(page)
-      const panel = new PropertiesPanelHelper(page)
+      const panel = new PropertiesPanel(page)
       const wrapper = agentConversation.vueNodes
         .getNodeLocator(UNTOUCHED_NODE_ID)
         .getByTestId('node-inner-wrapper')
@@ -198,7 +198,7 @@ test.describe(
       test.setTimeout(90_000)
       const topbar = new Topbar(page)
       const actionbar = new ComfyActionbar(page)
-      const panel = new PropertiesPanelHelper(page)
+      const panel = new PropertiesPanel(page)
       const CUSTOM_TITLE = 'My Custom Prompt'
       const titleLocator = agentConversation.vueNodes
         .getNodeLocator(UNTOUCHED_NODE_ID)

@@ -23,6 +23,10 @@ type AnnotatedPathOptions = {
   subfolder?: string
 }
 
+export function parseAnnotatedPath<Fallback extends string = 'input'>(
+  filepath: string,
+  fallbackRoot?: Fallback
+): { filepath: string; rootFolder: ResultItemType | Fallback }
 export function parseAnnotatedPath(
   filepath: string,
   fallbackRoot: string = IMPLICIT_ASSET_ROOT

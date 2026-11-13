@@ -16,6 +16,17 @@
       <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
     </a>
     <button
+      v-else-if="reissues"
+      type="button"
+      :class="primaryActionClass(ui)"
+      :disabled="!canReissue"
+      data-testid="add-credits-open-checkout"
+      @click="emit('reissue')"
+    >
+      {{ translate('blocked.action') }}
+      <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
+    </button>
+    <button
       v-else
       type="button"
       :class="primaryActionClass(ui)"
@@ -34,11 +45,19 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { AddCreditsUi } from './addCreditsPresentation'
 import { footerBarClass, primaryActionClass } from './addCreditsPresentation'
 
-const { checkoutUrl, translate, ui } = defineProps<{
+const {
+  checkoutUrl,
+  reissues = false,
+  canReissue = true,
+  translate,
+  ui
+} = defineProps<{
   checkoutUrl: string | undefined
+  reissues?: boolean
+  canReissue?: boolean
   translate: AddCreditsTranslate
   ui: AddCreditsUi
 }>()
 
-const emit = defineEmits<{ follow: [] }>()
+const emit = defineEmits<{ follow: []; reissue: [] }>()
 </script>

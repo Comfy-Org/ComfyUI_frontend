@@ -1,11 +1,13 @@
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
-import { getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
 
 import type { MenuOption } from './menuOption'
 
@@ -18,6 +20,21 @@ const DEFAULT_IMAGE_MENU_AVAILABILITY: ImageMenuAvailability = {
 
 function canPasteImage(node?: LGraphNode): boolean {
   return typeof node?.pasteFiles === 'function'
+}
+
+async function fullResolutionImage(
+  img: HTMLImageElement
+): Promise<HTMLImageElement | undefined> {
+  const src = fullResolutionSrc(img)
+  if (src === img.src) return img
+  const full = new Image()
+  full.src = src
+  try {
+    await full.decode()
+    return full
+  } catch {
+    return undefined
+  }
 }
 
 async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
@@ -46,6 +63,7 @@ async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
  */
 export function useImageMenuOptions() {
   const { t } = useI18n()
+  const toast = useToast()
   const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 
   const openMaskEditor = () => {
@@ -72,11 +90,19 @@ export function useImageMenuOptions() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    ctx.drawImage(img, 0, 0)
+    const source = await fullResolutionImage(img)
+    if (!source) {
+      toast.warning(
+        t('toastMessages.errorCopyImage', { error: t('g.unknownError') })
+      )
+      return
+    }
 
     try {
+      canvas.width = source.naturalWidth
+      canvas.height = source.naturalHeight
+      ctx.drawImage(source, 0, 0)
+
       const blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob(resolve, 'image/png')
       })
@@ -90,7 +116,11 @@ export function useImageMenuOptions() {
         new ClipboardItem({ 'image/png': blob })
       ])
     } catch (error) {
-      console.error('Failed to copy image to clipboard:', error)
+      toast.warning(
+        t('toastMessages.errorCopyImage', {
+          error: getErrorMessage(error) ?? t('g.unknownError')
+        })
+      )
     }
   }
 
