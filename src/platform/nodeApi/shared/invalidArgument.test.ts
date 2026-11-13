@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { invalidArgument } from './invalidArgument'
+import { invalidArgument, isInvalidArgument } from './invalidArgument'
 
 describe('refusing an argument', () => {
   it.for([
@@ -17,5 +17,11 @@ describe('refusing an argument', () => {
 
     expect(error).toBeInstanceOf(TypeError)
     expect(error.message).toBe(`queryNodes needs a query object, not ${shown}.`)
+  })
+
+  it('knows its own refusals from any other TypeError', () => {
+    expect(isInvalidArgument(invalidArgument('extend', 'a name', 5))).toBe(true)
+    expect(isInvalidArgument(new TypeError('extend needs a name'))).toBe(false)
+    expect(isInvalidArgument('extend needs a name')).toBe(false)
   })
 })

@@ -14,10 +14,19 @@ export function callIsolated<T>(
   callback: () => T
 ): IsolatedCall<T> {
   try {
-    return { ok: true, value: callback() }
+    const value = callback()
+    reportIfRejected(event, value)
+    return { ok: true, value }
   } catch (error) {
     reportListenerFailure(event, error)
     return { ok: false }
+  }
+}
+
+/** Reports the rejection of a promise a pack callback returned, as its throw would be. */
+export function reportIfRejected(event: string, returned: unknown): void {
+  if (returned instanceof Promise) {
+    returned.catch((error: unknown) => reportListenerFailure(event, error))
   }
 }
 
