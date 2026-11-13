@@ -53,6 +53,9 @@ export function createTypeColors(): TypeColors {
 
     setTypeColor(type, color): Unsubscribe {
       checkedText('setTypeColor', 'a type name', type)
+      if (type in Object.prototype) {
+        throw invalidArgument('setTypeColor', 'a type name', type)
+      }
       checkedText('setTypeColor', 'a colour', color)
       const shown = shownColor(type)
       if (shown && shown !== newestColor(type)) {

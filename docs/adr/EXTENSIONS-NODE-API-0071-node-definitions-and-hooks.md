@@ -144,10 +144,17 @@ registered, so `extend` cannot depend on the order.
     the host made for the type, calling what was there first. A dispatcher is
     put on a class the first time a hook needs it and stays, so extending and
     unsubscribing any number of times leaves one dispatcher per method and
-    class. It looks up the callbacks for its type at each call, so a callback
-    an extension removed is not called. A type the host registers again gets a
-    new class; its extensions are applied again and their dispatchers are put
-    on the new class.
+    class. It looks up the callbacks for its type at each call, and again
+    before each callback, so a callback an extension removed, even by an
+    earlier hook of the same delivery, is not called. A type the host
+    registers again gets a new class; its extensions are applied again and
+    their dispatchers are put on the new class. `onCreated` and menus are
+    found by the node's type name, not through a prototype, so they are given
+    only for a node whose class, or one it extends, is a class the API put
+    dispatchers on. A class a legacy pack registers over an extended type
+    therefore hears no hook at all, by name or by prototype, until the host
+    registers the type again; and a second API instance in one page does not
+    hear the nodes of a class only the first one registered.
 18. `onCreated` hears a node join a graph through the host's graph intents: the
     `add_node` intent `LGraph.add` announces, whose source is `load` while a
     workflow loads (`LGraph.configure`) and while API-JSON and A1111 imports
@@ -162,7 +169,8 @@ registered, so `extend` cannot depend on the order.
     mark clipboard adds, which is a core change (ticket draft in the report).
     The API listens for intents only while some extension has an `onCreated`
     or `onConfigured` hook.
-19. `onConfigured` gives a frozen JSON copy of the saved node. A node
+19. `onConfigured` gives a frozen JSON copy of the saved node, made only when
+    some hook asks for it. A node
     configured before it joined a graph is told once it joins, after
     `onCreated`. During a load, a paste and a duplicate the node joins first
     and is configured after, so `onCreated` comes first there too.
@@ -234,7 +242,8 @@ registered, so `extend` cannot depend on the order.
     `true`; its label and a submenu function are asked then, with the node's
     handle, inside the listener isolation, so an item whose function throws or
     gives something unusable is reported and left out and the others are
-    shown. An item with an empty submenu is shown only if it has `run`.
+    shown. The failure of an item is reported the first time only, not on
+    every open. An item with an empty submenu is shown only if it has `run`.
     Entries are sorted by `order` (none counts as 0); ties keep the order they
     were added in. A `run` for a node that has been removed since the menu
     opened does nothing.
@@ -248,7 +257,8 @@ registered, so `extend` cannot depend on the order.
     colour; when it removes the colour on show the next newest shows, and
     when it removes the last one the table gets back what it held before the
     first, unless a palette has coloured the type since. A type the palette
-    colours is refused with a `TypeError`.
+    colours, and a name `Object.prototype` has (`__proto__`, `constructor`),
+    are refused with a `TypeError`.
 34. Applying a palette writes an empty colour for every data type it has no
     colour for, which would clear a pack's colour. The theme service calls the
     host side's `reapplyTypeColors()` after it applies a palette; it puts back
@@ -258,7 +268,9 @@ registered, so `extend` cannot depend on the order.
     have, a property of `Object.prototype` included.
 36. `isTypeCompatible(outputType, inputType)` is
     `LiteGraph.isValidConnection`, the rule the host links by.
-37. Every type name, colour and colour name must be non-empty text.
+37. Every type name given to `define`, `setTypeColor` or `typeColor`, every
+    colour and every colour name must be non-empty text. `extend`, `get` and
+    `has` take `''` as a name no type has.
 
 ### Left out
 

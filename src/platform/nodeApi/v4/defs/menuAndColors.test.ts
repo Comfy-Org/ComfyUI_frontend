@@ -338,6 +338,19 @@ describe('node menus and colours', () => {
       expect(LGraphCanvas.link_type_colors.CLEARED).toBe('')
     })
 
+    it.for(['__proto__', 'constructor', 'toString'])(
+      'refuses %s as a type to colour, and leaves the table as it was',
+      (type) => {
+        const prototype = Object.getPrototypeOf(LGraphCanvas.link_type_colors)
+
+        expect(() => defs.setTypeColor(type, '#123456')).toThrow(TypeError)
+        expect(Object.hasOwn(LGraphCanvas.link_type_colors, type)).toBe(false)
+        expect(Object.getPrototypeOf(LGraphCanvas.link_type_colors)).toBe(
+          prototype
+        )
+      }
+    )
+
     it('refuses a type the palette colours, and leaves its colour', () => {
       LGraphCanvas.link_type_colors.IMAGE = '#64B5F6'
 

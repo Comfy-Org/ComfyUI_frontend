@@ -3,9 +3,13 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-import { callListener } from '@/platform/nodeApi/shared/listeners'
+import {
+  callListener,
+  reportListenerFailure
+} from '@/platform/nodeApi/shared/listeners'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
+import type { NodeHandle } from '@/platform/nodeApi/v4/types'
 import type {
   Deliver,
   DispatchContext,
@@ -16,6 +20,7 @@ import type { HookInstaller, NodeType } from './extensions'
 import { connectionInstallers } from './connectionDispatch'
 import { createLifecycleDispatch } from './lifecycleDispatch'
 import { menuEntry } from './nodeMenu'
+import type { CheckedMenuItem } from './nodeMenu'
 import { pointerInstallers } from './pointerDispatch'
 import { propertyInstallers } from './propertyDispatch'
 import type { HookName } from './nodeHooks'
@@ -47,9 +52,32 @@ export function createHookDispatch(
   copyOfSaved: SavedCopier
 ): HookDispatch {
   const installed = new WeakMap<typeof LGraphNode, Set<string>>()
+  const knownPrototypes = new WeakSet<object>()
+  const failedMenuItems = new WeakSet<CheckedMenuItem>()
 
   function isInGraph(node: LGraphNode): boolean {
     return node.graph?.getNodeById(node.id) === node
+  }
+
+  function isMadeFromKnownClass(node: LGraphNode): boolean {
+    let prototype: unknown = Object.getPrototypeOf(node)
+    while (typeof prototype === 'object' && prototype !== null) {
+      if (knownPrototypes.has(prototype)) return true
+      prototype = Object.getPrototypeOf(prototype)
+    }
+    return false
+  }
+
+  function menuEntryReportedOnce(item: CheckedMenuItem, handle: NodeHandle) {
+    try {
+      return menuEntry(item, handle)
+    } catch (error) {
+      if (!failedMenuItems.has(item)) {
+        failedMenuItems.add(item)
+        reportListenerFailure('addMenuItem', error)
+      }
+      return undefined
+    }
   }
 
   const deliver: Deliver = (type, hook, node, call) => {
@@ -59,11 +87,19 @@ export function createHookDispatch(
     const handle = nodes.find(graph, String(node.id))
     if (!handle) return []
     return callbacks.map((callback) =>
-      callListener(hook, () => call(callback, handle))
+      source.callbacksFor(type, hook).includes(callback)
+        ? callListener(hook, () => call(callback, handle))
+        : undefined
     )
   }
 
-  const context: DispatchContext = { deliver, source, copyOfSaved, isInGraph }
+  const context: DispatchContext = {
+    deliver,
+    source,
+    copyOfSaved,
+    isInGraph,
+    isMadeFromKnownClass
+  }
   const lifecycle = createLifecycleDispatch(context)
   const installers: Readonly<Record<string, MethodInstaller>> = {
     ...lifecycle.installers,
@@ -74,6 +110,7 @@ export function createHookDispatch(
 
   return {
     install(nodeType: NodeType, hooks: readonly HookName[]) {
+      knownPrototypes.add(nodeType.nodeClass.prototype)
       const done = installed.get(nodeType.nodeClass) ?? new Set<string>()
       installed.set(nodeType.nodeClass, done)
       for (const method of hooks.flatMap((hook) => METHODS_FOR[hook])) {
@@ -84,13 +121,14 @@ export function createHookDispatch(
     },
     demandChanged: lifecycle.demandChanged,
     menuItemsFor(node) {
+      if (!isMadeFromKnownClass(node)) return []
       const entries = deliver(
         node.type,
         'addMenuItem',
         node,
         (item, handle) => ({
           order: item.order,
-          entry: menuEntry(item, handle)
+          entry: menuEntryReportedOnce(item, handle)
         })
       )
       return entries
