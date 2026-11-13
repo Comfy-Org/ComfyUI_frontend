@@ -580,21 +580,19 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('retries once and then sends the user to sign in again when the backend still sends the request to sign-in', async () => {
+  it('retries once and then shows the session error without signing out when the backend still sends the request to sign-in', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce(signInRedirect())
       .mockResolvedValueOnce(signInRedirect())
 
     await renderLoadedConsent()
 
-    await waitFor(() => {
-      expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
-        signInPath,
-        keepAccountDrafts: true
-      })
-    })
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Failed to establish session. Please try again.'
+    )
     expect(recreateSession).toHaveBeenCalledOnce()
     expect(fetch).toHaveBeenCalledTimes(2)
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
   })
 
   it('shows the session error when leaving for sign-in is cancelled', async () => {

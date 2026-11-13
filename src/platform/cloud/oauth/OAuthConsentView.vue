@@ -371,17 +371,15 @@ async function recoverSession(oauthRequestId: string) {
     await import('@/platform/auth/session/useSessionCookie')
   const recreated = await useSessionCookie().recreateSession()
   if (left) return
+  if (recreated === 'failed') return signInAgain(oauthRequestId)
   if (recreated === 'identity_changed') {
     errorMessage.value = t('oauth.consent.sessionError')
     return
   }
-  const retried =
-    recreated === 'created'
-      ? await fetchOAuthConsentChallenge(oauthRequestId)
-      : undefined
+  const retried = await fetchOAuthConsentChallenge(oauthRequestId)
   if (left) return
-  if (retried?.kind === 'challenge') showChallenge(retried.challenge)
-  else await signInAgain(oauthRequestId)
+  if (retried.kind === 'challenge') showChallenge(retried.challenge)
+  else errorMessage.value = t('oauth.consent.sessionError')
 }
 
 async function signInAgain(oauthRequestId: string) {
