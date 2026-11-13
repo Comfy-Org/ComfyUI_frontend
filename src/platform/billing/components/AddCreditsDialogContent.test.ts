@@ -30,6 +30,9 @@ import type { BillingTab } from '@/platform/billing/billingTab'
 import type { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import type { issueLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
 
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useDialogStore } from '@/stores/dialogStore'
+
 import AddCreditsDialogContent from './AddCreditsDialogContent.vue'
 
 type BalanceIncreased = Parameters<
@@ -46,7 +49,7 @@ const hoisted = vi.hoisted(() => ({
   opensHandoff: false,
   issueHandoff: vi.fn<typeof issueLocalBillingHandoff>(),
   handoffTabs: [] as (BillingTab | null)[],
-  reopenTopUp: vi.fn(async () => undefined)
+  reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined)
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -162,7 +165,13 @@ function servedCheckout(
   }
 }
 
-function renderDialog({ atCheckout }: { atCheckout: boolean }) {
+function renderDialog({
+  atCheckout,
+  inGlobalDialog = false
+}: {
+  atCheckout: boolean
+  inGlobalDialog?: boolean
+}) {
   vi.mocked(useFeatureFlags().flags).billingAutoTopUpAtCheckoutEnabled =
     atCheckout
   const capabilities = useBillingCapabilities()
@@ -175,10 +184,20 @@ function renderDialog({ atCheckout }: { atCheckout: boolean }) {
     value: []
   })
   mockBillingContext()
-  const { unmount } = render(AddCreditsDialogContent, {
-    global: { plugins: [i18n] }
-  })
+  if (inGlobalDialog) showTopUpDialog()
+  const { unmount } = render(
+    inGlobalDialog ? GlobalDialog : AddCreditsDialogContent,
+    { global: { plugins: [i18n] } }
+  )
   return { user: userEvent.setup(), unmount }
+}
+
+function showTopUpDialog() {
+  useDialogStore().showDialog({
+    key: 'top-up-credits',
+    component: AddCreditsDialogContent,
+    dialogComponentProps: { headless: true }
+  })
 }
 
 const ACTIVATED_CHECKOUT: Partial<HostedTopupCheckout> = {
@@ -572,6 +591,30 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
       expect(tab.navigate).not.toHaveBeenCalled()
     }
   )
+
+  it('reopens a fresh Add credits dialog that runs the flag-off checkout', async () => {
+    hoisted.handoffTabs = [handoffTab()]
+    hoisted.reopenTopUp.mockImplementation(async () => showTopUpDialog())
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user } = renderDialog({ atCheckout: false, inGlobalDialog: true })
+    const firstContinue = await screen.findByRole('button', {
+      name: 'Continue'
+    })
+
+    hoisted.opensHandoff = false
+    await user.click(firstContinue)
+    await waitFor(() => expect(hoisted.reopenTopUp).toHaveBeenCalledOnce())
+    await user.click(await screen.findByRole('button', { name: 'Continue' }))
+
+    await waitFor(() =>
+      expect(hoisted.createHostedCheckout).toHaveBeenCalledOnce()
+    )
+    expect(hoisted.reopenTopUp).toHaveBeenCalledOnce()
+    expect(hoisted.issueHandoff).not.toHaveBeenCalled()
+  })
 
   it('closes the reserved tab and stops issuing when the dialog closes mid-issue', async () => {
     const tab = handoffTab()

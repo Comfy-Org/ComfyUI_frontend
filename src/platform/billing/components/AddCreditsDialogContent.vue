@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, shallowRef, watch } from 'vue'
+import { computed, nextTick, onMounted, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { AddCreditsTranslate } from '@comfyorg/account-core/billing'
@@ -143,9 +143,10 @@ function ownsCheckout(
 
 const opensHandoff = opensLocalBillingHandoff()
 
-function reopenForCurrentFlag(): void {
+async function reopenForCurrentFlag(): Promise<void> {
   close()
-  void useBillingDialogsAccess().showTopUpCreditsDialog({
+  await nextTick()
+  await useBillingDialogsAccess().showTopUpCreditsDialog({
     isInsufficientCredits,
     source
   })
@@ -156,7 +157,7 @@ async function createHandoffCheckout(
   signal: AbortSignal
 ): ReturnType<AddCreditsPorts['createCheckout']> {
   if (!opensLocalBillingHandoff()) {
-    reopenForCurrentFlag()
+    void reopenForCurrentFlag()
     return { status: 'error', refusal: { kind: 'checkout_failed' } }
   }
   const generation = workspaceIdentity.workspaceTransitionGeneration
