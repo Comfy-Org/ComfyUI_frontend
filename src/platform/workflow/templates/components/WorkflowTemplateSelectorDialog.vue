@@ -83,7 +83,7 @@
               :variant="selectedType === tab.value ? 'inverted' : 'secondary'"
               :aria-pressed="selectedType === tab.value"
               :aria-label="tab.icon ? tab.label : undefined"
-              class="h-8 shrink-0 px-3 text-xs @max-[30rem]/filters:px-2.5"
+              class="shrink-0 px-3 @max-[30rem]/filters:px-2.5"
               @click="selectedType = tab.value"
             >
               <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
@@ -108,7 +108,7 @@
             :aria-expanded="mobileFiltersOpen"
             aria-controls="template-mobile-filters"
             :aria-label="$t('templateWorkflows.filtersButton')"
-            class="ml-auto h-8 shrink-0 px-3 text-xs @[58rem]/filters:hidden"
+            class="ml-auto shrink-0 px-3 @[58rem]/filters:hidden"
             @click="mobileFiltersOpen = !mobileFiltersOpen"
           >
             <i class="icon-[lucide--sliders-horizontal] size-3.5" />
@@ -222,7 +222,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card h-full transition-colors hover:bg-secondary/50"
+            class="group/card h-full hover:bg-secondary/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template, $event)"
@@ -1178,7 +1178,7 @@ const activeDetailModelDownloadCandidates = computed<
   const setup = activeDetail.value?.modelSetup
   if (!setup || setup.pending) return []
   return setup.result.rows.filter((row) =>
-    isModelDownloadCandidate(row, setup.rowDownloads.stateFor)
+    isModelDownloadCandidate(row, setup.rowDownloads)
   )
 })
 
@@ -1211,7 +1211,7 @@ const activeDetailAssetSetup = computed<TemplateAssetSetup | undefined>(() => {
 
   const total = remainingModelDownloadTotal(
     setup.result.rows,
-    setup.rowDownloads.stateFor
+    setup.rowDownloads
   )
   return {
     state: 'startable',

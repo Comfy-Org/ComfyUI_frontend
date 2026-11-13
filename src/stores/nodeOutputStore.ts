@@ -1,7 +1,7 @@
 import { useTimeoutFn } from '@vueuse/core'
 import { mapKeys } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, toRaw } from 'vue'
 
 import type {
   LGraph,
@@ -15,6 +15,9 @@ import type {
   ResultItem
 } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import { parseNodeOutput } from '@/stores/resultItemParsing'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { clone } from '@/scripts/utils'
@@ -173,13 +176,57 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return isImageOutputs(node, outputs) ? useApp().getPreviewFormatParam() : ''
   }
 
+  const randParamByOutputs = new WeakMap<object, string>()
+
+  function randParamFor(outputs: ExecutedWsMessage['output']): string {
+    const key = toRaw(outputs)
+    let rand = randParamByOutputs.get(key)
+    if (rand === undefined) {
+      rand = useApp().getRandParam()
+      randParamByOutputs.set(key, rand)
+    }
+    return rand
+  }
+
+  function getNodeOutputItems(
+    node: LGraphNode,
+    outputs = getNodeOutputs(node)
+  ) {
+    if (!outputs) return []
+    const rand = randParamFor(outputs)
+    return parseNodeOutput(node.id, outputs).map((item) => {
+      const { filepath, rootFolder } = parseAnnotatedPath(
+        item.filename,
+        item.type
+      )
+      const result = {
+        ...item,
+        filename:
+          node.comfyClass === 'LoadImageOutput' ? item.filename : filepath,
+        type: rootFolder
+      }
+      return {
+        ...result,
+        url: result.url ?? resultItemUrl(result) + rand,
+        previewUrl:
+          result.previewUrl ??
+          (isHdrImageFilename(result.filename)
+            ? resultItemPreviewUrl(result)
+            : (result.url ??
+              resultItemPreviewUrl(result) +
+                getPreviewParam(node, outputs) +
+                rand))
+      }
+    })
+  }
+
   function buildImageUrls(
     node: LGraphNode,
     outputs: ExecutedWsMessage['output'] | undefined
   ): string[] | undefined {
     if (!outputs?.images?.length) return
 
-    const rand = useApp().getRandParam()
+    const rand = randParamFor(outputs)
     const previewParam = getPreviewParam(node, outputs)
 
     return outputs.images.filter(isResultItem).map((image) => {
@@ -641,6 +688,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
   return {
     getNodeOutputs,
+    getNodeOutputItems,
     getNodeImageUrls,
     getNodeImageUrlsByExecutionId,
     getNodeOutputByExecutionId,

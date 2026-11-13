@@ -61,10 +61,16 @@ import NodeContent from './components/NodeContent.vue'
  * failing anything below, and nothing else in the repo asserts identity
  * across a reset either. `LGraphNode.vue` is stood in for too: in production
  * it derives the `media` prop from `nodeOutputStore` (`nodeMedia`) behind its
- * own `v-if` gates. `media` is a constant here, so a retype that made
- * production's `nodeMedia` return `undefined`, or flip to `'image'`, would
- * swap the component out and destroy the element without failing anything
- * below.
+ * own `v-if` gates. Two consequences worth knowing before trusting these
+ * tests:
+ *   - `media` is a constant here, so a retype that made production's
+ *     `nodeMedia` return `undefined`, or flip to `'image'`, would swap the
+ *     component out and destroy the element without failing anything below.
+ *   - production appends a fresh `rand` per url on non-cloud builds
+ *     (`app.getRandParam`), so a surviving element can still be handed a new
+ *     `src` and reload. The urls are held fixed here and `src` is asserted
+ *     unchanged, which keeps identity honest but says nothing about that
+ *     derivation.
  */
 class MediaNode extends LGraphNode {
   static override title = 'Media Node'
@@ -106,16 +112,17 @@ function buildLiveGraph() {
 
 /** One url per node, held fixed so `src` churn would show as a failure. */
 function videoUrlFor(nodeId: string | number): string {
-  return `/api/view?filename=clip-${nodeId}.mp4&type=output&subfolder=`
+  return `/api/view?filename=clip-${nodeId}.mp4&type=output`
 }
 
-function videoOutputFor(nodeId: string | number): AugmentedResultItem {
+function videoItemFor(nodeId: string | number): AugmentedResultItem {
   return {
     filename: `clip-${nodeId}.mp4`,
     subfolder: '',
     type: 'output',
+    mediaType: 'video',
     nodeId,
-    mediaType: 'video'
+    previewUrl: videoUrlFor(nodeId)
   }
 }
 
@@ -141,7 +148,7 @@ function renderCanvasHost(graph: LGraph) {
               [
                 h(NodeContent, {
                   nodeData,
-                  media: { type: 'video', items: [videoOutputFor(nodeData.id)] }
+                  media: { type: 'video', items: [videoItemFor(nodeData.id)] }
                 })
               ]
             )
@@ -153,6 +160,13 @@ function renderCanvasHost(graph: LGraph) {
     global: { plugins: [getActivePinia()!, i18n] }
   })
   onTestFinished(unmount)
+  /**
+   * The node's own `<video>`. Reached semantically as far as the element
+   * allows: `<video>` exposes no implicit ARIA role and no accessible name,
+   * so the last hop has to be a direct read, as the sibling `VideoPreview`
+   * suite also does. Scoped through the node's own region rather than the
+   * whole tree, so it still fails if the element moves out of that subtree.
+   */
   const videoFor = (nodeId: string | number): HTMLVideoElement | null => {
     const node = screen.queryByTestId(`node-${nodeId}`)
     if (!node) return null

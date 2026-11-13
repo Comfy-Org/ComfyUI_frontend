@@ -81,10 +81,8 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import {
-  assetContentUrl,
-  resolveMediaSrc
-} from '@/platform/assets/utils/assetUrlUtil'
+import { assetContentUrl } from '@/platform/assets/utils/assetContentUrl'
+import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {

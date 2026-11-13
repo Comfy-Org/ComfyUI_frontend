@@ -50,7 +50,7 @@ function capabilitiesBody(
 ): CapabilitiesResponseBody {
   return {
     auto_top_up_enabled: false,
-    billing_web_checkout_ui: 'embedded',
+    billing_web_checkout_ui: 'full_page',
     capabilities: capabilities(),
     expires_at: '2024-06-15T12:01:00.000Z',
     resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },

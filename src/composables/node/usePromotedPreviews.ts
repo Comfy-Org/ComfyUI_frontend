@@ -4,13 +4,14 @@ import { computed, toValue } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
-import { parseNodeOutput } from '@/stores/resultItemParsing'
 import type { AugmentedResultItem } from '@/utils/resultItem'
+import { isAudioResult, isVideoResult } from '@/utils/resultItem'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   appendNodeExecutionId,
@@ -18,25 +19,26 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
-export type PromotedMedia =
-  | { type: 'video'; items: AugmentedResultItem[] }
-  | { type: 'image' | 'audio'; urls: string[] }
+type PromotedOutput = {
+  type: 'image' | 'video' | 'audio'
+  items: AugmentedResultItem[]
+}
+type PromotedLivePreview = { type: 'preview'; url: string }
+type PromotedContent = PromotedOutput | PromotedLivePreview
 
-type PromotedPreview = PromotedMedia & {
+type PromotedPreview = PromotedContent & {
   sourceNodeId: NodeId
   sourceWidgetName: string
 }
 
-const PREVIEW_TYPES_BY_MEDIA = {
-  video: 'video',
-  audio: 'audio'
-} as const satisfies Partial<Record<string, PromotedPreview['type']>>
-
-function getPreviewMediaType(node: LGraphNode): PromotedPreview['type'] {
+function getPreviewMediaType(
+  node: LGraphNode,
+  items: AugmentedResultItem[]
+): PromotedOutput['type'] {
   const media = node.previewMediaType
-  if (media && media in PREVIEW_TYPES_BY_MEDIA) {
-    return PREVIEW_TYPES_BY_MEDIA[media as keyof typeof PREVIEW_TYPES_BY_MEDIA]
-  }
+  if (media === 'image' || media === 'video' || media === 'audio') return media
+  if (items.some(isVideoResult)) return 'video'
+  if (items.some(isAudioResult)) return 'audio'
   return 'image'
 }
 
@@ -46,47 +48,38 @@ export function usePromotedPreviews(
   const previewExposureStore = usePreviewExposureStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  function readPromotedMedia(
+  function toPromotedContent(
+    node: LGraphNode,
+    previews: string[] | undefined,
+    outputs: NodeExecutionOutput | undefined
+  ): PromotedContent | undefined {
+    const url = previews?.at(-1)
+    if (url) return { type: 'preview', url }
+    if (!outputs) return undefined
+    const items = nodeOutputStore.getNodeOutputItems(node, outputs)
+    if (items.length) return { type: getPreviewMediaType(node, items), items }
+    return undefined
+  }
+
+  function readPromotedContent(
     leafHost: SubgraphNode,
-    leafSourceNodeId: NodeId,
-    leafExecutionId: NodeExecutionId,
+    sourceNodeId: NodeId,
+    executionId: NodeExecutionId,
     interiorNode: LGraphNode
-  ): PromotedMedia | undefined {
-    const locatorId = createNodeLocatorId(
-      leafHost.subgraph.id,
-      leafSourceNodeId
-    )
-    if (!locatorId) return undefined
-
-    const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
-    const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
-    const reactiveExecutionOutputs =
-      nodeOutputStore.getNodeOutputByExecutionId(leafExecutionId)
-    const reactiveExecutionPreviews =
-      nodeOutputStore.getNodePreviewImagesByExecutionId(leafExecutionId)
-    const hasAnySource = [
-      reactiveOutputs?.images,
-      reactivePreviews,
-      reactiveExecutionOutputs?.images,
-      reactiveExecutionPreviews
-    ].some((source) => source?.length)
-    if (!hasAnySource) return undefined
-
-    const type = getPreviewMediaType(interiorNode)
-    if (type === 'video') {
-      const items = parseNodeOutput(
-        leafSourceNodeId,
-        reactiveExecutionOutputs ?? reactiveOutputs
+  ): PromotedContent | undefined {
+    const locatorId = createNodeLocatorId(leafHost.subgraph.id, sourceNodeId)
+    return (
+      toPromotedContent(
+        interiorNode,
+        nodeOutputStore.getNodePreviewImagesByExecutionId(executionId),
+        nodeOutputStore.getNodeOutputByExecutionId(executionId)
+      ) ??
+      toPromotedContent(
+        interiorNode,
+        nodeOutputStore.nodePreviewImages[locatorId],
+        nodeOutputStore.nodeOutputs[locatorId]
       )
-      return items.length ? { type, items } : undefined
-    }
-
-    const urls =
-      nodeOutputStore.getNodeImageUrlsByExecutionId(
-        leafExecutionId,
-        interiorNode
-      ) ?? nodeOutputStore.getNodeImageUrls(interiorNode)
-    return urls?.length ? { type, urls } : undefined
+    )
   }
 
   const promotedPreviews = computed((): PromotedPreview[] => {
@@ -156,17 +149,17 @@ export function usePromotedPreviews(
       )
       if (!leafExecutionId) return []
 
-      const media = readPromotedMedia(
+      const content = readPromotedContent(
         leafHost,
         leaf.sourceNodeId,
         leafExecutionId,
         interiorNode
       )
-      if (!media) return []
+      if (!content) return []
 
       return [
         {
-          ...media,
+          ...content,
           sourceNodeId: leaf.sourceNodeId,
           sourceWidgetName: leaf.sourcePreviewName
         }

@@ -15,10 +15,6 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
 
-export function assetContentUrl(id: string): string {
-  return api.apiURL(`/assets/${id}/content?disposition=inline`)
-}
-
 /**
  * Get the download/view URL for an asset
  * Constructs the proper URL with filename encoding, type, and subfolder parameters

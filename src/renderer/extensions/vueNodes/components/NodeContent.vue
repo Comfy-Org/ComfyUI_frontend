@@ -9,19 +9,19 @@
     <!-- Default slot for custom content -->
     <slot>
       <VideoPreview
-        v-if="media?.type === 'video'"
+        v-if="hasMedia && media?.type === 'video'"
         :items="media.items"
         :node-id="nodeId"
         class="mt-2 flex-auto"
       />
       <AudioPreview
-        v-else-if="media?.type === 'audio'"
-        :audio-urls="media.urls"
+        v-else-if="hasMedia && media?.type === 'audio'"
+        :audio-urls="media.items.map((item) => resultItemPreviewUrl(item))"
         class="mt-2 flex-auto"
       />
       <ImagePreview
-        v-else-if="media?.type === 'image'"
-        :image-urls="media.urls"
+        v-else-if="hasMedia && media?.type === 'image'"
+        :items="media.items"
         :node-id="nodeId"
         class="flex-auto"
         :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"
@@ -36,19 +36,22 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 
-import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
-import type { PromotedMedia } from '@/composables/node/usePromotedPreviews'
 import AudioPreview from '@comfyorg/design-system/media/AudioPreview'
+import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 import ImagePreview from './ImagePreview.vue'
 import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 
 interface NodeContentProps {
   nodeData?: NodeState
-  media?: PromotedMedia
+  media?: { type: 'video' | 'image' | 'audio'; items: AugmentedResultItem[] }
 }
 
 const props = defineProps<NodeContentProps>()
+
+const hasMedia = computed(() => props.media && props.media.items.length > 0)
 
 const nodeId = computed(() => props.nodeData?.id)
 

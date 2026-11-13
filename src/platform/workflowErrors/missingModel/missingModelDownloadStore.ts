@@ -352,6 +352,10 @@ export const useMissingModelDownloadStore = defineStore(
       }
       const key = getModelFileKey(model)
       const current = downloads.get(key)
+      if (current?.state.status === 'downloading' && current.state.paused) {
+        if (current.url === model.url) control(model, 'resumeDownload')
+        return
+      }
       if (isBusy(current)) return
 
       const request = ++nextRequest
@@ -469,6 +473,9 @@ export const useMissingModelDownloadStore = defineStore(
       tracksHostProgress: () => tracking.value,
       reopenFinished: reopenStillMissing,
       canControl,
+      canResume: (model: ModelWithUrl) =>
+        downloads.get(getModelFileKey(model))?.url === model.url &&
+        canControl(model, 'resumeDownload'),
       pause: (model: ModelWithUrl) => control(model, 'pauseDownload'),
       resume: (model: ModelWithUrl) => control(model, 'resumeDownload'),
       cancel: (model: ModelWithUrl) => control(model, 'cancelDownload')

@@ -1297,6 +1297,7 @@
       "descriptionMore": "Show more",
       "descriptionLess": "Show less",
       "justOpen": "Just open",
+      "open": "Open",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"
     },
@@ -6667,5 +6668,14 @@
       "title": "Auto top-up didn't turn on",
       "body": "Your credits were added. Set up auto top-up in Billing to try again."
     }
+  },
+  "billingHandoff": {
+    "failed": "Could not open billing. Try again.",
+    "superseded": "Your account or workspace changed while billing was opening. Try again.",
+    "signInAgain": "Sign in again to open billing.",
+    "popupBlocked": "Your browser blocked the billing tab.",
+    "openBilling": "Open billing",
+    "opening": "Opening checkout…",
+    "openingDetail": "This takes a few seconds."
   }
 }

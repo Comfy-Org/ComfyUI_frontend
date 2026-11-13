@@ -25,7 +25,7 @@ import type {
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetContentUrl } from '@/platform/assets/utils/assetUrlUtil'
+import { assetContentUrl } from '@/platform/assets/utils/assetContentUrl'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetKind } from '@/types/widgetTypes'
 import {
@@ -159,7 +159,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   function itemNameFor(asset: AssetItem): string {
-    if (toValue(options.isAssetMode)) return getAssetFilename(asset)
+    if (toValue(options.isAssetMode))
+      return asset.loader_path ?? getAssetFilename(asset)
     const filenameForUrl = getAssetUrlFilename(asset)
     const subfolder = getOutputSubfolder(asset)
     const name = subfolder ? `${subfolder}/${filenameForUrl}` : filenameForUrl

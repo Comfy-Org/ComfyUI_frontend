@@ -183,12 +183,16 @@
               "
             >
               <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
-              <NodeContent
+              <template
                 v-for="preview in promotedPreviews"
                 :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
-                :node-data
-                :media="preview"
-              />
+              >
+                <LivePreview
+                  v-if="preview.type === 'preview'"
+                  :image-url="preview.url"
+                />
+                <NodeContent v-else :node-data :media="preview" />
+              </template>
             </div>
             <LivePreview
               v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
@@ -306,7 +310,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { parseNodeOutput } from '@/stores/resultItemParsing'
+import { isVideoResult } from '@/utils/resultItem'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -480,9 +484,10 @@ const handleResizePointerDown = (
 }
 
 // Check if node has custom content (like image/video outputs)
-const hasCustomContent = computed(
-  () => promotedPreviews.value.length > 0 || !!nodeMedia.value
-)
+const hasCustomContent = computed(() => {
+  if (promotedPreviews.value.length > 0) return true
+  return !!nodeMedia.value && nodeMedia.value.items.length > 0
+})
 
 // Computed classes and conditions for better reusability
 const progressClasses = 'h-2 bg-primary transition-all duration-300'
@@ -700,35 +705,33 @@ const hasVideoPreviewWidget = computed(() =>
 )
 
 const nodeMedia = computed(() => {
-  const locatorId = nodeLocatorId.value
-  const newOutputs = locatorId ? nodeOutputs.nodeOutputs[locatorId] : undefined
   const node = lgraphNode.value
-
-  if (
-    !node ||
-    !newOutputs?.images?.length ||
-    node.hideOutputImages ||
-    hideExecutedOutput.value
-  )
+  if (!node || node.hideOutputImages || hideExecutedOutput.value)
     return undefined
-
   if (node instanceof SubgraphNode) return undefined
-  if (shouldHideLinkedCoreMediaInputPreview(node, newOutputs)) return undefined
 
-  const isVideo =
-    isVideoOutput(newOutputs) ||
+  const outputs = nodeOutputs.getNodeOutputs(node)
+  if (!outputs?.images?.length) return undefined
+
+  if (shouldHideLinkedCoreMediaInputPreview(node, outputs)) return undefined
+
+  const type =
+    isVideoOutput(outputs) ||
     node.previewMediaType === 'video' ||
     (!node.previewMediaType && hasVideoInput.value)
+      ? 'video'
+      : 'image'
 
-  if (isVideo) {
-    if (hasVideoPreviewWidget.value) return undefined
-    const items = parseNodeOutput(node.id, newOutputs)
-    return items.length ? ({ type: 'video', items } as const) : undefined
-  }
+  if (type === 'video' && hasVideoPreviewWidget.value) return undefined
 
-  const urls = nodeOutputs.getNodeImageUrls(node)
-  if (!urls?.length) return undefined
-  return { type: 'image', urls } as const
+  const items = nodeOutputs
+    .getNodeOutputItems(node, outputs)
+    .filter((item) =>
+      type === 'video' ? isVideoResult(item) : item.mediaType === 'images'
+    )
+  if (!items.length) return undefined
+
+  return { type, items } as const
 })
 
 // Drag and drop support

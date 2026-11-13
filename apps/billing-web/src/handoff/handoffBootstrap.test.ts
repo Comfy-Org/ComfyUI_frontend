@@ -318,6 +318,38 @@ describe('runHandoffBootstrap', () => {
     expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
   })
 
+  it('restores an expired session with a payment still settling as checking that payment', async () => {
+    const storage = memoryStorage()
+    storage.setItem(
+      'comfy.billing-web.handoff.v1',
+      JSON.stringify({
+        kind: 'session',
+        exchange: { ...exchanged, expires_at: '2026-11-09T11:59:59Z' }
+      })
+    )
+    storage.setItem(
+      'comfy:billing:operation:user-1:ws-1',
+      JSON.stringify({
+        operationId: 'op-7',
+        kind: 'subscription',
+        presentation: 'hosted',
+        attemptStartedAt: NOW - 40 * 60_000,
+        awaited: true
+      })
+    )
+    const ended = {
+      kind: 'ended',
+      ending: 'payment_pending',
+      reference: 'op-7'
+    }
+
+    await runHandoffBootstrap(setup('/return/topup', { storage }).env)
+    expect(handoffTab.value).toEqual(ended)
+
+    await runHandoffBootstrap(setup('/handoff', { storage }).env)
+    expect(handoffTab.value).toEqual(ended)
+  })
+
   it('keeps a terminal state across a reload', async () => {
     const storage = memoryStorage()
     storage.setItem(
@@ -346,17 +378,14 @@ describe('runHandoffBootstrap', () => {
     })
   })
 
-  it('keeps a handoff tab out of sign-in when storage becomes unreadable before a reload', async () => {
+  it('ends a live handoff whose storage became unreadable as a session end, which never says nothing was charged', async () => {
     const marker = memoryMarker()
     await runHandoffBootstrap(setup('/handoff#token=tok-1', { marker }).env)
 
     const reload = setup('/', { storage: blockedStorage, marker })
 
     await expect(runHandoffBootstrap(reload.env)).resolves.toBe('handoff')
-    expect(handoffTab.value).toEqual({
-      kind: 'ended',
-      ending: 'storage_unavailable'
-    })
+    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
   })
 
   it('keeps the storage ending across a reload when storage was blocked from the start', async () => {

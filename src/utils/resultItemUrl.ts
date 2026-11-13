@@ -1,7 +1,7 @@
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
-import { assetContentUrl } from '@/platform/assets/utils/assetUrlUtil'
-import { api } from '@/scripts/api'
+import { assetContentUrl } from '@/platform/assets/utils/assetContentUrl'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { isImageResult, isVideoResult } from '@/utils/resultItem'
 
@@ -23,17 +23,20 @@ export function resultItemUrl(item: AugmentedResultItem): string {
 
 export function resultItemPreviewUrl(
   item: AugmentedResultItem,
-  { fullRes = false }: { fullRes?: boolean } = {}
+  options: { fullRes?: boolean } = {}
 ): string {
+  if (isHdrImageFilename(item.filename))
+    return (
+      item.previewUrl ??
+      (item.preview_id ? assetContentUrl(item.preview_id) : '')
+    )
+  if (isVideoResult(item) && item.preview_id)
+    return item.previewUrl ?? assetContentUrl(item.preview_id)
+  if (options.fullRes) return resultItemUrl(item)
   if (item.previewUrl !== undefined) return item.previewUrl
-  if (
-    item.preview_id &&
-    (isHdrImageFilename(item.filename) || isVideoResult(item))
-  )
-    return assetContentUrl(item.preview_id)
   if (!isImageResult(item)) return resultItemUrl(item)
   const params = resultItemUrlParams(item)
-  if (!fullRes) appendCloudResParam(params, item.filename)
+  appendCloudResParam(params, item.filename)
   return api.apiURL('/view?' + params)
 }
 
