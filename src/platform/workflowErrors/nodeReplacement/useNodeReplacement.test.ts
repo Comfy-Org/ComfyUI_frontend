@@ -2078,6 +2078,116 @@ describe('useNodeReplacement', () => {
       )
     })
 
+    it('reports a mapped widget assignment failure and still replaces the node', () => {
+      const placeholder = createPlaceholderNode(1, 'OldLoader')
+      placeholder.last_serialization!.widgets_values = ['a.safetensors']
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      const newNode = createNewNode([], [], [{ name: 'model', value: '' }])
+      const assignmentError = new Error('assignment failed')
+      Object.defineProperty(newNode.widgets![0], 'value', {
+        get: () => '',
+        set: () => {
+          throw assignmentError
+        }
+      })
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const result = useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldLoader', {
+          new_node_id: 'NewLoader',
+          old_node_id: 'OldLoader',
+          old_widget_ids: ['model_name'],
+          input_mapping: [{ new_id: 'model', old_id: 'model_name' }],
+          output_mapping: null
+        })
+      ])
+
+      expect(result).toEqual(['OldLoader'])
+      expect(graph.getNodeById(toNodeId(1))).toBe(newNode)
+      expect(vi.mocked(reportError).mock.calls).toEqual([
+        [
+          assignmentError,
+          {
+            surface: 'graph',
+            errorType: 'failure_assigning_replacement_widget_value',
+            tags: { node_type: 'NewLoader', widget_name: 'model' }
+          }
+        ]
+      ])
+    })
+
+    it('reports an input notification failure after preserving the moved link', () => {
+      const link = createMockLink(21, 6, 0, 1, 0)
+      const placeholder = createPlaceholderNode(1, 'OldNode', [
+        { name: 'old_input', link: 21 }
+      ])
+      const upstream = createPlaceholderNode(
+        6,
+        'Upstream',
+        [],
+        [{ name: 'output', links: [21] }]
+      )
+      const graph = createMockGraph([placeholder, upstream], [link])
+      placeholder.graph = graph
+      upstream.graph = graph
+      const onNodeAdded = vi.fn()
+      graph.onNodeAdded = onNodeAdded
+      const dispatch = vi.spyOn(graph.events, 'dispatch')
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      const newNode = createNewNode([
+        { name: 'unused', link: null },
+        { name: 'new_input', link: null }
+      ])
+      const notificationError = new Error('input notification failed')
+      newNode.onConnectionsChange = vi.fn(() => {
+        throw notificationError
+      })
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const result = useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: [{ old_id: 'old_input', new_id: 'new_input' }],
+          output_mapping: null
+        })
+      ])
+
+      expect(result).toEqual(['OldNode'])
+      expect(graph.getNodeById(toNodeId(1))).toBe(newNode)
+      expect(graph.getLink(toLinkId(21))).toBe(link)
+      expect(link).toMatchObject({
+        origin_id: toNodeId(6),
+        origin_slot: 0,
+        target_id: toNodeId(1),
+        target_slot: 1
+      })
+      expect(newNode.onConnectionsChange).toHaveBeenCalledWith(
+        NodeSlotType.INPUT,
+        1,
+        true,
+        link,
+        newNode.inputs[1]
+      )
+      expect(vi.mocked(reportError).mock.calls).toEqual([
+        [
+          notificationError,
+          {
+            surface: 'graph',
+            errorType: 'failure_notifying_replacement_input_connection',
+            tags: { node_type: 'NewNode', input_name: 'new_input' }
+          }
+        ]
+      ])
+      expect(onNodeAdded).toHaveBeenCalledWith(newNode)
+      expect(dispatch).toHaveBeenCalledWith('node:added', { node: newNode })
+    })
+
     it('dispatches node:added when onNodeAdded throws', () => {
       const placeholder = createPlaceholderNode(1, 'OldType')
       const graph = createMockGraph([placeholder])
