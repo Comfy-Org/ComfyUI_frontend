@@ -88,14 +88,14 @@ jobs:
         run: pnpm exec playwright test --project=cloud --list --reporter=./scripts/cicd/plan-playwright-shards.ts
         env:
           PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
-          PLAYWRIGHT_SHARD_TOTAL: 4
+          PLAYWRIGHT_SHARD_TOTAL: '4'
           PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/cloud
 
       - name: Plan chromium shards by historical duration
         run: pnpm exec playwright test --project=chromium --list --reporter=./scripts/cicd/plan-playwright-shards.ts
         env:
           PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
-          PLAYWRIGHT_SHARD_TOTAL: 16
+          PLAYWRIGHT_SHARD_TOTAL: '16'
           PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/chromium
 
       - name: Share shard plans
