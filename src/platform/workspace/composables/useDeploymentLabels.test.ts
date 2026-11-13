@@ -19,6 +19,7 @@ const deployment: WorkspaceDeployment = {
   build_name: 'Studio Build',
   release_version: 2,
   status: 'ready',
+  can_start: false,
   created_at: '2026-10-01T00:00:00Z'
 }
 
@@ -125,7 +126,7 @@ describe('deployment labels', () => {
     { status: 'failed', fields: {}, detail: 'Failed' },
     { status: 'unhealthy', fields: {}, detail: 'Not ready' }
   ] satisfies {
-    status: string
+    status: WorkspaceDeployment['status']
     fields: Partial<WorkspaceDeployment>
     detail: string | null
   }[])(
@@ -155,7 +156,7 @@ describe('deployment labels', () => {
       tooltip: 'Studio Build · production · Stopped'
     }
   ] satisfies {
-    status: string
+    status: WorkspaceDeployment['status']
     fields: Partial<WorkspaceDeployment>
     tooltip: string
   }[])(

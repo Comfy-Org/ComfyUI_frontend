@@ -23,6 +23,9 @@
       "path": "./packages/ingest-types/tsconfig.declarations.json"
     },
     {
+      "path": "./packages/comfyui-api-types/tsconfig.declarations.json"
+    },
+    {
       "path": "./packages/registry-types/tsconfig.declarations.json"
     },
     {
@@ -48,6 +51,15 @@
     },
     {
       "path": "./packages/telemetry/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/keybindings/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/settings-core/tsconfig.declarations.json"
+    },
+    {
+      "path": "./packages/api-client/tsconfig.declarations.json"
     }
   ]
 }

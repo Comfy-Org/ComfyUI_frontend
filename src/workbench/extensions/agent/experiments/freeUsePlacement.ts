@@ -24,11 +24,13 @@ export const FREE_USE_VARIANTS = [
 
 export type FreeUseVariant = AgentFreeUseVariant
 
+export const LOCAL_FREE_USE_PLACEMENT = 'near-composer' satisfies FreeUseVariant
+
 function isFreeUseVariant(value: unknown): value is FreeUseVariant {
   return FREE_USE_VARIANTS.some((variant) => variant === value)
 }
 
-export function useFreeUsePlacement() {
+export function useFreeUsePlacement(isCloudDistribution: boolean) {
   const panelStore = useAgentPanelStore()
   const assigned = ref<FreeUseVariant>('control')
 
@@ -58,6 +60,8 @@ export function useFreeUsePlacement() {
 
   if (hasQaOverride) {
     if (isFreeUseVariant(override)) assigned.value = override
+  } else if (!isCloudDistribution) {
+    assigned.value = LOCAL_FREE_USE_PLACEMENT
   } else if (isAuthenticatedConfigLoaded.value) {
     assign()
   } else {
@@ -68,7 +72,7 @@ export function useFreeUsePlacement() {
     })
   }
 
-  if (!hasQaOverride) {
+  if (!hasQaOverride && isCloudDistribution) {
     watch(
       () => remoteConfig.value[FREE_USE_PLACEMENT_FLAG],
       () => {
@@ -90,7 +94,9 @@ export function useFreeUsePlacement() {
     const telemetry = useTelemetry()
     if (!telemetry) return
     if (metadata.action === 'shown') panelStore.reportedFreeUseImpression = true
-    telemetry.trackAgentFreeUseNotice(metadata)
+    telemetry.trackAgentFreeUseNotice(
+      isCloudDistribution ? metadata : { ...metadata, deployment: 'local' }
+    )
   }
 
   return {

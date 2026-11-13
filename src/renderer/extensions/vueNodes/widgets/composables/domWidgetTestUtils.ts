@@ -1,68 +1,60 @@
-import { fromAny } from '@total-typescript/shoehorn'
-import { vi } from 'vitest'
+import { beforeEach } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { DOMWidgetOptions } from '@/types/domWidget'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { DOMWidgetImpl } from '@/scripts/domWidget'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-interface FakeDOMWidget {
-  name: string
-  type: string
-  element: HTMLElement
-  options: Record<string, unknown>
-  value: string
-  callback?: (value: string) => void
-  onRemove?: () => void
-  serialize?: boolean
-  serializeValue?: () => unknown
-}
+type NodeOverrides = Partial<
+  Pick<LGraphNode, 'id' | 'type' | 'size' | 'imgs' | 'graph'>
+>
 
-interface FakeMediaWidget {
-  name: string
-  element: HTMLElement
-  onRemove?: () => void
-  serialize?: boolean
-  serializeValue?: () => unknown
-  computeLayoutSize?: () => { minHeight: number; minWidth: number }
-}
+export function useDOMWidgetTestNodes() {
+  let nodes: LGraphNode[]
 
-type NodeOverrides = Record<string, unknown> & { widgets?: never }
-
-export function createMockDOMWidgetNode(overrides: NodeOverrides = {}) {
-  const widgets: FakeDOMWidget[] = []
-  return fromAny<LGraphNode & { widgets: FakeDOMWidget[] }, unknown>({
-    id: 1,
-    widgets,
-    addDOMWidget: vi.fn(
-      (
-        name: string,
-        type: string,
-        element: HTMLElement,
-        _options?: DOMWidgetOptions<string>
-      ) => {
-        const widget: FakeDOMWidget = {
-          name,
-          type,
-          element,
-          options: {},
-          value: ''
-        }
-        widgets.push(widget)
-        return widget
+  beforeEach(() => {
+    const ownedNodes: LGraphNode[] = []
+    nodes = ownedNodes
+    return () => {
+      for (const node of ownedNodes) {
+        for (const widget of node.widgets ?? []) widget.onRemove?.()
       }
-    ),
-    ...overrides
+    }
   })
+
+  return (overrides: NodeOverrides = {}) => {
+    const { graph, type, ...properties } = overrides
+    const node = new LGraphNode('Test', type)
+    node.widgets = []
+    Object.assign(node, { id: toNodeId(1) }, properties)
+    graph?.add(node)
+    nodes.push(node)
+    return node
+  }
 }
 
-export function createMockMediaNode(overrides: NodeOverrides = {}) {
-  const widgets: FakeMediaWidget[] = []
-  return fromAny<LGraphNode & { widgets: FakeMediaWidget[] }, unknown>({
-    widgets,
-    addDOMWidget: vi.fn((name: string, _type: string, element: HTMLElement) => {
-      const widget: FakeMediaWidget = { name, element }
-      widgets.push(widget)
-      return widget
-    }),
-    ...overrides
-  })
+class SilentValueDOMWidget<
+  T extends HTMLElement,
+  V extends object | string
+> extends DOMWidgetImpl<T, V> {
+  override get value(): V {
+    return super.value
+  }
+
+  override set value(value: V) {
+    this.options.setValue?.(value)
+  }
+}
+
+export function stubWidgetValueCallbacks(node: LGraphNode) {
+  node.addDOMWidget = (name, type, element, options = {}) => {
+    const widget = new SilentValueDOMWidget({
+      node,
+      name,
+      type,
+      element,
+      options
+    })
+    node.addCustomWidget(widget)
+    return widget
+  }
 }

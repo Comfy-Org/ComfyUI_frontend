@@ -6,8 +6,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { Settings } from '@/platform/settings/types'
-import { useColorPaletteService } from '@/services/colorPaletteService'
+import type { Settings } from '@comfyorg/settings-core/types'
+import { useLegacyColorPaletteService } from '@/platform/theme/themeService'
 import { useExtensionDialogService } from '@/services/dialogService'
 import type {
   SidebarTabExtension,
@@ -17,7 +17,7 @@ import type {
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import { useApiKeyAuthStore } from './apiKeyAuthStore'
-import { useCommandStore } from './commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from './executionErrorStore'
 import { useAuthStore } from './authStore'
 import { useQueueSettingsStore } from './queueSettingsStore'
@@ -101,7 +101,7 @@ function workspaceStoreSetup() {
       )
   }))
   const workflow = computed(() => useWorkflowStore())
-  const colorPalette = useColorPaletteService()
+  const colorPalette = useLegacyColorPaletteService()
   const dialog = computed(() => useExtensionDialogService())
   const bottomPanel = useBottomPanelStore()
 
@@ -123,6 +123,13 @@ function workspaceStoreSetup() {
    */
   function registerSidebarTab(tab: SidebarTabExtension) {
     sidebarTab.value.registerSidebarTab(tab)
+  }
+
+  function registerSidebarTabForExtension(
+    tab: SidebarTabExtension,
+    extensionName: string
+  ) {
+    sidebarTab.value.registerSidebarTab(tab, undefined, extensionName)
   }
 
   /**
@@ -168,6 +175,7 @@ function workspaceStoreSetup() {
     lastExecutionError: computed(() => executionErrorStore.lastExecutionError),
 
     registerSidebarTab,
+    registerSidebarTabForExtension,
     unregisterSidebarTab,
     getSidebarTabs,
     renderMarkdownToHtml

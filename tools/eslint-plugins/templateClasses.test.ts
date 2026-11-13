@@ -23,6 +23,8 @@ const buttonImport =
   "<script setup>\nimport Button from '@comfyorg/design-system/button/Button'\n</script>\n"
 const inputImport =
   "<script setup>\nimport Input from '@comfyorg/design-system/input/Input'\n</script>\n"
+const badgeImport =
+  "<script setup>\nimport Badge from '@comfyorg/design-system/badge/Badge'\n</script>\n"
 
 function vue(template: string, script = '') {
   return { filename, code: `${script}<template>${template}</template>\n` }
@@ -174,6 +176,39 @@ ruleTester.run(
   {
     valid: [
       vue('<Button size="lg" class="h-8 rounded-md">Go</Button>', buttonImport),
+      ...[
+        '<Button :size="size" class="p-2" />',
+        '<Button size="unset" class="p-2" />',
+        '<Button class="p-3 p-2" />',
+        '<Button :class="\'p-3 p-2\'" />',
+        '<Button class="p-3" :class="\'p-2\'" />',
+        '<Button class="p-2" :class="classes" />',
+        "<Button :class=\"cn('p-3', cn('p-2'))\" />",
+        '<Button :class="active ? \'p-2\' : classes" />',
+        '<Button :class="forwardedClass" />',
+        '<Button :[attribute]="value" class="p-2" />'
+      ].map((template) => vue(template, buttonImport)),
+      ...[
+        '<Badge severity="muted" class="text-foreground" />',
+        '<Badge variant="outline" severity="muted" class="text-muted-foreground" />',
+        '<Badge :variant="variant" class="rounded-md" />',
+        '<Badge :severity="severity" class="rounded-md" />',
+        '<Badge variant="unknown" class="rounded-md" />',
+        '<Badge severity="unknown" class="rounded-md" />',
+        '<Badge v-bind="badgeProps" class="rounded-md" />'
+      ].map((template) => vue(template, badgeImport)),
+      vue(
+        '<Button class="p-2" />',
+        "<script setup>import Button from '@/components/ui/unrelated/Button.vue'</script>"
+      ),
+      vue(
+        '<Message :severity="severity" class="rounded-lg" />',
+        "<script setup>import Message from '@comfyorg/design-system/message/Message'</script>"
+      ),
+      vue(
+        '<Message severity="unknown" class="rounded-lg" />',
+        "<script setup>import Message from '@comfyorg/design-system/message/Message'</script>"
+      ),
       vue(
         '<Button :variant="kind" class="rounded-lg">Go</Button>',
         buttonImport
@@ -184,6 +219,77 @@ ruleTester.run(
       )
     ],
     invalid: [
+      ...[
+        [
+          '<Badge class="rounded-md max-w-80" />',
+          '<Badge class="max-w-80" />',
+          'rounded-md'
+        ],
+        [
+          '<Badge variant="outline" severity="muted" class="bg-transparent max-w-80" />',
+          '<Badge variant="outline" severity="muted" class="max-w-80" />',
+          'bg-transparent'
+        ],
+        [
+          '<Badge variant="outline" severity="muted" class="text-foreground max-w-80" />',
+          '<Badge variant="outline" severity="muted" class="max-w-80" />',
+          'text-foreground'
+        ]
+      ].map(([template, output, token]) => ({
+        ...redundant(template, output, badgeImport),
+        errors: [
+          { messageId: 'redundant', data: { token, component: 'Badge' } }
+        ]
+      })),
+      ...[
+        [
+          '<Button size="unset" class="font-medium p-3" />',
+          '<Button size="unset" class="p-3" />',
+          'font-medium'
+        ],
+        [
+          '<Button :class="\'p-2 font-bold\'" />',
+          '<Button :class="\'font-bold\'" />',
+          'p-2'
+        ],
+        [
+          "<Button :class=\"active ? 'p-2 font-bold' : 'p-3'\" />",
+          "<Button :class=\"active ? 'font-bold' : 'p-3'\" />",
+          'p-2'
+        ],
+        ['<Button :class="\'p-2\'" />', '<Button :class="\'\'" />', 'p-2']
+      ].map(([template, output, token]) => ({
+        ...redundant(template, output, buttonImport),
+        errors: [
+          { messageId: 'redundant', data: { token, component: 'Button' } }
+        ]
+      })),
+      ...[
+        'apps/billing-web/src/LintFixture.vue',
+        'packages/account-ui/src/LintFixture.vue'
+      ].map((importer) => ({
+        ...redundant('<Button class="p-2" />', '<Button />', buttonImport),
+        filename: path.join(import.meta.dirname, '../..', importer),
+        errors: [
+          {
+            messageId: 'redundant',
+            data: { token: 'p-2', component: 'Button' }
+          }
+        ]
+      })),
+      {
+        ...redundant(
+          '<Message severity="success" class="bg-success/15 font-bold" />',
+          '<Message severity="success" class="font-bold" />',
+          "<script setup>import Message from '@comfyorg/design-system/message/Message'</script>"
+        ),
+        errors: [
+          {
+            messageId: 'redundant',
+            data: { token: 'bg-success/15', component: 'Message' }
+          }
+        ]
+      },
       {
         ...redundant(
           '<Button size="lg" class="h-10 px-4 font-bold">Go</Button>',
@@ -295,5 +401,39 @@ ruleTester.run(
         ]
       }
     ]
+  }
+)
+
+ruleTester.run(
+  'prefer-design-system-button',
+  templateClasses.rules['prefer-design-system-button'],
+  {
+    valid: [
+      vue('<button class="flex cursor-pointer bg-transparent p-0" />'),
+      vue("<button :class=\"cn('size-full', active && 'bg-none')\" />"),
+      vue('<button class="flex"><span class="bg-secondary" /></button>'),
+      vue('<div class="bg-secondary hover:bg-secondary/80" />'),
+      vue('<Button class="bg-secondary" />', buttonImport),
+      vue('<button :title="\'bg-secondary\'" />'),
+      vue('<button class="bg-transparent! p-0" />'),
+      vue("<button :class=\"`bg-${quiet ? 'transparent' : 'none'}`\" />")
+    ],
+    invalid: [
+      [
+        '<button class="flex hover:bg-secondary/80" />',
+        'hover:bg-secondary/80'
+      ],
+      ['<button class="rounded-md bg-secondary" />', 'bg-secondary'],
+      ['<button class="hover:!bg-secondary" />', 'hover:!bg-secondary'],
+      [
+        "<button :class=\"cn('flex', primary ? 'bg-foreground' : 'bg-transparent')\" />",
+        'bg-foreground'
+      ],
+      ['<button :class="{ \'bg-muted\': selected }" />', 'bg-muted'],
+      ['<button v-bind:class="`px-2 ${size} bg-base`" />', 'bg-base']
+    ].map(([template, token]) => ({
+      ...vue(template),
+      errors: [{ messageId: 'styled', data: { token } }]
+    }))
   }
 )

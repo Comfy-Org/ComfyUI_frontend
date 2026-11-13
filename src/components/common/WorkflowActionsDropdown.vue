@@ -14,10 +14,10 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { ViewMode } from '@comfyorg/graph-model/appMode'
 
 interface ViewModeSegment {
@@ -197,10 +197,10 @@ onMounted(async () => {
               :aria-expanded="seg.active ? dropdownOpen : undefined"
               :class="
                 cn(
-                  'relative flex h-8 items-center gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
+                  'flex h-8 gap-0 rounded-lg font-normal transition-[background-color,color,transform] duration-200',
                   seg.displayActive
-                    ? 'bg-secondary pr-2 pl-2.5 text-foreground group-data-[state=open]:bg-secondary/80 group-data-[state=open]:shadow-md hover:bg-secondary'
-                    : 'w-8 justify-center bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
+                    ? 'bg-secondary pr-2 pl-2.5 group-data-[state=open]:bg-secondary/80 group-data-[state=open]:shadow-md hover:bg-secondary'
+                    : 'w-8 text-muted-foreground hover:bg-secondary hover:text-foreground'
                 )
               "
               @click="onSegmentClick(seg, $event)"

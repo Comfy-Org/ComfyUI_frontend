@@ -7,7 +7,7 @@ import type { AboutPageBadge } from '@/types/comfy'
 import { electronAPI } from '@/utils/envUtil'
 import { formatCommitHash } from '@/utils/formatUtil'
 
-import { useExtensionStore } from './extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSystemStatsStore } from './systemStatsStore'
 
 export const useAboutPanelStore = defineStore('aboutPanel', () => {
@@ -72,7 +72,9 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
 
   const allBadges = computed<AboutPageBadge[]>(() => [
     ...coreBadges.value,
-    ...extensionStore.extensions.flatMap((e) => e.aboutPageBadges ?? [])
+    ...extensionStore.extensions
+      .filter((e) => extensionStore.contributes(e.name))
+      .flatMap((e) => e.aboutPageBadges ?? [])
   ])
 
   return {

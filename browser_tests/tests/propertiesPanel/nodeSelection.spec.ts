@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe('Properties panel - Node selection', () => {
-  let panel: PropertiesPanelHelper
+  let panel: PropertiesPanel
 
   test.beforeEach(async ({ comfyPage }) => {
-    panel = new PropertiesPanelHelper(comfyPage.page)
+    panel = new PropertiesPanel(comfyPage.page)
     await comfyPage.actionbar.propertiesButton.click()
   })
 
@@ -173,7 +173,10 @@ test.describe('Properties panel - Node selection', () => {
       'a linked widget is suppressed while its slot remains connected',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        const seed = panel.contentArea.getByLabel('seed').locator('input')
+        const seed = panel.contentArea.getByRole('spinbutton', {
+          name: 'seed',
+          exact: true
+        })
         await comfyPage.searchBoxV2.addNode('Int')
         const intNode = await comfyPage.vueNodes.getFixtureByTitle(/Int/)
         const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
@@ -221,6 +224,25 @@ test.describe('Properties panel - Node selection', () => {
         'CLIP Text Encode (Prompt)'
       ])
       await expect(panel.getTab('Info')).toBeHidden()
+    })
+
+    test('should toggle all sections with Expand all and Collapse all', async ({
+      comfyPage
+    }) => {
+      await comfyPage.nodeOps.selectNodes([
+        'KSampler',
+        'CLIP Text Encode (Prompt)'
+      ])
+      await expect(panel.expandAllButton).toBeVisible()
+      await expect(panel.sectionWidgetsLists).toHaveCount(0)
+
+      await panel.expandAllButton.click()
+      await expect(panel.collapseAllButton).toBeVisible()
+      await expect(panel.sectionWidgetsLists).toHaveCount(3)
+
+      await panel.collapseAllButton.click()
+      await expect(panel.expandAllButton).toBeVisible()
+      await expect(panel.sectionWidgetsLists).toHaveCount(0)
     })
   })
 

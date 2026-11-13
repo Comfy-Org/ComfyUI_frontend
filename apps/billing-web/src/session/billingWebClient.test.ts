@@ -1,5 +1,6 @@
 import { datadogRum } from '@datadog/browser-rum'
 
+import type { BillingStatusResponse } from '@comfyorg/ingest-types'
 import type { BillingSession } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 import { disposeBillingClient } from '@comfyorg/account-ui/billing'
@@ -8,7 +9,10 @@ import type {
   SessionSnapshot
 } from '@comfyorg/account-core/session'
 
-import { createBillingWebClient } from '@/session/billingWebClient'
+import {
+  createBillingWebClient,
+  createHandoffBillingClient
+} from '@/session/billingWebClient'
 import { createResubscribeTelemetry } from '@/telemetry/resubscribeTelemetry'
 import { createSubscriptionCheckoutTelemetry } from '@/telemetry/subscriptionCheckoutTelemetry'
 
@@ -134,13 +138,15 @@ describe('createBillingWebClient', () => {
 
 const STATUS_BODY = {
   billing_rail: 'stripe',
+  ended_at: null,
   has_funds: true,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
   scheduled_change: null,
+  next_charge: null,
   team_credit_stop: null
-}
+} satisfies BillingStatusResponse
 
 /** The network edge: the billing routes the lifecycle reads, answered by route. */
 function stubBillingRoutes(operation: Record<string, unknown>) {
@@ -179,6 +185,44 @@ function authenticatedSession(): BillingSession {
 
 const issueOperation = async () =>
   ({ status: 'ok', value: { operationId: 'op_1' } }) as const
+
+describe('billing status wire compatibility', () => {
+  it('reads older status without an end date through the authenticated billing web client', async () => {
+    const body = { ...STATUS_BODY, ended_at: undefined }
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify(body), { status: 200 })
+    )
+    const client = createBillingWebClient(authenticatedSession())
+
+    const result = await client.status.read()
+
+    expect(result).toMatchObject({
+      status: 'ok',
+      value: { status: { has_funds: true } }
+    })
+    expect(client.status.getSnapshot()?.status).not.toHaveProperty('ended_at')
+    disposeBillingClient(client)
+  })
+
+  it('rejects a malformed supplied end date through the authenticated billing web client', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ ...STATUS_BODY, ended_at: 'not-a-date' }), {
+        status: 200
+      })
+    )
+    const client = createBillingWebClient(authenticatedSession())
+
+    const result = await client.status.read()
+
+    expect(result).toEqual({
+      status: 'error',
+      code: 'MALFORMED_RESPONSE',
+      httpStatus: 200
+    })
+    expect(client.status.getSnapshot()).toBeUndefined()
+    disposeBillingClient(client)
+  })
+})
 
 describe('SDK operation telemetry', () => {
   beforeEach(() => {
@@ -327,4 +371,64 @@ describe('SDK operation telemetry', () => {
       ).toEqual(sequence)
     }
   )
+})
+
+describe('createHandoffBillingClient', () => {
+  function handoffSession(): BillingSession {
+    return {
+      ...signedInSession().session,
+      ensureFresh: vi.fn(async () => ({
+        status: 'ok' as const,
+        session: CREDENTIAL
+      })),
+      remint: vi.fn(async () => ({
+        status: 'error' as const,
+        code: 'NOT_AUTHENTICATED' as const
+      }))
+    }
+  }
+
+  it.for([
+    { name: 'a GET', call: (c: BillingClient) => c.credits.read() },
+    {
+      name: 'a POST that is never retried',
+      call: (c: BillingClient) =>
+        c.commands.openPaymentPortal({ returnUrl: 'https://example.test' })
+    }
+  ])(
+    'ends the handoff when Cloud refuses the scoped session on $name',
+    async ({ call }) => {
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify({ code: 'INVALID_CREDENTIAL' }), {
+          status: 401
+        })
+      )
+      const onSessionRefused = vi.fn()
+      const client = createHandoffBillingClient(
+        handoffSession(),
+        onSessionRefused
+      )
+
+      await call(client)
+
+      expect(onSessionRefused).toHaveBeenCalled()
+      disposeBillingClient(client)
+    }
+  )
+
+  it('keeps the handoff on a 401 from a route that does not take scoped sessions', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ code: 'UNAUTHORIZED' }), { status: 401 })
+    )
+    const onSessionRefused = vi.fn()
+    const client = createHandoffBillingClient(
+      handoffSession(),
+      onSessionRefused
+    )
+
+    await client.credits.read()
+
+    expect(onSessionRefused).not.toHaveBeenCalled()
+    disposeBillingClient(client)
+  })
 })

@@ -66,6 +66,7 @@ vi.mock(import('@comfyorg/billing-core/sdk'), () => ({
 }))
 
 const STATUS: BillingStatusResponse = {
+  ended_at: null,
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,

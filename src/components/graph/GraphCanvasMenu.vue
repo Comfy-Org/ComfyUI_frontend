@@ -1,19 +1,8 @@
 <template>
-  <div>
-    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
+  <div class="isolate">
+    <div v-if="hasActivePopup" class="fixed inset-0" @click="hideModal"></div>
 
-    <!-- Backdrop -->
-    <div
-      v-if="hasActivePopup"
-      class="fixed inset-0 z-1200"
-      @click="hideModal"
-    ></div>
-
-    <!-- Right-anchoring alone lets a toolbar wider than the canvas overhang its
-         left edge and cover the sidebar. Spanning the canvas and pushing with an
-         auto margin pins the toolbar to the right instead, and the width cap keeps
-         any overflow inside the canvas as a scroll. -->
-    <div class="pointer-events-none absolute inset-x-0 bottom-0 z-1200 flex">
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 flex">
       <div
         role="toolbar"
         :aria-label="t('graphCanvasMenu.canvasToolbar')"
@@ -28,10 +17,10 @@
 
         <Button
           :tooltip="fitViewLabel"
-          variant="secondary"
+          variant="textonly"
           :aria-label="fitViewLabel"
           :style="stringifiedMinimapStyles.buttonStyles"
-          class="size-8 bg-transparent p-0"
+          class="size-8 p-0"
           @click="() => commandStore.execute('Comfy.Canvas.FitView')"
         >
           <i class="icon-[lucide--focus]" aria-hidden="true" />
@@ -39,13 +28,8 @@
 
         <Button
           :tooltip="t('zoomControls.label')"
-          variant="secondary"
-          :class="
-            cn(
-              'h-8 w-15 bg-transparent p-0 hover:bg-accent',
-              isModalVisible && 'not-active:bg-muted'
-            )
-          "
+          variant="textonly"
+          :class="cn('w-15 p-0', isModalVisible && 'not-active:bg-muted')"
           :aria-label="t('zoomControls.label')"
           data-testid="zoom-controls-button"
           :style="stringifiedMinimapStyles.buttonStyles"
@@ -61,13 +45,13 @@
 
         <Button
           :tooltip="minimapLabel"
-          variant="secondary"
+          variant="textonly"
           :aria-label="minimapLabel"
           data-testid="toggle-minimap-button"
           :style="stringifiedMinimapStyles.buttonStyles"
           :class="
             cn(
-              'size-8 bg-transparent p-0 hover:bg-accent',
+              'size-8 p-0',
               settingStore.get('Comfy.Minimap.Visible') && 'not-active:bg-muted'
             )
           "
@@ -78,13 +62,8 @@
 
         <Button
           :tooltip="linkVisibilityLabel"
-          variant="secondary"
-          :class="
-            cn(
-              'size-8 bg-transparent p-0 hover:bg-accent',
-              linkHidden && 'not-active:bg-muted'
-            )
-          "
+          variant="textonly"
+          :class="cn('size-8 p-0', linkHidden && 'not-active:bg-muted')"
           :aria-label="linkVisibilityLabel"
           data-testid="toggle-link-visibility-button"
           :style="stringifiedMinimapStyles.buttonStyles"
@@ -94,6 +73,7 @@
         </Button>
       </div>
     </div>
+    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
   </div>
 </template>
 
@@ -109,7 +89,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CanvasModeSelector from './CanvasModeSelector.vue'

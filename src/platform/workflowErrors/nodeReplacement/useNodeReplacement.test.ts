@@ -728,6 +728,140 @@ describe('useNodeReplacement', () => {
       ).toHaveBeenCalledTimes(1)
     })
 
+    it('assigns a dynamic child value mapped before the value that creates it', () => {
+      const placeholder = createPlaceholderNode(1, 'OldScaler')
+      placeholder.last_serialization!.widgets_values = [1.5, 'multiplier']
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [],
+        [],
+        [{ name: 'resize_type', value: '' }]
+      )
+      const resizeType = newNode.widgets![0]
+      let resizeTypeValue: unknown = ''
+      Object.defineProperty(resizeType, 'value', {
+        get: () => resizeTypeValue,
+        set(value) {
+          resizeTypeValue = value
+          newNode.widgets!.splice(1, Infinity, {
+            ...resizeType,
+            name: 'resize_type.multiplier',
+            value: 1
+          })
+        }
+      })
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldScaler', {
+          new_node_id: 'NewScaler',
+          old_node_id: 'OldScaler',
+          old_widget_ids: ['scale_by', 'mode'],
+          input_mapping: [
+            { new_id: 'resize_type.multiplier', old_id: 'scale_by' },
+            { new_id: 'resize_type', old_id: 'mode' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      expect(
+        graph.getNodeById(toNodeId(1))!.widgets!.map((widget) => widget.value)
+      ).toEqual(['multiplier', 1.5])
+    })
+
+    it('lets the later mapping win when two mappings target one widget', () => {
+      const placeholder = createPlaceholderNode(1, 'OldScaler')
+      placeholder.last_serialization!.widgets_values = ['saved']
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode([], [], [{ name: 'mode', value: '' }])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldScaler', {
+          new_node_id: 'NewScaler',
+          old_node_id: 'OldScaler',
+          old_widget_ids: ['mode'],
+          input_mapping: [
+            { new_id: 'mode', old_id: 'mode' },
+            { new_id: 'mode', set_value: 'forced' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      expect(graph.getNodeById(toNodeId(1))!.widgets![0].value).toBe('forced')
+    })
+
+    it('keeps a restored value that an earlier widget callback resets', () => {
+      const placeholder = createPlaceholderNode(1, 'OldSampler')
+      placeholder.last_serialization!.widgets_values = ['portrait', 7]
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+
+      const newNode = createNewNode(
+        [],
+        [],
+        [
+          { name: 'preset', value: '' },
+          { name: 'steps', value: 0 }
+        ]
+      )
+      newNode.widgets![0].callback = () => {
+        newNode.widgets![1].value = 20
+      }
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldSampler', {
+          new_node_id: 'NewSampler',
+          old_node_id: 'OldSampler',
+          old_widget_ids: ['preset', 'steps'],
+          input_mapping: [
+            { new_id: 'preset', old_id: 'preset' },
+            { new_id: 'steps', old_id: 'steps' }
+          ],
+          output_mapping: null
+        })
+      ])
+
+      expect(
+        graph.getNodeById(toNodeId(1))!.widgets!.map((widget) => widget.value)
+      ).toEqual(['portrait', 7])
+    })
+
+    it('replaces a node reached through two instances of one subgraph once', () => {
+      const placeholder = createPlaceholderNode(1, 'OldType')
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder, placeholder])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(createNewNode())
+
+      const result = useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldType', {
+          new_node_id: 'NewType',
+          old_node_id: 'OldType',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(result).toEqual(['OldType'])
+      expect(useToast().error).not.toHaveBeenCalled()
+    })
+
     it('should transfer widget values using old_widget_ids', () => {
       const placeholder = createPlaceholderNode(1, 'ResizeImagesByLongerEdge')
       // Set widget values in serialized data
@@ -1089,19 +1223,26 @@ describe('useNodeReplacement', () => {
       expect(newNode.widgets![0].value).toBe(0.75)
     })
 
-    it('should skip dot-notation input connections but still transfer widget values', () => {
-      const placeholder = createPlaceholderNode(1, 'ImageBatch')
-      const graph = createMockGraph([placeholder])
+    it('moves input links onto dotted dynamic input names', () => {
+      const firstLink = createMockLink(30, 5, 0, 1, 0)
+      const secondLink = createMockLink(31, 6, 0, 1, 1)
+      const placeholder = createPlaceholderNode(1, 'ImageBatch', [
+        { name: 'image1', link: 30 },
+        { name: 'image2', link: 31 }
+      ])
+      const graph = createMockGraph([placeholder], [firstLink, secondLink])
       placeholder.graph = graph
       Object.assign(app, { rootGraph: graph })
 
       vi.mocked(collectAllNodes).mockReturnValue([placeholder])
 
-      const newNode = createNewNode([], [])
+      const newNode = createNewNode([
+        { name: 'images.image1', link: null },
+        { name: 'images.image0', link: null }
+      ])
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
 
-      const { replaceNodesInPlace } = useNodeReplacement()
-      const result = replaceNodesInPlace([
+      const result = useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('ImageBatch', {
           new_node_id: 'BatchImagesNode',
           old_node_id: 'ImageBatch',
@@ -1114,8 +1255,11 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      // Should still succeed (dot-notation skipped gracefully)
       expect(result).toEqual(['ImageBatch'])
+      expect(graph.links.has(toLinkId(30))).toBe(true)
+      expect(graph.links.has(toLinkId(31))).toBe(true)
+      expect(firstLink.target_slot).toBe(1)
+      expect(secondLink.target_slot).toBe(0)
     })
   })
 
@@ -1791,38 +1935,86 @@ describe('useNodeReplacement', () => {
       expect(newNode.widgets![0].value).toBe('bilinear')
     })
 
-    it('skips set_value mapping when the new_id uses dot-notation', () => {
-      const placeholder = createPlaceholderNode(1, 'OldType')
-      placeholder.onRemoved = vi.fn()
-      const graph = createMockGraph([placeholder])
-      placeholder.graph = graph
-      Object.assign(app, { rootGraph: graph })
-
-      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
-
-      const newNode = createNewNode(
-        [{ name: 'input', link: null }],
-        [],
-        [{ name: 'resize_type', value: '' }]
-      )
-      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
-
-      const { replaceNodesInPlace } = useNodeReplacement()
-      replaceNodesInPlace([
-        makeMissingNodeType('OldType', {
-          new_node_id: 'NewType',
-          old_node_id: 'OldType',
-          old_widget_ids: null,
-          input_mapping: [
-            // Dot-notation target — the set_value should NOT be applied.
-            { new_id: 'resize_type.multiplier', set_value: 'dot-notation-skip' }
-          ],
-          output_mapping: null
+    it.for([
+      {
+        name: 'saved names without old_widget_ids',
+        inputs: [],
+        widgetsValues: ['a.safetensors', 0.4],
+        widgetsValuesNamed: { model_name: 'a.safetensors', strength: 0.4 },
+        oldWidgetIds: null,
+        expected: ['a.safetensors', 0.4]
+      },
+      {
+        name: 'saved names over disagreeing old_widget_ids',
+        inputs: [],
+        widgetsValues: ['a.safetensors', 0.4],
+        widgetsValuesNamed: { model_name: 'a.safetensors', strength: 0.4 },
+        oldWidgetIds: ['strength', 'model_name'],
+        expected: ['a.safetensors', 0.4]
+      },
+      {
+        name: 'a lone positional value for the lone mapped widget',
+        inputs: [{ name: 'strength', link: null }],
+        widgetsValues: ['a.safetensors'],
+        widgetsValuesNamed: undefined,
+        oldWidgetIds: null,
+        expected: ['a.safetensors', 1]
+      },
+      {
+        name: 'no values when positional values are ambiguous',
+        inputs: [],
+        widgetsValues: ['a.safetensors', 0.4],
+        widgetsValuesNamed: undefined,
+        oldWidgetIds: null,
+        expected: ['', 1]
+      }
+    ])(
+      'transfers widget values from $name',
+      ({
+        inputs,
+        widgetsValues,
+        widgetsValuesNamed,
+        oldWidgetIds,
+        expected
+      }) => {
+        const placeholder = createPlaceholderNode(1, 'OldLoader', inputs)
+        Object.assign(placeholder.last_serialization!, {
+          widgets_values: widgetsValues,
+          widgets_values_named: widgetsValuesNamed
         })
-      ])
+        const graph = createMockGraph([placeholder])
+        placeholder.graph = graph
+        Object.assign(app, { rootGraph: graph })
+        vi.mocked(collectAllNodes).mockReturnValue([placeholder])
 
-      expect(newNode.widgets![0].value).toBe('')
-    })
+        const newNode = createNewNode(
+          [],
+          [],
+          [
+            { name: 'model', value: '' },
+            { name: 'strength', value: 1 }
+          ]
+        )
+        vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+        useNodeReplacement().replaceNodesInPlace([
+          makeMissingNodeType('OldLoader', {
+            new_node_id: 'NewLoader',
+            old_node_id: 'OldLoader',
+            old_widget_ids: oldWidgetIds,
+            input_mapping: [
+              { new_id: 'model', old_id: 'model_name' },
+              { new_id: 'strength', old_id: 'strength' }
+            ],
+            output_mapping: null
+          })
+        ])
+
+        expect(
+          graph.getNodeById(toNodeId(1))!.widgets!.map((widget) => widget.value)
+        ).toEqual(expected)
+      }
+    )
 
     it('invokes nodeGraph.onNodeAdded for each replaced node so VueNode data refreshes', () => {
       const placeholder = createPlaceholderNode(1, 'OldType')

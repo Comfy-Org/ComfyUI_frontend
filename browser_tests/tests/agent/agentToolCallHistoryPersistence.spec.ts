@@ -28,7 +28,7 @@ const TRACE = [
   THINKING_ROUND_1,
   'Search nodes',
   THINKING_ROUND_2,
-  enMessages.agent.toolNotConfirmedOnCanvas.replace('{tool}', 'Add node'),
+  'Add node',
   THINKING_FINAL
 ]
 
@@ -39,10 +39,16 @@ test(
   'keeps a completed turn work summary, thinking included, after reload and chat switching',
   {
     tag: ['@cloud', '@ui'],
-    annotation: {
-      type: 'source',
-      description: 'https://linear.app/comfyorg/issue/PM-717'
-    }
+    annotation: [
+      {
+        type: 'source',
+        description: 'https://linear.app/comfyorg/issue/PM-717'
+      },
+      {
+        type: 'source',
+        description: 'https://linear.app/comfyorg/issue/FRONT-3803'
+      }
+    ]
   },
   async ({ page, promptHistory, workflowSelection }) => {
     await new AgentPanel(page).open()
@@ -148,10 +154,16 @@ test(
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
     const summary = reopenedPanel.getByRole('button', {
-      name: enMessages.agent.workedNotConfirmedOnCanvas,
+      name: enMessages.agent.worked,
       exact: true
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })
+    await expect(
+      reopenedPanel.getByText(enMessages.agent.workedNotConfirmedOnCanvas)
+    ).toHaveCount(0)
+    await expect(
+      reopenedPanel.getByTestId('agent-canvas-unconfirmed')
+    ).toHaveCount(0)
     await expect(summary).toHaveAttribute('aria-expanded', 'false')
     await expect(reopenedPanel.getByText('Search nodes')).toBeHidden()
 

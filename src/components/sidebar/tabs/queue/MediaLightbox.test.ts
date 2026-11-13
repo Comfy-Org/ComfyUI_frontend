@@ -162,6 +162,36 @@ describe('MediaLightbox', () => {
     expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
   })
 
+  it('preloads the neighboring images but not neighboring videos', async () => {
+    const requested: string[] = []
+    vi.stubGlobal(
+      'Image',
+      class {
+        decoding = ''
+        set src(url: string) {
+          requested.push(url)
+        }
+      }
+    )
+
+    renderGallery({
+      allGalleryItems: [
+        mockGalleryItems[0],
+        {
+          ...mockGalleryItems[1],
+          filename: 'clip.mp4',
+          mediaType: 'video',
+          url: 'clip.mp4'
+        },
+        mockGalleryItems[2]
+      ]
+    })
+    await nextTick()
+
+    expect(requested).toContain('image3.jpg')
+    expect(requested).not.toContain('clip.mp4')
+  })
+
   it('keeps failed text media actionable until the viewer closes', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }))
 
@@ -251,18 +281,23 @@ describe('MediaLightbox', () => {
       id: `v${n}`
     })
 
-    const renderTeleported = (items: MockResultItem[]) => {
+    const renderTeleported = (
+      items: MockResultItem[],
+      extraProps: { autoplayVideo?: boolean } = {}
+    ) => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {
           allGalleryItems: items,
-          activeIndex: 0
+          activeIndex: 0,
+          ...extraProps
         }
       })
       const show = async (activeIndex: number) => {
         await rerender({
           allGalleryItems: items,
-          activeIndex
+          activeIndex,
+          ...extraProps
         })
         await nextTick()
       }
@@ -318,6 +353,39 @@ describe('MediaLightbox', () => {
 
       await show(0)
       expect(video()).not.toBe(first)
+    })
+
+    it('PM-1895 starts an opt-in video on open and again on return', async () => {
+      const { show, video } = renderTeleported(
+        [videoItem(1), mockGalleryItems[0]],
+        { autoplayVideo: true }
+      )
+      await nextTick()
+
+      const first = video()
+      expect(first?.autoplay).toBe(true)
+      expect(first?.paused).toBe(false)
+
+      first?.pause()
+      await show(1)
+      await show(0)
+
+      expect(video()?.paused).toBe(false)
+    })
+
+    it('leaves playback alone for callers that do not opt in', async () => {
+      const { show, video } = renderTeleported([
+        videoItem(1),
+        mockGalleryItems[0]
+      ])
+      await nextTick()
+
+      expect(video()?.autoplay).toBe(false)
+
+      await show(1)
+      await show(0)
+
+      expect(video()?.paused).toBe(true)
     })
 
     it('drops retained videos when the lightbox closes', async () => {

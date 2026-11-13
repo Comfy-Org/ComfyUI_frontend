@@ -47,6 +47,7 @@ function listingOn(
         build_name: 'Studio Build',
         release_version: 2,
         status: 'ready',
+        can_start: false,
         created_at: '2026-10-01T00:00:00Z'
       }
     ]

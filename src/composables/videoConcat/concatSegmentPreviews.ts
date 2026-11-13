@@ -1,18 +1,23 @@
 import { z } from 'zod'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { resultItemType } from '@/schemas/resultItemTypeSchema'
+import { resultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { executionIdFromState } from '@/utils/graphTraversalUtil'
 
-const zSegmentPreview = z.object({
-  filename: z.string(),
-  subfolder: z.string().default(''),
-  type: resultItemType,
-  source: z.tuple([z.string(), z.number()]).nullish()
-})
+const zSegmentPreview = z
+  .tuple([
+    z.string(),
+    z.tuple([z.string(), z.number()]).nullish(),
+    z.object({
+      filename: z.string(),
+      subfolder: z.string().default(''),
+      type: resultItemType
+    })
+  ])
+  .transform(([name, source, file]) => ({ name, source, ...file }))
 
-type SegmentPreview = z.infer<typeof zSegmentPreview>
+type SegmentPreview = z.output<typeof zSegmentPreview>
 
 export function parseSegmentPreviews(value: unknown): SegmentPreview[] {
   const parsed = z.array(zSegmentPreview).safeParse(value)

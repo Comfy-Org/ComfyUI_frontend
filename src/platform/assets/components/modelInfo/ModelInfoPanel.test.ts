@@ -1,11 +1,16 @@
 import { getActivePinia } from 'pinia'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
+
+import { useAssetsStore } from '@/stores/assetsStore'
 
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
+import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import ModelInfoPanel from './ModelInfoPanel.vue'
 
@@ -71,6 +76,284 @@ describe('ModelInfoPanel', () => {
       }
     })
   }
+
+  it('preserves description edits made while an earlier save is pending', async () => {
+    vi.useFakeTimers()
+    const asset = createMockAsset({
+      is_immutable: false,
+      user_metadata: { user_description: 'Original description' }
+    })
+    let resolveSave!: (saved: boolean) => void
+    const save = vi
+      .spyOn(useAssetsStore(), 'updateAssetMetadata')
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveSave = resolve
+        })
+      )
+      .mockResolvedValue(true)
+    const { rerender } = renderPanel(asset)
+    const description = screen.getByPlaceholderText(
+      'assetBrowser.modelInfo.descriptionPlaceholder'
+    )
+    await fireEvent.update(description, 'First edit')
+    await vi.advanceTimersByTimeAsync(500)
+    const savedAsset = {
+      ...asset,
+      user_metadata: { user_description: 'First edit' }
+    }
+    await rerender({ asset: savedAsset })
+    await fireEvent.update(description, 'Newer edit')
+    resolveSave(true)
+    await rerender({
+      asset: { ...savedAsset, user_metadata: { ...savedAsset.user_metadata } }
+    })
+    expect(description).toHaveValue('Newer edit')
+    await vi.advanceTimersByTimeAsync(500)
+    expect(save).toHaveBeenLastCalledWith(
+      expect.objectContaining({ id: asset.id }),
+      { user_description: 'Newer edit' },
+      undefined
+    )
+  })
+
+  it('retains a failed description save for the next edit to retry', async () => {
+    vi.useFakeTimers()
+    const asset = createMockAsset({
+      is_immutable: false,
+      user_metadata: { user_description: 'Original description' }
+    })
+    const save = vi
+      .spyOn(useAssetsStore(), 'updateAssetMetadata')
+      .mockResolvedValueOnce(false)
+      .mockResolvedValue(true)
+    const { rerender, unmount } = renderPanel(asset)
+    const description = screen.getByPlaceholderText(
+      'assetBrowser.modelInfo.descriptionPlaceholder'
+    )
+    await fireEvent.update(description, 'Unsaved edit')
+    await vi.advanceTimersByTimeAsync(500)
+    expect(description).toHaveValue('Unsaved edit')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(save).toHaveBeenCalledTimes(1)
+    await rerender({ asset: createMockAsset({ id: 'other-model' }) })
+    await rerender({ asset })
+    expect(description).toHaveValue('Unsaved edit')
+    unmount()
+    renderPanel(asset)
+    const reopenedDescription = screen.getByPlaceholderText(
+      'assetBrowser.modelInfo.descriptionPlaceholder'
+    )
+    expect(reopenedDescription).toHaveValue('Unsaved edit')
+    await fireEvent.update(reopenedDescription, 'Retry edit')
+    await vi.advanceTimersByTimeAsync(500)
+    expect(save).toHaveBeenLastCalledWith(
+      asset,
+      { user_description: 'Retry edit' },
+      undefined
+    )
+  })
+
+  it('keeps the newest persisted description when details reopen before an old response arrives', async () => {
+    vi.useFakeTimers()
+    const asset = createMockAsset({
+      is_immutable: false,
+      user_metadata: { user_description: 'Original description' }
+    })
+    let persisted = asset
+    let deliverFirstResponse!: () => void
+    vi.spyOn(assetService, 'updateAsset')
+      .mockImplementationOnce((_id, payload) => {
+        persisted = { ...persisted, ...payload }
+        const response = persisted
+        return new Promise((resolve) => {
+          deliverFirstResponse = () => resolve(response)
+        })
+      })
+      .mockImplementation(async (_id, payload) => {
+        persisted = { ...persisted, ...payload }
+        return persisted
+      })
+    const panel = renderPanel(asset)
+    await fireEvent.update(
+      screen.getByPlaceholderText(
+        'assetBrowser.modelInfo.descriptionPlaceholder'
+      ),
+      'First edit'
+    )
+    await vi.advanceTimersByTimeAsync(500)
+    await fireEvent.update(
+      screen.getByPlaceholderText(
+        'assetBrowser.modelInfo.descriptionPlaceholder'
+      ),
+      'Older queued edit'
+    )
+    await vi.advanceTimersByTimeAsync(500)
+    await panel.rerender({ asset: createMockAsset({ id: 'other-model' }) })
+    panel.unmount()
+    const reopened = renderPanel(persisted)
+    const description = screen.getByPlaceholderText(
+      'assetBrowser.modelInfo.descriptionPlaceholder'
+    )
+    await fireEvent.update(description, 'Newest edit after reopening')
+    await vi.advanceTimersByTimeAsync(500)
+    deliverFirstResponse()
+    await vi.advanceTimersByTimeAsync(1000)
+    await reopened.rerender({ asset: persisted })
+
+    expect(persisted.user_metadata?.user_description).toBe(
+      'Newest edit after reopening'
+    )
+    expect(description).toHaveValue('Newest edit after reopening')
+  })
+
+  it.for([
+    { transition: 'workspace', nextWorkspace: 'workspace-2', nextIdentity: 1 },
+    { transition: 'identity', nextWorkspace: 'workspace-1', nextIdentity: 2 }
+  ])(
+    'drops old drafts and late follow-up writes after a $transition change',
+    async ({ nextWorkspace, nextIdentity }) => {
+      vi.useFakeTimers()
+      const workspace = ref('workspace-1')
+      const identity = ref(1)
+      const workspaceStore = useTeamWorkspaceStore()
+      vi.spyOn(workspaceStore, 'workspaceId', 'get').mockImplementation(
+        () => workspace.value
+      )
+      vi.spyOn(workspaceStore, 'identityGeneration', 'get').mockImplementation(
+        () => identity.value
+      )
+      const asset = createMockAsset({
+        is_immutable: false,
+        user_metadata: { user_description: 'Saved description' }
+      })
+      let resolveSave!: (saved: boolean) => void
+      const save = vi
+        .spyOn(useAssetsStore(), 'updateAssetMetadata')
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveSave = resolve
+          })
+        )
+        .mockResolvedValue(true)
+      renderPanel(asset)
+      const description = screen.getByPlaceholderText(
+        'assetBrowser.modelInfo.descriptionPlaceholder'
+      )
+      await fireEvent.update(description, 'First edit')
+      await vi.advanceTimersByTimeAsync(500)
+      await fireEvent.update(description, 'Old queued edit')
+      await vi.advanceTimersByTimeAsync(500)
+
+      workspace.value = nextWorkspace
+      identity.value = nextIdentity
+      resolveSave(true)
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(description).toHaveValue('Saved description')
+      expect(save).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it.for([true, false])(
+    'serializes newer edits while the earlier save completes with %s',
+    async (saved) => {
+      vi.useFakeTimers()
+      const asset = createMockAsset({
+        is_immutable: false,
+        user_metadata: { user_description: 'Original description' }
+      })
+      let resolveSave!: (saved: boolean) => void
+      const save = vi
+        .spyOn(useAssetsStore(), 'updateAssetMetadata')
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveSave = resolve
+          })
+        )
+        .mockResolvedValue(true)
+      const { rerender } = renderPanel(asset)
+      const description = screen.getByPlaceholderText(
+        'assetBrowser.modelInfo.descriptionPlaceholder'
+      )
+      await fireEvent.update(description, 'First edit')
+      await vi.advanceTimersByTimeAsync(500)
+      await fireEvent.update(description, 'Newer edit')
+      await vi.advanceTimersByTimeAsync(500)
+      expect(save).toHaveBeenCalledTimes(1)
+      resolveSave(saved)
+      await rerender({
+        asset: {
+          ...asset,
+          user_metadata: { user_description: 'First edit' }
+        }
+      })
+      expect(description).toHaveValue('Newer edit')
+      await vi.advanceTimersByTimeAsync(500)
+      expect(save).toHaveBeenCalledTimes(2)
+      expect(save).toHaveBeenLastCalledWith(
+        expect.objectContaining({ id: asset.id }),
+        { user_description: 'Newer edit' },
+        undefined
+      )
+    }
+  )
+
+  it.for([true, false])(
+    'saves queued edits to their original model after selection changes and the first save returns %s',
+    async (saved) => {
+      vi.useFakeTimers()
+      const asset = createMockAsset({
+        is_immutable: false,
+        user_metadata: { user_description: 'Original description' }
+      })
+      const otherAsset = createMockAsset({
+        id: 'other-model',
+        is_immutable: false,
+        user_metadata: { user_description: 'Other description' }
+      })
+      let resolveSave!: (saved: boolean) => void
+      const save = vi
+        .spyOn(useAssetsStore(), 'updateAssetMetadata')
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            resolveSave = resolve
+          })
+        )
+        .mockResolvedValue(true)
+      const { rerender } = renderPanel(asset)
+      const description = screen.getByPlaceholderText(
+        'assetBrowser.modelInfo.descriptionPlaceholder'
+      )
+      await fireEvent.update(description, 'First edit')
+      await vi.advanceTimersByTimeAsync(500)
+      await fireEvent.update(description, 'Queued edit')
+      await vi.advanceTimersByTimeAsync(500)
+      await rerender({ asset: otherAsset })
+      expect(description).toHaveValue('Other description')
+      await fireEvent.update(description, 'Other model edit')
+      await vi.advanceTimersByTimeAsync(500)
+      expect(save).toHaveBeenLastCalledWith(
+        otherAsset,
+        { user_description: 'Other model edit' },
+        undefined
+      )
+      resolveSave(saved)
+      await vi.advanceTimersByTimeAsync(500)
+      expect(save).toHaveBeenLastCalledWith(
+        expect.objectContaining({ id: asset.id }),
+        { user_description: 'Queued edit' },
+        undefined
+      )
+      await rerender({
+        asset: {
+          ...otherAsset,
+          user_metadata: { user_description: 'Refreshed description' }
+        }
+      })
+      expect(description).toHaveValue('Refreshed description')
+    }
+  )
 
   describe('Basic Info Section', () => {
     it('renders basic info section', () => {

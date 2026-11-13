@@ -10,7 +10,7 @@
     >
       <div
         v-if="isVisible"
-        class="pointer-events-none fixed right-0 bottom-0 z-1500"
+        class="pointer-events-none fixed right-0 bottom-0 z-education"
       >
         <div
           role="dialog"
@@ -27,7 +27,7 @@
               :base-muted="audibleSide !== 'partner'"
               :overlay-muted="audibleSide !== 'open'"
               :label="t('partnerNodesEducation.sliderLabel')"
-              class="relative z-2 -mb-5 flex-1 rounded-t-xl"
+              class="z-2 -mb-5 flex-1 rounded-t-xl"
             >
               <Button
                 v-for="control in audioControls"

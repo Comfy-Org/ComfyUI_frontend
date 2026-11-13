@@ -1,8 +1,9 @@
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { fullResolutionSrc } from '@/utils/hdrFormatUtil'
 
 export type Clipspace = {
   widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
@@ -49,7 +50,7 @@ export function copyToClipspace(node: LGraphNode) {
 
     for (let i = 0; i < node.imgs.length; i++) {
       imgs[i] = new Image()
-      imgs[i].src = node.imgs[i].src
+      imgs[i].src = fullResolutionSrc(node.imgs[i])
       orig_imgs[i] = imgs[i]
     }
   }

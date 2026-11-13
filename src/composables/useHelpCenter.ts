@@ -5,9 +5,9 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
-import { useNodeConflictDialog } from '@/workbench/extensions/manager/composables/useNodeConflictDialog'
+import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
+import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
+import { useNodeConflictDialog } from '@/platform/customNodes/manager/composables/dialogs/useNodeConflictDialog'
 
 export function useHelpCenter() {
   const settingStore = useSettingStore()

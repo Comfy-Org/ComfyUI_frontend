@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { loadTurnstile } from '@comfyorg/account-core/turnstileScript'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import TurnstileWidget from './TurnstileWidget.vue'
 
@@ -31,8 +31,8 @@ function i18n() {
 
 describe('TurnstileWidget, mounted through the real @comfyorg/account-core component', () => {
   it('mounts the shared widget, not a stub', () => {
-    const store = useColorPaletteStore()
-    store.completedActivePalette.light_theme = true
+    const store = useThemeStore()
+    store.activePresetId = 'light'
     vi.mocked(loadTurnstile).mockClear()
 
     render(TurnstileWidget, { global: { plugins: [i18n()] } })
@@ -44,8 +44,8 @@ describe('TurnstileWidget, mounted through the real @comfyorg/account-core compo
   })
 
   it('renders no error alert before the challenge reports one', () => {
-    const store = useColorPaletteStore()
-    store.completedActivePalette.light_theme = true
+    const store = useThemeStore()
+    store.activePresetId = 'light'
 
     render(TurnstileWidget, { global: { plugins: [i18n()] } })
 

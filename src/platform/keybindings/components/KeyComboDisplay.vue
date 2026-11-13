@@ -2,7 +2,7 @@
   <span class="flex gap-0.5">
     <template v-for="(sequence, index) in keySequences" :key="index">
       <Badge
-        class="min-w-6 justify-center gap-1 bg-muted text-center font-normal text-foreground capitalize"
+        class="min-w-6 bg-muted text-center font-normal capitalize"
         :severity="isModified ? 'info' : 'secondary'"
       >
         {{ sequence }}
@@ -15,7 +15,7 @@
 import { computed } from 'vue'
 
 import Badge from '@comfyorg/design-system/badge/Badge'
-import type { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import type { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 
 const { keyCombo, isModified = false } = defineProps<{
   keyCombo: KeyComboImpl

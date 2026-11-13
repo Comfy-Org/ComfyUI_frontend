@@ -2,7 +2,13 @@
   <div :class="cn('flex h-full items-center', !isDocked && '-ml-2')">
     <div
       v-if="isDragging && !isDocked"
-      :class="actionbarClass"
+      :class="
+        cn(
+          'pointer-events-auto m-1.5 flex w-50 items-center justify-center self-stretch rounded-md border-dashed border-blue-500 opacity-80 before:-ml-50 before:h-full before:w-50',
+          isMouseOverDropZone &&
+            'scale-105 border-[3px] opacity-100 shadow-[0_0_20px] shadow-blue-500'
+        )
+      "
       @mouseenter="onMouseEnterDropZone"
       @mouseleave="onMouseLeaveDropZone"
     >
@@ -12,7 +18,13 @@
     <div
       ref="panelRef"
       :style
-      :class="panelClass"
+      :class="
+        cn(
+          'actionbar pointer-events-auto',
+          isDragging && 'pointer-events-none select-none',
+          !isDocked && 'fixed z-1 floating-panel'
+        )
+      "
       data-testid="actionbar-panel"
     >
       <div class="relative flex items-center gap-2 select-none">
@@ -115,7 +127,7 @@ import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQu
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
@@ -427,22 +439,4 @@ const handleClearQueue = async () => {
   await commandStore.execute('Comfy.ClearPendingTasks')
   executionStore.clearInitializationByJobIds(pendingJobIds)
 }
-
-const actionbarClass = computed(() =>
-  cn(
-    'w-[200px] border-dashed border-blue-500 opacity-80',
-    'm-1.5 flex items-center justify-center self-stretch',
-    'rounded-md before:-ml-50 before:h-full before:w-50',
-    'pointer-events-auto',
-    isMouseOverDropZone.value &&
-      'scale-105 border-[3px] opacity-100 shadow-[0_0_20px] shadow-blue-500'
-  )
-)
-const panelClass = computed(() =>
-  cn(
-    'actionbar pointer-events-auto',
-    isDragging.value && 'pointer-events-none select-none',
-    !isDocked.value && 'fixed z-1300 floating-panel'
-  )
-)
 </script>

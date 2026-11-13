@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 import { isTextResult, resultItemSupportsPreview } from '@/utils/resultItem'
 import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'
 
@@ -131,6 +131,28 @@ describe(parseNodeOutput, () => {
     expect(result[0].mediaType).toBe('images')
   })
 
+  it('parses inline text outputs', () => {
+    const result = parseNodeOutput(
+      '1',
+      makeOutput({ text: ['hello', 'world'] })
+    )
+
+    expect(result).toStrictEqual([
+      expect.objectContaining({ content: 'hello', mediaType: 'text' }),
+      expect.objectContaining({ content: 'world', mediaType: 'text' })
+    ])
+  })
+
+  it('excludes text outputs with malformed filenames', () => {
+    const result = parseNodeOutput('1', {
+      text: [{ filename: 42, content: 'invalid' }, { content: 'valid' }]
+    })
+
+    expect(result).toStrictEqual([
+      expect.objectContaining({ content: 'valid', filename: '' })
+    ])
+  })
+
   it('excludes non-ResultItem array items', () => {
     const output = fromPartial<NodeExecutionOutput>({
       images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
@@ -159,12 +181,13 @@ describe(parseNodeOutput, () => {
   })
 
   it('excludes items missing filename', () => {
-    const output = fromPartial<NodeExecutionOutput>({
+    const output = {
       images: [
         { filename: 'valid.png', subfolder: '', type: 'output' },
-        { subfolder: '', type: 'output' }
+        { subfolder: '', type: 'output' },
+        { content: 'not text' }
       ]
-    })
+    }
 
     const result = parseNodeOutput('1', output)
 

@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/platform/settings/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { Settings } from '@comfyorg/settings-core/types'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import { useNodeTooltips } from './useNodeTooltips'

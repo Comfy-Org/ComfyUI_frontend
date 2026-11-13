@@ -1,4 +1,48 @@
 <template>
+  <div class="absolute inset-0 isolate">
+    <canvas
+      id="graph-canvas"
+      ref="canvasRef"
+      tabindex="1"
+      class="absolute inset-0 size-full touch-none"
+    />
+    <TransformPane
+      v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+      ref="transformPaneRef"
+      :canvas="comfyApp.canvas"
+      :inert="canvasStore.isPickingNodes"
+      @wheel.capture="canvasInteractions.forwardEventToCanvas"
+      @pointerdown.capture="forwardPointerDownPanEvent"
+      @pointerup.capture="forwardPointerUpPanEvent"
+      @pointermove.capture="forwardPointerMovePanEvent"
+      @keydown.space="forwardSpaceKeyEvent"
+    >
+      <LGraphNode
+        v-for="nodeData in allNodes"
+        :key="nodeData.id"
+        :node-data
+        :data-node-id="nodeData.id"
+      />
+    </TransformPane>
+    <LinkOverlayCanvas
+      v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+      :canvas="comfyApp.canvas"
+      @ready="onLinkOverlayReady"
+      @dispose="onLinkOverlayDispose"
+    />
+    <SelectionRectangle v-if="comfyAppReady" />
+    <NodeTooltip v-if="tooltipEnabled" />
+    <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
+    <NodeDragPreview />
+    <VueNodeSwitchPopup />
+    <template v-if="comfyAppReady">
+      <TitleEditor />
+      <SelectionToolbox v-if="selectionToolboxEnabled" />
+      <NodeContextMenu />
+      <DomWidgets v-if="!shouldRenderVueNodes" />
+    </template>
+    <slot name="legacy-menu" />
+  </div>
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
@@ -32,7 +76,7 @@
     </template>
     <template v-if="betaMenuEnabled" #right-side-panel>
       <AppBuilder v-if="isBuilderMode" />
-      <NodePropertiesPanel v-else />
+      <PropertiesPanel v-else />
     </template>
     <template v-if="showUI" #agent-panel="{ hasOpaqueNeighbor }">
       <component
@@ -42,10 +86,6 @@
       />
     </template>
     <template #graph-canvas-panel>
-      <GraphCanvasMenu
-        v-if="canvasMenuEnabled && !isBuilderMode"
-        class="pointer-events-auto"
-      />
       <MiniMap
         v-if="
           comfyAppReady &&
@@ -56,60 +96,13 @@
         "
         class="pointer-events-auto"
       />
+      <GraphCanvasMenu
+        v-if="canvasMenuEnabled && !isBuilderMode"
+        class="pointer-events-auto"
+      />
       <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>
-  <canvas
-    id="graph-canvas"
-    ref="canvasRef"
-    tabindex="1"
-    class="absolute inset-0 size-full touch-none"
-  />
-
-  <!-- TransformPane for Vue node rendering -->
-  <TransformPane
-    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-    ref="transformPaneRef"
-    :canvas="comfyApp.canvas"
-    :inert="canvasStore.isPickingNodes"
-    @wheel.capture="canvasInteractions.forwardEventToCanvas"
-    @pointerdown.capture="forwardPointerDownPanEvent"
-    @pointerup.capture="forwardPointerUpPanEvent"
-    @pointermove.capture="forwardPointerMovePanEvent"
-    @keydown.space="forwardSpaceKeyEvent"
-  >
-    <!-- Vue nodes rendered based on graph nodes -->
-    <LGraphNode
-      v-for="nodeData in allNodes"
-      :key="nodeData.id"
-      :node-data
-      :data-node-id="nodeData.id"
-    />
-  </TransformPane>
-
-  <LinkOverlayCanvas
-    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-    :canvas="comfyApp.canvas"
-    @ready="onLinkOverlayReady"
-    @dispose="onLinkOverlayDispose"
-  />
-
-  <SelectionRectangle v-if="comfyAppReady" />
-
-  <NodeTooltip v-if="tooltipEnabled" />
-  <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
-  <NodeDragPreview />
-  <VueNodeSwitchPopup />
-
-  <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
-  canvasStore.canvas to be initialized. -->
-  <template v-if="comfyAppReady">
-    <TitleEditor />
-    <SelectionToolbox v-if="selectionToolboxEnabled" />
-    <NodeContextMenu />
-    <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
-    <DomWidgets v-if="!shouldRenderVueNodes" />
-  </template>
 </template>
 
 <script lang="ts">
@@ -153,7 +146,7 @@ import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
-import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import PropertiesPanel from '@/renderer/extensions/propertiesPanel/PropertiesPanel.vue'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
@@ -193,13 +186,13 @@ import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftT
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
-import { UnauthorizedError } from '@/scripts/api'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
-import { loadExtensions } from '@/services/extensionLoader'
-import { useColorPaletteService } from '@/services/colorPaletteService'
+import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
+import { useThemeService } from '@/platform/theme/themeService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
   collapseOutsideSelectionOnPrimaryPointerDown,
@@ -208,12 +201,13 @@ import {
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -253,8 +247,8 @@ const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toast = useToast()
-const colorPaletteStore = useColorPaletteStore()
-const colorPaletteService = useColorPaletteService()
+const themeStore = useThemeStore()
+const themeService = useThemeService()
 const canvasInteractions = useCanvasInteractions()
 const bootstrapStore = useBootstrapStore()
 const { isI18nReady, i18nError } = storeToRefs(bootstrapStore)
@@ -366,9 +360,7 @@ watchEffect(() => {
 })
 watchEffect(() => {
   LiteGraph.nodeLightness =
-    colorPaletteStore.colorScheme === 'light'
-      ? LIGHT_THEME_NODE_LIGHTNESS
-      : undefined
+    themeStore.colorScheme === 'light' ? LIGHT_THEME_NODE_LIGHTNESS : undefined
 })
 
 watchEffect(() => {
@@ -423,7 +415,7 @@ watch(
   async ([canvas, currentPaletteId]) => {
     if (!canvas) return
 
-    await colorPaletteService.loadColorPalette(currentPaletteId)
+    await themeService.setActiveTheme(currentPaletteId)
   }
 )
 
@@ -431,17 +423,17 @@ watch(
   () => settingStore.get('Comfy.Canvas.BackgroundImage'),
   async () => {
     if (!canvasStore.canvas) return
-    const currentPaletteId = colorPaletteStore.activePaletteId
+    const currentPaletteId = themeStore.activePresetId
     if (!currentPaletteId) return
 
     // Reload color palette to apply background image
-    await colorPaletteService.loadColorPalette(currentPaletteId)
+    await themeService.setActiveTheme(currentPaletteId)
     // Mark background canvas as dirty
     canvasStore.canvas.setDirty(false, true)
   }
 )
 watch(
-  () => colorPaletteStore.activePaletteId,
+  () => themeStore.activePresetId,
   async (newValue) => {
     await settingStore.set('Comfy.ColorPalette', newValue)
   }
@@ -542,7 +534,7 @@ useEventListener(
 )
 
 let disposed = false
-const lateExtensionWork = new AbortController()
+const lateCustomNodeWork = new AbortController()
 const startupOwner = Symbol()
 
 function finishStartup(outcome: 'completed' | 'failed') {
@@ -571,8 +563,6 @@ onMounted(async () => {
   let urlTemplateId: string | undefined
   let bootstrapOutcome: 'completed' | 'failed' = 'failed'
   try {
-    // ChangeTracker needs to be initialized before setup, as it will overwrite
-    // some listeners of litegraph canvas.
     ChangeTracker.init()
 
     await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
@@ -587,7 +577,6 @@ onMounted(async () => {
       throw settingsError.value
     }
 
-    // Register core settings immediately after settings are ready
     CORE_SETTINGS.forEach(settingStore.addSetting)
 
     await Promise.all([
@@ -604,7 +593,7 @@ onMounted(async () => {
     }
 
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>
-      loadExtensions(lateExtensionWork.signal)
+      loadExtensions(lateCustomNodeWork.signal)
     )
 
     const canvas = canvasRef.value
@@ -617,6 +606,8 @@ onMounted(async () => {
     if (disposed) return
     if (!deploymentConfirmed) showDeploymentLookupToast()
     await comfyApp.setup(canvas)
+    await themeService.loadCustomThemePresets()
+    if (disposed) return
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
@@ -626,36 +617,30 @@ onMounted(async () => {
 
     comfyAppReady.value = true
 
-    // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
     }
 
-    // Load color palette
-    colorPaletteStore.customPalettes = settingStore.get(
-      'Comfy.CustomColorPalettes'
-    )
-
-    // Restore saved workflow and workflow tabs state
     await bootstrapTracer.settle('bootstrap/workflow-restore', async () => {
       startupOutcome = await workflowPersistence.initializeWorkflow()
       await workflowPersistence.restoreWorkflowTabsState()
       urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
+      if (!workflowStore.activeWorkflow)
+        await useWorkflowService().loadDefaultWorkflow()
       await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     })
     bootstrapOutcome = 'completed'
   } finally {
     if (!disposed) {
+      workflowStore.markTabsRestored()
       finishStartup(bootstrapOutcome)
     }
   }
   const sharedStatus =
     await workflowPersistence.loadSharedWorkflowFromUrlIfPresent()
 
-  // Run query-param deep-link loaders (?invite, ?create_workspace, ?pricing, ?topup)
   await runUrlActionLoaders()
 
-  // Initialize release store to fetch releases from comfy-api (fire-and-forget)
   const { useReleaseStore } =
     await import('@/platform/updates/common/releaseStore')
   const releaseStore = useReleaseStore()
@@ -663,7 +648,8 @@ onMounted(async () => {
 
   emit('ready')
 
-  // The tour draws into an overlay that only mounts once `ready` has flushed.
+  void useSubgraphStore().fetchSubgraphs()
+
   await nextTick()
   try {
     await useFirstRunEntry().handleUrlWorkflow(
@@ -678,7 +664,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   disposed = true
-  lateExtensionWork.abort()
+  lateCustomNodeWork.abort()
   void nextTick(() => {
     if (activeStartup !== startupOwner) return
     activeStartup = undefined

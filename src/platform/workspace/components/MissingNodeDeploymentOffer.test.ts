@@ -73,6 +73,7 @@ function deployment(id: string, build: string): WorkspaceDeployment {
     build_name: build,
     release_version: 2,
     status: 'ready',
+    can_start: false,
     created_at: '2026-10-01T00:00:00Z'
   }
 }
@@ -260,6 +261,28 @@ describe('MissingNodeDeploymentOffer', () => {
       screen.queryByRole('button', { name: 'Agency A krea · dep-agency-a' })
     ).toBeNull()
     expect(workspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1')
+  })
+
+  it('offers Comfy Cloud and ready deployments, and not a stopped one, when each has every node', async () => {
+    useDeploymentPickStore().state = readyOn([
+      plain,
+      { ...agencyA, status: 'stopped' },
+      agencyB
+    ])
+    vi.mocked(workspaceApi.checkDeploymentCompatibility).mockResolvedValue(
+      answer([agencyA, agencyB], [plain], true)
+    )
+    renderOffer()
+
+    expect(
+      await screen.findByRole('button', { name: 'Comfy Cloud' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Agency B flux · dep-agency-b' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Agency A krea · dep-agency-a' })
+    ).toBeNull()
   })
 
   it('names three and opens the switcher for the rest', async () => {

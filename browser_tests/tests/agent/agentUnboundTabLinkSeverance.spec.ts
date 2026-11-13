@@ -128,10 +128,10 @@ test.describe(
         await expect.poll(() => postedMessages.length).toBe(2)
         const second = sentTurn(postedMessages, 1)
         expect(second.workflow_id).toBeUndefined()
-        test.fail(
-          second.draft === undefined,
-          'PM-1410: a continuing turn on a still-unbound tab drops its updated draft'
-        )
+        expect(
+          second.current_tab_unbound,
+          'the tab never adopted the other tab workflow, so it is still unbound'
+        ).toBe(true)
         expect(
           carriesLink(second, severedLink),
           'the continuing turn must carry the updated draft without the severed link'

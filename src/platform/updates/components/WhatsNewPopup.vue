@@ -5,9 +5,9 @@
       @click.stop
     >
       <Button
-        class="absolute top-2 right-2 z-10 size-8 rounded-lg p-2 opacity-50"
+        class="absolute top-2 right-2 z-10 p-2 opacity-50"
         :aria-label="$t('g.close')"
-        size="icon-sm"
+        size="icon"
         variant="muted-textonly"
         @click="closePopup"
       >
@@ -171,7 +171,6 @@ defineExpose({
 
   position: absolute;
   bottom: var(--whats-new-popup-bottom);
-  z-index: 1000;
   pointer-events: auto;
 }
 
