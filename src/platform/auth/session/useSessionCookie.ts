@@ -9,6 +9,7 @@ import {
   SessionRevokedError,
   revokedCodeOf
 } from '@/platform/auth/session/sessionRevokedError'
+import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -191,10 +192,17 @@ export const useSessionCookie = () => {
     try {
       await establishSession(ownerUid, true)
       return 'created'
-    } catch {
-      const currentUid = useAuthStoreAccess().currentUser?.uid
-      return currentUid !== undefined && currentUid !== ownerUid
-        ? 'identity_changed'
+    } catch (error) {
+      const authStore = useAuthStoreAccess()
+      const currentUid = authStore.currentUser?.uid
+      if (currentUid !== undefined && currentUid !== ownerUid) {
+        return 'identity_changed'
+      }
+      return error instanceof SsoRequiredSessionError &&
+        presentSsoRequired('session_refused', {
+          email: authStore.userEmail ?? undefined
+        })
+        ? 'sso_required'
         : 'failed'
     }
   }

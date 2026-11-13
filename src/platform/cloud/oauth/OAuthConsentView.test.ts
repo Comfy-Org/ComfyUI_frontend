@@ -567,26 +567,32 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     expect(useAuthActions().logout).not.toHaveBeenCalled()
   })
 
-  it('shows the session error and a Sign in again button instead of signing out when the session cannot be re-created', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(signInRedirect())
-    recreateSession.mockResolvedValueOnce('failed')
-    const user = userEvent.setup()
+  it.for<{ name: string; recreated: SessionRecreation }>([
+    { name: 'the session cannot be re-created', recreated: 'failed' },
+    { name: 'the session requires SSO', recreated: 'sso_required' }
+  ])(
+    'shows the session error and a Sign in again button instead of signing out when $name',
+    async ({ recreated }) => {
+      vi.mocked(fetch).mockResolvedValueOnce(signInRedirect())
+      recreateSession.mockResolvedValueOnce(recreated)
+      const user = userEvent.setup()
 
-    await renderLoadedConsent()
+      await renderLoadedConsent()
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Failed to establish session. Please try again.'
-    )
-    expect(useAuthActions().logout).not.toHaveBeenCalled()
-    expect(fetch).toHaveBeenCalledOnce()
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Failed to establish session. Please try again.'
+      )
+      expect(useAuthActions().logout).not.toHaveBeenCalled()
+      expect(fetch).toHaveBeenCalledOnce()
 
-    await user.click(screen.getByRole('button', { name: 'Sign in again' }))
+      await user.click(screen.getByRole('button', { name: 'Sign in again' }))
 
-    expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
-      signInPath,
-      keepAccountDrafts: true
-    })
-  })
+      expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
+        signInPath,
+        keepAccountDrafts: true
+      })
+    }
+  )
 
   it('retries once and then shows the session error without signing out when the backend still sends the request to sign-in', async () => {
     vi.mocked(fetch)

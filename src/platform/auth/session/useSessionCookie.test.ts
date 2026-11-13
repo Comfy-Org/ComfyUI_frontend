@@ -7,6 +7,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/auth/sso/ssoRequired'))
 
 const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
@@ -469,6 +470,39 @@ describe('useSessionCookie', () => {
     expect(globalThis.fetch).not.toHaveBeenCalled()
     expect(mockReportError).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { shown: true, result: 'sso_required', reported: false },
+    { shown: false, result: 'failed', reported: true }
+  ])(
+    'recreateSession presents SSO when ingest refuses the session for SSO and answers $result (the SSO screen shows: $shown)',
+    async ({ shown, result, reported }) => {
+      useAuthStore().currentUser = fromPartial({
+        uid: 'user-a',
+        email: 'user-a@example.com'
+      })
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-id-token'
+      )
+      vi.mocked(globalThis.fetch).mockResolvedValue(
+        Response.json(
+          { code: 'sso_required', message: 'use SSO' },
+          { status: 403 }
+        )
+      )
+      const { useSessionCookie } = await loadUseSessionCookie()
+      const { presentSsoRequired } =
+        await import('@/platform/auth/sso/ssoRequired')
+      vi.mocked(presentSsoRequired).mockReturnValue(shown)
+
+      expect(await useSessionCookie().recreateSession()).toBe(result)
+      expect(presentSsoRequired).toHaveBeenCalledExactlyOnceWith(
+        'session_refused',
+        { email: 'user-a@example.com' }
+      )
+      expect(mockReportError).toHaveBeenCalledTimes(reported ? 1 : 0)
+    }
+  )
 
   it('sessionRequiresSso is false once the session is created', async () => {
     vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')

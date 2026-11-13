@@ -403,7 +403,7 @@ async function recoverSession(oauthRequestId: string) {
   const offerSignIn = { action: 'sign_in_again', oauthRequestId } as const
   if (recreated === 'identity_changed') return showSessionError()
   if (recreated === 'unavailable') return showSessionError({ action: 'retry' })
-  if (recreated === 'failed') return showSessionError(offerSignIn)
+  if (recreated !== 'created') return showSessionError(offerSignIn)
   const retried = await fetchOAuthConsentChallenge(oauthRequestId)
   if (left) return
   if (retried.kind === 'challenge') showChallenge(retried.challenge)

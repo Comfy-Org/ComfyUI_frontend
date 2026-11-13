@@ -78,11 +78,12 @@ interface InteractiveSignIn {
 
 type Phase = WebSessionIdentityState['phase']
 
-/** `unavailable`: the session could not be judged, and the tab stays signed in. */
+/** `unavailable`: the session could not be judged, and the tab stays signed in. `sso_required`: the SSO screen is shown. */
 export type SessionRecreation =
   | 'created'
   | 'identity_changed'
   | 'unavailable'
+  | 'sso_required'
   | 'failed'
 
 /** Why this tab holds no session; `lapsed` is the server's, not a person's, doing. */
