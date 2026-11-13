@@ -398,12 +398,12 @@ describe('SubgraphIO - Advanced Scenarios', () => {
       subgraph.addOutput(name, 'STRING')
     )
     subgraph.outputNode.arrange()
-    const tall = subgraph.outputNode.size[1]
+    const tall = subgraph.outputNode.boundingRect[3]
 
     for (const output of outputs.slice(1)) subgraph.removeOutput(output)
     subgraph.outputNode.arrange()
 
-    expect(subgraph.outputNode.size[1]).toBeLessThan(tall)
+    expect(subgraph.outputNode.boundingRect[3]).toBeLessThan(tall)
   })
 
   it('keeps a requested input node size larger than its slots', () => {
@@ -413,7 +413,8 @@ describe('SubgraphIO - Advanced Scenarios', () => {
 
     subgraph.inputNode.arrange()
 
-    expect([...subgraph.inputNode.size]).toEqual([344, 400])
+    const [, , width, height] = subgraph.inputNode.boundingRect
+    expect([width, height]).toEqual([344, 400])
   })
 
   it('maintains slot synchronization across multiple instances', () => {
@@ -553,6 +554,24 @@ describe('SubgraphIO - Definition-keyed layout', () => {
     expect(
       layoutStore.getNodeLayout(previousId, subgraph.inputNode.id)
     ).toBeNull()
+  })
+
+  it('saves the fitted size without writing it as layout intent', async () => {
+    const subgraph = createTestSubgraph()
+    for (const name of ['a', 'b', 'c', 'd']) subgraph.addOutput(name, 'STRING')
+    const { outputNode } = subgraph
+    const changes: unknown[] = []
+    const stop = layoutStore.onChange((change) => changes.push(change))
+
+    outputNode.arrange()
+    await Promise.resolve()
+    stop()
+
+    expect(changes).toEqual([])
+    expect(outputNode.asSerialisable().bounding).toEqual(
+      outputNode.boundingRect.export()
+    )
+    expect(outputNode.asSerialisable().bounding[3]).not.toBe(outputNode.size[1])
   })
 
   it('drops pseudo-node layout and measurements when the root graph is cleared', () => {

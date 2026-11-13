@@ -74,15 +74,21 @@ export abstract class SubgraphIONodeBase<
       : SubgraphIONodeBase.roundedRadius
   }
 
-  private get storedRect(): Rectangle {
+  private fitted: Point | undefined
+
+  private get layoutRect(): Rectangle {
     refreshNodeGeometry(this)
-    return nodeGeometryBuffer(this)
+    const [x, y, width, height] = nodeGeometryBuffer(this)
+    const [fittedWidth, fittedHeight] = this.fitted
+      ? this.fitSize(...this.fitted)
+      : [width, height]
+    return new Rectangle(x, y, fittedWidth, fittedHeight)
   }
 
   get boundingRect(): Rectangle {
-    const { measured, storedRect } = this
-    if (!measured) return storedRect
-    const [x, y, width] = storedRect
+    const { measured, layoutRect } = this
+    if (!measured) return layoutRect
+    const [x, y, width] = layoutRect
     const offsetX = this.slotDirection === 'output' ? width - measured.width : 0
     return new Rectangle(x + offsetX, y, measured.width, measured.height)
   }
@@ -377,10 +383,7 @@ export abstract class SubgraphIONodeBase<
     }
 
     if (!measured)
-      this.size = this.fitSize(
-        maxWidth + 2 * roundedRadius,
-        currentY - y + roundedRadius
-      )
+      this.fitted = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
   }
 
   protected fitSize(width: number, height: number): Point {
@@ -450,7 +453,7 @@ export abstract class SubgraphIONodeBase<
   asSerialisable(): ExportedSubgraphIONode {
     return {
       id: serializeNodeId(this.id),
-      bounding: this.storedRect.export(),
+      bounding: this.layoutRect.export(),
       pinned: this.pinned ? true : undefined
     }
   }
