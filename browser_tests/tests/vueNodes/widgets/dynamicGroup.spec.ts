@@ -456,7 +456,7 @@ test.describe(
           const originalId =
             await comfyPage.vueNodes.getNodeIdByTitle('New Subgraph')
           await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
-          await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
+          await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
           await comfyPage.command.executeCommand('Comfy.Canvas.CopySelected')
           const bounds = await comfyPage.vueNodes
             .getNodeLocator('2')
@@ -843,7 +843,7 @@ test.describe(
       await original.getByLabel('LoRA #2 enabled', { exact: true }).click()
 
       await comfyPage.command.executeCommand('Comfy.Canvas.SelectAll')
-      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
+      await expect(comfyPage.vueNodes.emphasizedNodes).toHaveCount(2)
       await comfyPage.command.executeCommand('Comfy.Canvas.CopySelected')
       const previewBounds = await comfyPage.vueNodes
         .getNodeLocator('2')

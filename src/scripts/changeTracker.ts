@@ -19,6 +19,11 @@ import {
   parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
+import {
+  canCaptureCanvas,
+  isCanvasCaptureBlocked,
+  resetCanvasTrackerForTest
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -38,6 +43,7 @@ import {
 import { useApp } from '@/scripts/appInstance'
 import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
 import { clipspace } from '@/scripts/clipspace'
+import { travelFocusedNodeHistory } from '@/scripts/focusedNodeHistory'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
@@ -334,8 +340,25 @@ function reportInactiveTrackerCall(method: string, workflowPath: string) {
   assert(false, `ChangeTracker.${method}() called on inactive tracker`)
 }
 
+const reportedCanvasMismatchCalls = new Set<string>()
+
+function reportCanvasMismatchCall(method: string, workflowPath: string) {
+  const key = `${method}:${workflowPath}`
+  if (reportedCanvasMismatchCalls.has(key)) return
+  reportedCanvasMismatchCalls.add(key)
+  assert(
+    false,
+    `ChangeTracker.${method}() called while another workflow's graph is on the canvas`
+  )
+}
+
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
+
+  static resetCanvasTrackerForTest() {
+    resetCanvasTrackerForTest()
+    reportedCanvasMismatchCalls.clear()
+  }
   /**
    * Guard flag to prevent captureCanvasState from running during loadGraphData.
    * Between rootGraph.configure() and afterLoadNewGraph(), the rootGraph
@@ -414,7 +437,9 @@ export class ChangeTracker implements WorkflowChangeTracker {
       reportInactiveTrackerCall('deactivate', this.workflow.path)
       return
     }
-    if (!this._restoringState) this.captureCanvasState()
+    if (!this._restoringState && canCaptureCanvas(this)) {
+      this.captureCanvasState()
+    }
     this.store()
   }
 
@@ -426,7 +451,9 @@ export class ChangeTracker implements WorkflowChangeTracker {
    * @internal Not part of the public extension API.
    */
   prepareForSave() {
-    if (isActiveTracker(this)) this.captureCanvasState()
+    if (isActiveTracker(this) && canCaptureCanvas(this)) {
+      this.captureCanvasState()
+    }
   }
 
   restore() {
@@ -517,6 +544,11 @@ export class ChangeTracker implements WorkflowChangeTracker {
       reportInactiveTrackerCall('captureCanvasState', this.workflow.path)
       return
     }
+    if (isCanvasCaptureBlocked()) return
+    if (!canCaptureCanvas(this)) {
+      reportCanvasMismatchCall('captureCanvasState', this.workflow.path)
+      return
+    }
 
     const currentState = clone(
       useApp().rootGraph.serialize()
@@ -548,7 +580,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
       ChangeTracker.isLoadingGraph ||
-      isChangeCaptureSuppressed()
+      isChangeCaptureSuppressed() ||
+      !canCaptureCanvas(this)
     )
       return
 
@@ -702,6 +735,9 @@ export class ChangeTracker implements WorkflowChangeTracker {
 
         // The layer editor has its own session-local undo history
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
+
+        const shortcut = historyShortcut(e)
+        if (shortcut && travelFocusedNodeHistory(shortcut)) return
 
         keyIgnored =
           e.key === 'Control' ||

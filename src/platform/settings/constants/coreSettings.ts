@@ -170,7 +170,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Workflow.NamedValuesRestore',
     name: 'Restore widget values by name',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     experimental: true
   },
   {
@@ -962,7 +962,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     telemetry: { trackChanges: true, includeValues: true },
     migrateDeprecatedValue(val: unknown) {
       const value = val as string
-      // Legacy custom palettes were prefixed with 'custom_'
       return value.startsWith('custom_') ? value.replace('custom_', '') : value
     }
   },

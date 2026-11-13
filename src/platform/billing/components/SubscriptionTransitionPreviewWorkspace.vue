@@ -6,11 +6,8 @@
     :copy
     :locale
     :subscription-loaded="subscription !== null"
-    :subscription-cancelled="subscription?.isCancelled ?? false"
-    :subscription-end-date="subscription?.endDate"
     :is-loading
     :action-url
-    :force-reactivation
     :authentication-state
     :payment-cancelable
     :canceling-payment
@@ -22,11 +19,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * The cloud app's binding of the shared plan-change confirm: its tier names
- * and credits, its translations, and the subscription status that decides
- * whether the change reactivates a cancelled plan (ADR BILLING-WEB-0038).
- */
 import { CheckoutTransitionConfirm } from '@comfyorg/account-ui/billing/checkout'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -49,7 +41,6 @@ const {
   isLoading = false,
   teamPlan = null,
   actionUrl = null,
-  forceReactivation = false,
   authenticationState = null,
   paymentCancelable = false,
   cancelingPayment = false,
@@ -61,9 +52,6 @@ const {
    *  the selected slider stop; all proration money stays driven by previewData. */
   teamPlan?: TeamPlanSelection | null
   actionUrl?: string | null
-  /** Server-authoritative fallback for legacy status reads that omit a
-   * scheduled cancellation until subscribe enforces the consent gate. */
-  forceReactivation?: boolean
   authenticationState?: BillingAuthenticationState | null
   paymentCancelable?: boolean
   cancelingPayment?: boolean

@@ -1,8 +1,12 @@
 import type {
   OAuthConsentChallenge as GeneratedOAuthConsentChallenge,
-  OAuthConsentChallengeWorkspace
+  OAuthConsentChallengeWorkspace,
+  OAuthConsentVerifiedClient
 } from '@comfyorg/ingest-types'
-import { zErrorResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zErrorResponse,
+  zOAuthConsentVerifiedClient
+} from '@comfyorg/ingest-types/zod'
 
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 
@@ -39,12 +43,36 @@ export type OAuthConsentChallenge = Omit<
      * Not in the spec yet.
      */
     client_application_type?: 'native' | 'web'
+    user_email?: string
+    user_display_name?: string
   }
 
 export function isFirstPartyClient(
   challenge: Pick<OAuthConsentChallenge, 'client_provenance'>
 ): boolean {
   return challenge.client_provenance === 'first_party'
+}
+
+export const verifiedClientIcons: Record<
+  OAuthConsentVerifiedClient['platform'],
+  string
+> = {
+  chatgpt: 'icon-[comfy--openai]',
+  claude: 'icon-[comfy--anthropic]'
+}
+
+export function verifiedClient(
+  challenge: Pick<
+    OAuthConsentChallenge,
+    'client_provenance' | 'verified_client'
+  >
+): OAuthConsentVerifiedClient | undefined {
+  if (challenge.client_provenance !== 'dynamic') return undefined
+  const parsed = zOAuthConsentVerifiedClient.safeParse(
+    challenge.verified_client
+  )
+  if (!parsed.success || !parsed.data.display_name.trim()) return undefined
+  return parsed.data
 }
 
 export function redirectHost(uri: string | undefined): string | undefined {
@@ -124,10 +152,16 @@ function assertChallenge(
     !Array.isArray(challenge.scopes) ||
     !challenge.scopes.every((scope) => typeof scope === 'string') ||
     !Array.isArray(challenge.workspaces) ||
-    !challenge.workspaces.every(isValidWorkspace)
+    !challenge.workspaces.every(isValidWorkspace) ||
+    !isOptionalString(challenge.user_email) ||
+    !isOptionalString(challenge.user_display_name)
   ) {
     throw new Error('OAuth consent challenge is invalid')
   }
+}
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string'
 }
 
 function isValidWorkspace(value: unknown): value is OAuthWorkspace {

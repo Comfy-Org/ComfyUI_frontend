@@ -171,6 +171,13 @@ export function useFeatureFlags() {
         false
       )
     },
+    get signedOutRerouteEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED,
+        remoteConfig.value.signed_out_reroute_enabled,
+        false
+      )
+    },
     get partnerNodeGovernanceEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
@@ -206,6 +213,13 @@ export function useFeatureFlags() {
     },
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+    },
+    get openOnCloudEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
+        remoteConfig.value.open_on_cloud_enabled,
+        import.meta.env.DEV
+      )
     },
     get deployToCloud() {
       return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
@@ -323,6 +337,18 @@ export function useFeatureFlags() {
         remoteConfig.value.member_credit_limits_enabled
       )
     },
+    get billingNewUxEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.BILLING_NEW_UX_ENABLED,
+        remoteConfig.value.billing_new_ux_enabled
+      )
+    },
+    get billingAutoTopUpAtCheckoutEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED,
+        remoteConfig.value.billing_auto_top_up_at_checkout_enabled
+      )
+    },
     get billingSdkTopupEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
@@ -346,6 +372,19 @@ export function useFeatureFlags() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
         remoteConfig.value.unified_billing_settings
+      )
+    },
+    get pricingTableFallback() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.PRICING_TABLE_FALLBACK,
+        remoteConfig.value.pricing_table_fallback
+      )
+    },
+    get oauthConsentSwitchAccountEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED,
+        remoteConfig.value.oauth_consent_switch_account_enabled,
+        false
       )
     },
     get v1PaymentRecovery() {
@@ -406,10 +445,13 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,
+      [ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED]:
+        flags.signedOutRerouteEnabled,
       [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
         flags.partnerNodeGovernanceEnabled,
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
+      [ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED]: flags.openOnCloudEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
@@ -424,12 +466,18 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,
+      [ServerFeatureFlag.BILLING_NEW_UX_ENABLED]: flags.billingNewUxEnabled,
+      [ServerFeatureFlag.BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED]:
+        flags.billingAutoTopUpAtCheckoutEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
         flags.billingSdkSubscriptionEnabled,
       [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
         flags.unifiedBillingSettingsEnabled,
+      [ServerFeatureFlag.PRICING_TABLE_FALLBACK]: flags.pricingTableFallback,
+      [ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED]:
+        flags.oauthConsentSwitchAccountEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,

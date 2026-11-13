@@ -105,6 +105,7 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   private_models_enabled?: boolean
   onboarding_survey_enabled?: boolean
   onboarding_survey?: OnboardingSurvey
+  signed_out_reroute_enabled?: boolean
   /** Full hosted (external) survey URL embedded in the Nodes Manager modal on Cloud. */
   manager_survey_url?: string
   cancellation_survey_id?: string
@@ -140,8 +141,13 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
   member_credit_limits_enabled?: boolean
+  billing_new_ux_enabled?: boolean
+  billing_auto_top_up_at_checkout_enabled?: boolean
   v1_payment_recovery?: boolean
   unified_billing_settings?: boolean
+  /** Restores the in-app pricing table where the Plans page dialogs and same-tab redirect now go. */
+  pricing_table_fallback?: boolean
+  oauth_consent_switch_account_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
   /** Absent when the backend has no key configured, not an empty string; always sanitize with the reader before trusting it. */

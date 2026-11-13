@@ -416,5 +416,9 @@ export function useTemplateModelRowDownloads({
     stopLegacyProgress?.()
   }
 
-  return { stateFor, request, dispose }
+  function canResume(_model: ModelWithUrl): boolean {
+    return false
+  }
+
+  return { stateFor, request, canResume, dispose }
 }

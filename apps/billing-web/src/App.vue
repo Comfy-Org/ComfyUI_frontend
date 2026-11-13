@@ -7,6 +7,7 @@ import { billingIntentPath } from '@comfyorg/billing-contract'
 import { safeReturnTo } from '@/auth/returnTo'
 import BillingShell from '@/components/BillingShell.vue'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { HANDOFF_PATH, handoffTab, isHandoffPath } from '@/handoff/handoffTab'
 import { SIGN_IN_PATH } from '@/router'
 import { billedScope, billingWebLivePhase } from '@/session/billingWebAuth'
 import EntryErrorView from '@/views/EntryErrorView.vue'
@@ -15,14 +16,14 @@ const { error } = useBillingEntry()
 const route = useRoute()
 const router = useRouter()
 
-/**
- * The router guard only runs on navigation, so a session refused after the
- * page rendered (a restored credential for a workspace that has since been
- * deleted) is sent to sign-in here, where the refusal is explained.
- */
 watch(billingWebLivePhase, (next) => {
-  if (next !== 'error' || route.path === SIGN_IN_PATH || route.meta.public)
+  if (route.meta.public) return
+  if (handoffTab.value !== undefined) {
+    if (next !== 'authenticated' && !isHandoffPath(route.path))
+      void router.replace(HANDOFF_PATH)
     return
+  }
+  if (next !== 'error' || route.path === SIGN_IN_PATH) return
   void router.replace({
     path: SIGN_IN_PATH,
     query: { returnTo: route.fullPath }
