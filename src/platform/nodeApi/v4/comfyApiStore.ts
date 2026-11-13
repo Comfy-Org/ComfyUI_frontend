@@ -51,6 +51,7 @@ export const useComfyApiStore = defineStore('comfyApiV4', () => {
     importWorkflowFile: host.importWorkflowFile,
     queue: host.queue,
     reapplyTypeColors: host.reapplyTypeColors,
+    frontendExecution: host.frontendExecution,
     markReady: host.markReady,
     providePacks: host.providePacks,
     endDocument: host.endDocument,

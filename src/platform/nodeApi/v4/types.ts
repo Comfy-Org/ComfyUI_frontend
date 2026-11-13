@@ -1153,3 +1153,78 @@ export interface GroupHandle {
   /** Pans the view so the group is in its middle; `false` if it is gone or not on screen. */
   centerOn(): boolean
 }
+
+export interface NodeDefinition {
+  /**
+   * With `execution: 'frontend'`, says what each output stands for when a prompt is built.
+   * One that throws or answers wrongly is reported, and the node is built as if it had none.
+   */
+  readonly resolve?: Resolver
+}
+
+/** Answers, by output index or name, what the outputs it names stand for. Must not change the graph. */
+export type Resolver = (
+  view: ResolveView
+) => Readonly<Record<string, OutputResolution>>
+
+/** What a resolver sees: its node, and the other nodes of its graph. */
+export interface ResolveView {
+  readonly self: ResolvedNodeView
+  /** The nodes of `type` in the resolved node's own graph, in the graph's order. */
+  nodesOfType(type: string): readonly ResolvedNodeView[]
+}
+
+/** An output left out of the prompt, standing for whatever feeds an input, or a value. */
+export type OutputResolution =
+  | { readonly omit: true }
+  | { readonly forwardTo: InputRef }
+  | { readonly literal: WidgetValue }
+
+/** An input of a node in the same graph as the node that names it. */
+export interface InputRef {
+  readonly nodeId: string
+  readonly input: number
+}
+
+/** A frozen view of a node while a prompt is built. Each field is read when first asked for. */
+export interface ResolvedNodeView {
+  readonly id: string
+  readonly type: string
+  /** `undefined` for a mode that has no name here. */
+  readonly mode: NodeMode | undefined
+  readonly color: string | undefined
+  /** A copy of the node's saved properties. */
+  readonly properties: Readonly<Record<string, unknown>>
+  /** The groups that hold the node's centre, in draw order. */
+  readonly groups: readonly GroupMembership[]
+  readonly inputs: readonly OwnInput[]
+  readonly outputs: readonly OwnOutput[]
+  /** A copy of the value of the node's widget with this name; `undefined` if it has none or it cannot be saved. */
+  widgetValue(name: string): WidgetValue | undefined
+  /** The input at this index, or the first with this name; `undefined` if there is none. */
+  input(ref: string | number): InputRef | undefined
+}
+
+export interface OwnInput {
+  readonly index: number
+  readonly name: string
+  /** The name the editor shows: the label, else the localized name, else the name. */
+  readonly label: string
+  /** The type the link into the input carries; `undefined` with no link. */
+  readonly connectedType: string | undefined
+  /** The node the link comes from; in a subgraph, the subgraph's input node for its own input. */
+  readonly sourceNodeId: string | undefined
+}
+
+export interface OwnOutput {
+  readonly index: number
+  readonly name: string
+  /** The name the editor shows: the label, else the localized name, else the name. */
+  readonly label: string
+  readonly type: string
+}
+
+export interface GroupMembership {
+  readonly id: string
+  readonly title: string
+}

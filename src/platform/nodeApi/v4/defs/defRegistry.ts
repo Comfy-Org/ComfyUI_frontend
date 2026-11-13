@@ -12,7 +12,11 @@ import { createListeners } from '@/platform/nodeApi/shared/listeners'
 import { savedCopier, savedRecord } from '@/platform/nodeApi/shared/savedCopy'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
-import type { DefRegistry, Unsubscribe } from '@/platform/nodeApi/v4/types'
+import type {
+  DefRegistry,
+  Resolver,
+  Unsubscribe
+} from '@/platform/nodeApi/v4/types'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { Packs } from '@/platform/nodeApi/v4/packs'
 import type { WidgetTypes } from '@/platform/nodeApi/v4/widgets/widgetTypes'
@@ -22,6 +26,7 @@ import {
   nodeDefFromDefinition,
   registerDefinedType
 } from './definedNodeType'
+import type { CheckedDefinition } from './definedNodeType'
 import { SELECTOR_NEEDED, checkedSelector } from './defSelector'
 import { createExtensions } from './extensions'
 import type { NodeType } from './extensions'
@@ -41,9 +46,16 @@ export interface NodeTypeHooks extends ComfyExtension {
   getNodeMenuItems(node: LGraphNode): IContextMenuValue[]
 }
 
+/** The resolvers of the types packs defined with one. */
+export interface DefinedResolvers {
+  resolverFor(type: string): Resolver | undefined
+  any(): boolean
+}
+
 interface DefRegistryParts {
   readonly defs: DefRegistry
   readonly nodeTypeHooks: NodeTypeHooks
+  readonly resolvers: DefinedResolvers
   reapplyTypeColors(): void
 }
 
@@ -68,6 +80,7 @@ export function createDefRegistry(
   const refreshed = createListeners('onRefreshed')
   const colors = createTypeColors()
   const hostRegistering = new Set<string>()
+  const resolving = new Map<string, CheckedDefinition>()
 
   function registerHostType(
     nodeClass: typeof LGraphNode,
@@ -120,9 +133,13 @@ export function createDefRegistry(
       addDefinitionHooks(builder, checked)
     )
     extensions.typeRegistered(nodeType)
+    if (checked.resolve) resolving.set(checked.type, checked)
     return once(() => {
       stopHooks()
       extensions.typeUnregistered(nodeType)
+      if (resolving.get(checked.type) === checked) {
+        resolving.delete(checked.type)
+      }
       if (LiteGraph.registered_node_types[checked.type] === nodeClass) {
         LiteGraph.unregisterNodeType(checked.type)
       }
@@ -170,7 +187,11 @@ export function createDefRegistry(
       refreshComboInNodes: () => refreshed.notify(),
       getNodeMenuItems: dispatch.menuItemsFor
     },
-    reapplyTypeColors: colors.reapply
+    reapplyTypeColors: colors.reapply,
+    resolvers: {
+      resolverFor: (type) => resolving.get(type)?.resolve,
+      any: () => resolving.size > 0
+    }
   }
 }
 

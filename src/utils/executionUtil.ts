@@ -47,6 +47,12 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
   return value
 }
 
+/** What a prompt build asks of the node API. */
+export interface FrontendExecution {
+  /** Puts its own executable form in place of each node whose outputs a pack resolves. */
+  adoptNodes(nodes: Map<ExecutionId, ExecutableLGraphNode>): void
+}
+
 /**
  * Converts the current graph workflow for sending to the API.
  * @note Node widgets are updated before serialization to prepare queueing.
@@ -58,9 +64,9 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
  */
 export const graphToPrompt = async (
   graph: LGraph,
-  options: { sortNodes?: boolean } = {}
+  options: { sortNodes?: boolean; frontendExecution?: FrontendExecution } = {}
 ): Promise<{ workflow: ComfyWorkflowJSON; output: ComfyApiWorkflow }> => {
-  const { sortNodes = false } = options
+  const { sortNodes = false, frontendExecution } = options
 
   for (const node of graph.computeExecutionOrder(false)) {
     const innerNodes = node.getInnerNodes
@@ -110,6 +116,7 @@ export const graphToPrompt = async (
       nodeDtoMap.set(innerNode.id, innerNode)
     }
   }
+  frontendExecution?.adoptNodes(nodeDtoMap)
 
   const output: ComfyApiWorkflow = {}
   // Process nodes in order of execution

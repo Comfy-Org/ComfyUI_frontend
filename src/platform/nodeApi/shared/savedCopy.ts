@@ -69,6 +69,13 @@ function isSavedList(value: SavableValue): value is readonly SavableValue[] {
   return Array.isArray(value)
 }
 
+/** A frozen copy of `value` as a workflow would save it, `undefined` as JSON drops it. Throws for a value it cannot save. */
+export function savedCopy(value: unknown): SavableValue | undefined {
+  const saved = savedValue(value)
+  if (!saved.ok) throw saved.error
+  return saved.value
+}
+
 function deepFreeze<T>(value: T): T {
   if (typeof value !== 'object' || value === null) return value
   for (const child of Object.values(value)) deepFreeze(child)

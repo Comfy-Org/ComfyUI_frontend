@@ -102,6 +102,10 @@ import {
   hostNodeDef,
   registerHostType
 } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import {
+  addBackendNode,
+  addNodeOfType
+} from '@/platform/nodeApi/v4/execution/__fixtures__/promptGraphs'
 import type {
   Comfy,
   NodeCreatedEvent,
@@ -4417,6 +4421,30 @@ describe('ComfyApp', () => {
       await app.handleFile(createTestFile('graph.bin', ''))
 
       expect(app.rootGraph.id).toBe(DOCUMENT_ID)
+    })
+  })
+
+  describe('node API in the prompt', () => {
+    it('builds the prompt with the resolvers packs defined', async () => {
+      onTestFinished(() => {
+        delete window.comfy_v4
+      })
+      useComfyApiStore().publish()
+      assert(window.comfy_v4)
+      window.comfy_v4.defs.define({
+        type: 'Pack/Constant',
+        execution: 'frontend',
+        outputs: [{ name: 'out', type: 'STRING' }],
+        resolve: () => ({ 0: { literal: 'answered' } })
+      })
+      const graph = new LGraph()
+      const constant = addNodeOfType(graph, 'Pack/Constant')
+      const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+      constant.connect(0, consumer, 0)
+
+      const { output } = await app.graphToPrompt(graph)
+
+      expect(output[String(consumer.id)].inputs).toEqual({ x: 'answered' })
     })
   })
 
