@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
-import type { EffectScope } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { app } from '@/scripts/app'
@@ -15,22 +14,16 @@ function configureRootGraph() {
 }
 
 describe(useLiveGraphNode, () => {
-  let scope: EffectScope
-  beforeEach(() => {
-    scope = effectScope()
-    return () => scope.stop()
-  })
-
   it('resolves the node immediately', () => {
     const node = createMockLGraphNode({ id: 1 })
-    const live = scope.run(() => useLiveGraphNode(() => node))
+    const live = effectScope().run(() => useLiveGraphNode(() => node))
 
     expect(live?.value).toBe(node)
   })
 
   it('resolves again after the root graph is configured', () => {
     let current: LGraphNode | undefined = createMockLGraphNode({ id: 1 })
-    const live = scope.run(() => useLiveGraphNode(() => current))
+    const live = effectScope().run(() => useLiveGraphNode(() => current))
 
     const replacement = createMockLGraphNode({ id: 1 })
     current = replacement
@@ -45,6 +38,7 @@ describe(useLiveGraphNode, () => {
   it('stops following the graph once its scope is disposed', () => {
     const original = createMockLGraphNode({ id: 1 })
     let current = original
+    const scope = effectScope()
     const live = scope.run(() => useLiveGraphNode(() => current))
 
     scope.stop()

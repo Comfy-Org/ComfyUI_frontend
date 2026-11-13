@@ -1,28 +1,25 @@
+import { useSubgraphInputValuesStore } from '@/components/graph/subgraph/subgraphInputValuesStore'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
+import {
+  getNodeByState,
+  resolveInputSourceNode
+} from '@/utils/graphTraversalUtil'
 
 function viewedSubgraphHost(
   node: LGraphNode,
   renderedNodeId: NodeId
 ): SubgraphNode | undefined {
-  const graph = node.graph
-  if (!graph || graph === graph.rootGraph) return undefined
-
   const rendered = app.canvas.graph?.getNodeById(renderedNodeId)
-  if (rendered?.isSubgraphNode() && rendered.subgraph === graph) return rendered
+  if (rendered?.isSubgraphNode() && rendered.subgraph === node.graph)
+    return rendered
 
-  const { navigationStack } = useSubgraphNavigationStore()
-  if (navigationStack.at(-1) !== graph) return undefined
-  const parent = navigationStack.at(-2) ?? graph.rootGraph
-  const instances = parent.nodes.filter(
-    (candidate): candidate is SubgraphNode =>
-      candidate.isSubgraphNode() && candidate.subgraph === graph
-  )
-  return instances.length === 1 ? instances[0] : undefined
+  const { graph, selected } = useSubgraphInputValuesStore()
+  if (!graph || graph !== node.graph || !selected) return undefined
+  const host = getNodeByState(graph.rootGraph, selected)
+  return host?.isSubgraphNode() ? host : undefined
 }
 
 export function resolveWidgetInputSource(
