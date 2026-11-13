@@ -185,6 +185,46 @@ registered, so `extend` cannot depend on the order.
 29. A definition may also declare `onConnectionsChanged` and
     `onPropertyChanged`.
 
+### Menus and colours
+
+30. `addMenuItem(item)` adds an entry to the context menu of the type's
+    nodes, through the host extension's `getNodeMenuItems` hook, which both
+    renderers' menus collect. An item is checked whole and copied when it is
+    added: a plain object of `label`, `when`, `run`, `items` and `order` only,
+    a label that is text or a function, functions for `when` and `run`, a
+    finite `order`, a submenu that is a function or a list of `{ label, run }`,
+    and `run` or `items` or both. Submenus are one level deep, as every stored
+    pack uses them.
+31. Each time a node's menu opens, an item is shown only when `when` returns
+    `true`; its label and a submenu function are asked then, with the node's
+    handle, inside the listener isolation, so an item whose function throws or
+    gives something unusable is reported and left out and the others are
+    shown. An item with an empty submenu is shown only if it has `run`.
+    Entries are sorted by `order` (none counts as 0); ties keep the order they
+    were added in. A `run` for a node that has been removed since the menu
+    opened does nothing.
+32. `typeColor(type)` reads the colour the host draws a data type's links in
+    (`LGraphCanvas.link_type_colors`), and `undefined` when the type has none
+    or an empty one.
+33. `setTypeColor(type, color)` colours a type the palette leaves uncoloured,
+    such as one the pack introduced. A type whose colour is the newest pack
+    colour for it may be coloured again, by the same pack or another (review
+    finding B-15): the newest colour shows. Each disposer removes only its own
+    colour; when it removes the colour on show the next newest shows, and
+    when it removes the last one the table gets back what it held before the
+    first, unless a palette has coloured the type since. A type the palette
+    colours is refused with a `TypeError`.
+34. Applying a palette writes an empty colour for every data type it has no
+    colour for, which would clear a pack's colour. The theme service calls the
+    host side's `reapplyTypeColors()` after it applies a palette; it puts back
+    each pack colour the palette cleared and leaves a colour the palette set.
+35. `nodeColor(name)` gives a frozen copy of an entry of
+    `LGraphCanvas.node_colors`, and `undefined` for a name the menu does not
+    have, a property of `Object.prototype` included.
+36. `isTypeCompatible(outputType, inputType)` is
+    `LiteGraph.isValidConnection`, the rule the host links by.
+37. Every type name, colour and colour name must be non-empty text.
+
 ## Alternatives considered
 
 - Call the API from `litegraphService.registerNodeDef`, as the earlier
@@ -236,7 +276,11 @@ registered, so `extend` cannot depend on the order.
 - A property bound to a widget (`options.property`) shows the edited value in
   the widget after a `setValue`, because `setProperty` updates the widget
   after the hooks run.
-- Host changes: `useComfyApiStore().publish()` registers the extension.
+- The type colours are global, as the host's table is: a pack's colour for a
+  type shows in every document.
+- Host changes: `useComfyApiStore().publish()` registers the extension;
+  `themeService.setActiveTheme` calls `useComfyApiStore().reapplyTypeColors()`
+  after it applies a palette.
 
 ## What this feature replaces or duplicates, and why
 
@@ -255,6 +299,11 @@ registered, so `extend` cannot depend on the order.
 - **Saved fields** go through the host's extension payload in
   `extensionPersistence.ts`, and the fields it saves itself are its own list
   (`isNodeCanonicalField`).
+- **Type colours** are the host's own table, with a record of each pack's
+  claim beside it so a disposer can take back only its own colour.
+  `getLinkTypeColor` in `litegraphUtil.ts` reads the same table but gives the
+  default link colour for a type with none, which would hide that the type
+  is uncoloured.
 - **Calling a pack callback** goes through `callListener`, the error isolation
   the listener primitive already had, now exported so every callback the API
   calls is reported the same way.

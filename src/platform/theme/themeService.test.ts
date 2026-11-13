@@ -6,7 +6,10 @@ import { basename, join } from 'node:path'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
 import { themeSchema } from '@comfyorg/theme-core/themePresetSchema'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
+import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { ComfyApp } from '@/scripts/app'
 import {
   useLegacyColorPaletteService,
@@ -487,5 +490,31 @@ describe('useThemeService', () => {
       ['10px', 10],
       ['4px', 4]
     ])
+  })
+})
+
+describe('pack colours across palettes', () => {
+  it('puts back the colour a pack gave its own type after a palette clears it', async () => {
+    clearRootThemeAfterTest()
+    const before = { ...LGraphCanvas.link_type_colors }
+    onTestFinished(() => {
+      delete LGraphCanvas.link_type_colors.PACK_PIPE
+      Object.assign(LGraphCanvas.link_type_colors, before)
+    })
+    useNodeDefStore().updateNodeDefs([
+      hostNodeDef('PipeMaker', { output: ['PACK_PIPE'], output_name: ['pipe'] })
+    ])
+    useComfyApiStore().publish()
+    const published = window.comfy_v4
+    assert(published)
+    onTestFinished(() => {
+      delete window.comfy_v4
+    })
+    published.defs.setTypeColor('PACK_PIPE', '#a1b2c3')
+
+    await useThemeService().setActiveTheme('dark')
+
+    expect(LGraphCanvas.link_type_colors.PACK_PIPE).toBe('#a1b2c3')
+    expect(published.defs.typeColor('PACK_PIPE')).toBe('#a1b2c3')
   })
 })

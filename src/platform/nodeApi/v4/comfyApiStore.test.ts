@@ -9,7 +9,7 @@ import {
   vi
 } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
@@ -207,5 +207,24 @@ describe("the app's node API", () => {
     await useExtensionService().invokeExtensionsAsync('refreshComboInNodes', {})
 
     expect(listener).toHaveBeenCalledOnce()
+  })
+
+  it('adds the menu entries packs give a type to the host node menu', async () => {
+    const comfy = publishedApi()
+    comfy.defs.extend('HostType', (builder) =>
+      builder.addMenuItem({ label: 'From a pack', run: () => {} })
+    )
+    await useLitegraphService().registerNodeDef(
+      'HostType',
+      hostNodeDef('HostType')
+    )
+    const graph = new LGraph()
+    const node = LiteGraph.createNode('HostType')
+    assert(node)
+    graph.add(node)
+
+    expect(
+      app.collectNodeMenuItems(node).map((item) => item.content)
+    ).toContain('From a pack')
   })
 })

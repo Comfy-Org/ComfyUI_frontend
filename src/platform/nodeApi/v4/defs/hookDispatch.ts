@@ -1,4 +1,7 @@
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 
 import { callListener } from '@/platform/nodeApi/shared/listeners'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
@@ -12,6 +15,7 @@ import type {
 import type { HookInstaller, NodeType } from './extensions'
 import { connectionInstallers } from './connectionDispatch'
 import { createLifecycleDispatch } from './lifecycleDispatch'
+import { menuEntry } from './nodeMenu'
 import { pointerInstallers } from './pointerDispatch'
 import { propertyInstallers } from './propertyDispatch'
 import type { HookName } from './nodeHooks'
@@ -28,14 +32,20 @@ const METHODS_FOR: Readonly<Record<HookName, readonly string[]>> = {
   onBeforeConnect: ['onConnectInput', 'onConnectOutput'],
   onPropertyChanged: ['onPropertyChanged'],
   onHover: ['onMouseEnter', 'onMouseLeave'],
-  onDoubleClick: ['onDblClick']
+  onDoubleClick: ['onDblClick'],
+  addMenuItem: []
+}
+
+interface HookDispatch extends HookInstaller {
+  /** The context-menu entries packs added for a node, lowest `order` first. */
+  menuItemsFor(node: LGraphNode): IContextMenuValue[]
 }
 
 export function createHookDispatch(
   nodes: NodeHandles,
   source: HookSource,
   copyOfSaved: SavedCopier
-): HookInstaller {
+): HookDispatch {
   const installed = new WeakMap<typeof LGraphNode, Set<string>>()
 
   function isInGraph(node: LGraphNode): boolean {
@@ -71,6 +81,23 @@ export function createHookDispatch(
         installers[method](nodeType.nodeClass, nodeType.type)
       }
     },
-    demandChanged: lifecycle.demandChanged
+    demandChanged: lifecycle.demandChanged,
+    menuItemsFor(node) {
+      const entries = deliver(
+        node.type,
+        'addMenuItem',
+        node,
+        (item, handle) => ({
+          order: item.order,
+          entry: menuEntry(item, handle)
+        })
+      )
+      return entries
+        .flatMap((shown) =>
+          shown?.entry ? [{ ...shown, entry: shown.entry }] : []
+        )
+        .sort((first, second) => first.order - second.order)
+        .map(({ entry }) => entry)
+    }
   }
 }
