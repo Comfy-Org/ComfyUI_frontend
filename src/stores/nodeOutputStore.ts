@@ -61,6 +61,7 @@ const createOutputs = (
     parseAnnotatedPath(image, fallbackType)
   )
   return {
+    isInputPreview: true,
     images: paths.map(({ filepath, rootFolder }) => ({
       type: isResultItemType(rootFolder) ? rootFolder : fallbackType,
       ...parseFilePath(filepath)
