@@ -907,11 +907,8 @@
     "index": "{current} / {total}"
   },
   "billingHandoff": {
-    "failed": "Die Abrechnung konnte nicht geöffnet werden. Versuchen Sie es erneut.",
-    "openBilling": "Abrechnung öffnen",
     "opening": "Checkout wird geöffnet…",
     "openingDetail": "Dies dauert einige Sekunden.",
-    "popupBlocked": "Ihr Browser hat den Abrechnungs-Tab blockiert.",
     "signInAgain": "Melden Sie sich erneut an, um die Abrechnung zu öffnen.",
     "superseded": "Ihr Konto oder Workspace wurde geändert, während die Abrechnung geöffnet wurde. Versuchen Sie es erneut."
   },

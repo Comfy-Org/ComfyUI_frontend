@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
@@ -59,6 +60,23 @@ describe(useWidgetValueHistory, () => {
     history.redo()
     expect(value.value).toEqual(['a', 'b'])
     expect(history.canUndo.value).toBe(true)
+  })
+
+  it('exposes its undo and redo to node shortcuts while mounted', async () => {
+    const store = useWidgetHistoryStore()
+    const node = { rootGraphId: 'root', graphId: 'root', nodeId: '1' }
+    const mounted = effectScope()
+    const { value, edit } = mounted.run(() => setup(['a']))!
+    edit(['a', 'b'])
+
+    await store.latestTraveler(node, 'undo')?.travel()
+    expect(value.value).toEqual(['a'])
+
+    await store.latestTraveler(node, 'redo')?.travel()
+    expect(value.value).toEqual(['a', 'b'])
+
+    mounted.stop()
+    expect(store.latestTraveler(node, 'undo')).toBeUndefined()
   })
 
   it('records nothing when a commit does not change the value', () => {

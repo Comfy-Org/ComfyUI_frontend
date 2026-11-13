@@ -907,11 +907,8 @@
     "index": "{current} / {total}"
   },
   "billingHandoff": {
-    "failed": "請求を開けませんでした。もう一度お試しください。",
-    "openBilling": "請求を開く",
     "opening": "チェックアウトを開いています…",
     "openingDetail": "数秒かかります。",
-    "popupBlocked": "ブラウザによって請求タブがブロックされました。",
     "signInAgain": "請求を開くには、もう一度サインインしてください。",
     "superseded": "請求を開いている間に、アカウントまたはワークスペースが変更されました。もう一度お試しください。"
   },

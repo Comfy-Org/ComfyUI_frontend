@@ -1,4 +1,7 @@
-import { autoTopUpOffView } from '@comfyorg/account-core/billing'
+import {
+  autoTopUpOffView,
+  isAutoTopUpNotAvailable
+} from '@comfyorg/account-core/billing'
 import { autoTopUpCardView } from '@comfyorg/account-ui/billing'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { computedAsync } from '@vueuse/core'
@@ -32,7 +35,7 @@ export function useAutoTopUpCardSection(shown: MaybeRefOrGetter<boolean>) {
   useAutoTopUpCardViewed(() => {
     const current = state.value
     return toValue(shown) &&
-      autoTopUpSetup.value?.state !== 'unavailable' &&
+      !isAutoTopUpNotAvailable(autoTopUpSetup.value) &&
       isReady.value &&
       current.kind === 'loaded'
       ? current.settings.status

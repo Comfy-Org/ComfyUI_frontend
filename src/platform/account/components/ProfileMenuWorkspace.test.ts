@@ -28,7 +28,7 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('@/platform/account/composables/useWorkspaceDialogs'))
 vi.mock(import('@comfyorg/telemetry'))
 
-const WorkspaceSwitcherPopoverStub = defineComponent({
+const WorkspaceSwitcherFlyoutStub = defineComponent({
   emits: ['select', 'create'],
   template: `
     <div>
@@ -89,7 +89,7 @@ function renderMenu(served: Partial<Served> = {}) {
     global: {
       plugins: [getActivePinia()!, i18n],
       stubs: {
-        WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
+        WorkspaceSwitcherFlyout: WorkspaceSwitcherFlyoutStub,
         WorkspaceProfilePic: true
       }
     }
