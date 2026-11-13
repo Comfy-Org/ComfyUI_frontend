@@ -5869,6 +5869,7 @@ export const zBillingCapabilitiesResponse = z.object({
   auto_top_up_setup: zAutoTopUpSetup.optional(),
   billing_notice_audience: z.enum(['none', 'team', 'personal']).optional(),
   billing_web_checkout_ui: z.enum(['embedded', 'full_page']),
+  cancel_takes_effect_immediately: z.boolean().optional(),
   capabilities: zBillingCapabilities,
   denied_reason_params: zBillingCapabilityDenialParams.optional(),
   denied_reasons: zBillingCapabilityDenials.optional(),

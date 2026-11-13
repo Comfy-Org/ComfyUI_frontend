@@ -26,7 +26,7 @@ import {
   clampResolution,
   DEBOUNCE_MS,
   DEFAULT_SIZE,
-  getImageThroughSubgraphBoundary,
+  getInputNodeThroughSubgraphBoundary,
   GLSL_NODE_TYPE,
   normalizeDimension
 } from '@/renderer/glsl/glslPreviewUtils'
@@ -261,16 +261,17 @@ function createInnerPreview(
     node: LGraphNode,
     slot: number
   ): Promise<InputImage | null> {
-    const upstreamNode = node.getInputNode(slot)
+    const upstreamNode =
+      node.getInputNode(slot) ??
+      (ownerSubgraphNode
+        ? getInputNodeThroughSubgraphBoundary(node, slot, ownerSubgraphNode)
+        : null)
     if (upstreamNode?.imgs?.length) return upstreamNode.imgs[0]
 
     if (upstreamNode) {
       const url = nodeOutputStore.getNodeImageUrls(upstreamNode)?.[0]
       if (url) return await loadImageFromUrl(url)
     }
-
-    const owner = ownerSubgraphNode
-    if (owner) return getImageThroughSubgraphBoundary(node, slot, owner) ?? null
 
     return null
   }
@@ -496,7 +497,6 @@ function createInnerPreview(
     if (shouldRender.value) debouncedRender()
   })
 
-  // Return dispose function for the inner tier
   return () => {
     disposed = true
     hideExecutedOutput.value = false
