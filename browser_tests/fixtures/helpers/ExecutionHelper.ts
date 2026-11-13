@@ -5,6 +5,10 @@ import type {
   PromptFailureResponse
 } from '@comfyorg/api-client/types'
 import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
+import type {
+  PromptOutputsSkippedFrame,
+  PromptOutputsSkippedNodeError
+} from '@comfyorg/ingest-types'
 import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -256,12 +260,15 @@ export class ExecutionHelper {
   }
 
   /** Send `prompt_outputs_skipped` WS event for outputs Cloud skipped. */
-  outputsSkipped(jobId: string, nodeErrors: Record<string, NodeError>): void {
+  outputsSkipped(
+    jobId: string,
+    nodeErrors: Record<string, PromptOutputsSkippedNodeError>
+  ): void {
     this.requireWs().send(
       JSON.stringify({
         type: 'prompt_outputs_skipped',
         data: { prompt_id: jobId, node_errors: nodeErrors }
-      })
+      } satisfies PromptOutputsSkippedFrame)
     )
   }
 

@@ -4,7 +4,8 @@ import type {
   GetI18nResponse,
   ModelDownloadData,
   ModelFile,
-  PostAssetsFromWorkflowResponse
+  PostAssetsFromWorkflowResponse,
+  PromptOutputsSkippedData
 } from '@comfyorg/ingest-types'
 import {
   zGetEmbeddingsResponse,
@@ -48,7 +49,6 @@ import type {
   ProgressStateWsMessage,
   ProgressTextWsMessage,
   ProgressWsMessage,
-  PromptOutputsSkippedWsMessage,
   StatusWsMessage,
   StatusWsMessageStatus
 } from './executionTypes'
@@ -206,7 +206,7 @@ interface BackendApiCalls {
   execution_error: ExecutionErrorWsMessage
   execution_interrupted: ExecutionInterruptedWsMessage
   execution_cached: ExecutionCachedWsMessage
-  prompt_outputs_skipped: PromptOutputsSkippedWsMessage
+  prompt_outputs_skipped: PromptOutputsSkippedData
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob

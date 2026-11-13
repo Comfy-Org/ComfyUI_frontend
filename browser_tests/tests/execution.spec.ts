@@ -1,6 +1,7 @@
 import { mergeTests } from '@playwright/test'
 
 import type { NodeError } from '@comfyorg/api-client/types'
+import type { PromptOutputsSkippedNodeError } from '@comfyorg/ingest-types'
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -25,7 +26,8 @@ type PromptRequestBody = {
   prompt?: Record<string, PromptRequestNode>
 }
 
-function buildPreviewAnyValidationError(): NodeError {
+function buildPreviewAnyValidationError(): NodeError &
+  PromptOutputsSkippedNodeError {
   return {
     class_type: 'PreviewAny',
     dependent_outputs: [VALIDATION_ERROR_NODE_ID],

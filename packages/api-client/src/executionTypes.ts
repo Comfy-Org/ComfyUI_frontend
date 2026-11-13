@@ -3,7 +3,6 @@ import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from './taskSchema'
-import type { NodeError } from './types'
 import { resultItemType } from './resultItemTypeSchema'
 
 export type JobId = string
@@ -111,12 +110,6 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   traceback: string[]
   current_inputs?: unknown
   current_outputs?: unknown
-}
-/** A node error as Cloud relays it: an entry in `errors` may be a bare string. */
-export type RelayedNodeError = Omit<NodeError, 'errors'> & { errors: unknown[] }
-export interface PromptOutputsSkippedWsMessage {
-  prompt_id: JobId
-  node_errors: Record<string, RelayedNodeError>
 }
 export interface ProgressTextWsMessage {
   nodeId: NodeId

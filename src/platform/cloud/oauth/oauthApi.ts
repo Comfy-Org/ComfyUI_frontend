@@ -53,9 +53,8 @@ export function isFirstPartyClient(
   return challenge.client_provenance === 'first_party'
 }
 
-export const verifiedClientIcons: Record<
-  OAuthConsentVerifiedClient['platform'],
-  string
+export const verifiedClientIcons: Partial<
+  Record<OAuthConsentVerifiedClient['platform'], string>
 > = {
   chatgpt: 'icon-[comfy--openai]',
   claude: 'icon-[comfy--anthropic]'

@@ -29,9 +29,9 @@ import type {
   NodeProgressState,
   NotificationWsMessage,
   ProgressStateWsMessage,
-  ProgressWsMessage,
-  PromptOutputsSkippedWsMessage
+  ProgressWsMessage
 } from '@comfyorg/api-client/executionTypes'
+import type { PromptOutputsSkippedData } from '@comfyorg/ingest-types'
 import type { NodeError } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
@@ -898,7 +898,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handlePromptOutputsSkipped(
-    e: CustomEvent<PromptOutputsSkippedWsMessage>
+    e: CustomEvent<PromptOutputsSkippedData>
   ) {
     const nodeErrors = normalizeRelayedNodeErrors(e.detail.node_errors)
     if (Object.keys(nodeErrors).length === 0) return

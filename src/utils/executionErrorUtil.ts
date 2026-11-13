@@ -1,6 +1,6 @@
-import type { RelayedNodeError } from '@comfyorg/api-client/executionTypes'
 import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { PromptOutputsSkippedNodeError } from '@comfyorg/ingest-types'
 
 type RawPromptError =
   | string
@@ -109,7 +109,7 @@ function toNodeValidationErrors(error: unknown): NodeValidationError[] {
  * message, and a node left with no errors is dropped.
  */
 export function normalizeRelayedNodeErrors(
-  nodeErrors: Record<string, RelayedNodeError>
+  nodeErrors: Record<string, PromptOutputsSkippedNodeError>
 ): Record<string, NodeError> {
   return Object.fromEntries(
     Object.entries(nodeErrors).flatMap(([nodeId, nodeError]) => {

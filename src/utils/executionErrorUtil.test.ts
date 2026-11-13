@@ -391,7 +391,7 @@ describe('executionErrorUtil', () => {
           '10': {
             class_type: 'SaveImage',
             dependent_outputs: ['10'],
-            errors: [42, null]
+            errors: []
           }
         })
       ).toEqual({

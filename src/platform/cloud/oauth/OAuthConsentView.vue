@@ -39,6 +39,7 @@
             data-testid="client-verified"
           >
             <i
+              v-if="verifiedClientIcons[verified.platform]"
               :class="cn(verifiedClientIcons[verified.platform], 'shrink-0')"
               aria-hidden="true"
               data-testid="client-verified-icon"
