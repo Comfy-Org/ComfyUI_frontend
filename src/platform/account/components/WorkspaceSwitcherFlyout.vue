@@ -156,7 +156,6 @@ const filteredWorkspaces = computed(() => {
   )
 })
 
-/** The typed query when it matches no workspace, else empty. */
 const noMatchQuery = computed(() =>
   filteredWorkspaces.value.length === 0 ? searchQuery.value.trim() : ''
 )

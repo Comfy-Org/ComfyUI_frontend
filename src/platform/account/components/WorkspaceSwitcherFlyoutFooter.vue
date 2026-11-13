@@ -64,7 +64,6 @@ const { canCreateWorkspace, createWorkspaceRefusal, maxOwnedWorkspaces } =
   storeToRefs(useTeamWorkspaceStore())
 const createRefusal = useCreateWorkspaceRefusal()
 
-/** The served refusal under Create workspace; the owned limit gets the short line. */
 const createRefusalLine = computed(() => {
   if (
     createWorkspaceRefusal.value === 'owned_workspace_limit' &&
