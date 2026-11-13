@@ -101,11 +101,7 @@
         <Skeleton class="size-full rounded-sm" />
       </div>
       <img
-        v-if="
-          !imageError &&
-          displayUrls[currentIndex] &&
-          !failedHdrPreviews[currentIndex]
-        "
+        v-if="!imageError && mainImageSrc && !failedHdrPreviews[currentIndex]"
         :key="imageKeys[currentIndex]"
         data-testid="main-image"
         :src="mainImageSrc"
@@ -374,14 +370,19 @@ const currentDisplayImage = computed(() =>
     : undefined
 )
 const displayImageUrl = useObjectUrl(() => currentDisplayImage.value?.blob)
+const failedDisplayCopySource = ref<string>()
+const isDownscaled = computed(
+  () =>
+    !!currentDisplayImage.value?.blob &&
+    failedDisplayCopySource.value !== currentImageUrl.value
+)
 const mainImageSrc = computed(() =>
   isHdr.value
     ? currentImageUrl.value
-    : currentDisplayImage.value?.blob
+    : isDownscaled.value
       ? displayImageUrl.value
       : currentDisplayImage.value?.source
 )
-const isDownscaled = computed(() => !!currentDisplayImage.value?.blob)
 const hasMultipleImages = computed(() => items.length > 1)
 const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined
@@ -466,6 +467,10 @@ function updateAspectRatio(event: Event, index: number) {
 }
 
 async function handleImageError(failedUrl: string) {
+  if (isDownscaled.value) {
+    failedDisplayCopySource.value = failedUrl
+    return
+  }
   stopDelayedLoader()
   showLoader.value = false
   if (isHdr.value) {

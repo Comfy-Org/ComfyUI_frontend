@@ -151,6 +151,29 @@ describe('ImagePreview', () => {
     expect(revoke).toHaveBeenCalledWith('blob:display-copy')
   })
 
+  it('falls back to the original image when the downscaled copy fails to load', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockResolvedValue({
+      source: viewUrl('large.png'),
+      blob: new Blob(['display pixels']),
+      originalSize: { width: 4096, height: 2048 }
+    })
+    renderImagePreview({ items: [outputItem('large.png')] })
+
+    const image = await screen.findByTestId('main-image')
+    await vi.waitFor(() =>
+      expect(image).toHaveAttribute('src', 'blob:display-copy')
+    )
+    await fireEvent.error(image)
+
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'src',
+      viewUrl('large.png')
+    )
+    expect(screen.queryByText('Image failed to load')).not.toBeInTheDocument()
+    expect(useTelemetry()?.trackImageLoadFailed).not.toHaveBeenCalled()
+  })
+
   it('clears the previous copy while the next gallery image is pending', async () => {
     const { getDisplayImage } = useImagePreviewStore()
     let nextCopy = 0
@@ -187,10 +210,7 @@ describe('ImagePreview', () => {
     )
 
     await user.click(screen.getByRole('button', { name: 'View image 2 of 2' }))
-    expect(screen.getByTestId('main-image')).not.toHaveAttribute('src')
-    expect(screen.getByTestId('main-image')).not.toHaveAttribute(
-      'data-full-src'
-    )
+    expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
     expect(revoke).toHaveBeenCalledWith('blob:copy-0')
     resolveNext({
       source: defaultUrls[1],
@@ -397,7 +417,7 @@ describe('ImagePreview', () => {
       screen.getByRole('button', { name: 'Download image' })
     ).toBeInTheDocument()
 
-    await fireEvent.error(screen.getByTestId('main-image'))
+    await fireEvent.error(await screen.findByTestId('main-image'))
     await nextTick()
 
     expect(
@@ -472,10 +492,13 @@ describe('ImagePreview', () => {
     expect(navigationDots[1]).toHaveAttribute('aria-current', 'true')
   })
 
-  it('has proper accessibility attributes', () => {
+  it('has proper accessibility attributes', async () => {
     renderImagePreview({ items: [defaultProps.items[0]] })
 
-    expect(screen.getByRole('img')).toHaveAttribute('alt', 'View image 1 of 1')
+    expect(await screen.findByRole('img')).toHaveAttribute(
+      'alt',
+      'View image 1 of 1'
+    )
   })
 
   it('updates alt text when switching images', async () => {
@@ -632,7 +655,7 @@ describe('ImagePreview', () => {
         nodeId: '1'
       })
 
-      const img = screen.getByRole('img')
+      const img = await screen.findByRole('img')
       await fireEvent.load(img)
 
       expect(sync).toHaveBeenCalledWith('1', img, 0)
@@ -644,7 +667,7 @@ describe('ImagePreview', () => {
         items: [outputItem('test1.png', { type: 'input' })],
         nodeId: '1'
       })
-      const img = screen.getByRole('img')
+      const img = await screen.findByRole('img')
 
       unmount()
       await fireEvent.load(img)
@@ -697,7 +720,7 @@ describe('ImagePreview', () => {
       void user
 
       // Simulate image load completing
-      await fireEvent.load(screen.getByRole('img'))
+      await fireEvent.load(await screen.findByRole('img'))
       await nextTick()
 
       // Verify loader is hidden after load
@@ -727,7 +750,7 @@ describe('ImagePreview', () => {
       const { container, rerender } = renderImagePreview({ items })
 
       // Simulate image load completing
-      await fireEvent.load(screen.getByRole('img'))
+      await fireEvent.load(await screen.findByRole('img'))
       await nextTick()
 
       // Verify loader is hidden
@@ -756,7 +779,7 @@ describe('ImagePreview', () => {
       await nextTick()
 
       expect(container.querySelector('.image-preview')).toBeInTheDocument()
-      screen.getByRole('img')
+      await screen.findByRole('img')
     })
   })
 })
