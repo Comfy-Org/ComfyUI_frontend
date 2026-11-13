@@ -350,23 +350,14 @@ leaves the graph feeding execution the wrong data.
     output reorder re-point links in the link store, which raises no intent;
     the editor has no such edit, and no intent kind describes it. So in a
     session bound to a shared document these two edits, like a color change,
-    reach no other participant. The options, none of which this ADR adopts
-    without the owner's decision:
-    - **Keep this**, and record the gap (chosen until decided).
-    - **Re-point by disconnecting and connecting.** It would announce, but
-      every moved link would get a new id, against decision 19, and the
-      saved `links` array would change.
-    - **Announce from the API.** There is no intent kind for an endpoint
-      change; adding one is a change in `graphIntents.ts` and the minter, a
-      core change, and announcing `disconnect` and `connect` for a link whose
-      id stays would describe something that did not happen.
-    - **Refuse the two edits while a shared document is bound.** It keeps the
-      document consistent at the cost of failing the call in those sessions.
-
-    Recommendation: keep this for now, and file the core ticket in "Core
-    limitations" for an intent kind for endpoint changes and for slot fields
-    and slot structure, which the editor's own subgraph and widget code would
-    use too; the API then raises it from the same calls. For `comfy.edit` to
+    reach no other participant. The API does not work around this: it keeps the
+    host's behavior, and the gap is filed as a core limitation. Re-pointing by
+    disconnecting and connecting would give every moved link a new id, against
+    decision 19, and announcing from the API would describe changes that did not
+    happen. An intent kind for endpoint changes and for slot fields and slot
+    structure is a change in core, owned by the core maintainers. The API does
+    not fix this bug; once core fixes it, these calls are correct with no change
+    to the API. For `comfy.edit` to
     be a command interface, slot handles would also need an id that a saved
     document carries, which the host does not have (decision 14).
 
