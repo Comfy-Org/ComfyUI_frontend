@@ -2,6 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type {
+  CanvasBlobLayer,
+  ImageOutput
+} from '@comfyorg/mask-editor/imageOutput'
 
 export interface ImageRef {
   filename: string
@@ -9,30 +13,25 @@ export interface ImageRef {
   type?: string
 }
 
-export interface ImageLayer {
+export interface LoadedImageLayer {
   image: HTMLImageElement
   url: string
 }
 
 interface EditorInputData {
-  baseLayer: ImageLayer
-  maskLayer: ImageLayer
-  paintLayer?: ImageLayer
+  baseLayer: LoadedImageLayer
+  maskLayer: LoadedImageLayer
+  paintLayer?: LoadedImageLayer
   sourceRef: ImageRef
   nodeId: NodeId
 }
 
-export interface EditorOutputLayer {
-  canvas: HTMLCanvasElement
-  blob: Blob
+export interface EditorOutputLayer extends CanvasBlobLayer {
   ref: ImageRef
 }
 
-export interface EditorOutputData {
-  maskedImage: EditorOutputLayer
-  paintLayer: EditorOutputLayer
-  paintedImage: EditorOutputLayer
-  paintedMaskedImage: EditorOutputLayer
+export type EditorOutputData = {
+  [K in keyof ImageOutput]: ImageOutput[K] & { ref: ImageRef }
 }
 
 export const useMaskEditorDataStore = defineStore('maskEditorData', () => {

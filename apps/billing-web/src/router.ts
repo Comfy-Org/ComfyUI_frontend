@@ -1,7 +1,8 @@
 import type { Component } from 'vue'
-import type { RouterHistory, RouteRecordRaw } from 'vue-router'
+import type { LocationQuery, RouterHistory, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { ADD_CREDITS_DEFAULT_CENTS } from '@comfyorg/account-core/billing'
 import type {
   WebEntryBounceReason,
   WebEntryBounceTarget
@@ -24,6 +25,7 @@ import { pricingTableUrl } from '@/checkout/cloudLinks'
 import { awaitCheckoutUiVariant } from '@/config/checkoutUi'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
+import { HANDOFF_PATH, handoffTab, isHandoffPath } from '@/handoff/handoffTab'
 import {
   billingWebLivePhase,
   billingWebPhase,
@@ -38,6 +40,7 @@ import BillingHomeView from '@/views/BillingHomeView.vue'
 import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
 import TopupReturnView from '@/views/TopupReturnView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
+import HandoffEndedView from '@/views/HandoffEndedView.vue'
 import InvoicesView from '@/views/InvoicesView.vue'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
 import ResultView from '@/views/ResultView.vue'
@@ -82,6 +85,11 @@ const routes: RouteRecordRaw[] = [
     component: SignInView
   },
   {
+    path: HANDOFF_PATH,
+    name: 'handoff',
+    component: HandoffEndedView
+  },
+  {
     path: TOPUP_RETURN_PATH,
     name: 'topup-return',
     component: TopupReturnView,
@@ -104,6 +112,30 @@ const routes: RouteRecordRaw[] = [
 ]
 
 export type BillingWebSessionPhase = SessionSnapshot['phase']
+
+const HANDOFF_ENTRY = { product: 'comfyui', return_to: 'comfyui_credits' }
+
+function handoffEntryPath(
+  intent: BillingIntent,
+  extra: Record<string, string> = {}
+): string {
+  const query = new URLSearchParams({ ...HANDOFF_ENTRY, ...extra })
+  return `${billingIntentPath(intent)}?${query}`
+}
+
+function handoffAmount(amount: LocationQuery[string] | undefined): string {
+  if (amount === undefined) return String(ADD_CREDITS_DEFAULT_CENTS)
+  return typeof amount === 'string' ? amount : ''
+}
+
+function handoffLanding({
+  intent,
+  amount_cents: amount
+}: LocationQuery): string {
+  if (intent === 'subscription') return handoffEntryPath('subscription')
+  if (intent !== 'top-up') return APP_ENTRY_PATH
+  return handoffEntryPath('top-up', { amount_cents: handoffAmount(amount) })
+}
 
 const isPlanlessCheckout = (entry: BillingEntry) =>
   entry.intent === 'checkout' && entry.plan === undefined
@@ -245,7 +277,8 @@ export function createBillingRouter(
         reason: 'return_target_rewritten',
         to: entry.returnTo
       })
-    if (entry.workspaceId !== undefined) onEntryWorkspace(entry.workspaceId)
+    if (entry.workspaceId !== undefined && handoffTab.value === undefined)
+      onEntryWorkspace(entry.workspaceId)
     return true
   }
 
@@ -291,12 +324,29 @@ export function createBillingRouter(
     return admitEntry(arrival)
   }
 
+  async function guardHandoffTab(to: {
+    path: string
+    fullPath: string
+    query: LocationQuery
+  }): Promise<boolean | string> {
+    const authenticated = (await readPhase()) === 'authenticated'
+    if (isHandoffPath(to.path)) {
+      recordBillingEntry(undefined)
+      return authenticated ? handoffLanding(to.query) : true
+    }
+    if (to.path === SIGN_IN_PATH) return HANDOFF_PATH
+    if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
+    else if (!(await readEntry(to.fullPath))) return false
+    return authenticated || HANDOFF_PATH
+  }
+
   router.beforeEach(async (to) => {
     latestNavigation += 1
     if (to.meta.public) {
       recordBillingEntry(undefined)
       return true
     }
+    if (handoffTab.value !== undefined) return guardHandoffTab(to)
     if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
     else if (to.path !== SIGN_IN_PATH && !(await readEntry(to.fullPath)))
       return false

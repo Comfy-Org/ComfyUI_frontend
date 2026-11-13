@@ -6,16 +6,27 @@ import {
   waitFor,
   within
 } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { toValue } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAssetDownload } from '@/composables/useAssetDownload'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { api } from '@/scripts/api'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
+import { pagedItems } from '@/utils/pagedList'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
@@ -24,15 +35,14 @@ vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 beforeEach(() => {
   vi.mocked(useAssetDownload).mockReturnValue({ downloadFiles })
+  distribution.isCloud = false
   const store = useAssetsStore()
-  store.outputAssets = {
-    items: [],
-    hasMore: false,
-    isLoading: false,
-    loadMore: vi.fn(async () => false),
-    loadNew: vi.fn(async () => {}),
-    invalidate: vi.fn(async () => {})
-  }
+  Object.assign(store, {
+    outputAssets: mockPagedList<AssetItem>({
+      items: [folderAsset],
+      loadMore: vi.fn(async () => false)
+    })
+  })
   vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
   vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
 })
@@ -135,19 +145,21 @@ const sidebarTabTemplateStub = {
 const assetsGridStub = {
   props: ['assets'],
   emits: ['output-count-click', 'context-menu', 'zoom'],
+  methods: { pagedItems },
   template: `
     <div data-testid="assets-grid">
       <button
         aria-label="Enter output folder"
-        @click="$emit('output-count-click', assets[0])"
-        @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
+        @click="$emit('output-count-click', pagedItems(assets)[0])"
+        @contextmenu.prevent="$emit('context-menu', $event, pagedItems(assets)[0])"
       />
       <button
-        v-for="asset in assets"
+        v-for="asset in pagedItems(assets)"
         :key="asset.id"
         :aria-label="\`Preview \${asset.name}\`"
         @click="$emit('zoom', asset)"
       />
+      <button aria-label="Zoom" @click="$emit('zoom', pagedItems(assets)[0])" />
     </div>
   `
 }
@@ -157,15 +169,34 @@ const mediaLightboxStub = {
   template: `<div data-testid="lightbox-url" :data-display-name="String(allGalleryItems[activeIndex]?.filenameIsDisplayName)">{{ allGalleryItems[activeIndex]?.url }}</div>`
 }
 
-function renderTab({ realTemplate = false, realLightbox = false } = {}) {
+function renderTab({
+  realTemplate = false,
+  realLightbox = false,
+  realList = false
+} = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
       stubs: {
         ...(realTemplate ? {} : { SidebarTabTemplate: sidebarTabTemplateStub }),
         AssetsSidebarGridView: assetsGridStub,
-        AssetsSidebarListView: true,
-        MediaAssetFilterBar: true,
+        AssetsSidebarListView: !realList,
+        MediaAssetFilterBar: realList
+          ? {
+              emits: ['update:viewMode'],
+              template:
+                "<button @click=\"$emit('update:viewMode', 'list')\">List view</button>"
+            }
+          : true,
+        VirtualGrid: {
+          props: ['items', 'canLoadMore', 'onLoadMore'],
+          template: `
+            <div>
+              <slot v-for="item in items" :key="item.key" name="item" :item="item" />
+              <button :disabled="!canLoadMore" @click="onLoadMore()">Load more</button>
+            </div>
+          `
+        },
         MediaAssetSelectionBar: true,
         ...(realLightbox ? {} : { MediaLightbox: mediaLightboxStub })
       }
@@ -173,15 +204,10 @@ function renderTab({ realTemplate = false, realLightbox = false } = {}) {
   })
 }
 
-beforeEach(() => {
-  distribution.isCloud = false
-  useAssetsStore().outputAssets.items = [folderAsset]
-  useAssetsStore().outputAssets.hasMore = false
-})
-
 it('keeps pagination mounted when more assets can be loaded', () => {
-  useAssetsStore().outputAssets.items = []
-  useAssetsStore().outputAssets.hasMore = true
+  const { outputAssets } = useAssetsStore()
+  outputAssets.items = []
+  outputAssets.hasMore = true
 
   renderTab()
 
@@ -189,6 +215,31 @@ it('keeps pagination mounted when more assets can be loaded', () => {
 })
 
 describe('AssetsSidebarTab folder navigation', () => {
+  it('does not page global history from a completed folder list and resumes paging after leaving', async () => {
+    onTestFinished(() =>
+      localStorage.removeItem('Comfy.Assets.Sidebar.ViewMode')
+    )
+    const { outputAssets } = useAssetsStore()
+    outputAssets.hasMore = true
+    vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
+    renderTab({ realList: true })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Enter output folder' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'List view' }))
+
+    expect(await screen.findByText('multi-output.png')).toBeVisible()
+    await userEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(outputAssets.loadMore).not.toHaveBeenCalled()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to all assets' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Load more' }))
+    expect(outputAssets.loadMore).toHaveBeenCalledOnce()
+  })
+
   it('places accessible folder actions beside the job ID', async () => {
     vi.mocked(resolveOutputAssetItems).mockResolvedValue([folderAsset])
     renderTab()

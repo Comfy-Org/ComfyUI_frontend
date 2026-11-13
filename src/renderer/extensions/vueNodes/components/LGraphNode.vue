@@ -46,14 +46,6 @@
       class="absolute right-0 bottom-full"
       :style="badgesStyle"
     />
-    <NodeBloodDrips
-      v-if="
-        !isRerouteNode &&
-        !isCollapsed &&
-        !nodeData.flags?.ghost &&
-        ['spooky', 'zombie'].includes(settingStore.get('Comfy.ColorPalette'))
-      "
-    />
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
@@ -76,181 +68,197 @@
       "
     />
     <div
-      data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-1 flex-col bg-node-header',
-          'w-(--node-width)',
-          !isRerouteNode && 'min-w-(--min-node-width)',
-          shapeClass,
-          hasAnyError && 'ring-4',
-          errorSeverity === 'missing' && 'ring-warning',
-          errorSeverity === 'error' && 'ring-destructive',
-          bypassed && bypassOverlayClass,
-          muted && mutedOverlayClass,
-          isDraggingOver && 'bg-primary/10 ring-4 ring-primary'
+          'relative flex flex-1 flex-col',
+          !isCollapsed &&
+            '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] group-data-measured/node:[content-visibility:auto] group-data-measured/node:[overflow-clip-margin:16px]'
         )
       "
-      :style="{
-        '--node': applyLightThemeColor(nodeData.bgcolor),
-        '--component-node-background': 'var(--node)',
-        backgroundColor: applyLightThemeColor(nodeData?.color)
-      }"
     >
       <div
-        v-if="displayHeader"
-        class="relative flex flex-col items-center justify-center"
-      >
-        <template v-if="isCollapsed">
-          <SlotConnectionDot
-            v-if="hasInputs"
-            multi
-            class="absolute left-0 -translate-x-1/2"
-          />
-          <SlotConnectionDot
-            v-if="nodeData.outputs.length"
-            multi
-            class="absolute right-0 translate-x-1/2"
-          />
-          <NodeSlots :node-data unified />
-        </template>
-        <NodeHeader
-          :node-data
-          :collapsed="isCollapsed"
-          :show-missing-warning="
-            errorSeverity === 'missing' && !showErrorsTabEnabled
-          "
-          @collapse="handleCollapse"
-          @update:title="handleHeaderTitleUpdate"
-        />
-      </div>
-
-      <div
-        v-if="isCollapsed && executing && progress !== undefined"
+        data-testid="node-inner-wrapper"
         :class="
           cn(
-            'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
-            progressClasses
+            'flex flex-1 flex-col bg-node-header',
+            'w-(--node-width)',
+            !isRerouteNode && 'min-w-(--min-node-width)',
+            shapeClass,
+            hasAnyError && 'ring-4',
+            errorSeverity === 'missing' && 'ring-warning',
+            errorSeverity === 'error' && 'ring-destructive',
+            bypassed && bypassOverlayClass,
+            muted && mutedOverlayClass,
+            isDraggingOver && 'bg-primary/10 ring-4 ring-primary'
           )
         "
-        :style="{ width: `${Math.min(progress * 100, 100)}%` }"
-      />
-
-      <template v-if="!isCollapsed && isRerouteNode">
-        <NodeSlots :node-data />
-      </template>
-
-      <template v-else-if="!isCollapsed">
-        <div class="relative">
-          <div
-            v-if="executing && progress !== undefined"
-            :class="
-              cn(
-                'absolute inset-x-0 top-1/2 -translate-y-1/2',
-                !!(progress < 1) && 'rounded-r-full',
-                progressClasses
-              )
+        :style="{
+          '--node': applyLightThemeColor(nodeData.bgcolor),
+          '--component-node-background': 'var(--node)',
+          backgroundColor: applyLightThemeColor(nodeData?.color)
+        }"
+      >
+        <div
+          v-if="displayHeader"
+          class="relative flex flex-col items-center justify-center"
+        >
+          <template v-if="isCollapsed">
+            <SlotConnectionDot
+              v-if="hasInputs"
+              multi
+              class="absolute left-0 -translate-x-1/2"
+            />
+            <SlotConnectionDot
+              v-if="nodeData.outputs.length"
+              multi
+              class="absolute right-0 translate-x-1/2"
+            />
+            <NodeSlots :node-data unified />
+          </template>
+          <NodeHeader
+            :node-data
+            :collapsed="isCollapsed"
+            :show-missing-warning="
+              errorSeverity === 'missing' && !showErrorsTabEnabled
             "
-            :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+            @collapse="handleCollapse"
+            @update:title="handleHeaderTitleUpdate"
           />
         </div>
 
         <div
+          v-if="isCollapsed && executing && progress !== undefined"
           :class="
-            cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
+            cn(
+              'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
+              progressClasses
+            )
           "
-          :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
-          :data-testid="`node-body-${nodeData.id}`"
-        >
+          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
+        />
+
+        <template v-if="!isCollapsed && isRerouteNode">
           <NodeSlots :node-data />
+        </template>
 
-          <NodeWidgets
-            v-if="hasRenderableWidgets"
-            :node-data
-            :processed-widget-model
-          />
-
-          <div
-            v-if="hasCustomContent"
-            :class="
-              cn(
-                'flex min-h-0 flex-col',
-                nodeMedia?.type === 'image' && hasExpandingWidget
-                  ? 'shrink-0'
-                  : 'flex-1'
-              )
-            "
-          >
-            <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
-            <NodeContent
-              v-for="preview in promotedPreviews"
-              :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
-              :node-data
-              :media="preview"
+        <template v-else-if="!isCollapsed">
+          <div class="relative">
+            <div
+              v-if="executing && progress !== undefined"
+              :class="
+                cn(
+                  'absolute inset-x-0 top-1/2 -translate-y-1/2',
+                  !!(progress < 1) && 'rounded-r-full',
+                  progressClasses
+                )
+              "
+              :style="{ width: `${Math.min(progress * 100, 100)}%` }"
             />
           </div>
-          <LivePreview
-            v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
-            :image-url="latestPreviewUrl"
-          />
+
+          <div
+            :class="
+              cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
+            "
+            :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
+            :data-testid="`node-body-${nodeData.id}`"
+          >
+            <NodeSlots :node-data />
+
+            <NodeWidgets
+              v-if="hasRenderableWidgets"
+              :node-data
+              :processed-widget-model
+            />
+
+            <div
+              v-if="hasCustomContent"
+              :class="
+                cn(
+                  'flex min-h-0 flex-col',
+                  nodeMedia?.type === 'image' && hasExpandingWidget
+                    ? 'shrink-0'
+                    : 'flex-1'
+                )
+              "
+            >
+              <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
+              <template
+                v-for="preview in promotedPreviews"
+                :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
+              >
+                <LivePreview
+                  v-if="preview.type === 'preview'"
+                  :image-url="preview.url"
+                />
+                <NodeContent v-else :node-data :media="preview" />
+              </template>
+            </div>
+            <LivePreview
+              v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
+              :image-url="latestPreviewUrl"
+            />
+          </div>
+        </template>
+      </div>
+      <NodeFooter
+        v-if="!isRerouteNode"
+        :is-subgraph="!!lgraphNode?.isSubgraphNode()"
+        :error-severity="errorSeverity"
+        :show-errors-tab-enabled="showErrorsTabEnabled"
+        :show-advanced-inputs-button="showAdvancedInputsButton"
+        :show-advanced-state="!!nodeData.showAdvanced"
+        :header-color="applyLightThemeColor(nodeData?.color)"
+        :shape="nodeData.shape"
+        @enter-subgraph="handleEnterSubgraph"
+        @open-errors="handleOpenErrors"
+        @toggle-advanced="handleToggleAdvanced"
+      />
+      <template
+        v-if="
+          !isCollapsed &&
+          !isRerouteNode &&
+          nodeData.resizable !== false &&
+          !isSelectMode
+        "
+      >
+        <div
+          v-for="handle in RESIZE_HANDLES"
+          :key="handle.corner"
+          role="button"
+          :data-corner="handle.corner"
+          :aria-label="t(handle.i18nKey)"
+          :class="
+            cn(
+              baseResizeHandleClasses,
+              handle.positionClasses,
+              handle.cursorClass,
+              'group-hover/node:opacity-100'
+            )
+          "
+          @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 12 12"
+            :class="cn('absolute size-2/5', handle.svgPositionClasses)"
+            :style="
+              handle.svgTransform
+                ? { transform: handle.svgTransform }
+                : undefined
+            "
+          >
+            <path
+              d="M11 1L1 11M11 6L6 11"
+              stroke="var(--color-muted-foreground)"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
         </div>
       </template>
     </div>
-    <NodeFooter
-      v-if="!isRerouteNode"
-      :is-subgraph="!!lgraphNode?.isSubgraphNode()"
-      :error-severity="errorSeverity"
-      :show-errors-tab-enabled="showErrorsTabEnabled"
-      :show-advanced-inputs-button="showAdvancedInputsButton"
-      :show-advanced-state="!!nodeData.showAdvanced"
-      :header-color="applyLightThemeColor(nodeData?.color)"
-      :shape="nodeData.shape"
-      @enter-subgraph="handleEnterSubgraph"
-      @open-errors="handleOpenErrors"
-      @toggle-advanced="handleToggleAdvanced"
-    />
-    <template
-      v-if="
-        !isCollapsed &&
-        !isRerouteNode &&
-        nodeData.resizable !== false &&
-        !isSelectMode
-      "
-    >
-      <div
-        v-for="handle in RESIZE_HANDLES"
-        :key="handle.corner"
-        role="button"
-        :data-corner="handle.corner"
-        :aria-label="t(handle.i18nKey)"
-        :class="
-          cn(
-            baseResizeHandleClasses,
-            handle.positionClasses,
-            handle.cursorClass,
-            'group-hover/node:opacity-100'
-          )
-        "
-        @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 12 12"
-          :class="cn('absolute size-2/5', handle.svgPositionClasses)"
-          :style="
-            handle.svgTransform ? { transform: handle.svgTransform } : undefined
-          "
-        >
-          <path
-            d="M11 1L1 11M11 6L6 11"
-            stroke="var(--color-muted-foreground)"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-      </div>
-    </template>
   </div>
 </template>
 
@@ -302,11 +310,12 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { isVideoResult } from '@/utils/resultItem'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -323,7 +332,6 @@ import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTran
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
-import NodeBloodDrips from './NodeBloodDrips.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
@@ -478,7 +486,7 @@ const handleResizePointerDown = (
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
   if (promotedPreviews.value.length > 0) return true
-  return !!nodeMedia.value && nodeMedia.value.urls.length > 0
+  return !!nodeMedia.value && nodeMedia.value.items.length > 0
 })
 
 // Computed classes and conditions for better reusability
@@ -501,16 +509,16 @@ const cursorClass = computed(() => {
 const bodyRoundingClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: '',
-    card: 'rounded-br-xl',
-    default: 'rounded-b-xl'
+    card: 'rounded-br-(--node-radius)',
+    default: 'rounded-b-(--node-radius)'
   })
 )
 
 const shapeClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: '',
-    card: 'rounded-tl-xl rounded-br-xl',
-    default: 'rounded-xl'
+    card: 'rounded-tl-(--node-radius) rounded-br-(--node-radius)',
+    default: 'rounded-(--node-radius)'
   })
 )
 
@@ -524,13 +532,14 @@ const isTransparentHeaderless = computed(
 const selectionShapeClass = computed(() => {
   if (isTransparentHeaderless.value) return 'border-0'
 
-  const isExpanded = hasAnyError.value
   return shapeVariantClass(nodeData.shape, {
     box: '',
-    card: isExpanded
-      ? 'rounded-tl-[23px] rounded-br-[23px]'
-      : 'rounded-tl-[19px] rounded-br-[19px]',
-    default: isExpanded ? 'rounded-[19px]' : 'rounded-[15px]'
+    card: hasAnyError.value
+      ? 'rounded-tl-[calc(var(--node-radius)+11px)] rounded-br-[calc(var(--node-radius)+11px)]'
+      : 'rounded-tl-[calc(var(--node-radius)+7px)] rounded-br-[calc(var(--node-radius)+7px)]',
+    default: hasAnyError.value
+      ? 'rounded-[calc(var(--node-radius)+7px)]'
+      : 'rounded-[calc(var(--node-radius)+3px)]'
   })
 })
 
@@ -540,16 +549,16 @@ const BEFORE_OVERLAY_BASE =
 const bypassOverlayClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
-    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
-    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
+    card: `before:rounded-tl-(--node-radius) before:rounded-br-(--node-radius) ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`,
+    default: `before:rounded-(--node-radius) ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
   })
 )
 
 const mutedOverlayClass = computed(() =>
   shapeVariantClass(nodeData.shape, {
     box: BEFORE_OVERLAY_BASE,
-    card: `before:rounded-tl-xl before:rounded-br-xl ${BEFORE_OVERLAY_BASE}`,
-    default: `before:rounded-xl ${BEFORE_OVERLAY_BASE}`
+    card: `before:rounded-tl-(--node-radius) before:rounded-br-(--node-radius) ${BEFORE_OVERLAY_BASE}`,
+    default: `before:rounded-(--node-radius) ${BEFORE_OVERLAY_BASE}`
   })
 )
 
@@ -562,10 +571,10 @@ const handleHeaderTitleUpdate = (newTitle: string) => {
   handleNodeTitleUpdate(nodeData.id, newTitle)
 }
 
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 
 const handleOpenErrors = () => {
-  rightSidePanelStore.openPanel('errors')
+  propertiesPanelStore.openPanel('errors')
 }
 
 const handleToggleAdvanced = () => {
@@ -574,8 +583,8 @@ const handleToggleAdvanced = () => {
 
   // A subgraph node has no advanced section of its own; the side panel hosts it.
   if (node instanceof SubgraphNode) {
-    if (rightSidePanelStore.isOpen) rightSidePanelStore.closePanel()
-    else rightSidePanelStore.focusSection('advanced-inputs')
+    if (propertiesPanelStore.isOpen) propertiesPanelStore.closePanel()
+    else propertiesPanelStore.focusSection('advanced-inputs')
     return
   }
   node.showAdvanced = !node.showAdvanced
@@ -696,26 +705,18 @@ const hasVideoPreviewWidget = computed(() =>
 )
 
 const nodeMedia = computed(() => {
-  const locatorId = nodeLocatorId.value
-  const newOutputs = locatorId ? nodeOutputs.nodeOutputs[locatorId] : undefined
   const node = lgraphNode.value
-
-  if (
-    !node ||
-    !newOutputs?.images?.length ||
-    node.hideOutputImages ||
-    hideExecutedOutput.value
-  )
+  if (!node || node.hideOutputImages || hideExecutedOutput.value)
     return undefined
-
   if (node instanceof SubgraphNode) return undefined
-  if (shouldHideLinkedCoreMediaInputPreview(node, newOutputs)) return undefined
 
-  const urls = nodeOutputs.getNodeImageUrls(node)
-  if (!urls?.length) return undefined
+  const outputs = nodeOutputs.getNodeOutputs(node)
+  if (!outputs?.images?.length) return undefined
+
+  if (shouldHideLinkedCoreMediaInputPreview(node, outputs)) return undefined
 
   const type =
-    isVideoOutput(newOutputs) ||
+    isVideoOutput(outputs) ||
     node.previewMediaType === 'video' ||
     (!node.previewMediaType && hasVideoInput.value)
       ? 'video'
@@ -723,7 +724,14 @@ const nodeMedia = computed(() => {
 
   if (type === 'video' && hasVideoPreviewWidget.value) return undefined
 
-  return { type, urls } as const
+  const items = nodeOutputs
+    .getNodeOutputItems(node, outputs)
+    .filter((item) =>
+      type === 'video' ? isVideoResult(item) : item.mediaType === 'images'
+    )
+  if (!items.length) return undefined
+
+  return { type, items } as const
 })
 
 // Drag and drop support

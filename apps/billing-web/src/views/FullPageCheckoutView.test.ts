@@ -1291,7 +1291,40 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       Reflect.deleteProperty(window, 'opener')
     })
 
-    it('goes back to return_to with the outcome and reference when no script opened the tab', async () => {
+    it.for([
+      { name: 'its opener cut loose', opener: undefined },
+      { name: 'a script opened', opener: {} }
+    ])(
+      'closes a tab $name when the browser lets it, and navigates nowhere',
+      async ({ opener }) => {
+        if (opener)
+          Object.defineProperty(window, 'opener', {
+            value: opener,
+            configurable: true
+          })
+        const assign = vi
+          .spyOn(window.location, 'assign')
+          .mockImplementation(() => {})
+        const close = vi.spyOn(window, 'close').mockImplementation(() => {
+          Object.defineProperty(window, 'closed', {
+            value: true,
+            configurable: true
+          })
+        })
+        await payReady(SETTLED)
+        form.emit('confirm', 'ctoken_1')
+
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Close' })
+        )
+
+        Reflect.deleteProperty(window, 'closed')
+        expect(close).toHaveBeenCalledOnce()
+        expect(assign).not.toHaveBeenCalled()
+      }
+    )
+
+    it('goes back to return_to with the outcome and reference when the browser keeps the tab open', async () => {
       const assign = vi
         .spyOn(window.location, 'assign')
         .mockImplementation(() => {})
@@ -1304,7 +1337,7 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
         await screen.findByRole('button', { name: 'Close' })
       )
 
-      expect(close).not.toHaveBeenCalled()
+      expect(close).toHaveBeenCalledOnce()
       expect(assign).toHaveBeenCalledOnce()
       expect(parseReturnResult(String(assign.mock.calls[0][0]))).toEqual({
         result: 'success',
@@ -1343,26 +1376,6 @@ describe('FullPageCheckoutView outcomes after Pay', () => {
       expect(assign).toHaveBeenCalledWith(
         'https://testplatform.comfy.org/?workspace=ws-team&billing_result=success&billing_ref=op_mine'
       )
-    })
-
-    it('closes a tab a script opened, and navigates nowhere', async () => {
-      Object.defineProperty(window, 'opener', {
-        value: {},
-        configurable: true
-      })
-      const assign = vi
-        .spyOn(window.location, 'assign')
-        .mockImplementation(() => {})
-      const close = vi.spyOn(window, 'close').mockImplementation(() => {})
-      await payReady(SETTLED)
-      form.emit('confirm', 'ctoken_1')
-
-      await userEvent.click(
-        await screen.findByRole('button', { name: 'Close' })
-      )
-
-      expect(close).toHaveBeenCalledOnce()
-      expect(assign).not.toHaveBeenCalled()
     })
 
     it.for<{ name: string; opened: boolean; footer: string }>([

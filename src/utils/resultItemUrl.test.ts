@@ -17,6 +17,39 @@ function resultItem(
 }
 
 describe('resultItemPreviewUrl', () => {
+  it('keeps the original URL and its revision when requesting full resolution', () => {
+    const item = resultItem({
+      url: '/api/view?filename=out.png&type=output&rand=second',
+      previewUrl:
+        '/api/view?filename=out.png&type=output&preview=webp;75&rand=second'
+    })
+    expect(resultItemPreviewUrl(item, { fullRes: true })).toBe(item.url)
+    expect(
+      resultItemPreviewUrl(item, {
+        previewFormat: '&preview=webp;75',
+        rand: '&rand=ignored'
+      })
+    ).toBe(item.previewUrl)
+  })
+
+  it('applies preview format and output revision to generated URLs', () => {
+    const url = new URL(
+      resultItemPreviewUrl(resultItem({ filename: 'out.png' }), {
+        previewFormat: '&preview=webp;75',
+        rand: '&rand=revision-2'
+      }),
+      window.location.origin
+    )
+
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({
+      filename: 'out.png',
+      type: 'output',
+      subfolder: '',
+      preview: 'webp;75',
+      rand: 'revision-2'
+    })
+  })
+
   it.for([
     {
       filename: 'render.exr',
@@ -28,7 +61,6 @@ describe('resultItemPreviewUrl', () => {
       preview_id: 'p1',
       pathname: '/api/assets/p1/content'
     },
-    { filename: 'render.exr', preview_id: undefined, pathname: '/api/view' },
     { filename: 'render.png', preview_id: 'p1', pathname: '/api/view' }
   ])(
     'resolves $filename with preview_id $preview_id to $pathname',
@@ -40,4 +72,13 @@ describe('resultItemPreviewUrl', () => {
       expect(url.pathname).toBe(pathname)
     }
   )
+
+  it('resolves no preview for an HDR output without a stored preview', () => {
+    expect(
+      resultItemPreviewUrl(resultItem({ filename: 'render.exr' }), {
+        previewFormat: '&preview=webp;75',
+        rand: '&rand=ignored'
+      })
+    ).toBe('')
+  })
 })

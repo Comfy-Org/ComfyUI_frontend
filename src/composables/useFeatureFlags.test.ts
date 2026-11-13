@@ -7,13 +7,14 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { isReactive, isReadonly, nextTick } from 'vue'
+import { computed, isReactive, isReadonly, nextTick } from 'vue'
 
 import {
   startFeatureFlagTelemetry,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
@@ -37,6 +38,7 @@ vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
 // Mock the distribution types module
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
+  isDesktop: false,
   isNightly: false
 }))
 
@@ -201,6 +203,34 @@ describe('useFeatureFlags', () => {
       remoteConfig.value = { hosted_billing_destination: 'true' }
       expect(flags.hostedBillingDestination).toBe('stripe')
       expect(flags.hostedBillingWebEnabled).toBe(false)
+    })
+  })
+
+  describe('billingNewUxEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it.for([
+      { label: 'absent', value: undefined, enabled: false },
+      { label: 'false', value: false, enabled: false },
+      { label: 'a string', value: 'true', enabled: false },
+      { label: 'true', value: true, enabled: true }
+    ])(
+      'enables the 1.61 billing UX only for literal true ($label)',
+      ({ value, enabled }) => {
+        remoteConfig.value = {}
+        vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+        expect(useFeatureFlags().flags.billingNewUxEnabled).toBe(enabled)
+      }
+    )
+
+    it('reads the billing rollout from /features', () => {
+      remoteConfig.value = { billing_new_ux_enabled: true }
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+
+      expect(useFeatureFlags().flags.billingNewUxEnabled).toBe(true)
     })
   })
 
@@ -390,7 +420,7 @@ describe('useFeatureFlags', () => {
   describe.for([
     {
       flag: 'unifiedBillingSettingsEnabled' as const,
-      offCloudTrue: true
+      offCloudTrue: false
     }
   ])('$flag', ({ flag, offCloudTrue }) => {
     afterEach(() => {
@@ -452,6 +482,52 @@ describe('useFeatureFlags', () => {
       vi.mocked(getSessionOverride).mockReturnValue(true)
 
       expect(useFeatureFlags().flags[flag]).toBe(true)
+    })
+  })
+
+  describe('unifiedBillingSettingsEnabled off cloud', () => {
+    afterEach(() => {
+      setLocalBillingWebEnabled(false)
+    })
+
+    it.for([
+      {
+        case: 'local web with local_billing_web on',
+        desktop: false,
+        flag: true,
+        expected: true
+      },
+      {
+        case: 'local web with local_billing_web off',
+        desktop: false,
+        flag: false,
+        expected: false
+      },
+      {
+        case: 'Desktop with local_billing_web on',
+        desktop: true,
+        flag: true,
+        expected: false
+      }
+    ])('is $expected on $case', ({ desktop, flag, expected }) => {
+      vi.stubGlobal('__comfyDesktop2', desktop ? {} : undefined)
+      setLocalBillingWebEnabled(flag)
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      expect(useFeatureFlags().flags.unifiedBillingSettingsEnabled).toBe(
+        expected
+      )
+    })
+
+    it('follows the flag as it changes on local web', () => {
+      const { flags } = useFeatureFlags()
+      const shown = computed(() => flags.unifiedBillingSettingsEnabled)
+
+      expect(shown.value).toBe(false)
+      setLocalBillingWebEnabled(true)
+      expect(shown.value).toBe(true)
+      setLocalBillingWebEnabled(false)
+      expect(shown.value).toBe(false)
     })
   })
 
