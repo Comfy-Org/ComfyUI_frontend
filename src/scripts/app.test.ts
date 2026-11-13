@@ -2242,6 +2242,44 @@ describe('ComfyApp', () => {
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
     })
 
+    it('keeps skipped-output errors that arrive before the submission response', async () => {
+      prepareEmptyPromptQueue()
+      const workflow = useWorkflowStore().activeWorkflow
+      if (!workflow) throw new Error('Expected an active workflow')
+      const graphId = '11111111-1111-4111-8111-111111111111'
+      workflow.changeTracker.activeState = {
+        ...createWorkflowGraphData(),
+        id: graphId
+      }
+      Object.assign(useWorkflowStore(), { openWorkflows: [workflow] })
+      const executionStore = useExecutionStore()
+      const errorStore = useExecutionErrorStore()
+      errorStore.setActiveGraph(graphId, workflow.path)
+      executionStore.bindExecutionEvents()
+      onTestFinished(() => executionStore.unbindExecutionEvents())
+      const skippedErrors = {
+        '9': nodeError(
+          [validationError('required_input_missing', 'images')],
+          'SaveImage'
+        )
+      }
+      const socket: EventTarget = api
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+        executionStore.registerJobWorkflowIdMapping('job-1', graphId)
+        socket.dispatchEvent(
+          new CustomEvent('prompt_outputs_skipped', {
+            detail: { prompt_id: 'job-1', node_errors: skippedErrors }
+          })
+        )
+        return { prompt_id: 'job-1', node_errors: {} }
+      })
+
+      await app.queuePrompt(0)
+
+      expect(errorStore.lastNodeErrors).toEqual(skippedErrors)
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
+    })
+
     it('stores workflow telemetry metadata for every accepted batch submission', async () => {
       prepareEmptyPromptQueue()
       const registry = new TelemetryRegistry()
