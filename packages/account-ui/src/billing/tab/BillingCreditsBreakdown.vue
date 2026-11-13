@@ -6,7 +6,7 @@
     <div v-if="state.kind !== 'noPlan'" class="flex flex-col gap-2 pt-2">
       <div class="flex items-start justify-between gap-2 text-sm">
         <span class="text-muted-foreground">{{ copy.planCredits }}</span>
-        <Skeleton v-if="loading" class="h-3 w-18 rounded-sm" />
+        <div v-if="loading" :class="cn(SKELETON, 'w-18')" />
         <span
           v-else
           class="text-muted-foreground tabular-nums"
@@ -40,7 +40,7 @@
     <div class="flex flex-col gap-2 pt-2">
       <div class="flex items-start justify-between gap-2 text-sm">
         <span class="text-muted-foreground">{{ copy.topUpCredits }}</span>
-        <Skeleton v-if="loading" class="h-3 w-10 rounded-sm" />
+        <div v-if="loading" :class="cn(SKELETON, 'w-10')" />
         <span
           v-else
           class="font-semibold text-foreground tabular-nums"
@@ -57,8 +57,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
-
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 import type { CreditsFlyoutState } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -83,6 +81,10 @@ const {
   locale: string
   class?: HTMLAttributes['class']
 }>()
+
+// shortcut: design-system Skeleton's classes inline; a new account-ui SFC importing
+// any design-system .vue fails the packages vue-tsc -b build (TS2307). Swap back once that resolves.
+const SKELETON = 'h-3 animate-pulse rounded-sm bg-secondary'
 
 const loading = computed(() => state.kind === 'loading')
 const plan = computed(() => (state.kind === 'plan' ? state : null))
