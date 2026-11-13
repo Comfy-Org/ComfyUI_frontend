@@ -43,6 +43,7 @@ import {
 import { useApp } from '@/scripts/appInstance'
 import { provideChangeTracker } from '@/scripts/changeTrackerAccess'
 import { clipspace } from '@/scripts/clipspace'
+import { travelFocusedNodeHistory } from '@/scripts/focusedNodeHistory'
 
 function clone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj))
@@ -731,6 +732,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
         if (isModalOpen(dialogStore.dialogStack.length)) return
 
         if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
+
+        if (shortcut && !e.repeat && travelFocusedNodeHistory(shortcut)) return
 
         keyIgnored = ['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)
         if (keyIgnored) return

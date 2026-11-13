@@ -41,7 +41,10 @@
       </PopoverTrigger>
 
       <PopoverContent
+        :side
         align="end"
+        :side-offset="side === 'bottom' ? undefined : 8"
+        :reference="sidebarReference"
         :class="
           cn(
             'overflow-visible border-border p-0 data-[state=closed]:animate-none data-[state=open]:animate-none',
@@ -53,6 +56,7 @@
           :is="workspaceMenu"
           v-if="showWorkspacePopover"
           :account-actions-only="initState !== 'ready'"
+          v-bind="flags.billingNewUxEnabled ? { flyoutSide } : {}"
           @close="closePopover"
         />
         <CurrentUserPopoverLegacy v-else @close="closePopover" />
@@ -84,9 +88,14 @@ import ProfileMenuWorkspace from '@/platform/account/components/ProfileMenuWorks
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
-const { showArrow = true, compact = false } = defineProps<{
+const {
+  showArrow = true,
+  compact = false,
+  side = 'bottom'
+} = defineProps<{
   showArrow?: boolean
   compact?: boolean
+  side?: 'bottom' | 'left' | 'right'
 }>()
 
 const { isLoggedIn, userPhotoUrl } = useCurrentUser()
@@ -112,6 +121,7 @@ const { flags } = useFeatureFlags()
 const workspaceMenu = computed(() =>
   flags.billingNewUxEnabled ? ProfileMenuWorkspace : CurrentUserPopoverWorkspace
 )
+const flyoutSide = computed(() => (side === 'right' ? 'right' : 'left'))
 const showWorkspacePopover = computed(
   () => isCloud || initState.value === 'ready'
 )
@@ -130,6 +140,18 @@ const workspaceName = computed(() => {
 const open = ref(false)
 const buttonRef = ref<InstanceType<typeof Button> | null>(null)
 usePopoverViewportDismiss(open, () => unrefElement(buttonRef))
+
+const sidebarReference = computed(() => {
+  if (side === 'bottom') return undefined
+  return {
+    getBoundingClientRect: () => {
+      const trigger = unrefElement(buttonRef)
+      const rect = trigger?.getBoundingClientRect() ?? new DOMRect()
+      const sidebar = trigger?.closest('nav')?.getBoundingClientRect() ?? rect
+      return new DOMRect(sidebar.x, rect.y, sidebar.width, rect.height)
+    }
+  }
+})
 
 function closePopover() {
   open.value = false

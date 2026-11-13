@@ -2738,5 +2738,44 @@ describe('ChangeTracker', () => {
         document.body.removeChild(modal)
       }
     })
+
+    it('undoes the widget step of the focused node and leaves graph history alone', async () => {
+      const previousState = createState(1)
+      const currentState = createState(2)
+      const tracker = createTracker(currentState)
+      tracker.undoQueue.push(previousState)
+      const graphId = app.canvas.graph?.id
+      assert(graphId, 'canvas graph missing')
+      const scope = {
+        rootGraphId: app.rootGraph.id,
+        widgetId: widgetId(graphId, toNodeId(7), 'mask')
+      }
+      const store = useWidgetHistoryStore()
+      const travel = vi.fn()
+      onTestFinished(
+        store.registerTraveler({
+          scope: () => scope,
+          canTravel: () => store.canUndo(scope),
+          travel
+        })
+      )
+      store.record(scope, 'before')
+      const node = document.createElement('div')
+      node.dataset.nodeId = '7'
+      node.tabIndex = 0
+      document.body.append(node)
+      onTestFinished(() => node.remove())
+      node.focus()
+
+      ChangeTracker.init()
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+      )
+      await vi.runAllTimersAsync()
+
+      expect(travel).toHaveBeenCalledWith('undo')
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(tracker.undoQueue).toEqual([previousState])
+    })
   })
 })

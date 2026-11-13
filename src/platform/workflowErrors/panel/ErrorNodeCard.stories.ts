@@ -5,7 +5,7 @@ import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const meta: Meta<typeof ErrorNodeCard> = {
-  title: 'RightSidePanel/Errors/ErrorNodeCard',
+  title: 'PropertiesPanel/Errors/ErrorNodeCard',
   component: ErrorNodeCard,
   parameters: {
     layout: 'centered'
