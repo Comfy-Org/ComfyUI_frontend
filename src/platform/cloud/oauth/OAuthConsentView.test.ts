@@ -573,7 +573,7 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     await waitFor(() => {
       expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
         signInPath,
-        keepWorkspaceStorage: true
+        keepAccountDrafts: true
       })
     })
     expect(fetch).toHaveBeenCalledOnce()
@@ -590,7 +590,7 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     await waitFor(() => {
       expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
         signInPath,
-        keepWorkspaceStorage: true
+        keepAccountDrafts: true
       })
     })
     expect(recreateSession).toHaveBeenCalledOnce()

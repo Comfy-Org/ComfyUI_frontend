@@ -6,6 +6,7 @@ import {
   clearAllWorkspaceStorage,
   clearAllWorkflowStorage,
   clearWorkflowRestoreState,
+  clearWorkspaceStorageExceptAccountDrafts,
   deleteOrphanPayloads,
   deletePayload,
   deletePayloads,
@@ -569,6 +570,37 @@ describe('storageIO', () => {
           localStorage.key(index)
         )
       ).toEqual(['unrelated'])
+    })
+  })
+
+  describe('clearWorkspaceStorageExceptAccountDrafts', () => {
+    it('keeps only the account-keyed workflow drafts', () => {
+      localStorage.setItem('Comfy.Workflow.DraftIndex.v2:user-a:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.Draft.v2:user-a:personal:abc', '{}')
+      localStorage.setItem('Comfy.Workflow.LastActivePath:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.LastOpenPaths:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.Drafts:personal', '{}')
+      localStorage.setItem('Comfy.Workflow.DraftOrder:personal', '[]')
+      localStorage.setItem('workflow', '{}')
+      localStorage.setItem('Comfy.Agent.ComposerDraft:personal', '{}')
+      localStorage.setItem('Comfy.Agent.ThreadId:personal', 'thread-a')
+      localStorage.setItem('Comfy.Agent.ChatTitles', '{}')
+      sessionStorage.setItem('Comfy.Workflow.OpenPaths:client-1', '{}')
+
+      clearWorkspaceStorageExceptAccountDrafts()
+
+      expect(
+        [...Array(localStorage.length)].map((_, index) =>
+          localStorage.key(index)
+        )
+      ).toEqual(
+        expect.arrayContaining([
+          'Comfy.Workflow.DraftIndex.v2:user-a:personal',
+          'Comfy.Workflow.Draft.v2:user-a:personal:abc'
+        ])
+      )
+      expect(localStorage).toHaveLength(2)
+      expect(sessionStorage).toHaveLength(0)
     })
   })
 

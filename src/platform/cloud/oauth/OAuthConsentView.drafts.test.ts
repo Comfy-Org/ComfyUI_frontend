@@ -4,7 +4,10 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { i18n } from '@/i18n'
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
-import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -49,7 +52,7 @@ describe('OAuthConsentView signing in again without a Cloud session cookie', () 
     vi.mocked(useAuthStore().logout).mockResolvedValue(undefined)
   })
 
-  it('keeps the persisted workflow drafts of a tab with no workflows loaded', async () => {
+  async function signInAgainFromConsent() {
     const navigation = vi
       .spyOn(window.location, 'href', 'set')
       .mockImplementation(() => {})
@@ -71,7 +74,32 @@ describe('OAuthConsentView signing in again without a Cloud session cookie', () 
         `/cloud/login?switchAccount=true&oauth_request_id=${oauthRequestId}`
       )
     )
+  }
+
+  it('keeps the persisted workflow drafts of a tab with no workflows loaded', async () => {
+    await signInAgainFromConsent()
+
     expect(useAuthStore().logout).toHaveBeenCalledOnce()
+    expect(localStorage.getItem(draftIndexKey)).toBe('{"order":["unsaved"]}')
+    expect(localStorage.getItem(draftPayloadKey)).toBe('{"nodes":[]}')
+  })
+
+  it('clears the unsent agent prompt so the next account to sign in does not see it', async () => {
+    const composerDraftKey = StorageKeys.agentComposerDraft(getWorkspaceId())
+    localStorage.setItem(
+      composerDraftKey,
+      JSON.stringify({
+        threadId: null,
+        text: 'Use  as the style',
+        workflowReferences: [
+          { id: 'wf-portrait', name: 'portrait', textOffset: 4 }
+        ]
+      })
+    )
+
+    await signInAgainFromConsent()
+
+    expect(localStorage.getItem(composerDraftKey)).toBeNull()
     expect(localStorage.getItem(draftIndexKey)).toBe('{"order":["unsaved"]}')
     expect(localStorage.getItem(draftPayloadKey)).toBe('{"nodes":[]}')
   })

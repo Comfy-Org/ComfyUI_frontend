@@ -640,10 +640,13 @@ export function completeWorkflowLogoutTransition(): void {
   }
 }
 
-export function clearAllWorkflowStorage(): void {
+const accountDraftPrefixes = [
+  StorageKeys.prefixes.draftIndex,
+  StorageKeys.prefixes.draftPayload
+]
+
+function clearWorkflowStorageNotOwnedByAccount(): void {
   const localPrefixes = [
-    StorageKeys.prefixes.draftIndex,
-    StorageKeys.prefixes.draftPayload,
     StorageKeys.prefixes.lastActivePath,
     StorageKeys.prefixes.lastOpenPaths,
     'Comfy.Workflow.Drafts:',
@@ -654,8 +657,12 @@ export function clearAllWorkflowStorage(): void {
   removeStorageKeys(sessionStorage, sessionRestoreKeys, sessionRestorePrefixes)
 }
 
-export function clearAllWorkspaceStorage(): void {
-  clearAllWorkflowStorage()
+export function clearAllWorkflowStorage(): void {
+  removeStorageKeys(localStorage, [], accountDraftPrefixes)
+  clearWorkflowStorageNotOwnedByAccount()
+}
+
+function clearAgentStorage(): void {
   clearLegacyAgentStorage()
   removeStorageKeys(
     localStorage,
@@ -668,4 +675,15 @@ export function clearAllWorkspaceStorage(): void {
       StorageKeys.prefixes.agentComposerDraft
     ]
   )
+}
+
+export function clearAllWorkspaceStorage(): void {
+  clearAllWorkflowStorage()
+  clearAgentStorage()
+}
+
+/** Clears workspace storage except the workflow drafts, which are keyed by account. */
+export function clearWorkspaceStorageExceptAccountDrafts(): void {
+  clearWorkflowStorageNotOwnedByAccount()
+  clearAgentStorage()
 }

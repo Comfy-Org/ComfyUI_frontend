@@ -21,6 +21,7 @@ import type { AuthFlowAction } from '@comfyorg/telemetry/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   clearAllWorkspaceStorage,
+  clearWorkspaceStorageExceptAccountDrafts,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -117,16 +118,16 @@ export const useAuthActions = () => {
     }
   }
 
-  /** `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in. `keepWorkspaceStorage` keeps persisted drafts the tab has not loaded. */
+  /** `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in. `keepAccountDrafts` keeps the account's persisted workflow drafts. */
   const logout = wrapWithErrorHandlingAsync(
     async ({
       beforeSignOut,
       signInPath = '/cloud/login',
-      keepWorkspaceStorage = false
+      keepAccountDrafts = false
     }: {
       beforeSignOut?: () => Promise<boolean>
       signInPath?: string
-      keepWorkspaceStorage?: boolean
+      keepAccountDrafts?: boolean
     } = {}): Promise<boolean> => {
       if (isCloud) {
         const workflowStore = useWorkflowStore()
@@ -162,7 +163,8 @@ export const useAuthActions = () => {
       await authStore.logout()
       if (isCloud) {
         prepareWorkflowLogoutTransition()
-        if (!keepWorkspaceStorage) clearAllWorkspaceStorage()
+        if (keepAccountDrafts) clearWorkspaceStorageExceptAccountDrafts()
+        else clearAllWorkspaceStorage()
       }
 
       toast.success(t('auth.signOut.success'), {

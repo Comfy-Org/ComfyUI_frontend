@@ -387,7 +387,7 @@ async function recoverSession(oauthRequestId: string) {
 async function signInAgain(oauthRequestId: string) {
   const signedOut = await useAuthActions().logout({
     signInPath: switchAccountSignInPath(oauthRequestId),
-    keepWorkspaceStorage: true
+    keepAccountDrafts: true
   })
   if (!signedOut) errorMessage.value = t('oauth.consent.sessionError')
 }

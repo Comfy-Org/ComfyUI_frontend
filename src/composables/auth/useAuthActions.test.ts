@@ -34,6 +34,7 @@ const mockDistributionState = vi.hoisted(() => ({
   isDesktop: false
 }))
 const mockClearAllWorkspaceStorage = vi.hoisted(() => vi.fn())
+const mockClearWorkspaceStorageExceptAccountDrafts = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
 const authErrorMessages: Record<string, string> = enLocale.auth.errors
@@ -74,6 +75,8 @@ vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
+  clearWorkspaceStorageExceptAccountDrafts:
+    mockClearWorkspaceStorageExceptAccountDrafts,
   prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
 }))
 
@@ -179,14 +182,17 @@ describe('useAuthActions.logout', () => {
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })
 
-  it('keeps persisted workflows when asked to keep workspace storage', async () => {
+  it('clears everything but the account drafts when asked to keep them', async () => {
     vi.spyOn(window.location, 'href', 'set').mockImplementation(() => {})
     const { logout } = useAuthActions()
 
-    await logout({ keepWorkspaceStorage: true })
+    await logout({ keepAccountDrafts: true })
 
     expect(mockAuthStore.logout).toHaveBeenCalledOnce()
     expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
+    expect(
+      mockClearWorkspaceStorageExceptAccountDrafts
+    ).toHaveBeenCalledExactlyOnceWith()
     expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
   })
 
