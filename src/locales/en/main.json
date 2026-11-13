@@ -4173,7 +4173,13 @@
     "maxWorkspacesReached": "You can only own {max} workspace. Delete it to create a new one. | You can only own {max} workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
-    "failedToSwitch": "Failed to switch workspace"
+    "failedToSwitch": "Failed to switch workspace",
+    "createWorkspaceAction": "Create workspace",
+    "ownedLimit": "You can own up to {max}.",
+    "searchPlaceholder": "Search workspace...",
+    "noResults": "No workspaces match “{query}”.",
+    "loadFailed": "Couldn’t load your workspaces.",
+    "tryAgain": "Try again"
   },
   "profileMenu": {
     "switchWorkspace": "Switch workspace",
