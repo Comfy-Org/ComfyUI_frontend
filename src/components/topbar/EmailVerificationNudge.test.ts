@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { useEmailVerification } from '@/composables/auth/useEmailVerification'
@@ -9,28 +9,21 @@ import enMessages from '@/locales/en/main.json'
 
 import EmailVerificationNudge from './EmailVerificationNudge.vue'
 
-const h = vi.hoisted(() => ({
-  composable: null as {
-    isNudgeVisible: { value: boolean }
-    canResend: { value: boolean }
-    resend: ReturnType<typeof vi.fn>
-    dismiss: ReturnType<typeof vi.fn>
-  } | null
-}))
+type EmailVerification = ReturnType<typeof useEmailVerification>
 
-vi.mock(import('@/composables/auth/useEmailVerification'), async () => {
-  const { ref } = await import('vue')
-  h.composable = {
-    isNudgeVisible: ref(false),
-    canResend: ref(true),
-    resend: vi.fn(),
-    dismiss: vi.fn()
-  }
-  return {
-    useEmailVerification: () =>
-      fromPartial<ReturnType<typeof useEmailVerification>>(h.composable!)
-  }
-})
+const nudgeVisible = ref(false)
+const emailVerification: EmailVerification = {
+  needsEmailVerification: computed(() => nudgeVisible.value),
+  isNudgeVisible: computed(() => nudgeVisible.value),
+  canResend: ref(true),
+  resend: vi.fn<EmailVerification['resend']>(),
+  refresh: vi.fn<EmailVerification['refresh']>(),
+  dismiss: vi.fn<EmailVerification['dismiss']>()
+}
+
+vi.mock(import('@/composables/auth/useEmailVerification'), () => ({
+  useEmailVerification: () => emailVerification
+}))
 
 function renderNudge() {
   const i18n = createI18n({
@@ -42,10 +35,8 @@ function renderNudge() {
 }
 
 beforeEach(() => {
-  h.composable!.isNudgeVisible.value = false
-  h.composable!.canResend.value = true
-  h.composable!.resend.mockReset()
-  h.composable!.dismiss.mockReset()
+  nudgeVisible.value = false
+  emailVerification.canResend.value = true
 })
 
 const resendButton = () =>
@@ -58,7 +49,7 @@ describe('EmailVerificationNudge', () => {
   })
 
   it('renders the nudge with resend and dismiss controls', async () => {
-    h.composable!.isNudgeVisible.value = true
+    nudgeVisible.value = true
     renderNudge()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -66,15 +57,15 @@ describe('EmailVerificationNudge', () => {
     )
 
     await userEvent.click(resendButton())
-    expect(h.composable!.resend).toHaveBeenCalledOnce()
+    expect(emailVerification.resend).toHaveBeenCalledOnce()
 
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
-    expect(h.composable!.dismiss).toHaveBeenCalledOnce()
+    expect(emailVerification.dismiss).toHaveBeenCalledOnce()
   })
 
   it('disables resend while on cooldown', () => {
-    h.composable!.isNudgeVisible.value = true
-    h.composable!.canResend.value = false
+    nudgeVisible.value = true
+    emailVerification.canResend.value = false
     renderNudge()
 
     expect(resendButton()).toBeDisabled()
