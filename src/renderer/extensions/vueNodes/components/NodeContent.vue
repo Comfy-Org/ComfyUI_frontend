@@ -11,7 +11,7 @@
       <VideoPreview
         v-if="hasMedia && media?.type === 'video'"
         :items="media.items"
-        :node-id="nodeId"
+        :node-id
         class="mt-2 flex-auto"
       />
       <AudioPreview
@@ -22,7 +22,7 @@
       <ImagePreview
         v-else-if="hasMedia && media?.type === 'image'"
         :items="media.items"
-        :node-id="nodeId"
+        :node-id
         class="flex-auto"
         :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"
       />

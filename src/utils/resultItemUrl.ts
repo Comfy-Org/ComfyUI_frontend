@@ -21,9 +21,13 @@ export function resultItemUrl(item: AugmentedResultItem): string {
   return api.apiURL('/view?' + resultItemUrlParams(item))
 }
 
+interface PreviewUrlOptions {
+  fullRes?: boolean
+}
+
 export function resultItemPreviewUrl(
   item: AugmentedResultItem,
-  options: { fullRes?: boolean } = {}
+  { fullRes = false }: PreviewUrlOptions = {}
 ): string {
   if (isHdrImageFilename(item.filename))
     return (
@@ -32,7 +36,7 @@ export function resultItemPreviewUrl(
     )
   if (isVideoResult(item) && item.preview_id)
     return item.previewUrl ?? assetContentUrl(item.preview_id)
-  if (options.fullRes) return resultItemUrl(item)
+  if (fullRes) return resultItemUrl(item)
   if (item.previewUrl !== undefined) return item.previewUrl
   if (!isImageResult(item)) return resultItemUrl(item)
   const params = resultItemUrlParams(item)
