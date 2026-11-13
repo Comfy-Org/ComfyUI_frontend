@@ -22,10 +22,12 @@ consent, proof of loading, or server verification.
 Cloud must remove the claim and verify exact execution content against a trusted,
 versioned catalog and a server-side account/consent eligibility check before
 persisting provenance on the accepted job. Both server dependencies remain absent.
-The initial verifier uses an exact execution-prompt digest; changing seeds, inputs
-or graph content therefore excludes attribution unless that exact content is in
-the approved catalog. No wildcard or mutable-input policy is supplied. This proves
-content equivalence, not the client's historical loading action.
+The verifier defaults to an exact execution-prompt digest. Cloud also supports a
+bounded, explicit catalog policy for seed or prompt/text fields on exact node IDs
+and classes; it preserves every other input, model and graph connection. No real
+mutable-input rules or catalog entries are supplied. Unknown input policies fail
+closed. This proves content equivalence under the approved input policy, not the
+client's historical loading action.
 
 Activation needs an approved eligible template pool, real snapshot/execution digest
 pairs, applicable consent and canonical-account adapters, revocation-aware analysis,
