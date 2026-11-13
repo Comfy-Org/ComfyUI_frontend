@@ -155,6 +155,19 @@ export const VerifiedClaude: Story = {
   }
 }
 
+export const VerifiedCursor: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      client_display_name: 'Comfy Cloud',
+      client_provenance: 'dynamic',
+      client_application_type: 'web',
+      redirect_uri: 'https://www.cursor.com/connector/oauth/callback',
+      verified_client: { platform: 'cursor', display_name: 'Cursor' }
+    }
+  }
+}
+
 export const SessionAccount: Story = {
   args: {
     initialChallenge: {

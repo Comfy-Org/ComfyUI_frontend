@@ -220,6 +220,13 @@ describe('OAuthConsentView', () => {
       redirectUri: 'https://claude.ai/api/mcp/auth_callback',
       host: 'claude.ai',
       icon: 'icon-[comfy--anthropic]'
+    },
+    {
+      platform: 'cursor',
+      displayName: 'Cursor',
+      redirectUri: 'https://www.cursor.com/connector/oauth/callback',
+      host: 'www.cursor.com',
+      icon: 'icon-[comfy--cursor]'
     }
   ] as const)(
     'renders a verified $platform destination without hiding the registrant name',
@@ -314,6 +321,41 @@ describe('OAuthConsentView', () => {
       expect(screen.queryByTestId('client-verified')).not.toBeInTheDocument()
     }
   )
+
+  it('renders a dynamic client named Cursor with no verified_client exactly as today', async () => {
+    // A non-Cursor callback that only borrowed the name: without a
+    // server-issued verified_client it stays unverified — orange badge,
+    // "provided by whoever registered this app" notice, generic app-window
+    // icon — and never shows the Cursor brand icon.
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json({
+        ...challenge,
+        client_display_name: 'Cursor',
+        client_provenance: 'dynamic',
+        redirect_uri: 'https://www.cursor.com/connector/oauth/callback'
+      })
+    )
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/oauth/consent', component: OAuthConsentView }]
+    })
+    await router.push(
+      `/oauth/consent?oauth_request_id=${challenge.oauth_request_id}`
+    )
+    render(OAuthConsentView, { global: { plugins: [i18n, router] } })
+
+    expect(await screen.findByText('Cursor wants access')).toBeVisible()
+    expect(screen.getByTestId('client-icon')).toHaveClass(
+      'icon-[lucide--app-window]'
+    )
+    expect(screen.getByTestId('client-unverified')).toHaveTextContent(
+      'Name not verified'
+    )
+    expect(screen.getByTestId('client-unverified-notice')).toHaveTextContent(
+      'This name was provided by whoever registered this app. After you continue, your browser will be sent to www.cursor.com — make sure you recognize it.'
+    )
+    expect(screen.queryByTestId('client-verified')).not.toBeInTheDocument()
+  })
 
   it('ignores verified_client on a first-party client', () => {
     renderConsent({
