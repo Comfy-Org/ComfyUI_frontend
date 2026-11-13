@@ -106,11 +106,17 @@ describe('TopUpAutoTopUpCard', () => {
     expect(screen.queryByText(PROMPT)).toBeNull()
   })
 
-  it('stays shown while setup is frozen for another reason', () => {
-    renderCard({ setup: { state: 'frozen', reason: 'billing_paused' } })
+  it.for([
+    { reason: 'billing_paused', shown: false },
+    { reason: 'default_payment_method_missing', shown: true }
+  ] as const)(
+    'shows the prompt: $shown while setup is frozen for $reason',
+    ({ reason, shown }) => {
+      renderCard({ setup: { state: 'frozen', reason } })
 
-    expect(screen.getByText(PROMPT)).toBeInTheDocument()
-  })
+      expect(screen.queryByText(PROMPT) !== null).toBe(shown)
+    }
+  )
 
   it('reads the auto top-up status only when the served facts allow setup', () => {
     renderCard({ canManage: false })
