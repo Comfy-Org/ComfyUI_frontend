@@ -124,8 +124,6 @@ export async function getJobDetail(
   const request = api
     .getJobDetail(jobId)
     .then((detail) => {
-      // Only an outputs-bearing detail satisfies the cache for a caller that
-      // requires outputs, so a preview-only detail never blocks the refetch.
       if (detail && (!options.requireOutputs || detail.outputs)) {
         jobDetailCache.set(jobId, detail)
       }
