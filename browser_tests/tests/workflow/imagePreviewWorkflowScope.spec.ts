@@ -63,7 +63,7 @@ for (const mode of ['canvas', 'vue'] as const) {
           await expect(
             comfyPage.vueNodes
               .getNodeLocator(SHARED_NODE.id)
-              .getByTestId('main-image')
+              .getByRole('region', { name: /^Image preview/ })
           ).toBeAttached()
 
         const workflowsTab = comfyPage.menu.workflowsTab
