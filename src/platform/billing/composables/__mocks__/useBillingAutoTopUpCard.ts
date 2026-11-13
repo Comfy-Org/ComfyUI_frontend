@@ -1,5 +1,5 @@
-import { onTestFinished, vi } from 'vitest'
-import { computed, shallowRef } from 'vue'
+import { vi } from 'vitest'
+import { computed } from 'vue'
 
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import type { useBillingAutoTopUpCard as realUseBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
@@ -38,21 +38,20 @@ export function loadedAutoTopUp(
   return { kind: 'loaded', settings: { ...offSettings, status } }
 }
 
-export const autoTopUpCardState = shallowRef<AutoTopUpCardState>({
-  kind: 'loading'
-})
-
-const card: AutoTopUpCard = {
-  scope: computed(() => 'workspace-test'),
-  state: computed(() => autoTopUpCardState.value),
-  isReady: computed(() => autoTopUpCardState.value.kind !== 'loading'),
-  ensureRead: vi.fn(),
-  retry: vi.fn(async () => undefined)
+/** A card serving `state`; pass it to `vi.mocked(useBillingAutoTopUpCard).mockReturnValue`. */
+export function autoTopUpCard(
+  state: AutoTopUpCardState = { kind: 'loading' }
+): AutoTopUpCard {
+  return {
+    scope: computed(() => 'workspace-test'),
+    state: computed(() => state),
+    isReady: computed(() => state.kind !== 'loading'),
+    ensureRead: vi.fn(),
+    retry: vi.fn(async () => undefined)
+  }
 }
 
-export const useBillingAutoTopUpCard = vi.fn(() => {
-  onTestFinished(() => {
-    autoTopUpCardState.value = { kind: 'loading' }
-  })
-  return card
-})
+const card = autoTopUpCard()
+
+// The config's mockReset restores this loading card after each test.
+export const useBillingAutoTopUpCard = vi.fn(() => card)

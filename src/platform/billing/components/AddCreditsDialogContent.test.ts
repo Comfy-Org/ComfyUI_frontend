@@ -12,13 +12,14 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import {
-  autoTopUpCardState,
+  autoTopUpCard,
   loadedAutoTopUp
 } from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
 import {
   autoTopUpEnabledFact,
   canManageAutoTopUpFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -178,7 +179,9 @@ function renderDialog({
   capabilities.autoTopUpEnabled = autoTopUpEnabledFact(true)
   capabilities.canManageAutoTopUp = canManageAutoTopUpFact(true)
   capabilities.autoTopUpSetup = computed(() => ({ state: 'ready' }))
-  autoTopUpCardState.value = loadedAutoTopUp('off')
+  vi.mocked(useBillingAutoTopUpCard).mockReturnValue(
+    autoTopUpCard(loadedAutoTopUp('off'))
+  )
   vi.mocked(useBillingSdkStore().readPaymentMethods).mockResolvedValue({
     status: 'ok',
     value: []

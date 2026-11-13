@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import { useTelemetry } from '@comfyorg/telemetry'
 import {
-  autoTopUpCardState,
+  autoTopUpCard,
   loadedAutoTopUp
 } from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
 import {
@@ -57,7 +57,7 @@ function renderCard(served: Partial<Served> = {}) {
   capabilities.autoTopUpEnabled = autoTopUpEnabledFact(enabled)
   capabilities.canManageAutoTopUp = canManageAutoTopUpFact(canManage)
   capabilities.autoTopUpSetup = computed(() => setup)
-  autoTopUpCardState.value = card
+  vi.mocked(useBillingAutoTopUpCard).mockReturnValue(autoTopUpCard(card))
   render(TopUpAutoTopUpCard, {
     global: {
       plugins: [
