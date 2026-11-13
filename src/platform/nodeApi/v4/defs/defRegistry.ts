@@ -1,7 +1,10 @@
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { once } from 'es-toolkit'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
@@ -22,6 +25,7 @@ import { createExtensions } from './extensions'
 import type { NodeType } from './extensions'
 import { createHookDispatch } from './hookDispatch'
 import { nodeDefFromHost } from './nodeDef'
+import { createTypeColors } from './typeColors'
 
 /** The extension through which the host tells the API about node types. */
 export interface NodeTypeHooks extends ComfyExtension {
@@ -30,11 +34,14 @@ export interface NodeTypeHooks extends ComfyExtension {
     hostDef: ComfyNodeDefV1
   ): void
   refreshComboInNodes(): void
+  getNodeMenuItems(node: LGraphNode): IContextMenuValue[]
 }
 
 interface DefRegistryParts {
   readonly defs: DefRegistry
   readonly nodeTypeHooks: NodeTypeHooks
+  /** Puts back the colours packs gave their types, after a palette cleared them. */
+  reapplyTypeColors(): void
 }
 
 export const NODE_TYPE_HOOKS_NAME = 'Comfy.NodeApi.v4.NodeTypes'
@@ -51,6 +58,7 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
   )
   const extensions = createExtensions(dispatch)
   const refreshed = createListeners('onRefreshed')
+  const colors = createTypeColors()
 
   function registerHostType(
     nodeClass: typeof LGraphNode,
@@ -111,7 +119,11 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
         throw invalidArgument('onRefreshed', 'a function to call', listener)
       }
       return refreshed.add(listener)
-    }
+    },
+    typeColor: colors.typeColor,
+    setTypeColor: colors.setTypeColor,
+    nodeColor: colors.nodeColor,
+    isTypeCompatible: colors.isTypeCompatible
   })
 
   return {
@@ -119,8 +131,10 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
     nodeTypeHooks: {
       name: NODE_TYPE_HOOKS_NAME,
       beforeRegisterNodeDef: registerHostType,
-      refreshComboInNodes: refreshed.notify
-    }
+      refreshComboInNodes: refreshed.notify,
+      getNodeMenuItems: dispatch.menuItemsFor
+    },
+    reapplyTypeColors: colors.reapply
   }
 }
 

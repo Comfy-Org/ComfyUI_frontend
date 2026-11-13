@@ -38,6 +38,8 @@ export interface ComfyApiHost {
   afterHistoryRestore(): void
   /** The extension through which the host tells the API about node types. */
   readonly nodeTypeHooks: NodeTypeHooks
+  /** Puts back the colours packs gave their types, after a palette cleared them. */
+  reapplyTypeColors(): void
 }
 
 export function createComfyApi(services: ComfyApiServices): {
@@ -80,6 +82,7 @@ export function createComfyApi(services: ComfyApiServices): {
     comfy,
     host: {
       nodeTypeHooks: definitions.nodeTypeHooks,
+      reapplyTypeColors: definitions.reapplyTypeColors,
       markReady: lifecycle.markReady,
       beginDocument: handles.beginDocument,
       afterHistoryRestore: handles.afterHistoryRestore

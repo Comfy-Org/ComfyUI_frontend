@@ -9,8 +9,10 @@ import type {
   NodeHandle,
   PropertyChangeEvent
 } from '@/platform/nodeApi/v4/types'
+import { checkedMenuItem } from './nodeMenu'
+import type { CheckedMenuItem } from './nodeMenu'
 
-/** The callback a pack gives each hook. */
+/** What a pack gives each hook: a callback, or for `addMenuItem` the checked item. */
 export interface HookCallbacks {
   onCreated: (node: NodeHandle, event: NodeCreatedEvent) => void
   onConfigured: (
@@ -32,6 +34,7 @@ export interface HookCallbacks {
   onPropertyChanged: (node: NodeHandle, event: PropertyChangeEvent) => void
   onHover: (node: NodeHandle, hovering: boolean) => void
   onDoubleClick: (node: NodeHandle) => void
+  addMenuItem: CheckedMenuItem
 }
 
 export type HookName = keyof HookCallbacks
@@ -47,7 +50,8 @@ export const HOOK_NAMES = [
   'onBeforeConnect',
   'onPropertyChanged',
   'onHover',
-  'onDoubleClick'
+  'onDoubleClick',
+  'addMenuItem'
 ] as const satisfies readonly HookName[]
 
 /** The callbacks one extension added to one type, by hook, in the order it added them. */
@@ -71,22 +75,32 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
     onBeforeConnect: [],
     onPropertyChanged: [],
     onHover: [],
-    onDoubleClick: []
+    onDoubleClick: [],
+    addMenuItem: []
   }
   let open = true
 
-  function hook<K extends HookName>(name: K) {
-    return (callback: HookCallbacks[K]): void => {
+  function adder<K extends HookName, Given>(
+    name: K,
+    checked: (value: Given) => HookCallbacks[K]
+  ) {
+    return (value: Given): void => {
       if (!open) {
         throw new TypeError(
           `${name} can only be called inside the callback given to extend.`
         )
       }
+      callbacks[name].push(checked(value))
+    }
+  }
+
+  function hook<K extends Exclude<HookName, 'addMenuItem'>>(name: K) {
+    return adder(name, (callback: HookCallbacks[K]) => {
       if (typeof callback !== 'function') {
         throw invalidArgument(name, 'a function to call', callback)
       }
-      callbacks[name].push(callback)
-    }
+      return callback
+    })
   }
 
   const builder: NodeDefBuilder = Object.freeze({
@@ -101,7 +115,8 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
     onBeforeConnect: hook('onBeforeConnect'),
     onPropertyChanged: hook('onPropertyChanged'),
     onHover: hook('onHover'),
-    onDoubleClick: hook('onDoubleClick')
+    onDoubleClick: hook('onDoubleClick'),
+    addMenuItem: adder('addMenuItem', checkedMenuItem)
   })
 
   return {

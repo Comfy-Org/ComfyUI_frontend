@@ -502,6 +502,23 @@ export interface DefRegistry {
   refresh(): Promise<boolean>
   /** Calls `listener` after each reload of the node definitions, whoever asked. */
   onRefreshed(listener: () => void): Unsubscribe
+  /** The colour links of a data type are drawn in, or `undefined` if nothing colours the type. */
+  typeColor(type: string): string | undefined
+  /**
+   * Colours the links of a data type the palette leaves uncoloured, such as one
+   * the pack introduces. A type's newest colour wins until it is unsubscribed.
+   */
+  setTypeColor(type: string, color: string): Unsubscribe
+  /** The colours of an entry of the node colour menu, such as `red`. */
+  nodeColor(name: string): NodeColor | undefined
+  /** True if an output of `outputType` may link to an input of `inputType`. */
+  isTypeCompatible(outputType: string, inputType: string): boolean
+}
+
+export interface NodeColor {
+  readonly color: string
+  readonly bgColor: string
+  readonly groupColor: string
 }
 
 /**
@@ -561,6 +578,28 @@ export interface NodeDefBuilder {
   onHover(callback: (node: NodeHandle, hovering: boolean) => void): void
   /** A node was double-clicked. Called by the canvas renderer, not by Vue nodes. */
   onDoubleClick(callback: (node: NodeHandle) => void): void
+  /** Adds an entry to the context menu of the type's nodes. */
+  addMenuItem(item: NodeMenuItem): void
+}
+
+/** An entry of a node's context menu. It needs `run`, `items`, or both. */
+export interface NodeMenuItem {
+  /** The text, or a function of the node that gives it. */
+  readonly label: string | ((node: NodeHandle) => string)
+  /** Shown only when this returns `true`. */
+  when?(node: NodeHandle): boolean
+  run?(node: NodeHandle): void
+  /** A submenu, or a function of the node that gives one. An empty one is not shown. */
+  readonly items?:
+    | readonly NodeSubMenuItem[]
+    | ((node: NodeHandle) => readonly NodeSubMenuItem[])
+  /** Lower comes first; none counts as 0. Ties keep the order they were added in. */
+  readonly order?: number
+}
+
+export interface NodeSubMenuItem {
+  readonly label: string
+  run(node: NodeHandle): void
 }
 
 export interface NodeCreatedEvent {
