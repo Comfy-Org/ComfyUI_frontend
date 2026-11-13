@@ -43,6 +43,26 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { prepareTemplateInputs } from '@/platform/workflow/templates/services/templateInputService'
 
+function snapshotTemplateOrigin(json: unknown, sourceModule: string): unknown {
+  if (!isCloud || !isTemplateOriginEnabled() || sourceModule !== 'default')
+    return undefined
+  return structuredClone(json)
+}
+
+async function rememberLoadedTemplateOrigin(
+  workflow: unknown,
+  templateId: string,
+  snapshot: unknown
+): Promise<void> {
+  if (
+    snapshot === undefined ||
+    typeof workflow !== 'object' ||
+    workflow === null
+  )
+    return
+  await rememberTemplateOrigin(workflow, templateId, snapshot)
+}
+
 type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
 
 type FetchedTemplate =
@@ -288,9 +308,7 @@ export function useTemplateWorkflows() {
     templateId: string
   ): Promise<TemplateLoadResult> {
     try {
-      const trackOrigin =
-        isCloud && isTemplateOriginEnabled() && sourceModule === 'default'
-      const originSnapshot = trackOrigin ? structuredClone(json) : undefined
+      const originSnapshot = snapshotTemplateOrigin(json, sourceModule)
       const loadedWorkflow = await app.loadGraphData(
         json as ComfyWorkflowJSON,
         true,
@@ -301,9 +319,11 @@ export function useTemplateWorkflows() {
       if (loadedWorkflow === false) return 'graph-failed'
       if (loadedWorkflow === undefined) return 'not-started'
 
-      if (trackOrigin && typeof loadedWorkflow === 'object') {
-        await rememberTemplateOrigin(loadedWorkflow, templateId, originSnapshot)
-      }
+      await rememberLoadedTemplateOrigin(
+        loadedWorkflow,
+        templateId,
+        originSnapshot
+      )
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
       await syncCompletedTemplateInputsWithCurrentGraph()

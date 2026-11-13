@@ -1,4 +1,6 @@
 import { ref, watch } from 'vue'
+import type { AccountCredential } from '@comfyorg/account-core/session'
+import type { WebSessionRequestScope } from '@comfyorg/api-client/webSessionFetch'
 import { bindAnalyticsConsentRuntime } from '@comfyorg/api-client/analyticsConsentRuntime'
 import type { ConsentReceiptConfiguration } from '@comfyorg/api-client/analyticsConsentReceiptBridge'
 import {
@@ -16,6 +18,22 @@ export interface HomepageConsentSource {
     listener: (explicitPostHogConsent: boolean | undefined) => void
   ) => () => void
   setEligible: (eligible: boolean) => void
+}
+
+function matchesSessionScope(
+  scope: WebSessionRequestScope | undefined,
+  actor: string,
+  workspace: string
+): scope is WebSessionRequestScope {
+  return scope?.session.user.id === actor && scope.workspaceId === workspace
+}
+
+function matchesCredential(
+  credential: AccountCredential,
+  actor: string,
+  workspace: string
+): boolean {
+  return credential.uid === actor && credential.workspace.id === workspace
 }
 
 /** Installs the Cloud host only for an explicitly supplied reviewed consent source. */
@@ -52,29 +70,23 @@ export function installCloudHomepageConsentHost(
           if (!actor || !workspace) return
           const requests = webSessionRequests()
           if (!requests) return
+          const isCurrent = () =>
+            !disposed &&
+            generation === revision &&
+            webSessionRequests() === requests &&
+            auth.userId === actor &&
+            workspaces.activeWorkspaceId === workspace
           try {
             const scope = await requests.scope()
-            if (
-              !scope ||
-              scope.session.user.id !== actor ||
-              scope.workspaceId !== workspace
-            )
-              return
+            if (!matchesSessionScope(scope, actor, workspace)) return
             const result = await requests.workspaceToken(scope)
             const current = await requests.scope()
             if (
-              disposed ||
-              generation !== revision ||
-              webSessionRequests() !== requests ||
+              !isCurrent() ||
               result.status !== 'ok' ||
-              !current ||
+              !matchesSessionScope(current, actor, workspace) ||
               current.epoch !== scope.epoch ||
-              current.workspaceId !== scope.workspaceId ||
-              current.session.user.id !== actor ||
-              auth.userId !== actor ||
-              workspaces.activeWorkspaceId !== workspace ||
-              result.credential.uid !== actor ||
-              result.credential.workspace.id !== workspace
+              !matchesCredential(result.credential, actor, workspace)
             )
               return
             listener(result.credential)
