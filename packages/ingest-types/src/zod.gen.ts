@@ -2,6 +2,8 @@
 
 import * as z from 'zod'
 
+import type { CccPublicationCondition } from './types.gen'
+
 /**
  * Response returned after successfully accepting a workspace invitation.
  */
@@ -2064,7 +2066,9 @@ export const zCccPagesPage = z.object({
 export const zCccPublicationCondition = z.object({
   equals: z.unknown(),
   field: z.string(),
-  if_absent: z.lazy((): any => zCccPublicationCondition).optional()
+  if_absent: z
+    .lazy((): z.ZodType<CccPublicationCondition> => zCccPublicationCondition)
+    .optional()
 })
 
 /**
@@ -5865,6 +5869,7 @@ export const zBillingCapabilitiesResponse = z.object({
   auto_top_up_setup: zAutoTopUpSetup.optional(),
   billing_notice_audience: z.enum(['none', 'team', 'personal']).optional(),
   billing_web_checkout_ui: z.enum(['embedded', 'full_page']),
+  cancel_takes_effect_immediately: z.boolean().optional(),
   capabilities: zBillingCapabilities,
   denied_reason_params: zBillingCapabilityDenialParams.optional(),
   denied_reasons: zBillingCapabilityDenials.optional(),

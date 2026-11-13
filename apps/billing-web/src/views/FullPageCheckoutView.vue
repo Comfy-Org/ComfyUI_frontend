@@ -25,12 +25,12 @@ import PromoCodeEntry from '@/components/fullPage/summary/PromoCodeEntry.vue'
 import { useFullPageCheckout } from '@/composables/useFullPageCheckout'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { useBillingWebStripeKey } from '@/config/stripeKey'
-import { useBillingWebSession } from '@/session/billingWebSession'
+import { useBilledScope } from '@/session/billingWebAuth'
 import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 const { t, locale } = useI18n()
 const { coded } = useHostedCopy()
-const { session } = useBillingWebSession()
+const session = useBilledScope()
 const stripeKey = useBillingWebStripeKey()
 const {
   page,

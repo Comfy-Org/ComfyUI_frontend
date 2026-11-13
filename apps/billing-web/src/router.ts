@@ -1,7 +1,8 @@
 import type { Component } from 'vue'
-import type { RouterHistory, RouteRecordRaw } from 'vue-router'
+import type { LocationQuery, RouterHistory, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
+import { ADD_CREDITS_DEFAULT_CENTS } from '@comfyorg/account-core/billing'
 import type {
   WebEntryBounceReason,
   WebEntryBounceTarget
@@ -111,6 +112,30 @@ const routes: RouteRecordRaw[] = [
 ]
 
 export type BillingWebSessionPhase = SessionSnapshot['phase']
+
+const HANDOFF_ENTRY = { product: 'comfyui', return_to: 'comfyui_credits' }
+
+function handoffEntryPath(
+  intent: BillingIntent,
+  extra: Record<string, string> = {}
+): string {
+  const query = new URLSearchParams({ ...HANDOFF_ENTRY, ...extra })
+  return `${billingIntentPath(intent)}?${query}`
+}
+
+function handoffAmount(amount: LocationQuery[string] | undefined): string {
+  if (amount === undefined) return String(ADD_CREDITS_DEFAULT_CENTS)
+  return typeof amount === 'string' ? amount : ''
+}
+
+function handoffLanding({
+  intent,
+  amount_cents: amount
+}: LocationQuery): string {
+  if (intent === 'subscription') return handoffEntryPath('subscription')
+  if (intent !== 'top-up') return APP_ENTRY_PATH
+  return handoffEntryPath('top-up', { amount_cents: handoffAmount(amount) })
+}
 
 const isPlanlessCheckout = (entry: BillingEntry) =>
   entry.intent === 'checkout' && entry.plan === undefined
@@ -302,11 +327,12 @@ export function createBillingRouter(
   async function guardHandoffTab(to: {
     path: string
     fullPath: string
+    query: LocationQuery
   }): Promise<boolean | string> {
     const authenticated = (await readPhase()) === 'authenticated'
     if (isHandoffPath(to.path)) {
       recordBillingEntry(undefined)
-      return authenticated ? APP_ENTRY_PATH : true
+      return authenticated ? handoffLanding(to.query) : true
     }
     if (to.path === SIGN_IN_PATH) return HANDOFF_PATH
     if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)

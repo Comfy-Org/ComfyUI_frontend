@@ -1297,6 +1297,7 @@
       "descriptionMore": "Show more",
       "descriptionLess": "Show less",
       "justOpen": "Just open",
+      "open": "Open",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"
     },
@@ -2040,6 +2041,7 @@
     "Anthropic": "Anthropic",
     "Beeble": "Beeble",
     "BFL": "BFL",
+    "Breeze": "Breeze",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
@@ -2065,6 +2067,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "fal": "fal",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",
@@ -2095,6 +2098,7 @@
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "BOUNDING_BOXES",
+    "BREEZE_VOICE": "BREEZE_VOICE",
     "CAMERA_INFO_STATE": "CAMERA_INFO_STATE",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -2735,6 +2739,7 @@
       "unverifiedBadge": "Name not verified",
       "unverifiedNotice": "This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.",
       "unverifiedNoticeNoHost": "This name was provided by whoever registered this app and has not been verified by Comfy.",
+      "verifiedNotice": "Name not verified · Verified destination: {platform} · you'll return to {host}",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
       "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
@@ -2940,7 +2945,7 @@
       "auth/weak-password": "Password is too weak. Please use a stronger password with at least 6 characters.",
       "auth/too-many-requests": "Too many login attempts. Please wait a moment and try again.",
       "auth/operation-not-allowed": "This sign-in method is not currently supported.",
-      "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
+      "auth/invalid-credential": "Invalid login credentials. Please check your email and password. If you have signed in with Google or GitHub before, use that instead.",
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
       "auth/popup-closed-by-user": "The sign-in window closed before sign-in finished. Please try again.",
       "auth/cancelled-popup-request": "Another sign-in window was already open, so this one was cancelled. Please try again.",
@@ -2960,7 +2965,8 @@
     },
     "loginButton": {
       "tooltipHelp": "Login to be able to use \"API Nodes\"",
-      "tooltipLearnMore": "Learn more..."
+      "tooltipLearnMore": "Learn more...",
+      "signInToUsePartnerNodes": "Sign in to use Partner Nodes"
     }
   },
   "desktopLogin": {
@@ -4168,13 +4174,22 @@
     "maxWorkspacesReached": "You can only own {max} workspace. Delete it to create a new one. | You can only own {max} workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
-    "failedToSwitch": "Failed to switch workspace"
+    "failedToSwitch": "Failed to switch workspace",
+    "createWorkspaceAction": "Create workspace",
+    "ownedLimit": "You can own up to {max}.",
+    "searchPlaceholder": "Search workspace...",
+    "noResults": "No workspaces match “{query}”.",
+    "loadFailed": "Couldn’t load your workspaces.",
+    "tryAgain": "Try again"
   },
   "profileMenu": {
     "switchWorkspace": "Switch workspace",
     "credits": "Credits",
     "balanceUnavailable": "Couldn't load your balance.",
     "billingSettings": "Billing settings",
+    "planCredits": "Plan credits",
+    "topUpCredits": "Top-up credits",
+    "paymentProcessing": "Payment processing…",
     "planStatus": {
       "noPlan": "No plan",
       "paused": "Paused",
@@ -6667,5 +6682,11 @@
       "title": "Auto top-up didn't turn on",
       "body": "Your credits were added. Set up auto top-up in Billing to try again."
     }
+  },
+  "billingHandoff": {
+    "superseded": "Your account or workspace changed while billing was opening. Try again.",
+    "signInAgain": "Sign in again to open billing.",
+    "opening": "Opening checkout…",
+    "openingDetail": "This takes a few seconds."
   }
 }

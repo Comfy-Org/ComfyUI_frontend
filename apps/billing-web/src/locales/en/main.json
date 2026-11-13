@@ -42,7 +42,7 @@
       "auth/weak-password": "Password is too weak. Please use a stronger password with at least 6 characters.",
       "auth/too-many-requests": "Too many login attempts. Please wait a moment and try again.",
       "auth/operation-not-allowed": "This sign-in method is not currently supported.",
-      "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
+      "auth/invalid-credential": "Invalid login credentials. Please check your email and password. If you have signed in with Google or GitHub before, use that instead.",
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
       "auth/popup-closed-by-user": "The sign-in window closed before sign-in finished. Please try again.",
       "auth/cancelled-popup-request": "Another sign-in window was already open, so this one was cancelled. Please try again.",
@@ -597,23 +597,24 @@
     "body": "Your balance updates in the app once the payment is confirmed. If you canceled, nothing was charged."
   },
   "handoff": {
-    "link_unavailable": {
+    "closeTab": "You can close this tab.",
+    "link": {
       "title": "This checkout link no longer works",
-      "body": "Return to ComfyUI and try again."
+      "body": "Links from ComfyUI work once and expire after a minute. Nothing was charged.",
+      "step": "Go back to ComfyUI and open checkout again from Settings → Billing."
     },
-    "exchange_lost": {
-      "title": "This checkout link no longer works",
-      "body": "Return to ComfyUI and try again."
+    "browser": {
+      "title": "Checkout can't open in this browser",
+      "body": "Your browser settings are blocking it. Nothing was charged.",
+      "step": "Turn off private browsing or try another browser, then open checkout again from ComfyUI."
     },
-    "storage_unavailable": {
-      "title": "Checkout can't open in this tab",
-      "body": "This browser is blocking the storage checkout needs. Allow site data for this page, then return to ComfyUI and try again."
+    "checking": {
+      "title": "Checking your payment",
+      "body": "This can take a minute. Don't pay again while we check, you could be charged twice.",
+      "codeLabel": "If this page still can't confirm it after a few minutes, contact support with this code:",
+      "closeLine": "You can close this tab. We'll email your invoice once the payment goes through."
     },
-    "refused": {
-      "title": "Billing isn't available here",
-      "body": "This account can't manage billing for this workspace from ComfyUI. Return to ComfyUI for details."
-    },
-    "session_ended": {
+    "session": {
       "title": "This checkout session has ended",
       "body": "Return to ComfyUI and try again."
     }

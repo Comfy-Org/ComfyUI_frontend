@@ -170,7 +170,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Workflow.NamedValuesRestore',
     name: 'Restore widget values by name',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     experimental: true
   },
   {
