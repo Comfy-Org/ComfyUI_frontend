@@ -114,6 +114,25 @@ it('account change during mint cannot publish the old credential', async () => {
   state.stop()
 })
 
+it('account change after the final scope read cannot publish a stale credential', async () => {
+  mocks.scope.mockResolvedValueOnce(scope).mockResolvedValueOnce({
+    ...scope,
+    get epoch() {
+      queueMicrotask(() => {
+        useAuthStore().currentUser = null
+      })
+      return scope.epoch
+    }
+  })
+  const state = start()
+  await vi.waitFor(() => expect(useAuthStore().currentUser).toBeNull())
+  expect(
+    state.listener.mock.calls.every(([value]) => value === undefined)
+  ).toBe(true)
+  state.unsubscribe()
+  state.stop()
+})
+
 it('requires a resolved workspace matching the request scope', async () => {
   Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: '' })
   const missing = start()

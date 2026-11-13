@@ -108,7 +108,7 @@ export function installCloudHomepageConsentHost(
               workspace,
               isCurrent
             )
-            if (credential) listener(credential)
+            if (credential && isCurrent()) listener(credential)
           } catch {
             if (!disposed && generation === revision) listener(undefined)
           }
