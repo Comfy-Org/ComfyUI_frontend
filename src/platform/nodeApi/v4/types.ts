@@ -1282,3 +1282,24 @@ export interface GraphSupplyReads {
 export interface GraphHandle extends GraphSupplyReads {}
 
 export interface GraphScopeHandleMembers extends GraphSupplyReads {}
+
+export interface NodeDefBuilder {
+  /**
+   * Leaves inputs out of a node's entry in each prompt built; the saved workflow keeps them.
+   * One that throws or answers wrongly is reported and leaves nothing out.
+   */
+  onPromptSerialize(
+    callback: (node: NodeHandle) => PromptInputProjection | void
+  ): void
+  /** The server sent a preview image while running a node. */
+  onPreview(callback: (node: NodeHandle, frame: PreviewFrame) => void): void
+}
+
+export interface PromptInputProjection {
+  /** Names of the node's inputs and widgets, as the prompt names them. */
+  readonly omitInputs: readonly string[]
+}
+
+export interface PreviewFrame {
+  readonly blob: Blob
+}

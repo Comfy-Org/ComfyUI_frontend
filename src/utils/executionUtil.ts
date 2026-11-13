@@ -51,6 +51,8 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
 export interface FrontendExecution {
   /** Puts its own executable form in place of each node whose outputs or inputs a pack resolves. */
   adoptNodes(nodes: Map<ExecutionId, ExecutableLGraphNode>): void
+  /** The inputs to leave out of a node's entry in the prompt. */
+  omittedInputs(node: ExecutableLGraphNode): readonly string[]
 }
 
 /**
@@ -170,6 +172,9 @@ export const graphToPrompt = async (
       }
 
       inputs[input.name] = [resolvedInput.origin_id, resolvedInput.origin_slot]
+    }
+    for (const name of frontendExecution?.omittedInputs(node) ?? []) {
+      delete inputs[name]
     }
 
     const cnrId = zNodePackMetadata.shape.cnr_id.safeParse(

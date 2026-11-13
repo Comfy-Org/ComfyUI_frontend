@@ -278,6 +278,24 @@ describe('graphToPrompt with the node API', () => {
     }
   )
 
+  it('leaves out of a node the inputs its onPromptSerialize hooks name', async () => {
+    const { comfy, host } = createComfyApi({ getGraph: () => null })
+    comfy.defs.define({ type: 'Pack/Stash', execution: 'backend' })
+    comfy.defs.extend('Pack/Stash', (builder) =>
+      builder.onPromptSerialize(() => ({ omitInputs: ['text'] }))
+    )
+    const graph = new LGraph()
+    const stash = addNodeOfType(graph, 'Pack/Stash')
+    stash.addWidget('text', 'text', 'typed', () => undefined, {})
+    stash.addWidget('number', 'seed', 3, () => undefined, {})
+
+    const { output } = await graphToPrompt(graph, {
+      frontendExecution: host.frontendExecution
+    })
+
+    expect(output[String(stash.id)].inputs).toEqual({ seed: 3 })
+  })
+
   it('builds the inputs a resolved node feeds from what its resolver answers', async () => {
     const { comfy, host } = createComfyApi({ getGraph: () => null })
     comfy.defs.define({

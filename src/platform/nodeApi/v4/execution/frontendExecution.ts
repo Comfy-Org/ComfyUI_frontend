@@ -9,6 +9,8 @@ import type { ResolvedSupply } from '@/platform/nodeApi/v4/types'
 import type { FrontendExecution } from '@/utils/executionUtil'
 import { sourceInGraph } from './graphSource'
 import { createNodeViews } from './nodeView'
+import { deliverPreview } from './previews'
+import { omittedInputs } from './promptProjection'
 import { createResolutions } from './resolution'
 import type { Resolutions } from './resolution'
 import { ResolvedNodeDTO } from './resolvedNodeDto'
@@ -19,6 +21,7 @@ import type { GraphSupplies } from './supply'
 interface FrontendExecutionParts {
   readonly prompt: FrontendExecution
   resolvedSupplies(graph: LGraph): readonly ResolvedSupply[]
+  deliverPreview(rootGraph: LGraph, executionId: string, blob: Blob): void
 }
 
 interface Build {
@@ -65,8 +68,11 @@ export function createFrontendExecution(
         for (const [id, node] of nodes) {
           nodes.set(id, executableFor(node, build, supplying))
         }
-      }
+      },
+      omittedInputs: (node) => omittedInputs(node, nodeHooks)
     },
+    deliverPreview: (rootGraph, executionId, blob) =>
+      deliverPreview(rootGraph, executionId, blob, nodeHooks),
     resolvedSupplies(graph) {
       const { resolutions, suppliesOf } = newBuild()
       return Object.freeze(

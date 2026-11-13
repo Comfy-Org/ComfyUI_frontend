@@ -43,6 +43,7 @@ export const useComfyApiStore = defineStore('comfyApiV4', () => {
     queue: host.queue,
     reapplyTypeColors: host.reapplyTypeColors,
     frontendExecution: host.frontendExecution,
+    deliverPreview: host.deliverPreview,
     markReady: host.markReady,
     beginDocument: host.beginDocument,
     afterHistoryRestore: host.afterHistoryRestore
