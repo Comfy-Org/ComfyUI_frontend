@@ -16,6 +16,7 @@ import type {
 } from '@/platform/nodeApi/v4/types'
 import { checkedWidgetDef } from './widgetDef'
 import { createWidgetEdits } from './widgetEdits'
+import { createWidgetEvents } from './widgetEvents'
 import type { WidgetEdits } from './widgetEdits'
 import { createWidgetHandles, nameList, widgetNamed } from './widgetHandle'
 import type { WidgetHandleFor } from './widgetHandle'
@@ -24,8 +25,10 @@ export function createWidgetCollections(
   handles: DocumentHandles,
   runner: EditRunner
 ): WidgetsOf {
-  const edits = createWidgetEdits(runner)
-  const handleFor = createWidgetHandles(handles, edits, savedCopier())
+  const copyOfSaved = savedCopier()
+  const events = createWidgetEvents(copyOfSaved)
+  const edits = createWidgetEdits(runner, events.asSetValue)
+  const handleFor = createWidgetHandles(handles, { edits, events, copyOfSaved })
   return (locate) => widgetCollection(locate, handleFor, edits)
 }
 
