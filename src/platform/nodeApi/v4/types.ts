@@ -929,3 +929,56 @@ export interface WidgetTypeContext {
   /** A frozen copy of the options the input was declared with. `undefined` if they cannot be saved. */
   getOptions(): Readonly<Record<string, unknown>> | undefined
 }
+
+/** What a pack hears from the editor. */
+export interface Comfy {
+  /** A node's title, mode or color changed, by any means, in the graphs `options.scope` names. */
+  onNodeChanged(
+    listener: (event: NodeChangeEvent) => void,
+    options?: NodeChangeOptions
+  ): Unsubscribe
+  /** A node was moved, under either renderer. A pack sees its own moves too. */
+  onNodeMoved(listener: (event: NodeMoveEvent) => void): Unsubscribe
+  /** A drag of nodes or other canvas items ended. */
+  onNodeDragEnd(listener: () => void): Unsubscribe
+  /** True while the user drags a link, resizes a node or drags a widget. */
+  isInteracting(): boolean
+  /** The view on the graph panned or zoomed. */
+  onViewportChanged(listener: () => void): Unsubscribe
+  /** The nodes selected in the graph on screen changed. Passes them in the graph's order. */
+  onSelectionChanged(
+    listener: (nodes: readonly NodeHandle[]) => void
+  ): Unsubscribe
+  /** The node the backend is running, in the open document, or `undefined`. */
+  executingNode(): NodeHandle | undefined
+  /** The node a backend execution id such as `'12:5'` names in the open document. */
+  executionNode(id: string): NodeHandle | undefined
+  /** Fires when `executingNode()` changes, including to `undefined`. */
+  onExecutingNodeChanged(
+    listener: (node: NodeHandle | undefined) => void
+  ): Unsubscribe
+}
+
+/** Which graphs `onNodeChanged` hears: the graph on screen by default. */
+export interface NodeChangeOptions {
+  readonly scope?: NodeQueryScope
+}
+
+/** `to` is what the node's matching read returns after the change. */
+export type NodeChangeEvent =
+  | NodeChangeOf<'title' | 'color' | 'bgColor', string>
+  | NodeChangeOf<'mode', NodeMode>
+
+interface NodeChangeOf<TProperty extends string, TValue> {
+  readonly node: NodeHandle
+  /** The id of the graph the node is in. */
+  readonly graphId: string
+  readonly property: TProperty
+  readonly to: TValue | undefined
+}
+
+export interface NodeMoveEvent {
+  readonly node: NodeHandle
+  /** The node's new top-left corner, in graph space. */
+  readonly position: Point
+}

@@ -169,4 +169,18 @@ describe('calling a pack callback', () => {
       [2, 'b']
     ])
   })
+
+  it('says whether any listener is registered', () => {
+    const listeners = createListeners('test')
+
+    expect(listeners.isEmpty()).toBe(true)
+
+    const stop = listeners.add(vi.fn())
+
+    expect(listeners.isEmpty()).toBe(false)
+
+    stop()
+
+    expect(listeners.isEmpty()).toBe(true)
+  })
 })

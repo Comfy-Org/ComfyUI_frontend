@@ -33,6 +33,9 @@ import {
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { api } from '@/scripts/api'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
@@ -381,6 +384,28 @@ describe('GraphCanvas node API', () => {
 
     expect(app.setup).toHaveBeenCalledOnce()
     expect(ready).not.toHaveBeenCalled()
+  })
+
+  it('gives the node API the canvas, so a pack hears a node move', async () => {
+    const moved = vi.fn()
+    vi.mocked(loadExtensions).mockImplementationOnce(async () => {
+      window.comfy_v4?.onNodeMoved(moved)
+    })
+    await mountGraphCanvas()
+    const graph = new LGraph()
+    const node = new LGraphNode('Moved')
+    graph.add(node)
+    useCanvasStore().currentGraph = graph
+
+    useLayoutMutations(LayoutSource.Canvas).moveNode(graph.id, node.id, {
+      x: 12,
+      y: 34
+    })
+    layoutStore.flushPendingChanges()
+
+    expect(moved).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ position: { x: 12, y: 34 } })
+    )
   })
 })
 

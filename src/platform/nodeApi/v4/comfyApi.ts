@@ -4,6 +4,7 @@ import { createDocumentHandles } from '@/platform/nodeApi/shared/documentHandles
 
 import { API_VERSION, isApiVersionAtLeast } from './apiVersion'
 import { createAppLifecycle } from './appLifecycle'
+import type { CanvasSource } from './canvasSource'
 import { createEditRunner } from './edit/editRunner'
 import type { EditHistory } from './edit/editRunner'
 import { createEdits } from './edit/edits'
@@ -13,6 +14,12 @@ import { groupHandleMembers } from './edit/groupHandleMembers'
 import { createGroupHandles } from './edit/groupHandles'
 import { nodeHandleMembers } from './edit/nodeHandleMembers'
 import { createSlotHandles } from './edit/slotHandles'
+import { createExecutingNode } from './events/executingNode'
+import { isInteracting } from './events/interaction'
+import { createNodeChanges } from './events/nodeChanges'
+import { createNodeMoves } from './events/nodeMoves'
+import { createSelectionEvents } from './events/selection'
+import { createViewportEvents } from './events/viewport'
 import { createDefRegistry } from './defs/defRegistry'
 import type { NodeTypeHooks } from './defs/defRegistry'
 import { createGraphHandle } from './graphHandle'
@@ -27,6 +34,8 @@ export interface ComfyApiServices {
   getGraph(): LGraph | null
   /** The open document's undo history; without it an edit is no undo step. */
   history?(): EditHistory | undefined
+  /** The canvas, once the renderer has supplied it. */
+  canvas?(): CanvasSource | undefined
 }
 
 /** What the host drives. A pack never sees this. */
@@ -80,11 +89,24 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     services.history?.()
   )
   const definitions = createDefRegistry(nodes, widgets.widgetTypes)
+  const canvas = () => services.canvas?.()
+  const visibleGraph = () => canvas()?.visibleGraph() ?? null
+  const moves = createNodeMoves(nodes, canvas)
+  const executing = createExecutingNode(nodes, services.getGraph)
 
   const comfy = Object.freeze({
     getApiVersion: () => API_VERSION,
     isApiVersionAtLeast,
     onReady: lifecycle.onReady,
+    onNodeChanged: createNodeChanges(nodes, visibleGraph),
+    onNodeMoved: moves.onNodeMoved,
+    onNodeDragEnd: moves.onNodeDragEnd,
+    isInteracting: () => isInteracting(canvas()),
+    onViewportChanged: createViewportEvents(canvas),
+    onSelectionChanged: createSelectionEvents(nodes, canvas),
+    executingNode: executing.executingNode,
+    executionNode: executing.executionNode,
+    onExecutingNodeChanged: executing.onExecutingNodeChanged,
     defs: definitions.defs,
 
     graph: createGraphHandle(
