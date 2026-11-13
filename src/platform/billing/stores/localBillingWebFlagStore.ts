@@ -45,10 +45,6 @@ async function readLocalBillingWeb(): Promise<boolean> {
   }
 }
 
-/**
- * Cloud's `local_billing_web` for the account signed in to local ComfyUI or
- * Desktop: false while unknown, signed out, on Cloud, or after a failed read.
- */
 let generation = 0
 
 export const useLocalBillingWebFlagStore = defineStore(

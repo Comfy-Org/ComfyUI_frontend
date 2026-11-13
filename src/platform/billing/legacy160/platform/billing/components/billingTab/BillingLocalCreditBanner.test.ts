@@ -700,22 +700,16 @@ describe('BillingLocalCreditBanner', () => {
     ).not.toBeInTheDocument()
   })
 
-  it.for([
-    { platformAvailable: true, updatePayment: 1 },
-    { platformAvailable: false, updatePayment: 0 }
-  ])(
-    'keeps the failed auto top-up banner with Platform available=$platformAvailable, and shows Update payment $updatePayment time(s)',
-    ({ platformAvailable, updatePayment }) => {
-      arrange({ autoTopUp: 'autoTopUpFailed', platformAvailable })
+  it('keeps the failed auto top-up banner without Update payment when Platform is unavailable', () => {
+    arrange({ autoTopUp: 'autoTopUpFailed', platformAvailable: false })
 
-      expect(
-        screen.getByTestId('billing-auto-top-up-banner')
-      ).toHaveTextContent('Auto top-up failed')
-      expect(
-        screen.queryAllByRole('link', { name: 'Update payment' })
-      ).toHaveLength(updatePayment)
-    }
-  )
+    expect(screen.getByTestId('billing-auto-top-up-banner')).toHaveTextContent(
+      'Auto top-up failed'
+    )
+    expect(
+      screen.queryByRole('link', { name: 'Update payment' })
+    ).not.toBeInTheDocument()
+  })
 
   it('hands off the Update payment link to the platform billing page', async () => {
     arrange({ autoTopUp: 'autoTopUpFailed' })

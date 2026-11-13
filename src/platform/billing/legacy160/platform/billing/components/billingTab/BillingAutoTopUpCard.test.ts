@@ -370,29 +370,23 @@ describe('BillingAutoTopUpCard', () => {
     }
   )
 
-  it.for([
-    { localBillingWeb: false, platformLink: true },
-    { localBillingWeb: true, platformLink: false }
-  ])(
-    'keeps the status and lines with local_billing_web=$localBillingWeb, and shows the Platform action: $platformLink',
-    async ({ localBillingWeb, platformLink }) => {
-      setLocalBillingWebEnabled(localBillingWeb)
-      onTestFinished(() => setLocalBillingWebEnabled(false))
-      renderCard(notConfigured)
+  it('keeps the status and lines without the Platform action when local billing uses a handoff', async () => {
+    setLocalBillingWebEnabled(true)
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    renderCard(notConfigured)
 
-      expect(
-        await screen.findByTestId('billing-auto-top-up-status')
-      ).toHaveTextContent('Off')
-      expect(
-        screen
-          .getAllByTestId('billing-auto-top-up-line')
-          .map((line) => line.textContent.trim())
-      ).toEqual(['Refills credits when your balance runs low.'])
-      expect(screen.queryAllByRole('link', { name: 'Turn on' })).toHaveLength(
-        platformLink ? 1 : 0
-      )
-    }
-  )
+    expect(
+      await screen.findByTestId('billing-auto-top-up-status')
+    ).toHaveTextContent('Off')
+    expect(
+      screen
+        .getAllByTestId('billing-auto-top-up-line')
+        .map((line) => line.textContent.trim())
+    ).toEqual(['Refills credits when your balance runs low.'])
+    expect(
+      screen.queryByRole('link', { name: 'Turn on' })
+    ).not.toBeInTheDocument()
+  })
 
   it.for([
     { status: 'off', action: 'Turn on', reported: 'turn_on' },

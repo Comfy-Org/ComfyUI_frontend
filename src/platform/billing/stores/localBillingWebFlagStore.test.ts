@@ -11,7 +11,7 @@ import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useLocalBillingWebFlagStore as defineFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
+import { useLocalBillingWebFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -75,14 +75,6 @@ function pendingResponse() {
 
 const settle = () => vi.advanceTimersByTimeAsync(0)
 
-const createdStores: ReturnType<typeof defineFlagStore>[] = []
-
-function useLocalBillingWebFlagStore() {
-  const store = defineFlagStore()
-  createdStores.push(store)
-  return store
-}
-
 async function signInAndRead(state = signedIn('user-1', 'ws-1')) {
   const host = fakeBridge(state)
   await startDesktopHostSession(host.bridge)
@@ -97,10 +89,7 @@ describe('useLocalBillingWebFlagStore', () => {
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue()
   })
 
-  afterEach(() => {
-    stopDesktopHostSession()
-    createdStores.splice(0).forEach((store) => store.$dispose())
-  })
+  afterEach(() => stopDesktopHostSession())
 
   it('reads the flag on sign-in with the account credential', async () => {
     serveFlags({ local_billing_web: true })

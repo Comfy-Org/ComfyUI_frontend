@@ -1,3 +1,5 @@
+import { toValue } from 'vue'
+
 import { canSetUpAutoTopUp } from '@comfyorg/account-core/billing'
 
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -15,8 +17,6 @@ export function useAutoTopUpSetupOffer() {
     { target: 'auto_top_up', action: 'turn_on' }
   )
 
-  const platformAvailable = () => available.value
-
   function trackOffer(stage: 'viewed' | 'declined') {
     useTelemetry()?.trackBillingEvent({
       operation: 'auto_top_up_offer',
@@ -32,10 +32,10 @@ export function useAutoTopUpSetupOffer() {
       setup: autoTopUpSetup.value
     })
     if (!canSetUp) return null
-    if (!platformAvailable()) return null
+    if (!toValue(available)) return null
     const settings = await billingApi.getBillingAutoReload()
     if (settings.status !== 'off') return null
-    if (!platformAvailable()) return null
+    if (!toValue(available)) return null
     trackOffer('viewed')
     return href.value
   }
