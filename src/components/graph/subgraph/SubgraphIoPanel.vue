@@ -61,7 +61,8 @@ const title = computed(() =>
 
 const nodeView = useTemplateRef('nodeView')
 const panel = computed(() => nodeView.value?.element ?? null)
-const { isInput, style, startResize } = useSubgraphIoLayout(
+const isInput = computed(() => ioNode === ioNode.subgraph.inputNode)
+const { style, startResize } = useSubgraphIoLayout(
   () => ioNode,
   panel,
   () => slots.value

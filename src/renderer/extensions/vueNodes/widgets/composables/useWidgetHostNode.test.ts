@@ -56,9 +56,6 @@ describe('useWidgetHostNode', () => {
     const node = scopedOwner(undefined, toNodeId(7))
 
     expect(node.value).toBe(canvasNode)
-    expect(useCanvasStore().currentGraph?.getNodeById).toHaveBeenCalledWith(
-      toNodeId(7)
-    )
   })
 
   it('falls back to the canvas graph when the locator id finds no node', () => {

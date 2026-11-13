@@ -5,13 +5,13 @@ import { useI18n } from 'vue-i18n'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { resolveInputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import type {
   InputValueSource,
   ValueSourceGraph
 } from '@/core/graph/subgraph/resolveInputValueSource'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -20,18 +20,19 @@ import SubgraphInputValue from './SubgraphInputValue.vue'
 import SubgraphIoPanel from './SubgraphIoPanel.vue'
 import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 
+const { graph } = defineProps<{ graph: Subgraph }>()
+
 const { t } = useI18n()
 const context = useSubgraphInputValuesStore()
-const canvasStore = useCanvasStore()
 const nodeStore = useNodeDataStore()
 const linkStore = useLinkStore()
 const widgetStore = useWidgetValueStore()
 const { focusNodeInstance } = useFocusNode()
 
 const sources = computed(() => {
-  const { graph, selected: host } = context
+  const host = context.selected
   const result = new Map<string, InputValueSource>()
-  if (!graph || !host) return result
+  if (!host) return result
   const root = graph.rootGraph
   const scope = graphScopeOf({ id: host.graphId, rootGraph: root })
   const sourceGraph: ValueSourceGraph = {
@@ -47,11 +48,11 @@ const sources = computed(() => {
     outputLinkCount: (node, index) =>
       linkStore.getOutputSlotLinks(scope, node.id, index).size
   }
-  for (const input of host.inputs) {
-    if (input.widgetId)
+  for (const [index, { name, widgetId }] of host.inputs.entries()) {
+    if (widgetId)
       result.set(
-        input.name,
-        resolveInputValueSource(sourceGraph, host, input.name)
+        name,
+        resolveInputValueSource(sourceGraph, host, index, widgetId)
       )
   }
   return result
@@ -63,8 +64,7 @@ const hint = computed(() => {
 })
 
 async function locate(node: NodeState) {
-  const root = context.graph?.rootGraph
-  const live = root && getNodeByState(root, node)
+  const live = getNodeByState(graph.rootGraph, node)
   if (live) await focusNodeInstance(live)
 }
 
@@ -75,10 +75,9 @@ function captureEdits() {
 
 <template>
   <SubgraphIoPanel
-    v-if="context.graph && !canvasStore.linearMode"
-    :key="context.graph.id"
+    :key="graph.id"
     v-slot="{ slots }"
-    :io-node="context.graph.inputNode"
+    :io-node="graph.inputNode"
     data-testid="subgraph-input-values"
   >
     <div class="contents" @focusout="captureEdits">

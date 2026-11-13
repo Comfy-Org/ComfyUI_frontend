@@ -39,11 +39,6 @@ geometry. Resizing the input node writes its saved rectangle directly instead of
 issuing a LayoutOperation. This is an explicit exception to
 [ADR-CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md).
 
-IO nodes are not registered as layout entities. Node layout keys are scoped to
-the root graph, and IO node IDs (-10 and -20) repeat in every definition, so the
-keys would collide. Every layout consumer, including slot hit tests, link drop
-handling, and the node data store, is also written for LGraphNode.
-
 ## Alternatives considered
 
 - **A separate set of boundary controls.** These would drift from the external
@@ -52,8 +47,9 @@ handling, and the node data store, is also written for LGraphNode.
   their own heights, and forcing a row height changes their behavior.
 - **Editing interior defaults.** Defaults are shared by every host, so editing
   them breaks host isolation and promoted-widget ownership.
-- **Registering IO nodes as layout entities.** This needs definition-scoped
-  layout keys and IO-aware versions of every layout consumer.
+- **Registering IO nodes as layout entities.** IO node IDs repeat in every
+  definition, so root-scoped layout keys would collide. This needs
+  definition-scoped layout keys and IO-aware versions of every layout consumer.
 
 ## Consequences
 
@@ -61,8 +57,7 @@ Both renderers use the existing Vue widgets at the boundary. Workflows gain no
 fields and need no migration. Editing a Primitive source affects all of its
 consumers, so the row names the source and offers a locate action.
 
-Disconnecting a fanout fires every expected removal callback. Reconnecting a
-disconnected input reuses its WidgetId, but the widget entity object is new, so
+Reconnecting a disconnected input reuses its WidgetId, but the widget entity object is new, so
 extensions that keep widget entities must resolve them again.
 
 ## References

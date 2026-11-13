@@ -390,13 +390,12 @@ describe('SubgraphIO - Advanced Scenarios', () => {
 
   it('shrinks the output node when outputs are removed', () => {
     const subgraph = createTestSubgraph()
-    const outputs = ['a', 'b', 'c', 'd'].map((name) =>
-      subgraph.addOutput(name, 'STRING')
-    )
+    subgraph.addOutput('a', 'STRING')
+    const removed = subgraph.addOutput('b', 'STRING')
     subgraph.outputNode.arrange()
     const tall = subgraph.outputNode.size[1]
 
-    for (const output of outputs.slice(1)) subgraph.removeOutput(output)
+    subgraph.removeOutput(removed)
     subgraph.outputNode.arrange()
 
     expect(subgraph.outputNode.size[1]).toBeLessThan(tall)

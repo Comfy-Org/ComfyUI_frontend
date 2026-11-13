@@ -21,18 +21,11 @@ test.describe(
 
       await test.step('Dragging the clip label row moves the node, its port and its link together', async () => {
         const before = await inputPanel.boundingBox()
-        const label = await inputPanel
-          .getByText('clip', { exact: true })
-          .boundingBox()
-        if (!before || !label)
-          throw new Error('Expected the input node and its clip row')
+        if (!before) throw new Error('Expected the input node')
         const slot = await comfyPage.subgraph.getInputSlot('clip').getPosition()
-        await comfyMouse.dragAndDrop(
-          { x: label.x + label.width / 2, y: label.y + label.height / 2 },
-          {
-            x: label.x + label.width / 2 + 20,
-            y: label.y + label.height / 2 + 30
-          }
+        await comfyMouse.dragElementBy(
+          inputPanel.getByText('clip', { exact: true }),
+          { x: 20, y: 30 }
         )
         await expect
           .poll(async () => (await inputPanel.boundingBox())?.x)

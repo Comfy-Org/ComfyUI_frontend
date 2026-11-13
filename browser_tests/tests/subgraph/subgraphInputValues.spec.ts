@@ -33,9 +33,6 @@ for (const renderer of [
             if (!root) throw new Error('Expected an active workflow')
             const workflow = root.asSerialisable()
             return {
-              inputBounds: workflow.definitions?.subgraphs?.map(
-                (definition) => definition.inputNode.bounding
-              ),
               hosts: workflow.nodes.map((node) => ({
                 id: String(node.id),
                 values: node.widgets_values

@@ -22,7 +22,6 @@ export function useSubgraphIoLayout(
 ) {
   const canvasStore = useCanvasStore()
   const { camera, syncWithCanvas } = useTransformState()
-  const isInput = computed(() => ioNode() === ioNode().subgraph.inputNode)
   const size = computedWithControl(ioNode, () => {
     const [width, height] = ioNode().size
     return { width: Math.max(MIN_NODE_WIDTH, width), height }
@@ -109,5 +108,5 @@ export function useSubgraphIoLayout(
     resize(event, 'SE', element.value ?? undefined)
   }
 
-  return { isInput, style, startResize }
+  return { style, startResize }
 }

@@ -14,6 +14,7 @@ import type { ValueSourceGraph } from './resolveInputValueSource'
 
 const rootId = '00000000-0000-4000-8000-000000000001'
 const scope = graphScopeOf({ id: rootId, rootGraph: { id: rootId } })
+const hostValue = widgetId(rootId, toNodeId(29), 'value')
 
 function node(id: number, type: string): NodeState {
   return {
@@ -97,23 +98,24 @@ describe('subgraph input value source', () => {
       const reroute = node(7, 'Reroute')
       const downstream = node(11, 'PrimitiveInt')
       const other = node(37, 'subgraph')
+      const unrelated = node(41, 'PrimitiveInt')
       const branchingNode = {
-        no: undefined,
+        no: unrelated,
         source,
         reroute,
         'downstream Primitive': downstream
       }[branch]
       const graph = fixture(
-        [host, source, reroute, downstream, other],
+        [host, source, reroute, downstream, other, unrelated],
         [
           link(source, reroute),
           link(reroute, downstream),
           link(downstream, host),
-          ...(branchingNode ? [link(branchingNode, other)] : [])
+          link(branchingNode, other)
         ]
       )
 
-      expect(resolveInputValueSource(graph, host, 'value')).toEqual({
+      expect(resolveInputValueSource(graph, host, 0, hostValue)).toEqual({
         kind: 'editable',
         node: source,
         widgetId: widgetId(rootId, source.id, 'value'),
@@ -125,8 +127,7 @@ describe('subgraph input value source', () => {
   it('addresses an unconnected promoted input by its existing widget ID', () => {
     const host = node(29, 'subgraph')
     const id = widgetId(rootId, host.id, 'value')
-    host.inputs[0].widgetId = id
-    expect(resolveInputValueSource(fixture([host]), host, 'value')).toEqual({
+    expect(resolveInputValueSource(fixture([host]), host, 0, id)).toEqual({
       kind: 'editable',
       node: host,
       widgetId: id,
@@ -134,17 +135,14 @@ describe('subgraph input value source', () => {
     })
   })
 
-  it.for([
-    { type: 'PrimitiveInt', widgetName: 'value' },
-    { type: 'PrimitiveNode', widgetName: 'seed' }
-  ])('edits the stored $widgetName widget of $type', ({ type, widgetName }) => {
+  it('edits the stored widget of a legacy PrimitiveNode', () => {
     const host = node(29, 'subgraph')
-    const source = node(11, type)
-    const graph = fixture([host, source], [link(source, host)], widgetName)
-    expect(resolveInputValueSource(graph, host, 'value')).toEqual({
+    const source = node(11, 'PrimitiveNode')
+    const graph = fixture([host, source], [link(source, host)], 'seed')
+    expect(resolveInputValueSource(graph, host, 0, hostValue)).toEqual({
       kind: 'editable',
       node: source,
-      widgetId: widgetId(rootId, source.id, widgetName),
+      widgetId: widgetId(rootId, source.id, 'seed'),
       shared: false
     })
   })
@@ -173,7 +171,8 @@ describe('subgraph input value source', () => {
       resolveInputValueSource(
         fixture([host, source], [link(source, host)]),
         host,
-        'value'
+        0,
+        hostValue
       )
     ).toEqual({ kind: 'linked', node: source })
   })
@@ -183,7 +182,7 @@ describe('subgraph input value source', () => {
     const a = node(11, 'PrimitiveInt')
     const b = node(7, 'PrimitiveInt')
     const graph = fixture([host, a, b], [link(a, host), link(b, a), link(a, b)])
-    expect(resolveInputValueSource(graph, host, 'value')).toEqual({
+    expect(resolveInputValueSource(graph, host, 0, hostValue)).toEqual({
       kind: 'unavailable'
     })
   })
