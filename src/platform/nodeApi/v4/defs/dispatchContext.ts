@@ -4,7 +4,6 @@ import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { NodeHandle } from '@/platform/nodeApi/v4/types'
 import type { HookCallbacks, HookName } from './nodeHooks'
 
-/** Where the dispatchers find the callbacks packs added. */
 export interface HookSource {
   callbacksFor<K extends HookName>(
     type: string,
@@ -13,11 +12,7 @@ export interface HookSource {
   demand(hook: HookName): number
 }
 
-/**
- * Calls each callback for `hook` on `type` with the node's handle, each in the
- * listener isolation, and gives what each returned. Nothing for a node that is
- * not in a graph.
- */
+/** Calls each current callback for `hook` with a node's handle, isolated; nothing for a node outside a graph. */
 export type Deliver = <K extends HookName, R>(
   type: string,
   hook: K,
@@ -36,4 +31,6 @@ export interface DispatchContext {
   readonly source: HookSource
   readonly copyOfSaved: SavedCopier
   isInGraph(node: LGraphNode): boolean
+  /** True if the node's class, or one it extends, is a class the API put dispatchers on. */
+  isMadeFromKnownClass(node: LGraphNode): boolean
 }

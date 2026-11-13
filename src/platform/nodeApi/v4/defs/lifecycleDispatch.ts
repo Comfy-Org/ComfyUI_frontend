@@ -1,5 +1,5 @@
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
-import { isPlainObject } from 'es-toolkit'
+import { isPlainObject, once } from 'es-toolkit'
 
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import { isNodeCanonicalField } from '@/lib/litegraph/src/extensionPersistence'
@@ -19,7 +19,8 @@ export function createLifecycleDispatch({
   deliver,
   source,
   copyOfSaved,
-  isInGraph
+  isInGraph,
+  isMadeFromKnownClass
 }: DispatchContext) {
   const configuredBeforeAdded = new WeakMap<LGraphNode, ISerialisedNode>()
   let stopHearingAdds: (() => void) | undefined
@@ -29,16 +30,19 @@ export function createLifecycleDispatch({
     node: LGraphNode,
     data: ISerialisedNode
   ) {
-    const copied = copyOfSaved<unknown>('onConfigured', data)
-    const copy = isPlainObject(copied) ? copied : NO_FIELDS
+    const copy = once(() => {
+      const copied = copyOfSaved<unknown>('onConfigured', data)
+      return isPlainObject(copied) ? copied : NO_FIELDS
+    })
     deliver(type, 'onConfigured', node, (callback, handle) =>
-      callback(handle, copy)
+      callback(handle, copy())
     )
   }
 
   function nodeAdded(node: LGraphNode, loading: boolean): void {
     const saved = configuredBeforeAdded.get(node)
     configuredBeforeAdded.delete(node)
+    if (!isMadeFromKnownClass(node)) return
     const event: NodeCreatedEvent = Object.freeze({
       restored: loading || saved !== undefined,
       loading
