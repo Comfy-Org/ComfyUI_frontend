@@ -130,23 +130,19 @@ export function savableCopy(
   value: unknown
 ): NodeProperty {
   const saved = jsonRoundTrip(value)
-  if (!saved.ok || saved.value === undefined) {
+  if (saved === undefined) {
     throw invalidArgument(member, `${field} the workflow can save`, value)
   }
-  return saved.value
+  return saved
 }
 
-type JsonRoundTrip =
-  | { ok: true; value: NodeProperty | undefined }
-  | { ok: false }
-
-function jsonRoundTrip(value: unknown): JsonRoundTrip {
+function jsonRoundTrip(value: unknown): NodeProperty | undefined {
   try {
     const saved: { value?: NodeProperty } = JSON.parse(
       JSON.stringify({ value })
     )
-    return { ok: true, value: saved.value }
+    return saved.value
   } catch {
-    return { ok: false }
+    return undefined
   }
 }

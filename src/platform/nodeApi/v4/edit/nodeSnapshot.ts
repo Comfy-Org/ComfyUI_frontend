@@ -10,7 +10,7 @@ export function snapshotOf(node: LGraphNode): NodeSnapshot {
   const [x, y] = node.pos
   const [width, height] = node.size
   return Object.freeze({
-    id: String(node.id),
+    id: node.id,
     type: node.type,
     title: textOrUndefined(node.title),
     mode: MODE_NAMES[node.mode],

@@ -269,4 +269,123 @@ describe('edit contracts', () => {
       expect(write.mock.calls).toEqual([[false], [false]])
     })
   })
+
+  describe('values the core keeps or refuses exactly', () => {
+    it('freezes comfy.edit, so no pack can replace an edit another pack calls', () => {
+      expect(Object.isFrozen(comfy.edit)).toBe(true)
+    })
+
+    it.for(['constructor', 'toString', 'hasOwnProperty'])(
+      'refuses %s as a patch field, though every object inherits it',
+      (field) => {
+        expect(() =>
+          Reflect.apply(comfy.edit.updateNode, undefined, [
+            handle,
+            { [field]: 1 }
+          ])
+        ).toThrow(TypeError)
+      }
+    )
+
+    it('names updateNode when it refuses something that is not a node handle', () => {
+      expect(() =>
+        Reflect.apply(comfy.edit.updateNode, undefined, [{}, {}])
+      ).toThrow(/^updateNode needs a node handle/)
+    })
+
+    it('stores a title exactly as given, and refuses one that is not text', () => {
+      handle.setTitle('  padded  ')
+
+      expect(node.title).toBe('  padded  ')
+      expect(() => Reflect.apply(handle.setTitle, undefined, [5])).toThrow(
+        /^setTitle /
+      )
+    })
+
+    it('turns widget saving off as well as on', () => {
+      handle.setSerializeWidgets(true)
+      handle.setSerializeWidgets(false)
+
+      expect(handle.isSerializingWidgets()).toBe(false)
+    })
+
+    it.for([
+      ['a null limit', { minWidth: null }],
+      ['autoHeight as 0', { autoHeight: 0 }],
+      ['autoHeight as an empty string', { autoHeight: '' }]
+    ] as const)('refuses %s in sizeConstraints', ([, constraints]) => {
+      expect(() =>
+        Reflect.apply(handle.setSizeConstraints, undefined, [constraints])
+      ).toThrow(TypeError)
+    })
+
+    it('takes a minimum equal to its maximum', () => {
+      node.size = [100, 50]
+
+      handle.setSizeConstraints({ minWidth: 210, maxWidth: 210 })
+
+      expect(node.size[0]).toBe(210)
+    })
+
+    it.for([
+      ['zero', 0],
+      ['false', false]
+    ] as const)(
+      'refuses a node title of %s when adding a node',
+      ([, title]) => {
+        expect(() =>
+          Reflect.apply(comfy.graph.add, undefined, ['Any', { title }])
+        ).toThrow(TypeError)
+      }
+    )
+
+    it('snapshots a node id as text, and collapsed apart from pinned', () => {
+      node.collapse(true)
+
+      expect(handle.snapshot()).toMatchObject({
+        id: String(node.id),
+        collapsed: true,
+        pinned: false
+      })
+    })
+
+    it('draws badges in the order packs add them', () => {
+      handle.addBadge({ text: 'first' })
+      handle.addBadge({ text: 'second' })
+
+      expect(
+        node.badges.map((badge) =>
+          typeof badge === 'function' ? badge().text : badge.text
+        )
+      ).toEqual(['first', 'second'])
+    })
+
+    it('reads and writes the right direction', () => {
+      handle.outputs.at(0)?.modify({ direction: 'right' })
+
+      expect(handle.outputs.at(0)?.snapshot()?.direction).toBe('right')
+    })
+
+    it('snapshots a connected slot as connected, and gives each target its input index', () => {
+      const target = new LGraphNode('Target')
+      target.addInput('x', 'INT')
+      target.addInput('y', 'INT')
+      graph.add(target)
+      node.connect(1, target, 0)
+
+      expect(handle.outputs.at(1)?.snapshot()?.isConnected).toBe(true)
+      expect(handle.outputs.at(1)?.targets()).toEqual([
+        { nodeId: String(target.id), inputIndex: 0 }
+      ])
+    })
+
+    it('refuses a widget for an output, even one the node has', () => {
+      node.addWidget('number', 'steps', 1, () => {})
+
+      expect(() =>
+        handle.outputs.add('c', 'INT', Object({ widget: 'steps' }))
+      ).toThrow(TypeError)
+      expect(node.outputs).toHaveLength(2)
+    })
+  })
 })
