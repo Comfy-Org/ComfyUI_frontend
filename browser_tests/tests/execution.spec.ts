@@ -174,6 +174,32 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
     await expect(errorOverlay).toBeVisible()
   })
 
+  test('marks the outputs a run skipped as node errors', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+
+    const ws = await getWebSocket()
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const jobId = await exec.run()
+    exec.executionStart(jobId)
+    exec.outputsSkipped(jobId, {
+      [VALIDATION_ERROR_NODE_ID]: buildPreviewAnyValidationError()
+    })
+
+    await expect
+      .poll(() => getValidationErrorMessage(comfyPage))
+      .toBe(VALIDATION_ERROR_MESSAGE)
+    const errorOverlay = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorOverlay
+    )
+    await expect(errorOverlay).toBeVisible()
+    await expect(errorOverlay).toContainText(
+      'Preview as Text is missing a required input: source'
+    )
+  })
+
   test(
     'renders cloud node errors when optional details are omitted',
     { tag: '@cloud' },

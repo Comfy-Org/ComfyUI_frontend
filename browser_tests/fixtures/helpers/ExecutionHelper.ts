@@ -255,6 +255,16 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send `prompt_outputs_skipped` WS event for outputs Cloud skipped. */
+  outputsSkipped(jobId: string, nodeErrors: Record<string, NodeError>): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'prompt_outputs_skipped',
+        data: { prompt_id: jobId, node_errors: nodeErrors }
+      })
+    )
+  }
+
   /** Send `execution_interrupted` WS event (user-initiated stop). */
   executionInterrupted(jobId: string, nodeId: string): void {
     this.requireWs().send(
