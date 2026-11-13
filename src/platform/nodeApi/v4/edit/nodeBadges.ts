@@ -69,18 +69,9 @@ const DEFAULT_COLORS = new LGraphBadge({ text: '' })
 type BadgeFields = Pick<LGraphBadge, 'text' | 'fgColor' | 'bgColor' | 'onClick'>
 
 function badgeFields(value: unknown): BadgeFields | undefined {
-  if (!isPlainObject(value)) return undefined
-  const fields: Readonly<Record<string, unknown>> = value
+  const fields = badgeShaped(value)
+  if (!fields) return undefined
   const { text, color, bgColor, onClick } = fields
-  if (
-    !Object.keys(fields).every((field) => Object.hasOwn(BADGE_FIELDS, field)) ||
-    typeof text !== 'string' ||
-    !isOptionalText(color) ||
-    !isOptionalText(bgColor) ||
-    (onClick !== undefined && typeof onClick !== 'function')
-  ) {
-    return undefined
-  }
   return {
     text,
     fgColor: color ?? DEFAULT_COLORS.fgColor,
@@ -89,6 +80,19 @@ function badgeFields(value: unknown): BadgeFields | undefined {
       onClick &&
       (() => callIsolated(MEMBER, () => Reflect.apply(onClick, undefined, [])))
   }
+}
+
+function badgeShaped(value: unknown) {
+  if (!isPlainObject(value)) return undefined
+  const fields: Readonly<Record<string, unknown>> = { ...value }
+  const { text, color, bgColor, onClick } = fields
+  const isBadge =
+    Object.keys(fields).every((field) => Object.hasOwn(BADGE_FIELDS, field)) &&
+    typeof text === 'string' &&
+    isOptionalText(color) &&
+    isOptionalText(bgColor) &&
+    (onClick === undefined || typeof onClick === 'function')
+  return isBadge ? { text, color, bgColor, onClick } : undefined
 }
 
 function isOptionalText(value: unknown): value is string | undefined {

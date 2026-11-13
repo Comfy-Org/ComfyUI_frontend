@@ -4,7 +4,7 @@ import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
+import type { LiveNode, NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { LinkInfo, SlotSide } from '@/platform/nodeApi/v4/types'
 import type { EditRunner } from './editRunner'
 import { linkInfoOf } from './linkInfo'
@@ -33,6 +33,17 @@ export function createLinkEdits(
     return locator.locate()
   }
 
+  function disconnectTarget(
+    side: SlotSide,
+    target: unknown
+  ): LiveNode | null | undefined {
+    if (target === undefined) return undefined
+    if (side === 'input') {
+      throw invalidArgument('disconnect', 'no target for an input', target)
+    }
+    return liveNodeOf(nodes, 'disconnect', target) ?? null
+  }
+
   return {
     connect(output, input) {
       const from = slotOn('connect', 'output', output)
@@ -47,16 +58,9 @@ export function createLinkEdits(
 
     disconnect(slot, target) {
       const locator = slotLocatorOf(slots, 'disconnect', slot)
-      if (locator.side === 'input' && target !== undefined) {
-        throw invalidArgument('disconnect', 'no target for an input', target)
-      }
-      const targetNode =
-        target === undefined
-          ? undefined
-          : liveNodeOf(nodes, 'disconnect', target)
+      const targetNode = disconnectTarget(locator.side, target)
       const live = locator.locate()
-      if (!live || (target !== undefined && !targetNode)) return false
-      if (!isSlotConnected(live)) return false
+      if (!live || targetNode === null) return false
       if (targetNode && targetNode.graph !== live.graph) {
         throw invalidArgument(
           'disconnect',
@@ -64,6 +68,7 @@ export function createLinkEdits(
           target
         )
       }
+      if (!isSlotConnected(live)) return false
       return runner.apply(live.graph, () =>
         live.side === 'input'
           ? live.node.disconnectInput(live.index)

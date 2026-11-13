@@ -133,8 +133,8 @@ export interface NodeHandle extends NodeHandleEdits {}
 
 export interface GraphHandle extends GraphHandleEdits {
   /**
-   * Advances with each `comfy.edit` call and when nodes or links come or go; a move,
-   * resize, color or widget value set outside the API leaves it. Compare readings only.
+   * Advances with each `comfy.edit` call that is applied and when nodes or links come or go; host moves,
+   * colors and widget values leave it, and undo or a load sets it back. A different reading means a change.
    */
   readonly version: number | undefined
 }
@@ -279,7 +279,7 @@ export interface BadgeDef {
   onClick?(): void
 }
 
-/** Each edit method is `comfy.edit.updateNode` or `removeNode` on this node. */
+/** Each edit method, and each edit of `inputs` and `outputs`, is a call to `comfy.edit`; `addBadge` is not an edit. */
 export interface NodeHandleEdits {
   setTitle(title: string): boolean
   setMode(mode: NodeMode): boolean
@@ -303,8 +303,8 @@ export interface NodeHandleEdits {
   readonly inputs: SlotCollection<InputSlotHandle>
   readonly outputs: SlotCollection<OutputSlotHandle>
   /**
-   * Adds a badge until the disposer is called or undo rebuilds the node. Vue nodes
-   * show only the badges a node had when it was first drawn.
+   * Adds a badge until the disposer is called or undo rebuilds the node. Under Vue nodes, a badge added
+   * or removed after the node is first drawn shows or goes only when its badges are next recomputed.
    */
   addBadge(badge: BadgeDef | (() => BadgeDef)): Unsubscribe
 }

@@ -46,7 +46,7 @@ export function nodeHandleMembers(
       handleFor: slots.inputHandle,
       add: (name, type, options) =>
         edits.addInput(handle, name, type, options, 'add'),
-      remove: (slot) => edits.removeSlot(slot),
+      remove: (slot) => edits.removeSlot(slot, 'remove'),
       reorder: (names) => edits.reorderSlots(handle, 'input', names, 'reorder')
     }),
     outputs: slotCollection(handle, nodes, {
@@ -54,7 +54,7 @@ export function nodeHandleMembers(
       handleFor: slots.outputHandle,
       add: (name, type, options) =>
         edits.addOutput(handle, name, type, options, 'add'),
-      remove: (slot) => edits.removeSlot(slot),
+      remove: (slot) => edits.removeSlot(slot, 'remove'),
       reorder: (names) => edits.reorderSlots(handle, 'output', names, 'reorder')
     }),
 

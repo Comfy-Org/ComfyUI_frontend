@@ -46,7 +46,7 @@ export interface CheckedNodePatch {
 /** Checks every field of `patch`, so nothing is applied unless the whole patch is usable. */
 export function checkedNodePatch(
   patch: unknown,
-  member = 'updateNode'
+  member: string
 ): CheckedNodePatch {
   const checks = fieldChecks(member)
   const given = checkedFields(member, patch, FIELDS)

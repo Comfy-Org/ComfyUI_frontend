@@ -47,7 +47,7 @@ export interface CheckedSlotPatch {
 export function checkedSlotPatch(
   patch: unknown,
   side: SlotSide,
-  member = 'updateSlot'
+  member: string
 ): CheckedSlotPatch {
   const given = checkedFields(
     member,
