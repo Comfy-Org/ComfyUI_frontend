@@ -29,13 +29,7 @@ function mintTarget(workspaceId: string): PartnerNodeTokenTarget | undefined {
   return { ownerUid, workspaceId, credential: () => authStore.getIdToken() }
 }
 
-/**
- * The credential a Local prompt carries in `auth_token_comfy_org`: a
- * partner-node token for the workspace when the flag is on and Desktop hands
- * one over or the mint succeeds, otherwise the workspace token unchanged. A
- * Desktop account or workspace change during the lookup or mint also yields
- * the workspace token.
- */
+/** The workspace's partner-node token for `auth_token_comfy_org`, or the workspace token when none is available or the Desktop session changed meanwhile. */
 export async function queueAuthToken(
   workspaceToken: string | undefined,
   workspaceId: string | null
