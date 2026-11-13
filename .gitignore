@@ -107,7 +107,9 @@ vitest.config.*.timestamp*
 # Weekly docs check output
 /output.txt
 
-.amp
+# Amp local state stays ignored; the tracked orb service config must stay addable
+.amp/*
+!.amp/services.yaml
 # Registry census working tree (scripts/registry-census) - corpus, lockfile, results
 .census/
 # Ecosystem matrix fixture (scripts/registry-census/build_matrix.py) - generated per-pack specs

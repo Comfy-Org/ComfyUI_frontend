@@ -6,6 +6,12 @@ Date: 2026-09-28
 
 Proposed
 
+Partly implemented: transport exhaustion now holds the batch in `opSender` and
+replays it after the reconnect's catch-up. Stamping of that replay is decided in
+[CRDT-STAMPS-0051](CRDT-STAMPS-0051-human-ops-stamp-above-what-they-have-received.md).
+Panel teardown still drains held batches, so the page-session lifetime below is
+not met yet.
+
 ## Context
 
 The in-app agent's `opSender` owns the ordering and identity of locally minted
@@ -87,8 +93,7 @@ requires browser storage nor promises delivery after the page session ends.
   session. Panel teardown must preserve or transfer that state, while page
   teardown may discard it because reload persistence remains undecided.
 - This does not protect an edit across a full page reload.
-- Until runtime support lands, this is a policy contract rather than a claim
-  about current behavior.
+- Panel teardown is the remaining gap between this policy and current behavior.
 
 ## Notes
 

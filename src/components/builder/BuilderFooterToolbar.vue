@@ -153,8 +153,7 @@ const isSaved = computed(
 )
 
 const activeSaveClasses = 'bg-ocean-600 text-white hover:bg-ocean-600/80'
-const disabledSaveClasses =
-  'bg-secondary text-muted-foreground/50 disabled:opacity-100'
+const disabledSaveClasses = 'text-muted-foreground/50 disabled:opacity-100'
 
 const isModified = computed(
   () => workflowStore.activeWorkflow?.isModified === true

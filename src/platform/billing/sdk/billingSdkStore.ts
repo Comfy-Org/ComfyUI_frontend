@@ -69,6 +69,7 @@ import { projectBillingPlans } from './billingPlansView'
 import { projectBillingStatus } from './billingStatusView'
 import type { BillingSdkOptions } from '@comfyorg/billing-core/sdk'
 import { createBillingSdk } from '@comfyorg/billing-core/sdk'
+import type { TopupAutoTopUpSettings } from '@comfyorg/ingest-types'
 import type { BillingOperationRecordView } from './operationRecordView'
 import { projectOperationRecord } from './operationRecordView'
 import type {
@@ -83,6 +84,7 @@ import {
   projectSubscribeResult,
   projectSubscriptionResult
 } from './subscriptionOperationView'
+import type { HostedCheckoutSession } from './topupOperationView'
 import {
   declineDetail,
   projectHostedTopupCheckoutResult,
@@ -412,16 +414,26 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return projectTopupResult(result, amountCents)
   }
 
+  async function quoteTopup(
+    amountCents: number,
+    signal: AbortSignal
+  ): Promise<number | null> {
+    const quoted = await sdk.topup.quoteTopup({ amountCents, signal })
+    return quoted.status === 'ok' ? quoted.value.credits : null
+  }
+
   async function createHostedTopupCheckout(
     amountCents: number,
     returnUrl: string,
-    signal?: AbortSignal
-  ): Promise<string> {
+    signal?: AbortSignal,
+    autoTopUp?: TopupAutoTopUpSettings
+  ): Promise<HostedCheckoutSession> {
     return projectHostedTopupCheckoutResult(
       await sdk.topup.createHostedTopupCheckout({
         amountCents,
         returnUrl,
-        ...(signal === undefined ? {} : { signal })
+        ...(signal === undefined ? {} : { signal }),
+        ...(autoTopUp === undefined ? {} : { autoTopUp })
       })
     )
   }
@@ -634,6 +646,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     recoverPendingOperation,
     createTopup,
     createHostedTopupCheckout,
+    quoteTopup,
     subscribe,
     previewSubscribe,
     cancelSubscription,

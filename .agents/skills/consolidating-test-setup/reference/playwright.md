@@ -10,7 +10,6 @@ and canonical browser-test guidance. In this repository, inspect:
 - `playwright.config.ts`
 - `browser_tests/globalSetup.ts` and `browser_tests/globalTeardown.ts`
 - the fixtures used by the affected specs
-- `docs/guidance/playwright.md`
 - `.agents/checks/playwright-e2e.md`
 - `browser_tests/README.md`
 

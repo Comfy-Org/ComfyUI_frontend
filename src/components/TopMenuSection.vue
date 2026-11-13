@@ -86,8 +86,9 @@
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
               </Button>
+              <CloudButton v-if="isCloudButtonShown" />
               <Button
-                v-if="isDeployButtonShown"
+                v-else-if="isDeployButtonShown"
                 :tooltip="t('deployToComfyApi.buttonLabel')"
                 tooltip-side="bottom"
                 variant="secondary"
@@ -110,7 +111,7 @@
               >
                 <i class="icon-[comfy--send]" />
               </Button>
-              <div v-if="!isRightSidePanelOpen" class="relative">
+              <div v-if="!isPropertiesPanelOpen" class="relative">
                 <Button
                   :tooltip="t('rightSidePanel.togglePanel')"
                   tooltip-side="bottom"
@@ -123,7 +124,7 @@
                   variant="secondary"
                   size="icon"
                   :aria-label="t('rightSidePanel.togglePanel')"
-                  @click="openRightSidePanel"
+                  @click="openPropertiesPanel"
                 >
                   <i class="icon-[lucide--panel-right]" />
                 </Button>
@@ -182,7 +183,7 @@
 <script setup lang="ts">
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -193,6 +194,8 @@ import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBan
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
 import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
@@ -214,9 +217,12 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { isCloud } from '@/platform/distribution/types'
+import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
+import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
@@ -231,7 +237,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const canvasStore = useCanvasStore()
 const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
@@ -241,6 +247,13 @@ const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
+const isCloudButtonShown = computed(
+  () =>
+    !isCloud &&
+    !handsPopupsToSystemBrowser() &&
+    flags.openOnCloudEnabled &&
+    canHandOffToCloud()
+)
 const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
   useTelemetry()?.trackUiButtonClicked({
@@ -272,9 +285,9 @@ const hasDockedButtons = computed(() => {
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
-  if (isDeployButtonShown.value) return true
+  if (isCloudButtonShown.value || isDeployButtonShown.value) return true
   if (isCloud) return true
-  if (!isRightSidePanelOpen.value) return true
+  if (!isPropertiesPanelOpen.value) return true
   return false
 })
 const isActionbarContainerEmpty = computed(
@@ -315,6 +328,7 @@ const shouldShowRedDot = computed((): boolean => {
 
 const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
 const { viewErrorsInGraph } = useViewErrorsInGraph()
+provide(AskAgentPortKey, useAskAgentAboutIssues())
 
 const isErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
@@ -324,19 +338,18 @@ const showErrorIndicatorOnPanelButton = computed(
   () =>
     isErrorsTabEnabled.value &&
     hasAnyError.value &&
-    !isRightSidePanelOpen.value &&
+    !isPropertiesPanelOpen.value &&
     !isErrorOverlayOpen.value
 )
 
-// Right side panel toggle
-const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
+const { isOpen: isPropertiesPanelOpen } = storeToRefs(propertiesPanelStore)
 
-function openRightSidePanel() {
+function openPropertiesPanel() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'right_side_panel_opened',
     element_group: 'top_menu'
   })
-  rightSidePanelStore.togglePanel()
+  propertiesPanelStore.togglePanel()
 }
 
 const legacyCommandsContainerRef = ref<HTMLElement>()

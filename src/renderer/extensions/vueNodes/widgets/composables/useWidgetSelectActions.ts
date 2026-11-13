@@ -1,5 +1,5 @@
 import { toValue } from 'vue'
-import type { ComputedRef, MaybeRefOrGetter, Ref } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -58,7 +58,7 @@ function addMissingOptionValues(
 
 interface UseWidgetSelectActionsOptions {
   modelValue: Ref<string | undefined>
-  dropdownItems: ComputedRef<FormDropdownItem[]>
+  dropdownItems: MaybeRefOrGetter<readonly FormDropdownItem[]>
   widget: MaybeRefOrGetter<SimplifiedWidget<string | undefined>>
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
@@ -78,12 +78,13 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
 
   const showHdrPreviewIfApplicable = wrapWithErrorHandlingAsync(
     async (widgetValue: string | undefined) => {
-      if (!widgetValue || !isHdrImageFilename(widgetValue)) return
+      if (!widgetValue) return
+      const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
+      if (!isHdrImageFilename(filename)) return
 
       const asset = await resolveWidgetValueAsset(widgetValue)
       if (!asset?.preview_id || modelValue.value !== widgetValue) return
 
-      const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
       setPreviewImage({
         filename,
         preview_id: asset.preview_id,
@@ -101,7 +102,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     const name =
       id == null
         ? undefined
-        : dropdownItems.value.find((item) => item.id === id)?.name
+        : toValue(dropdownItems).find((item) => item.id === id)?.name
 
     modelValue.value = name
     void showHdrPreviewIfApplicable(name)

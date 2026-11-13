@@ -4,6 +4,28 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import { withHdrImageType } from '@/utils/eventUtils'
+import { getPathDetails } from '@/utils/formatUtil'
+import { parseUrl } from '@/utils/urlSafety'
+
+const UNSAFE_FILENAME_CHARACTERS = /[\\:*?"<>|]/
+
+function getLowercaseSuffix(filename: string): string | undefined {
+  return getPathDetails(filename).suffix?.toLowerCase()
+}
+
+function getFetchedAssetFileName({
+  filename,
+  display_name
+}: ResultItem): string | undefined {
+  if (!filename || !display_name) return filename
+  const label = getPathDetails(display_name).fullFilename
+  const labelSuffix = getLowercaseSuffix(label)
+  return labelSuffix &&
+    labelSuffix === getLowercaseSuffix(filename) &&
+    !UNSAFE_FILENAME_CHARACTERS.test(label)
+    ? label
+    : filename
+}
 
 type DragHandler = (e: DragEvent) => boolean
 type DropHandler<T> = (files: File[]) => Promise<T[]>
@@ -70,13 +92,13 @@ export const useNodeDragAndDrop = <T>(
 
     const baseUri = dataTransfer.getData('text/uri-list')
     if (!baseUri) return false
-    const uri = URL.parse(baseUri, location.href)
+    const uri = parseUrl(baseUri, location.href)
     if (!uri || uri.origin !== location.origin) return false
 
     try {
       const resp = await fetch(uri)
       const fileName =
-        asset?.filename ??
+        (asset && getFetchedAssetFileName(asset)) ??
         uri.searchParams.get('filename') ??
         baseUri.split('/').at(-1)
       if (!fileName || !resp.ok) return false
