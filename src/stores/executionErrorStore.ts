@@ -75,6 +75,8 @@ interface RunErrorState {
     MissingResourceAbsorption
   >
   nodeErrors: Record<string, NodeError> | null
+  /** The job whose socket message recorded `nodeErrors`, if one did. */
+  nodeErrorsJobId: string | null
   executionError: ExecutionErrorWsMessage | null
   promptError: PromptError | null
 }
@@ -118,6 +120,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const next: RunErrorState = {
       absorbedValidationErrors: new WeakMap(),
       nodeErrors: null,
+      nodeErrorsJobId: null,
       executionError: null,
       promptError: null,
       ...runErrorsByWorkflow.value.get(key),
@@ -434,12 +437,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    */
   function recordNodeErrors(
     nodeErrors: Record<string, NodeError> | null,
-    key: string | null = activeRunErrorKey.value
+    key: string | null = activeRunErrorKey.value,
+    jobId: string | null = null
   ) {
     const record =
       nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
     updateRunErrors(
-      { nodeErrors: record, absorbedValidationErrors: new WeakMap() },
+      {
+        nodeErrors: record,
+        nodeErrorsJobId: record ? jobId : null,
+        absorbedValidationErrors: new WeakMap()
+      },
       key
     )
     if (record && key !== null && key === activeRunErrorKey.value) {
@@ -455,14 +463,36 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   }
 
   /**
-   * Records `nodeErrors` under `key` and opens the error overlay when that
-   * run is on screen.
+   * Records the node errors of the submission `jobId` from `key`'s run. An
+   * empty response keeps errors that `jobId`'s own socket message recorded
+   * before the response arrived, and drops those of any older job.
+   */
+  function recordSubmissionNodeErrors(
+    nodeErrors: Record<string, NodeError> | null | undefined,
+    key: string | null,
+    jobId: string | undefined
+  ) {
+    if (nodeErrors && Object.keys(nodeErrors).length > 0) {
+      recordNodeErrors(nodeErrors, key)
+      return
+    }
+    const recordedJobId =
+      key === null ? null : runErrorsByWorkflow.value.get(key)?.nodeErrorsJobId
+    if (jobId === undefined || recordedJobId !== jobId) {
+      recordNodeErrors(null, key)
+    }
+  }
+
+  /**
+   * Records `nodeErrors` of job `jobId` under `key` and opens the error
+   * overlay when that run is on screen.
    */
   function surfaceNodeErrors(
     nodeErrors: Record<string, NodeError>,
-    key: string
+    key: string,
+    jobId: string
   ) {
-    recordNodeErrors(nodeErrors, key)
+    recordNodeErrors(nodeErrors, key, jobId)
     if (
       key === activeRunErrorKey.value &&
       hasNodeError.value &&
@@ -997,6 +1027,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Recording
     recordNodeErrors,
+    recordSubmissionNodeErrors,
     surfaceNodeErrors,
     recordExecutionError,
     recordPromptError,

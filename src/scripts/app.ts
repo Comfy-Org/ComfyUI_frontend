@@ -1937,12 +1937,11 @@ export class ComfyApp implements IComfyApp {
                 ...(workflowContext && { workflowContext })
               })
             }
-            if (res.node_errors && Object.keys(res.node_errors).length > 0) {
-              executionErrorStore.recordNodeErrors(
-                res.node_errors,
-                queuedRunErrorKey
-              )
-            }
+            executionErrorStore.recordSubmissionNodeErrors(
+              res.node_errors,
+              queuedRunErrorKey,
+              res.prompt_id
+            )
             queueResultOverride = null
             try {
               if (res.prompt_id) {

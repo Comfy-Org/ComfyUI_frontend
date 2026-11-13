@@ -2242,7 +2242,7 @@ describe('ComfyApp', () => {
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
     })
 
-    it('keeps skipped-output errors that arrive before the submission response', async () => {
+    function prepareSkippedOutputsRun() {
       prepareEmptyPromptQueue()
       const workflow = useWorkflowStore().activeWorkflow
       if (!workflow) throw new Error('Expected an active workflow')
@@ -2264,13 +2264,22 @@ describe('ComfyApp', () => {
         )
       }
       const socket: EventTarget = api
-      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
-        executionStore.registerJobWorkflowIdMapping('job-1', graphId)
+      function dispatchSkippedOutputs(jobId: string) {
+        executionStore.registerJobWorkflowIdMapping(jobId, graphId)
         socket.dispatchEvent(
           new CustomEvent('prompt_outputs_skipped', {
-            detail: { prompt_id: 'job-1', node_errors: skippedErrors }
+            detail: { prompt_id: jobId, node_errors: skippedErrors }
           })
         )
+      }
+      return { errorStore, skippedErrors, dispatchSkippedOutputs }
+    }
+
+    it('keeps skipped-output errors that arrive before the submission response', async () => {
+      const { errorStore, skippedErrors, dispatchSkippedOutputs } =
+        prepareSkippedOutputsRun()
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+        dispatchSkippedOutputs('job-1')
         return { prompt_id: 'job-1', node_errors: {} }
       })
 
@@ -2278,6 +2287,21 @@ describe('ComfyApp', () => {
 
       expect(errorStore.lastNodeErrors).toEqual(skippedErrors)
       expect(errorStore.isErrorOverlayOpen).toBe(true)
+    })
+
+    it("drops an older job's skipped-output errors when a newer submission comes back clean", async () => {
+      const { errorStore, dispatchSkippedOutputs } = prepareSkippedOutputsRun()
+      vi.spyOn(api, 'queuePrompt')
+        .mockResolvedValueOnce({ prompt_id: 'job-a', node_errors: {} })
+        .mockImplementationOnce(async () => {
+          dispatchSkippedOutputs('job-a')
+          return { prompt_id: 'job-b', node_errors: {} }
+        })
+      await app.queuePrompt(0)
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+
+      expect(errorStore.lastNodeErrors).toBeNull()
     })
 
     it('stores workflow telemetry metadata for every accepted batch submission', async () => {

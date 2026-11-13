@@ -833,7 +833,8 @@ describe('surfaceNodeErrors', () => {
 
     store.surfaceNodeErrors(
       nodeErrors,
-      store.runErrorKey(visibleGraphId, 'workflows/a.json')
+      store.runErrorKey(visibleGraphId, 'workflows/a.json'),
+      'job-1'
     )
 
     expect(store.lastNodeErrors).toEqual(nodeErrors)
@@ -846,7 +847,8 @@ describe('surfaceNodeErrors', () => {
 
     store.surfaceNodeErrors(
       nodeErrors,
-      store.runErrorKey(backgroundGraphId, 'workflows/b.json')
+      store.runErrorKey(backgroundGraphId, 'workflows/b.json'),
+      'job-1'
     )
 
     expect(store.isErrorOverlayOpen).toBe(false)

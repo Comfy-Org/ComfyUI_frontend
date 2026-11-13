@@ -915,7 +915,7 @@ export const useExecutionStore = defineStore('execution', () => {
       bufferByJobId(pendingSkippedOutputsByJobId, jobId, nodeErrors)
       return
     }
-    executionErrorStore.surfaceNodeErrors(nodeErrors, runErrorKey)
+    executionErrorStore.surfaceNodeErrors(nodeErrors, runErrorKey, jobId)
   }
 
   function flushPendingSkippedOutputs(jobId: string) {
