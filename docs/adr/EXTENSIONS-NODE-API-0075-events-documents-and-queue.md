@@ -11,8 +11,10 @@ Proposed
 [ADR-EXTENSIONS-NODE-API-0070](EXTENSIONS-NODE-API-0070-versioned-node-api-with-document-scoped-handles.md)
 sets out the V4 node API: one versioned object, handles scoped to a
 document, refusals and one listener primitive. This decision adds what a
-pack can listen to: changes to nodes, moves, drags, the view, the selection
-and the running node.
+pack can listen to (changes to nodes, moves, drags, the view, the selection
+and the running node), the open documents and workflow files, the queue,
+and the view of the graph a pack may move: selection, centring, zoom and
+pan, and where things are on screen.
 
 Packs heard these things before by wrapping LiteGraph callbacks
 (`onPropertyChanged`, `onDrawForeground`), by installing `defineProperty`
@@ -45,11 +47,10 @@ review finding requires it. The counts below are packs, then call sites.
 ### The canvas seam
 
 3. The node API lives in `src/platform`, and the layer rule forbids it from
-   importing `src/renderer`, where the canvas store, the selection and the
-   layout store live. The renderer therefore supplies a `CanvasSource`
-   (`v4/canvasSource.ts`): the graph on screen, the canvas, the selected
-   node ids, the node moves of each layout change and the end of each drag.
-   Its reads are reactive. `useNodeApiCanvasSource` in
+   importing `src/renderer`, where the canvas store and the layout store
+   live. The renderer therefore supplies a `CanvasSource`
+   (`v4/canvasSource.ts`): the graph on screen, the canvas, the node moves
+   of each layout change and the end of each drag. Its reads are reactive. `useNodeApiCanvasSource` in
    `src/renderer/core/canvas/nodeApiCanvasSource.ts` implements it over
    `useCanvasStore` and `layoutStore`, and `GraphCanvas.vue` hands it to the
    store with `provideCanvas` on the line before it publishes the API, so
@@ -105,10 +106,10 @@ review finding requires it. The counts below are packs, then call sites.
    "Consequences".
 9. `onSelectionChanged(listener)` (1 pack, 1 site) passes the selected
    nodes of the graph on screen, frozen and in the graph's own order,
-   whenever that set changes. Its source is the canvas store's
-   `selectedNodeIds`, the selection store's view of the graph on screen.
-   That is the one selection source A-16 asks for: a selection read
-   elsewhere in the API should use the same seam.
+   whenever that set changes. It and `graph.selection()` (decision 23) read
+   one source, the host's selection store (`useSelectionStore`, from which
+   the canvas store's selection is also derived), through one function,
+   `selectedNodes` (A-16).
 10. `executingNode()` (4 packs, 6 sites), `executionNode(id)` (3, 4) and
     `onExecutingNodeChanged(listener)` (6, 7) name the node the backend is
     running. The execution store's `executingNodeId` is an execution id,
@@ -257,13 +258,59 @@ review finding requires it. The counts below are packs, then call sites.
     follows the backend's `execution_interrupted` message.
     `disableAutoQueue()` (1 pack) sets the automatic queue mode to off.
 
+### The view
+
+23. `graph.selection()` (9 packs, 19 sites) is decision 9's
+    `selectedNodes`. `graph.select(nodes)` (12, 18) replaces the selection
+    through the canvas's own `selectItems`, the host's selection owner, so
+    the selection store, the canvas and the selection toolbox agree; an
+    empty list clears it. Each handle is resolved with the node handles'
+    `locator`, as the edit core and `queue.run` resolve them (B-01): a
+    value the API did not make is refused with a `TypeError`, and if a node
+    is gone or not in the graph on screen `select` returns `false` and
+    nothing changes. The old `{ add }` option is left out.
+24. `graph.centerOn(node)` (6, 10) resolves the node the same way and
+    returns `false` when it is gone or not on screen; otherwise it calls the
+    canvas's `centerOnNode`. `GroupHandle.centerOn()` (3 packs) centres the
+    group's rectangle the same way, and returns `false` when the group is
+    gone or its graph is not on screen. `setZoom(scale)` (2, 3) refuses
+    anything but a positive finite number and calls
+    `DragAndScale.changeScale` with the middle of the canvas element in
+    client coordinates (A-17); the canvas clamps it to its own limits.
+    `panBy(delta)` (1, 1) refuses anything but finite `x` and `y` and moves
+    the view by that many screen pixels with `DragAndScale.mouseDrag`
+    (A-01). Each marks the canvas dirty and recomputes the visible area, as
+    a draw does, so the view redraws and `onViewportChanged` hears it at
+    once (A-04). None of them edits the graph or touches undo.
+25. `graph.pointerPosition()` (4, 5) is the canvas's `graph_mouse`, the
+    pointer's last position in graph space, frozen, or `undefined` before
+    there is a canvas.
+26. `node.getScreenRect()` (4, 10) maps `getBounds()` through the canvas's
+    pan and zoom onto the page, and is `undefined` when the node is gone or
+    its graph is not the one on screen. `node.getSlotPosition(side, index)`
+    (1, 2) is the node's own `getInputPos` or `getOutputPos`, in graph
+    space, and `undefined` for a slot the node does not have or a node that
+    is gone; a side other than `'input'` or `'output'`, and an index that is
+    not a whole number from 0, are refused.
+27. These members find the canvas through `CanvasSource`, as the events do.
+    They join the handles through the factories' member hooks: the graph
+    handle's `members` (whose type becomes `GraphHandleMembers`, every
+    member but the reads), the node handle's `membersFor`, and a
+    `centerOn` callback `createGroupHandles` now takes.
+
 ### Members left out
 
-| Member                                                                         | Packs | Reason                                                                          |
-| ------------------------------------------------------------------------------ | ----: | ------------------------------------------------------------------------------- |
-| `onDocumentOpened`, `onDocumentDeactivated`                                    |     0 | No pack calls them.                                                             |
-| `NodeChangeEvent.from`                                                         |     0 | No pack reads it.                                                               |
-| `version`, `major`, `supports`, `require`, `capabilities`, `forMajor`, `adopt` |     0 | Left out by ADR-EXTENSIONS-NODE-API-0070; several existed only for the sandbox. |
+| Member                                                                                       | Packs | Reason                                                                                   |
+| -------------------------------------------------------------------------------------------- | ----: | ---------------------------------------------------------------------------------------- |
+| `onDocumentOpened`, `onDocumentDeactivated`                                                  |     0 | No pack calls them.                                                                      |
+| `NodeChangeEvent.from`                                                                       |     0 | No pack reads it.                                                                        |
+| `version`, `major`, `supports`, `require`, `capabilities`, `forMajor`, `adopt`               |     0 | Left out by ADR-EXTENSIONS-NODE-API-0070; several existed only for the sandbox.          |
+| `DocumentHandle.isModified`                                                                  |     0 | No pack reads it.                                                                        |
+| `queue.guard`                                                                                |     0 | A veto with a deadline, built for the sandbox; the queue keeps "prepare, then clean up". |
+| `queue.autoQueueMode`, `setAutoQueueMode`, `batchCount`, `setBatchCount`, `RunOptions.batch` |     0 | No pack calls them.                                                                      |
+| `RunSubmittedEvent.rejected`                                                                 |     0 | No pack reads it; `onRejected` says it.                                                  |
+| `RunRejectedEvent`, `RunRejectedNode`, `RunRejectionError` and their fields                  |     0 | No pack reads them; `onRejected` passes no event.                                        |
+| `GraphHandle.select(options).add`                                                            |     0 | No pack uses it.                                                                         |
 
 ## Alternatives considered
 
@@ -295,6 +342,10 @@ Host changes outside the folder:
   hook on its three load paths, and passes each file through
   `importWorkflowFile` in `handleFile`. `app.test.ts` has a test for each
   that fails when its line is removed.
+- `graphHandle.ts` types its `members` hook as `GraphHandleMembers`;
+  `edit/groupHandles.ts` takes a `centerOn` callback and gives each group
+  handle `centerOn()`; `edit/nodeHandleMembers.ts` leaves the two view
+  members out of its return type.
 - `queuePrompt` in `src/scripts/app.ts` calls `promptSubmitted`,
   `promptRejected` (twice) and `queueSettled` (three times), each on a line
   of its own; decision 17.
@@ -330,6 +381,12 @@ the API reports, recorded here with the change that would lift it.
   not change as a move, including one rewritten to the same place. A
   `positionChangedNodeIds` list beside `sizeChangedNodeIds` would make it
   exact.
+- **`changeScale` without a centre ignores where the canvas sits.**
+  `DragAndScale.changeScale(value)` defaults the centre to half the
+  element's width and height and then subtracts the element's page offset,
+  so the default is off for a canvas that does not start at the page's
+  top-left. `setZoom` passes the centre in client coordinates instead; the
+  default should be the rectangle's centre in client coordinates.
 - **No session uid.** ADR-GRAPH-DOCUMENT-0026 Phase 1; decision 11 says
   what replaces it until then.
 - **Execution events are not addressed to their document.**
@@ -341,9 +398,16 @@ the API reports, recorded here with the change that would lift it.
   of ADR-EXTENSIONS-NODE-API-0070, which isolates each listener through
   `callIsolated`; it adds only the start-on-first and stop-on-last rule
   that every event here needs, so no event repeats it.
-- **The resolved selection.** The canvas store's `selectedNodeIds`, not the
-  deprecated `canvas.selected_nodes`, which logs a deprecation warning on
-  every read.
+- **The resolved selection.** The selection store, not the deprecated
+  `canvas.selected_nodes`, which logs a deprecation warning on every read.
+  Writes go through `LGraphCanvas.selectItems`, never to the store.
+- **Graph to screen coordinates.** `getScreenRect` repeats the two-line
+  transform of `useCanvasPositionConversion`, which is in `src/renderer`,
+  where the API may not import from; `app.canvasPosToClientPos` throws
+  until setup has finished. Centring a group repeats the formula of
+  `LGraphCanvas.centerOnNode`, which takes only a node.
+- **A live handle.** Every handle-taking member here resolves through
+  `NodeHandles.locator`, the edit core's check, not one of its own.
 - **Execution id resolution.** `getNodeByExecutionId` from
   `utils/graphTraversalUtil`, unchanged.
 - **Graph scopes.** `followGraphs` maps a scope to graphs the way

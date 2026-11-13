@@ -30,14 +30,11 @@ function canvasWithNodes() {
 }
 
 describe('the canvas the node API reads', () => {
-  it('reads the graph and canvas on screen, and the selection there', () => {
-    const { graph, first, canvas, source } = canvasWithNodes()
-
-    canvas.select(first)
+  it('reads the graph and canvas on screen', () => {
+    const { graph, canvas, source } = canvasWithNodes()
 
     expect(source.visibleGraph()).toBe(graph)
     expect(source.canvas()).toBe(canvas)
-    expect([...source.selectedNodeIds()]).toEqual([first.id])
   })
 
   it('passes on a node move and the moves of a batch, leaving out a resize', () => {

@@ -6,7 +6,7 @@ import { isReissuable } from '@/platform/nodeApi/shared/documentHandles'
 import type { DocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import { boundsOnCanvas } from '@/platform/nodeApi/v4/nodeHandle'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
-import type { GroupHandle } from '@/platform/nodeApi/v4/types'
+import type { Bounds, GroupHandle } from '@/platform/nodeApi/v4/types'
 
 /** The one handle for each group of a graph, in draw order. */
 export type GroupsOf = (graph: LGraph) => readonly GroupHandle[]
@@ -31,22 +31,21 @@ export type GroupHandleMembers = Pick<GroupHandle, 'setBounds'>
 export function createGroupHandles(
   handles: DocumentHandles,
   nodes: NodeHandles,
-  membersFor: (handle: object) => GroupHandleMembers
+  membersFor: (handle: object) => GroupHandleMembers,
+  centerOn: (graph: LGraph, area: Bounds) => boolean
 ): GroupHandles {
   const cache = handles.createCache<GroupHandle, LiveGroup>((graph, id) =>
     isReissuable(id, graph.state.lastGroupId)
   )
 
   function handleFor(graph: LGraph, id: string): GroupHandle {
-    return cache.handleFor(
-      graph,
-      id,
-      (current) => liveGroup(current, id),
-      (locate) => {
-        const reads = groupReads(id, locate, nodes)
-        return Object.freeze(Object.assign(reads, membersFor(reads)))
-      }
-    )
+    return cache.handleFor(graph, id, (resolveGraph) => {
+      const locate = locator(resolveGraph, id)
+      const reads = groupReads(id, locate, nodes, centerOn)
+      const handle = Object.freeze(Object.assign(reads, membersFor(reads)))
+      liveGroups.set(handle, locate)
+      return handle
+    })
   }
 
   return {
@@ -66,7 +65,8 @@ function liveGroup(graph: LGraph, id: string): LiveGroup | undefined {
 function groupReads(
   id: string,
   locate: () => LiveGroup | undefined,
-  nodes: NodeHandles
+  nodes: NodeHandles,
+  centerOn: (graph: LGraph, area: Bounds) => boolean
 ) {
   function readLive<T>(
     read: (group: LGraphGroup, graph: LGraph) => T
@@ -82,11 +82,9 @@ function groupReads(
     },
     getTitle: () => readLive((group) => group.title),
     getColor: () => readLive((group) => group.color),
-    getBounds: () =>
-      readLive((group) => {
-        const [x, y, width, height] = group.boundingRect
-        return Object.freeze({ x, y, width, height })
-      }),
+    getBounds: () => readLive(boundsOf),
+    centerOn: () =>
+      readLive((group, graph) => centerOn(graph, boundsOf(group))) ?? false,
     nodes: () =>
       readLive((group, graph) => {
         const area = group.boundingRect
@@ -96,4 +94,9 @@ function groupReads(
         })
       })
   }
+}
+
+function boundsOf(group: LGraphGroup): Bounds {
+  const [x, y, width, height] = group.boundingRect
+  return Object.freeze({ x, y, width, height })
 }

@@ -1,6 +1,10 @@
 import { shallowRef } from 'vue'
 
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -14,13 +18,11 @@ type MoveFollower = (rootGraphId: string, moves: readonly NodeMove[]) => void
 export function apiOnTestCanvas(graph: LGraph | null) {
   const visible = shallowRef(graph)
   const canvas = shallowRef<LGraphCanvas | null>(null)
-  const selected = shallowRef<ReadonlySet<NodeId>>(new Set())
   const moveFollowers = new Set<MoveFollower>()
   const dragFollowers = new Set<() => void>()
   const source: CanvasSource = {
     visibleGraph: () => visible.value,
     canvas: () => canvas.value,
-    selectedNodeIds: () => selected.value,
     followMoves(moved) {
       moveFollowers.add(moved)
       return () => moveFollowers.delete(moved)
@@ -44,7 +46,11 @@ export function apiOnTestCanvas(graph: LGraph | null) {
       canvas.value = next
     },
     select(...ids: NodeId[]) {
-      selected.value = new Set(ids)
+      if (!visible.value) return
+      useSelectionStore().apply(graphScopeOf(visible.value), {
+        type: 'selection.replace',
+        keys: ids.map((id) => toSelectableKey('node', id))
+      })
     },
     move(rootGraphId: string, moves: readonly NodeMove[]) {
       for (const moved of moveFollowers) moved(rootGraphId, moves)
