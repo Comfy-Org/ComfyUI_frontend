@@ -112,9 +112,11 @@ export interface ExecutionErrorWsMessage extends ExecutionWsMessageBase {
   current_inputs?: unknown
   current_outputs?: unknown
 }
+/** A node error as Cloud relays it: an entry in `errors` may be a bare string. */
+export type RelayedNodeError = Omit<NodeError, 'errors'> & { errors: unknown[] }
 export interface PromptOutputsSkippedWsMessage {
   prompt_id: JobId
-  node_errors: Record<string, NodeError>
+  node_errors: Record<string, RelayedNodeError>
 }
 export interface ProgressTextWsMessage {
   nodeId: NodeId

@@ -1,3 +1,4 @@
+import type { RelayedNodeError } from '@comfyorg/api-client/executionTypes'
 import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -76,6 +77,49 @@ export function normalizePromptError(error: unknown): PromptError | null {
   return typeof error === 'string'
     ? { type: 'error', message: error, details: '' }
     : null
+}
+
+function isExtraInfo(
+  value: unknown
+): value is NonNullable<NodeValidationError['extra_info']> {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    (!('input_name' in value) || typeof value.input_name === 'string')
+  )
+}
+
+function toNodeValidationErrors(error: unknown): NodeValidationError[] {
+  const promptError = normalizePromptError(error)
+  if (!promptError) return []
+  const extraInfo =
+    error !== null && typeof error === 'object' && 'extra_info' in error
+      ? error.extra_info
+      : undefined
+  return [
+    isExtraInfo(extraInfo)
+      ? { ...promptError, extra_info: extraInfo }
+      : promptError
+  ]
+}
+
+/**
+ * Turns relayed node errors into `NodeError`s: a string entry becomes an
+ * error whose message is that string, and any other non-object is dropped.
+ */
+export function normalizeRelayedNodeErrors(
+  nodeErrors: Record<string, RelayedNodeError>
+): Record<string, NodeError> {
+  return Object.fromEntries(
+    Object.entries(nodeErrors).map(([nodeId, nodeError]) => [
+      nodeId,
+      {
+        ...nodeError,
+        errors: nodeError.errors.flatMap(toNodeValidationErrors)
+      }
+    ])
+  )
 }
 
 export function isMissingNodePromptError(

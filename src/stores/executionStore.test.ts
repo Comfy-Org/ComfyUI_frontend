@@ -16,6 +16,7 @@ import '@/scripts/changeTracker'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import {
   createNodeExecutionId,
@@ -1208,6 +1209,33 @@ describe('useExecutionStore - background workflow error routing', () => {
     fireExecutionStart('job-a')
 
     expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('shows skipped outputs whose errors include a bare string', () => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    const inputError = validationError('required_input_missing', 'images')
+    callStoreJob('job-a', workflowA)
+
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: 'job-a',
+          node_errors: {
+            '9': {
+              class_type: 'SaveImage',
+              dependent_outputs: ['9'],
+              errors: [inputError, 'Image is not valid', 42]
+            }
+          }
+        }
+      })
+    )
+
+    expect(errorStore.lastNodeErrors?.['9']?.errors).toEqual([
+      inputError,
+      { type: 'error', message: 'Image is not valid', details: '' }
+    ])
+    expect(errorStore.isErrorOverlayOpen).toBe(true)
   })
 
   it('does not route an unattributable failure to the visible workflow', () => {

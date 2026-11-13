@@ -32,6 +32,7 @@ import type {
   ProgressWsMessage,
   PromptOutputsSkippedWsMessage
 } from '@comfyorg/api-client/executionTypes'
+import type { NodeError } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -42,7 +43,10 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import { isAppModeValue } from '@comfyorg/graph-model/appMode'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
-import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
+import {
+  classifyCloudValidationError,
+  normalizeRelayedNodeErrors
+} from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
 
@@ -186,7 +190,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const pendingExecutionErrorsByJobId = new Map<string, PendingExecutionError>()
   const pendingSkippedOutputsByJobId = new Map<
     string,
-    PromptOutputsSkippedWsMessage
+    Record<string, NodeError>
   >()
 
   function bufferPendingWorkflowStatus(
@@ -896,23 +900,29 @@ export const useExecutionStore = defineStore('execution', () => {
   function handlePromptOutputsSkipped(
     e: CustomEvent<PromptOutputsSkippedWsMessage>
   ) {
-    recordSkippedOutputs(e.detail)
+    recordSkippedOutputs(
+      e.detail.prompt_id,
+      normalizeRelayedNodeErrors(e.detail.node_errors)
+    )
   }
 
-  function recordSkippedOutputs(detail: PromptOutputsSkippedWsMessage) {
-    const runErrorKey = runErrorKeyForJob(detail.prompt_id)
+  function recordSkippedOutputs(
+    jobId: string,
+    nodeErrors: Record<string, NodeError>
+  ) {
+    const runErrorKey = runErrorKeyForJob(jobId)
     if (runErrorKey === null) {
-      bufferByJobId(pendingSkippedOutputsByJobId, detail.prompt_id, detail)
+      bufferByJobId(pendingSkippedOutputsByJobId, jobId, nodeErrors)
       return
     }
-    executionErrorStore.surfaceNodeErrors(detail.node_errors, runErrorKey)
+    executionErrorStore.surfaceNodeErrors(nodeErrors, runErrorKey)
   }
 
   function flushPendingSkippedOutputs(jobId: string) {
     const pending = pendingSkippedOutputsByJobId.get(jobId)
     if (!pending) return
     pendingSkippedOutputsByJobId.delete(jobId)
-    recordSkippedOutputs(pending)
+    recordSkippedOutputs(jobId, pending)
   }
 
   function processExecutionError(
