@@ -113,7 +113,7 @@ describe('subgraph IO renderer measurements', () => {
     expect(second.inputNode.boundingRect[3]).not.toBe(400)
   })
 
-  it('re-measures slot centers when the panel rows are reordered', async () => {
+  it('moves slot anchors as soon as the panel reports reordered rows', async () => {
     const graph = createTestSubgraph({
       inputs: [
         { name: 'a', type: 'INT' },
@@ -140,13 +140,11 @@ describe('subgraph IO renderer measurements', () => {
       )
     )
     await nextTick()
-    graph.inputNode.arrange()
     expect(graph.inputNode.slots.map((slot) => slot.pos[1])).toEqual([15, 45])
 
     panel.prepend(rows[1])
     slots.value = [...slots.value]
     await nextTick()
-    graph.inputNode.arrange()
 
     expect(graph.inputNode.slots.map((slot) => slot.pos[1])).toEqual([45, 15])
     scope.stop()
