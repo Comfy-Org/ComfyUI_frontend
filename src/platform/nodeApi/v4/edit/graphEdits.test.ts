@@ -197,6 +197,8 @@ describe('graph edits', () => {
       shown().configure({ ...saved, links: [...saved.links].reverse() })
 
       const links = comfy.graph.links()
+      const outputs = comfy.graph.node(String(source.id))?.outputs
+      const inputs = comfy.graph.node(String(target.id))?.inputs
 
       const [first, second] = Array.from(shown().links.keys()).sort(
         (a, b) => a - b
@@ -206,16 +208,20 @@ describe('graph edits', () => {
         {
           id: String(first),
           sourceNodeId: String(source.id),
+          sourceSlotId: outputs?.at(0)?.id,
           sourceIndex: 0,
           targetNodeId: String(target.id),
+          targetSlotId: inputs?.at(1)?.id,
           targetIndex: 1,
           type: 'INT'
         },
         {
           id: String(second),
           sourceNodeId: String(source.id),
+          sourceSlotId: outputs?.at(1)?.id,
           sourceIndex: 1,
           targetNodeId: String(target.id),
+          targetSlotId: inputs?.at(0)?.id,
           targetIndex: 0,
           type: 'FLOAT'
         }

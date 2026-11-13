@@ -159,6 +159,58 @@ export interface Edits {
     init?: NodeInit
   ): NodeHandle | undefined
   /**
+   * Changes the fields `patch` names on a slot. A name another slot on its side
+   * has, or a widget the node lacks, throws first. False if the slot is gone.
+   */
+  updateSlot(slot: InputSlotHandle, patch: InputSlotPatch): boolean
+  updateSlot(slot: OutputSlotHandle, patch: SlotPatch): boolean
+  /** Adds an input after the others. `undefined` if the node is gone. */
+  addInput(
+    node: NodeHandle,
+    name: string,
+    type: SlotType,
+    options?: SlotOptions
+  ): InputSlotHandle | undefined
+  /** Adds an output after the others. `undefined` if the node is gone. */
+  addOutput(
+    node: NodeHandle,
+    name: string,
+    type: SlotType,
+    options?: SlotOptions
+  ): OutputSlotHandle | undefined
+  /** Removes a slot and its links. False if it is gone. */
+  removeSlot(slot: InputSlotHandle | OutputSlotHandle): boolean
+  /**
+   * Puts a node's inputs or outputs in the order `names` gives, moving their
+   * links with them. `names` must name each slot once.
+   */
+  reorderSlots(
+    node: NodeHandle,
+    side: SlotSide,
+    names: readonly string[]
+  ): boolean
+  /**
+   * Links an output to an input of the same graph. `undefined` if either is
+   * gone or the host refuses the link, as for types that do not match.
+   */
+  connect(
+    output: OutputSlotHandle,
+    input: InputSlotHandle
+  ): LinkInfo | undefined
+  /** Removes an input's link, or an output's links, to `target` only if given. */
+  disconnect(
+    slot: InputSlotHandle | OutputSlotHandle,
+    target?: NodeHandle
+  ): boolean
+  /**
+   * Moves every link of an output to another output of its node, keeping the
+   * links' ids, and gives the links moved. Their types are not checked again.
+   */
+  moveLinks(
+    from: OutputSlotHandle,
+    to: OutputSlotHandle
+  ): readonly LinkInfo[] | undefined
+  /**
    * Runs `edits` now, as one undo step, and returns what it returns. Edits it
    * made before throwing stay. Edits after it returns are not in the step.
    */
@@ -246,6 +298,8 @@ export interface NodeHandleEdits {
   remove(): boolean
   /** The node's state now, frozen. */
   snapshot(): NodeSnapshot | undefined
+  readonly inputs: SlotCollection<InputSlotHandle>
+  readonly outputs: SlotCollection<OutputSlotHandle>
   /**
    * Adds a badge until the disposer is called or the node is rebuilt, as undo
    * rebuilds it. A function is called each time the badge is drawn.
@@ -266,9 +320,12 @@ export interface LinkInfo {
   readonly id: string
   /** In a subgraph, a link from the subgraph's own input has that input's node id. */
   readonly sourceNodeId: string
+  /** The output's id; a slot handle with it is the same slot. */
+  readonly sourceSlotId: string | undefined
   /** The output's position on its node; it shifts when slots are added or removed. */
   readonly sourceIndex: number
   readonly targetNodeId: string
+  readonly targetSlotId: string | undefined
   readonly targetIndex: number
   readonly type: string
 }
@@ -281,4 +338,119 @@ export interface GraphHandleEdits {
   batch<T>(edits: () => T): T
   /** Every link in the graph on screen, in id order. */
   links(): readonly LinkInfo[] | undefined
+}
+
+export type SlotSide = 'input' | 'output'
+
+/** A slot id, else a slot name, else a position on the node. */
+export type SlotRef = string | { readonly index: number }
+
+export type SlotShape = 'default' | 'optional' | 'list' | 'directional'
+
+export type SlotDirection = 'none' | 'up' | 'down' | 'left' | 'right' | 'center'
+
+/** A slot type. Several names make a slot that accepts any of them. */
+export type SlotType = string | readonly string[]
+
+/** What `updateSlot` changes. `null` or `undefined` clears a field that can be cleared. */
+export interface SlotPatch {
+  readonly name?: string
+  readonly label?: string | null
+  readonly localizedName?: string | null
+  /** An output's links take the new type; an input's link is kept. */
+  readonly type?: SlotType
+  /** The dot's color when the slot is connected. */
+  readonly color?: string | null
+  readonly colorWhenUnconnected?: string | null
+  readonly shape?: SlotShape
+  /** The slot's center relative to the node's body. */
+  readonly position?: Point | null
+  /** The direction links leave the slot in. */
+  readonly direction?: SlotDirection | null
+}
+
+export interface InputSlotPatch extends SlotPatch {
+  /** The node's widget this input is the socket form of. */
+  readonly widget?: string
+}
+
+export interface SlotOptions {
+  readonly shape?: SlotShape
+  /** Inputs only: the node's widget this input is the socket form of. */
+  readonly widget?: string
+}
+
+export interface SlotSnapshot {
+  readonly id: string
+  readonly index: number
+  readonly name: string
+  readonly type: string
+  readonly label: string | undefined
+  readonly localizedName: string | undefined
+  readonly position: Point | undefined
+  readonly direction: SlotDirection | undefined
+  readonly shape: SlotShape
+  readonly isConnected: boolean
+}
+
+/** One slot of a node. Undo and redo rebuild slots, so a handle does not outlive them. */
+export interface SlotHandle {
+  /** Stays the same for as long as the slot does. */
+  readonly id: string
+  /** True once the slot is gone; every other read is then `undefined`. */
+  readonly isDeleted: boolean
+  /** The slot's position on its node. It shifts when slots are added or removed. */
+  readonly index: number | undefined
+  readonly name: string | undefined
+  readonly type: string | undefined
+  readonly label: string | undefined
+  readonly isConnected: boolean | undefined
+  snapshot(): SlotSnapshot | undefined
+}
+
+export interface InputSlotHandle extends SlotHandle {
+  /** The type the link into this input carries. */
+  readonly connectedType: string | undefined
+  readonly isWidgetInput: boolean | undefined
+  link(): LinkInfo | undefined
+  source():
+    | { readonly nodeId: string; readonly outputIndex: number }
+    | undefined
+  /** `comfy.edit.updateSlot(this, patch)`. */
+  modify(patch: InputSlotPatch): boolean
+  /** `comfy.edit.disconnect(this)`. */
+  disconnect(): boolean
+}
+
+export interface OutputSlotHandle extends SlotHandle {
+  links(): readonly LinkInfo[] | undefined
+  targets():
+    | readonly { readonly nodeId: string; readonly inputIndex: number }[]
+    | undefined
+  /** `comfy.edit.updateSlot(this, patch)`. */
+  modify(patch: SlotPatch): boolean
+  /** `comfy.edit.connect` to the input `input` names on the node with this id in this slot's graph. */
+  connectTo(targetNodeId: string, input: SlotRef): LinkInfo | undefined
+  /** `comfy.edit.disconnect`, from the node with this id in this slot's graph, or from all. */
+  disconnect(targetNodeId?: string): boolean
+  /** `comfy.edit.moveLinks` to the output `target` names on this node. */
+  moveLinksTo(target: SlotRef): readonly LinkInfo[] | undefined
+}
+
+/** A node's inputs or outputs. Reads are `undefined` once the node is gone. */
+export interface SlotCollection<THandle> {
+  readonly length: number | undefined
+  at(index: number): THandle | undefined
+  all(): readonly THandle[] | undefined
+  /** `undefined` too when more than one slot has the name. */
+  byName(name: string): THandle | undefined
+  byId(id: string): THandle | undefined
+  names(): readonly string[] | undefined
+  [Symbol.iterator](): Iterator<THandle>
+  /** `comfy.edit.addInput` or `addOutput` on this node. */
+  add(name: string, type: SlotType, options?: SlotOptions): THandle | undefined
+  /** `comfy.edit.removeSlot` on the slot `ref` names. False if none does. */
+  remove(ref: SlotRef): boolean
+  /** `comfy.edit.reorderSlots` on this node and side. */
+  reorder(names: readonly string[]): boolean
 }

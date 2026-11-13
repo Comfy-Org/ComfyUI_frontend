@@ -1,0 +1,207 @@
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import {
+  captureInputLayout,
+  outputLinks,
+  replaceNodeInputs
+} from '@/lib/litegraph/src/node/slotLinks'
+import { useLinkStore } from '@/stores/linkStore'
+
+import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
+import type {
+  InputSlotHandle,
+  OutputSlotHandle,
+  SlotSide
+} from '@/platform/nodeApi/v4/types'
+import { checkedChoice } from './checkedArguments'
+import type { EditRunner } from './editRunner'
+import type { LiveSlot, SlotHandles } from './liveSlot'
+import { liveNodeOf } from './nodeEdits'
+import {
+  assertFitsNode,
+  checkedSlotName,
+  checkedSlotOptions,
+  checkedSlotPatch,
+  checkedSlotType
+} from './slotPatch'
+
+/** The slot edits, taking anything a pack passes and checking it. */
+export interface SlotEdits {
+  updateSlot(slot: unknown, patch: unknown): boolean
+  addInput(
+    node: unknown,
+    name: unknown,
+    type: unknown,
+    options?: unknown
+  ): InputSlotHandle | undefined
+  addOutput(
+    node: unknown,
+    name: unknown,
+    type: unknown,
+    options?: unknown
+  ): OutputSlotHandle | undefined
+  removeSlot(slot: unknown): boolean
+  reorderSlots(node: unknown, side: unknown, names: unknown): boolean
+}
+
+const SIDES = { input: true, output: true } satisfies Record<SlotSide, true>
+
+export function createSlotEdits(
+  nodes: NodeHandles,
+  slots: SlotHandles,
+  runner: EditRunner
+): SlotEdits {
+  function addSlot(
+    member: string,
+    side: SlotSide,
+    [node, name, type, options]: readonly unknown[]
+  ): LiveSlot | undefined {
+    const live = liveNodeOf(nodes, member, node)
+    const slotName = checkedSlotName(member, name)
+    const slotType = checkedSlotType(member, type)
+    const extra = checkedSlotOptions(member, options, side)
+    if (!live) return undefined
+    assertFitsNode(member, live.node, side, {
+      name: slotName,
+      widget: extra.widget?.name
+    })
+    return runner.apply(live.graph, () => {
+      const { graph, node: host } = live
+      if (side === 'input') {
+        const slot = host.addInput(slotName, slotType, extra)
+        return { graph, node: host, index: host.inputs.length - 1, side, slot }
+      }
+      const slot = host.addOutput(slotName, slotType, extra)
+      return { graph, node: host, index: host.outputs.length - 1, side, slot }
+    })
+  }
+
+  return {
+    updateSlot(slot, patch) {
+      const locator = slotLocatorOf(slots, 'updateSlot', slot)
+      const checked = checkedSlotPatch(patch, locator.side)
+      const live = locator.locate()
+      if (!live) return false
+      assertFitsNode('updateSlot', live.node, live.side, {
+        name: checked.name,
+        widget: checked.widget,
+        except: live.slot
+      })
+      runner.apply(live.graph, () => {
+        for (const write of checked.writes) write(live)
+        if (checked.widget !== undefined) {
+          live.slot.widget = { name: checked.widget }
+        }
+      })
+      return true
+    },
+
+    addInput(...args) {
+      const live = addSlot('addInput', 'input', args)
+      return live?.side === 'input'
+        ? slots.inputHandle(live.graph, live.node, live.slot)
+        : undefined
+    },
+
+    addOutput(...args) {
+      const live = addSlot('addOutput', 'output', args)
+      return live?.side === 'output'
+        ? slots.outputHandle(live.graph, live.node, live.slot)
+        : undefined
+    },
+
+    removeSlot(slot) {
+      const live = slotLocatorOf(slots, 'removeSlot', slot).locate()
+      if (!live) return false
+      runner.apply(live.graph, () => {
+        if (live.side === 'input') live.node.removeInput(live.index)
+        else live.node.removeOutput(live.index)
+      })
+      return true
+    },
+
+    reorderSlots(node, side, names) {
+      const live = liveNodeOf(nodes, 'reorderSlots', node)
+      const slotSide = checkedChoice('reorderSlots', 'side', side, SIDES)
+      const order = checkedNames(names)
+      if (!live) return false
+      const current =
+        slotSide === 'input' ? live.node.inputs : live.node.outputs
+      const moved = permutation(order, current)
+      return runner.apply(live.graph, () =>
+        slotSide === 'input'
+          ? reorderInputs(live.node, moved)
+          : reorderOutputs(live.graph, live.node, moved)
+      )
+    }
+  }
+}
+
+/** For a slot handle, its locator; anything else throws. */
+export function slotLocatorOf(
+  slots: SlotHandles,
+  member: string,
+  handle: unknown
+) {
+  const locator = slots.locator(handle)
+  if (!locator) throw invalidArgument(member, 'a slot handle', handle)
+  return locator
+}
+
+function checkedNames(names: unknown): readonly string[] {
+  if (
+    !Array.isArray(names) ||
+    !names.every((name): name is string => typeof name === 'string')
+  ) {
+    throw invalidArgument('reorderSlots', 'a list of slot names', names)
+  }
+  return names
+}
+
+/** Where each slot moves from, in the new order; refuses a list that is not a permutation of the names. */
+function permutation(
+  order: readonly string[],
+  slots: readonly { readonly name: string }[]
+): readonly number[] {
+  const indexByName = new Map(slots.map((slot, index) => [slot.name, index]))
+  const from = order.map((name) => indexByName.get(name))
+  if (
+    order.length !== slots.length ||
+    new Set(order).size !== order.length ||
+    from.includes(undefined)
+  ) {
+    throw invalidArgument(
+      'reorderSlots',
+      `each of the slots' distinct names once (${slots.map(({ name }) => name).join(', ')})`,
+      order.join(', ')
+    )
+  }
+  return from.filter((index): index is number => index !== undefined)
+}
+
+function reorderInputs(node: LGraphNode, from: readonly number[]): boolean {
+  const layout = captureInputLayout(node)
+  const inputs = from.map((index) => layout.inputs[index])
+  return replaceNodeInputs(node, layout, inputs).ok
+}
+
+function reorderOutputs(
+  graph: LGraph,
+  node: LGraphNode,
+  from: readonly number[]
+): boolean {
+  const moves = from.flatMap((was, now) =>
+    outputLinks(graph, node.id, was).map((link) => ({
+      topology: link._state,
+      patch: { originSlot: now }
+    }))
+  )
+  const result = useLinkStore().updateEndpoints(graphScopeOf(graph), moves)
+  if (!result.ok) return false
+  const outputs = from.map((index) => node.outputs[index])
+  node.outputs.splice(0, node.outputs.length, ...outputs)
+  return true
+}
