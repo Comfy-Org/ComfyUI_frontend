@@ -252,6 +252,14 @@ describe('TopMenuSection', () => {
       })
     })
 
+    it('moves CurrentUserButton out of the top bar while billing_new_ux_enabled is on', () => {
+      useCurrentUser().isLoggedIn = computed(() => true)
+      Object.assign(useFeatureFlags().flags, { billingNewUxEnabled: true })
+      const { container } = createLegacyTabBarWrapper()
+      expect(container.querySelector('current-user-button-stub')).toBeNull()
+      expect(container.querySelector('login-button-stub')).toBeNull()
+    })
+
     describe('when user is not logged in', () => {
       it('should display LoginButton and not display CurrentUserButton', () => {
         const { container } = createLegacyTabBarWrapper()

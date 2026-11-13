@@ -2,9 +2,13 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@comfyorg/telemetry'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -39,6 +43,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 const i18n = createI18n({
   legacy: false,
@@ -59,6 +65,11 @@ function renderToolbar(props: SideToolbarProps = {}) {
         SidebarLogoutIcon: { template: '<div data-testid="logout" />' },
         SidebarHelpCenterIcon: { template: '<div />' },
         SidebarSettingsButton: { template: '<div />' },
+        CurrentUserButton: {
+          props: ['side'],
+          template:
+            '<div data-testid="current-user-button" :data-side="side" />'
+        },
         HelpCenterPopups: { template: '<div />' },
         SidebarBottomPanelToggleButton: {
           template: '<div data-testid="bottom-panel-toggle" />'
@@ -159,5 +170,54 @@ describe('SideToolbar', () => {
     Object.assign(useUserStore(), { isMultiUserServer: true })
     renderToolbar()
     expect(screen.getByTestId('logout')).toBeInTheDocument()
+  })
+
+  describe('profile button', () => {
+    beforeEach(() => {
+      useCurrentUser().isLoggedIn = computed(() => true)
+    })
+
+    it('stays out of the sidebar while billing_new_ux_enabled is off', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+      renderToolbar()
+
+      expect(
+        screen.queryByTestId('current-user-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it('mounts at the bottom of the sidebar while billing_new_ux_enabled is on', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      renderToolbar()
+
+      expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+    })
+
+    it('stays out of the sidebar when signed out', () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      useCurrentUser().isLoggedIn = computed(() => false)
+      renderToolbar()
+
+      expect(
+        screen.queryByTestId('current-user-button')
+      ).not.toBeInTheDocument()
+    })
+
+    it.for([
+      { location: 'left', side: 'right' },
+      { location: 'right', side: 'left' }
+    ] as const)(
+      'opens the menu toward the canvas when the sidebar is on the $location',
+      ({ location, side }) => {
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+        useSettingStore().settingValues['Comfy.Sidebar.Location'] = location
+        renderToolbar()
+
+        expect(screen.getByTestId('current-user-button')).toHaveAttribute(
+          'data-side',
+          side
+        )
+      }
+    )
   })
 })

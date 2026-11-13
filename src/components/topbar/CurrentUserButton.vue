@@ -41,7 +41,9 @@
       </PopoverTrigger>
 
       <PopoverContent
+        :side
         align="end"
+        :side-offset="side === 'bottom' ? undefined : 12"
         :class="
           cn(
             'overflow-visible border-border p-0 data-[state=closed]:animate-none data-[state=open]:animate-none',
@@ -53,6 +55,7 @@
           :is="workspaceMenu"
           v-if="showWorkspacePopover"
           :account-actions-only="initState !== 'ready'"
+          v-bind="flags.billingNewUxEnabled ? { flyoutSide } : {}"
           @close="closePopover"
         />
         <CurrentUserPopoverLegacy v-else @close="closePopover" />
@@ -84,9 +87,14 @@ import ProfileMenuWorkspace from '@/platform/account/components/ProfileMenuWorks
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
-const { showArrow = true, compact = false } = defineProps<{
+const {
+  showArrow = true,
+  compact = false,
+  side = 'bottom'
+} = defineProps<{
   showArrow?: boolean
   compact?: boolean
+  side?: 'bottom' | 'left' | 'right'
 }>()
 
 const { isLoggedIn, userPhotoUrl } = useCurrentUser()
@@ -112,6 +120,8 @@ const { flags } = useFeatureFlags()
 const workspaceMenu = computed(() =>
   flags.billingNewUxEnabled ? ProfileMenuWorkspace : CurrentUserPopoverWorkspace
 )
+// Flyouts open on the side facing the canvas.
+const flyoutSide = computed(() => (side === 'right' ? 'right' : 'left'))
 const showWorkspacePopover = computed(
   () => isCloud || initState.value === 'ready'
 )

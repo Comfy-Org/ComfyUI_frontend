@@ -67,10 +67,14 @@
                 @update:progress-target="updateProgressTarget"
               />
               <CurrentUserButton
-                v-if="isLoggedIn && !isIntegratedTabBar"
+                v-if="
+                  isLoggedIn &&
+                  !isIntegratedTabBar &&
+                  !flags.billingNewUxEnabled
+                "
                 class="shrink-0"
               />
-              <LoginButton v-else-if="!isIntegratedTabBar" />
+              <LoginButton v-else-if="!isLoggedIn && !isIntegratedTabBar" />
               <Button
                 v-if="managerState.shouldShowExtensionsButton.value"
                 :tooltip="t('menu.manageExtensions')"
