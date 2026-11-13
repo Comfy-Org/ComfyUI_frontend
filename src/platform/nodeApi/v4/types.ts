@@ -1503,3 +1503,143 @@ export interface ModelsHandle {
    */
   list(folder: string): Promise<readonly string[] | undefined>
 }
+
+export interface Comfy {
+  /** What a pack adds to the app around the graph. */
+  readonly ui: UiHandle
+}
+
+/** The pack renders a contribution's content into the element it is given. */
+export interface UiHandle {
+  /** Adds a tab to the sidebar until the returned function removes it. An id already there throws. */
+  addSidebarTab(tab: SidebarTabDef): Unsubscribe
+  /** Shows a readout in the top bar until `remove()`. An id already shown throws. */
+  addTopBarBadge(badge: BadgeContribution): ChromeItemHandle<BadgeContribution>
+  /** Adds a button to the action bar until `remove()`. An id already shown throws. */
+  addActionBarButton(
+    button: ButtonContribution
+  ): ChromeItemHandle<ButtonContribution>
+  /** Opens a dialog, or raises the one already open under `key`. */
+  showDialog(dialog: DialogDef): DialogHandle
+  /** Shows a menu at the pointer. It closes when an item is chosen or the user clicks away. */
+  showMenu(menu: MenuDef): void
+  /** Asks the user for text. Resolves `undefined` if they cancel. */
+  prompt(prompt: PromptDef): Promise<string | undefined>
+  /** Mounts a panel over the graph view. `undefined` before the app has a graph view. */
+  mountViewportPanel(panel: ViewportPanelDef): ViewportPanelHandle | undefined
+}
+
+export interface SidebarTabDef {
+  /** Unique across core and every pack: `MyPack.assets`. */
+  readonly id: string
+  readonly title: string
+  /** An icon class, such as `icon-[lucide--activity]`. */
+  readonly icon?: string
+  readonly tooltip?: string
+  /** Fills the tab's panel each time the tab is shown. */
+  render(container: HTMLElement): void
+  /** Called when the panel is taken down, once after each `render`. */
+  destroy?(): void
+}
+
+export interface BadgeContribution {
+  /** Unique among badges: `MyPack.monitor`. */
+  readonly id: string
+  readonly text: string
+  readonly label?: string
+  readonly variant?: 'info' | 'warning' | 'error'
+  readonly tooltip?: string
+}
+
+export interface ButtonContribution {
+  /** Unique among buttons: `MyPack.open`. */
+  readonly id: string
+  /** An icon class, such as `icon-[lucide--camera]`. */
+  readonly icon: string
+  readonly label?: string
+  readonly tooltip?: string
+  /** Called on a click, with the click's event. */
+  run(event?: MouseEvent): void
+}
+
+/** What a pack keeps of a badge or button it added. */
+export interface ChromeItemHandle<T> {
+  /** Replaces the fields given. `false` once removed, and nothing changes. */
+  update(changes: Partial<Omit<T, 'id'>>): boolean
+  /** Takes the item away. Safe to call more than once. */
+  remove(): void
+}
+
+export interface DialogDef {
+  /** Names the dialog among those packs open: `MyPack.settings`. */
+  readonly key: string
+  readonly title?: string
+  /** Fills the dialog when it opens. */
+  render(container: HTMLElement): void
+  /** Called when the dialog closes. */
+  destroy?(): void
+}
+
+export interface DialogHandle {
+  /** Closes the dialog if it is still open. */
+  close(): void
+}
+
+export interface MenuDef {
+  readonly items: readonly MenuItemDef[]
+  readonly title?: string
+  /** The click that asked for the menu; the menu opens at its pointer. */
+  readonly event: MouseEvent
+}
+
+export interface MenuItemDef {
+  readonly label: string
+  /** Shown, but cannot be chosen. */
+  readonly disabled?: boolean
+  /** A menu that opens from this item. An item has a submenu or `run`, not both. */
+  readonly submenu?: readonly MenuItemDef[]
+  run?(): void
+}
+
+export interface PromptDef {
+  /** What is asked for, such as "Strength". */
+  readonly label: string
+  /** The text the field starts with. */
+  readonly value?: string
+  readonly placeholder?: string
+}
+
+export type ViewportPanelAnchor =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right'
+
+/** A panel over the graph view that stays put as the graph pans and zooms. */
+export interface ViewportPanelDef {
+  /** Unique among mounted panels: `MyPack.progress`. */
+  readonly id: string
+  /** The panel's accessible name. */
+  readonly ariaLabel: string
+  /** The edge or corner the panel sits against. Defaults to `'top-left'`. */
+  readonly anchor?: ViewportPanelAnchor
+  /** Pixels in from the anchored side, or along from the centre. */
+  readonly offsetX?: number
+  /** Pixels in from the anchored top or bottom. */
+  readonly offsetY?: number
+  /** Pixels. */
+  readonly width?: number
+  /** Pixels. */
+  readonly maxHeight?: number
+  /** Fills the panel once, while it is in the document. */
+  render(container: HTMLElement): void
+  /** Called once when the panel is removed, before it leaves the document. */
+  destroy?(): void
+}
+
+export interface ViewportPanelHandle {
+  /** Removes the panel. Safe to call more than once. */
+  remove(): void
+}

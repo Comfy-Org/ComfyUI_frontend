@@ -176,6 +176,59 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     registers its own. The model store is not used: it lists only folders it
     has already loaded, and in asset mode it reads the asset service instead.
 
+### UI contributions (`comfy.ui`, 35 / 101)
+
+19. A pack renders its own content. Every contribution with content hands the
+    pack an element to fill (`render`) and calls it back when that element is
+    taken down (`destroy`); the host never renders a pack's Vue component.
+    Both callbacks run through `callListener`, and `mountedContent.ts` calls
+    `destroy` once after each `render`, never without one, whichever host
+    path takes the content down first.
+20. `addSidebarTab(tab)` (7 / 7) registers a `custom` tab with the sidebar
+    tab store, which `app.extensionManager.registerSidebarTab` reaches, and
+    the host's `ExtensionSlot` renders it each time it is shown. The store
+    accepts a second tab under an id; the API refuses it. The disposer
+    unregisters the tab only if the tab it added is still the one registered,
+    so an old disposer cannot remove a newer tab under the same id.
+21. `addTopBarBadge(badge)` (3 / 4) and `addActionBarButton(button)` (14 / 20)
+    keep the pack's items in a list per API, which the top-bar badge and
+    action-bar button stores append to what extensions declare. Those stores
+    read only `ComfyExtension.topbarBadges` and `actionBarButtons`, which an
+    extension declares once; a badge that changes needed a reactive source.
+    The handle's `update(changes)` re-checks the whole item with the changes
+    applied, keeps its id and place, and returns `false` once the item is
+    removed; `remove()` takes away only that item, so a stale handle cannot
+    remove a later item under the same id. An id already shown is refused. A
+    button's `run` is called with the click's `MouseEvent`, which a pack reads
+    to place a menu at the pointer.
+22. `showDialog(dialog)` (22 / 36) opens a dialog through the dialog store's
+    `showExtensionDialog`, which prefixes the key with `extension-` and raises
+    an open dialog with the same key rather than opening another. Its content
+    is the host's `ExtensionSlot`, as for a sidebar tab. `close()` closes the
+    dialog the call opened or raised, only while that dialog is still on the
+    stack, so it cannot close a later dialog under the same key.
+23. `showMenu(menu)` (3 / 15) opens LiteGraph's `ContextMenu`, the menu the
+    canvas and core extensions open, at the pointer of the pack's
+    `MouseEvent`. A label is shown as text, never as markup. The whole item
+    tree is checked before the menu opens; an item has a submenu or `run`,
+    not both. `MenuHandle.close` (0 / 0) has no use, so `showMenu` returns
+    nothing; the menu closes on a choice or a click elsewhere.
+24. `prompt(prompt)` (7 / 13) is the dialog service's `prompt`, the text
+    prompt the host uses itself, with the label as both its title and the
+    input's label. A cancel resolves `undefined`.
+25. `mountViewportPanel(panel)` (2 / 3) appends a panel to the element that
+    holds the canvas the renderer supplies (`CanvasSource.canvas()`),
+    positioned against an edge or corner. There is no host owner for such
+    panels; without the API a pack appends its own element over the canvas.
+    Every offset must be finite and every size positive and finite (finding
+    A-01). `ariaLabel` is required, so the panel's `region` role always has a
+    name (finding A-14). An id already mounted is refused. `remove()` calls
+    `destroy` once, while the panel is still in the document, and then
+    removes it, even after the graph view itself was taken down; a stale
+    handle cannot free the id of a later panel. Before the renderer has
+    supplied a canvas there is no view, and the call mounts nothing and
+    returns `undefined`.
+
 ### Left out
 
 The sandbox the earlier contract served is out of scope, and nothing here
@@ -195,6 +248,10 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   host, the `/system_monitor` route, is not in ComfyUI; it exists on an
   unreleased backend branch. A wrapper over a route the server lacks would
   have no working path. The members return when that route ships.
+- `VueSidebarTab` and `VueDialog` (0 / 0): the host would have rendered a
+  pack's Vue component with its own Vue, which only the sandbox needed.
+- `BadgeContribution.icon` (0 / 0) has no use. `ViewportPanelDef.destroy`
+  (0 / 0) is kept, because finding A-14 sets the panel's teardown order.
 
 ## Alternatives considered
 
@@ -221,13 +278,29 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   without saying so. `cloneDeep` from `es-toolkit` returns what it cannot
   clone, such as a function or a DOM node, by reference, so freezing its
   result could freeze a host object.
+- Render a pack's viewport panels in a host component in the canvas's
+  overlay slot, as badges are rendered. That is new host UI for two packs;
+  the panel element is what a pack appends without the API, now owned and
+  removable.
+- Give the menu keyboard navigation in the API. `ContextMenu` has none for
+  core's menus either; adding it here would make a pack's menu behave unlike
+  the canvas's. It belongs in `ContextMenu` (see Consequences).
 
 ## Consequences
 
+- Host lines: `actionBarButtonStore.ts` and `topbarBadgeStore.ts` each
+  append `useComfyApiStore()`'s list, and `comfyApi.ts` and
+  `comfyApiStore.ts` pass the lists through. Each has a test that fails when
+  the line is removed.
 - The settings store, the command store and the keybinding store cannot
   remove a registration, so `declare` and `register` last for the page, as
   `extension.settings` and `extension.commands` do. A removal method in each
   store would let them return a disposer.
+- LiteGraph's `ContextMenu` has no keyboard navigation, for core's menus and
+  a pack's alike. A ticket: "Context menus cannot be used from the keyboard:
+  open a node's context menu, press the arrow keys; focus does not move into
+  the menu. Suggested direction: give the menu `role="menu"`, roving focus
+  with the arrow keys, Enter to choose and Escape to close."
 - A pack's setting and its stored text live under the ids and paths it
   chooses. Nothing stops a pack from writing core's settings or another
   pack's files, as nothing stops it today through `api`.

@@ -1,4 +1,7 @@
+import type { ComputedRef } from 'vue'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { ActionBarButton, TopbarBadge } from '@/types/comfy'
 
 import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import { createDocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
@@ -41,6 +44,7 @@ import { createCommandsHandle } from './utilities/commandsHandle'
 import { createModelsHandle } from './utilities/modelsHandle'
 import { createSettingsHandle } from './utilities/settingsHandle'
 import { createStorageHandle } from './utilities/storageHandle'
+import { createUi } from './utilities/ui/uiHandle'
 import { createWidgetCollections } from './widgets/widgetCollection'
 
 export interface ComfyApiServices {
@@ -61,6 +65,10 @@ export interface ComfyApiHost extends Omit<
   VersionHost,
   'publish' | 'provideCanvas'
 > {
+  /** The top-bar badges packs have added, for the host to show. */
+  readonly topbarBadges: ComputedRef<readonly TopbarBadge[]>
+  /** The action-bar buttons packs have added, for the host to show. */
+  readonly actionBarButtons: ComputedRef<readonly ActionBarButton[]>
   /** The extension through which the host tells the API about node types. */
   readonly nodeTypeHooks: NodeTypeHooks
   /** A startup of the canvas begins: `onReady` waits for its {@link VersionHost.markReady}. */
@@ -77,6 +85,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
   const handles = createDocumentHandles(() => services.shownRoot?.())
   const canvas = () => services.canvas?.()
+  const chrome = createUi(canvas)
   const runner = createEditRunner(() => services.history?.())
   const widgets = createWidgetCollections(
     handles,
@@ -172,6 +181,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     commands: createCommandsHandle(),
     backend: createBackendHandle(),
     models: createModelsHandle(),
+    ui: chrome.ui,
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
   } satisfies Comfy)
 
@@ -179,6 +189,8 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     comfy,
     edit,
     host: {
+      topbarBadges: chrome.topbarBadges,
+      actionBarButtons: chrome.actionBarButtons,
       nodeTypeHooks: definitions.nodeTypeHooks,
       reapplyTypeColors: definitions.reapplyTypeColors,
       frontendExecution: execution.prompt,

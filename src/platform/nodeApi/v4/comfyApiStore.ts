@@ -45,6 +45,8 @@ export const useComfyApiStore = defineStore('comfyApiV4', () => {
   }
 
   return {
+    topbarBadges: host.topbarBadges,
+    actionBarButtons: host.actionBarButtons,
     publish,
     provideCanvas,
     workflowLoaded: host.workflowLoaded,
