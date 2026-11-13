@@ -186,7 +186,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('workspace-switcher-trigger').click()
 
-    await page.getByText('Create a workspace').click()
+    await page.getByText('Create workspace').click()
 
     await expect(
       page.getByText(

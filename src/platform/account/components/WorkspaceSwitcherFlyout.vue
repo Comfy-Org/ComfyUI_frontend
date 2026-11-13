@@ -1,5 +1,5 @@
 <template>
-  <div :class="cn('flex w-60 flex-col gap-1', showSearch && 'pt-1')">
+  <div class="flex w-60 flex-col gap-1" :class="{ 'pt-1': showSearch }">
     <div v-if="showSearch" class="flex flex-col gap-2">
       <input
         v-model="searchQuery"
@@ -49,10 +49,10 @@
       </div>
 
       <p
-        v-else-if="filteredWorkspaces.length === 0 && searchQuery.trim()"
+        v-else-if="noMatchQuery"
         class="m-0 px-2 py-3 text-sm text-muted-foreground"
       >
-        {{ $t('workspaceSwitcher.noResults', { query: searchQuery.trim() }) }}
+        {{ $t('workspaceSwitcher.noResults', { query: noMatchQuery }) }}
       </p>
 
       <template v-else>
@@ -93,33 +93,7 @@
       </template>
     </div>
 
-    <template v-if="isCloud">
-      <div class="-mx-2 border-t" />
-      <Button
-        variant="muted-textonly"
-        size="unset"
-        :disabled="!canCreateWorkspace"
-        class="min-h-10 w-full justify-start rounded-lg px-2 py-1 text-left font-normal whitespace-normal"
-        data-testid="workspace-switcher-create"
-        @click="handleCreateWorkspace"
-      >
-        <i class="icon-[lucide--plus]" />
-        <span class="flex min-w-0 flex-1 flex-col gap-1">
-          <span class="truncate text-sm">{{
-            $t('workspaceSwitcher.createWorkspaceAction')
-          }}</span>
-          <span
-            v-if="createRefusalLine"
-            class="text-xs"
-            data-testid="workspace-switcher-create-refusal"
-            >{{ createRefusalLine }}</span
-          >
-        </span>
-      </Button>
-    </template>
-    <p v-else class="m-0 px-2 pt-1 text-xs text-muted-foreground">
-      {{ $t('workspaceSwitcher.scopeCaption') }}
-    </p>
+    <WorkspaceSwitcherFlyoutFooter @create="emit('create')" />
   </div>
 </template>
 
@@ -130,12 +104,11 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { cn } from '@comfyorg/tailwind-utils'
+import WorkspaceSwitcherFlyoutFooter from '@/platform/account/components/WorkspaceSwitcherFlyoutFooter.vue'
 import { profileMenuPlanLabel } from '@/platform/account/components/profileMenuPlanLine'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { isCloud } from '@/platform/distribution/types'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import { useCreateWorkspaceRefusal } from '@/platform/workspace/composables/useCreateWorkspaceRefusal'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -153,14 +126,10 @@ const billingState = useWorkspaceBillingStateStore()
 const {
   workspaceId,
   workspaces,
-  canCreateWorkspace,
   isFetchingWorkspaces,
   isSwitching,
-  initState,
-  createWorkspaceRefusal,
-  maxOwnedWorkspaces
+  initState
 } = storeToRefs(workspaceStore)
-const createRefusal = useCreateWorkspaceRefusal()
 
 const isSelectionDisabled = computed(() => !isCloud && isSwitching.value)
 
@@ -187,18 +156,12 @@ const filteredWorkspaces = computed(() => {
   )
 })
 
-const hasLoadError = computed(() => initState.value === 'error')
+/** The typed query when it matches no workspace, else empty. */
+const noMatchQuery = computed(() =>
+  filteredWorkspaces.value.length === 0 ? searchQuery.value.trim() : ''
+)
 
-/** The served refusal under Create workspace; the owned limit gets the short line. */
-const createRefusalLine = computed(() => {
-  if (
-    createWorkspaceRefusal.value === 'owned_workspace_limit' &&
-    maxOwnedWorkspaces.value !== undefined
-  ) {
-    return t('workspaceSwitcher.ownedLimit', { max: maxOwnedWorkspaces.value })
-  }
-  return createRefusal.value
-})
+const hasLoadError = computed(() => initState.value === 'error')
 
 function retryLoad() {
   workspaceStore.initialize().catch((error: unknown) =>
@@ -211,9 +174,5 @@ function retryLoad() {
 
 async function handleSelectWorkspace(id: string) {
   if (await switchWorkspace(id)) emit('select')
-}
-
-function handleCreateWorkspace() {
-  if (canCreateWorkspace.value) emit('create')
 }
 </script>

@@ -1,10 +1,5 @@
 <template>
-  <WorkspaceSwitcherFlyout
-    v-if="flags.billingNewUxEnabled"
-    @select="emit('select')"
-    @create="emit('create')"
-  />
-  <div v-else class="flex max-h-96 w-80 flex-col overflow-hidden rounded-lg">
+  <div class="flex max-h-96 w-80 flex-col overflow-hidden rounded-lg">
     <div
       class="flex scrollbar-custom min-h-0 flex-1 flex-col"
       data-testid="workspace-switcher-list"
@@ -126,8 +121,6 @@ import { useI18n } from 'vue-i18n'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import WorkspaceSwitcherFlyout from '@/platform/account/components/WorkspaceSwitcherFlyout.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
@@ -154,12 +147,11 @@ interface AvailableWorkspace {
 }
 
 const emit = defineEmits<{
-  select: [workspace?: AvailableWorkspace]
+  select: [workspace: AvailableWorkspace]
   create: []
 }>()
 
 const { t } = useI18n()
-const { flags } = useFeatureFlags()
 const { switchWorkspace } = useWorkspaceSwitch()
 const { subscription } = useBillingContext()
 const { formatTierName, getTierLabel } = useWorkspaceTierLabel()

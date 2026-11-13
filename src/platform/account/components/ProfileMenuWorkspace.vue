@@ -57,7 +57,7 @@
           class="w-auto overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0"
           data-testid="workspace-switcher-panel"
         >
-          <WorkspaceSwitcherPopover
+          <WorkspaceSwitcherFlyout
             @select="close"
             @create="(close(), handleCreateWorkspace())"
           />
@@ -190,7 +190,7 @@ import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import ProfileMenuCreditsFlyout from '@/platform/account/components/ProfileMenuCreditsFlyout.vue'
-import WorkspaceSwitcherPopover from '@/platform/account/components/WorkspaceSwitcherPopover.vue'
+import WorkspaceSwitcherFlyout from '@/platform/account/components/WorkspaceSwitcherFlyout.vue'
 import {
   PROFILE_MENU_ROLE_KEY,
   profileMenuPlanLabel
