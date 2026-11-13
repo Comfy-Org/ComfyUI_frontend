@@ -9,6 +9,10 @@ import type {
   MissingPackGroup,
   SwapNodeGroup
 } from '@/platform/workflowErrors/panel/useErrorGroups'
+import {
+  buildAllErrorContext,
+  buildGroupErrorContext
+} from '@/platform/workflowErrors/panel/buildAgentErrorContext'
 import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
@@ -156,6 +160,12 @@ export function useErrorOverlayState() {
     allErrorGroups.value.some((group) => group.type === 'missing_node')
   )
 
+  const downloadableMissingModelGroups = computed(() =>
+    allErrorGroups.value.every((group) => group.type === 'missing_model')
+      ? missingModelGroups.value
+      : []
+  )
+
   const totalErrorCount = computed(() =>
     allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
   )
@@ -205,6 +215,24 @@ export function useErrorOverlayState() {
     allErrorGroups.value.map((group) => group.groupKey)
   )
 
+  const askAgentContext = computed(() => {
+    const groups = allErrorGroups.value
+    if (groups.length === 0) return undefined
+    const context = {
+      missingPackGroups: missingPackGroups.value,
+      swapNodeGroups: swapNodeGroups.value,
+      missingModelGroups: missingModelGroups.value,
+      missingMediaGroups: missingMediaGroups.value
+    }
+    const base =
+      groups.length === 1
+        ? buildGroupErrorContext(groups[0], context)
+        : buildAllErrorContext(groups, context, {
+            label: t('agent.errorContext.allLabel')
+          })
+    return overlayTitle.value ? { ...base, label: overlayTitle.value } : base
+  })
+
   const isVisible = computed(
     () =>
       isErrorOverlayOpen.value &&
@@ -216,9 +244,11 @@ export function useErrorOverlayState() {
   return {
     hasError,
     hasMissingNodes,
+    downloadableMissingModelGroups,
     isVisible,
     overlayMessage,
     overlayTitle,
-    overlayGroupKeys
+    overlayGroupKeys,
+    askAgentContext
   }
 }

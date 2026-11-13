@@ -5,9 +5,11 @@ import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 
 import BillingAutoTopUpCard from './BillingAutoTopUpCard.vue'
 import BillingAutoTopUpMemberBlock from './BillingAutoTopUpMemberBlock.vue'
+import type { AutoTopUpMemberView } from './autoTopUpMemberView'
 import {
   autoTopUpCardCopy,
-  autoTopUpMemberBlockCopy
+  autoTopUpMemberBlockCopy,
+  memberView
 } from './__fixtures__/autoTopUpCopy'
 import { loaded, notConfiguredSettings } from './__fixtures__/autoTopUpSettings'
 
@@ -86,13 +88,36 @@ export const NoDefaultPaymentMethod: Story = {
   args: { state: OFF, offView: 'noDefaultPaymentMethod' }
 }
 
-export const MemberBlock: Story = {
+const memberBlock = (view?: AutoTopUpMemberView): Story => ({
   render: () => ({
     components: { BillingAutoTopUpMemberBlock },
-    setup: () => ({ copy: autoTopUpMemberBlockCopy }),
-    template: '<BillingAutoTopUpMemberBlock :copy="copy" />'
+    setup: () => ({ copy: autoTopUpMemberBlockCopy, view }),
+    template:
+      '<BillingAutoTopUpMemberBlock :copy="copy" :view="view" locale="en" />'
   })
-}
+})
+
+export const MemberBlock = memberBlock()
+
+export const MemberOn = memberBlock(memberView())
+
+export const MemberOff = memberBlock(memberView({ status: 'off' }))
+
+export const MemberLimitReached = memberBlock(
+  memberView({ status: 'paused_by_budget' })
+)
+
+export const MemberMaximumReached = memberBlock(
+  memberView({ status: 'paused_by_budget', monthly_budget_is_default: true })
+)
+
+export const MemberFailed = memberBlock(memberView({ status: 'failed' }))
+
+export const MemberTurnedOff = memberBlock(
+  memberView({ status: 'failed', disabled_reason: 'consecutive_declines' })
+)
+
+export const MemberOnHold = memberBlock(memberView({ status: 'on_hold' }))
 
 export const PlatformRestyled: Story = {
   args: {

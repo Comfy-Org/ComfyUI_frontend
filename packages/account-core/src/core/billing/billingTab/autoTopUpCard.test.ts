@@ -1,12 +1,17 @@
-import type { AutoReloadSettings } from '@comfyorg/ingest-types'
+import type { AutoReloadSettings, AutoTopUpSetup } from '@comfyorg/ingest-types'
 import { describe, expect, it } from 'vitest'
 
 import {
   autoTopUpOffView,
+  canSetUpAutoTopUp,
   deriveAutoTopUpCard,
-  deriveAutoTopUpSection
+  deriveAutoTopUpSection,
+  isAutoTopUpNotAvailable
 } from './autoTopUpCard'
-import type { AutoTopUpSectionFacts } from './autoTopUpCard'
+import type {
+  AutoTopUpSectionFacts,
+  AutoTopUpSetupFacts
+} from './autoTopUpCard'
 
 const settings: AutoReloadSettings = {
   card_expiry: null,
@@ -128,4 +133,74 @@ describe('autoTopUpOffView', () => {
       )
     }
   )
+})
+
+describe('canSetUpAutoTopUp', () => {
+  const manager: AutoTopUpSetupFacts = {
+    autoTopUpEnabled: true,
+    canManageAutoTopUp: true,
+    setup: { state: 'ready' }
+  }
+
+  it.for<{ name: string; facts: Partial<AutoTopUpSetupFacts>; can: boolean }>([
+    { name: 'a manager with a ready setup', facts: {}, can: true },
+    {
+      name: 'a setup frozen for a missing default card',
+      facts: {
+        setup: { state: 'frozen', reason: 'default_payment_method_missing' }
+      },
+      can: true
+    },
+    {
+      name: 'auto top-up not served',
+      facts: { autoTopUpEnabled: false },
+      can: false
+    },
+    {
+      name: 'no can_manage_auto_top_up',
+      facts: { canManageAutoTopUp: false },
+      can: false
+    },
+    { name: 'no served setup', facts: { setup: null }, can: false },
+    {
+      name: 'an unavailable setup',
+      facts: { setup: { state: 'unavailable' } },
+      can: false
+    },
+    {
+      name: 'a setup frozen for past due',
+      facts: { setup: { state: 'frozen', reason: 'payment_past_due' } },
+      can: false
+    },
+    {
+      name: 'a setup frozen for paused billing',
+      facts: { setup: { state: 'frozen', reason: 'billing_paused' } },
+      can: false
+    }
+  ])('$name: $can', ({ facts, can }) => {
+    expect(canSetUpAutoTopUp({ ...manager, ...facts })).toBe(can)
+  })
+})
+
+describe('isAutoTopUpNotAvailable', () => {
+  it.for<{ setup: AutoTopUpSetup | null; hidden: boolean }>([
+    { setup: null, hidden: false },
+    { setup: { state: 'ready' }, hidden: false },
+    {
+      setup: { state: 'frozen', reason: 'default_payment_method_missing' },
+      hidden: false
+    },
+    {
+      setup: { state: 'frozen', reason: 'billing_payment_pending' },
+      hidden: false
+    },
+    { setup: { state: 'frozen', reason: 'billing_paused' }, hidden: true },
+    { setup: { state: 'frozen', reason: 'payment_past_due' }, hidden: true },
+    {
+      setup: { state: 'unavailable', reason: 'billing_rail_not_supported' },
+      hidden: true
+    }
+  ])('reads setup $setup as hidden: $hidden', ({ setup, hidden }) => {
+    expect(isAutoTopUpNotAvailable(setup)).toBe(hidden)
+  })
 })

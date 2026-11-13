@@ -7,6 +7,8 @@ import type {
   AddCreditsFacts,
   AddCreditsRefusal,
   AddCreditsState,
+  AutoTopUpActivation,
+  AutoTopUpActivationOutcome,
   TopupCommand
 } from '@comfyorg/account-core/billing'
 import {
@@ -15,6 +17,8 @@ import {
   startAddCredits,
   viewAddCreditsAmount
 } from '@comfyorg/account-core/billing'
+
+import type { AddCreditsAutoTopUpRequest } from './useAddCreditsAutoTopUp'
 
 export type AddCreditsQuoteResult =
   | { readonly status: 'ok'; readonly credits: number }
@@ -36,13 +40,25 @@ export interface AddCreditsPorts {
     amountCents: number,
     signal: AbortSignal
   ) => Promise<AddCreditsQuoteResult>
+  /** `autoTopUp` turns auto top-up on once this purchase is paid. */
   readonly createCheckout: (
     amountCents: number,
-    signal: AbortSignal
+    signal: AbortSignal,
+    autoTopUp?: AutoTopUpActivation
   ) => Promise<AddCreditsCheckoutResult>
   readonly reserveTab: () => AddCreditsCheckoutTab | null
-  /** Calls `landed` once the server reports the top-up went through; returns its stop. */
-  readonly watchPayment: (landed: () => void) => () => void
+  /** Calls `landed` once the server reports the top-up went through, with the activation outcome when one was requested; returns its stop. */
+  readonly watchPayment: (
+    landed: (activation?: AutoTopUpActivationOutcome) => void
+  ) => () => void
+  /** True when a checkout URL works once: none is created without a reserved tab, and the blocked step requests one again in its own click. */
+  readonly singleUseCheckout?: boolean
+  /** True when `createCheckout` sends `autoTopUp` and `watchPayment` reports its outcome; the checkbox shows only then. */
+  readonly activatesAutoTopUp?: boolean
+  /** After a top-up lands, Platform's Turn on auto top-up link when the served facts offer it, else null. */
+  readonly autoTopUpSetupUrl?: () => Promise<string | null>
+  /** False once the host no longer owns the watched checkout; a landing still reading its setup link is then dropped. */
+  readonly ownsCheckout?: () => boolean
 }
 
 export type AddCreditsQuote =
@@ -54,6 +70,7 @@ export interface AddCreditsDialogOptions {
   readonly ports: AddCreditsPorts
   readonly facts: MaybeRefOrGetter<AddCreditsFacts>
   readonly initialAmount: AddCreditsAmount
+  readonly autoTopUp?: MaybeRefOrGetter<AddCreditsAutoTopUpRequest>
   readonly onLanded?: () => void
 }
 
@@ -98,6 +115,17 @@ export function reserveBrowserTab(): AddCreditsCheckoutTab | null {
   }
 }
 
+function landedEvent(
+  setupUrl: string | null,
+  activation: AutoTopUpActivationOutcome | undefined
+): AddCreditsEvent {
+  return {
+    type: 'payment_landed',
+    ...(setupUrl === null ? {} : { autoTopUpSetupUrl: setupUrl }),
+    ...(activation === undefined ? {} : { activation })
+  }
+}
+
 export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   const { ports } = options
   const state = shallowRef<AddCreditsState>(
@@ -107,11 +135,21 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     state.value = reduceAddCredits(state.value, event)
   }
 
-  const amountView = computed(() =>
+  const autoTopUpRequest = (): AddCreditsAutoTopUpRequest =>
+    toValue(options.autoTopUp) ?? { kind: 'not_offered' }
+
+  const pickedView = computed(() =>
     state.value.step === 'amount' || state.value.step === 'opening'
       ? viewAddCreditsAmount(state.value, toValue(options.facts))
       : undefined
   )
+
+  const amountView = computed(() => {
+    const view = pickedView.value
+    return view && autoTopUpRequest().kind === 'invalid'
+      ? { ...view, canContinue: false }
+      : view
+  })
 
   const quotedCents = computed(() =>
     amountView.value
@@ -158,18 +196,49 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
 
   let checkoutScope: AbortController | undefined
   let stopWatch: (() => void) | undefined
+  let disposed = false
+  let acceptedRequest: AddCreditsAutoTopUpRequest = { kind: 'not_offered' }
 
   function armPaymentWatch() {
     if (stopWatch) return
-    stopWatch = ports.watchPayment(() => {
+    stopWatch = ports.watchPayment((activation) => {
       stopWatch?.()
-      dispatch({ type: 'payment_landed' })
-      options.onLanded?.()
+      stopWatch = undefined
+      void land(activation)
     })
   }
 
-  async function openCheckout(amountCents: number) {
+  async function setupUrl(): Promise<string | null> {
+    return ports.autoTopUpSetupUrl
+      ? ports.autoTopUpSetupUrl().catch(() => null)
+      : null
+  }
+
+  function setupUrlAfterPaying(
+    activation: AutoTopUpActivationOutcome | undefined
+  ): Promise<string | null> {
+    const asks =
+      activation?.status === 'failed' || acceptedRequest.kind === 'not_offered'
+    return asks ? setupUrl() : Promise.resolve(null)
+  }
+
+  async function land(activation?: AutoTopUpActivationOutcome) {
+    const url =
+      activation?.status === 'on' ? null : await setupUrlAfterPaying(activation)
+    if (disposed || ports.ownsCheckout?.() === false) return
+    dispatch(landedEvent(url, activation))
+    if (state.value.step === 'landed') options.onLanded?.()
+  }
+
+  async function openCheckout(
+    amountCents: number,
+    request: AddCreditsAutoTopUpRequest
+  ) {
     const tab = ports.reserveTab()
+    if (tab === null && ports.singleUseCheckout) {
+      dispatch({ type: 'tab_blocked', amountCents })
+      return
+    }
     dispatch({
       type: 'checkout_requested',
       amountCents,
@@ -178,7 +247,11 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     const scope = new AbortController()
     checkoutScope = scope
     const session = await ports
-      .createCheckout(amountCents, scope.signal)
+      .createCheckout(
+        amountCents,
+        scope.signal,
+        request.kind === 'checked' ? request.activation : undefined
+      )
       .catch((): AddCreditsCheckoutResult => ({
         status: 'error',
         refusal: { kind: 'checkout_failed' }
@@ -201,17 +274,23 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   function continueToCheckout() {
     const view = amountView.value
     if (!view?.canContinue || view.amountCents === undefined) return
-    return openCheckout(view.amountCents)
+    acceptedRequest = autoTopUpRequest()
+    return openCheckout(view.amountCents, acceptedRequest)
   }
 
   function reopenCheckout() {
     const current = state.value
-    if (current.step !== 'checkout_opened' || !toValue(options.facts).canTopUp)
+    if (
+      (current.step !== 'checkout_opened' &&
+        current.step !== 'checkout_blocked') ||
+      !toValue(options.facts).canTopUp
+    )
       return
-    return openCheckout(current.amountCents)
+    return openCheckout(current.amountCents, acceptedRequest)
   }
 
   onScopeDispose(() => {
+    disposed = true
     quoteScope?.abort()
     checkoutScope?.abort()
     stopWatch?.()
@@ -220,6 +299,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   return {
     state,
     amountView,
+    pickedCents: computed(() => pickedView.value?.amountCents),
     quote,
     pickPreset: (cents: number) => dispatch({ type: 'preset_picked', cents }),
     typeAmount: (input: string) => dispatch({ type: 'amount_typed', input }),

@@ -100,6 +100,25 @@ describe('createCapabilitiesReader', () => {
     }
   )
 
+  it.for([
+    { wire: { billing_web_checkout_ui: 'full_page' }, expected: 'full_page' },
+    { wire: { billing_web_checkout_ui: 'embedded' }, expected: 'embedded' },
+    { wire: { billing_web_checkout_ui: 'sideways' }, expected: undefined },
+    { wire: {}, expected: undefined }
+  ])(
+    'serves the checkout UI variant $expected as received',
+    async ({ wire, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([httpOk(capabilitiesBody(wire))])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      expect(reader.getSnapshot()?.billingWebCheckoutUi).toBe(expected)
+    }
+  )
+
   it('decodes the server answer and reports the resolved scope', async () => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(capabilitiesBody())])
@@ -196,6 +215,82 @@ describe('createCapabilitiesReader', () => {
   )
 
   it.for([
+    {
+      case: 'a served view',
+      served: {
+        status: 'paused_by_budget',
+        threshold_credits: 1000,
+        target_credits: 6275,
+        cycle_resets_at: '2026-11-28T00:00:00Z',
+        monthly_budget_is_default: true
+      }
+    },
+    {
+      case: 'a view turned off by declines',
+      served: {
+        status: 'failed',
+        threshold_credits: null,
+        target_credits: null,
+        cycle_resets_at: null,
+        monthly_budget_is_default: false,
+        disabled_reason: 'consecutive_declines'
+      }
+    },
+    { case: 'an omitted view', served: undefined }
+  ] as const)(
+    'keeps auto_top_up_member_view for $case with credits as numbers',
+    async ({ served }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined ? {} : { auto_top_up_member_view: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.autoTopUpMemberView).toEqual(served)
+    }
+  )
+
+  it.for([
+    {
+      case: 'an unknown status',
+      served: { status: 'snoozed', monthly_budget_is_default: false }
+    },
+    {
+      case: 'fractional credits',
+      served: {
+        status: 'on',
+        threshold_credits: 1.5,
+        target_credits: 6000,
+        cycle_resets_at: null,
+        monthly_budget_is_default: false
+      }
+    }
+  ])(
+    'drops a malformed auto_top_up_member_view for $case and keeps the read',
+    async ({ served }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(capabilitiesBody({ auto_top_up_member_view: served }))
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.autoTopUpMemberView).toBeUndefined()
+    }
+  )
+
+  it.for([
     { served: true, expected: true },
     { served: false, expected: false },
     { served: undefined, expected: undefined }
@@ -217,6 +312,33 @@ describe('createCapabilitiesReader', () => {
       expect(result.status).toBe('ok')
       if (result.status !== 'ok') return
       expect(result.value.hasParkedBillingOperation).toBe(expected)
+    }
+  )
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: undefined }
+  ])(
+    'keeps cancel_takes_effect_immediately $served instead of dropping it',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk(
+          capabilitiesBody(
+            served === undefined
+              ? {}
+              : { cancel_takes_effect_immediately: served }
+          )
+        )
+      ])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.cancelTakesEffectImmediately).toBe(expected)
     }
   )
 
