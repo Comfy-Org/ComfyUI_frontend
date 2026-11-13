@@ -22,12 +22,7 @@ import { checkedChoice } from './checkedArguments'
 import type { EditRunner } from './editRunner'
 import type { SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
-import {
-  assertNotSubgraphNode,
-  assertRemovalKept,
-  assertReorderKept,
-  assertSlotEditKept
-} from './rebuiltSlots'
+import { assertNotSubgraphNode } from './refusedEdits'
 import {
   assertFitsNode,
   checkedSlotName,
@@ -94,7 +89,7 @@ export function createSlotEdits(
       const checked = checkedSlotPatch(patch, locator.side, member)
       const live = locator.locate()
       if (!live) return false
-      assertSlotEditKept(member, live, checked.fields)
+      assertNotSubgraphNode(member, live.node)
       assertFitsNode(member, live.node, live.side, {
         name: checked.name,
         widget: checked.widget,
@@ -145,7 +140,7 @@ export function createSlotEdits(
     removeSlot(slot) {
       const live = slotLocatorOf(slots, 'removeSlot', slot).locate()
       if (!live) return false
-      assertRemovalKept('removeSlot', live)
+      assertNotSubgraphNode('removeSlot', live.node)
       runner.apply(live.graph, () => {
         if (live.side === 'input') live.node.removeInput(live.index)
         else live.node.removeOutput(live.index)
@@ -166,7 +161,6 @@ export function createSlotEdits(
         return runner.apply(graph, () => reorderSubgraphNodeInputs(host, moved))
       }
       assertNotSubgraphNode(member, host)
-      assertReorderKept(member, host, slotSide, moved)
       return runner.apply(graph, () => {
         const reordered =
           slotSide === 'input'

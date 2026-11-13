@@ -180,11 +180,11 @@ export interface Edits {
     type: SlotType,
     options?: SlotOptions
   ): OutputSlotHandle | undefined
-  /** Removes a slot and its links; not one its type declares. False if it is gone. */
+  /** Removes a slot and its links; not a subgraph node's. False if it is gone. */
   removeSlot(slot: InputSlotHandle | OutputSlotHandle): boolean
   /**
    * Puts a node's inputs or outputs in the order `names` gives, with their links.
-   * Names each slot once, and leaves every slot the node's type declares in place.
+   * Names each slot once. A load puts slots the node's type makes back in its order.
    */
   reorderSlots(
     node: NodeHandle,
@@ -231,7 +231,7 @@ export interface NodePatch {
   readonly shape?: NodeShape
   /** Saved properties, by name. Each value is stored as the workflow saves it. */
   readonly properties?: Readonly<Record<string, unknown>>
-  /** Not saved: a load gives the type's own. `false` throws for a backend type, whose values it would lose. */
+  /** Not saved: a load gives the type's own. `false` throws on a Note, MarkdownNote or PrimitiveNode. */
   readonly serializeWidgets?: boolean
   /** The top-left corner of the node's body, in graph space. */
   readonly position?: Point
@@ -379,8 +379,8 @@ export type SlotDirection = 'none' | 'up' | 'down' | 'left' | 'right' | 'center'
 export type SlotType = string | readonly string[]
 
 /**
- * What `updateSlot` changes. A slot a backend type declares keeps its name, type, shape,
- * localizedName and widget, which a load rebuilds; a subgraph node's slots take no patch.
+ * What `updateSlot` changes; a subgraph node's slots take no patch. A load gives a slot its type
+ * makes its name, type, shape, localizedName, widget and place back, and brings a removed one back.
  */
 export interface SlotPatch {
   readonly name?: string

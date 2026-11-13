@@ -184,8 +184,8 @@ follow-up for a command interface.
     type given as several names is stored as the host compares it, joined by
     commas. `null` or `undefined` clears a field that has a default (label,
     localized name, colors, shape, position, direction), as the stored V2 packs
-    wrote it. Decisions 24 and 26 limit which slots take which
-    fields.
+    wrote it. Decision 24 says what a load
+    gives back, and decision 26 refuses a subgraph node's slots.
 17. `addInput` and `addOutput` add a slot after the others through
     `node.addInput` and `node.addOutput`, with the same name rule; `removeSlot`
     removes one through `removeInput` and `removeOutput`, which drop its links
@@ -198,7 +198,7 @@ follow-up for a command interface.
     the saved `links` array holds the same links, in an order that may differ.
     Floating links (links detached onto a reroute) of the reordered slots move
     with them. If the store refuses, nothing moves and
-    the call answers `false`. Decisions 24 and 26 limit which orders it takes.
+    the call answers `false`. Decision 24 says what a load gives back.
 19. `connect(output, input)` links two slots of one graph through
     `LGraphNode.connect`, so the host's type check and the nodes' connection
     hooks apply; it gives the new link, or `undefined` if the host refused.
@@ -249,42 +249,71 @@ follow-up for a command interface.
     added or removed after that changes nothing on screen, and a function
     badge is not called again (see "Core limitations").
 
-### Edits a load would not keep
+### Edits a load does not keep
 
 An undo or redo is a load of a saved state (ADR-EXTENSIONS-NODE-API-0070
-decision 10), so an edit is one undo step only if the saved workflow holds
-what it changed and a load gives it back. Three kinds of edit did not, and
-are refused before anything changes:
+decision 10). The API is not stricter than the host it wraps: an edit the
+legacy API and the editor apply is applied, as one undo step, even where the
+next load gives back part of what it changed. This is the owner's decision
+(the default the review recommended; refusing such edits threw in the stored
+conversions of at least nine packs, about 45 call sites, and the class of
+edits a load undoes did not close as more node families were checked). What a
+load gives back is stated in the contract instead, and a refusal is kept only
+where an edit makes a later load erase content the pack does not own, or
+leaves the graph feeding execution the wrong data.
 
-24. A slot a backend node type declares. The host rebuilds such a node from
-    its type on every load (`registerNodeDef`'s `configure` in
-    `litegraphService.ts`): each declared input, matched by name, takes its
-    `name`, `type`, `shape`, `localized_name` and `widget` from the type, in
-    the type's order, with any other input after it; each declared output,
-    matched by position, takes the same fields. A rename of a declared input
-    came back as the declared input plus a second input under the new name, an
-    output's new type came back as the old type with its links still of the
-    new one, and a removed or reordered declared slot came back. So
-    `updateSlot` refuses those fields on a declared slot, `removeSlot` refuses
-    a declared slot, and `reorderSlots` refuses an order that moves one. A
-    label, colors, a position and a direction are saved and kept, and so is
-    every edit of a slot a pack added. A slot is declared if the node's class
-    carries the host's `ComfyNodeDefImpl` and the slot is one of its inputs
-    by name or one of its outputs by position.
-25. Widget saving on a backend type. Such a type turns `serialize_widgets` on
-    in its constructor, and the flag is not saved, so after `false` a load
-    turned it on again with no widget values to restore: every widget went
-    back to its default. `serializeWidgets: false` is refused on a node of a
-    backend type; `true`, and either value on another type, is applied and is
-    an undo step as before, but a load gives the type's own value again, so a
-    pack sets it where the node is created.
+24. Slots a node's type makes. A load builds each node with its type's
+    constructor and then merges the saved node into it.
+    - A backend type (`registerNodeDef` in `litegraphService.ts`) rebuilds
+      each input its constructor made, matched by name, with that input's
+      `name`, `type`, `shape`, `localized_name` and `widget`, in the
+      constructor's order, and any other saved input after them; each output
+      its constructor made, matched by position, takes back the same fields.
+      So after a load a renamed declared input is the declared input plus a
+      second input under the new name, a retyped, reshaped or retranslated
+      declared slot has the type's value again, a removed declared slot is
+      back, a reordered one is in the type's order again, and a declared input
+      that stopped being a widget's socket is one again.
+    - Any other type (a `comfy.defs.define` type, one a legacy extension
+      registers) gets the slots its constructor makes, with the saved slots
+      merged in by position, and no list is shortened: a slot removed from the
+      constructor's slots comes back, after the remaining ones, so names can
+      repeat.
+    - A label, colors, a position on an input that is not a widget's socket,
+      and a direction are saved and kept, and so is every edit of a slot a
+      pack added (a backend type keeps added inputs in their saved order).
+
+    `updateSlot`, `removeSlot` and `reorderSlots` apply these edits, return
+    `true`, and make an undo step; the `SlotPatch` and `Edits` JSDoc state
+    what a load gives back. The tests in `loadLimits.test.ts` record it, and
+    fail when the host starts keeping such an edit. A pack that needs one to
+    last applies it again where the node is created or configured. The
+    ticket draft for the host is in "Core limitations".
+
+25. Widget saving. A backend type, a Note, a MarkdownNote and a PrimitiveNode
+    turn `serialize_widgets` on in their constructors, and the flag is not
+    saved, so after `false` the next load turns saving on again with no
+    widget values to restore: every widget goes back to its default.
+    `serializeWidgets: false` is applied as the host applies it, except on a
+    Note, a MarkdownNote or a PrimitiveNode, where it is refused: their
+    widgets hold only what the user typed (a note's text, a primitive's
+    value) and no pack owns those types, so a pack would erase the user's
+    content at the next undo, redo or reload. Of the six stored V2 calls that
+    turn widget saving off (Crystools' debugger, three in rgthree, ToggleMaster,
+    DebugNode), none targets those three types; each targets the pack's own
+    type, where the loss is the pack's to accept.
 26. A subgraph node's slots. They are its subgraph's inputs and outputs, which
     execution maps by position; an edit to the node's own list leaves it
-    disagreeing with its subgraph, and a source then feeds another input.
-    `reorderSlots` on a subgraph node's inputs goes through the host's own
+    disagreeing with its subgraph, and a source then feeds another input. That
+    corrupts what runs, so it stays refused even though the legacy API allowed
+    it. `reorderSlots` on a subgraph node's inputs goes through the host's own
     `reorderSubgraphInputs`, which reorders the subgraph's inputs and the
-    node's together. Every other slot edit on a subgraph node is refused; a
-    pack edits the subgraph's inputs and outputs in the subgraph.
+    node's together. Every
+    other slot edit on a subgraph node is refused; a pack edits the subgraph's
+    inputs and outputs in the subgraph. No stored V2 conversion reaches it: a
+    pack extends a type by name, and a subgraph node's type is its
+    subgraph's id. The host's reorder leaves other instances of the same
+    subgraph in the old order ("Core limitations").
 
 ### Graph intents and the command future
 
@@ -333,16 +362,16 @@ document is no longer open.
 | `updateNode` `collapsed`                 | `LGraphNode.collapse(true)`: flag and a `set_node_field` graph intent                                                 | One step                                                               | `false`                                |
 | `updateNode` `color`, `bgColor`, `shape` | `LGraphNode` setters: node state store                                                                                | One step                                                               | `false`                                |
 | `updateNode` `properties`                | `LGraphNode.setProperty` per name: `onPropertyChanged`, property widgets                                              | One step                                                               | `false`                                |
-| `updateNode` `serializeWidgets`          | `LGraphNode.serialize_widgets`; `false` refused on a backend type (decision 25)                                       | One step; a load gives the type's own value                            | `false`                                |
+| `updateNode` `serializeWidgets`          | `LGraphNode.serialize_widgets`; `false` refused on a Note, MarkdownNote or PrimitiveNode (decision 25)                | One step; a load gives the type's own value                            | `false`                                |
 | `updateNode` `position`                  | `LGraphNode.pos` setter: a `moveNode` layout operation                                                                | One step                                                               | `false`                                |
 | `updateNode` `size`, `sizeConstraints`   | `LGraphNode.setSize`: a `resizeNode` layout operation, then `onResize`                                                | One step                                                               | `false`                                |
 | `updateNode` `resizable`                 | `LGraphNode.resizable` (node state store); reapplied after pin changes                                                | No step: not saved                                                     | `false`                                |
 | `updateNode` with several fields         | All of the above in one transaction                                                                                   | One step for the patch                                                 | `false`                                |
 | `removeNode`                             | `LGraph.remove`: links, stores, selection, `node:removed`, `remove_node` graph intent                                 | One step                                                               | `false`                                |
 | `addNode`                                | `LiteGraph.createNode`, then `LGraph.add`: id, stores, layout, `onNodeAdded`, `add_node` graph intent                 | One step                                                               | `undefined`, nothing added             |
-| `updateSlot`                             | The slot's own fields; `setOutputDataType` for an output's type. Refused per decisions 24 and 26                      | One step                                                               | `false`                                |
+| `updateSlot`                             | The slot's own fields; `setOutputDataType` for an output's type; refused on a subgraph node (decision 26)             | One step                                                               | `false`                                |
 | `addInput`, `addOutput`                  | `LGraphNode.addInput`, `addOutput`; refused on a subgraph node                                                        | One step                                                               | `undefined`, nothing added             |
-| `removeSlot`                             | `LGraphNode.removeInput`, `removeOutput`; refused for a declared slot or a subgraph node's                            | One step                                                               | `false`                                |
+| `removeSlot`                             | `LGraphNode.removeInput`, `removeOutput`; refused on a subgraph node                                                  | One step                                                               | `false`                                |
 | `reorderSlots`                           | Inputs: `replaceNodeInputs`, or `reorderSubgraphInputs` on a subgraph node; outputs: `updateEndpoints`, then the list | One step; `false` if the link store refuses, slots and links unchanged | `false`                                |
 | `connect`                                | `LGraphNode.connect`: the type check, `onConnectInput`, `onConnectionsChange`, a `connect` graph intent               | One step; `undefined` if the host refuses                              | `undefined`                            |
 | `disconnect`                             | `LGraphNode.disconnectInput`, `disconnectOutput`: `onConnectionsChange`, a `disconnect` graph intent                  | One step; `false` and no step for a slot with no link                  | `false`                                |
@@ -448,6 +477,27 @@ ADR-EXTENSIONS-NODE-API-0070.
 
 ## Core limitations
 
+- **A load gives back slots a type makes.** `registerNodeDef`'s `configure`
+  rebuilds a backend node's declared slots from its definition, and
+  `LGraphNode.configure` merges saved slots into the constructor's slots by
+  position without shortening the lists (decision 24). Ticket draft:
+  _Title:_ "A load undoes edits to the slots a node's type makes". _Reproduction:_
+  rename `KSampler`'s `model` input (`node.inputs[0].name = 'mdl'`), save and
+  load: the node has `model` unlinked and an extra `mdl` input with the link;
+  or register a type whose constructor adds inputs `a` and `b`, add a node,
+  `node.removeInput(0)`, `graph.configure(graph.serialize())`: the node has
+  inputs `b`, `b`. _Direction:_ let the saved slot list be the node's slot list
+  (shorten to the saved length, keep a saved slot's name, type, shape and
+  order), and match a backend type's declared slots to it by a slot id rather
+  than by name or position.
+- **Reordering one instance of a subgraph.** `reorderSubgraphInputs` reorders
+  the subgraph's inputs and the one node it is given; another node of the same
+  subgraph keeps the old order, so its links feed other inputs. Ticket draft:
+  _Title:_ "Reordering a subgraph's inputs from one instance leaves its other
+  instances in the old order". _Reproduction:_ place a subgraph twice, call
+  `reorderSubgraphInputs` on one instance with a new order: the other
+  instance's inputs keep the old order while the subgraph's change.
+  _Direction:_ reorder every instance's inputs in the same call.
 - **Slot identity across undo.** Undo and redo rebuild slots, and the host
   has no slot id to find them by, so slot handles do not survive them (decision
   14). Ticket draft: _Title:_ "Give node slots an id that survives

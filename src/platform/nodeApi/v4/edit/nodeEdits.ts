@@ -2,7 +2,7 @@ import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { LiveNode, NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { EditRunner } from './editRunner'
 import { checkedNodePatch } from './nodePatch'
-import { isBackendTypeNode } from './rebuiltSlots'
+import { assertWidgetSavingKept } from './refusedEdits'
 
 /** The node edits, taking anything a pack passes and checking it. */
 export interface NodeEdits {
@@ -20,13 +20,7 @@ export function createNodeEdits(
       const live = liveNodeOf(nodes, member, node)
       const { writes, stopsSavingWidgets } = checkedNodePatch(patch, member)
       if (!live) return false
-      if (stopsSavingWidgets && isBackendTypeNode(live.node)) {
-        throw invalidArgument(
-          member,
-          'a node whose type does not save its widget values, to stop saving them',
-          live.node.type
-        )
-      }
+      if (stopsSavingWidgets) assertWidgetSavingKept(member, live.node)
       return runner.apply(live.graph, () =>
         writes.map((write) => write(live.node)).every((kept) => kept !== false)
       )
