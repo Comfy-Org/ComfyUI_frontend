@@ -708,6 +708,10 @@ export interface WidgetCollection extends Iterable<WidgetHandle> {
   reorder(names: readonly string[]): void
   /** Moves one widget to `index`, clamped to the list. */
   move(name: string, index: number): void
+  /** Adds a widget whose element the pack fills. A name the node already has throws a `TypeError`. */
+  mount(def: MountDef): WidgetHandle | undefined
+  /** Adds a widget the pack draws on its own canvas. A name the node already has throws a `TypeError`. */
+  canvas(def: CanvasDef): CanvasHandle | undefined
 }
 
 /**
@@ -814,4 +818,84 @@ export interface WidgetOptions {
   readonly useGrouping?: boolean
   readonly showThumbnails?: boolean
   readonly showItemNavigators?: boolean
+}
+
+/** What a mounted or canvas widget holds: a string, or a plain object or array. */
+export type MountedData = string | object
+
+/** A widget whose element the pack fills with its own tools. */
+export interface MountDef {
+  readonly name: string
+  /** Called once, with the element mounted on the node. A throw is reported. */
+  render(container: HTMLElement, value: MountedValue): void
+  /** Called once when the host releases the widget. A throw is reported. */
+  destroy?(): void
+  /** The height the widget takes on its node, in graph units. Omit to share the free space. */
+  readonly height?: number
+  /** Defaults to `true`: a placeholder is drawn instead at low zoom. */
+  readonly hideOnZoom?: boolean
+  /** Whether the value is saved in the workflow. Defaults to whether `defaultValue` is given. */
+  readonly serialize?: boolean
+  /** Whether the value is sent in the prompt. Defaults to `serialize`. */
+  readonly sendToPrompt?: boolean
+  /** The value before one is set or loaded. */
+  readonly defaultValue?: MountedData
+}
+
+/** The value a mounted widget holds. */
+export interface MountedValue {
+  /** A frozen copy of the value. */
+  get(): MountedData | undefined
+  /** Commits a value as `WidgetHandle.setValue` does. */
+  set(value: MountedData): void
+  /** Runs when the value changes other than through `set`, as when a workflow loads. */
+  onChange(listener: (value: MountedData | undefined) => void): Unsubscribe
+}
+
+/** A widget the pack draws on a canvas element of its own. */
+export interface CanvasDef {
+  readonly name: string
+  /**
+   * Draws the widget, in CSS pixels. Called when the widget is mounted, when
+   * its element is resized, on `redraw()`, and when its value changes.
+   */
+  draw(
+    context: CanvasRenderingContext2D,
+    size: readonly [width: number, height: number],
+    theme: CanvasTheme,
+    value: MountedValue | undefined
+  ): void
+  /** The primary button went down. The node underneath does not see it. */
+  onPointerDown?(event: CanvasPointerEvent): void
+  /** The pointer moved, during a drag or not. */
+  onPointerMove?(event: CanvasPointerEvent): void
+  onPointerUp?(event: CanvasPointerEvent): void
+  /** The canvas's height in graph units. Omit to share the node's free space. */
+  readonly height?: number
+  /** As for `MountDef`. `draw` receives the value only when this is given. */
+  readonly defaultValue?: MountedData
+  readonly serialize?: boolean
+  readonly sendToPrompt?: boolean
+}
+
+export interface CanvasHandle {
+  readonly widget: WidgetHandle
+  /** Draws the canvas again now. Does nothing before it is mounted or after it is released. */
+  redraw(): void
+}
+
+/** A pointer event on a canvas widget, at the position `draw` uses. */
+export interface CanvasPointerEvent {
+  readonly x: number
+  readonly y: number
+  readonly event: PointerEvent
+}
+
+/** The theme's colors for a canvas widget, read again for every draw. */
+export interface CanvasTheme {
+  readonly surface: string
+  readonly surfaceHovered: string
+  readonly border: string
+  readonly text: string
+  readonly textSecondary: string
 }

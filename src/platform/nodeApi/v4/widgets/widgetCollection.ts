@@ -7,6 +7,7 @@ import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { DocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { savedCopier } from '@/platform/nodeApi/shared/savedCopy'
+import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { EditRunner } from '@/platform/nodeApi/v4/edit/editRunner'
 import type { LiveNode as LiveNodeOnGraph } from '@/platform/nodeApi/v4/nodeHandle'
 import type { WidgetsOf } from './widgetsOf'
@@ -14,6 +15,13 @@ import type {
   WidgetCollection,
   WidgetHandle
 } from '@/platform/nodeApi/v4/types'
+import { checkedCanvasDef } from './canvasWidget'
+import {
+  checkedMountDef,
+  createMountedWidget,
+  renderMounted
+} from './mountedWidget'
+import type { MountSpec } from './mountedWidget'
 import { checkedWidgetDef } from './widgetDef'
 import { createWidgetEdits } from './widgetEdits'
 import { createWidgetEvents } from './widgetEvents'
@@ -29,7 +37,13 @@ export function createWidgetCollections(
   const events = createWidgetEvents(copyOfSaved)
   const edits = createWidgetEdits(runner, events.asSetValue)
   const handleFor = createWidgetHandles(handles, { edits, events, copyOfSaved })
-  return (locate) => widgetCollection(locate, handleFor, edits)
+  return (locate) => widgetCollection(locate, { handleFor, edits, copyOfSaved })
+}
+
+interface CollectionServices {
+  readonly handleFor: WidgetHandleFor
+  readonly edits: WidgetEdits
+  readonly copyOfSaved: SavedCopier
 }
 
 interface LiveNode {
@@ -40,9 +54,9 @@ interface LiveNode {
 
 function widgetCollection(
   locate: () => LiveNodeOnGraph | undefined,
-  handleFor: WidgetHandleFor,
-  edits: WidgetEdits
+  services: CollectionServices
 ): WidgetCollection {
+  const { handleFor, edits } = services
   function live(): LiveNode | undefined {
     const found = locate()
     if (!found) return undefined
@@ -91,15 +105,20 @@ function widgetCollection(
     add(def: unknown) {
       const checked = checkedWidgetDef(def)
       return read(({ graph, node }) => {
-        if (node.widgets?.some(({ name }) => name === checked.name)) {
-          throw invalidArgument(
-            'add',
-            'a name no widget of the node has',
-            checked.name
-          )
-        }
+        refuseTakenName('add', node, checked.name)
         edits.addWidget(node, checked)
         return handleFor(graph, node, checked.name)
+      })
+    },
+    mount(def: unknown) {
+      const spec = checkedMountDef('mount', def)
+      return read((found) => mountOn(found, spec, services))
+    },
+    canvas(def: unknown) {
+      const { spec, redraw } = checkedCanvasDef(def)
+      return read((found) => {
+        const widget = mountOn(found, spec, services)
+        return widget && Object.freeze({ widget, redraw })
       })
     },
     remove(name: unknown) {
@@ -162,4 +181,23 @@ function moved(found: LiveNode, name: string, index: number): IBaseWidget[] {
 function unaddressable({ node, widgets }: LiveNode): IBaseWidget[] {
   const addressable = new Set<IBaseWidget>(widgets)
   return (node.widgets ?? []).filter((widget) => !addressable.has(widget))
+}
+
+function refuseTakenName(member: string, node: LGraphNode, name: string): void {
+  if (node.widgets?.some((widget) => widget.name === name)) {
+    throw invalidArgument(member, 'a name no widget of the node has', name)
+  }
+}
+
+function mountOn(
+  { graph, node }: LiveNode,
+  spec: MountSpec,
+  { handleFor, edits, copyOfSaved }: CollectionServices
+): WidgetHandle | undefined {
+  refuseTakenName(spec.member, node, spec.name)
+  const mounted = createMountedWidget(node, spec)
+  edits.addDomWidget(node, mounted.widget, spec.height)
+  const handle = handleFor(graph, node, spec.name)
+  renderMounted(spec, mounted, handle, copyOfSaved)
+  return handle
 }

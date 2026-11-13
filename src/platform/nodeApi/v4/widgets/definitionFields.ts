@@ -57,3 +57,10 @@ export function requiredSize(member: string, value: unknown): number {
   }
   return value
 }
+
+export function optionalSize(
+  member: string,
+  value: unknown
+): number | undefined {
+  return value === undefined ? value : requiredSize(member, value)
+}
