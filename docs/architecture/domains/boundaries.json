@@ -2100,6 +2100,7 @@
           "keybindings/public",
           "mask-editor/public",
           "painter/public",
+          "properties-panel/public",
           "remote-config/public",
           "server-facts/public",
           "webcam-capture/public",
@@ -2304,6 +2305,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "error-reporting/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
@@ -2660,6 +2662,7 @@
         "allow": [
           "account/public",
           "comfyui-api/public",
+          "error-reporting/public",
           "image-compare/public",
           "image-compositor/public",
           "image-crop/public",
