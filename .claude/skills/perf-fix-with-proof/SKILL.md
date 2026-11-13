@@ -118,7 +118,7 @@ Implement the fix. The `@perf` test from PR1 is now on main and will run automat
 
 Read the performance section of the PR report comment. The Sig column shows `z=…` for any row with a z-score and marks only regressions (`⚠️`), so read the number. The fix is proven when the target metric's Δ is negative and its z is below -2. Count metrics with a `minAbsDelta` in `REPORTED_METRICS` (`scripts/perf-report.ts`) also need an absolute change of at least that much; below it the row is neutral whatever its z.
 
-A count that never varied on main shows `—` instead of a z-score. Prove that fix from the per-sample values in the baseline and PR `perf-metrics` artifacts: every PR sample must be lower than every baseline sample. Neither the Baseline and PR columns (medians) nor a σ of 0 in `Historical variance` (spread of run means, not of samples within a run) is enough on its own.
+A count that never varied on main shows `—` instead of a z-score. Prove that fix from per-sample values: every PR sample in the PR `perf-metrics` artifact must be lower than every sample of that measurement in the baseline artifact and in the 15 `perf-data` baselines the report loads. Neither the Baseline and PR columns (medians) nor a σ of 0 in `Historical variance` (spread of run means, not of samples within a run) is enough on its own.
 
 If PR2's perf job ran before those baselines existed, rerun it once they do.
 
