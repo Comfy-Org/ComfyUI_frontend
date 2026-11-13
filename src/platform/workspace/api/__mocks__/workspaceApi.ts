@@ -37,6 +37,7 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
     clearDeployment: async () => {},
     startDeployment: async () => ({ deployment_id: '', status: 'starting' }),
     setDefaultDeployment: async () => {},
+    setEditorGpu: async () => null,
     clearDefaultDeployment: async () => {},
     getDeploymentCpuServer: async () => ({ cpu_server: 'none' }),
     getReleaseUnsupportedPacks: async () => ({ release_id: null, packs: [] }),
