@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest'
 
 import type { CurveData } from '@comfyorg/graph-model/curve'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  LGraph,
+  LGraphEventMode,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import {
+  addBackendNode,
+  addNodeOfType
+} from '@/platform/nodeApi/v4/execution/__fixtures__/promptGraphs'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { graphToPrompt } from './executionUtil'
 
@@ -166,4 +181,120 @@ describe('graphToPrompt _meta pack identity', () => {
       })
     }
   )
+})
+
+describe('graphToPrompt with the node API', () => {
+  function workflowWithoutResolvers(definePlainFrontendType: () => void) {
+    definePlainFrontendType()
+    const graph = new LGraph()
+    const source = addBackendNode(graph, 'Source', { outputs: ['text'] })
+    const direct = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+    direct.addWidget('number', 'seed', 42, () => undefined, {})
+    source.connect(0, direct, 0)
+
+    for (const mode of [LGraphEventMode.BYPASS, LGraphEventMode.NEVER]) {
+      const between = addBackendNode(graph, 'Between', {
+        inputs: ['in'],
+        outputs: ['out']
+      })
+      between.mode = mode
+      const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+      source.connect(0, between, 0)
+      between.connect(0, consumer, 0)
+    }
+
+    const legacyVirtual = addBackendNode(graph, 'LegacyReroute', {
+      inputs: ['in'],
+      outputs: ['out']
+    })
+    legacyVirtual.isVirtualNode = true
+    const plain = addNodeOfType(graph, 'Pack/Plain')
+    const afterVirtual = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+    source.connect(0, legacyVirtual, 0)
+    legacyVirtual.connect(0, plain, 0)
+    plain.connect(0, afterVirtual, 0)
+
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const inner = addBackendNode(subgraph, 'Inner', { inputs: ['x'] })
+    subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
+    const linked = createTestSubgraphNode(subgraph)
+    graph.add(linked)
+    source.connect(0, linked, 0)
+    const widgetFed = createTestSubgraphNode(subgraph)
+    graph.add(widgetFed)
+    const id = widgetId(graph.id, widgetFed.id, 'text')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'text',
+      value: 'typed',
+      options: {}
+    })
+    widgetFed.inputs[0].widgetId = id
+    return graph
+  }
+
+  it.for([
+    { packs: 'no pack resolves a type', resolves: false },
+    { packs: 'a pack resolves a type it does not use', resolves: true }
+  ])(
+    'builds the same prompt for a workflow with no resolved node when $packs',
+    async ({ resolves }) => {
+      const { comfy, host } = createComfyApi({ getGraph: () => null })
+      const graph = workflowWithoutResolvers(() => {
+        comfy.defs.define({
+          type: 'Pack/Plain',
+          execution: 'frontend',
+          inputs: [{ name: 'in', type: 'STRING' }],
+          outputs: [{ name: 'out', type: 'STRING' }]
+        })
+        if (resolves) {
+          comfy.defs.define({
+            type: 'Pack/Unused',
+            execution: 'frontend',
+            outputs: [{ name: 'out', type: 'STRING' }],
+            resolve: () => ({ 0: { literal: 'unused' } })
+          })
+        }
+      })
+
+      const { output: alone } = await graphToPrompt(graph)
+      const { output: withApi } = await graphToPrompt(graph, {
+        frontendExecution: host.frontendExecution
+      })
+
+      expect(Object.values(alone).map(({ inputs }) => inputs)).toEqual([
+        {},
+        { seed: 42, x: ['1', 0] },
+        { x: ['1', 0] },
+        {},
+        { x: ['1', 0] },
+        { x: 'typed' },
+        { x: ['1', 0] }
+      ])
+      expect(withApi).toEqual(alone)
+    }
+  )
+
+  it('builds the inputs a resolved node feeds from what its resolver answers', async () => {
+    const { comfy, host } = createComfyApi({ getGraph: () => null })
+    comfy.defs.define({
+      type: 'Pack/Constant',
+      execution: 'frontend',
+      outputs: [{ name: 'out', type: 'STRING' }],
+      resolve: () => ({ 0: { literal: 'answered' } })
+    })
+    const graph = new LGraph()
+    const constant = addNodeOfType(graph, 'Pack/Constant')
+    const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+    constant.connect(0, consumer, 0)
+
+    const { output } = await graphToPrompt(graph, {
+      frontendExecution: host.frontendExecution
+    })
+
+    expect(output[String(consumer.id)].inputs).toEqual({ x: 'answered' })
+  })
 })

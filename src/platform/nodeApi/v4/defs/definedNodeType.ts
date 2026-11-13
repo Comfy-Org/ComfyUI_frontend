@@ -19,6 +19,7 @@ import type {
   NodeDef,
   NodeDefBuilder,
   NodeDefinition,
+  Resolver,
   WidgetDef
 } from '@/platform/nodeApi/v4/types'
 import { checkedWidgetDef } from '@/platform/nodeApi/v4/widgets/widgetDef'
@@ -56,6 +57,7 @@ export interface CheckedDefinition {
   readonly presentation: CheckedPresentation
   readonly widgets: readonly WidgetDef[]
   readonly hooks: DefinitionHooks
+  readonly resolve: Resolver | undefined
 }
 
 const DEFINITION_FIELDS = {
@@ -73,7 +75,8 @@ const DEFINITION_FIELDS = {
   onRemoved: true,
   onSerialize: true,
   onConnectionsChanged: true,
-  onPropertyChanged: true
+  onPropertyChanged: true,
+  resolve: true
 } satisfies Record<keyof NodeDefinition, true>
 
 const EXECUTIONS = ['backend', 'frontend'] as const
@@ -87,6 +90,7 @@ export function checkedDefinition(given: unknown): CheckedDefinition {
     DEFINITION_FIELDS
   )
   const type = availableTypeName(definition.type)
+  const execution = checkedExecution(definition.execution)
   return {
     type,
     title: optionalText('title', definition.title) || type,
@@ -94,7 +98,7 @@ export function checkedDefinition(given: unknown): CheckedDefinition {
     description: optionalText('description', definition.description) ?? '',
     inputs: checkedSlots('inputs', definition.inputs),
     outputs: checkedSlots('outputs', definition.outputs),
-    execution: checkedExecution(definition.execution),
+    execution,
     presentation: checkedPresentation(definition.presentation),
     widgets: checkedWidgets(definition.widgets),
     hooks: {
@@ -110,7 +114,11 @@ export function checkedDefinition(given: unknown): CheckedDefinition {
         'onPropertyChanged',
         definition.onPropertyChanged
       )
-    }
+    },
+    resolve: checkedResolver(
+      optionalHook('resolve', definition.resolve),
+      execution
+    )
   }
 }
 
@@ -196,6 +204,20 @@ function optionalHook<K extends keyof DefinitionHooks>(
   hook: unknown
 ): DefinitionHooks[K] {
   return optionalCallback('define', name, hook) as DefinitionHooks[K]
+}
+
+function checkedResolver(
+  resolver: Resolver | undefined,
+  execution: CheckedDefinition['execution']
+): Resolver | undefined {
+  if (resolver && execution !== 'frontend') {
+    throw invalidArgument(
+      'define',
+      "a resolve only with execution: 'frontend'",
+      execution
+    )
+  }
+  return resolver
 }
 
 function optionalText(field: string, value: unknown): string | undefined {

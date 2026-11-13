@@ -1777,7 +1777,8 @@ export class ComfyApp implements IComfyApp {
 
   async graphToPrompt(graph = this.rootGraph) {
     return graphToPrompt(graph, {
-      sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
+      sortNodes: useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave'),
+      frontendExecution: useComfyApiStore().frontendExecution
     })
   }
 

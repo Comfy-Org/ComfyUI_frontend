@@ -3,13 +3,11 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 /** A frozen copy of `value` as a workflow would save it, or `undefined` if it cannot be saved. */
 export type SavedCopier = <T>(member: string, value: T) => T | undefined
 
-type SavedValue<T> =
-  | { ok: true; value: T | undefined }
-  | { ok: false; error: unknown }
+type SavedValue<T> = { ok: true; value: T } | { ok: false; error: unknown }
 
 function savedValue<T>(value: T): SavedValue<T> {
   try {
-    const saved: { value?: T } = JSON.parse(JSON.stringify({ value }))
+    const saved: { value: T } = JSON.parse(JSON.stringify({ value }))
     return { ok: true, value: deepFreeze(saved.value) }
   } catch (error) {
     return { ok: false, error }
@@ -36,6 +34,13 @@ export function savedCopier(): SavedCopier {
     }
     return saved.value
   }
+}
+
+/** A frozen copy of `value` as a workflow would save it. Throws for a value it cannot save. */
+export function savedCopy<T>(value: T): T {
+  const saved = savedValue(value)
+  if (!saved.ok) throw saved.error
+  return saved.value
 }
 
 function deepFreeze<T>(value: T): T {
