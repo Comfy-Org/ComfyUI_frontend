@@ -35,6 +35,11 @@
       "@comfyorg/ingest-types": "./src/homepage-consent/zod.gen.ts",
       "types": "./dist-types/homepage-consent/zod.gen.d.ts",
       "default": "./src/homepage-consent/zod.gen.ts"
+    },
+    "./homepage-consent/types": {
+      "@comfyorg/ingest-types": "./src/homepage-consent/index.ts",
+      "types": "./dist-types/homepage-consent/index.d.ts",
+      "default": "./src/homepage-consent/index.ts"
     }
   },
   "publishConfig": {
@@ -51,6 +56,10 @@
       "./homepage-consent": {
         "types": "./dist/homepage-consent/zod.gen.d.ts",
         "import": "./dist/homepage-consent/zod.gen.js"
+      },
+      "./homepage-consent/types": {
+        "types": "./dist/homepage-consent/index.d.ts",
+        "import": "./dist/homepage-consent/index.js"
       }
     },
     "access": "public"
