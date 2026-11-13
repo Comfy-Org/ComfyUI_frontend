@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { getActivePinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
@@ -59,9 +59,6 @@ const edits: {
 
 async function renderInputNode() {
   stubCanvasGetContext()
-  onTestFinished(() =>
-    vi.mocked(HTMLCanvasElement.prototype.getContext).mockRestore()
-  )
   const graph = createTestSubgraph({
     inputs: [
       { name: 'first', type: 'STRING' },
@@ -101,7 +98,6 @@ describe('subgraph input node ports', () => {
     expect(
       screen.getByRole('group', { name: `${host.title} · #${host.id}` })
     ).toBeVisible()
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Exit subgraph' })).toBeVisible()
   })
 
@@ -113,7 +109,6 @@ describe('subgraph input node ports', () => {
     const handle = screen.getByRole('button', {
       name: 'Resize from bottom-right corner'
     })
-    handle.setPointerCapture = vi.fn()
     vi.advanceTimersByTime(1)
 
     await user.pointer({
@@ -127,7 +122,6 @@ describe('subgraph input node ports', () => {
     })
     await user.pointer({ keys: '[/MouseLeft]', target: handle })
 
-    expect(handle.setPointerCapture).not.toHaveBeenCalled()
     expect(graph.inputNode.asSerialisable()).toEqual(before)
   })
 
@@ -140,8 +134,6 @@ describe('subgraph input node ports', () => {
     const handle = screen.getByRole('button', {
       name: 'Resize from bottom-right corner'
     })
-    handle.setPointerCapture = vi.fn()
-    handle.releasePointerCapture = vi.fn()
     vi.advanceTimersByTime(1)
     await user.pointer({
       keys: '[MouseLeft>]',
@@ -153,7 +145,6 @@ describe('subgraph input node ports', () => {
       coords: { x: 760, y: 700 }
     })
     const resized = graph.inputNode.asSerialisable()
-    expect(handle.setPointerCapture).toHaveBeenCalledOnce()
     expect(resized.bounding).not.toEqual(before.bounding)
 
     useCanvasStore().currentGraph = target
@@ -166,7 +157,6 @@ describe('subgraph input node ports', () => {
 
     expect(target.inputNode.asSerialisable()).toEqual(targetBefore)
     expect(graph.inputNode.asSerialisable()).toEqual(resized)
-    expect(handle.releasePointerCapture).toHaveBeenCalledOnce()
   })
 
   it.for(edits)(

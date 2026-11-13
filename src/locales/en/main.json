@@ -125,7 +125,6 @@
     "enter": "Enter",
     "enterSubgraph": "Enter subgraph",
     "exitSubgraph": "Exit subgraph",
-    "subgraph": "Subgraph",
     "inSubgraph": "in subgraph '{name}'",
     "missingNodeTypesInGroup": "missing: {types}",
     "resizeFromBottomRight": "Resize from bottom-right corner",

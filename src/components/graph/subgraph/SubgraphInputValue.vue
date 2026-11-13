@@ -15,16 +15,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import SubgraphIoLabel from './SubgraphIoLabel.vue'
 import SubgraphIoPort from './SubgraphIoPort.vue'
 
-const {
-  port,
-  label,
-  isAddPort = false,
-  host,
-  source
-} = defineProps<{
+const { port, label, host, source } = defineProps<{
   port: SubgraphInput
   label: string
-  isAddPort?: boolean
   host?: NodeState
   source?: InputValueSource
 }>()
@@ -106,12 +99,12 @@ const sourceTitle = computed(() =>
         :node-title="owner.node.title"
         :sync-layout="false"
       />
-      <SubgraphIoLabel v-else-if="!isAddPort" :label :status />
+      <SubgraphIoLabel
+        v-else-if="port !== port.parent.emptySlot"
+        :label
+        :status
+      />
     </div>
-    <SubgraphIoPort
-      :port
-      :data-testid="isAddPort ? 'subgraph-add-input' : 'subgraph-input-port'"
-      :aria-label="isAddPort ? undefined : label"
-    />
+    <SubgraphIoPort :port :label />
   </div>
 </template>
