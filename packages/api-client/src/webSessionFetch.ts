@@ -121,14 +121,37 @@ export interface WebSessionRequests {
 }
 
 let provided: WebSessionRequests | undefined
+const providerListeners = new Set<() => void>()
+
+function notifyProviderChange() {
+  for (const listener of providerListeners) {
+    try {
+      listener()
+    } catch {
+      continue
+    }
+  }
+}
+
+/** Observes provider replacement/release without exposing identity or credential data. */
+export function subscribeWebSessionRequests(listener: () => void): () => void {
+  providerListeners.add(listener)
+  return () => {
+    providerListeners.delete(listener)
+  }
+}
 
 /** Set while the web session is on for this page load; returns its release. */
 export function provideWebSessionRequests(
   requests: WebSessionRequests
 ): () => void {
   provided = requests
+  notifyProviderChange()
   return () => {
-    if (provided === requests) provided = undefined
+    if (provided === requests) {
+      provided = undefined
+      notifyProviderChange()
+    }
   }
 }
 

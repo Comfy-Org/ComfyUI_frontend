@@ -12,6 +12,8 @@ import {
   zPostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
 import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
+import type { TemplateOrigin } from './templateOrigin'
+import { projectTemplateOrigin } from './templateOrigin'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
@@ -93,6 +95,7 @@ interface QueuePromptRequestBody {
   partial_execution_targets?: NodeExecutionId[]
   workflow_metadata?: Pick<PromptWorkflowMetadata, 'workflow_id'>
   extra_data: {
+    homepage_template_origin?: TemplateOrigin
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
     }
@@ -157,6 +160,7 @@ interface FetchApiOptions extends RequestInit {
  * Options for queuePrompt method
  */
 interface QueuePromptOptions {
+  templateOrigin?: TemplateOrigin
   /**
    * Optional list of node execution IDs to execute (partial execution).
    * Each ID represents a node's position in nested subgraphs.
@@ -1342,6 +1346,7 @@ export class ComfyApi extends EventTarget {
     options?: QueuePromptOptions
   ): Promise<PromptResponse> {
     const { output: prompt, workflow } = data
+    const templateOrigin = projectTemplateOrigin(options?.templateOrigin)
 
     const body: QueuePromptRequestBody = {
       client_id: this.clientId ?? '', // TODO: Unify clientId access
@@ -1354,6 +1359,7 @@ export class ComfyApi extends EventTarget {
           workflow_metadata: { workflow_id: workflow.id }
         }),
       extra_data: {
+        ...(templateOrigin && { homepage_template_origin: templateOrigin }),
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
         comfy_usage_source: 'comfyui-frontend',

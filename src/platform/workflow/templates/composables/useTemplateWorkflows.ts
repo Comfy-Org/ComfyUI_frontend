@@ -11,6 +11,10 @@ import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTra
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { TemplateInput } from '@comfyorg/api-client/templateSchema'
+import {
+  isTemplateOriginEnabled,
+  rememberTemplateOrigin
+} from '@comfyorg/api-client/templateOrigin'
 import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
@@ -38,6 +42,26 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { prepareTemplateInputs } from '@/platform/workflow/templates/services/templateInputService'
+
+function snapshotTemplateOrigin(json: unknown, sourceModule: string): unknown {
+  if (!isCloud || !isTemplateOriginEnabled() || sourceModule !== 'default')
+    return undefined
+  return structuredClone(json)
+}
+
+async function rememberLoadedTemplateOrigin(
+  workflow: unknown,
+  templateId: string,
+  snapshot: unknown
+): Promise<void> {
+  if (
+    snapshot === undefined ||
+    typeof workflow !== 'object' ||
+    workflow === null
+  )
+    return
+  await rememberTemplateOrigin(workflow, templateId, snapshot)
+}
 
 type TemplateLoadResult = 'loaded' | 'graph-failed' | 'not-started'
 
@@ -280,9 +304,11 @@ export function useTemplateWorkflows() {
       template
     }: Pick<PreparedWorkflowTemplate['data'], 'json' | 'template'>,
     workflowName: string,
-    sourceModule: string
+    sourceModule: string,
+    templateId: string
   ): Promise<TemplateLoadResult> {
     try {
+      const originSnapshot = snapshotTemplateOrigin(json, sourceModule)
       const loadedWorkflow = await app.loadGraphData(
         json as ComfyWorkflowJSON,
         true,
@@ -292,6 +318,13 @@ export function useTemplateWorkflows() {
       )
       if (loadedWorkflow === false) return 'graph-failed'
       if (loadedWorkflow === undefined) return 'not-started'
+
+      if (originSnapshot !== undefined)
+        await rememberLoadedTemplateOrigin(
+          loadedWorkflow,
+          templateId,
+          originSnapshot
+        )
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
       await syncCompletedTemplateInputsWithCurrentGraph()
@@ -420,7 +453,12 @@ export function useTemplateWorkflows() {
 
       dialogStore.closeDialog()
       if (shouldDownloadAssets) startTemplateInputDownloads(id, sourceModule)
-      return await loadTemplateGraph(preparedData, workflowName, sourceModule)
+      return await loadTemplateGraph(
+        preparedData,
+        workflowName,
+        sourceModule,
+        id
+      )
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)
       return 'not-started'

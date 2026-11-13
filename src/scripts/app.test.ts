@@ -99,6 +99,9 @@ import { setTelemetryRegistry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
+import * as distribution from '@/platform/distribution/types'
+import { rememberTemplateOrigin } from '@comfyorg/api-client/templateOrigin'
+import * as templateOrigin from '@comfyorg/api-client/templateOrigin'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
@@ -2052,6 +2055,42 @@ describe('ComfyApp', () => {
       await expect(submission).resolves.toBe(false)
       expect(queuePrompt).not.toHaveBeenCalled()
       expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('withholds origin when the workflow changes during prompt construction', async () => {
+      vi.spyOn(distribution, 'isCloud', 'get').mockReturnValue(true)
+      vi.spyOn(templateOrigin, 'isTemplateOriginEnabled').mockReturnValue(true)
+      prepareEmptyPromptQueue()
+      const original = useWorkflowStore().activeWorkflow
+      assert(original)
+      await rememberTemplateOrigin(original, 'fixture', {})
+      let finishPromptBuild: () => void = () => {}
+      vi.spyOn(app, 'graphToPrompt').mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishPromptBuild = () =>
+              resolve({ output: {}, workflow: createWorkflowGraphData() })
+          })
+      )
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockResolvedValue({ prompt_id: 'fixture-job' })
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() => expect(app.graphToPrompt).toHaveBeenCalledOnce())
+      useWorkflowStore().activeWorkflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/other.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      finishPromptBuild()
+      await submission
+      expect(queuePrompt).toHaveBeenCalledWith(
+        0,
+        expect.anything(),
+        expect.objectContaining({ templateOrigin: undefined })
+      )
     })
 
     it('does not fall back to an API key when workspace authentication fails', async () => {

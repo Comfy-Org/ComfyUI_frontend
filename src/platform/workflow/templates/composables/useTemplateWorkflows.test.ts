@@ -10,6 +10,7 @@ import { useFeatureUsageTracker } from '@/platform/surveys/useFeatureUsageTracke
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
+import * as templateOrigin from '@comfyorg/api-client/templateOrigin'
 import { app } from '@/scripts/app'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -154,6 +155,21 @@ beforeEach(() => {
 
 describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
+
+  it('retains a builtin origin only in the explicitly enabled Cloud path', async () => {
+    mockDistributionIsCloud.value = true
+    vi.spyOn(templateOrigin, 'isTemplateOriginEnabled').mockReturnValue(true)
+    const { loader } = mountTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
+      'loaded'
+    )
+    const loaded = mockLoadedWorkflow.value
+    assert(loaded)
+    expect(templateOrigin.templateOriginFor(loaded)?.template_id).toBe(
+      'template1'
+    )
+  })
 
   beforeEach(() => {
     vi.mocked(fetch).mockImplementation(async () =>

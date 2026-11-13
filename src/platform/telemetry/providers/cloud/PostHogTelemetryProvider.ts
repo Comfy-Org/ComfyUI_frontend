@@ -27,6 +27,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
+import { installCloudHomepageConsentHost } from '@/platform/telemetry/cloudHomepageConsentHost'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
@@ -265,6 +266,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.flushEventQueue()
 
             await whenStoresReady()
+            installCloudHomepageConsentHost()
             const currentUser = useCurrentUser()
             currentUser.onUserResolved((user) => {
               if (this.posthog && user.id) {
