@@ -21,8 +21,9 @@ updates. Those contracts already belong to the widget rendering system.
 
 The prototype renders the existing input boundary through NodeFrame.vue with
 outputs and native widgets. Its title identifies the host by title and node ID.
-A Leave Subgraph footer uses the existing exit command to return to the parent
-context. Users enter a different SubgraphNode to edit another instance.
+An Exit subgraph footer runs the existing exit command to return to the parent
+context. The action does nothing while the user picks nodes. Users enter a
+different SubgraphNode to edit another instance.
 The final empty output creates a new external input through
 the existing connection handlers. Widgets display their own labels.
 Explicit entry records a graph-scoped host locator. Direct entry infers a host
@@ -31,7 +32,7 @@ the context unresolved rather than selecting another host implicitly.
 
 NodeFrame.vue owns the shared frame, NodeHeader the title and collapse control,
 NodeBody the shared body spacing, NodeFooter the subgraph navigation action, and
-NodeResizeHandle the resize affordance. The same footer renders enter and leave
+NodeResizeHandle the resize affordance. The same footer renders enter and exit
 actions; the header supports a read-only instance title. LGraphNode.vue remains
 the ordinary node and composes the same parts. Input-boundary selection, port
 projection and widget-source ownership live in composables, outside their views.
@@ -50,12 +51,14 @@ the interior source's nodeLocatorId. The existing useWidgetHostNode resolver
 handles both roles at the adapter boundary and follows owner changes and graph
 configuration. There is no separate injected owner mechanism.
 
-WidgetGrid provides node and form presentations. Form presentation omits sockets,
-layout measurements, input-selection actions, and graph action menus. The node menu
-resolves selection in the displayed graph and cannot safely target a host or
-Primitive in another graph. Native text-field menus remain owned by their
-controls. Users can locate the source to access its graph actions. The shared
-editor and the panel respect node-picking and read-only interaction modes.
+WidgetGrid has one opt-out, which turns off layout syncing. The input editor
+uses it, and removes slot metadata and the context-menu handler from each
+processed widget before passing it to the grid. The grid therefore renders no
+socket and opens no graph action menu for those rows. The node menu resolves
+selection in the displayed graph and cannot safely target a host or Primitive in
+another graph. The editor suppresses the browser context menu. A focused text
+field keeps its own menu. Users can locate the source to access its graph
+actions.
 
 Unconnected promoted inputs address the host's existing widget ID. Recognized
 Primitive chains and reroutes resolve to the upstream widget's existing ID.
@@ -63,11 +66,12 @@ Computed, muted, and bypassed sources remain read-only. Ancestor-boundary inputs
 are unavailable in this prototype; cross-boundary editing requires a separate
 decision about nested invocation ownership.
 
-Input names identify rows across reordering. The shared model revalidates the
-current node, widget ID, workflow, connectivity, and editing mode before applying a retained
-update. The shared value binding also checks widget lifetime and disabled state,
-including value-control updates. Removed inputs and changed sources cannot
-redirect an update to another widget.
+Input names identify rows across reordering. Each row is keyed by host graph,
+host ID, and input name, and its grid is keyed by widget ID. Removing an input
+or changing its source therefore remounts the control. Nothing revalidates a
+retained update when it applies, so the keys are the only guard against writing
+to a stale widget. A row is inert in read-only mode, and the whole unit is inert
+while the user picks nodes.
 
 WidgetValueStore supplies the existing state, render metadata, and visibility
 together, so the renderer does not invent defaults for metadata belonging to a
@@ -92,28 +96,37 @@ Projected bounds preserve the original port anchor and never overwrite saved
 geometry. Registration occurs before the first canvas frame. The port view
 invalidates on existing interface-edit events, including reordering, without
 creating another source of port declarations.
-Unmount removes those measurements and restores the canvas presentation. No
-instance fields or methods are added. The view follows canvas coordinates without
-viewport clamping. Existing selection, dragging, connection, and port-renaming
-handlers remain authoritative.
+Unmount removes those measurements and restores the canvas presentation. The
+view follows canvas coordinates without viewport clamping. Existing selection,
+dragging, connection, and port-renaming handlers remain authoritative.
 
-Explicit resizing uses the shared useNodeResize interaction and serializable
-BatchUpdateBoundsOperation. A focused IO adapter applies it through the existing
-configuration boundary to saved bounding geometry. Renderer measurements remain
-transient. Existing bounds retain the requested size as a minimum, allowing
-textarea controls to grow and preserving size across save/reload without new
-workflow fields. Pinned, read-only, and picking modes block resizing. Changing
-the definition during a gesture invalidates its target.
+The IO node base gains a static socket-inset getter and no instance fields.
+While a measurement exists, its bounds getter returns the projected bounds,
+arrange takes the port offset from the measurement and leaves the size alone,
+and draw returns early. Position, size, and serialization always read the saved
+rectangle. The input node overrides arrange to keep the requested size as a
+minimum.
+
+Explicit resizing uses the shared useNodeResize interaction. Its resize callback
+writes the input node's saved position and size directly, marks the canvas
+dirty, and reports the measurement. The write does not go through a
+LayoutOperation. Renderer measurements remain transient. Existing bounds retain
+the requested size as a minimum, allowing textarea controls to grow and
+preserving size across save/reload without new workflow fields. Pinned,
+collapsed, read-only, and picking states block resizing. A gesture is dropped if
+the definition changes while it runs.
 
 Disconnect iterates a snapshot of the links so removing one cannot skip another.
-Final widget demotion excludes the departing input from its own orphan check.
-Same-tick rewires and remaining fanout retain their widget; a completed disconnect
-followed by reconnect resolves a fresh widget and target defaults.
+Ctrl or Meta with Alt and a click on a port disconnects it. Same-tick rewires
+and remaining fanout retain their widget. A completed disconnect followed by a
+reconnect reuses the WidgetId and keeps the stored host value. The widget takes
+the new target's constraints, and its entity object is new.
 
-The renderer supplies the existing measured-slot lookup to link drops through a
-lifetime-scoped adapter. A visible socket can lie outside the node body, so a
-drop cannot rely only on body hit testing. This reuses the canonical slot lookup
-without adding methods or renderer dependencies to graph entities.
+A visible socket can lie outside the node body, so a drop cannot rely only on
+body hit testing. When Vue nodes are enabled and a drop hits no node body, the
+link connector calls the canonical slot-layout lookup directly. This adds no
+methods to graph entities, but the link connector and the IO node base now
+import renderer modules.
 
 ## Alternatives considered
 

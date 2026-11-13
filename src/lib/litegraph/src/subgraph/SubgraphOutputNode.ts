@@ -49,7 +49,7 @@ export class SubgraphOutputNode
 
   get slotAnchorX() {
     const [x] = this.boundingRect
-    return x + SubgraphIONodeBase.roundedRadius
+    return x + this.slotInset
   }
 
   override onPointerDown(

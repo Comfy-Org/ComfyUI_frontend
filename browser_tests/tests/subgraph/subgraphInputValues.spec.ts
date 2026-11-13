@@ -3,7 +3,6 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { NodeBadgeMode } from '@/types/nodeSource'
 
 for (const renderer of [
   {
@@ -55,7 +54,6 @@ for (const renderer of [
         )
         const initial = await savedValues()
         const panel = comfyPage.page.getByTestId('subgraph-input-values')
-        const heading = panel.getByRole('heading')
         const exit = panel.getByRole('button', {
           name: 'Exit subgraph',
           exact: true
@@ -65,7 +63,7 @@ for (const renderer of [
         await test.step('Entering Host A identifies the instance and preserves saved values', async () => {
           await renderer.enter(comfyPage, '11')
           await expect(panel).toBeVisible()
-          await expect(heading).toHaveText('Host A · #11')
+          await expect(panel).toHaveAccessibleName('Host A · #11')
           await expect(panel.getByRole('combobox')).toHaveCount(0)
           await expect(input).toHaveValue('')
           expect(await savedValues()).toEqual(initial)
@@ -81,20 +79,14 @@ for (const renderer of [
               { id: '12', values: [''] }
             ])
           expect((await savedValues()).defaults).toEqual(initial.defaults)
-          await panel
-            .getByRole('button', { name: 'Collapse', exact: true })
-            .click()
           expect((await savedValues()).inputBounds).toEqual(initial.inputBounds)
-          await panel
-            .getByRole('button', { name: 'Expand', exact: true })
-            .click()
         })
 
         await test.step('Leaving the subgraph and entering Host B changes the editing target', async () => {
           await exit.getByText('Exit subgraph', { exact: true }).click()
           await expect(panel).toBeHidden()
           await renderer.enter(comfyPage, '12')
-          await expect(heading).toHaveText('Host B · #12')
+          await expect(panel).toHaveAccessibleName('Host B · #12')
           await expect(input).toHaveValue('')
           await input.fill('boundary-host-b')
           await exit.focus()
@@ -114,9 +106,7 @@ for (const renderer of [
               { id: '11', values: ['boundary-host-a'] },
               { id: '12', values: [''] }
             ])
-          await panel
-            .getByRole('button', { name: 'Collapse', exact: true })
-            .press('Control+y')
+          await exit.press('Control+y')
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
@@ -129,7 +119,7 @@ for (const renderer of [
           await comfyPage.subgraph.exitViaBreadcrumb()
           await comfyPage.subgraph.serializeAndReload()
           await renderer.enter(comfyPage, '12')
-          await expect(heading).toHaveText('Host B · #12')
+          await expect(panel).toHaveAccessibleName('Host B · #12')
           await expect(input).toHaveValue('boundary-host-b')
           expect((await savedValues()).defaults).toEqual(initial.defaults)
         })
@@ -193,52 +183,10 @@ for (const renderer of [
               })
             )
             .toBe(true)
-          await expect(heading).toHaveText('Host B · #12')
+          await expect(panel).toHaveAccessibleName('Host B · #12')
           await expect(input).toHaveValue('boundary-host-b')
         })
       })
     }
   )
 }
-
-test.describe(
-  'Subgraph input badge placement',
-  { tag: ['@subgraph', '@vue-nodes'] },
-  () => {
-    test('uses the same positive badge gap as an ordinary node', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.NodeBadge.NodeIdBadgeMode',
-        NodeBadgeMode.ShowAll
-      )
-      await comfyPage.workflow.loadWorkflow(
-        'subgraphs/shared-definition-two-hosts-promoted-text'
-      )
-      await comfyPage.vueNodes.enterSubgraph('11')
-      await comfyPage.canvasOps.waitForViewToSettle()
-      const interior = await comfyPage.nodeOps.getNodeRefByType(
-        'CLIPTextEncode',
-        true
-      )
-      const ordinary = comfyPage.vueNodes.getNodeLocator(String(interior.id))
-      const input = comfyPage.page.getByTestId('subgraph-input-values')
-      const [ordinaryBounds, ordinaryBadge, inputBounds, inputBadge] =
-        await Promise.all([
-          ordinary.boundingBox(),
-          ordinary.getByTestId('node-badges').boundingBox(),
-          input.boundingBox(),
-          input.getByRole('img', { name: 'Subgraph' }).boundingBox()
-        ])
-      if (!ordinaryBounds || !ordinaryBadge || !inputBounds || !inputBadge) {
-        throw new Error('Expected both native nodes and their badges')
-      }
-      const nativeGap =
-        ordinaryBounds.y - ordinaryBadge.y - ordinaryBadge.height
-      const inputGap = inputBounds.y - inputBadge.y - inputBadge.height
-
-      expect(nativeGap).toBeGreaterThan(0)
-      expect(inputGap).toBeCloseTo(nativeGap, 1)
-    })
-  }
-)

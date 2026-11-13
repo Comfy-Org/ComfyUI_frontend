@@ -4,29 +4,40 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import Button from '@comfyorg/design-system/button/Button'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { cn } from '@comfyorg/tailwind-utils'
+import SubgraphIoLabel from './SubgraphIoLabel.vue'
+import SubgraphIoPort from './SubgraphIoPort.vue'
 
-const { label, source, host } = defineProps<{
+const {
+  port,
+  label,
+  isAddPort = false,
+  host,
+  source
+} = defineProps<{
+  port: SubgraphInput
   label: string
-  source: InputValueSource
-  host: NodeState
+  isAddPort?: boolean
+  host?: NodeState
+  source?: InputValueSource
 }>()
 const emit = defineEmits<{ locate: [node: NodeState] }>()
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
+
 const upstream = computed(() =>
-  source.kind !== 'unavailable' && source.node !== host
+  source && source.kind !== 'unavailable' && source.node !== host
     ? source.node
     : undefined
 )
-const owner = computed(() => (source.kind === 'editable' ? source : undefined))
+const owner = computed(() => (source?.kind === 'editable' ? source : undefined))
 const { processedWidgets } = useProcessedWidgets(
   () => owner.value?.node,
   () => (owner.value ? [owner.value.widgetId] : [])
@@ -41,42 +52,49 @@ const expands = computed(() =>
     (item) => shouldExpand(item.simplified.type) || item.hasLayoutSize
   )
 )
+const status = computed(() => {
+  if (!source || owner.value) return undefined
+  return source.kind === 'linked'
+    ? t('subgraphInputValues.linked')
+    : t('subgraphInputValues.unavailable')
+})
+const sourceTitle = computed(() =>
+  owner.value?.shared
+    ? `${t('subgraphInputValues.sharedSource')}. ${t('subgraphInputValues.sourceHint')}`
+    : t('subgraphInputValues.locateSource')
+)
 </script>
 
 <template>
-  <div :class="cn('flex min-w-0 flex-col gap-1', expands && 'min-h-0 flex-1')">
-    <div
+  <div
+    data-subgraph-port
+    :class="
+      cn('relative flex min-w-0 items-center', expands && 'min-h-0 flex-1')
+    "
+  >
+    <button
       v-if="upstream"
-      class="mx-3 flex items-center gap-2 text-xs text-muted-foreground"
+      type="button"
+      class="absolute top-1/2 right-full mr-0.5 flex -translate-y-1/2 cursor-pointer items-center gap-1 rounded-sm border-none bg-transparent px-1 py-0.5 text-2xs whitespace-nowrap text-muted-foreground hover:text-foreground"
+      :title="sourceTitle"
+      :aria-label="t('subgraphInputValues.locateSource')"
+      @click="emit('locate', upstream)"
     >
-      <span
-        class="min-w-0 flex-1 wrap-anywhere"
-        :title="t('subgraphInputValues.sourceHint')"
-      >
-        {{
-          t('subgraphInputValues.fromSource', {
-            title: upstream.title,
-            id: upstream.id
-          })
-        }}
-      </span>
-      <span
+      <span>{{
+        t('subgraphInputValues.fromSource', {
+          title: upstream.title,
+          id: upstream.id
+        })
+      }}</span>
+      <i
         v-if="owner?.shared"
-        class="shrink-0 rounded-sm bg-secondary px-1 py-0.5 text-2xs"
-      >
-        {{ t('subgraphInputValues.sharedSource') }}
-      </span>
-      <Button
-        variant="muted-textonly"
-        size="icon-sm"
-        :aria-label="t('subgraphInputValues.locateSource')"
-        @click="emit('locate', upstream)"
-      >
-        <i class="icon-[lucide--locate-fixed]" />
-      </Button>
-    </div>
+        role="img"
+        class="icon-[lucide--link] size-3"
+        :aria-label="t('subgraphInputValues.sharedSource')"
+      />
+    </button>
     <div
-      class="flex min-h-0 min-w-0 flex-1 flex-col"
+      class="flex min-h-0 min-w-0 flex-1 flex-col self-stretch"
       :inert="canvasStore.isReadOnly"
     >
       <WidgetGrid
@@ -88,14 +106,12 @@ const expands = computed(() =>
         :node-title="owner.node.title"
         :sync-layout="false"
       />
-      <p v-else class="m-0 text-xs text-muted-foreground">
-        {{ label }}:
-        {{
-          source.kind === 'linked'
-            ? t('subgraphInputValues.linked')
-            : t('subgraphInputValues.unavailable')
-        }}
-      </p>
+      <SubgraphIoLabel v-else-if="!isAddPort" :label :status />
     </div>
+    <SubgraphIoPort
+      :port
+      :data-testid="isAddPort ? 'subgraph-add-input' : 'subgraph-input-port'"
+      :aria-label="isAddPort ? undefined : label"
+    />
   </div>
 </template>

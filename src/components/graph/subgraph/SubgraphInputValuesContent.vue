@@ -5,7 +5,11 @@ import { useI18n } from 'vue-i18n'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resolveInputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
-import type { ValueSourceGraph } from '@/core/graph/subgraph/resolveInputValueSource'
+import type {
+  InputValueSource,
+  ValueSourceGraph
+} from '@/core/graph/subgraph/resolveInputValueSource'
+import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -16,6 +20,8 @@ import { getNodeByState } from '@/utils/graphTraversalUtil'
 import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 import SubgraphInputValue from './SubgraphInputValue.vue'
 
+const { slots } = defineProps<{ slots: SubgraphInput[] }>()
+
 const { t } = useI18n()
 const context = useSubgraphInputValuesStore()
 const nodeStore = useNodeDataStore()
@@ -24,13 +30,14 @@ const widgetStore = useWidgetValueStore()
 const canvasStore = useCanvasStore()
 const navigation = useSubgraphNavigationStore()
 
-const rows = computed(() => {
+const sources = computed(() => {
   const { graph, selected: host } = context
-  if (!graph || !host) return []
+  const result = new Map<string, InputValueSource>()
+  if (!graph || !host) return result
   const root = graph.rootGraph
   const hostGraph =
     host.graphId === root.id ? root : root.subgraphs.get(host.graphId)
-  if (!hostGraph) return []
+  if (!hostGraph) return result
   const scope = graphScopeOf(hostGraph)
   const sourceGraph: ValueSourceGraph = {
     nodes: new Map(
@@ -45,17 +52,19 @@ const rows = computed(() => {
     outputLinkCount: (node, index) =>
       linkStore.getOutputSlotLinks(scope, node.id, index).size
   }
-  return host.inputs.flatMap((input) =>
-    input.widgetId
-      ? [
-          {
-            name: input.name,
-            label: input.label ?? input.name,
-            source: resolveInputValueSource(sourceGraph, host, input.name)
-          }
-        ]
-      : []
-  )
+  for (const input of host.inputs) {
+    if (input.widgetId)
+      result.set(
+        input.name,
+        resolveInputValueSource(sourceGraph, host, input.name)
+      )
+  }
+  return result
+})
+
+const hint = computed(() => {
+  if (!context.selected) return t('subgraphInputValues.enterInstanceHint')
+  return sources.value.size ? undefined : t('subgraphInputValues.noInputs')
 })
 
 async function locate(node: NodeState) {
@@ -74,26 +83,19 @@ function captureEdits() {
 </script>
 
 <template>
-  <div
-    class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap)"
-    @contextmenu.prevent
-    @focusout="captureEdits"
-  >
-    <template v-if="context.selected">
-      <SubgraphInputValue
-        v-for="row in rows"
-        :key="`${context.selected.graphId}:${context.selected.id}:${row.name}`"
-        :label="row.label"
-        :host="context.selected"
-        :source="row.source"
-        @locate="locate"
-      />
-      <p v-if="!rows.length" class="mx-3 my-0 text-muted-foreground">
-        {{ t('subgraphInputValues.noInputs') }}
-      </p>
-    </template>
-    <p v-else class="mx-3 my-0 text-muted-foreground">
-      {{ t('subgraphInputValues.enterInstanceHint') }}
+  <div class="contents" @focusout="captureEdits">
+    <SubgraphInputValue
+      v-for="slot in slots"
+      :key="`${context.selected?.graphId}:${context.selected?.id}:${slot.id}`"
+      :port="slot"
+      :label="slot.displayName"
+      :is-add-port="slot === context.graph?.inputNode.emptySlot"
+      :host="context.selected"
+      :source="sources.get(slot.name)"
+      @locate="locate"
+    />
+    <p v-if="hint" class="mx-3 my-0 text-muted-foreground">
+      {{ hint }}
     </p>
   </div>
 </template>

@@ -1376,7 +1376,7 @@
     "instance": "{title} · #{id}",
     "enterInstanceHint": "Enter this subgraph through a Subgraph Node to edit its values.",
     "linked": "Linked value · read-only",
-    "fromSource": "Source: {title} · #{id}",
+    "fromSource": "← {title} #{id}",
     "sourceHint": "Editing this source also changes the other inputs connected to it.",
     "sharedSource": "Shared source",
     "locateSource": "Locate source node",

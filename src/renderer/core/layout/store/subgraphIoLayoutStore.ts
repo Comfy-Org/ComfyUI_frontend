@@ -4,9 +4,10 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@comfyorg/graph-model/uuid'
 
 interface SubgraphIoLayout {
+  offsetX: number
   width: number
   height: number
-  slotTop: number
+  slotCenters: readonly number[]
 }
 
 export const useSubgraphIoLayoutStore = defineStore('subgraphIoLayout', () => {
