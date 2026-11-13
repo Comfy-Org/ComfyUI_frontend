@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { coreRoutePath } from '@/platform/cloud/coreRouteFetch'
 
@@ -147,6 +147,26 @@ describe('coreRouteFetch', () => {
 })
 
 describe('installCoreRouteFetch', () => {
+  it('sends window.fetch calls to a root ComfyUI route through the API on Cloud', async () => {
+    const { installCoreRouteFetch, api } = await loadOnDistribution(true)
+    const networkGuard = window.fetch
+    onTestFinished(() => {
+      Object.assign(window, { fetch: networkGuard })
+    })
+    const apiResponse = new Response('api')
+    vi.mocked(api.fetchApi).mockResolvedValue(apiResponse)
+    const init = { method: 'POST', body: 'image' }
+
+    installCoreRouteFetch()
+
+    await expect(window.fetch('/upload/image', init)).resolves.toBe(apiResponse)
+    expect(api.fetchApi).toHaveBeenCalledWith(
+      '/upload/image',
+      expect.objectContaining(init)
+    )
+    expect(networkGuard).not.toHaveBeenCalled()
+  })
+
   it('leaves fetch unchanged off Cloud', async () => {
     const { installCoreRouteFetch } = await loadOnDistribution(false)
     const pageFetch = window.fetch
