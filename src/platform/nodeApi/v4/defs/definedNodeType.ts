@@ -18,8 +18,10 @@ import { SLOT_SHAPES } from '@/platform/nodeApi/v4/edit/slotVocabulary'
 import type {
   NodeDef,
   NodeDefBuilder,
-  NodeDefinition
+  NodeDefinition,
+  WidgetDef
 } from '@/platform/nodeApi/v4/types'
+import { checkedWidgetDef } from '@/platform/nodeApi/v4/widgets/widgetDef'
 import type { HookCallbacks } from './nodeHooks'
 import { checkedPresentation } from './nodePresentation'
 import type { CheckedPresentation } from './nodePresentation'
@@ -52,6 +54,7 @@ export interface CheckedDefinition {
   readonly outputs: readonly CheckedSlot[]
   readonly execution: 'backend' | 'frontend'
   readonly presentation: CheckedPresentation
+  readonly widgets: readonly WidgetDef[]
   readonly hooks: DefinitionHooks
 }
 
@@ -64,6 +67,7 @@ const DEFINITION_FIELDS = {
   outputs: true,
   execution: true,
   presentation: true,
+  widgets: true,
   onCreated: true,
   onConfigured: true,
   onRemoved: true,
@@ -92,6 +96,7 @@ export function checkedDefinition(given: unknown): CheckedDefinition {
     outputs: checkedSlots('outputs', definition.outputs),
     execution: checkedExecution(definition.execution),
     presentation: checkedPresentation(definition.presentation),
+    widgets: checkedWidgets(definition.widgets),
     hooks: {
       onCreated: optionalHook('onCreated', definition.onCreated),
       onConfigured: optionalHook('onConfigured', definition.onConfigured),
@@ -112,8 +117,9 @@ export function checkedDefinition(given: unknown): CheckedDefinition {
 /** Adds the hooks a definition declares, as an extension of its own type. */
 export function addDefinitionHooks(
   builder: NodeDefBuilder,
-  { hooks }: CheckedDefinition
+  { hooks, widgets }: CheckedDefinition
 ): void {
+  for (const widget of widgets) builder.addWidget(widget)
   if (hooks.onCreated) builder.onCreated(hooks.onCreated)
   if (hooks.onConfigured) builder.onConfigured(hooks.onConfigured)
   if (hooks.onRemoved) builder.onRemoved(hooks.onRemoved)
@@ -236,6 +242,14 @@ function checkedSlots(
       shape
     })
   })
+}
+
+function checkedWidgets(widgets: unknown): readonly WidgetDef[] {
+  if (widgets === undefined) return []
+  if (!Array.isArray(widgets)) {
+    throw invalidArgument('define', 'a list of widgets', widgets)
+  }
+  return widgets.map((widget: unknown) => checkedWidgetDef(widget, 'define'))
 }
 
 function checkedExecution(execution: unknown): CheckedDefinition['execution'] {
