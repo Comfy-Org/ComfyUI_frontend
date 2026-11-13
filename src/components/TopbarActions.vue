@@ -25,7 +25,7 @@
       <i class="icon-[lucide--megaphone]" />
     </Button>
     <CurrentUserButton v-if="showCurrentUser" compact class="shrink-0 p-1" />
-    <LoginButton v-else class="p-1" />
+    <LoginButton v-else-if="showLoginButton" class="p-1" />
     <template v-if="showAgentEntry">
       <div
         data-testid="agent-entry-separator"
@@ -55,6 +55,8 @@ import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/platform/billing/components/TopbarSubscribeButton.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useAppMode } from '@/composables/useAppMode'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { openFeedbackDialog } from '@/platform/support/feedbackDialog'
@@ -69,11 +71,17 @@ const topbarBadgeStore = useTopbarBadgeStore()
 const { withConsent, isChecking } = useAgentConsent()
 const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
+const { flags } = useFeatureFlags()
+const { isBuilderMode } = useAppMode()
 
 const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
-const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
+const isSignedIn = computed(() => isCloud || isLoggedIn.value)
+const showCurrentUser = computed(
+  () => isSignedIn.value && (!flags.billingNewUxEnabled || isBuilderMode.value)
+)
+const showLoginButton = computed(() => !isSignedIn.value)
 const comfyAgentNotReady = computed(() =>
   agentPanelStore.enabled || agentPanelStore.comfyAgent?.state === 'ready'
     ? undefined

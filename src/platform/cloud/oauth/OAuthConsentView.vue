@@ -33,7 +33,24 @@
               })
             }}
           </h1>
-          <template v-if="!isFirstPartyClient(challenge)">
+          <p
+            v-if="verified"
+            class="m-0 flex items-center gap-1 text-xs wrap-anywhere text-muted-foreground"
+            data-testid="client-verified"
+          >
+            <i
+              :class="cn(verifiedClientIcons[verified.platform], 'shrink-0')"
+              aria-hidden="true"
+              data-testid="client-verified-icon"
+            />
+            {{
+              t('oauth.consent.verifiedNotice', {
+                platform: verified.display_name,
+                host: destinationHost
+              })
+            }}
+          </p>
+          <template v-else-if="!isFirstPartyClient(challenge)">
             <Badge
               variant="compact"
               severity="warning"
@@ -254,7 +271,9 @@ import {
   fetchOAuthConsentChallenge,
   isFirstPartyClient,
   redirectHost,
-  submitOAuthConsentDecision
+  submitOAuthConsentDecision,
+  verifiedClient,
+  verifiedClientIcons
 } from '@/platform/cloud/oauth/oauthApi'
 import type {
   OAuthConsentChallenge,
@@ -313,6 +332,12 @@ const resourceName = computed(
 
 const destinationHost = computed(() =>
   redirectHost(challenge.value?.redirect_uri)
+)
+
+const verified = computed(() =>
+  challenge.value && destinationHost.value
+    ? verifiedClient(challenge.value)
+    : undefined
 )
 
 const selectedWorkspaceIsValid = computed(() =>

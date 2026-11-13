@@ -25,7 +25,6 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { launchLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -62,12 +61,6 @@ export function useBillingDialogs() {
         options?.source ??
         (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
     })
-    if (opensLocalBillingHandoff()) {
-      await launchLocalBillingHandoff(
-        () => void showTopUpCreditsDialog(options)
-      )
-      return
-    }
     const { canTopUp, topUpDenial, isReady, initialize } =
       useBillingCapabilities()
     if (!isReady.value) await initialize()
@@ -104,9 +97,11 @@ export function useBillingDialogs() {
 
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component: useFeatureFlags().flags.billingNewUxEnabled
-        ? AddCreditsDialogContent
-        : TopUpCreditsDialogContentWorkspace,
+      component:
+        useFeatureFlags().flags.billingNewUxEnabled ||
+        opensLocalBillingHandoff()
+          ? AddCreditsDialogContent
+          : TopUpCreditsDialogContentWorkspace,
       props: options,
       dialogComponentProps: {
         headless: true

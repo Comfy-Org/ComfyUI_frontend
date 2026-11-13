@@ -246,6 +246,40 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
   })
 })
 
+describe('canvas image context menu', () => {
+  it.for([
+    { state: 'selected', imageIndex: 0, overIndex: null },
+    { state: 'hovered', imageIndex: null, overIndex: 0 }
+  ])(
+    'offers image actions for the $state image at index zero',
+    async (state) => {
+      const nodeName = 'TestFirstImageMenu'
+      await useLitegraphService().registerNodeDef(
+        nodeName,
+        createNodeDefV1({ name: nodeName })
+      )
+      const node = LiteGraph.createNode(nodeName)
+      assert.exists(node)
+      const image = document.createElement('img')
+      image.src = 'http://localhost/view?filename=first.png'
+      node.imgs = [image]
+      node.imageIndex = state.imageIndex
+      node.overIndex = state.overIndex
+      const options: (IContextMenuValue | null)[] = []
+
+      node.getExtraMenuOptions?.(app.canvas, options)
+
+      expect(options).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ content: 'Open Image' }),
+          expect.objectContaining({ content: 'Copy Image' }),
+          expect.objectContaining({ content: 'Save Image' })
+        ])
+      )
+    }
+  )
+})
+
 describe('canvas Copy Image action', () => {
   it('preserves original bounds when clipboard requires PNG conversion', async () => {
     const nodeName = 'TestOriginalImageCopy'

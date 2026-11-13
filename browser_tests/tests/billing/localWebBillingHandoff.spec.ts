@@ -46,17 +46,23 @@ test.describe('Local web billing handoff', () => {
   test.describe('flag on', () => {
     test.use({ localBillingWeb: true })
 
-    test('opens billing-web at the issued entry URL', async ({
+    test('Continue opens billing-web at the issued entry URL for the picked amount', async ({
       comfyPage,
       handoffRequests,
       openAddCredits
     }) => {
       const page = comfyPage.page
-      const popupOpened = page.waitForEvent('popup')
+      const dialog = new TopUpCreditsDialog(page)
       await openAddCredits()
+      await dialog.preset25.click()
+      expect(handoffRequests).toHaveLength(0)
+
+      const popupOpened = page.waitForEvent('popup')
+      await dialog.continueButton.click()
       const popup = await popupOpened
 
       await expect(popup).toHaveURL(ENTRY_URL)
+      await expect(dialog.openedHeading).toBeVisible()
       expect(handoffRequests).toHaveLength(1)
       const [handoff] = handoffRequests
       expect(handoff.method()).toBe('POST')
@@ -67,10 +73,11 @@ test.describe('Local web billing handoff', () => {
         expect.objectContaining({
           workspace_id: WORKSPACE_ID,
           receiver: 'billing_web',
-          surface: 'local_web'
+          surface: 'local_web',
+          intent: 'top-up',
+          amount_cents: 2500
         })
       )
-      await expect(page.getByRole('dialog')).toHaveCount(0)
     })
 
     test('shows the Billing tab without Platform links instead of Plan & Credits', async ({
@@ -98,20 +105,23 @@ test.describe('Local web billing handoff', () => {
     test.describe('when Cloud refuses the handoff', () => {
       test.use({ handoffReply: OWNER_ONLY })
 
-      test('closes the tab and shows the server message', async ({
+      test('closes the tab and shows the server message in the dialog', async ({
         comfyPage,
         handoffRequests,
         openAddCredits
       }) => {
         const page = comfyPage.page
-        const popupOpened = page.waitForEvent('popup')
+        const dialog = new TopUpCreditsDialog(page)
         await openAddCredits()
+
+        const popupOpened = page.waitForEvent('popup')
+        await dialog.continueButton.click()
         const popup = await popupOpened
 
-        await expect(comfyPage.toast.withText(OWNER_ONLY_MESSAGE)).toBeVisible()
+        await expect(dialog.notice).toContainText(OWNER_ONLY_MESSAGE)
         await expect.poll(() => popup.isClosed()).toBe(true)
         expect(handoffRequests).toHaveLength(1)
-        await expect(page.getByRole('dialog')).toHaveCount(0)
+        await expect(dialog.continueButton).toBeEnabled()
       })
     })
   })

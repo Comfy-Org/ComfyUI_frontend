@@ -11,7 +11,7 @@ import {
 import { load3dWidgets } from './load3dWidgets'
 
 describe('Comfy.CreateCameraInfo extension', () => {
-  it('keeps the viewport out of the right side panel', async () => {
+  it('keeps the viewport out of the properties panel', async () => {
     const node = new LGraphNode('CreateCameraInfo')
     load3dWidgets.CAMERA_INFO_STATE(
       node,

@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, shallowRef, watch } from 'vue'
+import { computed, nextTick, onMounted, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { AddCreditsTranslate } from '@comfyorg/account-core/billing'
@@ -50,6 +50,11 @@ import {
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
+import {
+  issueLocalBillingHandoff,
+  reserveBillingHandoffTab
+} from '@/platform/billing/localBillingHandoff'
+import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
@@ -58,6 +63,7 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
+import { useBillingDialogsAccess } from '@/platform/billing/subscription/composables/billingDialogsAccess'
 import { useAddCreditsPlanLine } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
 import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUrl'
@@ -136,14 +142,54 @@ function ownsCheckout(
   )
 }
 
+const opensHandoff = opensLocalBillingHandoff()
+
+async function reopenForCurrentFlag(): Promise<void> {
+  close()
+  await nextTick()
+  await useBillingDialogsAccess().showTopUpCreditsDialog({
+    isInsufficientCredits,
+    source
+  })
+}
+
+async function createHandoffCheckout(
+  amountCents: number,
+  signal: AbortSignal
+): ReturnType<AddCreditsPorts['createCheckout']> {
+  if (!opensLocalBillingHandoff()) {
+    void reopenForCurrentFlag()
+    return { status: 'error', refusal: { kind: 'checkout_failed' } }
+  }
+  const generation = workspaceIdentity.workspaceTransitionGeneration
+  const issued = await issueLocalBillingHandoff(
+    { intent: 'top-up', amountCents },
+    signal
+  )
+  if (issued.status === 'error') {
+    return {
+      status: 'error',
+      refusal: {
+        kind: 'checkout_failed',
+        ...(issued.message === undefined
+          ? {}
+          : { serverMessage: issued.message })
+      }
+    }
+  }
+  ownedCheckout = { generation }
+  return { status: 'ok', url: issued.url }
+}
+
 const ports: AddCreditsPorts = {
   async quote(amountCents, signal) {
     const credits = await quoteTopup(amountCents, signal)
     return credits === null ? { status: 'error' } : { status: 'ok', credits }
   },
   get activatesAutoTopUp() {
-    return flags.billingAutoTopUpAtCheckoutEnabled
+    return !opensHandoff && flags.billingAutoTopUpAtCheckoutEnabled
   },
+  singleUseCheckout: opensHandoff,
   async createCheckout(amountCents, signal, autoTopUp) {
     telemetry?.trackBillingEvent({
       operation: 'topup',
@@ -151,6 +197,7 @@ const ports: AddCreditsPorts = {
       outcome: 'pending',
       payment_intent_source: source
     })
+    if (opensHandoff) return createHandoffCheckout(amountCents, signal)
     const returnUrl = topupCheckoutReturnUrl()
     if (!returnUrl) {
       return { status: 'error', refusal: { kind: 'checkout_failed' } }
@@ -180,7 +227,7 @@ const ports: AddCreditsPorts = {
       }
     }
   },
-  reserveTab: reserveBillingTab,
+  reserveTab: opensHandoff ? reserveBillingHandoffTab : reserveBillingTab,
   watchPayment(landed) {
     if (!ownsCheckout(ownedCheckout)) return () => {}
     paymentWatched = true

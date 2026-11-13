@@ -57,6 +57,7 @@ class FakePorts implements AddCreditsPorts {
   watchStopped = false
   autoTopUpSetupUrl: AddCreditsPorts['autoTopUpSetupUrl']
   activatesAutoTopUp = true
+  singleUseCheckout = false
 
   quoteRejects = false
   checkoutRejects = false
@@ -412,6 +413,61 @@ describe('AddCreditsDialog checkout hand-off', () => {
     expect(
       screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
     ).toBeVisible()
+  })
+})
+
+describe('AddCreditsDialog with a single-use checkout', () => {
+  it('never offers the checkout as a link when the pop-up is blocked, and opens a fresh one from the blocked step', async () => {
+    const { ports, user } = renderDialog()
+    ports.singleUseCheckout = true
+    ports.popupsBlocked = true
+
+    await user.click(continueButton())
+
+    expect(
+      screen.getByRole('heading', { name: "Checkout didn't open" })
+    ).toBeVisible()
+    expect(ports.checkouts).toEqual([])
+    const open = screen.getByTestId('add-credits-open-checkout')
+    expect(open).not.toHaveAttribute('href')
+
+    ports.popupsBlocked = false
+    await user.click(open)
+
+    expect(ports.checkouts).toEqual([5000])
+    expect(ports.tabs[0].url).toBe(CHECKOUT_URL)
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Checkout opened in a new tab'
+      })
+    ).toBeVisible()
+  })
+
+  it('disables the blocked step Open checkout while top-up is not allowed', async () => {
+    const { ports, user, rerender } = renderDialog()
+    ports.singleUseCheckout = true
+    ports.popupsBlocked = true
+    await user.click(continueButton())
+
+    await rerender({ canTopUp: false })
+
+    expect(screen.getByTestId('add-credits-open-checkout')).toBeDisabled()
+  })
+
+  it('shows the server message when the checkout is refused', async () => {
+    const { ports, user } = renderDialog()
+    ports.singleUseCheckout = true
+    ports.refuse({
+      kind: 'checkout_failed',
+      serverMessage: 'Only the workspace owner can add credits.'
+    })
+
+    await user.click(continueButton())
+
+    expect(notice()).toHaveTextContent("Couldn't open checkout")
+    expect(notice()).toHaveTextContent(
+      'Only the workspace owner can add credits.'
+    )
   })
 })
 

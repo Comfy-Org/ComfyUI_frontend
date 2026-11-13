@@ -1,6 +1,6 @@
 <template>
   <section
-    v-if="setup?.state !== 'unavailable'"
+    v-if="!isAutoTopUpNotAvailable(setup)"
     :class="cn('flex flex-col', classes?.root)"
     data-testid="billing-auto-top-up-card"
   >
@@ -105,6 +105,7 @@ import type {
   AutoTopUpOffView,
   AutoTopUpOffViewFacts
 } from '@comfyorg/account-core/billing'
+import { isAutoTopUpNotAvailable } from '@comfyorg/account-core/billing'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { cn } from '@comfyorg/tailwind-utils'

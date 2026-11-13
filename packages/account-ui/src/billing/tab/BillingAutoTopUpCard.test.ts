@@ -252,10 +252,12 @@ describe('BillingAutoTopUpCard', () => {
     expect(onRetry).toHaveBeenCalledOnce()
   })
 
-  it('renders nothing when the server marks setup unavailable', () => {
-    renderCard(loaded(), {
-      setup: { state: 'unavailable', reason: 'billing_rail_not_supported' }
-    })
+  it.for([
+    { state: 'unavailable', reason: 'billing_rail_not_supported' },
+    { state: 'frozen', reason: 'billing_paused' },
+    { state: 'frozen', reason: 'payment_past_due' }
+  ] as const)('renders nothing when setup is $state for $reason', (setup) => {
+    renderCard(loaded({ status: 'on' }), { setup })
 
     expect(screen.queryByTestId('billing-auto-top-up-card')).toBeNull()
   })
