@@ -104,14 +104,14 @@ Resolve conflicts by category (see the SKILL.md Conflict Triage table and "Confl
 **Per-PR validation**, scoped to the files the cherry-pick changed:
 
 ```bash
-mapfile -t TEST_FILES < <(git diff --name-only HEAD~1 | grep -E '\.test\.ts$' || true)
+mapfile -t TEST_FILES < <(git diff --name-only --diff-filter=d HEAD~1 | grep -E '\.test\.ts$' || true)
 [ ${#TEST_FILES[@]} -gt 0 ] && pnpm test:unit "${TEST_FILES[@]}"
 
-mapfile -t CODE_FILES < <(git diff --name-only HEAD~1 | grep -E '\.(ts|vue)$' || true)
+mapfile -t CODE_FILES < <(git diff --name-only --diff-filter=d HEAD~1 | grep -E '\.(ts|vue)$' || true)
 [ ${#CODE_FILES[@]} -gt 0 ] && pnpm exec eslint "${CODE_FILES[@]}" && pnpm exec oxfmt --check "${CODE_FILES[@]}"
 ```
 
-Guard each command against an empty file list: `pnpm test:unit` with no path runs the whole suite. The pre-push hook and CI cover the rest.
+`--diff-filter=d` drops files the cherry-pick deleted, which the commands cannot open. Guard each command against an empty file list: `pnpm test:unit` with no path runs the whole suite. The pre-push hook and CI cover the rest.
 
 ```bash
 git push origin backport-$PR-to-TARGET

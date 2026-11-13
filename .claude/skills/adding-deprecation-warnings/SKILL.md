@@ -29,6 +29,8 @@ gh search code 'oldProp' --language javascript --limit 100
 gh search code 'oldProp' --language typescript --limit 100
 ```
 
+`--limit 100` stops at 100 matches. When a command returns exactly 100, the list is truncated: split the search with `--owner`, `--filename` or a more specific term until each part returns fewer.
+
 Document the usage patterns found (property access, truthiness checks,
 caching to local vars, style mutation, etc.) — these all must continue
 working.

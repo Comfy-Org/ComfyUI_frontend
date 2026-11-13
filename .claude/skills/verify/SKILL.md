@@ -12,12 +12,12 @@ Two other surfaces exist and are **not** covered here: `apps/billing-web` (its o
 ## Launch
 
 ```bash
-nvm use && pnpm dev:cloud
+nvm use && pnpm install && pnpm dev:cloud
 ```
 
 - Use the Node version in `.nvmrc` (and `engines` in `package.json`). `nvm install` if missing.
 - `dev:cloud` → `DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/`. Vite infers `DISTRIBUTION='cloud'` from the `.comfy.org` host (`IS_CLOUD_URL` in `vite.config.mts`), which is what makes `isCloud === true` and the `?ff=` override path reachable.
-- Ready when stdout has `VITE v… ready in` and `➜  Local:   http://localhost:5173/`. Serving takes ~1s; a first run may spend ~30s on `pnpm install` and dependency re-optimization first.
+- Ready when stdout has `VITE v… ready in` and `➜  Local:   http://localhost:5173/`. Serving takes ~1s; a first run may spend ~30s on Vite's dependency re-optimization first. `dev:cloud` does not install dependencies, so run `pnpm install` after every checkout or pull.
 - **Never use `dev:cloud:prod`.** It proxies to `https://cloud.comfy.org`, which is real production with real customers and real money. `dev:cloud:staging` (stagingcloud) is the only other safe target.
 
 Teardown: see Cleanup.

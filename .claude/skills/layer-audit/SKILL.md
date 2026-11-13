@@ -18,9 +18,11 @@ Finds imports that violate the layer boundaries enforced by `comfy/no-restricted
 Lint only the restricted layers; the oxlint config applies the rule:
 
 ```bash
-pnpm exec oxlint src/base/ src/platform/ src/workbench/ --format=json 2>/dev/null \
+pnpm exec oxlint src/base/ src/platform/ src/workbench/ --format=json \
   | jq -r '.diagnostics[] | select(.code == "comfy(no-restricted-paths)") | "\(.filename):\(.labels[0].span.line) \(.message)"' | sort
 ```
+
+An empty list means no violations only when the command printed no errors. If oxlint fails to run, it writes the failure to stderr and no JSON, and the list is empty too.
 
 Each line names the file, the line of the offending import, and the zone message, which states the layer pair. Group the results by that message.
 

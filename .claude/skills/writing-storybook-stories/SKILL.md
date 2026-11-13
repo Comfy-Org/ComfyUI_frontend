@@ -171,7 +171,7 @@ export const AllVariants: Story = {
 - [ ] Add `tags: ['autodocs']`
 - [ ] Keep the story co-located with the component
 - [ ] Run `pnpm storybook` and check each story renders
-- [ ] Run `pnpm lint:unstaged:fix` on the files you changed; the pre-commit hook formats, lints and typechecks what you stage. Do not run repo-wide `pnpm lint` or `pnpm typecheck`
+- [ ] `git add` new story files, then run `pnpm lint:unstaged:fix`; it skips untracked files. The pre-commit hook formats, lints and typechecks what you stage. Do not run repo-wide `pnpm lint` or `pnpm typecheck`
 
 ## Avoid
 

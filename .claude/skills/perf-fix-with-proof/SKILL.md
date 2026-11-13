@@ -100,7 +100,7 @@ Needed to prove the improvement from the upcoming fix for <issue link>." \
 
 ### Step 6: Get PR1 merged
 
-Once PR1 merges, CI runs the test on main and saves the baseline to the `perf-data` branch.
+Once PR1 merges, CI runs the test on main and saves the baseline to the `perf-data` branch. A failed save does not fail that job, so check `baselines/` on `perf-data` for files that contain PR1's test name. PR2 can only show a significant Δ once at least two of them exist and their values for the target metric differ: `scripts/perf-stats.ts` computes no z-score from fewer samples or zero variance.
 
 ### Step 7: Create PR2 (fix) on top of main
 
@@ -116,7 +116,7 @@ Implement the fix. The `@perf` test from PR1 is now on main and will run automat
 
 ### Step 8: Verify the improvement shows in CI
 
-Read the performance section of the PR report comment. If Δ is negative for the target metric and marked significant, the fix is proven.
+Read the performance section of the PR report comment. If Δ is negative for the target metric and marked significant, the fix is proven. If PR2's perf job ran before those baselines existed, rerun it once they do.
 
 ## Test Design Guidelines
 
