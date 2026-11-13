@@ -38,6 +38,9 @@ it('sends no asserted identity, uses immutable JWT without cookies and validates
     send
   )
   await transport.grant(receipt)
+  expect(send.mock.calls[0][0]).toBe(
+    'https://cloud.example/api/global-settings/analytics/posthog-consent'
+  )
   const init = send.mock.calls[0][1]
   expect(init?.credentials).toBe('omit')
   expect(init?.headers).toEqual({
@@ -57,6 +60,23 @@ it('sends no asserted identity, uses immutable JWT without cookies and validates
     send.mockResolvedValueOnce(response)
     await expect(transport.grant(receipt)).resolves.toBe(false)
   }
+})
+
+it('revokes through the same dedicated resource without widening the settings union', async () => {
+  const send = vi
+    .fn<typeof fetch>()
+    .mockResolvedValue(new Response(null, { status: 204 }))
+  const transport = createAnalyticsConsentTransport(
+    'https://cloud.example/api',
+    credential(),
+    () => true,
+    send
+  )
+  await expect(transport.revoke()).resolves.toBe(true)
+  expect(send.mock.calls[0][0]).toBe(
+    'https://cloud.example/api/global-settings/analytics/posthog-consent'
+  )
+  expect(send.mock.calls[0][1]?.method).toBe('DELETE')
 })
 
 it('rejects expired, API-key and stale-session grants without sending', async () => {

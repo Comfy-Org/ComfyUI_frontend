@@ -25,3 +25,10 @@ The website host may retain an injected binder for tests; its default binder can
 then import this shared entry directly. Supplying a real consent-event source and
 reviewed matching policy/notice remains an independent hold. SDK opt-out and
 Agent/OAuth/default analytics booleans are not substituted.
+
+The transport uses the dedicated
+`/api/global-settings/analytics/posthog-consent` POST/DELETE resource. It never
+falls back to widening the generic settings response union. The stored receipt
+and exact authenticated ACK schema are unchanged; missing/older receivers deny
+grants and never establish eligibility. Revocation has the same actor/workspace
+scope and is available with grants disabled. No public read endpoint is needed.
