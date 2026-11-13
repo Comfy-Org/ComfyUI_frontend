@@ -957,6 +957,16 @@ export interface Comfy {
   onExecutingNodeChanged(
     listener: (node: NodeHandle | undefined) => void
   ): Unsubscribe
+  /** Fires after every workflow load, undo and redo, with the open document. */
+  onWorkflowLoaded(
+    listener: (document: DocumentHandle | undefined) => void
+  ): Unsubscribe
+  /** An open document became the one on screen. */
+  onDocumentActivated(listener: (document: DocumentHandle) => void): Unsubscribe
+  /** An open document was closed. Its handle reports `isDeleted` from then on. */
+  onDocumentClosed(listener: (document: DocumentHandle) => void): Unsubscribe
+  /** The open documents, opening a workflow, and files the host cannot read. */
+  readonly workflow: WorkflowHandle
 }
 
 /** Which graphs `onNodeChanged` hears: the graph on screen by default. */
@@ -981,4 +991,72 @@ export interface NodeMoveEvent {
   readonly node: NodeHandle
   /** The node's new top-left corner, in graph space. */
   readonly position: Point
+}
+
+/** One open workflow: an editing session, from opening it until closing it. */
+export interface DocumentHandle {
+  /**
+   * The same through undo, redo and tab switches; a reopened workflow gets a
+   * new one. It means nothing after a page reload, so do not save it.
+   */
+  readonly id: string
+  /** True once the document is closed, and every other read is `undefined`. */
+  readonly isDeleted: boolean
+  /** The file name, without its directory or extension. */
+  readonly name: string | undefined
+  /** Where the workflow is saved, or `undefined` while it has never been saved. */
+  readonly path: string | undefined
+}
+
+/** Parsed ComfyUI workflow JSON. */
+export type WorkflowData = Readonly<Record<string, unknown>>
+
+/** An argument a member cannot use throws a `TypeError`. */
+export interface WorkflowHandle {
+  /** The open document on screen, or `undefined` before there is one. */
+  current(): DocumentHandle | undefined
+  /** The id of `current()`. */
+  documentId(): string | undefined
+  /** A frozen copy of the open document's workflow, as it would be saved. */
+  snapshot(): WorkflowData | undefined
+  /**
+   * Opens `data` as a new document on screen. Resolves `false` if the host did
+   * not load it, and rejects with a `TypeError` if it is not a workflow.
+   */
+  open(data: WorkflowData): Promise<boolean>
+  /** `value` with `%date:…%` and `%Node.widget%` expanded in the open document. */
+  applyTextReplacements(value: string): string | undefined
+  /** Asks `importer` for a workflow when a file the host cannot read is opened or dropped. */
+  registerImporter(importer: WorkflowImporter): Unsubscribe
+}
+
+export interface WorkflowImportContext {
+  readonly name: string
+  /** The MIME type the browser gives the file, or `''`. */
+  readonly type: string
+}
+
+export type WorkflowImportResult =
+  | { readonly workflow: WorkflowData | string }
+  | { readonly prompt: WorkflowData | string }
+
+/** Reads a workflow or prompt from a file the host cannot read itself. */
+export interface WorkflowImporter {
+  /** Names the importer in error reports; no two importers share one. */
+  readonly id: string
+  /** Offered files of these MIME types or extensions; every file when neither is given. */
+  readonly mimeTypes?: readonly string[]
+  readonly extensions?: readonly string[]
+  /** Files larger than this are not offered. */
+  readonly maxBytes: number
+  enabled?(): boolean | Promise<boolean>
+  /** Returns nothing to decline the file. A throw is reported and the next importer is asked. */
+  parse(
+    bytes: Uint8Array,
+    context: WorkflowImportContext
+  ):
+    | WorkflowImportResult
+    | null
+    | undefined
+    | Promise<WorkflowImportResult | null | undefined>
 }

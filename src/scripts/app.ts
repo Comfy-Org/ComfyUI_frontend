@@ -1683,6 +1683,7 @@ export class ComfyApp implements IComfyApp {
         await cancelReplacedLoad()
         return undefined
       }
+      useComfyApiStore().workflowLoaded()
       ChangeTracker.isLoadingGraph = false
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
@@ -2189,6 +2190,10 @@ export class ComfyApp implements IComfyApp {
     let workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
     try {
       workflowData = await getWorkflowDataFromFile(file)
+      workflowData = await useComfyApiStore().importWorkflowFile(
+        file,
+        workflowData
+      )
     } catch (error) {
       await previousDiscovery
       releaseDiscovery()
@@ -2389,6 +2394,7 @@ export class ComfyApp implements IComfyApp {
             this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
           )
           await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+          useComfyApiStore().workflowLoaded()
           return
         } catch (error) {
           if (!lifecycle.started) throw error
@@ -2750,6 +2756,7 @@ export class ComfyApp implements IComfyApp {
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      useComfyApiStore().workflowLoaded()
       lifecycleCompleted = true
       if (missingNodeTypes.length) {
         this.showMissingNodesError(missingNodeTypes, options)
