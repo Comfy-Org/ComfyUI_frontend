@@ -16,7 +16,7 @@ export const zPostHogConsentSettingValue = z.object({
  * The last-changed timestamp every stored setting carries.
  */
 export const zGlobalSettingUpdatedAt = z.object({
-  updated_at: z.iso.datetime()
+  updated_at: z.iso.datetime({ offset: true })
 })
 
 export const zStoredPostHogConsentSetting = zPostHogConsentSettingValue

@@ -75,6 +75,28 @@ it('rejects expired, API-key and stale-session grants without sending', async ()
   expect(send).not.toHaveBeenCalled()
 })
 
+it.for(['2024-06-15T12:00:00+00:00', '2024-06-15T08:00:00-04:00'])(
+  'accepts a valid RFC3339 offset timestamp %s',
+  async (updated_at) => {
+    const send = vi.fn<typeof fetch>().mockResolvedValue(
+      Response.json({
+        key: 'Comfy.Analytics.PostHogConsent',
+        value: receipt,
+        updated_at,
+        scope: { actor_id: 'actor', workspace_id: 'workspace' }
+      })
+    )
+    await expect(
+      createAnalyticsConsentTransport(
+        '/api',
+        credential(),
+        () => true,
+        send
+      ).grant(receipt)
+    ).resolves.toBe(true)
+  }
+)
+
 it('a session switch during response parsing cannot acknowledge a grant', async () => {
   let current = true
   const response = ack()
