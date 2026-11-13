@@ -249,6 +249,40 @@ describe('graph edits', () => {
       expect(comfy.graph.version).not.toBe(afterAdd)
     })
 
+    it('advances when the host adds a node or links two', () => {
+      const source = new LGraphNode('Source')
+      source.addOutput('out', 'INT')
+      const target = new LGraphNode('Target')
+      target.addInput('in', 'INT')
+      const before = comfy.graph.version
+
+      shown().add(source)
+      const afterAdd = comfy.graph.version
+      shown().add(target)
+      source.connect(0, target, 0)
+
+      expect(afterAdd).not.toBe(before)
+      expect(comfy.graph.version).not.toBe(afterAdd)
+    })
+
+    it('holds still for a move, a color or a widget value set outside the API', () => {
+      const node = new LGraphNode('Changed outside the API')
+      const widget = node.addWidget('number', 'steps', 1, () => {})
+      shown().add(node)
+      const before = comfy.graph.version
+
+      node.pos = [node.pos[0] + 40, node.pos[1]]
+      node.color = '#123'
+      widget.value = 5
+
+      expect([node.pos[0], node.color, widget.value]).toEqual([
+        expect.any(Number),
+        '#123',
+        5
+      ])
+      expect(comfy.graph.version).toBe(before)
+    })
+
     it('is undefined without a graph on screen', () => {
       graph = null
 

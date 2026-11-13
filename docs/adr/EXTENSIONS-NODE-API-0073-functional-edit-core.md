@@ -18,10 +18,15 @@ least one such call, so the methods have to keep working.
 The review of the earlier API
 ([#16790](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16790#discussion_r3927590595))
 asked that edits be serializable commands and that handles not become a second
-way to change the graph. Main has a serializable command form only for layout
-(`LayoutOperation`: positions and sizes). Titles, modes, links, slots, adding
-and removing go through LiteGraph's own methods, and undo restores whole
-snapshots that the change tracker captures. Issue
+way to change the graph. Main has two command forms. Layout has
+`LayoutOperation` (positions and sizes). LiteGraph announces a graph intent
+(`graphIntents.ts`) from the methods it adds and removes nodes, adds and removes
+links, and sets the title, mode, collapsed and pinned fields through; when a
+shared document is bound, the agent's `docOpMinter.ts` mints those intents into
+the serializable operations of `@comfyorg/comfy-multi-player` (`add_node`,
+`delete_node`, `connect`, `disconnect`, `set_node_field`, `set_widget`).
+Colors, shapes, properties, widget saving and slot fields have neither form,
+and undo restores whole snapshots that the change tracker captures. Issue
 [#16852](https://github.com/Comfy-Org/ComfyUI_frontend/issues/16852) is the
 follow-up for a command interface.
 
@@ -30,8 +35,10 @@ follow-up for a command interface.
 ### One place where an edit happens
 
 1. `comfy.edit` holds every edit the API can make. Each function takes handles
-   and plain data, and nothing else, so a call is already the data a command
-   would carry.
+   and plain data, and nothing else. A node edit names its node by graph id
+   and node id, which a command could carry; a slot handle's id is a number
+   this session gives the slot object, and `batch` takes a function, so those
+   are not yet the data of a command (decision 27).
 2. Each edit runs in four steps, in this order:
    1. It checks every argument a pack passed, and throws a `TypeError` from
       `invalidArgument` for the first it cannot use. Numbers must be finite.
@@ -57,11 +64,10 @@ follow-up for a command interface.
 4. The handle methods packs call are kept, and each is one call into
    `comfy.edit`: `node.setTitle(title)` is `comfy.edit.updateNode(node,
    { title })`. They hold no edit logic. Their types say which call they are.
-5. Edits are not replayable commands. Main has no command form for anything but
-   layout, and these functions call the same host methods the editor's own UI
-   calls. What undo does for each edit is in the mutation table. When main
-   grows commands, each function here can construct one from its arguments
-   without changing what a pack calls.
+5. Edits are not replayable commands of their own. They call the same host
+   methods the editor's own UI calls, so an edit raises the graph intent or
+   layout operation that method raises, and no other (decision 27). What undo
+   does for each edit is in the mutation table.
 
 ### Node edits
 
@@ -130,7 +136,10 @@ follow-up for a command interface.
 13. `comfy.graph.links()` lists the links of the graph on screen as frozen
     `LinkInfo` records, sorted by link id so the order does not depend on how
     the graph was loaded. `comfy.graph.version` is the graph's own version
-    counter, which every edit through this API advances.
+    counter. Every edit through this API advances it; the host advances it
+    when nodes or links are added or removed and a node is collapsed or
+    pinned, but not for a move, a resize, a color, a property or a widget
+    value, so it says that something changed, not that nothing did.
 
 ### Slots and links
 
@@ -262,6 +271,38 @@ are refused before anything changes:
     `reorderSubgraphInputs`, which reorders the subgraph's inputs and the
     node's together. Every other slot edit on a subgraph node is refused; a
     pack edits the subgraph's inputs and outputs in the subgraph.
+
+### Graph intents and the command future
+
+27. Each edit announces what the host method it calls announces:
+    `title` and `mode` (their setters) and `collapsed` (`collapse`) a
+    `set_node_field` intent, `addNode` an `add_node`, `removeNode` a
+    `remove_node`, `connect` and `disconnect` a `connect` or `disconnect`, and
+    `position` and `size` a layout operation. The other node fields, slot
+    fields, `addInput`, `addOutput` and the input reorder announce nothing, as
+    the same edits made by the editor's own code do not. `moveLinks` and the
+    output reorder re-point links in the link store, which raises no intent;
+    the editor has no such edit, and no intent kind describes it. So in a
+    session bound to a shared document these two edits, like a color change,
+    reach no other participant. The options, none of which this ADR adopts
+    without the owner's decision:
+    - **Keep this**, and record the gap (chosen until decided).
+    - **Re-point by disconnecting and connecting.** It would announce, but
+      every moved link would get a new id, against decision 19, and the
+      saved `links` array would change.
+    - **Announce from the API.** There is no intent kind for an endpoint
+      change; adding one is a change in `graphIntents.ts` and the minter, a
+      core change, and announcing `disconnect` and `connect` for a link whose
+      id stays would describe something that did not happen.
+    - **Refuse the two edits while a shared document is bound.** It keeps the
+      document consistent at the cost of failing the call in those sessions.
+
+    Recommendation: keep this for now, and file the core ticket in "Core
+    limitations" for an intent kind for endpoint changes and for slot fields
+    and slot structure, which the editor's own subgraph and widget code would
+    use too; the API then raises it from the same calls. For `comfy.edit` to
+    be a command interface, slot handles would also need an id that a saved
+    document carries, which the host does not have (decision 14).
 
 ## The mutation table
 
@@ -416,6 +457,15 @@ ADR-EXTENSIONS-NODE-API-0070.
   node's inputs with `replaceNodeInputs`, and the floating link points at
   another input. _Direction:_ update floating links in `replaceNodeInputs` as
   `removeInput` does.
+- **No intent for re-pointed links or slot edits.** `moveLinks` and the
+  output reorder update link endpoints in the link store, and slot fields and
+  slot structure change without an intent, so none of them reaches the shared
+  document's operations (decision 27). Ticket draft: _Title:_ "Announce link
+  endpoint changes and slot edits as graph intents". _Reproduction:_ bind a
+  shared document, re-point a link with `useLinkStore().updateEndpoints`, and
+  no operation is minted. _Direction:_ intent kinds for an endpoint update and
+  for slot field and structure changes, raised by the link store and the slot
+  methods, and minted into operations.
 - **Badges under Vue nodes.** `usePartitionedBadges` computes a node's badges
   from `node.badges`, a plain array no reactive state depends on, so a badge an
   extension adds or removes after the node is drawn neither shows nor goes.
@@ -434,9 +484,10 @@ ADR-EXTENSIONS-NODE-API-0070.
 - An edit through the API is one undo step and marks the workflow modified,
   through the same tracker as the editor's own edits.
 - Every edit advances its graph's version, including edits that LiteGraph
-  itself does not count (a title, a color).
-- The node handle carries the edit methods through an `extend` seam in
-  `createNodeHandles`, which builds each handle with the members another module
+  itself does not count (a title, a color); the version does not see changes
+  made outside the API that LiteGraph does not count (decision 13).
+- The node handle carries the edit methods through the `membersFor` parameter
+  of `createNodeHandles`, which builds each handle with the members another module
   supplies and then freezes it. `NodeHandles` gains `locator`, which gives,
   for a handle it made, the function that finds its node in the handle's own
   graph and document; every call that takes a node handle goes through it.
