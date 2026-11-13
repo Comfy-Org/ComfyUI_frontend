@@ -1293,6 +1293,11 @@ class LayoutStoreImpl {
     })
   }
 
+  flushPendingChanges(): void {
+    this.flushQueuedGlobalChanges()
+    this.flushQueuedGeometryChanges()
+  }
+
   private flushQueuedGlobalChanges(): void {
     this.isGlobalDispatchQueued = false
     if (this.pendingGlobalChanges.length === 0) return
@@ -1313,19 +1318,23 @@ class LayoutStoreImpl {
 
     this.isGeometryDispatchQueued = true
     queueMicrotask(() => {
-      this.isGeometryDispatchQueued = false
-      const changes = this.pendingGeometryChanges
-      this.pendingGeometryChanges = []
-      for (const change of changes) {
-        for (const listener of this.geometryListeners) {
-          try {
-            listener(change)
-          } catch (error) {
-            this.reportListenerFailure(error, 'geometry', listener)
-          }
+      this.flushQueuedGeometryChanges()
+    })
+  }
+
+  private flushQueuedGeometryChanges(): void {
+    this.isGeometryDispatchQueued = false
+    const changes = this.pendingGeometryChanges
+    this.pendingGeometryChanges = []
+    for (const change of changes) {
+      for (const listener of this.geometryListeners) {
+        try {
+          listener(change)
+        } catch (error) {
+          this.reportListenerFailure(error, 'geometry', listener)
         }
       }
-    })
+    }
   }
 
   private reportListenerFailure(

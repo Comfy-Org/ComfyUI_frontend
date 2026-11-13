@@ -279,6 +279,8 @@ import PendingInvitesList from '@/platform/workspace/components/dialogs/settings
 import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/account/composables/useMembersPanel'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useAuthStore } from '@/stores/authStore'
+import { buildSupportFormUrl } from '@/utils/supportFormUrl'
 
 const TEAM_PLAN_REQUEST_URL =
   'https://comfysupport.portal.usepylon.com/forms/team-plan-requests'
@@ -357,7 +359,13 @@ const livePendingCount = computed(
 )
 
 function handleContactUs() {
-  window.open(TEAM_PLAN_REQUEST_URL, '_blank', 'noopener,noreferrer')
+  window.open(
+    buildSupportFormUrl(TEAM_PLAN_REQUEST_URL, {
+      email: useAuthStore().userEmail
+    }),
+    '_blank',
+    'noopener,noreferrer'
+  )
 }
 
 function handleContactSales() {

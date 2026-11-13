@@ -5,6 +5,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   computed,
   effectScope,
+  onScopeDispose,
   reactive,
   ref,
   shallowReactive,
@@ -20,7 +21,6 @@ import { deploymentDownloads } from '@/platform/workspace/stores/deploymentLibra
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   mapInputFileToAssetItem,
-  mapTaskOutputToAssetItem,
   unflattenOutputAssets
 } from '@/platform/assets/composables/media/assetMappers'
 import type {
@@ -31,8 +31,12 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import {
   useAssetsQuery,
-  invalidateAll
+  invalidateAll,
+  loadNewAll
 } from '@/platform/assets/composables/useAssetsQuery'
+import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
+import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import {
@@ -42,12 +46,10 @@ import {
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { AssetSeedCompletedWsMessage } from '@comfyorg/api-client/executionTypes'
-import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { api } from '@/scripts/api'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
-import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
 
@@ -71,46 +73,6 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
   )
 }
 
-/**
- * Convert history job items to asset items
- */
-function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
-  const assetItems: AssetItem[] = []
-
-  for (const job of historyItems) {
-    // Only process completed jobs with preview output
-    if (job.status !== 'completed' || !job.preview_output) {
-      continue
-    }
-
-    const task = new TaskItemImpl(job)
-
-    if (!task.previewOutput) {
-      continue
-    }
-
-    const assetItem = mapTaskOutputToAssetItem(task, task.previewOutput)
-
-    assetItem.user_metadata = {
-      ...assetItem.user_metadata,
-      outputCount:
-        task.previewableOutputsCount ??
-        task.outputsCount ??
-        task.previewableOutputs.length,
-      allOutputs: task.previewableOutputs
-    }
-
-    assetItems.push(assetItem)
-  }
-
-  return assetItems.sort(
-    (a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  )
-}
-
-const BATCH_SIZE = 200
-const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
 const MAX_OUTPUT_LOOKUP_PAGES = 20
 
 export const useAssetsStore = defineStore('assets', () => {
@@ -163,189 +125,77 @@ export const useAssetsStore = defineStore('assets', () => {
     loadNew: async () => undefined
   }
 
-  function useHistoryAssets(): PagedList<AssetItem> {
-    // Pagination state
-    const historyOffset = ref(0)
-    const hasMoreHistory = ref(true)
-    const isLoadingMore = ref(false)
-    const allHistoryItems = ref<AssetItem[]>([])
-    const loadedIds = shallowReactive(new Set<string>())
-
-    /**
-     * Fetch history assets with pagination support
-     * @param loadMore - true for pagination (append), false for initial load (replace)
-     */
-    const fetchHistoryAssets = async (
-      loadMore = false
-    ): Promise<AssetItem[]> => {
-      // Reset state for initial load
-      if (!loadMore) {
-        historyOffset.value = 0
-        hasMoreHistory.value = true
-        allHistoryItems.value = []
-        loadedIds.clear()
-      }
-
-      // Fetch from server with offset
-      const history = await api.getHistory(BATCH_SIZE, {
-        offset: historyOffset.value
-      })
-
-      // Convert JobListItems to AssetItems
-      const newAssets = mapHistoryToAssets(history)
-
-      if (loadMore) {
-        // Filter out duplicates and insert in sorted order
-        for (const asset of newAssets) {
-          if (loadedIds.has(asset.id)) {
-            continue // Skip duplicates
-          }
-          loadedIds.add(asset.id)
-
-          // Find insertion index to maintain sorted order (newest first)
-          const assetTime = new Date(asset.created_at).getTime()
-          const insertIndex = allHistoryItems.value.findIndex(
-            (item) => new Date(item.created_at).getTime() < assetTime
-          )
-
-          if (insertIndex === -1) {
-            // Asset is oldest, append to end
-            allHistoryItems.value.push(asset)
-          } else {
-            // Insert at the correct position
-            allHistoryItems.value.splice(insertIndex, 0, asset)
-          }
+  function useHistoryAssets(): [PagedList<AssetItem>, PagedList<AssetItem>] {
+    const history = useJobOutputHistory()
+    const resolvedAssetsCache = ref<Partial<Record<string, AssetItem[]>>>({})
+    watch(
+      () => toValue(history.items),
+      (items, previousItems) => {
+        const currentAssetsCache = resolvedAssetsCache.value
+        const currentIds = new Set(items.map(({ id }) => id))
+        for (const jobId of Object.keys(currentAssetsCache)) {
+          if (!currentIds.has(jobId)) delete currentAssetsCache[jobId]
         }
-      } else {
-        // Initial load: replace all
-        allHistoryItems.value = newAssets
-        newAssets.forEach((asset) => loadedIds.add(asset.id))
-      }
-
-      // Update pagination state
-      historyOffset.value += BATCH_SIZE
-      hasMoreHistory.value = history.length === BATCH_SIZE
-
-      if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-        const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-        allHistoryItems.value = allHistoryItems.value.slice(
-          0,
-          MAX_HISTORY_ITEMS
-        )
-
-        // Clean up Set
-        removed.forEach((item) => loadedIds.delete(item.id))
-      }
-
-      return allHistoryItems.value
-    }
-
-    const historyAssets = ref<AssetItem[]>([])
-    const historyLoading = ref(false)
-    const historyError = ref<unknown>(null)
-    let historyQueue = Promise.resolve()
-    let refreshPromise: Promise<void> | undefined
-    let loadMorePromise: Promise<boolean> | undefined
-
-    /**
-     * Initial load of history assets
-     */
-    const doUpdateHistory = async () => {
-      historyLoading.value = true
-      historyError.value = null
-      try {
-        await fetchHistoryAssets(false)
-        historyAssets.value = allHistoryItems.value
-      } catch (err) {
-        reportError(err, {
-          errorType: 'failure_loading_history_assets',
-          surface: 'assets'
-        })
-        historyError.value = err
-      } finally {
-        historyLoading.value = false
-      }
-    }
-
-    const updateHistory = () => {
-      if (!refreshPromise) {
-        refreshPromise = historyQueue.then(doUpdateHistory).finally(() => {
-          refreshPromise = undefined
-        })
-        historyQueue = refreshPromise
-      }
-      return refreshPromise
-    }
-
-    /**
-     * Load more history items (infinite scroll)
-     */
-    const doLoadMoreHistory = async () => {
-      isLoadingMore.value = true
-      historyError.value = null
-
-      try {
-        await fetchHistoryAssets(true)
-        historyAssets.value = allHistoryItems.value
-        return true
-      } catch (err) {
-        reportError(err, {
-          errorType: 'failure_loading_more_history_assets',
-          surface: 'assets'
-        })
-        historyError.value = err
-        return false
-      } finally {
-        isLoadingMore.value = false
-      }
-    }
-
-    const loadMoreHistory = () => {
-      if (!loadMorePromise) {
-        const operation = historyQueue.then(() =>
-          hasMoreHistory.value ? doLoadMoreHistory() : false
-        )
-        loadMorePromise = operation.finally(() => {
-          loadMorePromise = undefined
-        })
-        historyQueue = operation.then(() => undefined)
-      }
-      return loadMorePromise
-    }
-
-    return {
-      hasMore: hasMoreHistory,
-      invalidate: updateHistory,
-      isLoading: computed(() => historyLoading.value || isLoadingMore.value),
-      items: historyAssets,
-      loadMore: loadMoreHistory,
-      loadNew: updateHistory
-    }
+        for (const asset of items) {
+          const metadata = getOutputAssetMetadata(asset.user_metadata)
+          const jobId = metadata?.jobId
+          if (!jobId || previousItems?.includes(asset)) continue
+          void resolveOutputAssetItems(metadata, {
+            createdAt: asset.created_at,
+            fallbackItems: currentAssetsCache[jobId]
+          }).then((assets) => {
+            if (toValue(history.items).includes(asset)) {
+              currentAssetsCache[jobId] = assets
+            }
+          })
+        }
+      },
+      { immediate: true }
+    )
+    const flatOutputs = new WrappedList(history, (items) =>
+      items.flatMap((asset) => {
+        const jobId = getOutputAssetMetadata(asset.user_metadata)?.jobId
+        if (!jobId) return [asset]
+        return resolvedAssetsCache.value[jobId] ?? [asset]
+      })
+    )
+    return [history, flatOutputs]
   }
 
   const inputAssets = ref<PagedList<AssetItem>>(undefined!)
   const outputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const flatOutputAssets = ref<PagedList<AssetItem>>(undefined!)
+  const allAssets = ref<PagedList<AssetItem>>(undefined!)
   let assetsScope: EffectScope | undefined
+  onScopeDispose(() => assetsScope?.stop())
   watch(
     () => flags.assetsEnabled,
     (isAssets) => {
-      if (assetsScope) assetsScope.stop()
-      assetsScope = undefined
-
-      if (isAssets) {
-        assetsScope = effectScope()
-        assetsScope.run(() => {
+      assetsScope?.stop()
+      assetsScope = effectScope()
+      assetsScope.run(() => {
+        if (isAssets) {
           inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
-          const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
+          flatOutputAssets.value = useAssetsQuery({
+            tags_any: ['output', 'temp']
+          })
           outputAssets.value = new WrappedList(
-            flatAssets,
+            flatOutputAssets.value,
             unflattenOutputAssets
           )
-        })
-      } else {
-        inputAssets.value = historyInputs
-        outputAssets.value = useHistoryAssets()
-      }
+          allAssets.value = useAssetsQuery({
+            tags_any: ['input', 'output', 'temp']
+          })
+        } else {
+          inputAssets.value = historyInputs
+          ;[outputAssets.value, flatOutputAssets.value] = useHistoryAssets()
+          allAssets.value = new WrappedList(
+            flatOutputAssets.value,
+            (outputItems) => [...toValue(historyInputs.items), ...outputItems]
+          )
+          void executeUpdateInputs()
+        }
+      })
     },
     { immediate: true }
   )
@@ -369,6 +219,11 @@ export const useAssetsStore = defineStore('assets', () => {
     api,
     'assets.seed.completed',
     async ({ detail }: CustomEvent<AssetSeedCompletedWsMessage>) => {
+      if (flags.assetsEnabled) {
+        if (detail.phase !== 'fast') await invalidateAll()
+        else if (detail.created) await loadNewAll()
+        return
+      }
       if (detail.phase !== 'fast') {
         await outputAssets.value.invalidate()
         await inputAssets.value.invalidate()
@@ -1102,6 +957,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
   return {
     // States
+    allAssets,
+    flatOutputAssets,
     inputAssets,
     outputAssets,
     invalidateAll,

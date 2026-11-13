@@ -19,7 +19,6 @@ type JobsListResponse = z.infer<typeof zJobsListResponse>
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const KSAMPLER_NODE = '3'
-const EXECUTING_CLASS = /outline-primary/
 
 const QUEUE_ROUTE = /\/api\/jobs\?[^/]*status=in_progress,pending/
 const HISTORY_ROUTE = /\/api\/jobs\?[^/]*status=completed/
@@ -266,16 +265,15 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
     })
   })
 
-  test.describe('vue node executing class', { tag: '@vue-nodes' }, () => {
+  test.describe('vue node execution indicator', { tag: '@vue-nodes' }, () => {
     for (const scenario of scenarios) {
       test(scenario.name, async ({ comfyPage, getWebSocket }) => {
         const ws = await getWebSocket()
         const exec = new ExecutionHelper(comfyPage, ws)
 
-        // The executing outline lives on the outer `[data-node-id]`
-        // container, not the inner wrapper.
-        const ksamplerNode = comfyPage.vueNodes.getNodeLocator(KSAMPLER_NODE)
-        await expect(ksamplerNode).toBeVisible()
+        const ksamplerNode =
+          await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+        await expect(ksamplerNode.root).toBeVisible()
 
         const jobId = await exec.run()
         exec.executionStart(jobId)
@@ -290,15 +288,13 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
           }
         })
 
-        await expect(ksamplerNode).toHaveClass(EXECUTING_CLASS)
+        await expect(ksamplerNode.executionOutline).toBeVisible()
 
         await triggerReconnect(comfyPage, ws, scenario, jobId)
 
-        if (scenario.expectsActiveAfter) {
-          await expect(ksamplerNode).toHaveClass(EXECUTING_CLASS)
-        } else {
-          await expect(ksamplerNode).not.toHaveClass(EXECUTING_CLASS)
-        }
+        await expect(ksamplerNode.executionOutline).toBeVisible({
+          visible: scenario.expectsActiveAfter
+        })
       })
     }
   })

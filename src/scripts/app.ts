@@ -137,7 +137,6 @@ import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplaceme
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type {
@@ -810,7 +809,8 @@ export class ComfyApp implements IComfyApp {
       })
       if (precondition) {
         void useAccountPreconditionDialog().open(precondition, {
-          nodeType: detail.node_type
+          nodeType: detail.node_type,
+          runRefused: true
         })
       }
       this.canvas.draw(true, true)
@@ -899,8 +899,6 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/sync-workflows', () =>
       useWorkspaceStore().workflow.syncWorkflows()
     )
-    //Doesn't need to block. Blueprints will load async
-    void useSubgraphStore().fetchSubgraphs()
 
     this.addProcessKeyHandler()
     this.addConfigureHandler()
@@ -1199,8 +1197,16 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
-    return this.enqueueGraphLoad(() =>
-      this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
+    return this.enqueueGraphLoad(async () =>
+      options.isCurrent?.() === false
+        ? false
+        : this.loadGraphDataNow(
+            graphData,
+            clean,
+            restore_view,
+            workflow,
+            options
+          )
     )
   }
 
@@ -1221,7 +1227,8 @@ export class ComfyApp implements IComfyApp {
       deferWarnings = false,
       skipAssetScans = false,
       silentAssetErrors = false,
-      workflowNavigationId
+      workflowNavigationId,
+      isCurrent
     } = options
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
     let reset_invalid_values = false
@@ -1409,6 +1416,21 @@ export class ComfyApp implements IComfyApp {
       return false
     }
 
+    const cancelReplacedLoad = () =>
+      useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new DOMException('Workflow load was replaced', 'AbortError')
+      )
+    if (isCurrent?.() === false) {
+      ChangeTracker.isLoadingGraph = false
+      await cancelReplacedLoad()
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
+      return false
+    }
+
     const fitView = () => {
       const savedCameraState = normalizeCameraState(graphData.extra?.ds, {
         minScale: this.canvas.ds.min_scale,
@@ -1505,11 +1527,6 @@ export class ComfyApp implements IComfyApp {
       const configuredGraphState = this.rootGraph.state
       const isCurrentGraphLoad = () =>
         configuredGraphState === this.rootGraph.state
-      const cancelReplacedLoad = () =>
-        useExtensionService().invokeExtensionsAsync(
-          'onGraphLoadError',
-          new DOMException('Workflow load was replaced', 'AbortError')
-        )
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
         : 0
@@ -1579,6 +1596,10 @@ export class ComfyApp implements IComfyApp {
       if (!isCurrentGraphLoad()) {
         await cancelReplacedLoad()
         return undefined
+      }
+      if (isCurrent?.() === false) {
+        await cancelReplacedLoad()
+        return false
       }
 
       const effectiveShareId =
@@ -1978,6 +1999,7 @@ export class ComfyApp implements IComfyApp {
               const opened = await useAccountPreconditionDialog().open(
                 promptPrecondition,
                 {
+                  runRefused: true,
                   creditsLocked: promptErrorHasLockedCredits(
                     error instanceof PromptExecutionError
                       ? error.response.error

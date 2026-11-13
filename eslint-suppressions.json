@@ -34,7 +34,7 @@
       "count": 1
     }
   },
-  "src/components/rightSidePanel/settings/SetNodeColor.vue": {
+  "src/renderer/extensions/propertiesPanel/settings/SetNodeColor.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 2
     }
@@ -64,7 +64,7 @@
       "count": 2
     }
   },
-  "src/renderer/extensions/maskEditor/components/BrushSettingsPanel.vue": {
+  "packages/mask-editor/src/ui/components/BrushSettingsPanel.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 4
     }
@@ -79,7 +79,7 @@
       "count": 3
     }
   },
-  "src/renderer/extensions/vueNodes/widgets/components/form/FormSelectButton.vue": {
+  "src/renderer/extensions/propertiesPanel/settings/FormSelectButton.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 2
     }

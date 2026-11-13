@@ -4,7 +4,7 @@ import { jobOutputInsertionCases } from '@e2e/fixtures/data/jobOutputInsertion'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { jobOutputInsertionTest as test } from '@e2e/fixtures/jobOutputInsertionFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe(
   'Job output insertion',
@@ -14,7 +14,7 @@ test.describe(
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.expectNodeCount(0)
       await comfyPage.toast.closeToasts()
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
@@ -27,7 +27,7 @@ test.describe(
       test(`does not surface errors when inserting the owned ${scenario.mediaKind} job asset`, async ({
         comfyPage
       }) => {
-        const panel = new PropertiesPanelHelper(comfyPage.page)
+        const panel = new PropertiesPanel(comfyPage.page)
         await expect(panel.root).toBeVisible()
         const initialLoaderCount = (
           await comfyPage.nodeOps.getNodeRefsByType(scenario.nodeType)

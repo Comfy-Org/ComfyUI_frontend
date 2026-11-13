@@ -16,7 +16,12 @@ import type {
   SubscriptionDialogOptions
 } from '@/platform/billing/composables/types'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
-import { openPlatformPlans } from '@/platform/billing/openPlatformPlans'
+import {
+  navigateToPlatformPlans,
+  openPlatformPlans
+} from '@/platform/billing/openPlatformPlans'
+import { t } from '@/i18n'
+import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { provideSubscriptionDialog } from '@/platform/billing/subscription/composables/subscriptionDialogAccess'
 import { toCurrentTier } from '@/platform/billing/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
@@ -32,6 +37,12 @@ import {
 import type { PendingSubscriptionCheckout } from '@/platform/billing/utils/pendingSubscriptionCheckout'
 
 const DIALOG_KEY = 'subscription-required'
+
+interface PlansLinkCopy {
+  title: string
+  body: string
+  linkLabel: string
+}
 
 function paymentIntentSourceOf(
   options?: SubscriptionDialogOptions
@@ -114,6 +125,66 @@ export const useSubscriptionDialog = () => {
     return true
   }
 
+  function runRefusedCopy(): PlansLinkCopy {
+    const { subscriptionState } = useBillingContext()
+    const { available, maxAvailable } = useFreeTierQuota()
+    const body =
+      subscriptionState.value === 'ended'
+        ? t('subscription.plansLink.runRefusedEnded')
+        : subscriptionState.value === 'never_subscribed' &&
+            maxAvailable.value > 0 &&
+            available.value === 0
+          ? t('subscription.plansLink.runRefusedFreeRunsUsed', {
+              total: maxAvailable.value
+            })
+          : t('subscription.plansLink.runRefusedNoPlan')
+    return {
+      title: t('subscription.plansLink.runRefusedTitle'),
+      body,
+      linkLabel: t('subscription.plansLink.choosePlan')
+    }
+  }
+
+  async function showPlansLinkDialog(copy: PlansLinkCopy): Promise<void> {
+    dialogService.showLayoutDialog({
+      key: DIALOG_KEY,
+      component: (
+        await import('@/platform/billing/components/PlatformPlansLinkDialog.vue')
+      ).default,
+      props: { ...copy, onClose: hide }
+    })
+  }
+
+  async function handOffToPlatformPlans(
+    options: SubscriptionDialogOptions | undefined,
+    trackEntry: () => void
+  ): Promise<void> {
+    if (options?.runRefused) {
+      await showPlansLinkDialog(runRefusedCopy())
+      trackEntry()
+      return
+    }
+    if (options?.sameTab) {
+      trackPaywallShown(paymentIntentSourceOf(options))
+      navigateToPlatformPlans()
+      return
+    }
+    if (openPlatformPlans()) {
+      trackPaywallShown(paymentIntentSourceOf(options))
+      return
+    }
+    await showPlansLinkDialog({
+      title: t('subscription.plansLink.blockedTitle'),
+      body: t('subscription.plansLink.blockedBody'),
+      linkLabel: t('subscription.plansLink.openPlansPage')
+    })
+    trackEntry()
+  }
+
+  function usesPlansLinkDialog(): boolean {
+    return flags.billingNewUxEnabled && !flags.pricingTableFallback
+  }
+
   async function showPricingTable(
     options?: SubscriptionDialogOptions
   ): Promise<boolean> {
@@ -139,9 +210,15 @@ export const useSubscriptionDialog = () => {
       const trackEntry = () =>
         trackPaywallEntry(reason, paymentIntentSource, refusalType)
 
-      if (!options?.resumingCheckout && openPlatformPlans()) {
-        trackPaywallShown(paymentIntentSource)
-        return true
+      if (!options?.resumingCheckout) {
+        if (usesPlansLinkDialog()) {
+          await handOffToPlatformPlans(options, trackEntry)
+          return true
+        }
+        if (openPlatformPlans()) {
+          trackPaywallShown(paymentIntentSource)
+          return true
+        }
       }
 
       const nonDismissableDialogProps = {

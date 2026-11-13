@@ -385,16 +385,21 @@ describe(assetService.deleteAsset, () => {
     await expect(assetService.deleteAsset('asset-1')).rejects.toThrow(/503/)
   })
 
-  it('issues a DELETE to the asset endpoint when the response is ok', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(buildResponse(null))
+  it.for([204, 404])(
+    'confirms the record is absent after DELETE returns %s',
+    async (status) => {
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        new Response(null, { status })
+      )
 
-    await assetService.deleteAsset('asset-1')
+      await expect(assetService.deleteAsset('asset-1')).resolves.toBeUndefined()
 
-    expect(api.fetchApi).toHaveBeenCalledWith(
-      '/assets/asset-1',
-      expect.objectContaining({ method: 'DELETE' })
-    )
-  })
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/assets/asset-1',
+        expect.objectContaining({ method: 'DELETE' })
+      )
+    }
+  )
 })
 
 describe('asset tag changes', () => {
