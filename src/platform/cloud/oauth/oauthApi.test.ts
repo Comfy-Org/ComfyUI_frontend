@@ -395,7 +395,7 @@ describe('submitOAuthConsentDecision', () => {
 describe('redirectHost', () => {
   it.for([
     ['https://chatgpt.com/connector/oauth/abc123', 'chatgpt.com'],
-    ['https://www.cursor.com/connector/oauth/callback', 'www.cursor.com'],
+    ['https://www.cursor.com/agents/mcp/oauth/callback', 'www.cursor.com'],
     ['http://127.0.0.1:50632/cb', undefined],
     ['http://127.0.0.2/cb', undefined],
     ['http://localhost:8080/cb', undefined],

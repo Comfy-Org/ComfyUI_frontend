@@ -224,7 +224,7 @@ describe('OAuthConsentView', () => {
     {
       platform: 'cursor',
       displayName: 'Cursor',
-      redirectUri: 'https://www.cursor.com/connector/oauth/callback',
+      redirectUri: 'https://www.cursor.com/agents/mcp/oauth/callback',
       host: 'www.cursor.com',
       icon: 'icon-[comfy--cursor]'
     }
@@ -288,6 +288,11 @@ describe('OAuthConsentView', () => {
       case: 'a custom-scheme redirect',
       verifiedClient: chatgpt,
       redirectUri: 'comfy://oauth/callback'
+    },
+    {
+      case: "Cursor's custom-scheme callback",
+      verifiedClient: { platform: 'cursor', display_name: 'Cursor' },
+      redirectUri: 'cursor://anysphere.cursor-mcp/oauth/callback'
     }
   ])(
     'renders a dynamic client with $case as unverified',
@@ -322,17 +327,13 @@ describe('OAuthConsentView', () => {
     }
   )
 
-  it('renders a dynamic client named Cursor with no verified_client exactly as today', async () => {
-    // A non-Cursor callback that only borrowed the name: without a
-    // server-issued verified_client it stays unverified — orange badge,
-    // "provided by whoever registered this app" notice, generic app-window
-    // icon — and never shows the Cursor brand icon.
+  it('keeps a dynamic client named Cursor unverified without verified_client', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
       Response.json({
         ...challenge,
         client_display_name: 'Cursor',
         client_provenance: 'dynamic',
-        redirect_uri: 'https://www.cursor.com/connector/oauth/callback'
+        redirect_uri: 'https://www.cursor.com/agents/mcp/oauth/callback'
       })
     )
     const router = createRouter({

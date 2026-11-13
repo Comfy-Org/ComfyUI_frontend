@@ -162,7 +162,7 @@ export const VerifiedCursor: Story = {
       client_display_name: 'Comfy Cloud',
       client_provenance: 'dynamic',
       client_application_type: 'web',
-      redirect_uri: 'https://www.cursor.com/connector/oauth/callback',
+      redirect_uri: 'https://www.cursor.com/agents/mcp/oauth/callback',
       verified_client: { platform: 'cursor', display_name: 'Cursor' }
     }
   }
