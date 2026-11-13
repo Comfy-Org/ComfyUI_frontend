@@ -16,15 +16,18 @@ import {
 } from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
-const { createSessionOrThrow } = vi.hoisted(() => ({
-  createSessionOrThrow: vi.fn<() => Promise<void>>(async () => undefined)
+const { recreateSession } = vi.hoisted(() => ({
+  recreateSession: vi.fn<
+    () => Promise<'created' | 'identity_changed' | 'failed'>
+  >(async () => 'created')
 }))
 
 vi.mock(import('@/platform/cloud/oauth/oauthApi'), { spy: true })
 vi.mock(import('@/platform/auth/session/useSessionCookie'), () => ({
   useSessionCookie: () => ({
     createSession: vi.fn(),
-    createSessionOrThrow,
+    createSessionOrThrow: vi.fn(),
+    recreateSession,
     sessionRequiresSso: vi.fn(),
     ensureSessionCookie: vi.fn(),
     deleteSession: vi.fn()
@@ -491,8 +494,61 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     await router.push(
       `/oauth/consent?oauth_request_id=${challenge.oauth_request_id}`
     )
-    render(OAuthConsentView, { global: { plugins: [i18n, router] } })
+    return render(OAuthConsentView, { global: { plugins: [i18n, router] } })
   }
+
+  function deferred<T>() {
+    let resolve: (value: T) => void = () => {}
+    const promise = new Promise<T>((settle) => {
+      resolve = settle
+    })
+    return { promise, resolve }
+  }
+
+  it('does not sign in again once the consent view is left while the session is being recreated', async () => {
+    const navigation = vi
+      .spyOn(window.location, 'href', 'set')
+      .mockImplementation(() => {})
+    const recreation = deferred<'failed'>()
+    vi.mocked(fetch).mockResolvedValueOnce(signInRedirect())
+    recreateSession.mockReturnValueOnce(recreation.promise)
+
+    const { unmount } = await renderLoadedConsent()
+    await vi.waitFor(() => expect(recreateSession).toHaveBeenCalledOnce())
+    unmount()
+    recreation.resolve('failed')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
+    expect(navigation).not.toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('neither recreates the session nor signs in again when the redirect lands after the consent view is left', async () => {
+    const answer = deferred<Response>()
+    vi.mocked(fetch).mockReturnValueOnce(answer.promise)
+
+    const { unmount } = await renderLoadedConsent()
+    unmount()
+    answer.resolve(signInRedirect())
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(recreateSession).not.toHaveBeenCalled()
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
+  })
+
+  it('shows the session error instead of signing out when another account took the session during recovery', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(signInRedirect())
+    recreateSession.mockResolvedValueOnce('identity_changed')
+
+    await renderLoadedConsent()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Failed to establish session. Please try again.'
+    )
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledOnce()
+  })
 
   it('establishes the session and shows the consent when the backend sends the request to sign-in', async () => {
     vi.mocked(fetch)
@@ -502,7 +558,7 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     await renderLoadedConsent()
 
     expect(await screen.findByText('Comfy Desktop wants access')).toBeVisible()
-    expect(createSessionOrThrow).toHaveBeenCalledOnce()
+    expect(recreateSession).toHaveBeenCalledOnce()
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(useAuthActions().logout).not.toHaveBeenCalled()
@@ -510,13 +566,14 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
 
   it('sends the user to sign in again with the same request when the session cannot be established', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(signInRedirect())
-    createSessionOrThrow.mockRejectedValueOnce(new Error('No Firebase token'))
+    recreateSession.mockResolvedValueOnce('failed')
 
     await renderLoadedConsent()
 
     await waitFor(() => {
       expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
-        signInPath
+        signInPath,
+        keepWorkspaceStorage: true
       })
     })
     expect(fetch).toHaveBeenCalledOnce()
@@ -532,16 +589,17 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
 
     await waitFor(() => {
       expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
-        signInPath
+        signInPath,
+        keepWorkspaceStorage: true
       })
     })
-    expect(createSessionOrThrow).toHaveBeenCalledOnce()
+    expect(recreateSession).toHaveBeenCalledOnce()
     expect(fetch).toHaveBeenCalledTimes(2)
   })
 
   it('shows the session error when leaving for sign-in is cancelled', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(signInRedirect())
-    createSessionOrThrow.mockRejectedValueOnce(new Error('No Firebase token'))
+    recreateSession.mockResolvedValueOnce('failed')
     vi.mocked(useAuthActions().logout).mockResolvedValueOnce(false)
 
     await renderLoadedConsent()
@@ -561,7 +619,7 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Failed to establish session. Please try again.'
     )
-    expect(createSessionOrThrow).not.toHaveBeenCalled()
+    expect(recreateSession).not.toHaveBeenCalled()
     expect(useAuthActions().logout).not.toHaveBeenCalled()
   })
 })

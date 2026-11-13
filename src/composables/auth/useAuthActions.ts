@@ -117,14 +117,16 @@ export const useAuthActions = () => {
     }
   }
 
-  /** `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in. */
+  /** `beforeSignOut` runs once unsaved work is settled; false keeps the user signed in. `keepWorkspaceStorage` keeps persisted drafts the tab has not loaded. */
   const logout = wrapWithErrorHandlingAsync(
     async ({
       beforeSignOut,
-      signInPath = '/cloud/login'
+      signInPath = '/cloud/login',
+      keepWorkspaceStorage = false
     }: {
       beforeSignOut?: () => Promise<boolean>
       signInPath?: string
+      keepWorkspaceStorage?: boolean
     } = {}): Promise<boolean> => {
       if (isCloud) {
         const workflowStore = useWorkflowStore()
@@ -160,7 +162,7 @@ export const useAuthActions = () => {
       await authStore.logout()
       if (isCloud) {
         prepareWorkflowLogoutTransition()
-        clearAllWorkspaceStorage()
+        if (!keepWorkspaceStorage) clearAllWorkspaceStorage()
       }
 
       toast.success(t('auth.signOut.success'), {
@@ -172,7 +174,6 @@ export const useAuthActions = () => {
         try {
           window.location.href = signInPath
         } catch {
-          // needed for local development until we bring in cloud login pages.
           window.location.reload()
         }
       }

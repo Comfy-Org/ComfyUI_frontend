@@ -239,7 +239,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { RadioGroupItem, RadioGroupRoot } from 'reka-ui'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
@@ -290,6 +290,7 @@ const errorMessage = ref('')
 const submitting = ref<'allow' | 'deny' | null>(null)
 const isSubmitting = computed(() => submitting.value !== null)
 const switchingAccount = ref(false)
+let left = false
 
 const signedInAccount = computed(() => {
   if (!flags.oauthConsentSwitchAccountEnabled) return null
@@ -351,40 +352,42 @@ async function loadChallenge() {
     return
   }
   try {
-    const fetched = await fetchChallengeEstablishingSession(oauthRequestId)
-    if (fetched.kind === 'session-required') {
-      await signInAgain(oauthRequestId)
-      return
-    }
-    challenge.value = fetched.challenge
-    selectedWorkspaceId.value = getDefaultWorkspaceId(fetched.challenge)
+    const fetched = await fetchOAuthConsentChallenge(oauthRequestId)
+    if (left) return
+    if (fetched.kind === 'challenge') showChallenge(fetched.challenge)
+    else await recoverSession(oauthRequestId)
   } catch (error) {
     errorMessage.value = messageForError(error)
   }
 }
 
-async function fetchChallengeEstablishingSession(oauthRequestId: string) {
-  const fetched = await fetchOAuthConsentChallenge(oauthRequestId)
-  if (fetched.kind === 'challenge' || !(await establishSessionCookie())) {
-    return fetched
-  }
-  return fetchOAuthConsentChallenge(oauthRequestId)
+function showChallenge(next: OAuthConsentChallenge) {
+  challenge.value = next
+  selectedWorkspaceId.value = getDefaultWorkspaceId(next)
 }
 
-async function establishSessionCookie(): Promise<boolean> {
-  try {
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
-    await useSessionCookie().createSessionOrThrow()
-    return true
-  } catch {
-    return false
+async function recoverSession(oauthRequestId: string) {
+  const { useSessionCookie } =
+    await import('@/platform/auth/session/useSessionCookie')
+  const recreated = await useSessionCookie().recreateSession()
+  if (left) return
+  if (recreated === 'identity_changed') {
+    errorMessage.value = t('oauth.consent.sessionError')
+    return
   }
+  const retried =
+    recreated === 'created'
+      ? await fetchOAuthConsentChallenge(oauthRequestId)
+      : undefined
+  if (left) return
+  if (retried?.kind === 'challenge') showChallenge(retried.challenge)
+  else await signInAgain(oauthRequestId)
 }
 
 async function signInAgain(oauthRequestId: string) {
   const signedOut = await useAuthActions().logout({
-    signInPath: switchAccountSignInPath(oauthRequestId)
+    signInPath: switchAccountSignInPath(oauthRequestId),
+    keepWorkspaceStorage: true
   })
   if (!signedOut) errorMessage.value = t('oauth.consent.sessionError')
 }
@@ -455,5 +458,9 @@ onMounted(() => {
   if (!initialChallenge) {
     void loadChallenge()
   }
+})
+
+onUnmounted(() => {
+  left = true
 })
 </script>

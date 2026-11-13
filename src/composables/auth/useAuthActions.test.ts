@@ -179,6 +179,17 @@ describe('useAuthActions.logout', () => {
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })
 
+  it('keeps persisted workflows when asked to keep workspace storage', async () => {
+    vi.spyOn(window.location, 'href', 'set').mockImplementation(() => {})
+    const { logout } = useAuthActions()
+
+    await logout({ keepWorkspaceStorage: true })
+
+    expect(mockAuthStore.logout).toHaveBeenCalledOnce()
+    expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
+    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+  })
+
   it.for([
     { case: 'the cloud login page by default', signInPath: undefined },
     {
