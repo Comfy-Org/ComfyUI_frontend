@@ -2945,7 +2945,7 @@
       "auth/weak-password": "Password is too weak. Please use a stronger password with at least 6 characters.",
       "auth/too-many-requests": "Too many login attempts. Please wait a moment and try again.",
       "auth/operation-not-allowed": "This sign-in method is not currently supported.",
-      "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
+      "auth/invalid-credential": "Invalid login credentials. Please check your email and password. If you have signed in with Google or GitHub before, use that instead.",
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
       "auth/popup-closed-by-user": "The sign-in window closed before sign-in finished. Please try again.",
       "auth/cancelled-popup-request": "Another sign-in window was already open, so this one was cancelled. Please try again.",
