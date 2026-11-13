@@ -56,8 +56,7 @@ function initialFocusId(): string {
   return backButtonId
 }
 
-async function removeSkill(pack: SkillPack): Promise<void> {
-  const scope = skills.scope
+async function removeSkill(pack: SkillPack, scope: string): Promise<void> {
   const deleted = await deleteSkillPack(pack)
   await nextTick()
   if (deleted) drafts.setDraft(scope, { kind: 'edit', name: pack.name }, null)
@@ -68,6 +67,7 @@ async function removeSkill(pack: SkillPack): Promise<void> {
 }
 
 function confirmDelete(pack: SkillPack): void {
+  const requestScope = skills.scope
   const dialog = showConfirmDialog({
     headerProps: { title: t('agent.deleteSkillTitle') },
     props: { promptText: t('agent.deleteSkillMessage', { name: pack.name }) },
@@ -78,7 +78,8 @@ function confirmDelete(pack: SkillPack): void {
       onCancel: () => dialogStore.closeDialog(dialog),
       onConfirm: async () => {
         dialogStore.closeDialog(dialog)
-        await removeSkill(pack)
+        if (!skills.isCurrentScope(requestScope)) return
+        await removeSkill(pack, requestScope)
       }
     }
   })

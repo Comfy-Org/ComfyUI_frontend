@@ -42,7 +42,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
 
   let flagGateStarted = false
   let fetchGeneration = 0
-  let inFlight: Promise<void> | undefined
+  let inFlight: Promise<boolean> | undefined
   let catalogRequested = false
   const { resolvedUserInfo } = useCurrentUser()
   const workspace = useTeamWorkspaceStore()
@@ -139,7 +139,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     invalidateCatalog()
   }
 
-  function fetchPacks(): Promise<void> {
+  function fetchPacks(): Promise<boolean> {
     syncScope()
     catalogRequested = true
     if (inFlight) return inFlight
@@ -168,20 +168,21 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     routesAvailable.value = true
   }
 
-  async function fetchPacksOnce(): Promise<void> {
+  async function fetchPacksOnce(): Promise<boolean> {
     const generation = ++fetchGeneration
     const requestScope = scope.value
     loading.value = true
     loadFailed.value = false
     try {
       const nextPacks = await listSkillPacks()
-      if (isSuperseded(generation, requestScope)) return
+      if (isSuperseded(generation, requestScope)) return false
       applyCatalog(nextPacks)
+      return true
     } catch (error) {
-      if (isSuperseded(generation, requestScope)) return
+      if (isSuperseded(generation, requestScope)) return false
       if (isRoutesUnavailable(error)) {
         markUnavailable()
-        return
+        return false
       }
       loadFailed.value = true
       throw error

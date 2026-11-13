@@ -22,9 +22,6 @@ import AgentSkillList from './AgentSkillList.vue'
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@comfyorg/telemetry'))
-vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 vi.mock(import('@/components/dialog/confirm/confirmDialog'))
 
@@ -116,7 +113,6 @@ function pendingDelete() {
 
 describe('AgentSkillList row actions', () => {
   beforeEach(() => {
-    localStorage.clear()
     seedCatalog([LANDSCAPE, PORTRAIT])
     vi.mocked(deleteSkillPack).mockResolvedValue(undefined)
     vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
@@ -322,25 +318,58 @@ describe('AgentSkillList row actions', () => {
       }
     )
 
-    it('keeps the draft changes after a 404 when the workspace changes during the refresh', async () => {
+    it.for([
+      ['changes', false],
+      ['changes and changes back', true]
+    ] as const)(
+      'keeps the draft changes after a 404 when the workspace %s during the refresh',
+      async ([, changesBack]) => {
+        const workspace = useTeamWorkspaceStore()
+        const shownWorkspaceId = workspace.workspaceId
+        seedDraft(
+          { kind: 'edit', name: 'landscape' },
+          { ...DRAFT, name: 'landscape' }
+        )
+        vi.mocked(deleteSkillPack).mockRejectedValueOnce(
+          new SkillPacksApiError('missing', 404)
+        )
+        const { user } = mount()
+        await chooseDelete(user, 'landscape')
+        vi.mocked(listSkillPacks).mockImplementation(async () => {
+          Object.assign(workspace, { workspaceId: 'workspace-b' })
+          if (changesBack)
+            Object.assign(workspace, { workspaceId: shownWorkspaceId })
+          return [LANDSCAPE, PORTRAIT]
+        })
+
+        await confirmDeletion()
+
+        Object.assign(workspace, { workspaceId: shownWorkspaceId })
+        expect(useSkillDraftStore().editDraftFor('landscape')).toBeDefined()
+      }
+    )
+
+    it('keeps the draft changes of the skill when the workspace changed while the question was open', async () => {
       const workspace = useTeamWorkspaceStore()
       const shownWorkspaceId = workspace.workspaceId
       seedDraft(
         { kind: 'edit', name: 'landscape' },
         { ...DRAFT, name: 'landscape' }
       )
-      vi.mocked(deleteSkillPack).mockRejectedValueOnce(
-        new SkillPacksApiError('missing', 404)
-      )
       const { user } = mount()
       await chooseDelete(user, 'landscape')
-      vi.mocked(listSkillPacks).mockImplementation(async () => {
-        Object.assign(workspace, { workspaceId: 'workspace-b' })
-        return [PORTRAIT]
-      })
 
+      Object.assign(workspace, { workspaceId: 'workspace-b' })
+      seedDraft(
+        { kind: 'edit', name: 'landscape' },
+        { ...DRAFT, name: 'landscape', body: 'Workspace B text' }
+      )
       await confirmDeletion()
 
+      expect(deleteSkillPack).not.toHaveBeenCalled()
+      expect(useSkillDraftStore().editDraftFor('landscape')?.body).toBe(
+        'Workspace B text'
+      )
       Object.assign(workspace, { workspaceId: shownWorkspaceId })
       expect(useSkillDraftStore().editDraftFor('landscape')).toBeDefined()
     })

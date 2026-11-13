@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, useId, watch } from 'vue'
+import { computed, nextTick, onMounted, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -28,9 +28,6 @@ const descriptionId = useId()
 const bodyId = useId()
 const saveButtonId = useId()
 
-const visible = ref(true)
-const savedName = ref<string>()
-
 const {
   form,
   errors,
@@ -41,19 +38,14 @@ const {
   handleSubmit
 } = useSkillPackForm({
   pack: () => skill,
-  visible,
   onSaved: (saved) => {
-    savedName.value = saved.name
-  }
+    draft.settle()
+    emit('close', saved.name)
+  },
+  onUnavailable: () => emit('close')
 })
 
 const draft = useSkillDraft({ pack: skill, form })
-
-watch(visible, (isVisible) => {
-  if (isVisible) return
-  if (savedName.value) draft.settle()
-  emit('close', savedName.value)
-})
 
 const isEditing = computed(() => skill !== undefined)
 
@@ -101,7 +93,7 @@ function keepShortcutEnterInForm(event: KeyboardEvent): void {
 }
 
 function requestClose(): void {
-  visible.value = false
+  emit('close')
 }
 
 onMounted(async () => {

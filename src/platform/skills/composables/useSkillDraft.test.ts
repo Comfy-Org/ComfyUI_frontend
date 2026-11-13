@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, reactive } from 'vue'
 
 import { useSkillDraftStore } from '@/platform/skills/stores/skillDraftStore'
@@ -16,11 +16,6 @@ function openAddForm() {
 }
 
 describe('useSkillDraft', () => {
-  beforeEach(() => {
-    localStorage.clear()
-    vi.useFakeTimers()
-  })
-
   it('does not bring back a draft that a save removed after the form was closed and reopened within the save delay', async () => {
     const first = openAddForm()
     first.form.body = 'a'

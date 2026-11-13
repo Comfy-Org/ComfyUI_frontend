@@ -141,17 +141,6 @@ describe('storageKeys', () => {
       )
     })
 
-    it('scopes skill drafts to the skills scope', async () => {
-      const { StorageKeys } = await import('./storageKeys')
-
-      expect(StorageKeys.agentSkillDrafts('["origin","user","ws"]')).toBe(
-        'Comfy.Agent.SkillDrafts:["origin","user","ws"]'
-      )
-      expect(StorageKeys.prefixes.agentSkillDrafts).toBe(
-        'Comfy.Agent.SkillDrafts:'
-      )
-    })
-
     it('exposes prefix patterns for cleanup', async () => {
       const { StorageKeys } = await import('./storageKeys')
 

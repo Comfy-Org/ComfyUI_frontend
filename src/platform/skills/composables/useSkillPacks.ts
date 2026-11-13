@@ -30,8 +30,7 @@ export function useSkillPacks() {
 
   async function fetchSkillPacks(): Promise<boolean> {
     try {
-      await store.fetchPacks()
-      return true
+      return await store.fetchPacks()
     } catch (error) {
       reportUnexpected(error, 'error_fetching_agent_skill_packs')
       return false
@@ -52,11 +51,10 @@ export function useSkillPacks() {
       if (!store.isCurrentScope(requestScope)) return false
       if (error instanceof SkillPacksApiError && error.status === 404) {
         store.removePack(pack.name, requestScope)
-        const refreshed = await fetchSkillPacks()
+        const listingApplied = await fetchSkillPacks()
         return (
+          listingApplied &&
           store.isCurrentScope(requestScope) &&
-          refreshed &&
-          store.routesAvailable &&
           !store.packs.some((existing) => existing.name === pack.name)
         )
       }

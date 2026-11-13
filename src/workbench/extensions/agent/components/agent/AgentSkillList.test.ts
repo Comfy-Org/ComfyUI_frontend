@@ -264,9 +264,9 @@ describe('AgentSkillList', () => {
   })
 
   it.for([
-    { initialFocus: 'add' as const, focused: 'Add skill' },
+    { initialFocus: 'add', focused: 'Add skill' },
     { initialFocus: { pack: 'portrait' }, focused: 'portrait' }
-  ])(
+  ] as const)(
     'puts focus on $focused when the screen is asked to',
     async ({ initialFocus, focused }) => {
       seedCatalog([LANDSCAPE, PORTRAIT])

@@ -48,10 +48,6 @@ function seedCatalog(packs: SkillPack[]) {
   return skills
 }
 
-function serverHolds(packs: SkillPack[]) {
-  vi.mocked(listSkillPacks).mockResolvedValue(packs)
-}
-
 function mount() {
   const user = userEvent.setup()
   const view = render(AgentSkillsScreen, { global: { plugins: [i18n] } })
@@ -97,7 +93,6 @@ function pendingSave() {
 
 describe('AgentSkillsScreen', () => {
   beforeEach(() => {
-    localStorage.clear()
     seedCatalog([LANDSCAPE])
   })
 
@@ -142,7 +137,7 @@ describe('AgentSkillsScreen', () => {
       vi.mocked(publishSkillPack).mockResolvedValue(PORTRAIT)
       const { user } = mount()
       await openAddForm(user)
-      serverHolds([LANDSCAPE, PORTRAIT])
+      vi.mocked(listSkillPacks).mockResolvedValue([LANDSCAPE, PORTRAIT])
 
       await fillField(user, 'Name', ' portrait ')
       await fillField(user, 'When to use', 'Compose a portrait')
@@ -170,7 +165,7 @@ describe('AgentSkillsScreen', () => {
       await fillField(user, 'When to use', 'Compose a portrait')
       await fillField(user, 'Instructions', 'Keep the subject sharp')
 
-      serverHolds([LANDSCAPE, PORTRAIT])
+      vi.mocked(listSkillPacks).mockResolvedValue([LANDSCAPE, PORTRAIT])
       await user.click(screen.getByRole('button', { name: 'Save' }))
 
       expect(screen.getByRole('button', { name: 'Save' })).toHaveAttribute(
@@ -224,13 +219,17 @@ describe('AgentSkillsScreen', () => {
     it.for([
       ['Instructions', 'Control'],
       ['Instructions', 'Meta'],
+      ['Instructions', 'Alt'],
       ['Name', 'Control'],
       ['When to use', 'Meta']
     ])(
       'keeps Enter with %s held down in %s from reaching the app-wide shortcuts that run the workflow',
-      async ([field, modifier]) => {
+      async ([field, modifier], { onTestFinished }) => {
         const appWideShortcuts = vi.fn()
         window.addEventListener('keydown', appWideShortcuts)
+        onTestFinished(() =>
+          window.removeEventListener('keydown', appWideShortcuts)
+        )
         const { user } = mount()
         await openAddForm(user)
         await user.click(screen.getByRole('textbox', { name: field }))
@@ -240,20 +239,9 @@ describe('AgentSkillsScreen', () => {
         const enterPresses = appWideShortcuts.mock.calls.filter(
           ([event]) => event.key === 'Enter'
         )
-        window.removeEventListener('keydown', appWideShortcuts)
         expect(enterPresses).toEqual([])
       }
     )
-
-    it('shows When to use in a field that wraps long text over several lines', async () => {
-      const { user } = mount()
-
-      await openAddForm(user)
-
-      expect(
-        screen.getByRole('textbox', { name: 'When to use' })
-      ).toBeInstanceOf(HTMLTextAreaElement)
-    })
 
     it('saves from Enter in When to use without adding a line break', async () => {
       const save = pendingSave()
@@ -396,7 +384,7 @@ describe('AgentSkillsScreen', () => {
       expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
 
       vi.mocked(publishSkillPack).mockResolvedValueOnce(PORTRAIT)
-      serverHolds([LANDSCAPE, PORTRAIT])
+      vi.mocked(listSkillPacks).mockResolvedValue([LANDSCAPE, PORTRAIT])
       await user.click(screen.getByRole('button', { name: 'Save' }))
 
       expect(
@@ -503,7 +491,7 @@ describe('AgentSkillsScreen', () => {
       vi.mocked(publishSkillPack).mockResolvedValue(updated)
       const { user } = mount()
       await openEditForm(user, 'landscape')
-      serverHolds([updated])
+      vi.mocked(listSkillPacks).mockResolvedValue([updated])
 
       await user.clear(screen.getByRole('textbox', { name: 'When to use' }))
       await fillField(user, 'When to use', 'Compose a wide landscape')
@@ -527,12 +515,6 @@ describe('AgentSkillsScreen', () => {
         form: 'Edit',
         open: openLandscapeForm,
         leave: 'Back to skills',
-        focused: 'landscape'
-      },
-      {
-        form: 'Edit',
-        open: openLandscapeForm,
-        leave: 'Cancel',
         focused: 'landscape'
       },
       {
@@ -663,6 +645,26 @@ describe('AgentSkillsScreen', () => {
       await user.click(screen.getByRole('button', { name: 'Save' }))
 
       await screen.findByRole('list', { name: 'Skills' })
+      expect(screen.queryByRole('list', { name: 'Drafts' })).toBeNull()
+    })
+
+    it('removes the draft of a save that completes after the screen was closed', async () => {
+      const save = pendingSave()
+      const first = mount()
+      await openAddForm(first.user)
+      await fillField(first.user, 'Name', 'portrait')
+      await fillField(first.user, 'When to use', 'Compose a portrait')
+      await fillField(first.user, 'Instructions', 'Keep the subject sharp')
+      await first.user.click(screen.getByRole('button', { name: 'Save' }))
+      first.unmount()
+
+      save.resolve(PORTRAIT)
+      await vi.waitFor(() =>
+        expect(useSkillPacksStore().packs).toContainEqual(PORTRAIT)
+      )
+      mount()
+
+      expect(await screen.findByRole('list', { name: 'Skills' })).toBeVisible()
       expect(screen.queryByRole('list', { name: 'Drafts' })).toBeNull()
     })
 

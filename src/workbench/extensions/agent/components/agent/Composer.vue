@@ -32,7 +32,6 @@ import type {
 import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
 import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
-import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import type {
   PromptSnapshot,
   WorkflowReference,
@@ -297,10 +296,6 @@ function onEditorInput(): void {
 
 function focusEditor(): void {
   editorRef.value?.focus()
-}
-
-function onSelectSkill(skill: SkillReferenceMetadata): void {
-  editorRef.value?.selectSkill(skill)
 }
 
 function isSkillDescription(target: EventTarget | null): boolean {
@@ -712,7 +707,7 @@ defineExpose({
             @request-workflow-references="emit('requestWorkflowReferences')"
             @request-skills="skills.refreshPacks()"
             @retry-skills="skills.ensurePacks()"
-            @select-skill="onSelectSkill"
+            @select-skill="editorRef?.selectSkill($event)"
             @manage-skills="emit('manageSkills')"
             @focus-prompt="focusEditor"
           />

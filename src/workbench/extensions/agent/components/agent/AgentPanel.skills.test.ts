@@ -116,20 +116,30 @@ describe('AgentPanel skills screen', () => {
     expect(screen.getByTestId('agent-panel-footer')).toBeVisible()
   })
 
-  it('leaves an open form for a new chat without asking, dropping what was typed', async () => {
-    const { emitted } = mount()
+  it('keeps typed skill changes as a draft when New chat leaves the form', async () => {
+    mount()
     await userEvent.click(
       screen.getAllByRole('button', { name: 'Add skill' })[0]
     )
     await userEvent.click(await screen.findByRole('textbox', { name: 'Name' }))
     await userEvent.keyboard('portrait')
-
     await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
-
-    expect(emitted().newChat).toEqual([['new_chat_button']])
     expect(screen.queryByText('Discard unsaved changes?')).toBeNull()
-    expect(useAgentPanelStore().view).toEqual({ screen: 'chat' })
-    expect(screen.getByTestId('agent-panel-footer')).toBeVisible()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Skills' })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Manage skills' })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'portrait' })
+    )
+
+    expect(await screen.findByRole('textbox', { name: 'Name' })).toHaveValue(
+      'portrait'
+    )
   })
 
   it('reports the standing paywall only while the chat is visible', async () => {

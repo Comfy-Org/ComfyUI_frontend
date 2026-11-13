@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import {
@@ -24,10 +24,6 @@ const LANDSCAPE = {
 }
 
 describe('skillDraftStore', () => {
-  beforeEach(() => {
-    localStorage.clear()
-  })
-
   it('reads a new-skill draft back from storage', () => {
     const skills = useSkillPacksStore()
     const drafts = useSkillDraftStore()
@@ -54,6 +50,30 @@ describe('skillDraftStore', () => {
     expect(drafts.editDraftFor('portrait')).toBeUndefined()
     expect(drafts.newSkillDraft).toBeNull()
   })
+
+  it.for(['landscape', '__proto__', 'constructor', 'toString'])(
+    'reads back the edit draft of a skill named %s from storage',
+    (name) => {
+      const skills = useSkillPacksStore()
+      const drafts = useSkillDraftStore()
+      const scope = skills.scope
+      drafts.setDraft(scope, { kind: 'edit', name }, { ...LANDSCAPE, name })
+
+      skills.scope = 'another-account'
+      skills.scope = scope
+
+      expect(drafts.editDraftFor(name)).toEqual({ ...LANDSCAPE, name })
+    }
+  )
+
+  it.for(['__proto__', 'constructor', 'toString'])(
+    'has no edit draft for a skill named %s that was never edited',
+    (name) => {
+      const drafts = useSkillDraftStore()
+
+      expect(drafts.editDraftFor(name)).toBeUndefined()
+    }
+  )
 
   it('removes the stored entry once the last draft is cleared', () => {
     const skills = useSkillPacksStore()

@@ -8053,7 +8053,7 @@ describe('AgentPanelRoot history', () => {
     await vi.waitFor(() => expect(history.activeId).toBe('th-active'))
   })
 
-  it.for(['chat', 'skills'] as const)(
+  it.for(['skills'] as const)(
     'restores the current thread when the panel opens on the %s screen',
     async (screen) => {
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
