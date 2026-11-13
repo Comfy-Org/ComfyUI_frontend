@@ -4176,6 +4176,9 @@
     "credits": "Credits",
     "balanceUnavailable": "Couldn't load your balance.",
     "billingSettings": "Billing settings",
+    "planCredits": "Plan credits",
+    "topUpCredits": "Top-up credits",
+    "paymentProcessing": "Payment processing…",
     "planStatus": {
       "noPlan": "No plan",
       "paused": "Paused",
