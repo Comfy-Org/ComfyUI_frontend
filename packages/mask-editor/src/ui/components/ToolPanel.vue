@@ -9,7 +9,9 @@
         :class="
           cn(
             'maskEditor_toolPanelContainer hover:bg-accent',
-            currentTool === tool && 'maskEditor_toolPanelContainerSelected'
+            !extensionActive &&
+              currentTool === tool &&
+              'maskEditor_toolPanelContainerSelected'
           )
         "
         @click="onToolSelect(tool)"
@@ -19,6 +21,7 @@
         </div>
         <div class="maskEditor_toolPanelIndicator"></div>
       </div>
+      <slot />
     </div>
 
     <div
@@ -46,7 +49,8 @@ import type { Tools } from '#/types'
 import { allTools } from '#/types'
 import { useMaskEditorStore } from '#/maskEditorStore'
 
-const { toolManager } = defineProps<{
+const { toolManager, extensionActive = false } = defineProps<{
+  extensionActive?: boolean
   toolManager: ReturnType<typeof useToolManager>
 }>()
 

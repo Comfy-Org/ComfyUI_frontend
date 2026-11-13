@@ -15,6 +15,7 @@
     >
       <canvas
         ref="imgCanvasRef"
+        data-testid="mask-editor-image-canvas"
         class="absolute top-0 left-0 size-full"
         @contextmenu.prevent
       />
@@ -25,6 +26,7 @@
       />
       <canvas
         ref="maskCanvasRef"
+        data-testid="mask-editor-mask-canvas"
         class="absolute top-0 left-0 z-30 size-full"
         @contextmenu.prevent
       />
@@ -37,6 +39,22 @@
         }"
       />
       <div ref="canvasBackgroundRef" class="size-full" />
+      <svg
+        v-if="overlayPoints.length"
+        data-testid="mask-editor-tool-overlay"
+        aria-hidden="true"
+        class="pointer-events-none absolute inset-0 z-50 size-full"
+        :viewBox="`0 0 ${store.canvasHistory.dimensions?.width ?? 0} ${store.canvasHistory.dimensions?.height ?? 0}`"
+      >
+        <circle
+          v-for="point in overlayPoints"
+          :key="point.id"
+          :cx="point.x"
+          :cy="point.y"
+          :r="point.radius"
+          :fill="point.color"
+        />
+      </svg>
     </div>
 
     <LoadingOverlay :loading="!initialized" size="sm" />
@@ -46,7 +64,13 @@
       class="relative isolate flex min-h-0 flex-1 flex-col"
     >
       <div class="flex min-h-0 flex-1 overflow-hidden">
-        <ToolPanel v-if="initialized" :tool-manager="toolManager!" />
+        <ToolPanel
+          v-if="initialized"
+          :tool-manager="toolManager!"
+          :extension-active="extensionTools?.isActive()"
+        >
+          <slot name="extension-tools" />
+        </ToolPanel>
 
         <PointerZone
           v-if="initialized"
@@ -54,7 +78,11 @@
           :pan-zoom="panZoom!"
         />
 
-        <SidePanel v-if="initialized" :tool-manager="toolManager!" />
+        <SidePanel v-if="initialized" :tool-manager="toolManager!">
+          <template v-if="extensionTools?.isActive()" #settings>
+            <slot name="extension-settings" />
+          </template>
+        </SidePanel>
       </div>
     </div>
 
@@ -69,6 +97,8 @@ import { useCanvasManager } from '#/useCanvasManager'
 import { useKeyboard } from '#/useKeyboard'
 import { usePanAndZoom } from '#/usePanAndZoom'
 import { useToolManager } from '#/useToolManager'
+import type { MaskEditorToolDelegate } from '#/useToolManager'
+import type { MaskEditorOverlayPoint } from '#/extensionTypes'
 import { useMaskEditorStore } from '#/maskEditorStore'
 
 import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
@@ -78,7 +108,16 @@ import PointerZone from './components/PointerZone.vue'
 import SidePanel from './components/SidePanel.vue'
 import ToolPanel from './components/ToolPanel.vue'
 
-const { baseImage, maskImage, paintImage, brushAdjustment } = defineProps<{
+const {
+  baseImage,
+  maskImage,
+  paintImage,
+  brushAdjustment,
+  extensionTools,
+  overlayPoints = []
+} = defineProps<{
+  extensionTools?: MaskEditorToolDelegate
+  overlayPoints?: readonly MaskEditorOverlayPoint[]
   baseImage: HTMLImageElement
   maskImage: HTMLImageElement
   paintImage?: HTMLImageElement
@@ -106,7 +145,12 @@ const initialized = ref(false)
 const keyboard = useKeyboard(containerRef)
 const panZoom = usePanAndZoom()
 
-const toolManager = useToolManager(keyboard, panZoom, brushAdjustment)
+const toolManager = useToolManager(
+  keyboard,
+  panZoom,
+  brushAdjustment,
+  extensionTools
+)
 
 let resizeObserver: ResizeObserver | null = null
 let disposed = false
