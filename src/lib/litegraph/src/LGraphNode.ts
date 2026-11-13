@@ -45,7 +45,7 @@ import { toSelectableKey } from '@/core/selection/selectionState'
 import type {
   NodeExecutionOutput,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
@@ -69,7 +69,7 @@ import {
 } from '@/types/widgetVisibility'
 import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import type { ColorAdjustOptions } from '@comfyorg/shared-frontend-utils/colorUtil'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import {
   commonType,
   isNodeBindable,
@@ -2260,7 +2260,7 @@ export class LGraphNode
         } else {
           widget_height += LiteGraph.NODE_WIDGET_HEIGHT
         }
-        widgets_height += widget_height + 4
+        widgets_height += widget_height + LiteGraph.NODE_WIDGET_GAP
       }
       widgets_height += 8
     }
@@ -4580,7 +4580,7 @@ export class LGraphNode
 
     for (const w of visibleWidgets) {
       if (w.computeSize) {
-        const height = w.computeSize()[1] + 4
+        const height = w.computeSize()[1] + LiteGraph.NODE_WIDGET_GAP
         w.computedHeight = height
         fixedWidgetHeight += height
       } else if (w.computeLayoutSize) {
@@ -4591,7 +4591,7 @@ export class LGraphNode
           w
         })
       } else {
-        const height = LiteGraph.NODE_WIDGET_HEIGHT + 4
+        const height = LiteGraph.NODE_WIDGET_HEIGHT + LiteGraph.NODE_WIDGET_GAP
         w.computedHeight = height
         fixedWidgetHeight += height
       }

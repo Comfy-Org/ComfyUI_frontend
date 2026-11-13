@@ -30,17 +30,6 @@ const UNPARSED_JSON_DOCUMENT = /^[{[]/
 
 const CODE_SHAPE = /^[A-Z][A-Z0-9_]*$/
 
-/** Refusal of a legacy `/customers/*` call for a workspace not on the legacy rail. */
-export function isWorkspaceBillingRequiredError(err: unknown): boolean {
-  return (
-    err instanceof Error &&
-    'status' in err &&
-    err.status === 409 &&
-    'code' in err &&
-    err.code === 'WORKSPACE_BILLING_REQUIRED'
-  )
-}
-
 /**
  * Flat `{ error, message }` bodies (the /customers/* shape) carry the code in
  * `error`; a prose value there (e.g. "Forbidden") is not a code.

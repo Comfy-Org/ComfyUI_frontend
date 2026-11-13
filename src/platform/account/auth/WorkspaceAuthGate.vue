@@ -97,7 +97,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
-import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
+import { signedInOnWebSession } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import {
   remoteConfigErrorStatus,
@@ -271,18 +271,8 @@ async function handleSignOut(): Promise<void> {
 }
 
 async function initializeWorkspaceMode(): Promise<void> {
-  // Initialize the full workspace store which handles:
-  // - Restoring workspace token from session (fast path for refresh)
-  // - Fetching workspace list
-  // - Switching to last used workspace if needed
-  // - Setting active workspace
   const workspaceStore = useTeamWorkspaceStore()
-  if (
-    workspaceStore.initState === 'uninitialized' ||
-    workspaceStore.initState === 'error'
-  ) {
-    await workspaceStore.initialize()
-  }
+  if (workspaceStore.initState !== 'ready') await workspaceStore.initialize()
   if (
     workspaceStore.initState !== 'ready' ||
     !workspaceStore.activeWorkspaceId
@@ -291,12 +281,9 @@ async function initializeWorkspaceMode(): Promise<void> {
   }
 }
 
-// The local session identity: the Firebase uid, or the validated API key for
-// key-only sessions. Workspace initialization keys off this so an API-key
-// login boots workspace context the same way a Firebase login does.
 function localSessionIdentity(): string | null {
-  const { currentUser } = storeToRefs(useAuthStore())
-  if (currentUser.value?.uid) return currentUser.value.uid
+  const { userId } = storeToRefs(useAuthStore())
+  if (userId.value) return userId.value
   const apiKeyStore = useApiKeyAuthStore()
   return apiKeyStore.isAuthenticated ? apiKeyStore.getApiKey() : null
 }

@@ -1,6 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import type { ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type { ObjectInfoResponse } from '@comfyorg/object-info-parser'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -10,7 +10,7 @@ import {
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { agentTest, pushAgentEvent } from '@e2e/tests/agent/agentPanelMocks'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -82,7 +82,7 @@ test.describe(
 
         pushAgentEvent(ws, catalogRefreshed)
         await objectInfoResponse
-        const propertiesPanel = new PropertiesPanelHelper(page)
+        const propertiesPanel = new PropertiesPanel(page)
         await propertiesPanel.open(comfyPage.actionbar.propertiesButton)
 
         await expect(propertiesPanel.errorsTab).toBeHidden()

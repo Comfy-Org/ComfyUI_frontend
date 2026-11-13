@@ -16,13 +16,15 @@ import type {
 import { datadogRum } from '@datadog/browser-rum'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { CORE_COLOR_PALETTES } from '@/constants/coreColorPalettes'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import type {
+  AgentSendGatedMetadata,
   AuthMetadata,
   BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
+  FetchStatusRetryMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
   TelemetryProvider,
@@ -59,6 +61,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     datadogRum.addAction(TelemetryEvents.FETCH_TIMEOUT, metadata)
   }
 
+  trackFetchStatusRetry(metadata: FetchStatusRetryMetadata): void {
+    datadogRum.addAction(TelemetryEvents.FETCH_STATUS_RETRY, metadata)
+  }
+
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
     datadogRum.addAction(
       metadata.outcome === 'succeeded'
@@ -85,6 +91,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     datadogRum.addAction(event.name, event.properties)
   }
 
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    datadogRum.addAction(TelemetryEvents.AGENT_SEND_GATED, metadata)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
@@ -92,10 +102,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
   trackBootstrapComplete({ outcome }: BootstrapCompleteMetadata): void {
     if (outcome !== 'completed') return
 
-    const { completedActivePalette, colorScheme } = useColorPaletteStore()
+    const { activeTheme, colorScheme } = useThemeStore()
     datadogRum.addAction(TelemetryEvents.THEME_LOADED, {
-      theme: Object.hasOwn(CORE_COLOR_PALETTES, completedActivePalette.id)
-        ? completedActivePalette.id
+      theme: Object.hasOwn(BUILT_IN_THEME_PRESETS, activeTheme.id)
+        ? activeTheme.id
         : 'custom',
       color_scheme: colorScheme
     })

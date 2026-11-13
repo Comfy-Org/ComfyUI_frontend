@@ -143,7 +143,7 @@ Representative evidence:
 - `src/core/graph/subgraph/migration/proxyWidgetMigration.test.ts` and
   `src/core/graph/subgraph/promotionUtils.test.ts`: migration and reorder
   preservation.
-- `src/components/rightSidePanel/parameters/WidgetActions.test.ts` and
+- `src/renderer/extensions/propertiesPanel/parameters/WidgetActions.test.ts` and
   `WidgetItem.test.ts`: user actions and linked-input state.
 - `browser_tests/tests/appModeBuilder.spec.ts` and
   `browser_tests/tests/vueNodes/widgets/widgetReactivity.spec.ts`: builder and

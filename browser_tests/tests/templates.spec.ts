@@ -5,9 +5,12 @@ import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
+import {
+  hasElementFlashed,
+  trackElementFlash
+} from '@e2e/fixtures/utils/flashDetector'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import type { WorkflowTemplates } from '@comfyorg/api-client/templateTypes'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function checkTemplateFileExists(
@@ -71,26 +74,23 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.expectNodeCountMinimum(1)
   })
 
-  test('dialog should open Popular for first-time users', async ({
-    comfyPage
-  }) => {
-    // Set the tutorial as not completed to mark the user as a first-time user
-    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
+  test.describe('first-time user', () => {
+    test.use({ initialSettings: { 'Comfy.TutorialCompleted': false } })
 
-    // Load the page
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({ clearStorage: true })
-
-    await expect(comfyPage.templates.content).toBeVisible()
-    await expect(
-      comfyPage.page.getByRole('heading', { name: 'Popular', exact: true })
-    ).toBeVisible()
-    await comfyPage.page.getByRole('button', { name: 'Filters' }).click()
-    await expect(
-      comfyPage.page
-        .getByRole('combobox', { name: 'Sort by' })
-        .filter({ visible: true })
-    ).toHaveText('Popular')
+    test('dialog should open Popular for first-time users', async ({
+      comfyPage
+    }) => {
+      await expect(comfyPage.templates.content).toBeVisible()
+      await expect(
+        comfyPage.page.getByRole('heading', { name: 'Popular', exact: true })
+      ).toBeVisible()
+      await comfyPage.page.getByRole('button', { name: 'Filters' }).click()
+      await expect(
+        comfyPage.page
+          .getByRole('combobox', { name: 'Sort by' })
+          .filter({ visible: true })
+      ).toHaveText('Popular')
+    })
   })
 
   test("dialog should preserve a returning user's Popular sort", async ({
@@ -117,48 +117,49 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       .toBe('popular')
   })
 
-  test('dialog should not be shown when first-time user opens a shared workflow link', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.route(
-      '**/workflows/published/test-share-id',
-      async (route) => {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            share_id: 'test-share-id',
-            workflow_id: 'wf-1',
-            name: 'Shared Workflow',
-            listed: true,
-            publish_time: new Date().toISOString(),
-            workflow_json: {
-              version: 0.4,
-              nodes: [],
-              links: [],
-              groups: [],
-              config: {},
-              extra: {}
-            },
-            assets: []
-          })
-        })
-      }
-    )
-
-    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
-
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup({
-      clearStorage: true,
-      url: '/?share=test-share-id'
+  test.describe('first-time shared workflow', () => {
+    test.use({
+      initialSettings: { 'Comfy.TutorialCompleted': false },
+      initialUrl: '/?share=test-share-id'
     })
 
-    await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.openSharedWorkflowTitle)
-    ).toBeVisible()
+    test.beforeEach(async ({ page }) => {
+      await page.route(
+        '**/workflows/published/test-share-id',
+        async (route) => {
+          await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              share_id: 'test-share-id',
+              workflow_id: 'wf-1',
+              name: 'Shared Workflow',
+              listed: true,
+              publish_time: new Date().toISOString(),
+              workflow_json: {
+                version: 0.4,
+                nodes: [],
+                links: [],
+                groups: [],
+                config: {},
+                extra: {}
+              },
+              assets: []
+            })
+          })
+        }
+      )
+    })
 
-    await expect(comfyPage.templates.content).toBeHidden()
+    test('dialog should not be shown when first-time user opens a shared workflow link', async ({
+      comfyPage
+    }) => {
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.openSharedWorkflowTitle)
+      ).toBeVisible()
+
+      await expect(comfyPage.templates.content).toBeHidden()
+    })
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
@@ -515,25 +516,23 @@ test.describe(
   'Templates deeplink (new user)',
   { tag: ['@slow', '@workflow'] },
   () => {
+    test.use({
+      initialSettings: { 'Comfy.TutorialCompleted': false },
+      initialUrl: '/?template=image_z_image_turbo'
+    })
+
+    test.beforeEach(async ({ page }) => {
+      await trackElementFlash(page, TestIds.templates.content)
+    })
+
     test('templates dialog never flashes when first-time user opens a template link', async ({
       comfyPage
     }) => {
-      const templatesFlash = await trackElementFlash(
-        comfyPage.page,
-        TestIds.templates.content
-      )
-
-      await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
-
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-      await comfyPage.setup({
-        clearStorage: true,
-        url: '/?template=image_z_image_turbo'
-      })
-
       await comfyPage.expectNodeCountMinimum(1)
 
-      expect(await templatesFlash.hasFlashed()).toBe(false)
+      expect(
+        await hasElementFlashed(comfyPage.page, TestIds.templates.content)
+      ).toBe(false)
       await expect(comfyPage.templates.content).toBeHidden()
     })
   }

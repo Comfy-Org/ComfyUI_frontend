@@ -46,13 +46,15 @@ describe('LGraphCanvas ghost placement auto-pan', () => {
 
   beforeEach(() => {
     ;({ canvas, canvasElement, node } = createGhostTestHarness())
-    // Near left edge so autopan fires by default
+    vi.spyOn(canvas, 'draw').mockImplementation(() => {})
+    canvas.startRendering()
     canvas.mouse[0] = 5
     canvas.mouse[1] = 300
   })
 
   afterEach(() => {
     if (canvas.state.ghostNodeId != null) canvas.finalizeGhostPlacement(false)
+    canvas.stopRendering()
     canvasElement.remove()
   })
 

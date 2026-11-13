@@ -36,10 +36,13 @@ describe('LGraphCanvas link drag auto-pan', () => {
       skip_render: true,
       skip_events: true
     })
+    vi.spyOn(canvas, 'draw').mockImplementation(() => {})
+    canvas.startRendering()
   })
 
   afterEach(() => {
     canvas.pointer.finally?.()
+    canvas.stopRendering()
   })
 
   function pressLink(clientX: number, clientY: number) {

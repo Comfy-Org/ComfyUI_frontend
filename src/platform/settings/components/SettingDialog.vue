@@ -103,7 +103,7 @@
         </template>
         <template v-else-if="activeSettingCategory">
           <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
-          <ColorPaletteMessage
+          <ThemePresetMessage
             v-if="activeSettingCategory.label === 'Appearance'"
           />
           <SettingsPanel
@@ -126,11 +126,12 @@ import BaseModalLayout from '@comfyorg/design-system/layout/BaseModalLayout'
 import NavItem from '@comfyorg/design-system/navigation/NavItem'
 import NavTitle from '@comfyorg/design-system/navigation/NavTitle'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
+import ThemePresetMessage from '@/platform/theme/ThemePresetMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
@@ -140,11 +141,11 @@ import type {
   ISettingGroup,
   SettingDialogProps,
   SettingParams
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 import { useModalLayoutLabels } from '@/components/dialog/useModalLayoutLabels'
 import { flattenTree } from '@/utils/treeUtil'
 
-const { onClose, defaultPanel, scrollToSettingId } =
+const { onClose, defaultPanel, scrollToSettingId, navigationRequestId } =
   defineProps<SettingDialogProps>()
 
 const modalLayoutLabels = useModalLayoutLabels()
@@ -211,6 +212,16 @@ watch(navItems, (items) => {
   const activeKey = activeCategoryKey.value
   if (!activeKey || items.some(({ id }) => id === activeKey)) return
   activeCategoryKey.value = items[0]?.id ?? null
+})
+
+watch([() => defaultPanel, () => navigationRequestId], ([panel]) => {
+  if (!panel) return
+  if (!findCategoryByKey(panel) && !findPanelByKey(panel)) return
+  if (inSearch.value) {
+    searchQuery.value = ''
+    handleSearch('')
+  }
+  activeCategoryKey.value = panel
 })
 
 watch(
@@ -307,7 +318,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
     activeCategoryKey.value = oldKey
   }
   if (newKey === 'credits') {
-    void fetchBalance()
+    void refreshBalanceInBackground(fetchBalance)
   }
   if (newKey) {
     void nextTick(() => {

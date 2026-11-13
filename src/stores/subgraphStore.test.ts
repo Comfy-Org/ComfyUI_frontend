@@ -9,10 +9,11 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import type { GlobalSubgraphData } from '@/scripts/api'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
+import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -123,11 +124,16 @@ describe('useSubgraphStore', () => {
     { confirmed: true, storeCalls: 1 },
     { confirmed: false, storeCalls: 0 }
   ])(
-    'should publish over an existing blueprint only when overwrite is confirmed (confirmed: $confirmed)',
+    'requires confirmation before replacing an unloaded blueprint (confirmed: $confirmed)',
     async ({ confirmed, storeCalls }) => {
       selectSubgraphNodeToPublish()
       vi.mocked(useDialogService().confirm).mockResolvedValue(confirmed)
-      await mockFetch({ 'testname.json': mockGraph })
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+        { path: 'testname.json', modified: 1, size: 1 }
+      ])
+      vi.mocked(api.getUserData).mockImplementation(async () =>
+        Response.json(mockGraph)
+      )
       await store.publishSubgraph()
       expect(useDialogService().confirm).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -138,10 +144,79 @@ describe('useSubgraphStore', () => {
       expect(api.storeUserData).toHaveBeenCalledTimes(storeCalls)
     }
   )
+  it('publishes a new filename without overwrite confirmation', async () => {
+    selectSubgraphNodeToPublish()
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+      { path: 'another-blueprint.json', modified: 1, size: 1 }
+    ])
+    vi.mocked(api.getUserData).mockImplementation(async () =>
+      Response.json(mockGraph)
+    )
+
+    await store.publishSubgraph()
+
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
+    expect(api.storeUserData).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not publish when existing filenames cannot be checked', async () => {
+    selectSubgraphNodeToPublish()
+    const listingError = new Error('Blueprint listing unavailable')
+    vi.mocked(api.listUserDataFullInfo).mockRejectedValue(listingError)
+
+    await store.publishSubgraph()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(listingError, {
+      errorType: 'error_checking_blueprint_overwrite',
+      surface: 'graph'
+    })
+    expect(api.storeUserData).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Blueprint listing unavailable'
+      })
+    ])
+  })
+
   it('should display published nodes in the node library', async () => {
     await mockFetch({ 'test.json': mockGraph })
     expect(userBlueprintNames()).toEqual(['SubgraphBlueprint.test'])
   })
+  it.for([false, true])(
+    'loads blueprint boundary inputs when object info is trusted: %s',
+    async (isTrusted) => {
+      mockDistributionTypes.isCloud = isTrusted
+
+      await mockFetch({
+        'dynamic-boundaries.json': {
+          ...mockGraph,
+          nodes: [
+            {
+              type: '123',
+              inputs: [
+                { name: 'autogrow', type: 'COMFY_AUTOGROW_V3', link: null },
+                { name: 'match', type: 'COMFY_MATCHTYPE_V3', link: null },
+                { name: 'group', type: 'COMFY_DYNAMICGROUP_V3', link: null },
+                { name: 'image', type: 'IMAGE', link: null }
+              ],
+              outputs: [
+                { name: 'matched', type: 'COMFY_MATCHTYPE_V3', links: null },
+                { name: 'image', type: 'IMAGE', links: null }
+              ]
+            }
+          ]
+        }
+      })
+
+      const blueprintDef = useNodeDefStore().nodeDefs.find(
+        (def) => def.name === 'SubgraphBlueprint.dynamic-boundaries'
+      )
+      expect(blueprintDef).toBeDefined()
+      expect(blueprintDef?.inputTypes).toEqual(['IMAGE'])
+      expect(blueprintDef?.outputTypes).toEqual(['IMAGE'])
+    }
+  )
   it('should remove deleted blueprints from the node library', async () => {
     await mockFetch({ 'test.json': mockGraph })
     await store.deleteBlueprint('SubgraphBlueprint.test')
@@ -288,6 +363,47 @@ describe('useSubgraphStore', () => {
     )
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
   })
+
+  it.for([
+    {
+      source: 'user',
+      failedListing: 'listUserDataFullInfo',
+      survivingBlueprint: 'SubgraphBlueprint.installed_test'
+    },
+    {
+      source: 'installed',
+      failedListing: 'getGlobalSubgraphs',
+      survivingBlueprint: 'SubgraphBlueprint.user_test'
+    }
+  ] as const)(
+    'loads the other blueprint source and reports a failed $source listing',
+    async ({ failedListing, survivingBlueprint }) => {
+      vi.mocked(api[failedListing]).mockRejectedValueOnce(
+        new Error('Listing failed')
+      )
+
+      await mockFetch(
+        { 'user_test.json': mockGraph },
+        {
+          installed_test: {
+            name: 'Installed Test',
+            info: { node_pack: 'test_pack' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+
+      expect([...useNodeDefStore().blueprintNodeDefsByName.keys()]).toEqual([
+        survivingBlueprint
+      ])
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'Listing failed',
+          kind: 'error'
+        })
+      ])
+    }
+  )
 
   it('should handle global blueprint with rejected data promise gracefully', async () => {
     await mockFetch(

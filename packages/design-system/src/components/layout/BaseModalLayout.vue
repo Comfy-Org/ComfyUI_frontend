@@ -77,7 +77,7 @@
           <DialogTitle
             :class="
               cn(
-                'm-0 px-6 pt-2 pb-6 text-2xl font-normal capitalize select-none',
+                'px-6 pt-2 pb-6 text-2xl font-normal capitalize select-none',
                 hasLeftPanel && 'sr-only'
               )
             "
@@ -169,7 +169,7 @@ const {
   contentPadding = 'default',
   headerPadding = 'default',
   closeButtonVariant,
-  closeIcon = 'icon-[lucide--x] scale-150'
+  closeIcon = 'icon-[lucide--x]'
 } = defineProps<{
   contentTitle: string
   labels: {

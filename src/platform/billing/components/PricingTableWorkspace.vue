@@ -278,7 +278,7 @@ import type {
 } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@comfyorg/billing-core'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -456,8 +456,8 @@ const isButtonDisabled = (tier: PricingTierConfig): boolean => {
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
-    ? 'font-inter text-sm font-bold leading-normal text-background'
-    : 'font-inter text-sm font-bold leading-normal text-foreground'
+    ? 'text-sm font-bold leading-normal text-background'
+    : 'text-sm font-bold leading-normal'
 
 const getPrice = (tier: PricingTierConfig): number =>
   getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]

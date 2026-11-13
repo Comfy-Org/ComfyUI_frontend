@@ -4,129 +4,70 @@
   "description": "Shared technical module for app composition and startup: entrypoints, router, i18n, bootstrap state, GraphView, configuration, and desktop host wiring. Feature implementations remain in their own records.",
   "modules": [
     {
-      "path": "src/App.test.ts",
-      "role": "presentation"
+      "path": "src/App.vue"
     },
     {
-      "path": "src/App.vue",
-      "role": "presentation"
+      "path": "src/__mocks__/**"
     },
     {
-      "path": "src/__mocks__/**",
-      "role": "application"
+      "path": "src/bootstrap.ts"
     },
     {
-      "path": "src/bootstrap.ts",
-      "role": "integration"
+      "path": "src/components/graph/GraphCanvas.vue"
     },
     {
-      "path": "src/components/graph/GraphCanvas.test.ts",
-      "role": "integration"
+      "path": "src/composables/useExternalLink.ts"
     },
     {
-      "path": "src/components/graph/GraphCanvas.vue",
-      "role": "integration"
+      "path": "src/composables/useUrlActionLoaders.ts"
     },
     {
-      "path": "src/composables/useExternalLink.test.ts",
-      "role": "infrastructure"
+      "path": "src/config.ts"
     },
     {
-      "path": "src/composables/useExternalLink.ts",
-      "role": "infrastructure"
+      "path": "src/config/comfyApi.ts"
     },
     {
-      "path": "src/composables/useUrlActionLoaders.test.ts",
-      "role": "integration"
+      "path": "src/config/viteSeo.test.ts"
     },
     {
-      "path": "src/composables/useUrlActionLoaders.ts",
-      "role": "integration"
+      "path": "src/constants/**"
     },
     {
-      "path": "src/config.ts",
-      "role": "domain"
+      "path": "src/extensions/core/electronAdapter.ts"
     },
     {
-      "path": "src/config/comfyApi.test.ts",
-      "role": "infrastructure"
+      "path": "src/i18n.ts"
     },
     {
-      "path": "src/config/comfyApi.ts",
-      "role": "infrastructure"
+      "path": "src/locales/**"
     },
     {
-      "path": "src/config/viteSeo.test.ts",
-      "role": "infrastructure"
+      "path": "src/main.ts"
     },
     {
-      "path": "src/constants/**",
-      "role": "domain"
+      "path": "src/platform/distribution/types.ts"
     },
     {
-      "path": "src/extensions/core/electronAdapter.ts",
-      "role": "integration"
+      "path": "src/router.ts"
     },
     {
-      "path": "src/i18n.catalog.test.ts",
-      "role": "application"
+      "path": "src/stores/bootstrapStore.ts"
     },
     {
-      "path": "src/i18n.safeTranslation.test.ts",
-      "role": "application"
+      "path": "src/utils/electronMirrorCheck.ts"
     },
     {
-      "path": "src/i18n.test.ts",
-      "role": "application"
+      "path": "src/utils/envUtil.ts"
     },
     {
-      "path": "src/i18n.ts",
-      "role": "application"
+      "path": "src/views/**"
     },
     {
-      "path": "src/locales/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/main.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/platform/distribution/types.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/router.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/stores/bootstrapStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/bootstrapStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/utils/electronMirrorCheck.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/envUtil.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/views/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/vite-env.d.ts",
-      "role": "domain"
+      "path": "src/vite-env.d.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["account", "error-reporting", "telemetry"],
-  "allowedConsumers": ["error-reporting", "selection-toolbox"],
   "characterizationScenarios": [
     {
       "name": "Bootstrap loads i18n, waits for cloud auth with a bounded retry, and loads settings and workflows once",
@@ -151,7 +92,7 @@
   ],
   "adrs": ["docs/adr/TELEMETRY-STARTUP-0030-production-startup-telemetry.md"],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }

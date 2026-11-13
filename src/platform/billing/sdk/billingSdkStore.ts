@@ -30,7 +30,7 @@ import { computed, shallowRef } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -61,13 +61,15 @@ import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdenti
 import { useWorkspaceSession } from '@/platform/workspace/ports/workspaceSession'
 import { getCheckoutJourneyPaymentIntentSource } from '@/platform/billing/utils/checkoutJourney'
 import { useDialogStore } from '@/stores/dialogStore'
-import { fetchWithRetry } from '@/utils/fetchWithRetry'
+import { fetchWithRetry } from '@comfyorg/api-client/fetchWithRetry'
 
+import { projectBillingBalance } from './billingBalanceView'
 import { projectBillingCapabilities } from './billingCapabilitiesView'
 import { projectBillingPlans } from './billingPlansView'
 import { projectBillingStatus } from './billingStatusView'
 import type { BillingSdkOptions } from '@comfyorg/billing-core/sdk'
 import { createBillingSdk } from '@comfyorg/billing-core/sdk'
+import type { TopupAutoTopUpSettings } from '@comfyorg/ingest-types'
 import type { BillingOperationRecordView } from './operationRecordView'
 import { projectOperationRecord } from './operationRecordView'
 import type {
@@ -82,6 +84,7 @@ import {
   projectSubscribeResult,
   projectSubscriptionResult
 } from './subscriptionOperationView'
+import type { HostedCheckoutSession } from './topupOperationView'
 import {
   declineDetail,
   projectHostedTopupCheckoutResult,
@@ -122,6 +125,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const callerStarted = new Set<BillingOperationKind>()
   const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<string, ProgressToast>()
+  const closedProgressToasts = new Set<string>()
 
   function sessionPorts(): Pick<
     BillingSdkOptions,
@@ -278,6 +282,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       return
     }
     clearProgressToast(state.id)
+    closedProgressToasts.delete(state.id)
     dismissed.value = new Set(
       [...dismissed.value].filter((id) => id !== state.id)
     )
@@ -297,8 +302,16 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     })
     const current = progressToasts.get(state.id)
     if (current?.kind === progress) return
+    if (current && toast.takeClosedByUser(current.id)) {
+      closedProgressToasts.add(state.id)
+    }
     clearProgressToast(state.id)
-    if (progress === undefined) return
+    if (
+      progress === undefined ||
+      (progress === 'processing' && closedProgressToasts.has(state.id))
+    ) {
+      return
+    }
     const title = t(PROGRESS_SUMMARY[kind][progress])
     const id =
       progress === 'action' ? toast.warning(title) : toast.loading(title)
@@ -315,6 +328,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   function onSubscriptionChanged(state: BillingOperationState) {
     if (state.phase !== 'pending') {
       clearProgressToast(state.id)
+      closedProgressToasts.delete(state.id)
       offeredActions.delete(state.id)
       if (resumedOperations.delete(state.id)) {
         void settleResumedSubscription(state)
@@ -400,16 +414,26 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return projectTopupResult(result, amountCents)
   }
 
+  async function quoteTopup(
+    amountCents: number,
+    signal: AbortSignal
+  ): Promise<number | null> {
+    const quoted = await sdk.topup.quoteTopup({ amountCents, signal })
+    return quoted.status === 'ok' ? quoted.value.credits : null
+  }
+
   async function createHostedTopupCheckout(
     amountCents: number,
     returnUrl: string,
-    signal?: AbortSignal
-  ): Promise<string> {
+    signal?: AbortSignal,
+    autoTopUp?: TopupAutoTopUpSettings
+  ): Promise<HostedCheckoutSession> {
     return projectHostedTopupCheckoutResult(
       await sdk.topup.createHostedTopupCheckout({
         amountCents,
         returnUrl,
-        ...(signal === undefined ? {} : { signal })
+        ...(signal === undefined ? {} : { signal }),
+        ...(autoTopUp === undefined ? {} : { autoTopUp })
       })
     )
   }
@@ -559,7 +583,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   async function readBalance(): Promise<BillingResult<BillingBalanceResponse>> {
     const result = await sdk.credits.read()
     return result.status === 'ok'
-      ? { status: 'ok', value: result.value.balance }
+      ? { status: 'ok', value: projectBillingBalance(result.value.balance) }
       : result
   }
 
@@ -622,6 +646,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     recoverPendingOperation,
     createTopup,
     createHostedTopupCheckout,
+    quoteTopup,
     subscribe,
     previewSubscribe,
     cancelSubscription,

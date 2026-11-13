@@ -10,12 +10,9 @@ import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMed
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import type {
-  JobListItem,
-  JobStatus
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobListItem, JobStatus } from '@comfyorg/api-client/jobTypes'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'

@@ -2,7 +2,12 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import { computed } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
+
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import {
@@ -12,6 +17,9 @@ import {
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
 vi.mock(import('@/platform/cloud/oauth/oauthApi'), { spy: true })
+vi.mock(import('@/composables/auth/useAuthActions'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockSubmitOAuthConsentDecision = vi.mocked(submitOAuthConsentDecision)
 
 const SCOPE_BROADENING =
@@ -26,6 +34,11 @@ const i18n = createI18n({
     en: {
       g: {
         singleSelectDropdown: 'Select an option'
+      },
+      auth: {
+        login: {
+          userAvatar: 'User avatar'
+        }
       },
       oauth: {
         consent: {
@@ -48,12 +61,17 @@ const i18n = createI18n({
             'This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.',
           unverifiedNoticeNoHost:
             'This name was provided by whoever registered this app and has not been verified by Comfy.',
+          verifiedNotice:
+            "Name not verified · Verified destination: {platform} · you'll return to {host}",
           errorExpired:
             'This consent request has expired or has already been used.',
           errorScopeBroadening: SCOPE_BROADENING,
           errorOriginRefused: ORIGIN_REFUSED,
           errorUnavailable: "This feature isn't available right now.",
-          sessionError: 'Failed to establish session. Please try again.'
+          sessionError: 'Failed to establish session. Please try again.',
+          signedInAs: 'Signed in as',
+          notYou: 'Not you?',
+          switchAccount: 'Switch account'
         },
         scopes: {
           'mcp:tools:read': {
@@ -186,6 +204,128 @@ describe('OAuthConsentView', () => {
     expect(screen.getByTestId('client-unverified-notice')).toHaveTextContent(
       notice
     )
+  })
+
+  it.for([
+    {
+      platform: 'chatgpt',
+      displayName: 'ChatGPT',
+      redirectUri: 'https://chatgpt.com/connector/oauth/abc123',
+      host: 'chatgpt.com',
+      icon: 'icon-[comfy--openai]'
+    },
+    {
+      platform: 'claude',
+      displayName: 'Claude',
+      redirectUri: 'https://claude.ai/api/mcp/auth_callback',
+      host: 'claude.ai',
+      icon: 'icon-[comfy--anthropic]'
+    }
+  ] as const)(
+    'renders a verified $platform destination without hiding the registrant name',
+    ({ platform, displayName, redirectUri, host, icon }) => {
+      renderConsent({
+        client_display_name: 'Totally Legit Connector',
+        client_provenance: 'dynamic',
+        redirect_uri: redirectUri,
+        verified_client: { platform, display_name: displayName }
+      })
+
+      expect(
+        screen.getByText('Totally Legit Connector wants access')
+      ).toBeVisible()
+      expect(screen.getByTestId('client-icon')).toHaveClass(
+        'icon-[lucide--app-window]'
+      )
+      expect(screen.getByTestId('client-verified-icon')).toHaveClass(icon)
+      expect(screen.getByTestId('client-verified')).toHaveTextContent(
+        `Name not verified · Verified destination: ${displayName} · you'll return to ${host}`
+      )
+      expect(screen.queryByTestId('client-unverified')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('client-unverified-notice')
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  const chatgptCallback = 'https://chatgpt.com/connector/oauth/abc123'
+  const chatgpt = { platform: 'chatgpt', display_name: 'ChatGPT' }
+
+  it.for([
+    {
+      case: 'no verified_client',
+      verifiedClient: undefined,
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'an unknown platform',
+      verifiedClient: { platform: 'gemini', display_name: 'Gemini' },
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'a non-string display name',
+      verifiedClient: { platform: 'chatgpt', display_name: 123 },
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'a whitespace-only display name',
+      verifiedClient: { platform: 'chatgpt', display_name: '  ' },
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'a loopback redirect',
+      verifiedClient: chatgpt,
+      redirectUri: 'http://127.0.0.1:8765/callback'
+    },
+    {
+      case: 'a custom-scheme redirect',
+      verifiedClient: chatgpt,
+      redirectUri: 'comfy://oauth/callback'
+    }
+  ])(
+    'renders a dynamic client with $case as unverified',
+    async ({ verifiedClient, redirectUri }) => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json({
+          ...challenge,
+          client_display_name: 'ChatGPT Connector',
+          client_provenance: 'dynamic',
+          redirect_uri: redirectUri,
+          verified_client: verifiedClient
+        })
+      )
+      const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [{ path: '/oauth/consent', component: OAuthConsentView }]
+      })
+      await router.push(
+        `/oauth/consent?oauth_request_id=${challenge.oauth_request_id}`
+      )
+      render(OAuthConsentView, { global: { plugins: [i18n, router] } })
+
+      expect(
+        await screen.findByText('ChatGPT Connector wants access')
+      ).toBeVisible()
+      expect(screen.getByTestId('client-icon')).toHaveClass(
+        'icon-[lucide--app-window]'
+      )
+      expect(screen.getByTestId('client-unverified')).toBeVisible()
+      expect(screen.getByTestId('client-unverified-notice')).toBeVisible()
+      expect(screen.queryByTestId('client-verified')).not.toBeInTheDocument()
+    }
+  )
+
+  it('ignores verified_client on a first-party client', () => {
+    renderConsent({
+      verified_client: { platform: 'chatgpt', display_name: 'ChatGPT' }
+    })
+
+    expect(screen.getByText('Comfy Desktop wants access')).toBeVisible()
+    expect(screen.getByTestId('client-icon')).toHaveClass(
+      'icon-[lucide--app-window]'
+    )
+    expect(screen.queryByTestId('client-verified')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('client-unverified')).not.toBeInTheDocument()
   })
 
   it('renders title, subtitle, and scope checklist', () => {
@@ -335,5 +475,114 @@ describe('OAuthConsentView', () => {
         screen.getByText("This feature isn't available right now.")
       ).toBeVisible()
     })
+  })
+})
+
+describe('OAuthConsentView signed-in account', () => {
+  const signInAs = (email?: string, displayName?: string) =>
+    Object.assign(useCurrentUser(), {
+      userEmail: computed(() => email),
+      userDisplayName: computed(() => displayName)
+    })
+  const sessionUser = { user_email: 'a@example.com' }
+  const consentControlNames = ['Continue', 'Cancel', 'Switch account']
+  const enabledConsentControls = () =>
+    consentControlNames.filter(
+      (name) => !screen.getByRole('button', { name }).hasAttribute('disabled')
+    )
+
+  beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).oauthConsentSwitchAccountEnabled = true
+    sessionStorage.setItem('Comfy.OAuthRequestId', challenge.oauth_request_id)
+  })
+
+  it('shows the session user from the challenge over the client user', () => {
+    signInAs('a@example.com', 'Account A')
+    renderConsent({
+      user_email: 'b@example.com',
+      user_display_name: 'Account B'
+    })
+
+    const account = screen.getByRole('region', { name: 'Signed in as' })
+    expect(account).toHaveTextContent('Account B')
+    expect(account).toHaveTextContent('b@example.com')
+    expect(account).not.toHaveTextContent('a@example.com')
+  })
+
+  it.for([
+    { case: 'the challenge omits the session user', flag: true },
+    { case: 'the feature flag is off', flag: false }
+  ])('renders no account row when $case', ({ flag }) => {
+    vi.mocked(useFeatureFlags().flags).oauthConsentSwitchAccountEnabled = flag
+    signInAs('a@example.com', 'Account A')
+    renderConsent(flag ? {} : sessionUser)
+
+    expect(
+      screen.queryByRole('region', { name: 'Signed in as' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Switch account' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByText('Comfy Desktop wants access')).toBeVisible()
+  })
+
+  it('signs out and keeps the consent disabled while leaving for sign-in with the same request', async () => {
+    const user = userEvent.setup()
+    renderConsent({ ...sessionUser, workspaces: [challenge.workspaces[0]] })
+
+    await user.click(screen.getByRole('button', { name: 'Switch account' }))
+
+    expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
+      signInPath: `/cloud/login?switchAccount=true&oauth_request_id=${challenge.oauth_request_id}`
+    })
+    expect(enabledConsentControls()).toEqual([])
+    expect(mockSubmitOAuthConsentDecision).not.toHaveBeenCalled()
+  })
+
+  it('reloads instead of restoring the consent when the sign-out fails', async () => {
+    vi.mocked(useAuthActions().logout).mockResolvedValueOnce(undefined)
+    const reload = vi
+      .spyOn(window.location, 'reload')
+      .mockImplementation(() => {})
+    const user = userEvent.setup()
+    renderConsent({ ...sessionUser, workspaces: [challenge.workspaces[0]] })
+
+    await user.click(screen.getByRole('button', { name: 'Switch account' }))
+
+    expect(reload).toHaveBeenCalledOnce()
+    expect(enabledConsentControls()).toEqual([])
+  })
+
+  it('never puts an unvalidated request id into the sign-in path', async () => {
+    const user = userEvent.setup()
+    renderConsent({ ...sessionUser, oauth_request_id: '//evil.example/' })
+
+    await user.click(screen.getByRole('button', { name: 'Switch account' }))
+
+    expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
+      signInPath: '/cloud/login?switchAccount=true'
+    })
+  })
+
+  it('stays on the same request when the sign-out is cancelled', async () => {
+    vi.mocked(useAuthActions().logout).mockResolvedValueOnce(false)
+    const user = userEvent.setup()
+    renderConsent({ ...sessionUser, workspaces: [challenge.workspaces[0]] })
+
+    await user.click(screen.getByRole('button', { name: 'Switch account' }))
+
+    expect(useAuthActions().logout).toHaveBeenCalledOnce()
+    expect(screen.getByRole('button', { name: 'Switch account' })).toBeEnabled()
+    expect(sessionStorage.getItem('Comfy.OAuthRequestId')).toBe(
+      challenge.oauth_request_id
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    expect(mockSubmitOAuthConsentDecision).toHaveBeenCalledWith(
+      expect.objectContaining({
+        oauthRequestId: challenge.oauth_request_id,
+        decision: 'allow'
+      })
+    )
   })
 })

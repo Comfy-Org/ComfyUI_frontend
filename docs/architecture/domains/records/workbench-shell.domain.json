@@ -4,165 +4,73 @@
   "description": "Workbench layout, persisted panel sizing, contribution registries, command dispatch, menus, sidebar and bottom-panel tabs, action bar buttons, and extension slots. Feature content belongs to its respective modules.",
   "modules": [
     {
-      "path": "src/components/LiteGraphCanvasSplitterOverlay.test.ts",
-      "role": "presentation"
+      "path": "src/components/LiteGraphCanvasSplitterOverlay.vue"
     },
     {
-      "path": "src/components/LiteGraphCanvasSplitterOverlay.vue",
-      "role": "presentation"
+      "path": "src/components/MenuHamburger.vue"
     },
     {
-      "path": "src/components/MenuHamburger.vue",
-      "role": "presentation"
+      "path": "src/components/TopMenuSection.vue"
     },
     {
-      "path": "src/components/TopMenuSection.test.ts",
-      "role": "presentation"
+      "path": "src/components/common/ExtensionSlot.vue"
     },
     {
-      "path": "src/components/TopMenuSection.vue",
-      "role": "presentation"
+      "path": "src/components/sidebar/**"
     },
     {
-      "path": "src/components/common/ExtensionSlot.vue",
-      "role": "presentation"
+      "path": "src/components/sidebar/tabs/SidebarTabCloseButton.vue"
     },
     {
-      "path": "src/components/sidebar/**",
-      "role": "presentation"
+      "path": "src/components/sidebar/tabs/SidebarTabTemplate.vue"
     },
     {
-      "path": "src/components/sidebar/tabs/SidebarTabCloseButton.vue",
-      "role": "presentation"
+      "path": "src/components/topbar/ActionBarButtons.vue"
     },
     {
-      "path": "src/components/sidebar/tabs/SidebarTabTemplate.test.ts",
-      "role": "presentation"
+      "path": "src/components/topbar/TopbarBadge.vue"
     },
     {
-      "path": "src/components/sidebar/tabs/SidebarTabTemplate.vue",
-      "role": "presentation"
+      "path": "src/components/topbar/TopbarBadges.vue"
     },
     {
-      "path": "src/components/topbar/ActionBarButtons.vue",
-      "role": "presentation"
+      "path": "src/composables/sidebarTabs/registerCoreSidebarTabs.ts"
     },
     {
-      "path": "src/components/topbar/TopbarBadge.test.ts",
-      "role": "presentation"
+      "path": "src/composables/useCoreCommands.ts"
     },
     {
-      "path": "src/components/topbar/TopbarBadge.vue",
-      "role": "presentation"
+      "path": "src/composables/usePanelSizing.ts"
     },
     {
-      "path": "src/components/topbar/TopbarBadges.vue",
-      "role": "presentation"
+      "path": "src/composables/useWorkspaceInset.ts"
     },
     {
-      "path": "src/composables/sidebarTabs/registerCoreSidebarTabs.test.ts",
-      "role": "integration"
+      "path": "src/stores/actionBarButtonStore.ts"
     },
     {
-      "path": "src/composables/sidebarTabs/registerCoreSidebarTabs.ts",
-      "role": "integration"
+      "path": "src/stores/menuItemStore.ts"
     },
     {
-      "path": "src/composables/useCoreCommands.selectOnly.test.ts",
-      "role": "integration"
+      "path": "src/stores/topbarBadgeStore.ts"
     },
     {
-      "path": "src/composables/useCoreCommands.test.ts",
-      "role": "integration"
+      "path": "src/stores/workspace/bottomPanelStore.ts"
     },
     {
-      "path": "src/composables/useCoreCommands.ts",
-      "role": "integration"
+      "path": "src/stores/workspace/sidebarTabStore.ts"
     },
     {
-      "path": "src/composables/usePanelSizing.test.ts",
-      "role": "application"
+      "path": "src/stores/workspaceStore.ts"
     },
     {
-      "path": "src/composables/usePanelSizing.ts",
-      "role": "application"
+      "path": "src/utils/splitterPersistence.ts"
     },
     {
-      "path": "src/composables/useWorkspaceInset.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useWorkspaceInset.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/actionBarButtonStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/commandStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/commandStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/menuItemStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/menuItemStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/topbarBadgeStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/bottomPanelStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/bottomPanelStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/sidebarTabStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/sidebarTabStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspaceStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspaceStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/utils/splitterPersistence.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/splitterPersistence.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/utils/splitterWidthUtil.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/splitterWidthUtil.ts",
-      "role": "domain"
+      "path": "src/utils/splitterWidthUtil.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["telemetry"],
-  "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
       "name": "Splitter overlay and top menu arrange workbench regions from layout settings",
@@ -183,13 +91,6 @@
     {
       "name": "Topbar badges render extension-contributed badges",
       "checks": ["src/components/topbar/TopbarBadge.test.ts"]
-    },
-    {
-      "name": "Commands register, execute with error handling, and expose keybinding labels",
-      "checks": [
-        "src/stores/commandStore.test.ts",
-        "browser_tests/tests/commands.spec.ts"
-      ]
     },
     {
       "name": "Menu items, sidebar tabs, and bottom panel tabs register, order, and toggle",
@@ -223,7 +124,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior without granting public entry points."
   ],
   "deepImports": "inventory"
 }

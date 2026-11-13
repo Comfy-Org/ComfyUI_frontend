@@ -38,7 +38,7 @@ const i18n = createI18n({
           'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.',
         createWorkspace: 'Create a team workspace',
         maxWorkspacesReached:
-          'You can only own 10 workspaces. Delete one to create a new one.',
+          'You can only own {max} workspace. Delete it to create a new one. | You can only own {max} workspaces. Delete one to create a new one.',
         managedByOrganization:
           "Your organization manages your workspaces, so you can't create one.",
         cannotCreateWorkspace:
@@ -275,32 +275,38 @@ describe('WorkspaceSwitcherPopover', () => {
     expect(list).not.toContainElement(createWorkspaceButton)
   })
 
-  it('says why creation is off when an organization manages the workspaces', async () => {
-    const store = useTeamWorkspaceStore()
-    store.$patch({
-      serverRefusesCreation: true,
-      workspacesManagedByOrganization: true
-    })
-    const { emitted } = renderComponent()
+  it.for([
+    {
+      reason: 'organization_managed',
+      notice: /Your organization manages your workspaces/
+    },
+    {
+      reason: 'owned_workspace_limit',
+      notice: /You can only own 25 workspaces/
+    },
+    {
+      reason: 'owned_workspace_limit',
+      max: 1,
+      notice: /You can only own 1 workspace\. Delete it/
+    },
+    { reason: undefined, notice: /can't create a workspace on this account/ }
+  ] as const)(
+    'renders the served refusal ($reason) in place of creating',
+    async ({ reason, notice, max = 25 }) => {
+      const store = useTeamWorkspaceStore()
+      store.$patch({
+        serverRefusesCreation: true,
+        creationDeniedReason: reason,
+        maxOwnedWorkspaces: max
+      })
+      const { emitted } = renderComponent()
 
-    await userEvent.click(
-      screen.getByText(/Your organization manages your workspaces/)
-    )
+      await userEvent.click(screen.getByText(notice))
 
-    expect(screen.queryByText('Create a team workspace')).toBeNull()
-    expect(emitted().create).toBeUndefined()
-  })
-
-  it('does not blame an organization when the server gives no reason', () => {
-    const store = useTeamWorkspaceStore()
-    store.$patch({ serverRefusesCreation: true })
-    renderComponent()
-
-    expect(
-      screen.getByText(/can't create a workspace on this account/)
-    ).toBeInTheDocument()
-    expect(screen.queryByText(/Your organization manages/)).toBeNull()
-  })
+      expect(screen.queryByText('Create a team workspace')).toBeNull()
+      expect(emitted().create).toBeUndefined()
+    }
+  )
 
   it('hides the create-workspace footer on non-cloud distributions', () => {
     distributionMocks.isCloud = false
@@ -309,5 +315,46 @@ describe('WorkspaceSwitcherPopover', () => {
 
     expect(screen.queryByText('Create a team workspace')).toBeNull()
     expect(screen.queryByText(/You can only own 10 workspaces/)).toBeNull()
+  })
+})
+
+describe('WorkspaceSwitcherPopover (the old menu with billing_new_ux_enabled off)', () => {
+  beforeEach(() => {
+    const billingContext = useBillingContext()
+    billingContext.subscription = computed(() => null)
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    distributionMocks.isCloud = true
+  })
+
+  it('keeps the previous switcher: role line, tier badge, no search, old create label', () => {
+    renderComponent({
+      activeWorkspaceId: 'ws-team',
+      workspaces: [
+        createWorkspaceState({
+          id: 'ws-personal',
+          name: 'Personal Workspace',
+          type: 'personal',
+          role: 'owner',
+          subscription_tier: 'PRO',
+          plan_summary: { status: 'paused', plan_name: 'Pro' }
+        }),
+        ...Array.from({ length: 6 }, (_, i) =>
+          createWorkspaceState({
+            id: `ws-${i}`,
+            name: `Team ${i}`,
+            type: 'team',
+            role: 'member',
+            plan_summary: { status: 'active', plan_name: 'Enterprise' }
+          })
+        )
+      ]
+    })
+
+    expect(screen.getByText('Pro')).toBeInTheDocument()
+    expect(screen.getByText('Owner')).toBeInTheDocument()
+    expect(screen.queryByText('Paused')).toBeNull()
+    expect(screen.queryByText('Enterprise')).toBeNull()
+    expect(screen.queryByTestId('workspace-switcher-search')).toBeNull()
+    expect(screen.getByText('Create a team workspace')).toBeInTheDocument()
   })
 })

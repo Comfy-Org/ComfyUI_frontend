@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   desktopHostUser,
+  desktopHostReportsSignInFailures,
   isDesktopHostSessionActive,
+  requestDesktopHostSignIn,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
@@ -31,7 +33,9 @@ function environment(pageUrl: string) {
   const env = {
     issuer: 'https://cloud.example.test',
     pageUrl: () => page.url,
-    navigate: vi.fn<(url: string) => void>(),
+    openPopup: () => null,
+    onMessage: () => () => {},
+    reportSignInFailure: () => {},
     replaceUrl: vi.fn((url: string) => {
       page.url = url
     }),
@@ -62,13 +66,15 @@ function environment(pageUrl: string) {
 
 afterEach(() => stopDesktopHostSession())
 
+const noNotices = { onPopupBlocked: () => {}, onSignInFailed: () => {} }
+
 describe('startLocalWebSession', () => {
   it('changes nothing while local_web_sso is off', async () => {
     const { env, page } = environment(
       'http://127.0.0.1:8188/?code=code-1&state=state-1'
     )
 
-    await expect(startLocalWebSession(env)).resolves.toBe(false)
+    await expect(startLocalWebSession(noNotices, env)).resolves.toBe('off')
 
     expect(isDesktopHostSessionActive()).toBe(false)
     expect(page.url).toBe('http://127.0.0.1:8188/?code=code-1&state=state-1')
@@ -85,7 +91,7 @@ describe('startLocalWebSession', () => {
     vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
     const { env } = environment(url)
 
-    await expect(startLocalWebSession(env)).resolves.toBe(false)
+    await expect(startLocalWebSession(noNotices, env)).resolves.toBe('off')
 
     expect(isDesktopHostSessionActive()).toBe(false)
   })
@@ -96,7 +102,7 @@ describe('startLocalWebSession', () => {
       'http://localhost:8188/?code=code-1&state=state-1'
     )
 
-    await expect(startLocalWebSession(env)).resolves.toBe(true)
+    await expect(startLocalWebSession(noNotices, env)).resolves.toBe('started')
 
     expect(desktopHostUser.value).toEqual({
       id: 'user-1',
@@ -107,7 +113,7 @@ describe('startLocalWebSession', () => {
     expect(page.url).toBe('http://localhost:8188/')
   })
 
-  it('starts signed out and reports a failed exchange', async () => {
+  it('starts signed out and reports a failed exchange so the page can say so', async () => {
     vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
     const { env } = environment(
       'http://127.0.0.1:8188/?code=code-1&state=state-1'
@@ -119,7 +125,9 @@ describe('startLocalWebSession', () => {
         })
     )
 
-    await startLocalWebSession(env)
+    await expect(startLocalWebSession(noNotices, env)).resolves.toBe(
+      'sign-in-failed'
+    )
 
     expect(isDesktopHostSessionActive()).toBe(true)
     expect(desktopHostUser.value).toBeNull()
@@ -132,13 +140,40 @@ describe('startLocalWebSession', () => {
     )
   })
 
+  it('opens every sign-in in a new window, never one a related tab has named', async () => {
+    vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+
+    await startLocalWebSession(noNotices)
+    await requestDesktopHostSignIn()
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      'about:blank',
+      '_blank',
+      expect.any(String)
+    )
+  })
+
+  it('tells the person once that pop-ups are blocked, and owns that notice', async () => {
+    vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
+    vi.spyOn(window, 'open').mockReturnValue(null)
+    const notices = { onPopupBlocked: vi.fn(), onSignInFailed: vi.fn() }
+
+    await startLocalWebSession(notices)
+    await requestDesktopHostSignIn()
+
+    expect(notices.onPopupBlocked).toHaveBeenCalledOnce()
+    expect(notices.onSignInFailed).not.toHaveBeenCalled()
+    expect(desktopHostReportsSignInFailures()).toBe(true)
+  })
+
   it('does not report a consent the person declined', async () => {
     vi.mocked(useFeatureFlags().flags).localWebSsoEnabled = true
     const { env } = environment(
       'http://127.0.0.1:8188/?error=access_denied&state=state-1'
     )
 
-    await startLocalWebSession(env)
+    await expect(startLocalWebSession(noNotices, env)).resolves.toBe('started')
 
     expect(reportError).not.toHaveBeenCalled()
   })

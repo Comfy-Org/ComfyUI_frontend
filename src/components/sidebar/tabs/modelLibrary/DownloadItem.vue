@@ -8,7 +8,7 @@
         :remove-label="$t('g.remove')"
         variant="chip"
         severity="danger"
-        class="mt-2 h-6 text-sm font-light"
+        class="mt-2 h-6 font-light"
         removable
         @remove="handleRemoveDownload"
       >

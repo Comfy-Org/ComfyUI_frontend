@@ -57,7 +57,7 @@ export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
 
 // End backwards compat
 
-export type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
+export type { CanvasInteractionModeReader } from '@comfyorg/graph-model/CanvasInteractionMode'
 export { LinkConnector } from './canvas/LinkConnector'
 export { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 export { CanvasPointer } from './CanvasPointer'

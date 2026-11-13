@@ -74,7 +74,7 @@ import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import type { BillingEntryState } from '@/entry/billingEntry'
-import { useBillingWebSession } from '@/session/billingWebSession'
+import { useBilledScope } from '@/session/billingWebAuth'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import {
   checkoutAttemptOf,
@@ -225,7 +225,7 @@ function arrivalPage({ entry, error }: BillingEntryState): CheckoutPage {
  */
 export function useFullPageCheckout() {
   const { entry, error: unreadableLink } = useBillingEntry()
-  const { session } = useBillingWebSession()
+  const session = useBilledScope()
   const billedWorkspace = useBilledWorkspace()
   const { capabilities, commands, lifecycle, plans, status } = useBillingClient<
     'capabilities' | 'commands' | 'lifecycle' | 'plans' | 'status'
@@ -802,12 +802,10 @@ export function useFullPageCheckout() {
   }
 
   const askOnce = (operationId: string) =>
-    commands.cancelOperation(operationId).catch(
-      (): CancelOperationResult => ({
-        status: 'error',
-        code: 'REQUEST_FAILED'
-      })
-    )
+    commands.cancelOperation(operationId).catch((): CancelOperationResult => ({
+      status: 'error',
+      code: 'REQUEST_FAILED'
+    }))
 
   /** Asks again while the server is still settling the cancel and `waiting` holds. */
   async function askUntilSettled(operationId: string, waiting: () => boolean) {

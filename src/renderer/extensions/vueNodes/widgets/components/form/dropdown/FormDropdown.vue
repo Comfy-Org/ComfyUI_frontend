@@ -20,6 +20,8 @@ import type {
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
+import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
@@ -31,9 +33,8 @@ import {
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: FormDropdownItem[]
-  /** Items used for display in the input field. Falls back to items if not provided. */
-  displayItems?: FormDropdownItem[]
+  inputId?: string
+  items: MaybePaged<FormDropdownItem>
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -50,9 +51,6 @@ interface Props {
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
-  loadingMore?: boolean
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
   isSelected?: (
     selected: Set<string>,
     item: FormDropdownItem,
@@ -61,9 +59,9 @@ interface Props {
   isUploading?: boolean
   searcher?: (
     query: string,
-    items: FormDropdownItem[],
+    items: readonly FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<FormDropdownItem[]>
+  ) => Promise<readonly FormDropdownItem[]>
 }
 
 const { t } = useI18n()
@@ -80,7 +78,6 @@ const {
   ownershipOptions,
   showBaseModelFilter,
   baseModelOptions,
-  loadingMore = false,
   isSelected = (selected, item, _index) => selected.has(item.id),
   searcher = defaultSearcher,
   items
@@ -131,7 +128,7 @@ const filteredItems = computedAsync(
   async (onCancel) => {
     if (!isOpen.value) {
       displayedSearchQuery.value = ''
-      return items
+      return pagedItems(items).slice()
     }
 
     const query = debouncedSearchQuery.value
@@ -142,13 +139,13 @@ const filteredItems = computedAsync(
       cleanupFn?.()
     })
 
-    const result = await searcher(query, items, (cb) => {
+    const result = await searcher(query, pagedItems(items).slice(), (cb) => {
       cleanupFn = cb
     })
     if (!cancelled) displayedSearchQuery.value = query
     return result
   },
-  items,
+  pagedItems(items).slice(),
   {
     evaluating: isFiltering
   }
@@ -167,7 +164,7 @@ const selectedSorter = computed<SortOption['sorter']>(() => {
 })
 const sortedItems = computed(() => {
   if (!isOpen.value) {
-    return items
+    return pagedItems(items).slice()
   }
 
   return selectedSorter.value({ items: filteredItems.value }) || []
@@ -279,13 +276,17 @@ async function getTopSearchResult() {
   const query = searchQuery.value
   if (query.trim() === '') return
 
-  const sourceItems = items
+  const sourceItems = pagedItems(items)
   const matches =
     isShowingCurrentSearchResults.value && displayedSearchQuery.value === query
       ? filteredItems.value
-      : await searcher(query, sourceItems, () => {})
+      : await searcher(query, sourceItems.slice(), () => {})
 
-  if (query !== searchQuery.value || sourceItems !== items || !isOpen.value) {
+  if (
+    query !== searchQuery.value ||
+    sourceItems !== pagedItems(items) ||
+    !isOpen.value
+  ) {
     return
   }
 
@@ -311,30 +312,37 @@ function showPicker() {
   triggerRef.value!.showPicker()
   closeDropdown()
 }
+const dropdownItems = computed(() =>
+  isPaged(items)
+    ? new WrappedList(items, () => sortedItems.value)
+    : sortedItems.value
+)
 </script>
 
 <template>
   <div ref="triggerAnchorRef">
-    <FormDropdownInput
-      ref="triggerRef"
-      :files
-      :is-open
-      :placeholder="placeholderText"
-      :items
-      :display-items
-      :max-selectable
-      :selected
-      :uploadable
-      :disabled
-      :accept
-      :is-uploading
-      @select-click="toggleDropdown"
-      @file-change="handleFileChange"
-    />
     <PopoverRoot v-model:open="isOpen">
-      <PopoverAnchor as="template" :reference="triggerAnchorRef ?? undefined" />
+      <FormDropdownInput
+        ref="triggerRef"
+        :input-id
+        :files
+        :is-open
+        :placeholder="placeholderText"
+        :selected-items="pagedItems(items).filter(internalIsSelected)"
+        :max-selectable
+        :uploadable
+        :disabled
+        :accept
+        :is-uploading
+        @select-click="toggleDropdown"
+        @file-change="handleFileChange"
+      >
+        <template #anchor="{ element }">
+          <PopoverAnchor as="template" :reference="element" />
+        </template>
+      </FormDropdownInput>
       <PopoverContent
-        align="start"
+        align="end"
         class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
         @interact-outside.prevent
         @close-auto-focus.prevent="focusTrigger"
@@ -355,14 +363,11 @@ function showPicker() {
           :show-base-model-filter
           :base-model-options
           :disabled
-          :items="sortedItems"
+          :items="dropdownItems"
           :candidate-index
           :candidate-label
           :is-selected="internalIsSelected"
           :max-selectable
-          :loading-more
-          :on-load-more
-          :can-load-more
           @close="closeDropdown"
           @search-enter="handleSearchEnter"
           @item-click="handleSelection"

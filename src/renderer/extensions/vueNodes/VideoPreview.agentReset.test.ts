@@ -19,6 +19,7 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { AgentCrdtProjection } from '@/workbench/extensions/agent/crdt/agentCrdtProjection'
 import { FollowerDoc } from '@/workbench/extensions/agent/crdt/followerDoc'
@@ -114,6 +115,17 @@ function videoUrlFor(nodeId: string | number): string {
   return `/api/view?filename=clip-${nodeId}.mp4&type=output`
 }
 
+function videoItemFor(nodeId: string | number): AugmentedResultItem {
+  return {
+    filename: `clip-${nodeId}.mp4`,
+    subfolder: '',
+    type: 'output',
+    mediaType: 'video',
+    nodeId,
+    previewUrl: videoUrlFor(nodeId)
+  }
+}
+
 /**
  * `GraphCanvas`'s store-backed, id-keyed node list, rendering the production
  * `NodeContent` so the real `VideoPreview` owns the `<video>` under test.
@@ -136,7 +148,7 @@ function renderCanvasHost(graph: LGraph) {
               [
                 h(NodeContent, {
                   nodeData,
-                  media: { type: 'video', urls: [videoUrlFor(nodeData.id)] }
+                  media: { type: 'video', items: [videoItemFor(nodeData.id)] }
                 })
               ]
             )

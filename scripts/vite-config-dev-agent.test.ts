@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { promisify } from 'node:util'
 
 import { afterAll, describe, expect, it } from 'vitest'
+import type { ProxyOptions } from 'vite'
 
 import {
   createDevAgentConfig,
@@ -263,17 +264,64 @@ describe('dev server agent routes', () => {
   const agentProxy = { target: 'http://127.0.0.1:8095', ws: true }
   const backend = { target: 'https://cloud.example.com' }
 
+  function resolve(
+    routes: Record<string, ProxyOptions>,
+    url: string
+  ): ProxyOptions | undefined {
+    return Object.entries(routes).find(([context]) =>
+      url.startsWith(context)
+    )?.[1]
+  }
+
+  function resolveSocket(
+    routes: Record<string, ProxyOptions>,
+    url: string
+  ): ProxyOptions | undefined {
+    return Object.entries(routes).find(([context, options]) => {
+      if (!url.startsWith(context)) return false
+      const target = typeof options.target === 'string' ? options.target : ''
+      return options.ws === true || /^wss?:/.test(target)
+    })?.[1]
+  }
+
   it('upgrades the events socket on the backend without a local agent', () => {
-    expect(devServerAgentRoutes(undefined, backend)).toEqual({
+    const routes = devServerAgentRoutes(undefined, backend)
+
+    expect(routes).toEqual({
       '/api/agent/events': { target: 'https://cloud.example.com', ws: true }
+    })
+    expect(resolveSocket(routes, '/api/agent/events')).toMatchObject({
+      target: 'https://cloud.example.com',
+      ws: true
+    })
+  })
+
+  it('falls the events socket through to the backend when the agent route cannot carry one', () => {
+    const routes = devServerAgentRoutes(
+      { target: 'http://127.0.0.1:8095' },
+      backend
+    )
+
+    expect(resolve(routes, '/api/agent/events')).toMatchObject({
+      target: 'http://127.0.0.1:8095'
+    })
+    expect(resolveSocket(routes, '/api/agent/events')).toMatchObject({
+      target: 'https://cloud.example.com',
+      ws: true
     })
   })
 
   it('routes the agent and the saved-workflow index to a local agent first', () => {
-    expect(Object.entries(devServerAgentRoutes(agentProxy, backend))).toEqual([
-      ['/api/workflows', agentProxy],
-      ['/api/agent', agentProxy],
-      ['/api/agent/events', { target: 'https://cloud.example.com', ws: true }]
-    ])
+    const routes = devServerAgentRoutes(agentProxy, backend)
+
+    expect(resolve(routes, '/api/workflows?limit=20')).toBe(agentProxy)
+    expect(resolve(routes, '/api/agent/threads/new/messages')).toBe(agentProxy)
+    expect(resolveSocket(routes, '/api/agent/events')).toBe(agentProxy)
+  })
+
+  it('leaves other api traffic to the ComfyUI proxy', () => {
+    expect(
+      resolve(devServerAgentRoutes(agentProxy, backend), '/api/prompt')
+    ).toBeUndefined()
   })
 })

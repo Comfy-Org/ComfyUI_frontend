@@ -1,4 +1,11 @@
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  defineComponent,
+  h,
+  onMounted,
+  ref
+} from 'vue'
 import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -8,12 +15,13 @@ import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
+import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
-import type { SettingPanelType, SettingParams } from '@/platform/settings/types'
+import type {
+  SettingPanelType,
+  SettingParams
+} from '@comfyorg/settings-core/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
@@ -169,15 +177,25 @@ export function useSettingUI(
     props: { section: 'planCredits' }
   }
 
+  const BillingTabCurrent = defineAsyncComponent(
+    () =>
+      import('@/platform/account/components/dialogs/settings/BillingTab.vue')
+  )
+  // shortcut: the 1.60 tab, kept whole for the billing_new_ux_enabled rollback; delete with the flag.
+  const BillingTabLegacy = defineAsyncComponent(
+    () =>
+      import('@/platform/account/components/dialogs/settings/BillingTabLegacy.vue')
+  )
+
   const billingPanel: SettingPanelItem = {
     node: {
       key: 'workspace',
       label: 'Billing',
       children: []
     },
-    component: defineAsyncComponent(
-      () =>
-        import('@/platform/account/components/dialogs/settings/BillingTab.vue')
+    component: defineComponent(
+      () => () =>
+        h(flags.billingNewUxEnabled ? BillingTabCurrent : BillingTabLegacy)
     )
   }
 
@@ -276,7 +294,7 @@ export function useSettingUI(
       children: []
     },
     component: defineAsyncComponent(
-      () => import('@/platform/settings/components/ExtensionPanel.vue')
+      () => import('@/platform/extensions/components/ExtensionPanel.vue')
     )
   }
 

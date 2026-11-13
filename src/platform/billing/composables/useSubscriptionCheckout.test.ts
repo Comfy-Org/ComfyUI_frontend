@@ -422,8 +422,8 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 
 function latestPaymentRecoveryAction() {
   const toast = useToast().toasts.at(-1)
-  assert(toast?.kind === 'warning' && toast.action)
-  return toast.action.onClick
+  assert(toast?.kind === 'warning' && toast.actions[0])
+  return toast.actions[0].onClick
 }
 
 const i18n = createI18n({
@@ -634,6 +634,8 @@ describe('useSubscriptionCheckout', () => {
         credits_today_cents: 3150,
         credits_next_period_cents: 4200,
         requires_reactivation_confirmation: true,
+        requires_reactivation_charge_confirmation: false,
+        cancel_at: '2026-11-20T00:00:00Z',
         current_plan: {
           ...makeCreatorMonthly(),
           period_end: '2026-11-27T00:00:00Z'
@@ -1227,7 +1229,7 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          action: { label: 'Try again', onClick: expect.any(Function) },
+          actions: [{ label: 'Try again', onClick: expect.any(Function) }],
           description: 'Payment popup blocked',
           kind: 'warning',
           title: 'Warning'
@@ -1376,7 +1378,10 @@ describe('useSubscriptionCheckout', () => {
         'SUBSCRIPTION_PAYMENT_REQUIRED'
       )
       expect(useToast().toasts).toEqual([
-        expect.objectContaining({ action: expect.any(Object), kind: 'warning' })
+        expect.objectContaining({
+          actions: [expect.any(Object)],
+          kind: 'warning'
+        })
       ])
 
       checkout.handleBackToPricing()
@@ -1404,7 +1409,10 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'yearly'
       })
       expect(useToast().toasts).toEqual([
-        expect.objectContaining({ action: expect.any(Object), kind: 'warning' })
+        expect.objectContaining({
+          actions: [expect.any(Object)],
+          kind: 'warning'
+        })
       ])
 
       unmount()
@@ -1566,12 +1574,12 @@ describe('useSubscriptionCheckout', () => {
     describe('payment recovery on the SDK rail', () => {
       const RAIL_PORTAL = 'https://billing.stripe.com/rail-portal'
 
-      /** Only `billing_status` is read, but the response requires six more. */
       function railStatus(
         billing_status: BillingStatus
       ): BillingStatusResponse {
         return {
           billing_status,
+          ended_at: null,
           has_funds: true,
           is_active: true,
           max_seats: 1,
@@ -4443,7 +4451,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          action: { label: 'Try again', onClick: expect.any(Function) },
+          actions: [{ label: 'Try again', onClick: expect.any(Function) }],
           description: 'Payment popup blocked',
           kind: 'warning',
           title: 'Warning'
@@ -4452,8 +4460,7 @@ describe('useSubscriptionCheckout', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-blocked',
         'subscription',
-        expect.any(Object),
-        'https://stripe.com/pay'
+        expect.objectContaining({ paymentMethodUrl: 'https://stripe.com/pay' })
       )
 
       const onAction = latestPaymentRecoveryAction()
@@ -4863,9 +4870,9 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'yearly',
           checkoutType: 'new',
           paymentIntentSource: undefined,
-          attemptStartedAt: expect.any(Number)
-        },
-        'https://stripe.com/pay'
+          attemptStartedAt: expect.any(Number),
+          paymentMethodUrl: 'https://stripe.com/pay'
+        }
       )
       expect(checkout.checkoutStep.value).toBe('success')
       openSpy.mockRestore()

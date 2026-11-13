@@ -1,9 +1,8 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscriptionActions } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
@@ -158,7 +157,6 @@ describe('useSubscriptionActions', () => {
 
       expect(billing.fetchBalance).toHaveBeenCalledOnce()
       expect(billing.fetchStatus).toHaveBeenCalledOnce()
-      expect(useAuthActions().fetchBalance).not.toHaveBeenCalled()
     })
 
     it('swallows refresh failures without surfacing a toast', async () => {
