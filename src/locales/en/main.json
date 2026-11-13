@@ -1297,6 +1297,7 @@
       "descriptionMore": "Show more",
       "descriptionLess": "Show less",
       "justOpen": "Just open",
+      "open": "Open",
       "backToTemplates": "Back to {category}",
       "breadcrumbLabel": "Template navigation"
     },
@@ -2040,6 +2041,7 @@
     "Anthropic": "Anthropic",
     "Beeble": "Beeble",
     "BFL": "BFL",
+    "Breeze": "Breeze",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
@@ -2065,6 +2067,7 @@
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
     "fal": "fal",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",
@@ -2095,6 +2098,7 @@
     "BOOLEAN": "BOOLEAN",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "BOUNDING_BOXES": "BOUNDING_BOXES",
+    "BREEZE_VOICE": "BREEZE_VOICE",
     "CAMERA_INFO_STATE": "CAMERA_INFO_STATE",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -2611,10 +2615,10 @@
     "noClips": "Connect videos to preview and order them",
     "clips": "Clips",
     "clipLabel": "Clip {position}",
-    "previewClips": "Clips",
-    "previewResult": "Last run",
     "reorderHint": "Drag clips or press Alt + arrow keys to reorder, click to jump",
-    "mixedDimensions": "Mixed sizes"
+    "mixedDimensions": "Mixed sizes",
+    "mixedDimensionsWarning": "All clips must match clip {position} ({width} × {height}) to concatenate: {clips}.",
+    "clipSize": "clip {position} is {width} × {height}"
   },
   "toastMessages": {
     "nothingToPasteIntoNode": "Nothing to paste into this node",
@@ -2735,6 +2739,7 @@
       "unverifiedBadge": "Name not verified",
       "unverifiedNotice": "This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.",
       "unverifiedNoticeNoHost": "This name was provided by whoever registered this app and has not been verified by Comfy.",
+      "verifiedNotice": "Name not verified · Verified destination: {platform} · you'll return to {host}",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
       "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
@@ -2960,7 +2965,8 @@
     },
     "loginButton": {
       "tooltipHelp": "Login to be able to use \"API Nodes\"",
-      "tooltipLearnMore": "Learn more..."
+      "tooltipLearnMore": "Learn more...",
+      "signInToUsePartnerNodes": "Sign in to use Partner Nodes"
     }
   },
   "desktopLogin": {
@@ -4168,13 +4174,22 @@
     "maxWorkspacesReached": "You can only own {max} workspace. Delete it to create a new one. | You can only own {max} workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
-    "failedToSwitch": "Failed to switch workspace"
+    "failedToSwitch": "Failed to switch workspace",
+    "createWorkspaceAction": "Create workspace",
+    "ownedLimit": "You can own up to {max}.",
+    "searchPlaceholder": "Search workspace...",
+    "noResults": "No workspaces match “{query}”.",
+    "loadFailed": "Couldn’t load your workspaces.",
+    "tryAgain": "Try again"
   },
   "profileMenu": {
     "switchWorkspace": "Switch workspace",
     "credits": "Credits",
     "balanceUnavailable": "Couldn't load your balance.",
     "billingSettings": "Billing settings",
+    "planCredits": "Plan credits",
+    "topUpCredits": "Top-up credits",
+    "paymentProcessing": "Payment processing…",
     "planStatus": {
       "noPlan": "No plan",
       "paused": "Paused",
@@ -5372,7 +5387,10 @@
       "retryDownload": "Retry",
       "retryDownloadModel": "Retry download for {model}",
       "downloadFailedHint": "The download couldn't be completed. Use Retry to try again.",
-      "downloading": "Downloading"
+      "downloading": "Downloading",
+      "pauseDownloadModel": "Pause download for {model}",
+      "resumeDownloadModel": "Resume download for {model}",
+      "cancelDownloadModel": "Cancel download for {model}"
     },
     "missingMedia": {
       "missingMediaTitle": "Missing Inputs"
@@ -6627,6 +6645,51 @@
       "body": "Buy credits automatically when you run low, so workflows and API calls keep running.",
       "setUp": "Set up",
       "notNow": "Not now"
+    },
+    "autoTopUp": {
+      "label": "Turn on auto top-up",
+      "body": "Buy credits automatically when you run low, so workflows keep running.",
+      "threshold": "When credits drop below",
+      "thresholdHint": "Counts plan credits and credits you’ve bought.",
+      "target": "Top up to",
+      "targetHint": "{target} credits. Each top-up is at least {amount}.",
+      "limit": "Monthly limit",
+      "limitOff": "Up to {max} a month, the maximum. Turn on to set a lower limit.",
+      "limitHint": "Most you can set here: {max} a month.",
+      "consentNoCard": "Top-ups are charged to the card you pay with at checkout, up to {max} a month. Turn this off anytime in {billing}.",
+      "consentDefaultCard": "Top-ups are charged to your default card, {card}, up to {max} a month. Turn this off anytime in {billing}.",
+      "card": "{brand} ···· {last4}",
+      "billing": "Billing",
+      "invalid": "Enter a valid value.",
+      "fieldError": {
+        "notWhole": "Enter a whole number of credits.",
+        "belowMinimum": "Must be at least 1 credit.",
+        "belowTarget": "Must be at least {minimum} credits, about {usd} above your threshold.",
+        "aboveTarget": "Can’t be more than {max} credits (about {usd}).",
+        "belowTopUp": "Can’t cover one top-up. Set at least {amount}."
+      },
+      "isOn": "Auto top-up is on.",
+      "manage": "Manage"
+    },
+    "autoTopUpOn": {
+      "title": "Auto top-up is on",
+      "summary": "Below {threshold} credits, tops up to {target}.",
+      "limit": "Up to {limit} a month.",
+      "noLimit": "No monthly limit.",
+      "done": "Done"
+    },
+    "autoTopUpFailed": {
+      "title": "Auto top-up didn't turn on",
+      "body": "Your credits were added. Set up auto top-up in Billing to try again."
     }
+  },
+  "billingHandoff": {
+    "failed": "Could not open billing. Try again.",
+    "superseded": "Your account or workspace changed while billing was opening. Try again.",
+    "signInAgain": "Sign in again to open billing.",
+    "popupBlocked": "Your browser blocked the billing tab.",
+    "openBilling": "Open billing",
+    "opening": "Opening checkout…",
+    "openingDetail": "This takes a few seconds."
   }
 }

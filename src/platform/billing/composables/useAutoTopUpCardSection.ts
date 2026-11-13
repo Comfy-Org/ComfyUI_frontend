@@ -1,4 +1,7 @@
-import { autoTopUpOffView } from '@comfyorg/account-core/billing'
+import {
+  autoTopUpOffView,
+  isAutoTopUpNotAvailable
+} from '@comfyorg/account-core/billing'
 import { autoTopUpCardView } from '@comfyorg/account-ui/billing'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { computedAsync } from '@vueuse/core'
@@ -11,6 +14,7 @@ import { useAutoTopUpCardCopy } from '@/platform/billing/composables/useAutoTopU
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
 /** The auto top-up card's served state, copy and Platform link while the card is shown. */
@@ -31,7 +35,7 @@ export function useAutoTopUpCardSection(shown: MaybeRefOrGetter<boolean>) {
   useAutoTopUpCardViewed(() => {
     const current = state.value
     return toValue(shown) &&
-      autoTopUpSetup.value?.state !== 'unavailable' &&
+      !isAutoTopUpNotAvailable(autoTopUpSetup.value) &&
       isReady.value &&
       current.kind === 'loaded'
       ? current.settings.status
@@ -91,10 +95,10 @@ export function useAutoTopUpCardSection(shown: MaybeRefOrGetter<boolean>) {
       : 'turn_on'
   )
 
-  const { href, track } = usePlatformHandoff('/profile/billing', () => ({
-    target: 'auto_top_up',
-    action: action.value
-  }))
+  const { href, track } = usePlatformHandoff(
+    () => platformAutoTopUpPath(action.value),
+    () => ({ target: 'auto_top_up', action: action.value })
+  )
 
   return {
     setup: autoTopUpSetup,

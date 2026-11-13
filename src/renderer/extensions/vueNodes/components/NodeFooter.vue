@@ -283,7 +283,7 @@ const errorRadiusClass = computed(() => getBottomRadius(shape))
 
 const enterRadiusClass = computed(() => getBottomRadius(shape, 'right'))
 
-const tabStyles = 'pointer-events-auto h-11 text-xs font-normal'
+const tabStyles = 'pointer-events-auto h-11 font-normal'
 const footerWrapperBase = 'isolate -z-1 -mt-5 box-border flex'
 const errorWrapperStyles = cn(
   footerWrapperBase,

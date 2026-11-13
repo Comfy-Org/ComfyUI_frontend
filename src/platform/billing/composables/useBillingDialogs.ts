@@ -25,6 +25,11 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { launchLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import {
+  localSurface,
+  useLocalBillingWebFlagStore
+} from '@/platform/billing/stores/localBillingWebFlagStore'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
@@ -48,6 +53,14 @@ const DENIED_TOP_UP_OUTCOME: Record<
   unresolved: { toast: 'subscription.planUnavailable.billingStateUnknown' }
 }
 
+function opensLocalBillingHandoff(): boolean {
+  return (
+    !isCloud &&
+    localSurface() === 'local_web' &&
+    useLocalBillingWebFlagStore().enabled
+  )
+}
+
 export function useBillingDialogs() {
   const dialogStore = useDialogStore()
 
@@ -60,6 +73,12 @@ export function useBillingDialogs() {
         options?.source ??
         (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
     })
+    if (opensLocalBillingHandoff()) {
+      await launchLocalBillingHandoff(
+        () => void showTopUpCreditsDialog(options)
+      )
+      return
+    }
     const { canTopUp, topUpDenial, isReady, initialize } =
       useBillingCapabilities()
     if (!isReady.value) await initialize()

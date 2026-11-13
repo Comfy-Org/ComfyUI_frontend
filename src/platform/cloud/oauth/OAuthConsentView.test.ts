@@ -61,6 +61,8 @@ const i18n = createI18n({
             'This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.',
           unverifiedNoticeNoHost:
             'This name was provided by whoever registered this app and has not been verified by Comfy.',
+          verifiedNotice:
+            "Name not verified · Verified destination: {platform} · you'll return to {host}",
           errorExpired:
             'This consent request has expired or has already been used.',
           errorScopeBroadening: SCOPE_BROADENING,
@@ -202,6 +204,128 @@ describe('OAuthConsentView', () => {
     expect(screen.getByTestId('client-unverified-notice')).toHaveTextContent(
       notice
     )
+  })
+
+  it.for([
+    {
+      platform: 'chatgpt',
+      displayName: 'ChatGPT',
+      redirectUri: 'https://chatgpt.com/connector/oauth/abc123',
+      host: 'chatgpt.com',
+      icon: 'icon-[comfy--openai]'
+    },
+    {
+      platform: 'claude',
+      displayName: 'Claude',
+      redirectUri: 'https://claude.ai/api/mcp/auth_callback',
+      host: 'claude.ai',
+      icon: 'icon-[comfy--anthropic]'
+    }
+  ] as const)(
+    'renders a verified $platform destination without hiding the registrant name',
+    ({ platform, displayName, redirectUri, host, icon }) => {
+      renderConsent({
+        client_display_name: 'Totally Legit Connector',
+        client_provenance: 'dynamic',
+        redirect_uri: redirectUri,
+        verified_client: { platform, display_name: displayName }
+      })
+
+      expect(
+        screen.getByText('Totally Legit Connector wants access')
+      ).toBeVisible()
+      expect(screen.getByTestId('client-icon')).toHaveClass(
+        'icon-[lucide--app-window]'
+      )
+      expect(screen.getByTestId('client-verified-icon')).toHaveClass(icon)
+      expect(screen.getByTestId('client-verified')).toHaveTextContent(
+        `Name not verified · Verified destination: ${displayName} · you'll return to ${host}`
+      )
+      expect(screen.queryByTestId('client-unverified')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('client-unverified-notice')
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  const chatgptCallback = 'https://chatgpt.com/connector/oauth/abc123'
+  const chatgpt = { platform: 'chatgpt', display_name: 'ChatGPT' }
+
+  it.for([
+    {
+      case: 'no verified_client',
+      verifiedClient: undefined,
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'an unknown platform',
+      verifiedClient: { platform: 'gemini', display_name: 'Gemini' },
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'a non-string display name',
+      verifiedClient: { platform: 'chatgpt', display_name: 123 },
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'a whitespace-only display name',
+      verifiedClient: { platform: 'chatgpt', display_name: '  ' },
+      redirectUri: chatgptCallback
+    },
+    {
+      case: 'a loopback redirect',
+      verifiedClient: chatgpt,
+      redirectUri: 'http://127.0.0.1:8765/callback'
+    },
+    {
+      case: 'a custom-scheme redirect',
+      verifiedClient: chatgpt,
+      redirectUri: 'comfy://oauth/callback'
+    }
+  ])(
+    'renders a dynamic client with $case as unverified',
+    async ({ verifiedClient, redirectUri }) => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json({
+          ...challenge,
+          client_display_name: 'ChatGPT Connector',
+          client_provenance: 'dynamic',
+          redirect_uri: redirectUri,
+          verified_client: verifiedClient
+        })
+      )
+      const router = createRouter({
+        history: createMemoryHistory(),
+        routes: [{ path: '/oauth/consent', component: OAuthConsentView }]
+      })
+      await router.push(
+        `/oauth/consent?oauth_request_id=${challenge.oauth_request_id}`
+      )
+      render(OAuthConsentView, { global: { plugins: [i18n, router] } })
+
+      expect(
+        await screen.findByText('ChatGPT Connector wants access')
+      ).toBeVisible()
+      expect(screen.getByTestId('client-icon')).toHaveClass(
+        'icon-[lucide--app-window]'
+      )
+      expect(screen.getByTestId('client-unverified')).toBeVisible()
+      expect(screen.getByTestId('client-unverified-notice')).toBeVisible()
+      expect(screen.queryByTestId('client-verified')).not.toBeInTheDocument()
+    }
+  )
+
+  it('ignores verified_client on a first-party client', () => {
+    renderConsent({
+      verified_client: { platform: 'chatgpt', display_name: 'ChatGPT' }
+    })
+
+    expect(screen.getByText('Comfy Desktop wants access')).toBeVisible()
+    expect(screen.getByTestId('client-icon')).toHaveClass(
+      'icon-[lucide--app-window]'
+    )
+    expect(screen.queryByTestId('client-verified')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('client-unverified')).not.toBeInTheDocument()
   })
 
   it('renders title, subtitle, and scope checklist', () => {

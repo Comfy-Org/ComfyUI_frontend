@@ -17,7 +17,8 @@ const READ_TIMEOUT_MS = 10_000
 
 const zAllowlistedCloudFlags = z.object({ local_billing_web: z.boolean() })
 
-function localSurface(): 'desktop' | 'local_web' {
+/** Which local app this view runs in, as the `local_billing_web` flag splits it. */
+export function localSurface(): 'desktop' | 'local_web' {
   return isDesktop || window.__comfyDesktop2 !== undefined
     ? 'desktop'
     : 'local_web'
