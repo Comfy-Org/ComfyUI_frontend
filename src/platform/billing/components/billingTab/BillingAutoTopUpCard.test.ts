@@ -435,19 +435,23 @@ describe('BillingAutoTopUpCard', () => {
     }
   )
 
-  it('renders nothing when the server marks setup unavailable', async () => {
-    renderCard(configured, {
-      state: 'unavailable',
-      reason: 'billing_rail_not_supported'
-    })
+  it.for([
+    { state: 'unavailable', reason: 'billing_rail_not_supported' },
+    { state: 'frozen', reason: 'billing_paused' },
+    { state: 'frozen', reason: 'payment_past_due' }
+  ] as const)(
+    'renders nothing when setup is $state for $reason',
+    async (setup) => {
+      renderCard(configured, setup)
 
-    await vi.waitFor(() =>
-      expect(billingApi.getBillingAutoReload).toHaveBeenCalled()
-    )
-    expect(
-      screen.queryByTestId('billing-auto-top-up-card')
-    ).not.toBeInTheDocument()
-  })
+      await vi.waitFor(() =>
+        expect(billingApi.getBillingAutoReload).toHaveBeenCalled()
+      )
+      expect(
+        screen.queryByTestId('billing-auto-top-up-card')
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it('reports no view while the server hides the card, then one once it shows', async () => {
     const { setupRef } = renderCard(configured, {
