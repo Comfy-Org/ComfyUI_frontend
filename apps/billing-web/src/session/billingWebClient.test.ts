@@ -416,25 +416,32 @@ describe('createHandoffBillingClient', () => {
     }
   )
 
-  it('ends the handoff when Cloud turns billing from this app off mid-session', async () => {
-    vi.mocked(fetch).mockResolvedValue(
-      new Response(JSON.stringify({ code: 'HANDOFF_DISABLED' }), {
-        status: 403
-      })
-    )
-    const onSessionRefused = vi.fn()
-    const client = createHandoffBillingClient(
-      handoffSession(),
-      onSessionRefused
-    )
+  it.for([
+    'HANDOFF_DISABLED',
+    'sso_required',
+    'account_outside_organization',
+    'personal_workspace_disabled',
+    'workspace_access_denied'
+  ])(
+    'ends the handoff when Cloud refuses the whole session with 403 %s',
+    async (code) => {
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify({ code }), { status: 403 })
+      )
+      const onSessionRefused = vi.fn()
+      const client = createHandoffBillingClient(
+        handoffSession(),
+        onSessionRefused
+      )
 
-    await client.credits.read()
+      await client.credits.read()
 
-    expect(onSessionRefused).toHaveBeenCalled()
-    disposeBillingClient(client)
-  })
+      expect(onSessionRefused).toHaveBeenCalled()
+      disposeBillingClient(client)
+    }
+  )
 
-  it('keeps the handoff on a 403 that refuses one action', async () => {
+  it('keeps the handoff on 403 BILLING_FORBIDDEN, which Cloud also answers for one request', async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(JSON.stringify({ code: 'BILLING_FORBIDDEN' }), {
         status: 403
