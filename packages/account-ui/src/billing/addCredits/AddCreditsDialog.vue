@@ -277,7 +277,6 @@ const offerSetupUrl = computed(() =>
     : undefined
 )
 
-// Without its setup link the offer has nothing to offer: close as a landing without one does.
 watch(
   () => state.value.step === 'auto_top_up_offer' && autoTopUpSetupHidden,
   (withdrawn) => {
