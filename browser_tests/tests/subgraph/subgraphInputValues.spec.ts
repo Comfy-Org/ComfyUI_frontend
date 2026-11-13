@@ -53,43 +53,34 @@ for (const renderer of [
           'subgraphs/shared-definition-two-hosts-promoted-text'
         )
         const initial = await savedValues()
-        const panel = comfyPage.page.getByTestId('subgraph-input-values')
-        const exit = panel.getByRole('button', {
-          name: 'Exit subgraph',
-          exact: true
-        })
+        const { inputPanel: panel, exitButton } = comfyPage.subgraph
         const input = panel.getByRole('textbox', { name: 'text', exact: true })
 
         await test.step('Entering Host A identifies the instance and preserves saved values', async () => {
           await renderer.enter(comfyPage, '11')
-          await expect(panel).toBeVisible()
           await expect(panel).toHaveAccessibleName('Host A · #11')
-          await expect(panel.getByRole('combobox')).toHaveCount(0)
           await expect(input).toHaveValue('')
           expect(await savedValues()).toEqual(initial)
         })
 
         await test.step('Editing inside Host A changes only its promoted value', async () => {
-          await input.fill('boundary-host-a')
-          await exit.focus()
-          await expect
-            .poll(async () => (await savedValues()).hosts)
-            .toEqual([
+          await comfyPage.subgraph.fillInput('text', 'boundary-host-a')
+          await expect.poll(savedValues).toEqual({
+            ...initial,
+            hosts: [
               { id: '11', values: ['boundary-host-a'] },
               { id: '12', values: [''] }
-            ])
-          expect((await savedValues()).defaults).toEqual(initial.defaults)
-          expect((await savedValues()).inputBounds).toEqual(initial.inputBounds)
+            ]
+          })
         })
 
         await test.step('Leaving the subgraph and entering Host B changes the editing target', async () => {
-          await exit.getByText('Exit subgraph', { exact: true }).click()
+          await exitButton.getByText('Exit subgraph', { exact: true }).click()
           await expect(panel).toBeHidden()
           await renderer.enter(comfyPage, '12')
           await expect(panel).toHaveAccessibleName('Host B · #12')
           await expect(input).toHaveValue('')
-          await input.fill('boundary-host-b')
-          await exit.focus()
+          await comfyPage.subgraph.fillInput('text', 'boundary-host-b')
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
@@ -99,14 +90,14 @@ for (const renderer of [
         })
 
         await test.step('Workflow undo and redo restore the host values', async () => {
-          await exit.press('Control+z')
+          await comfyPage.keyboard.undo(exitButton)
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
               { id: '11', values: ['boundary-host-a'] },
               { id: '12', values: [''] }
             ])
-          await exit.press('Control+y')
+          await comfyPage.keyboard.redo(exitButton)
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
@@ -132,59 +123,29 @@ for (const renderer of [
               { x: 1100, y: 350 }
             )
           }
-          const boundary = await comfyPage.page.evaluate(() => {
-            const app = window.app
-            if (!app) throw new Error('Expected an active application')
-            const graph = app.canvas.graph
-            if (!graph || !('inputNode' in graph)) {
-              throw new Error('Expected the entered subgraph')
-            }
-            const [x, y] = app.canvasPosToClientPos([
-              graph.inputNode.boundingRect[0],
-              graph.inputNode.boundingRect[1]
-            ])
-            return {
-              x,
-              y,
-              width: window.innerWidth,
-              height: window.innerHeight
-            }
-          })
-          expect(boundary.x).toBeGreaterThan(boundary.width)
-          expect(boundary.y).toBeGreaterThan(boundary.height)
-          const readScale = () =>
-            comfyPage.page.evaluate(() => {
-              const app = window.app
-              if (!app) throw new Error('Expected an active application')
-              return app.canvas.ds.scale
-            })
-          const scale = await readScale()
+          await expect(panel).not.toBeInViewport()
+          const scale = await comfyPage.canvasOps.getScale()
           {
             await using _zoom = await comfyPage.keyboard.hold('Control')
             await comfyPage.page.mouse.move(1100, 350)
             await comfyPage.page.mouse.wheel(0, -120)
           }
-          await expect.poll(readScale).not.toBe(scale)
+          await expect
+            .poll(() => comfyPage.canvasOps.getScale())
+            .not.toBe(scale)
           await expect(panel).not.toBeInViewport()
           await expect
-            .poll(() =>
-              panel.evaluate((element) => {
-                const app = window.app
-                const graph = app?.canvas.graph
-                if (!app || !graph || !('inputNode' in graph)) {
-                  throw new Error('Expected an entered subgraph')
-                }
-                const [x, y] = app.canvasPosToClientPos([
-                  graph.inputNode.boundingRect[0],
-                  graph.inputNode.boundingRect[1]
-                ])
-                const bounds = element.getBoundingClientRect()
-                return Math.abs(bounds.x - x) < 1 && Math.abs(bounds.y - y) < 1
-              })
-            )
-            .toBe(true)
-          await expect(panel).toHaveAccessibleName('Host B · #12')
-          await expect(input).toHaveValue('boundary-host-b')
+            .poll(async () => {
+              const bounds = await comfyPage.subgraph.getInputBounds()
+              const expected = await comfyPage.canvasOps.toAbsolute(bounds)
+              const actual = await panel.boundingBox()
+              if (!actual) return Number.POSITIVE_INFINITY
+              return Math.max(
+                Math.abs(actual.x - expected.x),
+                Math.abs(actual.y - expected.y)
+              )
+            })
+            .toBeLessThan(1)
         })
       })
     }

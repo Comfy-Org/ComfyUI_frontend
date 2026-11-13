@@ -660,14 +660,9 @@ test(
     const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     const seedSlot = ksampler.getSlot('seed')
     const seedIOSlot = await comfyPage.subgraph.getInputSlot('seed')
-    const addInputSocket = comfyPage.page
-      .getByTestId('subgraph-add-input')
-      .getByTestId('slot-connection-dot')
-    const hoverIOSlot = ({ x, y }: { x: number; y: number }) =>
-      comfyPage.page.mouse.move(x, y)
 
     await test.step('Make second INT typed connection', async () => {
-      await seedSlot.dragTo(addInputSocket)
+      await seedSlot.dragTo(comfyPage.subgraph.addInputSocket)
       const isConnected = () => comfyPage.vueNodes.isSlotConnected(seedSlot)
       await expect.poll(isConnected).toBe(true)
     })
@@ -675,11 +670,8 @@ test(
     const rawClip = await comfyPage.subgraph.getInputBounds()
     const absolutePos = await comfyPage.canvasOps.toAbsolute(rawClip)
     const clip = { ...rawClip, ...absolutePos }
-    const ports = comfyPage.page
-      .getByTestId('subgraph-input-values')
-      .getByTestId('subgraph-input-port')
     const portNames = () =>
-      ports.evaluateAll((elements) =>
+      comfyPage.subgraph.inputPorts.evaluateAll((elements) =>
         elements.map((element) => element.getAttribute('aria-label'))
       )
     const inputLinkCounts = () =>
@@ -698,7 +690,8 @@ test(
       await stepsSlot.hover()
       await stepsSlot.click({ trial: true })
       await comfyPage.page.mouse.down()
-      await hoverIOSlot(await seedIOSlot.getPosition())
+      const seedPos = await seedIOSlot.getPosition()
+      await comfyPage.page.mouse.move(seedPos.x, seedPos.y)
 
       await expectRegionScreenshot(
         comfyPage.page,
@@ -725,7 +718,7 @@ test(
       expect(await hasSnap()).toBe(false)
 
       const emptySlotPos = await seedIOSlot.getOpenSlotPosition()
-      await hoverIOSlot(emptySlotPos)
+      await comfyPage.page.mouse.move(emptySlotPos.x, emptySlotPos.y)
       await comfyPage.page.mouse.down()
       const { width, height } = (await stepsSlot.boundingBox())!
       await stepsSlot.hover({ position: { x: (width * 3) / 4, y: height / 2 } })
@@ -749,7 +742,7 @@ test(
       await expect(slotParent).toHaveCSS('opacity', '0')
 
       await expect.poll(portNames).toEqual(twoLinkPorts)
-      expect(await inputLinkCounts()).toEqual(twoLinkInputs)
+      await expect.poll(inputLinkCounts).toEqual(twoLinkInputs)
     })
   }
 )

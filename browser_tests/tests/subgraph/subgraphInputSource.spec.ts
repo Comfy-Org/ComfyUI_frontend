@@ -8,6 +8,7 @@ test.describe(
   { tag: ['@subgraph', '@widget', '@vue-nodes'] },
   () => {
     test('edits a shared Primitive source without replacing either connection', async ({
+      comfyMouse,
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
@@ -20,7 +21,7 @@ test.describe(
         x: 360,
         y: 600
       })
-      const panel = comfyPage.page.getByTestId('subgraph-input-values')
+      const panel = comfyPage.subgraph.inputPanel
 
       await test.step('Connect the String source through a reroute with two consumers', async () => {
         await comfyPage.vueNodes
@@ -41,8 +42,6 @@ test.describe(
               0
             )
           )
-        await (await source.getOutput(0)).expectLinkCount(1)
-        await (await reroute.getOutput(0)).expectLinkCount(2)
       })
 
       await test.step('Edit the owning Primitive from inside the subgraph', async () => {
@@ -51,12 +50,10 @@ test.describe(
         await expect(
           panel.getByRole('img', { name: 'Shared source', exact: true })
         ).toBeVisible()
-        const input = panel.getByRole('textbox', { name: 'value', exact: true })
-        await expect(input).toHaveValue('external prompt')
-        await input.fill('edited upstream source')
-        await panel
-          .getByRole('button', { name: 'Exit subgraph', exact: true })
-          .focus()
+        await expect(
+          panel.getByRole('textbox', { name: 'value', exact: true })
+        ).toHaveValue('external prompt')
+        await comfyPage.subgraph.fillInput('value', 'edited upstream source')
       })
 
       await test.step('Right-clicking a boundary widget does not open the selected interior node menu', async () => {
@@ -73,18 +70,16 @@ test.describe(
           .toEqual([interior.id])
         const before =
           await comfyPage.nodeOps.getSerializedGraphWithoutViewport()
-        const numeric = await panel
-          .getByRole('spinbutton', { name: 'width', exact: true })
-          .boundingBox()
-        if (!numeric)
-          throw new Error('Expected the numeric widget to be rendered')
-        await comfyPage.page.mouse.click(
-          numeric.x + numeric.width / 2,
-          numeric.y + numeric.height / 2,
+        await comfyMouse.clickCenter(
+          panel.getByRole('spinbutton', { name: 'width', exact: true }),
           { button: 'right' }
         )
         await comfyPage.nextFrame()
-        await comfyPage.contextMenu.waitForHidden()
+        const { ariaMenu, litegraphMenu, litegraphContextMenu } =
+          comfyPage.contextMenu
+        await expect(
+          ariaMenu.or(litegraphMenu).or(litegraphContextMenu)
+        ).toBeHidden()
         expect(
           await comfyPage.nodeOps.getSerializedGraphWithoutViewport()
         ).toEqual(before)

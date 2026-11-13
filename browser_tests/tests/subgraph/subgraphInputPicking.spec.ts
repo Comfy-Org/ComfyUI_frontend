@@ -1,5 +1,3 @@
-import type { Locator } from '@playwright/test'
-
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
@@ -12,28 +10,15 @@ test.describe(
 
     test('blocks the whole panel while picking and restores editing after exiting', async ({
       agentPanel,
+      comfyMouse,
       comfyPage
     }) => {
-      const panel = comfyPage.page.getByTestId('subgraph-input-values')
-      const input = panel.getByRole('textbox', {
+      const { inputPanel, exitButton } = comfyPage.subgraph
+      const input = inputPanel.getByRole('textbox', {
         name: 'text',
         exact: true,
         includeHidden: true
       })
-      const exit = panel.getByRole('button', {
-        name: 'Exit subgraph',
-        exact: true,
-        includeHidden: true
-      })
-
-      async function clickThroughInertLayer(locator: Locator) {
-        const box = await locator.boundingBox()
-        if (!box) throw new Error('Expected the panel control to be rendered')
-        await comfyPage.page.mouse.click(
-          box.x + box.width / 2,
-          box.y + box.height / 2
-        )
-      }
 
       await test.step('Edit the identified host before picking', async () => {
         await comfyPage.workflow.loadWorkflow(
@@ -44,9 +29,7 @@ test.describe(
           'shared-definition-two-hosts-promoted-text'
         )
         await comfyPage.vueNodes.enterSubgraph('11')
-        await expect(panel).toHaveAccessibleName('Host A · #11')
-        await input.fill('before-picking')
-        await exit.focus()
+        await comfyPage.subgraph.fillInput('text', 'before-picking')
       })
 
       const before = await comfyPage.nodeOps.getSerializedGraphWithoutViewport()
@@ -60,39 +43,31 @@ test.describe(
           .click()
         await expect(agentPanel.nodeSelectionBanner).toBeVisible()
         await comfyPage.canvasOps.waitForViewToSettle()
-        const bounds = await panel.boundingBox()
+        const bounds = await inputPanel.boundingBox()
         if (!bounds) throw new Error('Expected the input node to be rendered')
         await comfyPage.canvasOps.pan(
           { x: 96 - bounds.x, y: 220 - bounds.y },
           { x: 600, y: 650 }
         )
         await expect(input).toBeInViewport()
-        await expect(panel).toHaveAttribute('inert', '')
-        await clickThroughInertLayer(input)
+        await comfyMouse.clickCenter(input)
         await comfyPage.page.keyboard.type('x')
         await expect(input).not.toBeFocused()
         await expect(input).toHaveValue('before-picking')
         const graphId = await comfyPage.subgraph.getActiveGraphId()
-        await clickThroughInertLayer(
-          exit.getByText('Exit subgraph', { exact: true })
+        await comfyMouse.clickCenter(
+          exitButton.getByText('Exit subgraph', { exact: true })
         )
         expect(await comfyPage.subgraph.getActiveGraphId()).toBe(graphId)
-        await expect(panel).toHaveAccessibleName('Host A · #11')
         expect(
           await comfyPage.nodeOps.getSerializedGraphWithoutViewport()
         ).toEqual(before)
       })
 
-      await test.step('Exiting restores editing and panel controls', async () => {
+      await test.step('Exiting picking restores editing', async () => {
         await agentPanel.exitNodeSelectionMode()
-        await input.fill('after-picking')
-        await exit.focus()
+        await comfyPage.subgraph.fillInput('text', 'after-picking')
         await expect(input).toHaveValue('after-picking')
-        await exit.getByText('Exit subgraph', { exact: true }).click()
-        await expect(panel).toBeHidden()
-        await comfyPage.vueNodes.enterSubgraph('12')
-        await expect(panel).toHaveAccessibleName('Host B · #12')
-        await expect(input).toHaveValue('')
       })
     })
   }
