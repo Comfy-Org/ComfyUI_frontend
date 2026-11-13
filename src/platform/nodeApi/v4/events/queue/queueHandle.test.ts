@@ -143,6 +143,28 @@ describe('queue.onAfterRun', () => {
     expect(Object.isFrozen(events[0].submissions[0])).toBe(true)
   })
 
+  it('stops following accepted runs once its last listener leaves', () => {
+    const { queue, host } = queueApi()
+    const removeListener = vi.spyOn(api, 'removeEventListener')
+    const submitted = vi.fn()
+    queue.onAfterRun(submitted)()
+
+    expect(removeListener).toHaveBeenCalledWith(
+      'promptQueued',
+      expect.any(Function)
+    )
+
+    host.promptSubmitted(1, 'job-a', 1)
+    runQueued(1)
+    const again = vi.fn()
+    queue.onAfterRun(again)
+    host.promptSubmitted(2, 'job-b', 1)
+    runQueued(2)
+
+    expect(submitted).not.toHaveBeenCalled()
+    expect(again).toHaveBeenCalledOnce()
+  })
+
   it('says nothing for a run call that submitted no prompt, or that the host does not name', () => {
     const { queue, host } = queueApi()
     const submitted = vi.fn()

@@ -64,6 +64,25 @@ describe('onSelectionChanged', () => {
     expect(changed).toHaveBeenCalledExactlyOnceWith([])
   })
 
+  it('says nothing when only a selected group changes', async () => {
+    const { graph, first, comfy, select } = graphWithNodes()
+    select(first.id)
+    const changed = vi.fn()
+    comfy.onSelectionChanged(changed)
+
+    useSelectionStore().apply(graphScopeOf(graph), {
+      type: 'selection.replace',
+      keys: [
+        toSelectableKey('node', first.id),
+        toSelectableKey('group', toGroupId(7))
+      ]
+    })
+    await nextTick()
+
+    expect(changed).not.toHaveBeenCalled()
+    expect(comfy.graph.selection()).toEqual([comfy.graph.node(first.id)])
+  })
+
   it('reads the selection in the graph the user moves to', async () => {
     const { first, comfy, select, show } = graphWithNodes()
     const other = new LGraph()
