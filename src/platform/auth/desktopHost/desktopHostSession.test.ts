@@ -7,6 +7,7 @@ import type {
 import {
   canDesktopHostSwitchWorkspace,
   desktopHostPartnerNodeToken,
+  desktopHostTokenRecoveries,
   desktopHostUser,
   desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
@@ -168,6 +169,39 @@ describe('desktopHostSession', () => {
       await expect(desktopHostPartnerNodeToken('ws-1')).resolves.toBe(expected)
     }
   )
+
+  it.for([
+    { name: 'has none', getPartnerNodeToken: async () => null },
+    { name: 'lacks the method', getPartnerNodeToken: undefined }
+  ] satisfies {
+    name: string
+    getPartnerNodeToken: (() => Promise<string | null>) | undefined
+  }[])(
+    'does not count a workspace-token read as a recovery when Desktop $name for a partner-node token',
+    async ({ getPartnerNodeToken }) => {
+      const { bridge } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession({ ...bridge, getPartnerNodeToken })
+      const before = desktopHostTokenRecoveries.value
+
+      await desktopHostWorkspaceToken('ws-1')
+      await desktopHostPartnerNodeToken('ws-1')
+      await desktopHostWorkspaceToken('ws-1')
+
+      expect(desktopHostTokenRecoveries.value).toBe(before)
+    }
+  )
+
+  it('counts a workspace-token read that succeeds after a failed one', async () => {
+    const { bridge } = fakeBridge(SIGNED_IN)
+    bridge.getWorkspaceToken.mockResolvedValueOnce(null)
+    await startDesktopHostSession(bridge)
+    const before = desktopHostTokenRecoveries.value
+
+    await desktopHostWorkspaceToken('ws-1')
+    await desktopHostWorkspaceToken('ws-1')
+
+    expect(desktopHostTokenRecoveries.value).toBe(before + 1)
+  })
 
   describe('when Desktop changes state while a request is pending', () => {
     function deferred<T>() {

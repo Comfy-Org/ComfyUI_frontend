@@ -293,6 +293,36 @@ describe('queueAuthToken', () => {
         expect(fetchRequests(MINT_URL)).toHaveLength(0)
       })
 
+      it('queues the workspace token when the same account switches workspace during the mint', async () => {
+        let answerMint: (response: Response) => void = () => {}
+        const { push } = await startHostSession(signedInAs('host-a'), {
+          getPartnerNodeToken: async () => null
+        })
+        respondToFetch(
+          MINT_URL,
+          () =>
+            new Promise<Response>((resolve) => {
+              answerMint = resolve
+            })
+        )
+
+        const queued = queueAuthToken('host-token', 'ws-a')
+        await vi.waitFor(() => expect(fetchRequests(MINT_URL)).toHaveLength(1))
+        await push(signedInAs('host-a', 'ws-b'))
+        answerMint(
+          Response.json({
+            token: 'partner-node-token',
+            expires_at: new Date(Date.now() + 90 * 60 * 1000).toISOString(),
+            user_id: 'uid-1',
+            workspace: { id: 'ws-a', name: 'Team', type: 'team' },
+            role: 'owner',
+            permissions: []
+          })
+        )
+
+        await expect(queued).resolves.toBe('host-token')
+      })
+
       it('does not ask Desktop with the flag off', async () => {
         vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = false
         const getPartnerNodeToken = vi.fn(

@@ -117,7 +117,9 @@ export function stopDesktopHostSession(): void {
 export function desktopHostWorkspaceToken(
   workspaceId: string
 ): Promise<string | undefined> {
-  return fetchToken((current) => current.getWorkspaceToken(workspaceId))
+  return fetchToken((current) => current.getWorkspaceToken(workspaceId), {
+    tracksRecovery: true
+  })
 }
 
 /**
@@ -135,15 +137,18 @@ export function desktopHostPartnerNodeToken(
 }
 
 async function fetchToken(
-  read: (current: DesktopHostAuthBridge) => Promise<string | null>
+  read: (current: DesktopHostAuthBridge) => Promise<string | null>,
+  { tracksRecovery = false }: { tracksRecovery?: boolean } = {}
 ): Promise<string | undefined> {
   const current = bridge
   if (!current || session.value.status !== 'signed_in') return undefined
   const before = revision
   const token = await read(current).catch(() => null)
   if (revision !== before) return undefined
-  if (token && lastTokenReadFailed) recoveredTokenReads.value++
-  lastTokenReadFailed = !token
+  if (tracksRecovery) {
+    if (token && lastTokenReadFailed) recoveredTokenReads.value++
+    lastTokenReadFailed = !token
+  }
   return token ?? undefined
 }
 
