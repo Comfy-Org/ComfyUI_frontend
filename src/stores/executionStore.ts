@@ -1022,7 +1022,11 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(detail.prompt_id)
 
     if (result.kind === 'nodeErrors') {
-      executionErrorStore.recordNodeErrors(result.nodeErrors, runErrorKey)
+      executionErrorStore.recordNodeErrors(
+        result.nodeErrors,
+        runErrorKey,
+        detail.prompt_id
+      )
     } else {
       executionErrorStore.recordPromptError(result.promptError, runErrorKey)
     }

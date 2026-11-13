@@ -471,7 +471,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     jobId: string | undefined
   ) {
     if (nodeErrors && Object.keys(nodeErrors).length > 0) {
-      recordNodeErrors(nodeErrors, key)
+      recordNodeErrors(nodeErrors, key, jobId ?? null)
       return
     }
     const recordedJobId =

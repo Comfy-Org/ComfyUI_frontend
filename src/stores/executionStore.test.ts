@@ -1061,6 +1061,22 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
   })
 
+  it("keeps validation node errors that arrive before their job's empty submission response", () => {
+    store.registerJobWorkflowIdMapping('job-a', graphAId)
+    fireExecutionError('job-a', {
+      exception_message: cloudValidationMessage,
+      exception_type: 'ValidationError'
+    })
+
+    errorStore.recordSubmissionNodeErrors(
+      {},
+      errorStore.runErrorKey(graphAId, workflowA.path),
+      'job-a'
+    )
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
+  })
+
   it('routes a background service-level error to its own workflow', () => {
     callStoreJob('job-b', workflowB)
     fireExecutionError('job-b', {
