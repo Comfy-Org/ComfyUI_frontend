@@ -69,7 +69,7 @@ const i18n = createI18n({
           errorOriginRefused: ORIGIN_REFUSED,
           errorUnavailable: "This feature isn't available right now.",
           sessionError: 'Failed to establish session. Please try again.',
-          loginRequired: 'Your sign-in has expired.',
+          loginRequired: 'Sign in to continue.',
           signInAgain: 'Sign in again',
           signedInAs: 'Signed in as',
           notYou: 'Not you?',
@@ -509,7 +509,7 @@ describe('OAuthConsentView when the request does not load', () => {
     await renderConsentFromUrl()
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Your sign-in has expired.'
+      'Sign in to continue.'
     )
     await user.click(screen.getByRole('button', { name: 'Sign in again' }))
 
