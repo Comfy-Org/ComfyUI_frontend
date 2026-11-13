@@ -18,9 +18,10 @@ import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
-import { combineAbortSignals } from './abortSignal'
+import type { ResponseDeadline } from './attemptDeadline'
+import { startResponseDeadline } from './attemptDeadline'
 import defaultClientFeatureFlags from './clientFeatureFlags.json' with { type: 'json' }
-import type { ApiAuthProvider } from './apiAuthProvider'
+import type { ApiAuthProvider, RetrySignalLifecycle } from './apiAuthProvider'
 import { anonymousApiAuthProvider } from './apiAuthProvider'
 import { authCredentialOf, notifyAuthCredential } from './authCredential'
 import { scopeMediaRoute } from './sessionMediaUrl'
@@ -87,6 +88,71 @@ import {
 } from './fetchJobs'
 
 const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
+
+function reportFetchTimeout(
+  route: string,
+  method: string | undefined,
+  timeoutMs: number
+): void {
+  const upperMethod = (method ?? 'GET').toUpperCase()
+  const routeTemplate = getFetchRouteTemplate(route)
+
+  addBreadcrumb({
+    category: 'fetch',
+    message: `Timeout on ${upperMethod} ${routeTemplate}`,
+    level: 'warning',
+    data: { timeout_ms: timeoutMs }
+  })
+
+  useTelemetry()?.trackFetchTimeout({
+    route: routeTemplate,
+    method: upperMethod,
+    timeout_ms: timeoutMs
+  })
+}
+
+/** The response deadlines of one `fetchApi` call: the first send's, and a fresh one per re-mint retry. */
+interface FetchDeadlines {
+  readonly signal: AbortSignal | undefined
+  readonly retrySignalLifecycle: RetrySignalLifecycle | undefined
+  stopAll(): void
+}
+
+function startFetchDeadlines(
+  route: string,
+  method: string | undefined,
+  callerSignal: AbortSignal | undefined,
+  timeoutMs: number | null
+): FetchDeadlines {
+  if (timeoutMs === null) {
+    return {
+      signal: callerSignal,
+      retrySignalLifecycle: undefined,
+      stopAll: () => {}
+    }
+  }
+  const start = () =>
+    startResponseDeadline(timeoutMs, callerSignal, () =>
+      reportFetchTimeout(route, method, timeoutMs)
+    )
+  const first = start()
+  let retry: ResponseDeadline | undefined
+  return {
+    signal: first.signal,
+    retrySignalLifecycle: {
+      clearInitialTimeout: first.stop,
+      createSignal: () => {
+        retry?.stop()
+        retry = start()
+        return retry.signal
+      }
+    },
+    stopAll: () => {
+      first.stop()
+      retry?.stop()
+    }
+  }
+}
 
 interface QueuePromptRequestBody {
   client_id: string
@@ -638,6 +704,47 @@ export class ComfyApi extends EventTarget {
     }
   }
 
+  /**
+   * Chooses how a `fetchApi` request is authorized: the web session on Cloud
+   * when one is open, else today's token header; reports the choice through
+   * the caller's callbacks.
+   */
+  private async authorizeFetch(
+    headers: HeadersInit,
+    retryPolicy: RetryPolicy | undefined,
+    callbacks: Pick<
+      FetchApiOptions,
+      'onAuthHeader' | 'onAuthScheme' | 'onAuthCredential'
+    >
+  ): Promise<{
+    sendOnWebSession: WebSessionSend | undefined
+    unifiedRetryOn401: boolean
+  }> {
+    const { onAuthHeader, onAuthScheme, onAuthCredential } = callbacks
+    if (!this.ports.isCloud) {
+      onAuthHeader?.(false)
+      onAuthScheme?.('none')
+      notifyAuthCredential(onAuthCredential, 'none')
+      return { sendOnWebSession: undefined, unifiedRetryOn401: false }
+    }
+
+    await this.authProvider.waitForInitialization()
+    const sendOnWebSession = await this.getWebSessionSend(retryPolicy)
+    if (sendOnWebSession) {
+      onAuthHeader?.(true)
+      onAuthScheme?.('web-session')
+      notifyAuthCredential(onAuthCredential, 'session-cookie')
+      return { sendOnWebSession, unifiedRetryOn401: false }
+    }
+    const cloudAuth = await this.addCloudAuthHeader(headers, onAuthHeader)
+    onAuthScheme?.(cloudAuth.scheme)
+    notifyAuthCredential(onAuthCredential, cloudAuth.credential)
+    return {
+      sendOnWebSession: undefined,
+      unifiedRetryOn401: cloudAuth.unifiedRetryOn401
+    }
+  }
+
   async fetchApi(route: string, options?: FetchApiOptions) {
     const {
       timeoutMs = FETCH_RESPONSE_HEADERS_TIMEOUT_MS,
@@ -649,110 +756,25 @@ export class ComfyApi extends EventTarget {
     } = options ?? {}
     const retryPolicy = skipStatusRetry ? NO_RETRY_POLICY : undefined
     const headers: HeadersInit = requestOptions.headers ?? {}
-    let unifiedRetryOn401 = false
-    let sendOnWebSession: WebSessionSend | undefined
-
-    if (this.ports.isCloud) {
-      await this.authProvider.waitForInitialization()
-      sendOnWebSession = await this.getWebSessionSend(retryPolicy)
-      if (sendOnWebSession) {
-        onAuthHeader?.(true)
-        onAuthScheme?.('web-session')
-        notifyAuthCredential(onAuthCredential, 'session-cookie')
-      } else {
-        const cloudAuth = await this.addCloudAuthHeader(headers, onAuthHeader)
-        unifiedRetryOn401 = cloudAuth.unifiedRetryOn401
-        onAuthScheme?.(cloudAuth.scheme)
-        notifyAuthCredential(onAuthCredential, cloudAuth.credential)
-      }
-    } else {
-      onAuthHeader?.(false)
-      onAuthScheme?.('none')
-      notifyAuthCredential(onAuthCredential, 'none')
-    }
+    const { sendOnWebSession, unifiedRetryOn401 } = await this.authorizeFetch(
+      headers,
+      retryPolicy,
+      { onAuthHeader, onAuthScheme, onAuthCredential }
+    )
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
 
-    const timeout =
-      timeoutMs === null
-        ? null
-        : { controller: new AbortController(), duration: timeoutMs }
-    const timeoutId = timeout
-      ? setTimeout(() => {
-          const method = (requestOptions.method ?? 'GET').toUpperCase()
-          const routeTemplate = getFetchRouteTemplate(route)
-
-          addBreadcrumb({
-            category: 'fetch',
-            message: `Timeout on ${method} ${routeTemplate}`,
-            level: 'warning',
-            data: { timeout_ms: timeout.duration }
-          })
-
-          useTelemetry()?.trackFetchTimeout({
-            route: routeTemplate,
-            method,
-            timeout_ms: timeout.duration
-          })
-
-          timeout.controller.abort(
-            new DOMException('Fetch timeout', 'TimeoutError')
-          )
-        }, timeout.duration)
-      : undefined
-    const signal =
-      requestOptions.signal && timeout
-        ? combineAbortSignals([
-            requestOptions.signal,
-            timeout.controller.signal
-          ])
-        : (requestOptions.signal ?? timeout?.controller.signal)
-
-    let retryTimeoutId: ReturnType<typeof setTimeout> | undefined
-    const retrySignalLifecycle = timeout
-      ? {
-          clearInitialTimeout: () => {
-            if (timeoutId !== undefined) clearTimeout(timeoutId)
-          },
-          createSignal: () => {
-            const retryController = new AbortController()
-            retryTimeoutId = setTimeout(() => {
-              const method = (requestOptions.method ?? 'GET').toUpperCase()
-              const routeTemplate = getFetchRouteTemplate(route)
-
-              addBreadcrumb({
-                category: 'fetch',
-                message: `Timeout on ${method} ${routeTemplate}`,
-                level: 'warning',
-                data: { timeout_ms: timeout.duration }
-              })
-
-              useTelemetry()?.trackFetchTimeout({
-                route: routeTemplate,
-                method,
-                timeout_ms: timeout.duration
-              })
-
-              retryController.abort(
-                new DOMException('Fetch timeout', 'TimeoutError')
-              )
-            }, timeout.duration)
-
-            return requestOptions.signal
-              ? combineAbortSignals([
-                  requestOptions.signal,
-                  retryController.signal
-                ])
-              : retryController.signal
-          }
-        }
-      : undefined
-
+    const deadlines = startFetchDeadlines(
+      route,
+      requestOptions.method,
+      requestOptions.signal ?? undefined,
+      timeoutMs
+    )
     const init: RequestInit = {
       cache: 'no-cache',
       ...requestOptions,
       headers,
-      signal
+      signal: deadlines.signal
     }
     const response = sendOnWebSession
       ? sendOnWebSession(this.unscopedApiURL(route), init)
@@ -760,13 +782,10 @@ export class ComfyApi extends EventTarget {
           this.apiURL(route),
           init,
           unifiedRetryOn401,
-          retrySignalLifecycle,
+          deadlines.retrySignalLifecycle,
           retryPolicy
         )
-    return response.finally(() => {
-      if (timeoutId !== undefined) clearTimeout(timeoutId)
-      if (retryTimeoutId !== undefined) clearTimeout(retryTimeoutId)
-    })
+    return response.finally(deadlines.stopAll)
   }
 
   /**
