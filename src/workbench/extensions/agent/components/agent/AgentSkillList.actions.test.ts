@@ -339,7 +339,7 @@ describe('AgentSkillList row actions', () => {
           Object.assign(workspace, { workspaceId: 'workspace-b' })
           if (changesBack)
             Object.assign(workspace, { workspaceId: shownWorkspaceId })
-          return [LANDSCAPE, PORTRAIT]
+          return [PORTRAIT]
         })
 
         await confirmDeletion()

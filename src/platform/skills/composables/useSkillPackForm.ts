@@ -9,6 +9,7 @@ import {
   SkillPacksApiError
 } from '@/platform/skills/api/skillsApi'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import type { SkillDraftFields } from '@/platform/skills/stores/skillDraftStore'
 import type { SkillPack } from '@/platform/skills/types'
 import {
   CONTROL_CHARACTERS,
@@ -22,7 +23,7 @@ import {
 
 interface UseSkillPackFormOptions {
   pack?: MaybeRefOrGetter<SkillPack | undefined>
-  onSaved?: (saved: SkillPack) => void
+  onSaved?: (saved: SkillPack, submitted: SkillDraftFields) => void
   onUnavailable?: () => void
 }
 
@@ -153,6 +154,11 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
     if (!validate()) return
 
     const requestScope = store.scope
+    const submitted: SkillDraftFields = {
+      name: form.name,
+      description: form.description,
+      body: form.body
+    }
     loading.value = true
     try {
       const saved = await publishSkillPack({
@@ -162,7 +168,7 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
       })
       if (!store.isCurrentScope(requestScope)) return
       store.upsertPack(saved, requestScope)
-      onSaved?.(saved)
+      onSaved?.(saved, submitted)
     } catch (error) {
       if (!store.isCurrentScope(requestScope)) return
       handlePublishFailure(error)

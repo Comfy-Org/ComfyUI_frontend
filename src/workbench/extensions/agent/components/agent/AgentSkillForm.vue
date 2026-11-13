@@ -38,8 +38,8 @@ const {
   handleSubmit
 } = useSkillPackForm({
   pack: () => skill,
-  onSaved: (saved) => {
-    draft.settle()
+  onSaved: (saved, submitted) => {
+    draft.settle(submitted)
     emit('close', saved.name)
   },
   onUnavailable: () => emit('close')

@@ -12,7 +12,11 @@ function openAddForm() {
   const form = reactive({ name: '', description: '', body: '' })
   const scope = effectScope()
   const draft = scope.run(() => useSkillDraft({ pack: undefined, form }))
-  return { form, settle: () => draft?.settle(), close: () => scope.stop() }
+  return {
+    form,
+    settle: (submitted = { ...form }) => draft?.settle(submitted),
+    close: () => scope.stop()
+  }
 }
 
 describe('useSkillDraft', () => {
@@ -28,6 +32,19 @@ describe('useSkillDraft', () => {
     await vi.advanceTimersByTimeAsync(1000)
 
     expect(useSkillDraftStore().newSkillDraft).toBeNull()
+  })
+
+  it('keeps newer edits when a save of older text completes', async () => {
+    const form = openAddForm()
+    onTestFinished(form.close)
+    form.form.body = 'edited after the save started'
+    await vi.advanceTimersByTimeAsync(1000)
+
+    form.settle({ name: '', description: '', body: 'text that was saved' })
+
+    expect(useSkillDraftStore().newSkillDraft?.body).toBe(
+      'edited after the save started'
+    )
   })
 
   it('writes the typed text when the page is being left before the save delay has passed', async () => {

@@ -11,6 +11,12 @@ import type { SkillPack } from '@/platform/skills/types'
 
 const SAVE_DELAY_MS = 300
 
+function sameFields(a: SkillDraftFields, b: SkillDraftFields): boolean {
+  return (
+    a.name === b.name && a.description === b.description && a.body === b.body
+  )
+}
+
 export function useSkillDraft(options: {
   pack: SkillPack | undefined
   form: SkillDraftFields
@@ -50,9 +56,12 @@ export function useSkillDraft(options: {
   useEventListener(window, 'pagehide', persist)
   onScopeDispose(persist)
 
-  function settle(): void {
+  function settle(submitted: SkillDraftFields): void {
     settled = true
-    drafts.setDraft(scope, target, null)
+    const stored = pack ? drafts.editDraftFor(pack.name) : drafts.newSkillDraft
+    if (stored && sameFields(stored, submitted)) {
+      drafts.setDraft(scope, target, null)
+    }
   }
 
   return { settle }
