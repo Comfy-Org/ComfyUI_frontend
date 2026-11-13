@@ -1,6 +1,7 @@
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isNodeSlot } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 
 import type {
   BeforeConnectEvent,
@@ -34,12 +35,15 @@ export function connectionInstallers(
         slot
       ) {
         previous?.call(this, slotType, index, connected, link, slot)
+        if (connected && !link) return
         const input = slotType === NodeSlotType.INPUT
         const peerNodeId = input ? link?.origin_id : link?.target_id
         const event: ConnectionChangeEvent = Object.freeze({
           side: input ? 'input' : 'output',
           index,
-          name: slot.name,
+          name: isNodeSlot(slot)
+            ? slot.name
+            : ((input ? this.inputs : this.outputs)[index]?.name ?? slot.name),
           connected,
           peerNodeId: peerNodeId === undefined ? undefined : String(peerNodeId),
           peerIndex: input ? link?.origin_slot : link?.target_slot

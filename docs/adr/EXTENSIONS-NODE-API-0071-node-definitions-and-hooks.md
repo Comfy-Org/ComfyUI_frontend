@@ -133,13 +133,20 @@ registered, so `extend` cannot depend on the order.
     `add_node` intent `LGraph.add` announces, whose source is `load` while a
     workflow loads (`LGraph.configure`) and while API-JSON and A1111 imports
     add their nodes. That source is the event's `loading` (review finding
-    B-07). `restored` is true while loading and for a node configured before
-    it joined, as a paste or a duplicate is. The API listens for intents only
-    while some extension has an `onCreated` or `onConfigured` hook.
+    B-07). Undo, redo and converting to a subgraph rebuild the graph through a
+    load, so their nodes are `loading` too. `restored` is true while loading,
+    and for a node configured before it joined. The host's paste, duplicate
+    and alt-drag copy (`LGraphCanvas._deserializeItems`) add the node first
+    and configure it after, so such a node is not `restored`; its saved state
+    reaches `onConfigured` right after `onCreated`, and overwrites what an
+    `onCreated` hook set from defaults. Telling a paste apart needs the host to
+    mark clipboard adds, which is a core change (ticket draft in the report).
+    The API listens for intents only while some extension has an `onCreated`
+    or `onConfigured` hook.
 19. `onConfigured` gives a frozen JSON copy of the saved node. A node
     configured before it joined a graph is told once it joins, after
-    `onCreated`. During a load a node joins first and is configured after, so
-    `onCreated` comes first there too.
+    `onCreated`. During a load, a paste and a duplicate the node joins first
+    and is configured after, so `onCreated` comes first there too.
 20. `onRemoved` is called before the node leaves its graph, so its handle still
     reads it.
 21. `onExecuted` gives the texts and images of the server's output and a frozen
@@ -159,10 +166,17 @@ registered, so `extend` cannot depend on the order.
 
 25. `onConnectionsChanged` gives the side, index and name of the node's slot,
     whether it is now connected, and the node and slot at the other end of the
-    link the host reports, on a disconnect too. The name is read from the slot
-    the host passes with the change, not looked up by index, because removing
-    a connected slot shifts the slots after it before the host reports the
-    disconnect (review finding A-02).
+    link the host reports, on a disconnect too. When a node takes saved state,
+    `LGraphNode.configure` reports every input as connected, with no link for
+    the unlinked ones; the API passes on only the inputs with a link, so a
+    loaded, pasted or undone node tells of the links it really has. The name
+    is read from the slot the host passes with the change, not looked up by
+    index, because removing a connected slot shifts the slots after it before
+    the host reports the disconnect (review finding A-02). For a link to a
+    subgraph's input or output the host passes the subgraph's slot instead, so
+    the API names the node's slot at that index; when such a slot is removed
+    with its link, that is the slot that moved into its place. Passing the
+    node's own slot there is a core change (ticket draft in the report).
 26. `onBeforeConnect` is asked before a link is made to an input
     (`onConnectInput`) or from an output (`onConnectOutput`) of the node, with
     the side and index of the node's own slot. The link is refused if the
