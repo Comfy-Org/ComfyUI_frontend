@@ -16,6 +16,7 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
@@ -85,6 +86,15 @@ describe('useAddCreditsAutoTopUpOffer', () => {
 
     expect(offer.value).toEqual({ kind: 'on' })
     expect(billingUrl.value).toBe('https://platform.test/profile/billing')
+  })
+
+  it('drops the Billing link once local billing opens through a handoff', () => {
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    const { billingUrl } = offerFor({ status: 'on' })
+
+    setLocalBillingWebEnabled(true)
+
+    expect(billingUrl.value).toBeUndefined()
   })
 
   it('offers hidden while off when auto top-up at checkout is off, leaving the after-payment suggestion', async () => {

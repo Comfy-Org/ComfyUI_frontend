@@ -1,7 +1,15 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -22,6 +30,7 @@ import {
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
@@ -47,7 +56,6 @@ const hoisted = vi.hoisted(() => ({
   createHostedCheckout: vi.fn(),
   setupUrl: vi.fn<() => Promise<string | null>>(),
   balanceIncreased: undefined as BalanceIncreased,
-  opensHandoff: false,
   issueHandoff: vi.fn<typeof issueLocalBillingHandoff>(),
   handoffTabs: [] as (BillingTab | null)[],
   reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined)
@@ -141,7 +149,6 @@ vi.mock(
   })
 )
 vi.mock(import('@/platform/billing/localBillingHandoff'), () => ({
-  opensLocalBillingHandoff: () => hoisted.opensHandoff,
   issueLocalBillingHandoff: hoisted.issueHandoff,
   reserveBillingHandoffTab: () => hoisted.handoffTabs.shift() ?? null
 }))
@@ -318,6 +325,23 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
     expect(screen.queryByTestId('add-credits-auto-top-up-on')).toBeNull()
   })
 
+  it('drops the shown Set up link once local billing opens through a handoff', async () => {
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    hoisted.setupUrl.mockResolvedValue(
+      'https://platform.test/profile/billing?auto_top_up=setup'
+    )
+    await payWithAutoTopUp({ auto_top_up_activation: 'failed' })
+    await hoisted.balanceIncreased!()
+    const failed = await screen.findByTestId('add-credits-auto-top-up-failed')
+    expect(screen.getByRole('link', { name: 'Set up' })).toBeVisible()
+
+    setLocalBillingWebEnabled(true)
+    await nextTick()
+
+    expect(failed).toBeVisible()
+    expect(screen.queryByRole('link', { name: 'Set up' })).toBeNull()
+  })
+
   it('stops reading a pending activation once the dialog unmounts', async () => {
     const { unmount } = await payWithAutoTopUp({
       auto_top_up_activation: 'pending'
@@ -463,12 +487,12 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
 
   beforeEach(() => {
     stubFirebaseAuthHarness()
-    hoisted.opensHandoff = true
+    setLocalBillingWebEnabled(true)
     hoisted.issueHandoff.mockResolvedValue({ status: 'ok', url: ENTRY_URL })
   })
 
   afterEach(() => {
-    hoisted.opensHandoff = false
+    setLocalBillingWebEnabled(false)
     hoisted.handoffTabs = []
   })
 
@@ -581,7 +605,7 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
       const { user } = renderDialog({ atCheckout: false })
       const action = await reach(user)
 
-      hoisted.opensHandoff = false
+      setLocalBillingWebEnabled(false)
       await user.click(action)
 
       await waitFor(() => expect(hoisted.reopenTopUp).toHaveBeenCalledOnce())
@@ -607,7 +631,7 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
       name: 'Continue'
     })
 
-    hoisted.opensHandoff = false
+    setLocalBillingWebEnabled(false)
     await user.click(firstContinue)
     await waitFor(() => expect(hoisted.reopenTopUp).toHaveBeenCalledOnce())
     await user.click(await screen.findByRole('button', { name: 'Continue' }))

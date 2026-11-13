@@ -64,6 +64,7 @@
         </p>
       </div>
       <Button
+        v-if="available"
         as="a"
         :href
         target="_blank"
@@ -422,7 +423,7 @@ const view = computed(() => {
 
 const action = computed(() => view.value?.status.action.id ?? 'turn_on')
 
-const { href, track } = usePlatformHandoff(
+const { href, track, available } = usePlatformHandoff(
   () => platformAutoTopUpPath(action.value),
   () => ({ target: 'auto_top_up', action: action.value })
 )

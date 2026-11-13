@@ -7,16 +7,11 @@ import { watch } from 'vue'
 
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
-import { t } from '@/i18n'
+import { i18n, t } from '@/i18n'
 import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { refreshBilling } from '@/platform/billing/billingRefresh'
 import type { BillingTab } from '@/platform/billing/billingTab'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
-import {
-  localSurface,
-  useLocalBillingWebFlagStore
-} from '@/platform/billing/stores/localBillingWebFlagStore'
-import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
@@ -169,18 +164,10 @@ function settle(
   return { status: 'error', message: t('billingHandoff.signInAgain') }
 }
 
-/** True where Add credits pays through a billing-web handoff instead of a Cloud checkout. */
-export function opensLocalBillingHandoff(): boolean {
-  return (
-    !isCloud &&
-    localSurface() === 'local_web' &&
-    useLocalBillingWebFlagStore().enabled
-  )
-}
-
 /** The tab a handoff opens in, reserved during the click and showing that checkout is opening. */
 export function reserveBillingHandoffTab(): BillingTab | null {
   return reserveBillingTab({
+    lang: i18n.global.locale.value,
     title: t('billingHandoff.opening'),
     detail: t('billingHandoff.openingDetail')
   })

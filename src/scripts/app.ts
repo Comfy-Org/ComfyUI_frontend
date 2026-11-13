@@ -1919,6 +1919,7 @@ export class ComfyApp implements IComfyApp {
           try {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
+            executionErrorStore.recordNodeErrors(null, queuedRunErrorKey)
             const res = await api.queuePrompt(number, p, {
               partialExecutionTargets: queueNodeIds,
               previewMethod
@@ -1936,9 +1937,10 @@ export class ComfyApp implements IComfyApp {
                 ...(workflowContext && { workflowContext })
               })
             }
-            executionErrorStore.recordNodeErrors(
-              res.node_errors ?? null,
-              queuedRunErrorKey
+            executionErrorStore.recordSubmissionNodeErrors(
+              res.node_errors,
+              queuedRunErrorKey,
+              res.prompt_id
             )
             queueResultOverride = null
             try {
