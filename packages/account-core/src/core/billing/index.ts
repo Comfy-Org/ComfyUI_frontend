@@ -403,6 +403,12 @@ export type {
   PlanCreditsState
 } from './billingTab/creditsCard'
 export { addCreditsEmphasis, deriveCreditsCard } from './billingTab/creditsCard'
+export type {
+  CreditsFlyoutFacts,
+  CreditsFlyoutPlan,
+  CreditsFlyoutState
+} from './billingTab/creditsFlyout'
+export { deriveCreditsFlyout } from './billingTab/creditsFlyout'
 export type { PlanCheckoutBanner } from './billingTab/planCheckoutBanner'
 export { planCheckoutBannerFor } from './billingTab/planCheckoutBanner'
 export type {
