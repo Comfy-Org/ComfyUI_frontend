@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe('Errors tab - common', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
@@ -12,7 +12,7 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
       await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
       await comfyPage.actionbar.propertiesButton.click()
 
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await expect(panel.errorsTabIcon).toBeVisible()
       // Missing resources alone are setup warnings, not blocking errors.
       await expect(panel.errorsTabIcon).toHaveAccessibleName('Setup required')
@@ -28,7 +28,7 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
       )
       await comfyPage.actionbar.propertiesButton.click()
 
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await expect(panel.errorsTabIcon).toBeHidden()
     })
   })

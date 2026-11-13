@@ -4,7 +4,7 @@
       <DialogOverlay />
       <DialogContent
         size="full"
-        class="w-[90vw] border-0 bg-transparent p-0 shadow-none"
+        class="border-0 bg-transparent p-0 shadow-none"
         :aria-label="ariaLabel"
         @escape-key-down="onEscapeKeyDown"
       >

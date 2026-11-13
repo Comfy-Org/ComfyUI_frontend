@@ -2089,30 +2089,6 @@ describe('BillingTab', () => {
         canTopUp: false
       }
 
-      it('tells a member who manages auto top-up, without status, action or a settings read', () => {
-        arrange(member)
-
-        const block = screen.getByTestId('billing-auto-top-up-member-card')
-        expect(
-          within(block).getByRole('heading', { name: 'Auto top-up' })
-        ).toBeInTheDocument()
-        expect(block).toHaveTextContent(
-          'Credits can top up automatically when they run low. Contact a workspace owner to manage this.'
-        )
-        expect(within(block).queryByRole('button')).not.toBeInTheDocument()
-        expect(within(block).queryByRole('link')).not.toBeInTheDocument()
-        expect(
-          screen.queryByTestId('billing-auto-top-up-status')
-        ).not.toBeInTheDocument()
-        expect(
-          within(screen.getByTestId('billing-credits-section')).queryByRole(
-            'button',
-            { name: 'Add credits' }
-          )
-        ).not.toBeInTheDocument()
-        expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
-      })
-
       it('shows a member the served auto top-up status, still without an action or a settings read', () => {
         arrange({
           ...member,

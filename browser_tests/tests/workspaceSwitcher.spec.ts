@@ -32,13 +32,15 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     expect(box!.height).toBeLessThan(SINGLE_LINE_MAX_HEIGHT_PX)
   })
 
-  test('opens the switcher to the left of the profile menu without overlap', async ({
+  test('opens the switcher toward the canvas, 8px right of the sidebar profile menu', async ({
     comfyPage
   }) => {
     const page = comfyPage.page
 
     await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
+    const button = page.getByRole('button', { name: 'Current user' })
+    await expect(page.getByTestId('side-toolbar').locator(button)).toBeVisible()
+    await button.click()
     await page.getByTestId('workspace-switcher-trigger').click()
 
     const panel = page.getByTestId('workspace-switcher-panel')
@@ -47,13 +49,108 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       panel.getByText('Workspaces only affect which credits you use.')
     ).toHaveCount(0)
 
-    const profileMenu = page.locator('.current-user-popover')
-    const panelBox = await panel.boundingBox()
-    const profileBox = await profileMenu.boundingBox()
-    expect(panelBox).not.toBeNull()
-    expect(profileBox).not.toBeNull()
-    expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
+    const profileMenu = page.locator('[data-slot="popover-content"]', {
+      has: page.getByTestId('current-user-popover')
+    })
+    await expect
+      .poll(async () => {
+        const [panelBox, profileBox] = await Promise.all([
+          panel.boundingBox(),
+          profileMenu.boundingBox()
+        ])
+        if (!panelBox || !profileBox) return null
+        return Math.round(panelBox.x - (profileBox.x + profileBox.width))
+      })
+      .toBe(8)
+    await expect(panel).toBeInViewport({ ratio: 1 })
   })
+
+  test.describe('with billing_new_ux_enabled off', () => {
+    test.use({ billingNewUx: false })
+
+    test('opens the switcher to the left of the profile menu without overlap', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await page.getByTestId('workspace-switcher-trigger').click()
+
+      const panel = page.getByTestId('workspace-switcher-panel')
+      await expect(panel).toBeVisible()
+
+      const profileMenu = page.locator('.current-user-popover')
+      await expect
+        .poll(async () => {
+          const [panelBox, profileBox] = await Promise.all([
+            panel.boundingBox(),
+            profileMenu.boundingBox()
+          ])
+          if (!panelBox || !profileBox) return Number.POSITIVE_INFINITY
+          return panelBox.x + panelBox.width - profileBox.x
+        })
+        .toBeLessThanOrEqual(0)
+    })
+  })
+
+  for (const { name, viewport, reducedMotion } of [
+    {
+      name: 'desktop',
+      viewport: { width: 1280, height: 720 },
+      reducedMotion: 'no-preference'
+    },
+    {
+      name: 'short viewport',
+      viewport: { width: 1024, height: 600 },
+      reducedMotion: 'no-preference'
+    },
+    {
+      name: 'reduced motion',
+      viewport: { width: 1280, height: 720 },
+      reducedMotion: 'reduce'
+    }
+  ] as const) {
+    test.describe(name, () => {
+      test.use({ viewport, reducedMotion })
+
+      test('keeps the switcher clear throughout its entrance', async ({
+        comfyPage
+      }) => {
+        const page = comfyPage.page
+        await comfyPage.toast.closeToasts()
+        const button = page.getByRole('button', { name: 'Current user' })
+        await button.scrollIntoViewIfNeeded()
+        await button.click()
+        await expect(page.getByTestId('current-user-popover')).toBeVisible()
+        await page.addStyleTag({
+          content:
+            '[data-testid="workspace-switcher-panel"] { animation-play-state: paused; }'
+        })
+        await page.getByTestId('workspace-switcher-trigger').click()
+
+        const panel = page.getByTestId('workspace-switcher-panel')
+        await expect(panel).toBeVisible()
+        const profileBox = await page
+          .getByTestId('current-user-popover')
+          .boundingBox()
+        expect(profileBox).not.toBeNull()
+        const leftEdges = await panel.evaluate((element) => {
+          const animations = element.getAnimations()
+          return [0, 0.25, 0.5, 0.75, 1].map((progress) => {
+            animations.forEach((animation) => {
+              animation.currentTime =
+                Number(animation.effect?.getComputedTiming().endTime) * progress
+            })
+            return element.getBoundingClientRect().left
+          })
+        })
+        expect(Math.min(...leftEdges)).toBeGreaterThanOrEqual(
+          profileBox!.x + profileBox!.width
+        )
+      })
+    })
+  }
 
   test.describe('on a phone-width viewport', () => {
     test.use({ viewport: { width: 390, height: 844 } })
@@ -128,7 +225,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('workspace-switcher-trigger').click()
 
-    await page.getByText('Create a workspace').click()
+    await page.getByText('Create workspace').click()
 
     await expect(
       page.getByText(
