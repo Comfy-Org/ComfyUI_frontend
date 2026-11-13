@@ -14,6 +14,7 @@ import { useApp } from '@/scripts/appInstance'
 import type { ComfyExtension } from '@/types/comfy'
 import type { DefRegistry, Unsubscribe } from '@/platform/nodeApi/v4/types'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
+import type { WidgetTypes } from '@/platform/nodeApi/v4/widgets/widgetTypes'
 import {
   addDefinitionHooks,
   checkedDefinition,
@@ -45,7 +46,10 @@ interface DefRegistryParts {
   reapplyTypeColors(): void
 }
 
-export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
+export function createDefRegistry(
+  nodes: NodeHandles,
+  widgetTypes: WidgetTypes
+): DefRegistryParts {
   const copyOfSaved = savedCopier()
   const dispatch = createHookDispatch(
     nodes,
@@ -130,7 +134,8 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
     typeColor: colors.typeColor,
     setTypeColor: colors.setTypeColor,
     nodeColor: colors.nodeColor,
-    isTypeCompatible: colors.isTypeCompatible
+    isTypeCompatible: colors.isTypeCompatible,
+    defineWidgetType: widgetTypes.define
   })
 
   return {

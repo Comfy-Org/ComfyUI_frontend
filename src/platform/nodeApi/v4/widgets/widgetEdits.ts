@@ -110,7 +110,8 @@ function displayEdits(): Pick<
   }
 }
 
-function fixHeight(widget: IBaseWidget, height: number): void {
+/** Fixes the height a widget takes on its node, before or after it is added. */
+export function fixHeight(widget: IBaseWidget, height: number): void {
   widget.computeSize = (width = 0) => [width, height]
 }
 

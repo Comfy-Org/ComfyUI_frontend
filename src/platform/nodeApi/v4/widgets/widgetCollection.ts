@@ -24,19 +24,26 @@ import { checkedWidgetDef } from './widgetDef'
 import { createWidgetEdits } from './widgetEdits'
 import { createWidgetEvents } from './widgetEvents'
 import { orderMembers } from './widgetOrder'
+import { createWidgetTypes } from './widgetTypes'
+import type { WidgetTypes } from './widgetTypes'
 import type { WidgetEdits } from './widgetEdits'
 import { createWidgetHandles, widgetNamed } from './widgetHandle'
 import type { WidgetHandleFor } from './widgetHandle'
 
+/** The widgets of each node, and the widget types packs declare. */
 export function createWidgetCollections(
   handles: DocumentHandles,
   runner: EditRunner
-): WidgetsOf {
+): { readonly widgetsOf: WidgetsOf; readonly widgetTypes: WidgetTypes } {
   const copyOfSaved = savedCopier()
   const events = createWidgetEvents(copyOfSaved)
   const edits = createWidgetEdits(runner, events.asSetValue)
   const handleFor = createWidgetHandles(handles, { edits, events, copyOfSaved })
-  return (locate) => widgetCollection(locate, { handleFor, edits, copyOfSaved })
+  return {
+    widgetsOf: (locate) =>
+      widgetCollection(locate, { handleFor, edits, copyOfSaved }),
+    widgetTypes: createWidgetTypes(edits, copyOfSaved)
+  }
 }
 
 interface CollectionServices {
@@ -136,6 +143,6 @@ function mountOn(
   const mounted = createMountedWidget(node, spec)
   edits.addDomWidget(node, mounted.widget, spec.height)
   const handle = handleFor(graph, node, spec.name)
-  renderMounted(spec, mounted, handle, copyOfSaved)
+  renderMounted(spec, mounted, (value) => handle.setValue(value), copyOfSaved)
   return handle
 }
