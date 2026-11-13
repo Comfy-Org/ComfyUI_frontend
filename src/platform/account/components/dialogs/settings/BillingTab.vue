@@ -227,6 +227,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { isCloud } from '@/platform/distribution/types'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -366,6 +367,15 @@ const autoTopUpMemberCopy = useAutoTopUpMemberBlockCopy()
 const autoTopUpMemberView = computed(
   () => capabilities.autoTopUpMemberView.value
 )
+const { isPlanTerminal } = usePlanEnded()
+const endedPlanSalesVariant = computed(() =>
+  isPlanTerminal.value ? 'inverted' : 'secondary'
+)
+
+const salesVariant = computed(() =>
+  isCloud ? endedPlanSalesVariant.value : 'secondary'
+)
+
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:
@@ -378,16 +388,14 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
+      action.value === 'subscribe' ||
+      (action.value === 'choosePlan' && isCloud) ||
+      (action.value === 'contactSales' && salesVariant.value === 'inverted')
   })
 )
 
 const creditBannerAddCreditsVariant = computed(() =>
   planRow.value.kind === 'ended' ? 'secondary' : addCreditsVariant.value
-)
-
-const salesVariant = computed(() =>
-  billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
 const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(

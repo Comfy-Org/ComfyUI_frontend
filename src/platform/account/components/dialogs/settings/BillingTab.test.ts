@@ -89,6 +89,7 @@ const activeSubscription: SubscriptionInfo = {
 interface Scenario {
   subscription?: SubscriptionInfo | null
   subscriptionStatus?: 'active' | 'canceled' | 'ended' | null
+  canAccessSubscriptionFeatures?: boolean
   subscriptionState?: SubscriptionState | null
   planKind?: NonNullable<BillingCapabilitiesResponse['plan_kind']> | null
   isInitialized?: boolean
@@ -157,7 +158,9 @@ function arrange(scenario: Scenario = {}) {
       ),
       subscriptionState: computed(() => scenario.subscriptionState ?? null),
       billingStatus: computed(() => scenario.billingStatus ?? 'paid'),
-      canAccessSubscriptionFeatures: computed(() => true),
+      canAccessSubscriptionFeatures: computed(
+        () => scenario.canAccessSubscriptionFeatures ?? true
+      ),
       manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
@@ -565,13 +568,44 @@ describe('BillingTab', () => {
   })
 
   it.for([
-    { subscriptionStatus: 'ended' as const, variant: 'inverted' },
-    { subscriptionStatus: 'canceled' as const, variant: 'secondary' },
-    { subscriptionStatus: 'active' as const, variant: 'secondary' }
+    {
+      subscriptionStatus: 'ended' as const,
+      isCloud: true,
+      variant: 'inverted'
+    },
+    {
+      subscriptionStatus: 'ended' as const,
+      isCloud: false,
+      variant: 'secondary'
+    },
+    {
+      subscriptionStatus: 'canceled' as const,
+      isCloud: true,
+      variant: 'secondary'
+    },
+    {
+      subscriptionStatus: 'canceled' as const,
+      accessClosed: true,
+      isCloud: true,
+      variant: 'inverted'
+    },
+    {
+      subscriptionStatus: 'active' as const,
+      isCloud: true,
+      variant: 'secondary'
+    }
   ])(
-    'renders Contact sales as $variant when subscription_status is $subscriptionStatus',
-    ({ subscriptionStatus, variant }) => {
-      arrange({ planKind: 'sales_managed', subscriptionStatus })
+    'renders Contact sales as $variant when subscription_status is $subscriptionStatus (Cloud: $isCloud, access closed: $accessClosed)',
+    ({ subscriptionStatus, accessClosed, isCloud, variant }) => {
+      distribution.isCloud = isCloud
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      arrange({
+        planKind: 'sales_managed',
+        subscriptionStatus,
+        canAccessSubscriptionFeatures: !accessClosed
+      })
 
       expect(
         screen.getByRole('link', { name: 'Contact sales' })
@@ -1570,6 +1604,46 @@ describe('BillingTab', () => {
       await screen.findByTestId('billing-auto-top-up-status')
       expect(addCreditsVariants()).toEqual(['secondary', 'secondary'])
     })
+
+    it.for([
+      {
+        surface: 'Cloud',
+        isCloud: true,
+        contactSales: 'inverted',
+        addCredits: 'secondary'
+      },
+      {
+        surface: 'local ComfyUI',
+        isCloud: false,
+        contactSales: 'secondary',
+        addCredits: 'inverted'
+      }
+    ])(
+      'keeps one white action on $surface when an Enterprise plan has ended at 0',
+      async ({ isCloud, contactSales, addCredits }) => {
+        distribution.isCloud = isCloud
+        onTestFinished(() => {
+          distribution.isCloud = false
+        })
+        arrange({
+          balance: zeroBalance,
+          planKind: 'sales_managed',
+          canOpenPlans: false,
+          subscriptionStatus: 'ended',
+          subscription: {
+            ...activeSubscription,
+            tier: 'ENTERPRISE',
+            isActive: false
+          }
+        })
+
+        await screen.findByTestId('billing-auto-top-up-status')
+        expect(
+          screen.getByRole('link', { name: 'Contact sales' })
+        ).toHaveAttribute('data-variant', contactSales)
+        expect(addCreditsVariants()).toEqual([addCredits])
+      }
+    )
 
     it('keeps Subscribe the one white button with no plan at 0', () => {
       arrange({
