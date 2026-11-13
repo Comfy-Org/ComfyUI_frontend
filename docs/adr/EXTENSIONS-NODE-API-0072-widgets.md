@@ -187,6 +187,20 @@ This ADR records how the API reaches widgets through those owners.
     sent) defaults to `true`; `minHeight` is returned to the host, which
     sizes the node with it; `height` fixes the height.
 
+### Widgets in node definitions
+
+23. The definitions feature left three more members to this one
+    ([ADR-EXTENSIONS-NODE-API-0071](EXTENSIONS-NODE-API-0071-node-definitions-and-hooks.md)
+    decision 39). `NodeDefBuilder.addWidget(def)` and `hideWidget(name)`
+    are `onCreated` hooks of the type: each node of the type, as it is
+    made, gets the widget through `widgets.add`, or has the named widget
+    hidden through `setHidden(true)`. `NodeDefinition.widgets` adds each
+    listed widget the same way, after the type's inputs; `define` no longer
+    refuses it. Each definition is checked when it is given, as `add`
+    checks one, and a refusal names the member. A widget a node already has
+    is refused by `add` inside the hook, reported, and the node's other
+    widgets are still added.
+
 ## Alternatives considered
 
 - Write a value with `useWidgetValueStore().setValue` and call the callback,

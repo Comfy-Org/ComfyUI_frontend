@@ -270,6 +270,14 @@ describe('a node’s widgets', () => {
       expect(added?.getValue()).toEqual({ list: [1] })
     })
 
+    it('names add in a refusal of its definition', () => {
+      const { widgets } = nodeWith()
+
+      expect(() => Reflect.apply(widgets.add, widgets, ['number'])).toThrow(
+        "add needs a definition object, not 'number'."
+      )
+    })
+
     it('refuses a name the node already has, and adds nothing', () => {
       const { node, widgets } = nodeWith('seed')
 

@@ -908,6 +908,18 @@ export interface DefRegistry {
   defineWidgetType(type: string, def: WidgetTypeDef): Unsubscribe
 }
 
+export interface NodeDefBuilder {
+  /** Adds the widget `def` describes to each node of the type as it is made. */
+  addWidget(def: WidgetDef): void
+  /** Hides the widget named `name` on each node of the type as it is made. */
+  hideWidget(name: string): void
+}
+
+export interface NodeDefinition {
+  /** Widgets each node of the type gets as it is made, after its inputs. */
+  readonly widgets?: readonly WidgetDef[]
+}
+
 /** How every input of a declared widget type is shown. */
 export interface WidgetTypeDef {
   /**
