@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -16,6 +18,8 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
 }))
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const distributionMocks = vi.hoisted(() => ({ isCloud: true }))
 
@@ -42,7 +46,21 @@ const i18n = createI18n({
         managedByOrganization:
           "Your organization manages your workspaces, so you can't create one.",
         cannotCreateWorkspace:
-          "You can't create a workspace on this account right now."
+          "You can't create a workspace on this account right now.",
+        createWorkspaceAction: 'Create workspace',
+        ownedLimit: 'You can own up to {max}.',
+        searchPlaceholder: 'Search workspace...',
+        noResults: 'No workspaces match “{query}”.',
+        loadFailed: 'Couldn’t load your workspaces.',
+        tryAgain: 'Try again'
+      },
+      profileMenu: {
+        planStatus: {
+          noPlan: 'No plan',
+          paused: 'Paused',
+          paymentDue: 'Payment due',
+          ended: 'Plan ended'
+        }
       },
       subscription: {
         tiers: {
@@ -315,5 +333,185 @@ describe('WorkspaceSwitcherPopover', () => {
 
     expect(screen.queryByText('Create a team workspace')).toBeNull()
     expect(screen.queryByText(/You can only own 10 workspaces/)).toBeNull()
+  })
+})
+
+describe('WorkspaceSwitcherPopover with billing_new_ux_enabled', () => {
+  beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+    const billingContext = useBillingContext()
+    billingContext.subscription = computed(() => null)
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    distributionMocks.isCloud = true
+  })
+
+  function teams(count: number) {
+    return Array.from({ length: count }, (_, i) =>
+      createWorkspaceState({
+        id: `ws-${i}`,
+        name: `Team ${i}`,
+        type: 'team',
+        role: 'member'
+      })
+    )
+  }
+
+  it('shows the served plan or status per row and drops the line when no summary is served', () => {
+    renderComponent({
+      activeWorkspaceId: 'ws-a',
+      workspaces: [
+        createWorkspaceState({
+          id: 'ws-a',
+          name: 'Workspace A',
+          type: 'personal',
+          role: 'owner',
+          subscription_tier: 'PRO',
+          plan_summary: { status: 'no_plan', plan_name: null }
+        }),
+        createWorkspaceState({
+          id: 'ws-b',
+          name: 'Team A',
+          type: 'team',
+          role: 'owner',
+          plan_summary: { status: 'active', plan_name: 'Enterprise' }
+        }),
+        createWorkspaceState({
+          id: 'ws-c',
+          name: 'Team B',
+          type: 'team',
+          role: 'member',
+          plan_summary: { status: 'payment_due', plan_name: 'Pro' }
+        }),
+        createWorkspaceState({
+          id: 'ws-d',
+          name: 'Team C',
+          type: 'team',
+          role: 'member'
+        })
+      ]
+    })
+
+    expect(
+      screen
+        .getAllByTestId('workspace-row-plan-line')
+        .map((el) => el.textContent.trim())
+    ).toEqual(['No plan', 'Enterprise', 'Payment due'])
+    expect(screen.queryByText('Owner')).toBeNull()
+    expect(screen.queryByText('Member')).toBeNull()
+  })
+
+  it('hides search at 5 workspaces', () => {
+    renderComponent({ activeWorkspaceId: 'ws-0', workspaces: teams(5) })
+
+    expect(screen.queryByTestId('workspace-switcher-search')).toBeNull()
+  })
+
+  it('shows search at 6 workspaces and filters by name', async () => {
+    renderComponent({ activeWorkspaceId: 'ws-0', workspaces: teams(6) })
+
+    await userEvent.type(
+      screen.getByTestId('workspace-switcher-search'),
+      'team 3'
+    )
+
+    expect(screen.getByText('Team 3')).toBeInTheDocument()
+    expect(screen.queryByText('Team 4')).toBeNull()
+  })
+
+  it('shows the no-results message when nothing matches', async () => {
+    renderComponent({ activeWorkspaceId: 'ws-0', workspaces: teams(6) })
+
+    await userEvent.type(
+      screen.getByTestId('workspace-switcher-search'),
+      'marketing'
+    )
+
+    expect(
+      screen.getByText('No workspaces match “marketing”.')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Team 0')).toBeNull()
+  })
+
+  it('shows the error state with Try again and keeps Create workspace available', async () => {
+    const store = useTeamWorkspaceStore()
+    const initialize = vi
+      .spyOn(store, 'initialize')
+      .mockRejectedValue(new Error('list failed'))
+    store.$patch({ initState: 'error' })
+    renderComponent({ workspaces: [] })
+
+    expect(
+      screen.getByText('Couldn’t load your workspaces.')
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('workspace-switcher-create')).toBeEnabled()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(initialize).toHaveBeenCalledOnce()
+    await vi.waitFor(() => expect(reportError).toHaveBeenCalled())
+  })
+
+  it('shows the served owned-workspace limit under a disabled Create workspace', async () => {
+    useTeamWorkspaceStore().$patch({
+      serverRefusesCreation: true,
+      creationDeniedReason: 'owned_workspace_limit',
+      maxOwnedWorkspaces: 10
+    })
+    const { emitted } = renderComponent()
+
+    expect(screen.getByText('You can own up to 10.')).toBeInTheDocument()
+    const create = screen.getByTestId('workspace-switcher-create')
+    expect(create).toBeDisabled()
+    await userEvent.click(create)
+    expect(emitted().create).toBeUndefined()
+  })
+
+  it('shows no limit line when creation is allowed', () => {
+    renderComponent()
+
+    expect(screen.getByText('Create workspace')).toBeInTheDocument()
+    expect(screen.queryByTestId('workspace-switcher-create-refusal')).toBeNull()
+  })
+})
+
+describe('WorkspaceSwitcherPopover with billing_new_ux_enabled off', () => {
+  beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+    const billingContext = useBillingContext()
+    billingContext.subscription = computed(() => null)
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    distributionMocks.isCloud = true
+  })
+
+  it('keeps the previous switcher: role line, tier badge, no search, old create label', () => {
+    renderComponent({
+      activeWorkspaceId: 'ws-team',
+      workspaces: [
+        createWorkspaceState({
+          id: 'ws-personal',
+          name: 'Personal Workspace',
+          type: 'personal',
+          role: 'owner',
+          subscription_tier: 'PRO',
+          plan_summary: { status: 'paused', plan_name: 'Pro' }
+        }),
+        ...Array.from({ length: 6 }, (_, i) =>
+          createWorkspaceState({
+            id: `ws-${i}`,
+            name: `Team ${i}`,
+            type: 'team',
+            role: 'member',
+            plan_summary: { status: 'active', plan_name: 'Enterprise' }
+          })
+        )
+      ]
+    })
+
+    expect(screen.getByText('Pro')).toBeInTheDocument()
+    expect(screen.getByText('Owner')).toBeInTheDocument()
+    expect(screen.queryByText('Paused')).toBeNull()
+    expect(screen.queryByText('Enterprise')).toBeNull()
+    expect(screen.queryByTestId('workspace-switcher-search')).toBeNull()
+    expect(screen.getByText('Create a team workspace')).toBeInTheDocument()
   })
 })
