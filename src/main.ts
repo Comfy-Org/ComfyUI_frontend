@@ -28,6 +28,7 @@ import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import { createAppRouter } from '@/router'
 import { captureSafeExtensionBoot } from '@/platform/customNodes/safeExtensionBoot'
+import { installCoreRouteFetch } from '@/platform/cloud/coreRouteFetch'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -172,6 +173,7 @@ async function bootstrap(): Promise<void> {
   if (isCloud) {
     stripPaymentReturnParams()
     installCloudApiAuth()
+    installCoreRouteFetch()
   }
   installWorkspaceApiAuth()
 
