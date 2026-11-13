@@ -162,6 +162,20 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     host-dispatched event could carry, is delivered as `undefined` and
     reported once per event name (`node_api_payload_not_copyable`).
 
+### Models (`comfy.models`, 6 / 10)
+
+18. `list(folder)` (6 / 8) is the backend client's `getModels`, the route the
+    model store reads outside asset mode (`/experiment/models/{folder}`). Each
+    name is listed once, in the backend's order, though a name may sit in
+    several of the folder's paths. The client resolves an empty list for a
+    folder the backend does not know. A failed request or a reply that is not
+    a list of named entries resolves `undefined`. A folder must be one path
+    segment of word characters, dots and dashes, not `.` or `..`, because the
+    client puts it in the URL unencoded. The earlier contract fixed thirteen
+    folder names; the backend decides which folders exist, and a pack
+    registers its own. The model store is not used: it lists only folders it
+    has already loaded, and in asset mode it reads the asset service instead.
+
 ### Left out
 
 The sandbox the earlier contract served is out of scope, and nothing here
@@ -177,6 +191,10 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   sandbox, and threw everywhere else. A pack calls its routes with
   `backend.fetch('/my-pack/route')`.
 - `backend.sessionId` (0 / 0) has no use.
+- `comfy.system` and its snapshot types (1 / 2) are deferred. Their only
+  host, the `/system_monitor` route, is not in ComfyUI; it exists on an
+  unreleased backend branch. A wrapper over a route the server lacks would
+  have no working path. The members return when that route ships.
 
 ## Alternatives considered
 
@@ -225,7 +243,7 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   trip would drop `undefined` and functions and turn `NaN` into `null`
   without saying so, which is the silent change the check exists to refuse.
 - **Reading a server's list.** `textFieldOfEach` reads one string field of
-  each entry of a reply, for the storage list, which the
+  each entry of a reply, for the storage and model lists, which the
   client returns unchecked.
 - **Reading a pack's object.** `packArguments.ts` reads each field once with
   `Reflect.get` and checks it. `isPlainObject` from `es-toolkit` is used for

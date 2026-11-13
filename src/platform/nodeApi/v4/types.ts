@@ -1490,3 +1490,16 @@ export interface BackendHandle {
   /** Calls `listener` with a frozen copy of each payload the backend sends as `event`. */
   on(event: string, listener: (detail: unknown) => void): Unsubscribe
 }
+
+export interface Comfy {
+  /** The model files the backend lists. */
+  readonly models: ModelsHandle
+}
+
+export interface ModelsHandle {
+  /**
+   * The model names in a folder such as `loras`, each once, in the backend's order.
+   * An unknown folder lists none; `undefined` if the server could not list them.
+   */
+  list(folder: string): Promise<readonly string[] | undefined>
+}
