@@ -164,7 +164,15 @@ function classifyDownloadFailure(error: unknown): DownloadFailure {
     return { failure_kind: 'timeout' }
   }
   if (error instanceof TypeError) return { failure_kind: 'network' }
-  return {}
+  return { failure_kind: 'unknown' }
+}
+
+function isSameOrigin(url: string): boolean {
+  try {
+    return new URL(url, location.href).origin === location.origin
+  } catch {
+    return false
+  }
 }
 
 function downloadRoute(url: string): AssetDownloadMetadata['route'] {
@@ -184,7 +192,7 @@ function mediaKindOf(
 /**
  * Fetches `url` and saves its body as a file. `fetch` receives a callback to
  * report which credential the request carried; when omitted, the bare global
- * fetch rides the same-origin session cookie.
+ * fetch rides the session cookie on same-origin URLs only.
  */
 export async function downloadFileAsBlob(
   url: string,
@@ -206,7 +214,11 @@ export async function downloadFileAsBlob(
   const knownFilename = filename || extractFilenameFromUrl(url)
   const fallbackFilename = knownFilename || DEFAULT_DOWNLOAD_FILENAME
   const startedAt = performance.now()
-  let authCredential: AuthCredential = fetchFile ? 'none' : 'session-cookie'
+  let authCredential: AssetDownloadMetadata['auth_credential'] = fetchFile
+    ? 'unreported'
+    : isSameOrigin(url)
+      ? 'session-cookie'
+      : 'none'
 
   function report(
     outcome: Pick<

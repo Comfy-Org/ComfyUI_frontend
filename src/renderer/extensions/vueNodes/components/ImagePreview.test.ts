@@ -430,7 +430,11 @@ describe('ImagePreview', () => {
     })
     await user.click(downloadButton)
 
-    expect(downloadFile).toHaveBeenCalledWith(defaultUrls[0])
+    expect(downloadFile).toHaveBeenCalledWith(
+      defaultUrls[0],
+      undefined,
+      'node_preview'
+    )
   })
 
   it('switches images when navigation dots are clicked', async () => {

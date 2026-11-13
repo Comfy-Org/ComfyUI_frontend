@@ -440,22 +440,52 @@ describe('downloadUtil', () => {
         ).rejects.toBe(networkError)
       })
 
-      it('reports the session cookie for a bare same-origin fetch', async () => {
-        vi.mocked(fetch).mockResolvedValue(new Response('abcd'))
+      it.for([
+        { origin: 'same-origin', base: '', credential: 'session-cookie' },
+        {
+          origin: 'cross-origin',
+          base: 'https://storage.example.com',
+          credential: 'none'
+        }
+      ] as const)(
+        'reports $credential for a bare $origin fetch',
+        async ({ base, credential }) => {
+          vi.mocked(fetch).mockResolvedValue(new Response('abcd'))
 
-        await downloadFileAsBlob('/api/view?filename=model.glb&type=output')
+          await downloadFileAsBlob(
+            `${base}/api/view?filename=model.glb&type=output`
+          )
+
+          expect(
+            useTelemetry()?.trackAssetDownload
+          ).toHaveBeenCalledExactlyOnceWith({
+            ...settled,
+            auth_credential: credential,
+            route: 'view',
+            media_kind: '3d',
+            surface: 'unknown',
+            outcome: 'completed',
+            phase: 'body',
+            size_bytes: 4
+          })
+        }
+      )
+
+      it('reports an unreported credential when fetch fails before attaching one', async () => {
+        await downloadFileAsBlob('/api/assets/abc-123/content', {
+          filename: 'clip.mp4',
+          fetch: () => Promise.reject(new Error('auth not ready')),
+          surface: 'gallery'
+        }).catch(() => {})
 
         expect(
           useTelemetry()?.trackAssetDownload
         ).toHaveBeenCalledExactlyOnceWith({
           ...settled,
-          auth_credential: 'session-cookie',
-          route: 'view',
-          media_kind: '3d',
-          surface: 'unknown',
-          outcome: 'completed',
-          phase: 'body',
-          size_bytes: 4
+          auth_credential: 'unreported',
+          outcome: 'failed',
+          phase: 'headers',
+          failure_kind: 'unknown'
         })
       })
     })

@@ -157,8 +157,12 @@ describe('MessageFeedback', () => {
     await user.click(screen.getByRole('button', { name: 'Download assets' }))
 
     await waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
-    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
-    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb')
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=a.png', {
+      onAuthCredential: expect.any(Function)
+    })
+    expect(api.fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb', {
+      onAuthCredential: expect.any(Function)
+    })
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
   })
 

@@ -152,11 +152,23 @@ export interface ImageLoadFailureMetadata {
  */
 export interface AssetDownloadMetadata {
   outcome: 'completed' | 'failed'
-  failure_kind?: 'http' | 'network' | 'timeout' | 'abort' | 'body_read'
+  failure_kind?:
+    | 'http'
+    | 'network'
+    | 'timeout'
+    | 'abort'
+    | 'body_read'
+    | 'unknown'
   /** HTTP status of a non-OK response. Absent when no response arrived. */
   status?: number
   phase: 'headers' | 'body'
-  auth_credential: 'session-cookie' | 'bearer' | 'api-key' | 'none'
+  /** `unreported` when the request failed before attaching a credential. */
+  auth_credential:
+    | 'session-cookie'
+    | 'bearer'
+    | 'api-key'
+    | 'none'
+    | 'unreported'
   route: 'assets_content' | 'view' | 'other'
   media_kind: 'image' | 'video' | 'audio' | '3d' | 'text' | 'other'
   surface: string
