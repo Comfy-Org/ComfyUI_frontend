@@ -13,6 +13,8 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { NODE_TYPE_HOOKS_NAME } from '@/platform/nodeApi/v4/defs/nodeTypeHooksName'
 import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -226,5 +228,19 @@ describe("the app's node API", () => {
     expect(
       app.collectNodeMenuItems(node).map((item) => item.content)
     ).toContain('From a pack')
+  })
+
+  it('keeps hearing node types when a user has disabled the hook extension', async () => {
+    useExtensionStore().loadDisabledExtensionNames([NODE_TYPE_HOOKS_NAME])
+    const comfy = publishedApi()
+    const extended = vi.fn()
+    comfy.defs.extend('HostType', extended)
+
+    await useLitegraphService().registerNodeDef(
+      'HostType',
+      hostNodeDef('HostType')
+    )
+
+    expect(extended).toHaveBeenCalledOnce()
   })
 })

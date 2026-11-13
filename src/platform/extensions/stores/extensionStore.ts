@@ -2,6 +2,7 @@ import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef } from 'vue'
 
+import { NODE_TYPE_HOOKS_NAME } from '@/platform/nodeApi/v4/defs/nodeTypeHooksName'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingWriteOutcome } from '@comfyorg/settings-core/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -10,7 +11,7 @@ import type { ComfyExtension } from '@/types/comfy'
 /**
  * These extensions are always active, even if they are disabled in the setting.
  */
-const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = []
+const ALWAYS_ENABLED_EXTENSIONS: readonly string[] = [NODE_TYPE_HOOKS_NAME]
 
 const ALWAYS_DISABLED_EXTENSIONS: readonly string[] = [
   // pysssss.Locking is replaced by pin/unpin in ComfyUI core.

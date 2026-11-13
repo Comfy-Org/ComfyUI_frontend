@@ -26,6 +26,7 @@ import type { NodeType } from './extensions'
 import { createHookDispatch } from './hookDispatch'
 import { categoryOfHostDef, nodeDefFromHost } from './nodeDef'
 import { checkedReadable } from './readableInput'
+import { NODE_TYPE_HOOKS_NAME } from './nodeTypeHooksName'
 import { createTypeColors } from './typeColors'
 
 /** The extension through which the host tells the API about node types. */
@@ -44,8 +45,6 @@ interface DefRegistryParts {
   /** Puts back the colours packs gave their types, after a palette cleared them. */
   reapplyTypeColors(): void
 }
-
-export const NODE_TYPE_HOOKS_NAME = 'Comfy.NodeApi.v4.NodeTypes'
 
 export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
   const copyOfSaved = savedCopier()
