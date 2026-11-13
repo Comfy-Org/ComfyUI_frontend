@@ -245,6 +245,25 @@ describe('slot handles', () => {
       expect(inside.graph.links()?.[0]?.sourceSlotId).toBe(link?.sourceSlotId)
     })
 
+    it('read the subgraph output a link inside a subgraph goes to', () => {
+      const subgraph = createTestSubgraph({
+        outputs: [{ name: 'value', type: 'number' }]
+      })
+      subgraph.rootGraph.subgraphs.set(subgraph.id, subgraph)
+      const inner = new LGraphNode('Inner')
+      inner.addOutput('value', 'number')
+      subgraph.add(inner)
+      subgraph.outputNode.slots[0].connect(inner.outputs[0], inner)
+      const inside = createComfyApi({ getGraph: () => subgraph }).comfy
+      const value = inside.graph.node(String(inner.id))?.outputs.at(0)
+
+      const links = value?.links() ?? []
+
+      expect(links).toHaveLength(1)
+      expect(links[0].sourceSlotId).toBe(value?.id)
+      expect(links[0].targetSlotId).toEqual(expect.stringMatching(/^slot:/))
+    })
+
     it('read a link whose slots are missing from a malformed workflow without their ids', () => {
       source.connect(0, target, 0)
       target.inputs.length = 0

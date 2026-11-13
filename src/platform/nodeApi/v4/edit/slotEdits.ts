@@ -20,7 +20,7 @@ import type {
 } from '@/platform/nodeApi/v4/types'
 import { checkedChoice } from './checkedArguments'
 import type { EditRunner } from './editRunner'
-import type { LiveSlot, SlotHandles } from './liveSlot'
+import type { SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
 import {
   assertNotSubgraphNode,
@@ -70,11 +70,11 @@ export function createSlotEdits(
   slots: SlotHandles,
   runner: EditRunner
 ): SlotEdits {
-  function addSlot(
+  function checkedAddition(
     member: string,
     side: SlotSide,
     [node, name, type, options]: readonly unknown[]
-  ): LiveSlot | undefined {
+  ) {
     const live = liveNodeOf(nodes, member, node)
     const slotName = checkedSlotName(member, name)
     const slotType = checkedSlotType(member, type)
@@ -85,15 +85,7 @@ export function createSlotEdits(
       name: slotName,
       widget: extra.widget?.name
     })
-    return runner.apply(live.graph, () => {
-      const { graph, node: host } = live
-      if (side === 'input') {
-        const slot = host.addInput(slotName, slotType, extra)
-        return { graph, node: host, index: host.inputs.length - 1, side, slot }
-      }
-      const slot = host.addOutput(slotName, slotType, extra)
-      return { graph, node: host, index: host.outputs.length - 1, side, slot }
-    })
+    return { ...live, slotName, slotType, extra }
   }
 
   return {
@@ -119,17 +111,35 @@ export function createSlotEdits(
     },
 
     addInput(node, name, type, options, member = 'addInput') {
-      const live = addSlot(member, 'input', [node, name, type, options])
-      return live?.side === 'input'
-        ? slots.inputHandle(live.graph, live.node, live.slot)
-        : undefined
+      const adding = checkedAddition(member, 'input', [
+        node,
+        name,
+        type,
+        options
+      ])
+      if (!adding) return undefined
+      const { graph, node: host, slotName, slotType, extra } = adding
+      return runner.apply(graph, () =>
+        slots.inputHandle(graph, host, host.addInput(slotName, slotType, extra))
+      )
     },
 
     addOutput(node, name, type, options, member = 'addOutput') {
-      const live = addSlot(member, 'output', [node, name, type, options])
-      return live?.side === 'output'
-        ? slots.outputHandle(live.graph, live.node, live.slot)
-        : undefined
+      const adding = checkedAddition(member, 'output', [
+        node,
+        name,
+        type,
+        options
+      ])
+      if (!adding) return undefined
+      const { graph, node: host, slotName, slotType, extra } = adding
+      return runner.apply(graph, () =>
+        slots.outputHandle(
+          graph,
+          host,
+          host.addOutput(slotName, slotType, extra)
+        )
+      )
     },
 
     removeSlot(slot) {
