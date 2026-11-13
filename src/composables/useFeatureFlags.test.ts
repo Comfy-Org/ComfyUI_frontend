@@ -488,7 +488,6 @@ describe('useFeatureFlags', () => {
   describe('unifiedBillingSettingsEnabled off cloud', () => {
     afterEach(() => {
       setLocalBillingWebEnabled(false)
-      delete window.__comfyDesktop2
     })
 
     it.for([
@@ -511,7 +510,7 @@ describe('useFeatureFlags', () => {
         expected: false
       }
     ])('is $expected on $case', ({ desktop, flag, expected }) => {
-      if (desktop) window.__comfyDesktop2 = {}
+      vi.stubGlobal('__comfyDesktop2', desktop ? {} : undefined)
       setLocalBillingWebEnabled(flag)
       vi.mocked(api.getServerFeature).mockReturnValue(true)
 

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { openBillingUrl, reserveBillingTab } from './billingTab'
 
@@ -15,11 +15,7 @@ const checkoutUrl = 'https://checkout.stripe.com/c/pay/cs_test'
 describe('reserveBillingTab', () => {
   beforeEach(() => {
     distribution.isDesktop = false
-    delete window.__comfyDesktop2
-  })
-
-  afterEach(() => {
-    delete window.__comfyDesktop2
+    vi.stubGlobal('__comfyDesktop2', undefined)
   })
 
   describe('on the web', () => {
@@ -79,7 +75,7 @@ describe('reserveBillingTab', () => {
     {
       host: 'cloud Desktop',
       arrange: () => {
-        window.__comfyDesktop2 = {}
+        vi.stubGlobal('__comfyDesktop2', {})
       }
     }
   ])('on $host', ({ arrange }) => {
@@ -101,11 +97,7 @@ describe('reserveBillingTab', () => {
 describe('openBillingUrl', () => {
   beforeEach(() => {
     distribution.isDesktop = false
-    delete window.__comfyDesktop2
-  })
-
-  afterEach(() => {
-    delete window.__comfyDesktop2
+    vi.stubGlobal('__comfyDesktop2', undefined)
   })
 
   it.for([
@@ -132,7 +124,7 @@ describe('openBillingUrl', () => {
     {
       host: 'cloud Desktop',
       arrange: () => {
-        window.__comfyDesktop2 = {}
+        vi.stubGlobal('__comfyDesktop2', {})
       },
       handle: null,
       opened: true
