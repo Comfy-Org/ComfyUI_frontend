@@ -303,7 +303,7 @@ describe('TopMenuSection', () => {
     expect(screen.queryByTestId('error-overlay')).toBeNull()
   })
 
-  it('tracks right side panel opens', async () => {
+  it('tracks properties panel opens', async () => {
     const { user } = createWrapper()
 
     await user.click(

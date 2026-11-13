@@ -4,7 +4,7 @@
   "description": "Promoting inner widgets and previews onto subgraph nodes: promotion and preview-exposure property schemas, concrete widget resolution, promoted input widgets and value controls, legacy proxy-widget migration, and promotion error reconciliation. Widget values stay in the widget value store outside this domain.",
   "modules": [
     {
-      "path": "src/components/rightSidePanel/subgraph/**"
+      "path": "src/renderer/extensions/propertiesPanel/subgraph/**"
     },
     {
       "path": "src/composables/node/usePromotedPreviews.ts"
@@ -55,7 +55,7 @@
     {
       "name": "Subgraph editor lists, reorders, and toggles promoted widgets and previews",
       "checks": [
-        "src/components/rightSidePanel/subgraph/SubgraphEditor.test.ts"
+        "src/renderer/extensions/propertiesPanel/subgraph/SubgraphEditor.test.ts"
       ]
     },
     {

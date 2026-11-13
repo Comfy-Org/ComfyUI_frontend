@@ -4,18 +4,14 @@
     :widget
     :input-id
     :no-border="!hasLabels"
+    :root-class="cn(hasLabels && 'h-auto')"
   >
     <ToggleGroup
       v-if="hasLabels"
       type="single"
       :model-value="modelValue ? 'on' : 'off'"
       :disabled="Boolean(widget.options?.read_only)"
-      :class="
-        cn(
-          WidgetInputBaseClass,
-          'flex w-full min-w-0 items-center justify-center gap-1 p-1'
-        )
-      "
+      :class="cn(WidgetInputBaseClass, 'w-full min-w-0 p-1')"
       @update:model-value="(v) => handleOptionChange(v as string)"
     >
       <ToggleGroupItem

@@ -37,6 +37,7 @@ const litegraphBaseSchema = z.object({
     z.literal(RenderShape.CARD),
     z.string()
   ]),
+  NODE_WIDGET_GAP: z.number(),
   NODE_BOX_OUTLINE_COLOR: z.string(),
   NODE_BYPASS_BGCOLOR: z.string(),
   NODE_ERROR_COLOUR: z.string(),
@@ -106,6 +107,9 @@ export const themeSchema = z
     ['node-radius']: z.string(),
     ['node-title-font-size']: z.string(),
     ['node-icon-style']: z.string(),
+    ['node-widget-height']: z.string(),
+    ['node-widget-radius']: z.string(),
+    ['node-widget-border-width']: z.string(),
     warning: z.string(),
     ['shadow-color']: z.string()
   })

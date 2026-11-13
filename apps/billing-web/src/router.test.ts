@@ -11,6 +11,8 @@ import { recordBillingEntry, useBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter, TOPUP_RETURN_PATH } from '@/router'
 import type { BillingWebSessionPhase } from '@/router'
+import type { HandoffState } from '@/handoff/handoffTab'
+import { handoffTab } from '@/handoff/handoffTab'
 import { createFakeBillingClient } from '@/test/fakeBillingClient'
 
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
@@ -416,5 +418,75 @@ describe('hosted billing entry routing', () => {
       await screen.findByRole('heading', { name: 'Billing' })
     ).toBeInTheDocument()
     expect(useBillingEntry().error.value).toBeUndefined()
+  })
+})
+
+describe('a billing handoff tab', () => {
+  afterEach(() => {
+    handoffTab.value = undefined
+  })
+
+  const liveHandoff: HandoffState = {
+    kind: 'session',
+    session: {
+      token: 'comfy-scoped-session-1',
+      expiresAt: Date.now() + 30 * 60_000,
+      userId: 'user-1',
+      email: 'a@example.com',
+      workspace: { id: 'ws-1', name: 'Studio', type: 'team' },
+      role: 'owner'
+    }
+  }
+
+  it('opens billing once the handoff is exchanged', async () => {
+    handoffTab.value = liveHandoff
+
+    const router = await arriveAt('/handoff')
+
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
+  it('opens billing from the handoff route with a trailing slash', async () => {
+    handoffTab.value = liveHandoff
+
+    const router = await arriveAt('/handoff/')
+
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
+  it('never opens billing-web sign-in', async () => {
+    handoffTab.value = liveHandoff
+
+    const router = await arriveAt('/sign-in')
+
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
+  it('shows how the handoff ended instead of asking to sign in', async () => {
+    handoffTab.value = { kind: 'ended', ending: 'link_unavailable' }
+
+    const router = await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}`,
+      routerAt('signed-out')
+    )
+
+    expect(router.currentRoute.value.path).toBe('/handoff')
+    expect(
+      await screen.findByText('This checkout link no longer works')
+    ).toBeInTheDocument()
+  })
+
+  it('ignores a workspace the URL names', async () => {
+    handoffTab.value = liveHandoff
+    const onEntryWorkspace = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated',
+      onEntryWorkspace
+    )
+
+    await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace=ws-other`)
+
+    expect(onEntryWorkspace).not.toHaveBeenCalled()
   })
 })

@@ -1,16 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import {
   fakeBillingSdk,
   pendingTopup,
-  serverCode
+  serverCode,
+  settledTopup
 } from '@/platform/billing/sdk/billingSdkTestUtils'
 import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
+import type { HostedCheckoutSession } from '@/platform/billing/sdk/topupOperationView'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -130,6 +133,83 @@ describe('useTopupOperation', () => {
     await expect(view.quoteTopup(5000, signal)).resolves.toBeNull()
   })
 
+  it('issues through the billing context while the SDK rail is off', async () => {
+    flagState.billingSdkTopupEnabled = false
+    const response: CreateTopupResponse = {
+      billing_op_id: 'op-1',
+      topup_id: 'topup-1',
+      status: 'completed',
+      amount_cents: 1000
+    }
+    vi.mocked(useBillingContext().topup).mockResolvedValue(response)
+
+    await expect(useTopupOperation().topup(1000)).resolves.toBe(response)
+
+    expect(mockCreateBillingSdk).not.toHaveBeenCalled()
+  })
+
+  it('issues through the SDK and keeps that rail after the flag flips', async () => {
+    flagState.billingSdkTopupEnabled = true
+    vi.mocked(harness.sdk.topup.createTopupCheckout).mockResolvedValue({
+      status: 'ok',
+      operation: settledTopup('succeeded'),
+      creditsReconciled: true
+    })
+    const view = useTopupOperation()
+    flagState.billingSdkTopupEnabled = false
+
+    await expect(view.topup(1000)).resolves.toEqual({
+      billing_op_id: 'op-1',
+      topup_id: '',
+      status: 'completed',
+      amount_cents: 1000
+    })
+    expect(harness.sdk.topup.createTopupCheckout).toHaveBeenCalledWith({
+      amountCents: 1000
+    })
+    expect(useBillingContext().topup).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { rail: 'legacy', flagOn: false, registers: true },
+    { rail: 'SDK', flagOn: true, registers: false }
+  ])(
+    'registers exactly one poller per pending top-up on the $rail rail',
+    ({ flagOn, registers }) => {
+      flagState.billingSdkTopupEnabled = flagOn
+      const store = useBillingOperationStore()
+
+      void useTopupOperation()
+        .adoptPendingOperation('op-pending', { attemptStartedAt: 1000 })
+        .catch(() => {})
+
+      expect(store.startOperation).toHaveBeenCalledTimes(registers ? 1 : 0)
+      if (registers) {
+        expect(store.startOperation).toHaveBeenCalledWith(
+          'op-pending',
+          'topup',
+          { attemptStartedAt: 1000 }
+        )
+      }
+    }
+  )
+
+  it('surfaces an SDK refusal as a workspace error', async () => {
+    flagState.billingSdkTopupEnabled = true
+    vi.mocked(harness.sdk.topup.createTopupCheckout).mockResolvedValue({
+      status: 'error',
+      code: 'REQUEST_FAILED',
+      httpStatus: 503
+    })
+
+    const refusal = await useTopupOperation()
+      .topup(1000)
+      .catch((error: unknown) => error)
+
+    expect(refusal).toBeInstanceOf(WorkspaceApiError)
+    expect(refusal).toMatchObject({ status: 503, code: 'REQUEST_FAILED' })
+  })
+
   describe('createHostedCheckout', () => {
     type Refusal = { status: number; code: string }
     const busy: Refusal = { status: 409, code: 'TOPUP_CHECKOUT_BUSY' }
@@ -187,9 +267,9 @@ describe('useTopupOperation', () => {
       vi.useFakeTimers()
     })
 
-    async function settle(promise: Promise<string>) {
+    async function settle(promise: Promise<HostedCheckoutSession>) {
       const outcome = promise.then(
-        (url) => ({ url }),
+        (session) => session,
         (error: unknown) => ({ error })
       )
       await vi.runAllTimersAsync()
@@ -264,7 +344,7 @@ describe('useTopupOperation', () => {
         const checkout = useTopupOperation()
           .createHostedCheckout(1000, returnUrl, scope.signal)
           .then(
-            (url) => ({ url }),
+            (session) => session,
             (error: unknown) => ({ error })
           )
         await vi.advanceTimersByTimeAsync(500)
@@ -293,6 +373,42 @@ describe('useTopupOperation', () => {
           flagOn
             ? { amountCents: 1000, returnUrl, signal: scope.signal }
             : scope.signal
+        )
+      }
+    )
+
+    it.for(rails)(
+      'sends the auto top-up settings and returns the session id on the $rail rail',
+      async ({ flagOn }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        const autoTopUp = {
+          threshold_credits: 1000,
+          target_credits: 5000,
+          monthly_budget_cents: null
+        }
+        const mintCheckout = flagOn
+          ? vi
+              .mocked(harness.sdk.topup.createHostedTopupCheckout)
+              .mockResolvedValueOnce({
+                status: 'ok',
+                url: 'https://stripe/new',
+                sessionId: 'cs_1'
+              })
+          : vi.spyOn(billingApi, 'createTopupCheckout').mockResolvedValueOnce({
+              checkout_url: 'https://stripe/new',
+              session_id: 'cs_1'
+            })
+
+        await expect(
+          useTopupOperation().createHostedCheckout(
+            1000,
+            returnUrl,
+            undefined,
+            autoTopUp
+          )
+        ).resolves.toEqual({ url: 'https://stripe/new', sessionId: 'cs_1' })
+        expect(mintCheckout.mock.lastCall).toContainEqual(
+          flagOn ? { amountCents: 1000, returnUrl, autoTopUp } : autoTopUp
         )
       }
     )
