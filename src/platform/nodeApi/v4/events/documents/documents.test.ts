@@ -204,6 +204,20 @@ describe('document lifecycle events', () => {
     expect(closed[0].isDeleted).toBe(true)
   })
 
+  it('counts an open tab whose workflow is not loaded as no document', async () => {
+    const { comfy } = api()
+    const store = useWorkflowStore()
+    const unloaded = store.createTemporary('Unloaded.json')
+    store.openWorkflowsInBackground({ right: [unloaded.path] })
+    const closed = vi.fn()
+    comfy.onDocumentClosed(closed)
+
+    await store.closeWorkflow(unloaded)
+    await nextTick()
+
+    expect(closed).not.toHaveBeenCalled()
+  })
+
   it('stops following the workflows once the last listener leaves', async () => {
     const { comfy } = api()
     const first = openTemporary('First')
