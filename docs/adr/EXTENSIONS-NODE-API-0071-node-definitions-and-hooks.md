@@ -86,9 +86,14 @@ registered, so `extend` cannot depend on the order.
     `LiteGraph.registerNodeType`, as packs register frontend types today. The
     class is the API's own subclass of `LGraphNode`: it adds the declared
     inputs and outputs, and takes the title, category and description. With
-    `execution: 'frontend'` its nodes are virtual, so the prompt builder
-    leaves them out. The type joins the index, and every extension that picks
-    it applies.
+    `execution: 'frontend'`, the default, its nodes are virtual, so the prompt
+    builder leaves them out. With `'backend'` its nodes carry the type as
+    their `comfyClass`, so the prompt sends them as that `class_type`; the
+    server must know a class of that name. Every stored pack that defines a
+    type passes `'frontend'` (20 sites) and none passes `'backend'`, and a
+    defined type with no server class could not run, so `'frontend'` is the
+    default. The type joins the index, and every extension that picks it
+    applies.
 11. A definition is checked whole before anything is registered: a plain
     object of the documented fields only, a type name that is non-empty, is
     not a property of `Object.prototype`, and is not registered yet, text for

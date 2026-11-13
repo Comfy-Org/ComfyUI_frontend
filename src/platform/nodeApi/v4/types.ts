@@ -694,7 +694,7 @@ export interface NodeDefinition {
   readonly description?: string
   readonly inputs?: readonly NodeDefinitionSlot[]
   readonly outputs?: readonly NodeDefinitionSlot[]
-  /** `'frontend'` leaves the node out of the prompt sent to the server. Defaults to `'backend'`. */
+  /** `'frontend'`, the default, leaves the node out of the prompt; `'backend'` sends it as its type. */
   readonly execution?: 'backend' | 'frontend'
   onCreated?(node: NodeHandle, event: NodeCreatedEvent): void
   onConfigured?(node: NodeHandle, data: Readonly<Record<string, unknown>>): void

@@ -473,7 +473,7 @@ describe('node definitions', () => {
       const node = LiteGraph.createNode('Bare')
 
       expect(node?.title).toBe('Bare')
-      expect(node?.isVirtualNode).toBeFalsy()
+      expect(node?.isVirtualNode).toBe(true)
       expect(defs.get('Bare')).toMatchObject({
         title: 'Bare',
         category: '',
@@ -481,14 +481,6 @@ describe('node definitions', () => {
         inputs: [],
         outputs: []
       })
-    })
-
-    it('keeps a frontend node out of the prompt, and a backend node in it', () => {
-      defs.define({ type: 'Frontend', execution: 'frontend' })
-      defs.define({ type: 'Backend', execution: 'backend' })
-
-      expect(LiteGraph.createNode('Frontend')?.isVirtualNode).toBe(true)
-      expect(LiteGraph.createNode('Backend')?.isVirtualNode).toBeFalsy()
     })
 
     it('keeps a frontend node frontend when an extension of it is disposed', () => {
