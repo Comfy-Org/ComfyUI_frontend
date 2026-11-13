@@ -195,6 +195,68 @@ review finding requires it. The counts below are packs, then call sites.
       sandbox's transfer to a worker; it is gone, and `maxBytes` is the
       importer's own limit.
 
+### The queue
+
+17. `comfy.queue` (25 packs, 61 sites) runs the workflow and hears the queue.
+    It listens to two events `queuePrompt` already dispatches, and the host
+    tells it three things it did not say before, each a call on its own
+    line in `queuePrompt`:
+    - `promptSubmitted(requestId, promptId, nodeCount)` once the backend
+      accepts a prompt;
+    - `promptRejected()` when the backend refuses one, both on the ordinary
+      validation failure (`PromptExecutionError`) and when it answers
+      without a prompt id;
+    - `queueSettled()` when `queuePrompt` stops processing, in its
+      `finally` and on the two early returns that drop the queued calls.
+      `app.test.ts` runs each through the real `queuePrompt` (B-04, B-05),
+      and each test fails when its line is removed.
+18. `onBeforeRun(listener)` (8 packs) is called on the host's existing
+    `promptQueueing` event, which `queuePrompt` dispatches for every call
+    before the prompt is built, so a pack can still change widgets that go
+    into it. A function the listener returns is a cleanup. Every cleanup is
+    run once, when the host reports the queue settled, which is after every
+    prompt it was processing has been sent or refused, or when the listener
+    unsubscribes, whichever is first. Cleanups belong to the registration
+    that made them, so one pack unsubscribing runs only its own. A cleanup
+    that throws is reported like a listener. Overlapping calls are folded
+    into one processing pass by `queuePrompt`, so "the queue settled" is
+    the end of every attempt whose listener ran.
+19. `onAfterRun(listener)` (7 packs) fires on the host's existing
+    `promptQueued` event, once per run call that the backend accepted at
+    least one prompt from, with `promptIds` (4 packs) and `submissions` (1)
+    as `promptSubmitted` recorded them for that call's request id. A call
+    whose every prompt was refused produces no `onAfterRun`, only
+    `onRejected` (B-16). Recorded submissions are dropped when the event is
+    delivered and when the queue settles, so nothing grows.
+20. `onRejected(listener)` (2 packs) fires each time the backend refuses a
+    prompt. The listener takes no event: every field of the old
+    `RunRejectedEvent`, `RunRejectedNode` and `RunRejectionError` has no
+    use in the stored packs. Adding an event argument later is a patch.
+21. `run(options?)` (8 packs, 15 sites) calls the host's `queuePrompt`, as
+    the Run button does. It resolves `true` once this call's prompts are
+    submitted, not run. It resolves `false` in every case `queuePrompt`
+    does (B-08): the call was folded into a run already in progress, the
+    backend refused a prompt or reported node errors, or the run stopped
+    before sending (a workspace switch failed, sign-in is missing, the
+    workspace changed). `app.test.ts` drives each through the real
+    `queuePrompt`. `options.nodes` (2 packs) runs only those nodes and what
+    feeds them. Each handle is resolved by the node handles' own `locator`,
+    the check the edit core uses, which finds the node in the handle's own
+    graph and document (A-11, B-01). As in the edit core
+    (ADR-EXTENSIONS-NODE-API-0073 decision 2), a value the API did not make
+    is refused with a `TypeError`, and a handle whose node is gone or whose
+    document was replaced makes `run` resolve `false`; either way nothing
+    is queued. Nodes are grouped by graph and each group is turned into
+    execution ids with `getExecutionIdsForSelectedNodes`; a node in a
+    subgraph that is not placed in the workflow also resolves `false`. A
+    subgraph placed more than once runs at its first placement, as the
+    host's own partial run does. `RunOptions.batch` (0 packs) is left out.
+22. `pending()` (4 packs) and `onPendingChanged` (3) read and follow the
+    queue store's count of waiting prompts. `interrupt()` (2) cancels the
+    running job as the host's Interrupt command does; `onInterrupted` (10)
+    follows the backend's `execution_interrupted` message.
+    `disableAutoQueue()` (1 pack) sets the automatic queue mode to off.
+
 ### Members left out
 
 | Member                                                                         | Packs | Reason                                                                          |
@@ -233,6 +295,9 @@ Host changes outside the folder:
   hook on its three load paths, and passes each file through
   `importWorkflowFile` in `handleFile`. `app.test.ts` has a test for each
   that fails when its line is removed.
+- `queuePrompt` in `src/scripts/app.ts` calls `promptSubmitted`,
+  `promptRejected` (twice) and `queueSettled` (three times), each on a line
+  of its own; decision 17.
 
 `onViewportChanged` chains onto a single callback slot. A typed viewport
 event on `DragAndScale` or the canvas would let the API, the canvas store
@@ -249,6 +314,26 @@ it may name a node of the document on screen that has the same id, as the
 legacy `app.runningNodeId` does; addressing execution events to the
 document that queued them is ADR-GRAPH-DOCUMENT-0026 decision D2, which is
 not built yet.
+
+### Core limitations, and the change each would take
+
+None of these is worked around by changing core; each is a limit of what
+the API reports, recorded here with the change that would lift it.
+
+- **No viewport event.** `DragAndScale.onChanged` is one callback slot that
+  the canvas, the canvas store and now the API chain onto. A typed
+  `viewport-changed` event on the canvas would let each listen without
+  chaining; `onViewportChanged` would then listen to it.
+- **A batch layout update does not say which positions changed.**
+  `batchUpdateBounds` records the nodes whose size changed but not those
+  whose position did, so `onNodeMoved` treats every entry whose size did
+  not change as a move, including one rewritten to the same place. A
+  `positionChangedNodeIds` list beside `sizeChangedNodeIds` would make it
+  exact.
+- **No session uid.** ADR-GRAPH-DOCUMENT-0026 Phase 1; decision 11 says
+  what replaces it until then.
+- **Execution events are not addressed to their document.**
+  ADR-GRAPH-DOCUMENT-0026 decision D2; see `executingNode()` above.
 
 ## What this feature replaces or duplicates, and why
 

@@ -987,6 +987,8 @@ export interface Comfy {
   onDocumentClosed(listener: (document: DocumentHandle) => void): Unsubscribe
   /** The open documents, opening a workflow, and files the host cannot read. */
   readonly workflow: WorkflowHandle
+  /** Running the workflow, and hearing runs start, finish and fail. */
+  readonly queue: QueueHandle
 }
 
 /** Which graphs `onNodeChanged` hears: the graph on screen by default. */
@@ -1079,4 +1081,45 @@ export interface WorkflowImporter {
     | null
     | undefined
     | Promise<WorkflowImportResult | null | undefined>
+}
+
+export interface RunOptions {
+  /** Run only these nodes and what feeds them: live handles of the open document, at least one. */
+  readonly nodes?: readonly NodeHandle[]
+}
+
+export interface RunSubmission {
+  readonly promptId: string
+  /** How many backend nodes the prompt runs. */
+  readonly nodeCount: number
+}
+
+export interface RunSubmittedEvent {
+  /** The prompts the backend accepted, in the order they were sent. */
+  readonly promptIds: readonly string[]
+  readonly submissions: readonly RunSubmission[]
+}
+
+/** An argument a member cannot use throws a `TypeError`; `run` rejects with one. */
+export interface QueueHandle {
+  /**
+   * Queues the workflow as Run does: `true` once this call's prompts are submitted. `false` if a node it names
+   * is gone, or the call was folded into a run in progress, refused, given node errors, or stopped before sending.
+   */
+  run(options?: RunOptions): Promise<boolean>
+  /** Called as each run starts, before its prompt is built. A function it returns is called once that run is sent or refused. */
+  onBeforeRun(listener: () => (() => void) | void): Unsubscribe
+  /** Once for each run the backend accepted a prompt from. A run whose every prompt was refused fires only `onRejected`. */
+  onAfterRun(listener: (event: RunSubmittedEvent) => void): Unsubscribe
+  /** The backend refused a prompt. */
+  onRejected(listener: () => void): Unsubscribe
+  /** How many prompts are waiting or running, as the backend last said. */
+  pending(): number
+  onPendingChanged(listener: (pending: number) => void): Unsubscribe
+  /** Cancels the prompt that is running. The rest of the queue stays. */
+  interrupt(): Promise<void>
+  /** A run was interrupted, by anyone. */
+  onInterrupted(listener: () => void): Unsubscribe
+  /** Turns automatic queuing off, and leaves the run in progress alone. */
+  disableAutoQueue(): void
 }

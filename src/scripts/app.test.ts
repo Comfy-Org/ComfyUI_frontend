@@ -5954,6 +5954,264 @@ describe('ComfyApp', () => {
     })
   })
 
+  describe('the node API queue', () => {
+    function queueOnTheApp() {
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/queued.json',
+        modified: 0,
+        size: 0
+      })
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      app.canvas = fromPartial<LGraphCanvas>({ graph, draw: vi.fn() })
+      onTestFinished(attachLegacyUI(app))
+      useWorkflowStore().activeWorkflow = markLoaded(workflow)
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: { '1': { class_type: 'PreviewAny', inputs: {} } },
+        workflow: createWorkflowGraphData()
+      })
+      useComfyApiStore().publish()
+      onTestFinished(() => {
+        delete window.comfy_v4
+      })
+      const { comfy_v4 } = window
+      assert(comfy_v4)
+      return comfy_v4.queue
+    }
+
+    const NODE_ERRORS: Record<string, NodeError> = {
+      '1': {
+        class_type: 'PreviewAny',
+        dependent_outputs: ['1'],
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'Required input is missing: source',
+            details: ''
+          }
+        ]
+      }
+    }
+
+    it('runs a pack listener as each run call starts, and its cleanup once the queue settles', async () => {
+      const queue = queueOnTheApp()
+      const order: string[] = []
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+        order.push('submitted')
+        return { prompt_id: 'job-1' }
+      })
+      queue.onBeforeRun(() => {
+        order.push('before run')
+        return () => order.push('cleanup')
+      })
+
+      await app.queuePrompt(0, 2)
+
+      expect(order).toEqual(['before run', 'submitted', 'submitted', 'cleanup'])
+    })
+
+    it.for([
+      {
+        stop: 'a failed workspace switch',
+        arrange: () =>
+          vi
+            .mocked(useTeamWorkspaceStore().waitForWorkspaceSwitch)
+            .mockRejectedValueOnce(new Error('Token exchange failed'))
+      },
+      {
+        stop: 'a missing workspace credential',
+        arrange: () =>
+          vi
+            .mocked(useAuthStore().getWorkspaceAuthToken)
+            .mockResolvedValueOnce(undefined)
+      },
+      {
+        stop: 'a prompt that cannot be built',
+        arrange: () =>
+          vi
+            .spyOn(app, 'graphToPrompt')
+            .mockRejectedValueOnce(new Error('cannot build'))
+      }
+    ])(
+      'runs the cleanup when the queue stops early on $stop',
+      async ({ arrange }) => {
+        const queue = queueOnTheApp()
+        const cleanup = vi.fn()
+        queue.onBeforeRun(() => cleanup)
+        arrange()
+        const submit = vi.spyOn(api, 'queuePrompt')
+
+        await app.queuePrompt(0).catch(() => false)
+
+        expect(submit).not.toHaveBeenCalled()
+        expect(cleanup).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('tells a pack the ids of the prompts a run call submitted', async () => {
+      const queue = queueOnTheApp()
+      let next = 0
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => ({
+        prompt_id: `job-${++next}`
+      }))
+      const submitted = vi.fn()
+      queue.onAfterRun(submitted)
+
+      await app.queuePrompt(0, 2)
+
+      expect(submitted).toHaveBeenCalledExactlyOnceWith({
+        promptIds: ['job-1', 'job-2'],
+        submissions: [
+          { promptId: 'job-1', nodeCount: 1 },
+          { promptId: 'job-2', nodeCount: 1 }
+        ]
+      })
+    })
+
+    it('tells a pack about a refusal on the ordinary validation failure, and nothing after it', async () => {
+      const queue = queueOnTheApp()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+        new PromptExecutionError(
+          {
+            error: {
+              type: 'prompt_outputs_failed_validation',
+              message: 'Prompt outputs failed validation',
+              details: ''
+            },
+            node_errors: NODE_ERRORS
+          },
+          400
+        )
+      )
+      const rejected = vi.fn()
+      const submitted = vi.fn()
+      queue.onRejected(rejected)
+      queue.onAfterRun(submitted)
+
+      await app.queuePrompt(0)
+
+      expect(rejected).toHaveBeenCalledOnce()
+      expect(submitted).not.toHaveBeenCalled()
+    })
+
+    it('tells a pack about a refusal the backend answers without a prompt id', async () => {
+      const queue = queueOnTheApp()
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        node_errors: NODE_ERRORS
+      })
+      const rejected = vi.fn()
+      queue.onRejected(rejected)
+
+      await app.queuePrompt(0)
+
+      expect(rejected).toHaveBeenCalledOnce()
+    })
+
+    it.for([
+      {
+        outcome: 'submits its prompt',
+        respond: async () => ({ prompt_id: 'job-1' }),
+        resolves: true
+      },
+      {
+        outcome: 'is answered with neither a prompt id nor an error',
+        respond: async () => ({}),
+        resolves: true
+      },
+      {
+        outcome: 'is accepted with node errors',
+        respond: async () => ({ prompt_id: 'job-1', node_errors: NODE_ERRORS }),
+        resolves: false
+      },
+      {
+        outcome: 'is refused with node errors',
+        respond: async () => {
+          throw new PromptExecutionError({
+            error: { type: 'invalid_prompt', message: 'Invalid', details: '' },
+            node_errors: NODE_ERRORS
+          })
+        },
+        resolves: false
+      },
+      {
+        outcome: 'is refused with a prompt error',
+        respond: async () => {
+          throw new PromptExecutionError({
+            error: {
+              type: 'prompt_no_outputs',
+              message: 'No outputs',
+              details: ''
+            },
+            node_errors: {}
+          })
+        },
+        resolves: false
+      }
+    ])(
+      'resolves $resolves from queue.run() when the run $outcome',
+      async ({ respond, resolves }) => {
+        const queue = queueOnTheApp()
+        const submit = vi.spyOn(api, 'queuePrompt').mockImplementation(respond)
+
+        await expect(queue.run()).resolves.toBe(resolves)
+        expect(submit).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('resolves false from queue.run() when the queue stops before sending', async () => {
+      const queue = queueOnTheApp()
+      vi.mocked(
+        useTeamWorkspaceStore().waitForWorkspaceSwitch
+      ).mockRejectedValueOnce(new Error('Token exchange failed'))
+      const submit = vi.spyOn(api, 'queuePrompt')
+
+      await expect(queue.run()).resolves.toBe(false)
+      expect(submit).not.toHaveBeenCalled()
+    })
+
+    it('resolves false from queue.run() when it is folded into a run in progress', async () => {
+      const queue = queueOnTheApp()
+      let finishFirst: () => void = () => {}
+      vi.spyOn(api, 'queuePrompt').mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finishFirst = () => resolve({ prompt_id: 'job-1' })
+          })
+      )
+      const first = app.queuePrompt(0)
+      await vi.waitFor(() => expect(api.queuePrompt).toHaveBeenCalledOnce())
+
+      await expect(queue.run()).resolves.toBe(false)
+
+      finishFirst()
+      await vi.waitFor(() => expect(api.queuePrompt).toHaveBeenCalledTimes(2))
+      finishFirst()
+      await expect(first).resolves.toBe(true)
+    })
+
+    it('submits only the nodes a pack names', async () => {
+      const queue = queueOnTheApp()
+      const root = app.rootGraph
+      const outer = new LGraphNode('Outer')
+      root.add(outer)
+      const submit = vi
+        .spyOn(api, 'queuePrompt')
+        .mockResolvedValue({ prompt_id: 'job-1' })
+      const comfy = window.comfy_v4
+      assert(comfy)
+      const handle = comfy.graph.node(String(outer.id))
+      assert(handle)
+
+      await expect(queue.run({ nodes: [handle] })).resolves.toBe(true)
+
+      expect(submit).toHaveBeenCalledWith(
+        0,
+        expect.anything(),
+        expect.objectContaining({ partialExecutionTargets: [String(outer.id)] })
+      )
+    })
+  })
+
   describe('workflow lifecycle', () => {
     it.for([
       { indices: ['1', '3'], nested: false },
