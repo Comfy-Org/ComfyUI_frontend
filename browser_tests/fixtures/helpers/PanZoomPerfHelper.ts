@@ -68,9 +68,15 @@ export async function waitForMeasuredVueNodes(
   comfyPage: ComfyPage,
   nodeCount: number
 ) {
-  await expect(
-    comfyPage.page.locator('[data-node-id][data-measured]')
-  ).toHaveCount(nodeCount)
+  await expect
+    .poll(async () => {
+      const mounted = await comfyPage.page.locator('[data-node-id]').count()
+      const measured = await comfyPage.page
+        .locator('[data-node-id][data-measured]')
+        .count()
+      return mounted > 0 && mounted <= nodeCount && measured === mounted
+    })
+    .toBe(true)
 }
 
 export async function measureIdle(comfyPage: ComfyPage, name: string) {
