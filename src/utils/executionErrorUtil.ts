@@ -1,6 +1,11 @@
 import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { PromptOutputsSkippedNodeError } from '@comfyorg/ingest-types'
+import type { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
+import type { z } from 'zod'
+
+type PromptOutputsSkippedNodeError = z.infer<
+  typeof zPromptOutputsSkippedNodeError
+>
 
 type RawPromptError =
   | string

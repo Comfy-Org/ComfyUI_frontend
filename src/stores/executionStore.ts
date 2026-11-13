@@ -31,7 +31,7 @@ import type {
   ProgressStateWsMessage,
   ProgressWsMessage
 } from '@comfyorg/api-client/executionTypes'
-import type { PromptOutputsSkippedData } from '@comfyorg/ingest-types'
+import type { zPromptOutputsSkippedData } from '@comfyorg/ingest-types/zod'
 import type { NodeError } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
@@ -49,6 +49,9 @@ import {
 } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
+import type { z } from 'zod'
+
+type PromptOutputsSkippedData = z.infer<typeof zPromptOutputsSkippedData>
 
 type RuntimeExecutionError = Omit<
   ExecutionErrorWsMessage,
