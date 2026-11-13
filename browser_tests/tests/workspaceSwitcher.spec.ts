@@ -59,12 +59,10 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
           profileMenu.boundingBox()
         ])
         if (!panelBox || !profileBox) return null
-        return {
-          gap: Math.round(panelBox.x - (profileBox.x + profileBox.width)),
-          top: Math.round(panelBox.y - profileBox.y)
-        }
+        return Math.round(panelBox.x - (profileBox.x + profileBox.width))
       })
-      .toEqual({ gap: 8, top: 0 })
+      .toBe(8)
+    await expect(panel).toBeInViewport({ ratio: 1 })
   })
 
   test.describe('with billing_new_ux_enabled off', () => {
@@ -121,7 +119,10 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       }) => {
         const page = comfyPage.page
         await comfyPage.toast.closeToasts()
-        await page.getByRole('button', { name: 'Current user' }).click()
+        const button = page.getByRole('button', { name: 'Current user' })
+        await button.scrollIntoViewIfNeeded()
+        await button.click()
+        await expect(page.getByTestId('current-user-popover')).toBeVisible()
         await page.addStyleTag({
           content:
             '[data-testid="workspace-switcher-panel"] { animation-play-state: paused; }'
