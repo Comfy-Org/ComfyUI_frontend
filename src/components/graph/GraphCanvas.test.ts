@@ -217,6 +217,11 @@ vi.mock(
   () => ({ useWorkflowAutoSave: vi.fn() })
 )
 
+beforeEach(() => {
+  vi.spyOn(api, 'listUserDataFullInfo').mockResolvedValue([])
+  vi.spyOn(api, 'getGlobalSubgraphs').mockResolvedValue({})
+})
+
 /**
  * Installs (or clears) the mock app's root graph, standing in for the
  * assignment `ComfyApp.setup()` makes. The real class exposes no setter, so the

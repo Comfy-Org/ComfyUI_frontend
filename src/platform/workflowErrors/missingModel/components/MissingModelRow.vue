@@ -240,7 +240,6 @@
           role="status"
           variant="compact"
           severity="success"
-          class="shrink-0"
         >
           {{ t('rightSidePanel.missingModels.downloaded') }}
         </Badge>

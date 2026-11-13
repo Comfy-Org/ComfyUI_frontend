@@ -372,25 +372,59 @@ describe('settleCheckoutUi', () => {
 })
 
 describe('in a billing handoff tab', () => {
-  it('fails closed without minting a session or reading Cloud features', async () => {
-    const { awaitCheckoutUiVariant } = await freshCheckoutUi()
+  async function handoffCheckoutUi(
+    read: () => Promise<'embedded' | 'full_page' | undefined>
+  ) {
+    const checkoutUi = await freshCheckoutUi()
     const { handoffTab } = await import('@/handoff/handoffTab')
     handoffTab.value = { kind: 'ended', ending: 'session_ended' }
+    checkoutUi.provideHandoffCheckoutUiRead(read)
+    return checkoutUi
+  }
+
+  it.for([
+    { served: 'full_page', expected: 'full_page' },
+    { served: 'embedded', expected: 'embedded' },
+    { served: undefined, expected: 'embedded' }
+  ] as const)(
+    'renders $expected when billing capabilities serve $served',
+    async ({ served, expected }) => {
+      const { awaitCheckoutUiVariant } = await handoffCheckoutUi(() =>
+        Promise.resolve(served)
+      )
+
+      await expect(awaitCheckoutUiVariant()).resolves.toBe(expected)
+      expect(h.ensureFresh).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+
+  it('fails closed when the capabilities read rejects', async () => {
+    const { awaitCheckoutUiVariant } = await handoffCheckoutUi(() =>
+      Promise.reject(new Error('offline'))
+    )
 
     await expect(awaitCheckoutUiVariant()).resolves.toBe('embedded')
-
-    expect(h.ensureFresh).not.toHaveBeenCalled()
-    expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('ignores a dev override that would open the full-page checkout', async () => {
+  it('asks billing capabilities once per tab', async () => {
+    const read = vi.fn(() => Promise.resolve('full_page' as const))
+    const { awaitCheckoutUiVariant } = await handoffCheckoutUi(read)
+
+    await awaitCheckoutUiVariant()
+    await awaitCheckoutUiVariant()
+
+    expect(read).toHaveBeenCalledOnce()
+  })
+
+  it('ignores a dev override for the served variant', async () => {
     localStorage.setItem(
       'ff:billing_web_checkout_ui',
       JSON.stringify('full_page')
     )
-    const { awaitCheckoutUiVariant } = await freshCheckoutUi()
-    const { handoffTab } = await import('@/handoff/handoffTab')
-    handoffTab.value = { kind: 'ended', ending: 'session_ended' }
+    const { awaitCheckoutUiVariant } = await handoffCheckoutUi(() =>
+      Promise.resolve('embedded')
+    )
 
     await expect(awaitCheckoutUiVariant()).resolves.toBe('embedded')
   })

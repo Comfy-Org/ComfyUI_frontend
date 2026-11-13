@@ -16,14 +16,17 @@ import type { WebSessionMode } from '@comfyorg/account-core/billing'
 
 import type { SignInPort } from '@/auth/useSignInController'
 import { sessionClientPort } from '@/auth/useSignInController'
-import { provideWebSessionCloudRead } from '@/config/checkoutUi'
+import {
+  provideHandoffCheckoutUiRead,
+  provideWebSessionCloudRead
+} from '@/config/checkoutUi'
 import { CLOUD_BASE_URL } from '@/config/env'
 import { resolveBillingWebIdentity } from '@/config/firebase'
 import { readBillingWebUnifiedWebSession } from '@/config/unifiedWebSession'
 import { bindEntryWorkspace, boundWorkspaceId } from '@/entry/workspaceBinding'
 import { createHandoffBillingSession } from '@/handoff/handoffBillingSession'
 import {
-  endHandoff,
+  endHandoffSession,
   handoffTab,
   liveHandoffSession,
   sessionTabStorage
@@ -204,11 +207,16 @@ provideWebSessionCloudRead(() => {
   )
 })
 
+provideHandoffCheckoutUiRead(async () => {
+  const read = await createModeBillingClient().capabilities.read()
+  return read.status === 'ok' ? read.value.billingWebCheckoutUi : undefined
+})
+
 export function createModeBillingClient(): BillingWebClient {
   if (isHandoffTab())
     return createHandoffBillingClient(
       createHandoffBillingSession(sessionTabStorage),
-      () => endHandoff(sessionTabStorage, 'session_ended')
+      () => endHandoffSession(sessionTabStorage)
     )
   return mode.value === 'web-session'
     ? createWebSessionBillingClient(unifiedSession())

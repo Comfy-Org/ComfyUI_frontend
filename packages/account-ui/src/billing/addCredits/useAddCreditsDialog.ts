@@ -55,6 +55,8 @@ export interface AddCreditsPorts {
   readonly activatesAutoTopUp?: boolean
   /** After a top-up lands, Platform's Turn on auto top-up link when the served facts offer it, else null. */
   readonly autoTopUpSetupUrl?: () => Promise<string | null>
+  /** False once the host no longer owns the watched checkout; a landing still reading its setup link is then dropped. */
+  readonly ownsCheckout?: () => boolean
 }
 
 export type AddCreditsQuote =
@@ -193,7 +195,6 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   let checkoutScope: AbortController | undefined
   let stopWatch: (() => void) | undefined
   let disposed = false
-  let offeredWithPurchase = false
   let acceptedRequest: AddCreditsAutoTopUpRequest = { kind: 'not_offered' }
 
   function armPaymentWatch() {
@@ -213,14 +214,15 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   function setupUrlAfterPaying(
     activation: AutoTopUpActivationOutcome | undefined
   ): Promise<string | null> {
-    const asks = activation?.status === 'failed' || !offeredWithPurchase
+    const asks =
+      activation?.status === 'failed' || acceptedRequest.kind === 'not_offered'
     return asks ? setupUrl() : Promise.resolve(null)
   }
 
   async function land(activation?: AutoTopUpActivationOutcome) {
     const url =
       activation?.status === 'on' ? null : await setupUrlAfterPaying(activation)
-    if (disposed) return
+    if (disposed || ports.ownsCheckout?.() === false) return
     dispatch(landedEvent(url, activation))
     if (state.value.step === 'landed') options.onLanded?.()
   }
@@ -229,7 +231,6 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     amountCents: number,
     request: AddCreditsAutoTopUpRequest
   ) {
-    offeredWithPurchase = request.kind !== 'not_offered'
     const tab = ports.reserveTab()
     dispatch({
       type: 'checkout_requested',
