@@ -11,7 +11,6 @@ type TypeColorMembers = Pick<
 >
 
 interface TypeColors extends TypeColorMembers {
-  /** Puts back each pack colour a palette just cleared. */
   reapply(): void
 }
 
@@ -20,7 +19,6 @@ interface Claim {
 }
 
 interface ClaimedType {
-  /** What the host's table held for the type before the first claim, if anything. */
   readonly hostColor: string | undefined
   readonly claims: Claim[]
 }
