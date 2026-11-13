@@ -181,6 +181,10 @@ export const useSubscriptionDialog = () => {
     trackEntry()
   }
 
+  function usesPlansLinkDialog(): boolean {
+    return flags.billingNewUxEnabled && !flags.pricingTableFallback
+  }
+
   async function showPricingTable(
     options?: SubscriptionDialogOptions
   ): Promise<boolean> {
@@ -207,7 +211,7 @@ export const useSubscriptionDialog = () => {
         trackPaywallEntry(reason, paymentIntentSource, refusalType)
 
       if (!options?.resumingCheckout) {
-        if (!flags.pricingTableFallback) {
+        if (usesPlansLinkDialog()) {
           await handOffToPlatformPlans(options, trackEntry)
           return true
         }

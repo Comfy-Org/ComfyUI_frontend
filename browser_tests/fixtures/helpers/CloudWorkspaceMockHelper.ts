@@ -45,7 +45,9 @@ interface MemberMockState {
 export class CloudWorkspaceMockHelper {
   constructor(private readonly page: Page) {}
 
-  async openPlanAndCreditsSettings(): Promise<Locator> {
+  async openPlanAndCreditsSettings(
+    navLabel = 'Plan & Credits'
+  ): Promise<Locator> {
     await this.page.goto(
       process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
     )
@@ -64,7 +66,7 @@ export class CloudWorkspaceMockHelper {
     await dialog.waitFor({ state: 'visible' })
     await dialog
       .locator('nav')
-      .getByRole('button', { name: 'Plan & Credits', exact: true })
+      .getByRole('button', { name: navLabel, exact: true })
       .click()
     return dialog.getByRole('main')
   }

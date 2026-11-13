@@ -29,6 +29,7 @@ import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/componen
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import WidgetWithControl from '@/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
+import { parseComboSpecDescriptor } from '@/renderer/extensions/vueNodes/widgets/utils/comboSpecDescriptor'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
@@ -37,7 +38,6 @@ import type {
   SimplifiedWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
-import type { AssetKind } from '@/types/widgetTypes'
 
 type SelectControlWidget = SimplifiedControlWidget<WidgetValue>
 
@@ -61,61 +61,7 @@ const comboSpec = computed<ComboInputSpec | undefined>(() => {
   return undefined
 })
 
-const specDescriptor = computed<{
-  kind: AssetKind
-  allowUpload: boolean
-  folder: ResultItemType | undefined
-  subfolder: string | undefined
-}>(() => {
-  const spec = comboSpec.value
-  if (!spec) {
-    return {
-      kind: 'unknown',
-      allowUpload: false,
-      folder: undefined,
-      subfolder: undefined
-    }
-  }
-
-  const {
-    image_upload,
-    animated_image_upload,
-    video_upload,
-    image_folder,
-    audio_upload,
-    mesh_upload,
-    upload_subfolder
-  } = spec
-
-  let kind: AssetKind = 'unknown'
-  if (video_upload) {
-    kind = 'video'
-  } else if (image_upload || animated_image_upload) {
-    kind = 'image'
-  } else if (audio_upload) {
-    kind = 'audio'
-  } else if (mesh_upload) {
-    kind = 'mesh'
-  }
-
-  // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
-
-  const allowUpload =
-    image_upload === true ||
-    animated_image_upload === true ||
-    video_upload === true ||
-    audio_upload === true ||
-    mesh_upload === true
-
-  const folder = mesh_upload ? 'input' : image_folder
-
-  return {
-    kind,
-    allowUpload,
-    folder,
-    subfolder: upload_subfolder
-  }
-})
+const specDescriptor = computed(() => parseComboSpecDescriptor(comboSpec.value))
 
 const isAssetMode = computed(
   () =>

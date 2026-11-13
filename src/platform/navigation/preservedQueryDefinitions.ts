@@ -12,7 +12,8 @@ export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.WORKFLOW_ID,
     keys: ['workflowId'],
-    rejectRepeated: true
+    rejectRepeated: true,
+    markEmpty: true
   },
   {
     namespace: PRESERVED_QUERY_NAMESPACES.TEMPLATE,

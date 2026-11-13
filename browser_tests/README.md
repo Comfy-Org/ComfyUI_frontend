@@ -263,6 +263,30 @@ Run the first spec after the dev server starts with one worker, the
 parallel workers against a cold server time out in `beforeEach` with
 `app never became ready`.
 
+To collect diagnostics for a local failure, rerun the affected spec with
+`--trace on`. Add `RECORD_VIDEO=true` when you also need video:
+
+```bash
+RECORD_VIDEO=true pnpm test:browser:local widget.spec.ts --trace on
+```
+
+For larger local runs, use a bundled test frontend instead of `dev:test`.
+Keep the backend running, stop the dev server, then run:
+
+```bash
+pnpm build:test
+pnpm preview:test
+```
+
+Run `pnpm test:browser:local` in another terminal. Use `--workers=4` to try
+parallel execution on a machine with spare CPU capacity; the default remains
+one worker. Rebuild after changing frontend code because preview has no HMR.
+
+The test bundle preserves development-only feature-flag overrides and the
+legacy default graph. A normal production build does not preserve those
+overrides. Keep `dev:test` for interactive edits and small test selections
+where a build would cost more than it saves. This mode does not change CI.
+
 **Use UI mode while developing.** It provides:
 
 - **Locator picker** — click an element to get its exact locator code
@@ -396,8 +420,8 @@ the video inline per test — to the same `comfyui-playwright-chromium`
 Cloudflare Pages project, on its own branch. The link is posted alongside
 the other browser report links in the PR comment. It's scoped to added
 files only — the existing suite always runs without video — to keep CI cost
-and time bounded. Recording is opt-in via `RECORD_VIDEO=true` (set only by
-that CI job; see `playwright.config.ts`) and slowed down with `SLOW_MO` so
+and time bounded. The job enables recording via `RECORD_VIDEO=true` and
+slows actions with `SLOW_MO` so
 the result is legible for reviewers. Files containing no tests eligible for
 the `chromium` project, such as `@perf`-only specs, are skipped with an
 explanation in the workflow summary. Newly added `@audit` tests fail this
