@@ -87,7 +87,7 @@ describe('node lifecycle hooks', () => {
       expect(onCreated).toHaveBeenCalledOnce()
     })
 
-    it('says a node configured before it joined, as a paste is, was restored', () => {
+    it('says a node a pack configures before it joins was restored', () => {
       const order: string[] = []
       extend((builder) => {
         builder.onCreated((_, event) => order.push(`created ${event.restored}`))
@@ -97,13 +97,13 @@ describe('node lifecycle hooks', () => {
       })
       const node = created()
 
-      node.configure({ ...node.serialize(), title: 'Pasted' })
+      node.configure({ ...node.serialize(), title: 'Configured first' })
       graph.add(node)
 
-      expect(order).toEqual(['created true', 'configured Pasted'])
+      expect(order).toEqual(['created true', 'configured Configured first'])
     })
 
-    it('says a pasted node was restored even with no hook for saved state', () => {
+    it('says a node configured before it joins was restored even with no hook for saved state', () => {
       const events: NodeCreatedEvent[] = []
       extend((builder) => builder.onCreated((_, event) => events.push(event)))
       const node = created()

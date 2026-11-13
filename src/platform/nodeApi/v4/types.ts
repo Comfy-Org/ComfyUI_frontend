@@ -565,7 +565,7 @@ export interface NodeDefBuilder {
     callback: (node: NodeHandle) => Readonly<Record<string, unknown>> | void
   ): void
   onResized(callback: (node: NodeHandle, size: Size) => void): void
-  /** A link to or from one of a node's slots was made or removed. */
+  /** A link to or from one of a node's slots was made, removed, or restored with saved state. */
   onConnectionsChanged(
     callback: (node: NodeHandle, event: ConnectionChangeEvent) => void
   ): void
@@ -606,9 +606,12 @@ export interface NodeSubMenuItem {
 }
 
 export interface NodeCreatedEvent {
-  /** True if the node came with saved state: loaded, pasted or duplicated. */
+  /**
+   * True while loading, and for a node configured before it joined. A pasted or
+   * duplicated node joins first; `onConfigured` then gives its saved state.
+   */
   readonly restored: boolean
-  /** True while a workflow is being loaded or imported. */
+  /** True while a workflow is loaded or imported, or rebuilt by undo, redo or a subgraph conversion. */
   readonly loading: boolean
 }
 
@@ -616,7 +619,10 @@ export interface ConnectionChangeEvent {
   readonly side: 'input' | 'output'
   /** The slot's index when the link changed. */
   readonly index: number
-  /** The slot's name, also when the slot was removed with its link. */
+  /**
+   * The slot's name, also when the slot was removed with its link; for a slot
+   * linked to a subgraph's input or output, the name at `index` after the change.
+   */
   readonly name: string
   readonly connected: boolean
   /** The node at the other end of the link, when the host reports one. */
