@@ -39,10 +39,10 @@ Pseudo-nodes register no `NodeState` and stay out of every graph's node list.
 
 ### Values are a query by host
 
-`subgraphInputValuesStore` resolves the selected host and, from it, each
-input's value source. The panels read pseudo-node values only through that
-store, so two hosts of one definition yield two results without per-host
-state. Without a resolved host, the panels show slots without values. The
+`subgraphInputValuesStore` resolves the selected host, and its `sourcesFor`
+query takes a host and returns each input's value source. The panels read
+pseudo-node values only through that query, so two hosts of one definition
+yield two results without per-host state. Without a resolved host, the panels show slots without values. The
 classic canvas draws no values and reads slots from the pseudo-node.
 
 ### Geometry is a layout entry keyed by the definition
@@ -54,7 +54,12 @@ and resizes are `LayoutOperation`s. They sync through the layout document like
 any node entry. Undo snapshots serialize the entry, and reconfiguring restores
 it. Panel measurements and slot offsets use the same key and stay transient.
 
-The entry is created when the definition is configured. `detachGraphLayouts`
+The size that fits the slots when no panel is measured is derived, not
+written. `arrange` keeps it on the pseudo-node, `boundingRect` renders it, and
+`asSerialisable` saves it, so drawing never issues a `LayoutOperation`.
+
+The entry is created when the definition is configured, and renaming an empty
+definition moves it to the new key. `detachGraphLayouts`
 deletes it, with its measurements, whenever it visits the definition. Root
 `clearGraph` matches keys by the root graph ID, so it never covers a
 definition-keyed entry.
