@@ -38,6 +38,7 @@ const { widget: _inputOnly, ...OUTPUT_PATCH_FIELDS } = PATCH_FIELDS
 
 /** A checked patch: its writes, the name it needs free, and the widget an input becomes the socket of. */
 export interface CheckedSlotPatch {
+  readonly fields: readonly string[]
   readonly writes: readonly SlotWrite[]
   readonly name: string | undefined
   readonly widget: string | undefined
@@ -59,6 +60,7 @@ export function checkedSlotPatch(
   )
   const { name, widget } = patch
   return {
+    fields: Object.keys(patch),
     writes,
     name: name === undefined ? undefined : checkedSlotName(member, name),
     widget:

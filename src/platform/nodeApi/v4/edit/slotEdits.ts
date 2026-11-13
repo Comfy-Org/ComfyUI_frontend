@@ -7,6 +7,8 @@ import {
   outputLinks,
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import { useLinkStore } from '@/stores/linkStore'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
@@ -20,6 +22,12 @@ import { checkedChoice } from './checkedArguments'
 import type { EditRunner } from './editRunner'
 import type { LiveSlot, SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
+import {
+  assertNotSubgraphNode,
+  assertRemovalKept,
+  assertReorderKept,
+  assertSlotEditKept
+} from './rebuiltSlots'
 import {
   assertFitsNode,
   checkedSlotName,
@@ -64,6 +72,7 @@ export function createSlotEdits(
     const slotType = checkedSlotType(member, type)
     const extra = checkedSlotOptions(member, options, side)
     if (!live) return undefined
+    assertNotSubgraphNode(member, live.node)
     assertFitsNode(member, live.node, side, {
       name: slotName,
       widget: extra.widget?.name
@@ -85,6 +94,7 @@ export function createSlotEdits(
       const checked = checkedSlotPatch(patch, locator.side)
       const live = locator.locate()
       if (!live) return false
+      assertSlotEditKept('updateSlot', live, checked.fields)
       assertFitsNode('updateSlot', live.node, live.side, {
         name: checked.name,
         widget: checked.widget,
@@ -116,6 +126,7 @@ export function createSlotEdits(
     removeSlot(slot) {
       const live = slotLocatorOf(slots, 'removeSlot', slot).locate()
       if (!live) return false
+      assertRemovalKept('removeSlot', live)
       runner.apply(live.graph, () => {
         if (live.side === 'input') live.node.removeInput(live.index)
         else live.node.removeOutput(live.index)
@@ -131,10 +142,16 @@ export function createSlotEdits(
       const current =
         slotSide === 'input' ? live.node.inputs : live.node.outputs
       const moved = permutation(order, current)
-      return runner.apply(live.graph, () =>
+      const { graph, node: host } = live
+      if (host.isSubgraphNode() && slotSide === 'input') {
+        return runner.apply(graph, () => reorderSubgraphNodeInputs(host, moved))
+      }
+      assertNotSubgraphNode('reorderSlots', host)
+      assertReorderKept('reorderSlots', host, slotSide, moved)
+      return runner.apply(graph, () =>
         slotSide === 'input'
-          ? reorderInputs(live.node, moved)
-          : reorderOutputs(live.graph, live.node, moved)
+          ? reorderInputs(host, moved)
+          : reorderOutputs(graph, host, moved)
       )
     }
   }
@@ -180,6 +197,15 @@ function permutation(
     )
   }
   return from.filter((index): index is number => index !== undefined)
+}
+
+function reorderSubgraphNodeInputs(
+  node: SubgraphNode,
+  from: readonly number[]
+): boolean {
+  const before = [...node.inputs]
+  reorderSubgraphInputs(node, from)
+  return node.inputs.every((input, index) => input === before[from[index]])
 }
 
 function reorderInputs(node: LGraphNode, from: readonly number[]): boolean {
