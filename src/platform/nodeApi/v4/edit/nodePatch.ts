@@ -37,19 +37,25 @@ const SHAPES = {
   card: true
 } satisfies Record<NodeShape, true>
 
-/**
- * Checks every field of `patch` and returns its writes, in a fixed order, so
- * nothing is applied unless the whole patch is usable.
- */
+/** A checked patch: its writes in a fixed order, and whether it turns widget saving off. */
+export interface CheckedNodePatch {
+  readonly writes: readonly NodeWrite[]
+  readonly stopsSavingWidgets: boolean
+}
+
+/** Checks every field of `patch`, so nothing is applied unless the whole patch is usable. */
 export function checkedNodePatch(
   patch: unknown,
   resizable: ResizableChoices
-): readonly NodeWrite[] {
+): CheckedNodePatch {
   const checks = fieldChecks(resizable)
   assertPatch(MEMBER, patch, FIELDS)
-  return Object.entries(checks).flatMap(([field, check]) =>
-    Object.hasOwn(patch, field) ? [check(patch[field])] : []
-  )
+  return {
+    writes: Object.entries(checks).flatMap(([field, check]) =>
+      Object.hasOwn(patch, field) ? [check(patch[field])] : []
+    ),
+    stopsSavingWidgets: patch.serializeWidgets === false
+  }
 }
 
 const FIELDS = {

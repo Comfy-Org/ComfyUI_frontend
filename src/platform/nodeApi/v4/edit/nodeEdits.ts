@@ -3,6 +3,7 @@ import type { LiveNode, NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { EditRunner } from './editRunner'
 import { checkedNodePatch } from './nodePatch'
 import { createResizableChoices } from './nodeSizing'
+import { isBackendTypeNode } from './rebuiltSlots'
 
 /** The node edits, taking anything a pack passes and checking it. */
 export interface NodeEdits {
@@ -19,8 +20,15 @@ export function createNodeEdits(
   return {
     updateNode(node, patch) {
       const live = liveNodeOf(nodes, 'updateNode', node)
-      const writes = checkedNodePatch(patch, resizable)
+      const { writes, stopsSavingWidgets } = checkedNodePatch(patch, resizable)
       if (!live) return false
+      if (stopsSavingWidgets && isBackendTypeNode(live.node)) {
+        throw invalidArgument(
+          'updateNode',
+          'a node whose type does not save its widget values, to stop saving them',
+          live.node.type
+        )
+      }
       runner.apply(live.graph, () => {
         for (const write of writes) write(live.node)
       })

@@ -163,7 +163,8 @@ follow-up for a command interface.
     `setOutputDataType`, which retypes its links; an input's link is kept. A
     type given as several names is stored as the host compares it, joined by
     commas. `null` or `undefined` clears a field that has a default, as the
-    stored V2 packs wrote it.
+    stored V2 packs wrote it. Decisions 24 and 26 limit which slots take which
+    fields.
 17. `addInput` and `addOutput` add a slot after the others through
     `node.addInput` and `node.addOutput`, with the same name rule; `removeSlot`
     removes one through `removeInput` and `removeOutput`, which drop its links
@@ -174,7 +175,7 @@ follow-up for a command interface.
     `updateEndpoints` call on the link store, which validates every re-pointed
     link before it moves any, and then the output list. Link ids, and so the
     saved `links` array, do not change. If the store refuses, nothing moves and
-    the call answers `false`.
+    the call answers `false`. Decisions 24 and 26 limit which orders it takes.
 19. `connect(output, input)` links two slots of one graph through
     `LGraphNode.connect`, so the host's type check and the nodes' connection
     hooks apply; it gives the new link, or `undefined` if the host refused.
@@ -220,6 +221,43 @@ follow-up for a command interface.
     gone when undo or a load rebuilds the node; a removed node gets nothing and
     a disposer that does nothing.
 
+### Edits a load would not keep
+
+An undo or redo is a load of a saved state (ADR-EXTENSIONS-NODE-API-0070
+decision 10), so an edit is one undo step only if the saved workflow holds
+what it changed and a load gives it back. Three kinds of edit did not, and
+are refused before anything changes:
+
+24. A slot a backend node type declares. The host rebuilds such a node from
+    its type on every load (`registerNodeDef`'s `configure` in
+    `litegraphService.ts`): each declared input, matched by name, takes its
+    `name`, `type`, `shape`, `localized_name` and `widget` from the type, in
+    the type's order, with any other input after it; each declared output,
+    matched by position, takes the same fields. A rename of a declared input
+    came back as the declared input plus a second input under the new name, an
+    output's new type came back as the old type with its links still of the
+    new one, and a removed or reordered declared slot came back. So
+    `updateSlot` refuses those fields on a declared slot, `removeSlot` refuses
+    a declared slot, and `reorderSlots` refuses an order that moves one. A
+    label, colors, a position and a direction are saved and kept, and so is
+    every edit of a slot a pack added. A slot is declared if the node's class
+    carries the host's `ComfyNodeDefImpl` and the slot is one of its inputs
+    by name or one of its outputs by position.
+25. Widget saving on a backend type. Such a type turns `serialize_widgets` on
+    in its constructor, and the flag is not saved, so after `false` a load
+    turned it on again with no widget values to restore: every widget went
+    back to its default. `serializeWidgets: false` is refused on a node of a
+    backend type; `true`, and either value on another type, is applied and is
+    an undo step as before, but a load gives the type's own value again, so a
+    pack sets it where the node is created.
+26. A subgraph node's slots. They are its subgraph's inputs and outputs, which
+    execution maps by position; an edit to the node's own list leaves it
+    disagreeing with its subgraph, and a source then feeds another input.
+    `reorderSlots` on a subgraph node's inputs goes through the host's own
+    `reorderSubgraphInputs`, which reorders the subgraph's inputs and the
+    node's together. Every other slot edit on a subgraph node is refused; a
+    pack edits the subgraph's inputs and outputs in the subgraph.
+
 ## The mutation table
 
 "Step" is what one call does to undo history when the host has an open
@@ -228,29 +266,29 @@ unusable argument leaves: always the document unchanged, with a `TypeError`.
 "Gone" is what a call does with a handle whose entity is deleted or whose
 document is no longer open.
 
-| Edit                                     | Host owner it goes through                                                                                              | Step                                                                   | Gone                                   |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------- |
-| `updateNode` `title`                     | `LGraphNode.title` setter: node state store and a `set_node_field` graph intent                                         | One step                                                               | `false`, nothing changed               |
-| `updateNode` `mode`                      | `LGraphNode.mode` setter: node state store and a `set_node_field` graph intent                                          | One step                                                               | `false`                                |
-| `updateNode` `collapsed`                 | `LGraphNode.collapse(true)`: flag and a `set_node_field` graph intent                                                   | One step                                                               | `false`                                |
-| `updateNode` `color`, `bgColor`, `shape` | `LGraphNode` setters: node state store                                                                                  | One step                                                               | `false`                                |
-| `updateNode` `properties`                | `LGraphNode.setProperty` per name: `onPropertyChanged`, property widgets                                                | One step                                                               | `false`                                |
-| `updateNode` `serializeWidgets`          | `LGraphNode.serialize_widgets`                                                                                          | One step                                                               | `false`                                |
-| `updateNode` `position`                  | `LGraphNode.pos` setter: a `moveNode` layout operation                                                                  | One step                                                               | `false`                                |
-| `updateNode` `size`, `sizeConstraints`   | `LGraphNode.setSize`: a `resizeNode` layout operation, then `onResize`                                                  | One step                                                               | `false`                                |
-| `updateNode` `resizable`                 | `LGraphNode.resizable` (node state store); reapplied after pin changes                                                  | No step: not saved                                                     | `false`                                |
-| `updateNode` with several fields         | All of the above in one transaction                                                                                     | One step for the patch                                                 | `false`                                |
-| `removeNode`                             | `LGraph.remove`: links, stores, selection, `node:removed`, `remove_node` graph intent                                   | One step                                                               | `false`                                |
-| `addNode`                                | `LiteGraph.createNode`, then `LGraph.add`: id, stores, layout, `onNodeAdded`, `add_node` graph intent                   | One step                                                               | `undefined`, nothing added             |
-| `updateSlot`                             | The slot's own fields; `LGraphNode.setOutputDataType` for an output's type, which retypes its links                     | One step                                                               | `false`                                |
-| `addInput`, `addOutput`                  | `LGraphNode.addInput`, `addOutput`: `onInputAdded`, `onOutputAdded`, the node's size                                    | One step                                                               | `undefined`, nothing added             |
-| `removeSlot`                             | `LGraphNode.removeInput`, `removeOutput`: the slot's links, the later slots' links and floating links                   | One step                                                               | `false`                                |
-| `reorderSlots`                           | Inputs: `captureInputLayout` and `replaceNodeInputs`; outputs: the link store's `updateEndpoints`, then the output list | One step; `false` if the link store refuses, slots and links unchanged | `false`                                |
-| `connect`                                | `LGraphNode.connect`: the type check, `onConnectInput`, `onConnectionsChange`, a `connect` graph intent                 | One step; `undefined` if the host refuses                              | `undefined`                            |
-| `disconnect`                             | `LGraphNode.disconnectInput`, `disconnectOutput`: `onConnectionsChange`, a `disconnect` graph intent                    | One step; `false` and no step for a slot with no link                  | `false`                                |
-| `moveLinks`                              | The link store's `updateEndpoints`, all links validated before any moves                                                | One step; `undefined` if the store refuses, links unchanged            | `undefined`                            |
-| `batch`                                  | The change tracker's transaction around the pack's function                                                             | One step for all edits inside                                          | Each edit inside answers for itself    |
-| `addBadge` (registration)                | `LGraphNode.badges`                                                                                                     | No step: not saved                                                     | No badge, a disposer that does nothing |
+| Edit                                     | Host owner it goes through                                                                                            | Step                                                                   | Gone                                   |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------- |
+| `updateNode` `title`                     | `LGraphNode.title` setter: node state store and a `set_node_field` graph intent                                       | One step                                                               | `false`, nothing changed               |
+| `updateNode` `mode`                      | `LGraphNode.mode` setter: node state store and a `set_node_field` graph intent                                        | One step                                                               | `false`                                |
+| `updateNode` `collapsed`                 | `LGraphNode.collapse(true)`: flag and a `set_node_field` graph intent                                                 | One step                                                               | `false`                                |
+| `updateNode` `color`, `bgColor`, `shape` | `LGraphNode` setters: node state store                                                                                | One step                                                               | `false`                                |
+| `updateNode` `properties`                | `LGraphNode.setProperty` per name: `onPropertyChanged`, property widgets                                              | One step                                                               | `false`                                |
+| `updateNode` `serializeWidgets`          | `LGraphNode.serialize_widgets`; `false` refused on a backend type (decision 25)                                       | One step; a load gives the type's own value                            | `false`                                |
+| `updateNode` `position`                  | `LGraphNode.pos` setter: a `moveNode` layout operation                                                                | One step                                                               | `false`                                |
+| `updateNode` `size`, `sizeConstraints`   | `LGraphNode.setSize`: a `resizeNode` layout operation, then `onResize`                                                | One step                                                               | `false`                                |
+| `updateNode` `resizable`                 | `LGraphNode.resizable` (node state store); reapplied after pin changes                                                | No step: not saved                                                     | `false`                                |
+| `updateNode` with several fields         | All of the above in one transaction                                                                                   | One step for the patch                                                 | `false`                                |
+| `removeNode`                             | `LGraph.remove`: links, stores, selection, `node:removed`, `remove_node` graph intent                                 | One step                                                               | `false`                                |
+| `addNode`                                | `LiteGraph.createNode`, then `LGraph.add`: id, stores, layout, `onNodeAdded`, `add_node` graph intent                 | One step                                                               | `undefined`, nothing added             |
+| `updateSlot`                             | The slot's own fields; `setOutputDataType` for an output's type. Refused per decisions 24 and 26                      | One step                                                               | `false`                                |
+| `addInput`, `addOutput`                  | `LGraphNode.addInput`, `addOutput`; refused on a subgraph node                                                        | One step                                                               | `undefined`, nothing added             |
+| `removeSlot`                             | `LGraphNode.removeInput`, `removeOutput`; refused for a declared slot or a subgraph node's                            | One step                                                               | `false`                                |
+| `reorderSlots`                           | Inputs: `replaceNodeInputs`, or `reorderSubgraphInputs` on a subgraph node; outputs: `updateEndpoints`, then the list | One step; `false` if the link store refuses, slots and links unchanged | `false`                                |
+| `connect`                                | `LGraphNode.connect`: the type check, `onConnectInput`, `onConnectionsChange`, a `connect` graph intent               | One step; `undefined` if the host refuses                              | `undefined`                            |
+| `disconnect`                             | `LGraphNode.disconnectInput`, `disconnectOutput`: `onConnectionsChange`, a `disconnect` graph intent                  | One step; `false` and no step for a slot with no link                  | `false`                                |
+| `moveLinks`                              | The link store's `updateEndpoints`, all links validated before any moves                                              | One step; `undefined` if the store refuses, links unchanged            | `undefined`                            |
+| `batch`                                  | The change tracker's transaction around the pack's function                                                           | One step for all edits inside                                          | Each edit inside answers for itself    |
+| `addBadge` (registration)                | `LGraphNode.badges`                                                                                                   | No step: not saved                                                     | No badge, a disposer that does nothing |
 
 Groups have no edits (decision 21), so no group row is here: every group
 member reads.
