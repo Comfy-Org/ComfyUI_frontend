@@ -12,6 +12,7 @@
  * push concerns that need a document and a scheduler, so they belong to the
  * view package that has both — not to a framework-free core.
  */
+import type { AutoTopUpSetup } from '@comfyorg/ingest-types'
 import {
   zBillingCapabilities,
   zBillingCapabilitiesResponse,
@@ -246,4 +247,16 @@ export function createCapabilitiesReader(
     },
     dispose: reader.dispose
   }
+}
+
+const PAUSED_PLAN_REASONS: ReadonlySet<AutoTopUpSetup['reason']> = new Set([
+  'payment_past_due',
+  'billing_paused'
+])
+
+/** Auto top-up is hidden on every surface while setup is unavailable or frozen for a paused plan. */
+export function isAutoTopUpNotAvailable(setup: AutoTopUpSetup | null): boolean {
+  if (setup === null) return false
+  if (setup.state === 'unavailable') return true
+  return setup.state === 'frozen' && PAUSED_PLAN_REASONS.has(setup.reason)
 }
