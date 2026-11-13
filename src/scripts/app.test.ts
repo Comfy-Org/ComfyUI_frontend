@@ -703,6 +703,111 @@ describe('ComfyApp', () => {
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
     })
 
+    it('does not configure or activate a graph whose load stopped being current during beforeConfigureGraph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let current = true
+      let releaseHook!: () => void
+      const hookHeld = new Promise<void>((resolve) => {
+        releaseHook = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+        .thenReturnOnce(hookHeld)
+      const load = app.loadGraphData(
+        { ...createWorkflowGraphData(), extra: { loadedFrom: 'superseded' } },
+        false,
+        true,
+        null,
+        { isCurrent: () => current, workflowNavigationId: 9 }
+      )
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'beforeConfigureGraph',
+          expect.anything(),
+          expect.anything()
+        )
+      )
+      current = false
+      releaseHook()
+
+      await expect(load).resolves.toBe(false)
+      expect(app.rootGraph.extra.loadedFrom).toBeUndefined()
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ name: 'AbortError' })
+      )
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+    })
+
+    it('does not activate a graph whose load stopped being current during afterConfigureGraph', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      let current = true
+      let releaseHook!: () => void
+      const hookHeld = new Promise<void>((resolve) => {
+        releaseHook = resolve
+      })
+      vi.when(mockExtensionService.invokeExtensionsAsync)
+        .calledWith('afterConfigureGraph', expect.anything())
+        .thenReturnOnce(hookHeld)
+      const load = app.loadGraphData(
+        createWorkflowGraphData(),
+        false,
+        true,
+        null,
+        {
+          isCurrent: () => current,
+          workflowNavigationId: 9
+        }
+      )
+      await vi.waitFor(() =>
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'afterConfigureGraph',
+          expect.anything()
+        )
+      )
+      current = false
+      releaseHook()
+
+      await expect(load).resolves.toBe(false)
+      expect(mockWorkflowService.afterLoadNewGraph).not.toHaveBeenCalled()
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ name: 'AbortError' })
+      )
+    })
+
+    it('leaves the canvas untouched for a load that stopped being current while it waited its turn', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      app.rootGraph.extra.loadedFrom = 'newer'
+
+      const load = app.loadGraphData(
+        createWorkflowGraphData(),
+        true,
+        true,
+        null,
+        { isCurrent: () => false }
+      )
+
+      await expect(load).resolves.toBe(false)
+      expect(app.rootGraph.extra.loadedFrom).toBe('newer')
+      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+      expect(
+        mockExtensionService.invokeExtensionsAsync
+      ).not.toHaveBeenCalledWith('beforeLoadGraph')
+    })
+
     it('resolves false and notifies onGraphLoadError when the outgoing preflight throws', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -2354,6 +2459,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: false,
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
@@ -2380,6 +2486,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: false
       })
     })
@@ -2406,6 +2513,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: true,
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
@@ -2433,6 +2541,7 @@ describe('ComfyApp', () => {
         useBillingDialogs().showSubscriptionRequiredDialog
       ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_required',
+        runRefused: true,
         creditsLocked: false,
         refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })

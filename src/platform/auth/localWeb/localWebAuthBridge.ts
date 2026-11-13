@@ -11,7 +11,8 @@ import {
   exchangeAuthorizationCode,
   localRedirectUri,
   readAuthorizationResponse,
-  refreshAccessToken
+  refreshAccessToken,
+  revokeRefreshToken
 } from '@comfyorg/account-core/oauthPkce'
 
 import type {
@@ -214,7 +215,8 @@ export function createLocalWebAuthBridge(
     const incoming = readAccessTokenIdentity(tokens.accessToken)?.userId
     const kept = activeTokens() ?? env.tokens.read()
     const previous = kept && readAccessTokenIdentity(kept.accessToken)?.userId
-    if (previous && incoming && previous !== incoming) env.tokens.clear()
+    if (previous && incoming && previous !== incoming)
+      revokeSignIns(env.tokens.clear())
   }
 
   function abandonSignIn(): void {
@@ -225,10 +227,16 @@ export function createLocalWebAuthBridge(
 
   function signOutLocally(): DesktopHostAuthState {
     abandonSignIn()
-    env.tokens.clear()
+    revokeSignIns(env.tokens.clear())
     pinTab(undefined)
     emit()
     return currentState()
+  }
+
+  function revokeSignIns(tokens: OAuthTokens[]): void {
+    new Set(tokens.map((t) => t.refreshToken)).forEach(
+      (refreshToken) => void revokeRefreshToken(refreshToken, tokenOptions())
+    )
   }
 
   function isFresh(tokens: OAuthTokens): boolean {

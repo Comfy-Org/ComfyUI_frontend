@@ -1,9 +1,14 @@
 import '@testing-library/jest-dom/vitest'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import type { AddCreditsRefusal } from '@comfyorg/account-core/billing'
+import type {
+  AddCreditsAutoTopUpOffer,
+  AddCreditsRefusal,
+  AutoTopUpActivation,
+  AutoTopUpActivationOutcome
+} from '@comfyorg/account-core/billing'
 
 import AddCreditsDialog from './AddCreditsDialog.vue'
 import type {
@@ -12,8 +17,15 @@ import type {
   AddCreditsPorts,
   AddCreditsQuoteResult
 } from './useAddCreditsDialog'
+import type { AutoTopUpEdit } from './useAddCreditsAutoTopUp'
+
+expectTypeOf<['threshold', true]>().not.toExtend<AutoTopUpEdit>()
+expectTypeOf<['limitOn', 'false']>().not.toExtend<AutoTopUpEdit>()
+expectTypeOf<['limitOn', true]>().toExtend<AutoTopUpEdit>()
 
 const CHECKOUT_URL = 'https://billing.comfy.org/topup?session=cs_1'
+const AUTO_TOP_UP_SETUP_URL =
+  'https://platform.comfy.org/profile/billing?auto_top_up=setup'
 const SUPPORT_URL = 'https://support.example/billing'
 const CREDITS_PER_CENT = 2.11
 
@@ -31,6 +43,7 @@ class FakeTab implements AddCreditsCheckoutTab {
 class FakePorts implements AddCreditsPorts {
   quotes: number[] = []
   checkouts: number[] = []
+  autoTopUps: (AutoTopUpActivation | undefined)[] = []
   tabs: FakeTab[] = []
   popupsBlocked = false
   quoteFails = false
@@ -40,8 +53,11 @@ class FakePorts implements AddCreditsPorts {
     url: CHECKOUT_URL
   }
   checkoutHeld: ((answer: AddCreditsCheckoutResult) => void) | undefined
-  landed: (() => void) | undefined
+  landed: ((activation?: AutoTopUpActivationOutcome) => void) | undefined
   watchStopped = false
+  autoTopUpSetupUrl: AddCreditsPorts['autoTopUpSetupUrl']
+  activatesAutoTopUp = true
+  singleUseCheckout = false
 
   quoteRejects = false
   checkoutRejects = false
@@ -58,8 +74,13 @@ class FakePorts implements AddCreditsPorts {
     )
   }
 
-  createCheckout = (amountCents: number) => {
+  createCheckout = (
+    amountCents: number,
+    _signal: AbortSignal,
+    autoTopUp?: AutoTopUpActivation
+  ) => {
     this.checkouts.push(amountCents)
+    this.autoTopUps.push(autoTopUp)
     if (this.checkoutRejects)
       return Promise.reject(new TypeError('Failed to fetch'))
     return new Promise<AddCreditsCheckoutResult>((resolve) => {
@@ -75,7 +96,9 @@ class FakePorts implements AddCreditsPorts {
     return tab
   }
 
-  watchPayment = (landed: () => void) => {
+  watchPayment = (
+    landed: (activation?: AutoTopUpActivationOutcome) => void
+  ) => {
     this.landed = landed
     return () => {
       this.watchStopped = true
@@ -169,8 +192,8 @@ describe('AddCreditsDialog amount step', () => {
   it.for([
     { input: '3', error: 'Minimum is $5.' },
     {
-      input: '10001',
-      error: 'The largest top-up is $10,000. Add more with another top-up.'
+      input: '2501',
+      error: 'The largest top-up is $2,500. Add more with another top-up.'
     },
     { input: '12.50', error: 'Whole dollars only.' }
   ])(
@@ -393,6 +416,61 @@ describe('AddCreditsDialog checkout hand-off', () => {
   })
 })
 
+describe('AddCreditsDialog with a single-use checkout', () => {
+  it('never offers the checkout as a link when the pop-up is blocked, and opens a fresh one from the blocked step', async () => {
+    const { ports, user } = renderDialog()
+    ports.singleUseCheckout = true
+    ports.popupsBlocked = true
+
+    await user.click(continueButton())
+
+    expect(
+      screen.getByRole('heading', { name: "Checkout didn't open" })
+    ).toBeVisible()
+    expect(ports.checkouts).toEqual([])
+    const open = screen.getByTestId('add-credits-open-checkout')
+    expect(open).not.toHaveAttribute('href')
+
+    ports.popupsBlocked = false
+    await user.click(open)
+
+    expect(ports.checkouts).toEqual([5000])
+    expect(ports.tabs[0].url).toBe(CHECKOUT_URL)
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Checkout opened in a new tab'
+      })
+    ).toBeVisible()
+  })
+
+  it('disables the blocked step Open checkout while top-up is not allowed', async () => {
+    const { ports, user, rerender } = renderDialog()
+    ports.singleUseCheckout = true
+    ports.popupsBlocked = true
+    await user.click(continueButton())
+
+    await rerender({ canTopUp: false })
+
+    expect(screen.getByTestId('add-credits-open-checkout')).toBeDisabled()
+  })
+
+  it('shows the server message when the checkout is refused', async () => {
+    const { ports, user } = renderDialog()
+    ports.singleUseCheckout = true
+    ports.refuse({
+      kind: 'checkout_failed',
+      serverMessage: 'Only the workspace owner can add credits.'
+    })
+
+    await user.click(continueButton())
+
+    expect(notice()).toHaveTextContent("Couldn't open checkout")
+    expect(notice()).toHaveTextContent(
+      'Only the workspace owner can add credits.'
+    )
+  })
+})
+
 describe('AddCreditsDialog refusals', () => {
   it.for<{ refusal: AddCreditsRefusal; wait: string }>([
     {
@@ -497,5 +575,391 @@ describe('AddCreditsDialog pending bank check', () => {
     expect(within(summary()).getByText('$25.00 top-up')).toBeVisible()
     expect(within(summary()).getByText('Not verified')).toBeVisible()
     expect(screen.queryByText(/nothing was charged/i)).toBeNull()
+  })
+})
+
+describe('AddCreditsDialog auto top-up suggestion', () => {
+  const OFFER =
+    'Buy credits automatically when you run low, so workflows and API calls keep running.'
+
+  async function landPayment(
+    autoTopUpSetupUrl: AddCreditsPorts['autoTopUpSetupUrl']
+  ) {
+    const rendered = renderDialog()
+    rendered.ports.autoTopUpSetupUrl = autoTopUpSetupUrl
+    await rendered.user.click(continueButton())
+    rendered.ports.landed?.()
+    return rendered
+  }
+
+  it('suggests auto top-up instead of closing when the payment lands and it is offered', async () => {
+    const { emitted } = await landPayment(() =>
+      Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    )
+
+    expect(await screen.findByText(OFFER)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Not now' })).toBeVisible()
+    expect(emitted().close).toBeUndefined()
+  })
+
+  it('Set up opens Platform billing in a new tab and closes the dialog', async () => {
+    const { user, emitted } = await landPayment(() =>
+      Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    )
+
+    const setUp = await screen.findByRole('link', { name: 'Set up' })
+    expect(setUp).toHaveAttribute('href', AUTO_TOP_UP_SETUP_URL)
+    expect(setUp).toHaveAttribute('target', '_blank')
+    setUp.addEventListener('click', (event) => event.preventDefault())
+    await user.click(setUp)
+
+    expect(emitted().setUpAutoTopUp).toHaveLength(1)
+    expect(emitted().close).toHaveLength(1)
+  })
+
+  it.for([
+    { name: 'Not now', button: 'Not now', declined: true },
+    { name: 'the X', button: 'Close', declined: false }
+  ])('$name closes the suggestion', async ({ button, declined }) => {
+    const { user, emitted } = await landPayment(() =>
+      Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    )
+    await screen.findByText(OFFER)
+
+    await user.click(screen.getByRole('button', { name: button }))
+
+    expect(emitted().close).toHaveLength(1)
+    expect(emitted().setUpAutoTopUp).toBeUndefined()
+    expect('declineAutoTopUp' in emitted()).toBe(declined)
+  })
+
+  it.for([
+    { name: 'not offered', answer: () => Promise.resolve(null) },
+    {
+      name: 'the read fails',
+      answer: () => Promise.reject(new TypeError('Failed to fetch'))
+    }
+  ])('closes once the payment lands when $name', async ({ answer }) => {
+    const { emitted } = await landPayment(answer)
+
+    await vi.waitFor(() => expect(emitted().close).toHaveLength(1))
+    expect(screen.queryByText(OFFER)).not.toBeInTheDocument()
+  })
+})
+
+describe('AddCreditsDialog auto top-up with the purchase', () => {
+  const BILLING_URL = 'https://platform.comfy.org/profile/billing'
+  const RULES = {
+    minReloadCredits: 1055,
+    maxReloadCredits: 12_660_000,
+    maxMonthlyBudgetCents: 6_000_000
+  }
+  const CHECKBOX: AddCreditsAutoTopUpOffer = {
+    kind: 'checkbox',
+    rules: RULES,
+    defaultCard: null
+  }
+  const checkbox = () =>
+    screen.getByRole('checkbox', { name: /Turn on auto top-up/ })
+  const threshold = () => screen.getByLabelText('When credits drop below')
+  const target = () => screen.getByLabelText('Top up to')
+
+  function renderOffered(
+    autoTopUp: AddCreditsAutoTopUpOffer = CHECKBOX,
+    props: Partial<Props> = {}
+  ) {
+    return renderDialog({ autoTopUp, billingUrl: BILLING_URL, ...props })
+  }
+
+  it('shows the checkbox unchecked with its pitch when the host turns auto top-up on with the purchase', () => {
+    renderOffered()
+
+    expect(checkbox()).toHaveAttribute('aria-checked', 'false')
+    expect(
+      screen.getByText(
+        'Buy credits automatically when you run low, so workflows keep running.'
+      )
+    ).toBeVisible()
+    expect(screen.queryByLabelText('Top up to')).toBeNull()
+  })
+
+  it.for<{ name: string; props: Partial<Props> }>([
+    { name: 'no served offer', props: { billingUrl: BILLING_URL } },
+    {
+      name: 'a hidden offer',
+      props: { autoTopUp: { kind: 'hidden' }, billingUrl: BILLING_URL }
+    },
+    { name: 'no Billing link', props: { autoTopUp: CHECKBOX } },
+    {
+      name: 'a host that cannot turn auto top-up on with the purchase',
+      props: {
+        autoTopUp: CHECKBOX,
+        billingUrl: BILLING_URL,
+        ports: Object.assign(new FakePorts(), { activatesAutoTopUp: false })
+      }
+    }
+  ])('shows no checkbox for $name', ({ props }) => {
+    renderDialog(props)
+
+    expect(screen.queryByTestId('add-credits-auto-top-up')).toBeNull()
+  })
+
+  it('keeps the after-payment suggestion for a host that cannot turn auto top-up on with the purchase', async () => {
+    const ports = Object.assign(new FakePorts(), {
+      activatesAutoTopUp: false,
+      autoTopUpSetupUrl: () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    })
+    const { user, emitted } = renderOffered(CHECKBOX, { ports })
+    await user.click(continueButton())
+
+    ports.landed?.()
+
+    expect(
+      await screen.findByText(
+        'Buy credits automatically when you run low, so workflows and API calls keep running.'
+      )
+    ).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Set up' })).toHaveAttribute(
+      'href',
+      AUTO_TOP_UP_SETUP_URL
+    )
+    expect(emitted().close).toBeUndefined()
+  })
+
+  it('checking prefills the starting threshold and the credits picked on top', async () => {
+    const { user } = renderOffered()
+
+    await user.click(checkbox())
+
+    expect(threshold()).toHaveValue('1000')
+    expect(
+      screen.getByText('Counts plan credits and credits you’ve bought.')
+    ).toBeVisible()
+    expect(target()).toHaveValue('11550')
+    expect(
+      screen.getByText('11,550 credits. Each top-up is at least $50.00.')
+    ).toBeVisible()
+    expect(
+      screen.getByText(
+        'Up to $60,000 a month, the maximum. Turn on to set a lower limit.'
+      )
+    ).toBeVisible()
+  })
+
+  it('the target follows the amount picked until it is edited', async () => {
+    const { user } = renderOffered()
+    await user.click(checkbox())
+
+    await user.click(preset('$25'))
+    expect(target()).toHaveValue('6275')
+
+    await user.clear(target())
+    await user.type(target(), '9000')
+    await user.click(preset('$100'))
+    expect(target()).toHaveValue('9000')
+  })
+
+  it.for([
+    {
+      name: 'a target under the minimum top-up',
+      input: '2000',
+      message: 'Must be at least 2,055 credits, about $5 above your threshold.'
+    },
+    {
+      name: 'a fractional target',
+      input: '2100.5',
+      message: 'Enter a whole number of credits.'
+    }
+  ])(
+    'shows the Billing dialog copy for $name and holds Continue',
+    async ({ input, message }) => {
+      const { user } = renderOffered()
+      await user.click(checkbox())
+
+      await user.clear(target())
+      await user.type(target(), input)
+
+      expect(screen.getByText(message)).toBeVisible()
+      expect(continueButton()).toBeDisabled()
+    }
+  )
+
+  it('turning the limit on prefills $10,000 and checks it against the ceiling', async () => {
+    const { user } = renderOffered()
+    await user.click(checkbox())
+
+    await user.click(screen.getByRole('switch'))
+    const limit = screen.getByLabelText('Monthly limit', { selector: 'input' })
+    expect(limit).toHaveValue('10000')
+    expect(
+      screen.getByTestId('add-credits-auto-top-up-consent')
+    ).toHaveTextContent('up to $10,000 a month')
+
+    await user.clear(limit)
+    await user.type(limit, '60001')
+    expect(screen.getByText('Enter a valid value.')).toBeVisible()
+    expect(continueButton()).toBeDisabled()
+  })
+
+  it.for([
+    {
+      name: 'no default card',
+      defaultCard: null,
+      consent:
+        'Top-ups are charged to the card you pay with at checkout, up to $60,000 a month. Turn this off anytime in Billing.'
+    },
+    {
+      name: 'a default card',
+      defaultCard: { brand: 'Visa', last4: '4242' },
+      consent:
+        'Top-ups are charged to your default card, Visa ···· 4242, up to $60,000 a month. Turn this off anytime in Billing.'
+    }
+  ])(
+    'the consent names the card for $name',
+    async ({ defaultCard, consent }) => {
+      const { user } = renderOffered({ ...CHECKBOX, defaultCard })
+      await user.click(checkbox())
+
+      const line = screen.getByTestId('add-credits-auto-top-up-consent')
+      expect(line).toHaveTextContent(consent)
+      expect(
+        within(line).getByRole('link', { name: 'Billing' })
+      ).toHaveAttribute('href', BILLING_URL)
+    }
+  )
+
+  it('sends the settings shown with the purchase', async () => {
+    const { user, ports } = renderOffered()
+    await user.click(checkbox())
+    await user.click(screen.getByRole('switch'))
+    await user.clear(threshold())
+    await user.type(threshold(), '2000')
+    await user.clear(target())
+    await user.type(target(), '17000')
+    const limit = screen.getByLabelText('Monthly limit', { selector: 'input' })
+    await user.clear(limit)
+    await user.type(limit, '250')
+
+    await user.click(continueButton())
+
+    expect(ports.autoTopUps).toEqual([
+      {
+        threshold_credits: 2000,
+        target_credits: 17000,
+        monthly_budget_cents: 25000
+      }
+    ])
+  })
+
+  it('reopening checkout sends the settings the buyer accepted', async () => {
+    const { user, ports } = renderOffered()
+    await user.click(checkbox())
+    await user.click(continueButton())
+
+    await user.click(screen.getByTestId('add-credits-reopen'))
+
+    const accepted = {
+      threshold_credits: 1000,
+      target_credits: 11550,
+      monthly_budget_cents: null
+    }
+    expect(ports.autoTopUps).toEqual([accepted, accepted])
+  })
+
+  it('an unchecked purchase sends no settings and closes on landing without a second ask', async () => {
+    const { user, ports, emitted } = renderOffered()
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(continueButton())
+    expect(ports.autoTopUps).toEqual([undefined])
+
+    ports.landed?.()
+
+    await vi.waitFor(() => expect(emitted().close).toHaveLength(1))
+  })
+
+  it.for([
+    { budget: null, expected: 'No monthly limit.' },
+    { budget: 200000, expected: 'Up to $2,000 a month.' }
+  ])(
+    'shows the served auto top-up settings with $expected',
+    async ({ budget, expected }) => {
+      const { user, ports } = renderOffered()
+      await user.click(checkbox())
+      await user.click(continueButton())
+
+      ports.landed?.({
+        status: 'on',
+        settings: {
+          threshold_credits: 2000,
+          target_credits: 15000,
+          monthly_budget_cents: budget
+        }
+      })
+
+      expect(
+        await screen.findByRole('heading', { name: 'Auto top-up is on' })
+      ).toBeVisible()
+      expect(
+        screen.getByTestId('add-credits-auto-top-up-on')
+      ).toHaveTextContent('Below 2,000 credits, tops up to 15,000.')
+      expect(
+        screen.getByTestId('add-credits-auto-top-up-on')
+      ).toHaveTextContent(expected)
+      expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
+        'href',
+        BILLING_URL
+      )
+      expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
+    }
+  )
+
+  it("shows Auto top-up didn't turn on with Set up when the server reports a failure", async () => {
+    const { user, ports, emitted } = renderOffered()
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(checkbox())
+    await user.click(continueButton())
+
+    ports.landed?.({ status: 'failed' })
+
+    expect(
+      await screen.findByRole('heading', { name: "Auto top-up didn't turn on" })
+    ).toBeVisible()
+    expect(
+      screen.getByText(
+        'Your credits were added. Set up auto top-up in Billing to try again.'
+      )
+    ).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Set up' })).toHaveAttribute(
+      'href',
+      AUTO_TOP_UP_SETUP_URL
+    )
+    await user.click(screen.getByRole('button', { name: 'Done' }))
+    expect(emitted().close).toHaveLength(1)
+  })
+
+  it('a checked purchase that lands without an outcome closes without claiming a failure', async () => {
+    const { user, ports, emitted } = renderOffered()
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(checkbox())
+    await user.click(continueButton())
+
+    ports.landed?.()
+
+    await vi.waitFor(() => expect(emitted().close).toHaveLength(1))
+    expect(
+      screen.queryByRole('heading', { name: "Auto top-up didn't turn on" })
+    ).toBeNull()
+  })
+
+  it('says auto top-up is on with a Manage link when it already is', () => {
+    renderOffered({ kind: 'on' })
+
+    const line = screen.getByTestId('add-credits-auto-top-up-is-on')
+    expect(line).toHaveTextContent('Auto top-up is on. Manage')
+    expect(within(line).getByRole('link', { name: 'Manage' })).toHaveAttribute(
+      'target',
+      '_blank'
+    )
+    expect(screen.queryByRole('checkbox')).toBeNull()
   })
 })
