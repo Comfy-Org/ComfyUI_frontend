@@ -1758,14 +1758,14 @@ describe('useMediaAssetActions', () => {
       {
         name: 'file-backed output',
         records: [record],
-        deleteRecord: async () => undefined,
+        deleteRecord: async () => true,
         deletedRecords: ['real-asset-record'],
         deletedHistory: [['history', 'job-distinct-from-asset']]
       },
       {
         name: 'text-only output',
         records: [],
-        deleteRecord: async () => undefined,
+        deleteRecord: async () => true,
         deletedRecords: [],
         deletedHistory: [['history', 'job-distinct-from-asset']]
       },
