@@ -208,6 +208,10 @@ function receiveMessage(
   }
 }
 
+function turnOff(state: GpuSessionState): GpuSessionState {
+  return { ...state, changed: { ...state.changed, on: false }, gpu: 'idle' }
+}
+
 export function reduceGpuSession(
   state: GpuSessionState,
   event: GpuSessionEvent
@@ -218,6 +222,7 @@ export function reduceGpuSession(
     case 'changeSaved': {
       const changed = { ...state.changed, ...savedSettings(event.change) }
       if (!('on' in event.change)) return { ...state, changed }
+      if (event.change.on && event.gpu === 'off') return turnOff(state)
       return {
         ...state,
         changed,
@@ -227,13 +232,7 @@ export function reduceGpuSession(
       }
     }
     case 'gpuAnswered':
-      if (event.answer === 'off') {
-        return {
-          ...state,
-          changed: { ...state.changed, on: false },
-          gpu: 'idle'
-        }
-      }
+      if (event.answer === 'off') return turnOff(state)
       if (event.answer === 'starting') {
         return { ...state, gpu: phaseAfterStarting(state.gpu) }
       }

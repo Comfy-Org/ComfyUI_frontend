@@ -130,11 +130,17 @@ describe('reduceGpuSession', () => {
     expect(next).toEqual({ changed: { on: true }, gpu: phase, session: null })
   })
 
-  it('a gpu_starting answer of off turns the toggle off', () => {
-    const next = reduceGpuSession(starting, {
-      type: 'gpuAnswered',
-      answer: 'off'
-    })
+  it.for([
+    {
+      name: 'a gpu_starting answer of off',
+      event: { type: 'gpuAnswered', answer: 'off' }
+    },
+    {
+      name: 'an answer of off to turning on',
+      event: { type: 'changeSaved', change: { on: true }, gpu: 'off' }
+    }
+  ] as const)('$name turns the toggle off', ({ event }) => {
+    const next = reduceGpuSession(starting, event)
 
     expect(next.changed.on).toBe(false)
     expect(next.gpu).toBe('idle')
