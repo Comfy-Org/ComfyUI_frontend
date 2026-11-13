@@ -38,6 +38,8 @@ import { createGraphHandle } from './graphHandle'
 import { createGraphScopes } from './graphScopeHandle'
 import { createNodeHandles } from './nodeHandle'
 import type { Comfy } from './types'
+import { createSettingsHandle } from './utilities/settingsHandle'
+import { createStorageHandle } from './utilities/storageHandle'
 import { createWidgetCollections } from './widgets/widgetCollection'
 
 /** What the host supplies. */
@@ -175,6 +177,8 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
         resolvedSupplies: () => suppliesIn(visible) ?? Object.freeze([])
       })
     ),
+    settings: createSettingsHandle(),
+    storage: createStorageHandle(),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
   } satisfies Comfy)
 
