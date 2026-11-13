@@ -10,10 +10,8 @@ import { useI18n } from 'vue-i18n'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
 import NodeFrame from '@/renderer/extensions/vueNodes/components/NodeFrame.vue'
 import NodeResizeHandle from '@/renderer/extensions/vueNodes/components/NodeResizeHandle.vue'
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
@@ -69,10 +67,6 @@ const { isInput, style, startResize } = useSubgraphIoLayout(
   () => slots.value
 )
 
-function exitSubgraph() {
-  void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
-}
-
 function stopUnmodifiedKeys(event: KeyboardEvent) {
   if (
     !event.ctrlKey &&
@@ -120,19 +114,12 @@ function forwardUnlessOnButton(event: PointerEvent) {
   >
     <div
       data-testid="subgraph-input-body"
-      class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) py-1"
+      class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) pt-1 pb-3"
       @contextmenu.prevent
     >
       <slot :slots />
     </div>
     <template #after>
-      <NodeFooter
-        class="[clip-path:inset(1.25rem_-0.25rem_-0.25rem)] [&_button:focus-visible]:bg-accent"
-        subgraph-action="exit"
-        error-severity="none"
-        :show-errors-tab-enabled="false"
-        @navigate-subgraph="exitSubgraph"
-      />
       <div
         aria-hidden="true"
         :class="
