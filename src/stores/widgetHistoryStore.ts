@@ -42,7 +42,7 @@ function isOnNode(scope: WidgetHistoryScope | null, node: HistoryNode) {
   return graphId === node.graphId && String(nodeId) === node.nodeId
 }
 
-export interface WidgetHistoryTraveler {
+interface WidgetHistoryTraveler {
   scope: () => WidgetHistoryScope | null
   canTravel: (direction: HistoryDirection) => boolean
   travel: (direction: HistoryDirection) => void | Promise<void>

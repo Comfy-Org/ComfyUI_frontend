@@ -59,7 +59,15 @@ describe(travelFocusedNodeHistory, () => {
 
   it.for([
     { case: 'focus is on another node', focus: () => mountNode('8').focus() },
-    { case: 'focus is outside any node', focus: () => document.body.focus() }
+    { case: 'focus is outside any node', focus: () => document.body.focus() },
+    {
+      case: 'focus is in a text field of the node',
+      focus: () => {
+        const field = document.createElement('input')
+        mountNode('7').append(field)
+        field.focus()
+      }
+    }
   ])('leaves the shortcut to graph history when $case', ({ focus }) => {
     const travel = mountWidget()
     focus()
