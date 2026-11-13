@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import { i18n } from '@/i18n'
+import type { SessionRecreation } from '@/platform/auth/session/cloudWebSessionStore'
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import {
   getWorkspaceId,
@@ -13,8 +14,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const { recreateSession } = vi.hoisted(() => ({
-  recreateSession:
-    vi.fn<() => Promise<'created' | 'identity_changed' | 'failed'>>()
+  recreateSession: vi.fn<() => Promise<SessionRecreation>>()
 }))
 
 vi.mock(import('firebase/auth'), { spy: true })

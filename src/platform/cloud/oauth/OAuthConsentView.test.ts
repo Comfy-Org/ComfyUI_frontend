@@ -9,6 +9,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
+import type { SessionRecreation } from '@/platform/auth/session/cloudWebSessionStore'
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import {
   OAuthApiError,
@@ -17,9 +18,9 @@ import {
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
 const { recreateSession } = vi.hoisted(() => ({
-  recreateSession: vi.fn<
-    () => Promise<'created' | 'identity_changed' | 'failed'>
-  >(async () => 'created')
+  recreateSession: vi.fn<() => Promise<SessionRecreation>>(
+    async () => 'created'
+  )
 }))
 
 vi.mock(import('@/platform/cloud/oauth/oauthApi'), { spy: true })
@@ -49,6 +50,7 @@ const i18n = createI18n({
   messages: {
     en: {
       g: {
+        retry: 'Retry',
         singleSelectDropdown: 'Select an option'
       },
       auth: {
@@ -600,6 +602,29 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(useAuthActions().logout).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: 'Sign in again' })).toBeEnabled()
+  })
+
+  it('shows the session error with Retry, never Sign in again, when the session cannot be judged, and Retry loads the consent', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(signInRedirect())
+      .mockResolvedValueOnce(Response.json(challenge))
+    recreateSession.mockResolvedValueOnce('unavailable')
+    const user = userEvent.setup()
+
+    await renderLoadedConsent()
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Failed to establish session. Please try again.'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Sign in again' })
+    ).not.toBeInTheDocument()
+    expect(fetch).toHaveBeenCalledOnce()
+
+    await user.click(screen.getByRole('button', { name: 'Retry' }))
+
+    expect(await screen.findByText('Comfy Desktop wants access')).toBeVisible()
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
   })
 
   it('keeps the session error and Sign in again when leaving for sign-in is cancelled', async () => {

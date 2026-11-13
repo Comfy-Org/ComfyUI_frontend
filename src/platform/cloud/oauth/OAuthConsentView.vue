@@ -241,6 +241,15 @@
       >
         {{ t('oauth.consent.signInAgain') }}
       </Button>
+      <Button
+        v-else-if="sessionRecovery?.action === 'retry'"
+        variant="secondary"
+        size="lg"
+        class="w-full bg-ink-500 hover:bg-ink-400"
+        @click="loadChallenge"
+      >
+        {{ t('g.retry') }}
+      </Button>
     </div>
     <p v-else class="m-0 text-center text-sm text-muted-foreground">
       {{ t('oauth.consent.loading') }}
@@ -279,10 +288,9 @@ import {
 } from '@/platform/cloud/oauth/oauthState'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 
-interface SessionRecovery {
-  action: 'sign_in_again'
-  oauthRequestId: string
-}
+type SessionRecovery =
+  | { action: 'sign_in_again'; oauthRequestId: string }
+  | { action: 'retry' }
 
 const { initialChallenge } = defineProps<{
   initialChallenge?: OAuthConsentChallenge
@@ -365,6 +373,8 @@ function requestIdFromRoute(): string | null {
 }
 
 async function loadChallenge() {
+  errorMessage.value = ''
+  sessionRecovery.value = null
   const oauthRequestId = requestIdFromRoute()
   if (!oauthRequestId) {
     errorMessage.value = t('oauth.consent.missingRequest')
@@ -392,6 +402,7 @@ async function recoverSession(oauthRequestId: string) {
   if (left) return
   const offerSignIn = { action: 'sign_in_again', oauthRequestId } as const
   if (recreated === 'identity_changed') return showSessionError()
+  if (recreated === 'unavailable') return showSessionError({ action: 'retry' })
   if (recreated === 'failed') return showSessionError(offerSignIn)
   const retried = await fetchOAuthConsentChallenge(oauthRequestId)
   if (left) return

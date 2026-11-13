@@ -633,6 +633,39 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     )
   })
 
+  it.for<{ name: string; session: ServerSession; user: User }>([
+    {
+      name: 'the session read fails with a 503',
+      session: 'network',
+      user: USER_A
+    },
+    {
+      name: 'the remembered login gives no proof to restore the cookie',
+      session: 'none',
+      user: fromPartial<User>({
+        uid: 'user-a',
+        getIdToken: async () => {
+          throw new Error('proof timed out')
+        }
+      })
+    }
+  ])(
+    'answers unavailable, not failed, without reporting or signing out when $name',
+    async ({ session, user }) => {
+      const server = installServer({ userId: 'user-a' })
+      await refreshRemoteConfig({ useAuth: false })
+      identity.signIn(user)
+      await useSessionCookie().ensureSessionCookie()
+
+      server.session = session
+
+      expect(await useSessionCookie().recreateSession()).toBe('unavailable')
+      expect(reportError).not.toHaveBeenCalled()
+      expect(firebaseSignOut).not.toHaveBeenCalled()
+      expect(useCloudWebSessionStore().state.phase).toBe('signed_in')
+    }
+  )
+
   it('answers identity_changed without reporting when another account holds the session', async () => {
     const server = installServer({ userId: 'user-a' })
     await refreshRemoteConfig({ useAuth: false })

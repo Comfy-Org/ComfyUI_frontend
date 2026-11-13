@@ -78,7 +78,12 @@ interface InteractiveSignIn {
 
 type Phase = WebSessionIdentityState['phase']
 
-export type SessionRecreation = 'created' | 'identity_changed' | 'failed'
+/** `unavailable`: the session could not be judged, and the tab stays signed in. */
+export type SessionRecreation =
+  | 'created'
+  | 'identity_changed'
+  | 'unavailable'
+  | 'failed'
 
 /** Why this tab holds no session; `lapsed` is the server's, not a person's, doing. */
 export type WebSessionEnd =
@@ -438,7 +443,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
         ? 'identity_changed'
         : 'failed'
     }
-    if (next.session === held) return 'failed'
+    if (next.session === held) return 'unavailable'
     return next.session.user.id === held.user.id
       ? 'created'
       : 'identity_changed'
