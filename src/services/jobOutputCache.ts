@@ -43,6 +43,7 @@ const jobDetailCache = new QuickLRU<string, JobDetail>({
 const jobAssetsCache = new QuickLRU<string, JobOutputAsset[]>({
   maxSize: MAX_JOB_ASSETS_CACHE_SIZE
 })
+const inFlightJobDetails = new Map<string, Promise<JobDetail | undefined>>()
 const inFlightJobAssets = new Map<string, Promise<JobOutputAsset[]>>()
 
 // Track latest request to dedupe stale responses
@@ -117,16 +118,26 @@ export async function getJobDetail(
   const cached = jobDetailCache.get(jobId)
   if (cached && (!options.requireOutputs || cached.outputs)) return cached
 
-  try {
-    const detail = await api.getJobDetail(jobId)
-    if (detail && (!options.requireOutputs || detail.outputs)) {
-      jobDetailCache.set(jobId, detail)
-    }
-    return detail
-  } catch (error) {
-    console.warn('Failed to fetch job detail:', error)
-    return undefined
-  }
+  const inFlight = inFlightJobDetails.get(jobId)
+  if (inFlight) return inFlight
+
+  const request = api
+    .getJobDetail(jobId)
+    .then((detail) => {
+      // Only an outputs-bearing detail satisfies the cache for a caller that
+      // requires outputs, so a preview-only detail never blocks the refetch.
+      if (detail && (!options.requireOutputs || detail.outputs)) {
+        jobDetailCache.set(jobId, detail)
+      }
+      return detail
+    })
+    .catch((error) => {
+      console.warn('Failed to fetch job detail:', error)
+      return undefined
+    })
+    .finally(() => inFlightJobDetails.delete(jobId))
+  inFlightJobDetails.set(jobId, request)
+  return request
 }
 
 /**

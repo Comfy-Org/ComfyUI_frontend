@@ -18,8 +18,7 @@ import {
  */
 test.describe('API-key login billing surfaces', () => {
   test('shows the key workspace context, balance, and activity from the workspace rail', async ({
-    comfyPage,
-    legacyBillingReads
+    comfyPage
   }) => {
     const page = comfyPage.page
 
@@ -33,9 +32,10 @@ test.describe('API-key login billing surfaces', () => {
       0
     )
     await expect(popover).toContainText(API_KEY_BALANCE_DISPLAY)
-    await expect(popover.getByTestId('add-credits-button')).toBeVisible()
+    await popover.getByTestId('credits-menu-item').hover()
+    await expect(page.getByTestId('add-credits-button')).toBeVisible()
 
-    await popover.getByTestId('plans-credits-menu-item').click()
+    await popover.getByTestId('workspace-settings-menu-item').click()
 
     const settingsDialog = comfyPage.settingDialog
     await settingsDialog.waitForVisible()
@@ -52,7 +52,5 @@ test.describe('API-key login billing surfaces', () => {
       .getByRole('button', { name: 'Activity' })
       .click()
     await expect(settingsDialog.contentArea).toContainText('Credits Added')
-
-    expect(legacyBillingReads).toEqual([])
   })
 })

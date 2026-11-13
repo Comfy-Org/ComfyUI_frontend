@@ -93,7 +93,10 @@ describe('AudioPreviewPlayer', () => {
       expect(pause).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledWith(
         expect.any(DOMException),
-        expect.objectContaining({ errorType: 'error_playing_audio' })
+        expect.objectContaining({
+          errorType: 'error_playing_audio',
+          level: 'warning'
+        })
       )
       expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
@@ -126,6 +129,69 @@ describe('AudioPreviewPlayer', () => {
       )
     })
 
+    it('resumes a retry from where a mid-playback failure stopped', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+      let position = 42
+      let mediaError: MediaError | null = fromPartial<MediaError>({ code: 2 })
+      vi.spyOn(HTMLMediaElement.prototype, 'error', 'get').mockImplementation(
+        () => mediaError
+      )
+      vi.spyOn(
+        HTMLMediaElement.prototype,
+        'currentTime',
+        'get'
+      ).mockImplementation(() => position)
+      vi.spyOn(
+        HTMLMediaElement.prototype,
+        'currentTime',
+        'set'
+      ).mockImplementation((value: number) => {
+        position = value
+      })
+      vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {
+        mediaError = null
+        position = 0
+      })
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.mp3')
+      await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+      await fireEvent.loadedMetadata(screen.getByTestId('audio-preview'))
+
+      expect(position).toBe(42)
+    })
+
+    it('does not carry a retry position over to a replaced source', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+      let position = 42
+      let mediaError: MediaError | null = fromPartial<MediaError>({ code: 2 })
+      vi.spyOn(HTMLMediaElement.prototype, 'error', 'get').mockImplementation(
+        () => mediaError
+      )
+      vi.spyOn(
+        HTMLMediaElement.prototype,
+        'currentTime',
+        'get'
+      ).mockImplementation(() => position)
+      const seek = vi
+        .spyOn(HTMLMediaElement.prototype, 'currentTime', 'set')
+        .mockImplementation((value: number) => {
+          position = value
+        })
+      vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {
+        mediaError = null
+        position = 0
+      })
+      const user = userEvent.setup()
+
+      const { rerender } = renderPlayer('http://example.com/a.mp3')
+      await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+      await rerender({ modelValue: 'http://example.com/b.mp3' })
+      await fireEvent.loadedMetadata(screen.getByTestId('audio-preview'))
+
+      expect(seek).not.toHaveBeenCalledWith(42)
+    })
+
     it('follows a pause that came from outside the player', async () => {
       vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
       vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
@@ -141,6 +207,51 @@ describe('AudioPreviewPlayer', () => {
       await fireEvent(screen.getByTestId('audio-preview'), new Event('pause'))
 
       expect(button).toHaveAttribute('aria-pressed', 'false')
+    })
+
+    it('follows playback that started from outside the player', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+
+      renderPlayer('http://example.com/audio.mp3')
+      const button = screen.getByRole('button', { name: 'g.playPause' })
+      expect(button).toHaveAttribute('aria-pressed', 'false')
+
+      await fireEvent(screen.getByTestId('audio-preview'), new Event('play'))
+
+      expect(button).toHaveAttribute('aria-pressed', 'true')
+    })
+
+    it('does not reload the previous file when the source is replaced', async () => {
+      const loadedSources: string[] = []
+      vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(function (
+        this: HTMLMediaElement
+      ) {
+        loadedSources.push(this.src)
+      })
+      vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+
+      const { rerender } = renderPlayer('http://example.com/a.mp3')
+      await rerender({ modelValue: 'http://example.com/b.mp3' })
+
+      expect(screen.getByTestId('audio-preview')).toHaveAttribute(
+        'src',
+        'http://example.com/b.mp3'
+      )
+      expect(loadedSources).not.toContain('http://example.com/a.mp3')
+    })
+
+    it('stays silent when the source fails to load while paused', async () => {
+      renderPlayer('http://example.com/audio.mp3')
+      vi.spyOn(HTMLMediaElement.prototype, 'error', 'get').mockReturnValue(
+        fromPartial<MediaError>({ code: 4 })
+      )
+
+      await fireEvent.error(screen.getByTestId('audio-preview'))
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('reports the native media diagnostics when playback fails after it started', async () => {
@@ -168,7 +279,10 @@ describe('AudioPreviewPlayer', () => {
           message:
             'Audio playback failed (MediaError 4): DEMUXER_ERROR_COULD_NOT_OPEN'
         }),
-        expect.objectContaining({ errorType: 'error_playing_audio' })
+        expect.objectContaining({
+          errorType: 'error_playing_audio',
+          level: 'warning'
+        })
       )
     })
 
@@ -210,6 +324,45 @@ describe('AudioPreviewPlayer', () => {
       await rerender({ modelValue: undefined })
 
       expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument()
+    })
+
+    it('does not show the previous file length after the source is replaced', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'duration', 'get').mockReturnValue(
+        90
+      )
+      vi.spyOn(
+        HTMLMediaElement.prototype,
+        'currentTime',
+        'get'
+      ).mockReturnValue(27)
+      vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => {})
+
+      const { rerender } = renderPlayer('http://example.com/a.mp3')
+      await fireEvent.loadedMetadata(screen.getByTestId('audio-preview'))
+      await fireEvent.timeUpdate(screen.getByTestId('audio-preview'))
+      expect(screen.getByText('0:27 / 1:30')).toBeInTheDocument()
+
+      await rerender({ modelValue: 'http://example.com/b.mp3' })
+
+      expect(screen.getByText('0:00 / 0:00')).toBeInTheDocument()
+    })
+
+    it('dismisses the error toast when playback is resumed from outside the player', async () => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockRejectedValue(
+        notSupported()
+      )
+      const user = userEvent.setup()
+
+      renderPlayer('http://example.com/audio.mp3')
+      await user.click(screen.getByRole('button', { name: 'g.playPause' }))
+      expect(useToast().toasts).toHaveLength(1)
+
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+      await fireEvent(screen.getByTestId('audio-preview'), new Event('play'))
+
+      expect(useToast().toasts).toEqual([])
     })
 
     it.for([
@@ -345,13 +498,13 @@ describe('AudioPreviewPlayer', () => {
     })
 
     it('reports once when the source fails while a play attempt is pending', async () => {
-      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
-        function (this: HTMLMediaElement) {
-          const rejection = Promise.reject(notSupported())
-          this.dispatchEvent(new Event('error'))
-          return rejection
-        }
-      )
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (
+        this: HTMLMediaElement
+      ) {
+        const rejection = Promise.reject(notSupported())
+        this.dispatchEvent(new Event('error'))
+        return rejection
+      })
       const user = userEvent.setup()
 
       renderPlayer('http://example.com/audio.ogg')
@@ -365,12 +518,12 @@ describe('AudioPreviewPlayer', () => {
 
     it('reports once when the source error follows a handled rejection', async () => {
       const elements: HTMLMediaElement[] = []
-      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
-        function (this: HTMLMediaElement) {
-          elements.push(this)
-          return Promise.reject(notSupported())
-        }
-      )
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function (
+        this: HTMLMediaElement
+      ) {
+        elements.push(this)
+        return Promise.reject(notSupported())
+      })
       const user = userEvent.setup()
 
       renderPlayer('http://example.com/audio.ogg')

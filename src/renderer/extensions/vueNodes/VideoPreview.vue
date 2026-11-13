@@ -25,7 +25,7 @@
       >
         <i class="mb-2 icon-[lucide--video-off] size-12" />
         <p class="text-sm">
-          {{ $t('g.videoFailedToLoad') }}
+          {{ $t(videoFailureMessageKey([errorCode])) }}
         </p>
         <p class="mt-1 text-xs">
           {{ getVideoFilename(currentVideoUrl) }}
@@ -41,6 +41,7 @@
       <!-- Main Video -->
       <video
         v-if="!videoError"
+        data-testid="main-video"
         :src="currentVideoUrl"
         :class="
           cn(
@@ -130,6 +131,9 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { videoFailureMessageKey } from '@/composables/node/useNodeImage'
+import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
+import { useTelemetry } from '@comfyorg/telemetry'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -154,6 +158,7 @@ const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const videoError = ref(false)
 const showLoader = ref(false)
+const errorCode = ref<number>()
 
 const videoWrapperEl = ref<HTMLDivElement>()
 
@@ -197,10 +202,23 @@ const handleVideoLoad = (event: Event) => {
   }
 }
 
-const handleVideoError = () => {
+const handleVideoError = (event: Event) => {
   showLoader.value = false
   videoError.value = true
   actualDimensions.value = null
+  errorCode.value =
+    event.target instanceof HTMLVideoElement
+      ? event.target.error?.code
+      : undefined
+
+  const failedUrl = currentVideoUrl.value
+  if (!failedUrl) return
+  void describeImageLoadFailure(failedUrl).then((metadata) => {
+    useTelemetry()?.trackImageLoadFailed({
+      ...metadata,
+      source: 'node_video_preview'
+    })
+  })
 }
 
 const handleDownload = () => {
@@ -291,7 +309,10 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 const getVideoFilename = (url: string): string => {
   try {
-    return new URL(url).searchParams.get('filename') || 'Unknown file'
+    return (
+      new URL(url, window.location.href).searchParams.get('filename') ||
+      'Unknown file'
+    )
   } catch {
     return 'Invalid URL'
   }

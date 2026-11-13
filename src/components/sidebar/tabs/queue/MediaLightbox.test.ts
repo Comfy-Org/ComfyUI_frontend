@@ -254,6 +254,36 @@ describe('MediaLightbox', () => {
     })
   })
 
+  it('preloads the neighboring images but not neighboring videos', async () => {
+    const requested: string[] = []
+    vi.stubGlobal(
+      'Image',
+      class {
+        decoding = ''
+        set src(url: string) {
+          requested.push(url)
+        }
+      }
+    )
+
+    renderGallery({
+      allGalleryItems: [
+        mockGalleryItems[0],
+        {
+          ...mockGalleryItems[1],
+          filename: 'clip.mp4',
+          mediaType: 'video',
+          url: 'clip.mp4'
+        },
+        mockGalleryItems[2]
+      ]
+    })
+    await nextTick()
+
+    expect(requested).toContain('image3.jpg')
+    expect(requested).not.toContain('clip.mp4')
+  })
+
   it('keeps failed text media actionable until the viewer closes', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }))
 

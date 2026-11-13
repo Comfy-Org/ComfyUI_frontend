@@ -22,6 +22,7 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
       signal?.throwIfAborted()
       return {
         auto_top_up_enabled: false,
+        billing_web_checkout_ui: 'full_page',
         capabilities: {
           can_cancel: false,
           can_change_seats: false,
@@ -36,6 +37,8 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
           can_view_team_usage: false,
           can_edit_workspace: false,
           can_manage_auto_top_up: false,
+          can_view_auto_top_up: false,
+          can_view_auto_top_up_member_notice: false,
           can_manage_subscription: false,
           can_open_plans: false,
           can_run_workflows: false,
@@ -136,6 +139,11 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
     }),
     createTopupCheckout: async () => ({
       checkout_url: 'https://checkout.stripe.com/c/pay/cs_mock'
+    }),
+    quoteTopup: async (amount_cents) => ({
+      amount_cents,
+      credits: Math.round(amount_cents * 2.11),
+      expires_at: '2027-11-02T00:00:00Z'
     }),
     listTopupCheckouts: async () => ({ checkouts: [], next_cursor: null }),
     getTopupCheckout: async (sessionId) => ({

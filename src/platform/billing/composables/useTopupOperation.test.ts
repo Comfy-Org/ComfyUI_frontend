@@ -13,6 +13,7 @@ import {
 import type { BillingSdk } from '@comfyorg/billing-core/sdk'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
+import type { HostedCheckoutSession } from '@/platform/billing/sdk/topupOperationView'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -60,11 +61,10 @@ beforeEach(() => {
 })
 
 describe('useTopupOperation', () => {
-  it('reads and drives the poller while the SDK flag is off', () => {
+  it('reads the poller while the SDK flag is off', () => {
     flagState.billingSdkTopupEnabled = false
     const store = useBillingOperationStore()
     Object.assign(store, {
-      isAddingCredits: true,
       topupActionOperation: billingOperation({
         type: 'topup',
         opId: 'op-poller'
@@ -72,15 +72,12 @@ describe('useTopupOperation', () => {
     })
 
     const view = useTopupOperation()
-    view.dismissOperation('op-poller')
 
-    expect(view.isAddingCredits.value).toBe(true)
     expect(view.topupOperation.value?.opId).toBe('op-poller')
-    expect(store.dismissOperation).toHaveBeenCalledWith('op-poller')
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
 
-  it('reads and drives the SDK while the flag is on', async () => {
+  it('reads the SDK while the flag is on', async () => {
     flagState.billingSdkTopupEnabled = true
     const store = useBillingOperationStore()
     Object.assign(store, {
@@ -93,12 +90,7 @@ describe('useTopupOperation', () => {
     const view = useTopupOperation()
     harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
 
-    expect(view.isAddingCredits.value).toBe(true)
     expect(view.topupOperation.value?.opId).toBe('op-1')
-
-    view.dismissOperation('op-1')
-    expect(view.topupOperation.value).toBeUndefined()
-    expect(store.dismissOperation).not.toHaveBeenCalled()
   })
 
   it('stays on the poller while unified auth is off, whatever the SDK flag says', () => {
@@ -108,6 +100,37 @@ describe('useTopupOperation', () => {
     useTopupOperation()
 
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
+  })
+
+  it('quotes on the legacy rail and reads a failure as no quote', async () => {
+    flagState.billingSdkTopupEnabled = false
+    const signal = new AbortController().signal
+    vi.spyOn(billingApi, 'quoteTopup')
+      .mockResolvedValueOnce({
+        amount_cents: 5000,
+        credits: 10550,
+        expires_at: '2027-11-02'
+      })
+      .mockRejectedValueOnce(new WorkspaceApiError('down', 503))
+    const view = useTopupOperation()
+
+    await expect(view.quoteTopup(5000, signal)).resolves.toBe(10550)
+    await expect(view.quoteTopup(5000, signal)).resolves.toBeNull()
+  })
+
+  it('quotes on the SDK rail and reads a failure as no quote', async () => {
+    flagState.billingSdkTopupEnabled = true
+    const signal = new AbortController().signal
+    vi.mocked(harness.sdk.topup.quoteTopup)
+      .mockResolvedValueOnce({
+        status: 'ok',
+        value: { amountCents: 5000, credits: 10550, expiresAt: '2027-11-02' }
+      })
+      .mockResolvedValueOnce({ status: 'error', code: 'REQUEST_FAILED' })
+    const view = useTopupOperation()
+
+    await expect(view.quoteTopup(5000, signal)).resolves.toBe(10550)
+    await expect(view.quoteTopup(5000, signal)).resolves.toBeNull()
   })
 
   it('issues through the billing context while the SDK rail is off', async () => {
@@ -156,8 +179,6 @@ describe('useTopupOperation', () => {
       flagState.billingSdkTopupEnabled = flagOn
       const store = useBillingOperationStore()
 
-      // Not awaited: the legacy registration settles only when the operation
-      // does, which is the reason the dialog holds it as a promise.
       void useTopupOperation()
         .adoptPendingOperation('op-pending', { attemptStartedAt: 1000 })
         .catch(() => {})
@@ -246,9 +267,9 @@ describe('useTopupOperation', () => {
       vi.useFakeTimers()
     })
 
-    async function settle(promise: Promise<string>) {
+    async function settle(promise: Promise<HostedCheckoutSession>) {
       const outcome = promise.then(
-        (url) => ({ url }),
+        (session) => session,
         (error: unknown) => ({ error })
       )
       await vi.runAllTimersAsync()
@@ -323,7 +344,7 @@ describe('useTopupOperation', () => {
         const checkout = useTopupOperation()
           .createHostedCheckout(1000, returnUrl, scope.signal)
           .then(
-            (url) => ({ url }),
+            (session) => session,
             (error: unknown) => ({ error })
           )
         await vi.advanceTimersByTimeAsync(500)
@@ -352,6 +373,42 @@ describe('useTopupOperation', () => {
           flagOn
             ? { amountCents: 1000, returnUrl, signal: scope.signal }
             : scope.signal
+        )
+      }
+    )
+
+    it.for(rails)(
+      'sends the auto top-up settings and returns the session id on the $rail rail',
+      async ({ flagOn }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        const autoTopUp = {
+          threshold_credits: 1000,
+          target_credits: 5000,
+          monthly_budget_cents: null
+        }
+        const mintCheckout = flagOn
+          ? vi
+              .mocked(harness.sdk.topup.createHostedTopupCheckout)
+              .mockResolvedValueOnce({
+                status: 'ok',
+                url: 'https://stripe/new',
+                sessionId: 'cs_1'
+              })
+          : vi.spyOn(billingApi, 'createTopupCheckout').mockResolvedValueOnce({
+              checkout_url: 'https://stripe/new',
+              session_id: 'cs_1'
+            })
+
+        await expect(
+          useTopupOperation().createHostedCheckout(
+            1000,
+            returnUrl,
+            undefined,
+            autoTopUp
+          )
+        ).resolves.toEqual({ url: 'https://stripe/new', sessionId: 'cs_1' })
+        expect(mintCheckout.mock.lastCall).toContainEqual(
+          flagOn ? { amountCents: 1000, returnUrl, autoTopUp } : autoTopUp
         )
       }
     )

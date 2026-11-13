@@ -10,6 +10,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { onCapabilityRevision } from '@/platform/remote/ingest/capabilityRevision'
 import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
+import { parseBillingTopUpDenial } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
@@ -18,13 +19,21 @@ import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdenti
 import { reportWorkspaceScopeMismatch } from '@/platform/billing/telemetry/workspaceTelemetryContext'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 
 type CapabilityReadState =
   | { status: 'idle' }
   | {
-      status: 'pending' | 'denied'
+      status: 'pending'
       authUid: string
       workspaceId: string
+    }
+  | {
+      status: 'denied'
+      authUid: string
+      workspaceId: string
+      sessionLapsed: boolean
     }
   | {
       status: 'unavailable'
@@ -80,6 +89,11 @@ function readCapabilitiesResponse(
 
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
+  const webSession = useCloudWebSessionStore()
+  const { flags } = useFeatureFlags()
+  function lapseRecoveryEnabled(): boolean {
+    return flags.webSessionLapseRecoveryEnabled
+  }
   const apiKeyAuthStore = useApiKeyAuthStore()
   const workspaceStore = useWorkspaceIdentity()
   const actorId = computed(
@@ -115,8 +129,8 @@ function useBillingCapabilitiesInternal() {
   )
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const canTopUp = computed(() => capabilities.value?.can_top_up ?? false)
-  const topUpDenial = computed<string | undefined>(
-    () => resolvedResponse.value?.denied_reasons?.can_top_up
+  const topUpDenial = computed(() =>
+    parseBillingTopUpDenial(resolvedResponse.value?.denied_reasons?.can_top_up)
   )
   const canManageBilling = computed(() =>
     receiveServerFact(
@@ -197,6 +211,18 @@ function useBillingCapabilitiesInternal() {
       capabilities.value?.can_manage_auto_top_up ?? false
     )
   )
+  const canViewAutoTopUpCard = computed(() =>
+    receiveServerFact(
+      'can_view_auto_top_up',
+      capabilities.value?.can_view_auto_top_up ?? false
+    )
+  )
+  const canViewAutoTopUpMemberNotice = computed(() =>
+    receiveServerFact(
+      'can_view_auto_top_up_member_notice',
+      capabilities.value?.can_view_auto_top_up_member_notice ?? false
+    )
+  )
   const autoTopUpEnabled = computed(() =>
     receiveServerFact(
       'auto_top_up_enabled',
@@ -205,6 +231,12 @@ function useBillingCapabilitiesInternal() {
   )
   const autoTopUpSetup = computed(
     () => resolvedResponse.value?.auto_top_up_setup ?? null
+  )
+  const autoTopUpMemberView = computed(() =>
+    receiveServerFact(
+      'auto_top_up_member_view',
+      resolvedResponse.value?.auto_top_up_member_view ?? null
+    )
   )
   const canRunWorkflows = computed(
     () => capabilities.value?.can_run_workflows ?? false
@@ -222,6 +254,18 @@ function useBillingCapabilitiesInternal() {
     receiveServerFact(
       'has_parked_billing_operation',
       resolvedResponse.value?.has_parked_billing_operation === true
+    )
+  )
+  const billingNoticeAudience = computed(() =>
+    receiveServerFact(
+      'billing_notice_audience',
+      resolvedResponse.value?.billing_notice_audience ?? null
+    )
+  )
+  const endingNoticeStartsAt = computed(() =>
+    receiveServerFact(
+      'ending_notice_starts_at',
+      resolvedResponse.value?.ending_notice_starts_at ?? null
     )
   )
   const runWorkflowsDenial = computed(() =>
@@ -341,7 +385,9 @@ function useBillingCapabilitiesInternal() {
     void fetchCapabilities()
   })
 
+  let disposed = false
   onScopeDispose(() => {
+    disposed = true
     clearRefreshTimer()
     stopRevisionListener()
   })
@@ -392,6 +438,7 @@ function useBillingCapabilitiesInternal() {
     else resetRead()
 
     const requestId = ++latestRequestId
+    const recoveryEnabledAtStart = lapseRecoveryEnabled()
     const controller = new AbortController()
     const abortRequest = () => controller.abort()
     if (signal?.aborted) controller.abort()
@@ -473,6 +520,8 @@ function useBillingCapabilitiesInternal() {
           (error instanceof WorkspaceApiError &&
             (error.status === 401 || error.status === 403)) ||
           (error instanceof Error && error.name === 'AuthStoreError')
+        const sessionLapsed =
+          error instanceof WorkspaceApiError && error.status === 401
         if (!denied) trackCapabilityRead(false)
         // A transient failure keeps the last good snapshot - stale, not wrong -
         // and retries. A denial is the server answering about this actor, so it
@@ -486,10 +535,15 @@ function useBillingCapabilitiesInternal() {
           }
         } else {
           readState.value = denied
-            ? { status: 'denied', authUid: userId, workspaceId }
+            ? { status: 'denied', authUid: userId, workspaceId, sessionLapsed }
             : unavailableState(userId, workspaceId)
         }
         scheduleRefresh()
+        refetchAfterSettle =
+          sessionLapsed &&
+          !recoveryEnabledAtStart &&
+          lapseRecoveryEnabled() &&
+          webSession.state.phase === 'signed_in'
         // A sustained outage retries on a timer, so reporting every attempt
         // would emit one warning a minute for as long as the tab is open.
         if (!denied && !firstFailure) return
@@ -512,7 +566,7 @@ function useBillingCapabilitiesInternal() {
           // Deferred to here so the refetch is not deduped onto the request
           // it replaces. It cannot loop: this one is issued after the revision
           // that marked it, so only a further mutation can mark it in turn.
-          if (refetchAfterSettle) void fetchCapabilities()
+          if (refetchAfterSettle && !disposed) void fetchCapabilities()
         }
       }
     })()
@@ -556,6 +610,21 @@ function useBillingCapabilitiesInternal() {
     }
   )
 
+  watch(
+    [() => webSession.state, lapseRecoveryEnabled],
+    ([state, recoveryEnabled]) => {
+      const read = readState.value
+      if (
+        state.phase === 'signed_in' &&
+        read.status === 'denied' &&
+        read.sessionLapsed &&
+        recoveryEnabled
+      ) {
+        void fetchCapabilities()
+      }
+    }
+  )
+
   return {
     canTopUp,
     topUpDenial,
@@ -576,13 +645,18 @@ function useBillingCapabilitiesInternal() {
     canManageSubscription,
     canDowngradeToPersonal,
     canManageAutoTopUp,
+    canViewAutoTopUpCard,
+    canViewAutoTopUpMemberNotice,
     autoTopUpEnabled,
     autoTopUpSetup,
+    autoTopUpMemberView,
     canRunWorkflows,
     planKind,
     paymentRecoveryAvailable,
     runWorkflowsDenial,
     hasParkedBillingOperation,
+    billingNoticeAudience,
+    endingNoticeStartsAt,
     runDeniedPaymentPastDue,
     isReady,
     hasResolvedCapabilities,

@@ -2,7 +2,7 @@ import { expect, mergeTests } from '@playwright/test'
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import {
   BLANK_WORKFLOW,
@@ -276,8 +276,7 @@ async function driveThroughRejectedWidgetEdit(
   await page.getByRole('button', { name: 'Fit View (.)', exact: true }).click()
   const seedInput = vueNodes
     .getNodeLocator(copyBNodeId)
-    .getByLabel('seed', { exact: true })
-    .getByRole('spinbutton')
+    .getByRole('spinbutton', { name: 'seed', exact: true })
 
   const framesBeforeEdit = outboundFrames.length
   await seedInput.fill(String(EDITED_SEED_VALUE))

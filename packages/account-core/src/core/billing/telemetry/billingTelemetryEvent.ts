@@ -1,4 +1,5 @@
 import type { AutoTopUpCardBillingEvent } from './autoTopUpCardEvent'
+import type { AutoTopUpOfferBillingEvent } from './autoTopUpOfferEvent'
 import type { CancelBillingEvent } from './cancelEvent'
 import type { CapabilityReadBillingEvent } from './capabilityReadEvent'
 import type { CheckoutChallengeBillingEvent } from './checkoutChallengeEvent'
@@ -38,6 +39,7 @@ export type BillingTelemetryEvent = {
   | CancelBillingEvent
   | PortalBillingEvent
   | AutoTopUpCardBillingEvent
+  | AutoTopUpOfferBillingEvent
   | PlatformHandoffBillingEvent
   | CheckoutChallengeBillingEvent
   | CheckoutRedirectBillingEvent

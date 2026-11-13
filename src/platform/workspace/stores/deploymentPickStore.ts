@@ -30,11 +30,6 @@ import {
 import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-/**
- * What picking a linked deployment did: `picked` (the page is reloading onto
- * it), `unchanged` (this browser already runs on it), or `refused` with the
- * server's reason.
- */
 type LinkPickOutcome =
   | { kind: 'picked' }
   | { kind: 'unchanged' }
@@ -289,7 +284,11 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     reportedLoadFailure = true
     reportError(err, {
       surface: 'workspace',
-      errorType: 'error_loading_deployment_listing'
+      errorType: 'error_loading_deployment_listing',
+      ...(isSessionRefused(err) && {
+        level: 'warning',
+        tags: { status: 401, outcome: 'denied' }
+      })
     })
   }
 
@@ -381,14 +380,14 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     return pickAndReload(id, deploymentId)
   }
 
-  /**
-   * Pick the deployment a link names (BE-20294), then reload like `pick`.
-   * It waits for the page's first listing, so a link to what this browser
-   * already runs on does nothing, but it does not need that listing to have
-   * answered: an account outside the rollout, or a deployment that is gone
-   * or not the workspace's, gets the server's refusal rather than nothing.
-   */
-  async function pickFromLink(deploymentId: string): Promise<LinkPickOutcome> {
+  function runsOnComfyCloud(): boolean {
+    if (listingRefused.value) return true
+    return isVisible.value && pickedDeploymentId.value === null
+  }
+
+  async function pickFromLink(
+    deploymentId: string | null
+  ): Promise<LinkPickOutcome> {
     const id = workspaceStore.workspaceId
     if (!id || state.value.phase === 'switching') return { kind: 'unchanged' }
     let timeout: ReturnType<typeof setTimeout> | undefined
@@ -405,27 +404,35 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     if (workspaceStore.workspaceId !== id || isSwitching.value) {
       return { kind: 'unchanged' }
     }
-    if (deploymentId === pickedDeploymentId.value) return { kind: 'unchanged' }
+    const alreadyOn =
+      deploymentId === null
+        ? runsOnComfyCloud()
+        : deploymentId === pickedDeploymentId.value
+    if (alreadyOn) return { kind: 'unchanged' }
     return pickLinkAndReload(id, deploymentId)
   }
 
   async function pickLinkAndReload(
     workspaceId: string,
-    deploymentId: string
+    deploymentId: string | null
   ): Promise<LinkPickOutcome> {
     dispatch({ type: 'switchStarted', target: deploymentId })
     const controller = new AbortController()
     let timeout: ReturnType<typeof setTimeout> | undefined
-    const selection = workspaceApi
-      .pickDeployment(
-        workspaceId,
-        { deployment_id: deploymentId },
-        controller.signal
-      )
-      .then<LinkPickOutcome, LinkPickOutcome>(
-        () => ({ kind: 'picked' }),
-        (error: unknown) => ({ kind: 'refused', message: errorMessage(error) })
-      )
+    const request =
+      deploymentId === null
+        ? workspaceApi.clearDeployment(workspaceId, {
+            signal: controller.signal
+          })
+        : workspaceApi.pickDeployment(
+            workspaceId,
+            { deployment_id: deploymentId },
+            controller.signal
+          )
+    const selection = request.then<LinkPickOutcome, LinkPickOutcome>(
+      () => ({ kind: 'picked' }),
+      (error: unknown) => ({ kind: 'refused', message: errorMessage(error) })
+    )
     const outcome = await Promise.race([
       selection,
       new Promise<LinkPickOutcome>((resolve) => {
@@ -612,6 +619,10 @@ function isTransient(err: unknown): boolean {
   return (
     status === undefined || status === 408 || status === 429 || status >= 500
   )
+}
+
+function isSessionRefused(err: unknown): boolean {
+  return err instanceof WorkspaceApiError && err.status === 401
 }
 
 function loadFailure(

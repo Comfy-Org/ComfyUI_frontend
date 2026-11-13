@@ -13,6 +13,7 @@
  * view package that has both — not to a framework-free core.
  */
 import {
+  zAutoTopUpMemberView,
   zBillingCapabilities,
   zBillingCapabilitiesResponse,
   zBillingCapabilityRolloutDefaults,
@@ -27,6 +28,7 @@ import type { CapabilityDenials } from './capabilityDenials'
 import { decodeCapabilityDenials } from './capabilityDenials'
 import { createScopedReader } from './scopedReader'
 import type { ValidatedBillingResponse } from './sharedRead'
+import { wireCents } from './wireCents'
 
 export const CAPABILITIES_ROUTE = '/billing/capabilities'
 
@@ -60,6 +62,20 @@ export type CapabilityRolloutDefaults = z.infer<
 const CapabilitiesBodySchema = z.object({
   auto_top_up_enabled:
     zBillingCapabilitiesResponse.shape.auto_top_up_enabled.optional(),
+  auto_top_up_member_view: zAutoTopUpMemberView
+    .extend({
+      target_credits: wireCents.nullable(),
+      threshold_credits: wireCents.nullable()
+    })
+    .optional()
+    .catch(undefined),
+  auto_top_up_setup: zBillingCapabilitiesResponse.shape.auto_top_up_setup,
+  billing_web_checkout_ui:
+    zBillingCapabilitiesResponse.shape.billing_web_checkout_ui
+      .optional()
+      .catch(undefined),
+  cancel_takes_effect_immediately:
+    zBillingCapabilitiesResponse.shape.cancel_takes_effect_immediately,
   capabilities: zBillingCapabilities,
   expires_at: z.string(),
   has_parked_billing_operation:
@@ -87,6 +103,15 @@ export interface CapabilitiesSnapshot {
    * As received. Absent when the server omits it: unknown, not a refusal.
    */
   readonly autoTopUpEnabled?: boolean
+  /** As received. Absent when the server omits or hides it. */
+  readonly autoTopUpMemberView?: CapabilitiesBody['auto_top_up_member_view']
+  readonly autoTopUpSetup?: z.infer<
+    typeof zBillingCapabilitiesResponse.shape.auto_top_up_setup
+  >
+  /** As received. Absent when the server omits it or sends an unknown variant. */
+  readonly billingWebCheckoutUi?: CapabilitiesBody['billing_web_checkout_ui']
+  /** As received. Absent when the server omits it: unknown, never false. */
+  readonly cancelTakesEffectImmediately?: boolean
   readonly hasParkedBillingOperation?: boolean
   readonly paymentRecoveryAvailable?: boolean
   readonly planKind?: z.infer<
@@ -195,6 +220,10 @@ export function createCapabilitiesReader(
       status: 'ok',
       value: {
         autoTopUpEnabled: data.auto_top_up_enabled,
+        autoTopUpMemberView: data.auto_top_up_member_view,
+        autoTopUpSetup: data.auto_top_up_setup,
+        billingWebCheckoutUi: data.billing_web_checkout_ui,
+        cancelTakesEffectImmediately: data.cancel_takes_effect_immediately,
         capabilities: data.capabilities,
         denials,
         hasParkedBillingOperation: data.has_parked_billing_operation,

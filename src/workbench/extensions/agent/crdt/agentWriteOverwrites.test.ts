@@ -18,8 +18,8 @@ import type {
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 import { useLitegraphService } from '@/services/litegraphService'
 import { reportError } from '@comfyorg/telemetry/reportError'
 

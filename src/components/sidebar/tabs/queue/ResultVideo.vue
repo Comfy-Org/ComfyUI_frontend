@@ -5,7 +5,11 @@
     :autoplay="autoplay"
     class="max-h-[90vh] max-w-[90vw]"
   >
-    <source :src="url" :type="htmlVideoType" />
+    <source
+      data-testid="result-video-source"
+      :src="url"
+      :type="htmlVideoType"
+    />
     {{ $t('g.videoFailedToLoad') }}
   </video>
 </template>
@@ -40,8 +44,13 @@ onActivated(() => {
 const settingStore = useSettingStore()
 const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
 
+const playsResolvedUrl = computed(
+  () => !!props.result.url && props.result.filenameIsDisplayName === true
+)
+
 const vhsAdvancedPreviews = computed(() => {
   return (
+    !playsResolvedUrl.value &&
     isExtensionInstalled('VideoHelperSuite.Core') &&
     isExtensionEnabled('VideoHelperSuite.Core') &&
     settingStore.get('VHS.AdvancedPreviews') &&

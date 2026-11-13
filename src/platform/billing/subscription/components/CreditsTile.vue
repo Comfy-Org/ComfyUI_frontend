@@ -177,8 +177,12 @@
       </div>
     </template>
 
-    <div v-if="canTopUp" class="flex flex-col gap-3">
+    <div
+      v-if="addCredits.kind !== 'hidden' || paymentRecoveryAvailable"
+      class="flex flex-col gap-3"
+    >
       <Button
+        v-if="addCredits.kind !== 'hidden'"
         :variant="isOutOfCredits ? 'inverted' : 'secondary'"
         size="lg"
         :class="
@@ -187,31 +191,34 @@
             !isOutOfCredits && 'bg-muted text-foreground'
           )
         "
+        :disabled="addCredits.kind === 'disabled'"
+        :aria-describedby="refusalReason ? refusalReasonId : undefined"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
       </Button>
-      <span v-if="creditsUseNote" class="text-sm text-muted-foreground">
-        {{ creditsUseNote }}
-      </span>
-    </div>
-    <div v-else-if="paymentRecoveryAvailable" class="flex flex-col gap-3">
+      <p
+        v-if="refusalReason"
+        :id="refusalReasonId"
+        class="m-0 text-sm text-muted-foreground"
+      >
+        {{ refusalReason }}
+      </p>
       <Button
-        :variant="isOutOfCredits ? 'inverted' : 'secondary'"
+        v-if="paymentRecoveryAvailable"
+        variant="secondary"
         size="lg"
-        :class="
-          cn(
-            'w-full font-normal',
-            !isOutOfCredits && 'bg-muted text-foreground'
-          )
-        "
-        :data-dd-action-name="BILLING_ACTION_NAME.addCreditsTile"
-        @click="handleAddCredits"
+        class="w-full font-normal"
+        :loading="isUpdatingPayment"
+        @click="updatePayment"
       >
-        {{ $t('subscription.addCredits') }}
+        {{ $t('workspacePanel.billingStatus.updatePayment') }}
       </Button>
-      <span v-if="creditsUseNote" class="text-sm text-muted-foreground">
+      <span
+        v-if="creditsUseNote && addCredits.kind === 'enabled'"
+        class="text-sm text-muted-foreground"
+      >
         {{ creditsUseNote }}
       </span>
     </div>
@@ -222,7 +229,7 @@
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -247,7 +254,11 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { useCustomerEventsService } from '@/services/customerEventsService'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { addCreditsAvailability } from '@comfyorg/account-core/billing'
+import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 
 const { zeroState = false, inactivePlan } = defineProps<{
@@ -267,7 +278,24 @@ const {
   fetchBalance,
   fetchStatus
 } = useBillingContext()
-const { canTopUp, paymentRecoveryAvailable } = useBillingCapabilities()
+const {
+  canTopUp,
+  topUpDenial,
+  hasResolvedCapabilities,
+  paymentRecoveryAvailable
+} = useBillingCapabilities()
+const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
+const addCredits = computed(() =>
+  addCreditsAvailability({
+    resolved: hasResolvedCapabilities.value,
+    canTopUp: canTopUp.value,
+    denial: topUpDenial.value
+  })
+)
+const refusalReasonId = useId()
+const refusalReason = computed(() =>
+  addCredits.value.kind === 'disabled' ? t(addCredits.value.reasonKey) : null
+)
 const {
   prepaidCredits,
   totalCredits,
@@ -276,7 +304,8 @@ const {
   isLoadingBalance
 } = useSubscriptionCredits()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
-const customerEventsService = useCustomerEventsService()
+const { shouldUseWorkspaceBilling } = useBillingRouting()
+const workspaceStore = useWorkspaceIdentity()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
 const { pendingTopupNeedsRefresh, consumeCompletedTopup } = usePendingTopup()
@@ -522,15 +551,11 @@ async function refreshCredits() {
 
   if (!pendingTopupNeedsRefresh()) return
 
-  const response = await customerEventsService.getMyEvents({
-    page: 1,
-    limit: 10
-  })
-  if (!response) {
-    throw new Error(
-      customerEventsService.error.value ?? 'Fetching customer events failed'
-    )
-  }
+  if (!shouldUseWorkspaceBilling.value) return
+
+  const workspaceId = workspaceStore.activeWorkspaceId
+  const response = await readWorkspaceBillingEvents({ page: 1, limit: 10 })
+  if (!response || workspaceStore.activeWorkspaceId !== workspaceId) return
   const completedTopup = consumeCompletedTopup(response.events)
   if (completedTopup) {
     telemetry?.trackApiCreditTopupSucceeded()
@@ -587,6 +612,10 @@ async function handleWindowFocus() {
 }
 
 useEventListener(window, 'focus', () => void handleWindowFocus())
+
+watch(shouldUseWorkspaceBilling, (known) => {
+  if (known && pendingTopupNeedsRefresh()) void handleRefresh()
+})
 
 onMounted(handleRefresh)
 </script>

@@ -130,15 +130,21 @@ function isApiRoute(url: URL): boolean {
   return pathname === '/api' || pathname.startsWith('/api/')
 }
 
+function absoluteUrl(raw: string): URL | null {
+  try {
+    return new URL(raw)
+  } catch {
+    return null
+  }
+}
+
 function ssoReturnTo(
   raw: string,
   origin: string,
   appOrigin: string | undefined
 ): string {
-  if (appOrigin !== undefined && URL.canParse(raw)) {
-    const url = new URL(raw)
-    if (url.origin === appOrigin) return isApiRoute(url) ? '/' : url.href
-  }
+  const url = appOrigin === undefined ? null : absoluteUrl(raw)
+  if (url && url.origin === appOrigin) return isApiRoute(url) ? '/' : url.href
   const path = safeInternalPath(raw, origin, '/')
   return isApiRoute(new URL(path, origin)) ? '/' : path
 }
