@@ -895,7 +895,7 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
   })
 
   it("keeps Auto top-up didn't turn on but drops Set up once its setup link is hidden", async () => {
-    const { user, ports, rerender } = renderOffered()
+    const { user, ports, rerender, emitted } = renderOffered()
     ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
     await user.click(checkbox())
     await user.click(continueButton())
@@ -908,6 +908,7 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
       screen.getByRole('heading', { name: "Auto top-up didn't turn on" })
     ).toBeVisible()
     expect(screen.queryByRole('link', { name: 'Set up' })).toBeNull()
+    expect(emitted().close).toBeUndefined()
   })
 
   it('a checked purchase that lands without an outcome closes without claiming a failure', async () => {
