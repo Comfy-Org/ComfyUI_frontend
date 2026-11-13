@@ -266,6 +266,7 @@ function installServer(
 ) {
   const server = {
     session: initial,
+    sessionAfterCreate: { userId: 'user-a' } as ServerSession,
     requests: [] as SessionRequest[],
     dropPosts: false,
     revokeAllStatus: 200,
@@ -288,7 +289,7 @@ function installServer(
     if (server.session === 'sso_required') {
       return jsonResponse({ code: 'sso_required', message: 'use SSO' }, 403)
     }
-    server.session = { userId: 'user-a' }
+    server.session = server.sessionAfterCreate
     return jsonResponse({ success: true })
   }
 
@@ -640,6 +641,20 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     firebaseSignOut.mockResolvedValue()
 
     server.session = { userId: 'user-b' }
+
+    expect(await useSessionCookie().recreateSession()).toBe('identity_changed')
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('answers identity_changed when another tab signs in to another account while the cookie is created again', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+    firebaseSignOut.mockResolvedValue()
+
+    server.session = 'none'
+    server.sessionAfterCreate = { userId: 'user-b' }
 
     expect(await useSessionCookie().recreateSession()).toBe('identity_changed')
     expect(reportError).not.toHaveBeenCalled()

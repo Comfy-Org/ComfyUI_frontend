@@ -173,6 +173,11 @@ export async function readsSignedInWebSession(): Promise<boolean> {
   return (await readWebSession(sessionOptions())).status === 'ok'
 }
 
+async function readSessionUserId(): Promise<string | undefined> {
+  const read = await readWebSession(sessionOptions())
+  return read.status === 'ok' ? read.session.user.id : undefined
+}
+
 function createCloudIdentity(
   onAccountChanged: (change: WebSessionAccountChange) => void
 ): WebSessionIdentity {
@@ -427,7 +432,13 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     const held = currentSession()
     if (!identity || !held) return 'failed'
     const next = await identity.refresh(held.user.id)
-    if (next.phase !== 'signed_in' || next.session === held) return 'failed'
+    if (next.phase !== 'signed_in') {
+      const holder = await readSessionUserId()
+      return holder !== undefined && holder !== held.user.id
+        ? 'identity_changed'
+        : 'failed'
+    }
+    if (next.session === held) return 'failed'
     return next.session.user.id === held.user.id
       ? 'created'
       : 'identity_changed'
