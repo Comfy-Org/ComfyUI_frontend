@@ -189,13 +189,27 @@ follow-up for a command interface.
     the graph on screen (B-01). A node id or slot that is not there answers
     `undefined` or `false`; an id that is not a string throws.
 
+### Groups
+
+21. `comfy.graph.groups()` and a graph handle's `groups()` give a handle for
+    each group of the graph, in draw order. A group handle names a group by its
+    id in its graph and follows the same rules as a node handle: it survives
+    undo and redo, which restore the id, and is retired when another document
+    loads or a restore finds the group gone. It reads the group's title, color
+    and bounds, and `nodes()` gives the nodes whose center, title bar
+    included, is inside the group now. The centers are measured as `getBounds`
+    measures a node, so the answer does not depend on the last frame drawn,
+    and the group's own list of nodes, which `recomputeInsideNodes` rewrites,
+    is neither read nor changed. No stored pack retitles or recolors a group
+    through the API, so there is no group edit.
+
 ### Node handle members that are not edits
 
-21. `isSerializingWidgets()`, `isResizable()` and `snapshot()` read the live
+22. `isSerializingWidgets()`, `isResizable()` and `snapshot()` read the live
     node, and return `undefined` once it is gone. `snapshot()` is a frozen copy
     of the node's identity, title, mode, flags, colors, shape, position and
     size; a shape with no name here reads as `'default'`.
-22. `addBadge(badge)` is a registration, not an edit: badges are not saved and
+23. `addBadge(badge)` is a registration, not an edit: badges are not saved and
     make no undo step. It pushes an `LGraphBadge` onto `node.badges`, the list
     extensions already use, and returns a disposer that removes that entry
     only and is safe to call twice. An object badge is read once, when it is
@@ -232,6 +246,29 @@ document is no longer open.
 
 A step is captured only if the serialized graph changed, so an edit that
 changes nothing a workflow saves (a title set to itself) adds no entry.
+
+## What is left out
+
+Counts are stored packs and call sites from the member census of the earlier
+contract. A member no stored pack calls is cut.
+
+| Member                                                                                                                                                      |               Packs, sites | Why                                                                                                                                                                                                                     |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GraphHandle.remove(id)`                                                                                                                                    |                       0, 0 | `node.remove()` and `comfy.edit.removeNode` cover it                                                                                                                                                                    |
+| `NodeHandle.setPinned`, `getShape`, `getSizeConstraints`                                                                                                    |                       0, 0 | No use; `snapshot()` reads the shape                                                                                                                                                                                    |
+| `GroupHandle.setTitle`, `setColor`                                                                                                                          |                       0, 0 | No use, so there is no group edit                                                                                                                                                                                       |
+| `SlotCollection.get`, `ids`; `SlotOptions.localizedName`, `position`, `direction`                                                                           |                       0, 0 | No use; `byId`, `at` and `byName` remain                                                                                                                                                                                |
+| `SlotSnapshot.*` fields read on their own                                                                                                                   |                       0, 0 | `snapshot()` is used (3 packs) and returns them all                                                                                                                                                                     |
+| `GraphHandle.select`, `selection`, `centerOn`, `setZoom`, `panBy`, `pointerPosition`; `GroupHandle.centerOn`; `NodeHandle.getScreenRect`, `getSlotPosition` | 12, 9, 6, 2, 1, 4; 3; 4, 1 | View state, not document edits: no undo step, no command. They belong with the viewport and selection events (A-04, A-16, A-17 apply there)                                                                             |
+| `NodeHandle.getOutputImages`, `getDisplayedImageIndex`                                                                                                      |                       8, 4 | Execution output, not graph state                                                                                                                                                                                       |
+| `GraphHandle.resolvedSupplies`, `GraphScopeHandle.resolvedSupplies`, `InputSlotHandle.resolvedSource`                                                       |                    1, 1, 2 | Frontend execution's resolvers own them                                                                                                                                                                                 |
+| `GraphHandle.replace`, `duplicate`                                                                                                                          |                       3, 1 | The host has no owner for rebuilding a node as another type with its state and links (`useNodeReplacement` serves missing backend types and its planning is private); building one here would be a second mutation path |
+| `InputSlotHandle.widgetConfig`, `mergeWidgetConfig`; `InputSlotPatch.widgetConfig`; `SlotOptions.widgetConfig`                                              |                 3, 2; 5; 4 | They rebuild a connected Primitive node's widget from an input spec, which is the widget owner's work                                                                                                                   |
+| `NodeHandle.widgets`                                                                                                                                        |                        101 | The widget collection is its own feature                                                                                                                                                                                |
+
+Nothing in this feature existed only for the sandbox the earlier API was
+built for. Its closed proxies are replaced by frozen objects, as in
+ADR-EXTENSIONS-NODE-API-0070.
 
 ## Alternatives considered
 
@@ -323,7 +360,8 @@ changes nothing a workflow saves (a title set to itself) adds no entry.
   for a handle it made, the function that finds its node in the handle's own
   graph and document; every call that takes a node handle goes through it.
   `createGraphScopes` returns the same kind of `locator` for graph handles
-  beside `scopeFor`, and `createGraphHandle` takes the members another module
-  adds to the graph handle.
+  beside `scopeFor`, and `createGraphHandle` and `createGraphScopes` take the
+  members another module adds to their handles. `nodeHandle.ts` exports
+  `boundsOnCanvas`, so a group measures nodes the way `getBounds` does.
 - The first `resizable` choice installs one graph-intent listener for the life
   of the API.
