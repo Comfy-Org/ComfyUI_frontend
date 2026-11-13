@@ -907,11 +907,8 @@
     "index": "{current} / {total}"
   },
   "billingHandoff": {
-    "failed": "Faturalandırma açılamadı. Yeniden deneyin.",
-    "openBilling": "Faturallandırmayı aç",
     "opening": "Ödeme işlemi açılıyor…",
     "openingDetail": "Bu işlem birkaç saniye sürer.",
-    "popupBlocked": "Tarayıcınız faturalandırma sekmesini engelledi.",
     "signInAgain": "Faturalandırmayı açmak için yeniden oturum açın.",
     "superseded": "Faturalandırma açılırken hesabınız veya çalışma alanınız değişti. Yeniden deneyin."
   },

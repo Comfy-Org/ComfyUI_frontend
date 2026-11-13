@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { UserEvent } from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -25,7 +26,12 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
+import type { BillingTab } from '@/platform/billing/billingTab'
 import type { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
+import type { issueLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
+
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import AddCreditsDialogContent from './AddCreditsDialogContent.vue'
 
@@ -39,7 +45,11 @@ const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_1'
 const hoisted = vi.hoisted(() => ({
   createHostedCheckout: vi.fn(),
   setupUrl: vi.fn<() => Promise<string | null>>(),
-  balanceIncreased: undefined as BalanceIncreased
+  balanceIncreased: undefined as BalanceIncreased,
+  opensHandoff: false,
+  issueHandoff: vi.fn<typeof issueLocalBillingHandoff>(),
+  handoffTabs: [] as (BillingTab | null)[],
+  reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined)
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -118,6 +128,22 @@ vi.mock(import('@/platform/billing/topupCheckoutReturnUrl'), () => ({
 vi.mock(import('@/platform/billing/billingTab'), () => ({
   reserveBillingTab: () => ({ navigate: vi.fn(), close: vi.fn() })
 }))
+vi.mock(
+  import('@/platform/billing/subscription/composables/billingDialogsAccess'),
+  () => ({
+    provideBillingDialogs: vi.fn(),
+    useBillingDialogsAccess: () => ({
+      showTopUpCreditsDialog: hoisted.reopenTopUp,
+      showSubscriptionRequiredDialog: vi.fn(),
+      showDowngradeToPersonalDialog: vi.fn()
+    })
+  })
+)
+vi.mock(import('@/platform/billing/localBillingHandoff'), () => ({
+  opensLocalBillingHandoff: () => hoisted.opensHandoff,
+  issueLocalBillingHandoff: hoisted.issueHandoff,
+  reserveBillingHandoffTab: () => hoisted.handoffTabs.shift() ?? null
+}))
 
 vi.mock(import('firebase/auth'), { spy: true })
 
@@ -139,7 +165,13 @@ function servedCheckout(
   }
 }
 
-function renderDialog({ atCheckout }: { atCheckout: boolean }) {
+function renderDialog({
+  atCheckout,
+  inGlobalDialog = false
+}: {
+  atCheckout: boolean
+  inGlobalDialog?: boolean
+}) {
   vi.mocked(useFeatureFlags().flags).billingAutoTopUpAtCheckoutEnabled =
     atCheckout
   const capabilities = useBillingCapabilities()
@@ -152,10 +184,20 @@ function renderDialog({ atCheckout }: { atCheckout: boolean }) {
     value: []
   })
   mockBillingContext()
-  const { unmount } = render(AddCreditsDialogContent, {
-    global: { plugins: [i18n] }
-  })
+  if (inGlobalDialog) showTopUpDialog()
+  const { unmount } = render(
+    inGlobalDialog ? GlobalDialog : AddCreditsDialogContent,
+    { global: { plugins: [i18n] } }
+  )
   return { user: userEvent.setup(), unmount }
+}
+
+function showTopUpDialog() {
+  useDialogStore().showDialog({
+    key: 'top-up-credits',
+    component: AddCreditsDialogContent,
+    dialogComponentProps: { headless: true }
+  })
 }
 
 const ACTIVATED_CHECKOUT: Partial<HostedTopupCheckout> = {
@@ -406,5 +448,193 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
     } finally {
       await releaseSwitch()
     }
+  })
+})
+
+describe('AddCreditsDialogContent on local web with local_billing_web on', () => {
+  const ENTRY_URL = 'https://billing.comfy.org/handoff?intent=top-up#token=t'
+
+  function handoffTab(): BillingTab {
+    return { navigate: vi.fn(), close: vi.fn() }
+  }
+
+  beforeEach(() => {
+    stubFirebaseAuthHarness()
+    hoisted.opensHandoff = true
+    hoisted.issueHandoff.mockResolvedValue({ status: 'ok', url: ENTRY_URL })
+  })
+
+  afterEach(() => {
+    hoisted.opensHandoff = false
+    hoisted.handoffTabs = []
+  })
+
+  it.for<{
+    name: string
+    choose: (user: UserEvent) => Promise<void>
+    amountCents: number
+  }>([
+    {
+      name: 'a preset',
+      choose: (user) => user.click(screen.getByRole('radio', { name: '$25' })),
+      amountCents: 2500
+    },
+    {
+      name: 'a typed amount',
+      choose: (user) =>
+        user.type(screen.getByLabelText('Or enter an amount'), '120'),
+      amountCents: 12_000
+    }
+  ])(
+    'Continue opens billing-web through a handoff for $name',
+    async ({ choose, amountCents }) => {
+      const tab = handoffTab()
+      hoisted.handoffTabs = [tab]
+      const { user } = renderDialog({ atCheckout: true })
+
+      await choose(user)
+      await user.click(continueButton())
+
+      expect(
+        await screen.findByRole('heading', {
+          name: 'Checkout opened in a new tab'
+        })
+      ).toBeVisible()
+      expect(hoisted.issueHandoff).toHaveBeenCalledExactlyOnceWith(
+        { intent: 'top-up', amountCents },
+        expect.any(AbortSignal)
+      )
+      expect(tab.navigate).toHaveBeenCalledExactlyOnceWith(ENTRY_URL)
+      expect(hoisted.createHostedCheckout).not.toHaveBeenCalled()
+      expect(checkbox()).toBeNull()
+    }
+  )
+
+  it('issues a fresh handoff from the blocked step instead of showing a link', async () => {
+    const tab = handoffTab()
+    hoisted.handoffTabs = [null, tab]
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    const open = await screen.findByTestId('add-credits-open-checkout')
+
+    expect(hoisted.issueHandoff).not.toHaveBeenCalled()
+    expect(open).not.toHaveAttribute('href')
+
+    await user.click(open)
+
+    await waitFor(() =>
+      expect(tab.navigate).toHaveBeenCalledExactlyOnceWith(ENTRY_URL)
+    )
+    expect(hoisted.issueHandoff).toHaveBeenCalledExactlyOnceWith(
+      { intent: 'top-up', amountCents: 5000 },
+      expect.any(AbortSignal)
+    )
+  })
+
+  it('shows the refusal in the dialog and closes the tab', async () => {
+    const tab = handoffTab()
+    hoisted.handoffTabs = [tab]
+    hoisted.issueHandoff.mockResolvedValue({
+      status: 'error',
+      message: 'Only the workspace owner can add credits.'
+    })
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+
+    const notice = await screen.findByTestId('add-credits-notice')
+    expect(notice).toHaveTextContent("Couldn't open checkout")
+    expect(notice).toHaveTextContent(
+      'Only the workspace owner can add credits.'
+    )
+    expect(tab.close).toHaveBeenCalledOnce()
+    expect(tab.navigate).not.toHaveBeenCalled()
+  })
+
+  it.for<{
+    name: string
+    tabs: (tab: BillingTab) => (BillingTab | null)[]
+    reach: (user: UserEvent) => Promise<HTMLElement>
+  }>([
+    {
+      name: 'Continue',
+      tabs: (tab) => [tab],
+      reach: async () => continueButton()
+    },
+    {
+      name: 'the blocked step',
+      tabs: (tab) => [null, tab],
+      reach: async (user) => {
+        await user.click(continueButton())
+        return screen.findByTestId('add-credits-open-checkout')
+      }
+    }
+  ])(
+    'issues nothing from $name once local_billing_web turns off, and reopens Add credits for the current flag',
+    async ({ tabs, reach }) => {
+      const tab = handoffTab()
+      hoisted.handoffTabs = tabs(tab)
+      const { user } = renderDialog({ atCheckout: false })
+      const action = await reach(user)
+
+      hoisted.opensHandoff = false
+      await user.click(action)
+
+      await waitFor(() => expect(hoisted.reopenTopUp).toHaveBeenCalledOnce())
+      expect(hoisted.reopenTopUp).toHaveBeenCalledWith({
+        isInsufficientCredits: false,
+        source: undefined
+      })
+      expect(hoisted.issueHandoff).not.toHaveBeenCalled()
+      expect(tab.close).toHaveBeenCalledOnce()
+      expect(tab.navigate).not.toHaveBeenCalled()
+    }
+  )
+
+  it('reopens a fresh Add credits dialog that runs the flag-off checkout', async () => {
+    hoisted.handoffTabs = [handoffTab()]
+    hoisted.reopenTopUp.mockImplementation(async () => showTopUpDialog())
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user } = renderDialog({ atCheckout: false, inGlobalDialog: true })
+    const firstContinue = await screen.findByRole('button', {
+      name: 'Continue'
+    })
+
+    hoisted.opensHandoff = false
+    await user.click(firstContinue)
+    await waitFor(() => expect(hoisted.reopenTopUp).toHaveBeenCalledOnce())
+    await user.click(await screen.findByRole('button', { name: 'Continue' }))
+
+    await waitFor(() =>
+      expect(hoisted.createHostedCheckout).toHaveBeenCalledOnce()
+    )
+    expect(hoisted.reopenTopUp).toHaveBeenCalledOnce()
+    expect(hoisted.issueHandoff).not.toHaveBeenCalled()
+  })
+
+  it('closes the reserved tab and stops issuing when the dialog closes mid-issue', async () => {
+    const tab = handoffTab()
+    hoisted.handoffTabs = [tab]
+    hoisted.issueHandoff.mockImplementation(
+      (_request, signal) =>
+        new Promise((resolve) =>
+          signal.addEventListener('abort', () =>
+            resolve({ status: 'error', message: undefined })
+          )
+        )
+    )
+    const { user, unmount } = renderDialog({ atCheckout: false })
+    await user.click(continueButton())
+    const [, signal] = hoisted.issueHandoff.mock.calls[0]
+
+    unmount()
+
+    expect(signal.aborted).toBe(true)
+    await waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
+    expect(tab.navigate).not.toHaveBeenCalled()
   })
 })

@@ -196,8 +196,9 @@ function handleLocateNode() {
 function navigateToErrorTab() {
   if (!targetNode.value) return
   if (!useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) return
-  errorsTabRequestStore.focusNode(String(targetNode.value.id))
-  propertiesPanelStore.openPanel('errors')
+  if (propertiesPanelStore.openPanel('errors')) {
+    errorsTabRequestStore.focusNode(String(targetNode.value.id))
+  }
 }
 
 function clearWidgetErrors(
