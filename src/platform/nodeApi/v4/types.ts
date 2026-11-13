@@ -121,3 +121,117 @@ interface Size {
 }
 
 export interface Bounds extends Point, Size {}
+
+export interface Comfy {
+  /** Every change a pack makes to the document. */
+  readonly edit: Edits
+}
+
+export interface NodeHandle extends NodeHandleEdits {}
+
+/**
+ * The one place a pack changes the document; every handle edit method calls
+ * one of these. Each call is one undo step, or part of `batch`'s.
+ */
+export interface Edits {
+  /**
+   * Changes the fields `patch` names. An unusable field throws a `TypeError`
+   * before anything changes. False, changing nothing, if the node is gone.
+   */
+  updateNode(node: NodeHandle, patch: NodePatch): boolean
+  /** Removes the node and its links. False if it is gone or cannot be removed. */
+  removeNode(node: NodeHandle): boolean
+  /**
+   * Runs `edits` now, as one undo step, and returns what it returns. Edits it
+   * made before throwing stay. Edits after it returns are not in the step.
+   */
+  batch<T>(edits: () => T): T
+}
+
+/** What `updateNode` changes. A field left out stays as it is. */
+export interface NodePatch {
+  readonly title?: string
+  readonly mode?: NodeMode
+  readonly collapsed?: boolean
+  /** The title-bar color. `undefined` restores the default. */
+  readonly color?: string | undefined
+  /** The body color. `undefined` restores the default. */
+  readonly bgColor?: string | undefined
+  readonly shape?: NodeShape
+  /** Saved properties, by name. Each value is stored as the workflow saves it. */
+  readonly properties?: Readonly<Record<string, unknown>>
+  /** Whether the node saves its widget values in the workflow. */
+  readonly serializeWidgets?: boolean
+  /** The top-left corner of the node's body, in graph space. */
+  readonly position?: Point
+  /** The size of the node's body, title bar excluded. */
+  readonly size?: Size
+  /** Resizes the node to fit them, once. A later resize is not held to them. */
+  readonly sizeConstraints?: SizeConstraints
+  /** Not saved. A pinned node cannot be resized; unpinning brings this back. */
+  readonly resizable?: boolean
+}
+
+export type NodeShape = 'default' | 'box' | 'round' | 'circle' | 'card'
+
+/** Limits in graph units, each zero or more. */
+export interface SizeConstraints {
+  readonly minWidth?: number
+  readonly minHeight?: number
+  readonly maxWidth?: number
+  readonly maxHeight?: number
+  /** Sets the height to what the node's slots and widgets need. */
+  readonly autoHeight?: boolean
+}
+
+export interface NodeSnapshot {
+  readonly id: string
+  readonly type: string
+  readonly title: string | undefined
+  readonly mode: NodeMode | undefined
+  readonly collapsed: boolean
+  readonly pinned: boolean
+  readonly color: string | undefined
+  readonly bgColor: string | undefined
+  readonly shape: NodeShape
+  readonly position: Point
+  readonly size: Size
+}
+
+/** A label on a node's title bar. */
+export interface BadgeDef {
+  readonly text: string
+  /** The text color. */
+  readonly color?: string
+  readonly bgColor?: string
+  /** Called when the user clicks the badge. */
+  onClick?(): void
+}
+
+/** Each edit method is `comfy.edit.updateNode` or `removeNode` on this node. */
+export interface NodeHandleEdits {
+  setTitle(title: string): boolean
+  setMode(mode: NodeMode): boolean
+  setCollapsed(collapsed: boolean): boolean
+  setColor(color: string | undefined): boolean
+  setBgColor(color: string | undefined): boolean
+  setShape(shape: NodeShape): boolean
+  /** A name that is not a string throws a `TypeError`. */
+  setProperty(name: string, value: unknown): boolean
+  setSerializeWidgets(serialize: boolean): boolean
+  isSerializingWidgets(): boolean | undefined
+  setPosition(position: Point): boolean
+  setSize(size: Size): boolean
+  setSizeConstraints(constraints: SizeConstraints): boolean
+  setResizable(resizable: boolean): boolean
+  /** False while the node is pinned, or after `setResizable(false)`. */
+  isResizable(): boolean | undefined
+  remove(): boolean
+  /** The node's state now, frozen. */
+  snapshot(): NodeSnapshot | undefined
+  /**
+   * Adds a badge until the disposer is called or the node is rebuilt, as undo
+   * rebuilds it. A function is called each time the badge is drawn.
+   */
+  addBadge(badge: BadgeDef | (() => BadgeDef)): Unsubscribe
+}

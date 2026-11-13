@@ -22,18 +22,40 @@ export interface NodeHandles {
     graphs: readonly LGraph[],
     include?: (node: LGraphNode) => boolean
   ): readonly NodeHandle[]
+  /**
+   * For a node handle made here, what finds its node in the handle's own graph
+   * and document while the node is there; `undefined` for anything else.
+   */
+  locator(value: unknown): (() => LiveNode | undefined) | undefined
 }
 
-export function createNodeHandles(handles: DocumentHandles): NodeHandles {
+export interface LiveNode {
+  readonly graph: LGraph
+  readonly node: LGraphNode
+}
+
+/** The node handle members other modules own, such as its edit methods. */
+export type NodeHandleMembers = Omit<NodeHandle, keyof NodeHandleReads>
+type NodeHandleReads = ReturnType<typeof nodeReads>
+
+export function createNodeHandles(
+  handles: DocumentHandles,
+  membersFor: (handle: NodeHandleReads) => NodeHandleMembers
+): NodeHandles {
   const copyOfSaved = savedCopier()
   const cache = handles.createCache<NodeHandle>(
     (graph, id) => graph.getNodeById(toNodeId(id)) !== null
   )
+  const liveNodes = new WeakMap<object, () => LiveNode | undefined>()
 
   function handleFor(graph: LGraph, node: LGraphNode): NodeHandle {
-    return cache.handleFor(graph, node.id, (resolveGraph) =>
-      nodeHandle(graph.id, node.id, resolveGraph, copyOfSaved)
-    )
+    return cache.handleFor(graph, node.id, (resolveGraph) => {
+      const locate = locator(resolveGraph, node.id)
+      const reads = nodeReads(graph.id, node.id, locate, copyOfSaved)
+      const handle = Object.freeze(Object.assign(reads, membersFor(reads)))
+      liveNodes.set(handle, locate)
+      return handle
+    })
   }
 
   return {
@@ -48,27 +70,41 @@ export function createNodeHandles(handles: DocumentHandles): NodeHandles {
           graph.nodes.filter(include).map((node) => handleFor(graph, node))
         )
       )
-    }
+    },
+    locator: (value) =>
+      typeof value === 'object' && value !== null
+        ? liveNodes.get(value)
+        : undefined
   }
 }
 
-function nodeHandle(
+function locator(
+  resolveGraph: GraphResolver,
+  id: NodeId
+): () => LiveNode | undefined {
+  return () => {
+    const graph = resolveGraph()
+    const node = graph?.getNodeById(id)
+    return graph && node ? { graph, node } : undefined
+  }
+}
+
+function nodeReads(
   graphId: string,
   id: NodeId,
-  resolveGraph: GraphResolver,
+  locate: () => LiveNode | undefined,
   copyOfSaved: SavedCopier
-): NodeHandle {
-  const liveNode = () => resolveGraph()?.getNodeById(id)
+) {
   function readLive<T>(read: (node: LGraphNode) => T): T | undefined {
-    const node = liveNode()
-    return node ? read(node) : undefined
+    const live = locate()
+    return live ? read(live.node) : undefined
   }
 
-  return Object.freeze({
+  return {
     id,
     graphId,
     get isDeleted() {
-      return !liveNode()
+      return !locate()
     },
     get type() {
       return readLive((node) => node.type)
@@ -96,10 +132,10 @@ function nodeHandle(
     getSize: () =>
       readLive(({ size: [width, height] }) => Object.freeze({ width, height })),
     getBounds: () => readLive(boundsOnCanvas)
-  })
+  }
 }
 
-const MODE_NAMES: Readonly<Record<LGraphEventMode, NodeMode>> = {
+export const MODE_NAMES: Readonly<Record<LGraphEventMode, NodeMode>> = {
   [LGraphEventMode.ALWAYS]: 'always',
   [LGraphEventMode.NEVER]: 'never',
   [LGraphEventMode.BYPASS]: 'bypass',
