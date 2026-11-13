@@ -416,6 +416,42 @@ describe('createHandoffBillingClient', () => {
     }
   )
 
+  it('ends the handoff when Cloud turns billing from this app off mid-session', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ code: 'HANDOFF_DISABLED' }), {
+        status: 403
+      })
+    )
+    const onSessionRefused = vi.fn()
+    const client = createHandoffBillingClient(
+      handoffSession(),
+      onSessionRefused
+    )
+
+    await client.credits.read()
+
+    expect(onSessionRefused).toHaveBeenCalled()
+    disposeBillingClient(client)
+  })
+
+  it('keeps the handoff on a 403 that refuses one action', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ code: 'BILLING_FORBIDDEN' }), {
+        status: 403
+      })
+    )
+    const onSessionRefused = vi.fn()
+    const client = createHandoffBillingClient(
+      handoffSession(),
+      onSessionRefused
+    )
+
+    await client.credits.read()
+
+    expect(onSessionRefused).not.toHaveBeenCalled()
+    disposeBillingClient(client)
+  })
+
   it('keeps the handoff on a 401 from a route that does not take scoped sessions', async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(JSON.stringify({ code: 'UNAUTHORIZED' }), { status: 401 })
