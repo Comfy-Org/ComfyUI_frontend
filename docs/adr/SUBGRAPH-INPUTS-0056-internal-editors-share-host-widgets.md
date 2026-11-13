@@ -34,15 +34,9 @@ disabled at the boundary, because they act on the displayed graph and cannot
 target a host or Primitive in another graph. Users locate the source to reach
 its actions.
 
-IO measurements are transient, kept per IO node, and never overwrite saved
-geometry. Resizing the input node writes its saved rectangle directly instead of
-issuing a LayoutOperation. This is an explicit exception to
-[ADR-CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md).
-
-IO nodes are not registered as layout entities. Node layout keys are scoped to
-the root graph, and IO node IDs (-10 and -20) repeat in every definition, so the
-keys would collide. Every layout consumer, including slot hit tests, link drop
-handling, and the node data store, is also written for LGraphNode.
+IO measurements are transient and never overwrite saved geometry. IO node
+identity, geometry, and host queries follow
+[ADR-SUBGRAPH-IO-0057](SUBGRAPH-IO-0057-io-pseudo-nodes-are-queried-through-their-host.md).
 
 ## Alternatives considered
 
@@ -52,8 +46,6 @@ handling, and the node data store, is also written for LGraphNode.
   their own heights, and forcing a row height changes their behavior.
 - **Editing interior defaults.** Defaults are shared by every host, so editing
   them breaks host isolation and promoted-widget ownership.
-- **Registering IO nodes as layout entities.** This needs definition-scoped
-  layout keys and IO-aware versions of every layout consumer.
 
 ## Consequences
 
