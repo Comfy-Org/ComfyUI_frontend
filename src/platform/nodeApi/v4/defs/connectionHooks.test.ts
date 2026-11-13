@@ -5,6 +5,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
@@ -102,6 +103,27 @@ describe('connection, property and pointer hooks', () => {
       ])
     })
 
+    it('names no other end when the host reports a change without a link', () => {
+      const events = heard()
+      const node = probe({ inputs: ['a'] })
+
+      node.onConnectionsChange?.(
+        NodeSlotType.INPUT,
+        0,
+        false,
+        null,
+        node.inputs[0]
+      )
+
+      expect(events).toEqual([
+        expect.objectContaining({
+          name: 'a',
+          peerNodeId: undefined,
+          peerIndex: undefined
+        })
+      ])
+    })
+
     it.for([
       { name: 'a middle input', removed: 1, expected: 'b' },
       { name: 'the last input', removed: 2, expected: 'c' }
@@ -173,6 +195,26 @@ describe('connection, property and pointer hooks', () => {
 
       expect(source().connect(0, target, 0)).not.toBeNull()
       expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('keeps a refusal of an output link the type itself makes', () => {
+      class Refusing extends LGraphNode {
+        override onConnectOutput() {
+          return false
+        }
+      }
+      host.nodeTypeHooks.beforeRegisterNodeDef(Refusing, hostNodeDef('NoOut'))
+      LiteGraph.registerNodeType('NoOut', Refusing)
+      const allow = vi.fn(() => true)
+      defs.extend('NoOut', (builder) => builder.onBeforeConnect(allow))
+      const from = LiteGraph.createNode('NoOut')
+      assert(from)
+      from.addOutput('out', '*')
+      graph.add(from)
+      const target = probe({ inputs: ['a'] })
+
+      expect(from.connect(0, target, 0)).toBeNull()
+      expect(allow).not.toHaveBeenCalled()
     })
 
     it('keeps a refusal the type itself makes', () => {

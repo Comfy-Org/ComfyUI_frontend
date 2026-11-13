@@ -225,6 +225,34 @@ registered, so `extend` cannot depend on the order.
     `LiteGraph.isValidConnection`, the rule the host links by.
 37. Every type name, colour and colour name must be non-empty text.
 
+### Left out
+
+38. Members of the old contract that no stored pack calls are not built:
+    `NodeDefBuilder.setTitle`, `setCategory`, `setExecution`, `onDragOver` and
+    `onDrop`; `NodeDef.source`; `PropertyChangeEvent.previous`;
+    `BeforeConnectEvent.peerNodeId`, `peerIndex` and `peerType`;
+    `NodeDefinition.outputs.shape`, `supply`, `onExecuted`, `onDragOver`,
+    `onDrop` and `onPromptSerialize` (0 packs each). With `setTitle` gone, a
+    late extension cannot rename a type, so review finding A-08 cannot arise;
+    with `setExecution` gone, only `define` decides whether a type runs in the
+    frontend, on a class it owns, so disposing an extension cannot change it
+    (A-07).
+39. Members that need another part of the API are left for it, and a
+    definition that uses them is refused as having an unknown field until
+    then: `NodeDefinition.widgets` (7 packs), `NodeDefBuilder.hideWidget` (9)
+    and `addWidget` (3), and `DefRegistry.defineWidgetType` (3) need the
+    widget definitions and handles; `NodeDefinition.resolve` (6),
+    `NodeDefBuilder.setSupply` (1), `onPromptSerialize` (1) and `onPreview`
+    (1) need frontend execution and previews.
+40. `NodeDefBuilder.onUnplacedLink` (1 pack) and its event are not built. The
+    host announces a link dropped on a node (`dropped-on-node`) before it
+    tries to place it, and nothing after it fails to, so a hook for "the host
+    found no slot" needs a new event in LiteGraph's `LinkConnector`, which this
+    API does not change.
+41. Nothing here exists for a sandbox: no proxies, no capability checks, and
+    no asynchronous hooks. `onPromptSerialize` was awaited, and `onDrop` was
+    asynchronous, so that a sandboxed pack could answer; neither is built.
+
 ## Alternatives considered
 
 - Call the API from `litegraphService.registerNodeDef`, as the earlier
@@ -276,6 +304,12 @@ registered, so `extend` cannot depend on the order.
 - A property bound to a widget (`options.property`) shows the edited value in
   the widget after a `setValue`, because `setProperty` updates the widget
   after the hooks run.
+- `ExecutionResult` is declared with these hooks because `onExecuted`
+  delivers it; the frontend-execution part of the API uses the same type.
+- `onUnplacedLink` waits for a core change; the ticket proposed for it is a
+  cancelable `link-unplaced` event that `LinkConnector` dispatches when a link
+  dropped on a node finds no slot, carrying the node, the link, the side and
+  the pointer event. Nothing in this API works around its absence.
 - The type colours are global, as the host's table is: a pack's colour for a
   type shows in every document.
 - Host changes: `useComfyApiStore().publish()` registers the extension;

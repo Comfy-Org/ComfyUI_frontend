@@ -54,8 +54,9 @@ export function createHookDispatch(
 
   const deliver: Deliver = (type, hook, node, call) => {
     const callbacks = source.callbacksFor(type, hook)
-    if (callbacks.length === 0 || !isInGraph(node)) return []
-    const handle = nodes.find(node.graph ?? undefined, String(node.id))
+    const { graph } = node
+    if (callbacks.length === 0 || !graph || !isInGraph(node)) return []
+    const handle = nodes.find(graph, String(node.id))
     if (!handle) return []
     return callbacks.map((callback) =>
       callListener(hook, () => call(callback, handle))
