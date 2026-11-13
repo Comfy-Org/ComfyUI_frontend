@@ -675,10 +675,22 @@ test(
     const rawClip = await comfyPage.subgraph.getInputBounds()
     const absolutePos = await comfyPage.canvasOps.toAbsolute(rawClip)
     const clip = { ...rawClip, ...absolutePos }
-    await hoverIOSlot(await seedIOSlot.getPosition())
-    const captureInputNode = () =>
-      comfyPage.page.screenshot({ clip, animations: 'disabled' })
-    const twoLinkScreenshot = await captureInputNode()
+    const ports = comfyPage.page
+      .getByTestId('subgraph-input-values')
+      .getByTestId('subgraph-input-port')
+    const portNames = () =>
+      ports.evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute('aria-label'))
+      )
+    const inputLinkCounts = () =>
+      comfyPage.page.evaluate(() =>
+        app!.canvas.subgraph?.inputs.map(({ name, linkIds }) => ({
+          name,
+          links: linkIds.length
+        }))
+      )
+    const twoLinkPorts = await portNames()
+    const twoLinkInputs = await inputLinkCounts()
 
     const stepsSlot = ksampler.getSlot('steps')
 
@@ -736,9 +748,8 @@ test(
 
       await expect(slotParent).toHaveCSS('opacity', '0')
 
-      await hoverIOSlot(await seedIOSlot.getPosition())
-      const postScreenshot = await captureInputNode()
-      expect(postScreenshot).toStrictEqual(twoLinkScreenshot)
+      await expect.poll(portNames).toEqual(twoLinkPorts)
+      expect(await inputLinkCounts()).toEqual(twoLinkInputs)
     })
   }
 )
