@@ -6,11 +6,7 @@ import { useAttrsClass } from '@comfyorg/design-system/lib/composables/useAttrsC
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 
-const {
-  containerClass = 'rounded-(--node-radius)',
-  containerStyle,
-  contentVisibility = false
-} = defineProps<{
+const { containerClass, containerStyle, contentVisibility } = defineProps<{
   containerClass?: ClassValue
   containerStyle?: CSSProperties
   contentVisibility?: boolean

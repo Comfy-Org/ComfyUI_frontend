@@ -24,7 +24,7 @@
 
     <Button
       variant="textonly"
-      :data-testid="`subgraph-${subgraphAction}-button`"
+      data-testid="subgraph-enter-button"
       :class="
         cn(
           tabStyles,
@@ -37,7 +37,7 @@
       @click.stop="emitIfNotDragged('navigateSubgraph')"
     >
       <div class="flex size-full items-center justify-center gap-2">
-        <span class="truncate">{{ subgraphLabel }}</span>
+        <span class="truncate">{{ t('g.enter') }}</span>
         <i class="icon-[comfy--workflow]" />
       </div>
     </Button>
@@ -237,13 +237,7 @@ const emit = defineEmits<{
 
 const hasAnyError = computed(() => errorSeverity !== 'none')
 const subgraphLabel = computed(() =>
-  subgraphAction === 'exit'
-    ? t('g.exitSubgraph')
-    : t(
-        hasAnyError.value && showErrorsTabEnabled
-          ? 'g.enter'
-          : 'g.enterSubgraph'
-      )
+  t(subgraphAction === 'exit' ? 'g.exitSubgraph' : 'g.enterSubgraph')
 )
 const errorLabel = computed(() =>
   t(errorSeverity === 'missing' ? 'rightSidePanel.errors' : 'g.error')

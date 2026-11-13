@@ -12,7 +12,7 @@ defineProps<{
   <div
     v-if="groups.length"
     data-testid="node-badges"
-    class="pointer-events-none absolute right-0 bottom-full mb-1 flex w-max items-center gap-2 text-muted-foreground"
+    class="pointer-events-none flex w-max items-center gap-2 text-muted-foreground"
   >
     <div
       v-for="group in groups"

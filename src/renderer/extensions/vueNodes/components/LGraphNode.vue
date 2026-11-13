@@ -59,6 +59,7 @@
       <NodeBadges
         v-if="!isRerouteNode && !isTransparentHeaderless"
         v-bind="badges"
+        class="absolute right-0 bottom-full"
         :style="badgesStyle"
       />
       <AppOutput
@@ -142,8 +143,9 @@
         />
       </div>
 
-      <NodeBody
-        :class="bodyRoundingClass"
+      <div
+        :class="cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)"
+        :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
         :data-testid="`node-body-${nodeData.id}`"
       >
         <NodeSlots :node-data />
@@ -181,7 +183,7 @@
           v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
           :image-url="latestPreviewUrl"
         />
-      </NodeBody>
+      </div>
     </template>
 
     <template #after>
@@ -286,7 +288,6 @@ import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTran
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
-import NodeBody from './NodeBody.vue'
 import NodeContent from './NodeContent.vue'
 import NodeFrame from './NodeFrame.vue'
 import NodeHeader from './NodeHeader.vue'
@@ -294,7 +295,10 @@ import NodeFooter from './NodeFooter.vue'
 import NodeResizeHandle from './NodeResizeHandle.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
-import { IMAGE_PREVIEW_HEIGHT_RESERVE } from './imagePreviewLayout'
+import {
+  IMAGE_PREVIEW_HEIGHT_RESERVE,
+  NODE_CONTENT_GAP
+} from './imagePreviewLayout'
 
 const { nodeData } = defineProps<{
   nodeData: NodeState
