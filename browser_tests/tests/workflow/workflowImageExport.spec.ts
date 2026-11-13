@@ -4,45 +4,30 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { expectPngsToMatch } from '@e2e/fixtures/utils/pngComparison'
+import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+import { alignCanvasWithExport } from '@e2e/fixtures/utils/workflowImageExport'
 
-async function alignCanvasWithExport(comfyPage: ComfyPage, exported: Buffer) {
-  const { page } = comfyPage
-  const pixelRatio = await page.evaluate(() => window.devicePixelRatio)
-  const width = exported.readUInt32BE(16) / pixelRatio
-  const height = exported.readUInt32BE(20) / pixelRatio
-
-  const contentBounds = await page.evaluate(() => {
-    const { graph } = window.app!.canvas
-    const bounds = [Infinity, Infinity, -Infinity, -Infinity]
-    for (const item of graph!.positionableItems()) {
-      const [x, y, w, h] = item.boundingRect
-      bounds[0] = Math.min(bounds[0], x)
-      bounds[1] = Math.min(bounds[1], y)
-      bounds[2] = Math.max(bounds[2], x + w)
-      bounds[3] = Math.max(bounds[3], y + h)
-    }
-    return bounds
-  })
-  const padding = (width - (contentBounds[2] - contentBounds[0])) / 2
-
-  await comfyPage.canvasOps.setScale(1)
-  await comfyPage.canvasOps.setOffset([
-    padding - contentBounds[0],
-    padding - contentBounds[1]
-  ])
-  await comfyPage.canvasOps.moveMouseToEmptyArea()
-  await comfyPage.canvasOps.waitForViewToSettle()
-
-  const canvasBox = await comfyPage.canvas.boundingBox()
-  if (!canvasBox) throw new Error('Canvas is not visible')
-  return { x: canvasBox.x, y: canvasBox.y, width, height }
-}
-
-for (const { renderer, tags } of [
-  { renderer: 'classic', tags: ['@canvas'] },
-  { renderer: 'Vue', tags: ['@vue-nodes', '@canvas'] }
+for (const { renderer, tags, workflow, imageCount } of [
+  {
+    renderer: 'classic',
+    tags: ['@canvas'],
+    workflow: 'default',
+    imageCount: 0
+  },
+  {
+    renderer: 'Vue',
+    tags: ['@vue-nodes', '@canvas'],
+    workflow: 'default',
+    imageCount: 0
+  },
+  {
+    renderer: 'Vue with image preview',
+    tags: ['@vue-nodes', '@canvas'],
+    workflow: 'widgets/load_image_widget',
+    imageCount: 1
+  }
 ]) {
   test.describe(`Workflow image export: ${renderer}`, { tag: tags }, () => {
     test.use({
@@ -53,7 +38,21 @@ for (const { renderer, tags } of [
     test('exported image matches the rendered canvas', async ({
       comfyPage
     }, testInfo) => {
-      await comfyPage.workflow.loadWorkflow('default')
+      await mockViewFiles(comfyPage.page, {
+        'example.png': { path: assetPath('test_upload_image.png') }
+      })
+      await comfyPage.workflow.loadWorkflow(workflow)
+      const images = comfyPage.page.getByTestId('main-image')
+      await expect(images).toHaveCount(imageCount)
+      await images.evaluateAll((elements) =>
+        Promise.all(
+          elements.map((element) => {
+            if (!(element instanceof HTMLImageElement))
+              throw new Error('Preview is not an image')
+            return element.decode()
+          })
+        )
+      )
       const navigation = await comfyPage.canvasOps.snapshotNavigation()
 
       const exported =
@@ -71,7 +70,7 @@ for (const { renderer, tags } of [
 
       await test.step('pixels match the canvas at the same view', async () => {
         await comfyPage.setFocusMode(true)
-        const clip = await alignCanvasWithExport(comfyPage, exported)
+        const { clip } = await alignCanvasWithExport(comfyPage, exported)
         const live = await comfyPage.page.screenshot({ clip })
         await testInfo.attach('exported-workflow.png', {
           body: exported,

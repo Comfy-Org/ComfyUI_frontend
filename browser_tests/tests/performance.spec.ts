@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises'
+
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
@@ -5,6 +7,8 @@ import {
   logMeasurement,
   recordMeasurement
 } from '@e2e/fixtures/utils/perfReporter'
+import { expectPngsToMatch } from '@e2e/fixtures/utils/pngComparison'
+import { alignCanvasWithExport } from '@e2e/fixtures/utils/workflowImageExport'
 
 test.describe('Performance', { tag: ['@perf'] }, () => {
   test('canvas idle style recalculations', async ({ comfyPage }) => {
@@ -330,19 +334,47 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     test.describe('workflow image', () => {
       test.use({ initialSettings: { 'Comfy.PromptFilename': false } })
 
-      test('export', async ({ comfyPage }) => {
+      test('export', async ({ comfyPage }, testInfo) => {
         const download = comfyPage.page.waitForEvent('download')
         await comfyPage.perf.startMeasuring()
         await comfyPage.command.executeCommand('Comfy.ExportWorkflowImage')
-        await download
+        const file = await download
 
         const m = await comfyPage.perf.stopMeasuring(
           'vue-large-graph-export-workflow-image'
         )
         recordMeasurement(m)
-        console.log(
-          `Vue large graph workflow image export: ${m.durationMs.toFixed(0)}ms wall, ${m.taskDurationMs.toFixed(0)}ms task, ${m.scriptDurationMs.toFixed(0)}ms script, ${m.styleRecalcs} style recalcs, ${m.layouts} layouts, ${m.domNodes} DOM nodes`
-        )
+        logMeasurement('Vue large graph workflow image export', m, [
+          'durationMs',
+          'taskDurationMs',
+          'scriptDurationMs',
+          'styleRecalcs',
+          'layouts',
+          'domNodes'
+        ])
+
+        await test.step('far-edge node matches the exported pixels', async () => {
+          const exported = await readFile(await file.path())
+          const farNode = await comfyPage.nodeOps.getNodeRefById('245')
+          await comfyPage.setFocusMode(true)
+          const framed = await alignCanvasWithExport(
+            comfyPage,
+            exported,
+            await farNode.getBounding()
+          )
+          const live = await comfyPage.page.screenshot({ clip: framed.clip })
+          await testInfo.attach('large-workflow.png', {
+            body: exported,
+            contentType: 'image/png'
+          })
+          await expectPngsToMatch(
+            testInfo,
+            'far-edge-node',
+            framed.exported,
+            live,
+            { maxDiffPixelRatio: 0.001 }
+          )
+        })
       })
     })
 
