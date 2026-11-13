@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import Slider from '@comfyorg/design-system/slider/Slider'
 import Button from '@comfyorg/design-system/button/Button'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
-import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
+import { useAssetDownload } from '@/composables/useAssetDownload'
 
 import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
 import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
