@@ -11,6 +11,7 @@ import {
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 
 import { useComfyApiStore } from './comfyApiStore'
@@ -145,5 +146,26 @@ describe("the app's node API", () => {
     expect(staysHandle.isDeleted).toBe(false)
     expect(removedHandle.isDeleted).toBe(true)
     expect(comfy.graph.node(sameId.id)).not.toBe(removedHandle)
+  })
+
+  it("makes a pack's edit one undo step of the open workflow", () => {
+    const comfy = publishedApi()
+    const graph = new LGraph()
+    const node = new LGraphNode('Before')
+    graph.add(node)
+    showOnCanvas(graph)
+    const steps: string[] = []
+    useWorkflowStore().activeWorkflow = fromPartial({
+      changeTracker: {
+        beforeChange: () => steps.push('before'),
+        afterChange: () => steps.push(`after ${node.title}`)
+      }
+    })
+    const handle = comfy.graph.node(String(node.id))
+    assert(handle)
+
+    handle.setTitle('After')
+
+    expect(steps).toEqual(['before', 'after After'])
   })
 })

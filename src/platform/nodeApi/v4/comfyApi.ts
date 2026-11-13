@@ -4,6 +4,9 @@ import { createDocumentHandles } from '@/platform/nodeApi/shared/documentHandles
 
 import { API_VERSION, isApiVersionAtLeast } from './apiVersion'
 import { createAppLifecycle } from './appLifecycle'
+import type { EditHistory } from './edit/editRunner'
+import { createEdits } from './edit/edits'
+import { nodeHandleMembers } from './edit/nodeHandleMembers'
 import { createGraphHandle } from './graphHandle'
 import { createGraphScopes } from './graphScopeHandle'
 import { createNodeHandles } from './nodeHandle'
@@ -13,6 +16,8 @@ import type { Comfy } from './types'
 export interface ComfyApiServices {
   /** The graph on screen: the root graph, or the subgraph the user is in. */
   getGraph(): LGraph | null
+  /** The open document's undo history; without it an edit is no undo step. */
+  history?(): EditHistory | undefined
 }
 
 /** What the host drives. A pack never sees this. */
@@ -34,7 +39,10 @@ export function createComfyApi(services: ComfyApiServices): {
 } {
   const lifecycle = createAppLifecycle()
   const handles = createDocumentHandles()
-  const nodes = createNodeHandles(handles)
+  const nodes = createNodeHandles(handles, (handle) =>
+    nodeHandleMembers(handle, edit, nodes)
+  )
+  const edit = createEdits(nodes, () => services.history?.())
 
   const comfy: Comfy = Object.freeze({
     getApiVersion: () => API_VERSION,
@@ -46,7 +54,8 @@ export function createComfyApi(services: ComfyApiServices): {
       createGraphScopes(handles, nodes),
       services.getGraph
     ),
-    sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
+    sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a),
+    edit
   })
 
   return {

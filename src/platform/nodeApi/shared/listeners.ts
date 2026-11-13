@@ -5,20 +5,27 @@ interface Listeners {
   drain(): void
 }
 
+type IsolatedCall<T> = { ok: true; value: T } | { ok: false }
+
+/** Calls a pack's callback; one that throws is reported, and stops nothing. */
+export function callIsolated<T>(
+  event: string,
+  callback: () => T
+): IsolatedCall<T> {
+  try {
+    return { ok: true, value: callback() }
+  } catch (error) {
+    reportError(error, {
+      errorType: 'node_api_listener_failure',
+      surface: 'platform',
+      tags: { event }
+    })
+    return { ok: false }
+  }
+}
+
 export function createListeners(event: string): Listeners {
   const registrations = new Set<{ readonly listener: () => void }>()
-
-  function call(listener: () => void): void {
-    try {
-      listener()
-    } catch (error) {
-      reportError(error, {
-        errorType: 'node_api_listener_failure',
-        surface: 'platform',
-        tags: { event }
-      })
-    }
-  }
 
   return {
     add(listener) {
@@ -31,7 +38,9 @@ export function createListeners(event: string): Listeners {
 
     drain() {
       for (const registration of Array.from(registrations)) {
-        if (registrations.delete(registration)) call(registration.listener)
+        if (registrations.delete(registration)) {
+          callIsolated(event, registration.listener)
+        }
       }
     }
   }
