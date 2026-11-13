@@ -4,6 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
+import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import type { NodeCreatedEvent } from '@/platform/nodeApi/v4/types'
+
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
@@ -417,4 +421,32 @@ describe('importA1111', () => {
       ]).toEqual(expectedSize)
     }
   )
+
+  it('tells a node API hook that every node it adds is loading', async () => {
+    const graph = new LGraph()
+    vi.mocked(api.getEmbeddings).mockResolvedValue([])
+    mockAvailableCoreNodes(graph)
+    const { comfy, host } = createComfyApi({ getGraph: () => graph })
+    const events: [string | undefined, NodeCreatedEvent][] = []
+    for (const type of ['KSampler', 'LoraLoader']) {
+      host.nodeTypeHooks.beforeRegisterNodeDef(
+        class extends LGraphNode {},
+        hostNodeDef(type)
+      )
+      comfy.defs.extend(type, (builder) =>
+        builder.onCreated((node, event) => events.push([node.type, event]))
+      )
+    }
+
+    await importA1111(
+      graph,
+      `positive <lora:detail:0.5>\n${parameters.split('\n').slice(1).join('\n')}`,
+      vi.fn()
+    )
+
+    expect(events).toEqual([
+      ['KSampler', { restored: true, loading: true }],
+      ['LoraLoader', { restored: true, loading: true }]
+    ])
+  })
 })

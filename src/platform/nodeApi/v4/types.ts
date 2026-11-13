@@ -515,10 +515,51 @@ export type DefSelector =
   | { readonly category: string | RegExp }
   | ((def: NodeDef) => boolean)
 
-/** Extends one node type. Usable only until the callback given to `extend` returns. */
+/**
+ * Extends one node type. Its methods throw a `TypeError` once the callback
+ * given to `extend` returns. Hooks run for nodes in a graph, in the order added.
+ */
 export interface NodeDefBuilder {
   /** The definition of the type being extended. */
   readonly def: NodeDef
+  /** A node of the type joined a graph. */
+  onCreated(callback: (node: NodeHandle, event: NodeCreatedEvent) => void): void
+  /** A node took saved state. A node configured before it joined a graph hears this once it joins. */
+  onConfigured(
+    callback: (
+      node: NodeHandle,
+      data: Readonly<Record<string, unknown>>
+    ) => void
+  ): void
+  /** A node is leaving its graph; its handle still reads it. */
+  onRemoved(callback: (node: NodeHandle) => void): void
+  /** The server finished running a node. */
+  onExecuted(
+    callback: (node: NodeHandle, result: ExecutionResult) => void
+  ): void
+  /**
+   * Adds fields to a node as it is saved, and back through `onConfigured`.
+   * Fields the node saves itself are refused, and the whole result with them.
+   */
+  onSerialize(
+    callback: (node: NodeHandle) => Readonly<Record<string, unknown>> | void
+  ): void
+  onResized(callback: (node: NodeHandle, size: Size) => void): void
+}
+
+export interface NodeCreatedEvent {
+  /** True if the node came with saved state: loaded, pasted or duplicated. */
+  readonly restored: boolean
+  /** True while a workflow is being loaded or imported. */
+  readonly loading: boolean
+}
+
+export interface ExecutionResult {
+  readonly text: readonly string[]
+  /** The images the node output, as the server describes them. */
+  readonly images: readonly Readonly<Record<string, unknown>>[]
+  /** A copy of everything the server sent for the node. */
+  readonly raw: Readonly<Record<string, unknown>>
 }
 
 export interface NodeDef {
@@ -560,6 +601,10 @@ export interface NodeDefinition {
   readonly outputs?: readonly NodeDefinitionSlot[]
   /** `'frontend'` leaves the node out of the prompt sent to the server. Defaults to `'backend'`. */
   readonly execution?: 'backend' | 'frontend'
+  onCreated?(node: NodeHandle, event: NodeCreatedEvent): void
+  onConfigured?(node: NodeHandle, data: Readonly<Record<string, unknown>>): void
+  onRemoved?(node: NodeHandle): void
+  onSerialize?(node: NodeHandle): Readonly<Record<string, unknown>> | void
 }
 
 export interface NodeDefinitionSlot {

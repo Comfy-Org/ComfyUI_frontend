@@ -93,7 +93,8 @@ import {
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
-import type { NodeHandle } from '@/platform/nodeApi/v4/types'
+import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import type { NodeCreatedEvent, NodeHandle } from '@/platform/nodeApi/v4/types'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
 import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
@@ -3223,6 +3224,42 @@ describe('ComfyApp', () => {
 
       expect(kept.isDeleted).toBe(false)
     })
+
+    it.for([
+      {
+        format: 'a workflow',
+        load: () => app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      },
+      {
+        format: 'API JSON',
+        load: () =>
+          app.loadApiJson(
+            { '1': { class_type: 'HandleProbe', inputs: {} } },
+            'probe.json'
+          )
+      }
+    ])(
+      'tells a hook that a node joins while $format loads',
+      async ({ load }) => {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const [[nodeTypeHooks]] = vi.mocked(
+          mockExtensionService.registerExtension
+        ).mock.calls
+        nodeTypeHooks.beforeRegisterNodeDef?.(
+          LiteGraph.registered_node_types.HandleProbe,
+          hostNodeDef('HandleProbe'),
+          app
+        )
+        const events: NodeCreatedEvent[] = []
+        comfy.defs.extend('HandleProbe', (builder) =>
+          builder.onCreated((_, event) => events.push(event))
+        )
+
+        await load()
+
+        expect(events).toEqual([{ restored: true, loading: true }])
+      }
+    )
 
     it.for([
       {
