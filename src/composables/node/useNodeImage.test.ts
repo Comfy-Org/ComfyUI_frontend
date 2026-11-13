@@ -19,9 +19,6 @@ vi.mock(import('@/platform/telemetry/imageFailureDiagnostics'), () => ({
     status: 404
   }))
 }))
-vi.mock(import('@/utils/imageUtil'), () => ({
-  fitDimensionsToNodeWidth: () => ({ minHeight: 256, minWidth: 256 })
-}))
 
 describe('useNodeVideo', () => {
   async function setup() {
@@ -67,6 +64,15 @@ describe('useNodeVideo', () => {
     expect(useCanvasInteractions().handleWheel).toHaveBeenCalledTimes(1)
     expect(useCanvasInteractions().handlePointerMove).toHaveBeenCalledTimes(1)
     expect(useCanvasInteractions().handlePointerDown).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not pin the node to its size at load time', async () => {
+    const { node } = await setup()
+
+    expect(node.widgets?.[0]?.computeLayoutSize?.(node)).toEqual({
+      minHeight: 220,
+      minWidth: 0
+    })
   })
 
   it('detaches every listener when the widget is removed', async () => {

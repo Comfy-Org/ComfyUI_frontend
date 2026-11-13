@@ -6,7 +6,6 @@ import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagn
 import type { ImageLoadFailureMetadata } from '@comfyorg/telemetry/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getHdrPreviewUrl } from '@/utils/hdrFormatUtil'
-import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 
 const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {
@@ -16,7 +15,7 @@ const VIDEO_DEFAULT_OPTIONS = {
 } as const
 const MEDIA_LOAD_TIMEOUT = 8192
 const MAX_RETRIES = 1
-const DEFAULT_VIDEO_SIZE = 256
+const VIDEO_MIN_HEIGHT = 220
 
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
@@ -166,33 +165,16 @@ export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
  */
 export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
   node.previewMediaType = 'video'
-  let minHeight = DEFAULT_VIDEO_SIZE
-  let minWidth = DEFAULT_VIDEO_SIZE
 
   const { handleWheel, handlePointerDown, handlePointerMove } =
     useCanvasInteractions()
-
-  const setMinDimensions = (video: HTMLVideoElement) => {
-    const { minHeight: calculatedHeight, minWidth: calculatedWidth } =
-      fitDimensionsToNodeWidth(
-        video.videoWidth,
-        video.videoHeight,
-        node.size[0] || DEFAULT_VIDEO_SIZE
-      )
-
-    minWidth = calculatedWidth
-    minHeight = calculatedHeight
-  }
 
   const loadElement = (url: string): Promise<HTMLVideoElement | null> =>
     new Promise((resolve) => {
       const video = document.createElement('video')
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
 
-      video.onloadeddata = () => {
-        setMinDimensions(video)
-        resolve(video)
-      }
+      video.onloadeddata = () => resolve(video)
       video.onerror = () => resolve(null)
       video.src = url
     })
@@ -206,8 +188,8 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       })
       widget.serialize = false
       widget.computeLayoutSize = () => ({
-        minHeight,
-        minWidth
+        minHeight: VIDEO_MIN_HEIGHT,
+        minWidth: 0
       })
 
       const controller = new AbortController()
