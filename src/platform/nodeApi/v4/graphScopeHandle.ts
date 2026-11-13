@@ -6,7 +6,7 @@ import type {
   GraphResolver
 } from '@/platform/nodeApi/shared/documentHandles'
 import type { NodeHandles } from './nodeHandle'
-import type { GraphScopeHandle } from './types'
+import type { GraphScopeHandle, GraphScopeHandleMembers } from './types'
 
 /** Gives the one handle for a root graph or a subgraph definition. */
 export type GraphScopeFor = (graph: LGraph) => GraphScopeHandle
@@ -22,14 +22,18 @@ export interface GraphScopes {
 
 export function createGraphScopes(
   handles: DocumentHandles,
-  nodes: NodeHandles
+  nodes: NodeHandles,
+  membersFor: (resolveGraph: GraphResolver) => GraphScopeHandleMembers
 ): GraphScopes {
   const cache = handles.createCache<GraphScopeHandle>(() => true)
   const liveGraphs = new WeakMap<object, GraphResolver>()
   return {
     scopeFor: (graph) =>
       cache.handleFor(graph, graph.id, (resolveGraph) => {
-        const handle = graphScopeHandle(graph.id, resolveGraph, nodes)
+        const reads = graphScopeReads(graph.id, resolveGraph, nodes)
+        const handle = Object.freeze(
+          Object.assign(reads, membersFor(resolveGraph))
+        )
         liveGraphs.set(handle, resolveGraph)
         return handle
       }),
@@ -40,12 +44,12 @@ export function createGraphScopes(
   }
 }
 
-function graphScopeHandle(
+function graphScopeReads(
   id: string,
   resolveGraph: GraphResolver,
   nodes: NodeHandles
-): GraphScopeHandle {
-  return Object.freeze({
+) {
+  return {
     id,
     get isDeleted() {
       return !resolveGraph()
@@ -60,5 +64,5 @@ function graphScopeHandle(
       const graph = resolveGraph()
       return graph && nodes.list([graph])
     }
-  })
+  }
 }

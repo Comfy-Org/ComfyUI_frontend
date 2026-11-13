@@ -188,7 +188,7 @@ function deepFreeze<T>(value: T): T {
   return Object.freeze(value)
 }
 
-function boundsOnCanvas(node: LGraphNode): Bounds {
+export function boundsOnCanvas(node: LGraphNode): Bounds {
   const bounds: Rect = [0, 0, 0, 0]
   const collapsedWidth = node._collapsed_width
   node.measure(bounds, titleMeasuringContext())

@@ -338,6 +338,30 @@ export interface GraphHandleEdits {
   batch<T>(edits: () => T): T
   /** Every link in the graph on screen, in id order. */
   links(): readonly LinkInfo[] | undefined
+  /** The groups in the graph on screen, in draw order. */
+  groups(): readonly GroupHandle[] | undefined
+}
+
+export interface GraphScopeHandle extends GraphScopeHandleMembers {}
+
+export interface GraphScopeHandleMembers {
+  /** The groups in this graph, in draw order. */
+  groups(): readonly GroupHandle[] | undefined
+}
+
+/** A group: a titled rectangle. Which nodes it holds follows from where they are. */
+export interface GroupHandle {
+  /** The group's id in its graph. */
+  readonly id: string
+  /** True while the group is gone, and every other read is `undefined`. */
+  readonly isDeleted: boolean
+  getTitle(): string | undefined
+  /** The color the group is drawn in. */
+  getColor(): string | undefined
+  /** The group's rectangle in graph space, title bar included. */
+  getBounds(): Bounds | undefined
+  /** The nodes whose center is inside the group now, in the graph's order. */
+  nodes(): readonly NodeHandle[] | undefined
 }
 
 export type SlotSide = 'input' | 'output'

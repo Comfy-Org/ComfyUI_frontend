@@ -4,13 +4,15 @@ import type { GraphScopeFor } from '@/platform/nodeApi/v4/graphScopeHandle'
 import type { GraphHandleEdits } from '@/platform/nodeApi/v4/types'
 import type { EditCore } from './edits'
 import { checkedNodeCreation } from './graphEdits'
+import type { GroupsOf } from './groupHandles'
 import { linksIn } from './linkInfo'
 
-/** The graph handle's edit methods, each a call to `comfy.edit`, and its link read. */
+/** The graph handle's edit methods, each a call to `comfy.edit`, and its reads of links and groups. */
 export function graphHandleMembers(
   visible: () => LGraph | undefined,
   graphScopeFor: GraphScopeFor,
-  edits: EditCore
+  edits: EditCore,
+  groupsOf: GroupsOf
 ): GraphHandleEdits {
   return {
     add(type, init) {
@@ -23,6 +25,10 @@ export function graphHandleMembers(
     links() {
       const graph = visible()
       return graph && linksIn(graph)
+    },
+    groups() {
+      const graph = visible()
+      return graph && groupsOf(graph)
     }
   }
 }
