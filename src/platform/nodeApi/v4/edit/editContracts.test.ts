@@ -102,6 +102,61 @@ describe('edit contracts', () => {
     })
   })
 
+  it('reads a slot name once, so a getter cannot pass the taken-name refusal', () => {
+    let reads = 0
+    const patch = {
+      get name() {
+        reads++
+        return reads === 1 ? 'second' : 'fresh'
+      }
+    }
+
+    expect(() => handle.inputs.at(0)?.modify(patch)).toThrow(TypeError)
+    expect(reads).toBe(1)
+    expect(node.inputs.map(({ name }) => name)).toEqual(['first', 'second'])
+  })
+
+  it.for(['__proto__', 'constructor', 'INT,toString'])(
+    'refuses the slot type %s before adding anything',
+    (type) => {
+      expect(() => handle.inputs.add('third', type)).toThrow(/^add needs/)
+      expect(() => handle.outputs.add('third', type)).toThrow(/^add needs/)
+      expect(() => handle.inputs.at(0)?.modify({ type })).toThrow(
+        /^modify needs/
+      )
+      expect(node.inputs).toHaveLength(2)
+      expect(node.outputs).toHaveLength(2)
+    }
+  )
+
+  it('applies an edit to a node whose type is missing, which saves only its mode and position', () => {
+    graph.configure({
+      ...graph.serialize(),
+      nodes: [
+        {
+          id: 50,
+          type: 'EditTest/NotInstalled',
+          title: 'Saved',
+          pos: [0, 0],
+          size: [100, 50],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {}
+        }
+      ],
+      links: []
+    })
+    const missing = comfy.graph.node('50')
+    assert(missing)
+
+    expect(missing.setTitle('Edited')).toBe(true)
+    expect(missing.setPosition({ x: 7, y: 8 })).toBe(true)
+
+    const saved = graph.serialize().nodes.find(({ id }) => String(id) === '50')
+    expect(saved).toMatchObject({ title: 'Saved', pos: [7, 8] })
+  })
+
   describe('slot references', () => {
     it('read a position once, and refuse one read through a getter', () => {
       let reads = 0

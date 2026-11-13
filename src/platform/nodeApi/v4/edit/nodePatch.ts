@@ -7,7 +7,7 @@ import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { MODE_NAMES } from '@/platform/nodeApi/v4/nodeHandle'
 import type { NodePatch, NodeShape } from '@/platform/nodeApi/v4/types'
 import {
-  assertPatch,
+  checkedFields,
   checkedBoolean,
   checkedChoice,
   checkedNonNegative,
@@ -49,12 +49,12 @@ export function checkedNodePatch(
   member = 'updateNode'
 ): CheckedNodePatch {
   const checks = fieldChecks(member)
-  assertPatch(member, patch, FIELDS)
+  const given = checkedFields(member, patch, FIELDS)
   return {
     writes: Object.entries(checks).flatMap(([field, check]) =>
-      Object.hasOwn(patch, field) ? [check(patch[field])] : []
+      Object.hasOwn(given, field) ? [check(given[field])] : []
     ),
-    stopsSavingWidgets: patch.serializeWidgets === false
+    stopsSavingWidgets: given.serializeWidgets === false
   }
 }
 

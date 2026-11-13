@@ -6,7 +6,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { SizeConstraints } from '@/platform/nodeApi/v4/types'
 import {
-  assertPatch,
+  checkedFields,
   checkedBoolean,
   checkedNonNegative
 } from './checkedArguments'
@@ -25,20 +25,20 @@ export function checkedSizeConstraints(
   member: string,
   value: unknown
 ): SizeConstraints {
-  assertPatch(member, value, CONSTRAINTS)
+  const given = checkedFields(member, value, CONSTRAINTS)
   const limit = (field: Limit) =>
-    value[field] === undefined
+    given[field] === undefined
       ? undefined
-      : checkedNonNegative(member, `sizeConstraints.${field}`, value[field])
+      : checkedNonNegative(member, `sizeConstraints.${field}`, given[field])
   const constraints = {
     minWidth: limit('minWidth'),
     minHeight: limit('minHeight'),
     maxWidth: limit('maxWidth'),
     maxHeight: limit('maxHeight'),
     autoHeight:
-      value.autoHeight === undefined
+      given.autoHeight === undefined
         ? undefined
-        : checkedBoolean(member, 'sizeConstraints.autoHeight', value.autoHeight)
+        : checkedBoolean(member, 'sizeConstraints.autoHeight', given.autoHeight)
   }
   assertOrdered(member, 'Width', constraints.minWidth, constraints.maxWidth)
   assertOrdered(member, 'Height', constraints.minHeight, constraints.maxHeight)
@@ -77,10 +77,7 @@ export function fitToConstraints(
 const resizableChoices = new WeakMap<LGraphNode, boolean>()
 let watchingPins = false
 
-/**
- * Records whether a pack lets the user resize `node`; pinning still stops it.
- * One listener, installed on the first choice, reapplies choices after pin changes.
- */
+/** Records whether a pack lets the user resize `node`; pinning still stops it. */
 export function chooseResizable(
   node: LGraphNode,
   { resizable }: { resizable: boolean }

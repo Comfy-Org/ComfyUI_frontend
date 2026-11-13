@@ -22,7 +22,7 @@ import { checkedChoice } from './checkedArguments'
 import type { EditRunner } from './editRunner'
 import type { SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
-import { assertNotSubgraphNode } from './refusedEdits'
+import { assertNotSubgraphNode, assertPositionShown } from './refusedEdits'
 import {
   assertFitsNode,
   checkedSlotName,
@@ -90,6 +90,7 @@ export function createSlotEdits(
       const live = locator.locate()
       if (!live) return false
       assertNotSubgraphNode(member, live.node)
+      assertPositionShown(member, live, checked.fields, checked.widget)
       assertFitsNode(member, live.node, live.side, {
         name: checked.name,
         widget: checked.widget,
@@ -158,7 +159,11 @@ export function createSlotEdits(
       const moved = permutation(member, order, current)
       const { graph, node: host } = live
       if (host.isSubgraphNode() && slotSide === 'input') {
-        return runner.apply(graph, () => reorderSubgraphNodeInputs(host, moved))
+        return runner.apply(graph, () => {
+          const reordered = reorderSubgraphNodeInputs(host, moved)
+          if (reordered) moveFloatingLinks(graph, host, slotSide, moved)
+          return reordered
+        })
       }
       assertNotSubgraphNode(member, host)
       return runner.apply(graph, () => {
