@@ -6,6 +6,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { ComfyApi } from '@comfyorg/api-client/ComfyApi'
+import { respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -152,6 +153,7 @@ beforeEach(() => {
     (path) => `http://localhost:8188${path}`
   )
   api.user = 'test-user'
+  respondToFetch('http://localhost:8188/files/input', () => Response.json([]))
 })
 
 const mockAppGraph = vi.hoisted(() => ({
