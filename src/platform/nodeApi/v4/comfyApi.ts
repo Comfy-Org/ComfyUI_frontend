@@ -4,6 +4,7 @@ import { createDocumentHandles } from '@/platform/nodeApi/shared/documentHandles
 
 import { API_VERSION, isApiVersionAtLeast } from './apiVersion'
 import { createAppLifecycle } from './appLifecycle'
+import { createEditRunner } from './edit/editRunner'
 import type { EditHistory } from './edit/editRunner'
 import { createEdits } from './edit/edits'
 import type { EditCore } from './edit/edits'
@@ -18,6 +19,7 @@ import { createGraphHandle } from './graphHandle'
 import { createGraphScopes } from './graphScopeHandle'
 import { createNodeHandles } from './nodeHandle'
 import type { Comfy } from './types'
+import { createWidgetCollections } from './widgets/widgetCollection'
 
 /** What the host supplies. */
 export interface ComfyApiServices {
@@ -55,9 +57,14 @@ export interface ComfyApi {
 export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
   const handles = createDocumentHandles()
-  const nodes = createNodeHandles(handles, (handle) =>
-    nodeHandleMembers(handle, edit, nodes, slots)
+  const widgetsOf = createWidgetCollections(
+    handles,
+    createEditRunner(() => services.history?.())
   )
+  const nodes = createNodeHandles(handles, (handle) => ({
+    ...nodeHandleMembers(handle, edit, nodes, slots),
+    widgets: widgetsOf(() => nodes.locator(handle)?.())
+  }))
   const slots = createSlotHandles(handles, nodes, () => edit)
   const groups = createGroupHandles(handles, nodes, (handle) =>
     groupHandleMembers(handle, edit)

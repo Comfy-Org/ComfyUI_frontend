@@ -654,3 +654,113 @@ export interface NodePresentation {
   /** `false` stops the user collapsing the nodes. `setCollapsed` can still collapse one. */
   readonly collapsible?: boolean
 }
+
+/** What `updateGroup` changes. A field left out stays as it is. */
+export interface GroupPatch {
+  /** The group's rectangle in graph space, title bar included; width and height zero or more. */
+  readonly bounds?: Bounds
+}
+
+export interface NodeHandle {
+  /** The node's widgets. */
+  readonly widgets: WidgetCollection
+}
+
+/** A widget's value, as the workflow saves it. */
+export type WidgetValue = string | number | boolean | object | null
+
+/**
+ * A node's widgets, in the order the node shows them. On a deleted node every
+ * read is `undefined` and every change does nothing.
+ */
+export interface WidgetCollection extends Iterable<WidgetHandle> {
+  readonly length: number | undefined
+  get(name: string): WidgetHandle | undefined
+  /** The widget at `index`. A negative index counts back from the end. */
+  at(index: number): WidgetHandle | undefined
+  all(): readonly WidgetHandle[] | undefined
+  names(): readonly string[] | undefined
+  /** Adds a widget after the others. A name the node already has throws a `TypeError`. */
+  add(def: WidgetDef): WidgetHandle | undefined
+  /** Removes the widget. `false` if the node has none by that name. */
+  remove(name: string): boolean
+  /** Puts the widgets in this order. `names` names every widget once. */
+  reorder(names: readonly string[]): void
+  /** Moves one widget to `index`, clamped to the list. */
+  move(name: string, index: number): void
+}
+
+/**
+ * One widget, named by its node and its name. On a deleted widget every read
+ * is `undefined` and every change does nothing.
+ */
+export interface WidgetHandle {
+  readonly name: string
+  /** True while the node has no widget by this name. */
+  readonly isDeleted: boolean
+  /** The widget's type, e.g. `number` or `combo`. */
+  readonly widgetType: string | undefined
+
+  /** A frozen copy of the value. `undefined` too if the workflow cannot save it. */
+  getValue(): WidgetValue | undefined
+  /** Commits a value as a user's edit does: the widget's callbacks run, and it is one undo step. */
+  setValue(value: WidgetValue): void
+  /** A frozen copy of the options. An option that is a function is left out. */
+  getOptions(): Readonly<WidgetOptions> | undefined
+  setOption(key: string, value: WidgetValue): void
+  setLabel(label: string): void
+  isHidden(): boolean | undefined
+  /** Hides or shows the widget and every widget linked to it. */
+  setHidden(hidden: boolean): void
+  isDisabled(): boolean | undefined
+  setDisabled(disabled: boolean): void
+  /** True if the value is saved in the workflow. */
+  isSerialized(): boolean | undefined
+  /** Fixes the height the widget takes on its node, in graph units. */
+  setHeight(height: number): void
+  /** The widgets linked to this one, such as a seed's control. */
+  linked(): readonly WidgetHandle[] | undefined
+  /** Links these widgets of the same node to this one, in place of any linked before. */
+  setLinked(names: readonly string[]): void
+}
+
+/** What a widget is created from. */
+export interface WidgetDef {
+  readonly type: string
+  readonly name: string
+  readonly value?: WidgetValue
+  readonly options?: WidgetOptions
+  /** `false` keeps the value out of the saved workflow. `options.serialize` decides the prompt. */
+  readonly serialize?: boolean
+  readonly disabled?: boolean
+  readonly hidden?: boolean
+}
+
+/** Options the host's widgets read. A widget type may read others. */
+export interface WidgetOptions {
+  readonly [key: string]: unknown
+  readonly values?: unknown
+  readonly min?: number
+  readonly max?: number
+  readonly step?: number
+  readonly step2?: number
+  readonly precision?: number
+  readonly multiline?: boolean
+  readonly placeholder?: string
+  readonly read_only?: boolean
+  readonly on?: string
+  readonly off?: string
+  /** `false` keeps the value out of the prompt. */
+  readonly serialize?: boolean
+  readonly property?: string
+  readonly socketless?: boolean
+  readonly canvasOnly?: boolean
+  readonly hideInPanel?: boolean
+  readonly hidden?: boolean
+  readonly disabled?: boolean
+  readonly nodeType?: string
+  readonly iconClass?: string
+  readonly useGrouping?: boolean
+  readonly showThumbnails?: boolean
+  readonly showItemNavigators?: boolean
+}

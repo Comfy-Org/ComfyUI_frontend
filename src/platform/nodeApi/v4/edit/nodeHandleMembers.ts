@@ -16,7 +16,7 @@ export function nodeHandleMembers(
   edits: EditCore,
   nodes: NodeHandles,
   slots: SlotHandles
-): NodeHandleMembers {
+): Omit<NodeHandleMembers, 'widgets'> {
   const update = (member: string, patch: NodePatch) =>
     edits.updateNode(handle, patch, member)
   const live = () => nodes.locator(handle)?.()?.node
