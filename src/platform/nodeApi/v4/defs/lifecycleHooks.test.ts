@@ -103,6 +103,52 @@ describe('node lifecycle hooks', () => {
       expect(order).toEqual(['created true', 'configured Pasted'])
     })
 
+    it('says a pasted node was restored even with no hook for saved state', () => {
+      const events: NodeCreatedEvent[] = []
+      extend((builder) => builder.onCreated((_, event) => events.push(event)))
+      const node = created()
+
+      node.configure(node.serialize())
+      graph.add(node)
+
+      expect(events).toEqual([{ restored: true, loading: false }])
+    })
+
+    it('forgets saved state once delivered, so a node added again is not restored', () => {
+      const events: NodeCreatedEvent[] = []
+      const onConfigured = vi.fn()
+      extend((builder) => {
+        builder.onCreated((_, event) => events.push(event))
+        builder.onConfigured(onConfigured)
+      })
+      const node = created()
+      node.configure(node.serialize())
+      graph.add(node)
+      graph.remove(node)
+
+      graph.add(node)
+
+      expect(events.map((event) => event.restored)).toEqual([true, false])
+      expect(onConfigured).toHaveBeenCalledOnce()
+    })
+
+    it('hears nothing from a node that names a graph it is not in', () => {
+      const onRemoved = vi.fn()
+      extend((builder) => builder.onRemoved(onRemoved))
+      const inGraph = added()
+      const stray = created()
+      stray.id = inGraph.id
+      Reflect.set(stray, 'graph', graph)
+
+      stray.onRemoved?.()
+
+      expect(onRemoved).not.toHaveBeenCalled()
+
+      inGraph.onRemoved?.()
+
+      expect(onRemoved).toHaveBeenCalledOnce()
+    })
+
     it('says a node added while a workflow loads is loading and restored', () => {
       const onCreated = vi.fn()
       extend((builder) => builder.onCreated(onCreated))
@@ -177,6 +223,44 @@ describe('node lifecycle hooks', () => {
       graph.add(node)
 
       expect(onConfigured).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('saved state a workflow cannot save', () => {
+    it('gives empty data for saved state it cannot copy, and reports it', () => {
+      const received: unknown[] = []
+      extend((builder) =>
+        builder.onConfigured((_, data) => received.push(data))
+      )
+      const node = added()
+
+      const saved = node.serialize()
+      Reflect.set(saved, 'properties', { big: 10n })
+
+      node.configure(saved)
+
+      expect(received).toEqual([{}])
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('gives an empty result for output it cannot copy', () => {
+      const results: unknown[] = []
+      extend((builder) =>
+        builder.onExecuted((_, result) => results.push(result))
+      )
+      const node = added()
+
+      Reflect.apply(nodeMethod(node, 'onExecuted'), node, [{ text: [1n] }])
+
+      expect(results).toEqual([{ text: [], images: [], raw: {} }])
+    })
+
+    it('saves nothing from fields it cannot copy', () => {
+      extend((builder) => builder.onSerialize(() => ({ big: 10n })))
+      const node = added()
+
+      expect(node.serialize()).not.toHaveProperty('big')
+      expect(reportError).toHaveBeenCalledOnce()
     })
   })
 
@@ -494,6 +578,25 @@ describe('node lifecycle hooks', () => {
       expect(onRemoved).toHaveBeenCalledOnce()
     })
 
+    it('runs the saving and loading hooks its definition declares', () => {
+      const onConfigured = vi.fn()
+      defs.define({
+        type: 'Defined',
+        onSerialize: () => ({ packState: 1 }),
+        onConfigured
+      })
+      const node = LiteGraph.createNode('Defined')
+      assert(node)
+      graph.add(node)
+
+      node.configure(node.serialize())
+
+      expect(onConfigured).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ packState: 1 })
+      )
+    })
+
     it('stops its hooks when unsubscribed', () => {
       const onCreated = vi.fn()
       const stop = defs.define({ type: 'Defined', onCreated })
@@ -502,6 +605,33 @@ describe('node lifecycle hooks', () => {
 
       stop()
       graph.add(node)
+
+      expect(onCreated).not.toHaveBeenCalled()
+    })
+
+    it('stops the hooks of a definition replaced by a later one of the same type', () => {
+      const first = vi.fn()
+      const second = vi.fn()
+      defs.define({ type: 'Defined', onCreated: first })()
+      defs.define({ type: 'Defined', onCreated: second })
+      const node = LiteGraph.createNode('Defined')
+      assert(node)
+
+      graph.add(node)
+
+      expect(first).not.toHaveBeenCalled()
+      expect(second).toHaveBeenCalledOnce()
+    })
+
+    it('runs its hooks only for its own type', () => {
+      const onCreated = vi.fn()
+      defs.define({ type: 'Defined', onCreated })
+      registerHostType(host.nodeTypeHooks, hostNodeDef('Other'))
+
+      graph.add(created())
+      const other = LiteGraph.createNode('Other')
+      assert(other)
+      graph.add(other)
 
       expect(onCreated).not.toHaveBeenCalled()
     })

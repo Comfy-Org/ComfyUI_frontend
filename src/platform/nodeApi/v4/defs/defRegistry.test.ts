@@ -107,6 +107,45 @@ describe('node definitions', () => {
       expect(typesExtended(selector).types).toEqual(picked)
     })
 
+    it('tests a global category pattern the same way for each type', () => {
+      const { types } = typesExtended({ category: /^mine/g })
+
+      registerHost('First', 'mine')
+      registerHost('Second', 'mine')
+
+      expect(types).toEqual(['First', 'Second'])
+    })
+
+    it('names the selector forms when it refuses an object without a category', () => {
+      expect(() =>
+        Reflect.apply(defs.extend, defs, [{ type: 'Pick' }, () => {}])
+      ).toThrow(
+        'extend needs a type name, a list of names, a RegExp, { category } or a function'
+      )
+    })
+
+    it('does not apply an extension another apply unsubscribed during the same registration', () => {
+      const later = vi.fn()
+      let stopLater = () => {}
+      defs.extend('Pick', () => stopLater())
+      stopLater = defs.extend('Pick', later)
+
+      registerHost('Pick')
+
+      expect(later).not.toHaveBeenCalled()
+    })
+
+    it('applies an extension made by an apply during a registration once to that type', () => {
+      const nested = vi.fn()
+      defs.extend('Second', () => {
+        defs.extend(/./, nested)
+      })
+
+      registerHost('Second')
+
+      expect(nested).toHaveBeenCalledOnce()
+    })
+
     it('tests a global pattern the same way for each type', () => {
       const { types } = typesExtended(/^P/g)
 
@@ -303,6 +342,22 @@ describe('node definitions', () => {
         ],
         hidden: { prompt: 'PROMPT' },
         isOutputNode: true
+      })
+    })
+
+    it('reads a type that declares no outputs, and options it cannot copy as none', () => {
+      const circular: Record<string, unknown> = {}
+      circular.itself = circular
+      const declared = hostNodeDef('Odd', {
+        input: { required: { value: ['X', circular] }, hidden: circular }
+      })
+      Reflect.deleteProperty(declared, 'output')
+      registerHostType(host.nodeTypeHooks, declared)
+
+      expect(defs.get('Odd')).toMatchObject({
+        inputs: [{ name: 'value', options: {} }],
+        outputs: [],
+        hidden: {}
       })
     })
 

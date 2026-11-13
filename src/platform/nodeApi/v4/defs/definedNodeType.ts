@@ -118,8 +118,8 @@ export function registerDefinedType(
   class DefinedNode extends LGraphNode {
     static override title = title
 
-    constructor(nodeTitle?: string) {
-      super(nodeTitle ?? title)
+    constructor(nodeTitle: string) {
+      super(nodeTitle)
       for (const input of inputs) this.addInput(input.name, input.type)
       for (const output of outputs) this.addOutput(output.name, output.type)
       if (execution === 'frontend') this.isVirtualNode = true
