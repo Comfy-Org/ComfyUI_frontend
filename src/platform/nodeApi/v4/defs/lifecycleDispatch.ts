@@ -73,9 +73,11 @@ export function createLifecycleDispatch({
       const previous = target.onExecuted
       target.onExecuted = function (output) {
         previous?.call(this, output)
-        const result = executionResult(copyOfSaved('onExecuted', output))
+        const result = once(() =>
+          executionResult(copyOfSaved('onExecuted', output))
+        )
         deliver(type, 'onExecuted', this, (callback, handle) =>
-          callback(handle, result)
+          callback(handle, result())
         )
       }
     },

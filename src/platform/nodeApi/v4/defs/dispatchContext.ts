@@ -10,6 +10,8 @@ export interface HookSource {
     hook: K
   ): readonly HookCallbacks[K][]
   demand(hook: HookName): number
+  /** Changes each time an extension's hooks are added to or removed from a type. */
+  revision(): number
 }
 
 /** Calls each current callback for `hook` with a node's handle, isolated; nothing for a node outside a graph. */

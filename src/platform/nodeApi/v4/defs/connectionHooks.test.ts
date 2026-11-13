@@ -320,13 +320,37 @@ describe('connection, property and pointer hooks', () => {
       expect(node.properties.max).toBe(50)
     })
 
-    it('stores an unset replacement', () => {
-      changes((event) => event.setValue(undefined))
+    it('refuses an unset replacement, quietly, and keeps the value set', () => {
+      let refusal: unknown
+      changes((event) => {
+        try {
+          event.setValue(undefined)
+        } catch (error) {
+          refusal = error
+        }
+      })
       const node = probe()
 
       node.setProperty('max', 50)
 
-      expect(node.properties.max).toBeUndefined()
+      expect(refusal).toBeInstanceOf(TypeError)
+      expect(node.properties.max).toBe(50)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('refuses to settle a change once the hook that received it has returned', () => {
+      let kept: PropertyChangeEvent | undefined
+      changes((event) => {
+        kept = event
+      })
+      const node = probe()
+      node.setProperty('max', 50)
+      assert(kept)
+      const event = kept
+
+      expect(() => event.setValue(1)).toThrow(TypeError)
+      expect(() => event.reject()).toThrow(TypeError)
+      expect(node.properties.max).toBe(50)
     })
 
     it('keeps a refusal the type itself makes, without telling the hooks', () => {

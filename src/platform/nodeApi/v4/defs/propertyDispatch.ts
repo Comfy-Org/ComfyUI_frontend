@@ -1,13 +1,16 @@
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 
+import { once } from 'es-toolkit'
+
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { savedValue } from '@/platform/nodeApi/shared/savedCopy'
 import type { PropertyChangeEvent } from '@/platform/nodeApi/v4/types'
 import type { DispatchContext, MethodInstaller } from './dispatchContext'
 
 type Settlement =
   | { readonly kind: 'kept' }
   | { readonly kind: 'rejected' }
-  | { readonly kind: 'replaced'; readonly value: NodeProperty | undefined }
+  | { readonly kind: 'replaced'; readonly value: NodeProperty }
 
 /** Delivers a property change, and settles it as the packs asked: kept, rejected or replaced. */
 export function propertyInstallers({
@@ -23,33 +26,40 @@ export function propertyInstallers({
       target.onPropertyChanged = function (name, value, before) {
         const answer = previous?.call(this, name, value, before)
         if (answer === false) return false
-        const outcome: { settlement: Settlement } = {
-          settlement: { kind: 'kept' }
+        const outcome: { settlement: Settlement; open: boolean } = {
+          settlement: { kind: 'kept' },
+          open: true
         }
-        const event: PropertyChangeEvent = Object.freeze({
-          name,
-          value: copyOfSaved('onPropertyChanged', value),
-          setValue(replacement: unknown) {
-            const copy = copyOfSaved('setValue', replacement)
-            if (
-              !isSavedProperty(copy) ||
-              (copy === undefined && replacement !== undefined)
-            ) {
-              throw invalidArgument(
-                'setValue',
-                'a value a workflow can save',
-                replacement
-              )
-            }
-            outcome.settlement = { kind: 'replaced', value: copy }
-          },
-          reject() {
-            outcome.settlement = { kind: 'rejected' }
+        const settle = (member: string, settlement: Settlement) => {
+          if (!outcome.open) {
+            throw new TypeError(
+              `${member} can only be called while the hook that received the event runs.`
+            )
           }
-        })
-        deliver(type, 'onPropertyChanged', this, (callback, handle) =>
-          callback(handle, event)
+          outcome.settlement = settlement
+        }
+        const copy = once(() => copyOfSaved('onPropertyChanged', value))
+        const event = once((): PropertyChangeEvent =>
+          Object.freeze({
+            name,
+            get value() {
+              return copy()
+            },
+            setValue(replacement: unknown) {
+              settle('setValue', {
+                kind: 'replaced',
+                value: storableProperty(replacement)
+              })
+            },
+            reject() {
+              settle('reject', { kind: 'rejected' })
+            }
+          })
         )
+        deliver(type, 'onPropertyChanged', this, (callback, handle) =>
+          callback(handle, event())
+        )
+        outcome.open = false
         const { settlement } = outcome
         if (settlement.kind === 'rejected') return false
         if (settlement.kind === 'replaced') {
@@ -61,10 +71,18 @@ export function propertyInstallers({
   }
 }
 
-function isSavedProperty(value: unknown): value is NodeProperty | undefined {
-  return (
-    typeof value !== 'function' &&
-    typeof value !== 'symbol' &&
-    typeof value !== 'bigint'
-  )
+function storableProperty(replacement: unknown): NodeProperty {
+  const saved = savedValue(replacement)
+  if (!saved.ok || !isNodeProperty(saved.value)) {
+    throw invalidArgument(
+      'setValue',
+      'a value a workflow can save',
+      replacement
+    )
+  }
+  return saved.value
+}
+
+function isNodeProperty(value: unknown): value is NodeProperty {
+  return value !== undefined
 }

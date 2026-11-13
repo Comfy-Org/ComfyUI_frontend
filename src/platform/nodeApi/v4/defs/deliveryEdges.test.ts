@@ -90,6 +90,25 @@ describe('delivering hooks at the edges', () => {
       ]).toEqual([1, 1])
     })
 
+    it('gives a class registered under another type name no hook of the type it extends', () => {
+      const onCreated = vi.fn()
+      const onRemoved = vi.fn()
+      extend((builder) => {
+        builder.onCreated(onCreated)
+        builder.onRemoved(onRemoved)
+      })
+      const Registered = LiteGraph.registered_node_types[TYPE]
+      LiteGraph.registerNodeType('Pack/Clone', class extends Registered {})
+
+      graph.remove(addedNode('Pack/Clone'))
+      graph.remove(addedNode())
+
+      expect([
+        onCreated.mock.calls.length,
+        onRemoved.mock.calls.length
+      ]).toEqual([1, 1])
+    })
+
     it('keeps one API instance from hearing the nodes of a type another registered', () => {
       const onCreated = vi.fn()
       const onRemoved = vi.fn()
@@ -183,5 +202,43 @@ describe('delivering hooks at the edges', () => {
         ])
       )
     })
+  })
+
+  it('copies an output or a property value only when a hook will receive it', () => {
+    const stop = extend((builder) => {
+      builder.onExecuted(() => {})
+      builder.onPropertyChanged(() => {})
+    })
+    const node = addedNode()
+    const stringify = vi.spyOn(JSON, 'stringify')
+    node.onExecuted?.({ text: ['kept'] })
+    node.setProperty('size', 1)
+    const withHooks = stringify.mock.calls.length
+    stringify.mockClear()
+    stop()
+
+    node.onExecuted?.({ text: ['kept'] })
+    node.setProperty('size', 2)
+
+    expect(withHooks).toBeGreaterThan(0)
+    expect(stringify).not.toHaveBeenCalled()
+    stringify.mockRestore()
+  })
+
+  it('calls a hook added during a delivery only from the next event, and each hook once', () => {
+    const added = vi.fn()
+    const first = vi.fn(() => {
+      extend((builder) => builder.onRemoved(added))
+    })
+    const last = vi.fn()
+    extend((builder) => builder.onRemoved(first))
+    extend((builder) => builder.onRemoved(last))
+
+    graph.remove(addedNode())
+
+    expect([first.mock.calls.length, last.mock.calls.length]).toEqual([1, 1])
+    expect(added).not.toHaveBeenCalled()
+    graph.remove(addedNode())
+    expect(added).toHaveBeenCalledOnce()
   })
 })

@@ -92,14 +92,21 @@ export function createHookDispatch(
   const deliver: Deliver = (type, hook, node, call) => {
     const callbacks = source.callbacksFor(type, hook)
     const { graph } = node
-    if (callbacks.length === 0 || !graph || !isInGraph(node)) return []
+    if (callbacks.length === 0 || node.type !== type) return []
+    if (!graph || !isInGraph(node)) return []
     const handle = nodes.find(graph, String(node.id))
     if (!handle) return []
-    return callbacks.map((callback) =>
-      source.callbacksFor(type, hook).includes(callback)
+    let revision = source.revision()
+    let current: ReadonlySet<unknown> | undefined
+    return callbacks.map((callback) => {
+      if (source.revision() !== revision) {
+        revision = source.revision()
+        current = new Set<unknown>(source.callbacksFor(type, hook))
+      }
+      return !current || current.has(callback)
         ? callListener(hook, () => call(callback, handle))
         : undefined
-    )
+    })
   }
 
   const context: DispatchContext = {
