@@ -1,3 +1,5 @@
+import { clamp } from 'es-toolkit'
+
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
@@ -66,50 +68,40 @@ export function fitToConstraints(
   const [width, height] = node.size
   const wantedHeight = autoHeight ? node.computeSize()[1] : height
   const fitted: [number, number] = [
-    clamp(width, minWidth, maxWidth),
-    clamp(wantedHeight, minHeight, maxHeight)
+    clamp(width, minWidth ?? 0, maxWidth ?? Infinity),
+    clamp(wantedHeight, minHeight ?? 0, maxHeight ?? Infinity)
   ]
   if (fitted[0] !== width || fitted[1] !== height) node.setSize(fitted)
 }
 
-function clamp(value: number, min = 0, max = Infinity): number {
-  return Math.min(max, Math.max(min, value))
-}
-
-export interface ResizableChoices {
-  /** Records whether a pack lets the user resize `node`; pinning still stops it. */
-  choose(node: LGraphNode, resizable: boolean): void
-}
+const resizableChoices = new WeakMap<LGraphNode, boolean>()
+let watchingPins = false
 
 /**
- * Keeps each pack's resizable choice through pin toggles, which overwrite the
- * node's flag, by reapplying it after every pin change of a node that has one.
+ * Records whether a pack lets the user resize `node`; pinning still stops it.
+ * One listener, installed on the first choice, reapplies choices after pin changes.
  */
-export function createResizableChoices(): ResizableChoices {
-  const choices = new WeakMap<LGraphNode, boolean>()
-  let watchingPins = false
+export function chooseResizable(
+  node: LGraphNode,
+  { resizable }: { resizable: boolean }
+): void {
+  watchPins()
+  resizableChoices.set(node, resizable)
+  applyResizable(node)
+}
 
-  function apply(node: LGraphNode): void {
-    const choice = choices.get(node)
-    if (choice !== undefined) node.resizable = choice && !node.pinned
-  }
+function applyResizable(node: LGraphNode): void {
+  const choice = resizableChoices.get(node)
+  if (choice !== undefined) node.resizable = choice && !node.pinned
+}
 
-  function watchPins(): void {
-    if (watchingPins) return
-    watchingPins = true
-    onGraphIntent((intent) => {
-      if (intent.type !== 'set_node_field' || intent.field !== 'flags.pinned')
-        return
-      const node = intent.graph.getNodeById(intent.nodeId)
-      if (node) apply(node)
-    })
-  }
-
-  return {
-    choose(node, resizable) {
-      watchPins()
-      choices.set(node, resizable)
-      apply(node)
-    }
-  }
+function watchPins(): void {
+  if (watchingPins) return
+  watchingPins = true
+  onGraphIntent((intent) => {
+    if (intent.type !== 'set_node_field' || intent.field !== 'flags.pinned')
+      return
+    const node = intent.graph.getNodeById(intent.nodeId)
+    if (node) applyResizable(node)
+  })
 }

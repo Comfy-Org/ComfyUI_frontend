@@ -10,7 +10,7 @@ import type {
   SlotType
 } from '@/platform/nodeApi/v4/types'
 import { knownSlotId } from './slotIds'
-import { assertSlotRef, slotIndexOf } from './slotRef'
+import { checkedSlotRef, slotIndexOf } from './slotRef'
 
 /** How a collection reaches one side of a node's slots. */
 export interface SlotSideAccess<
@@ -90,8 +90,8 @@ export function slotCollection<
     [Symbol.iterator]: () => (all() ?? []).values(),
     add: side.add,
     remove(ref: SlotRef) {
-      assertSlotRef('remove', ref)
-      const slot = handleWhere((slots) => slotIndexOf('remove', slots, ref))
+      const checked = checkedSlotRef('remove', ref)
+      const slot = handleWhere((slots) => slotIndexOf('remove', slots, checked))
       return slot !== undefined && side.remove(slot)
     },
     reorder: side.reorder

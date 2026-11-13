@@ -16,7 +16,7 @@ import { checkedString } from './checkedArguments'
 import type { EditCore } from './edits'
 import { linkInfoOf } from './linkInfo'
 import type { LiveSlot, SlotHandles } from './liveSlot'
-import { assertSlotRef, slotIndexOf } from './slotRef'
+import { checkedSlotRef, slotIndexOf } from './slotRef'
 import { isSlotConnected, slotSnapshotOf, slotTypeOf } from './slotSnapshot'
 
 /** What a slot handle needs: its slot, the edit core and the handles beside it. */
@@ -64,7 +64,8 @@ export function inputSlotHandle(
     link: () => read((live) => linkInfoIn(live.graph, link(live))),
     source: () => read((live) => sourceOf(link(live))),
     snapshot: () => read(slotSnapshotOf),
-    modify: (patch: InputSlotPatch) => edits().updateSlot(handle, patch),
+    modify: (patch: InputSlotPatch) =>
+      edits().updateSlot(handle, patch, 'modify'),
     disconnect: () => edits().disconnect(handle)
   })
   return handle
@@ -104,7 +105,7 @@ export function outputSlotHandle(
       ),
     targets: () => read((live) => Object.freeze(links(live).map(targetOf))),
     snapshot: () => read(slotSnapshotOf),
-    modify: (patch: SlotPatch) => edits().updateSlot(handle, patch),
+    modify: (patch: SlotPatch) => edits().updateSlot(handle, patch, 'modify'),
 
     connectTo(targetNodeId: string, input: SlotRef) {
       const nodeId = checkedString(
@@ -112,11 +113,11 @@ export function outputSlotHandle(
         'a target node id',
         targetNodeId
       )
-      assertSlotRef('connectTo', input)
+      const ref = checkedSlotRef('connectTo', input)
       const live = locate()
       const target = live?.graph.getNodeById(toNodeId(nodeId))
       if (!live || !target) return undefined
-      const index = slotIndexOf('connectTo', target.inputs, input)
+      const index = slotIndexOf('connectTo', target.inputs, ref)
       if (index === -1) return undefined
       const inputHandle = slots.inputHandle(
         live.graph,
@@ -139,11 +140,11 @@ export function outputSlotHandle(
     },
 
     moveLinksTo(target: SlotRef) {
-      assertSlotRef('moveLinksTo', target)
+      const ref = checkedSlotRef('moveLinksTo', target)
       const live = locate()
       if (!live) return undefined
       const { outputs } = live.node
-      const index = slotIndexOf('moveLinksTo', outputs, target)
+      const index = slotIndexOf('moveLinksTo', outputs, ref)
       if (index === -1) return undefined
       const targetHandle = slots.outputHandle(
         live.graph,

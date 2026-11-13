@@ -38,21 +38,29 @@ import {
 
 /** The slot edits, taking anything a pack passes and checking it. */
 export interface SlotEdits {
-  updateSlot(slot: unknown, patch: unknown): boolean
+  /** `member` names the call a refusal blames, for a handle method that calls this. */
+  updateSlot(slot: unknown, patch: unknown, member?: string): boolean
   addInput(
     node: unknown,
     name: unknown,
     type: unknown,
-    options?: unknown
+    options?: unknown,
+    member?: string
   ): InputSlotHandle | undefined
   addOutput(
     node: unknown,
     name: unknown,
     type: unknown,
-    options?: unknown
+    options?: unknown,
+    member?: string
   ): OutputSlotHandle | undefined
   removeSlot(slot: unknown): boolean
-  reorderSlots(node: unknown, side: unknown, names: unknown): boolean
+  reorderSlots(
+    node: unknown,
+    side: unknown,
+    names: unknown,
+    member?: string
+  ): boolean
 }
 
 const SIDES = { input: true, output: true } satisfies Record<SlotSide, true>
@@ -89,35 +97,36 @@ export function createSlotEdits(
   }
 
   return {
-    updateSlot(slot, patch) {
-      const locator = slotLocatorOf(slots, 'updateSlot', slot)
-      const checked = checkedSlotPatch(patch, locator.side)
+    updateSlot(slot, patch, member = 'updateSlot') {
+      const locator = slotLocatorOf(slots, member, slot)
+      const checked = checkedSlotPatch(patch, locator.side, member)
       const live = locator.locate()
       if (!live) return false
-      assertSlotEditKept('updateSlot', live, checked.fields)
-      assertFitsNode('updateSlot', live.node, live.side, {
+      assertSlotEditKept(member, live, checked.fields)
+      assertFitsNode(member, live.node, live.side, {
         name: checked.name,
         widget: checked.widget,
         except: live.slot
       })
       runner.apply(live.graph, () => {
         for (const write of checked.writes) write(live)
-        if (checked.widget !== undefined) {
+        if (checked.widget === null) delete live.slot.widget
+        else if (checked.widget !== undefined) {
           live.slot.widget = { name: checked.widget }
         }
       })
       return true
     },
 
-    addInput(...args) {
-      const live = addSlot('addInput', 'input', args)
+    addInput(node, name, type, options, member = 'addInput') {
+      const live = addSlot(member, 'input', [node, name, type, options])
       return live?.side === 'input'
         ? slots.inputHandle(live.graph, live.node, live.slot)
         : undefined
     },
 
-    addOutput(...args) {
-      const live = addSlot('addOutput', 'output', args)
+    addOutput(node, name, type, options, member = 'addOutput') {
+      const live = addSlot(member, 'output', [node, name, type, options])
       return live?.side === 'output'
         ? slots.outputHandle(live.graph, live.node, live.slot)
         : undefined
@@ -134,25 +143,28 @@ export function createSlotEdits(
       return true
     },
 
-    reorderSlots(node, side, names) {
-      const live = liveNodeOf(nodes, 'reorderSlots', node)
-      const slotSide = checkedChoice('reorderSlots', 'side', side, SIDES)
-      const order = checkedNames(names)
+    reorderSlots(node, side, names, member = 'reorderSlots') {
+      const live = liveNodeOf(nodes, member, node)
+      const slotSide = checkedChoice(member, 'side', side, SIDES)
+      const order = checkedNames(member, names)
       if (!live) return false
       const current =
         slotSide === 'input' ? live.node.inputs : live.node.outputs
-      const moved = permutation(order, current)
+      const moved = permutation(member, order, current)
       const { graph, node: host } = live
       if (host.isSubgraphNode() && slotSide === 'input') {
         return runner.apply(graph, () => reorderSubgraphNodeInputs(host, moved))
       }
-      assertNotSubgraphNode('reorderSlots', host)
-      assertReorderKept('reorderSlots', host, slotSide, moved)
-      return runner.apply(graph, () =>
-        slotSide === 'input'
-          ? reorderInputs(host, moved)
-          : reorderOutputs(graph, host, moved)
-      )
+      assertNotSubgraphNode(member, host)
+      assertReorderKept(member, host, slotSide, moved)
+      return runner.apply(graph, () => {
+        const reordered =
+          slotSide === 'input'
+            ? reorderInputs(host, moved)
+            : reorderOutputs(graph, host, moved)
+        if (reordered) moveFloatingLinks(graph, host, slotSide, moved)
+        return reordered
+      })
     }
   }
 }
@@ -168,18 +180,18 @@ export function slotLocatorOf(
   return locator
 }
 
-function checkedNames(names: unknown): readonly string[] {
+function checkedNames(member: string, names: unknown): readonly string[] {
   if (
     !Array.isArray(names) ||
     !names.every((name): name is string => typeof name === 'string')
   ) {
-    throw invalidArgument('reorderSlots', 'a list of slot names', names)
+    throw invalidArgument(member, 'a list of slot names', names)
   }
   return names
 }
 
-/** Where each slot moves from, in the new order; refuses a list that is not a permutation of the names. */
 function permutation(
+  member: string,
   order: readonly string[],
   slots: readonly { readonly name: string }[]
 ): readonly number[] {
@@ -191,12 +203,27 @@ function permutation(
     from.includes(undefined)
   ) {
     throw invalidArgument(
-      'reorderSlots',
+      member,
       `each of the slots' distinct names once (${slots.map(({ name }) => name).join(', ')})`,
       order.join(', ')
     )
   }
   return from.filter((index): index is number => index !== undefined)
+}
+
+function moveFloatingLinks(
+  graph: LGraph,
+  node: LGraphNode,
+  side: SlotSide,
+  from: readonly number[]
+): void {
+  for (const link of graph.floatingLinks.values()) {
+    if (side === 'input' && link.target_id === node.id) {
+      link.target_slot = from.indexOf(link.target_slot)
+    } else if (side === 'output' && link.origin_id === node.id) {
+      link.origin_slot = from.indexOf(link.origin_slot)
+    }
+  }
 }
 
 function reorderSubgraphNodeInputs(
