@@ -76,7 +76,7 @@
     </template>
     <template v-if="betaMenuEnabled" #right-side-panel>
       <AppBuilder v-if="isBuilderMode" />
-      <NodePropertiesPanel v-else />
+      <PropertiesPanel v-else />
     </template>
     <template v-if="showUI" #agent-panel="{ hasOpaqueNeighbor }">
       <component
@@ -146,7 +146,7 @@ import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
-import NodePropertiesPanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import PropertiesPanel from '@/renderer/extensions/propertiesPanel/PropertiesPanel.vue'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
@@ -207,6 +207,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
@@ -624,6 +625,8 @@ onMounted(async () => {
       startupOutcome = await workflowPersistence.initializeWorkflow()
       await workflowPersistence.restoreWorkflowTabsState()
       urlTemplateId = await workflowPersistence.loadTemplateFromUrlIfPresent()
+      if (!workflowStore.activeWorkflow)
+        await useWorkflowService().loadDefaultWorkflow()
       await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     })
     bootstrapOutcome = 'completed'
@@ -644,6 +647,8 @@ onMounted(async () => {
   void releaseStore.initialize()
 
   emit('ready')
+
+  void useSubgraphStore().fetchSubgraphs()
 
   await nextTick()
   try {

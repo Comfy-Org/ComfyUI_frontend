@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe('Properties panel - Title editing', () => {
-  let panel: PropertiesPanelHelper
+  let panel: PropertiesPanel
 
   test.beforeEach(async ({ comfyPage }) => {
-    panel = new PropertiesPanelHelper(comfyPage.page)
+    panel = new PropertiesPanel(comfyPage.page)
     await comfyPage.actionbar.propertiesButton.click()
     await comfyPage.nodeOps.selectNodes(['KSampler'])
   })
@@ -19,6 +19,13 @@ test.describe('Properties panel - Title editing', () => {
   test('should enter edit mode on pencil click', async () => {
     await panel.titleEditIcon.click()
     await panel.titleEditor.expectVisible()
+  })
+
+  test('should enter edit mode on title click', async () => {
+    await panel.panelTitle.click()
+    await panel.titleEditor.expectVisible()
+    await panel.titleEditor.setTitle('My Custom Sampler')
+    await expect(panel.panelTitle).toContainText('My Custom Sampler')
   })
 
   test('should update node title on edit', async () => {

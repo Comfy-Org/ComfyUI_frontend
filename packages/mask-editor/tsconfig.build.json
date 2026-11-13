@@ -24,8 +24,10 @@
     "customConditions": ["@comfyorg/mask-editor"]
   },
   "references": [
-    { "path": "../shared-frontend-utils/tsconfig.declarations.json" }
+    { "path": "../shared-frontend-utils/tsconfig.declarations.json" },
+    { "path": "../design-system/tsconfig.declarations.json" },
+    { "path": "../tailwind-utils/tsconfig.declarations.json" }
   ],
-  "include": ["src/**/*.ts"],
-  "exclude": ["src/**/*.test.ts"]
+  "include": ["src/**/*.ts", "src/**/*.vue"],
+  "exclude": ["src/**/*.test.ts", "src/testing/**"]
 }

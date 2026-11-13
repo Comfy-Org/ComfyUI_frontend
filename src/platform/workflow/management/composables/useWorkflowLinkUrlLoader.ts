@@ -54,6 +54,42 @@ type Ownership = {
   unreplaced: () => boolean
 }
 
+function isWorkflowId(value: unknown): value is string {
+  return typeof value === 'string' && workflowIdSchema.safeParse(value).success
+}
+
+function linkIdentity(value: unknown): unknown {
+  if (value === null || value === '') return ','
+  if (!Array.isArray(value)) return value
+  if (value.length === 1) return linkIdentity(value[0])
+  return value.map((entry: unknown) => entry ?? '').join(',')
+}
+
+function isSameLink(carried: unknown, workflowId: unknown): boolean {
+  return linkIdentity(carried) === linkIdentity(workflowId)
+}
+
+const BUILT_IN_ERROR_NAMES: ReadonlySet<string> = new Set([
+  'Error',
+  'TypeError',
+  'RangeError',
+  'SyntaxError',
+  'ReferenceError',
+  'EvalError',
+  'URIError',
+  'AggregateError'
+])
+
+function failureContext(cause: unknown) {
+  try {
+    if (!(cause instanceof Error)) return { error_name: typeof cause }
+    const name = cause.name
+    return { error_name: BUILT_IN_ERROR_NAMES.has(name) ? name : 'other' }
+  } catch {
+    return { error_name: 'other' }
+  }
+}
+
 function isWorkflowPath(path: string): boolean {
   return (
     path.startsWith('workflows/') &&
@@ -105,9 +141,10 @@ async function lookupSidebarFile(workflowId: string): Promise<LookupResult> {
     const response = await api.fetchApi(`/workflows/${workflowId}/sidebar-file`)
     return await readLookupResponse(response)
   } catch (cause) {
-    reportError(new Error('Could not read workflow link', { cause }), {
+    reportError(new Error('Could not read workflow link'), {
       surface: 'graph',
-      errorType: 'error_loading_workflow_link'
+      errorType: 'error_loading_workflow_link',
+      context: failureContext(cause)
     })
     return { kind: 'error' }
   }
@@ -165,9 +202,10 @@ function useWorkflowLinkUrlLoaderInternal() {
     try {
       return (await router.replace({ query })) === undefined
     } catch (cause) {
-      reportError(new Error('Could not clear workflow link', { cause }), {
+      reportError(new Error('Could not clear workflow link'), {
         surface: 'graph',
-        errorType: 'error_clearing_workflow_link'
+        errorType: 'error_clearing_workflow_link',
+        context: failureContext(cause)
       })
       return true
     }
@@ -209,9 +247,10 @@ function useWorkflowLinkUrlLoaderInternal() {
       })
       return opened ? { kind: 'opened' } : { kind: 'error' }
     } catch (cause) {
-      reportError(new Error('Could not open workflow link', { cause }), {
+      reportError(new Error('Could not open workflow link'), {
         surface: 'graph',
-        errorType: 'error_opening_workflow_link'
+        errorType: 'error_opening_workflow_link',
+        context: failureContext(cause)
       })
       return { kind: 'error' }
     }
@@ -221,8 +260,7 @@ function useWorkflowLinkUrlLoaderInternal() {
     value: unknown,
     isCurrent: () => boolean
   ): Promise<ResolveOutcome> {
-    if (typeof value !== 'string' || !workflowIdSchema.safeParse(value).success)
-      return { kind: 'not_found' }
+    if (!isWorkflowId(value)) return { kind: 'not_found' }
     const result = await lookupSidebarFile(value)
     if (!isCurrent()) return { kind: 'pending' }
     return result.kind === 'found' ? openPath(result.path, isCurrent) : result
@@ -255,11 +293,11 @@ function useWorkflowLinkUrlLoaderInternal() {
     }
   }
 
-  function keepsCapturedLink(captured: LinkCarriers): boolean {
-    const current = linkCarriers()
+  function carriesOnly(workflowId: unknown): boolean {
+    const { route, stash } = linkCarriers()
     return (
-      (current.route === undefined || current.route === captured.route) &&
-      (current.stash === undefined || current.stash === captured.stash)
+      (route === undefined || isSameLink(route, workflowId)) &&
+      (stash === undefined || isSameLink(stash, workflowId))
     )
   }
 
@@ -268,19 +306,21 @@ function useWorkflowLinkUrlLoaderInternal() {
     return current.route !== undefined || current.stash !== undefined
   }
 
-  function attemptOwnership(workspaceId: string | null): Ownership {
-    const captured = linkCarriers()
+  function attemptOwnership(
+    workflowId: unknown,
+    workspaceId: string | null
+  ): Ownership {
     const unreplaced = () =>
       !disposed &&
       workspaceStore.activeWorkspaceId === workspaceId &&
-      keepsCapturedLink(captured)
+      carriesOnly(workflowId)
     return { owns: () => hasLink() && unreplaced(), unreplaced }
   }
 
   function completedStatus(value: unknown, workspaceId: string | null) {
     if (
       !completed ||
-      completed.value !== value ||
+      !isSameLink(completed.value, value) ||
       completed.workspaceId !== workspaceId
     )
       return undefined
@@ -301,8 +341,8 @@ function useWorkflowLinkUrlLoaderInternal() {
     workflowId: unknown,
     workspaceId: string | null
   ): Promise<WorkflowLinkLoadStatus> {
-    startedLinks.add(workflowId)
-    const ownership = attemptOwnership(workspaceId)
+    startedLinks.add(linkIdentity(workflowId))
+    const ownership = attemptOwnership(workflowId, workspaceId)
     const priorStatus = completedStatus(workflowId, workspaceId)
     if (priorStatus) {
       await clearOwnedIntent(ownership)
@@ -326,7 +366,11 @@ function useWorkflowLinkUrlLoaderInternal() {
 
   function hasLinkInFlight(): boolean {
     const { route, stash } = linkCarriers()
-    return stash !== undefined && stash !== route && !startedLinks.has(stash)
+    return (
+      stash !== undefined &&
+      !isSameLink(stash, route) &&
+      !startedLinks.has(linkIdentity(stash))
+    )
   }
 
   return { openWorkflowLinkFromUrl, isLinkSettled, hasLinkInFlight }

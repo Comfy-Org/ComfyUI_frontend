@@ -1,3 +1,4 @@
+import { tryOnScopeDispose } from '@vueuse/core'
 import { cloneDeep, isEqual } from 'es-toolkit'
 import { computed, nextTick } from 'vue'
 
@@ -72,6 +73,15 @@ export function useWidgetValueHistory({
     const target = scope()
     return !!target && store.canRedo(target)
   })
+
+  tryOnScopeDispose(
+    store.registerTraveler({
+      scope,
+      canTravel: (direction) =>
+        direction === 'undo' ? canUndo.value : canRedo.value,
+      travel: (direction) => (direction === 'undo' ? undo() : redo())
+    })
+  )
 
   return {
     canUndo,
