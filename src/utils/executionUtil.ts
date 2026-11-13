@@ -49,7 +49,7 @@ export function unwrapExportedWidgetValue(value: unknown): unknown {
 
 /** What a prompt build asks of the node API. */
 export interface FrontendExecution {
-  /** Puts its own executable form in place of each node whose outputs a pack resolves. */
+  /** Puts its own executable form in place of each node whose outputs or inputs a pack resolves. */
   adoptNodes(nodes: Map<ExecutionId, ExecutableLGraphNode>): void
 }
 

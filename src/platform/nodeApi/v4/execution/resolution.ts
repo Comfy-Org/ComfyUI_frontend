@@ -18,7 +18,7 @@ type CheckedResolution =
   | { readonly kind: 'omit' }
   | {
       readonly kind: 'forward'
-      readonly nodeId: string
+      readonly node: LGraphNode
       readonly input: number
     }
   | { readonly kind: 'literal'; readonly value: WidgetValue }
@@ -130,7 +130,7 @@ function forwardTo(graph: LGraph, ref: unknown): CheckedResolution {
       input >= 0 &&
       input < node.inputs.length
     ) {
-      return Object.freeze({ kind: 'forward', nodeId, input })
+      return Object.freeze({ kind: 'forward', node, input })
     }
   }
   throw invalidArgument(

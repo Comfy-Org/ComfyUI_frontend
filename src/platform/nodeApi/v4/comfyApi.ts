@@ -2,6 +2,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { FrontendExecution } from '@/utils/executionUtil'
 
 import { createDocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
+import type { GraphResolver } from '@/platform/nodeApi/shared/documentHandles'
 
 import { API_VERSION, isApiVersionAtLeast } from './apiVersion'
 import { createAppLifecycle } from './appLifecycle'
@@ -106,7 +107,8 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     groups: () => {
       const graph = resolveGraph()
       return graph && groupsOf(graph)
-    }
+    },
+    resolvedSupplies: () => suppliesIn(resolveGraph)
   }))
   const edit = createEdits(nodes, scopes, slots, groups, () =>
     services.history?.()
@@ -118,6 +120,14 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const documents = createDocuments()
   const importers = createWorkflowImporters()
   const queue = createQueue(nodes)
+  const execution = createFrontendExecution(
+    definitions.resolvers,
+    definitions.nodeHooks
+  )
+  const suppliesIn = (resolveGraph: GraphResolver) => {
+    const graph = resolveGraph()
+    return graph && execution.resolvedSupplies(graph)
+  }
 
   const comfy = Object.freeze({
     getApiVersion: () => API_VERSION,
@@ -149,7 +159,8 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       services.getGraph,
       (visible) => ({
         ...graphHandleMembers(visible, scopes.scopeFor, edit, groupsOf),
-        ...createGraphView(nodes, visible, canvas)
+        ...createGraphView(nodes, visible, canvas),
+        resolvedSupplies: () => suppliesIn(visible)
       })
     ),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
@@ -161,7 +172,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     host: {
       nodeTypeHooks: definitions.nodeTypeHooks,
       reapplyTypeColors: definitions.reapplyTypeColors,
-      frontendExecution: createFrontendExecution(definitions.resolvers),
+      frontendExecution: execution.prompt,
       markReady: lifecycle.markReady,
       workflowLoaded: documents.workflowLoaded,
       queue: queue.host,

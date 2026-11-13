@@ -122,7 +122,8 @@ function groupsHolding(
   )
 }
 
-function shownName(slot: {
+/** The name the editor shows for a slot. */
+export function shownName(slot: {
   readonly name: string
   readonly label?: string
   readonly localized_name?: string

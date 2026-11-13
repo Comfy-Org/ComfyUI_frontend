@@ -1,4 +1,5 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,11 +11,14 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import type {
+  ExecutableLGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphToPrompt } from '@/utils/executionUtil'
 
@@ -706,6 +710,16 @@ describe('a frontend node type with a resolver', () => {
         TypeError
       )
     })
+  })
+
+  it('leaves in place an executable node that is not the host DTO', () => {
+    defineWire(() => ({ 0: { literal: 'x' } }))
+    const stranger = fromPartial<ExecutableLGraphNode>({ id: '1' })
+    const nodes = new Map([['1', stranger]])
+
+    host.frontendExecution.adoptNodes(nodes)
+
+    expect(nodes.get('1')).toBe(stranger)
   })
 
   it('resolves only the nodes of a type with a resolver', async () => {
