@@ -28,6 +28,12 @@ value of a promoted widget when a subgraph input has no link. A frontend node
 without a resolver is handled there too: LiteGraph passes its input `k` through
 to its output `k` (`getInputLink`), or gives nothing.
 
+A second kind of pack feeds other nodes. cg-use-everywhere broadcasts a value
+into every input of a matching type that no link feeds; today it writes real
+links into the graph before the prompt is serialised and removes them after.
+In the census `NodeDefBuilder.setSupply` is used by that pack, which also reads
+the supplies back (`resolvedSupplies`) to turn them into real links on request.
+
 Review finding B-10 of the earlier attempt asks that no API behaviour or state
 be put on `LGraphNode` or `ExecutableNodeDTO`, and that the prompt builder ask
 the API through one explicit seam. Finding B-09 asks that a resolver forwarding
@@ -42,8 +48,10 @@ to a subgraph input fed by a widget produce the widget's value.
    refused with a `TypeError` before the type is registered: a `resolve` that
    is not a function, or a `resolve` with `execution: 'backend'`, whose nodes
    would both reach the prompt and stand for something else. The definition registry keeps each defined
-   type's resolver by type name; the definition's disposer removes it only if
-   it is still the one that definition added.
+   type's resolver by type name, and gives it only for a node made from the
+   class that definition registered, so a class a legacy pack registers over
+   the type later is not resolved by it. The definition's disposer removes the
+   resolver only if it is still the one that definition added.
 
 ### The seam
 
@@ -135,9 +143,80 @@ to a subgraph input fed by a widget produce the widget's value.
     an integer. Inside a resolver that is the resolver throwing, so it is
     reported as in decision 8.
 
+### Supply
+
+14. `NodeDefBuilder.setSupply(supplier)` adds a supplier to a type through
+    `extend`, so it reaches the backend types a pack's Python registers, which
+    `define` refuses. It is refused with a `TypeError` if it is not a function,
+    and, like every builder method, once the `extend` callback has returned.
+15. When a prompt is built and some applied extension has a supplier, each
+    graph's suppliers are asked once in the build, the first time a node of
+    that graph is adopted: every node of the graph that is not muted or
+    bypassed is asked by each supplier of its type, with a `SupplyView` of
+    `self` and `unconnectedInputs()`. As for every hook found by type name
+    (ADR-EXTENSIONS-NODE-API-0071 decision 17), a node is asked only if its
+    class, or one it extends, is a class the API put dispatchers on.
+16. `unconnectedInputs()` lists every input that no link feeds, of the nodes of
+    the graph that are neither frontend nodes nor subgraph nodes, in the
+    graph's order and then the inputs' order. It is built once per graph per
+    build and shared by its suppliers; an entry's `nodeGroups` and
+    `nodeProperties` are read from the node's view when first asked for.
+    Frontend nodes are left out because the prompt does not run them. Subgraph
+    nodes are left out because the host reads an unlinked input of a subgraph
+    node, from inside the subgraph, as its promoted widget, and never asks the
+    subgraph node for it.
+17. An answer is a list of edges. An edge has `to`, `from` and optionally
+    `priority`, and nothing else. `to` is exactly `{ nodeId, input }` of one of
+    `unconnectedInputs()`. `from` is exactly `{ output }`, an index of the
+    supplier's outputs, or `{ forwardInput }`, an index of its inputs.
+    `priority` is a finite number and defaults to 0. An answer with any edge
+    that breaks these is reported with the event `setSupply` and dropped
+    whole, as is a supplier that throws; the other suppliers still feed.
+18. For each input, the highest claim feeds it. Claims at that priority from
+    the same supplier with the same source count as one. Two different claims
+    at the highest priority feed nothing, and the conflict is reported as a
+    warning (`node_api_supply_conflict`, naming the input), because choosing
+    either would make the prompt depend on the order of the nodes.
+19. The entry of each node with a fed input is replaced, as in decision 3, by
+    a `SuppliedNodeDTO`, which overrides only `resolveInput`. A fed input
+    resolves to the supplier's executable node in the same placement:
+    `resolveOutput` of the output, or `resolveInput` of the forwarded input,
+    with the fed input's type. The host's rules then apply, as for a link: a
+    resolved supplier gives its resolver's answer, a bypassed node whose input
+    is fed passes it on, a forwarded input that comes from a subgraph's input
+    gives each placement its own source, and a cycle fails the build with the
+    host's `RecursionError`. A fed widget input replaces the widget's value in
+    the prompt, as a link to it does.
+
+### Reading supplies back
+
+20. `resolvedSupplies()` on `comfy.graph` (the graph on screen) and on a
+    `GraphScopeHandle` (its own graph, found through the handle, B-01) asks
+    that graph's suppliers again, arbitrates as in decision 18, and gives each
+    winning supply in the order of the inputs it feeds, frozen: the supplier,
+    the input, and the source in the graph. `undefined` with no graph on
+    screen, or for a scope that is gone.
+21. The source is the output a link from it would start at: an output of the
+    supplier, or the output that feeds its forwarded input, followed through
+    frontend nodes whose resolvers answer and that are not muted or bypassed.
+    A forward is followed to the link of the input it names; a literal gives
+    `{ kind: 'literal' }` and an omitted output `{ kind: 'omitted' }`. An input
+    no link feeds, a link from the subgraph's own input, and a cycle give
+    `{ kind: 'omitted' }`, since no link in the graph can start there. Any other
+    node, a bypassed or subgraph node included, gives its own output.
+
 ## Left out
 
-- `ResolveView.signal` (0 packs): cancellation for sandboxed resolvers.
+- `ResolveView.signal` and `SupplyView.signal` (0 packs each): cancellation
+  for sandboxed resolvers and suppliers.
+- `SupplyView.nodesOfType` (0 packs).
+- `SuppliedEdge.from.literal` (0 packs). The census also counts 0 for
+  `from.output` and `from.forwardInput`, because the one supplier builds
+  `from` in an untyped helper; its source uses both, so both are kept.
+- `ResolvedSource.value` and `ResolvedSource.reason` (0 packs). The one reader
+  checks `kind` and reports any kind but `'output'`.
+- `NodeDefinition.supply` (0 packs), as ADR-EXTENSIONS-NODE-API-0071 decision
+  38 records.
 - `OwnInput.type` and `OwnInput.connected` (0 packs each): `connectedType` and
   `sourceNodeId` are `undefined` exactly when no link feeds the input.
 - Asynchronous resolvers: no stored pack needs one, and the sandbox that did
@@ -165,6 +244,17 @@ to a subgraph input fed by a widget produce the widget's value.
   reads.
 - Keep `applyToGraph`. It changes the live graph while the prompt is
   serialised, so a resolver that throws half way leaves the document changed.
+- Feed supplied inputs in `graphToPrompt`'s input loop when `resolveInput`
+  gives nothing, as the earlier attempt did. The host's walk never comes back
+  to that loop from inside itself, so an input fed into a bypassed node or
+  behind a forward would be missed; and `resolveInput` gives nothing for a
+  linked input whose source is muted too, which the loop would have to tell
+  apart.
+- Let each supplier settle its own conflicts. Two packs' suppliers cannot see
+  each other's claims.
+- Feed the inputs of subgraph nodes. The host reads such an input from inside
+  the subgraph, through the subgraph's input node; feeding it would need a
+  second copy of that part of the walk.
 
 ## What this feature replaces or duplicates, and why
 
@@ -174,6 +264,10 @@ to a subgraph input fed by a widget produce the widget's value.
 - **The DTO walk**: `ResolvedNodeDTO` reuses it. It overrides only the public
   `resolveOutput`, passes the walk's `visited` set on as `ExecutableNodeDTO`
   asks of an override, and calls the host's `resolveInput` for every forward.
+- **Materialising links**: cg-use-everywhere's own pass that wrote links into
+  the graph before serialisation and recorded them to undo afterwards is
+  replaced by suppliers; `resolvedSupplies` gives it what it needs to make
+  real links when the user asks for them.
 - **Copying**: a literal is checked and copied by `savableValue`, the check
   the widget layer applies to every value a pack gives a widget, so a literal
   and a widget value are refused for the same reasons. A view's `properties`
@@ -197,9 +291,14 @@ to a subgraph input fed by a widget produce the widget's value.
 - A caller of `graphToPrompt` that does not pass the option builds without
   resolution. Every prompt the app builds goes through `app.graphToPrompt`.
 - A build with a resolver defined costs one map lookup per executable node,
-  and one view and one call per resolved node whose outputs are read.
-- `ResolvedNodeDTO` depends on `ExecutableNodeDTO`'s public constructor and on
-  `resolveOutput`, `resolveInput`, `nodesByExecutionId` and
-  `subgraphNodePath`. A change to those in core is a change to this file.
+  and one view and one call per resolved node whose outputs are read. With a
+  supplier applied, each graph in the prompt also costs one call per running
+  node of a type with suppliers (a pack that extends every type asks every
+  node), one view per node asked, and one pass over the graph's inputs.
+- `resolvedSupplies` asks the suppliers on every read.
+- `ResolvedNodeDTO` and `SuppliedNodeDTO` depend on `ExecutableNodeDTO`'s
+  public constructor and on `resolveOutput`, `resolveInput`, `inputs`,
+  `nodesByExecutionId` and `subgraphNodePath`. A change to those in core is a
+  change to these files.
 - A resolver that edits the graph is not stopped; the contract says it must
   not.

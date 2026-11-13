@@ -26,10 +26,10 @@ import {
   nodeDefFromDefinition,
   registerDefinedType
 } from './definedNodeType'
-import type { CheckedDefinition } from './definedNodeType'
 import { SELECTOR_NEEDED, checkedSelector } from './defSelector'
 import { createExtensions } from './extensions'
 import type { NodeType } from './extensions'
+import type { NodeHookSource } from './dispatchContext'
 import { createHookDispatch } from './hookDispatch'
 import { categoryOfHostDef, nodeDefFromHost } from './nodeDef'
 import { checkedReadable } from '@/platform/nodeApi/shared/readableInput'
@@ -46,16 +46,22 @@ export interface NodeTypeHooks extends ComfyExtension {
   getNodeMenuItems(node: LGraphNode): IContextMenuValue[]
 }
 
-/** The resolvers of the types packs defined with one. */
+/** The resolvers of the types packs defined with one, for the nodes made from those definitions. */
 export interface DefinedResolvers {
-  resolverFor(type: string): Resolver | undefined
+  resolverFor(node: LGraphNode): Resolver | undefined
   any(): boolean
+}
+
+interface DefinedResolver {
+  readonly resolve: Resolver
+  readonly nodeClass: typeof LGraphNode
 }
 
 interface DefRegistryParts {
   readonly defs: DefRegistry
   readonly nodeTypeHooks: NodeTypeHooks
   readonly resolvers: DefinedResolvers
+  readonly nodeHooks: NodeHookSource
   reapplyTypeColors(): void
 }
 
@@ -79,8 +85,8 @@ export function createDefRegistry(
   const extensions = createExtensions(dispatch)
   const refreshed = createListeners('onRefreshed')
   const colors = createTypeColors()
+  const resolving = new Map<string, DefinedResolver>()
   const hostRegistering = new Set<string>()
-  const resolving = new Map<string, CheckedDefinition>()
 
   function registerHostType(
     nodeClass: typeof LGraphNode,
@@ -133,11 +139,12 @@ export function createDefRegistry(
       addDefinitionHooks(builder, checked)
     )
     extensions.typeRegistered(nodeType)
-    if (checked.resolve) resolving.set(checked.type, checked)
+    const resolver = checked.resolve && { resolve: checked.resolve, nodeClass }
+    if (resolver) resolving.set(checked.type, resolver)
     return once(() => {
       stopHooks()
       extensions.typeUnregistered(nodeType)
-      if (resolving.get(checked.type) === checked) {
+      if (resolver && resolving.get(checked.type) === resolver) {
         resolving.delete(checked.type)
       }
       if (LiteGraph.registered_node_types[checked.type] === nodeClass) {
@@ -189,8 +196,17 @@ export function createDefRegistry(
     },
     reapplyTypeColors: colors.reapply,
     resolvers: {
-      resolverFor: (type) => resolving.get(type)?.resolve,
+      resolverFor(node) {
+        const resolver = resolving.get(node.type)
+        return resolver && node instanceof resolver.nodeClass
+          ? resolver.resolve
+          : undefined
+      },
       any: () => resolving.size > 0
+    },
+    nodeHooks: {
+      callbacksOf: dispatch.callbacksOf,
+      demand: (hook) => extensions.demand(hook)
     }
   }
 }

@@ -1,11 +1,9 @@
 import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 
-import {
-  ExecutableNodeDTO,
-  LGraphEventMode
-} from '@/lib/litegraph/src/litegraph'
+import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
 
 import type { Resolver } from '@/platform/nodeApi/v4/types'
+import { runs } from './nodeModes'
 import type { Resolutions } from './resolution'
 
 /** The prompt builder's form of a node whose outputs a pack's resolver answers for. */
@@ -33,7 +31,7 @@ export class ResolvedNodeDTO extends ExecutableNodeDTO {
     type: ISlotType,
     visited: Set<string>
   ): ReturnType<ExecutableNodeDTO['resolveOutput']> {
-    const resolution = this.runs()
+    const resolution = runs(this)
       ? this.resolutions.outputOf(this.graph, this.node, this.resolve, slot)
       : undefined
     switch (resolution?.kind) {
@@ -49,18 +47,11 @@ export class ResolvedNodeDTO extends ExecutableNodeDTO {
           widgetInfo: { value: structuredClone(resolution.value) }
         }
       case 'forward': {
-        const id = [...this.subgraphNodePath, resolution.nodeId].join(':')
+        const id = [...this.subgraphNodePath, resolution.node.id].join(':')
         return this.nodesByExecutionId
           .get(id)
           ?.resolveInput(resolution.input, visited, type)
       }
     }
-  }
-
-  private runs(): boolean {
-    return (
-      this.mode !== LGraphEventMode.NEVER &&
-      this.mode !== LGraphEventMode.BYPASS
-    )
   }
 }

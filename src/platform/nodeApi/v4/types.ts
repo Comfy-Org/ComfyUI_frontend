@@ -1228,3 +1228,77 @@ export interface GroupMembership {
   readonly id: string
   readonly title: string
 }
+
+export interface NodeDefBuilder {
+  /**
+   * Feeds inputs that no link feeds, of the nodes of a node's graph, when a prompt is built.
+   * One that throws or answers wrongly is reported and feeds nothing.
+   */
+  setSupply(supply: Supplier): void
+}
+
+/** Names the inputs a node feeds, and from what. Not asked for a muted or bypassed node. Must not change the graph. */
+export type Supplier = (view: SupplyView) => readonly SuppliedEdge[]
+
+export interface SupplyView {
+  readonly self: ResolvedNodeView
+  /** Every input of the node's graph that no link feeds, of nodes sent to the backend, in the graph's order. */
+  unconnectedInputs(): readonly UnconnectedInput[]
+}
+
+/** An input that no link feeds, and its node. */
+export interface UnconnectedInput {
+  readonly nodeId: string
+  readonly nodeType: string
+  readonly nodeTitle: string
+  /** `undefined` for a mode that has no name here. */
+  readonly nodeMode: NodeMode | undefined
+  readonly nodeColor: string | undefined
+  /** The groups that hold the node's centre, in draw order. */
+  readonly nodeGroups: readonly GroupMembership[]
+  /** A copy of the node's saved properties. */
+  readonly nodeProperties: Readonly<Record<string, unknown>>
+  /** The input's index on its node. */
+  readonly input: number
+  readonly name: string
+  /** The name the editor shows: the label, else the localized name, else the name. */
+  readonly label: string
+  readonly type: string
+  /** True for the socket form of a widget. */
+  readonly isWidgetInput: boolean
+}
+
+/** An input a supplier feeds, from one of its own outputs or from whatever feeds one of its own inputs. */
+export interface SuppliedEdge {
+  /** One of `unconnectedInputs()`. */
+  readonly to: InputRef
+  readonly from: { readonly output: number } | { readonly forwardInput: number }
+  /** The highest claim on an input feeds it, and equal highest claims feed nothing. Defaults to 0. */
+  readonly priority?: number
+}
+
+/** The claim that feeds an input, with its source in the graph. */
+export interface ResolvedSupply {
+  readonly supplierNodeId: string
+  readonly to: InputRef
+  readonly from: ResolvedSource
+}
+
+/** Where a supply comes from in its own graph, once resolved frontend nodes are followed. */
+export type ResolvedSource =
+  | {
+      readonly kind: 'output'
+      readonly nodeId: string
+      readonly output: number
+    }
+  | { readonly kind: 'literal' }
+  | { readonly kind: 'omitted' }
+
+export interface GraphSupplyReads {
+  /** The supplies a prompt would use in this graph, by the inputs they feed in the graph's order. */
+  resolvedSupplies(): readonly ResolvedSupply[] | undefined
+}
+
+export interface GraphHandle extends GraphSupplyReads {}
+
+export interface GraphScopeHandleMembers extends GraphSupplyReads {}
