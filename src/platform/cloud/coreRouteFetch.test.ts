@@ -17,12 +17,10 @@ const origin = 'https://cloud.example'
 async function loadOnDistribution(isCloud: boolean) {
   distribution.isCloud = isCloud
   vi.resetModules()
-  const { installCoreRouteFetch } =
+  const { coreRouteFetch, installCoreRouteFetch } =
     await import('@/platform/cloud/coreRouteFetch')
   const { api } = await import('@/scripts/api')
-  const pageFetch = vi.fn<typeof fetch>(async () => new Response('page'))
-  vi.stubGlobal('fetch', pageFetch)
-  return { installCoreRouteFetch, api, pageFetch }
+  return { coreRouteFetch, installCoreRouteFetch, api }
 }
 
 describe('coreRoutePath', () => {
@@ -65,34 +63,36 @@ describe('coreRoutePath', () => {
   })
 })
 
-describe('installCoreRouteFetch', () => {
-  it('sends a root ComfyUI route through the API on Cloud', async () => {
-    const { installCoreRouteFetch, api, pageFetch } =
-      await loadOnDistribution(true)
+describe('coreRouteFetch', () => {
+  it('sends a root ComfyUI route through the API', async () => {
+    const { coreRouteFetch, api } = await loadOnDistribution(true)
+    const pageFetch = vi.fn<typeof fetch>(async () => new Response('page'))
     const apiResponse = new Response('api')
     vi.mocked(api.fetchApi).mockResolvedValue(apiResponse)
     const init = { method: 'POST', body: 'image' }
 
-    installCoreRouteFetch()
+    const routed = coreRouteFetch(pageFetch)
 
-    await expect(window.fetch('/upload/image', init)).resolves.toBe(apiResponse)
+    await expect(routed('/upload/image', init)).resolves.toBe(apiResponse)
     expect(api.fetchApi).toHaveBeenCalledWith('/upload/image', init)
     expect(pageFetch).not.toHaveBeenCalled()
   })
 
-  it('sends a custom node route to the page on Cloud', async () => {
-    const { installCoreRouteFetch, api, pageFetch } =
-      await loadOnDistribution(true)
+  it('sends a custom node route to the page', async () => {
+    const { coreRouteFetch, api } = await loadOnDistribution(true)
+    const pageFetch = vi.fn<typeof fetch>(async () => new Response('page'))
 
-    installCoreRouteFetch()
-    await window.fetch('/example_pack/preview')
+    await coreRouteFetch(pageFetch)('/example_pack/preview')
 
     expect(pageFetch).toHaveBeenCalledWith('/example_pack/preview', undefined)
     expect(api.fetchApi).not.toHaveBeenCalled()
   })
+})
 
+describe('installCoreRouteFetch', () => {
   it('leaves fetch unchanged off Cloud', async () => {
-    const { installCoreRouteFetch, pageFetch } = await loadOnDistribution(false)
+    const { installCoreRouteFetch } = await loadOnDistribution(false)
+    const pageFetch = window.fetch
 
     installCoreRouteFetch()
 

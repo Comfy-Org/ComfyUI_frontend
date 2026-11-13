@@ -26,13 +26,17 @@ export function coreRoutePath(
   return url.pathname + url.search
 }
 
+/** A `fetch` that sends ComfyUI routes at the site root through the API and everything else to `sendToPage`. */
+export function coreRouteFetch(sendToPage: typeof fetch): typeof fetch {
+  return (input, init) => {
+    const route = coreRoutePath(input)
+    return route === null ? sendToPage(input, init) : api.fetchApi(route, init)
+  }
+}
+
 /** On Cloud, sends `fetch` calls to ComfyUI routes at the site root through the API. */
 export function installCoreRouteFetch(): void {
   if (!isCloud || installed) return
   installed = true
-  const sendToPage = window.fetch.bind(window)
-  window.fetch = (input, init) => {
-    const route = coreRoutePath(input)
-    return route === null ? sendToPage(input, init) : api.fetchApi(route, init)
-  }
+  window.fetch = coreRouteFetch(window.fetch.bind(window))
 }
