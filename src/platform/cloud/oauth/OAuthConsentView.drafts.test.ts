@@ -1,4 +1,5 @@
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -68,6 +69,11 @@ describe('OAuthConsentView signing in again without a Cloud session cookie', () 
     await router.push(`/oauth/consent?oauth_request_id=${oauthRequestId}`)
 
     render(OAuthConsentView, { global: { plugins: [i18n, router] } })
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: i18n.global.t('oauth.consent.signInAgain')
+      })
+    )
 
     await vi.waitFor(() =>
       expect(navigation).toHaveBeenCalledExactlyOnceWith(

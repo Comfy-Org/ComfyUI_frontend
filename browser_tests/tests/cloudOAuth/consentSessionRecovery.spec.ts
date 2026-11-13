@@ -41,20 +41,31 @@ test.describe(
     test.describe('when the cookie cannot be re-created', () => {
       test.use({ sessionRecreation: 'fails' })
 
-      test('sends the person to sign in again for the same request', async ({
+      test('shows the session error, and Sign in again goes to sign-in for the same request', async ({
         page,
         oauthConsent
       }) => {
         await page.goto(oauthConsent.url)
 
-        await expect(page).toHaveURL(/\/cloud\/login\?/)
-        const loginQuery = new URL(page.url()).searchParams
-        expect(loginQuery.get('switchAccount')).toBe('true')
-        expect(loginQuery.get('oauth_request_id')).toBe(OAUTH_REQUEST_ID)
+        await expect(
+          page
+            .getByRole('alert')
+            .filter({ hasText: enMessages.oauth.consent.sessionError })
+        ).toBeVisible()
+        expect(new URL(page.url()).pathname).toBe('/oauth/consent')
         expect(oauthConsent.callsFromConsent()).toEqual([
           'consent',
           'create session'
         ])
+
+        await page
+          .getByRole('button', { name: enMessages.oauth.consent.signInAgain })
+          .click()
+
+        await expect(page).toHaveURL(/\/cloud\/login\?/)
+        const loginQuery = new URL(page.url()).searchParams
+        expect(loginQuery.get('switchAccount')).toBe('true')
+        expect(loginQuery.get('oauth_request_id')).toBe(OAUTH_REQUEST_ID)
       })
     })
 

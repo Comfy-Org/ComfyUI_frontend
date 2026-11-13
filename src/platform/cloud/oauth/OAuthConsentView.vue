@@ -223,13 +223,25 @@
       </footer>
     </section>
 
-    <p
-      v-else-if="errorMessage"
-      role="alert"
-      class="m-0 rounded-md border border-destructive bg-destructive/10 p-3 text-center text-sm text-destructive"
-    >
-      {{ errorMessage }}
-    </p>
+    <div v-else-if="errorMessage" class="flex flex-col gap-3">
+      <p
+        role="alert"
+        class="m-0 rounded-md border border-destructive bg-destructive/10 p-3 text-center text-sm text-destructive"
+      >
+        {{ errorMessage }}
+      </p>
+      <Button
+        v-if="sessionRecovery?.action === 'sign_in_again'"
+        variant="secondary"
+        size="lg"
+        class="w-full bg-ink-500 hover:bg-ink-400"
+        :loading="signingIn"
+        :disabled="signingIn"
+        @click="signInAgain"
+      >
+        {{ t('oauth.consent.signInAgain') }}
+      </Button>
+    </div>
     <p v-else class="m-0 text-center text-sm text-muted-foreground">
       {{ t('oauth.consent.loading') }}
     </p>
@@ -267,6 +279,11 @@ import {
 } from '@/platform/cloud/oauth/oauthState'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 
+interface SessionRecovery {
+  action: 'sign_in_again'
+  oauthRequestId: string
+}
+
 const { initialChallenge } = defineProps<{
   initialChallenge?: OAuthConsentChallenge
 }>()
@@ -290,6 +307,8 @@ const errorMessage = ref('')
 const submitting = ref<'allow' | 'deny' | null>(null)
 const isSubmitting = computed(() => submitting.value !== null)
 const switchingAccount = ref(false)
+const sessionRecovery = ref<SessionRecovery | null>(null)
+const signingIn = ref(false)
 let left = false
 
 const signedInAccount = computed(() => {
@@ -371,23 +390,28 @@ async function recoverSession(oauthRequestId: string) {
     await import('@/platform/auth/session/useSessionCookie')
   const recreated = await useSessionCookie().recreateSession()
   if (left) return
-  if (recreated === 'failed') return signInAgain(oauthRequestId)
-  if (recreated === 'identity_changed') {
-    errorMessage.value = t('oauth.consent.sessionError')
-    return
-  }
+  const offerSignIn = { action: 'sign_in_again', oauthRequestId } as const
+  if (recreated === 'identity_changed') return showSessionError()
+  if (recreated === 'failed') return showSessionError(offerSignIn)
   const retried = await fetchOAuthConsentChallenge(oauthRequestId)
   if (left) return
   if (retried.kind === 'challenge') showChallenge(retried.challenge)
-  else errorMessage.value = t('oauth.consent.sessionError')
+  else showSessionError(offerSignIn)
 }
 
-async function signInAgain(oauthRequestId: string) {
+function showSessionError(recovery: SessionRecovery | null = null) {
+  errorMessage.value = t('oauth.consent.sessionError')
+  sessionRecovery.value = recovery
+}
+
+async function signInAgain() {
+  if (sessionRecovery.value?.action !== 'sign_in_again') return
+  signingIn.value = true
   const signedOut = await useAuthActions().logout({
-    signInPath: switchAccountSignInPath(oauthRequestId),
+    signInPath: switchAccountSignInPath(sessionRecovery.value.oauthRequestId),
     keepAccountDrafts: true
   })
-  if (!signedOut) errorMessage.value = t('oauth.consent.sessionError')
+  if (!signedOut) signingIn.value = false
 }
 
 function messageForError(error: unknown): string {

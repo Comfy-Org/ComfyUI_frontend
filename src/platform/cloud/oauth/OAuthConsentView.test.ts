@@ -83,6 +83,7 @@ const i18n = createI18n({
           errorOriginRefused: ORIGIN_REFUSED,
           errorUnavailable: "This feature isn't available right now.",
           sessionError: 'Failed to establish session. Please try again.',
+          signInAgain: 'Sign in again',
           signedInAs: 'Signed in as',
           notYou: 'Not you?',
           switchAccount: 'Switch account'
@@ -564,20 +565,25 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     expect(useAuthActions().logout).not.toHaveBeenCalled()
   })
 
-  it('sends the user to sign in again with the same request when the session cannot be established', async () => {
+  it('shows the session error and a Sign in again button instead of signing out when the session cannot be re-created', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(signInRedirect())
     recreateSession.mockResolvedValueOnce('failed')
+    const user = userEvent.setup()
 
     await renderLoadedConsent()
 
-    await waitFor(() => {
-      expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
-        signInPath,
-        keepAccountDrafts: true
-      })
-    })
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Failed to establish session. Please try again.'
+    )
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
     expect(fetch).toHaveBeenCalledOnce()
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Sign in again' }))
+
+    expect(useAuthActions().logout).toHaveBeenCalledExactlyOnceWith({
+      signInPath,
+      keepAccountDrafts: true
+    })
   })
 
   it('retries once and then shows the session error without signing out when the backend still sends the request to sign-in', async () => {
@@ -593,18 +599,25 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     expect(recreateSession).toHaveBeenCalledOnce()
     expect(fetch).toHaveBeenCalledTimes(2)
     expect(useAuthActions().logout).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Sign in again' })).toBeEnabled()
   })
 
-  it('shows the session error when leaving for sign-in is cancelled', async () => {
+  it('keeps the session error and Sign in again when leaving for sign-in is cancelled', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(signInRedirect())
     recreateSession.mockResolvedValueOnce('failed')
     vi.mocked(useAuthActions().logout).mockResolvedValueOnce(false)
+    const user = userEvent.setup()
 
     await renderLoadedConsent()
+    await user.click(
+      await screen.findByRole('button', { name: 'Sign in again' })
+    )
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    expect(useAuthActions().logout).toHaveBeenCalledOnce()
+    expect(screen.getByRole('alert')).toHaveTextContent(
       'Failed to establish session. Please try again.'
     )
+    expect(screen.getByRole('button', { name: 'Sign in again' })).toBeEnabled()
   })
 
   it('shows the session error for a 401 without establishing a session or leaving', async () => {
