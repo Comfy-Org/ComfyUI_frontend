@@ -352,8 +352,12 @@ registered, so `extend` cannot depend on the order.
   `has` is false for it and `extend` does not apply to it. The core frontend
   types (`Reroute`, `Note`, `PrimitiveNode`) are such types. No stored pack
   extends one.
-- Extensions apply to a type in the order they were made, so the hooks of a
-  type run in that order however the pack modules loaded.
+- The type of a subgraph placed as a node is outside the index too: the host
+  registers it with `registerSubgraphNodeDef`, which does not call
+  `beforeRegisterNodeDef`, so `extend` does not reach subgraph nodes and `has`
+  is false for a subgraph's id.
+- Hooks on a type run in the order their extensions were made, a definition's
+  own first, however the pack modules loaded.
 - A dispatcher reaches the nodes made from the class it is on. Nodes made
   before the host registered their type again keep the old class, which has
   the dispatchers it had then.
