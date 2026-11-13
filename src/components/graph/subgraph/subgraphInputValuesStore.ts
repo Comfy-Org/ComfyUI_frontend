@@ -67,22 +67,23 @@ export const useSubgraphInputValuesStore = defineStore(
       return instances.length === 1 ? instances[0] : undefined
     })
 
-    const sources = computed(() => {
-      const current = graph.value
-      const host = selected.value
+    function sourcesFor(host: NodeState): Map<string, InputValueSource> {
       const result = new Map<string, InputValueSource>()
-      if (!current || !host) return result
-      const root = current.rootGraph
-      const scope = graphScopeOf({ id: host.graphId, rootGraph: root })
+      const rootGraphId = canvasStore.rootGraphId
+      if (!rootGraphId) return result
+      const scope = graphScopeOf({
+        id: host.graphId,
+        rootGraph: { id: rootGraphId }
+      })
       const sourceGraph: ValueSourceGraph = {
         nodes: new Map(
           nodeDataStore
-            .getGraphNodesFor(root.id, host.graphId)
+            .getGraphNodesFor(rootGraphId, host.graphId)
             .map((node) => [node.id, node])
         ),
         inputLink: (node, index) =>
           linkStore.getInputSlotLink(scope, node.id, index),
-        widgetIds: (node) => widgetStore.getNodeWidgetIds(root.id, node.id),
+        widgetIds: (node) => widgetStore.getNodeWidgetIds(rootGraphId, node.id),
         widget: (id) => widgetStore.getWidget(id),
         outputLinkCount: (node, index) =>
           linkStore.getOutputSlotLinks(scope, node.id, index).size
@@ -95,7 +96,7 @@ export const useSubgraphInputValuesStore = defineStore(
           )
       }
       return result
-    })
-    return { graph, selected, sources }
+    }
+    return { graph, selected, sourcesFor }
   }
 )
