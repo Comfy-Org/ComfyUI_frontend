@@ -312,6 +312,28 @@ review finding requires it. The counts below are packs, then call sites.
 | `RunRejectedEvent`, `RunRejectedNode`, `RunRejectionError` and their fields                  |     0 | No pack reads them; `onRejected` passes no event.                                        |
 | `GraphHandle.select(options).add`                                                            |     0 | No pack uses it.                                                                         |
 
+## Relation to other decisions
+
+This feature sits on the definitions, widgets and edit layers
+([ADR-EXTENSIONS-NODE-API-0071](EXTENSIONS-NODE-API-0071-node-definitions-and-hooks.md),
+[ADR-EXTENSIONS-NODE-API-0072](EXTENSIONS-NODE-API-0072-widgets.md),
+[ADR-EXTENSIONS-NODE-API-0073](EXTENSIONS-NODE-API-0073-functional-edit-core.md))
+and uses what they already provide rather than a second copy:
+
+- The listener primitive's `notify`, `callIsolated` and argument lists;
+  this feature adds only `isEmpty` (decision 2).
+- The edit core's undo history is the open workflow's change tracker. The
+  documents of decision 11 are keyed by that same object, so a document is
+  the session whose history the edit core writes to. An edit through
+  `comfy.edit` changes a node through the host's setters, which raise
+  `node:property:changed`, so `onNodeChanged` hears it like any other
+  change.
+- `savedCopier` from `shared/savedCopy.ts` for `snapshot()`.
+- `NodeHandles.locator` as the one check that a value is a live handle
+  (decisions 21, 23, 24, 26), with the edit core's rule: a value the API did
+  not make is a `TypeError`, a gone entity is a value.
+- The handle factories' member hooks for the view members (decision 27).
+
 ## Alternatives considered
 
 - Import the canvas store and the layout store from the API. The layer rule

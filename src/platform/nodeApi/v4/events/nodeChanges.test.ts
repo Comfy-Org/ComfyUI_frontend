@@ -53,6 +53,20 @@ describe('onNodeChanged', () => {
     expect(events[0].node).toBe(comfy.graph.node(String(outer.id)))
   })
 
+  it('hears an edit made through comfy.edit', () => {
+    const { outer, comfy } = documentOnScreen()
+    const events: NodeChangeEvent[] = []
+    comfy.onNodeChanged((event) => events.push(event))
+    const handle = comfy.graph.node(String(outer.id))
+    assert(handle)
+
+    expect(handle.setTitle('Edited')).toBe(true)
+
+    expect(heard(events)).toEqual([
+      expect.objectContaining({ property: 'title', to: 'Edited' })
+    ])
+  })
+
   it('passes a frozen event', () => {
     const { outer, comfy } = documentOnScreen()
     const events: NodeChangeEvent[] = []
