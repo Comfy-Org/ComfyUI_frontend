@@ -99,12 +99,50 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     earlier contract rejected on a failed request; a stored conversion that
     wrote `await comfy.storage.get(name)` reads `.text` and checks `.ok`.
 
+### Commands (`comfy.commands`, 31 / 102)
+
+11. `register(command)` (18 / 41) adds the command to the command store with
+    `registerCommand`, which `extension.commands` reaches, and its key to the
+    keybinding store with `addDefaultKeybinding`, which `extension.keybindings`
+    reaches. A command and its key are one definition, so a key cannot point
+    at nothing. The store replaces a command registered twice with a console
+    warning; the API refuses the id instead. The whole definition, the key
+    combo included, is checked before either store changes (the rule of
+    finding A-10 for importers, applied to commands). A registration lasts for
+    the page: neither store can remove one, and `extension.commands` cannot
+    either.
+12. A key another command already holds by default stays with it. The
+    keybinding store throws for that; the API catches that one call, adds the
+    command without the key, and returns `false`, where a legacy extension
+    gets an error toast. The key is a default, so a key the user binds wins.
+    `scope: 'canvas'` sets the target the host's own canvas keys use,
+    `graph-canvas`, so the key does not run while the user types outside the
+    graph. `meta` is folded into `ctrl`, because the host reads Cmd as Ctrl
+    (`KeyComboImpl.fromEvent`); a combo keeping `meta` alone would have bound
+    the bare key.
+13. A command's `run` is called by the command store's `execute`, which awaits
+    it and shows a failure to the user through the host's error toast, as for
+    every command. It is not wrapped in `callListener`: the store already
+    isolates both a throw and a rejected promise, and a second path would
+    report one failure twice.
+14. `run(id)` (4 / 7) resolves `false` for an id no command has, where the
+    store's `execute` throws, and `true` once the store has handled it.
+    `notify(notification)` (26 / 52) shows a toast through the toast store.
+    `warn` maps to the store's `warning`; `life` must be a positive finite
+    number of milliseconds, and without it the toast stays, as the host's
+    default.
+
 ### Left out
 
 The sandbox the earlier contract served is out of scope, and nothing here
 exists only for it. A pack is trusted code in the page. The guest SDK's
 `comfy.files`, `comfy.clipboard`, `comfy.media`, `comfy.crypto` and
 `comfy.element` are not built; a pack uses the browser's own APIs.
+
+- `commands.playSound` and `PlaySoundDef` (2 / 2) existed because a sandboxed
+  worker cannot play audio. In the page, `new Audio(src)` with `volume` and
+  `play()` is the same call, and the host has no sound service to wrap.
+- `CommandsHandle.has` (0 / 0) has no use.
 
 ## Alternatives considered
 
@@ -121,12 +159,17 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   undeclared id too, but it clones the value on every evaluation and runs a
   reactive effect per listener; the store's own event is cheaper and is what
   the host listens to.
+- Refuse a command whose key is taken. Whether a key is free depends on
+  core and on the other packs installed, not on the pack's code, so the same
+  pack would load on one install and throw on another.
+- Read a function label (`label: () => string`). No stored pack passes one.
 
 ## Consequences
 
-- The settings store cannot remove a setting, so `declare` lasts for the
-  page, as `extension.settings` does. A removal method in the store would let
-  it return a disposer.
+- The settings store, the command store and the keybinding store cannot
+  remove a registration, so `declare` and `register` last for the page, as
+  `extension.settings` and `extension.commands` do. A removal method in each
+  store would let them return a disposer.
 - A pack's setting and its stored text live under the ids and paths it
   chooses. Nothing stops a pack from writing core's settings or another
   pack's files, as nothing stops it today through `api`.

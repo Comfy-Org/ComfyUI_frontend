@@ -1423,3 +1423,50 @@ export interface StorageHandle {
 export type StoredText =
   | { readonly ok: true; readonly text: string | undefined }
   | { readonly ok: false }
+
+export interface Comfy {
+  /** Commands, their default keys, and notifications. */
+  readonly commands: CommandsHandle
+}
+
+export interface CommandsHandle {
+  /**
+   * Adds a command for the life of the page. An id already registered throws.
+   * `false` if another command holds the key by default; the command is added without it.
+   */
+  register(command: CommandDef): boolean
+  /** Runs a command by id. Resolves `false` if no command has that id. */
+  run(id: string): Promise<boolean>
+  /** Shows a toast. */
+  notify(notification: NotifyDef): void
+}
+
+export interface CommandDef {
+  /** Shared with core and every pack: `MyPack.doTheThing`. */
+  readonly id: string
+  readonly label: string
+  /** The host shows a failure to the user, as for any command. */
+  readonly run: () => void | Promise<void>
+  /** The default key. A key the user binds to the command wins. */
+  readonly keybinding?: KeyCombo
+  /** `'canvas'` limits the key to the graph, so typing in a field does not run it. */
+  readonly scope?: 'canvas'
+}
+
+/** `meta`, Cmd on macOS, is the same key to the host as `ctrl`. */
+export interface KeyCombo {
+  readonly key: string
+  readonly ctrl?: boolean
+  readonly alt?: boolean
+  readonly shift?: boolean
+  readonly meta?: boolean
+}
+
+export interface NotifyDef {
+  /** Defaults to `'info'`. */
+  readonly severity?: 'success' | 'info' | 'warn' | 'error'
+  readonly summary: string
+  readonly detail?: string
+  /** Milliseconds before it closes. Omitted, it stays until the user closes it. */
+  readonly life?: number
+}
