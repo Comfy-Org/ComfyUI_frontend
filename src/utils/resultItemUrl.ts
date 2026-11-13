@@ -1,5 +1,5 @@
-import { assetContentUrl } from '@/platform/assets/utils/assetContentUrl'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { assetContentUrl } from '@/platform/assets/utils/assetUrlUtil'
+import { isHdrImageFilename, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -38,6 +38,14 @@ export function resultItemPreviewUrl(
   const params = resultItemUrlParams(item)
   appendCloudResParam(params, item.filename)
   return api.apiURL('/view?' + params)
+}
+
+export function getHdrPreviewUrl(url: string | undefined): string | undefined {
+  const previewId =
+    url &&
+    isHdrImageUrl(url) &&
+    new URL(url, window.location.origin).searchParams.get('preview_id')
+  return previewId ? assetContentUrl(previewId) : undefined
 }
 
 export function resultItemVhsAdvancedPreviewUrl(

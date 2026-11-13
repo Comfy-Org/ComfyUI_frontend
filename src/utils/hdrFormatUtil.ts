@@ -1,5 +1,3 @@
-import { assetContentUrl } from '@/platform/assets/utils/assetContentUrl'
-
 const HDR_EXTENSIONS = ['.exr', '.hdr'] as const
 
 export function isHdrImageFilename(filename: string | undefined): boolean {
@@ -25,14 +23,6 @@ export function getImageFilenameFromUrl(url: string): string | undefined {
 export function isHdrImageUrl(url: string | undefined): boolean {
   if (!url) return false
   return isHdrImageFilename(getImageFilenameFromUrl(url))
-}
-
-export function getHdrPreviewUrl(url: string | undefined): string | undefined {
-  const previewId =
-    url &&
-    isHdrImageUrl(url) &&
-    new URL(url, window.location.origin).searchParams.get('preview_id')
-  return previewId ? assetContentUrl(previewId) : undefined
 }
 
 export function fullResolutionSrc(img: HTMLImageElement): string {

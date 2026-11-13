@@ -172,6 +172,7 @@ import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import {
   getAssetInlineMediaUrl,
+  getAssetPreviewUrl,
   getAssetUrl,
   resolveMediaSrc
 } from '@/platform/assets/utils/assetUrlUtil'
@@ -277,10 +278,10 @@ const adaptedAsset = computed(() => {
     src:
       fileKind.value === '3D'
         ? getAssetUrl(asset)
-        : resolveMediaSrc(asset.thumbnail_url || asset.preview_url) ||
-          (fileKind.value === 'video' || fileKind.value === 'audio'
-            ? getAssetInlineMediaUrl(asset)
-            : ''),
+        : fileKind.value === 'audio'
+          ? resolveMediaSrc(asset.thumbnail_url || asset.preview_url) ||
+            getAssetInlineMediaUrl(asset)
+          : getAssetPreviewUrl(asset),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
     size: asset.size,

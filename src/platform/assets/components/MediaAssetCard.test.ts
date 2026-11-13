@@ -563,16 +563,27 @@ describe('MediaAssetCard', () => {
     {
       kind: 'video',
       name: 'agent_generated_video.mp4',
-      testId: 'media-asset-video'
+      testId: 'media-asset-video',
+      previewId: undefined,
+      expected: '/api/assets/agent-media/content?disposition=inline'
     },
     {
       kind: 'audio',
       name: 'agent_generated_audio.mp3',
-      testId: 'wave-audio-media'
+      testId: 'wave-audio-media',
+      previewId: undefined,
+      expected: '/api/assets/agent-media/content?disposition=inline'
+    },
+    {
+      kind: 'stored video preview',
+      name: 'agent_generated_video.mov',
+      testId: 'media-asset-video',
+      previewId: 'video-proxy',
+      expected: '/api/assets/video-proxy/content?disposition=inline'
     }
   ])(
-    'plays a $kind asset with no server preview from its inline content url',
-    async ({ name, testId }) => {
+    'plays a $kind asset from its display source',
+    async ({ name, testId, previewId, expected }) => {
       vi.mocked(useFeatureFlags().flags).assetsEnabled = true
 
       renderCard({
@@ -581,6 +592,7 @@ describe('MediaAssetCard', () => {
           ...asset,
           id: 'agent-media',
           name,
+          preview_id: previewId,
           preview_url: undefined,
           thumbnail_url: undefined
         }
@@ -588,10 +600,7 @@ describe('MediaAssetCard', () => {
 
       const media = await screen.findByTestId(testId)
 
-      expect(media).toHaveAttribute(
-        'src',
-        '/api/assets/agent-media/content?disposition=inline'
-      )
+      expect(media).toHaveAttribute('src', expected)
     }
   )
 

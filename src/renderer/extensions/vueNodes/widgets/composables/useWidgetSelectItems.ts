@@ -25,7 +25,7 @@ import type {
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { assetContentUrl } from '@/platform/assets/utils/assetContentUrl'
+import { assetContentUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetKind } from '@/types/widgetTypes'
 import {

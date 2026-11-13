@@ -11,9 +11,29 @@ import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { isResultItemType } from '@/utils/typeGuardUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
+
+export function assetContentUrl(id: string): string {
+  return api.apiURL(`/assets/${id}/content?disposition=inline`)
+}
+
+export function getAssetPreviewUrl(asset: AssetItem): string {
+  const mediaType = getMediaTypeFromFilename(asset.name)
+  if (mediaType !== 'image' && mediaType !== 'video') return ''
+  if (
+    asset.preview_id &&
+    (isHdrImageFilename(asset.name) || mediaType === 'video')
+  )
+    return assetContentUrl(asset.preview_id)
+  return (
+    resolveMediaSrc(asset.thumbnail_url || asset.preview_url) ||
+    (mediaType === 'video' ? getAssetInlineMediaUrl(asset) : '')
+  )
+}
 
 /**
  * Get the download/view URL for an asset

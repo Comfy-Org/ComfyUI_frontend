@@ -14,7 +14,7 @@ import {
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { assetContentUrl } from '@/platform/assets/utils/assetContentUrl'
+import { assetContentUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 

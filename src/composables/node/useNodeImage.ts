@@ -6,9 +6,8 @@ import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagn
 import type { ImageLoadFailureMetadata } from '@comfyorg/telemetry/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { parseNodeOutput } from '@/stores/resultItemParsing'
-import { getHdrPreviewUrl } from '@/utils/hdrFormatUtil'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
-import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
+import { getHdrPreviewUrl, resultItemPreviewUrl } from '@/utils/resultItemUrl'
 
 const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {
