@@ -126,8 +126,14 @@ registered, so `extend` cannot depend on the order.
 ### Refresh
 
 13. `refresh()` asks the host to reload the node definitions and resolves to
-    the host's answer: `false` when the host did not apply them. A failure of
-    the reload itself rejects, as the host's reload does.
+    the host's answer: `false` when the host did not apply them (it answers so
+    when late custom-node hooks are owed and the fetch fails). A failure of
+    the reload itself, such as an ordinary failed fetch, rejects, as the
+    host's reload does, and the JSDoc says both. Review finding B-19 asked for
+    a rejection when the reload is not applied; the repository's
+    error-handling guidance asks for a command's outcome as a `boolean`, and
+    both reviewers of PR 1 would keep it with the documentation complete, so
+    it stays a `boolean`.
 14. `onRefreshed(listener)` is told after every reload, whoever asked for it,
     through the listener primitive of ADR-EXTENSIONS-NODE-API-0070, which gains `notify()` for
     delivery that keeps its listeners.
@@ -180,7 +186,9 @@ registered, so `extend` cannot depend on the order.
     `onCreated`. During a load, a paste and a duplicate the node joins first
     and is configured after, so `onCreated` comes first there too.
 20. `onRemoved` is called before the node leaves its graph, so its handle still
-    reads it.
+    reads it. A load, an undo and a redo rebuild the graph, so they remove
+    every node and add it again: `onRemoved` does not mean the user deleted
+    the node, and the JSDoc says so.
 21. `onExecuted` gives the texts and images of the server's output and a frozen
     JSON copy of all of it (`raw`). A text that is not a string and an image
     that is not an object are left out of the lists, not of `raw`.
@@ -352,8 +360,8 @@ registered, so `extend` cannot depend on the order.
   replaced drops the API's dispatcher for that type, as it drops another
   pack's today.
 - A property bound to a widget (`options.property`) shows the edited value in
-  the widget after a `setValue`, because `setProperty` updates the widget
-  after the hooks run.
+  the widget after a `setValue` or a `reject()`, because `setProperty`
+  updates the widget with the edited value after the hooks run.
 - `ExecutionResult` is declared with these hooks because `onExecuted`
   delivers it; the frontend-execution part of the API uses the same type.
 - `onUnplacedLink` waits for a core change; the ticket proposed for it is a
@@ -373,6 +381,14 @@ registered, so `extend` cannot depend on the order.
   node-definition store. The first has no definitions and includes types that
   were never defined; the second is updated later than the hook. See
   "Alternatives considered".
+- **Reading a definition** does not use `transformNodeDefV1ToV2` from
+  `@comfyorg/object-info-parser`, which merges the inputs and names the
+  outputs too. It names an unnamed output `output_<index>` where the host's
+  nodes and this API use the type, it spreads an input's declared options
+  into the spec beside `name` and `type` (renaming some, as `type` becomes
+  `chartType` for a chart) instead of keeping the declaration as the pack
+  wrote it on its own input, and it assumes a well-formed definition, which
+  decision 8 does not.
 - **Copying a definition** uses the JSON copy and deep freeze that handles
   already use for property values, moved from `nodeHandle.ts` to
   `nodeApi/shared/savedCopy.ts` so both use one. Input types and combo values

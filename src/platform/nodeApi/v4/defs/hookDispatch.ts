@@ -25,7 +25,6 @@ import { pointerInstallers } from './pointerDispatch'
 import { propertyInstallers } from './propertyDispatch'
 import type { HookName } from './nodeHooks'
 
-/** The prototype methods each hook needs a dispatcher on. */
 const METHODS_FOR: Readonly<Record<HookName, readonly string[]>> = {
   onCreated: ['onConfigure'],
   onConfigured: ['onConfigure'],
@@ -42,7 +41,6 @@ const METHODS_FOR: Readonly<Record<HookName, readonly string[]>> = {
 }
 
 interface HookDispatch extends HookInstaller {
-  /** The context-menu entries packs added for a node, lowest `order` first. */
   menuItemsFor(node: LGraphNode): IContextMenuValue[]
 }
 

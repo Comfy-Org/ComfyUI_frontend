@@ -42,7 +42,6 @@ export interface NodeTypeHooks extends ComfyExtension {
 interface DefRegistryParts {
   readonly defs: DefRegistry
   readonly nodeTypeHooks: NodeTypeHooks
-  /** Puts back the colours packs gave their types, after a palette cleared them. */
   reapplyTypeColors(): void
 }
 

@@ -484,11 +484,11 @@ export interface SlotCollection<THandle> {
   reorder(names: readonly string[]): boolean
 }
 
-/** Node types: read their definitions, define new ones, and extend any. */
+/** Node types: read their definitions, define new ones, and extend those the host registers. */
 export interface DefRegistry {
   /**
-   * Calls `apply` once for each node type `selector` picks: now for the types
-   * already registered, and later for each one as it registers.
+   * Calls `apply` once for each node type `selector` picks, now and as types
+   * register. Unsubscribing also removes the hooks it has added.
    */
   extend(
     selector: DefSelector,
@@ -501,7 +501,7 @@ export interface DefRegistry {
   has(type: string): boolean
   /** Every node definition, in the order its type first registered. */
   all(): readonly NodeDef[]
-  /** Reloads the node definitions. Resolves `false` if the host did not apply them. */
+  /** Reloads the node definitions. Resolves `false` if the host did not apply them; rejects if fetching failed. */
   refresh(): Promise<boolean>
   /** Calls `listener` after each reload of the node definitions, whoever asked. */
   onRefreshed(listener: () => void): Unsubscribe
@@ -551,7 +551,7 @@ export interface NodeDefBuilder {
       data: Readonly<Record<string, unknown>>
     ) => void
   ): void
-  /** A node is leaving its graph; its handle still reads it. */
+  /** A node is leaving its graph, removed or rebuilt by a load, undo or redo; its handle still reads it. */
   onRemoved(callback: (node: NodeHandle) => void): void
   /** The server finished running a node. */
   onExecuted(

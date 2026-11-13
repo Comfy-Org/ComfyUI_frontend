@@ -243,4 +243,41 @@ describe("the app's node API", () => {
 
     expect(extended).toHaveBeenCalledOnce()
   })
+
+  it('puts the hooks on the class the host makes when it registers a type again', async () => {
+    const comfy = publishedApi()
+    const onRemoved = vi.fn()
+    comfy.defs.extend('HostType', (builder) => builder.onRemoved(onRemoved))
+    await useLitegraphService().registerNodeDef(
+      'HostType',
+      hostNodeDef('HostType')
+    )
+    await useLitegraphService().registerNodeDef(
+      'HostType',
+      hostNodeDef('HostType')
+    )
+    const graph = new LGraph()
+    const node = LiteGraph.createNode('HostType')
+    assert(node)
+    graph.add(node)
+
+    graph.remove(node)
+
+    expect(onRemoved).toHaveBeenCalledOnce()
+  })
+
+  it('tells packs when the app reloads the node definitions', async () => {
+    const comfy = publishedApi()
+    const listener = vi.fn()
+    comfy.defs.onRefreshed(listener)
+    const previousGraph = app.rootGraphOrUndefined
+    onTestFinished(() => {
+      Reflect.set(app, 'rootGraphInternal', previousGraph)
+    })
+    Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+    await expect(app.reloadNodeDefs({})).resolves.toBe(true)
+
+    expect(listener).toHaveBeenCalledOnce()
+  })
 })
