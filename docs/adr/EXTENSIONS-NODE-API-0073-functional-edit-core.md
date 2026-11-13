@@ -538,7 +538,8 @@ ADR-EXTENSIONS-NODE-API-0070.
   node's inputs with `replaceNodeInputs`, and the floating link points at
   another input. _Direction:_ update floating links in `replaceNodeInputs` as
   `removeInput` does.
-- **No intent for re-pointed links or slot edits.** `moveLinks` and the
+- **No intent for re-pointed links or slot edits (a requirement for release).**
+  `moveLinks` and the
   output reorder update link endpoints in the link store, and slot fields and
   slot structure change without an intent, so none of them reaches the shared
   document's operations (decision 27). Ticket draft: _Title:_ "Announce link
