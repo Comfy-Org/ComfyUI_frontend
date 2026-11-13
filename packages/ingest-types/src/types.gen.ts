@@ -3045,9 +3045,9 @@ export type BillingEventsResponse = {
  */
 export type BillingHandoffCreateRequest = {
   /**
-   * Version of the issuing app, for logs.
+   * Workspace the handoff and its session are bound to. An OAuth access token may name only its own workspace.
    */
-  client_version: string
+  workspace_id: string
   /**
    * Billing app that will exchange the handoff; its origin is the only one the exchange accepts.
    */
@@ -3057,9 +3057,17 @@ export type BillingHandoffCreateRequest = {
    */
   surface: 'local_web' | 'desktop'
   /**
-   * Workspace the handoff and its session are bound to. An OAuth access token may name only its own workspace.
+   * Version of the issuing app, for logs.
    */
-  workspace_id: string
+  client_version: string
+  /**
+   * Page the receiver opens after the exchange: top-up opens the credit checkout, subscription the plan checkout, none the receiver's billing home. Only billing_web accepts one; platform answers 400 INVALID_REQUEST. Sent in the entry URL's query, never its fragment. It is not a credential and grants nothing.
+   */
+  intent?: 'top-up' | 'subscription'
+  /**
+   * Credit amount the top-up checkout opens with, in cents. Whole dollars within the manual top-up limits (`min_topup_cents` to `max_topup_cents` on GET /api/billing/balance). Allowed only with intent top-up, else 400 INVALID_REQUEST; omitted, billing-web uses its default. Sent in the entry URL's query after intent. Not a credential; the checkout validates the amount again.
+   */
+  amount_cents?: number
 }
 
 /**

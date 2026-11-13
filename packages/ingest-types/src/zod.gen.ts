@@ -1578,10 +1578,16 @@ export const zBillingEventsResponse = z.object({
  * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
  */
 export const zBillingHandoffCreateRequest = z.object({
-  client_version: z.string().max(64),
+  workspace_id: z.string().min(1),
   receiver: z.enum(['billing_web', 'platform']),
   surface: z.enum(['local_web', 'desktop']),
-  workspace_id: z.string().min(1)
+  client_version: z.string().max(64),
+  intent: z.enum(['top-up', 'subscription']).optional(),
+  amount_cents: z.coerce
+    .bigint()
+    .gte(BigInt(500))
+    .lte(BigInt(250000))
+    .optional()
 })
 
 /**
