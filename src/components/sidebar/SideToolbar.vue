@@ -60,7 +60,7 @@
         <SidebarShortcutsToggleButton v-if="!hideWorkspaceToggles" :is-small />
         <SidebarSettingsButton :is-small />
         <CurrentUserButton
-          v-if="flags.billingNewUxEnabled && isLoggedIn"
+          v-if="showProfileButton"
           :show-arrow="false"
           :side="sidebarLocation === 'left' ? 'right' : 'left'"
           class="flex w-full shrink-0 justify-center pb-1"
@@ -135,6 +135,9 @@ const settingStore = useSettingStore()
 const userStore = useUserStore()
 const { isLoggedIn } = useCurrentUser()
 const { flags } = useFeatureFlags()
+const showProfileButton = computed(
+  () => flags.billingNewUxEnabled && isLoggedIn.value
+)
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const sideToolbarRef = ref<HTMLElement>()
@@ -269,6 +272,7 @@ onMounted(() => {
   )
 
   checkOverflow()
+  watch(showProfileButton, checkOverflow)
 
   onBeforeUnmount(() => {
     overflowObserver.stop()

@@ -1,8 +1,8 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -201,6 +201,33 @@ describe('SideToolbar', () => {
       expect(
         screen.queryByTestId('current-user-button')
       ).not.toBeInTheDocument()
+    })
+
+    it('rechecks overflow when the profile button mounts after sign-in', async () => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      const loggedIn = ref(false)
+      useCurrentUser().isLoggedIn = computed(() => loggedIn.value)
+      const itemHeight = 50
+      const clientHeight = vi
+        .spyOn(HTMLElement.prototype, 'clientHeight', 'get')
+        .mockReturnValue(320)
+      const scrollHeight = vi
+        .spyOn(HTMLElement.prototype, 'scrollHeight', 'get')
+        .mockImplementation(function (this: HTMLElement) {
+          return this.children.length * itemHeight
+        })
+      onTestFinished(() => {
+        clientHeight.mockRestore()
+        scrollHeight.mockRestore()
+      })
+      renderToolbar({ visibleTabIds: [] })
+      const toolbar = screen.getByTestId('side-toolbar')
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      expect(toolbar).not.toHaveClass('overflowing-sidebar')
+
+      loggedIn.value = true
+
+      await waitFor(() => expect(toolbar).toHaveClass('overflowing-sidebar'))
     })
 
     it.for([
