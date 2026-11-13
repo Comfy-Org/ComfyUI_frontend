@@ -1295,7 +1295,10 @@ export type ResolvedSource =
   | { readonly kind: 'omitted' }
 
 export interface GraphSupplyReads {
-  /** The supplies a prompt would use in this graph, by the inputs they feed in the graph's order. */
+  /**
+   * The supplies a prompt would use in this graph, by the inputs they feed in the graph's order.
+   * `undefined` while there is no such graph.
+   */
   resolvedSupplies(): readonly ResolvedSupply[] | undefined
 }
 

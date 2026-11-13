@@ -65,11 +65,14 @@ to a subgraph input fed by a widget produce the widget's value.
    `useComfyApiStore().frontendExecution`. `src/utils` does not import the API.
 3. `graphToPrompt` calls `adoptNodes(nodes)` once, with the flattened map of
    executable nodes, after it is built and before any input is emitted. When
-   no defined type has a resolver it returns at once, reading nothing.
+   no defined type has a resolver and no applied extension has a supplier
+   (decision 14), it returns at once, reading nothing.
    Otherwise each entry whose node's type has a resolver is replaced, under the
    same key, by a `ResolvedNodeDTO`: the API's subclass of `ExecutableNodeDTO`,
-   made from the same node, path, map and subgraph node. Every other entry is
-   left as it was, so a workflow with no resolved node builds the same prompt.
+   made from the same node, path, map and subgraph node (and each entry with a
+   fed input by a `SuppliedNodeDTO`, decision 19). Every other entry is left
+   as it was, so a workflow with no resolved or fed node builds the same
+   prompt.
    Nothing under `src/lib/litegraph` changes and no field is added to a node.
 
 ### Resolving an output
@@ -137,7 +140,8 @@ to a subgraph input fed by a widget produce the widget's value.
     `LinkInfo.sourceNodeId` does.
 12. `widgetValue(name)` reads the widget's `value`, the accessor through which
     the host's widget value owner is reached (the widget value store for an
-    ordinary widget, the element for a DOM widget), and gives a frozen copy;
+    ordinary widget, the widget's `getValue` option for a DOM widget), and
+    gives a frozen copy;
     `undefined` for a name no widget has or a value that cannot be saved.
     `input(ref)` gives the `InputRef` of an input by index or by name (the
     first with it), `undefined` if there is none.
@@ -160,14 +164,15 @@ to a subgraph input fed by a widget produce the widget's value.
     (ADR-EXTENSIONS-NODE-API-0071 decision 17), a node is asked only if its
     class, or one it extends, is a class the API put dispatchers on.
 16. `unconnectedInputs()` lists every input that no link feeds, of the nodes of
-    the graph that are neither frontend nodes nor subgraph nodes, in the
+    the graph that the host does not mark virtual (`isVirtualNode`), in the
     graph's order and then the inputs' order. It is built once per graph per
     build and shared by its suppliers; an entry's `nodeGroups` and
     `nodeProperties` are read from the node's view when first asked for.
-    Frontend nodes are left out because the prompt does not run them. Subgraph
-    nodes are left out because the host reads an unlinked input of a subgraph
-    node, from inside the subgraph, as its promoted widget, and never asks the
-    subgraph node for it.
+    Virtual nodes are frontend nodes and subgraph nodes. Frontend nodes are
+    left out because the prompt does not run them. Subgraph nodes are left out
+    because the host reads an unlinked input of a subgraph node, from inside
+    the subgraph, as its promoted widget, and never asks the subgraph node for
+    it.
 17. An answer is a list of edges. An edge has `to`, `from` and optionally
     `priority`, and nothing else. `to` is exactly `{ nodeId, input }` of one of
     `unconnectedInputs()`. `from` is exactly `{ output }`, an index of the
@@ -341,6 +346,8 @@ to a subgraph input fed by a widget produce the widget's value.
   node of a type with suppliers (a pack that extends every type asks every
   node), one view per node asked, and one pass over the graph's inputs.
 - `resolvedSupplies` asks the suppliers on every read.
+- `graphToPrompt` asks `omittedInputs` once per prompt entry; with no
+  `onPromptSerialize` hook applied the call returns at once.
 - `ResolvedNodeDTO` and `SuppliedNodeDTO` depend on `ExecutableNodeDTO`'s
   public constructor and on `resolveOutput`, `resolveInput`, `inputs`,
   `nodesByExecutionId` and `subgraphNodePath`. A change to those in core is a

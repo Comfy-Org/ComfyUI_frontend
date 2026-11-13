@@ -86,34 +86,39 @@ function unconnectedInputs(
 ): readonly UnconnectedInput[] {
   return Object.freeze(
     graph.nodes
-      .filter((node) => !node.isVirtualNode && !node.isSubgraphNode())
-      .flatMap((node) => {
-        const view = views.viewOf(graph, node)
-        return node.inputs.flatMap((input, index) =>
-          inputHasLink(graph, node.id, index)
-            ? []
-            : [
-                Object.freeze({
-                  nodeId: view.id,
-                  nodeType: view.type,
-                  nodeTitle: node.title,
-                  nodeMode: view.mode,
-                  nodeColor: view.color,
-                  get nodeGroups() {
-                    return view.groups
-                  },
-                  get nodeProperties() {
-                    return view.properties
-                  },
-                  input: index,
-                  name: input.name,
-                  label: shownName(input),
-                  type: String(input.type),
-                  isWidgetInput: input.widget !== undefined
-                })
-              ]
-        )
-      })
+      .filter((node) => !node.isVirtualNode)
+      .flatMap((node) => unconnectedInputsOf(graph, node, views))
+  )
+}
+
+function unconnectedInputsOf(
+  graph: LGraph,
+  node: LGraphNode,
+  views: NodeViews
+): UnconnectedInput[] {
+  const view = views.viewOf(graph, node)
+  const unlinked = node.inputs
+    .map((input, index) => ({ input, index }))
+    .filter(({ index }) => !inputHasLink(graph, node.id, index))
+  return unlinked.map(({ input, index }) =>
+    Object.freeze({
+      nodeId: view.id,
+      nodeType: view.type,
+      nodeTitle: node.title,
+      nodeMode: view.mode,
+      nodeColor: view.color,
+      get nodeGroups() {
+        return view.groups
+      },
+      get nodeProperties() {
+        return view.properties
+      },
+      input: index,
+      name: input.name,
+      label: shownName(input),
+      type: String(input.type),
+      isWidgetInput: input.widget !== undefined
+    })
   )
 }
 
