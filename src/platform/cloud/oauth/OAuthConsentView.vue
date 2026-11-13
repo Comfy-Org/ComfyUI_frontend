@@ -340,8 +340,6 @@ const verified = computed(() =>
     : undefined
 )
 
-// One element either way, so the template carries no branch for platforms
-// without a brand icon: those get the element hidden.
 const verifiedIconClass = computed(() => {
   const icon = verified.value && verifiedClientIcon(verified.value.platform)
   return cn(icon || 'hidden', 'shrink-0')
