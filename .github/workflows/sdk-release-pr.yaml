@@ -70,8 +70,10 @@ jobs:
         run: node scripts/sdk-release-plan.ts
 
       # A revert since the release PR opened can leave nothing to release.
+      # A release merge skips planning, so its empty plan says nothing about
+      # the open release PR.
       - name: Close the stale release PR
-        if: steps.plan.outputs.plan == '[]' && steps.open.outputs.ref != ''
+        if: steps.plan.outputs.plan == '[]' && steps.plan.outputs.skipped != 'true' && steps.open.outputs.ref != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

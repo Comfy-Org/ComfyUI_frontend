@@ -265,7 +265,7 @@ function sdkSources(root: string): string[] {
   )
 }
 
-function isReleaseMerge(root: string): boolean {
+export function isReleaseMerge(root: string = process.cwd()): boolean {
   const manifests = new Set(
     (['ingest-types', ...SDK_PACKAGES] as const).map(
       (name) => `packages/${name}/package.json`
@@ -359,6 +359,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const summary = JSON.stringify(plan)
   console.log(summary)
   if (process.env.GITHUB_OUTPUT) {
-    appendFileSync(process.env.GITHUB_OUTPUT, `plan=${summary}\n`)
+    appendFileSync(
+      process.env.GITHUB_OUTPUT,
+      `plan=${summary}\nskipped=${isReleaseMerge()}\n`
+    )
   }
 }

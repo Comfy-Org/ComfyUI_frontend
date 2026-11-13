@@ -15,6 +15,7 @@ import {
   catalogRanges,
   changedManifestFields,
   changedSchemas,
+  isReleaseMerge,
   planRelease,
   referencedSchemas,
   releaseVersion
@@ -277,6 +278,27 @@ describe('planRelease', () => {
       { package: 'ingest-types', version: '1.0.2', reasons: ['zFoo'] }
     ])
     expect(plan(new Set([...firstReleases, '1.0.1']))).toEqual([])
+  })
+
+  it('reports a version-only release merge as skipped while other changes stay pending', () => {
+    initRepository()
+    write('packages/billing-contract/src/index.ts', 'export const a = 1\n')
+    commit('unreleased billing-contract change')
+    manifest('account-core', '1.0.0-alpha.1')
+    commit('manual account-core release')
+
+    expect(isReleaseMerge(root)).toBe(true)
+    expect(
+      planRelease({ root, publishedVersions: () => firstReleases })
+    ).toEqual([])
+  })
+
+  it('does not report an ordinary push as a release merge', () => {
+    initRepository()
+    write('packages/billing-contract/src/index.ts', 'export const a = 1\n')
+    commit('billing-contract change')
+
+    expect(isReleaseMerge(root)).toBe(false)
   })
 
   it('plans the first release of a package npm does not have yet', () => {
