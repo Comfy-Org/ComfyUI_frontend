@@ -3,10 +3,14 @@ import { describe, expect, it } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
+  createTestRootGraph,
   createTestSubgraph,
+  createTestSubgraphData,
   createTestSubgraphNode
 } from './__fixtures__/subgraphHelpers'
 
@@ -512,4 +516,37 @@ describe('SubgraphIO - Empty Slot Connection', () => {
       ])
     }
   )
+})
+
+describe('SubgraphIO - Definition-keyed layout', () => {
+  it('applies a layout move to only the definition it names', () => {
+    const a = createTestSubgraph()
+    const b = createTestSubgraph({ rootGraph: a.rootGraph })
+    b.inputNode.pos = [300, 400]
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: a.id,
+      nodeId: a.inputNode.id,
+      position: { x: 15, y: 25 },
+      source: LayoutSource.Vue,
+      timestamp: 0
+    })
+
+    expect([...a.inputNode.pos]).toEqual([15, 25])
+    expect(a.inputNode.asSerialisable().bounding.slice(0, 2)).toEqual([15, 25])
+    expect([...b.inputNode.pos]).toEqual([300, 400])
+  })
+
+  it('drops pseudo-node layout and measurements when the root graph is cleared', () => {
+    const root = createTestRootGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const { id, inputNode } = subgraph
+    layoutStore.reportContentSize(id, inputNode.id, { width: 240, height: 90 })
+
+    root.clear()
+
+    expect(layoutStore.getNodeLayout(id, inputNode.id)).toBeNull()
+    expect(layoutStore.contentSizeOf(id, inputNode.id)).toBeUndefined()
+  })
 })

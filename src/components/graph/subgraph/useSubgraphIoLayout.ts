@@ -1,4 +1,4 @@
-import { computedWithControl, useResizeObserver } from '@vueuse/core'
+import { useResizeObserver } from '@vueuse/core'
 import { computed, shallowRef, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -8,6 +8,7 @@ import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -23,14 +24,13 @@ export function useSubgraphIoLayout(
   const canvasStore = useCanvasStore()
   const { camera, syncWithCanvas } = useTransformState()
   const isInput = computed(() => ioNode() === ioNode().subgraph.inputNode)
-  const size = computedWithControl(ioNode, () => {
+  const style = computed(() => {
     const [width, height] = ioNode().size
-    return { width: Math.max(MIN_NODE_WIDTH, width), height }
+    return {
+      '--node-width': `${Math.max(MIN_NODE_WIDTH, width)}px`,
+      '--node-height': `${height}px`
+    }
   })
-  const style = computed(() => ({
-    '--node-width': `${size.value.width}px`,
-    '--node-height': `${size.value.height}px`
-  }))
 
   const rows = shallowRef<HTMLElement[]>([])
   function report(override?: Size) {
@@ -57,6 +57,7 @@ export function useSubgraphIoLayout(
       }),
       'expanded'
     )
+    node.arrange()
     canvasStore.canvas?.setDirty(true, true)
   }
 
@@ -97,9 +98,7 @@ export function useSubgraphIoLayout(
   const { startResize: resize } = useNodeResize(({ size: next }) => {
     const node = ioNode()
     const [x, y] = node.boundingRect
-    node.pos = [x, y]
-    node.size = [next.width, next.height]
-    size.trigger()
+    resizeNodeLayout(node, next, { position: { x, y } })
     report(next)
   })
 
