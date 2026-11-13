@@ -10,6 +10,8 @@
       />
       <CollapseToggleButton
         v-model="isAllCollapsed"
+        :expand-label="$t('g.expandAll')"
+        :collapse-label="$t('g.collapseAll')"
         :show="!isSearching && allErrorGroups.length > 1"
       />
     </div>
@@ -432,10 +434,10 @@ import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useErrorsTabRequestStore } from './errorsTabRequestStore'
 import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 
-import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import ErrorCardSection from './ErrorCardSection.vue'
@@ -518,7 +520,7 @@ const SEVERITY_CHIP_CLASS = {
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
-const rightSidePanelStore = useRightSidePanelStore()
+const errorsTabRequestStore = useErrorsTabRequestStore()
 const missingModelStore = useMissingModelStore()
 const manager = useWorkflowErrorManager()
 const { shouldShowManagerButtons, shouldShowInstallButton } =
@@ -937,14 +939,8 @@ function setSectionCollapsed(groupKey: string, collapsed: boolean) {
   collapseState[groupKey] = collapsed
 }
 
-/**
- * When an external trigger (e.g. "See Error" button in SectionWidgets)
- * sets focusedErrorNodeId, expand only the group containing the target
- * node and collapse all others so the user sees the relevant errors
- * immediately.
- */
 watch(
-  () => rightSidePanelStore.focusedErrorNodeId,
+  () => errorsTabRequestStore.focusedNodeId,
   (graphNodeId) => {
     if (!graphNodeId) return
     const prefix = `${graphNodeId}:`
@@ -958,7 +954,7 @@ watch(
       )
       setSectionCollapsed(group.groupKey, !hasMatch)
     }
-    rightSidePanelStore.focusedErrorNodeId = null
+    errorsTabRequestStore.clearFocusedNode()
   },
   { immediate: true }
 )
@@ -983,11 +979,11 @@ function openClosedErrorDetails(groupKeys: readonly string[]) {
 }
 
 watch(
-  () => rightSidePanelStore.errorDetailsRequest,
+  () => errorsTabRequestStore.detailsRequest,
   (request) => {
     if (!request) return
     openClosedErrorDetails(request)
-    rightSidePanelStore.errorDetailsRequest = null
+    errorsTabRequestStore.clearDetailsRequest()
   },
   { immediate: true }
 )

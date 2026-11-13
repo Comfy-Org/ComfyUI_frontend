@@ -37,9 +37,17 @@ vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string, correlationId?: string) =>
-    `https://platform.test${path}?correlation_id=${correlationId}`
+  platformLink: (path: string, correlationId?: string) => {
+    const url = new URL(`https://platform.test${path}`)
+    if (correlationId) url.searchParams.set('correlation_id', correlationId)
+    return url.href
+  }
 }))
+
+const SETUP_HREF =
+  /^https:\/\/platform\.test\/profile\/billing\?auto_top_up=setup&correlation_id=.+$/
+const BILLING_HREF =
+  /^https:\/\/platform\.test\/profile\/billing\?correlation_id=.+$/
 
 const configured: AutoReloadSettings = {
   card_expiry: null,
@@ -173,6 +181,7 @@ describe('BillingAutoTopUpCard', () => {
     label: string
     lines: string[]
     action: string
+    href: RegExp
     expectedIcon: string
   }>([
     {
@@ -180,6 +189,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Failed',
       lines: [FAILED],
       action: 'Update payment',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -190,6 +200,7 @@ describe('BillingAutoTopUpCard', () => {
         'Turned off after 3 declined charges. Update your payment method, then turn it back on.'
       ],
       action: 'Update payment',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -198,6 +209,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Off',
       lines: ['Refills credits when your balance runs low.'],
       action: 'Turn on',
+      href: SETUP_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -208,6 +220,7 @@ describe('BillingAutoTopUpCard', () => {
         'No default payment method. Set one to resume auto top-up.'
       ],
       action: 'Update payment',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -215,6 +228,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Limit reached',
       lines: [RULE, 'Monthly limit reached. Resumes November 28.'],
       action: 'Manage',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -223,6 +237,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Limit reached',
       lines: [RULE, 'Monthly limit reached.'],
       action: 'Manage',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -234,6 +249,7 @@ describe('BillingAutoTopUpCard', () => {
         'Next top-up would go over your monthly limit. Resumes November 28.'
       ],
       action: 'Manage',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -246,6 +262,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Limit reached',
       lines: [RULE, 'Next top-up would go over your monthly limit.'],
       action: 'Manage',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -254,6 +271,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Maximum reached',
       lines: [RULE, 'Monthly maximum reached. Resets November 28.'],
       action: 'Manage',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -266,6 +284,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Maximum reached',
       lines: [RULE, 'Monthly maximum reached. Resets November 28.'],
       action: 'Manage',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -278,6 +297,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Maximum reached',
       lines: [RULE, 'Monthly maximum reached.'],
       action: 'Manage',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -286,6 +306,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'On',
       lines: [RULE, 'Monthly limit: $50 of $200 used'],
       action: 'Manage',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -293,6 +314,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'On',
       lines: [RULE, 'Monthly limit: $50 of $200 used'],
       action: 'Manage',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     },
     {
@@ -301,6 +323,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'On',
       lines: ['Monthly limit: $50 of $200 used'],
       action: 'Manage',
+      href: BILLING_HREF,
       expectedIcon: 'icon-[lucide--arrow-up-right]'
     }
   ])(
@@ -312,6 +335,7 @@ describe('BillingAutoTopUpCard', () => {
       label,
       lines,
       action,
+      href,
       expectedIcon
     }) => {
       renderCard({ ...settings, status, disabled_reason: disabledReason })
@@ -325,12 +349,7 @@ describe('BillingAutoTopUpCard', () => {
           .map((line) => line.textContent.trim())
       ).toEqual(lines)
       const link = screen.getByRole('link', { name: action })
-      expect(link).toHaveAttribute(
-        'href',
-        expect.stringMatching(
-          /^https:\/\/platform\.test\/profile\/billing\?correlation_id=.+$/
-        )
-      )
+      expect(link).toHaveAttribute('href', expect.stringMatching(href))
       expect(link).toContainHTML(expectedIcon)
       expect(screen.getByTestId('billing-auto-top-up-card')).toContainHTML(
         'rounded-xl'

@@ -53,10 +53,14 @@ export type { AddCreditsUi } from './addCredits/addCreditsPresentation'
 export { default as AddCreditsDialog } from './addCredits/AddCreditsDialog.vue'
 export type { PlanRowCopy } from './tab/planRowCopy'
 export { default as BillingPlanRow } from './tab/BillingPlanRow.vue'
-export type { CreditsCardCopy } from './tab/creditsCardCopy'
+export type {
+  CreditsBreakdownCopy,
+  CreditsCardCopy
+} from './tab/creditsCardCopy'
 export { CREDITS_PER_USD } from './tab/creditsCardCopy'
 export { default as AddCreditsAction } from './tab/AddCreditsAction.vue'
 export { default as BillingCreditsCard } from './tab/BillingCreditsCard.vue'
+export { default as BillingCreditsBreakdown } from './tab/BillingCreditsBreakdown.vue'
 export type {
   AutoTopUpActionLabel,
   AutoTopUpCardCopy,

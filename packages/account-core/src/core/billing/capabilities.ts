@@ -74,6 +74,8 @@ const CapabilitiesBodySchema = z.object({
     zBillingCapabilitiesResponse.shape.billing_web_checkout_ui
       .optional()
       .catch(undefined),
+  cancel_takes_effect_immediately:
+    zBillingCapabilitiesResponse.shape.cancel_takes_effect_immediately,
   capabilities: zBillingCapabilities,
   expires_at: z.string(),
   has_parked_billing_operation:
@@ -108,6 +110,8 @@ export interface CapabilitiesSnapshot {
   >
   /** As received. Absent when the server omits it or sends an unknown variant. */
   readonly billingWebCheckoutUi?: CapabilitiesBody['billing_web_checkout_ui']
+  /** As received. Absent when the server omits it: unknown, not period-end. */
+  readonly cancelTakesEffectImmediately?: boolean
   readonly hasParkedBillingOperation?: boolean
   readonly paymentRecoveryAvailable?: boolean
   readonly planKind?: z.infer<
@@ -219,6 +223,7 @@ export function createCapabilitiesReader(
         autoTopUpMemberView: data.auto_top_up_member_view,
         autoTopUpSetup: data.auto_top_up_setup,
         billingWebCheckoutUi: data.billing_web_checkout_ui,
+        cancelTakesEffectImmediately: data.cancel_takes_effect_immediately,
         capabilities: data.capabilities,
         denials,
         hasParkedBillingOperation: data.has_parked_billing_operation,
