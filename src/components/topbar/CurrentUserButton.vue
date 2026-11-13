@@ -43,7 +43,8 @@
       <PopoverContent
         :side
         align="end"
-        :side-offset="side === 'bottom' ? undefined : 12"
+        :side-offset="side === 'bottom' ? undefined : 8"
+        :reference="sidebarReference"
         :class="
           cn(
             'overflow-visible border-border p-0 data-[state=closed]:animate-none data-[state=open]:animate-none',
@@ -140,6 +141,19 @@ const workspaceName = computed(() => {
 const open = ref(false)
 const buttonRef = ref<InstanceType<typeof Button> | null>(null)
 usePopoverViewportDismiss(open, () => unrefElement(buttonRef))
+
+// In the sidebar the menu sits 8px from the sidebar edge, bottom-aligned with the button.
+const sidebarReference = computed(() => {
+  if (side === 'bottom') return undefined
+  return {
+    getBoundingClientRect: () => {
+      const trigger = unrefElement(buttonRef)
+      const rect = trigger?.getBoundingClientRect() ?? new DOMRect()
+      const sidebar = trigger?.closest('nav')?.getBoundingClientRect() ?? rect
+      return new DOMRect(sidebar.x, rect.y, sidebar.width, rect.height)
+    }
+  }
+})
 
 function closePopover() {
   open.value = false

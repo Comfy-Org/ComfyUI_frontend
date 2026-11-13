@@ -51,7 +51,8 @@
         <PopoverContent
           :side="flyoutSide"
           align="start"
-          :side-offset="8"
+          :side-offset="flyoutGap"
+          :align-offset="-menuInset"
           prioritize-position
           dismiss-on-viewport-change
           class="w-auto overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0 data-[state=open]:data-[side=right]:slide-in-from-left-0"
@@ -100,7 +101,7 @@
         <HoverCardContent
           :side="flyoutSide"
           align="start"
-          :side-offset="12"
+          :side-offset="flyoutGap"
           class="rounded-xl p-2"
         >
           <ProfileMenuCreditsFlyout
@@ -210,6 +211,10 @@ const { accountActionsOnly = false, flyoutSide = 'left' } = defineProps<{
   accountActionsOnly?: boolean
   flyoutSide?: 'left' | 'right'
 }>()
+
+// Rows sit 5px inside the menu edge (border + p-1); flyouts open 8px from that edge.
+const menuInset = 5
+const flyoutGap = menuInset + 8
 
 const emit = defineEmits<{
   close: []
