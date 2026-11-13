@@ -41,6 +41,7 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    or cannot be reached, is a value and not a throw, as
    `docs/guidance/error-handling.md` asks: `false`, `undefined`, or
    `{ ok: false }` where `undefined` already means something.
+   The one exception is `backend.fetch` (decision 16).
 
 3. Every callback a pack supplies runs through `shared/listeners.ts`: a
    listener set from `createListeners`, or `callListener` for one callback.
@@ -50,10 +51,13 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    source through `createHostEvent` only while a listener is registered.
 
 4. A value handed to a pack is a string, a frozen copy the API made for that
-   delivery. `jsonValues.ts` checks that a value
+   delivery, or a Blob, which cannot change. `jsonValues.ts` checks that a value
    holds only what JSON can (finite numbers, strings, booleans, `null`, lists
    and plain objects, refusing a cycle); a setting value that passes is copied
    with `savedCopy`, the shared copy handles use.
+   A backend payload may also hold Blobs, which `savedCopy` would turn into
+   empty objects, so `frozenJsonCopy` copies and freezes its lists and plain
+   objects and keeps each Blob as it is.
 
 ### Settings (`comfy.settings`, 22 / 177)
 
@@ -132,6 +136,32 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     number of milliseconds, and without it the toast stays, as the host's
     default.
 
+### Backend (`comfy.backend`, 30 / 124)
+
+15. `url(route)` (15 / 30) and `assetUrl(route)` (4 / 8) are the backend
+    client's `apiURL` and `fileURL`, so a URL follows the host's base path and
+    web session. A route must start with exactly one `/`: `//host/x` and
+    `/\host/x` would name another origin once a browser reads them, and
+    `fileURL` prefixes only the base path, which is empty by default.
+16. `fetch(route, init)` (14 / 22) is the client's `fetchApi`, with the
+    credentials, user header, timeout and retries the host adds to its own
+    calls. The pack's headers are copied into a new `Headers` first, so the
+    credentials the client adds are not written into the pack's object. It
+    keeps `fetch`'s contract: it resolves with the response whatever its
+    status, and rejects when the server cannot be reached, as `fetchApi`
+    does. This is the one call here whose failure is not a value: a pack
+    replacing `api.fetchApi` or `fetch` expects that contract, and wrapping
+    the response would hide the status and body it reads.
+17. `on(event, listener)` (18 / 53) hears the client's
+    `addCustomEventListener`, which also tells the socket to dispatch a
+    message of a type it does not know, so a pack's own events arrive. The
+    listeners of one event name share one subscription, started with the
+    first and stopped when the last leaves. Each listener gets its own frozen
+    copy of the payload, so one pack cannot change what another sees or what
+    the host keeps. A payload that is neither JSON nor a Blob, which only a
+    host-dispatched event could carry, is delivered as `undefined` and
+    reported once per event name (`node_api_payload_not_copyable`).
+
 ### Left out
 
 The sandbox the earlier contract served is out of scope, and nothing here
@@ -143,6 +173,10 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   worker cannot play audio. In the page, `new Audio(src)` with `volume` and
   `play()` is the same call, and the host has no sound service to wrap.
 - `CommandsHandle.has` (0 / 0) has no use.
+- `backend.ownFetch` (5 / 11) called a pack's own routes from inside the
+  sandbox, and threw everywhere else. A pack calls its routes with
+  `backend.fetch('/my-pack/route')`.
+- `backend.sessionId` (0 / 0) has no use.
 
 ## Alternatives considered
 
@@ -163,6 +197,12 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   core and on the other packs installed, not on the pack's code, so the same
   pack would load on one install and throw on another.
 - Read a function label (`label: () => string`). No stored pack passes one.
+- Copy a backend payload with `structuredClone`. It copies a Blob in a
+  browser but not in the test environment, which would leave the delivery of
+  previews untested, and it turns a class instance into a plain object
+  without saying so. `cloneDeep` from `es-toolkit` returns what it cannot
+  clone, such as a function or a DOM node, by reference, so freezing its
+  result could freeze a host object.
 
 ## Consequences
 
@@ -178,7 +218,9 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
 
 - **Copying a value.** A setting value is copied with `savedCopy` from
   `shared/savedCopy.ts`, after `isJsonValue` has checked it, so the JSON
-  round trip drops nothing.
+  round trip drops nothing. A backend payload is copied with
+  `frozenJsonCopy`, because the shared copy would turn a preview Blob into an
+  empty object.
 - **Checking a JSON value.** `isJsonValue` walks the value once. A JSON round
   trip would drop `undefined` and functions and turn `NaN` into `null`
   without saying so, which is the silent change the check exists to refuse.
