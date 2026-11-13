@@ -6,6 +6,8 @@ import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Login Button', { tag: ['@ui'] }, () => {
+  test.use({ billingNewUx: false })
+
   test.describe('Visibility', () => {
     test('button is visible', async ({ comfyPage }) => {
       await expect(
@@ -83,5 +85,27 @@ test.describe('Login Button', { tag: ['@ui'] }, () => {
         await expect(sidebar.searchInput).toBeFocused()
       })
     })
+  })
+})
+
+test.describe('Login Button (new billing UX)', { tag: ['@ui'] }, () => {
+  test.use({ billingNewUx: true })
+
+  test('shows the Partner Nodes tooltip and opens sign-in on click', async ({
+    comfyPage
+  }) => {
+    const button = comfyPage.page.getByRole('button', {
+      name: 'Sign in to use Partner Nodes'
+    })
+    await button.hover()
+    await expect(comfyPage.page.getByRole('tooltip')).toHaveText(
+      'Sign in to use Partner Nodes'
+    )
+    await expect(
+      comfyPage.page.getByTestId(TestIds.topbar.loginButtonPopover)
+    ).toHaveCount(0)
+
+    await button.click()
+    await expect(new SignInDialog(comfyPage.page).root).toBeVisible()
   })
 })
