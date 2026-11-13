@@ -116,8 +116,8 @@ For each backport, use a Desktop build containing
 [Comfy-Desktop PR #1983](https://github.com/Comfy-Org/Comfy-Desktop/pull/1983)
 and the ComfyUI installation that actually pins that backport:
 
-1. Sign in through Desktop and run a real partner-node workflow with the partner-node token flag enabled.
-2. Keep the job running or polling past the workspace token's actual expiry; record completion without the partner-node sign-in error. Do not substitute a mocked bridge or simulated expiry.
+1. Sign in through Desktop and run a real partner-node workflow with the partner-node token flag enabled. Record sanitized evidence that the Desktop bridge returned the queued token and that no frontend mint occurred.
+2. Keep the job running or polling past the workspace token's actual expiry. Record a partner-node request that executes after that expiry without the partner-node sign-in error, and record job completion separately. Do not substitute a mocked bridge or simulated expiry.
 3. Verify ComfyUI's partner-token renewal against the live service during a sufficiently long run, and record the outcome separately from job completion.
 4. Record missing platform coverage explicitly, including Windows if only macOS was exercised. Include timestamps and sanitized outcomes without token values.
 
