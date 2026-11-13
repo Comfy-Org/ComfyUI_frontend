@@ -66,4 +66,18 @@ describe('api queuePrompt workflow_metadata', () => {
 
     expect(body.extra_data.extra_pnginfo.workflow.id).toBe(zeroUuid)
   })
+
+  it('carries only the explicit origin snapshot without adding identity fields', async () => {
+    const origin = { template_id: 'fixture_template', revision: 'a'.repeat(64) }
+    await api.queuePrompt(
+      0,
+      { output: {}, workflow: workflowWithId('graph') },
+      { templateOrigin: origin }
+    )
+    const [, init] = fetchApiSpy.mock.calls[0]
+    if (typeof init?.body !== 'string') throw new Error('Expected JSON body')
+    expect(JSON.parse(init.body).extra_data.homepage_template_origin).toEqual(
+      origin
+    )
+  })
 })

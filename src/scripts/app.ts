@@ -7,6 +7,10 @@ import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/us
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
+  isTemplateOriginEnabled,
+  templateOriginFor
+} from '@comfyorg/api-client/templateOrigin'
+import {
   applyViewport,
   measureViewportFromElement
 } from '@/renderer/core/canvas/canvasViewport'
@@ -1876,6 +1880,7 @@ export class ComfyApp implements IComfyApp {
 
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
+          const queuedOrigin = templateOriginFor(queuedWorkflow)
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
           const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
@@ -1920,6 +1925,14 @@ export class ComfyApp implements IComfyApp {
             api.authToken = comfyOrgAuthToken
             api.apiKey = comfyOrgApiKey ?? undefined
             const res = await api.queuePrompt(number, p, {
+              templateOrigin:
+                isCloud &&
+                isTemplateOriginEnabled() &&
+                useWorkspaceStore().workflow.activeWorkflow ===
+                  queuedWorkflow &&
+                templateOriginFor(queuedWorkflow) === queuedOrigin
+                  ? queuedOrigin
+                  : undefined,
               partialExecutionTargets: queueNodeIds,
               previewMethod
             })
