@@ -48,6 +48,7 @@ import { useFreeTierQuota } from '@/platform/billing/subscription/composables/us
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useNodeApiHost } from '@/platform/nodeApi/nodeApiHost'
+import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
 import {
   graphsAwaitingNodeTypes,
   markOpenGraphsAwaitingNodeTypes
@@ -1390,6 +1391,7 @@ export class ComfyApp implements IComfyApp {
       const workflow = useWorkflowStore().activeWorkflow ?? undefined
       stopLoading()
       workflow?.changeTracker.adoptLoadedGraph()
+      useComfyApiStore().workflowLoaded()
       return workflow
     } finally {
       tracker?.endLoadHooks()
@@ -2425,6 +2427,10 @@ export class ComfyApp implements IComfyApp {
     let workflowData: Awaited<ReturnType<typeof getWorkflowDataFromFile>>
     try {
       workflowData = await getWorkflowDataFromFile(file)
+      workflowData = await useComfyApiStore().importWorkflowFile(
+        file,
+        workflowData
+      )
     } catch (error) {
       await previousDiscovery
       releaseDiscovery()

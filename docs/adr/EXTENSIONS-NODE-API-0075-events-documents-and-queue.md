@@ -117,6 +117,84 @@ review finding requires it. The counts below are packs, then call sites.
     and the handle is the node's own, in its own graph. `executionNode`
     refuses an id that is not a string.
 
+### Documents
+
+11. A document is one editing session of one workflow, as
+    ADR-GRAPH-DOCUMENT-0026 defines it, and the session uid that ADR plans
+    does not exist yet. Until it does, the API takes the session to be the
+    workflow's change tracker: `ComfyWorkflow.load()` creates one when a
+    workflow is opened, `unload()` and closing drop it, and a forced reload
+    from disk replaces it. That is the moment ADR-GRAPH-DOCUMENT-0026 says
+    the uid is minted. The API keeps one `DocumentHandle` per change tracker
+    in a `WeakMap`, so the handle and its `id` (a fresh UUID) stay the same
+    through undo, redo and tab switches, a reopened workflow gets a new one,
+    and nothing grows: a handle goes when its change tracker does. When the
+    uid lands, the handle is keyed by it instead and nothing a pack sees
+    changes. This is separate from the handle retirement of
+    ADR-EXTENSIONS-NODE-API-0070 decision 10, which still treats a tab switch
+    as a load.
+12. `DocumentHandle` (`id` 3 packs, `name` 5, `path` 1) reads the open
+    workflow live: `name` is the file name without directory or extension,
+    `path` is where it is saved and `undefined` while it has never been, and
+    once the document is closed `isDeleted` is true and the other reads are
+    `undefined`. `isModified` is left out: no pack reads it.
+13. `onWorkflowLoaded(listener)` (15 packs, 18 sites) fires after every load
+    and after every undo and redo, with the open document (the settled
+    decision of the rebuild plan, matching the legacy `afterLoadGraph`
+    hook). The host calls `workflowLoaded()` right after it runs the
+    `afterLoadGraph` extension hook, on each of the three load paths in
+    `app.ts`: a saved workflow (which undo and redo also take), API JSON and
+    an A1111 image. A load that fails or is overtaken returns before the
+    call, so it is not announced. The document's `id` is unchanged for an
+    undo or redo, which is how a pack tells them from a load.
+14. `onDocumentActivated` (1 pack) and `onDocumentClosed` (2 packs) watch
+    the workflow store only while they have listeners (B-12): the active
+    workflow's change tracker for the first, the change trackers of the open
+    workflows for the second. A closed document's handle reports
+    `isDeleted`.
+15. `comfy.workflow`:
+    - `current()` (6 packs) and `documentId()` (2) give the open document
+      and its id.
+    - `snapshot()` (3 packs; it was missing from the old contract) is a
+      frozen copy of `rootGraph.serialize()`, made by `savedCopier` as a
+      save would write it, or `undefined` before there is a graph. The old
+      pack contract made it a promise because the sandbox answered across a
+      worker; it is synchronous here, and a pack that awaits it still works.
+    - `open(data)` (4 packs) opens the data as a new document on screen
+      through the host's `loadGraphData`, as opening a file does. It checks
+      the data with `validateComfyWorkflow` first and rejects with a
+      `TypeError` if it is not a workflow, before anything loads. It
+      resolves `true` once the host has loaded it and `false` when the host
+      reports the load did not happen (A-13, and the review finding that it
+      reported success for a failed load). The old contract resolved
+      nothing; the packs that call it await it and ignore the value. A
+      failure is a value, not a throw, as `docs/guidance/error-handling.md`
+      asks.
+    - `applyTextReplacements(value)` (1 pack) runs the host's
+      `applyTextReplacements` over the root graph, so `%Node.widget%`
+      reaches nodes in subgraphs too. Before there is a graph it returns
+      `undefined` rather than the unexpanded text.
+16. `registerImporter(importer)` (4 packs) adds a reader for files the host
+    finds no workflow in. Every field is checked at registration (A-10):
+    `id` a non-empty string no other importer has, `parse` a function,
+    `enabled` a function if given, `maxBytes` a positive finite number, and
+    `mimeTypes` and `extensions` lists of non-empty strings if given. The
+    lists are copied then, so a pack changing them later changes nothing.
+    The host line in `handleFile` passes each file, with what
+    `getWorkflowDataFromFile` found in it, to `importWorkflowFile`; if that
+    found a workflow, prompt, A1111 parameters or templates it is returned
+    unchanged and no importer is asked. Otherwise each importer that takes
+    the file's size and type or extension is asked in registration order:
+    the check, `enabled()` and `parse()` all run inside that importer's own
+    error boundary, so one that throws is reported with its id and the next
+    is asked. The file is read once, only if an importer takes it, and each
+    importer gets its own copy of the bytes. A result is a `workflow` or a
+    `prompt`, a string or a plain object; an object is copied by a JSON
+    round trip at that call, and anything else declines.
+    - The old host never offered more than 16 MiB, a limit set for the
+      sandbox's transfer to a worker; it is gone, and `maxBytes` is the
+      importer's own limit.
+
 ### Members left out
 
 | Member                                                                         | Packs | Reason                                                                          |
@@ -151,6 +229,10 @@ Host changes outside the folder:
   and expects the move; the test fails when the line is removed.
 - `src/renderer/core/canvas/nodeApiCanvasSource.ts` is new and claimed by
   the canvas-renderer domain.
+- `src/scripts/app.ts` calls `workflowLoaded()` after the `afterLoadGraph`
+  hook on its three load paths, and passes each file through
+  `importWorkflowFile` in `handleFile`. `app.test.ts` has a test for each
+  that fails when its line is removed.
 
 `onViewportChanged` chains onto a single callback slot. A typed viewport
 event on `DragAndScale` or the canvas would let the API, the canvas store
@@ -183,3 +265,11 @@ not built yet.
   `graphHandle.ts` does for `queryNodes`, and adds what reading does not
   need: following the user between graphs and the set of subgraphs as it
   changes.
+- **A frozen copy.** `snapshot()` uses `savedCopier` from
+  `shared/savedCopy.ts`, the copy the node handles use for property values.
+- **Workflow validation and text replacement.** `validateComfyWorkflow` from
+  the workflow schema and `applyTextReplacements` from
+  `utils/searchAndReplace`, unchanged.
+- **The session id.** A `WeakMap` keyed by the change tracker, in place of
+  the session uid of ADR-GRAPH-DOCUMENT-0026, which does not exist yet; see
+  decision 11.

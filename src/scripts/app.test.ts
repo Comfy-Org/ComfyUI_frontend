@@ -4297,6 +4297,127 @@ describe('ComfyApp', () => {
         ])
       }
     )
+
+    async function importA1111ImageWithProbe() {
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      mockImportA1111.mockImplementation(
+        async (incomingGraph, _parameters, beforeGraphClear) => {
+          await beforeGraphClear?.()
+          incomingGraph.clear()
+          const probe = LiteGraph.createNode('HandleProbe')
+          assert(probe)
+          incomingGraph.add(probe)
+          return 'imported'
+        }
+      )
+      await app.handleFile(createTestFile('a1111.png', 'image/png'))
+    }
+
+    it.for([
+      {
+        format: 'a workflow',
+        load: () => app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      },
+      {
+        format: 'an undo or redo',
+        load: () =>
+          app.loadGraphData(
+            workflowWithFixedIdAndOneNode(),
+            false,
+            false,
+            null,
+            {
+              restoresHistory: true
+            }
+          )
+      },
+      {
+        format: 'API JSON',
+        load: () =>
+          app.loadApiJson(
+            { '1': { class_type: 'HandleProbe', inputs: {} } },
+            'probe.json'
+          )
+      },
+      { format: 'an A1111 image', load: importA1111ImageWithProbe }
+    ])('tells packs once that $format loaded', async ({ load }) => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      const loaded = vi.fn()
+      comfy.onWorkflowLoaded(loaded)
+
+      await load()
+
+      expect(loaded).toHaveBeenCalledOnce()
+    })
+
+    it('does not tell packs a workflow loaded when the load fails', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      const loaded = vi.fn()
+      comfy.onWorkflowLoaded(loaded)
+      vi.spyOn(app.rootGraph, 'configure').mockImplementationOnce(() => {
+        throw new Error('broken workflow')
+      })
+
+      await expect(
+        app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+      ).resolves.toBe(false)
+      expect(loaded).not.toHaveBeenCalled()
+
+      await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+
+      expect(loaded).toHaveBeenCalledOnce()
+    })
+
+    it('keeps the document id through undo and redo', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      useWorkflowStore().activeWorkflow = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/open.json', modified: 0, size: 0 })
+      )
+      const before = comfy.workflow.documentId()
+      const seen: (string | undefined)[] = []
+      comfy.onWorkflowLoaded((document) => seen.push(document?.id))
+
+      await app.loadGraphData(
+        workflowWithFixedIdAndOneNode(),
+        false,
+        false,
+        null,
+        {
+          restoresHistory: true
+        }
+      )
+
+      expect(before).toBeDefined()
+      expect(seen).toEqual([before])
+    })
+
+    it('opens a workflow a pack hands it through the real loader', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+
+      await expect(
+        comfy.workflow.open(workflowWithFixedIdAndOneNode())
+      ).resolves.toBe(true)
+
+      expect(app.rootGraph.id).toBe(DOCUMENT_ID)
+      expect(comfy.graph.node('1')?.type).toBe('HandleProbe')
+    })
+
+    it('loads the workflow a pack importer reads from a file the host cannot read', async () => {
+      const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue(undefined)
+      comfy.workflow.registerImporter({
+        id: 'test.importer',
+        extensions: ['bin'],
+        maxBytes: 1024,
+        parse: () => ({ workflow: workflowWithFixedIdAndOneNode() })
+      })
+
+      await app.handleFile(createTestFile('graph.bin', ''))
+
+      expect(app.rootGraph.id).toBe(DOCUMENT_ID)
+    })
   })
 
   describe('nodeOutputs', () => {
