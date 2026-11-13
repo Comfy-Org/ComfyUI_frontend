@@ -127,7 +127,7 @@
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
@@ -147,6 +147,14 @@ interface VideoPreviewProps {
 
 const props = defineProps<VideoPreviewProps>()
 
+/**
+ * How long a load that has produced neither `loadeddata` nor `error` is left on
+ * the Skeleton. Matches `MEDIA_LOAD_TIMEOUT` in the canvas preview
+ * (`composables/node/useNodeImage.ts`), so a stall rate measured on one renderer
+ * is comparable to the other's.
+ */
+const MEDIA_LOAD_TIMEOUT = 8192
+
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
 
@@ -157,6 +165,7 @@ const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const videoError = ref(false)
 const showLoader = ref(false)
+let loadTimeout: ReturnType<typeof setTimeout> | undefined
 
 const videoWrapperEl = ref<HTMLDivElement>()
 
@@ -210,10 +219,59 @@ const handleVideoError = () => {
   void describeImageLoadFailure(failedUrl).then((metadata) => {
     useTelemetry()?.trackImageLoadFailed({
       ...metadata,
-      source: 'node_video_preview'
+      source: 'node_video_preview',
+      attempts: 1,
+      timed_out: false
     })
   })
 }
+
+const handleLoadStalled = () => {
+  loadTimeout = undefined
+
+  // Reveal the element instead of flipping to the error state. `preload="metadata"`
+  // means a load that has not reached `loadeddata` can still be viable, and the
+  // native controls let the user start it; claiming a failure here would be a
+  // guess. The Skeleton is what has to go — left up it is an indefinite blank
+  // panel where the output should be, which is indistinguishable from a node that
+  // rendered a blank video.
+  showLoader.value = false
+
+  // Reported as a stall rather than a rejection: no `error` event arrives for
+  // this case, so before this it was invisible to both the user and telemetry.
+  // `timed_out: true` beside a probe `status` of 200 is the signal that separates
+  // a playback failure from a generation one.
+  const stalledUrl = currentVideoUrl.value
+  if (!stalledUrl) return
+  void describeImageLoadFailure(stalledUrl).then((metadata) => {
+    useTelemetry()?.trackImageLoadFailed({
+      ...metadata,
+      source: 'node_video_preview',
+      attempts: 1,
+      timed_out: true
+    })
+  })
+}
+
+// Armed off `showLoader` rather than off the two places that raise it, so a new
+// entry point into the loading state cannot forget to bound it.
+watch(
+  showLoader,
+  (loading) => {
+    if (loadTimeout !== undefined) {
+      clearTimeout(loadTimeout)
+      loadTimeout = undefined
+    }
+    if (loading) {
+      loadTimeout = setTimeout(handleLoadStalled, MEDIA_LOAD_TIMEOUT)
+    }
+  },
+  { immediate: true }
+)
+
+onScopeDispose(() => {
+  if (loadTimeout !== undefined) clearTimeout(loadTimeout)
+})
 
 const handleDownload = () => {
   try {
