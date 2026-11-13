@@ -23,8 +23,10 @@ Cloud must remove the claim and verify exact execution content against a trusted
 versioned catalog and a server-side account/consent eligibility check before
 persisting provenance on the accepted job. Both server dependencies remain absent.
 The verifier defaults to an exact execution-prompt digest. Cloud also supports a
-bounded, explicit catalog policy for seed or prompt/text fields on exact node IDs
-and classes; it preserves every other input, model and graph connection. No real
+bounded, explicit catalog policy for seed, prompt/text or known loader asset fields
+on exact node IDs and classes; it preserves every other input, model and graph
+connection. Dynamic seed fields and the multiline user-prompt primitive are scoped
+explicitly; model-loading fields cannot be treated as asset inputs. No real
 mutable-input rules or catalog entries are supplied. Unknown input policies fail
 closed. This proves content equivalence under the approved input policy, not the
 client's historical loading action.
