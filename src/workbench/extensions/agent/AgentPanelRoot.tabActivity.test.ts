@@ -209,6 +209,10 @@ async function openChat(title: string, threadId: string): Promise<void> {
   )
 }
 
+function leaveTabSoTheTurnEndsInTheBackground(): void {
+  workflowStore.activeWorkflow = addTab('workflows/elsewhere.json')
+}
+
 function emitRunApproval(): void {
   agentSocket.receive('agent_ask', {
     thread_id: 'th-1',
@@ -403,15 +407,13 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     )
   }
 
-  it('opens the latest chat of the errored workflow before attaching the chip', async () => {
+  it('attaches the chip to a new chat of the errored workflow and lists the chats it already has', async () => {
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([
       { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
-      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' },
+      { id: 'th-3', title: 'Earlier other chat', workflowId: 'wf-other' }
     ])
-    respondToFetch('/api/agent/threads/th-2/messages', () =>
-      json(200, liveOtherThread('wf-other'))
-    )
     renderPanel()
     await send('add an upscaler')
 
@@ -419,12 +421,35 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     useAgentPanelStore().pendingErrorContext = errorContext
 
     await vi.waitFor(() =>
-      expect(useAgentChatHistoryStore().activeId).toBe('th-2')
+      expect(useAgentComposerStore().errorContext).toEqual(errorContext)
     )
+    expect(useAgentPanelStore().pendingErrorContext).toBeNull()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+    expect(useAgentConversationStore().threadId).toBeNull()
+    expect(
+      await screen.findByRole('button', { name: 'Other chat' })
+    ).toBeVisible()
+  })
+
+  it('attaches the chip to the only chat of the errored workflow when it has exactly one (LS-30)', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    await useWorkflowService().openWorkflow(other)
+    useAgentPanelStore().pendingErrorContext = errorContext
+
     await vi.waitFor(() =>
       expect(useAgentComposerStore().errorContext).toEqual(errorContext)
     )
     expect(useAgentPanelStore().pendingErrorContext).toBeNull()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+    expect(useAgentConversationStore().threadId).toBe('th-2')
+    expect(screen.queryByTestId('workflow-chat-list')).toBeNull()
   })
 
   it('keeps a draft and does not attach when the chat it belongs to is for another workflow', async () => {
@@ -554,16 +579,12 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     )
   }
 
-  it('attaches nothing when the user returns to the first tab while the follow is still loading', async () => {
+  it('attaches nothing when the user returns to the first tab while the chats of the errored workflow are still loading', async () => {
     const running = workflowStore.activeWorkflow!
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([
-      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
-      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
     ])
-    respondToFetch('/api/agent/threads/th-2/messages', () =>
-      json(200, liveOtherThread('wf-other'))
-    )
     const releaseFollow = deferFollowOf('wf-other')
     renderPanel()
     await send('add an upscaler')
@@ -615,12 +636,8 @@ describe('AgentPanelRoot Ask agent about errors', () => {
   it('does not let an attachment left over from a closed panel replace a newer one', async () => {
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([
-      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
-      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
     ])
-    respondToFetch('/api/agent/threads/th-2/messages', () =>
-      json(200, liveOtherThread('wf-other'))
-    )
     const releaseFollow = deferFollowOf('wf-other')
     const closed = renderPanel()
     await send('add an upscaler')
@@ -649,7 +666,28 @@ describe('AgentPanelRoot Ask agent about errors', () => {
 })
 
 describe('AgentPanelRoot tab activity across chats', () => {
-  it('keeps A and B spinning independently after following their chats to C', async () => {
+  it('TS-15 marks the tab of a workflow that has a chat in Chat history, and no other', async () => {
+    addBoundTab(otherTab, 'wf-other')
+    respondToFetch(/\/agent\/threads(?:\?|$)/, () =>
+      json(200, {
+        ...threadList,
+        threads: [
+          { ...agentThread('th-2', 'Other chat'), workflow_id: 'wf-other' }
+        ],
+        pagination: { has_more: false, limit: 1, offset: 0, total: 1 }
+      })
+    )
+
+    renderPanel()
+
+    const activity = useWorkflowTabActivityStore()
+    await vi.waitFor(() =>
+      expect(activity.chatStatusFor(otherTab)).toBe('seen')
+    )
+    expect(activity.chatStatusFor(runningTab)).toBeUndefined()
+  })
+
+  it('keeps A and B spinning independently after opening their chats and then the chat of C', async () => {
     const other = addBoundTab(otherTab, 'wf-other')
     const thirdTab = 'workflows/third.json'
     const third = addBoundTab(thirdTab, 'wf-third')
@@ -669,9 +707,17 @@ describe('AgentPanelRoot tab activity across chats', () => {
         threads: [
           { ...agentThread('th-1', 'Running chat'), workflow_id: 'wf-42' },
           { ...agentThread('th-2', 'Other chat'), workflow_id: 'wf-other' },
-          { ...agentThread('th-3', 'Third chat'), workflow_id: 'wf-third' }
+          { ...agentThread('th-3', 'Third chat'), workflow_id: 'wf-third' },
+          {
+            ...agentThread('th-2b', 'Earlier other chat'),
+            workflow_id: 'wf-other'
+          },
+          {
+            ...agentThread('th-3b', 'Earlier third chat'),
+            workflow_id: 'wf-third'
+          }
         ],
-        pagination: { has_more: false, limit: 3, offset: 0, total: 3 }
+        pagination: { has_more: false, limit: 5, offset: 0, total: 5 }
       })
     )
     let answerOther!: () => void
@@ -684,31 +730,20 @@ describe('AgentPanelRoot tab activity across chats', () => {
 
     await useWorkflowService().openWorkflow(other, { initiator: 'user' })
 
-    expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
-    expect(
-      await screen.findByRole('status', {
-        name: i18n.global.t('agent.openingWorkflowChat', {
-          workflowName: 'other'
-        })
-      })
-    ).toBeVisible()
+    expect(useAgentConversationStore().threadId).toBeNull()
     expect([...useWorkflowTabActivityStore().editingPaths]).toEqual([
       runningTab
     ])
-    expect(useAgentConversationStore().threadId).toBe('th-1')
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Other chat' })
+    )
+    expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
 
     answerOther()
     await vi.waitFor(() =>
       expect(useAgentChatHistoryStore().activeId).toBe('th-2')
     )
 
-    expect(
-      screen.queryByRole('status', {
-        name: i18n.global.t('agent.openingWorkflowChat', {
-          workflowName: 'other'
-        })
-      })
-    ).toBeNull()
     expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
       'inert'
     )
@@ -720,6 +755,9 @@ describe('AgentPanelRoot tab activity across chats', () => {
     expect([...useWorkflowTabActivityStore().unseenModifiedPaths]).toEqual([])
 
     await useWorkflowService().openWorkflow(third, { initiator: 'user' })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Third chat' })
+    )
     await vi.waitFor(() =>
       expect(useAgentChatHistoryStore().activeId).toBe('th-3')
     )
@@ -810,6 +848,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
         runningTab
       ])
 
+      leaveTabSoTheTurnEndsInTheBackground()
       agentSocket.receive('agent_message_done', message)
       await nextTick()
 
@@ -833,6 +872,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
       useWorkflowTabActivityStore().unseenModifiedPaths.has(runningTab)
     ).toBe(false)
 
+    leaveTabSoTheTurnEndsInTheBackground()
     emitDone()
     await nextTick()
 
@@ -857,6 +897,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
       runningTab
     ])
 
+    leaveTabSoTheTurnEndsInTheBackground()
     emitDone()
     await nextTick()
 
@@ -899,6 +940,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
     await nextTick()
     expect(useWorkflowTabActivityStore().editingPaths.has(otherTab)).toBe(true)
 
+    leaveTabSoTheTurnEndsInTheBackground()
     emitDone()
     await nextTick()
 
@@ -1060,6 +1102,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
       'workflows/renamed.json'
     ])
 
+    leaveTabSoTheTurnEndsInTheBackground()
     emitDone()
     await nextTick()
 
@@ -1169,6 +1212,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
     )
     const markModified = vi.spyOn(useWorkflowTabActivityStore(), 'markModified')
 
+    leaveTabSoTheTurnEndsInTheBackground()
     emitDone()
 
     expect(markModified.mock.calls).toEqual([[runningTab]])

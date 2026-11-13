@@ -9035,6 +9035,473 @@ describe('thread resume (B17)', () => {
   })
 })
 
+describe('transcript cache', () => {
+  type Rows = AgentMessages
+  type Answer = () => Promise<Rows>
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  const rowsOf = (
+    threadId: string,
+    answer = `Answer in ${threadId}`,
+    status: 'complete' | 'streaming' = 'complete'
+  ): Rows => [
+    {
+      ...historyRow(
+        1,
+        'user',
+        `${threadId}-turn`,
+        `Prompt in ${threadId}`,
+        `${threadId}-user`
+      ),
+      thread_id: threadId
+    },
+    {
+      ...historyRow(
+        2,
+        'assistant',
+        `${threadId}-turn`,
+        answer,
+        `${threadId}-assistant`
+      ),
+      thread_id: threadId,
+      status
+    }
+  ]
+
+  const ok =
+    (rows: Rows): Answer =>
+    () =>
+      Promise.resolve(rows)
+  const failing = (): Answer => () => Promise.reject(new Error('offline'))
+
+  function held() {
+    let release!: (rows: Rows) => void
+    const rows = new Promise<Rows>((resolve) => {
+      release = resolve
+    })
+    return { answer: (): Promise<Rows> => rows, release }
+  }
+
+  function serve(queues: Record<string, Answer[]> = {}) {
+    return vi.fn(
+      async (
+        threadId: string,
+        options: { signal?: AbortSignal } = {}
+      ): Promise<Rows> =>
+        options.signal
+          ? hangingGetMessages(threadId, options)
+          : (queues[threadId]?.shift() ?? ok(rowsOf(threadId)))()
+    )
+  }
+
+  function openSession(
+    getMessages: ReturnType<typeof serve>,
+    rest: Partial<AgentRestClient> = {}
+  ) {
+    const events = fakeEvents()
+    const restored = vi.fn(async () => true)
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages, ...rest }),
+      events: events.source,
+      workflow: { current: () => undefined, adopted: vi.fn(), restored }
+    })
+    session.start({ restore: false })
+    return { session, events, restored, getMessages }
+  }
+
+  type Session = ReturnType<typeof openSession>['session']
+
+  const prompts = (session: Session): string[] =>
+    session.entries.value.flatMap((entry) =>
+      entry.role === 'user' ? [entry.text] : []
+    )
+
+  const answerShown = (session: Session): string =>
+    session.entries.value
+      .flatMap((entry) => (entry.role === 'assistant' ? entry.parts : []))
+      .flatMap((part) => (part.type === 'text' ? [part.text] : []))
+      .join('')
+
+  const fetchesExcludingPolls = (
+    getMessages: ReturnType<typeof serve>,
+    threadId: string
+  ): number =>
+    getMessages.mock.calls.filter(
+      ([id, options]) => id === threadId && options === undefined
+    ).length
+
+  const letReleasedAnswerContinue = () =>
+    new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+  async function sessionThatLeftAForB(
+    queues: Record<string, Answer[]> = {},
+    rest: Partial<AgentRestClient> = {}
+  ) {
+    const opened = openSession(serve(queues), rest)
+    await opened.session.loadThread('th-a')
+    await opened.session.loadThread('th-b')
+    return opened
+  }
+
+  it.for([
+    { via: 'a History row', options: undefined },
+    {
+      via: 'a tab returning to its chat',
+      options: { keepOpenChatUntilLoaded: true }
+    }
+  ])(
+    'TC-01 shows a chat it fetched before in the same step as $via, without waiting for the server',
+    async ({ options }) => {
+      const recheck = held()
+      const { session } = await sessionThatLeftAForB({
+        'th-a': [ok(rowsOf('th-a')), recheck.answer]
+      })
+
+      const returning = session.loadThread('th-a', () => true, options)
+
+      expect(session.threadId.value).toBe('th-a')
+      expect(session.isTranscriptReady.value).toBe(true)
+      expect(prompts(session)).toEqual(['Prompt in th-a'])
+      expect(await returning).toBe(true)
+      session.stop()
+    }
+  )
+
+  it('TC-02 leaves the rows alone when the re-check finds the same transcript', async () => {
+    const recheck = held()
+    const { session, getMessages } = await sessionThatLeftAForB({
+      'th-a': [ok(rowsOf('th-a')), recheck.answer]
+    })
+    const returning = session.loadThread('th-a')
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+    await returning
+    const shown = session.entries.value
+    await vi.waitFor(() =>
+      expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(2)
+    )
+
+    recheck.release(rowsOf('th-a'))
+    await letReleasedAnswerContinue()
+
+    expect(session.entries.value).toBe(shown)
+    session.stop()
+  })
+
+  it('TC-03 replaces the rows in place when the re-check finds the chat moved on, without restoring its workflow again', async () => {
+    const recheck = held()
+    const { session, restored } = await sessionThatLeftAForB({
+      'th-a': [ok(rowsOf('th-a')), recheck.answer]
+    })
+    const returning = session.loadThread('th-a')
+    expect(answerShown(session)).toBe('Answer in th-a')
+    await returning
+    expect(restored).toHaveBeenCalledTimes(3)
+
+    recheck.release(rowsOf('th-a', 'An answer written elsewhere'))
+
+    await vi.waitFor(() =>
+      expect(answerShown(session)).toBe('An answer written elsewhere')
+    )
+    expect(session.threadId.value).toBe('th-a')
+    expect(restored).toHaveBeenCalledTimes(3)
+    session.stop()
+  })
+
+  it('TC-04 drops the answer of the re-check when the user sent a message meanwhile', async () => {
+    const recheck = held()
+    const { session } = await sessionThatLeftAForB(
+      { 'th-a': [ok(rowsOf('th-a')), recheck.answer] },
+      {
+        postMessage: vi.fn(async (threadId: string) => ({
+          thread_id: threadId,
+          message_id: 'msg-a'
+        }))
+      }
+    )
+    const returning = session.loadThread('th-a')
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+    await returning
+
+    await session.sendMessage('A follow-up')
+    recheck.release(rowsOf('th-a', 'An answer written elsewhere'))
+    await letReleasedAnswerContinue()
+
+    expect(prompts(session)).toContain('A follow-up')
+    expect(answerShown(session)).not.toContain('An answer written elsewhere')
+    session.stop()
+  })
+
+  it('TC-04 also drops the answer of the re-check when the turn the user started has finished by then', async () => {
+    const recheck = held()
+    const { session, events } = await sessionThatLeftAForB(
+      { 'th-a': [ok(rowsOf('th-a')), recheck.answer] },
+      {
+        postMessage: vi.fn(async (threadId: string) => ({
+          thread_id: threadId,
+          message_id: 'msg-a'
+        }))
+      }
+    )
+    await session.loadThread('th-a')
+
+    await session.sendMessage('A follow-up')
+    events.emit(doneIn('th-a', 'msg-a'))
+    recheck.release(rowsOf('th-a', 'An answer written elsewhere'))
+    await letReleasedAnswerContinue()
+
+    expect(prompts(session)).toContain('A follow-up')
+    expect(answerShown(session)).not.toContain('An answer written elsewhere')
+    session.stop()
+  })
+
+  it('TC-05 keeps the screen on what the user opened meanwhile, and keeps the fresh transcript for the next switch', async () => {
+    const recheck = held()
+    const { session } = await sessionThatLeftAForB({
+      'th-a': [
+        ok(rowsOf('th-a')),
+        recheck.answer,
+        ok(rowsOf('th-a', 'An answer written elsewhere'))
+      ]
+    })
+    const returning = session.loadThread('th-a')
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+    await returning
+    await session.loadThread('th-b')
+
+    recheck.release(rowsOf('th-a', 'An answer written elsewhere'))
+    await letReleasedAnswerContinue()
+    expect(prompts(session)).toEqual(['Prompt in th-b'])
+
+    const back = session.loadThread('th-a')
+    expect(answerShown(session)).toBe('An answer written elsewhere')
+    await back
+    session.stop()
+  })
+
+  it('TC-06 loads a chat as before once something happened in it after it was fetched', async () => {
+    const warm = held()
+    const reload = held()
+    const { session, events } = openSession(
+      serve({ 'th-a': [ok(rowsOf('th-a')), warm.answer, reload.answer] })
+    )
+    await session.loadThread('th-a')
+    events.emit(deltaIn('th-a', 'th-a-turn', 'Typing'))
+    await session.loadThread('th-b')
+
+    const returning = session.loadThread('th-a')
+
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-a', 'The answer after it moved on'))
+    expect(await returning).toBe(true)
+    expect(answerShown(session)).toBe('The answer after it moved on')
+    session.stop()
+  })
+
+  it('TC-06 also loads a chat as before when the user sent a message in it after it was fetched', async () => {
+    const reload = held()
+    const { session } = openSession(
+      serve({ 'th-a': [ok(rowsOf('th-a')), reload.answer] }),
+      {
+        postMessage: vi.fn(async (threadId: string) => ({
+          thread_id: threadId,
+          message_id: 'msg-a'
+        }))
+      }
+    )
+    await session.loadThread('th-a')
+    await session.sendMessage('A follow-up')
+    await session.loadThread('th-b')
+
+    const returning = session.loadThread('th-a')
+
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-a', 'The answer after it moved on'))
+    expect(await returning).toBe(true)
+    session.stop()
+  })
+
+  it('TC-06 does not count a tab notice as something that happened in the chat', async () => {
+    const recheck = held()
+    const { session, events } = await sessionThatLeftAForB({
+      'th-a': [ok(rowsOf('th-a')), recheck.answer]
+    })
+    events.emit(
+      wire({
+        type: 'agent_active_tab',
+        data: { thread_id: 'th-a', message_id: 'msg-a', workflow_id: 'wf-1' }
+      })
+    )
+
+    const returning = session.loadThread('th-a')
+
+    expect(session.isTranscriptReady.value).toBe(true)
+    await returning
+    session.stop()
+  })
+
+  it('TC-06 counts an extension change in the chat as something that happened in it', async () => {
+    const reload = held()
+    const { session, events } = await sessionThatLeftAForB({
+      'th-a': [ok(rowsOf('th-a')), reload.answer]
+    })
+    events.emit(
+      wire({
+        type: 'agent_extension_changed',
+        data: {
+          thread_id: 'th-a',
+          message_id: 'msg-a',
+          action: 'enabled',
+          pack: 'pack-a',
+          agent_created: false,
+          restart_required: false
+        }
+      })
+    )
+
+    const returning = session.loadThread('th-a')
+
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-a'))
+    await returning
+    session.stop()
+  })
+
+  it('TC-08 fetches a chat the user leaves in the background, so that coming back is quick', async () => {
+    const recheck = held()
+    const { session, events } = openSession(
+      serve({ 'th-1': [ok(rowsOf('th-1', 'Hello there')), recheck.answer] })
+    )
+    await session.sendMessage('hello')
+    events.emit(delta('msg-1', 'Hello there'))
+    events.emit(done('msg-1'))
+    await session.loadThread('th-2')
+    await letReleasedAnswerContinue()
+
+    const returning = session.loadThread('th-1')
+
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Hello there')
+    await returning
+    session.stop()
+  })
+
+  it('TC-08 loads as before when the user is back before the background fetch has arrived', async () => {
+    const warm = held()
+    const reload = held()
+    const { session, events } = openSession(
+      serve({ 'th-1': [warm.answer, reload.answer] })
+    )
+    await session.sendMessage('hello')
+    events.emit(delta('msg-1', 'Hello there'))
+    events.emit(done('msg-1'))
+    await session.loadThread('th-2')
+
+    const returning = session.loadThread('th-1')
+
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-1', 'Hello there'))
+    expect(await returning).toBe(true)
+    expect(answerShown(session)).toBe('Hello there')
+    warm.release(rowsOf('th-1', 'Hello there'))
+    session.stop()
+  })
+
+  it('TC-08 also fetches a chat the user leaves for a blank chat', async () => {
+    const recheck = held()
+    const { session, events } = openSession(
+      serve({ 'th-1': [ok(rowsOf('th-1', 'Hello there')), recheck.answer] })
+    )
+    await session.sendMessage('hello')
+    events.emit(delta('msg-1', 'Hello there'))
+    events.emit(done('msg-1'))
+    session.newChat()
+    await letReleasedAnswerContinue()
+
+    const returning = session.loadThread('th-1')
+
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Hello there')
+    await returning
+    session.stop()
+  })
+
+  it('TC-09 fetches the transcript of a chat whose turn finishes while the user is elsewhere, and not before', async () => {
+    const recheck = held()
+    const { session, events, getMessages } = openSession(
+      serve({ 'th-1': [ok(rowsOf('th-1', 'Hello there')), recheck.answer] })
+    )
+    await session.sendMessage('hello')
+    await session.loadThread('th-2')
+    await letReleasedAnswerContinue()
+    expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(0)
+    events.emit(delta('msg-1', 'Hello there'))
+    events.emit(done('msg-1'))
+    await letReleasedAnswerContinue()
+    expect(fetchesExcludingPolls(getMessages, 'th-1')).toBe(1)
+
+    const returning = session.loadThread('th-1')
+
+    expect(session.isTranscriptReady.value).toBe(true)
+    expect(answerShown(session)).toBe('Hello there')
+    await returning
+    session.stop()
+  })
+
+  it('TC-10 keeps nothing once the session stops', async () => {
+    const reload = held()
+    const { session } = openSession(
+      serve({ 'th-a': [ok(rowsOf('th-a')), reload.answer] })
+    )
+    await session.loadThread('th-a')
+    session.stop()
+    session.start({ restore: false })
+
+    const reopening = session.loadThread('th-a')
+
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-a'))
+    expect(await reopening).toBe(true)
+    session.stop()
+  })
+
+  it('TC-11 shows no error for a failed re-check and fetches the chat again next time', async () => {
+    const warm = held()
+    const reload = held()
+    const { session, getMessages } = await sessionThatLeftAForB({
+      'th-a': [ok(rowsOf('th-a')), failing(), warm.answer, reload.answer]
+    })
+    const returning = session.loadThread('th-a')
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+    await returning
+    await vi.waitFor(() =>
+      expect(fetchesExcludingPolls(getMessages, 'th-a')).toBe(2)
+    )
+    await letReleasedAnswerContinue()
+
+    expect(prompts(session)).toEqual(['Prompt in th-a'])
+    expect(session.notices.value).toEqual([])
+    await session.loadThread('th-b')
+    const again = session.loadThread('th-a')
+    expect(session.isTranscriptReady.value).toBe(false)
+    reload.release(rowsOf('th-a'))
+    await again
+    session.stop()
+  })
+
+  it('TC-14 restores the workflow of a chat shown from memory, as for a fetched one', async () => {
+    const { session, restored } = await sessionThatLeftAForB()
+    expect(restored).toHaveBeenCalledTimes(2)
+
+    await session.loadThread('th-a')
+
+    expect(restored).toHaveBeenCalledTimes(3)
+    session.stop()
+  })
+})
+
 describe('app:agent_error telemetry (TEL-8)', () => {
   beforeEach(() => {
     localStorage.clear()

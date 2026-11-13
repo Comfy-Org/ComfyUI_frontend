@@ -1,4 +1,5 @@
 import { useLocalStorage, useTimestamp } from '@vueuse/core'
+import { orderBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -84,8 +85,25 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     groupSessionsByRecency(titled.value, activeId.value, now.value)
   )
 
+  const workflowIdsWithChats = computed(
+    () =>
+      new Set(
+        sessions.value.flatMap(({ workflowId }) =>
+          workflowId === undefined ? [] : [workflowId]
+        )
+      )
+  )
+
   function titleFor(id: string | null): string | undefined {
     return id === null ? undefined : customTitles.value[id]
+  }
+
+  function sessionsFor(workflowId: string): ChatSession[] {
+    return orderBy(
+      titled.value.filter((session) => session.workflowId === workflowId),
+      [({ lastActivityAt }) => lastActivityAt ?? Number.NEGATIVE_INFINITY],
+      ['desc']
+    )
   }
 
   function rename(id: string, title: string): void {
@@ -117,7 +135,9 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     sessions,
     activeId,
     grouped,
+    workflowIdsWithChats,
     titleFor,
+    sessionsFor,
     rename,
     remove,
     replaceAll,

@@ -99,14 +99,15 @@ function mount(isMaximized = false) {
   })
 }
 
-function mountTargetlessPanel() {
+function mountTargetlessPanel(props: Record<string, unknown> = {}) {
   const pinia = getActivePinia()
   assert.exists(pinia)
   return render(AgentPanel, {
     props: {
       entries: [],
       historyGroups: createHistoryGroups(),
-      workflowDetached: true
+      workflowDetached: true,
+      ...props
     },
     global: {
       plugins: [pinia, i18n],
@@ -290,7 +291,138 @@ describe('AgentPanel', () => {
     draftCalls.replaceDraft.length = 0
   })
 
-  it('locks immediately but only shows the conversation veil for a slow opening', async () => {
+  describe('the chats of the visible workflow', () => {
+    const landing = {
+      workflowName: 'portrait',
+      status: 'ready' as const,
+      chats: [
+        {
+          id: 'th-1',
+          title: 'Retouch the skin',
+          updatedAt: 1,
+          titleSource: 'server' as const
+        }
+      ],
+      hasMore: false,
+      openingId: null,
+      failedId: null
+    }
+
+    function mountLanding(props: Record<string, unknown> = {}) {
+      return render(AgentPanel, {
+        props: {
+          entries: [],
+          historyGroups: createHistoryGroups(),
+          landing,
+          ...props
+        },
+        global: { plugins: [i18n], stubs: { Composer: true } }
+      })
+    }
+
+    it('lists them on the new-chat screen in place of the starter prompts', () => {
+      mountLanding()
+
+      expect(screen.queryByTestId('suggested-prompts')).toBeNull()
+      expect(
+        screen.getByRole('button', { name: 'Retouch the skin' })
+      ).toBeVisible()
+    })
+
+    it('shows no list on a chat that has messages', () => {
+      mountLanding({
+        entries: [{ id: toTurnId('msg-1'), role: 'user', text: 'hi' }]
+      })
+
+      expect(screen.queryByTestId('workflow-chat-list')).toBeNull()
+    })
+
+    it('reports the chat the user picks and the retry of a failed list', async () => {
+      const { emitted, rerender } = mountLanding()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Retouch the skin' })
+      )
+
+      await rerender({ landing: { ...landing, status: 'failed', chats: [] } })
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.workflowChats.retry', {
+            workflowName: 'portrait'
+          })
+        })
+      )
+
+      expect(emitted('openLandingChat')).toEqual([['th-1']])
+      expect(emitted('retryLanding')).toHaveLength(1)
+    })
+
+    it('keeps the composer usable while the list loads or has failed', async () => {
+      const { rerender } = mountLanding({
+        landing: { ...landing, status: 'loading', chats: [] }
+      })
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+
+      await rerender({ landing: { ...landing, status: 'failed', chats: [] } })
+
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+    })
+
+    it('locks the panel while one of the chats opens, and frees it when that fails', async () => {
+      const { rerender } = mountLanding({
+        landing: { ...landing, openingId: 'th-1' }
+      })
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+      expect(screen.getByTestId('agent-empty-state')).toHaveAttribute('inert')
+
+      await rerender({ landing: { ...landing, failedId: 'th-1' } })
+
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+      expect(screen.getByTestId('agent-empty-state')).not.toHaveAttribute(
+        'inert'
+      )
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        i18n.global.t('agent.historyOpenFailed')
+      )
+    })
+
+    it('shows only a loading state while the chat of the tab opens', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      mountLanding({ openingWorkflowName: 'portrait' })
+
+      expect(screen.queryByTestId('suggested-prompts')).toBeNull()
+      expect(screen.queryByTestId('workflow-chat-list')).toBeNull()
+      await vi.advanceTimersByTimeAsync(120)
+      expect(
+        screen.getByRole('status', {
+          name: i18n.global.t('agent.openingWorkflowChat', {
+            workflowName: 'portrait'
+          })
+        })
+      ).toBeVisible()
+    })
+
+    it('opens the full chat history from the entry that follows a short list', async () => {
+      mountLanding({ landing: { ...landing, hasMore: true } })
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.workflowChats.allChats')
+        })
+      )
+
+      expect(
+        await screen.findByRole('heading', { name: 'Chat history' })
+      ).toBeVisible()
+    })
+  })
+
+  it('locks immediately but only shows the loading state for a slow opening', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     const { rerender } = render(AgentPanel, {
       props: {
@@ -570,7 +702,7 @@ describe('AgentPanel', () => {
     mount()
 
     expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
+      'The agent can now edit portrait. It works on 1 workflow at a time.'
     )
     expect(
       screen.getByRole('button', { name: 'Share feedback' })
@@ -581,11 +713,86 @@ describe('AgentPanel', () => {
     mount(true)
 
     expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
+      'The agent can now edit portrait. It works on 1 workflow at a time.'
     )
     expect(
       screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
+  })
+
+  describe('on a new chat that follows the visible tab', () => {
+    const dismissedKey = 'Comfy.AgentPanel.runNoticeDismissed'
+
+    function mountFollowing(props: Record<string, unknown> = {}) {
+      return render(AgentPanel, {
+        props: {
+          entries: [],
+          historyGroups: createHistoryGroups(),
+          activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
+          visibleTabPath: 'workflows/portrait.json',
+          followsVisibleWorkflow: true,
+          ...props
+        },
+        global: {
+          plugins: [i18n],
+          stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+        }
+      })
+    }
+
+    it.for([false, true])(
+      'shows no notice, with the edit notice dismissed: %s',
+      (dismissed) => {
+        if (dismissed) localStorage.setItem(dismissedKey, 'true')
+
+        mountFollowing()
+
+        expect(screen.queryByRole('note')).toBeNull()
+      }
+    )
+
+    it('shows the edit notice once the chat stops following the tab', async () => {
+      const { rerender } = mountFollowing()
+      expect(screen.queryByRole('note')).toBeNull()
+
+      await rerender({ followsVisibleWorkflow: false })
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        'The agent can now edit portrait. It works on 1 workflow at a time.'
+      )
+    })
+
+    it.for([
+      {
+        props: { canvasEmptyAfterTurn: true },
+        notice: 'agent.canvasIsEmptyAfterTurn'
+      },
+      {
+        props: { targetUnavailable: true },
+        notice: 'agent.targetWorkflowUnavailable'
+      },
+      {
+        props: { visibleTabPath: 'workflows/other.json' },
+        notice: 'agent.viewingDifferentWorkflow'
+      }
+    ])('still says so when $notice applies', ({ props, notice }) => {
+      mountFollowing(props)
+
+      expect(screen.getByRole('note')).toHaveTextContent(i18n.global.t(notice))
+    })
+
+    it('still shows the targetless run notice when no workflow is open', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      mountTargetlessPanel({ followsVisibleWorkflow: true })
+
+      await user.click(screen.getByRole('textbox'))
+      await vi.advanceTimersByTimeAsync(500)
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        i18n.global.t('agent.runNotice')
+      )
+    })
   })
 
   it('shows the targetless run notice 500ms after the first composer focus, and a refocus does not restart that deadline', async () => {

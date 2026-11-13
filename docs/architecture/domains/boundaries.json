@@ -173,7 +173,6 @@
           "src/components/graph/agentPanelMount.test.ts",
           "src/components/topbar/AgentEntryButton.stories.ts",
           "src/components/topbar/AgentEntryButton.vue",
-          "src/components/topbar/WorkflowAgentTargetIndicator.vue",
           "src/extensions/core/agentPanel.ts",
           "src/extensions/core/agentPanel.historyIdentity.test.ts",
           "src/extensions/core/agentPanel.test.ts",

@@ -9,9 +9,14 @@ import { isCloud } from '@/platform/distribution/types'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
-const { userName, hasSelection = false } = defineProps<{
+const {
+  userName,
+  hasSelection = false,
+  showIntro = true
+} = defineProps<{
   userName?: string
   hasSelection?: boolean
+  showIntro?: boolean
 }>()
 const emit = defineEmits<{
   insert: [text: string, prompt: AgentStarterPromptAttribution]
@@ -86,6 +91,7 @@ function onPromptClick(text: string, index: number): void {
   <div class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8">
     <div class="my-auto flex shrink-0 flex-col items-center gap-8 text-center">
       <div
+        v-if="showIntro"
         class="flex max-w-sm flex-col items-center pt-12 text-base/snug font-semibold tracking-tight @min-[570px]:text-2xl/snug"
       >
         <p class="my-0">
@@ -96,6 +102,7 @@ function onPromptClick(text: string, index: number): void {
         </p>
       </div>
       <div
+        v-if="showIntro"
         ref="promptList"
         data-testid="suggested-prompts"
         class="mx-auto flex w-full max-w-[608px] shrink-0 flex-wrap gap-2 @min-[460px]:justify-center"
@@ -121,6 +128,7 @@ function onPromptClick(text: string, index: number): void {
           <span class="truncate">{{ suggestion.text }}</span>
         </Button>
       </div>
+      <slot />
     </div>
   </div>
 </template>

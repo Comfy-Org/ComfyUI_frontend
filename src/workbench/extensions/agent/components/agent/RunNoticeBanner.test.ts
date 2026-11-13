@@ -31,7 +31,7 @@ describe('RunNoticeBanner', () => {
   it('keeps naming the workflow after the generic notice becomes ready', async () => {
     const { rerender } = mount()
     expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
+      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time.'
     )
 
     await rerender({
@@ -39,7 +39,7 @@ describe('RunNoticeBanner', () => {
       genericNoticeReady: true
     })
     expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time, and you can switch workflows during chat.'
+      'The agent can now edit 3d_hunyuan-v2.1. It works on 1 workflow at a time.'
     )
   })
 
@@ -111,34 +111,55 @@ describe('RunNoticeBanner', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
-  it('names the workflow whose chat failed to open, with a retry for it', async () => {
-    const { emitted } = render(RunNoticeBanner, {
-      props: { context: 'followFailed', workflowName: 'portrait' },
-      global: { plugins: [i18n] }
-    })
-    expect(screen.getByRole('note')).toHaveTextContent(
-      i18n.global.t('agent.followedChatOpenFailed', {
-        workflowName: 'portrait'
+  describe('for a chat that follows the visible tab', () => {
+    function mountFollowing(props: Record<string, unknown> = {}) {
+      return render(RunNoticeBanner, {
+        props: {
+          workflowName: 'portrait',
+          followsVisibleWorkflow: true,
+          genericNoticeReady: true,
+          ...props
+        },
+        global: { plugins: [i18n] }
       })
-    )
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.retryFollowedChat', {
-          workflowName: 'portrait'
-        })
-      })
-    )
-    expect(emitted('retry')).toHaveLength(1)
-  })
+    }
 
-  it('explains all three ways to decide the target', () => {
-    render(RunNoticeBanner, {
-      props: { context: 'following', workflowName: 'portrait' },
-      global: { plugins: [i18n] }
-    })
-    expect(screen.getByRole('note')).toHaveTextContent(
-      'Target workflow follows the visible tab until you choose a target, reference nodes, or send a message.'
+    it.for([false, true])(
+      'says nothing, with the edit notice dismissed: %s',
+      (isDismissed) => {
+        if (isDismissed) localStorage.setItem(STORAGE_KEY, 'true')
+
+        mountFollowing()
+
+        expect(screen.queryByRole('note')).toBeNull()
+      }
     )
-    expect(screen.queryByText(/The agent can now edit/)).toBeNull()
+
+    it('shows the edit notice once the chat stops following', async () => {
+      const { rerender } = mountFollowing()
+      expect(screen.queryByRole('note')).toBeNull()
+
+      await rerender({ followsVisibleWorkflow: false })
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        'The agent can now edit portrait. It works on 1 workflow at a time.'
+      )
+    })
+
+    it('still says so when the target is not the visible tab', () => {
+      mountFollowing({ context: 'mismatch' })
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        i18n.global.t('agent.viewingDifferentWorkflow')
+      )
+    })
+
+    it('still shows the targetless notice when no workflow is named', () => {
+      mountFollowing({ workflowName: '' })
+
+      expect(screen.getByRole('note')).toHaveTextContent(
+        i18n.global.t('agent.runNotice')
+      )
+    })
   })
 })

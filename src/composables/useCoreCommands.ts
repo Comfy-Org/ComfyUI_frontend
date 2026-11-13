@@ -175,7 +175,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         const previousWorkflowHadNodes = app.rootGraph._nodes.length > 0
-        await workflowService.loadBlankWorkflow()
+        await workflowService.loadBlankWorkflow({ initiator: 'user' })
         telemetry?.trackWorkflowCreated({
           workflow_type: 'blank',
           previous_workflow_had_nodes: previousWorkflowHadNodes
