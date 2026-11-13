@@ -80,7 +80,7 @@ const sourceTitle = computed(() =>
     <button
       v-if="upstream"
       type="button"
-      class="absolute inset-y-0 right-full mr-1 flex cursor-pointer items-center gap-1 border-none bg-transparent p-0 text-2xs whitespace-nowrap text-muted-foreground hover:text-foreground"
+      class="absolute top-1/2 right-full mr-0.5 flex -translate-y-1/2 cursor-pointer items-center gap-1 rounded-sm border-none bg-transparent px-1 py-0.5 text-2xs whitespace-nowrap text-muted-foreground hover:text-foreground"
       :title="sourceTitle"
       :aria-label="t('subgraphInputValues.locateSource')"
       @click="emit('locate', upstream)"
