@@ -15,8 +15,6 @@ export interface CanvasSource {
   /** The graph on screen. */
   visibleGraph(): LGraph | null
   canvas(): LGraphCanvas | null
-  /** The ids of the nodes selected in the graph on screen. */
-  selectedNodeIds(): ReadonlySet<NodeId>
   /** Passes each layout change that moves nodes to `moved` until stopped. */
   followMoves(
     moved: (rootGraphId: string, moves: readonly NodeMove[]) => void

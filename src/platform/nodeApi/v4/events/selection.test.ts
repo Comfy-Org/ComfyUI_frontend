@@ -1,7 +1,12 @@
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -29,6 +34,17 @@ describe('onSelectionChanged', () => {
 
     expect(selections).toEqual([comfy.graph.nodes()])
     expect(Object.isFrozen(selections[0])).toBe(true)
+  })
+
+  it('leaves out a group that shares an id with a node', () => {
+    const { graph, first, comfy } = graphWithNodes()
+
+    useSelectionStore().apply(graphScopeOf(graph), {
+      type: 'selection.replace',
+      keys: [toSelectableKey('group', toGroupId(Number(first.id)))]
+    })
+
+    expect(comfy.graph.selection()).toEqual([])
   })
 
   it('says nothing when the same nodes are selected again', async () => {

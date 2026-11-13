@@ -26,6 +26,8 @@ import { createNodeChanges } from './events/nodeChanges'
 import { createNodeMoves } from './events/nodeMoves'
 import { createSelectionEvents } from './events/selection'
 import { createViewportEvents } from './events/viewport'
+import { centerOnArea, createGraphView } from './events/view/graphView'
+import { nodeViewMembers } from './events/view/nodeView'
 import { createDefRegistry } from './defs/defRegistry'
 import type { NodeTypeHooks } from './defs/defRegistry'
 import { createGraphHandle } from './graphHandle'
@@ -71,18 +73,25 @@ export interface ComfyApi {
 export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
   const handles = createDocumentHandles(() => services.shownRoot?.())
+  const canvas = () => services.canvas?.()
   const widgets = createWidgetCollections(
     handles,
     createEditRunner(() => services.history?.())
   )
   const nodes = createNodeHandles(handles, (handle) => ({
     ...nodeHandleMembers(handle, edit, nodes, slots),
+    ...nodeViewMembers(handle, nodes, canvas),
     widgets: widgets.widgetsOf(() => nodes.locator(handle)?.())
   }))
   const slots = createSlotHandles(handles, nodes, () => edit)
-  const groups = createGroupHandles(handles, nodes, (handle) => ({
-    setBounds: (bounds) => edit.updateGroup(handle, { bounds }, 'setBounds')
-  }))
+  const groups = createGroupHandles(
+    handles,
+    nodes,
+    (handle) => ({
+      setBounds: (bounds) => edit.updateGroup(handle, { bounds }, 'setBounds')
+    }),
+    (graph, area) => centerOnArea(canvas, graph, area)
+  )
   const { groupsOf } = groups
   const scopes = createGraphScopes(handles, nodes, (resolveGraph) => ({
     groups: () => {
@@ -99,7 +108,6 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       new URL('/extensions/', window.location.href).href
   )
   const definitions = createDefRegistry(nodes, widgets.widgetTypes, packs)
-  const canvas = () => services.canvas?.()
   const visibleGraph = () => canvas()?.visibleGraph() ?? null
   const moves = createNodeMoves(nodes, canvas)
   const executing = createExecutingNode(nodes, services.getGraph)
@@ -117,7 +125,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     onNodeDragEnd: moves.onNodeDragEnd,
     isInteracting: () => isInteracting(canvas()),
     onViewportChanged: createViewportEvents(canvas),
-    onSelectionChanged: createSelectionEvents(nodes, canvas),
+    onSelectionChanged: createSelectionEvents(nodes, visibleGraph),
     executingNode: executing.executingNode,
     executionNode: executing.executionNode,
     onExecutingNodeChanged: executing.onExecutingNodeChanged,
@@ -137,7 +145,10 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       scopes.scopeFor,
       services.getGraph,
       handles.rebuilds,
-      (visible) => graphHandleMembers(visible, scopes.scopeFor, edit, groupsOf)
+      (visible) => ({
+        ...graphHandleMembers(visible, scopes.scopeFor, edit, groupsOf),
+        ...createGraphView(nodes, visible, canvas)
+      })
     ),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
   } satisfies Comfy)

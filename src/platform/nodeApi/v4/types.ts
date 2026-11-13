@@ -1123,3 +1123,33 @@ export interface QueueHandle {
   /** Turns automatic queuing off, and leaves the run in progress alone. */
   disableAutoQueue(): void
 }
+
+export interface GraphHandle {
+  /** The selected nodes of the graph on screen, in the graph's order. */
+  selection(): readonly NodeHandle[]
+  /**
+   * Selects exactly these nodes; an empty list clears the selection. `false`,
+   * and nothing changes, if one is gone or not on screen.
+   */
+  select(nodes: readonly NodeHandle[]): boolean
+  /** Pans the view so the node is in its middle; `false` if it is gone or not on screen. */
+  centerOn(node: NodeHandle): boolean
+  /** Where the pointer last was over the canvas, in graph space, or `undefined` before there is a canvas. */
+  pointerPosition(): Point | undefined
+  /** Zooms the view about its centre; 1 is unzoomed. Clamped to the zoom the canvas allows. */
+  setZoom(scale: number): void
+  /** Pans the view by `delta` screen pixels, the same at every zoom. */
+  panBy(delta: Point): void
+}
+
+export interface NodeHandle {
+  /** The node's rectangle on the page; `undefined` when its graph is not on screen. */
+  getScreenRect(): Bounds | undefined
+  /** Where a slot sits, in graph space; `undefined` if the node has no slot there. */
+  getSlotPosition(side: 'input' | 'output', index: number): Point | undefined
+}
+
+export interface GroupHandle {
+  /** Pans the view so the group is in its middle; `false` if it is gone or not on screen. */
+  centerOn(): boolean
+}

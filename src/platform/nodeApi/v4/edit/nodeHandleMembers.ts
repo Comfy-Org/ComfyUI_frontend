@@ -15,7 +15,7 @@ export function nodeHandleMembers(
   edits: EditCore,
   nodes: NodeHandles,
   slots: SlotHandles
-): Omit<NodeHandleMembers, 'widgets'> {
+): Omit<NodeHandleMembers, 'widgets' | 'getScreenRect' | 'getSlotPosition'> {
   const update = (member: string, patch: NodePatch) =>
     edits.updateNode(handle, patch, member)
   const live = () => nodes.locator(handle)?.()?.node

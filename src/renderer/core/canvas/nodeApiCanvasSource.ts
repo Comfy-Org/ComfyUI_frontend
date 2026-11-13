@@ -33,7 +33,6 @@ export function useNodeApiCanvasSource(): CanvasSource {
   return {
     visibleGraph: () => canvasStore.currentGraph,
     canvas: () => canvasStore.canvas,
-    selectedNodeIds: () => canvasStore.selectedNodeIds,
     followMoves: (moved) =>
       layoutStore.onChange((change) => {
         const moves = movesIn(change)
