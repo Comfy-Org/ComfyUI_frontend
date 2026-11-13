@@ -45,6 +45,7 @@ export {
   CAPABILITIES_ROUTE,
   CAPABILITY_REVISION_HEADER,
   createCapabilitiesReader,
+  isAutoTopUpNotAvailable,
   readCapabilityRevision
 } from './capabilities'
 export type {

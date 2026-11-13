@@ -1,6 +1,6 @@
 <template>
   <section
-    v-if="autoTopUpSetup?.state !== 'unavailable'"
+    v-if="!isAutoTopUpNotAvailable(autoTopUpSetup)"
     class="flex flex-col"
     data-testid="billing-auto-top-up-card"
   >
@@ -82,6 +82,7 @@
 
 <script setup lang="ts">
 import type { AutoTopUpCardAction } from '@comfyorg/account-core/billing'
+import { isAutoTopUpNotAvailable } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computedAsync } from '@vueuse/core'
 import { computed } from 'vue'
@@ -228,7 +229,7 @@ ensureRead()
 
 useAutoTopUpCardViewed(() => {
   const current = state.value
-  return autoTopUpSetup.value?.state !== 'unavailable' &&
+  return !isAutoTopUpNotAvailable(autoTopUpSetup.value) &&
     isReady.value &&
     current.kind === 'loaded'
     ? current.settings.status

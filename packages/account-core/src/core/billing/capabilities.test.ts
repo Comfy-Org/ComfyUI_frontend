@@ -1,3 +1,4 @@
+import type { AutoTopUpSetup } from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SessionSnapshot } from '#/core/session'
@@ -7,6 +8,7 @@ import type { BillingSession, BillingTransport } from './billingContracts'
 import {
   CAPABILITY_REVISION_HEADER,
   createCapabilitiesReader,
+  isAutoTopUpNotAvailable,
   readCapabilityRevision
 } from './capabilities'
 import { createSessionBillingTransport } from './transport'
@@ -761,5 +763,28 @@ describe('readCapabilityRevision', () => {
     ['a value beyond the safe integer range', '9007199254740993']
   ] as const)('reports nothing for %s', ([, value]) => {
     expect(readCapabilityRevision(() => value)).toBeUndefined()
+  })
+})
+
+describe('isAutoTopUpNotAvailable', () => {
+  it.for<{ setup: AutoTopUpSetup | null; hidden: boolean }>([
+    { setup: null, hidden: false },
+    { setup: { state: 'ready' }, hidden: false },
+    {
+      setup: { state: 'frozen', reason: 'default_payment_method_missing' },
+      hidden: false
+    },
+    {
+      setup: { state: 'frozen', reason: 'billing_payment_pending' },
+      hidden: false
+    },
+    { setup: { state: 'frozen', reason: 'billing_paused' }, hidden: true },
+    { setup: { state: 'frozen', reason: 'payment_past_due' }, hidden: true },
+    {
+      setup: { state: 'unavailable', reason: 'billing_rail_not_supported' },
+      hidden: true
+    }
+  ])('reads setup $setup as hidden: $hidden', ({ setup, hidden }) => {
+    expect(isAutoTopUpNotAvailable(setup)).toBe(hidden)
   })
 })
