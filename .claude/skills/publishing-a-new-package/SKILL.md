@@ -29,7 +29,9 @@ explicitly, so a new package must be added to every list:
 Also add the package to `PUBLISHED_PACKAGES` in
 `packages/account-core/scripts/smokePack.ts`, which packs every publishable
 package, installs the tarballs into a clean npm project and imports every
-entry.
+entry. In the same file, import every new export in `TYPED_CONSUMER_SOURCE` and
+check its type or value there; `smoke:pack` fails while any export is missing
+from it.
 
 `publish-package.yaml` refuses to publish a manifest that still sets
 `"private": true`. Removing that flag in a reviewed PR is the latch that
@@ -43,7 +45,9 @@ allows the first release.
 
 Run `version-bump-package.yaml` for the package. It opens a PR labelled
 `Release`; merge it, and `publish-package-on-merge.yaml` publishes the new
-version. Prerelease versions publish to `next`, others to `latest`. A publish at
+version. Prerelease versions publish to `next`, others to `latest`, except that
+`scripts/cicd/resolve-npm-dist-tag.ts` moves a stable version lower than the
+newest published stable version to `backport`. A publish at
 an already-published version is a **no-op**: the `Check if version already on
 npm` step finds it and skips. To test the pipeline you need a new version
 number.
@@ -126,6 +130,9 @@ rather than pnpm, since that is the path where `catalog:` would explode:
 npm install @comfyorg/<name>
 ```
 
+An unqualified install resolves `latest`. While the package has only
+prereleases on `next`, install `@comfyorg/<name>@next` or the exact version.
+
 Then import it somewhere real, build, and grep the build output to confirm the
 thing you imported actually reached the bundle. Import **every** entry in the
 `exports` map. A green build proves the import resolved; it does not prove the
@@ -150,17 +157,11 @@ Once the package exists, configure it on npmjs.com under package settings:
 - **Allow `npm publish` only.** `npm stage publish` publishes unlisted pending
   manual approval; we do not use it.
 
-OIDC must be granted at **both** workflow layers: the caller job in
-`publish-package-on-merge.yaml` that does
-`uses: ./.github/workflows/publish-package.yaml`, and the publish job inside the
-reusable workflow. A called workflow can never hold more than the calling job
-does. Both already declare:
-
-```yaml
-permissions:
-  contents: read
-  id-token: write
-```
+`publish-package-on-merge.yaml` starts `publish-package.yaml` through the
+Actions API (`workflow_dispatch`), so its dispatching job needs only
+`actions: write`. OIDC belongs to the publish job in `publish-package.yaml`,
+which already declares `id-token: write`. Do not add `id-token: write` to the
+dispatching job.
 
 Keep `NODE_AUTH_TOKEN` in place until an OIDC publish has actually succeeded.
 `[WARN] Skipped OIDC` in the log means it silently fell back to the token;
