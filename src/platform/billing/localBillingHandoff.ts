@@ -19,6 +19,9 @@ import { useAuthStore } from '@/stores/authStore'
 
 const ISSUE_TIMEOUT_MS = 15_000
 
+/** The billing flow the user started, which billing-web opens after the exchange. */
+export type BillingHandoffIntent = 'top-up' | 'subscription'
+
 type HandoffIssue =
   | { readonly kind: 'issued'; readonly entryUrl: string }
   | { readonly kind: 'sign_in_again' }
@@ -46,7 +49,8 @@ async function serverMessage(response: Response): Promise<string | undefined> {
 async function issueBillingHandoff(
   token: string,
   workspaceId: string,
-  cloudBaseUrl: string
+  cloudBaseUrl: string,
+  intent: BillingHandoffIntent
 ): Promise<HandoffIssue> {
   try {
     const response = await fetch(new URL('/api/auth/handoffs', cloudBaseUrl), {
@@ -60,6 +64,7 @@ async function issueBillingHandoff(
         workspace_id: workspaceId,
         receiver: 'billing_web',
         surface: 'local_web',
+        intent,
         client_version: __COMFYUI_FRONTEND_VERSION__.slice(0, 64)
       }),
       signal: AbortSignal.timeout(ISSUE_TIMEOUT_MS)
@@ -120,10 +125,18 @@ function armReturnRefresh(): void {
   )
 }
 
-async function issueForScope(scope: HandoffScope): Promise<HandoffIssue> {
+async function issueForScope(
+  scope: HandoffScope,
+  intent: BillingHandoffIntent
+): Promise<HandoffIssue> {
   const token = await useAuthStore().getIdToken()
   if (!token) return SIGN_IN_AGAIN
-  return issueBillingHandoff(token, scope.workspaceId, scope.cloudBaseUrl)
+  return issueBillingHandoff(
+    token,
+    scope.workspaceId,
+    scope.cloudBaseUrl,
+    intent
+  )
 }
 
 function settle(
@@ -151,8 +164,9 @@ function settle(
   return 'refused'
 }
 
-/** Opens billing-web for the signed-in local web account through a one-time handoff; `retry` re-enters the caller's gate after a blocked pop-up. */
+/** Opens billing-web at `intent` for the signed-in local web account through a one-time handoff; `retry` re-enters the caller's gate after a blocked pop-up. */
 export async function launchLocalBillingHandoff(
+  intent: BillingHandoffIntent,
   retry: () => void
 ): Promise<HandoffLaunch> {
   if (inFlight) return 'busy'
@@ -170,7 +184,7 @@ export async function launchLocalBillingHandoff(
   const scopeWatch = watchScopeChange()
   inFlight = true
   try {
-    const issue = scope ? await issueForScope(scope) : SIGN_IN_AGAIN
+    const issue = scope ? await issueForScope(scope, intent) : SIGN_IN_AGAIN
     return settle(tab, issue, scopeWatch.changed())
   } finally {
     scopeWatch.stop()

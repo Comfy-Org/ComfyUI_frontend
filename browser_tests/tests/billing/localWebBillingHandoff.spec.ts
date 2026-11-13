@@ -58,7 +58,8 @@ test.describe('Local web billing handoff', () => {
         expect.objectContaining({
           workspace_id: WORKSPACE_ID,
           receiver: 'billing_web',
-          surface: 'local_web'
+          surface: 'local_web',
+          intent: 'top-up'
         })
       )
       await expect(page.getByRole('dialog')).toHaveCount(0)

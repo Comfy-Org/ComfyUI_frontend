@@ -115,7 +115,9 @@ describe('launchLocalBillingHandoff', () => {
     openTabs(tab)
     respondToFetch(HANDOFFS, issued)
 
-    await expect(launchLocalBillingHandoff(retry)).resolves.toBe('opened')
+    await expect(launchLocalBillingHandoff('top-up', retry)).resolves.toBe(
+      'opened'
+    )
 
     expect(tab.document.title).toBe(t('billingHandoff.opening'))
     expect(tab.location.href).toBe(ENTRY_URL)
@@ -129,7 +131,8 @@ describe('launchLocalBillingHandoff', () => {
     expect(JSON.parse(String(request.body))).toMatchObject({
       workspace_id: 'ws-1',
       receiver: 'billing_web',
-      surface: 'local_web'
+      surface: 'local_web',
+      intent: 'top-up'
     })
   })
 
@@ -177,7 +180,9 @@ describe('launchLocalBillingHandoff', () => {
       openTabs(tab)
       respondToFetch(HANDOFFS, response)
 
-      await expect(launchLocalBillingHandoff(retry)).resolves.toBe(outcome)
+      await expect(launchLocalBillingHandoff('top-up', retry)).resolves.toBe(
+        outcome
+      )
 
       expect(tab.closed).toBe(true)
       expect(tab.location.href).toBe('')
@@ -212,7 +217,9 @@ describe('launchLocalBillingHandoff', () => {
         return answer()
       })
 
-      await expect(launchLocalBillingHandoff(retry)).resolves.toBe('superseded')
+      await expect(launchLocalBillingHandoff('top-up', retry)).resolves.toBe(
+        'superseded'
+      )
 
       expect(tab.closed).toBe(true)
       expect(tab.location.href).toBe('')
@@ -229,8 +236,8 @@ describe('launchLocalBillingHandoff', () => {
     respondToFetch(HANDOFFS, issued)
 
     const launches = [
-      launchLocalBillingHandoff(retry),
-      launchLocalBillingHandoff(retry)
+      launchLocalBillingHandoff('top-up', retry),
+      launchLocalBillingHandoff('top-up', retry)
     ]
 
     await expect(Promise.all(launches)).resolves.toEqual(['opened', 'busy'])
@@ -241,7 +248,9 @@ describe('launchLocalBillingHandoff', () => {
   it('offers to try again when the browser blocks the tab, without issuing', async () => {
     openTabs(null)
 
-    await expect(launchLocalBillingHandoff(retry)).resolves.toBe('blocked')
+    await expect(launchLocalBillingHandoff('top-up', retry)).resolves.toBe(
+      'blocked'
+    )
 
     expect(fetchRequests(HANDOFFS)).toHaveLength(0)
     const [toast] = useToast().toasts
@@ -258,7 +267,7 @@ describe('launchLocalBillingHandoff', () => {
     const tab = fakeTab()
     openTabs(tab)
 
-    await expect(launchLocalBillingHandoff(retry)).resolves.toBe(
+    await expect(launchLocalBillingHandoff('top-up', retry)).resolves.toBe(
       'sign_in_again'
     )
 

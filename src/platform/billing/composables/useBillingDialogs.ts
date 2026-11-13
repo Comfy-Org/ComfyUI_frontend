@@ -75,6 +75,7 @@ export function useBillingDialogs() {
     })
     if (opensLocalBillingHandoff()) {
       await launchLocalBillingHandoff(
+        'top-up',
         () => void showTopUpCreditsDialog(options)
       )
       return

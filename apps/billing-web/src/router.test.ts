@@ -454,6 +454,41 @@ describe('a billing handoff tab', () => {
     expect(router.currentRoute.value.path).toBe('/')
   })
 
+  it.for([
+    {
+      intent: 'top-up',
+      fullPath:
+        '/v1/top-up?product=comfyui&return_to=comfyui_credits&amount_cents=5000'
+    },
+    {
+      intent: 'subscription',
+      fullPath: '/v1/subscription?product=comfyui&return_to=comfyui_credits'
+    },
+    { intent: 'pricing', fullPath: '/' },
+    { intent: 'constructor', fullPath: '/' }
+  ])(
+    'opens the flow the handoff intent $intent names',
+    async ({ intent, fullPath }) => {
+      handoffTab.value = liveHandoff
+
+      const router = await arriveAt(`/handoff?intent=${intent}`)
+
+      expect(router.currentRoute.value.fullPath).toBe(fullPath)
+      expect(useBillingEntry().error.value).toBeUndefined()
+    }
+  )
+
+  it('keeps showing how the handoff ended whatever its intent', async () => {
+    handoffTab.value = { kind: 'ended', ending: 'link_unavailable' }
+
+    const router = await arriveAt(
+      '/handoff?intent=top-up',
+      routerAt('signed-out')
+    )
+
+    expect(router.currentRoute.value.path).toBe('/handoff')
+  })
+
   it('never opens billing-web sign-in', async () => {
     handoffTab.value = liveHandoff
 

@@ -90,7 +90,9 @@ describe('Add credits on local ComfyUI', () => {
 
       await useBillingDialogs().showTopUpCreditsDialog()
 
-      expect(launchLocalBillingHandoff).toHaveBeenCalledTimes(handoffs)
+      expect(vi.mocked(launchLocalBillingHandoff).mock.calls).toEqual(
+        Array.from({ length: handoffs }, () => ['top-up', expect.any(Function)])
+      )
       expect(useDialogStore().showDialog).toHaveBeenCalledTimes(dialogs)
       expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
     }
