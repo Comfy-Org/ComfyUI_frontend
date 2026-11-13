@@ -341,4 +341,81 @@ describe("the app's node API", () => {
     expect(before).not.toHaveBeenCalled()
     expect(after).not.toHaveBeenCalled()
   })
+
+  describe('recording a widget change', () => {
+    function trackedWidget(callback: () => void) {
+      const comfy = publishedApi()
+      const graph = new LGraph()
+      const node = new LGraphNode('Node')
+      graph.add(node)
+      node.addWidget('number', 'seed', 1, callback, {})
+      showOnCanvas(graph)
+      const steps: string[] = []
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {
+          beforeChange: () => steps.push('before'),
+          afterChange: () => steps.push('after')
+        }
+      })
+      const seed = comfy.graph.node(node.id)?.widgets.get('seed')
+      assert(seed)
+      return { seed, steps }
+    }
+
+    it('wraps a commit in one change of the open workflow', () => {
+      const { seed, steps } = trackedWidget(() => steps.push('commit'))
+
+      seed.setValue(2)
+
+      expect(steps).toEqual(['before', 'commit', 'after'])
+    })
+
+    it('ends the change when the commit throws', () => {
+      const failure = new Error('legacy callback failed')
+      const { seed, steps } = trackedWidget(() => {
+        throw failure
+      })
+
+      expect(() => seed.setValue(2)).toThrow(failure)
+      expect(steps).toEqual(['before', 'after'])
+    })
+
+    it('makes widget edits inside a batch one capture of the workflow', () => {
+      const comfy = publishedApi()
+      const graph = new LGraph()
+      const node = new LGraphNode('Node')
+      graph.add(node)
+      node.addWidget('number', 'seed', 1, () => {}, {})
+      node.addWidget('number', 'steps', 1, () => {}, {})
+      showOnCanvas(graph)
+      let open = 0
+      const captures: number[] = []
+      useWorkflowStore().activeWorkflow = fromPartial({
+        changeTracker: {
+          beforeChange: () => open++,
+          afterChange: () => {
+            if (--open === 0) captures.push(Number(node.widgets?.[1]?.value))
+          }
+        }
+      })
+      const widgets = comfy.graph.node(node.id)?.widgets
+
+      comfy.edit.batch(() => {
+        widgets?.get('seed')?.setValue(2)
+        widgets?.get('steps')?.setValue(3)
+      })
+
+      expect(captures).toEqual([3])
+    })
+
+    it('commits without a change when no workflow is open', () => {
+      const commit = vi.fn()
+      const { seed } = trackedWidget(commit)
+      useWorkflowStore().activeWorkflow = null
+
+      seed.setValue(2)
+
+      expect(commit).toHaveBeenCalledOnce()
+    })
+  })
 })
