@@ -132,13 +132,70 @@ follow-up for a command interface.
     the graph was loaded. `comfy.graph.version` is the graph's own version
     counter, which every edit through this API advances.
 
+### Slots and links
+
+14. A slot handle names one slot object of one node. The host has no stable
+    slot identity: a link records its slots by index, Vue nodes and the layout
+    store key a slot by node, side and index, and names may repeat (an output's
+    name comes from the backend's `RETURN_NAMES`). An index shifts when a slot
+    before it is added or removed, and a name changes when a pack renames it,
+    so neither can identify a slot. The handle follows its slot through both,
+    and reports `isDeleted` once the slot is removed, its node is removed, or
+    its document is no longer open. Undo and redo rebuild every slot as a new
+    object, so a slot handle does not survive them, unlike a node handle; a
+    pack takes it again from `node.inputs` or `node.outputs`. Slot handles use
+    the same per-document caches as node handles, so there is one handle per
+    slot and `sameEntity` works for them; `afterHistoryRestore()` retires the
+    handles whose slot is no longer on its node. A slot's `id` is a string the
+    API gives the slot object the first time it is asked for, kept in a
+    `WeakMap`, so nothing is written to the slot.
+15. `node.inputs` and `node.outputs` are collections over the live slots. A
+    `SlotRef` is a slot id, else a slot name, else `{ index }` with a whole
+    index of zero or more. A bare number is refused, so a position is visible
+    at the call site. A name two slots share finds nothing in `byName` and is
+    refused where a pack asked for one slot (`remove`, `connectTo`,
+    `moveLinksTo`).
+16. `updateSlot(slot, patch)` changes a slot's name, label, translated name,
+    type, colors, shape, position and direction, and an input's `widget`. A
+    name another slot on the same side has is refused (A-03), so slots stay
+    addressable by name; so is a `widget` the node does not have, which would
+    save a socket for nothing. An output's new type is applied through
+    `setOutputDataType`, which retypes its links; an input's link is kept. A
+    type given as several names is stored as the host compares it, joined by
+    commas. `null` or `undefined` clears a field that has a default, as the
+    stored V2 packs wrote it.
+17. `addInput` and `addOutput` add a slot after the others through
+    `node.addInput` and `node.addOutput`, with the same name rule; `removeSlot`
+    removes one through `removeInput` and `removeOutput`, which drop its links
+    and shift the later slots' links.
+18. `reorderSlots(node, side, names)` takes each slot's name once and moves the
+    slots with their links in one step (16790-48). Inputs go through the host's
+    own `captureInputLayout` and `replaceNodeInputs`; outputs through one
+    `updateEndpoints` call on the link store, which validates every re-pointed
+    link before it moves any, and then the output list. Link ids, and so the
+    saved `links` array, do not change. If the store refuses, nothing moves and
+    the call answers `false`.
+19. `connect(output, input)` links two slots of one graph through
+    `LGraphNode.connect`, so the host's type check and the nodes' connection
+    hooks apply; it gives the new link, or `undefined` if the host refused.
+    `disconnect(slot, target?)` removes an input's link, or an output's links
+    (only those to `target` if given), through `disconnectInput` and
+    `disconnectOutput`; a slot with no link answers `false` without a step.
+    `moveLinks(from, to)` re-points every link of one output to another output
+    of the same node through the link store, keeping the links' ids, and does
+    not check types again: a pack moves links and then retypes the output.
+20. The handle methods that take a node id (`output.connectTo(nodeId, input)`,
+    `output.disconnect(nodeId)`) look it up in the output's own graph, never in
+    the graph on screen (B-01). A node id or slot that is not there answers
+    `undefined` or `false`; an id that is not a string throws.
+
 ### Node handle members that are not edits
 
-14. `isSerializingWidgets()`, `isResizable()` and `snapshot()` read the live
+21. `isSerializingWidgets()`, `isResizable()` and `snapshot()` read the live
     node, and return `undefined` once it is gone. `snapshot()` is a frozen copy
     of the node's identity, title, mode, flags, colors, shape, position and
     size; a shape with no name here reads as `'default'`.
-15. `addBadge(badge)` is a registration, not an edit: badges are not saved and
+22. `addBadge(badge)` is a registration, not an edit: badges are not saved and
     make no undo step. It pushes an `LGraphBadge` onto `node.badges`, the list
     extensions already use, and returns a disposer that removes that entry
     only and is safe to call twice. An object badge is read once, when it is
@@ -224,6 +281,13 @@ changes nothing a workflow saves (a title set to itself) adds no entry.
 
 ## Core limitations
 
+- **Slot identity across undo.** Undo and redo rebuild slots, and the host
+  has no slot id to find them by, so slot handles do not survive them (decision
+  14). Ticket draft: _Title:_ "Give node slots an id that survives
+  serialization". _Reproduction:_ keep a reference to `node.inputs[0]`, press
+  Ctrl+Z, and the node's first input is a different object with nothing that
+  identifies it as the same slot. _Direction:_ a slot id kept in the saved
+  workflow, as links keep theirs.
 - **Size limits after the call.** No host owner holds a node to a declared
   minimum and maximum size in both renderers: LiteGraph's resize uses
   `computeSize` and `constructor.min_height`, and the Vue renderer reads the
@@ -233,6 +297,16 @@ changes nothing a workflow saves (a title set to itself) adds no entry.
   and drag the node's corner below the clamp: the node shrinks. _Direction:_ a
   min/max size in the node's layout state, read by `useNodeResize` and by
   LiteGraph's resize.
+- **Floating links on a reorder.** The host keeps a link detached from a
+  reroute as a floating link with a slot index. `replaceNodeInputs`, the host's
+  own reorder for inputs, does not move them, and neither does the output
+  reorder here, so a floating link of a reordered node keeps its old index.
+  `removeInput` and `removeOutput` do move them. Ticket draft: _Title:_ "Move
+  floating links when a node's inputs are replaced". _Reproduction:_ detach a
+  link onto a reroute so it floats from a node's second input, reorder that
+  node's inputs with `replaceNodeInputs`, and the floating link points at
+  another input. _Direction:_ update floating links in `replaceNodeInputs` as
+  `removeInput` does.
 - **A resizable choice after undo.** Undo rebuilds nodes from the saved
   workflow, which does not hold the flag, so the choice is lost. Saving it
   would change the workflow format.

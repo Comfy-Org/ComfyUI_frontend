@@ -41,7 +41,7 @@ export function createNodeEdits(
  * The node a pack's handle names, in its own graph and document, or
  * `undefined` once it is gone. Anything that is not a node handle throws.
  */
-function liveNodeOf(
+export function liveNodeOf(
   nodes: NodeHandles,
   member: string,
   handle: unknown
