@@ -133,8 +133,8 @@ export interface NodeHandle extends NodeHandleEdits {}
 
 export interface GraphHandle extends GraphHandleEdits {
   /**
-   * Changes whenever the graph on screen does, edits through this API
-   * included. Compare two readings; the number itself means nothing.
+   * Advances with each `comfy.edit` call and when nodes or links come or go; a move,
+   * resize, color or widget value set outside the API leaves it. Compare readings only.
    */
   readonly version: number | undefined
 }
