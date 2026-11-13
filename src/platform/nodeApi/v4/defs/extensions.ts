@@ -4,7 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import {
   callListener,
-  reportListenerFailure
+  reportIfRejected
 } from '@/platform/nodeApi/shared/listeners'
 import type {
   NodeDef,
@@ -109,7 +109,7 @@ export function createExtensions(installer: HookInstaller): Extensions {
     const applied = callListener('extend', () => {
       const opened = createNodeDefBuilder(candidate.def())
       try {
-        reportRejection('extend', extension.apply(opened.builder))
+        reportIfRejected('extend', extension.apply(opened.builder))
       } finally {
         opened.close()
       }
@@ -202,11 +202,5 @@ function candidateFor(nodeType: NodeType): SelectorCandidate {
     type: nodeType.type,
     category: nodeType.category,
     def: once(() => nodeType.def())
-  }
-}
-
-function reportRejection(event: string, returned: unknown): void {
-  if (returned instanceof Promise) {
-    returned.catch((error: unknown) => reportListenerFailure(event, error))
   }
 }

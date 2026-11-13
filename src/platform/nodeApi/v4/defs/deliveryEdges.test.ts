@@ -153,4 +153,35 @@ describe('delivering hooks at the edges', () => {
       )
     })
   })
+
+  describe('a callback that returns a rejected promise', () => {
+    it('is reported as a hook, a menu entry and a reload listener that throw are', async () => {
+      const failure = (where: string) => async () => {
+        await Promise.resolve()
+        throw new Error(where)
+      }
+      extend((builder) => {
+        builder.onCreated(failure('hook'))
+        builder.addMenuItem({ label: 'Async', run: failure('menu') })
+      })
+      defs.onRefreshed(failure('refresh'))
+      const node = addedNode()
+      const [entry] = host.nodeTypeHooks.getNodeMenuItems(node)
+      assert(entry.callback)
+      void Reflect.apply(entry.callback, null, [])
+      host.nodeTypeHooks.refreshComboInNodes()
+
+      await vi.waitFor(() =>
+        expect(
+          vi
+            .mocked(reportError)
+            .mock.calls.map(([error, context]) => [String(error), context.tags])
+        ).toEqual([
+          ['Error: hook', { event: 'onCreated' }],
+          ['Error: menu', { event: 'addMenuItem' }],
+          ['Error: refresh', { event: 'onRefreshed' }]
+        ])
+      )
+    })
+  })
 })

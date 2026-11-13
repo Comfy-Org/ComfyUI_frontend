@@ -265,4 +265,29 @@ describe('registering node types and extensions at the edges', () => {
       expect(onCreated).not.toHaveBeenCalled()
     })
   })
+
+  it('refuses a revoked Proxy with a TypeError naming the member, as a selector, a definition and a menu item', () => {
+    function revoked(): object {
+      const { proxy, revoke } = Proxy.revocable({}, {})
+      revoke()
+      return proxy
+    }
+    registerHost('Revoked')
+    let menuRefusal: unknown
+    defs.extend('Revoked', (builder) => {
+      try {
+        Reflect.apply(builder.addMenuItem, builder, [revoked()])
+      } catch (error) {
+        menuRefusal = error
+      }
+    })
+
+    expect(() =>
+      Reflect.apply(defs.extend, defs, [revoked(), () => {}])
+    ).toThrow(/^extend needs/)
+    expect(() => Reflect.apply(defs.define, defs, [revoked()])).toThrow(
+      /^define needs/
+    )
+    expect(String(menuRefusal)).toMatch(/^TypeError: addMenuItem needs/)
+  })
 })

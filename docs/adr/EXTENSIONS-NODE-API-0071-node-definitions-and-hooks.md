@@ -72,8 +72,9 @@ registered, so `extend` cannot depend on the order.
    a value of another kind, an object with fields other than `category`, a
    category that is neither text nor a pattern, a list holding a non-name, or
    an `apply` that is not a function. A selector, definition or menu item
-   whose reads throw, as a hostile `Proxy`'s do, is refused with a
-   `TypeError` too, not with the error it threw.
+   whose reads throw, as a hostile or revoked `Proxy`'s do, is refused with
+   a `TypeError` naming the member too, not with the error it threw: only a
+   refusal the API made itself (`isInvalidArgument`) passes through as it is.
 6. An `apply` that throws is reported and the others still run, and none of
    its hooks is kept. `apply` is synchronous; one that returns a promise has
    its rejection reported, and a hook it adds after its first `await` is
@@ -140,7 +141,12 @@ registered, so `extend` cannot depend on the order.
     it stays a `boolean`.
 14. `onRefreshed(listener)` is told after every reload, whoever asked for it,
     through the listener primitive of ADR-EXTENSIONS-NODE-API-0070, which gains `notify()` for
-    delivery that keeps its listeners.
+    delivery that keeps its listeners. Every pack callback the API calls,
+    hooks, menu entries, `onRefreshed` and `onReady` listeners and `apply`
+    alike, goes through one isolation
+    (`callIsolated`): a callback that throws is reported, and one that returns
+    a promise has the promise's rejection reported the same way, so an
+    `async` hook's failure does not become an unhandled rejection.
 
 ### Lifecycle hooks
 

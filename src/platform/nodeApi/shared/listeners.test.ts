@@ -140,4 +140,18 @@ describe('calling a pack callback', () => {
       tags: { event: 'onCreated' }
     })
   })
+
+  it('reports a callback whose promise rejects, and gives the promise', async () => {
+    const broken = new Error('async callback failed')
+    const rejected = Promise.reject(broken)
+
+    expect(callListener('onCreated', () => rejected)).toBe(rejected)
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(broken, {
+        errorType: 'node_api_listener_failure',
+        surface: 'platform',
+        tags: { event: 'onCreated' }
+      })
+    )
+  })
 })
