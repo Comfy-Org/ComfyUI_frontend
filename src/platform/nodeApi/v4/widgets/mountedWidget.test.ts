@@ -146,6 +146,20 @@ describe('mounted widgets', () => {
     expect(changes).toBe(1)
   })
 
+  it('tells onChange of a write elsewhere after the pack set a value itself', () => {
+    const { node: added, widgets } = node()
+    const { value } = mount(widgets, { defaultValue: 'a' })
+    const onChange = vi.fn()
+    value.onChange(onChange)
+    const widget = added.widgets?.[0]
+    assert(widget)
+
+    value.set('b')
+    widget.value = 'c'
+
+    expect(onChange).toHaveBeenCalledExactlyOnceWith('c')
+  })
+
   it('tells onChange when the value is written elsewhere, as a load does', () => {
     const { node: added, widgets } = node()
     const { value } = mount(widgets, { defaultValue: { n: 1 } })
@@ -262,6 +276,10 @@ describe('mounted widgets', () => {
     ],
     ['an unknown field', { name: 'p', render: () => {}, hidden: true }],
     ['a negative height', { name: 'p', render: () => {}, height: -1 }],
+    [
+      'a default it cannot save',
+      { name: 'p', render: () => {}, defaultValue: { at: Number.NaN } }
+    ],
     ['a number as default', { name: 'p', render: () => {}, defaultValue: 0 }],
     [
       'a flag that is not a boolean',

@@ -250,6 +250,17 @@ describe('widget listeners', () => {
   })
 
   describe('removed', () => {
+    it('runs once however often the host releases the widget', () => {
+      const { seedWidget, seed } = nodeWithSeed()
+      const listener = vi.fn()
+      seed.on('removed', listener)
+
+      seedWidget.onRemove?.()
+      seedWidget.onRemove?.()
+
+      expect(listener).toHaveBeenCalledOnce()
+    })
+
     it('runs once when the widget is removed', () => {
       const { seed } = nodeWithSeed()
       const listener = vi.fn()

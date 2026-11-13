@@ -223,6 +223,17 @@ describe('a node’s widgets', () => {
       ])
     })
 
+    it('grows the node to fit the widget it adds', () => {
+      const { node, widgets } = nodeWith()
+      const before = node.size[1]
+
+      for (const name of ['a', 'b', 'c', 'd']) {
+        widgets.add({ type: 'number', name, value: 1 })
+      }
+
+      expect(node.size[1]).toBeGreaterThan(before)
+    })
+
     it('applies the flags a definition gives', () => {
       const { node, widgets } = nodeWith()
 
@@ -289,6 +300,10 @@ describe('a node’s widgets', () => {
       [
         'a flag that is not a boolean',
         { type: 'number', name: 'x', hidden: 1 }
+      ],
+      [
+        'a combo whose values are not a list',
+        { type: 'combo', name: 'x', options: { values: 'a,b' } }
       ],
       ['a combo without values', { type: 'combo', name: 'x', options: {} }]
     ] as const)('refuses a definition with %s, and adds nothing', ([, def]) => {
@@ -373,6 +388,7 @@ describe('a node’s widgets', () => {
     it.for([
       [0, ['c', 'a', 'b']],
       [1, ['a', 'c', 'b']],
+      [-1, ['c', 'a', 'b']],
       [-4, ['c', 'a', 'b']],
       [9, ['a', 'b', 'c']]
     ] as const)(

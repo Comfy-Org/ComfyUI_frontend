@@ -48,14 +48,44 @@ export function createWidgetEdits(
     if (graph) runner.apply(graph, edit)
     else edit()
   }
+  return {
+    ...displayEdits(),
+    setInput: (node, widget, value) =>
+      saved(node, () => asSetValue(() => widget.setValue(value, { node }))),
+    addWidget: (node, def) =>
+      saved(node, () => {
+        node.addCustomWidget({ ...def, options: { ...def.options }, y: 0 })
+        node.expandToFitContent()
+      }),
+    addDomWidget: (node, widget, height) =>
+      saved(node, () => {
+        if (height !== undefined) fixHeight(widget, height)
+        addWidget(node, widget)
+        node.expandToFitContent()
+      }),
+    removeWidget: (node, widget) =>
+      saved(node, () => node.removeWidget(widget)),
+    reorderWidgets: (node, ordered) =>
+      saved(node, () => {
+        node.widgets?.splice(0, node.widgets.length, ...ordered)
+      })
+  }
+}
+
+function displayEdits(): Pick<
+  WidgetEdits,
+  | 'setOption'
+  | 'setLabel'
+  | 'setHidden'
+  | 'setDisabled'
+  | 'setHeight'
+  | 'setLinked'
+> {
   function shown(node: LGraphNode, edit: () => void): void {
     edit()
     node.setDirtyCanvas(true, true)
   }
-
   return {
-    setInput: (node, widget, value) =>
-      saved(node, () => asSetValue(() => widget.setValue(value, { node }))),
     setOption: (node, widget, key, value) =>
       shown(node, () => Object.assign(widget.options, { [key]: value })),
     setLabel: (node, widget, label) =>
@@ -76,23 +106,6 @@ export function createWidgetEdits(
     setLinked: (node, widget, linked) =>
       shown(node, () => {
         widget.linkedWidgets = [...linked]
-      }),
-    addWidget: (node, def) =>
-      saved(node, () => {
-        node.addCustomWidget({ ...def, options: { ...def.options }, y: 0 })
-        node.expandToFitContent()
-      }),
-    addDomWidget: (node, widget, height) =>
-      saved(node, () => {
-        if (height !== undefined) fixHeight(widget, height)
-        addWidget(node, widget)
-        node.expandToFitContent()
-      }),
-    removeWidget: (node, widget) =>
-      saved(node, () => node.removeWidget(widget)),
-    reorderWidgets: (node, ordered) =>
-      saved(node, () => {
-        node.widgets?.splice(0, node.widgets.length, ...ordered)
       })
   }
 }
