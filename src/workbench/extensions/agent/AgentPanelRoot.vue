@@ -197,6 +197,7 @@ import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
+import { findLast } from '@/utils/arrayUtil'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
@@ -1384,15 +1385,17 @@ useEventListener(
 
 const completedTurnClaimedCanvasContent = ref(false)
 function completedTurnCanClaimCanvasContent(): boolean {
-  const lastCanvasTool = conversationMessages.value
-    .at(-1)
-    ?.parts.findLast(
-      (part) =>
-        part.type === 'tool' &&
-        (part.name === 'clear_canvas'
-          ? part.ok === true
-          : part.ok !== false && toolCanClaimCanvasContent(part.name))
-    )
+  const lastParts = conversationMessages.value.at(-1)?.parts
+  const lastCanvasTool = lastParts
+    ? findLast(
+        lastParts,
+        (part) =>
+          part.type === 'tool' &&
+          (part.name === 'clear_canvas'
+            ? part.ok === true
+            : part.ok !== false && toolCanClaimCanvasContent(part.name))
+      )
+    : undefined
   return (
     lastCanvasTool?.type === 'tool' && lastCanvasTool.name !== 'clear_canvas'
   )

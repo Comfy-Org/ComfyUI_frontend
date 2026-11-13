@@ -15,6 +15,7 @@ const privateSigil = '#'
 
 const probeDirs = {
   source: path.resolve('src/__restricted_syntax_probes__'),
+  package: path.resolve('packages/__restricted_syntax_probes__'),
   app: path.resolve('apps/__restricted_syntax_probes__/src'),
   remote: path.resolve('src/platform/remote/__restricted_syntax_probes__'),
   selection: path.resolve('src/composables/graph/__restricted_syntax_probes__'),
@@ -200,8 +201,16 @@ const method = 'map' as const
 items[method]()
 items.sort()
 void fn
+items.findLast((item) => item > 1)
+items.findLastIndex((item) => item > 1)
 `
   },
+  ...['arrayPackage.ts', 'arrayPackage.test.ts'].map((name) => ({
+    file: path.join(probeDirs.package, 'src', name),
+    source: `const items = [1, 2]
+items.findLastIndex((item) => item > 1)
+`
+  })),
   {
     file: path.join(probeDirs.source, 'arrayCopy.vue'),
     source: `<script setup lang="ts">
@@ -215,6 +224,7 @@ void items
     source: `const items = [1, 2]
 items.toReversed()
 items['toSorted']()
+items.findLastIndex((item) => item > 1)
 `
   },
   {
@@ -506,9 +516,9 @@ describe('restricted syntax rules', () => {
     )
   })
 
-  it('rejects statically named ES2023 array copy calls outside unit tests', () => {
-    const copyFindings = findingsFor('no-es2023-array-copy-method')
-    expect(locations(copyFindings)).toEqual([
+  it('rejects statically named ES2023 array method calls outside unit tests', () => {
+    const arrayFindings = findingsFor('no-es2023-array-method')
+    expect(locations(arrayFindings)).toEqual([
       ['arrayCopy.ts', 2],
       ['arrayCopy.ts', 3],
       ['arrayCopy.ts', 4],
@@ -517,9 +527,12 @@ describe('restricted syntax rules', () => {
       ['arrayCopy.ts', 7],
       ['arrayCopy.ts', 8],
       ['arrayCopy.ts', 9],
-      ['arrayCopy.vue', 2]
+      ['arrayCopy.ts', 15],
+      ['arrayCopy.ts', 16],
+      ['arrayCopy.vue', 2],
+      ['arrayPackage.ts', 2]
     ])
-    expect(copyFindings.every(({ severity }) => severity === 'error')).toBe(
+    expect(arrayFindings.every(({ severity }) => severity === 'error')).toBe(
       true
     )
   })

@@ -35,6 +35,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { dynamicGroupWidget } from './dynamicGroupWidget'
+import { findLastIndex } from '@/utils/arrayUtil'
 import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 
@@ -523,7 +524,7 @@ function addAutogrowGroup(
     groupName,
     node
   ).name
-  const lastIndex = node.inputs.findLastIndex((inp) =>
+  const lastIndex = findLastIndex(node.inputs, (inp) =>
     inp.name.startsWith(targetName)
   )
   const insertionIndex =

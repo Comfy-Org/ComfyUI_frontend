@@ -210,7 +210,5 @@ export function selectBillingBanners(
   const suppressCredit = suppressesCreditBanners(views.map(({ kind }) => kind))
   return views
     .filter(({ kind }) => !(suppressCredit && CREDIT_KINDS.has(kind)))
-    .toSorted(
-      (a, b) => STACK_ORDER.indexOf(a.kind) - STACK_ORDER.indexOf(b.kind)
-    )
+    .sort((a, b) => STACK_ORDER.indexOf(a.kind) - STACK_ORDER.indexOf(b.kind))
 }
