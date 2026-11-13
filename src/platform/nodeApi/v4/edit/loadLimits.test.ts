@@ -8,7 +8,15 @@ import {
   vi
 } from 'vitest'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  LLink
+} from '@/lib/litegraph/src/litegraph'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -131,6 +139,27 @@ describe('edits and what a load keeps of them', () => {
       expect(names(reloaded().inputs)).toEqual(['model', 'latent', 'steps'])
     })
 
+    it("refuses a position for a widget's input, or one the same patch makes a widget's socket", () => {
+      const steps = handle.inputs.byName('steps')
+      assert(steps)
+      sampler.addWidget('number', 'extra', 1, () => {})
+      const added = handle.inputs.add('free', 'INT')
+
+      expect(() => steps.modify({ position: { x: 3, y: 4 } })).toThrow(
+        /^modify needs a slot that is not a widget's socket/
+      )
+      expect(() =>
+        added?.modify({ widget: 'extra', position: { x: 3, y: 4 } })
+      ).toThrow(TypeError)
+      expect(steps.modify({ widget: null, position: { x: 3, y: 4 } })).toBe(
+        true
+      )
+      expect(sampler.inputs[2].pos).toEqual([3, 4])
+      expect(handle.outputs.at(0)?.modify({ position: { x: 1, y: 1 } })).toBe(
+        true
+      )
+    })
+
     it('keeps a label, a color and a position on a declared slot across a load', () => {
       handle.inputs.at(0)?.modify({
         label: 'Checkpoint',
@@ -236,6 +265,25 @@ describe('edits and what a load keeps of them', () => {
       }
     )
 
+    it('reads serializeWidgets once, so a getter cannot pass the refusal', () => {
+      const note = new LGraphNode('Note', 'Note')
+      note.serialize_widgets = true
+      graph.add(note)
+      const noteHandle = comfy.graph.node(String(note.id))
+      assert(noteHandle)
+      let reads = 0
+      const patch = {
+        get serializeWidgets() {
+          reads++
+          return reads === 1 ? false : true
+        }
+      }
+
+      expect(() => comfy.edit.updateNode(noteHandle, patch)).toThrow(TypeError)
+      expect(reads).toBe(1)
+      expect(note.serialize_widgets).toBe(true)
+    })
+
     it('lets any other node stop saving its widget values', () => {
       const plain = new LGraphNode('Plain', 'Notes')
       plain.serialize_widgets = true
@@ -312,6 +360,24 @@ describe('edits and what a load keeps of them', () => {
       expect(subgraphHandle.inputs.reorder(['second', 'first'])).toBe(false)
       expect(names(subgraphNode.subgraph.inputs)).toEqual(['first', 'second'])
       expect(sourceFeeding()).toEqual(fedBySources)
+    })
+
+    it('moves the floating links of its inputs with them', () => {
+      const intoSecond = graph.addFloatingLink(
+        new LLink(
+          toLinkId(-1),
+          'INT',
+          UNASSIGNED_NODE_ID,
+          -1,
+          subgraphNode.id,
+          1
+        )
+      )
+      assert(intoSecond)
+
+      expect(subgraphHandle.inputs.reorder(['second', 'first'])).toBe(true)
+
+      expect(intoSecond.target_slot).toBe(0)
     })
 
     it('refuses to add, remove, change or reorder outputs of its slots', () => {

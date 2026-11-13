@@ -4,7 +4,7 @@ import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { GraphScopes } from '@/platform/nodeApi/v4/graphScopeHandle'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { NodeHandle, NodeInit } from '@/platform/nodeApi/v4/types'
-import { assertPatch, checkedPoint, checkedString } from './checkedArguments'
+import { checkedFields, checkedPoint, checkedString } from './checkedArguments'
 import type { EditRunner } from './editRunner'
 
 /** The graph edits, taking anything a pack passes and checking it. */
@@ -41,14 +41,18 @@ export function createGraphEdits(
 /** Checks what a node is to be made from, and gives what makes it. */
 export function checkedNodeCreation(type: unknown, init: unknown = {}) {
   const nodeType = checkedString(MEMBER, 'type', type)
-  assertPatch(MEMBER, init, INIT_FIELDS)
+  const { title: givenTitle, position } = checkedFields(
+    MEMBER,
+    init,
+    INIT_FIELDS
+  )
   const title =
-    init.title === undefined
+    givenTitle === undefined
       ? undefined
-      : checkedString(MEMBER, 'title', init.title)
+      : checkedString(MEMBER, 'title', givenTitle)
   const pos =
-    init.position === undefined
+    position === undefined
       ? undefined
-      : checkedPoint(MEMBER, 'position', init.position)
+      : checkedPoint(MEMBER, 'position', position)
   return () => LiteGraph.createNode(nodeType, title, pos && { pos })
 }

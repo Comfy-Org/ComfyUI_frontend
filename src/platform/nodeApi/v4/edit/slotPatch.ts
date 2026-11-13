@@ -10,7 +10,7 @@ import type {
   SlotSide
 } from '@/platform/nodeApi/v4/types'
 import {
-  assertPatch,
+  checkedFields,
   checkedChoice,
   checkedPoint,
   checkedString
@@ -49,21 +49,21 @@ export function checkedSlotPatch(
   side: SlotSide,
   member = 'updateSlot'
 ): CheckedSlotPatch {
-  assertPatch(
+  const given = checkedFields(
     member,
     patch,
     side === 'input' ? PATCH_FIELDS : OUTPUT_PATCH_FIELDS
   )
   const checks = fieldChecks(member)
   const writes = Object.entries(checks).flatMap(([field, check]) =>
-    Object.hasOwn(patch, field) ? [check(patch[field])] : []
+    Object.hasOwn(given, field) ? [check(given[field])] : []
   )
-  const { name, widget } = patch
+  const { name, widget } = given
   return {
-    fields: Object.keys(patch),
+    fields: Object.keys(given),
     writes,
     name: name === undefined ? undefined : checkedSlotName(member, name),
-    widget: !Object.hasOwn(patch, 'widget')
+    widget: !Object.hasOwn(given, 'widget')
       ? undefined
       : (clearable((given) => checkedString(member, 'widget', given))(widget) ??
         null)
@@ -85,7 +85,12 @@ export function checkedSlotType(member: string, value: unknown): string {
   return names
     .map((name) => {
       const type = checkedString(member, 'type', name)
-      if (type === '') throw invalidArgument(member, 'a type name', name)
+      if (
+        type === '' ||
+        type.split(',').some((part) => part in Object.prototype)
+      ) {
+        throw invalidArgument(member, 'a type name', name)
+      }
       return type
     })
     .join(',')
@@ -104,8 +109,11 @@ export function checkedSlotOptions(
 ): { readonly shape?: RenderShape; readonly widget?: { name: string } } {
   if (options === undefined) return {}
   const { widget: _inputOnly, ...outputFields } = OPTION_FIELDS
-  assertPatch(member, options, side === 'input' ? OPTION_FIELDS : outputFields)
-  const { shape, widget } = options
+  const { shape, widget } = checkedFields(
+    member,
+    options,
+    side === 'input' ? OPTION_FIELDS : outputFields
+  )
   return {
     ...(shape === undefined
       ? {}

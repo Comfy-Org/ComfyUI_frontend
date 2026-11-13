@@ -3,16 +3,17 @@ import { isPlainObject } from 'es-toolkit'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 
-/** Refuses anything but a plain object whose keys are all in `fields`. */
-export function assertPatch(
+/** A copy of a plain object whose keys are all in `fields`, each read once; anything else throws. */
+export function checkedFields(
   member: string,
   patch: unknown,
   fields: Readonly<Record<string, true>>
-): asserts patch is Readonly<Record<string, unknown>> {
+): Readonly<Record<string, unknown>> {
   if (!isPlainObject(patch)) {
     throw invalidArgument(member, 'a plain object of fields', patch)
   }
-  const unknownField = Object.keys(patch).find(
+  const given: Readonly<Record<string, unknown>> = { ...patch }
+  const unknownField = Object.keys(given).find(
     (field) => !Object.hasOwn(fields, field)
   )
   if (unknownField !== undefined) {
@@ -22,6 +23,7 @@ export function assertPatch(
       unknownField
     )
   }
+  return given
 }
 
 export function checkedString(

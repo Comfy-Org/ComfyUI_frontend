@@ -140,8 +140,8 @@ export interface GraphHandle extends GraphHandleEdits {
 }
 
 /**
- * The one place a pack changes the document; every handle edit method calls
- * one of these. Each call is one undo step, or part of `batch`'s.
+ * The one place a pack changes the document. Each call is one undo step, or part of `batch`'s;
+ * a node whose type is not installed saves only its mode and position.
  */
 export interface Edits {
   /**
@@ -392,7 +392,7 @@ export interface SlotPatch {
   readonly color?: string | null
   readonly colorWhenUnconnected?: string | null
   readonly shape?: SlotShape | null
-  /** The slot's center relative to the node's body. */
+  /** The slot's center relative to the node's body; not for a widget's socket. */
   readonly position?: Point | null
   /** The direction links leave the slot in. */
   readonly direction?: SlotDirection | null

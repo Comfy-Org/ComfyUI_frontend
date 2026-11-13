@@ -52,7 +52,9 @@ follow-up for a command interface.
    4. It advances the version of the graph it changed and marks it for redraw.
 
    Steps 1 and 2 finish before step 3 starts, so a refusal leaves the document
-   exactly as it was. An argument that is unusable is refused even when the
+   exactly as it was. A patch, constraints or options object is copied once,
+   each field read once, before it is checked, so a field behind a getter
+   cannot pass a check with one value and be written with another. An argument that is unusable is refused even when the
    entity is gone, so a mistake in a pack shows whatever state the document is
    in. A hook on the node (`onResize`, `onConnectionsChange`, `onInputAdded`
    and the like) that throws during step 3 stops the edit part way: what was
@@ -179,7 +181,13 @@ follow-up for a command interface.
     addressable by name; so is a `widget` the node does not have, which would
     save a socket for nothing, or one another input is already the socket of.
     `widget: null` (or `undefined`, when the patch names it) makes the input a
-    plain socket again. An output's new type is applied through
+    plain socket again. A `position` for an input that is, or the same patch
+    makes, a widget's socket is refused: the host places such an input by its
+    widget and does not save its position, so the edit would answer `true`
+    and change nothing. A type name that is an `Object.prototype` member
+    (`__proto__`, `constructor`, `toString`, alone or in a list) is refused
+    for every slot edit, as `defs.define` refuses it: the host's slot-type
+    registry would add the slot and then fail. An output's new type is applied through
     `setOutputDataType`, which retypes its links; an input's link is kept. A
     type given as several names is stored as the host compares it, joined by
     commas. `null` or `undefined` clears a field that has a default (label,
@@ -308,7 +316,8 @@ leaves the graph feeding execution the wrong data.
     corrupts what runs, so it stays refused even though the legacy API allowed
     it. `reorderSlots` on a subgraph node's inputs goes through the host's own
     `reorderSubgraphInputs`, which reorders the subgraph's inputs and the
-    node's together. Every
+    node's together, and the API then moves the node's floating links with
+    them. Every
     other slot edit on a subgraph node is refused; a pack edits the subgraph's
     inputs and outputs in the subgraph. No stored V2 conversion reaches it: a
     pack extends a type by name, and a subgraph node's type is its
@@ -549,7 +558,10 @@ ADR-EXTENSIONS-NODE-API-0070.
 ## Consequences
 
 - An edit through the API is one undo step and marks the workflow modified,
-  through the same tracker as the editor's own edits.
+  through the same tracker as the editor's own edits. A node whose type is not
+  installed is saved as it was loaded, with only its mode and position taken
+  from the node, so any other edit to it is applied on screen, answers `true`
+  and is not saved, exactly as an edit the editor makes to such a node.
 - Every edit advances its graph's version, including edits that LiteGraph
   itself does not count (a title, a color); the version does not see changes
   made outside the API that LiteGraph does not count (decision 13).
