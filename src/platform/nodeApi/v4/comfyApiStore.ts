@@ -9,10 +9,13 @@ import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { isChangeCaptureSuppressed } from '@/services/changeCaptureSuppression'
 
+import type { CanvasSource } from './canvasSource'
 import { createComfyApi } from './comfyApi'
 
 export const useComfyApiStore = defineStore('comfyApiV4', () => {
+  let canvas: CanvasSource | undefined
   const { comfy, host } = createComfyApi({
+    canvas: () => canvas,
     getGraph: () => useApp().canvasOrUndefined?.graph ?? null,
     history: () => useWorkflowStore().activeWorkflow?.changeTracker,
     isLoading: () =>
@@ -27,6 +30,10 @@ export const useComfyApiStore = defineStore('comfyApiV4', () => {
     useExtensionService().registerExtension(host.nodeTypeHooks)
   )
 
+  function provideCanvas(source: CanvasSource): void {
+    canvas = source
+  }
+
   function publish(): void {
     host.markStarting()
     Object.defineProperty(window, 'comfy_v4', {
@@ -39,6 +46,7 @@ export const useComfyApiStore = defineStore('comfyApiV4', () => {
 
   return {
     publish,
+    provideCanvas,
     reapplyTypeColors: host.reapplyTypeColors,
     markReady: host.markReady,
     providePacks: host.providePacks,

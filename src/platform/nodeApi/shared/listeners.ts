@@ -4,6 +4,7 @@ interface Listeners<TArgs extends unknown[]> {
   add(listener: (...args: TArgs) => void): () => void
   drain(...args: TArgs): void
   notify(...args: TArgs): void
+  isEmpty(): boolean
 }
 
 type IsolatedCall<T> = { ok: true; value: T } | { ok: false }
@@ -85,6 +86,8 @@ export function createListeners<TArgs extends unknown[] = []>(
       for (const registration of Array.from(registrations)) {
         if (registrations.has(registration)) call(registration.listener, args)
       }
-    }
+    },
+
+    isEmpty: () => registrations.size === 0
   }
 }
