@@ -4,6 +4,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphBadge, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import type { Comfy } from '@/platform/nodeApi/v4/types'
 
 function drawn(node: LGraphNode): LGraphBadge[] {
@@ -180,5 +181,76 @@ describe('node badges', () => {
 
     expect(node.badges).toHaveLength(1)
     expect(steps).toEqual([])
+  })
+
+  describe('on the canvas', () => {
+    function badgeHitAt(node: LGraphNode, x: number, y: number) {
+      return node.badges
+        .map((badge) => (badge instanceof LGraphBadge ? badge : badge()))
+        .find(
+          ({ onClick, boundingRect: [left, top, width, height] }) =>
+            onClick &&
+            x >= left &&
+            x < left + width &&
+            y >= top &&
+            y < top + height
+        )
+    }
+
+    function drawnCentre(node: LGraphNode) {
+      node.drawBadges(createMockCanvasRenderingContext2D())
+      const [badge] = drawn(node)
+      const [x, y, width, height] = badge.boundingRect
+      expect(width).toBeGreaterThan(0)
+      return [x + width / 2, y + height / 2] as const
+    }
+
+    it.for(['object', 'function'] as const)(
+      'clicks a %s badge where it was drawn',
+      (form) => {
+        const { node, handle } = add()
+        const onClick = vi.fn()
+        const badge = { text: 'Go', onClick }
+        handle.addBadge(form === 'object' ? badge : () => badge)
+
+        const [x, y] = drawnCentre(node)
+        badgeHitAt(node, x, y)?.onClick?.(new MouseEvent('click'))
+
+        expect(onClick).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('hides a function badge that was shown once its function fails', () => {
+      const { node, handle } = add()
+      let fails = false
+      handle.addBadge(() => {
+        if (fails) throw new Error('later failure')
+        return { text: 'Shown' }
+      })
+      expect(drawn(node)[0].visible).toBe(true)
+
+      fails = true
+
+      expect(drawn(node)[0].visible).toBe(false)
+    })
+
+    it('draws a function badge as one badge whose text and colors follow the function', () => {
+      const { node, handle } = add()
+      let state: { text: string; color?: string } = {
+        text: 'One',
+        color: '#f00'
+      }
+      handle.addBadge(() => state)
+      const first = drawn(node)[0]
+
+      state = { text: 'Two' }
+      const second = drawn(node)[0]
+
+      expect(second).toBe(first)
+      expect(second).toMatchObject({
+        text: 'Two',
+        fgColor: new LGraphBadge({ text: '' }).fgColor
+      })
+    })
   })
 })

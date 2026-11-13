@@ -214,12 +214,17 @@ follow-up for a command interface.
     make no undo step. It pushes an `LGraphBadge` onto `node.badges`, the list
     extensions already use, and returns a disposer that removes that entry
     only and is safe to call twice. An object badge is read once, when it is
-    added. A function badge is called each time the badge is drawn; if it
-    throws or returns something that is not a badge, the failure is reported
-    once and the badge is hidden from then on. A click handler runs through the
-    same isolation as listeners. A badge lives on the node object, so it is
-    gone when undo or a load rebuilds the node; a removed node gets nothing and
-    a disposer that does nothing.
+    added. A function badge is one `LGraphBadge` whose text, colors and click
+    handler the function sets each time the canvas draws it, so the canvas
+    finds the badge it drew when the user clicks it; if the function throws or
+    returns something that is not a badge, the failure is reported once and
+    the badge is hidden from then on. A click handler runs through the same
+    isolation as listeners. A badge lives on the node object, so it is gone
+    when undo or a load rebuilds the node; a removed node gets nothing and a
+    disposer that does nothing. Vue nodes compute a node's badges from
+    `node.badges` once, when the node first renders, so under Vue nodes a badge
+    added or removed after that changes nothing on screen, and a function
+    badge is not called again (see "Core limitations").
 
 ### Edits a load would not keep
 
@@ -411,6 +416,15 @@ ADR-EXTENSIONS-NODE-API-0070.
   node's inputs with `replaceNodeInputs`, and the floating link points at
   another input. _Direction:_ update floating links in `replaceNodeInputs` as
   `removeInput` does.
+- **Badges under Vue nodes.** `usePartitionedBadges` computes a node's badges
+  from `node.badges`, a plain array no reactive state depends on, so a badge an
+  extension adds or removes after the node is drawn neither shows nor goes.
+  The API cannot make that array reactive without changing a host object's
+  field. Ticket draft: _Title:_ "Vue nodes do not show a badge added after the
+  node is drawn". _Reproduction:_ with Nodes 2.0 on, push an `LGraphBadge`
+  onto `node.badges` of a node on screen and call `node.setDirtyCanvas(true)`:
+  the classic renderer shows it, Vue nodes do not. _Direction:_ a badge list
+  in the node's reactive state, or a revision the composable reads.
 - **A resizable choice after undo.** Undo rebuilds nodes from the saved
   workflow, which does not hold the flag, so the choice is lost. Saving it
   would change the workflow format.

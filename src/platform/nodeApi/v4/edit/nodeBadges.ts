@@ -24,11 +24,11 @@ export function checkedBadge(badge: unknown): BadgeEntry {
   if (typeof badge === 'function') {
     return computedBadge(() => Reflect.apply(badge, undefined, []))
   }
-  const checked = badgeFrom(badge)
-  if (!checked.ok) {
+  const fields = badgeFields(badge)
+  if (!fields) {
     throw invalidArgument(MEMBER, 'a badge or a function that gives one', badge)
   }
-  return checked.badge
+  return new LGraphBadge(fields)
 }
 
 /** Puts the badge on the node's title bar until the disposer is called. */
@@ -44,31 +44,32 @@ export function attachBadge(node: LGraphNode, badge: BadgeEntry): Unsubscribe {
 }
 
 function computedBadge(define: () => unknown): () => LGraphBadge {
-  const hidden = new LGraphBadge({ text: '' })
+  const badge = new LGraphBadge({ text: '' })
   let failed = false
   return () => {
-    if (failed) return hidden
+    if (failed) return badge
     const result = callIsolated(MEMBER, define)
-    if (!result.ok) {
-      failed = true
-      return hidden
-    }
-    const checked = badgeFrom(result.value)
-    if (checked.ok) return checked.badge
+    const fields = result.ok ? badgeFields(result.value) : undefined
+    if (fields) return Object.assign(badge, fields)
     failed = true
-    reportError(invalidArgument(MEMBER, 'a badge', result.value), {
-      errorType: 'node_api_listener_failure',
-      surface: 'platform',
-      tags: { event: MEMBER }
-    })
-    return hidden
+    badge.text = ''
+    if (result.ok) {
+      reportError(invalidArgument(MEMBER, 'a badge', result.value), {
+        errorType: 'node_api_listener_failure',
+        surface: 'platform',
+        tags: { event: MEMBER }
+      })
+    }
+    return badge
   }
 }
 
-type CheckedBadge = { ok: true; badge: LGraphBadge } | { ok: false }
+const DEFAULT_COLORS = new LGraphBadge({ text: '' })
 
-function badgeFrom(value: unknown): CheckedBadge {
-  if (!isPlainObject(value)) return { ok: false }
+type BadgeFields = Pick<LGraphBadge, 'text' | 'fgColor' | 'bgColor' | 'onClick'>
+
+function badgeFields(value: unknown): BadgeFields | undefined {
+  if (!isPlainObject(value)) return undefined
   const fields: Readonly<Record<string, unknown>> = value
   const { text, color, bgColor, onClick } = fields
   if (
@@ -78,21 +79,15 @@ function badgeFrom(value: unknown): CheckedBadge {
     !isOptionalText(bgColor) ||
     (onClick !== undefined && typeof onClick !== 'function')
   ) {
-    return { ok: false }
+    return undefined
   }
   return {
-    ok: true,
-    badge: new LGraphBadge({
-      text,
-      ...(color === undefined ? {} : { fgColor: color }),
-      ...(bgColor === undefined ? {} : { bgColor }),
-      ...(onClick === undefined
-        ? {}
-        : {
-            onClick: () =>
-              callIsolated(MEMBER, () => Reflect.apply(onClick, undefined, []))
-          })
-    })
+    text,
+    fgColor: color ?? DEFAULT_COLORS.fgColor,
+    bgColor: bgColor ?? DEFAULT_COLORS.bgColor,
+    onClick:
+      onClick &&
+      (() => callIsolated(MEMBER, () => Reflect.apply(onClick, undefined, [])))
   }
 }
 
