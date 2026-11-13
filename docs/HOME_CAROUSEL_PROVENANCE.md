@@ -68,3 +68,13 @@ token mint. Account, workspace, session epoch or request-provider replacement
 during an await rejects the result. Legacy/API-key sessions without that validated
 web-session scope remain excluded. The host installs neither a consent UI nor a
 vendor script; reviewed policy/notice values and a real consent source are absent.
+
+The framework-free receipt bridge and runtime are owned by the shared
+`@comfyorg/account-core/analyticsConsentReceiptBridge` and
+`@comfyorg/account-core/analyticsConsentRuntime` entry points. API-client retains
+compatibility re-exports of those same implementations. Behavior tests run in the
+account-core package; the API-client compatibility test verifies function identity.
+The generated receipt schemas remain in the existing ingest-types dependency.
+No dependency version, vendor banner or registry publication is needed for source
+delivery through the website's approved shared-package sync. That sync remains
+subject to upstream review/main ancestry; a local rehearsal does not waive it.
