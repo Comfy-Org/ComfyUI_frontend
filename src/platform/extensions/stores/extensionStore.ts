@@ -1,3 +1,4 @@
+import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef } from 'vue'
 
@@ -215,11 +216,14 @@ export const useExtensionStore = defineStore('extension', () => {
     const settingStore = useSettingStore()
     const editable = new Set(names.filter((name) => !isExtensionReadOnly(name)))
     const disabled = settingStore.get('Comfy.Extension.Disabled')
+    const nextDisabled = enabled
+      ? disabled.filter((name) => !editable.has(name))
+      : [...new Set([...disabled, ...editable])]
+    if (isEqual(nextDisabled, disabled)) return 'unchanged'
+
     const result = await settingStore.setWithOutcome(
       'Comfy.Extension.Disabled',
-      enabled
-        ? disabled.filter((name) => !editable.has(name))
-        : [...new Set([...disabled, ...editable])]
+      nextDisabled
     )
     reportUnsavedSetting(
       result,
