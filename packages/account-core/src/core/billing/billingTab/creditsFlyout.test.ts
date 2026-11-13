@@ -60,10 +60,10 @@ describe('deriveCreditsFlyout', () => {
       case: 'a proven zero grant',
       over: { periodCreditGrant: { state: 'none' as const } }
     }
-  ])('shows top-up credits only for $case', ({ over }) => {
+  ])('shows the served top-up balance only for $case', ({ over }) => {
     expect(deriveCreditsFlyout(facts(over))).toEqual({
       kind: 'noPlan',
-      topUpCents: 3600
+      topUpCents: 970
     })
   })
 
@@ -72,7 +72,11 @@ describe('deriveCreditsFlyout', () => {
       deriveCreditsFlyout(
         facts({
           planKind: 'noPlan',
-          balance: { amountMicros: -120, effectiveBalanceMicros: -120 }
+          balance: {
+            amountMicros: -120,
+            effectiveBalanceMicros: -120,
+            prepaidBalanceMicros: 0
+          }
         })
       )
     ).toEqual({ kind: 'noPlan', topUpCents: 0 })

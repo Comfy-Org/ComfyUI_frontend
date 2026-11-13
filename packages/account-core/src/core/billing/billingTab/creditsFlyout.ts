@@ -28,7 +28,9 @@ export function deriveCreditsFlyout(
   if (card.kind === 'unavailable') return card
   // Pools stop at 0; the Credits row carries the signed total.
   if (card.kind === 'noPlan') {
-    return { kind: 'noPlan', topUpCents: Math.max(card.availableCents, 0) }
+    const overdrawn = card.availableCents < 0
+    const prepaid = facts.balance?.prepaidBalanceMicros ?? 0
+    return { kind: 'noPlan', topUpCents: overdrawn ? 0 : prepaid }
   }
   return {
     ...card,

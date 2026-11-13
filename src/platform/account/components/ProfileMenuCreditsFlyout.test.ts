@@ -207,11 +207,11 @@ describe('ProfileMenuCreditsFlyout', () => {
     renderFlyout({ planKind: 'noPlan', planNote: note })
 
     expect(screen.queryByText('Plan credits')).not.toBeInTheDocument()
-    expect(textOf('credits-breakdown-top-up')).toBe('2,321')
+    expect(textOf('credits-breakdown-top-up')).toBe('211')
     expect(screen.getByText(note)).toBeInTheDocument()
   })
 
-  it('shows dashes and no Add credits when the balance is unavailable', () => {
+  it('shows dashes, and keeps Add credits on can_top_up, when the balance is unavailable', () => {
     renderFlyout({ balance: null })
 
     expect(textOf('credits-breakdown-plan')).toBe('—')
@@ -219,10 +219,7 @@ describe('ProfileMenuCreditsFlyout', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       "Couldn't load your balance."
     )
-    expect(addCredits()).not.toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Billing settings' })
-    ).toBeInTheDocument()
+    expect(addCredits()).toBeEnabled()
   })
 
   it('opens Billing settings', async () => {

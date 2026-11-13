@@ -16,7 +16,7 @@
           {{ $t('profileMenu.paymentProcessing') }}
         </p>
         <p
-          v-if="refusalReason && showAddCredits"
+          v-if="refusalReason"
           :id="refusalReasonId"
           class="m-0 text-xs text-muted-foreground"
         >
@@ -33,7 +33,7 @@
     </BillingCreditsBreakdown>
     <div class="-mx-2 my-1 border-t border-border" role="separator" />
     <div class="flex flex-col gap-2">
-      <Tooltip v-if="showAddCredits" :disabled="!paymentPastDue">
+      <Tooltip v-if="addCredits.kind !== 'hidden'" :disabled="!paymentPastDue">
         <TooltipTrigger as-child>
           <span class="flex flex-col" data-testid="add-credits-trigger">
             <Button
@@ -141,11 +141,6 @@ const addCredits = computed(() =>
     canTopUp: canTopUp.value,
     denial: topUpDenial.value
   })
-)
-// Balance unavailable: no Add credits (Figma states matrix).
-const showAddCredits = computed(
-  () =>
-    addCredits.value.kind !== 'hidden' && breakdown.value.kind !== 'unavailable'
 )
 const paymentPastDue = computed(
   () =>
