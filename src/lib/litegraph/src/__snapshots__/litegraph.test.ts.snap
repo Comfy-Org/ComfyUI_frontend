@@ -198,5 +198,6 @@ LiteGraphGlobal {
   "truncateWidgetValuesFirst": false,
   "uuidv4": [Function],
   "vueNodesMode": false,
+  "vueNodesSuspended": false,
 }
 `;

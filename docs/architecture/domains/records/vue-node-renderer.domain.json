@@ -36,9 +36,22 @@
   ],
   "publicEntryPoints": [
     "src/renderer/extensions/vueNodes/composables/useViewportKeepAlive.ts",
-    "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.ts"
+    "src/renderer/extensions/vueNodes/composables/useViewportKeepAlivePins.ts",
+    "src/renderer/extensions/vueNodes/components/NodeBoxOverlay.vue",
+    "src/renderer/extensions/vueNodes/composables/useLowQualityRendering.ts",
+    "src/renderer/extensions/vueNodes/utils/createNodeBox.ts",
+    "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.ts"
   ],
   "characterizationScenarios": [
+    {
+      "name": "Simplified node rendering projects node details and shape styles, switches quality with settings and zoom, and draws viewport boxes once per render signature",
+      "checks": [
+        "src/renderer/extensions/vueNodes/utils/createNodeBox.test.ts",
+        "src/renderer/extensions/vueNodes/utils/nodeStyleUtils.test.ts",
+        "src/renderer/extensions/vueNodes/composables/useLowQualityRendering.test.ts",
+        "src/renderer/extensions/vueNodes/components/NodeBoxOverlay.test.ts"
+      ]
+    },
     {
       "name": "Viewport keep-alive bounds active nodes and retains transient browser state and link-drag sources until released",
       "checks": [

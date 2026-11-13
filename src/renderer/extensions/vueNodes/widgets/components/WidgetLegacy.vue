@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { useResizeObserver, whenever } from '@vueuse/core'
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import {
+  onActivated,
+  onBeforeUnmount,
+  onDeactivated,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
@@ -28,6 +35,7 @@ const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
 let pointer: CanvasPointer | undefined
+let redrawOnActivation = false
 const scaleFactor = 2
 
 function findLegacyWidget():
@@ -73,6 +81,14 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (widgetInstance) widgetInstance.triggerDraw = () => {}
 })
+onDeactivated(() => {
+  redrawOnActivation = true
+})
+onActivated(() => {
+  if (!redrawOnActivation) return
+  redrawOnActivation = false
+  draw()
+})
 
 whenever(() => !canvasStore.linearMode, bindWidget)
 watch(() => canvasStore.currentGraph, bindWidget)
@@ -92,20 +108,21 @@ function getWidgetHeight(
 }
 
 function draw() {
-  if (!widgetInstance || !node) return
-  const width = canvasEl.value.parentElement.clientWidth
+  const element = canvasEl.value
+  if (!widgetInstance || !node || !element?.isConnected) return
+  const width = element.parentElement.clientWidth
   const height = getWidgetHeight(widgetInstance, node, width)
   containerHeight.value = height
   node.canvasHeight = height
   widgetInstance.y = 0
   widgetInstance.last_y = 0
   widgetInstance.width = width
-  canvasEl.value.height = height === 0 ? 0 : (height + 2) * scaleFactor
-  canvasEl.value.width = width * scaleFactor
-  const ctx = canvasEl.value.getContext('2d')
+  element.height = height === 0 ? 0 : (height + 2) * scaleFactor
+  element.width = width * scaleFactor
+  const ctx = element.getContext('2d')
   if (!ctx) return
   ctx.scale(scaleFactor, scaleFactor)
-  widgetInstance.draw?.(ctx, node, width, 1, height)
+  widgetInstance.draw?.(ctx, node, width, 1, height, canvas.low_quality)
 }
 function augmentToWidgetPointerEvent(
   e: PointerEvent,

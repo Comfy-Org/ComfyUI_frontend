@@ -23,6 +23,14 @@
   ],
   "characterizationScenarios": [
     {
+      "name": "Graph canvas filters simplified node boxes using graph-space layout bounds and intersection math",
+      "checks": [
+        "src/renderer/core/layout/utils/layoutMath.test.ts",
+        "src/renderer/extensions/vueNodes/utils/createNodeBox.test.ts",
+        "src/renderer/extensions/vueNodes/components/NodeBoxOverlay.test.ts"
+      ]
+    },
+    {
       "name": "Viewport keep-alive consumes layout bounds, intersection math, and camera transforms without changing node geometry",
       "checks": [
         "src/renderer/core/layout/utils/layoutMath.test.ts",
