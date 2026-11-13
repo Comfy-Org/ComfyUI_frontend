@@ -9,13 +9,13 @@
   >
     <div v-if="show" class="ml-2 flex items-center overflow-hidden">
       <Button
-        :tooltip="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
+        :tooltip="label"
         tooltip-side="bottom"
-        :aria-label="isAllCollapsed ? t('g.expandAll') : t('g.collapseAll')"
+        :aria-label="label"
         variant="muted-textonly"
         size="icon-sm"
         class="size-8 shrink-0 hover:text-foreground"
-        @click="toggle"
+        @click="isAllCollapsed = !isAllCollapsed"
       >
         <i
           :class="
@@ -30,18 +30,19 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-import Button from '@comfyorg/design-system/button/Button'
+import { computed } from 'vue'
 
-const { t } = useI18n()
+import Button from '@comfyorg/design-system/button/Button'
 
 const isAllCollapsed = defineModel<boolean>({ required: true })
 
-defineProps<{
+const { show, expandLabel, collapseLabel } = defineProps<{
   show: boolean
+  expandLabel: string
+  collapseLabel: string
 }>()
 
-function toggle() {
-  isAllCollapsed.value = !isAllCollapsed.value
-}
+const label = computed(() =>
+  isAllCollapsed.value ? expandLabel : collapseLabel
+)
 </script>

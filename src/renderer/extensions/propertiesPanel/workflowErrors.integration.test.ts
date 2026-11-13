@@ -29,7 +29,7 @@ import {
 } from '@/utils/__tests__/canvasTestUtils'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useErrorsTabRequestStore } from '@/platform/workflowErrors/panel/errorsTabRequestStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -301,7 +301,7 @@ describe('ErrorGroupList selection emphasis', () => {
 
     const groupKey = samplerSection.getAttribute('data-group-key')
     assert.exists(groupKey)
-    useRightSidePanelStore(pinia).requestErrorDetails([groupKey])
+    useErrorsTabRequestStore(pinia).requestDetails([groupKey])
     await nextTick()
 
     expect(isSectionExpanded(samplerSection)).toBe(true)

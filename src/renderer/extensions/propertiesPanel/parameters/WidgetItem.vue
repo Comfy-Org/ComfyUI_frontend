@@ -20,7 +20,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import type {
   SimplifiedWidget,

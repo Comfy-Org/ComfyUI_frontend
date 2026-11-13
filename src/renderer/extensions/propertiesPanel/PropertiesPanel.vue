@@ -7,25 +7,15 @@ import EditableText from '@comfyorg/design-system/common/EditableText'
 import Tab from '@comfyorg/design-system/tab/Tab'
 import TabList from '@comfyorg/design-system/tab/TabList'
 import Button from '@comfyorg/design-system/button/Button'
-import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
-import { app } from '@/scripts/app'
-import {
-  getActiveGraphNodeIds,
-  getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import type { PropertiesPanelTab } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -34,17 +24,15 @@ import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
 import TabNodes from './parameters/TabNodes.vue'
 import TabNormalInputs from './parameters/TabNormalInputs.vue'
 import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
-import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
+import { trackPropertiesPanelTabOpened } from './propertiesPanelTabTelemetry'
 import TabGlobalSettings from './settings/TabGlobalSettings.vue'
 import TabSettings from './settings/TabSettings.vue'
-import {
-  GetNodeParentGroupKey,
-  useFlatAndCategorizeSelectedItems
-} from './shared'
+import { findParentGroup, GetNodeParentGroupKey } from './parentGroup'
+import { useFlatAndCategorizeSelectedItems } from './selectedItems'
 import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from '@/platform/workflowErrors/panel/TabErrors.vue'
-import { useHasBlockingError } from '@/platform/workflowErrors/panel/useHasBlockingError'
+import { useErrorsTabIndicator } from '@/platform/workflowErrors/panel/useErrorsTabIndicator'
 import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
 import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
 import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
@@ -53,33 +41,14 @@ provide(WorkflowErrorManagerKey, createWorkflowErrorManager())
 provide(AskAgentPortKey, useAskAgentAboutIssues())
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
-const executionErrorStore = useExecutionErrorStore()
-const missingModelStore = useMissingModelStore()
-const missingMediaStore = useMissingMediaStore()
-const missingNodesErrorStore = useMissingNodesErrorStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const settingStore = useSettingStore()
 const { t } = useI18n()
 
-const { hasAnyError, allErrorExecutionIds } = storeToRefs(executionErrorStore)
-
-const activeMissingNodeGraphIds = computed<Set<string>>(() => {
-  if (!app.isGraphReady) return new Set()
-  return getActiveGraphNodeIds(
-    app.rootGraph,
-    canvasStore.currentGraph ?? app.rootGraph,
-    missingNodesErrorStore.missingAncestorExecutionIds
-  )
-})
-
-const { activeMissingModelGraphIds } = storeToRefs(missingModelStore)
-const { activeMissingMediaGraphIds } = storeToRefs(missingMediaStore)
-
-const { findParentGroup } = useGraphHierarchy()
 const { focusNode } = useFocusNode()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
-const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
+const { activeTab, isEditingSubgraph } = storeToRefs(propertiesPanelStore)
 
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -104,7 +73,10 @@ const shouldShowGroupNames = computed(() => {
 
 provide(GetNodeParentGroupKey, (node: LGraphNode) => {
   if (!shouldShowGroupNames.value) return null
-  return nodeToParentGroup.value.get(node) ?? findParentGroup(node)
+  return (
+    nodeToParentGroup.value.get(node) ??
+    findParentGroup(canvasStore.canvas?.graph?.groups ?? [], node)
+  )
 })
 
 const hasSelection = computed(() => flattedItems.value.length > 0)
@@ -138,89 +110,32 @@ function closePanel() {
     button_id: 'right_side_panel_closed',
     element_group: 'right_side_panel'
   })
-  rightSidePanelStore.closePanel()
+  propertiesPanelStore.closePanel()
 }
 
-function handleTabChange(newTab: RightSidePanelTab) {
-  trackRightSidePanelTabOpened(newTab)
-  rightSidePanelStore.openPanel(newTab)
+function handleTabChange(newTab: PropertiesPanelTab) {
+  trackPropertiesPanelTabOpened(newTab)
+  propertiesPanelStore.openPanel(newTab)
 }
 
-type RightSidePanelTabList = Array<{
+type PropertiesPanelTabList = Array<{
   label: () => string
-  value: RightSidePanelTab
+  value: PropertiesPanelTab
   icon?: {
     className: string
     label: () => string
   }
 }>
 
-const hasDirectNodeError = computed(() =>
-  selectedNodes.value.some((node) =>
-    executionErrorStore.activeGraphErrorNodeIds.has(String(node.id))
-  )
-)
-
-const hasContainerInternalError = computed(() => {
-  if (allErrorExecutionIds.value.length === 0) return false
-  return selectedNodes.value.some((node) => {
-    if (!(node instanceof SubgraphNode)) return false
-    return executionErrorStore.isContainerWithInternalError(node)
+const { hasRelevantErrors, hasPendingErrorScanSelected, hasBlockingError } =
+  useErrorsTabIndicator({
+    hasSelection,
+    selectedNodes,
+    currentGraph: () => canvasStore.currentGraph
   })
-})
 
-const hasMissingNodeSelected = computed(
-  () =>
-    hasSelection.value &&
-    selectedNodes.value.some((node) =>
-      activeMissingNodeGraphIds.value.has(String(node.id))
-    )
-)
-
-const hasMissingModelSelected = computed(
-  () =>
-    hasSelection.value &&
-    selectedNodes.value.some((node) =>
-      activeMissingModelGraphIds.value.has(String(node.id))
-    )
-)
-
-const hasMissingMediaSelected = computed(
-  () =>
-    hasSelection.value &&
-    selectedNodes.value.some((node) =>
-      activeMissingMediaGraphIds.value.has(String(node.id))
-    )
-)
-
-const hasRelevantErrors = computed(() => {
-  if (!hasSelection.value) return hasAnyError.value
-  return (
-    hasDirectNodeError.value ||
-    hasContainerInternalError.value ||
-    hasMissingNodeSelected.value ||
-    hasMissingModelSelected.value ||
-    hasMissingMediaSelected.value
-  )
-})
-
-const hasPendingErrorScanSelected = computed(() => {
-  const nodes = selectedNodes.value
-  if (!app.isGraphReady) return false
-  const rootGraph = app.rootGraph
-  return nodes.some((node) => {
-    const executionId = getExecutionIdByNode(rootGraph, node)
-    return (
-      executionId !== null &&
-      executionErrorStore.hasPendingAddedNodeErrorScan(rootGraph, executionId)
-    )
-  })
-})
-
-const hasBlockingError = useHasBlockingError()
-
-const tabs = computed<RightSidePanelTabList>(() => {
-  const list: RightSidePanelTabList = []
+const tabs = computed<PropertiesPanelTabList>(() => {
+  const list: PropertiesPanelTabList = []
 
   if (
     settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
@@ -230,8 +145,6 @@ const tabs = computed<RightSidePanelTabList>(() => {
     list.push({
       label: () => t('rightSidePanel.errors'),
       value: 'errors',
-      // No icon while the tab is only retained by a pending scan: with both
-      // severities absent there is no state for it to describe.
       icon: hasRelevantErrors.value
         ? {
             className: cn(
@@ -295,7 +208,7 @@ function isActiveTabAvailable() {
 
 watchEffect(() => {
   if (!isActiveTabAvailable()) {
-    rightSidePanelStore.openPanel(tabs.value[0].value)
+    propertiesPanelStore.openPanel(tabs.value[0].value)
   }
 })
 
@@ -399,7 +312,7 @@ function handleTitleCancel() {
             :aria-label="t('rightSidePanel.editSubgraph')"
             :class="cn(isEditingSubgraph && 'bg-muted')"
             @click="
-              rightSidePanelStore.openPanel(
+              propertiesPanelStore.openPanel(
                 isEditingSubgraph ? 'parameters' : 'subgraph'
               )
             "
@@ -409,7 +322,7 @@ function handleTitleCancel() {
           <Button
             variant="secondary"
             size="icon"
-            :aria-pressed="rightSidePanelStore.isOpen"
+            :aria-pressed="propertiesPanelStore.isOpen"
             :aria-label="t('rightSidePanel.togglePanel')"
             @click="closePanel"
           >

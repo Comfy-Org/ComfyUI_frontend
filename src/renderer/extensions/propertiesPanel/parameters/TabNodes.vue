@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import { computed, reactive, ref, shallowRef } from 'vue'
 
-import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-import {
-  computedSectionDataList,
-  searchWidgetsAndNodes
-} from '@/components/rightSidePanel/shared'
-import type { NodeWidgetsListList } from '@/components/rightSidePanel/shared'
+import { computedSectionDataList } from './widgetSections'
+import type { NodeWidgetsListList } from './widgetSections'
+import { searchWidgetsAndNodes } from './widgetSearch'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -70,6 +68,8 @@ async function searcher(query: string) {
   >
     <CollapseToggleButton
       v-model="isAllCollapsed"
+      :expand-label="$t('g.expandAll')"
+      :collapse-label="$t('g.collapseAll')"
       :show="!isSearching && widgetsSectionDataList.length > 1"
     />
   </PanelSearchHeader>

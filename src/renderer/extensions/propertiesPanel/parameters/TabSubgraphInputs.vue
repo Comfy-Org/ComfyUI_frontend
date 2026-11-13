@@ -11,16 +11,16 @@ import {
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 
-import { searchWidgets } from '@/components/rightSidePanel/shared'
-import type { NodeWidgetsList } from '@/components/rightSidePanel/shared'
+import { searchWidgets } from './widgetSearch'
+import type { NodeWidgetsList } from './widgetSections'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -30,9 +30,9 @@ const { node } = defineProps<{
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const widgetValueStore = useWidgetValueStore()
-const { focusedSection } = storeToRefs(rightSidePanelStore)
+const { focusedSection } = storeToRefs(propertiesPanelStore)
 const searchQuery = ref('')
 
 const advancedInputsCollapsed = ref(true)
@@ -56,7 +56,7 @@ watch(
   async (section) => {
     if (section === 'advanced-inputs') {
       advancedInputsCollapsed.value = false
-      rightSidePanelStore.clearFocusedSection()
+      propertiesPanelStore.clearFocusedSection()
 
       await nextTick()
 
@@ -148,6 +148,8 @@ const label = computed(() => {
   <PanelSearchHeader v-model="searchQuery" :searcher :update-key="widgetsList">
     <CollapseToggleButton
       v-model="isAllCollapsed"
+      :expand-label="$t('g.expandAll')"
+      :collapse-label="$t('g.collapseAll')"
       :show="!isSearching && advancedInputsWidgets.length > 0"
     />
   </PanelSearchHeader>

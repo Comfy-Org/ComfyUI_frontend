@@ -4,11 +4,11 @@ import { useTelemetry } from '@comfyorg/telemetry'
 
 vi.mock(import('@comfyorg/telemetry'))
 
-import { trackRightSidePanelTabOpened } from './rightSidePanelTabTelemetry'
+import { trackPropertiesPanelTabOpened } from './propertiesPanelTabTelemetry'
 
-describe('trackRightSidePanelTabOpened', () => {
+describe('trackPropertiesPanelTabOpened', () => {
   it('tracks opening the settings tab', () => {
-    trackRightSidePanelTabOpened('settings')
+    trackPropertiesPanelTabOpened('settings')
 
     expect(
       useTelemetry()?.trackUiButtonClicked
@@ -19,7 +19,7 @@ describe('trackRightSidePanelTabOpened', () => {
   })
 
   it('tracks opening the info tab', () => {
-    trackRightSidePanelTabOpened('info')
+    trackPropertiesPanelTabOpened('info')
 
     expect(
       useTelemetry()?.trackUiButtonClicked
@@ -32,7 +32,7 @@ describe('trackRightSidePanelTabOpened', () => {
   it.for(['parameters', 'nodes', 'errors', 'subgraph'] as const)(
     'does not track opening the %s tab',
     (tab) => {
-      trackRightSidePanelTabOpened(tab)
+      trackPropertiesPanelTabOpened(tab)
 
       expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
     }

@@ -14,7 +14,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
 import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
