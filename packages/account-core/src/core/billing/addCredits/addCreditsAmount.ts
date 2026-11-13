@@ -8,7 +8,7 @@ export const ADD_CREDITS_DEFAULT_CENTS = 5000
 /** Used only while the balance response omits `min_topup_cents` / `max_topup_cents`. */
 export const ADD_CREDITS_FALLBACK_BOUNDS: AddCreditsBounds = {
   minCents: 500,
-  maxCents: 1_000_000
+  maxCents: 250_000
 }
 
 export interface AddCreditsBounds {

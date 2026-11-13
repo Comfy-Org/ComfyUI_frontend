@@ -168,26 +168,77 @@ describe('CheckoutTransitionConfirm', () => {
   })
 
   describe('reactivation', () => {
-    it('shows no banner for a subscription that is not cancelled', () => {
-      renderTransition()
+    function cancelled(overrides: Partial<SubscriptionPreview> = {}) {
+      return upgrade({
+        requires_reactivation_confirmation: true,
+        cancel_at: '2026-07-01T00:00:00Z',
+        ...overrides
+      })
+    }
+
+    it.for([
+      { served: true, banner: true },
+      { served: false, banner: false },
+      { served: undefined, banner: false }
+    ])(
+      'renders the banner only for a served requires_reactivation_confirmation (served $served)',
+      ({ served, banner }) => {
+        renderTransition({
+          previewData: cancelled({
+            requires_reactivation_confirmation: served
+          })
+        })
+        expect(
+          screen.queryByText('Reactivating your subscription') !== null
+        ).toBe(banner)
+        expect(
+          screen.queryByRole('button', { name: /Confirm & reactivate/ }) !==
+            null
+        ).toBe(banner)
+      }
+    )
+
+    it.for([
+      { served: true, checkbox: true },
+      { served: false, checkbox: false },
+      { served: undefined, checkbox: false }
+    ])(
+      'asks for charge consent only for a served requires_reactivation_charge_confirmation (served $served)',
+      ({ served, checkbox }) => {
+        renderTransition({
+          previewData: cancelled({
+            amount_due_cents: 99_900,
+            requires_reactivation_charge_confirmation: served
+          })
+        })
+        expect(screen.queryByRole('checkbox') !== null).toBe(checkbox)
+        expect(
+          confirmButton('Confirm & reactivate — $999.00 today').disabled
+        ).toBe(checkbox)
+      }
+    )
+
+    it('names the served cancel_at, not the period end, as the end date', () => {
+      renderTransition({
+        previewData: cancelled({ cancel_at: '2026-06-15T00:00:00Z' })
+      })
+      expect(screen.getByText(/Your Standard was set to end/).textContent).toBe(
+        'Your Standard was set to end on Jun 15, 2026. You will be charged $15.00 today and renew on Jul 19, 2026.'
+      )
+    })
+
+    it('hides the banner when the preview carries no cancel_at to name', () => {
+      renderTransition({ previewData: cancelled({ cancel_at: undefined }) })
       expect(screen.queryByText('Reactivating your subscription')).toBeNull()
     })
 
     it('discloses an upgrade reactivation with the charge in the confirm label', async () => {
       const onConfirm = vi.fn()
       renderTransition({
-        subscriptionCancelled: true,
-        subscriptionEndDate: '2026-07-01T00:00:00Z',
-        previewData: upgrade({ amount_due_cents: 1500 }),
+        previewData: cancelled({ amount_due_cents: 1500 }),
         onConfirm
       })
       expect(screen.getByText('Reactivating your subscription')).toBeTruthy()
-      expect(
-        screen.getByText(/Your Standard was set to end on Jul 1, 2026/)
-          .textContent
-      ).toBe(
-        'Your Standard was set to end on Jul 1, 2026. You will be charged $15.00 today and renew on Jul 19, 2026.'
-      )
       await userEvent.click(
         confirmButton('Confirm & reactivate — $15.00 today')
       )
@@ -196,9 +247,8 @@ describe('CheckoutTransitionConfirm', () => {
 
     it('renews on the server renewal date, the one the summary shows', () => {
       renderTransition({
-        subscriptionCancelled: true,
-        subscriptionEndDate: '2026-10-25T00:00:00Z',
-        previewData: upgrade({
+        previewData: cancelled({
+          cancel_at: '2026-10-25T00:00:00Z',
           effective_at: '2026-09-27T00:00:00Z',
           renewal_at: '2026-10-25T00:00:00Z',
           new_plan: plan('CREATOR', 'MONTHLY', 3500)
@@ -213,11 +263,10 @@ describe('CheckoutTransitionConfirm', () => {
       expect(screen.getByText(/Renews at .* on Oct 25, 2026/)).toBeTruthy()
     })
 
-    it('requires the charge to be acknowledged when the preview serves it', async () => {
+    it('unlocks the confirm once the served charge consent is given', async () => {
       const onConfirm = vi.fn()
       renderTransition({
-        forceReactivation: true,
-        previewData: upgrade({
+        previewData: cancelled({
           amount_due_cents: 4500,
           requires_reactivation_charge_confirmation: true
         }),
@@ -237,71 +286,23 @@ describe('CheckoutTransitionConfirm', () => {
 
     it('drops the acknowledgement when a replacement quote arrives', async () => {
       const consentQuote = () =>
-        upgrade({
+        cancelled({
           amount_due_cents: 4500,
           requires_reactivation_charge_confirmation: true
         })
-      const { rerender } = renderTransition({
-        forceReactivation: true,
-        previewData: consentQuote()
-      })
+      const { rerender } = renderTransition({ previewData: consentQuote() })
       await userEvent.click(screen.getByRole('checkbox'))
       await rerender({ previewData: consentQuote() })
       expect(screen.getByRole('checkbox')).toHaveProperty('checked', false)
       expect(confirmButton(/Confirm & reactivate/).disabled).toBe(true)
     })
 
-    it('asks for no acknowledgement when the preview serves false, whatever the charge', () => {
+    it('labels a downgrade reactivation without a charge', () => {
       renderTransition({
-        forceReactivation: true,
-        previewData: upgrade({
-          amount_due_cents: 99_900,
-          requires_reactivation_charge_confirmation: false
-        })
-      })
-      expect(screen.queryByRole('checkbox')).toBeNull()
-      expect(
-        confirmButton('Confirm & reactivate — $999.00 today').disabled
-      ).toBe(false)
-    })
-
-    it('keeps the interim charge rule when the preview omits the fact', () => {
-      renderTransition({
-        forceReactivation: true,
-        previewData: upgrade({ amount_due_cents: 99_900 })
-      })
-      expect(
-        screen.getByRole('checkbox', {
-          name: "I understand I'll be charged $999.00 today"
-        })
-      ).toBeTruthy()
-      expect(
-        confirmButton('Confirm & reactivate — $999.00 today').disabled
-      ).toBe(true)
-    })
-
-    it('requires acknowledgement for a served true even when the client sees no cancellation', async () => {
-      const onConfirm = vi.fn()
-      renderTransition({
-        previewData: upgrade({
-          amount_due_cents: 500,
-          requires_reactivation_charge_confirmation: true
-        }),
-        onConfirm
-      })
-      const confirm = confirmButton(/Confirm & reactivate/)
-      expect(confirm.disabled).toBe(true)
-      await userEvent.click(screen.getByRole('checkbox'))
-      await userEvent.click(confirm)
-      expect(onConfirm).toHaveBeenCalledWith(true)
-    })
-
-    it('never asks a downgrade to acknowledge a charge', () => {
-      renderTransition({
-        forceReactivation: true,
-        previewData: upgrade({
+        previewData: cancelled({
           transition_type: 'downgrade',
-          amount_due_cents: 9900
+          amount_due_cents: 0,
+          requires_reactivation_charge_confirmation: false
         })
       })
       expect(screen.queryByRole('checkbox')).toBeNull()
@@ -310,8 +311,7 @@ describe('CheckoutTransitionConfirm', () => {
 
     it('titles an annual duration change as a full year billed today', () => {
       renderTransition({
-        forceReactivation: true,
-        previewData: upgrade({
+        previewData: cancelled({
           transition_type: 'duration_change',
           new_plan: plan('STANDARD', 'ANNUAL', 19_200)
         })
@@ -325,8 +325,7 @@ describe('CheckoutTransitionConfirm', () => {
 
     it('leaves the renewal clause out when the quote carries no renewal date', () => {
       renderTransition({
-        forceReactivation: true,
-        previewData: upgrade({
+        previewData: cancelled({
           effective_at: '2026-01-31T00:00:00Z',
           renewal_at: undefined,
           new_plan: plan('CREATOR', 'MONTHLY', 3500)
@@ -335,14 +334,6 @@ describe('CheckoutTransitionConfirm', () => {
       expect(screen.getByText(/Your Standard was set to end/).textContent).toBe(
         'Your Standard was set to end on Jul 1, 2026. You will be charged $15.00 today and renew.'
       )
-    })
-
-    it('hides the banner when the preview carries no current plan', () => {
-      renderTransition({
-        forceReactivation: true,
-        previewData: upgrade({ current_plan: undefined })
-      })
-      expect(screen.queryByText('Reactivating your subscription')).toBeNull()
     })
   })
 })

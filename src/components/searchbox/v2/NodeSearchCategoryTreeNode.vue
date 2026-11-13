@@ -20,7 +20,7 @@
         :style="{ paddingLeft: `${0.75 + depth * 1.25}rem` }"
         :class="
           cn(
-            'h-auto w-full gap-2 bg-transparent py-2.5 pr-3 text-left text-sm font-normal',
+            'h-auto w-full bg-transparent py-2.5 pr-3 text-left text-sm font-normal',
             selectedCategory === node.key
               ? CATEGORY_SELECTED_CLASS
               : CATEGORY_UNSELECTED_CLASS
@@ -70,9 +70,9 @@ export interface CategoryNode {
   children?: CategoryNode[]
 }
 
-export const CATEGORY_SELECTED_CLASS = 'bg-accent text-foreground'
+export const CATEGORY_SELECTED_CLASS = 'bg-accent'
 export const CATEGORY_UNSELECTED_CLASS =
-  'text-muted-foreground hover:bg-accent hover:text-foreground'
+  'text-muted-foreground hover:text-foreground'
 </script>
 
 <script setup lang="ts">
