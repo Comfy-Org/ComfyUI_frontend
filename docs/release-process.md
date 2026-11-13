@@ -71,6 +71,60 @@ skipped. Every other release label is cherry-picked: a backport that was on
 hold starts, and one whose backport PR was closed without merging is opened
 again. Remove the release label first if that target should stay skipped.
 
+### Desktop partner-node token backports (FRONT-3925)
+
+[Frontend PR #23229](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23229)
+adds the optional Desktop `Auth.getPartnerNodeToken(workspaceId)` path. Track
+its backports to `core/1.58`, `core/1.59` and `core/1.60` here. Local Desktop
+views load the frontend pinned by ComfyUI, so a standalone frontend release
+does not establish that Desktop users have the change.
+
+The fallback depends on whether the Desktop session stayed the same:
+
+| Queue-time result                                                      | Credential queued                                                      |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Desktop returns a partner-node token for the unchanged session         | Desktop's token, without a frontend mint                               |
+| Bridge method is missing, rejects or returns `null`; session unchanged | Frontend mint result, or the original workspace token if minting fails |
+| Account or workspace changes during the bridge lookup or fallback mint | Original workspace token; discard the asynchronous result              |
+
+The session-change guard also applies to older Desktop builds without the
+bridge method. Returning the original token preserves the prompt's original
+credential; it does not obtain a replacement account's credential or guarantee
+that the original token is still valid. Cloud, Firebase sign-in and the flag-off
+paths retain their existing behavior.
+
+The [before/after comparison](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23229#issuecomment-6860320532)
+records a mocked Desktop bridge and simulated expiry. It shows the bridge token
+being queued without a frontend mint and the workflow rendering its text
+preview. It does not establish a live partner-node run, native Desktop bridge
+integration or Windows behavior. The PR also records a local cross-repository
+fixture run with a real 17-minute wait; that is separate from a live service
+check.
+
+Record the backport PR, released frontend version, ComfyUI version and its
+frontend pin, Desktop version/commit, OS, and a link to the live run evidence
+for each line. All live checks below remain pending; fixture results do not
+complete them.
+
+| Target      | Backport / released frontend | ComfyUI pin / Desktop build / OS | Live partner-node evidence |
+| ----------- | ---------------------------- | -------------------------------- | -------------------------- |
+| `core/1.58` | Pending                      | Pending                          | Pending                    |
+| `core/1.59` | Pending                      | Pending                          | Pending                    |
+| `core/1.60` | Pending                      | Pending                          | Pending                    |
+
+For each backport, use a Desktop build containing
+[Comfy-Desktop PR #1983](https://github.com/Comfy-Org/Comfy-Desktop/pull/1983)
+and the ComfyUI installation that actually pins that backport:
+
+1. Sign in through Desktop and run a real partner-node workflow with the partner-node token flag enabled.
+2. Keep the job running or polling past the workspace token's actual expiry; record completion without the partner-node sign-in error. Do not substitute a mocked bridge or simulated expiry.
+3. Verify ComfyUI's partner-token renewal against the live service during a sufficiently long run, and record the outcome separately from job completion.
+4. Record missing platform coverage explicitly, including Windows if only macOS was exercised. Include timestamps and sanitized outcomes without token values.
+
+Track removal of the temporary Cloud mint exception separately; a merged
+backport or a fixture run alone does not prove the frontend and Desktop changes
+have reached users. See the dependency and rollout notes in PR #23229.
+
 ## Release Sheriff Assignment
 
 The sheriff is a **fixed role**, declared in `.github/release-sheriff.json`:
