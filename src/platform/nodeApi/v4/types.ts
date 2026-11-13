@@ -722,6 +722,37 @@ export interface WidgetHandle {
   linked(): readonly WidgetHandle[] | undefined
   /** Links these widgets of the same node to this one, in place of any linked before. */
   setLinked(names: readonly string[]): void
+
+  /** Runs after a commit changes the value, with copies of the value and the one before. */
+  on(
+    event: 'change',
+    listener: (
+      value: WidgetValue | undefined,
+      previous: WidgetValue | undefined
+    ) => void
+  ): Unsubscribe
+  /** Runs after each commit not made by `setValue`, such as a click on a button. */
+  on(
+    event: 'activate',
+    listener: (value: WidgetValue | undefined) => void
+  ): Unsubscribe
+  /** Runs once when the host releases the widget, as `remove` does. */
+  on(event: 'removed', listener: () => void): Unsubscribe
+  /** Runs while a prompt is queued, to send another value for this run only. */
+  on(
+    event: 'beforeSerialize',
+    listener: (event: WidgetSerializeEvent) => void
+  ): Unsubscribe
+}
+
+/** A widget's value about to be sent in a queued prompt. */
+export interface WidgetSerializeEvent {
+  /** Where the value goes. The queued prompt is the only destination. */
+  readonly context: 'prompt'
+  /** A copy of what is sent unless a listener replaces it. */
+  readonly value: WidgetValue | undefined
+  /** Sends `value` in its place. Called during the listener; the last call wins. */
+  setSerializedValue(value: WidgetValue): void
 }
 
 /** What a widget is created from. */

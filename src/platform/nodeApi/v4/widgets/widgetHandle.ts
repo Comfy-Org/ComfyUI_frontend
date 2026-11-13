@@ -15,6 +15,7 @@ import type { WidgetHandle, WidgetOptions } from '@/platform/nodeApi/v4/types'
 import { requiredFlag, requiredSize } from './definitionFields'
 import { savableValue } from './savableValue'
 import type { WidgetEdits } from './widgetEdits'
+import type { WidgetEvents } from './widgetEvents'
 
 /** The handle for a widget of a node in `graph`. */
 export type WidgetHandleFor = (
@@ -36,8 +37,7 @@ export function widgetNamed(
 
 export function createWidgetHandles(
   handles: DocumentHandles,
-  edits: WidgetEdits,
-  copyOfSaved: SavedCopier
+  services: Omit<WidgetServices, 'handleFor'>
 ): WidgetHandleFor {
   const cache = handles.createCache<WidgetHandle>((graph, key) => {
     const { nodeId, name } = parseKey(key)
@@ -49,7 +49,7 @@ export function createWidgetHandles(
     cache.handleFor(graph, keyOf(node.id, name), (resolveGraph) =>
       widgetHandle(
         { nodeId: node.id, name, resolveGraph },
-        { edits, copyOfSaved, handleFor }
+        { ...services, handleFor }
       )
     )
   return handleFor
@@ -63,6 +63,7 @@ interface WidgetIdentity {
 
 interface WidgetServices {
   readonly edits: WidgetEdits
+  readonly events: WidgetEvents
   readonly copyOfSaved: SavedCopier
   readonly handleFor: WidgetHandleFor
 }
@@ -75,7 +76,7 @@ interface LiveWidget {
 
 function widgetHandle(
   { nodeId, name, resolveGraph }: WidgetIdentity,
-  { edits, copyOfSaved, handleFor }: WidgetServices
+  { edits, events, copyOfSaved, handleFor }: WidgetServices
 ): WidgetHandle {
   function live(): LiveWidget | undefined {
     const graph = resolveGraph()
@@ -159,7 +160,9 @@ function widgetHandle(
         )
         edits.setLinked(node, widget, linked)
       })
-    }
+    },
+    on: (event: unknown, listener: unknown) =>
+      events.listen(live()?.widget, event, listener)
   })
 }
 

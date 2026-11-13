@@ -138,7 +138,7 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
     nodeTypeHooks: {
       name: NODE_TYPE_HOOKS_NAME,
       beforeRegisterNodeDef: registerHostType,
-      refreshComboInNodes: refreshed.notify,
+      refreshComboInNodes: () => refreshed.notify(),
       getNodeMenuItems: dispatch.menuItemsFor
     },
     reapplyTypeColors: colors.reapply

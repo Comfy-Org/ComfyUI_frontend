@@ -32,7 +32,10 @@ export interface WidgetEdits {
  * The only place a widget is changed. Arguments are checked by the caller.
  * A change the workflow saves is one undo step of its graph; every change is redrawn.
  */
-export function createWidgetEdits(runner: EditRunner): WidgetEdits {
+export function createWidgetEdits(
+  runner: EditRunner,
+  asSetValue: (commit: () => void) => void
+): WidgetEdits {
   function saved(node: LGraphNode, edit: () => void): void {
     const { graph } = node
     if (graph) runner.apply(graph, edit)
@@ -45,7 +48,7 @@ export function createWidgetEdits(runner: EditRunner): WidgetEdits {
 
   return {
     setInput: (node, widget, value) =>
-      saved(node, () => widget.setValue(value, { node })),
+      saved(node, () => asSetValue(() => widget.setValue(value, { node }))),
     setOption: (node, widget, key, value) =>
       shown(node, () => Object.assign(widget.options, { [key]: value })),
     setLabel: (node, widget, label) =>

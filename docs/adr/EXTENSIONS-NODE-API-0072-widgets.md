@@ -91,6 +91,41 @@ This ADR records how the API reaches widgets through those owners.
     with the `TypeError` of ADR-EXTENSIONS-NODE-API-0070 decision 13. The checks run on a deleted
     widget too.
 
+### Listening to a widget
+
+12. `on(event, listener)` adds a listener to the widget object the handle
+    reaches now. A listener belongs to that widget: it ends when the widget
+    is removed, and a widget added again under the name, or rebuilt by undo,
+    starts with none, as a chained callback does today. On a deleted widget
+    `on` registers nothing and returns a disposer that does nothing. Every
+    listener goes through the shared listener primitive, so one that throws
+    is reported and the host's commit and the other listeners carry on.
+13. `change` and `activate` hear the widget's `callback`, which every commit
+    runs: the canvas's `setValue`, the Vue canvas, the side panel, and
+    `setValue` here. The API chains it once per widget with the host's
+    `useChainCallback`, after the callback that was there, as
+    `useComputedWithWidgetWatch` does. `change` runs when the committed value
+    differs from the one the last commit left, with copies of both;
+    a value written without a commit, as a load restores it, is not a change.
+    `activate` runs on every commit that `setValue` did not make, which is
+    how a button is heard: its value never changes.
+14. `removed` chains the widget's `onRemove`, which the host runs when it
+    releases the widget: `removeWidget`, and for a DOM widget the removal of
+    its node. It runs once.
+15. `beforeSerialize` replaces the widget's `serializeValue`, the extension
+    point `graphToPrompt` already awaits for each widget, with one that first
+    awaits the serializer that was there, then lets listeners replace the
+    value for this prompt only. The value a listener supplies is checked as
+    `setValue` checks one. The event's `context` is always `'prompt'`; see
+    "Core limitation".
+16. Each bridge is installed when the first listener that needs it is added,
+    and only then, so a widget no pack listens to is untouched. Nothing is
+    added to `LGraphNode`, `BaseWidget` or `ExecutableNodeDTO`: `callback`,
+    `onRemove` and `serializeValue` are members every widget already has,
+    which host code assigns per widget in the same way (`dynamicPrompts`
+    assigns `serializeValue`, `bindMultilineTextareaWidget` chains
+    `onRemove`).
+
 ## Alternatives considered
 
 - Write a value with `useWidgetValueStore().setValue` and call the callback,
@@ -106,6 +141,38 @@ This ADR records how the API reaches widgets through those owners.
   is lost on the next save or undo; refusing it shows the pack's mistake at
   the call.
 
+- Hear values through the graph intents the widget value store emits. They
+  carry the root graph id, not the widget, and they also fire while a load
+  or an undo restores values, when a pack reacting with an edit would fight
+  the restore.
+- Keep listeners on the handle, so they survive undo. Packs register in
+  `onCreated`, which runs again for every node an undo rebuilds, and would
+  then hear each change twice.
+- Install `beforeSerialize` for the saved workflow through the node's
+  `onSerialize`. That is API behaviour on `LGraphNode`; see "Core
+  limitation".
+
+## Core limitation
+
+The old contract also offered `beforeSerialize` with `context` `'workflow'`
+(the saved file) and `'embedded'` (the copy written into an output image).
+Of the 15 stored packs that listen, 7 replace the saved value. The host has
+no seam for that: `LGraphNode.serialize` reads `widget.value` directly in
+`serialiseWidgetValues`, and the only hook after it is the node's
+`onSerialize`, on `LGraphNode`. Until a seam exists, those packs' saved files
+keep the widget's own value. The ticket to file:
+
+- **Title:** Let a widget supply the value saved in the workflow.
+- **Reproduction:** give a widget a `serializeValue` that returns another
+  value, save the workflow, and read `widgets_values`: it holds
+  `widget.value`, not what `serializeValue` returned. The same holds for the
+  workflow embedded in a queued prompt's `extra_pnginfo`.
+- **Suggested direction:** an optional widget member, for example
+  `serializeWorkflowValue(context)`, read by `serialiseWidgetValues` in
+  `LGraphNode.ts`, with the context telling a saved file from the copy
+  `graphToPrompt` embeds. When it lands, `context` gains `'workflow'` and
+  `'embedded'` as a patch.
+
 ## Consequences
 
 Changes outside the folder: `NodeHandle` gains `widgets` through the node
@@ -113,11 +180,21 @@ handle members seam (`createNodeHandles(handles, membersFor)`), and the edit
 core's `nodeHandleMembers` returns every member but `widgets`. Widget values
 and options are copied with `shared/savedCopy.ts`, as properties are.
 
+`createListeners` in `shared/listeners.ts` takes the arguments an event
+carries as a type parameter and passes them to each listener through
+`callListener`, so a widget's listeners share the one isolation path with
+`onReady` and the node type hooks. The definitions registry now calls
+`onRefreshed` listeners with no arguments, so the arguments the host passes
+its extension hook do not reach a pack.
+
 ## What this feature replaces or duplicates, and why
 
 - **The savable-value check.** `savableValue.ts` walks a value to refuse what
   the workflow cannot save. `JSON.stringify` silently drops a function or
   turns `NaN` into `null`, which would hide the mistake; `isPlainObject` from
   `es-toolkit` is used for the object test.
+- **Chaining a callback.** `useChainCallback` from the host is used for the
+  `callback` and `onRemove` bridges. It has no error isolation, so the
+  listeners it calls are delivered through the shared primitive.
 - **The definition check.** `definitionFields.ts` refuses unknown fields as
   `queryNodes` does, for every widget definition in this feature.

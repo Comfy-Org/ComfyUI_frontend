@@ -211,7 +211,7 @@ describe("the app's node API", () => {
 
     await useExtensionService().invokeExtensionsAsync('refreshComboInNodes', {})
 
-    expect(listener).toHaveBeenCalledOnce()
+    expect(listener).toHaveBeenCalledExactlyOnceWith()
   })
 
   it('adds the menu entries packs give a type to the host node menu', async () => {
