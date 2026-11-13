@@ -41,12 +41,15 @@ const METHODS_FOR: Readonly<Record<HookName, readonly string[]>> = {
   onDragOver: ['onDragOver'],
   onDrop: ['onDragDrop'],
   addMenuItem: [],
-  setSupply: []
+  setSupply: [],
+  onPromptSerialize: [],
+  onPreview: []
 }
 
 interface HookDispatch extends HookInstaller {
   menuItemsFor(node: LGraphNode): IContextMenuValue[]
   callbacksOf: NodeHookSource['callbacksOf']
+  deliverTo: NodeHookSource['deliverTo']
 }
 
 export function createHookDispatch(
@@ -171,6 +174,8 @@ export function createHookDispatch(
       isMadeFromKnownClass(node)
         ? source.callbacksFor(node.type, hook, joined.get(node) ?? 0)
         : [],
+    deliverTo: (node, hook, call) =>
+      isMadeFromKnownClass(node) ? deliver(node.type, hook, node, call) : [],
     menuItemsFor(node) {
       if (!isMadeFromKnownClass(node)) return []
       const entries = deliver(

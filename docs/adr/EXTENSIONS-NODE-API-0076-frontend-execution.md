@@ -33,6 +33,9 @@ into every input of a matching type that no link feeds; today it writes real
 links into the graph before the prompt is serialised and removes them after.
 In the census `NodeDefBuilder.setSupply` is used by that pack, which also reads
 the supplies back (`resolvedSupplies`) to turn them into real links on request.
+Two more hooks belong here: `onPromptSerialize` (1 pack) leaves some of a
+node's inputs out of the prompt, and `onPreview` (1 pack) hears the preview
+images the server sends while a node runs.
 
 Review finding B-10 of the earlier attempt asks that no API behaviour or state
 be put on `LGraphNode` or `ExecutableNodeDTO`, and that the prompt builder ask
@@ -205,6 +208,40 @@ to a subgraph input fed by a widget produce the widget's value.
     `{ kind: 'omitted' }`, since no link in the graph can start there. Any other
     node, a bypassed or subgraph node included, gives its own output.
 
+### Leaving inputs out of the prompt
+
+22. `NodeDefBuilder.onPromptSerialize(callback)` is asked while a prompt is
+    built, for each entry a node of the type has in it (once per placement of
+    a subgraph), with the node's handle in its own graph, for a node made from
+    a class the API put dispatchers on, as in decision 15. It is the second
+    member of the seam: after `graphToPrompt` has filled an entry's inputs, it
+    asks `omittedInputs(node)` and deletes each name the hooks give. Names the
+    entry does not have change nothing, and the saved workflow keeps every
+    input. Nodes the prompt leaves out (frontend, muted, bypassed) are not
+    asked. With no such hook applied it gives no names without looking at the
+    node.
+23. A hook answers nothing, which leaves nothing out, or exactly
+    `{ omitInputs }`, a list of names. Any other answer, and a hook that
+    throws, is reported with the event `onPromptSerialize`, and that hook
+    leaves nothing out; the other hooks' names are still left out. The hook is
+    synchronous: the old contract awaited it only so that a sandboxed pack
+    could answer.
+
+### Previews
+
+24. `NodeDefBuilder.onPreview(callback)` hears each preview image the server
+    sends for a node of the type while it runs, for a node made from a class
+    the API put dispatchers on, as in decision 15. The host's handler of
+    `b_preview_with_metadata`, once it has found that the frame belongs to the
+    run of the open workflow and stored it, calls
+    `useComfyApiStore().deliverPreview(rootGraph, executionId, blob)` with the
+    frame's display node. The API finds the node from the root graph by its
+    execution id, so a node inside a subgraph is found in its own graph
+    whether or not it is on screen, and calls the hooks of its type with the
+    node's handle and a frozen `{ blob }`. A frame of another workflow's run is
+    not delivered. With no such hook applied the call returns at once. A frame
+    sent without metadata (`b_preview`) names no node and is not delivered.
+
 ## Left out
 
 - `ResolveView.signal` and `SupplyView.signal` (0 packs each): cancellation
@@ -215,8 +252,11 @@ to a subgraph input fed by a widget produce the widget's value.
   `from` in an untyped helper; its source uses both, so both are kept.
 - `ResolvedSource.value` and `ResolvedSource.reason` (0 packs). The one reader
   checks `kind` and reports any kind but `'output'`.
-- `NodeDefinition.supply` (0 packs), as ADR-EXTENSIONS-NODE-API-0071 decision
-  38 records.
+- `NodeDefinition.supply` and `NodeDefinition.onPromptSerialize` (0 packs
+  each), as ADR-EXTENSIONS-NODE-API-0071 decision 38 records.
+- `PreviewFrame.url` (0 packs). An object URL needs an owner to revoke it; a
+  pack that wants one makes it from `frame.blob` with `URL.createObjectURL`
+  and revokes it itself.
 - `OwnInput.type` and `OwnInput.connected` (0 packs each): `connectedType` and
   `sourceNodeId` are `undefined` exactly when no link feeds the input.
 - Asynchronous resolvers: no stored pack needs one, and the sandbox that did
@@ -268,6 +308,10 @@ to a subgraph input fed by a widget produce the widget's value.
   the graph before serialisation and recorded them to undo afterwards is
   replaced by suppliers; `resolvedSupplies` gives it what it needs to make
   real links when the user asks for them.
+- **Preview routing**: packs listened to the API client's preview events and
+  kept the running node in a global to tell whose frame it was. `onPreview`
+  uses the host's handler, its display node and its check of the workflow,
+  and finds the node with the host's `getNodeByExecutionId`.
 - **Copying**: a literal is checked and copied by `savableValue`, the check
   the widget layer applies to every value a pack gives a widget, so a literal
   and a widget value are refused for the same reasons. A view's `properties`
@@ -284,10 +328,11 @@ to a subgraph input fed by a widget produce the widget's value.
 ## Consequences
 
 - Host changes: `executionUtil.ts` declares `FrontendExecution`, takes it in
-  `graphToPrompt`'s options and calls `adoptNodes` once; `app.ts` passes the
-  store's. Each has a test that fails without it (`executionUtil.test.ts`,
-  `app.test.ts`), and a workflow with no resolved node builds the same prompt
-  with and without the API.
+  `graphToPrompt`'s options, calls `adoptNodes` once and deletes the names
+  `omittedInputs` gives from each entry; `app.ts` passes the store's, and its
+  preview handler calls `deliverPreview`. Each has a test that fails without
+  it (`executionUtil.test.ts`, `app.test.ts`), and a workflow with no resolved
+  node builds the same prompt with and without the API.
 - A caller of `graphToPrompt` that does not pass the option builds without
   resolution. Every prompt the app builds goes through `app.graphToPrompt`.
 - A build with a resolver defined costs one map lookup per executable node,

@@ -67,6 +67,8 @@ export interface ComfyApiHost extends Omit<VersionHost, 'publish'> {
   importWorkflowFile: WorkflowImporters['importUnreadFile']
   /** What the prompt builder asks of the API. */
   readonly frontendExecution: FrontendExecution
+  /** Gives a preview the server sent for the node with `executionId` to packs. */
+  deliverPreview(rootGraph: LGraph, executionId: string, blob: Blob): void
 }
 
 export interface ComfyApi {
@@ -175,6 +177,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       nodeTypeHooks: definitions.nodeTypeHooks,
       reapplyTypeColors: definitions.reapplyTypeColors,
       frontendExecution: execution.prompt,
+      deliverPreview: execution.deliverPreview,
       markStarting: lifecycle.markStarting,
       markReady: lifecycle.markReady,
       providePacks: packs.provide,

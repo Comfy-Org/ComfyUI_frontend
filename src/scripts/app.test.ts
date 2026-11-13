@@ -7946,6 +7946,65 @@ describe('ComfyApp', () => {
       })
     })
 
+    it("gives a preview of the open workflow's run to the onPreview hooks of a node in a subgraph, and not another workflow's", () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const workflowA = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      workflowA.changeTracker.activeState = workflowGraphData(workflowAId)
+      useWorkflowStore().activeWorkflow = workflowA
+      onTestFinished(() => {
+        delete window.comfy_v4
+      })
+      useComfyApiStore().publish()
+      assert(window.comfy_v4)
+      const { defs } = window.comfy_v4
+      defs.define({ type: 'Pack/Preview' })
+      const previews: [string | undefined, Blob][] = []
+      defs.extend('Pack/Preview', (builder) =>
+        builder.onPreview((node, frame) =>
+          previews.push([node.graphId, frame.blob])
+        )
+      )
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const inner = addNodeOfType(subgraph, 'Pack/Preview')
+      const placement = createTestSubgraphNode(subgraph)
+      graph.add(placement)
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:preview')
+      const addEventListener = vi
+        .spyOn(api, 'addEventListener')
+        .mockImplementation(() => {})
+      vi.spyOn(api, 'init').mockResolvedValue()
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const previewHandler = addEventListener.mock.calls.find(
+        ([name]) => name === 'b_preview_with_metadata'
+      )?.[1]
+      assert(typeof previewHandler === 'function')
+      const preview = (blob: Blob, workflowId: string) =>
+        previewHandler(
+          new CustomEvent('b_preview_with_metadata', {
+            detail: {
+              blob,
+              nodeId: String(inner.id),
+              parentNodeId: String(placement.id),
+              displayNodeId: `${placement.id}:${inner.id}`,
+              realNodeId: String(inner.id),
+              jobId: `job-${workflowId}`,
+              workflowId
+            }
+          })
+        )
+      const own = new Blob(['own'])
+      useExecutionStore().activeJobId = `job-${workflowAId}`
+
+      preview(own, workflowAId)
+      preview(new Blob(['foreign']), workflowBId)
+
+      expect(previews).toEqual([[subgraph.id, own]])
+    })
+
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()

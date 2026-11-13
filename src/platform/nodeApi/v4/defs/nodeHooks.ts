@@ -10,6 +10,8 @@ import type {
   NodeDef,
   NodeDefBuilder,
   NodeHandle,
+  PreviewFrame,
+  PromptInputProjection,
   PropertyChangeEvent,
   Supplier
 } from '@/platform/nodeApi/v4/types'
@@ -54,6 +56,8 @@ export interface HookCallbacks {
   ) => boolean | void | Promise<boolean | void>
   addMenuItem: CheckedMenuItem
   setSupply: Supplier
+  onPromptSerialize: (node: NodeHandle) => PromptInputProjection | void
+  onPreview: (node: NodeHandle, frame: PreviewFrame) => void
 }
 
 export type HookName = keyof HookCallbacks
@@ -73,7 +77,9 @@ export const HOOK_NAMES = [
   'onDragOver',
   'onDrop',
   'addMenuItem',
-  'setSupply'
+  'setSupply',
+  'onPromptSerialize',
+  'onPreview'
 ] as const satisfies readonly HookName[]
 
 /** The callbacks one extension added to one type, by hook, in the order it added them. */
@@ -110,7 +116,9 @@ export function createNodeDefBuilder(
     onDragOver: [],
     onDrop: [],
     addMenuItem: [],
-    setSupply: []
+    setSupply: [],
+    onPromptSerialize: [],
+    onPreview: []
   }
   let open = true
 
@@ -172,7 +180,9 @@ export function createNodeDefBuilder(
     ),
     addWidget: adder('onCreated', widgetAdder, 'addWidget'),
     hideWidget: adder('onCreated', widgetHider, 'hideWidget'),
-    setSupply: hook('setSupply')
+    setSupply: hook('setSupply'),
+    onPromptSerialize: hook('onPromptSerialize'),
+    onPreview: hook('onPreview')
   })
 
   return {
