@@ -27,7 +27,9 @@ export interface NodeType {
 
 /** What the extensions need from whoever delivers their hooks. */
 export interface HookInstaller {
-  /** Makes sure the type's nodes call back for each of `hooks`. */
+  /** Records a class registered for a type, so its nodes count as the type's. */
+  registered(nodeType: NodeType): void
+  /** Makes sure the type's nodes, those that exist and those to come, call back for each of `hooks`. */
   install(nodeType: NodeType, hooks: readonly HookName[]): void
   /** The number of applied extensions with a callback for some hook changed. */
   demandChanged(): void
@@ -169,6 +171,7 @@ export function createExtensions(installer: HookInstaller): Extensions {
     typeRegistered(nodeType) {
       removeApplications(nodeType.type, () => true)
       nodeTypes.set(nodeType.type, nodeType)
+      installer.registered(nodeType)
       const candidate = candidateFor(nodeType)
       for (const extension of Array.from(extensions)) {
         applyIfSelected(extension, nodeType, candidate)

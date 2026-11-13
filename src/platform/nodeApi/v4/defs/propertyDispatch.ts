@@ -18,9 +18,9 @@ export function propertyInstallers({
   MethodInstaller
 > {
   return {
-    onPropertyChanged(nodeClass, type) {
-      const previous = nodeClass.prototype.onPropertyChanged
-      nodeClass.prototype.onPropertyChanged = function (name, value, before) {
+    onPropertyChanged(target, type) {
+      const previous = target.onPropertyChanged
+      target.onPropertyChanged = function (name, value, before) {
         const answer = previous?.call(this, name, value, before)
         if (answer === false) return false
         const outcome: { settlement: Settlement } = {

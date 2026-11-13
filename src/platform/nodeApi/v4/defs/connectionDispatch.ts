@@ -25,9 +25,9 @@ export function connectionInstallers(
   }
 
   return {
-    onConnectionsChange(nodeClass, type) {
-      const previous = nodeClass.prototype.onConnectionsChange
-      nodeClass.prototype.onConnectionsChange = function (
+    onConnectionsChange(target, type) {
+      const previous = target.onConnectionsChange
+      target.onConnectionsChange = function (
         slotType,
         index,
         connected,
@@ -53,16 +53,16 @@ export function connectionInstallers(
         )
       }
     },
-    onConnectInput(nodeClass, type) {
-      const previous = nodeClass.prototype.onConnectInput
-      nodeClass.prototype.onConnectInput = function (index, ...rest) {
+    onConnectInput(target, type) {
+      const previous = target.onConnectInput
+      target.onConnectInput = function (index, ...rest) {
         if (previous?.call(this, index, ...rest) === false) return false
         return mayConnect(type, this, Object.freeze({ side: 'input', index }))
       }
     },
-    onConnectOutput(nodeClass, type) {
-      const previous = nodeClass.prototype.onConnectOutput
-      nodeClass.prototype.onConnectOutput = function (index, ...rest) {
+    onConnectOutput(target, type) {
+      const previous = target.onConnectOutput
+      target.onConnectOutput = function (index, ...rest) {
         if (previous?.call(this, index, ...rest) === false) return false
         return mayConnect(type, this, Object.freeze({ side: 'output', index }))
       }
