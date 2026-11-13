@@ -56,9 +56,7 @@ export function useNodeResize(
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
 
-    const resizedElement = () =>
-      resized ?? target.closest<HTMLElement>('[data-node-id]')
-    const nodeElement = resizedElement()
+    const nodeElement = resized ?? target.closest<HTMLElement>('[data-node-id]')
     if (!nodeElement) return
 
     const rawNodeId = nodeElement.dataset.nodeId
@@ -204,8 +202,7 @@ export function useNodeResize(
         payload.position = { x: newX, y: newY }
       }
 
-      const targetNodeElement = resizedElement()
-      if (targetNodeElement) resizeCallback(payload, targetNodeElement)
+      resizeCallback(payload, nodeElement)
     }
 
     const cleanup = () => {

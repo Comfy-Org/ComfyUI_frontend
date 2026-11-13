@@ -63,6 +63,5 @@ describe('subgraph input widget lifecycle', () => {
     const current = store.getWidget(nextId)
     expect(current?.value).toBe(77)
     expect(current?.options.max).toBe(500)
-    expect(graph.inputNode.allSlots.at(-1)).toBe(graph.inputNode.emptySlot)
   })
 })

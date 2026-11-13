@@ -15,6 +15,7 @@ import {
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import type {
   DefaultConnectionColors,
   ISlotType,
@@ -74,7 +75,12 @@ export class SubgraphInputNode
     if (e.button === 0) {
       for (const slot of this.allSlots) {
         if (slot.boundingRect.containsXy(e.canvasX, e.canvasY)) {
-          if ((e.ctrlKey || e.metaKey) && e.altKey && !e.shiftKey) {
+          if (
+            LiteGraph.ctrl_alt_click_do_break_link &&
+            (e.ctrlKey || e.metaKey) &&
+            e.altKey &&
+            !e.shiftKey
+          ) {
             pointer.onClick = () => {
               this.subgraph.beforeChange()
               slot.disconnect()

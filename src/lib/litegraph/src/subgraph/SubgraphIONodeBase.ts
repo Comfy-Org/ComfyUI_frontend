@@ -52,8 +52,8 @@ export abstract class SubgraphIONodeBase<
 
   abstract readonly id: NodeId
 
-  private get measured() {
-    return useSubgraphIoLayoutStore().measurementOf(this.subgraph.id, this.id)
+  get measured() {
+    return useSubgraphIoLayoutStore().measurementOf(this)
   }
 
   protected get slotInset(): number {

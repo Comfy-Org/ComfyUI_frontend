@@ -15,7 +15,6 @@ import type {
 } from '@comfyorg/graph-model/interfaces'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
-import { useSubgraphIoLayoutStore } from '@/renderer/core/layout/store/subgraphIoLayoutStore'
 
 import {
   LinkMarkerShape,
@@ -52,11 +51,7 @@ export function resolvePointerTarget(
 ): PointerTarget {
   const point: Point = [e.canvasX, e.canvasY]
   const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
-  if (
-    ioNode &&
-    useSubgraphIoLayoutStore().measurementOf(ioNode.subgraph.id, ioNode.id)
-  )
-    return { kind: 'subgraphIO', ioNode }
+  if (ioNode?.measured) return { kind: 'subgraphIO', ioNode }
 
   if (node && (canvas.allow_interaction || node.flags.allow_interaction))
     return { kind: 'node', node }

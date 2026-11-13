@@ -34,7 +34,6 @@ const {
   forwardEventToCanvas
 } = useCanvasInteractions()
 
-const isInput = computed(() => ioNode === ioNode.subgraph.inputNode)
 const slots = computedWithControl(
   () => ioNode,
   (): TNode['allSlots'] => ioNode.allSlots
@@ -64,16 +63,14 @@ const title = computed(() =>
 
 const nodeView = useTemplateRef('nodeView')
 const panel = computed(() => nodeView.value?.element ?? null)
-const { style, startResize } = useSubgraphIoLayout(
+const { isInput, style, startResize } = useSubgraphIoLayout(
   () => ioNode,
   panel,
-  () => slots.value.length
+  () => slots.value
 )
 
 function exitSubgraph() {
-  if (!canvasStore.isPickingNodes) {
-    void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
-  }
+  void useCommandStore().execute('Comfy.Graph.ExitSubgraph')
 }
 
 function stopUnmodifiedKeys(event: KeyboardEvent) {
@@ -99,7 +96,6 @@ function forwardUnlessOnButton(event: PointerEvent) {
 
 <template>
   <NodeFrame
-    v-if="!canvasStore.linearMode"
     ref="nodeView"
     data-subgraph-io
     :inert="canvasStore.isPickingNodes"
@@ -123,7 +119,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
     @keydown="stopUnmodifiedKeys"
   >
     <div
-      :data-testid="isInput ? 'subgraph-input-body' : 'subgraph-output-body'"
+      data-testid="subgraph-input-body"
       class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) py-1"
       @contextmenu.prevent
     >
