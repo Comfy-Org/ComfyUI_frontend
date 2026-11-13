@@ -100,7 +100,7 @@ Needed to prove the improvement from the upcoming fix for <issue link>." \
 
 ### Step 6: Get PR1 merged
 
-Once PR1 merges, CI runs the test on main and saves the baseline to the `perf-data` branch. A failed save does not fail that job, so check `baselines/` on `perf-data` for files that contain the name PR1 passes to `stopMeasuring()`. PR2 needs at least two of them: `scripts/perf-stats.ts` computes no z-score from fewer samples, nor from samples that never vary (Step 8 covers that case). The report's Baseline column comes from a different source: the `perf-metrics` artifact of the newest `ci-perf-report.yaml` push run on main. Confirm that artifact contains the measurement too; if it does not, the row shows `new` with no comparison.
+Once PR1 merges, CI runs the test on main and saves the baseline to the `perf-data` branch. A failed save does not fail that job, so check the newest 15 files in `baselines/` on `perf-data`, the ones `pr-report.yaml` loads, for the name PR1 passes to `stopMeasuring()`. PR2 needs at least two of those 15 to contain it: `scripts/perf-stats.ts` computes no z-score from fewer samples, nor from samples that never vary (Step 8 covers that case). The report's Baseline column comes from a different source: the `perf-metrics` artifact of the newest `ci-perf-report.yaml` push run on main. Confirm that artifact contains the measurement too; if it does not, the row shows `new` with no comparison.
 
 ### Step 7: Create PR2 (fix) on top of main
 
@@ -118,7 +118,7 @@ Implement the fix. The `@perf` test from PR1 is now on main and will run automat
 
 Read the performance section of the PR report comment. The Sig column shows `z=…` for any row with a z-score and marks only regressions (`⚠️`), so read the number. The fix is proven when the target metric's Δ is negative and its z is below -2. Count metrics with a `minAbsDelta` in `REPORTED_METRICS` (`scripts/perf-report.ts`) also need an absolute change of at least that much; below it the row is neutral whatever its z.
 
-A count that never varied on main shows `—` instead of a z-score. Prove that fix with the `Historical variance` section, where σ is 0 across the baselines, and the per-sample values in the baseline and PR `perf-metrics` artifacts. Compare means, not the Baseline and PR columns: σ is computed from each run's mean, but those columns show medians, which can move while the mean does not.
+A count that never varied on main shows `—` instead of a z-score. Prove that fix from the per-sample values in the baseline and PR `perf-metrics` artifacts: every PR sample must be lower than every baseline sample. Neither the Baseline and PR columns (medians) nor a σ of 0 in `Historical variance` (spread of run means, not of samples within a run) is enough on its own.
 
 If PR2's perf job ran before those baselines existed, rerun it once they do.
 
