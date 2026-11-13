@@ -22,6 +22,7 @@ import {
   createNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
 
 const apiEvents: EventTarget = api
@@ -980,6 +981,22 @@ describe('useExecutionStore - background workflow error routing', () => {
     )
   }
 
+  function fireOutputsSkipped(jobId: string, nodeId: string) {
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: jobId,
+          node_errors: {
+            [nodeId]: nodeError(
+              [validationError('required_input_missing', 'images')],
+              'SaveImage'
+            )
+          }
+        }
+      })
+    )
+  }
+
   const cloudValidationMessage = JSON.stringify({
     error: { type: 'prompt_outputs_failed_validation', message: 'invalid' },
     node_errors: {
@@ -1149,6 +1166,48 @@ describe('useExecutionStore - background workflow error routing', () => {
     errorStore.setActiveGraph(graphBId, workflowB.path)
 
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-ambiguous')
+  })
+
+  it('marks the skipped outputs of the visible run as node errors', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('files the skipped outputs of a background run under its workflow', () => {
+    callStoreJob('job-b', workflowB)
+    fireOutputsSkipped('job-b', '9')
+
+    expect(errorStore.lastNodeErrors).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('applies skipped outputs that arrive before the job is stored', () => {
+    fireOutputsSkipped('job-a', '9')
+    expect(errorStore.lastNodeErrors).toBeNull()
+
+    callStoreJob('job-a', workflowA)
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('keeps skipped outputs of an unknown job off the visible run', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    fireOutputsSkipped('job-unknown', '5')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('keeps skipped-output errors through execution_start', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    fireExecutionStart('job-a')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
   })
 
   it('does not route an unattributable failure to the visible workflow', () => {
@@ -2595,7 +2654,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         'executing',
         'progress',
         'progress_state',
-        'execution_error'
+        'execution_error',
+        'prompt_outputs_skipped'
       ]
 
       store.unbindExecutionEvents()

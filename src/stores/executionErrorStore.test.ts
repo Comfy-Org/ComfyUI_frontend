@@ -813,6 +813,48 @@ describe('surfaceMissingMedia — silent option', () => {
   })
 })
 
+describe('surfaceNodeErrors', () => {
+  const visibleGraphId = '11111111-1111-4111-8111-111111111111'
+  const backgroundGraphId = '22222222-2222-4222-8222-222222222222'
+  const nodeErrors = {
+    '9': nodeError(
+      [validationError('required_input_missing', 'images')],
+      'SaveImage'
+    )
+  }
+
+  beforeEach(() => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+  })
+
+  it('records the errors and opens the overlay for the run on screen', () => {
+    const store = useExecutionErrorStore()
+    store.setActiveGraph(visibleGraphId, 'workflows/a.json')
+
+    store.surfaceNodeErrors(
+      nodeErrors,
+      store.runErrorKey(visibleGraphId, 'workflows/a.json')
+    )
+
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+    expect(store.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('records a background run without opening the overlay', () => {
+    const store = useExecutionErrorStore()
+    store.setActiveGraph(visibleGraphId, 'workflows/a.json')
+
+    store.surfaceNodeErrors(
+      nodeErrors,
+      store.runErrorKey(backgroundGraphId, 'workflows/b.json')
+    )
+
+    expect(store.isErrorOverlayOpen).toBe(false)
+    store.setActiveGraph(backgroundGraphId, 'workflows/b.json')
+    expect(store.lastNodeErrors).toEqual(nodeErrors)
+  })
+})
+
 describe('recordNodeErrors', () => {
   it('normalizes an empty error record to null', () => {
     const store = useExecutionErrorStore()

@@ -454,6 +454,24 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
   }
 
+  /**
+   * Records `nodeErrors` under `key` and opens the error overlay when that
+   * run is on screen.
+   */
+  function surfaceNodeErrors(
+    nodeErrors: Record<string, NodeError>,
+    key: string
+  ) {
+    recordNodeErrors(nodeErrors, key)
+    if (
+      key === activeRunErrorKey.value &&
+      hasNodeError.value &&
+      useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+    ) {
+      showErrorOverlay()
+    }
+  }
+
   function recordExecutionError(
     detail: ExecutionErrorWsMessage,
     key: string | null = activeRunErrorKey.value
@@ -979,6 +997,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Recording
     recordNodeErrors,
+    surfaceNodeErrors,
     recordExecutionError,
     recordPromptError,
 

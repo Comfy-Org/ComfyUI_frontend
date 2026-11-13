@@ -29,7 +29,8 @@ import type {
   NodeProgressState,
   NotificationWsMessage,
   ProgressStateWsMessage,
-  ProgressWsMessage
+  ProgressWsMessage,
+  PromptOutputsSkippedWsMessage
 } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
@@ -183,6 +184,10 @@ export const useExecutionStore = defineStore('execution', () => {
   // FIFO-capped to bound growth if a matching storeJob never fires.
   const pendingWorkflowStatusByJobId = new Map<string, WorkflowStatusUpdate>()
   const pendingExecutionErrorsByJobId = new Map<string, PendingExecutionError>()
+  const pendingSkippedOutputsByJobId = new Map<
+    string,
+    PromptOutputsSkippedWsMessage
+  >()
 
   function bufferPendingWorkflowStatus(
     jobId: string,
@@ -205,15 +210,18 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
-  function bufferPendingExecutionError(error: PendingExecutionError) {
-    const jobId = error.detail.prompt_id
-    pendingExecutionErrorsByJobId.delete(jobId)
-    pendingExecutionErrorsByJobId.set(jobId, error)
-    while (pendingExecutionErrorsByJobId.size > MAX_PROGRESS_JOBS) {
-      const oldest = pendingExecutionErrorsByJobId.keys().next().value
+  function bufferByJobId<T>(buffer: Map<string, T>, jobId: string, value: T) {
+    buffer.delete(jobId)
+    buffer.set(jobId, value)
+    while (buffer.size > MAX_PROGRESS_JOBS) {
+      const oldest = buffer.keys().next().value
       if (oldest === undefined) break
-      pendingExecutionErrorsByJobId.delete(oldest)
+      buffer.delete(oldest)
     }
+  }
+
+  function bufferPendingExecutionError(error: PendingExecutionError) {
+    bufferByJobId(pendingExecutionErrorsByJobId, error.detail.prompt_id, error)
   }
 
   function mutateStatus(
@@ -459,6 +467,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('progress_state', handleProgressState)
     api.addEventListener('status', handleStatus)
     api.addEventListener('execution_error', handleExecutionError)
+    api.addEventListener('prompt_outputs_skipped', handlePromptOutputsSkipped)
   }
 
   function unbindExecutionEvents() {
@@ -473,10 +482,15 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('progress_state', handleProgressState)
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
+    api.removeEventListener(
+      'prompt_outputs_skipped',
+      handlePromptOutputsSkipped
+    )
 
     if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
     pendingWorkflowStatusByJobId.clear()
     pendingExecutionErrorsByJobId.clear()
+    pendingSkippedOutputsByJobId.clear()
     jobIdToWorkflow.clear()
     jobIdToStampedWorkflowId.clear()
 
@@ -879,6 +893,28 @@ export const useExecutionStore = defineStore('execution', () => {
     processExecutionError(e.detail, runErrorKey, endTime)
   }
 
+  function handlePromptOutputsSkipped(
+    e: CustomEvent<PromptOutputsSkippedWsMessage>
+  ) {
+    recordSkippedOutputs(e.detail)
+  }
+
+  function recordSkippedOutputs(detail: PromptOutputsSkippedWsMessage) {
+    const runErrorKey = runErrorKeyForJob(detail.prompt_id)
+    if (runErrorKey === null) {
+      bufferByJobId(pendingSkippedOutputsByJobId, detail.prompt_id, detail)
+      return
+    }
+    executionErrorStore.surfaceNodeErrors(detail.node_errors, runErrorKey)
+  }
+
+  function flushPendingSkippedOutputs(jobId: string) {
+    const pending = pendingSkippedOutputsByJobId.get(jobId)
+    if (!pending) return
+    pendingSkippedOutputsByJobId.delete(jobId)
+    recordSkippedOutputs(pending)
+  }
+
   function processExecutionError(
     detail: ExecutionErrorWsMessage,
     runErrorKey: string,
@@ -1152,6 +1188,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     flushPendingWorkflowStatus(id, workflow)
     flushPendingExecutionError(id)
+    flushPendingSkippedOutputs(id)
     if (queuedJob.executionStartedAt !== undefined) adoptActiveWorkflowJob()
   }
 
@@ -1235,6 +1272,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!jobId || !workflowId) return
     jobIdToWorkflowId.value.set(jobId, workflowId)
     flushPendingExecutionError(jobId)
+    flushPendingSkippedOutputs(jobId)
   }
 
   /**
