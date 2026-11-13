@@ -8,8 +8,8 @@ import {
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { resolveWidgetValueAsset } from '@/platform/assets/utils/resolveWidgetValueAsset'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import type { InputSpec as InputSpecV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
   MissingMediaCandidate,
@@ -186,10 +186,10 @@ export async function verifyMediaCandidates(
   const pending = candidates.filter((c) => c.isMissing === undefined)
   const results = await Promise.allSettled(
     Object.entries(groupBy(pending, (p) => p.name)).map(
-      async ([name, candidates]) => {
+      async ([name, candidateGroup]) => {
         const asset = await resolveWidgetValueAsset(name, { signal })
         const isMissing = asset === undefined ? undefined : asset === null
-        for (const candidate of candidates) candidate.isMissing = isMissing
+        for (const candidate of candidateGroup) candidate.isMissing = isMissing
       }
     )
   )

@@ -30,7 +30,7 @@ test.describe('Floating toolbars', { tag: ['@ui', '@canvas'] }, () => {
       readPanelStyle(card),
       readPanelStyle(canvasMenu.root)
     ])
-    expect(toggleStyle.borderStyle).toBe('none')
+    expect(toggleStyle.borderWidth).toBe('0px')
     expect(cardStyle).toEqual(toggleStyle)
     expect(canvasMenuStyle).toEqual(toggleStyle)
   })

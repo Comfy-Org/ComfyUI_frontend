@@ -86,7 +86,13 @@ const BOOTSTRAP_PHASES = {
     'router',
     'sentry-init'
   ],
-  'auth-gate': ['initialized', 'user-store', 'needs-login'],
+  'auth-gate': [
+    'initialized',
+    'identity',
+    'sign-in',
+    'user-store',
+    'needs-login'
+  ],
   bootstrap: [
     'settings',
     'workflows',
@@ -113,7 +119,9 @@ type BootstrapSubphase<Namespace extends BootstrapPhaseNamespace> =
   (typeof BOOTSTRAP_PHASES)[Namespace][number]
 
 export type BootstrapPhase = {
-  [Namespace in BootstrapPhaseNamespace]: `${Namespace}/${BootstrapSubphase<Namespace>}`
+  [
+    Namespace in BootstrapPhaseNamespace
+  ]: `${Namespace}/${BootstrapSubphase<Namespace>}`
 }[BootstrapPhaseNamespace]
 
 function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {

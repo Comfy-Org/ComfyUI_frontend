@@ -129,6 +129,30 @@ watch(
   { immediate: true }
 )
 
+const neighborImageUrls = computed(() => {
+  if (!galleryVisible.value || !hasMultiple.value) return []
+  const count = props.allGalleryItems.length
+  return [-1, 1]
+    .map(
+      (step) =>
+        props.allGalleryItems[(props.activeIndex + step + count) % count]
+    )
+    .filter(isImageResult)
+    .map(resultItemUrl)
+})
+
+watch(
+  neighborImageUrls,
+  (urls) => {
+    for (const url of urls) {
+      const image = new Image()
+      image.decoding = 'async'
+      image.src = url
+    }
+  },
+  { immediate: true }
+)
+
 function close() {
   galleryVisible.value = false
   emit('update:activeIndex', -1)

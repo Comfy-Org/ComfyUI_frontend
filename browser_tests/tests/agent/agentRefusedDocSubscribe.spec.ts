@@ -88,7 +88,7 @@ test.describe(
 )
 
 exhaustedRetryTest.describe(
-  'Agent doc subscribe refused by the host',
+  'Agent doc subscribe retries exhausted',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     exhaustedRetryTest.describe.configure({ timeout: 90_000 })

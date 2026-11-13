@@ -51,6 +51,7 @@ type OutputAssetMapOptions = {
 type ResolveOutputAssetItemsOptions = {
   createdAt?: string
   excludeOutputKey?: string
+  fallbackItems?: AssetItem[]
 }
 
 function shouldLoadFullOutputs(
@@ -256,18 +257,22 @@ async function enrichWithJobAssets(
 
 export async function resolveOutputAssetItems(
   metadata: OutputAssetMetadata,
-  { createdAt, excludeOutputKey }: ResolveOutputAssetItemsOptions = {}
+  {
+    createdAt,
+    excludeOutputKey,
+    fallbackItems
+  }: ResolveOutputAssetItemsOptions = {}
 ): Promise<AssetItem[]> {
   let outputsToDisplay = metadata.allOutputs ?? []
   if (shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
     const jobDetail = await getJobDetail(metadata.jobId)
+    if (!jobDetail && fallbackItems) return fallbackItems
     const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
     if (previewableOutputs.length) {
       outputsToDisplay = previewableOutputs
     }
   }
 
-  // Reverse so the most recent outputs appear first
   const items = mapOutputsToAssetItems({
     jobId: metadata.jobId,
     outputs: [...outputsToDisplay].reverse(),
