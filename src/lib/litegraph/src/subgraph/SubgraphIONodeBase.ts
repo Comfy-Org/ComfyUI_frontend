@@ -16,7 +16,11 @@ import type {
   Positionable,
   CanvasColour
 } from '@comfyorg/graph-model/interfaces'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  PointTuple as Point,
+  Size2D as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotDirection } from '@comfyorg/graph-model/slotId'
 import type {
   Hoverable,
   CanvasPointerEvent
@@ -27,8 +31,7 @@ import type {
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { SubgraphIoLayout } from '@/renderer/core/layout/store/subgraphIoLayoutStore'
-import { useSubgraphIoLayoutStore } from '@/renderer/core/layout/store/subgraphIoLayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { CanvasItem } from '@comfyorg/graph-model/globalEnums'
@@ -52,9 +55,10 @@ export abstract class SubgraphIONodeBase<
   private readonly _boundingRect: Rectangle = new Rectangle()
 
   abstract readonly id: NodeId
+  abstract readonly slotDirection: SlotDirection
 
-  get measured(): SubgraphIoLayout | undefined {
-    return useSubgraphIoLayoutStore().measurementOf(this)
+  get measured(): Size | undefined {
+    return layoutStore.contentSizeOf(this.subgraph.id, this.id)
   }
 
   protected get slotInset(): number {
@@ -66,13 +70,9 @@ export abstract class SubgraphIONodeBase<
   get boundingRect(): Rectangle {
     const { measured } = this
     if (!measured) return this._boundingRect
-    const [x, y] = this._boundingRect
-    return new Rectangle(
-      x + measured.offsetX,
-      y,
-      measured.width,
-      measured.height
-    )
+    const [x, y, width] = this._boundingRect
+    const offsetX = this.slotDirection === 'output' ? width - measured.width : 0
+    return new Rectangle(x + offsetX, y, measured.width, measured.height)
   }
 
   get selected(): boolean {
@@ -350,8 +350,14 @@ export abstract class SubgraphIONodeBase<
 
     for (const [index, slot] of this.allSlots.entries()) {
       const [slotWidth, slotHeight] = slot.measure()
-      const center = measured?.slotCenters[index]
-      if (center !== undefined) currentY = y + center - slotHeight / 2
+      const center = layoutStore.getSlotOffset(
+        this.subgraph.id,
+        this.id,
+        index,
+        this.slotDirection,
+        'expanded'
+      )
+      if (center) currentY = y + center.y - slotHeight / 2
       slot.arrange([x, currentY, slotWidth, slotHeight])
 
       currentY += slotHeight

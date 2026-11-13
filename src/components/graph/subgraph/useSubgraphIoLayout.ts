@@ -1,12 +1,14 @@
 import { computedWithControl, useResizeObserver } from '@vueuse/core'
-import { computed, onScopeDispose, shallowRef, watch } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 import type { Ref } from 'vue'
+
+import type { Size2D as Size } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSubgraphIoLayoutStore } from '@/renderer/core/layout/store/subgraphIoLayoutStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
@@ -19,13 +21,11 @@ export function useSubgraphIoLayout(
   slots: () => SubgraphIoNode['allSlots']
 ) {
   const canvasStore = useCanvasStore()
-  const layout = useSubgraphIoLayoutStore()
   const { camera, syncWithCanvas } = useTransformState()
   const isInput = computed(() => ioNode() === ioNode().subgraph.inputNode)
   const size = computedWithControl(ioNode, () => {
-    const [storedWidth, height] = ioNode().size
-    const width = Math.max(MIN_NODE_WIDTH, storedWidth)
-    return { width, height, offsetX: isInput.value ? storedWidth - width : 0 }
+    const [width, height] = ioNode().size
+    return { width: Math.max(MIN_NODE_WIDTH, width), height }
   })
   const style = computed(() => ({
     '--node-width': `${size.value.width}px`,
@@ -33,29 +33,30 @@ export function useSubgraphIoLayout(
   }))
 
   const rows = shallowRef<HTMLElement[]>([])
-  function measure() {
+  function report(override?: Size) {
     const panel = element.value
     if (!panel?.offsetHeight) return
+    const node = ioNode()
+    const type = node.slotDirection
     const panelRect = panel.getBoundingClientRect()
     const scale = panelRect.height / panel.offsetHeight
-    return {
-      width: panel.offsetWidth,
-      height: panel.offsetHeight,
-      slotCenters: rows.value.map((row) => {
+    const x = type === 'input' ? 0 : panel.offsetWidth
+    layoutStore.reportContentSize(
+      node.subgraph.id,
+      node.id,
+      override ?? { width: panel.offsetWidth, height: panel.offsetHeight }
+    )
+    layoutStore.updateNodeSlotOffsets(
+      node.subgraph.id,
+      node.id,
+      rows.value.map((row, index) => {
         const port = row.querySelector('[data-port-anchor]') ?? row
         const rect = port.getBoundingClientRect()
-        return (rect.top + rect.height / 2 - panelRect.top) / scale
-      })
-    }
-  }
-  function report(override?: { width: number; height: number }) {
-    const measurement = measure()
-    if (!measurement) return
-    layout.report(ioNode(), {
-      offsetX: size.value.offsetX,
-      ...measurement,
-      ...override
-    })
+        const y = (rect.top + rect.height / 2 - panelRect.top) / scale
+        return { index, type, position: { x, y } }
+      }),
+      'expanded'
+    )
     canvasStore.canvas?.setDirty(true, true)
   }
 
@@ -75,10 +76,6 @@ export function useSubgraphIoLayout(
     },
     { flush: 'post', immediate: true }
   )
-  onScopeDispose(() => {
-    layout.clear(ioNode())
-    canvasStore.canvas?.setDirty(true, true)
-  })
 
   watch(
     () => canvasStore.canvas,

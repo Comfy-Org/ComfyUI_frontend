@@ -36,6 +36,7 @@ export class SubgraphOutputNode
   implements Positionable
 {
   readonly id: NodeId = SUBGRAPH_OUTPUT_ID
+  readonly slotDirection = 'input'
 
   readonly emptySlot: EmptySubgraphOutput = new EmptySubgraphOutput(this)
 
