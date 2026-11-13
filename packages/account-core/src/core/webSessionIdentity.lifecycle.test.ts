@@ -804,6 +804,40 @@ describe('refresh', () => {
     expect(methods(endpoint)).not.toContain('POST')
   })
 
+  it('recovers on the next heartbeat after both proof attempts time out', async () => {
+    const endpoint = createFakeWebSessionEndpoint({
+      state: { kind: 'live', user: USER_1 },
+      signInUser: USER_1
+    })
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    tab.login.getProof
+      .mockReturnValueOnce(deferred<string>().promise)
+      .mockReturnValueOnce(deferred<string>().promise)
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+
+    const refreshed = tab.identity.refresh()
+    await settle()
+    tab.scheduler.fire(PROOF_TIMEOUT_MS)
+    await refreshed
+    tab.scheduler.fire(1000)
+    await settle()
+    tab.scheduler.fire(PROOF_TIMEOUT_MS)
+    await settle()
+
+    expect(methods(endpoint)).not.toContain('POST')
+    expect(tab.scheduler.delays()).not.toContain(1000)
+
+    tab.scheduler.fire(HEARTBEAT_MS)
+    await settle()
+
+    expect(tab.login.getProof).toHaveBeenCalledTimes(3)
+    expect(methods(endpoint).filter((method) => method === 'POST')).toEqual([
+      'POST'
+    ])
+    expect(summarize(tab.identity.getState())).toBe('signed_in:user-1')
+  })
+
   it('does not wait on a restore left over from the previous account', async () => {
     const endpoint = liveEndpoint()
     const tab = openTab({ endpoint })
