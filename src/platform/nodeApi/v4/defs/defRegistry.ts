@@ -69,11 +69,12 @@ export function createDefRegistry(
     nodeClass: typeof LGraphNode,
     hostDef: ComfyNodeDefV1
   ): void {
+    const declared = copyOfSaved('defs', hostDef) ?? hostDef
     extensions.typeRegistered({
       type: hostDef.name,
-      category: categoryOfHostDef(hostDef),
+      category: categoryOfHostDef(declared),
       nodeClass,
-      def: () => nodeDefFromHost(hostDef, copyOfSaved)
+      def: () => nodeDefFromHost(declared, copyOfSaved)
     })
   }
 
