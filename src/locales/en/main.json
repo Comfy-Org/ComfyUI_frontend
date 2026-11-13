@@ -6690,5 +6690,26 @@
     "signInAgain": "Sign in again to open billing.",
     "opening": "Opening checkout…",
     "openingDetail": "This takes a few seconds."
+  },
+  "gpuSession": {
+    "switch": "GPU",
+    "starting": "Starting GPU…",
+    "on": "GPU on",
+    "unavailable": "GPU could not start",
+    "options": "GPU options",
+    "idleLabel": "Turn off when idle",
+    "idleAfter": "After {count} minute | After {count} minutes",
+    "idleNever": "Never",
+    "closeLabel": "Turn off when I close the editor",
+    "ownerOnly": "Only the workspace owner can change the GPU",
+    "saveFailed": "Couldn't change the GPU",
+    "panelSession": "GPU session {id}",
+    "panelRequests": "Requests sent to it: {count}",
+    "panelEnded": "Ended: {reason}",
+    "panelMachine": "Machine",
+    "panelRuns": "Runs in this session",
+    "sameMachine": "same machine",
+    "otherMachine": "different machine",
+    "panelNone": "No GPU session yet"
   }
 }

@@ -25,9 +25,9 @@ import { api } from '@/scripts/api'
 
 const HOLD_FOR_READY_MS = 10 * 60 * 1000
 
-type GpuStatus = 'starting' | 'on' | 'unavailable'
+export type GpuStatus = 'starting' | 'on' | 'unavailable'
 
-type GpuChangeRefusal = 'ownerOnly' | 'failed'
+export type GpuChangeRefusal = 'ownerOnly' | 'failed'
 
 function endsTheSession(
   event: GpuSessionEvent,
