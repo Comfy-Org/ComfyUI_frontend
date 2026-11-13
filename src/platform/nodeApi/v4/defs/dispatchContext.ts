@@ -20,17 +20,14 @@ export type Deliver = <K extends HookName, R>(
   call: (callback: HookCallbacks[K], node: NodeHandle) => R
 ) => readonly (R | undefined)[]
 
-/** Puts one dispatcher on the prototype of a type's class. */
-export type MethodInstaller = (
-  nodeClass: typeof LGraphNode,
-  type: string
-) => void
+/** Puts one dispatcher on a class's prototype, or on a node whose own method hides the prototype's. */
+export type MethodInstaller = (target: LGraphNode, type: string) => void
 
 export interface DispatchContext {
   readonly deliver: Deliver
   readonly source: HookSource
   readonly copyOfSaved: SavedCopier
   isInGraph(node: LGraphNode): boolean
-  /** True if the node's class, or one it extends, is a class the API put dispatchers on. */
+  /** True if the node's class, or one it extends, is a class registered through the API's index. */
   isMadeFromKnownClass(node: LGraphNode): boolean
 }

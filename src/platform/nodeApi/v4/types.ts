@@ -488,7 +488,7 @@ export interface SlotCollection<THandle> {
 export interface DefRegistry {
   /**
    * Calls `apply` once for each node type `selector` picks, now and as types
-   * register. Unsubscribing also removes the hooks it has added.
+   * register; its hooks reach the open document's existing nodes. Unsubscribing removes them.
    */
   extend(
     selector: DefSelector,

@@ -55,7 +55,11 @@ registered, so `extend` cannot depend on the order.
    its new definition, as the legacy hook is. The hooks on a type run in the
    order their extensions were made, whatever order the applications ran in,
    so an extension made inside another's `apply` keeps its place when the type
-   registers again.
+   registers again. An extension made after nodes of the type exist reaches
+   them too (decision 17). Every stored pack extends while its module
+   evaluates: the 63 `extend` calls that are not at the top of their module,
+   in 30 packs, run in a loop or a function the module calls as it loads,
+   and none from an event, a timer or `onReady`.
 4. A selector is a type name, a list of names, a `RegExp` tested against the
    name, `{ category }` with a name or a `RegExp`, or a function given the
    definition. Each form is used by stored packs. A pattern is copied without
@@ -155,14 +159,23 @@ registered, so `extend` cannot depend on the order.
     the host made for the type, calling what was there first. A dispatcher is
     put on a class the first time a hook needs it and stays, so extending and
     unsubscribing any number of times leaves one dispatcher per method and
-    class. It looks up the callbacks for its type at each call, and again
+    class. When a hook first needs a method on a class while nodes of the type
+    are in the open document, the API also puts the dispatcher on each of
+    those nodes' classes, earlier classes of the type included, and on each
+    node that has its own copy of the method: the host gives a node its own
+    `onConnectionsChange` when the error hooks track it
+    (`useErrorClearingHooks`), and its own `onRemoved` and `onResize` when it
+    gets a DOM widget (`domWidget.ts`), and such a copy calls the prototype's
+    method as it was when the copy was made. A node that copied the method
+    after the dispatcher was there already calls it, so no node hears a hook
+    twice. It looks up the callbacks for its type at each call, and again
     before each callback, so a callback an extension removed, even by an
     earlier hook of the same delivery, is not called. A type the host
     registers again gets a new class; its extensions are applied again and
     their dispatchers are put on the new class. `onCreated` and menus are
     found by the node's type name, not through a prototype, so they are given
-    only for a node whose class, or one it extends, is a class the API put
-    dispatchers on. A class a legacy pack registers over an extended type
+    only for a node whose class, or one it extends, is a class registered
+    through the API's index (by the host's hook or by `define`). A class a legacy pack registers over an extended type
     therefore hears no hook at all, by name or by prototype, until the host
     registers the type again; and a second API instance in one page does not
     hear the nodes of a class only the first one registered.
@@ -358,9 +371,10 @@ registered, so `extend` cannot depend on the order.
   is false for a subgraph's id.
 - Hooks on a type run in the order their extensions were made, a definition's
   own first, however the pack modules loaded.
-- A dispatcher reaches the nodes made from the class it is on. Nodes made
-  before the host registered their type again keep the old class, which has
-  the dispatchers it had then.
+- An extension made late reaches the nodes of the open document only; a node
+  in a graph the editor has not opened is made when it opens, from the
+  current class. Finding the existing nodes costs a pass over the open
+  document each time a hook first needs a method on a class.
 - A legacy pack that replaces a prototype method without calling the one it
   replaced drops the API's dispatcher for that type, as it drops another
   pack's today.

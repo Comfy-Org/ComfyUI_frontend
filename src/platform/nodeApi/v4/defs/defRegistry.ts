@@ -3,6 +3,7 @@ import { once } from 'es-toolkit'
 
 import type {
   IContextMenuValue,
+  LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -45,7 +46,10 @@ interface DefRegistryParts {
   reapplyTypeColors(): void
 }
 
-export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
+export function createDefRegistry(
+  nodes: NodeHandles,
+  openGraph: () => LGraph | null
+): DefRegistryParts {
   const copyOfSaved = savedCopier()
   const dispatch = createHookDispatch(
     nodes,
@@ -53,7 +57,8 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
       callbacksFor: (type, hook) => extensions.callbacksFor(type, hook),
       demand: (hook) => extensions.demand(hook)
     },
-    copyOfSaved
+    copyOfSaved,
+    openGraph
   )
   const extensions = createExtensions(dispatch)
   const refreshed = createListeners('onRefreshed')

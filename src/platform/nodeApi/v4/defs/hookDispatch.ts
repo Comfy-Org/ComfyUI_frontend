@@ -1,7 +1,5 @@
-import type {
-  IContextMenuValue,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue, LGraph } from '@/lib/litegraph/src/litegraph'
 
 import {
   callListener,
@@ -47,23 +45,36 @@ interface HookDispatch extends HookInstaller {
 export function createHookDispatch(
   nodes: NodeHandles,
   source: HookSource,
-  copyOfSaved: SavedCopier
+  copyOfSaved: SavedCopier,
+  openGraph: () => LGraph | null
 ): HookDispatch {
-  const installed = new WeakMap<typeof LGraphNode, Set<string>>()
-  const knownPrototypes = new WeakSet<object>()
+  const installed = new WeakMap<LGraphNode, Set<string>>()
+  const knownPrototypes = new WeakSet<LGraphNode>()
   const failedMenuItems = new WeakSet<CheckedMenuItem>()
 
   function isInGraph(node: LGraphNode): boolean {
     return node.graph?.getNodeById(node.id) === node
   }
 
-  function isMadeFromKnownClass(node: LGraphNode): boolean {
+  function knownPrototypeOf(node: LGraphNode): LGraphNode | undefined {
     let prototype: unknown = Object.getPrototypeOf(node)
-    while (typeof prototype === 'object' && prototype !== null) {
-      if (knownPrototypes.has(prototype)) return true
+    while (prototype instanceof LGraphNode) {
+      if (knownPrototypes.has(prototype)) return prototype
       prototype = Object.getPrototypeOf(prototype)
     }
-    return false
+    return undefined
+  }
+
+  function isMadeFromKnownClass(node: LGraphNode): boolean {
+    return knownPrototypeOf(node) !== undefined
+  }
+
+  function liveNodesOf(type: string): LGraphNode[] {
+    const root = openGraph()?.rootGraph
+    if (!root) return []
+    return [root, ...root.subgraphs.values()].flatMap((graph) =>
+      graph.nodes.filter((node) => node.type === type)
+    )
   }
 
   function menuEntryReportedOnce(item: CheckedMenuItem, handle: NodeHandle) {
@@ -107,14 +118,32 @@ export function createHookDispatch(
   }
 
   return {
-    install(nodeType: NodeType, hooks: readonly HookName[]) {
+    registered(nodeType: NodeType) {
       knownPrototypes.add(nodeType.nodeClass.prototype)
-      const done = installed.get(nodeType.nodeClass) ?? new Set<string>()
-      installed.set(nodeType.nodeClass, done)
-      for (const method of hooks.flatMap((hook) => METHODS_FOR[hook])) {
-        if (done.has(method)) continue
-        done.add(method)
-        installers[method](nodeType.nodeClass, nodeType.type)
+    },
+    install(nodeType: NodeType, hooks: readonly HookName[]) {
+      const methods = new Set(hooks.flatMap((hook) => METHODS_FOR[hook]))
+      const addedTo = new Map<LGraphNode, readonly string[]>()
+      const installOn = (prototype: LGraphNode) => {
+        if (addedTo.has(prototype)) return
+        const done = installed.get(prototype) ?? new Set<string>()
+        installed.set(prototype, done)
+        const added = [...methods].filter((method) => !done.has(method))
+        for (const method of added) {
+          done.add(method)
+          installers[method](prototype, nodeType.type)
+        }
+        addedTo.set(prototype, added)
+      }
+      installOn(nodeType.nodeClass.prototype)
+      for (const node of liveNodesOf(nodeType.type)) {
+        const prototype = knownPrototypeOf(node)
+        if (!prototype) continue
+        installOn(prototype)
+        for (const method of addedTo.get(prototype) ?? []) {
+          if (Object.hasOwn(node, method))
+            installers[method](node, nodeType.type)
+        }
       }
     },
     demandChanged: lifecycle.demandChanged,

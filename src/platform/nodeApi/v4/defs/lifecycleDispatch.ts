@@ -54,24 +54,24 @@ export function createLifecycleDispatch({
   }
 
   const installers: Record<string, MethodInstaller> = {
-    onConfigure(nodeClass, type) {
-      const previous = nodeClass.prototype.onConfigure
-      nodeClass.prototype.onConfigure = function (data) {
+    onConfigure(target, type) {
+      const previous = target.onConfigure
+      target.onConfigure = function (data) {
         previous?.call(this, data)
         if (isInGraph(this)) deliverConfigured(type, this, data)
         else configuredBeforeAdded.set(this, data)
       }
     },
-    onRemoved(nodeClass, type) {
-      const previous = nodeClass.prototype.onRemoved
-      nodeClass.prototype.onRemoved = function () {
+    onRemoved(target, type) {
+      const previous = target.onRemoved
+      target.onRemoved = function () {
         previous?.call(this)
         deliver(type, 'onRemoved', this, (callback, handle) => callback(handle))
       }
     },
-    onExecuted(nodeClass, type) {
-      const previous = nodeClass.prototype.onExecuted
-      nodeClass.prototype.onExecuted = function (output) {
+    onExecuted(target, type) {
+      const previous = target.onExecuted
+      target.onExecuted = function (output) {
         previous?.call(this, output)
         const result = executionResult(copyOfSaved('onExecuted', output))
         deliver(type, 'onExecuted', this, (callback, handle) =>
@@ -79,9 +79,9 @@ export function createLifecycleDispatch({
         )
       }
     },
-    onSerialize(nodeClass, type) {
-      const previous = nodeClass.prototype.onSerialize
-      nodeClass.prototype.onSerialize = function (serialised) {
+    onSerialize(target, type) {
+      const previous = target.onSerialize
+      target.onSerialize = function (serialised) {
         previous?.call(this, serialised)
         const added = deliver(type, 'onSerialize', this, (callback, handle) =>
           savedFields(callback(handle))
@@ -89,9 +89,9 @@ export function createLifecycleDispatch({
         for (const fields of added) Object.assign(serialised, fields)
       }
     },
-    onResize(nodeClass, type) {
-      const previous = nodeClass.prototype.onResize
-      nodeClass.prototype.onResize = function (size) {
+    onResize(target, type) {
+      const previous = target.onResize
+      target.onResize = function (size) {
         previous?.call(this, size)
         const [width, height] = size
         const frozen = Object.freeze({ width, height })
