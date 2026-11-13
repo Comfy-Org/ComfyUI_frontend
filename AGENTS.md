@@ -14,7 +14,7 @@ matching files before editing:
 - `playwright.md`: Playwright E2E conventions
 - `storybook.md`: Storybook story patterns
 - `design-standards.md`: Figma design-standards references
-- `performance-incident-runbook.md`: staged evidence gathering for frame drops, input latency, long tasks, and unexpected redraws
+- `performance-incident-runbook.md`: staged evidence gathering; read it before investigating frame drops, input latency, long tasks, or unexpected redraws, whichever files are involved
 
 ## Project Structure
 
