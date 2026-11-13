@@ -2739,6 +2739,7 @@
       "unverifiedBadge": "Name not verified",
       "unverifiedNotice": "This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.",
       "unverifiedNoticeNoHost": "This name was provided by whoever registered this app and has not been verified by Comfy.",
+      "verifiedNotice": "Name not verified · Verified destination: {platform} · you'll return to {host}",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
       "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
