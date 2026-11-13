@@ -462,6 +462,7 @@
           "src/components/topbar/CurrentUserPopoverLegacy.vue",
           "src/components/topbar/CurrentUserPopoverLegacy.test.ts",
           "src/components/topbar/LoginButton.vue",
+          "src/components/topbar/LoginButton.test.ts",
           "src/composables/auth/**",
           "src/platform/billing/composables/usePartnerNodesRunGate.ts",
           "src/platform/billing/composables/usePartnerNodesRunGate.cloud.test.ts",

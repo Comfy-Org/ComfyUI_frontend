@@ -2964,7 +2964,8 @@
     },
     "loginButton": {
       "tooltipHelp": "Login to be able to use \"API Nodes\"",
-      "tooltipLearnMore": "Learn more..."
+      "tooltipLearnMore": "Learn more...",
+      "signInToUsePartnerNodes": "Sign in to use Partner Nodes"
     }
   },
   "desktopLogin": {
