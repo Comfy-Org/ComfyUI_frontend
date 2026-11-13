@@ -47,7 +47,10 @@ registered, so `extend` cannot depend on the order.
 3. `extend(selector, apply)` calls `apply` with a builder for each type the
    selector picks: at once for the types already in the index, and later for
    each type as it registers. A type registered again is extended again, with
-   its new definition, as the legacy hook is.
+   its new definition, as the legacy hook is. The hooks on a type run in the
+   order their extensions were made, whatever order the applications ran in,
+   so an extension made inside another's `apply` keeps its place when the type
+   registers again.
 4. A selector is a type name, a list of names, a `RegExp` tested against the
    name, `{ category }` with a name or a `RegExp`, or a function given the
    definition. Each form is used by stored packs. A pattern is copied without
@@ -59,11 +62,19 @@ registered, so `extend` cannot depend on the order.
 5. Anything else is refused with a `TypeError` before anything is registered:
    a value of another kind, an object with fields other than `category`, a
    category that is neither text nor a pattern, a list holding a non-name, or
-   an `apply` that is not a function.
-6. An `apply` that throws is reported and the others still run. An extension
-   made, or a type defined, inside an `apply` is applied once to each type.
-7. The disposer stops later applications of that extension only, and is safe
-   to call twice.
+   an `apply` that is not a function. A selector, definition or menu item
+   whose reads throw, as a hostile `Proxy`'s do, is refused with a
+   `TypeError` too, not with the error it threw.
+6. An `apply` that throws is reported and the others still run, and none of
+   its hooks is kept. `apply` is synchronous; one that returns a promise has
+   its rejection reported, and a hook it adds after its first `await` is
+   refused because the builder has closed. An extension made, or a type
+   defined, inside an `apply` is applied once to each type. Reading the
+   type's definition happens inside the same isolation, so a definition that
+   cannot be read is reported and skipped and the extension stays whole.
+7. The disposer stops later applications of that extension and removes the
+   hooks it has already added, and is safe to call twice. An `apply` that
+   calls its own disposer keeps none of the hooks it added.
 
 ### Reading definitions
 
@@ -76,7 +87,10 @@ registered, so `extend` cannot depend on the order.
    spelling the server uses. The title and description are the ones the
    editor shows, in the user's language, and a type with no display name is
    titled by its name, as the host titles its nodes. `localizedName` is the
-   input label the editor shows.
+   input label the editor shows. The host tolerates some malformed server
+   definitions (outputs sent as text, for example), so the API reads each part
+   it cannot use as empty, an input whose spec is not a list is left out, and
+   one bad definition changes nothing for the others.
 9. `has(type)` and `all()` read the same index; `all()` lists the types in the
    order each first registered. A type name that is not text is refused.
 
@@ -165,7 +179,9 @@ registered, so `extend` cannot depend on the order.
 23. `onResized` gives the node's new size, frozen.
 24. A defined type's definition may declare `onCreated`, `onConfigured`,
     `onRemoved` and `onSerialize`; they are applied as an extension of that
-    type, made by `define` and removed by its disposer.
+    registration of the type only, made by `define` and removed by its
+    disposer, and they run before any other extension's hooks on the type. A
+    host type registered later under the same name does not get them.
 
 ### Connection, property and pointer hooks
 
