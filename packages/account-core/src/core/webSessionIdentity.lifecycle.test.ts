@@ -115,7 +115,9 @@ function createFakeSiteBus() {
 function fakeRememberedLogin(userId: string | null) {
   return {
     currentUserId: vi.fn(async () => userId),
-    getProof: vi.fn(async () => 'remembered-proof'),
+    getProof: vi.fn<RememberedLogin['getProof']>(
+      async () => 'remembered-proof'
+    ),
     signOutLocally: vi.fn(async () => undefined)
   } satisfies RememberedLogin
 }
@@ -804,6 +806,37 @@ describe('refresh', () => {
     expect(methods(endpoint)).not.toContain('POST')
   })
 
+  it('cancels pending proof retries when a heartbeat adopts a live session', async () => {
+    const endpoint = liveEndpoint()
+    const tab = openTab({ endpoint })
+    await booted(tab.identity)
+    tab.login.getProof
+      .mockReturnValueOnce(deferred<string>().promise)
+      .mockRejectedValueOnce(new Error('provider unavailable'))
+      .mockResolvedValue(null)
+    endpoint.state = { kind: 'dead', code: 'no_session' }
+
+    const refreshed = tab.identity.refresh()
+    await vi.waitFor(() =>
+      expect(tab.scheduler.delays()).toContain(PROOF_TIMEOUT_MS)
+    )
+    tab.scheduler.fire(PROOF_TIMEOUT_MS)
+    await refreshed
+    expect(tab.scheduler.delays()).toContain(1000)
+    await tab.identity.refresh()
+    expect(tab.scheduler.delays().filter((delay) => delay === 1000)).toEqual([
+      1000
+    ])
+
+    endpoint.state = { kind: 'live', user: USER_1 }
+    tab.scheduler.fire(HEARTBEAT_MS)
+    await vi.waitFor(() => expect(tab.scheduler.delays()).not.toContain(1000))
+
+    expect(tab.login.getProof).toHaveBeenCalledTimes(2)
+    expect(methods(endpoint)).not.toContain('POST')
+    expect(summarize(tab.identity.getState())).toBe('signed_in:user-1')
+  })
+
   it('recovers on the next heartbeat after both proof attempts time out', async () => {
     const endpoint = createFakeWebSessionEndpoint({
       state: { kind: 'live', user: USER_1 },
@@ -817,25 +850,32 @@ describe('refresh', () => {
     endpoint.state = { kind: 'dead', code: 'no_session' }
 
     const refreshed = tab.identity.refresh()
-    await settle()
+    await vi.waitFor(() =>
+      expect(tab.scheduler.delays()).toContain(PROOF_TIMEOUT_MS)
+    )
     tab.scheduler.fire(PROOF_TIMEOUT_MS)
     await refreshed
     tab.scheduler.fire(1000)
-    await settle()
+    await vi.waitFor(() =>
+      expect(tab.scheduler.delays()).toContain(PROOF_TIMEOUT_MS)
+    )
     tab.scheduler.fire(PROOF_TIMEOUT_MS)
-    await settle()
+    await vi.waitFor(() =>
+      expect(tab.scheduler.delays()).toEqual([HEARTBEAT_MS])
+    )
 
     expect(methods(endpoint)).not.toContain('POST')
     expect(tab.scheduler.delays()).not.toContain(1000)
 
     tab.scheduler.fire(HEARTBEAT_MS)
-    await settle()
+    await vi.waitFor(() => {
+      expect(methods(endpoint).filter((method) => method === 'POST')).toEqual([
+        'POST'
+      ])
+      expect(summarize(tab.identity.getState())).toBe('signed_in:user-1')
+    })
 
     expect(tab.login.getProof).toHaveBeenCalledTimes(3)
-    expect(methods(endpoint).filter((method) => method === 'POST')).toEqual([
-      'POST'
-    ])
-    expect(summarize(tab.identity.getState())).toBe('signed_in:user-1')
   })
 
   it('does not wait on a restore left over from the previous account', async () => {
