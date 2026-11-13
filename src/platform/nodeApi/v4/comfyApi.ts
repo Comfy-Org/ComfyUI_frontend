@@ -40,6 +40,7 @@ import { createNodeHandles } from './nodeHandle'
 import type { Comfy } from './types'
 import { createBackendHandle } from './utilities/backendHandle'
 import { createCommandsHandle } from './utilities/commandsHandle'
+import { createModelsHandle } from './utilities/modelsHandle'
 import { createSettingsHandle } from './utilities/settingsHandle'
 import { createStorageHandle } from './utilities/storageHandle'
 import { createWidgetCollections } from './widgets/widgetCollection'
@@ -183,6 +184,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     storage: createStorageHandle(),
     commands: createCommandsHandle(),
     backend: createBackendHandle(),
+    models: createModelsHandle(),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
   } satisfies Comfy)
 
