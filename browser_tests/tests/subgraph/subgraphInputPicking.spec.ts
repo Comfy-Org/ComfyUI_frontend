@@ -20,14 +20,8 @@ test.describe(
         exact: true,
         includeHidden: true
       })
-      const heading = panel.getByRole('heading', { includeHidden: true })
       const exit = panel.getByRole('button', {
         name: 'Exit subgraph',
-        exact: true,
-        includeHidden: true
-      })
-      const collapse = panel.getByRole('button', {
-        name: 'Collapse',
         exact: true,
         includeHidden: true
       })
@@ -50,14 +44,14 @@ test.describe(
           'shared-definition-two-hosts-promoted-text'
         )
         await comfyPage.vueNodes.enterSubgraph('11')
-        await expect(heading).toHaveText('Host A · #11')
+        await expect(panel).toHaveAccessibleName('Host A · #11')
         await input.fill('before-picking')
         await exit.focus()
       })
 
       const before = await comfyPage.nodeOps.getSerializedGraphWithoutViewport()
 
-      await test.step('Picking blocks widgets, leaving the subgraph, and collapsing', async () => {
+      await test.step('Picking blocks widgets and leaving the subgraph', async () => {
         await agentPanel.root
           .getByRole('button', { name: 'Add to prompt', exact: true })
           .click()
@@ -72,7 +66,7 @@ test.describe(
           { x: 96 - bounds.x, y: 220 - bounds.y },
           { x: 600, y: 650 }
         )
-        await expect(collapse).toBeInViewport()
+        await expect(input).toBeInViewport()
         await expect(panel).toHaveAttribute('inert', '')
         await clickThroughInertLayer(input)
         await comfyPage.page.keyboard.type('x')
@@ -83,10 +77,7 @@ test.describe(
           exit.getByText('Exit subgraph', { exact: true })
         )
         expect(await comfyPage.subgraph.getActiveGraphId()).toBe(graphId)
-        await expect(heading).toHaveText('Host A · #11')
-        await clickThroughInertLayer(collapse)
-        await expect(collapse).toHaveAttribute('aria-expanded', 'true')
-        await expect(input).toBeVisible()
+        await expect(panel).toHaveAccessibleName('Host A · #11')
         expect(
           await comfyPage.nodeOps.getSerializedGraphWithoutViewport()
         ).toEqual(before)
@@ -97,14 +88,10 @@ test.describe(
         await input.fill('after-picking')
         await exit.focus()
         await expect(input).toHaveValue('after-picking')
-        await collapse.click()
-        await expect(input).toHaveCount(0)
-        await panel.getByRole('button', { name: 'Expand', exact: true }).click()
-        await expect(input).toHaveValue('after-picking')
         await exit.getByText('Exit subgraph', { exact: true }).click()
         await expect(panel).toBeHidden()
         await comfyPage.vueNodes.enterSubgraph('12')
-        await expect(heading).toHaveText('Host B · #12')
+        await expect(panel).toHaveAccessibleName('Host B · #12')
         await expect(input).toHaveValue('')
       })
     })

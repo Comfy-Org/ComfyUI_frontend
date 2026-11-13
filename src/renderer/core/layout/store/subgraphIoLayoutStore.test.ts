@@ -20,9 +20,10 @@ describe('subgraph IO renderer measurements', () => {
     const graph = createTestSubgraph()
     graph.inputNode.pos = [100, 200]
     useSubgraphIoLayoutStore().report(graph.id, graph.inputNode.id, {
+      offsetX: 0,
       width: 320,
       height: 400,
-      slotTop: 36
+      slotCenters: []
     })
     graph.inputNode.arrange()
     const canvas = new LGraphCanvas(document.createElement('canvas'), graph, {
@@ -51,7 +52,7 @@ describe('subgraph IO renderer measurements', () => {
       node: interior
     })
   })
-  it('keeps connection anchors aligned with a measured node and the final empty port', () => {
+  it('anchors each connection on the panel edge at its measured row center', () => {
     const graph = createTestSubgraph()
     graph.addInput('first', 'STRING')
     graph.addInput('second', 'STRING')
@@ -61,23 +62,48 @@ describe('subgraph IO renderer measurements', () => {
     const savedBounds = node.asSerialisable().bounding
     const layouts = useSubgraphIoLayoutStore()
     layouts.report(graph.id, node.id, {
+      offsetX: -192,
       width: 320,
       height: 400,
-      slotTop: 36
+      slotCenters: [40, 72, 140]
     })
 
     node.arrange()
 
     expect(node.allSlots.map((slot) => [...slot.pos])).toEqual([
-      [204, 246],
-      [204, 266],
-      [204, 286]
+      [228, 240],
+      [228, 272],
+      [228, 340]
     ])
-    expect([...node.boundingRect.size]).toEqual([344, 400])
+    expect([...node.boundingRect]).toEqual([-92, 200, 320, 400])
     expect(node.asSerialisable().bounding).toEqual(savedBounds)
     expect(node.allSlots.at(-1)).toBe(node.emptySlot)
-    expect(graph.outputNode.boundingRect[2]).not.toBe(344)
+    expect(graph.outputNode.boundingRect[2]).not.toBe(320)
     expect(node.allSlots[0].boundingRect[3]).toBe(LiteGraph.NODE_SLOT_HEIGHT)
+  })
+
+  it('anchors measured output connections on the left edge and hit-tests their outer half', () => {
+    const graph = createTestSubgraph()
+    graph.addOutput('result', 'IMAGE')
+    const node = graph.outputNode
+    node.pos = [100, 200]
+    node.size = [128, 100]
+    useSubgraphIoLayoutStore().report(graph.id, node.id, {
+      offsetX: 0,
+      width: 180,
+      height: 90,
+      slotCenters: [30, 66]
+    })
+
+    node.arrange()
+
+    expect([...node.boundingRect]).toEqual([100, 200, 180, 90])
+    expect(node.allSlots.map((slot) => [...slot.pos])).toEqual([
+      [100, 230],
+      [100, 266]
+    ])
+    expect(graph.getIoNodeOnPos(95, 230)).toBe(node)
+    expect(graph.getIoNodeOnPos(95, 248)).toBeUndefined()
   })
 
   it('isolates measurements by definition and restores the canvas layout on unmount', () => {
@@ -85,9 +111,10 @@ describe('subgraph IO renderer measurements', () => {
     const second = createTestSubgraph()
     const layouts = useSubgraphIoLayoutStore()
     layouts.report(first.id, first.inputNode.id, {
+      offsetX: 0,
       width: 320,
       height: 400,
-      slotTop: 36
+      slotCenters: []
     })
     first.inputNode.arrange()
     second.inputNode.arrange()

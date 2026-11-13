@@ -48,26 +48,28 @@ export abstract class SubgraphIONodeBase<
   static minWidth = 100
   static roundedRadius = 14 // Matches NODE_SLOT_HEIGHT * 0.7 for slot alignment
 
-  static get socketInset(): number {
-    return SubgraphIONodeBase.roundedRadius + LiteGraph.NODE_SLOT_HEIGHT / 2
-  }
-
   private readonly _boundingRect: Rectangle = new Rectangle()
 
   abstract readonly id: NodeId
 
+  private get measured() {
+    return useSubgraphIoLayoutStore().measurementOf(this.subgraph.id, this.id)
+  }
+
+  protected get slotInset(): number {
+    return this.measured
+      ? -LiteGraph.NODE_SLOT_HEIGHT / 2
+      : SubgraphIONodeBase.roundedRadius
+  }
+
   get boundingRect(): Rectangle {
-    const measured = useSubgraphIoLayoutStore().measurementOf(
-      this.subgraph.id,
-      this.id
-    )
+    const { measured } = this
     if (!measured) return this._boundingRect
-    const [x, y, width] = this._boundingRect
-    const socketInset = SubgraphIONodeBase.socketInset
+    const [x, y] = this._boundingRect
     return new Rectangle(
-      x + width - socketInset - measured.width,
+      x + measured.offsetX,
       y,
-      measured.width + socketInset,
+      measured.width,
       measured.height
     )
   }
@@ -151,7 +153,11 @@ export abstract class SubgraphIONodeBase<
   // #region Hoverable
 
   containsPoint(point: Point): boolean {
-    return this.boundingRect.containsPoint(point)
+    return (
+      this.boundingRect.containsPoint(point) ||
+      (!!this.measured &&
+        this.allSlots.some((slot) => slot.boundingRect.containsPoint(point)))
+    )
   }
 
   abstract get slotAnchorX(): number
@@ -335,17 +341,16 @@ export abstract class SubgraphIONodeBase<
   arrange(): void {
     const { minWidth, roundedRadius } = SubgraphIONodeBase
     const [, y] = this.boundingRect
-    const measured = useSubgraphIoLayoutStore().measurementOf(
-      this.subgraph.id,
-      this.id
-    )
+    const { measured } = this
     const x = this.slotAnchorX
 
     let maxWidth = minWidth
-    let currentY = y + (measured?.slotTop ?? roundedRadius)
+    let currentY = y + roundedRadius
 
-    for (const slot of this.allSlots) {
+    for (const [index, slot] of this.allSlots.entries()) {
       const [slotWidth, slotHeight] = slot.measure()
+      const center = measured?.slotCenters[index]
+      if (center !== undefined) currentY = y + center - slotHeight / 2
       slot.arrange([x, currentY, slotWidth, slotHeight])
 
       currentY += slotHeight
@@ -366,8 +371,7 @@ export abstract class SubgraphIONodeBase<
       | SubgraphOutput,
     editorAlpha?: number
   ): void {
-    if (useSubgraphIoLayoutStore().measurementOf(this.subgraph.id, this.id))
-      return
+    if (this.measured) return
     const { lineWidth, strokeStyle, fillStyle, font, textBaseline } = ctx
     this.drawProtected(ctx, colorContext, fromSlot, editorAlpha)
     Object.assign(ctx, {

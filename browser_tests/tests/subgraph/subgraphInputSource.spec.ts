@@ -47,9 +47,9 @@ test.describe(
 
       await test.step('Edit the owning Primitive from inside the subgraph', async () => {
         await comfyPage.vueNodes.enterSubgraph('1')
-        await expect(panel.getByText(/Source: .* · #3$/)).toBeVisible()
+        await expect(panel.getByText(/← .* #3$/)).toBeVisible()
         await expect(
-          panel.getByText('Shared source', { exact: true })
+          panel.getByRole('img', { name: 'Shared source', exact: true })
         ).toBeVisible()
         const input = panel.getByRole('textbox', { name: 'value', exact: true })
         await expect(input).toHaveValue('external prompt')
@@ -91,6 +91,7 @@ test.describe(
       })
 
       await test.step('Locating the source shows the same value and both links outside', async () => {
+        await comfyPage.canvasOps.pan({ x: 300, y: 0 }, { x: 950, y: 420 })
         await panel
           .getByRole('button', { name: 'Locate source node', exact: true })
           .click()

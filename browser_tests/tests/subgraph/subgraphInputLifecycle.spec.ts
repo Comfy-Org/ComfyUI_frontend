@@ -41,7 +41,7 @@ test.describe(
         .getByTestId('slot-connection-dot')
       const steps = panel
         .getByTestId('subgraph-input-port')
-        .filter({ hasText: /^steps$/ })
+        .and(panel.getByLabel('steps', { exact: true }))
         .getByTestId('slot-connection-dot')
       const seedMaximum = await firstNode.root
         .getByRole('spinbutton', { name: 'seed', exact: true })

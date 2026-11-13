@@ -29,7 +29,7 @@ test.describe(
       )
       const clip = panel
         .getByTestId('subgraph-input-port')
-        .filter({ hasText: /^clip$/ })
+        .and(panel.getByLabel('clip', { exact: true }))
         .getByTestId('slot-connection-dot')
 
       async function dragPort(source: Locator) {
@@ -63,17 +63,21 @@ test.describe(
         expect(moved.y).toBeCloseTo(slot.y + 60, 0)
       })
 
-      await test.step('Dragging the node background also carries its linked port', async () => {
+      await test.step('Dragging a label row also carries its linked port', async () => {
         const before = await panel.boundingBox()
-        const body = await panel
+        const label = await panel
           .getByTestId('subgraph-input-body')
+          .getByText('clip', { exact: true })
           .boundingBox()
-        if (!before || !body)
-          throw new Error('Expected the input node and body to be rendered')
+        if (!before || !label)
+          throw new Error('Expected the input node and its clip row')
         const slot = await comfyPage.subgraph.getInputSlot('clip').getPosition()
         await comfyMouse.dragAndDrop(
-          { x: body.x + 8, y: body.y + body.height - 6 },
-          { x: body.x + 28, y: body.y + body.height + 24 }
+          { x: label.x + label.width / 2, y: label.y + label.height / 2 },
+          {
+            x: label.x + label.width / 2 + 20,
+            y: label.y + label.height / 2 + 30
+          }
         )
         await expect
           .poll(async () => (await panel.boundingBox())?.x)
