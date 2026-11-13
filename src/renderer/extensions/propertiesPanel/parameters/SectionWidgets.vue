@@ -1,0 +1,376 @@
+<script setup lang="ts">
+import { watchDebounced } from '@vueuse/core'
+import {
+  computed,
+  inject,
+  onBeforeUnmount,
+  onMounted,
+  provide,
+  ref,
+  shallowRef,
+  watchEffect
+} from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import Button from '@comfyorg/design-system/button/Button'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { DraggableList } from '@/scripts/ui/draggableList'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { useErrorsTabRequestStore } from '@/platform/workflowErrors/panel/errorsTabRequestStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { getWidgetDefaultValue } from '@/utils/widgetUtil'
+import type { WidgetValue } from '@/utils/widgetUtil'
+
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
+import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
+
+import { GetNodeParentGroupKey } from '@/renderer/extensions/propertiesPanel/parentGroup'
+import WidgetItem from './WidgetItem.vue'
+import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
+
+const {
+  label,
+  node,
+  widgets: widgetsProp,
+  showLocateButton = false,
+  isDraggable = false,
+  hiddenFavoriteIndicator = false,
+  showNodeName = false,
+  host,
+  enableEmptyState = false,
+  tooltip
+} = defineProps<{
+  label?: string
+  host?: SubgraphNode
+  node?: LGraphNode
+  widgets: { widget: IBaseWidget; node: LGraphNode }[]
+  showLocateButton?: boolean
+  isDraggable?: boolean
+  hiddenFavoriteIndicator?: boolean
+  showNodeName?: boolean
+  /**
+   * Whether to show the empty state slot when there are no widgets.
+   */
+  enableEmptyState?: boolean
+  tooltip?: string
+}>()
+
+const collapse = defineModel<boolean>('collapse', { default: false })
+
+const emit = defineEmits<{
+  reorder: [event: { fromIndex: number; toIndex: number }]
+}>()
+
+const widgetsContainer = ref<HTMLElement>()
+const rootElement = ref<HTMLElement>()
+
+const localWidgets = shallowRef(widgetsProp)
+watchEffect(() => (localWidgets.value = widgetsProp))
+
+const draggableList = ref<DraggableList | undefined>()
+
+function setDraggableState() {
+  draggableList.value?.dispose()
+  draggableList.value = undefined
+
+  if (!isDraggable || collapse.value) return
+  const container = widgetsContainer.value
+  if (!container?.children?.length) return
+
+  const list = new DraggableList(container, '.draggable-item')
+
+  list.applyNewItemsOrder = function () {
+    if (!this.draggableItem) return
+    const { items, oldPosition } = this.getReorderedItems(this.draggableItem)
+
+    if (oldPosition === -1) {
+      console.error('[SectionWidgets] draggableItem not found in items')
+      return
+    }
+
+    const newPosition = items.indexOf(this.draggableItem)
+
+    emit('reorder', { fromIndex: oldPosition, toIndex: newPosition })
+  }
+
+  draggableList.value = list
+}
+
+watchDebounced(
+  [localWidgets, () => isDraggable, collapse],
+  () => setDraggableState(),
+  { debounce: 100 }
+)
+onMounted(setDraggableState)
+onBeforeUnmount(() => draggableList.value?.dispose())
+
+provide(HideLayoutFieldKey, true)
+provide(WidgetHeightKey, 'h-7')
+
+const canvasStore = useCanvasStore()
+const executionErrorStore = useExecutionErrorStore()
+const propertiesPanelStore = usePropertiesPanelStore()
+const errorsTabRequestStore = useErrorsTabRequestStore()
+const nodeDefStore = useNodeDefStore()
+const { t } = useI18n()
+
+const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
+
+const isEmpty = computed(() => localWidgets.value.length === 0)
+
+const displayLabel = computed(
+  () => label ?? (node ? node.title : t('rightSidePanel.inputs'))
+)
+
+const targetNode = computed<LGraphNode | null>(() => {
+  if (node) return node
+  if (isEmpty.value) return null
+
+  const firstNodeId = localWidgets.value[0].node.id
+  const allSameNode = localWidgets.value.every(
+    ({ node }) => node.id === firstNodeId
+  )
+
+  return allSameNode ? localWidgets.value[0].node : null
+})
+
+const hasDirectError = computed(() => {
+  if (!targetNode.value) return false
+  return executionErrorStore.activeGraphErrorNodeIds.has(
+    String(targetNode.value.id)
+  )
+})
+
+const hasContainerInternalError = computed(() => {
+  if (!targetNode.value) return false
+  if (!(targetNode.value instanceof SubgraphNode)) return false
+
+  return executionErrorStore.isContainerWithInternalError(targetNode.value)
+})
+
+const nodeHasError = computed(() => {
+  if (!targetNode.value) return false
+  if (canvasStore.selectedItems.length === 1) return false
+  return hasDirectError.value || hasContainerInternalError.value
+})
+
+const showSeeError = computed(
+  () =>
+    nodeHasError.value &&
+    useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+)
+
+const parentGroup = computed<LGraphGroup | null>(() => {
+  if (!targetNode.value || !getNodeParentGroup) return null
+  return getNodeParentGroup(targetNode.value)
+})
+
+const canShowLocateButton = computed(
+  () => showLocateButton && targetNode.value !== null
+)
+
+function handleLocateNode() {
+  if (!targetNode.value || !canvasStore.canvas) return
+
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_locate_node_clicked',
+    element_group: 'right_side_panel_nodes'
+  })
+
+  const graphNode = canvasStore.canvas.graph?.getNodeById(targetNode.value.id)
+  if (graphNode) {
+    canvasStore.canvas.animateToBounds(graphNode.boundingRect)
+  }
+}
+
+function navigateToErrorTab() {
+  if (!targetNode.value) return
+  if (!useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) return
+  errorsTabRequestStore.focusNode(String(targetNode.value.id))
+  propertiesPanelStore.openPanel('errors')
+}
+
+function clearWidgetErrors(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  value: WidgetValue
+) {
+  const rootGraph = widgetNode.graph?.rootGraph
+  if (!rootGraph) return
+
+  const executionId = getExecutionIdByNode(rootGraph, widgetNode)
+  if (!executionId) return
+
+  const options = { min: widget.options?.min, max: widget.options?.max }
+  const source = resolvePromotedWidgetSource(rootGraph, widgetNode, widget)
+  if (source?.sourceExecutionId) {
+    executionErrorStore.clearWidgetRelatedErrors(
+      source.sourceExecutionId,
+      source.sourceWidgetName,
+      source.sourceWidgetName,
+      value,
+      {
+        min: source.sourceWidget.options?.min,
+        max: source.sourceWidget.options?.max
+      }
+    )
+  }
+
+  executionErrorStore.clearWidgetRelatedErrors(
+    executionId,
+    widget.name,
+    widget.name,
+    value,
+    options
+  )
+}
+
+function setWidgetValue(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  value: WidgetValue
+) {
+  // Store-backed widgets (interior node widgets and promoted subgraph inputs)
+  // are addressed by widgetId; writing there keeps the displayed value in sync.
+  if (widget.widgetId) useWidgetValueStore().setValue(widget.widgetId, value)
+  widget.value = value
+  widget.callback?.(value)
+  clearWidgetErrors(widgetNode, widget, value)
+  canvasStore.canvas?.setDirty(true, true)
+}
+
+function handleResetAllWidgets() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_reset_all_parameters_clicked',
+    element_group: 'right_side_panel_nodes'
+  })
+
+  for (const { widget, node: widgetNode } of widgetsProp) {
+    const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
+    const defaultValue = getWidgetDefaultValue(spec)
+    if (defaultValue !== undefined) {
+      setWidgetValue(widgetNode, widget, defaultValue)
+    }
+  }
+}
+
+function handleWidgetValueUpdate(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  newValue: WidgetValue
+) {
+  if (newValue === undefined) return
+  setWidgetValue(widgetNode, widget, newValue)
+}
+
+function handleWidgetReset(
+  widgetNode: LGraphNode,
+  widget: IBaseWidget,
+  newValue: WidgetValue
+) {
+  setWidgetValue(widgetNode, widget, newValue)
+}
+
+defineExpose({
+  widgetsContainer,
+  rootElement
+})
+</script>
+
+<template>
+  <div ref="rootElement">
+    <PropertiesAccordionItem
+      v-model:collapse="collapse"
+      :enable-empty-state
+      :disabled="isEmpty"
+      :tooltip
+      :size="showSeeError ? 'lg' : 'default'"
+    >
+      <template #label>
+        <div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+          <span class="flex min-w-0 flex-1 items-center gap-2">
+            <i
+              v-if="nodeHasError"
+              class="icon-[lucide--octagon-alert] text-destructive"
+            />
+            <span :class="cn('truncate', nodeHasError && 'text-destructive')">
+              <slot name="label">
+                {{ displayLabel }}
+              </slot>
+            </span>
+            <span
+              v-if="parentGroup"
+              class="min-w-11 flex-1 truncate text-right text-xs text-muted-foreground"
+              :title="parentGroup.title"
+            >
+              {{ parentGroup.title }}
+            </span>
+          </span>
+          <Button
+            v-if="showSeeError"
+            variant="secondary"
+            size="sm"
+            class="h-8 shrink-0 rounded-lg text-sm"
+            @click.stop="navigateToErrorTab"
+          >
+            {{ t('rightSidePanel.seeError') }}
+          </Button>
+          <Button
+            v-if="!isEmpty"
+            variant="muted-textonly"
+            size="icon-sm"
+            class="subbutton size-8 shrink-0 hover:text-foreground"
+            :title="t('rightSidePanel.resetAllParameters')"
+            :aria-label="t('rightSidePanel.resetAllParameters')"
+            @click.stop="handleResetAllWidgets"
+          >
+            <i class="icon-[lucide--rotate-ccw]" />
+          </Button>
+          <Button
+            v-if="canShowLocateButton"
+            variant="muted-textonly"
+            size="icon-sm"
+            class="subbutton mr-3 size-8 shrink-0 hover:text-foreground"
+            :title="t('rightSidePanel.locateNode')"
+            :aria-label="t('rightSidePanel.locateNode')"
+            @click.stop="handleLocateNode"
+          >
+            <i class="icon-[lucide--locate]" />
+          </Button>
+        </div>
+      </template>
+
+      <template #empty><slot name="empty" /></template>
+
+      <div
+        ref="widgetsContainer"
+        data-testid="section-widgets-list"
+        :data-draggable-ready="draggableList ? 'true' : undefined"
+        class="relative space-y-2 rounded-lg px-4 pt-1"
+      >
+        <WidgetItem
+          v-for="{ widget, node } in localWidgets"
+          :key="getStableWidgetRenderKey(widget)"
+          :widget
+          :node
+          :is-draggable
+          :hidden-favorite-indicator
+          :show-node-name
+          :host
+          @update:widget-value="handleWidgetValueUpdate(node, widget, $event)"
+          @reset-to-default="handleWidgetReset(node, widget, $event)"
+        />
+      </div>
+    </PropertiesAccordionItem>
+  </div>
+</template>

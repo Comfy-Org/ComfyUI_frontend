@@ -82,8 +82,8 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
@@ -763,7 +763,7 @@ export const useLitegraphService = () => {
           {
             content: 'Edit Subgraph Widgets',
             callback: () => {
-              useRightSidePanelStore().openPanel('subgraph')
+              usePropertiesPanelStore().openPanel('subgraph')
             }
           },
           {

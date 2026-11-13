@@ -274,7 +274,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -527,10 +527,10 @@ const handleHeaderTitleUpdate = (newTitle: string) => {
   handleNodeTitleUpdate(nodeData.id, newTitle)
 }
 
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 
 const handleOpenErrors = () => {
-  rightSidePanelStore.openPanel('errors')
+  propertiesPanelStore.openPanel('errors')
 }
 
 const handleToggleAdvanced = () => {
@@ -539,8 +539,8 @@ const handleToggleAdvanced = () => {
 
   // A subgraph node has no advanced section of its own; the side panel hosts it.
   if (node instanceof SubgraphNode) {
-    if (rightSidePanelStore.isOpen) rightSidePanelStore.closePanel()
-    else rightSidePanelStore.focusSection('advanced-inputs')
+    if (propertiesPanelStore.isOpen) propertiesPanelStore.closePanel()
+    else propertiesPanelStore.focusSection('advanced-inputs')
     return
   }
   node.showAdvanced = !node.showAdvanced

@@ -57,6 +57,7 @@ export function useSubgraphIoLayout(
       }),
       'expanded'
     )
+    node.arrange()
     canvasStore.canvas?.setDirty(true, true)
   }
 
