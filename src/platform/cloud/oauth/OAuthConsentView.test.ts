@@ -13,6 +13,7 @@ import type { SessionRecreation } from '@/platform/auth/session/cloudWebSessionS
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import {
   OAuthApiError,
+  fetchOAuthConsentChallenge,
   submitOAuthConsentDecision
 } from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
@@ -534,6 +535,24 @@ describe('OAuthConsentView without a Cloud session cookie', () => {
     const { unmount } = await renderLoadedConsent()
     unmount()
     answer.resolve(signInRedirect())
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(recreateSession).not.toHaveBeenCalled()
+    expect(useAuthActions().logout).not.toHaveBeenCalled()
+  })
+
+  it('does not recreate the session when the consent view is left while the session module loads', async () => {
+    const answer =
+      deferred<Awaited<ReturnType<typeof fetchOAuthConsentChallenge>>>()
+    vi.mocked(fetchOAuthConsentChallenge).mockReturnValueOnce(answer.promise)
+
+    const { unmount } = await renderLoadedConsent()
+    answer.resolve({
+      get kind() {
+        unmount()
+        return 'session-required' as const
+      }
+    })
     await vi.advanceTimersByTimeAsync(0)
 
     expect(recreateSession).not.toHaveBeenCalled()

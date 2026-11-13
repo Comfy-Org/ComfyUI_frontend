@@ -398,6 +398,7 @@ function showChallenge(next: OAuthConsentChallenge) {
 async function recoverSession(oauthRequestId: string) {
   const { useSessionCookie } =
     await import('@/platform/auth/session/useSessionCookie')
+  if (left) return
   const recreated = await useSessionCookie().recreateSession()
   if (left) return
   const offerSignIn = { action: 'sign_in_again', oauthRequestId } as const
