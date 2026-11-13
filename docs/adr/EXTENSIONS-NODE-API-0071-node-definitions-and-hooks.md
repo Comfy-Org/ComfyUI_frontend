@@ -217,7 +217,8 @@ registered, so `extend` cannot depend on the order.
     the host reports the disconnect (review finding A-02). For a link to a
     subgraph's input or output the host passes the subgraph's slot instead, so
     the API names the node's slot at that index; when such a slot is removed
-    with its link, that is the slot that moved into its place. Passing the
+    with its link, that is the slot that moved into its place, or the
+    subgraph's slot when no slot is left at that index. Passing the
     node's own slot there is a core change (ticket draft in the report).
 26. `onBeforeConnect` is asked before a link is made to an input
     (`onConnectInput`) or from an output (`onConnectOutput`) of the node, with
