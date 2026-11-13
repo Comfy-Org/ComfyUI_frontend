@@ -676,7 +676,6 @@ function createAccountIdentity(
     const proof = await proofWithinTimeout()
     if (started !== epoch) return
     if (proof === undefined) {
-      // Signed in ignores proof_errored, so nothing else would retry it.
       if (!retried && state.phase === 'signed_in') {
         schedule(() => {
           if (started === epoch && state.phase === 'signed_in') {
