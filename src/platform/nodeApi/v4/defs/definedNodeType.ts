@@ -71,7 +71,7 @@ export function checkedDefinition(definition: unknown): CheckedDefinition {
   const type = availableTypeName(definition.type)
   return {
     type,
-    title: optionalText('title', definition.title) ?? type,
+    title: optionalText('title', definition.title) || type,
     category: optionalText('category', definition.category) ?? '',
     description: optionalText('description', definition.description) ?? '',
     inputs: checkedSlots('inputs', definition.inputs),

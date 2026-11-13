@@ -16,6 +16,8 @@ import { useExtensionService } from '@/platform/extensions/services/extensionSer
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { NODE_TYPE_HOOKS_NAME } from '@/platform/nodeApi/v4/defs/nodeTypeHooksName'
 import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import type { NodeDef } from '@/platform/nodeApi/v4/types'
+import { uploadImageExtension } from '@/extensions/core/uploadImage'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 
@@ -279,5 +281,31 @@ describe("the app's node API", () => {
     await expect(app.reloadNodeDefs({})).resolves.toBe(true)
 
     expect(listener).toHaveBeenCalledOnce()
+  })
+
+  it('gives apply and get the same definition when a core extension adds an input as the type registers', async () => {
+    const comfy = publishedApi()
+    useExtensionService().registerExtension(uploadImageExtension)
+    const loader = () =>
+      hostNodeDef('ImageLoader', {
+        input: { required: { image: [['a.png'], { image_upload: true }] } }
+      })
+    const hasUpload = (def: NodeDef) =>
+      def.inputs.some((input) => input.type === 'IMAGEUPLOAD')
+    const seen: string[][] = []
+    const before = vi.fn()
+    comfy.defs.extend('ImageLoader', (builder) =>
+      seen.push(builder.def.inputs.map((input) => input.name))
+    )
+    comfy.defs.extend(hasUpload, before)
+
+    await useLitegraphService().registerNodeDef('ImageLoader', loader())
+    const after = vi.fn()
+    comfy.defs.extend(hasUpload, after)
+
+    expect(seen).toEqual([
+      comfy.defs.get('ImageLoader')?.inputs.map((input) => input.name)
+    ])
+    expect(after.mock.calls.length).toBe(before.mock.calls.length)
   })
 })

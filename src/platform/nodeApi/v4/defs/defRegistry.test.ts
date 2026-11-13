@@ -641,4 +641,13 @@ describe('node definitions', () => {
   it('cannot be changed by a pack', () => {
     expect(Object.isFrozen(defs)).toBe(true)
   })
+
+  it('titles a type defined with an empty title by its name, as its nodes show it', () => {
+    const stop = defs.define({ type: 'Pack/EmptyTitle', title: '' })
+    const node = LiteGraph.createNode('Pack/EmptyTitle')
+    const title = defs.get('Pack/EmptyTitle')?.title
+    stop()
+
+    expect([node?.title, title]).toEqual(['Pack/EmptyTitle', 'Pack/EmptyTitle'])
+  })
 })

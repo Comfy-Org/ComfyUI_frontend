@@ -688,7 +688,7 @@ export interface NodeDefOutput {
 /** A node type a pack owns. */
 export interface NodeDefinition {
   readonly type: string
-  /** Defaults to `type`. */
+  /** Defaults to `type`, as does `''`. */
   readonly title?: string
   readonly category?: string
   readonly description?: string

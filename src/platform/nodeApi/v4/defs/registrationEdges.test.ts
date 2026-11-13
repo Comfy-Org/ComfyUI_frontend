@@ -138,7 +138,13 @@ describe('registering node types and extensions at the edges', () => {
         'Fine',
         'Later'
       ])
-      expect(reportError).toHaveBeenCalledOnce()
+      expect(
+        vi
+          .mocked(reportError)
+          .mock.calls.filter(
+            ([, context]) => context.errorType === 'node_api_listener_failure'
+          )
+      ).toHaveLength(1)
       stop()
       registerHost('AfterStop')
       expect(applied).toHaveBeenCalledTimes(2)

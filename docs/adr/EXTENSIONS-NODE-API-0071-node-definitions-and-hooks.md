@@ -42,7 +42,10 @@ registered, so `extend` cannot depend on the order.
    can name it without depending on the API.
 2. The API keeps its own index of node types: each type its hook heard of and
    each type a pack defined, in the order each first registered, with a
-   reference to the host's definition (no copy). A type registered again
+   frozen JSON copy of the host's definition as the hook heard it, before the
+   extensions after it change it (the image upload extension adds an `upload`
+   input, for example), so `get` and `builder.def` give what a function
+   selector and `apply` saw, whenever `extend` runs. A type registered again
    replaces its entry in place. `get`, `has`, `all` and `extend` read this one
    index, so a type that `extend` would apply to is exactly a type `has`
    reports.
@@ -96,7 +99,9 @@ registered, so `extend` cannot depend on the order.
    reaches the host. A combo input carries its `values`, from either combo
    spelling the server uses. The title and description are the ones the
    editor shows, in the user's language, and a type with no display name is
-   titled by its name, as the host titles its nodes. `localizedName` is the
+   titled by its name, as the host titles its nodes; so is a definition given
+   `''` as its title, because `registerNodeType` replaces a falsy title with
+   the class name. `localizedName` is the
    input label the editor shows. The host tolerates some malformed server
    definitions (outputs sent as text, for example), so the API reads each part
    it cannot use as empty, an input whose spec is not a list is left out, and
@@ -351,8 +356,9 @@ registered, so `extend` cannot depend on the order.
   the types are registered and only when the Vue app is ready, so a pack
   extending at registration time would see a type `get` does not know; and it
   lists frontend-only types with inputs and outputs it does not know, for
-  which a definition with none would be wrong. The API's index holds only
-  references, so it costs one entry per type.
+  which a definition with none would be wrong. The API's index holds one
+  frozen JSON copy of each definition it heard (measured by the round-two
+  review at 4 ms to 12 ms for 1,000 types).
 - Hear `onCreated` through the prototype's `onAdded`. It runs before the
   host's graph intent, so it cannot tell a load from an import, and
   `ChangeTracker.isLoadingGraph` is set only for `loadGraphData`.
