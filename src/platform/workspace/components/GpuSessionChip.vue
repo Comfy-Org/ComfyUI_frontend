@@ -112,7 +112,7 @@ const optionItems = computed<MenuItem[]>(() => {
     },
     {
       label: t('gpuSession.idleLabel'),
-      disabled: !canChange.value,
+      disabled: saving.value || !canChange.value,
       radioGroup: {
         value: String(current.idleMinutes),
         options: IDLE_CHOICES.map((minutes) => ({
@@ -127,7 +127,7 @@ const optionItems = computed<MenuItem[]>(() => {
     },
     {
       label: t('gpuSession.closeLabel'),
-      disabled: !canChange.value,
+      disabled: saving.value || !canChange.value,
       presentation: 'switch',
       checked: current.endOnClose,
       command: () => report(store.setEndOnClose(!current.endOnClose))

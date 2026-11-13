@@ -101,4 +101,25 @@ describe('GpuSessionChip', () => {
       on: true
     })
   })
+
+  it('disables the options while a change to the close setting is saving', async () => {
+    vi.mocked(workspaceApi.setEditorGpu).mockReturnValue(new Promise(() => {}))
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    renderOn({ ...deployment, editor_gpu: false, can_change_editor_gpu: true })
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'GPU options' }))
+    const closeOption = await screen.findByRole('menuitemcheckbox', {
+      name: 'Turn off when I close the editor'
+    })
+    await user.click(closeOption)
+
+    await vi.waitFor(() =>
+      expect(closeOption).toHaveAttribute('aria-disabled', 'true')
+    )
+    expect(
+      screen.getByRole('menuitem', { name: 'Turn off when idle' })
+    ).toHaveAttribute('aria-disabled', 'true')
+    expect(workspaceApi.setEditorGpu).toHaveBeenCalledOnce()
+  })
 })
