@@ -2,6 +2,8 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import { addWidget } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/types/domWidget'
 
 import type { EditRunner } from '@/platform/nodeApi/v4/edit/editRunner'
 import type { WidgetDef, WidgetValue } from '@/platform/nodeApi/v4/types'
@@ -24,6 +26,11 @@ export interface WidgetEdits {
     linked: readonly IBaseWidget[]
   ): void
   addWidget(node: LGraphNode, def: WidgetDef): void
+  addDomWidget(
+    node: LGraphNode,
+    widget: BaseDOMWidget,
+    height: number | undefined
+  ): void
   removeWidget(node: LGraphNode, widget: BaseWidget): void
   reorderWidgets(node: LGraphNode, ordered: readonly IBaseWidget[]): void
 }
@@ -63,7 +70,7 @@ export function createWidgetEdits(
       }),
     setHeight: (node, widget, height) =>
       shown(node, () => {
-        widget.computeSize = (width = 0) => [width, height]
+        fixHeight(widget, height)
         node.expandToFitContent()
       }),
     setLinked: (node, widget, linked) =>
@@ -75,6 +82,12 @@ export function createWidgetEdits(
         node.addCustomWidget({ ...def, options: { ...def.options }, y: 0 })
         node.expandToFitContent()
       }),
+    addDomWidget: (node, widget, height) =>
+      saved(node, () => {
+        if (height !== undefined) fixHeight(widget, height)
+        addWidget(node, widget)
+        node.expandToFitContent()
+      }),
     removeWidget: (node, widget) =>
       saved(node, () => node.removeWidget(widget)),
     reorderWidgets: (node, ordered) =>
@@ -82,6 +95,10 @@ export function createWidgetEdits(
         node.widgets?.splice(0, node.widgets.length, ...ordered)
       })
   }
+}
+
+function fixHeight(widget: IBaseWidget, height: number): void {
+  widget.computeSize = (width = 0) => [width, height]
 }
 
 function hideWithLinked(

@@ -126,6 +126,42 @@ This ADR records how the API reaches widgets through those owners.
     assigns `serializeValue`, `bindMultilineTextareaWidget` chains
     `onRemove`).
 
+### Mounted and canvas widgets
+
+17. `mount(def)` gives the pack an element on the node to fill with its own
+    tools, its own Vue included, and nothing else of the host. It builds the
+    widget as host code builds a DOM widget: a `DOMWidgetImpl` whose
+    `serialize` is set first, added with `addWidget` from
+    `src/scripts/domWidget.ts`, which registers it with the DOM widget store
+    the canvases draw from. The value lives in the widget's `getValue` and
+    `setValue` options, as for every DOM widget. `serialize` (the saved
+    workflow) defaults to whether `defaultValue` is given, and `sendToPrompt`
+    (the widget's `options.serialize`, which `graphToPrompt` reads) to
+    `serialize`; a mount without a default is decoration and is neither saved
+    nor sent. `height` fixes the height as `setHeight` does.
+18. A mounted value is a string or a plain object or array. A DOM widget's
+    value type is `object | string`, and the host reads a missing value as
+    `''`, so `null` would not survive a save; a number or boolean is wrapped
+    by the pack. `MountedValue.set` commits through `WidgetHandle.setValue`.
+    `onChange` runs for every other write, such as a load restoring the
+    value, and not for the pack's own `set`.
+19. `render` is called once, when the widget is on its node; `destroy` is
+    chained on the widget's `onRemove`, after the host's own cleanup, and the
+    host runs it when the widget is removed and when its node is. Both are
+    called through the shared listener primitive, so a throw is reported.
+20. `canvas(def)` is a mount whose element holds a `<canvas>`. `draw` gets the
+    context scaled for the device pixel ratio, the size in CSS pixels, the
+    theme, and the value accessor when `defaultValue` is given. It runs on
+    mount, when a `ResizeObserver` sees the container resize, on
+    `redraw()`, and after every write of the value; nothing runs per frame.
+    The theme is read from the design system's color tokens on each draw, so
+    a theme switch needs nothing from the pack; a missing token falls back to
+    `transparent` or `currentColor`. A primary-button press is captured and
+    kept from the node under the widget; middle and right are left to the
+    canvas's panning and menus. Positions are scaled back from the zoomed
+    canvas to the units `draw` uses. The listeners and the observer are
+    released with the widget.
+
 ## Alternatives considered
 
 - Write a value with `useWidgetValueStore().setValue` and call the callback,
@@ -151,6 +187,16 @@ This ADR records how the API reaches widgets through those owners.
 - Install `beforeSerialize` for the saved workflow through the node's
   `onSerialize`. That is API behaviour on `LGraphNode`; see "Core
   limitation".
+
+- Take a Vue component from the pack and render it with the host's Vue. A
+  pack is trusted code with its own tools; the host hands it an element.
+
+## Members left out
+
+- `WidgetHandle.getHeight`, `MountDef.hidden`, `CanvasDef.onContextMenu`:
+  no stored pack uses them.
+- A number, boolean or `null` as a mounted value: 2 sites in the stored
+  packs use one (`0` and `null` as `defaultValue`); see decision 18.
 
 ## Core limitation
 
@@ -183,7 +229,8 @@ and options are copied with `shared/savedCopy.ts`, as properties are.
 `createListeners` in `shared/listeners.ts` takes the arguments an event
 carries as a type parameter and passes them to each listener through
 `callListener`, so a widget's listeners share the one isolation path with
-`onReady` and the node type hooks. The definitions registry now calls
+`onReady` and the node type hooks; `render`, `destroy`, `draw` and pointer
+handlers are called through `callListener` too. The definitions registry now calls
 `onRefreshed` listeners with no arguments, so the arguments the host passes
 its extension hook do not reach a pack.
 
