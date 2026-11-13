@@ -25,7 +25,7 @@
       >
         <i class="mb-2 icon-[lucide--video-off] size-12" />
         <p class="text-sm">
-          {{ $t('g.videoFailedToLoad') }}
+          {{ $t(videoFailureMessageKey([errorCode])) }}
         </p>
         <p class="mt-1 text-xs">
           {{ currentItem?.filename }}
@@ -135,6 +135,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import { videoFailureMessageKey } from '@/composables/node/useNodeImage'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useTelemetry } from '@comfyorg/telemetry'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -162,6 +163,7 @@ const isFocused = ref(false)
 const actualDimensions = ref<string | null>(null)
 const videoError = ref(false)
 const showLoader = ref(false)
+const errorCode = ref<number>()
 
 const videoWrapperEl = ref<HTMLDivElement>()
 
@@ -211,10 +213,14 @@ const handleVideoLoad = (event: Event) => {
   }
 }
 
-const handleVideoError = () => {
+const handleVideoError = (event: Event) => {
   showLoader.value = false
   videoError.value = true
   actualDimensions.value = null
+  errorCode.value =
+    event.target instanceof HTMLVideoElement
+      ? event.target.error?.code
+      : undefined
 
   const failedUrl = currentPlaybackUrl.value
   if (!failedUrl) return

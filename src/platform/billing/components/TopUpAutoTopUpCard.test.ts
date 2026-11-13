@@ -17,6 +17,7 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import TopUpAutoTopUpCard from '@/platform/billing/components/TopUpAutoTopUpCard.vue'
 
@@ -42,17 +43,23 @@ type Served = {
   canManage: boolean
   setup: AutoTopUpSetup | null
   card: ReturnType<typeof loadedAutoTopUp> | { kind: 'loading' | 'unavailable' }
+  localBillingWeb: boolean
 }
 
 const shown: Served = {
   enabled: true,
   canManage: true,
   setup: { state: 'ready' },
-  card: loadedAutoTopUp('off')
+  card: loadedAutoTopUp('off'),
+  localBillingWeb: false
 }
 
 function renderCard(served: Partial<Served> = {}) {
-  const { enabled, canManage, setup, card } = { ...shown, ...served }
+  const { enabled, canManage, setup, card, localBillingWeb } = {
+    ...shown,
+    ...served
+  }
+  setLocalBillingWebEnabled(localBillingWeb)
   const capabilities = useBillingCapabilities()
   capabilities.autoTopUpEnabled = autoTopUpEnabledFact(enabled)
   capabilities.canManageAutoTopUp = canManageAutoTopUpFact(canManage)
@@ -99,18 +106,25 @@ describe('TopUpAutoTopUpCard', () => {
     { name: 'auto top-up is already on', card: loadedAutoTopUp('on') },
     { name: 'auto top-up has failed', card: loadedAutoTopUp('failed') },
     { name: 'the status is still loading', card: { kind: 'loading' } },
-    { name: 'the status read failed', card: { kind: 'unavailable' } }
+    { name: 'the status read failed', card: { kind: 'unavailable' } },
+    { name: 'billing opens through a local handoff', localBillingWeb: true }
   ])('shows nothing when $name', ({ name: _, ...served }) => {
     renderCard(served)
 
     expect(screen.queryByText(PROMPT)).toBeNull()
   })
 
-  it('stays shown while setup is frozen for another reason', () => {
-    renderCard({ setup: { state: 'frozen', reason: 'billing_paused' } })
+  it.for([
+    { reason: 'billing_paused', shown: false },
+    { reason: 'default_payment_method_missing', shown: true }
+  ] as const)(
+    'shows the prompt: $shown while setup is frozen for $reason',
+    ({ reason, shown }) => {
+      renderCard({ setup: { state: 'frozen', reason } })
 
-    expect(screen.getByText(PROMPT)).toBeInTheDocument()
-  })
+      expect(screen.queryByText(PROMPT) !== null).toBe(shown)
+    }
+  )
 
   it('reads the auto top-up status only when the served facts allow setup', () => {
     renderCard({ canManage: false })

@@ -30,7 +30,7 @@
         <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
       </Button>
       <Button
-        v-else-if="action"
+        v-else-if="action && plansAvailable"
         as="a"
         :href="plansHref"
         target="_blank"
@@ -81,10 +81,11 @@ const {
   addCreditsVariant?: 'inverted' | 'secondary'
 }>()
 
-const { href: plansHref, track: trackPlans } = usePlatformHandoff(
-  '/profile/billing/plans',
-  { target: 'plans' }
-)
+const {
+  href: plansHref,
+  track: trackPlans,
+  available: plansAvailable
+} = usePlatformHandoff('/profile/billing/plans', { target: 'plans' })
 
 const { t, locale } = useI18n()
 

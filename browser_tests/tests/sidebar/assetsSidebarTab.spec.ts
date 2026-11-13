@@ -17,7 +17,7 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const test = mergeTests(
@@ -395,7 +395,7 @@ bulkInsertionTest.describe(
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.expectNodeCount(0)
       await comfyPage.toast.closeToasts()
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
@@ -411,7 +411,7 @@ bulkInsertionTest.describe(
       'does not surface errors for inserted output assets',
       async ({ comfyPage }) => {
         const tab = comfyPage.menu.assetsTab
-        const panel = new PropertiesPanelHelper(comfyPage.page)
+        const panel = new PropertiesPanel(comfyPage.page)
         await expect(panel.root).toBeVisible()
 
         await tab.getAssetCardByName('alpha').click()

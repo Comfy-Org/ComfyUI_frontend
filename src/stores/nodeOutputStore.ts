@@ -16,7 +16,6 @@ import type {
 } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import { parseNodeOutput } from '@/stores/resultItemParsing'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
@@ -209,14 +208,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       return {
         ...result,
         url: result.url ?? resultItemUrl(result) + rand,
-        previewUrl:
-          result.previewUrl ??
-          (isHdrImageFilename(result.filename)
-            ? resultItemPreviewUrl(result)
-            : (result.url ??
-              resultItemPreviewUrl(result) +
-                getPreviewParam(node, outputs) +
-                rand))
+        previewUrl: resultItemPreviewUrl(result, {
+          previewFormat: getPreviewParam(node, outputs),
+          rand
+        })
       }
     })
   }

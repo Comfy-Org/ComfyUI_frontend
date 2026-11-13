@@ -3,6 +3,7 @@ import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
+import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   isAuthenticatedConfigLoaded,
@@ -168,6 +169,13 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED,
         remoteConfig.value.onboarding_survey_enabled,
+        false
+      )
+    },
+    get signedOutRerouteEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED,
+        remoteConfig.value.signed_out_reroute_enabled,
         false
       )
     },
@@ -362,6 +370,7 @@ export function useFeatureFlags() {
       return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
     },
     get unifiedBillingSettingsEnabled() {
+      if (!isCloud) return opensLocalBillingHandoff()
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
         remoteConfig.value.unified_billing_settings
@@ -438,6 +447,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,
+      [ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED]:
+        flags.signedOutRerouteEnabled,
       [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
         flags.partnerNodeGovernanceEnabled,
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,

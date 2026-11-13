@@ -4,7 +4,8 @@ import type {
   GetI18nResponse,
   ModelDownloadData,
   ModelFile,
-  PostAssetsFromWorkflowResponse
+  PostAssetsFromWorkflowResponse,
+  PromptOutputsSkippedData
 } from '@comfyorg/ingest-types'
 import {
   zGetEmbeddingsResponse,
@@ -205,6 +206,7 @@ interface BackendApiCalls {
   execution_error: ExecutionErrorWsMessage
   execution_interrupted: ExecutionInterruptedWsMessage
   execution_cached: ExecutionCachedWsMessage
+  prompt_outputs_skipped: PromptOutputsSkippedData
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob
@@ -1147,6 +1149,7 @@ export class ComfyApi extends EventTarget {
             case 'execution_interrupted':
             case 'execution_cached':
             case 'execution_success':
+            case 'prompt_outputs_skipped':
             case 'progress':
             case 'progress_state':
             case 'executed':

@@ -1,8 +1,12 @@
 import type {
   OAuthConsentChallenge as GeneratedOAuthConsentChallenge,
-  OAuthConsentChallengeWorkspace
+  OAuthConsentChallengeWorkspace,
+  OAuthConsentVerifiedClient
 } from '@comfyorg/ingest-types'
-import { zErrorResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zErrorResponse,
+  zOAuthConsentVerifiedClient
+} from '@comfyorg/ingest-types/zod'
 
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 
@@ -47,6 +51,33 @@ export function isFirstPartyClient(
   challenge: Pick<OAuthConsentChallenge, 'client_provenance'>
 ): boolean {
   return challenge.client_provenance === 'first_party'
+}
+
+const verifiedClientIcons: Partial<
+  Record<OAuthConsentVerifiedClient['platform'], string>
+> = {
+  chatgpt: 'icon-[comfy--openai]',
+  claude: 'icon-[comfy--anthropic]'
+}
+
+export function verifiedClientIcon(
+  platform: OAuthConsentVerifiedClient['platform']
+): string | undefined {
+  return verifiedClientIcons[platform]
+}
+
+export function verifiedClient(
+  challenge: Pick<
+    OAuthConsentChallenge,
+    'client_provenance' | 'verified_client'
+  >
+): OAuthConsentVerifiedClient | undefined {
+  if (challenge.client_provenance !== 'dynamic') return undefined
+  const parsed = zOAuthConsentVerifiedClient.safeParse(
+    challenge.verified_client
+  )
+  if (!parsed.success || !parsed.data.display_name.trim()) return undefined
+  return parsed.data
 }
 
 export function redirectHost(uri: string | undefined): string | undefined {
