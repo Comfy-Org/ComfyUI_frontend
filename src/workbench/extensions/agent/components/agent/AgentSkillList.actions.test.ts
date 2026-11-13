@@ -406,6 +406,26 @@ describe('AgentSkillList row actions', () => {
       expect(useSkillDraftStore().newSkillDraft).toBeNull()
     })
 
+    it('keeps the draft changes of a skill whose delete failed while the workspace changed', async () => {
+      const workspace = useTeamWorkspaceStore()
+      const shownWorkspaceId = workspace.workspaceId
+      seedDraft(
+        { kind: 'edit', name: 'landscape' },
+        { ...DRAFT, name: 'landscape' }
+      )
+      vi.mocked(deleteSkillPack).mockImplementationOnce(async () => {
+        Object.assign(workspace, { workspaceId: 'workspace-b' })
+        throw new SkillPacksApiError('Server error', 500)
+      })
+      const { user } = mount()
+      await chooseDelete(user, 'landscape')
+
+      await confirmDeletion()
+
+      Object.assign(workspace, { workspaceId: shownWorkspaceId })
+      expect(useSkillDraftStore().editDraftFor('landscape')).toBeDefined()
+    })
+
     it('offers no draft menu item on a skill without draft changes', async () => {
       const { user } = mount()
 

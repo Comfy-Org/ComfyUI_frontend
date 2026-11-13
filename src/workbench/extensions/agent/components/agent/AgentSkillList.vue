@@ -58,10 +58,10 @@ function initialFocusId(): string {
 
 async function removeSkill(pack: SkillPack): Promise<void> {
   const scope = skills.scope
-  await deleteSkillPack(pack)
+  const deleted = await deleteSkillPack(pack)
   await nextTick()
+  if (deleted) drafts.setDraft(scope, { kind: 'edit', name: pack.name }, null)
   const removed = !skills.packs.some((existing) => existing.name === pack.name)
-  if (removed) drafts.setDraft(scope, { kind: 'edit', name: pack.name }, null)
   document
     .getElementById(removed ? addButtonId : rowButtonId(pack.name))
     ?.focus()

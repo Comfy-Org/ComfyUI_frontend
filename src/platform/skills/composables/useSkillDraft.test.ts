@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, reactive } from 'vue'
 
 import { useSkillDraftStore } from '@/platform/skills/stores/skillDraftStore'
@@ -37,6 +37,7 @@ describe('useSkillDraft', () => {
 
   it('writes the typed text when the page is being left before the save delay has passed', async () => {
     const form = openAddForm()
+    onTestFinished(form.close)
     form.form.body = 'typed just now'
     await nextTick()
 

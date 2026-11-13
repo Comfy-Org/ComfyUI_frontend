@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import {
+  completeWorkflowLogoutTransition,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import { useSkillDraftStore } from './skillDraftStore'
@@ -72,6 +76,22 @@ describe('skillDraftStore', () => {
     expect(
       localStorage.getItem(StorageKeys.agentSkillDrafts(skills.scope))
     ).toBeNull()
+  })
+
+  it('writes no draft while a sign-out is clearing storage', () => {
+    const skills = useSkillPacksStore()
+    const drafts = useSkillDraftStore()
+    prepareWorkflowLogoutTransition()
+    try {
+      drafts.setDraft(skills.scope, { kind: 'new' }, PORTRAIT)
+    } finally {
+      completeWorkflowLogoutTransition()
+    }
+
+    expect(
+      localStorage.getItem(StorageKeys.agentSkillDrafts(skills.scope))
+    ).toBeNull()
+    expect(drafts.newSkillDraft).toBeNull()
   })
 
   it('keeps the drafts of different scopes apart', () => {
