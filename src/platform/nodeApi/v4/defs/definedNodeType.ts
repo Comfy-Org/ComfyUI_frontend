@@ -14,7 +14,12 @@ import type { HookCallbacks } from './nodeHooks'
 type DefinitionHooks = Partial<
   Pick<
     HookCallbacks,
-    'onCreated' | 'onConfigured' | 'onRemoved' | 'onSerialize'
+    | 'onCreated'
+    | 'onConfigured'
+    | 'onRemoved'
+    | 'onSerialize'
+    | 'onConnectionsChanged'
+    | 'onPropertyChanged'
   >
 >
 
@@ -41,7 +46,9 @@ const DEFINITION_FIELDS = {
   onCreated: true,
   onConfigured: true,
   onRemoved: true,
-  onSerialize: true
+  onSerialize: true,
+  onConnectionsChanged: true,
+  onPropertyChanged: true
 } satisfies Record<keyof NodeDefinition, true>
 
 const EXECUTIONS = ['backend', 'frontend'] as const
@@ -74,7 +81,15 @@ export function checkedDefinition(definition: unknown): CheckedDefinition {
       onCreated: optionalHook('onCreated', definition.onCreated),
       onConfigured: optionalHook('onConfigured', definition.onConfigured),
       onRemoved: optionalHook('onRemoved', definition.onRemoved),
-      onSerialize: optionalHook('onSerialize', definition.onSerialize)
+      onSerialize: optionalHook('onSerialize', definition.onSerialize),
+      onConnectionsChanged: optionalHook(
+        'onConnectionsChanged',
+        definition.onConnectionsChanged
+      ),
+      onPropertyChanged: optionalHook(
+        'onPropertyChanged',
+        definition.onPropertyChanged
+      )
     }
   }
 }
@@ -88,6 +103,11 @@ export function addDefinitionHooks(
   if (hooks.onConfigured) builder.onConfigured(hooks.onConfigured)
   if (hooks.onRemoved) builder.onRemoved(hooks.onRemoved)
   if (hooks.onSerialize) builder.onSerialize(hooks.onSerialize)
+  if (hooks.onConnectionsChanged) {
+    builder.onConnectionsChanged(hooks.onConnectionsChanged)
+  }
+  if (hooks.onPropertyChanged)
+    builder.onPropertyChanged(hooks.onPropertyChanged)
 }
 
 /** Registers the node type a definition describes, and returns its class. */

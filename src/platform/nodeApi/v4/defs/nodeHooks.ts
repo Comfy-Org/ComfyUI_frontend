@@ -1,10 +1,13 @@
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type {
+  BeforeConnectEvent,
+  ConnectionChangeEvent,
   ExecutionResult,
   NodeCreatedEvent,
   NodeDef,
   NodeDefBuilder,
-  NodeHandle
+  NodeHandle,
+  PropertyChangeEvent
 } from '@/platform/nodeApi/v4/types'
 
 /** The callback a pack gives each hook. */
@@ -21,6 +24,14 @@ export interface HookCallbacks {
     node: NodeHandle,
     size: Readonly<{ width: number; height: number }>
   ) => void
+  onConnectionsChanged: (node: NodeHandle, event: ConnectionChangeEvent) => void
+  onBeforeConnect: (
+    node: NodeHandle,
+    event: BeforeConnectEvent
+  ) => boolean | void
+  onPropertyChanged: (node: NodeHandle, event: PropertyChangeEvent) => void
+  onHover: (node: NodeHandle, hovering: boolean) => void
+  onDoubleClick: (node: NodeHandle) => void
 }
 
 export type HookName = keyof HookCallbacks
@@ -31,7 +42,12 @@ export const HOOK_NAMES = [
   'onRemoved',
   'onExecuted',
   'onSerialize',
-  'onResized'
+  'onResized',
+  'onConnectionsChanged',
+  'onBeforeConnect',
+  'onPropertyChanged',
+  'onHover',
+  'onDoubleClick'
 ] as const satisfies readonly HookName[]
 
 /** The callbacks one extension added to one type, by hook, in the order it added them. */
@@ -50,7 +66,12 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
     onRemoved: [],
     onExecuted: [],
     onSerialize: [],
-    onResized: []
+    onResized: [],
+    onConnectionsChanged: [],
+    onBeforeConnect: [],
+    onPropertyChanged: [],
+    onHover: [],
+    onDoubleClick: []
   }
   let open = true
 
@@ -75,7 +96,12 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
     onRemoved: hook('onRemoved'),
     onExecuted: hook('onExecuted'),
     onSerialize: hook('onSerialize'),
-    onResized: hook('onResized')
+    onResized: hook('onResized'),
+    onConnectionsChanged: hook('onConnectionsChanged'),
+    onBeforeConnect: hook('onBeforeConnect'),
+    onPropertyChanged: hook('onPropertyChanged'),
+    onHover: hook('onHover'),
+    onDoubleClick: hook('onDoubleClick')
   })
 
   return {

@@ -155,6 +155,36 @@ registered, so `extend` cannot depend on the order.
     `onRemoved` and `onSerialize`; they are applied as an extension of that
     type, made by `define` and removed by its disposer.
 
+### Connection, property and pointer hooks
+
+25. `onConnectionsChanged` gives the side, index and name of the node's slot,
+    whether it is now connected, and the node and slot at the other end of the
+    link the host reports, on a disconnect too. The name is read from the slot
+    the host passes with the change, not looked up by index, because removing
+    a connected slot shifts the slots after it before the host reports the
+    disconnect (review finding A-02).
+26. `onBeforeConnect` is asked before a link is made to an input
+    (`onConnectInput`) or from an output (`onConnectOutput`) of the node, with
+    the side and index of the node's own slot. The link is refused if the
+    type's own method refuses it, in which case the hooks are not asked, or if
+    any hook returns `false`. A hook that throws is reported and does not
+    refuse. The other end's node, slot and type are not given: no stored pack
+    reads them.
+27. `onPropertyChanged` hears every call of the node's `onPropertyChanged`:
+    `setProperty`, and each property a saved workflow restores in `configure`.
+    `value` is a frozen copy. `setValue` stores a frozen copy of the pack's
+    value in the node's properties, where `setProperty` has just stored the
+    edited one; a value a workflow cannot save is refused with a `TypeError`.
+    `reject()` answers `false`, so `setProperty` puts the earlier value back;
+    `configure` ignores the answer, so a restored value is kept. When several
+    hooks answer, the last one wins. A refusal by the type's own method
+    stands and the hooks are not told.
+28. `onHover` and `onDoubleClick` are delivered from the node's
+    `onMouseEnter`, `onMouseLeave` and `onDblClick`, which only the canvas
+    renderer calls; the Vue node renderer does not, and the JSDoc says so.
+29. A definition may also declare `onConnectionsChanged` and
+    `onPropertyChanged`.
+
 ## Alternatives considered
 
 - Call the API from `litegraphService.registerNodeDef`, as the earlier
@@ -172,6 +202,9 @@ registered, so `extend` cannot depend on the order.
 - Hear node lifecycle through each graph's `node:added` and `node:removed`
   events. A listener per graph would have to follow every graph the host
   makes and replaces, and `node:removed` fires after the node has left.
+- Store a `setValue` replacement through `setProperty`. It runs inside the
+  host's `setProperty`, which then stores its own value over it or puts the
+  earlier one back.
 - Remove a dispatcher when its last callback goes. Another pack may have
   wrapped the method since, and taking ours out would drop theirs.
 - Index extensions by type name so registration does not test every
@@ -200,6 +233,9 @@ registered, so `extend` cannot depend on the order.
 - A legacy pack that replaces a prototype method without calling the one it
   replaced drops the API's dispatcher for that type, as it drops another
   pack's today.
+- A property bound to a widget (`options.property`) shows the edited value in
+  the widget after a `setValue`, because `setProperty` updates the widget
+  after the hooks run.
 - Host changes: `useComfyApiStore().publish()` registers the extension.
 
 ## What this feature replaces or duplicates, and why
