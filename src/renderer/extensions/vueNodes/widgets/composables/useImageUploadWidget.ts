@@ -13,18 +13,16 @@ import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { hasImageType, hasVideoType } from '@/utils/eventUtils'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
 import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_VIDEO_TYPES,
+  hasFilenameExtension,
   isExtensionlessVideo,
   isUploadableVideo
 } from '@/utils/mediaUploadUtil'
-
-function isImageFile(file: File) {
-  return file.type.startsWith('image/')
-}
 
 type ImageUploadComboWidget = Omit<IComboWidget, 'value' | 'callback'> & {
   value: string | number | string[]
@@ -62,7 +60,11 @@ export const useImageUploadWidget = () => {
       if (isVideo || !LiteGraph.vueNodesMode) showPreview({ block: false })
     }
 
-    const fileFilter = isVideo ? isUploadableVideo : isImageFile
+    const fileFilter = isVideo
+      ? (file: File) =>
+          isUploadableVideo(file) ||
+          (file.type === '' && hasVideoType(file) && hasFilenameExtension(file))
+      : hasImageType
     function alertExtensionlessVideo(files: File[]) {
       if (!files.some(isExtensionlessVideo)) return false
       useToast().warning(t('g.videoFilenameExtensionRequired'))
@@ -86,6 +88,7 @@ export const useImageUploadWidget = () => {
       accept,
       folder,
       onReject: isVideo ? alertExtensionlessVideo : undefined,
+      canHandleRejectedFile: isVideo ? isExtensionlessVideo : undefined,
       onUploadStart: (files) => {
         if (files.length > 0) {
           const prev = fileComboWidget.value
