@@ -256,7 +256,7 @@ function withAncestors(files: string[]): Set<string> {
   )
 }
 
-function buildIndex(files: string[]): RepoIndex {
+function buildIndex(files: string[], removedFiles: string[]): RepoIndex {
   const packageScripts = files
     .filter((file) => posix.basename(file) === 'package.json')
     .flatMap((file) =>
@@ -268,7 +268,7 @@ function buildIndex(files: string[]): RepoIndex {
   return {
     paths: withAncestors(files),
     topLevelDirectories: new Set(
-      files
+      [...files, ...removedFiles]
         .filter((file) => file.includes('/'))
         .map((file) => file.split('/')[0])
     ),
@@ -276,9 +276,9 @@ function buildIndex(files: string[]): RepoIndex {
   }
 }
 
-function removedPaths(base: string, current: ReadonlySet<string>): Set<string> {
+function filesRemovedSince(base: string): string[] {
   const mergeBase = git(['merge-base', base, 'HEAD']).trim()
-  const removedFiles = git([
+  return git([
     'diff',
     '--name-status',
     '--diff-filter=DR',
@@ -288,9 +288,6 @@ function removedPaths(base: string, current: ReadonlySet<string>): Set<string> {
   ])
     .split('\0')
     .filter((_, position, entries) => /^[DR]/.test(entries[position - 1] ?? ''))
-  return new Set(
-    [...withAncestors(removedFiles)].filter((path) => !current.has(path))
-  )
 }
 
 function changedMarkdown(base: string): Set<string> {
@@ -314,12 +311,15 @@ function main(argv: string[]): number {
   ])
     .split('\0')
     .filter((file) => file && existsSync(file))
-  const index = buildIndex(files)
+  const removedFiles = base ? filesRemovedSince(base) : []
+  const index = buildIndex(files, removedFiles)
   const markdownFiles = files.filter(
     (file) => /\.mdx?$/.test(file) && !lstatSync(file).isSymbolicLink()
   )
   const changed = base ? changedMarkdown(base) : undefined
-  const removed = base ? removedPaths(base, index.paths) : new Set<string>()
+  const removed = new Set(
+    [...withAncestors(removedFiles)].filter((path) => !index.paths.has(path))
+  )
   function isReported(file: string, finding: Finding): boolean {
     return (
       !changed ||
