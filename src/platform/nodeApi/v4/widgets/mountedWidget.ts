@@ -13,8 +13,7 @@ import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type {
   MountDef,
   MountedData,
-  MountedValue,
-  WidgetHandle
+  MountedValue
 } from '@/platform/nodeApi/v4/types'
 import {
   definitionFields,
@@ -76,7 +75,8 @@ export function checkedMountDef(member: string, def: unknown): MountSpec {
   }
 }
 
-function mountedData(member: string, value: unknown): MountedData {
+/** A copy of a mounted widget's value, or a `TypeError` naming `member`. */
+export function mountedData(member: string, value: unknown): MountedData {
   if (typeof value === 'string') return value
   if (!Array.isArray(value) && !isPlainObject(value)) {
     throw invalidArgument(member, 'a string, or a plain object or array', value)
@@ -135,14 +135,14 @@ export function createMountedWidget(
 export function renderMounted(
   spec: MountSpec,
   mounted: ReturnType<typeof createMountedWidget>,
-  handle: WidgetHandle,
+  commit: (value: MountedData) => void,
   copyOfSaved: SavedCopier
 ): MountedValue {
   const value: MountedValue = Object.freeze({
     get: () => copyOfSaved('get', mounted.widget.value),
     set(next: unknown) {
       const checked = mountedData('set', next)
-      mounted.settingOwnValue(() => handle.setValue(checked))
+      mounted.settingOwnValue(() => commit(checked))
     },
     onChange(listener: unknown) {
       if (typeof listener !== 'function') {

@@ -15,6 +15,7 @@ import type { ComfyExtension } from '@/types/comfy'
 import type { DefRegistry, Unsubscribe } from '@/platform/nodeApi/v4/types'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { Packs } from '@/platform/nodeApi/v4/packs'
+import type { WidgetTypes } from '@/platform/nodeApi/v4/widgets/widgetTypes'
 import {
   addDefinitionHooks,
   checkedDefinition,
@@ -48,6 +49,7 @@ interface DefRegistryParts {
 
 export function createDefRegistry(
   nodes: NodeHandles,
+  widgetTypes: WidgetTypes,
   packs: Pick<Packs, 'checked'>
 ): DefRegistryParts {
   const copyOfSaved = savedCopier()
@@ -156,7 +158,8 @@ export function createDefRegistry(
     typeColor: colors.typeColor,
     setTypeColor: colors.setTypeColor,
     nodeColor: colors.nodeColor,
-    isTypeCompatible: colors.isTypeCompatible
+    isTypeCompatible: colors.isTypeCompatible,
+    defineWidgetType: widgetTypes.define
   })
 
   return {

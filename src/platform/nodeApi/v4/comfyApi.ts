@@ -50,13 +50,13 @@ export interface ComfyApi {
 export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
   const handles = createDocumentHandles(() => services.shownRoot?.())
-  const widgetsOf = createWidgetCollections(
+  const widgets = createWidgetCollections(
     handles,
     createEditRunner(() => services.history?.())
   )
   const nodes = createNodeHandles(handles, (handle) => ({
     ...nodeHandleMembers(handle, edit, nodes, slots),
-    widgets: widgetsOf(() => nodes.locator(handle)?.())
+    widgets: widgets.widgetsOf(() => nodes.locator(handle)?.())
   }))
   const slots = createSlotHandles(handles, nodes, () => edit)
   const groups = createGroupHandles(handles, nodes, (handle) => ({
@@ -77,7 +77,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       services.extensionsUrl?.() ??
       new URL('/extensions/', window.location.href).href
   )
-  const definitions = createDefRegistry(nodes, packs)
+  const definitions = createDefRegistry(nodes, widgets.widgetTypes, packs)
 
   const comfy = Object.freeze({
     getApiVersion: () => API_VERSION,

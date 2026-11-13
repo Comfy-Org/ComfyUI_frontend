@@ -899,3 +899,41 @@ export interface CanvasTheme {
   readonly text: string
   readonly textSecondary: string
 }
+
+export interface DefRegistry {
+  /**
+   * Makes every input of `type` a widget `def` renders. A type the host or a
+   * pack already defines throws a `TypeError`. The disposer removes it.
+   */
+  defineWidgetType(type: string, def: WidgetTypeDef): Unsubscribe
+}
+
+/** How every input of a declared widget type is shown. */
+export interface WidgetTypeDef {
+  /**
+   * Fills the widget's element for the input named `name`. Return a teardown
+   * to run when the host releases the widget. A throw is reported.
+   */
+  render(
+    container: HTMLElement,
+    value: WidgetTypeValue,
+    name: string,
+    context: WidgetTypeContext
+  ): Unsubscribe | void
+  /** Used when the input's declaration gives no default text. */
+  readonly defaultValue?: MountedData
+  /** The height the widget takes on its node, in graph units. */
+  readonly height?: number
+  /** The least height the node gives the widget, in graph units. */
+  readonly minHeight?: number
+  /** Defaults to `true`: the value is saved and sent. */
+  readonly serialize?: boolean
+}
+
+/** The value a declared widget holds. */
+export type WidgetTypeValue = MountedValue
+
+export interface WidgetTypeContext {
+  /** A frozen copy of the options the input was declared with. `undefined` if they cannot be saved. */
+  getOptions(): Readonly<Record<string, unknown>> | undefined
+}

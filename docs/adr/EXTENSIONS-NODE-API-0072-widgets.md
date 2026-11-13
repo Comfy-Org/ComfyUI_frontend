@@ -162,6 +162,31 @@ This ADR records how the API reaches widgets through those owners.
     canvas to the units `draw` uses. The listeners and the observer are
     released with the widget.
 
+### Declared widget types
+
+21. A pack declares how every input of a type is shown with
+    `comfy.defs.defineWidgetType(type, def)`, which returns a disposer. It
+    registers a constructor with the host's widget store, the registry
+    `getCustomWidgets` fills, so the host makes every input of that type a
+    widget rather than a socket. It refuses a type the host or another pack
+    already defines. The widget store gains
+    `unregisterCustomWidget(type, constructor)`, which removes the type only
+    if that constructor still holds it, so the disposer removes only its own
+    registration. This settles what
+    [ADR-EXTENSIONS-NODE-API-0071](EXTENSIONS-NODE-API-0071-node-definitions-and-hooks.md)
+    decision 39 left to this feature for `defineWidgetType`.
+22. The constructor builds the same DOM widget as `mount`, while the node is
+    being created, and calls `render` with the element, the value accessor,
+    the input's name and a context whose `getOptions()` copies the options
+    the input was declared with. The value starts from the declaration's
+    `default` when it is text, else the type's `defaultValue`, else `''`.
+    `set` commits through the same edit as `setValue`; while the node is
+    still being made, and so in no graph, it writes the value without an
+    undo step. A teardown `render`
+    returns runs when the host releases the widget. `serialize` (saved and
+    sent) defaults to `true`; `minHeight` is returned to the host, which
+    sizes the node with it; `height` fixes the height.
+
 ## Alternatives considered
 
 - Write a value with `useWidgetValueStore().setValue` and call the callback,
@@ -193,6 +218,11 @@ This ADR records how the API reaches widgets through those owners.
 
 - `WidgetHandle.getHeight`, `MountDef.hidden`, `CanvasDef.onContextMenu`:
   no stored pack uses them.
+- `WidgetTypeDef.minWidth` (no stored pack uses it), and
+  `WidgetTypeContext.onNodeReady` (1 pack, 4 sites): it needs to hear a node
+  join and leave a graph, which is the node lifecycle hooks of the node
+  definitions feature, or a hook on the `LGraphNode` instance this API does
+  not install.
 - A number, boolean or `null` as a mounted value: 2 sites in the stored
   packs use one (`0` and `null` as `defaultValue`); see decision 18.
 - `WidgetTextEventBase.menuEvent`, `WidgetTextKeyEvent.altKey` and `repeat`,
@@ -207,12 +237,6 @@ Not built yet, and not part of this feature until they are:
   the API cannot reach without a call added to that component. Shipping the
   events for one renderer would publish a member that silently does nothing
   on the other.
-- Declared widget types (`WidgetTypeDef`, `WidgetTypeValue`,
-  `WidgetTypeContext`, 3 packs). They are registered through
-  `DefRegistry.defineWidgetType`, which belongs to the node definitions
-  feature. The seam is one function from this folder that turns a
-  `WidgetTypeDef` into the `ComfyWidgetConstructor` the widget store holds,
-  built from `mount`'s widget; the definitions feature registers it.
 
 ## Core limitation
 
@@ -241,6 +265,8 @@ Changes outside the folder: `NodeHandle` gains `widgets` through the node
 handle members seam (`createNodeHandles(handles, membersFor)`), and the edit
 core's `nodeHandleMembers` returns every member but `widgets`. Widget values
 and options are copied with `shared/savedCopy.ts`, as properties are.
+`DefRegistry` gains `defineWidgetType` (decision 21), and `useWidgetStore`
+gains `unregisterCustomWidget`.
 
 `createListeners` in `shared/listeners.ts` takes the arguments an event
 carries as a type parameter and passes them to each listener through
