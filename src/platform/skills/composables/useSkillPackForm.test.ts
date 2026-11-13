@@ -71,13 +71,13 @@ function deferred<T>() {
   return { promise, resolve, reject }
 }
 
-function mountForm(pack?: SkillPack) {
+function mountForm(pack?: SkillPack, onSaved?: (saved: SkillPack) => void) {
   const visible = ref(true)
   let api!: ReturnType<typeof useSkillPackForm>
   render(
     defineComponent({
       setup() {
-        api = useSkillPackForm({ pack: () => pack, visible })
+        api = useSkillPackForm({ pack: () => pack, visible, onSaved })
         return () => null
       }
     }),
@@ -290,6 +290,39 @@ describe('useSkillPackForm', () => {
     })
     expect(store.packs).toEqual([saved])
     expect(visible.value).toBe(false)
+  })
+
+  it('hands the saved pack to the caller once it is stored', async () => {
+    const saved = makePack({ name: 'my-pack' })
+    vi.mocked(publishSkillPack).mockResolvedValue(saved)
+    const onSaved = vi.fn()
+    const { form, handleSubmit } = mountForm(undefined, onSaved)
+    Object.assign(form, {
+      name: 'my-pack',
+      description: 'load me',
+      body: 'do it'
+    })
+
+    await handleSubmit()
+
+    expect(onSaved).toHaveBeenCalledExactlyOnceWith(saved)
+  })
+
+  it('hands nothing to the caller when the save fails', async () => {
+    vi.mocked(publishSkillPack).mockRejectedValue(
+      new SkillPacksApiError('too long', 400)
+    )
+    const onSaved = vi.fn()
+    const { form, handleSubmit } = mountForm(undefined, onSaved)
+    Object.assign(form, {
+      name: 'my-pack',
+      description: 'load me',
+      body: 'do it'
+    })
+
+    await handleSubmit()
+
+    expect(onSaved).not.toHaveBeenCalled()
   })
 
   it('submits once when publish is repeated while pending', async () => {

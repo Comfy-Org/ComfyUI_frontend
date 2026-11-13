@@ -8052,6 +8052,25 @@ describe('AgentPanelRoot history', () => {
     const history = useAgentChatHistoryStore()
     await vi.waitFor(() => expect(history.activeId).toBe('th-active'))
   })
+
+  it.for(['chat', 'skills'] as const)(
+    'restores the current thread when the panel opens on the %s screen',
+    async (screen) => {
+      vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        return new Response(
+          threadListRoute.test(url) ? JSON.stringify(agentThreadList()) : '[]',
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      })
+      useAgentConversationStore().setThreadId('th-active')
+      useAgentPanelStore().view = { screen }
+      renderWithSelectedTarget()
+
+      const history = useAgentChatHistoryStore()
+      await vi.waitFor(() => expect(history.activeId).toBe('th-active'))
+    }
+  )
 })
 
 describe('AgentPanelRoot transcript copy', () => {

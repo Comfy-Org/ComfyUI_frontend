@@ -12,6 +12,9 @@ import MenuSubTrigger from '@comfyorg/design-system/menu/MenuSubTrigger'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import type { SkillCatalogStatus } from '@/platform/skills/composables/useSkillCatalogStatus'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
+import ComposerSkillsSubmenu from './ComposerSkillsSubmenu.vue'
 import type { WorkflowReferenceOption } from '@/workbench/extensions/agent/types/workflowReference'
 
 const {
@@ -20,7 +23,10 @@ const {
   nodeReferenceDisabledReason,
   workflows,
   workflowSelecting,
-  selectWorkflow
+  selectWorkflow,
+  skillsEnabled,
+  skills,
+  skillsStatus
 } = defineProps<{
   canAttach: boolean
   canOpenAssets: boolean
@@ -28,21 +34,40 @@ const {
   workflows: WorkflowReferenceOption[]
   workflowSelecting: boolean
   selectWorkflow: (workflow: WorkflowReferenceOption) => Promise<boolean>
+  skillsEnabled: boolean
+  skills: SkillReferenceMetadata[]
+  skillsStatus?: SkillCatalogStatus
 }>()
 const emit = defineEmits<{
   selectNodes: [event: Event]
   attach: []
   openAssets: []
   requestWorkflowReferences: []
+  requestSkills: []
+  retrySkills: []
+  selectSkill: [skill: SkillReferenceMetadata]
+  manageSkills: []
+  focusPrompt: []
 }>()
 const { t } = useI18n()
 const addMenuOpen = ref(false)
 const workflowSubmenuOpen = ref(false)
+const skillPicked = ref(false)
 function onWorkflowSubmenuOpenChange(open: boolean): void {
   if (open && !workflowSelecting) emit('requestWorkflowReferences')
 }
 async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
   if (await selectWorkflow(workflow)) addMenuOpen.value = false
+}
+function pickSkill(skill: SkillReferenceMetadata): void {
+  skillPicked.value = true
+  emit('selectSkill', skill)
+}
+function onCloseAutoFocus(event: Event): void {
+  if (!skillPicked.value) return
+  skillPicked.value = false
+  event.preventDefault()
+  emit('focusPrompt')
 }
 </script>
 
@@ -64,6 +89,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
       :side-offset="4"
       width="compact"
       class="agent-scope"
+      @close-auto-focus="onCloseAutoFocus"
     >
       <MenuItem
         v-if="canOpenAssets"
@@ -133,7 +159,16 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
           </div>
         </MenuSubContent>
       </MenuSub>
-      <MenuSeparator v-if="canAttach" class="mt-0 mb-px" />
+      <ComposerSkillsSubmenu
+        v-if="skillsEnabled"
+        :skills
+        :status="skillsStatus"
+        @opened="emit('requestSkills')"
+        @pick="pickSkill"
+        @retry="emit('retrySkills')"
+        @manage="emit('manageSkills')"
+      />
+      <MenuSeparator v-if="canAttach" class="mb-px" />
       <MenuItem v-if="canAttach" @select="emit('attach')">
         <i-lucide:paperclip class="size-4 shrink-0" />
         <span class="whitespace-nowrap">{{ t('agent.attachFiles') }}</span>

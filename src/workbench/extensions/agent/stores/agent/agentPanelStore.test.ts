@@ -509,6 +509,23 @@ describe('agentPanelStore open-state persistence', () => {
     expect(store.gateSettled).toBe(false)
     expect(localStorage.getItem(OPEN_STORAGE_KEY)).toBeNull()
   })
+
+  it.for([{ screen: 'chat' }, { screen: 'skills' }] as const)(
+    'reopens on the $screen screen after the panel is closed',
+    async (view) => {
+      const store = useAgentPanelStore()
+      store.open('topbar_button')
+      store.view = view
+
+      store.close('close_button')
+      await nextTick()
+      expect(store.isOpen).toBe(false)
+      store.open('topbar_button')
+      await nextTick()
+
+      expect(store.view).toEqual(view)
+    }
+  )
 })
 
 describe('agentPanelStore width', () => {

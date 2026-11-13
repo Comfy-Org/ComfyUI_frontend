@@ -23,11 +23,12 @@ import {
 interface UseSkillPackFormOptions {
   pack?: MaybeRefOrGetter<SkillPack | undefined>
   visible: { value: boolean }
+  onSaved?: (saved: SkillPack) => void
 }
 
 export function useSkillPackForm(options: UseSkillPackFormOptions) {
   const { t } = useI18n()
-  const { pack: packRef, visible } = options
+  const { pack: packRef, visible, onSaved } = options
   const store = useSkillPacksStore()
 
   const loading = ref(false)
@@ -184,6 +185,7 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
       if (!store.isCurrentScope(requestScope)) return
       store.upsertPack(saved, requestScope)
       if (generation !== formGeneration) return
+      onSaved?.(saved)
       visible.value = false
     } catch (error) {
       if (!store.isCurrentScope(requestScope)) return

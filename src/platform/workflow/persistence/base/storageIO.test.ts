@@ -570,6 +570,19 @@ describe('storageIO', () => {
         )
       ).toEqual(['unrelated'])
     })
+
+    it('clears saved skill drafts on account logout', () => {
+      localStorage.setItem('Comfy.Agent.SkillDrafts:["scope"]', '{}')
+      localStorage.setItem('unrelated', 'keep')
+
+      clearAllWorkspaceStorage()
+
+      expect(
+        [...Array(localStorage.length)].map((_, index) =>
+          localStorage.key(index)
+        )
+      ).toEqual(['unrelated'])
+    })
   })
 
   describe('workflow storage transitions', () => {

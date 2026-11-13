@@ -13,6 +13,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import type { AgentStopMethod } from '@comfyorg/telemetry/types'
+import { useSkillCatalogStatus } from '@/platform/skills/composables/useSkillCatalogStatus'
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useNodeEmphasisSource } from '@/systems/nodeEmphasisSystem'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -31,6 +32,7 @@ import type {
 import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
 import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import type {
   PromptSnapshot,
   WorkflowReference,
@@ -95,6 +97,7 @@ const emit = defineEmits<{
   removeWorkflowReference: [id: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   workflowTargetRequired: []
+  manageSkills: []
 }>()
 const { t } = useI18n()
 const skills = useSkillPacksStore()
@@ -296,6 +299,10 @@ function focusEditor(): void {
   editorRef.value?.focus()
 }
 
+function onSelectSkill(skill: SkillReferenceMetadata): void {
+  editorRef.value?.selectSkill(skill)
+}
+
 function isSkillDescription(target: EventTarget | null): boolean {
   return (
     target instanceof Element && !!target.closest(`#${SKILL_DESCRIPTION_ID}`)
@@ -364,6 +371,7 @@ const mentionMenuHeading = computed(() => {
 const skillsRetryVisible = computed(
   () => mentionSection.value === 'skills' && skills.loadFailed
 )
+const skillsMenuStatus = useSkillCatalogStatus()
 const emptyMentionLabel = computed(() =>
   mentionSection.value === 'skills'
     ? t(
@@ -483,6 +491,18 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
   return true
 }
 
+function preloadSkillCatalog(enabled: boolean): void {
+  if (enabled) void skills.ensurePacks()
+}
+
+watch(
+  [() => skills.enabled, () => skills.scope],
+  ([enabled]) => preloadSkillCatalog(enabled),
+  {
+    immediate: true
+  }
+)
+
 let unregisterEscapeOverride: (() => void) | undefined
 onMounted(() => {
   void skills.startFlagGate({ fetch: false })
@@ -511,6 +531,7 @@ function removeAttachment(id: string): void {
 }
 
 defineExpose({
+  focus: focusEditor,
   insert,
   replaceDraft,
   addAttachment: composer.addAttachment,
@@ -682,10 +703,18 @@ defineExpose({
             :workflows="eligibleWorkflows"
             :workflow-selecting
             :select-workflow="selectWorkflow"
+            :skills-enabled="skills.enabled"
+            :skills="skills.packs"
+            :skills-status="skillsMenuStatus"
             @select-nodes="onSelectNodes"
             @attach="emit('attach')"
             @open-assets="emit('openAssets')"
             @request-workflow-references="emit('requestWorkflowReferences')"
+            @request-skills="skills.refreshPacks()"
+            @retry-skills="skills.ensurePacks()"
+            @select-skill="onSelectSkill"
+            @manage-skills="emit('manageSkills')"
+            @focus-prompt="focusEditor"
           />
           <Button
             :tooltip="t('agent.reference')"

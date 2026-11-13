@@ -1,7 +1,7 @@
 {
   "id": "skill-packs",
   "capability": "Skill packs",
-  "description": "User-published agent skill packs: skills REST client and name and size validation, the skill packs store scoped to the current user and team workspace, list and publish composables, and the settings panel, list item, and form dialog. Agent composer skill selection remains in the agent capability.",
+  "description": "User-published agent skill packs: skills REST client and name and size validation, the skill packs store scoped to the current user and team workspace, and the catalog status, delete, and publish composables. The skills screen in the agent panel and the agent composer skill selection remain in the agent capability.",
   "modules": [
     {
       "path": "src/platform/skills/**"
@@ -17,19 +17,14 @@
       ]
     },
     {
-      "name": "Skill pack panel and form validate names and sizes and publish packs",
-      "checks": [
-        "src/platform/skills/composables/useSkillPackForm.test.ts",
-        "src/platform/skills/components/SkillPacksPanel.test.ts",
-        "src/platform/skills/components/SkillPackFormDialog.test.ts",
-        "src/platform/skills/components/SkillPackListItem.test.ts"
-      ]
+      "name": "Skill pack form validates names and sizes and publishes packs",
+      "checks": ["src/platform/skills/composables/useSkillPackForm.test.ts"]
     }
   ],
   "adrs": [],
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
-    "The settings dialog and agent surfaces may keep importing skill pack internals during inventory.",
+    "The agent surfaces may keep importing skill pack internals during inventory.",
     "skillPacksStore reading the current user and team workspace store, and skillsApi calling scripts/api, remain untracked coupling; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"

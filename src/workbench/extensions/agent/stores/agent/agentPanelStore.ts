@@ -66,6 +66,7 @@ type TargetTracking =
 
 export type AgentPanelView =
   | { screen: 'chat' }
+  | { screen: 'skills' }
   | {
       screen: 'history'
       previousThreadId: string | null

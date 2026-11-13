@@ -1,4 +1,3 @@
-import { storeToRefs } from 'pinia'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -16,7 +15,6 @@ export function useSkillPacks() {
   const { t } = useI18n()
   const toast = useToast()
   const store = useSkillPacksStore()
-  const { packs, loading, hasLoaded } = storeToRefs(store)
 
   const operatingPackName = ref<string | null>(null)
 
@@ -61,11 +59,7 @@ export function useSkillPacks() {
   }
 
   return {
-    packs,
-    loading,
-    hasLoaded,
     operatingPackName,
-    fetchSkillPacks,
     deleteSkillPack
   }
 }
