@@ -193,6 +193,14 @@
   "publicEntryPoints": [],
   "characterizationScenarios": [
     {
+      "name": "Shared-session requests preserve account identity and enforce scope at send time",
+      "checks": [
+        "packages/api-client/src/webSessionFetch.test.ts",
+        "src/platform/auth/webSessionFlagOn.test.ts",
+        "src/platform/cloud/onboarding/desktopLoginRedemption.test.ts"
+      ]
+    },
+    {
       "name": "Firebase identity drives sign-in, sign-out, current-user projection, and auth headers",
       "checks": [
         "src/stores/authStore.test.ts",

@@ -124,6 +124,87 @@ describe('queueAuthToken', () => {
     expect(fetchRequests(MINT_URL)).toHaveLength(0)
   })
 
+  it.for([
+    {
+      name: 'uses the native partner token',
+      token: 'native-partner-token',
+      expected: 'native-partner-token'
+    },
+    {
+      name: 'returns no credential when native mint fails',
+      token: null,
+      expected: undefined
+    }
+  ])(
+    '$name without sending the workspace token to mint',
+    async ({ token, expected }) => {
+      vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
+      const getPartnerNodeToken = vi.fn(async () => token)
+      await startDesktopHostSession(
+        fromPartial<DesktopHostAuthBridge>({
+          getState: async () => ({
+            status: 'signed_in',
+            userId: 'sso-user',
+            workspaceId: 'ws-a'
+          }),
+          onChanged: () => () => {},
+          getPartnerNodeToken
+        })
+      )
+      await expect(queueAuthToken(WORKSPACE_TOKEN, 'ws-a')).resolves.toBe(
+        expected
+      )
+      expect(getPartnerNodeToken).toHaveBeenCalledExactlyOnceWith('ws-a')
+      expect(fetchRequests(MINT_URL)).toHaveLength(0)
+    }
+  )
+
+  it.for([undefined, 'ws-other'])(
+    'does not report a mint failure for workspace %s',
+    async (workspaceId) => {
+      vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
+      const getPartnerNodeToken = vi.fn(async () => 'unused')
+      await startDesktopHostSession(
+        fromPartial<DesktopHostAuthBridge>({
+          getState: async () => ({
+            status: 'signed_in',
+            userId: 'sso-user',
+            workspaceId
+          }),
+          onChanged: () => () => {},
+          getPartnerNodeToken
+        })
+      )
+      await expect(
+        queueAuthToken(WORKSPACE_TOKEN, 'ws-a')
+      ).resolves.toBeUndefined()
+      expect(getPartnerNodeToken).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
+  it('reports a native partner credential failure', async () => {
+    vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
+    await startDesktopHostSession(
+      fromPartial<DesktopHostAuthBridge>({
+        getState: async () => ({
+          status: 'signed_in',
+          userId: 'sso-user',
+          workspaceId: 'ws-a'
+        }),
+        onChanged: () => () => {},
+        getPartnerNodeToken: async () => null
+      })
+    )
+    await expect(
+      queueAuthToken(WORKSPACE_TOKEN, 'ws-a')
+    ).resolves.toBeUndefined()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      surface: 'auth',
+      errorType: 'failure_minting_partner_node_token'
+    })
+  })
+
   describe('with a host session', () => {
     const signedInAs = (
       userId: string,
