@@ -99,7 +99,7 @@ describe('subgraph input node ports', () => {
     const { host } = await renderInputNode()
 
     expect(
-      screen.getByRole('heading', { name: `${host.title} · #${host.id}` })
+      screen.getByRole('group', { name: `${host.title} · #${host.id}` })
     ).toBeVisible()
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Exit subgraph' })).toBeVisible()

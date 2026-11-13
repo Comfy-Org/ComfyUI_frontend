@@ -19,14 +19,12 @@ const {
   port,
   label,
   isAddPort = false,
-  collapsed = false,
   host,
   source
 } = defineProps<{
   port: SubgraphInput
   label: string
   isAddPort?: boolean
-  collapsed?: boolean
   host?: NodeState
   source?: InputValueSource
 }>()
@@ -34,15 +32,12 @@ const emit = defineEmits<{ locate: [node: NodeState] }>()
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 
-const shown = computed(() => (collapsed ? undefined : source))
 const upstream = computed(() =>
-  shown.value && shown.value.kind !== 'unavailable' && shown.value.node !== host
-    ? shown.value.node
+  source && source.kind !== 'unavailable' && source.node !== host
+    ? source.node
     : undefined
 )
-const owner = computed(() =>
-  shown.value?.kind === 'editable' ? shown.value : undefined
-)
+const owner = computed(() => (source?.kind === 'editable' ? source : undefined))
 const { processedWidgets } = useProcessedWidgets(
   () => owner.value?.node,
   () => (owner.value ? [owner.value.widgetId] : [])
@@ -58,8 +53,8 @@ const expands = computed(() =>
   )
 )
 const status = computed(() => {
-  if (!shown.value || owner.value) return undefined
-  return shown.value.kind === 'linked'
+  if (!source || owner.value) return undefined
+  return source.kind === 'linked'
     ? t('subgraphInputValues.linked')
     : t('subgraphInputValues.unavailable')
 })

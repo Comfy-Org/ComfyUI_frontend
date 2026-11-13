@@ -20,10 +20,7 @@ import { getNodeByState } from '@/utils/graphTraversalUtil'
 import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 import SubgraphInputValue from './SubgraphInputValue.vue'
 
-const { slots, collapsed } = defineProps<{
-  slots: SubgraphInput[]
-  collapsed: boolean
-}>()
+const { slots } = defineProps<{ slots: SubgraphInput[] }>()
 
 const { t } = useI18n()
 const context = useSubgraphInputValuesStore()
@@ -66,7 +63,6 @@ const sources = computed(() => {
 })
 
 const hint = computed(() => {
-  if (collapsed) return undefined
   if (!context.selected) return t('subgraphInputValues.enterInstanceHint')
   return sources.value.size ? undefined : t('subgraphInputValues.noInputs')
 })
@@ -94,7 +90,6 @@ function captureEdits() {
       :port="slot"
       :label="slot.displayName"
       :is-add-port="slot === context.graph?.inputNode.emptySlot"
-      :collapsed
       :host="context.selected"
       :source="sources.get(slot.name)"
       @locate="locate"

@@ -9,10 +9,10 @@ const context = useSubgraphInputValuesStore()
 <template>
   <SubgraphIoPanel
     v-if="context.graph"
-    v-slot="{ slots, collapsed }"
+    v-slot="{ slots }"
     :io-node="context.graph.inputNode"
     data-testid="subgraph-input-values"
   >
-    <SubgraphInputValuesContent :slots :collapsed />
+    <SubgraphInputValuesContent :slots />
   </SubgraphIoPanel>
 </template>

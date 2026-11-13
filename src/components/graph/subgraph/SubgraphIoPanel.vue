@@ -4,7 +4,7 @@
   generic="TNode extends SubgraphInputNode | SubgraphOutputNode"
 >
 import { computedWithControl, useEventListener } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
@@ -15,7 +15,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
 import NodeFrame from '@/renderer/extensions/vueNodes/components/NodeFrame.vue'
-import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeResizeHandle from '@/renderer/extensions/vueNodes/components/NodeResizeHandle.vue'
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -36,7 +35,6 @@ const {
 } = useCanvasInteractions()
 
 const isInput = computed(() => ioNode === ioNode.subgraph.inputNode)
-const collapsed = ref(false)
 const slots = computedWithControl(
   () => ioNode,
   (): TNode['allSlots'] => ioNode.allSlots
@@ -63,15 +61,13 @@ const title = computed(() =>
       })
     : ioNode.subgraph.name
 )
-const bracketInset = `${SubgraphIONodeBase.roundedRadius}px`
 
 const nodeView = useTemplateRef('nodeView')
 const panel = computed(() => nodeView.value?.element ?? null)
 const { style, startResize } = useSubgraphIoLayout(
   () => ioNode,
   panel,
-  () => slots.value.length,
-  () => collapsed.value
+  () => slots.value.length
 )
 
 function exitSubgraph() {
@@ -107,13 +103,12 @@ function forwardUnlessOnButton(event: PointerEvent) {
     ref="nodeView"
     data-subgraph-io
     :inert="canvasStore.isPickingNodes"
+    role="group"
     :aria-label="title"
     :class="
       cn(
-        'pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) origin-top-left rounded-(--node-radius) bg-node/60 drop-shadow-none [--node-header:transparent]',
-        isInput && !collapsed
-          ? 'w-(--node-width)'
-          : 'w-fit max-w-(--node-width)'
+        'pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) origin-top-left drop-shadow-none [--node-header:transparent]',
+        isInput ? 'w-(--node-width)' : 'w-fit max-w-(--node-width)'
       )
     "
     container-class="w-full"
@@ -127,21 +122,12 @@ function forwardUnlessOnButton(event: PointerEvent) {
     @pointerup="forwardUnlessOnButton"
     @keydown="stopUnmodifiedKeys"
   >
-    <NodeHeader
-      :title
-      :collapsed
-      :collapsible="isInput"
-      :style="
-        isInput ? { paddingRight: bracketInset } : { paddingLeft: bracketInset }
-      "
-      @collapse="collapsed = !collapsed"
-    />
     <div
       :data-testid="isInput ? 'subgraph-input-body' : 'subgraph-output-body'"
       class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) py-1"
       @contextmenu.prevent
     >
-      <slot :slots :collapsed />
+      <slot :slots />
     </div>
     <template #after>
       <NodeFooter
@@ -164,7 +150,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
         :style="{ width: `${SubgraphIONodeBase.roundedRadius}px` }"
       />
       <NodeResizeHandle
-        v-if="isInput && !collapsed"
+        v-if="isInput"
         :handle="RESIZE_HANDLES[0]"
         @resize="startResize"
       />

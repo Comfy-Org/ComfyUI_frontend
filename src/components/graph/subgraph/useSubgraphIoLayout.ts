@@ -20,8 +20,7 @@ type SubgraphIoNode = SubgraphInputNode | SubgraphOutputNode
 export function useSubgraphIoLayout(
   ioNode: () => SubgraphIoNode | undefined,
   element: Readonly<Ref<HTMLElement | null>>,
-  slotCount: () => number,
-  collapsed: () => boolean
+  slotCount: () => number
 ) {
   const canvasStore = useCanvasStore()
   const layout = useSubgraphIoLayoutStore()
@@ -39,7 +38,7 @@ export function useSubgraphIoLayout(
   })
   const style = computed(() => ({
     '--node-width': `${size.value.width}px`,
-    '--node-height': collapsed() ? '0px' : `${size.value.height}px`,
+    '--node-height': `${size.value.height}px`,
     '--min-node-width': `${MIN_NODE_WIDTH}px`
   }))
 
@@ -58,7 +57,7 @@ export function useSubgraphIoLayout(
   }
   useResizeObserver(() => [element.value, ...rows.value], measureSlotCenters)
   watch(
-    [element, slotCount, collapsed],
+    [element, slotCount],
     () => {
       rows.value = [
         ...(element.value?.querySelectorAll<HTMLElement>(
@@ -130,8 +129,7 @@ export function useSubgraphIoLayout(
       !node ||
       node.pinned ||
       event.button !== 0 ||
-      canvasStore.isEditingBlocked ||
-      collapsed()
+      canvasStore.isEditingBlocked
     )
       return
     resizingNode = node

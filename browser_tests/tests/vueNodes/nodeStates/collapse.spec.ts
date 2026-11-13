@@ -44,13 +44,16 @@ test.describe('Vue Node Collapse', { tag: '@vue-nodes' }, () => {
     const vueNode = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
     await expect(vueNode.root).toBeVisible()
 
-    await expect(vueNode.collapseIcon).toHaveCSS('rotate', 'none')
+    // Check initial expanded state icon
+    await expect(vueNode.collapseIcon).not.toHaveClass(/-rotate-90/)
 
+    // Collapse and check icon
     await vueNode.toggleCollapse()
-    await expect(vueNode.collapseIcon).toHaveCSS('rotate', '-90deg')
+    await expect(vueNode.collapseIcon).toHaveClass(/-rotate-90/)
 
+    // Expand and check icon
     await vueNode.toggleCollapse()
-    await expect(vueNode.collapseIcon).toHaveCSS('rotate', 'none')
+    await expect(vueNode.collapseIcon).not.toHaveClass(/-rotate-90/)
   })
 
   test('should keep a resized width across a collapsed save and reload', async ({

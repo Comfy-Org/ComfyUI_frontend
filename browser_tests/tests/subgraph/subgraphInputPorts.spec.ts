@@ -100,31 +100,6 @@ test.describe(
           })
       })
 
-      await test.step('Collapsing keeps the node in place and its ports on the canvas slots', async () => {
-        const before = await panel.boundingBox()
-        if (!before) throw new Error('Expected the input node to be rendered')
-        await panel.getByTestId('node-collapse-button').click()
-        await expect
-          .poll(async () => (await panel.boundingBox())?.width)
-          .toBeLessThan(before.width)
-        const after = await panel.boundingBox()
-        expect(after?.x).toBeCloseTo(before.x, 0)
-        expect(after?.y).toBeCloseTo(before.y, 0)
-        await expect
-          .poll(async () => {
-            const dot = await clip.boundingBox()
-            const slot = await comfyPage.subgraph
-              .getInputSlot('clip')
-              .getPosition()
-            return dot ? Math.abs(dot.x + dot.width / 2 - slot.x) : Infinity
-          })
-          .toBeLessThan(1)
-        await panel.getByTestId('node-collapse-button').click()
-        await expect
-          .poll(async () => (await panel.boundingBox())?.width)
-          .toBeCloseTo(before.width, 0)
-      })
-
       await test.step('Drag the trailing empty slot to create a typed external input', async () => {
         await expect(panel.getByTestId('subgraph-input-port')).toHaveCount(6)
         await dragPort(empty)
