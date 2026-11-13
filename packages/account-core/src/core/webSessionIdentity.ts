@@ -670,16 +670,37 @@ function createAccountIdentity(
 
   async function restore(
     started: number,
-    expectedUserId: string
+    expectedUserId: string,
+    retried: boolean
   ): Promise<void> {
     const proof = await proofWithinTimeout()
     if (started !== epoch) return
-    if (proof === undefined) return dispatch({ type: 'proof_errored' })
+    if (proof === undefined) {
+      // Signed in ignores proof_errored, so nothing else would retry it.
+      if (!retried && state.phase === 'signed_in') {
+        schedule(() => {
+          if (started === epoch && state.phase === 'signed_in') {
+            startRestore(expectedUserId, true)
+          }
+        }, retryBaseMs)
+      }
+      return dispatch({ type: 'proof_errored' })
+    }
     const { value } = proof
     if (value === null) return dispatch({ type: 'proof_missing' })
     await answer(started, { type: 'restore_answered' }, () =>
       createWebSession(options.session, async () => value, { expectedUserId })
     )
+  }
+
+  function startRestore(expectedUserId: string, retried: boolean): void {
+    if (restoring.inFlight && restoring.epoch === epoch) return
+    const settled = restore(epoch, expectedUserId, retried).finally(() => {
+      if (restoring.settled === settled) {
+        restoring = { ...restoring, inFlight: false }
+      }
+    })
+    restoring = { epoch, settled, inFlight: true }
   }
 
   function run(effect: WebSessionIdentityEffect): void {
@@ -689,16 +710,9 @@ function createAccountIdentity(
           readWebSession(options.session)
         )
         return
-      case 'restore': {
-        if (restoring.inFlight && restoring.epoch === epoch) return
-        const settled = restore(epoch, effect.expectedUserId).finally(() => {
-          if (restoring.settled === settled) {
-            restoring = { ...restoring, inFlight: false }
-          }
-        })
-        restoring = { epoch, settled, inFlight: true }
+      case 'restore':
+        startRestore(effect.expectedUserId, false)
         return
-      }
       case 'schedule_retry':
         cancelRetry = schedule(
           () => {
