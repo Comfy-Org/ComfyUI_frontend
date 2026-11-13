@@ -63,6 +63,7 @@
           size="unset"
           class="w-full justify-start gap-3 p-1 text-left font-normal"
           :disabled="isSelectionDisabled"
+          :aria-current="workspace.id === workspaceId || undefined"
           @click="handleSelectWorkspace(workspace.id)"
         >
           <WorkspaceProfilePic
