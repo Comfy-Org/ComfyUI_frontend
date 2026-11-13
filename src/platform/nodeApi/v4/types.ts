@@ -625,7 +625,7 @@ export interface ConnectionChangeEvent {
    */
   readonly name: string
   readonly connected: boolean
-  /** The node at the other end of the link, when the host reports one. */
+  /** The node at the other end of the link; `undefined` for a subgraph's own input or output, which is no node. */
   readonly peerNodeId: string | undefined
   readonly peerIndex: number | undefined
 }

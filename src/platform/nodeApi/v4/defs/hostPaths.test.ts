@@ -47,6 +47,23 @@ function canvasShowing(graph: LGraph): LGraphCanvas {
   })
 }
 
+function pointerAt(
+  clientX: number,
+  clientY: number,
+  type = 'pointermove',
+  timeStamp = 0
+): PointerEvent {
+  const event = new PointerEvent(type, {
+    clientX,
+    clientY,
+    isPrimary: true,
+    button: 0,
+    buttons: type === 'pointerdown' ? 1 : 0
+  })
+  Object.defineProperty(event, 'timeStamp', { value: timeStamp })
+  return event
+}
+
 describe('node hooks on the host paths', () => {
   let graph: LGraph
   let defs: DefRegistry
@@ -137,6 +154,44 @@ describe('node hooks on the host paths', () => {
     })
   })
 
+  describe('the canvas pointer', () => {
+    it('hears the pointer enter a node and leave it', () => {
+      const hovering: boolean[] = []
+      extend((builder) => builder.onHover((_, isOver) => hovering.push(isOver)))
+      const node = created()
+      node.pos = [100, 100]
+      node.size = [200, 100]
+      graph.add(node)
+      node.updateArea()
+      const canvas = canvasShowing(graph)
+      canvas.visible_nodes = [node]
+
+      canvas.processMouseMove(pointerAt(150, 150))
+      canvas.processMouseMove(pointerAt(900, 500))
+
+      expect(hovering).toEqual([true, false])
+    })
+
+    it('hears a double click on a node', () => {
+      const onDoubleClick = vi.fn()
+      extend((builder) => builder.onDoubleClick(onDoubleClick))
+      const node = created()
+      node.pos = [100, 100]
+      node.size = [200, 100]
+      graph.add(node)
+      node.updateArea()
+      const canvas = canvasShowing(graph)
+      canvas.visible_nodes = [node]
+
+      canvas.processMouseDown(pointerAt(150, 150, 'pointerdown', 10))
+      canvas.processMouseUp(pointerAt(150, 150, 'pointerup', 20))
+      canvas.processMouseDown(pointerAt(150, 150, 'pointerdown', 100))
+      canvas.processMouseUp(pointerAt(150, 150, 'pointerup', 110))
+
+      expect(onDoubleClick).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('a node inside a subgraph', () => {
     it('names its own input when the link from the subgraph input changes', () => {
       const events: ConnectionChangeEvent[] = []
@@ -158,6 +213,37 @@ describe('node hooks on the host paths', () => {
       expect(events.map(({ name, connected }) => [name, connected])).toEqual([
         ['node_side', true],
         ['node_side', false]
+      ])
+    })
+
+    it('gives no peer for a link to the subgraph input or output, which is no node', () => {
+      const events: ConnectionChangeEvent[] = []
+      extend((builder) =>
+        builder.onConnectionsChanged((_, event) => events.push(event))
+      )
+      const subgraph = createTestSubgraph({
+        rootGraph: graph,
+        inputs: [{ name: 'in', type: '*' }],
+        outputs: [{ name: 'out', type: '*' }]
+      })
+      graph.subgraphs.set(subgraph.id, subgraph)
+      const node = created()
+      node.addInput('node_in', '*')
+      node.addOutput('node_out', '*')
+      subgraph.add(node)
+
+      subgraph.inputs[0].connect(node.inputs[0], node)
+      subgraph.outputs[0].connect(node.outputs[0], node)
+
+      expect(
+        events.map(({ side, peerNodeId, peerIndex }) => [
+          side,
+          peerNodeId,
+          peerIndex
+        ])
+      ).toEqual([
+        ['input', undefined, undefined],
+        ['output', undefined, undefined]
       ])
     })
   })
