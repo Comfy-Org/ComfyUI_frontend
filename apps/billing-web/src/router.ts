@@ -123,16 +123,18 @@ function handoffEntryPath(
   return `${billingIntentPath(intent)}?${query}`
 }
 
+function handoffAmount(amount: LocationQuery[string] | undefined): string {
+  if (amount === undefined) return String(ADD_CREDITS_DEFAULT_CENTS)
+  return typeof amount === 'string' ? amount : ''
+}
+
 function handoffLanding({
   intent,
   amount_cents: amount
 }: LocationQuery): string {
   if (intent === 'subscription') return handoffEntryPath('subscription')
   if (intent !== 'top-up') return APP_ENTRY_PATH
-  return handoffEntryPath('top-up', {
-    amount_cents:
-      typeof amount === 'string' ? amount : String(ADD_CREDITS_DEFAULT_CENTS)
-  })
+  return handoffEntryPath('top-up', { amount_cents: handoffAmount(amount) })
 }
 
 const isPlanlessCheckout = (entry: BillingEntry) =>

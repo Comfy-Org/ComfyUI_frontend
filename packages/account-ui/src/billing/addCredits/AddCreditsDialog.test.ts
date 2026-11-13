@@ -443,6 +443,17 @@ describe('AddCreditsDialog with a single-use checkout', () => {
     ).toBeVisible()
   })
 
+  it('disables the blocked step Open checkout while top-up is not allowed', async () => {
+    const { ports, user, rerender } = renderDialog()
+    ports.singleUseCheckout = true
+    ports.popupsBlocked = true
+    await user.click(continueButton())
+
+    await rerender({ canTopUp: false })
+
+    expect(screen.getByTestId('add-credits-open-checkout')).toBeDisabled()
+  })
+
   it('shows the server message when the checkout is refused', async () => {
     const { ports, user } = renderDialog()
     ports.singleUseCheckout = true

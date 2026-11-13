@@ -35,6 +35,8 @@ export type AddCreditsState =
       readonly step: 'checkout_blocked'
       readonly amount: AddCreditsAmount
       readonly amountCents: number
+      /** `checkout_opened` while an earlier checkout from this dialog can still be paid. */
+      readonly origin: 'amount' | 'checkout_opened'
       /** Absent when the checkout URL works once and is requested again from this step. */
       readonly checkoutUrl?: string
     }
@@ -142,7 +144,8 @@ const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
             step: 'opening',
             amount: state.amount,
             amountCents: event.amountCents,
-            origin: state.step === 'checkout_opened' ? state.step : 'amount',
+            origin:
+              state.step === 'checkout_blocked' ? state.origin : state.step,
             tabReserved: event.tabReserved
           }
         : state,
@@ -153,7 +156,9 @@ const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
         ? {
             step: 'checkout_blocked',
             amount: state.amount,
-            amountCents: event.amountCents
+            amountCents: event.amountCents,
+            origin:
+              state.step === 'checkout_blocked' ? state.origin : state.step
           }
         : state,
     checkout_created: (state, event) => {
@@ -165,6 +170,7 @@ const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
             step: 'checkout_blocked',
             amount,
             amountCents,
+            origin: state.origin,
             checkoutUrl: event.checkoutUrl
           }
     },

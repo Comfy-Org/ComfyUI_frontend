@@ -1,3 +1,4 @@
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
 import {
   zBillingHandoffCreateResponse,
   zErrorResponse
@@ -52,7 +53,8 @@ async function issueBillingHandoff(
   token: string,
   workspaceId: string,
   cloudBaseUrl: string,
-  request: BillingHandoffRequest
+  request: BillingHandoffRequest,
+  signal: AbortSignal
 ): Promise<HandoffIssue> {
   try {
     const response = await fetch(new URL('/api/auth/handoffs', cloudBaseUrl), {
@@ -72,7 +74,10 @@ async function issueBillingHandoff(
           : {}),
         client_version: __COMFYUI_FRONTEND_VERSION__.slice(0, 64)
       }),
-      signal: AbortSignal.timeout(ISSUE_TIMEOUT_MS)
+      signal: combineAbortSignals([
+        signal,
+        AbortSignal.timeout(ISSUE_TIMEOUT_MS)
+      ])
     })
     if (response.status === 401) return { kind: 'sign_in_again' }
     if (!response.ok)
@@ -98,6 +103,8 @@ function currentScope(): HandoffScope | undefined {
 }
 
 const SIGN_IN_AGAIN: HandoffIssue = { kind: 'sign_in_again' }
+
+const DISCARDED: BillingHandoffResult = { status: 'error', message: undefined }
 
 function scopeKey(scope: HandoffScope | undefined): string {
   return scope
@@ -132,7 +139,8 @@ function armReturnRefresh(): void {
 
 async function issueForScope(
   scope: HandoffScope,
-  request: BillingHandoffRequest
+  request: BillingHandoffRequest,
+  signal: AbortSignal
 ): Promise<HandoffIssue> {
   const token = await useAuthStore().getIdToken()
   if (!token) return SIGN_IN_AGAIN
@@ -140,7 +148,8 @@ async function issueForScope(
     token,
     scope.workspaceId,
     scope.cloudBaseUrl,
-    request
+    request,
+    signal
   )
 }
 
@@ -179,15 +188,18 @@ export function reserveBillingHandoffTab(): BillingTab | null {
 
 /** Issues a one-time billing-web handoff for the signed-in local web account; the URL works once and is never shown. */
 export async function issueLocalBillingHandoff(
-  request: BillingHandoffRequest
+  request: BillingHandoffRequest,
+  signal: AbortSignal
 ): Promise<BillingHandoffResult> {
-  if (inFlight) return { status: 'error', message: undefined }
+  if (inFlight) return DISCARDED
   const scope = currentScope()
   const scopeWatch = watchScopeChange()
   inFlight = true
   try {
-    const issue = scope ? await issueForScope(scope, request) : SIGN_IN_AGAIN
-    return settle(issue, scopeWatch.changed())
+    const issue = scope
+      ? await issueForScope(scope, request, signal)
+      : SIGN_IN_AGAIN
+    return signal.aborted ? DISCARDED : settle(issue, scopeWatch.changed())
   } finally {
     scopeWatch.stop()
     inFlight = false

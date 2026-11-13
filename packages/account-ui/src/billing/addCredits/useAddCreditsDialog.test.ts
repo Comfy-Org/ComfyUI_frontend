@@ -12,7 +12,10 @@ import {
   readBillingErrorCode
 } from '@comfyorg/account-core/billing'
 
-import type { AddCreditsCheckoutTab } from './useAddCreditsDialog'
+import type {
+  AddCreditsCheckoutResult,
+  AddCreditsCheckoutTab
+} from './useAddCreditsDialog'
 import {
   addCreditsClientPorts,
   useAddCreditsDialog
@@ -167,7 +170,8 @@ describe('a single-use checkout', () => {
     expect(dialog.state.value).toStrictEqual({
       step: 'checkout_blocked',
       amount: { kind: 'preset', cents: 5000 },
-      amountCents: 5000
+      amountCents: 5000,
+      origin: 'amount'
     })
   })
 
@@ -186,5 +190,87 @@ describe('a single-use checkout', () => {
       'https://billing.test/handoff#token=once'
     )
     expect(dialog.state.value.step).toBe('checkout_opened')
+  })
+})
+
+describe('the payment watch', () => {
+  const OPENED = { status: 'ok' as const, url: 'https://billing.test/1' }
+  const tab = (): AddCreditsCheckoutTab => ({
+    navigate: () => {},
+    close: () => {}
+  })
+
+  function watchedDialog(options: {
+    tabs: (AddCreditsCheckoutTab | null)[]
+    checkouts: AddCreditsCheckoutResult[]
+    owns?: () => boolean
+  }) {
+    let landed: (() => void) | undefined
+    const watchPayment = vi.fn((onPayment: () => void) => {
+      landed = onPayment
+      return () => {}
+    })
+    const onLanded = vi.fn()
+    const scope = effectScope()
+    const dialog = scope.run(() =>
+      useAddCreditsDialog({
+        ports: {
+          quote: async () => ({ status: 'error' }),
+          createCheckout: async () =>
+            options.checkouts.shift() ?? { status: 'error', refusal: FAILED },
+          reserveTab: () => options.tabs.shift() ?? null,
+          watchPayment,
+          singleUseCheckout: true,
+          ...(options.owns ? { ownsCheckout: options.owns } : {})
+        },
+        facts: { bounds: ADD_CREDITS_FALLBACK_BOUNDS, canTopUp: true },
+        initialAmount: initialAddCreditsAmount(null),
+        onLanded
+      })
+    )
+    assert(dialog)
+    return { dialog, watchPayment, onLanded, land: () => landed?.() }
+  }
+
+  const FAILED = { kind: 'checkout_failed' } as const
+
+  it('still closes the dialog when the first checkout is paid after a blocked reopen is refused', async () => {
+    const { dialog, onLanded, land } = watchedDialog({
+      tabs: [tab(), null, tab()],
+      checkouts: [OPENED, { status: 'error', refusal: FAILED }]
+    })
+    await dialog.continueToCheckout()
+    await dialog.reopenCheckout()
+    expect(dialog.state.value.step).toBe('checkout_blocked')
+
+    await dialog.reopenCheckout()
+    expect(dialog.state.value).toMatchObject({
+      step: 'checkout_opened',
+      refusal: FAILED
+    })
+
+    land()
+
+    await vi.waitFor(() => expect(onLanded).toHaveBeenCalledOnce())
+    expect(dialog.state.value.step).toBe('landed')
+  })
+
+  it('watches again for a later checkout after a landing it dropped', async () => {
+    let owns = false
+    const { dialog, watchPayment, land } = watchedDialog({
+      tabs: [tab(), tab()],
+      checkouts: [OPENED, OPENED],
+      owns: () => owns
+    })
+    await dialog.continueToCheckout()
+    land()
+    await vi.waitFor(() =>
+      expect(dialog.state.value.step).toBe('checkout_opened')
+    )
+    owns = true
+
+    await dialog.reopenCheckout()
+
+    expect(watchPayment).toHaveBeenCalledTimes(2)
   })
 })

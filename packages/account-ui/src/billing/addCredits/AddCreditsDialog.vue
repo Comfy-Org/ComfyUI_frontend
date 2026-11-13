@@ -43,6 +43,7 @@
       :reissues="
         state.step === 'checkout_blocked' && state.checkoutUrl === undefined
       "
+      :can-reissue="canTopUp"
       :translate
       :ui
       @follow="dialog.followBlockedLink"

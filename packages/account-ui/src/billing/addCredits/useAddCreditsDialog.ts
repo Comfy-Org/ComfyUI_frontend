@@ -203,6 +203,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     if (stopWatch) return
     stopWatch = ports.watchPayment((activation) => {
       stopWatch?.()
+      stopWatch = undefined
       void land(activation)
     })
   }

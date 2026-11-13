@@ -62,6 +62,7 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
+import { useBillingDialogsAccess } from '@/platform/billing/subscription/composables/billingDialogsAccess'
 import { useAddCreditsPlanLine } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
 import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUrl'
@@ -142,14 +143,27 @@ function ownsCheckout(
 
 const opensHandoff = opensLocalBillingHandoff()
 
-async function createHandoffCheckout(
-  amountCents: number
-): ReturnType<AddCreditsPorts['createCheckout']> {
-  const generation = workspaceIdentity.workspaceTransitionGeneration
-  const issued = await issueLocalBillingHandoff({
-    intent: 'top-up',
-    amountCents
+function reopenForCurrentFlag(): void {
+  close()
+  void useBillingDialogsAccess().showTopUpCreditsDialog({
+    isInsufficientCredits,
+    source
   })
+}
+
+async function createHandoffCheckout(
+  amountCents: number,
+  signal: AbortSignal
+): ReturnType<AddCreditsPorts['createCheckout']> {
+  if (!opensLocalBillingHandoff()) {
+    reopenForCurrentFlag()
+    return { status: 'error', refusal: { kind: 'checkout_failed' } }
+  }
+  const generation = workspaceIdentity.workspaceTransitionGeneration
+  const issued = await issueLocalBillingHandoff(
+    { intent: 'top-up', amountCents },
+    signal
+  )
   if (issued.status === 'error') {
     return {
       status: 'error',
@@ -181,7 +195,7 @@ const ports: AddCreditsPorts = {
       outcome: 'pending',
       payment_intent_source: source
     })
-    if (opensHandoff) return createHandoffCheckout(amountCents)
+    if (opensHandoff) return createHandoffCheckout(amountCents, signal)
     const returnUrl = topupCheckoutReturnUrl()
     if (!returnUrl) {
       return { status: 'error', refusal: { kind: 'checkout_failed' } }

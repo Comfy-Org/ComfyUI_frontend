@@ -12,12 +12,16 @@ import {
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { issueLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/i18n'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/refreshOnReturn'), () => ({
+  registerRefreshOnReturn: vi.fn(() => () => {})
+}))
 vi.mock(import('@/platform/billing/billingRefresh'), () => ({
   refreshBilling: vi.fn(async () => undefined)
 }))
@@ -60,6 +64,7 @@ const HANDOFFS = /\/api\/auth\/handoffs$/
 const ENTRY_URL =
   'https://billing.comfy.org/handoff?intent=top-up&amount_cents=2500#token=abc'
 const TOP_UP = { intent: 'top-up', amountCents: 2500 } as const
+const live = new AbortController().signal
 
 function issued() {
   return Response.json(
@@ -85,7 +90,7 @@ describe('issueLocalBillingHandoff', () => {
   it('issues a handoff for the flow and amount the user picked', async () => {
     respondToFetch(HANDOFFS, issued)
 
-    await expect(issueLocalBillingHandoff(TOP_UP)).resolves.toEqual({
+    await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
       status: 'ok',
       url: ENTRY_URL
     })
@@ -103,12 +108,13 @@ describe('issueLocalBillingHandoff', () => {
       intent: 'top-up',
       amount_cents: 2500
     })
+    expect(registerRefreshOnReturn).toHaveBeenCalledOnce()
   })
 
   it('sends no amount for a subscription', async () => {
     respondToFetch(HANDOFFS, issued)
 
-    await issueLocalBillingHandoff({ intent: 'subscription' })
+    await issueLocalBillingHandoff({ intent: 'subscription' }, live)
 
     const body = JSON.parse(String(fetchRequests(HANDOFFS)[0].body))
     expect(body.intent).toBe('subscription')
@@ -151,7 +157,7 @@ describe('issueLocalBillingHandoff', () => {
   ])('$name', async ({ response, message, signIn }) => {
     respondToFetch(HANDOFFS, response)
 
-    await expect(issueLocalBillingHandoff(TOP_UP)).resolves.toEqual({
+    await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
       status: 'error',
       message
     })
@@ -182,7 +188,7 @@ describe('issueLocalBillingHandoff', () => {
         return answer()
       })
 
-      await expect(issueLocalBillingHandoff(TOP_UP)).resolves.toEqual({
+      await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
         status: 'error',
         message: 'billingHandoff.superseded'
       })
@@ -194,8 +200,8 @@ describe('issueLocalBillingHandoff', () => {
     respondToFetch(HANDOFFS, issued)
 
     const issues = [
-      issueLocalBillingHandoff(TOP_UP),
-      issueLocalBillingHandoff(TOP_UP)
+      issueLocalBillingHandoff(TOP_UP, live),
+      issueLocalBillingHandoff(TOP_UP, live)
     ]
 
     await expect(Promise.all(issues)).resolves.toEqual([
@@ -208,11 +214,31 @@ describe('issueLocalBillingHandoff', () => {
   it('asks to sign in again without issuing when no account is signed in', async () => {
     stopDesktopHostSession()
 
-    await expect(issueLocalBillingHandoff(TOP_UP)).resolves.toEqual({
+    await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
       status: 'error',
       message: 'billingHandoff.signInAgain'
     })
     expect(fetchRequests(HANDOFFS)).toHaveLength(0)
     expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+  })
+
+  it('drops a handoff the caller abandons mid-issue and frees the next one', async () => {
+    const abandoned = new AbortController()
+    respondToFetch(HANDOFFS, () => {
+      abandoned.abort()
+      return issued()
+    })
+
+    await expect(
+      issueLocalBillingHandoff(TOP_UP, abandoned.signal)
+    ).resolves.toEqual({ status: 'error', message: undefined })
+    expect(registerRefreshOnReturn).not.toHaveBeenCalled()
+    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+
+    respondToFetch(HANDOFFS, issued)
+    await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+      status: 'ok',
+      url: ENTRY_URL
+    })
   })
 })

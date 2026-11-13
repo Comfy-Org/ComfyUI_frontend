@@ -480,16 +480,21 @@ describe('a billing handoff tab', () => {
     expect(useBillingEntry().error.value).toBeUndefined()
   })
 
-  it('leaves an unreadable handoff amount for the top-up page to explain', async () => {
-    handoffTab.value = liveHandoff
+  it.for([
+    'intent=top-up&amount_cents=abc',
+    'intent=top-up&amount_cents=2500&amount_cents=100',
+    'intent=top-up&amount_cents'
+  ])(
+    'leaves the unreadable handoff amount in /handoff?%s for the top-up page to explain',
+    async (query) => {
+      handoffTab.value = liveHandoff
 
-    const router = await arriveAt('/handoff?intent=top-up&amount_cents=abc')
+      const router = await arriveAt(`/handoff?${query}`)
 
-    expect(router.currentRoute.value.fullPath).toBe(
-      '/v1/top-up?product=comfyui&return_to=comfyui_credits&amount_cents=abc'
-    )
-    expect(useBillingEntry().error.value).toBe('INVALID_AMOUNT')
-  })
+      expect(router.currentRoute.value.path).toBe('/v1/top-up')
+      expect(useBillingEntry().error.value).toBe('INVALID_AMOUNT')
+    }
+  )
 
   it('keeps showing how the handoff ended whatever its intent', async () => {
     handoffTab.value = { kind: 'ended', ending: 'link_unavailable' }

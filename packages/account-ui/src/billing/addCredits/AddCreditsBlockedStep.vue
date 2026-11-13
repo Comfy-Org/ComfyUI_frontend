@@ -19,6 +19,7 @@
       v-else-if="reissues"
       type="button"
       :class="primaryActionClass(ui)"
+      :disabled="!canReissue"
       data-testid="add-credits-open-checkout"
       @click="emit('reissue')"
     >
@@ -47,11 +48,13 @@ import { footerBarClass, primaryActionClass } from './addCreditsPresentation'
 const {
   checkoutUrl,
   reissues = false,
+  canReissue = true,
   translate,
   ui
 } = defineProps<{
   checkoutUrl: string | undefined
   reissues?: boolean
+  canReissue?: boolean
   translate: AddCreditsTranslate
   ui: AddCreditsUi
 }>()

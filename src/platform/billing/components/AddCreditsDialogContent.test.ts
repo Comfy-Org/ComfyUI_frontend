@@ -45,7 +45,8 @@ const hoisted = vi.hoisted(() => ({
   balanceIncreased: undefined as BalanceIncreased,
   opensHandoff: false,
   issueHandoff: vi.fn<typeof issueLocalBillingHandoff>(),
-  handoffTabs: [] as (BillingTab | null)[]
+  handoffTabs: [] as (BillingTab | null)[],
+  reopenTopUp: vi.fn(async () => undefined)
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -124,6 +125,17 @@ vi.mock(import('@/platform/billing/topupCheckoutReturnUrl'), () => ({
 vi.mock(import('@/platform/billing/billingTab'), () => ({
   reserveBillingTab: () => ({ navigate: vi.fn(), close: vi.fn() })
 }))
+vi.mock(
+  import('@/platform/billing/subscription/composables/billingDialogsAccess'),
+  () => ({
+    provideBillingDialogs: vi.fn(),
+    useBillingDialogsAccess: () => ({
+      showTopUpCreditsDialog: hoisted.reopenTopUp,
+      showSubscriptionRequiredDialog: vi.fn(),
+      showDowngradeToPersonalDialog: vi.fn()
+    })
+  })
+)
 vi.mock(import('@/platform/billing/localBillingHandoff'), () => ({
   opensLocalBillingHandoff: () => hoisted.opensHandoff,
   issueLocalBillingHandoff: hoisted.issueHandoff,
@@ -469,10 +481,10 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
           name: 'Checkout opened in a new tab'
         })
       ).toBeVisible()
-      expect(hoisted.issueHandoff).toHaveBeenCalledExactlyOnceWith({
-        intent: 'top-up',
-        amountCents
-      })
+      expect(hoisted.issueHandoff).toHaveBeenCalledExactlyOnceWith(
+        { intent: 'top-up', amountCents },
+        expect.any(AbortSignal)
+      )
       expect(tab.navigate).toHaveBeenCalledExactlyOnceWith(ENTRY_URL)
       expect(hoisted.createHostedCheckout).not.toHaveBeenCalled()
       expect(checkbox()).toBeNull()
@@ -495,10 +507,10 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
     await waitFor(() =>
       expect(tab.navigate).toHaveBeenCalledExactlyOnceWith(ENTRY_URL)
     )
-    expect(hoisted.issueHandoff).toHaveBeenCalledExactlyOnceWith({
-      intent: 'top-up',
-      amountCents: 5000
-    })
+    expect(hoisted.issueHandoff).toHaveBeenCalledExactlyOnceWith(
+      { intent: 'top-up', amountCents: 5000 },
+      expect.any(AbortSignal)
+    )
   })
 
   it('shows the refusal in the dialog and closes the tab', async () => {
@@ -518,6 +530,68 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
       'Only the workspace owner can add credits.'
     )
     expect(tab.close).toHaveBeenCalledOnce()
+    expect(tab.navigate).not.toHaveBeenCalled()
+  })
+
+  it.for<{
+    name: string
+    tabs: (tab: BillingTab) => (BillingTab | null)[]
+    reach: (user: UserEvent) => Promise<HTMLElement>
+  }>([
+    {
+      name: 'Continue',
+      tabs: (tab) => [tab],
+      reach: async () => continueButton()
+    },
+    {
+      name: 'the blocked step',
+      tabs: (tab) => [null, tab],
+      reach: async (user) => {
+        await user.click(continueButton())
+        return screen.findByTestId('add-credits-open-checkout')
+      }
+    }
+  ])(
+    'issues nothing from $name once local_billing_web turns off, and reopens Add credits for the current flag',
+    async ({ tabs, reach }) => {
+      const tab = handoffTab()
+      hoisted.handoffTabs = tabs(tab)
+      const { user } = renderDialog({ atCheckout: false })
+      const action = await reach(user)
+
+      hoisted.opensHandoff = false
+      await user.click(action)
+
+      await waitFor(() => expect(hoisted.reopenTopUp).toHaveBeenCalledOnce())
+      expect(hoisted.reopenTopUp).toHaveBeenCalledWith({
+        isInsufficientCredits: false,
+        source: undefined
+      })
+      expect(hoisted.issueHandoff).not.toHaveBeenCalled()
+      expect(tab.close).toHaveBeenCalledOnce()
+      expect(tab.navigate).not.toHaveBeenCalled()
+    }
+  )
+
+  it('closes the reserved tab and stops issuing when the dialog closes mid-issue', async () => {
+    const tab = handoffTab()
+    hoisted.handoffTabs = [tab]
+    hoisted.issueHandoff.mockImplementation(
+      (_request, signal) =>
+        new Promise((resolve) =>
+          signal.addEventListener('abort', () =>
+            resolve({ status: 'error', message: undefined })
+          )
+        )
+    )
+    const { user, unmount } = renderDialog({ atCheckout: false })
+    await user.click(continueButton())
+    const [, signal] = hoisted.issueHandoff.mock.calls[0]
+
+    unmount()
+
+    expect(signal.aborted).toBe(true)
+    await waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
     expect(tab.navigate).not.toHaveBeenCalled()
   })
 })
