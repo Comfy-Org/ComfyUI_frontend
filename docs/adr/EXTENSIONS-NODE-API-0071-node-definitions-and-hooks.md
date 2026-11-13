@@ -231,7 +231,8 @@ registered, so `extend` cannot depend on the order.
 
 25. `onConnectionsChanged` gives the side, index and name of the node's slot,
     whether it is now connected, and the node and slot at the other end of the
-    link the host reports, on a disconnect too. When a node takes saved state,
+    link the host reports, on a disconnect too; a subgraph's own input or
+    output is no node, so for a link to one both are `undefined`. When a node takes saved state,
     `LGraphNode.configure` reports every input as connected, with no link for
     the unlinked ones; the API passes on only the inputs with a link, so a
     loaded, pasted or undone node tells of the links it really has. The name
