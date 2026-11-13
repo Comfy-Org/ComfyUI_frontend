@@ -9,36 +9,36 @@ import RunNoticeAction from './RunNoticeAction.vue'
 const {
   expanded = false,
   workflowName,
+  followsVisibleWorkflow = false,
   genericNoticeReady = false,
   context
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
+  followsVisibleWorkflow?: boolean
   genericNoticeReady?: boolean
-  context?:
-    | 'following'
-    | 'mismatch'
-    | 'unavailable'
-    | 'emptyCanvas'
-    | 'followFailed'
+  context?: 'mismatch' | 'unavailable' | 'emptyCanvas'
 }>()
 
-const emit = defineEmits<{ showTarget: []; retry: [] }>()
+const emit = defineEmits<{ showTarget: [] }>()
 const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
 const contextMessages = {
-  following: 'agent.targetFollowsVisibleWorkflow',
   mismatch: 'agent.viewingDifferentWorkflow',
   unavailable: 'agent.targetWorkflowUnavailable',
-  emptyCanvas: 'agent.canvasIsEmptyAfterTurn',
-  followFailed: 'agent.followedChatOpenFailed'
+  emptyCanvas: 'agent.canvasIsEmptyAfterTurn'
 } as const satisfies Record<NonNullable<typeof context>, string>
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
+const followsNamedWorkflow = computed(
+  () => followsVisibleWorkflow && Boolean(workflowName)
+)
 const visible = computed(
   () =>
     Boolean(context) ||
-    (!dismissed.value && Boolean(workflowName || genericNoticeReady))
+    (!dismissed.value &&
+      !followsNamedWorkflow.value &&
+      Boolean(workflowName || genericNoticeReady))
 )
 const liveness = computed(() => (context ? 'polite' : undefined))
 const contextAction = computed(() => {
@@ -49,12 +49,6 @@ const contextAction = computed(() => {
         name: 'agent.showTargetWorkflow',
         icon: 'icon-[lucide--arrow-up-right]',
         run: () => emit('showTarget')
-      }
-    case 'followFailed':
-      return {
-        label: 'g.retry',
-        name: 'agent.retryFollowedChat',
-        run: () => emit('retry')
       }
     default:
       return undefined

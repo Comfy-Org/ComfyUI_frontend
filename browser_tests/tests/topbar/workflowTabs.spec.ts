@@ -171,7 +171,9 @@ test.describe('Workflow tabs', () => {
       .toEqual([expect.stringContaining('Unsaved Workflow')])
   })
 
-  test('Modified workflow shows unsaved indicator', async ({ comfyPage }) => {
+  test('Modified workflow shows the unsaved mark and keeps Close available', async ({
+    comfyPage
+  }) => {
     const topbar = comfyPage.menu.topbar
 
     // Modify the graph via litegraph API to trigger unsaved state
@@ -181,20 +183,19 @@ test.describe('Workflow tabs', () => {
       if (graph && node) graph.add(node)
     })
 
-    // WorkflowTab renders the dirty-state dot when the workflow has unsaved changes
     const activeTab = topbar.getActiveTab()
     const indicator = activeTab.getByTestId('workflow-dirty-indicator')
     const closeButton = activeTab.getByTestId('close-workflow-button')
     await expect(indicator).toBeVisible()
-    await expect(closeButton).toBeHidden()
+    await expect(closeButton).toBeVisible()
 
     await activeTab.hover()
-    await expect(indicator).toBeHidden()
+    await expect(indicator).toBeVisible()
     await expect(closeButton).toBeVisible()
 
     await comfyPage.canvas.hover()
     await expect(indicator).toBeVisible()
-    await expect(closeButton).toBeHidden()
+    await expect(closeButton).toBeVisible()
   })
 
   test('Can drag tab to end', async ({ comfyPage }) => {
@@ -352,7 +353,7 @@ test.describe('Workflow tabs', () => {
     )
 
     test(
-      'Compact inactive tabs reveal their close button to keyboard only',
+      'Compact inactive tabs reveal their close button on hover and to the keyboard',
       { tag: '@ui' },
       async ({ comfyPage }) => {
         const topbar = comfyPage.menu.topbar
@@ -367,14 +368,14 @@ test.describe('Workflow tabs', () => {
 
         const inactiveTab = topbar.getTab(9)
 
-        await test.step('hide Close on inactive tab hover', async () => {
+        await test.step('reveal Close on inactive tab hover, keeping the unsaved mark', async () => {
           await inactiveTab.hover()
           await expect(
             inactiveTab.getByTestId(TestIds.topbar.workflowDirtyIndicator)
           ).toBeVisible()
           await expect(
             inactiveTab.getByTestId(TestIds.topbar.closeWorkflowButton)
-          ).toBeHidden()
+          ).toBeVisible()
 
           const activeTab = topbar.getActiveTab()
           await activeTab.hover()
