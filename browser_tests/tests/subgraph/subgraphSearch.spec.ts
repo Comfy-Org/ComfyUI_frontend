@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { UserDataHelper } from '@e2e/fixtures/helpers/UserDataHelper'
 
 async function createSubgraphAndNavigateInto(comfyPage: ComfyPage) {
   const subgraphNode =
@@ -24,19 +25,6 @@ async function exitSubgraphAndPublish(
 
   await expect(comfyPage.toast.visibleToasts).toHaveCount(1)
   await comfyPage.toast.closeToasts(1)
-}
-
-async function searchAndExpectResult(
-  comfyPage: ComfyPage,
-  searchTerm: string,
-  expectedResult: string
-) {
-  await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
-  await expect(comfyPage.searchBox.input).toHaveCount(1)
-  await comfyPage.searchBox.input.fill(searchTerm)
-  await expect(comfyPage.searchBox.findResult(expectedResult)).toBeVisible({
-    timeout: 10_000
-  })
 }
 
 test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
@@ -63,21 +51,59 @@ test.describe('Subgraph Search Aliases', { tag: ['@subgraph'] }, () => {
   test('Published search aliases remain searchable after reload', async ({
     comfyPage
   }) => {
-    const subgraphNode = await createSubgraphAndNavigateInto(comfyPage)
-
-    await comfyPage.command.executeCommand('Comfy.Subgraph.SetSearchAliases', {
-      aliases: 'dragon, fire breather'
-    })
-
     const blueprintName = `test-persist-${Date.now()}`
-    await exitSubgraphAndPublish(comfyPage, subgraphNode, blueprintName)
-
-    await comfyPage.page.reload()
-    await comfyPage.page.waitForFunction(
-      () => window.app && window.app.extensionManager
+    const userData = new UserDataHelper(
+      comfyPage.request,
+      comfyPage.id,
+      comfyPage.url
     )
-    await comfyPage.nextFrame()
 
-    await searchAndExpectResult(comfyPage, 'dragon', blueprintName)
+    try {
+      const subgraphNode = await createSubgraphAndNavigateInto(comfyPage)
+      await comfyPage.command.executeCommand(
+        'Comfy.Subgraph.SetSearchAliases',
+        { aliases: 'dragon, fire breather' }
+      )
+      await exitSubgraphAndPublish(comfyPage, subgraphNode, blueprintName)
+
+      let releaseBlueprint = () => {}
+      const blueprintReleased = new Promise<void>((resolve) => {
+        releaseBlueprint = resolve
+      })
+      const isBlueprintUrl = (url: URL) =>
+        url.pathname.endsWith(`/userdata/subgraphs%2F${blueprintName}.json`)
+      let blueprintRequested = () => {}
+      const blueprintHeld = new Promise<void>((resolve) => {
+        blueprintRequested = resolve
+      })
+      await comfyPage.page.route(isBlueprintUrl, async (route) => {
+        blueprintRequested()
+        await blueprintReleased
+        await route.fallback()
+      })
+
+      await comfyPage.page.reload()
+      await comfyPage.page.waitForFunction(
+        () => window.app && window.app.extensionManager
+      )
+      await comfyPage.nextFrame()
+      await blueprintHeld
+
+      await test.step('search for the alias before the blueprint loads', async () => {
+        await comfyPage.command.executeCommand('Workspace.SearchBox.Toggle')
+        await comfyPage.searchBox.input.fill('KSampler')
+        await expect(
+          comfyPage.searchBox.findResult('KSampler').first()
+        ).toBeVisible()
+        await comfyPage.searchBox.input.fill('dragon')
+        await expect(comfyPage.searchBox.resultOptions).toHaveCount(0)
+      })
+
+      releaseBlueprint()
+
+      await expect(comfyPage.searchBox.findResult(blueprintName)).toBeVisible()
+    } finally {
+      await userData.delete(`subgraphs/${blueprintName}.json`)
+    }
   })
 })
