@@ -319,11 +319,12 @@ export function useTemplateWorkflows() {
       if (loadedWorkflow === false) return 'graph-failed'
       if (loadedWorkflow === undefined) return 'not-started'
 
-      await rememberLoadedTemplateOrigin(
-        loadedWorkflow,
-        templateId,
-        originSnapshot
-      )
+      if (originSnapshot !== undefined)
+        await rememberLoadedTemplateOrigin(
+          loadedWorkflow,
+          templateId,
+          originSnapshot
+        )
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
       await syncCompletedTemplateInputsWithCurrentGraph()

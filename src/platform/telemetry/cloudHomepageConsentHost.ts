@@ -1,6 +1,9 @@
 import { ref, watch } from 'vue'
 import type { AccountCredential } from '@comfyorg/account-core/session'
-import type { WebSessionRequestScope } from '@comfyorg/api-client/webSessionFetch'
+import type {
+  WebSessionRequestScope,
+  WebSessionRequests
+} from '@comfyorg/api-client/webSessionFetch'
 import { bindAnalyticsConsentRuntime } from '@comfyorg/api-client/analyticsConsentRuntime'
 import type { ConsentReceiptConfiguration } from '@comfyorg/api-client/analyticsConsentReceiptBridge'
 import {
@@ -34,6 +37,28 @@ function matchesCredential(
   workspace: string
 ): boolean {
   return credential.uid === actor && credential.workspace.id === workspace
+}
+
+async function readMatchingCredential(
+  requests: WebSessionRequests,
+  actor: string,
+  workspace: string,
+  isCurrent: () => boolean
+): Promise<AccountCredential | undefined> {
+  const scope = await requests.scope()
+  if (!matchesSessionScope(scope, actor, workspace)) return undefined
+  const result = await requests.workspaceToken(scope)
+  const current = await requests.scope()
+  if (
+    !isCurrent() ||
+    result.status !== 'ok' ||
+    !matchesSessionScope(current, actor, workspace) ||
+    current.epoch !== scope.epoch
+  )
+    return undefined
+  return matchesCredential(result.credential, actor, workspace)
+    ? result.credential
+    : undefined
 }
 
 /** Installs the Cloud host only for an explicitly supplied reviewed consent source. */
@@ -77,19 +102,13 @@ export function installCloudHomepageConsentHost(
             auth.userId === actor &&
             workspaces.activeWorkspaceId === workspace
           try {
-            const scope = await requests.scope()
-            if (!matchesSessionScope(scope, actor, workspace)) return
-            const result = await requests.workspaceToken(scope)
-            const current = await requests.scope()
-            if (
-              !isCurrent() ||
-              result.status !== 'ok' ||
-              !matchesSessionScope(current, actor, workspace) ||
-              current.epoch !== scope.epoch ||
-              !matchesCredential(result.credential, actor, workspace)
+            const credential = await readMatchingCredential(
+              requests,
+              actor,
+              workspace,
+              isCurrent
             )
-              return
-            listener(result.credential)
+            if (credential) listener(credential)
           } catch {
             if (!disposed && generation === revision) listener(undefined)
           }
