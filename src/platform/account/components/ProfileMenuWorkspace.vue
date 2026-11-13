@@ -49,12 +49,13 @@
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          side="left"
+          :side="flyoutSide"
           align="start"
-          :side-offset="8"
+          :side-offset="flyoutGap"
+          :align-offset="-menuInset"
           prioritize-position
           dismiss-on-viewport-change
-          class="w-auto overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0"
+          class="w-auto overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0 data-[state=open]:data-[side=right]:slide-in-from-left-0"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherFlyout
@@ -98,9 +99,9 @@
           </button>
         </HoverCardTrigger>
         <HoverCardContent
-          side="left"
+          :side="flyoutSide"
           align="start"
-          :side-offset="12"
+          :side-offset="flyoutGap"
           class="rounded-xl p-2"
         >
           <ProfileMenuCreditsFlyout
@@ -206,9 +207,13 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { accountActionsOnly = false } = defineProps<{
+const { accountActionsOnly = false, flyoutSide = 'left' } = defineProps<{
   accountActionsOnly?: boolean
+  flyoutSide?: 'left' | 'right'
 }>()
+
+const menuInset = 5
+const flyoutGap = menuInset + 8
 
 const emit = defineEmits<{
   close: []
