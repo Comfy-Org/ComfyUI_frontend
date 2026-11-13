@@ -10,6 +10,7 @@ import type {
   PropertyChangeEvent
 } from '@/platform/nodeApi/v4/types'
 import { checkedMenuItem } from './nodeMenu'
+import { checkedReadable } from './readableInput'
 import type { CheckedMenuItem } from './nodeMenu'
 
 /** What a pack gives each hook: a callback, or for `addMenuItem` the checked item. */
@@ -59,8 +60,8 @@ export type HookCallbackLists = { readonly [K in HookName]: HookCallbacks[K][] }
 
 interface OpenBuilder {
   readonly builder: NodeDefBuilder
-  /** Ends the builder and gives what it collected. Its methods throw from then on. */
-  close(): HookCallbackLists
+  readonly callbacks: HookCallbackLists
+  close(): void
 }
 
 export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
@@ -116,14 +117,21 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
     onPropertyChanged: hook('onPropertyChanged'),
     onHover: hook('onHover'),
     onDoubleClick: hook('onDoubleClick'),
-    addMenuItem: adder('addMenuItem', checkedMenuItem)
+    addMenuItem: adder('addMenuItem', (item: unknown) =>
+      checkedReadable(
+        'addMenuItem',
+        'a menu item object',
+        item,
+        checkedMenuItem
+      )
+    )
   })
 
   return {
     builder,
+    callbacks,
     close() {
       open = false
-      return callbacks
     }
   }
 }

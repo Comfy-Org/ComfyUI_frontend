@@ -16,13 +16,18 @@ export function callIsolated<T>(
   try {
     return { ok: true, value: callback() }
   } catch (error) {
-    reportError(error, {
-      errorType: 'node_api_listener_failure',
-      surface: 'platform',
-      tags: { event }
-    })
+    reportListenerFailure(event, error)
     return { ok: false }
   }
+}
+
+/** Reports a pack callback's failure the way every listener failure is reported. */
+export function reportListenerFailure(event: string, error: unknown): void {
+  reportError(error, {
+    errorType: 'node_api_listener_failure',
+    surface: 'platform',
+    tags: { event }
+  })
 }
 
 /** Calls a pack's callback. One that throws is reported and gives `undefined`. */

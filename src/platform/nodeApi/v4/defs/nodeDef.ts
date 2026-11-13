@@ -3,6 +3,7 @@ import {
   getInputSpecType,
   isComboInputSpec
 } from '@comfyorg/object-info-parser'
+import { isPlainObject } from 'es-toolkit'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
@@ -18,31 +19,47 @@ import type {
 
 const NO_OPTIONS: Readonly<Record<string, unknown>> = Object.freeze({})
 
-/** The pack's view of a definition the host registers, built from the host's own record of it. */
+/** The pack's view of a definition the host registers. A part the server sent malformed reads as empty. */
 export function nodeDefFromHost(
   hostDef: ComfyNodeDefV1,
   copyOfSaved: SavedCopier
 ): NodeDef {
-  const { name: type, input = {} } = hostDef
+  const type = hostDef.name
+  const input = recordOf(hostDef.input)
   const declaredInputs = Object.entries({
-    ...input.required,
-    ...input.optional
-  })
+    ...recordOf(input.required),
+    ...recordOf(input.optional)
+  }).filter((entry): entry is [string, InputSpec] => isInputSpec(entry[1]))
+  const outputNames = listOf(hostDef.output_name)
   return Object.freeze({
     type,
     title:
-      resolveNodeDefText('display_name', type, hostDef.display_name) || type,
-    category: hostDef.category,
-    description: resolveNodeDefText('description', type, hostDef.description),
+      resolveNodeDefText('display_name', type, textOf(hostDef.display_name)) ||
+      type,
+    category: textOf(hostDef.category) ?? '',
+    description: resolveNodeDefText(
+      'description',
+      type,
+      textOf(hostDef.description)
+    ),
     inputs: Object.freeze(
       declaredInputs.map(([name, spec]) =>
         hostInput(type, name, spec, copyOfSaved)
       )
     ),
-    outputs: Object.freeze((hostDef.output ?? []).map(hostOutput(hostDef))),
-    hidden: copyOfSaved('def.hidden', input.hidden ?? {}) ?? NO_OPTIONS,
-    isOutputNode: hostDef.output_node
+    outputs: Object.freeze(
+      listOf(hostDef.output).flatMap((output, index) =>
+        hostOutput(output, outputNames[index])
+      )
+    ),
+    hidden: copyOfSaved('def.hidden', recordOf(input.hidden)) ?? NO_OPTIONS,
+    isOutputNode: isTrue(hostDef.output_node)
   })
+}
+
+/** The category a definition the host registers declares, or none if it is malformed. */
+export function categoryOfHostDef(hostDef: ComfyNodeDefV1): string {
+  return textOf(hostDef.category) ?? ''
 }
 
 function hostInput(
@@ -51,27 +68,64 @@ function hostInput(
   spec: InputSpec,
   copyOfSaved: SavedCopier
 ): NodeDefInput {
-  const options = spec[1] ?? {}
-  const shownName =
-    typeof options.display_name === 'string' ? options.display_name : undefined
+  const options = recordOf(spec[1])
   const values = isComboInputSpec(spec)
-    ? { values: Object.freeze([...getComboSpecComboOptions(spec)]) }
+    ? {
+        values: Object.freeze(
+          listOf(getComboSpecComboOptions(spec)).filter(isChoice)
+        )
+      }
     : {}
   return Object.freeze({
     name,
     type: getInputSpecType(spec),
-    localizedName: resolveNodeDefSlotText('name', type, name, shownName, name),
+    localizedName: resolveNodeDefSlotText(
+      'name',
+      type,
+      name,
+      textOf(options.display_name),
+      name
+    ),
     ...values,
     options: copyOfSaved('def.inputs.options', options) ?? NO_OPTIONS
   })
 }
 
-function hostOutput(hostDef: ComfyNodeDefV1) {
+function hostOutput(output: unknown, name: unknown): NodeDefOutput[] {
+  const type =
+    typeof output === 'string'
+      ? output
+      : Array.isArray(output)
+        ? 'COMBO'
+        : undefined
+  if (type === undefined) return []
+  return [Object.freeze({ name: textOf(name) ?? type, type })]
+}
+
+function isInputSpec(spec: unknown): spec is InputSpec {
   return (
-    output: string | readonly unknown[],
-    index: number
-  ): NodeDefOutput => {
-    const type = typeof output === 'string' ? output : 'COMBO'
-    return Object.freeze({ name: hostDef.output_name?.[index] ?? type, type })
-  }
+    Array.isArray(spec) &&
+    (typeof spec[0] === 'string' || Array.isArray(spec[0])) &&
+    (spec[1] === undefined || isPlainObject(spec[1]))
+  )
+}
+
+function isTrue(value: unknown): boolean {
+  return value === true
+}
+
+function isChoice(value: unknown): value is string | number {
+  return typeof value === 'string' || typeof value === 'number'
+}
+
+function recordOf(value: unknown): Readonly<Record<string, unknown>> {
+  return isPlainObject(value) ? value : NO_OPTIONS
+}
+
+function listOf(value: unknown): readonly unknown[] {
+  return Array.isArray(value) ? value : []
+}
+
+function textOf(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined
 }

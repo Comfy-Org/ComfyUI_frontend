@@ -20,11 +20,12 @@ import {
   nodeDefFromDefinition,
   registerDefinedType
 } from './definedNodeType'
-import { checkedSelector } from './defSelector'
+import { SELECTOR_NEEDED, checkedSelector } from './defSelector'
 import { createExtensions } from './extensions'
 import type { NodeType } from './extensions'
 import { createHookDispatch } from './hookDispatch'
-import { nodeDefFromHost } from './nodeDef'
+import { categoryOfHostDef, nodeDefFromHost } from './nodeDef'
+import { checkedReadable } from './readableInput'
 import { createTypeColors } from './typeColors'
 
 /** The extension through which the host tells the API about node types. */
@@ -66,14 +67,19 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
   ): void {
     extensions.typeRegistered({
       type: hostDef.name,
-      category: hostDef.category,
+      category: categoryOfHostDef(hostDef),
       nodeClass,
       def: () => nodeDefFromHost(hostDef, copyOfSaved)
     })
   }
 
   function define(definition: unknown): Unsubscribe {
-    const checked = checkedDefinition(definition)
+    const checked = checkedReadable(
+      'define',
+      'a node definition object',
+      definition,
+      checkedDefinition
+    )
     const nodeClass = registerDefinedType(checked)
     const nodeType: NodeType = {
       type: checked.type,
@@ -81,9 +87,8 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
       nodeClass,
       def: () => nodeDefFromDefinition(checked)
     }
-    const stopHooks = extensions.extend(
-      (candidate) => candidate.type === checked.type,
-      (builder) => addDefinitionHooks(builder, checked)
+    const stopHooks = extensions.extendOwnType(nodeType, (builder) =>
+      addDefinitionHooks(builder, checked)
     )
     extensions.typeRegistered(nodeType)
     return once(() => {
@@ -97,7 +102,12 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
 
   const defs: DefRegistry = Object.freeze({
     extend(selector: unknown, apply: unknown) {
-      const selects = checkedSelector(selector)
+      const selects = checkedReadable(
+        'extend',
+        SELECTOR_NEEDED,
+        selector,
+        checkedSelector
+      )
       if (typeof apply !== 'function') {
         throw invalidArgument(
           'extend',

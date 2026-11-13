@@ -13,7 +13,7 @@ export interface SelectorCandidate {
 
 export type TypeSelection = (candidate: SelectorCandidate) => boolean
 
-const SELECTOR_NEEDED =
+export const SELECTOR_NEEDED =
   'a type name, a list of names, a RegExp, { category } or a function'
 
 /** Refuses a selector an untyped caller got wrong, before anything is registered. */

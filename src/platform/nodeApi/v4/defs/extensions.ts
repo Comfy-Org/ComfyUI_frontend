@@ -2,7 +2,10 @@ import { once } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { callListener } from '@/platform/nodeApi/shared/listeners'
+import {
+  callListener,
+  reportListenerFailure
+} from '@/platform/nodeApi/shared/listeners'
 import type {
   NodeDef,
   NodeDefBuilder,
@@ -34,6 +37,7 @@ interface Extension {
   readonly selects: TypeSelection
   readonly apply: (builder: NodeDefBuilder) => void
   readonly appliedTo: Set<string>
+  readonly sequence: number
 }
 
 interface Application {
@@ -44,6 +48,11 @@ interface Application {
 export interface Extensions {
   extend(
     selects: TypeSelection,
+    apply: (builder: NodeDefBuilder) => void
+  ): Unsubscribe
+  /** Adds the hooks a defined type declares, before any extension's, to that registration of it only. */
+  extendOwnType(
+    nodeType: NodeType,
     apply: (builder: NodeDefBuilder) => void
   ): Unsubscribe
   /** Records a type, replacing an earlier registration of it, and applies every extension that selects it. */
@@ -95,42 +104,67 @@ export function createExtensions(installer: HookInstaller): Extensions {
     candidate: SelectorCandidate
   ): void {
     if (!extensions.has(extension) || !extension.selects(candidate)) return
-    const { builder, close } = createNodeDefBuilder(candidate.def())
     const applied = callListener('extend', () => {
-      extension.apply(builder)
-      return true
+      const opened = createNodeDefBuilder(candidate.def())
+      try {
+        reportRejection('extend', extension.apply(opened.builder))
+      } finally {
+        opened.close()
+      }
+      return opened.callbacks
     })
-    const callbacks = close()
-    const hooks = HOOK_NAMES.filter((hook) => callbacks[hook].length)
-    if (!applied || hooks.length === 0) return
-    applications.set(nodeType.type, [
-      ...(applications.get(nodeType.type) ?? []),
-      { extension, callbacks }
-    ])
+    const hooks = HOOK_NAMES.filter((hook) => applied?.[hook].length)
+    if (!applied || hooks.length === 0 || !extensions.has(extension)) return
+    applications.set(
+      nodeType.type,
+      [
+        ...(applications.get(nodeType.type) ?? []),
+        { extension, callbacks: applied }
+      ].sort(
+        (first, second) => first.extension.sequence - second.extension.sequence
+      )
+    )
     extension.appliedTo.add(nodeType.type)
-    countDemand(callbacks, 1)
+    countDemand(applied, 1)
     installer.install(nodeType, hooks)
   }
 
-  return {
-    extend(selects, apply) {
-      const extension: Extension = { selects, apply, appliedTo: new Set() }
-      extensions.add(extension)
-      for (const nodeType of Array.from(nodeTypes.values())) {
-        applyIfSelected(extension, nodeType, candidateFor(nodeType))
+  function addExtension(extension: Extension): Unsubscribe {
+    extensions.add(extension)
+    for (const nodeType of Array.from(nodeTypes.values())) {
+      applyIfSelected(extension, nodeType, candidateFor(nodeType))
+    }
+    installer.demandChanged()
+    return once(() => {
+      extensions.delete(extension)
+      for (const type of Array.from(extension.appliedTo)) {
+        removeApplications(
+          type,
+          (application) => application.extension === extension
+        )
       }
       installer.demandChanged()
-      return once(() => {
-        extensions.delete(extension)
-        for (const type of Array.from(extension.appliedTo)) {
-          removeApplications(
-            type,
-            (application) => application.extension === extension
-          )
-        }
-        installer.demandChanged()
-      })
-    },
+    })
+  }
+
+  let sequence = 0
+
+  return {
+    extend: (selects, apply) =>
+      addExtension({
+        selects,
+        apply,
+        appliedTo: new Set(),
+        sequence: ++sequence
+      }),
+
+    extendOwnType: (nodeType, apply) =>
+      addExtension({
+        selects: (candidate) => nodeTypes.get(candidate.type) === nodeType,
+        apply,
+        appliedTo: new Set(),
+        sequence: 0
+      }),
 
     typeRegistered(nodeType) {
       removeApplications(nodeType.type, () => true)
@@ -165,5 +199,11 @@ function candidateFor(nodeType: NodeType): SelectorCandidate {
     type: nodeType.type,
     category: nodeType.category,
     def: once(() => nodeType.def())
+  }
+}
+
+function reportRejection(event: string, returned: unknown): void {
+  if (returned instanceof Promise) {
+    returned.catch((error: unknown) => reportListenerFailure(event, error))
   }
 }
