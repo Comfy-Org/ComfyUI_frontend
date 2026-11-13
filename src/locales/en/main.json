@@ -124,7 +124,6 @@
     "subgraphUnpackFailed": "Unable to unpack the selected subgraph.",
     "enter": "Enter",
     "enterSubgraph": "Enter subgraph",
-    "exitSubgraph": "Exit subgraph",
     "inSubgraph": "in subgraph '{name}'",
     "missingNodeTypesInGroup": "missing: {types}",
     "resizeFromBottomRight": "Resize from bottom-right corner",

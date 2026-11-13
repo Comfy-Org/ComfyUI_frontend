@@ -92,13 +92,12 @@ async function renderInputNode() {
 }
 
 describe('subgraph input node ports', () => {
-  it('identifies the current instance without a picker and offers an exit action', async () => {
+  it('identifies the current instance without a picker', async () => {
     const { host } = await renderInputNode()
 
     expect(
       screen.getByRole('group', { name: `${host.title} · #${host.id}` })
     ).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Exit subgraph' })).toBeVisible()
   })
 
   it('does not start resizing a pinned input node', async () => {

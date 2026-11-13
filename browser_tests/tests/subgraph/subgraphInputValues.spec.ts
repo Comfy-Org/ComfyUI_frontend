@@ -53,7 +53,7 @@ for (const renderer of [
           'subgraphs/shared-definition-two-hosts-promoted-text'
         )
         const initial = await savedValues()
-        const { inputPanel: panel, exitButton } = comfyPage.subgraph
+        const { inputPanel: panel } = comfyPage.subgraph
         const input = panel.getByRole('textbox', { name: 'text', exact: true })
 
         await test.step('Entering Host A identifies the instance and preserves saved values', async () => {
@@ -75,7 +75,7 @@ for (const renderer of [
         })
 
         await test.step('Leaving the subgraph and entering Host B changes the editing target', async () => {
-          await exitButton.getByText('Exit subgraph', { exact: true }).click()
+          await comfyPage.subgraph.exitViaBreadcrumb()
           await expect(panel).toBeHidden()
           await renderer.enter(comfyPage, '12')
           await expect(panel).toHaveAccessibleName('Host B · #12')
@@ -90,14 +90,14 @@ for (const renderer of [
         })
 
         await test.step('Workflow undo and redo restore the host values', async () => {
-          await comfyPage.keyboard.undo(exitButton)
+          await comfyPage.keyboard.undo()
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
               { id: '11', values: ['boundary-host-a'] },
               { id: '12', values: [''] }
             ])
-          await comfyPage.keyboard.redo(exitButton)
+          await comfyPage.keyboard.redo()
           await expect
             .poll(async () => (await savedValues()).hosts)
             .toEqual([
