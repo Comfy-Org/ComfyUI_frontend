@@ -399,6 +399,7 @@
           "src/platform/distribution/types.ts",
           "src/router.ts",
           "src/router.cloudAuthGuard.test.ts",
+          "src/router.signedOutReroute.test.ts",
           "src/router.test.ts",
           "src/stores/bootstrapStore.ts",
           "src/stores/bootstrapStore.test.ts",
