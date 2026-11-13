@@ -36,3 +36,14 @@ pairs, applicable consent and canonical-account adapters, revocation-aware analy
 and a server-job success reconciliation. A rollout must remain off until those are
 reviewed. Existing website PR #428 remains the separate disabled exposure/order
 preparation; this branch neither enables it nor alters carousel visuals.
+
+`analyticsConsentReceiptBridge` is an unbound utility, with no runtime caller or
+configured policy. Bind one instance to an immutable authenticated actor/workspace
+session and dispose it on either change. Feed actual configured PostHog service
+consent, never SDK opt-out or Agent terms. The transport must validate the response
+against the bound authenticated scope and must not send client-asserted account
+identifiers. Its eligibility callback controls only qualified experiment eligibility,
+not existing telemetry globally. A server ACK permits eligibility only for the
+current generation; revoke disables immediately, serializes behind an in-flight
+grant, and must succeed before a later grant. Stored local consent may establish a
+new server receipt at handoff, never historical eligibility before that write.
