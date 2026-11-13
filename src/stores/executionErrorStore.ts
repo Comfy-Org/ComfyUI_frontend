@@ -462,9 +462,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   }
 
   /**
-   * Records the node errors of the submission `jobId` from `key`'s run. An
-   * empty response keeps errors that `jobId`'s own socket message recorded
-   * before the response arrived, and drops those of any older job.
+   * Records submission `jobId`'s node errors under `key`. An empty response
+   * keeps errors already recorded for `jobId` and clears any other job's.
    */
   function recordSubmissionNodeErrors(
     nodeErrors: Record<string, NodeError> | null | undefined,

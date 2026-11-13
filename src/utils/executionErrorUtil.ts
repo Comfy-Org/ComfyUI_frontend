@@ -105,10 +105,8 @@ function toNodeValidationErrors(error: unknown): NodeValidationError[] {
 }
 
 /**
- * Turns relayed node errors into `NodeError`s: a string entry becomes an
- * error whose message is that string, and any other non-object is dropped.
- * A node left with no errors is dropped too, so it is not marked red with
- * nothing to show.
+ * Converts relayed node errors to `NodeError`s; a string entry becomes the
+ * message, and a node left with no errors is dropped.
  */
 export function normalizeRelayedNodeErrors(
   nodeErrors: Record<string, RelayedNodeError>
