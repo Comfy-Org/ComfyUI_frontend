@@ -1,5 +1,8 @@
+import type { ComputedRef } from 'vue'
+
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { FrontendExecution } from '@/utils/executionUtil'
+import type { ActionBarButton, TopbarBadge } from '@/types/comfy'
 
 import { createDocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import type { GraphResolver } from '@/platform/nodeApi/shared/documentHandles'
@@ -43,6 +46,7 @@ import { createCommandsHandle } from './utilities/commandsHandle'
 import { createModelsHandle } from './utilities/modelsHandle'
 import { createSettingsHandle } from './utilities/settingsHandle'
 import { createStorageHandle } from './utilities/storageHandle'
+import { createUi } from './utilities/ui/uiHandle'
 import { createWidgetCollections } from './widgets/widgetCollection'
 
 /** What the host supplies. */
@@ -59,6 +63,10 @@ export interface ComfyApiServices {
 
 /** What the host drives. A pack never sees this. */
 export interface ComfyApiHost {
+  /** The top-bar badges packs have added, for the host to show. */
+  readonly topbarBadges: ComputedRef<readonly TopbarBadge[]>
+  /** The action-bar buttons packs have added, for the host to show. */
+  readonly actionBarButtons: ComputedRef<readonly ActionBarButton[]>
   /** Tells packs the app is set up. */
   markReady(): void
   /**
@@ -96,6 +104,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
   const handles = createDocumentHandles()
   const canvas = () => services.canvas?.()
+  const chrome = createUi(canvas)
   const widgets = createWidgetCollections(
     handles,
     createEditRunner(() => services.history?.()),
@@ -185,6 +194,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     commands: createCommandsHandle(),
     backend: createBackendHandle(),
     models: createModelsHandle(),
+    ui: chrome.ui,
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
   } satisfies Comfy)
 
@@ -192,6 +202,8 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     comfy,
     edit,
     host: {
+      topbarBadges: chrome.topbarBadges,
+      actionBarButtons: chrome.actionBarButtons,
       nodeTypeHooks: definitions.nodeTypeHooks,
       reapplyTypeColors: definitions.reapplyTypeColors,
       frontendExecution: execution.prompt,
