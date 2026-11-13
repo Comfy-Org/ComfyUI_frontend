@@ -186,6 +186,22 @@ export const useSessionCookie = () => {
     await establishSession(currentOwnerUidOrThrow(), true)
   }
 
+  const refusedRecreation = (
+    error: unknown,
+    ownerUid: string
+  ): SessionRecreation => {
+    const authStore = useAuthStoreAccess()
+    const currentUid = authStore.currentUser?.uid
+    if (currentUid !== undefined && currentUid !== ownerUid) {
+      return 'identity_changed'
+    }
+    if (!(error instanceof SsoRequiredSessionError)) return 'failed'
+    const presented = presentSsoRequired('session_refused', {
+      email: authStore.userEmail ?? undefined
+    })
+    return presented ? 'sso_required' : 'failed'
+  }
+
   const recreateFirebaseSession = async (): Promise<SessionRecreation> => {
     const ownerUid = useAuthStoreAccess().currentUser?.uid
     if (!ownerUid) return 'failed'
@@ -193,17 +209,7 @@ export const useSessionCookie = () => {
       await establishSession(ownerUid, true)
       return 'created'
     } catch (error) {
-      const authStore = useAuthStoreAccess()
-      const currentUid = authStore.currentUser?.uid
-      if (currentUid !== undefined && currentUid !== ownerUid) {
-        return 'identity_changed'
-      }
-      return error instanceof SsoRequiredSessionError &&
-        presentSsoRequired('session_refused', {
-          email: authStore.userEmail ?? undefined
-        })
-        ? 'sso_required'
-        : 'failed'
+      return refusedRecreation(error, ownerUid)
     }
   }
 

@@ -223,34 +223,13 @@
       </footer>
     </section>
 
-    <div v-else-if="errorMessage" class="flex flex-col gap-3">
-      <p
-        role="alert"
-        class="m-0 rounded-md border border-destructive bg-destructive/10 p-3 text-center text-sm text-destructive"
-      >
-        {{ errorMessage }}
-      </p>
-      <Button
-        v-if="sessionRecovery?.action === 'sign_in_again'"
-        variant="secondary"
-        size="lg"
-        class="w-full bg-ink-500 hover:bg-ink-400"
-        :loading="signingIn"
-        :disabled="signingIn"
-        @click="signInAgain"
-      >
-        {{ t('oauth.consent.signInAgain') }}
-      </Button>
-      <Button
-        v-else-if="sessionRecovery?.action === 'retry'"
-        variant="secondary"
-        size="lg"
-        class="w-full bg-ink-500 hover:bg-ink-400"
-        @click="loadChallenge"
-      >
-        {{ t('g.retry') }}
-      </Button>
-    </div>
+    <OAuthConsentError
+      v-else-if="errorMessage"
+      :message="errorMessage"
+      :action-label="recoveryLabel"
+      :loading="signingIn"
+      @action="recover"
+    />
     <p v-else class="m-0 text-center text-sm text-muted-foreground">
       {{ t('oauth.consent.loading') }}
     </p>
@@ -270,6 +249,7 @@ import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import OAuthConsentError from '@/platform/cloud/oauth/OAuthConsentError.vue'
 import {
   OAuthApiError,
   fetchOAuthConsentChallenge,
@@ -318,6 +298,17 @@ const switchingAccount = ref(false)
 const sessionRecovery = ref<SessionRecovery | null>(null)
 const signingIn = ref(false)
 let left = false
+
+const recoveryLabel = computed(() => {
+  switch (sessionRecovery.value?.action) {
+    case 'sign_in_again':
+      return t('oauth.consent.signInAgain')
+    case 'retry':
+      return t('g.retry')
+    default:
+      return undefined
+  }
+})
 
 const signedInAccount = computed(() => {
   if (!flags.oauthConsentSwitchAccountEnabled) return null
@@ -414,6 +405,11 @@ async function recoverSession(oauthRequestId: string) {
 function showSessionError(recovery: SessionRecovery | null = null) {
   errorMessage.value = t('oauth.consent.sessionError')
   sessionRecovery.value = recovery
+}
+
+function recover() {
+  if (sessionRecovery.value?.action === 'retry') void loadChallenge()
+  else void signInAgain()
 }
 
 async function signInAgain() {
