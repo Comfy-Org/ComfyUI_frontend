@@ -34,7 +34,12 @@ registered, so `extend` cannot depend on the order.
    published. Its `beforeRegisterNodeDef` hook records each type the host
    registers and applies the matching extensions to it; its
    `refreshComboInNodes` hook tells `onRefreshed` listeners. The host's hooks
-   are used as they are: no host function changes what it does.
+   are used as they are: no host function changes what it does. The
+   extension is in the extension store's always-enabled list, so a user who
+   switches it off in the extension list does not silently turn off every
+   pack's hooks; the list shows it as read-only, as it shows the other
+   entries the store fixes. The name lives in its own module so the store
+   can name it without depending on the API.
 2. The API keeps its own index of node types: each type its hook heard of and
    each type a pack defined, in the order each first registered, with a
    reference to the host's definition (no copy). A type registered again
@@ -334,8 +339,6 @@ registered, so `extend` cannot depend on the order.
 
 ## Consequences
 
-- A user can disable `Comfy.NodeApi.v4.NodeTypes` in the extension list, as
-  any core extension; packs then hear of no new types.
 - A type a legacy pack registers directly with LiteGraph is not in the index:
   `has` is false for it and `extend` does not apply to it. The core frontend
   types (`Reroute`, `Note`, `PrimitiveNode`) are such types. No stored pack
@@ -361,7 +364,8 @@ registered, so `extend` cannot depend on the order.
   type shows in every document.
 - Host changes: `useComfyApiStore().publish()` registers the extension;
   `themeService.setActiveTheme` calls `useComfyApiStore().reapplyTypeColors()`
-  after it applies a palette.
+  after it applies a palette; the extension store lists the extension as
+  always enabled.
 
 ## What this feature replaces or duplicates, and why
 
