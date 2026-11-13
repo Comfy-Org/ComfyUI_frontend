@@ -261,7 +261,8 @@ vi.mock(
       (_options: Parameters<typeof useTemplateModelRowDownloads>[0]) => ({
         dispose: mocks.rowDownloadDispose,
         request: mocks.rowDownloadRequest,
-        stateFor: mocks.rowDownloadStateFor
+        stateFor: mocks.rowDownloadStateFor,
+        canResume: () => false
       })
     )
   })

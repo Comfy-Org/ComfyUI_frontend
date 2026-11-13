@@ -2,7 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe(
   'Legacy widget visibility mutation',
@@ -123,7 +123,7 @@ test.describe(
     test('accessor-backed canvasOnly follows renderer changes', async ({
       comfyPage
     }) => {
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await comfyPage.actionbar.propertiesButton.click()
       await comfyPage.page.evaluate(() => {
         const kSampler = window.app!.graph.nodes.find(

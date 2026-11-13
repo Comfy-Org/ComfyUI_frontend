@@ -10,6 +10,7 @@ import {
   handoffTab,
   readHandoffState,
   readTabMarker,
+  sessionEnding,
   writeHandoffState,
   writeTabMarker
 } from '@/handoff/handoffTab'
@@ -88,21 +89,16 @@ function settle(env: HandoffBootEnv, state: HandoffState): 'handoff' {
   return 'handoff'
 }
 
-function fromMarker(
-  env: HandoffBootEnv,
-  storageUnreadable: boolean
-): HandoffState | undefined {
+function fromMarker(env: HandoffBootEnv): HandoffState | undefined {
   const marked = readTabMarker(env.marker)
   if (marked === undefined) return undefined
   if (marked !== 'live') return { kind: 'ended', ending: marked }
-  return storageUnreadable
-    ? STORAGE_UNAVAILABLE
-    : { kind: 'ended', ending: 'session_ended' }
+  return { kind: 'ended', ending: 'session_ended' }
 }
 
 function restored(env: HandoffBootEnv, state: HandoffState): HandoffState {
   return state.kind === 'session' && state.session.expiresAt <= env.now()
-    ? { kind: 'ended', ending: 'session_ended' }
+    ? sessionEnding(env.storage, state.session, env.now)
     : state
 }
 
@@ -114,7 +110,7 @@ export async function runHandoffBootstrap(
   const { onHandoffPath, token } = env.capture
   if (!onHandoffPath || token === undefined) {
     if (stored) return settle(env, restored(env, stored))
-    const marked = fromMarker(env, read === 'unreadable')
+    const marked = fromMarker(env)
     if (marked) return settle(env, marked)
     return onHandoffPath
       ? settle(env, { kind: 'ended', ending: 'link_unavailable' })

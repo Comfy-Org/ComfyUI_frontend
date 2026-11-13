@@ -317,3 +317,44 @@ describe('WorkspaceSwitcherPopover', () => {
     expect(screen.queryByText(/You can only own 10 workspaces/)).toBeNull()
   })
 })
+
+describe('WorkspaceSwitcherPopover (the old menu with billing_new_ux_enabled off)', () => {
+  beforeEach(() => {
+    const billingContext = useBillingContext()
+    billingContext.subscription = computed(() => null)
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    distributionMocks.isCloud = true
+  })
+
+  it('keeps the previous switcher: role line, tier badge, no search, old create label', () => {
+    renderComponent({
+      activeWorkspaceId: 'ws-team',
+      workspaces: [
+        createWorkspaceState({
+          id: 'ws-personal',
+          name: 'Personal Workspace',
+          type: 'personal',
+          role: 'owner',
+          subscription_tier: 'PRO',
+          plan_summary: { status: 'paused', plan_name: 'Pro' }
+        }),
+        ...Array.from({ length: 6 }, (_, i) =>
+          createWorkspaceState({
+            id: `ws-${i}`,
+            name: `Team ${i}`,
+            type: 'team',
+            role: 'member',
+            plan_summary: { status: 'active', plan_name: 'Enterprise' }
+          })
+        )
+      ]
+    })
+
+    expect(screen.getByText('Pro')).toBeInTheDocument()
+    expect(screen.getByText('Owner')).toBeInTheDocument()
+    expect(screen.queryByText('Paused')).toBeNull()
+    expect(screen.queryByText('Enterprise')).toBeNull()
+    expect(screen.queryByTestId('workspace-switcher-search')).toBeNull()
+    expect(screen.getByText('Create a team workspace')).toBeInTheDocument()
+  })
+})

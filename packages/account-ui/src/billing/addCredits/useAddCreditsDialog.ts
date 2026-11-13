@@ -51,10 +51,14 @@ export interface AddCreditsPorts {
   readonly watchPayment: (
     landed: (activation?: AutoTopUpActivationOutcome) => void
   ) => () => void
+  /** True when a checkout URL works once: none is created without a reserved tab, and the blocked step requests one again in its own click. */
+  readonly singleUseCheckout?: boolean
   /** True when `createCheckout` sends `autoTopUp` and `watchPayment` reports its outcome; the checkbox shows only then. */
   readonly activatesAutoTopUp?: boolean
   /** After a top-up lands, Platform's Turn on auto top-up link when the served facts offer it, else null. */
   readonly autoTopUpSetupUrl?: () => Promise<string | null>
+  /** False once the host no longer owns the watched checkout; a landing still reading its setup link is then dropped. */
+  readonly ownsCheckout?: () => boolean
 }
 
 export type AddCreditsQuote =
@@ -193,13 +197,13 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   let checkoutScope: AbortController | undefined
   let stopWatch: (() => void) | undefined
   let disposed = false
-  let offeredWithPurchase = false
   let acceptedRequest: AddCreditsAutoTopUpRequest = { kind: 'not_offered' }
 
   function armPaymentWatch() {
     if (stopWatch) return
     stopWatch = ports.watchPayment((activation) => {
       stopWatch?.()
+      stopWatch = undefined
       void land(activation)
     })
   }
@@ -213,14 +217,15 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
   function setupUrlAfterPaying(
     activation: AutoTopUpActivationOutcome | undefined
   ): Promise<string | null> {
-    const asks = activation?.status === 'failed' || !offeredWithPurchase
+    const asks =
+      activation?.status === 'failed' || acceptedRequest.kind === 'not_offered'
     return asks ? setupUrl() : Promise.resolve(null)
   }
 
   async function land(activation?: AutoTopUpActivationOutcome) {
     const url =
       activation?.status === 'on' ? null : await setupUrlAfterPaying(activation)
-    if (disposed) return
+    if (disposed || ports.ownsCheckout?.() === false) return
     dispatch(landedEvent(url, activation))
     if (state.value.step === 'landed') options.onLanded?.()
   }
@@ -229,8 +234,11 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     amountCents: number,
     request: AddCreditsAutoTopUpRequest
   ) {
-    offeredWithPurchase = request.kind !== 'not_offered'
     const tab = ports.reserveTab()
+    if (tab === null && ports.singleUseCheckout) {
+      dispatch({ type: 'tab_blocked', amountCents })
+      return
+    }
     dispatch({
       type: 'checkout_requested',
       amountCents,
@@ -272,7 +280,11 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
 
   function reopenCheckout() {
     const current = state.value
-    if (current.step !== 'checkout_opened' || !toValue(options.facts).canTopUp)
+    if (
+      (current.step !== 'checkout_opened' &&
+        current.step !== 'checkout_blocked') ||
+      !toValue(options.facts).canTopUp
+    )
       return
     return openCheckout(current.amountCents, acceptedRequest)
   }

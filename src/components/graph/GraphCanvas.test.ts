@@ -214,6 +214,11 @@ vi.mock(
   () => ({ useWorkflowAutoSave: vi.fn() })
 )
 
+beforeEach(() => {
+  vi.spyOn(api, 'listUserDataFullInfo').mockResolvedValue([])
+  vi.spyOn(api, 'getGlobalSubgraphs').mockResolvedValue({})
+})
+
 function setRootGraph(graph: LGraph | undefined) {
   mocks.rootGraph = graph
 }

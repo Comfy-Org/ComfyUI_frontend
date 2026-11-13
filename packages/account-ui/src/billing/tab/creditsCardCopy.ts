@@ -49,15 +49,34 @@ export function planUsedPercent(plan: PlanCreditsState): number | null {
   return Math.round(Math.min(Math.max(1 - remaining, 0), 1) * 100)
 }
 
-/** The plan pool's refill or availability line. */
+/** Host-translated strings for the credits flyout breakdown. */
+export interface CreditsBreakdownCopy extends Pick<
+  CreditsCardCopy,
+  | 'planOfPool'
+  | 'refills'
+  | 'refillsAfterPayment'
+  | 'availableUntil'
+  | 'unavailable'
+> {
+  readonly planCredits: string
+  readonly topUpCredits: string
+}
+
+type PlanDateCopy = Pick<
+  CreditsCardCopy,
+  'refills' | 'refillsAfterPayment' | 'availableUntil'
+>
+
+/** The plan pool's refill or availability line; a null cadence keeps the year. */
 export function planDateLine(
   plan: PlanCreditsState,
-  copy: CreditsCardCopy,
-  locale: string
+  copy: PlanDateCopy,
+  locale: string,
+  cadence: 'monthly' | 'yearly' | null = null
 ): string {
   if (plan.planDate.kind === 'afterPayment') return copy.refillsAfterPayment
   const date = plan.planDate.date
-    ? formatPlanDate(plan.planDate.date, locale, null)
+    ? formatPlanDate(plan.planDate.date, locale, cadence)
     : ''
   if (!date) return ''
   return plan.planDate.kind === 'refills'

@@ -27,6 +27,7 @@
   "exports": {
     "./*": "./src/components/*.vue",
     "./*.vue": "./src/components/*.vue",
+    "./lib/badge/badge.variants": "./src/components/badge/badge.variants.ts",
     "./lib/color-picker/types": "./src/components/color-picker/types.ts",
     "./lib/composables/useAttrsClass": "./src/components/composables/useAttrsClass.ts",
     "./lib/composables/usePopoverSizing": "./src/components/composables/usePopoverSizing.ts",
@@ -82,6 +83,11 @@
         "types": "./dist/*.vue.d.ts",
         "import": "./dist/*.vue.js",
         "default": "./dist/*.vue.js"
+      },
+      "./lib/badge/badge.variants": {
+        "types": "./dist/badge/badge.variants.d.ts",
+        "import": "./dist/badge/badge.variants.js",
+        "default": "./dist/badge/badge.variants.js"
       },
       "./lib/color-picker/types": {
         "types": "./dist/color-picker/types.d.ts",

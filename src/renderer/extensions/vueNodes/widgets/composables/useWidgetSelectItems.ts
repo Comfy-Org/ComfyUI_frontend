@@ -167,7 +167,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   function itemNameFor(asset: AssetItem): string {
-    if (toValue(options.isAssetMode)) return getAssetFilename(asset)
+    if (toValue(options.isAssetMode))
+      return asset.loader_path ?? getAssetFilename(asset)
     const filenameForUrl = getAssetUrlFilename(asset)
     const subfolder = getOutputSubfolder(asset)
     const name = subfolder ? `${subfolder}/${filenameForUrl}` : filenameForUrl

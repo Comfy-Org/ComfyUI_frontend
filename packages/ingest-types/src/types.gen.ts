@@ -2194,6 +2194,21 @@ export type BillingCapabilitiesResponse = {
    *
    */
   billing_web_checkout_ui: 'embedded' | 'full_page'
+  /**
+   * Whether a cancel requested now ends the plan today instead of at the
+   * end of the billing period. True only when can_cancel is true, the
+   * workspace payment state is payment_failed or paused, and the provider
+   * confirms its bound live Stripe subscription is past_due or unpaid: the
+   * cancel then ends it immediately, stops payment retries, and bills no
+   * unpaid period. False when can_cancel is false or the cancel is
+   * scheduled for period end, including a provider-paused subscription.
+   * No denied_reasons key explains it. Absent when the live binding or
+   * provider state cannot be verified, on older servers, or when billing
+   * is disabled; absence means unknown. Not authorization: the cancel
+   * route rechecks the provider and its cancel_at is the result.
+   *
+   */
+  cancel_takes_effect_immediately?: boolean
   capabilities: BillingCapabilities
   denied_reason_params?: BillingCapabilityDenialParams
   denied_reasons?: BillingCapabilityDenials
