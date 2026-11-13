@@ -75,7 +75,6 @@ interface RunErrorState {
     MissingResourceAbsorption
   >
   nodeErrors: Record<string, NodeError> | null
-  /** The job whose socket message recorded `nodeErrors`, if one did. */
   nodeErrorsJobId: string | null
   executionError: ExecutionErrorWsMessage | null
   promptError: PromptError | null
