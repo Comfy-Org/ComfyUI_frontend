@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
@@ -126,6 +127,80 @@ describe('WidgetSelectDefault', () => {
     renderComponent(createWidget([raw]), raw, undefined, filenameSummary)
     expect(screen.getByRole('combobox').textContent.trim()).toBe(summary)
     expect(screen.getByRole('combobox')).not.toHaveAttribute('title')
+  })
+
+  it.for([
+    { filename: 'portrait.safetensors', summary: 'portrait' },
+    { filename: 'portrait.SFT', summary: 'portrait' },
+    { filename: 'portrait.SAFETENSORS', summary: 'portrait' },
+    { filename: 'portrait.ckpt', summary: 'portrait.ckpt' },
+    { filename: 'portrait.pt', summary: 'portrait.pt' },
+    { filename: 'portrait.pth', summary: 'portrait.pth' },
+    { filename: 'portrait.bin', summary: 'portrait.bin' },
+    {
+      filename: 'portrait.safetensors.ckpt',
+      summary: 'portrait.safetensors.ckpt'
+    },
+    { filename: '.sft', summary: '.sft' }
+  ])('optionally summarizes $filename as $summary', ({ filename, summary }) => {
+    useSettingStore().settingValues['Comfy.VueNodes.HideSafeModelExtensions'] =
+      true
+    const raw = `studio/models/${filename}`
+    renderComponent(createWidget([raw]), raw, undefined, true)
+
+    expect(screen.getByRole('combobox').textContent.trim()).toBe(summary)
+  })
+
+  it.for([
+    { filenameSummary: false, options: {}, expected: 'studio/model.sft' },
+    {
+      filenameSummary: true,
+      options: { getOptionLabel: () => 'Custom.sft' },
+      expected: 'Custom.sft'
+    }
+  ])(
+    'preserves $expected with extension hiding enabled',
+    ({ filenameSummary, options, expected }) => {
+      useSettingStore().settingValues[
+        'Comfy.VueNodes.HideSafeModelExtensions'
+      ] = true
+      const raw = 'studio/model.sft'
+      renderComponent(
+        createWidget([raw], options),
+        raw,
+        undefined,
+        filenameSummary
+      )
+
+      expect(screen.getByRole('combobox').textContent.trim()).toBe(expected)
+    }
+  )
+
+  it('updates summaries live without hiding option extensions or changing raw selections', async () => {
+    const settings = useSettingStore()
+    const first = 'studio/model.safetensors'
+    const second = 'studio/model.sft'
+    const { user, onUpdate, rerender } = renderComponent(
+      createWidget([first, second]),
+      first,
+      undefined,
+      true
+    )
+    settings.settingValues['Comfy.VueNodes.HideSafeModelExtensions'] = true
+    await nextTick()
+    expect(screen.getByRole('combobox').textContent.trim()).toBe('model')
+
+    await openDropdown(user)
+    expect(
+      screen.getByRole('option', { name: 'model.safetensors' })
+    ).toBeVisible()
+    await user.click(screen.getByRole('option', { name: 'model.sft' }))
+    expect(onUpdate).toHaveBeenCalledWith(second)
+    await rerender({ modelValue: second })
+
+    settings.settingValues['Comfy.VueNodes.HideSafeModelExtensions'] = false
+    await nextTick()
+    expect(screen.getByRole('combobox').textContent.trim()).toBe('model.sft')
   })
 
   it.for([

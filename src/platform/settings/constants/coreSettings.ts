@@ -1222,6 +1222,15 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.27.1'
   },
   {
+    id: 'Comfy.VueNodes.HideSafeModelExtensions',
+    category: ['Comfy', 'Nodes 2.0', 'HideSafeModelExtensions'],
+    name: 'Hide .safetensors and .sft extensions',
+    type: 'boolean',
+    defaultValue: false,
+    tooltip:
+      'Hide these extensions in closed model widgets. Other extensions remain visible; dropdown options and saved values keep full filenames.'
+  },
+  {
     id: 'Comfy.AppBuilder.VueNodeSwitchDismissed',
     name: 'App Builder Vue Node switch dismissed',
     type: 'hidden',
