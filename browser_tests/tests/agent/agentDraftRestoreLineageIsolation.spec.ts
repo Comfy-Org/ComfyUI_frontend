@@ -90,12 +90,14 @@ test.describe(
               thread_id: THREAD_ID,
               workflow_id: WORKFLOW_ID
             },
-            () =>
-              seedAgentDraftLineage(
-                page,
-                restoredLineage.workflowId,
-                restoredLineage.lineageSeq
-              )
+            {
+              beforeAccept: () =>
+                seedAgentDraftLineage(
+                  page,
+                  restoredLineage.workflowId,
+                  restoredLineage.lineageSeq
+                )
+            }
           )
           await mockWorkflowPersistence(page, WORKFLOW_ID)
         }

@@ -39,6 +39,7 @@ export class AgentPanel {
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
   public readonly creditTransitionNotice: Locator
+  public readonly currentHistorySection: Locator
   public readonly debugHeading: Locator
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
@@ -46,6 +47,7 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly footer: Locator
   public readonly historyButton: Locator
+  public readonly historyHeading: Locator
   public readonly hostFenceNotice: Locator
   public readonly loadFailedMessage: Locator
   public readonly loadRetryButton: Locator
@@ -65,6 +67,7 @@ export class AgentPanel {
   public readonly userMessageBubbles: Locator
   private readonly toasts: ToastHelper
   public readonly workflowPicker: Locator
+  public readonly workflowSearch: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
 
@@ -114,6 +117,10 @@ export class AgentPanel {
     this.creditTransitionNotice = this.root.getByTestId(
       'agent-credit-transition-notice'
     )
+    this.currentHistorySection = this.root.getByRole('region', {
+      name: enMessages.agent.historyCurrent,
+      exact: true
+    })
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
@@ -123,7 +130,12 @@ export class AgentPanel {
     this.fileInput = this.root.getByTestId('agent-file-input')
     this.footer = this.root.getByTestId('agent-panel-footer')
     this.historyButton = this.root.getByRole('button', {
-      name: enMessages.agent.showChatHistory
+      name: enMessages.agent.showChatHistory,
+      exact: true
+    })
+    this.historyHeading = this.root.getByRole('heading', {
+      name: enMessages.agent.history,
+      exact: true
     })
     this.hostFenceNotice = this.root.getByTestId('agent-host-fence-notice')
     this.loadFailedMessage = this.dockedPanelShell.getByText(
@@ -164,6 +176,9 @@ export class AgentPanel {
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
+    this.workflowSearch = page.getByPlaceholder(
+      enMessages.agent.searchWorkflows
+    )
     this.workflowSwitch = this.root.getByRole('switch', {
       name: 'Workflow JSON'
     })
@@ -405,6 +420,11 @@ export class AgentPanel {
 
     await expect(target).toBeVisible({ timeout })
     return target
+  }
+
+  async openHistory(): Promise<void> {
+    await this.historyButton.click()
+    await expect(this.historyHeading).toBeVisible()
   }
 
   async close(): Promise<void> {

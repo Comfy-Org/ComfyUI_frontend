@@ -21,7 +21,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 const THREAD_ID = '3b7e2d1c-9a4f-4e6b-8c5d-1f2a3b4c5d6e'
 const TURN_ID = '6c5d4e3f-2a1b-4c9d-8e7f-0a1b2c3d4e5f'
 const WORKFLOW_ID = '0d9c8b7a-6f5e-4d3c-b2a1-f0e9d8c7b6a5'
-const TWIN_WORKFLOW_ID = '1e0d9c8b-7a6f-4e5d-c3b2-a1f0e9d8c7b6'
 const WORKFLOW_NAME = 'Image and video'
 const THREAD_TITLE = 'Lighthouse clip'
 const USER_REQUEST = 'Make a lighthouse image, then a short video of it'
@@ -89,23 +88,24 @@ const TRANSCRIPT: AgentMessage[] = [
   }
 ]
 const CLOUD_WORKFLOWS: WorkflowListResponse = {
-  data: [WORKFLOW_ID, TWIN_WORKFLOW_ID].map((id) => ({
-    id,
-    name: WORKFLOW_NAME,
-    created_at: SAVED_AT,
-    updated_at: SAVED_AT,
-    created_by: 'test-user-e2e',
-    latest_version: 1
-  })),
-  pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+  data: [
+    {
+      id: WORKFLOW_ID,
+      name: WORKFLOW_NAME,
+      created_at: SAVED_AT,
+      updated_at: SAVED_AT,
+      created_by: 'test-user-e2e',
+      latest_version: 1
+    }
+  ],
+  pagination: { offset: 0, limit: 100, total: 1, has_more: false }
 }
 const SAVED_FILES: UserDataFullInfo[] = [
-  `${WORKFLOW_NAME}.json`,
-  `drafts/${WORKFLOW_NAME}.json`
-].map((path) => ({ path, modified: Date.parse(SAVED_AT), size: 64 }))
+  { path: `${WORKFLOW_NAME}.json`, modified: Date.parse(SAVED_AT), size: 64 }
+]
 
 test.describe(
-  'Agent history reports an unresolvable chat workflow',
+  'Agent history reports a chat workflow that fails to open',
   { tag: ['@cloud', '@agent'] },
   () => {
     test.beforeEach(async ({ page, agentFlagEnabled }) => {
@@ -127,11 +127,14 @@ test.describe(
             if (dir !== 'workflows') return route.fallback()
             return route.fulfill(jsonRoute(SAVED_FILES))
           })
+          await page.route('**/api/userdata/workflows%2F*', (route) =>
+            route.fulfill({ status: 500, body: 'workflow unavailable' })
+          )
         }
       })
     })
 
-    test('logs why a chat whose workflow cannot be resolved does not open', async ({
+    test('logs why a chat whose saved workflow fails to load does not open', async ({
       page
     }) => {
       const agentPanel = new AgentPanel(page)
