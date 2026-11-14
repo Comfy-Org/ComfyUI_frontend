@@ -37,6 +37,7 @@ class JobsApiError extends Error {}
 
 interface FetchJobsOptions {
   throwOnError?: boolean
+  cappedTotal?: boolean
 }
 
 export interface FetchHistoryPageResult {
@@ -59,7 +60,8 @@ async function fetchJobsRaw(
   options?: FetchJobsOptions
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
-  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
+  const cappedTotalParam = options?.cappedTotal ? '&capped_total=true' : ''
+  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}${cappedTotalParam}`
   try {
     const res = await fetchApi(url)
     if (!res.ok) {

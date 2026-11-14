@@ -1154,9 +1154,74 @@ describe(assetService.getAssetsByTag, () => {
     expect(params.get('include_tags')).toBe('input')
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
+
+  it.for([
+    { runtime: 'cloud', isCloud: true, expected: 'true' },
+    { runtime: 'local', isCloud: false, expected: null }
+  ])(
+    'sends capped_total=$expected on $runtime',
+    async ({ isCloud, expected }) => {
+      mockDistributionState.isCloud = isCloud
+      onTestFinished(() => {
+        mockDistributionState.isCloud = false
+      })
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
+      )
+
+      await assetService.getAssetsByTag('input')
+
+      const requestedUrl = vi.mocked(api.fetchApi).mock.calls[0]?.[0]
+      const params = new URL(requestedUrl, 'http://localhost').searchParams
+      expect(params.get('capped_total')).toBe(expected)
+    }
+  )
 })
 
 describe(assetService.getAllAssetsByTag, () => {
+  it('walks every page while has_more holds when the total is capped', async () => {
+    mockDistributionState.isCloud = true
+    onTestFinished(() => {
+      mockDistributionState.isCloud = false
+    })
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            validAsset({ id: 'a', tags: ['input'] }),
+            validAsset({ id: 'b', tags: ['input'] })
+          ],
+          { hasMore: true, total: 2, nextCursor: 'cursor-page-2' }
+        )
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            validAsset({ id: 'c', tags: ['input'] }),
+            validAsset({ id: 'd', tags: ['input'] })
+          ],
+          { hasMore: true, total: 2, nextCursor: 'cursor-page-3' }
+        )
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'e', tags: ['input'] })], {
+          total: 2
+        })
+      )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 2
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['a', 'b', 'c', 'd', 'e'])
+    const cappedTotals = vi
+      .mocked(api.fetchApi)
+      .mock.calls.map(([url]) =>
+        new URL(url, 'http://localhost').searchParams.get('capped_total')
+      )
+    expect(cappedTotals).toEqual(['true', 'true', 'true'])
+  })
+
   it('walks pages by keyset cursor with include_public=true', async () => {
     vi.mocked(api.fetchApi)
       .mockResolvedValueOnce(
