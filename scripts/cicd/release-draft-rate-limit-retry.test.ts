@@ -38,8 +38,10 @@ const stepNamed = (name: string) => {
   return step
 }
 
+const releaseToken = stepNamed('Create release token')
 const firstAttempt = stepNamed('Create release')
 const waitStep = stepNamed('Wait for release token rate limit reset')
+const refreshToken = stepNamed('Refresh release token')
 const retry = stepNamed('Retry create release')
 
 const writeStub = (dir: string, name: string, body: string) => {
@@ -85,6 +87,20 @@ describe('draft_release rate limit recovery', () => {
 
   it('checks the quota of the token the release steps use', () => {
     expect(waitStep.env?.GH_TOKEN).toBe(firstAttempt.with?.token)
+  })
+
+  it('mints a fresh App token after the wait for the retry to use', () => {
+    const order = [waitStep, refreshToken, retry].map((s) => steps.indexOf(s))
+    expect(order).toEqual([...order].sort((a, b) => a - b))
+    expect(refreshToken.uses).toBe(releaseToken.uses)
+    expect(refreshToken.with).toEqual(releaseToken.with)
+    expect(refreshToken.if).toContain(
+      "steps.create_release.outcome == 'failure'"
+    )
+    expect(refreshToken.if).toContain("vars.RELEASE_APP_CLIENT_ID != ''")
+    expect(retry.with?.token).toMatch(
+      /^\$\{\{ steps\.retry_token\.outputs\.token \|\| steps\.release_token\.outputs\.token \|\| /
+    )
   })
 
   it('fails the job when the retry fails', () => {
