@@ -50,6 +50,10 @@ const routeExplainsError = computed(() => {
   )
 })
 
+const leavingEndedHandoff = computed(
+  () => handoffTab.value !== undefined && !isHandoffPath(route.path)
+)
+
 /** A new key is a new scope, so the shell remounts with a fresh client. */
 const scopeKey = computed(() =>
   billedScope.value
@@ -65,5 +69,5 @@ const scopeKey = computed(() =>
   <BillingShell v-else-if="scopeKey" :key="scopeKey">
     <RouterView />
   </BillingShell>
-  <RouterView v-else />
+  <RouterView v-else-if="!leavingEndedHandoff" />
 </template>

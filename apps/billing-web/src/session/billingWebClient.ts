@@ -88,8 +88,23 @@ export function createBillingWebClient(
   return composeBillingWebClient(transport, sessionBillingScopeSource(session))
 }
 
+const SESSION_ENDING_REFUSALS = new Map<number, ReadonlySet<unknown>>([
+  [401, new Set(['INVALID_CREDENTIAL'])],
+  [
+    403,
+    new Set([
+      'HANDOFF_DISABLED',
+      'sso_required',
+      'account_outside_organization',
+      'personal_workspace_disabled',
+      'workspace_access_denied'
+    ])
+  ]
+])
+
 async function isScopedSessionRefusal(response: Response): Promise<boolean> {
-  if (response.status !== 401) return false
+  const endingCodes = SESSION_ENDING_REFUSALS.get(response.status)
+  if (endingCodes === undefined) return false
   const body: unknown = await response
     .clone()
     .json()
@@ -98,7 +113,7 @@ async function isScopedSessionRefusal(response: Response): Promise<boolean> {
     typeof body === 'object' &&
     body !== null &&
     'code' in body &&
-    body.code === 'INVALID_CREDENTIAL'
+    endingCodes.has(body.code)
   )
 }
 
