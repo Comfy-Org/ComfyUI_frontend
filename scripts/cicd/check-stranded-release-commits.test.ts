@@ -123,6 +123,59 @@ describe('evaluateLine', () => {
     expect(findings.some((f) => f.kind === 'published-version-lag')).toBe(true)
   })
 
+  it('reports the lag as a notice when this run was triggered by releasing that tag', () => {
+    const { findings, failed } = evaluateLine({
+      ...line,
+      publishedVersion: '1.47.9',
+      commits: [],
+      justPublishedTag: 'v1.47.10'
+    })
+
+    expect(failed).toBe(false)
+    expect(findings).toHaveLength(1)
+    expect(findings[0]).toMatchObject({
+      kind: 'published-version-lag',
+      severity: 'notice'
+    })
+  })
+
+  it('still fails the lag when a different tag triggered the run', () => {
+    const { failed } = evaluateLine({
+      ...line,
+      publishedVersion: '1.47.9',
+      commits: [],
+      justPublishedTag: 'v1.48.2'
+    })
+
+    expect(failed).toBe(true)
+  })
+
+  it('still fails stranded fix commits on the line that was just released', () => {
+    const { failed } = evaluateLine({
+      ...line,
+      publishedVersion: '1.47.9',
+      commits: [{ sha: 'c3', subject: 'fix: keep the draft' }],
+      justPublishedTag: 'v1.47.10'
+    })
+
+    expect(failed).toBe(true)
+  })
+
+  it('reports a missing published version as a notice for the tag just released', () => {
+    const { findings, failed } = evaluateLine({
+      ...line,
+      publishedVersion: null,
+      commits: [],
+      justPublishedTag: 'v1.47.10'
+    })
+
+    expect(failed).toBe(false)
+    expect(findings[0]).toMatchObject({
+      kind: 'published-version-missing',
+      severity: 'notice'
+    })
+  })
+
   it('treats a missing published version as a failure rather than passing silently', () => {
     const { failed } = evaluateLine({
       ...line,

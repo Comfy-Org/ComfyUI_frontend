@@ -36,6 +36,10 @@ jobs:
 
       - name: Check consumed release lines
         id: check
+        env:
+          # On `release: published` runs PyPI publishing for this tag has not
+          # finished yet, so the script reports its lag as a notice.
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           set -o pipefail
           pnpm exec tsx scripts/cicd/check-stranded-release-commits.ts 2>&1 | tee report.txt
