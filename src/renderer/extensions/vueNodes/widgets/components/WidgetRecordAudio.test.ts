@@ -56,6 +56,8 @@ vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
 import type { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
 import type { useAudioWaveform } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioWaveform'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import WidgetRecordAudio from './WidgetRecordAudio.vue'
 
 type RecorderOptions = NonNullable<Parameters<typeof useAudioRecorder>[0]>
@@ -126,7 +128,12 @@ function renderWidget(props: { readonly?: boolean; nodeId?: NodeId } = {}) {
       plugins: [i18n, getActivePinia()!],
       stubs: { Button: ButtonStub }
     },
-    props: { readonly: false, nodeId: toNodeId('n1'), ...props }
+    props: {
+      readonly: false,
+      nodeId: toNodeId('n1'),
+      widget: { name: 'audioUI', type: 'audio_record', value: undefined },
+      ...props
+    }
   })
 }
 
@@ -152,6 +159,7 @@ describe('WidgetRecordAudio', () => {
     waveform.waveformBars.value = []
 
     appMock.app.canvas.graph.getNodeById.mockReset().mockReturnValue(null)
+    useCanvasStore().currentGraph = app.canvas.graph
     isDOMWidgetMock.mockReset().mockReturnValue(false)
   })
 

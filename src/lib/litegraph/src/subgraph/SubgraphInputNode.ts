@@ -4,7 +4,6 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
@@ -25,7 +24,6 @@ import type {
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
@@ -40,6 +38,7 @@ export class SubgraphInputNode
   implements Positionable
 {
   readonly id: NodeId = SUBGRAPH_INPUT_ID
+  readonly slotDirection = 'output'
 
   readonly emptySlot: EmptySubgraphInput = new EmptySubgraphInput(this)
 
@@ -53,38 +52,24 @@ export class SubgraphInputNode
 
   get slotAnchorX() {
     const [x, , width] = this.boundingRect
-    return x + width - SubgraphIONodeBase.roundedRadius
+    return x + width - this.slotInset
   }
 
-  override onPointerDown(
-    e: CanvasPointerEvent,
-    pointer: CanvasPointer,
-    linkConnector: LinkConnector
+  override arrange(): void {
+    const [requestedWidth, requestedHeight] = this.size
+    super.arrange()
+    const [fittedWidth, fittedHeight] = this.size
+    this.size = [
+      Math.max(requestedWidth, fittedWidth),
+      Math.max(requestedHeight, fittedHeight)
+    ]
+  }
+
+  protected override dragNewLink(
+    linkConnector: LinkConnector,
+    slot: SubgraphInput
   ): void {
-    // Left-click handling for dragging connections
-    if (e.button === 0) {
-      for (const slot of this.allSlots) {
-        // Check if click is within the full slot area (including label)
-        if (slot.boundingRect.containsXy(e.canvasX, e.canvasY)) {
-          pointer.onDragStart = () => {
-            linkConnector.dragNewFromSubgraphInput(this.subgraph, this, slot)
-          }
-          pointer.onDragEnd = (eUp) => {
-            linkConnector.dropLinks(this.subgraph, eUp)
-          }
-          pointer.onDoubleClick = () => {
-            this.handleSlotDoubleClick(slot, e)
-          }
-          pointer.finally = () => {
-            linkConnector.reset(true)
-          }
-        }
-      }
-      // Check for right-click
-    } else if (e.button === 2) {
-      const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
-      if (slot) this.showSlotContextMenu(slot, e)
-    }
+    linkConnector.dragNewFromSubgraphInput(this.subgraph, this, slot)
   }
 
   /** @inheritdoc */

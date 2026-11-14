@@ -193,7 +193,6 @@ export function useSlotLinkInteraction({
     selectSlotLinks(app.canvas, node, type, index, layout.position)
   }
 
-  // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
   const dragReveal = useSlotLinkReveal({ nodeId, index, type, kind: 'drag' })
 
@@ -527,7 +526,6 @@ export function useSlotLinkInteraction({
     raf.schedule()
   }
 
-  // Attempt to finalize by connecting to a DOM slot candidate
   const tryConnectToCandidate = (
     candidate: SlotDropCandidate | null
   ): boolean => {
@@ -555,7 +553,6 @@ export function useSlotLinkInteraction({
     )
   }
 
-  // Attempt to finalize by dropping on a reroute under the pointer
   const tryConnectViaRerouteAtPointer = (): boolean => {
     const graph = app.canvas.graph
     const adapter = activeAdapter
@@ -649,7 +646,11 @@ export function useSlotLinkInteraction({
     )
     const hasConnected = connectByPriority(dropTarget, snappedCandidate)
 
-    if (!hasConnected && dropTarget === app.canvas.canvas) {
+    const isCanvasSurface =
+      dropTarget === app.canvas.canvas ||
+      (dropTarget instanceof Element &&
+        dropTarget.closest('[data-subgraph-io]') !== null)
+    if (!hasConnected && isCanvasSurface) {
       activeAdapter?.dropOnCanvas(canvasEvent)
     }
 
@@ -797,8 +798,6 @@ export function useSlotLinkInteraction({
     if (!wasConnecting && activeAdapter.linkConnector.isConnecting) {
       dragReveal.revealLinks()
       const { linkConnector } = activeAdapter
-      // Escape on the canvas resets the connector without ending this
-      // pointer session. Check after dispatch, since a listener may veto it.
       linkConnector.events.addEventListener(
         'reset',
         () =>

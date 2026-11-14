@@ -662,8 +662,7 @@ test(
     const seedIOSlot = await comfyPage.subgraph.getInputSlot('seed')
 
     await test.step('Make second INT typed connection', async () => {
-      const toPos = await seedIOSlot.getOpenSlotPosition()
-      await seedSlot.dragTo(comfyPage.canvas, { targetPosition: toPos })
+      await seedSlot.dragTo(comfyPage.subgraph.addInputSocket)
       const isConnected = () => comfyPage.vueNodes.isSlotConnected(seedSlot)
       await expect.poll(isConnected).toBe(true)
     })
@@ -671,8 +670,19 @@ test(
     const rawClip = await comfyPage.subgraph.getInputBounds()
     const absolutePos = await comfyPage.canvasOps.toAbsolute(rawClip)
     const clip = { ...rawClip, ...absolutePos }
-    await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
-    const twoLinkScreenshot = await comfyPage.page.screenshot({ clip })
+    const portNames = () =>
+      comfyPage.subgraph.inputPorts.evaluateAll((elements) =>
+        elements.map((element) => element.getAttribute('aria-label'))
+      )
+    const inputLinkCounts = () =>
+      comfyPage.page.evaluate(() =>
+        app!.canvas.subgraph?.inputs.map(({ name, linkIds }) => ({
+          name,
+          links: linkIds.length
+        }))
+      )
+    const twoLinkPorts = await portNames()
+    const twoLinkInputs = await inputLinkCounts()
 
     const stepsSlot = ksampler.getSlot('steps')
 
@@ -680,7 +690,8 @@ test(
       await stepsSlot.hover()
       await stepsSlot.click({ trial: true })
       await comfyPage.page.mouse.down()
-      await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
+      const seedPos = await seedIOSlot.getPosition()
+      await comfyPage.page.mouse.move(seedPos.x, seedPos.y)
 
       await expectRegionScreenshot(
         comfyPage.page,
@@ -707,14 +718,13 @@ test(
       expect(await hasSnap()).toBe(false)
 
       const emptySlotPos = await seedIOSlot.getOpenSlotPosition()
-      await comfyPage.canvas.hover({ position: emptySlotPos })
+      await comfyPage.page.mouse.move(emptySlotPos.x, emptySlotPos.y)
       await comfyPage.page.mouse.down()
       const { width, height } = (await stepsSlot.boundingBox())!
       await stepsSlot.hover({ position: { x: (width * 3) / 4, y: height / 2 } })
       await expect.poll(hasSnap).toBe(true)
       await comfyPage.page.mouse.up()
 
-      //move hover off the slot
       await ksampler.title.hover()
     })
 
@@ -731,9 +741,8 @@ test(
 
       await expect(slotParent).toHaveCSS('opacity', '0')
 
-      await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
-      const postScreenshot = await comfyPage.page.screenshot({ clip })
-      expect(postScreenshot).toStrictEqual(twoLinkScreenshot)
+      await expect.poll(portNames).toEqual(twoLinkPorts)
+      await expect.poll(inputLinkCounts).toEqual(twoLinkInputs)
     })
   }
 )

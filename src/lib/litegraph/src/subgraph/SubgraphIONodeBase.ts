@@ -16,7 +16,11 @@ import type {
   Positionable,
   CanvasColour
 } from '@comfyorg/graph-model/interfaces'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  PointTuple as Point,
+  Size2D as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotDirection } from '@comfyorg/graph-model/slotId'
 import type {
   Hoverable,
   CanvasPointerEvent
@@ -27,6 +31,7 @@ import type {
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { CanvasItem } from '@comfyorg/graph-model/globalEnums'
@@ -50,9 +55,24 @@ export abstract class SubgraphIONodeBase<
   private readonly _boundingRect: Rectangle = new Rectangle()
 
   abstract readonly id: NodeId
+  abstract readonly slotDirection: SlotDirection
+
+  get measured(): Size | undefined {
+    return layoutStore.contentSizeOf(this.subgraph.id, this.id)
+  }
+
+  protected get slotInset(): number {
+    return this.measured
+      ? -LiteGraph.NODE_SLOT_HEIGHT / 2
+      : SubgraphIONodeBase.roundedRadius
+  }
 
   get boundingRect(): Rectangle {
-    return this._boundingRect
+    const { measured } = this
+    if (!measured) return this._boundingRect
+    const [x, y, width] = this._boundingRect
+    const offsetX = this.slotDirection === 'output' ? width - measured.width : 0
+    return new Rectangle(x + offsetX, y, measured.width, measured.height)
   }
 
   get selected(): boolean {
@@ -78,19 +98,19 @@ export abstract class SubgraphIONodeBase<
   abstract readonly emptySlot: EmptySubgraphInput | EmptySubgraphOutput
 
   get pos() {
-    return this.boundingRect.pos
+    return this._boundingRect.pos
   }
 
   set pos(value) {
-    this.boundingRect.pos = value
+    this._boundingRect.pos = value
   }
 
   get size() {
-    return this.boundingRect.size
+    return this._boundingRect.size
   }
 
   set size(value) {
-    this.boundingRect.size = value
+    this._boundingRect.size = value
   }
 
   protected get sideLineWidth(): number {
@@ -125,16 +145,51 @@ export abstract class SubgraphIONodeBase<
     return true
   }
 
-  abstract onPointerDown(
+  protected abstract dragNewLink(
+    linkConnector: LinkConnector,
+    slot: TSlot
+  ): void
+
+  onPointerDown(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,
     linkConnector: LinkConnector
-  ): void
+  ): void {
+    const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
+    if (!slot) return
+    if (e.button === 2) {
+      this.showSlotContextMenu(slot, e)
+      return
+    }
+    if (e.button !== 0) return
+
+    if (
+      LiteGraph.ctrl_alt_click_do_break_link &&
+      (e.ctrlKey || e.metaKey) &&
+      e.altKey &&
+      !e.shiftKey
+    ) {
+      pointer.onClick = () => {
+        this.subgraph.beforeChange()
+        slot.disconnect()
+        this.subgraph.afterChange()
+      }
+      return
+    }
+    pointer.onDragStart = () => this.dragNewLink(linkConnector, slot)
+    pointer.onDragEnd = (eUp) => linkConnector.dropLinks(this.subgraph, eUp)
+    pointer.onDoubleClick = () => this.handleSlotDoubleClick(slot, e)
+    pointer.finally = () => linkConnector.reset(true)
+  }
 
   // #region Hoverable
 
   containsPoint(point: Point): boolean {
-    return this.boundingRect.containsPoint(point)
+    return (
+      this.boundingRect.containsPoint(point) ||
+      (!!this.measured &&
+        this.allSlots.some((slot) => slot.boundingRect.containsPoint(point)))
+    )
   }
 
   abstract get slotAnchorX(): number
@@ -315,24 +370,33 @@ export abstract class SubgraphIONodeBase<
     )
   }
 
-  /** Arrange the slots in this node. */
   arrange(): void {
     const { minWidth, roundedRadius } = SubgraphIONodeBase
     const [, y] = this.boundingRect
+    const { measured } = this
     const x = this.slotAnchorX
 
     let maxWidth = minWidth
     let currentY = y + roundedRadius
 
-    for (const slot of this.allSlots) {
+    for (const [index, slot] of this.allSlots.entries()) {
       const [slotWidth, slotHeight] = slot.measure()
+      const center = layoutStore.getSlotOffset(
+        this.subgraph.id,
+        this.id,
+        index,
+        this.slotDirection,
+        'expanded'
+      )
+      if (center) currentY = y + center.y - slotHeight / 2
       slot.arrange([x, currentY, slotWidth, slotHeight])
 
       currentY += slotHeight
       if (slotWidth > maxWidth) maxWidth = slotWidth
     }
 
-    this.size = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
+    if (!measured)
+      this.size = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
   }
 
   draw(
@@ -345,6 +409,7 @@ export abstract class SubgraphIONodeBase<
       | SubgraphOutput,
     editorAlpha?: number
   ): void {
+    if (this.measured) return
     const { lineWidth, strokeStyle, fillStyle, font, textBaseline } = ctx
     this.drawProtected(ctx, colorContext, fromSlot, editorAlpha)
     Object.assign(ctx, {
@@ -396,7 +461,7 @@ export abstract class SubgraphIONodeBase<
   asSerialisable(): ExportedSubgraphIONode {
     return {
       id: serializeNodeId(this.id),
-      bounding: this.boundingRect.export(),
+      bounding: this._boundingRect.export(),
       pinned: this.pinned ? true : undefined
     }
   }

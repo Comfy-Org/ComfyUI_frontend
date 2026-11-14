@@ -1,6 +1,8 @@
-import { computed, toValue } from 'vue'
+import { toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import { app } from '@/scripts/app'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
@@ -10,9 +12,10 @@ export function useWidgetHostNode(
   nodeLocatorId: MaybeRefOrGetter<NodeLocatorId | undefined>,
   nodeId: MaybeRefOrGetter<NodeId>
 ) {
-  return computed(() => {
+  const canvasStore = useCanvasStore()
+  return useLiveGraphNode(() => {
     const locatorId = toValue(nodeLocatorId)
     const owner = locatorId && getNodeByLocatorId(app.rootGraph, locatorId)
-    return owner || app.canvas.graph?.getNodeById(toValue(nodeId))
+    return owner || canvasStore.currentGraph?.getNodeById(toValue(nodeId))
   })
 }

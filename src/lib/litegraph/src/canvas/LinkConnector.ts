@@ -1,4 +1,5 @@
 import type {
+  LGraph,
   LGraphNode,
   Reroute,
   SubgraphInput,
@@ -10,6 +11,7 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 
 import {
@@ -26,13 +28,11 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import type {
-  ItemLocator,
-  LinkNetwork
-} from '@comfyorg/graph-model/linkNetwork'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
 
 import { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 
@@ -88,6 +88,18 @@ interface LinkConnectorExport {
   floatingLinks: LLink[]
   state: LinkConnectorState
   network: LinkNetwork
+}
+
+export function getNodeOrSlotOwnerOnPos(
+  graph: LGraph,
+  x: number,
+  y: number,
+  nodeList?: LGraphNode[]
+): LGraphNode | undefined {
+  const node = graph.getNodeOnPos(x, y, nodeList)
+  if (node || !litegraph().vueNodesMode) return node ?? undefined
+  const slot = getSlotLayoutAtPoint(graph, { x, y })
+  return graph.getNodeById(slot?.nodeId) ?? undefined
 }
 
 /**
@@ -701,7 +713,7 @@ export class LinkConnector {
    * Connects the links being dropped
    * @param event Contains the drop location, in canvas space
    */
-  dropLinks(locator: ItemLocator, event: CanvasPointerEvent): void {
+  dropLinks(locator: LGraph, event: CanvasPointerEvent): void {
     if (!this.isConnecting) {
       const mayContinue = this.events.dispatch('before-drop-links', {
         renderLinks: this.renderLinks,
@@ -713,19 +725,18 @@ export class LinkConnector {
     try {
       const { canvasX, canvasY } = event
 
-      const ioNode = locator.getIoNodeOnPos?.(canvasX, canvasY)
+      const ioNode =
+        locator instanceof Subgraph && locator.getIoNodeOnPos(canvasX, canvasY)
       if (ioNode) {
         this.dropOnIoNode(ioNode, event)
         return
       }
 
-      const node = locator.getNodeOnPos(canvasX, canvasY) ?? undefined
+      const node = getNodeOrSlotOwnerOnPos(locator, canvasX, canvasY)
       if (node) {
         this.dropOnNode(node, event)
       } else {
-        // Get reroute if no node is found
         const reroute = locator.getRerouteOnPos(canvasX, canvasY)
-        // Drop output->input link on reroute is not impl.
         if (reroute && this.isRerouteValidDrop(reroute)) {
           this.dropOnReroute(reroute, event)
         } else {

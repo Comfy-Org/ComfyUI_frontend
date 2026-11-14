@@ -46,6 +46,7 @@ import {
   executionIdFromState,
   executionIdToNodeLocatorId,
   getNodeByState,
+  locatorIdFromState,
   subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
@@ -345,6 +346,7 @@ interface WidgetProcessingContext {
   /** Root graph id, known even before `app.isGraphReady`. */
   rootGraphId: string | undefined
   hostNode: LGraphNode | null
+  hostNodeLocatorId: NodeLocatorId | undefined
   liveWidgets: Map<WidgetId, IBaseWidget>
   slotMetadata: Map<string, WidgetSlotMetadata>
   nodeExecId: NodeExecutionId | null
@@ -413,6 +415,7 @@ function processWidget(
     label: widgetState.label,
     linkedUpstream,
     nodeLocatorId: widgetNodeLocatorId(ctx, bareWidgetId, sourceExecutionId),
+    hostNodeLocatorId: ctx.hostNodeLocatorId,
     options: widgetOptions,
     spec: live
       ? ctx.nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
@@ -513,6 +516,7 @@ export function computeProcessedWidgets({
     rootGraph,
     rootGraphId: graphId,
     hostNode,
+    hostNodeLocatorId: locatorIdFromState(nodeData, graphId) ?? undefined,
     liveWidgets,
     slotMetadata,
     nodeExecId,
