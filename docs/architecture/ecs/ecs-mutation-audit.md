@@ -5,9 +5,7 @@ Verified: 2026-08-20 against `13a302eadda871b939b148ecb87e3d845ceefff2`
 
 This audit classifies current graph-domain writes and compares them with
 [ADR-CRDT-LAYOUT-0003](../../adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)
-and [ADR-ECS-0008](../../adr/ECS-0008-entity-component-system.md). The related
-[decision traceability matrix](ecs-decision-traceability.md) maps each claim to
-the wider design set.
+and [ADR-ECS-0008](../../adr/ECS-0008-entity-component-system.md).
 
 ## Classification
 
@@ -44,8 +42,8 @@ reactive, but that is not command-driven mutation.
 | Properties and extension state | `node.properties`, callback-owned fields, node-specific widgets                                                               | Direct class writes                        | Open-ended extension data has no schema, validation, command form, or deterministic reducer.                                                 |
 | Extension persistence hooks    | node/graph `onSerialize` mutate complete DTOs; generic configure assignment and `onConfigure` mutate live objects             | Extension-controlled orchestration         | Hooks bypass canonical ownership, schemas, validation, replay, transactions, and defined undo behavior.                                      |
 | Prompt serialization hooks     | `graphToPrompt` awaits widget `serializeValue`; hooks may mutate shadows/UI, randomize values, capture media, or upload files | Extension-controlled effects               | Prompt assembly is not a pure store read; effects and durable mutations have no command, idempotency, replay, transaction, or undo contract. |
-| Unknown-node fallback          | `node.last_serialization` assigned and patched by load/import paths                                                           | Direct class writes                        | Full opaque node wire state can override store-backed serialization without scoped ownership or a command boundary.                          |
-| Execution order                | `computeExecutionOrder` assigns `node.order`; configure restores and serialization emits it                                   | Derived projection plus direct class state | Derived scheduling data can become an independent persisted mutation channel.                                                                |
+| Unknown-node fallback          | `node.last_serialization` assigned and patched by load/import paths                                                           | Direct accessor writes                     | Opaque wire state in `NodeState.lastSerialization` can override store-backed serialization without a command boundary.                       |
+| Execution order                | `computeExecutionOrder` assigns `node.order`; configure restores and serialization emits it                                   | Derived projection plus direct store state | Derived scheduling data can become an independent persisted mutation channel.                                                                |
 | Badges and reroute membership  | `badgeSystem` computed projections; `rerouteStore.buildMembershipIndex`                                                       | Derived read-only data                     | Correctly omitted from serialization, command, and undo state as independent entities.                                                       |
 
 ## ADR-CRDT-LAYOUT-0003 properties
