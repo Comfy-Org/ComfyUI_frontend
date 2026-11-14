@@ -8,26 +8,28 @@ export function redactTelemetryUrls(text: string): string {
 
 const MAX_REDACTABLE_TEXT_LENGTH = 16_384
 const ABSOLUTE_URL_START = /(?:https?:)?\/\/[^\s"'<>?#]+/.source
-/**
- * The root-relative alternative starts at a non-digit, or at a digit followed
- * by a second path character. That keeps `/v?token=…` and `/a/b?token=…`
- * redacted while leaving a bare fraction such as `1/2?x` as ordinary text, so
- * non-URL messages keep their Sentry grouping.
- */
 const ROOT_RELATIVE_URL_START =
   /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
     .source
 const RELATIVE_URL_START =
-  /(?<![A-Za-z0-9._~%/-])(?!\d+\/\d+[?#])[A-Za-z0-9_~%-]+(?:[./][A-Za-z0-9._~%-]+)*/
+  /(?<![A-Z0-9._~%/-])(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+[A-Z0-9_~%-]+)*/
+    .source
+const RELATIVE_URL_START_WITH_SEPARATOR =
+  /(?<![A-Z0-9._~%/-])(?!\d+\/\d+[?#])[A-Z0-9_~%-]+(?:[./]+[A-Z0-9_~%-]+)+/
     .source
 const URL_START = `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START}|${RELATIVE_URL_START})`
 const SPACED_QUERY_URL_PATTERN = new RegExp(
-  `${URL_START}\\?[^\\n"'<>]*\\s[^\\n"'<>]*&[A-Za-z0-9_~%-]+=[^\\n"'<>]*`,
+  `${URL_START}\\?[^\\s"<>]*\\s[^\\n"<>]*&[A-Z0-9_~%-]+=[^\\n"<>]*`,
   'gi'
 )
 
+const QUERY_VALUE_RUN = `(?:[^\\s"'<>]|'(?![\\s,;)\\]]|$))*`
 const URL_TOKEN_PATTERN = new RegExp(
-  `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})[^\\s"'<>]*|${RELATIVE_URL_START}(?:\\?[^\\s"'<>]*=[^\\s"'<>]*|#[^\\s"'<>]+)`,
+  `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})${QUERY_VALUE_RUN}` +
+    `|${RELATIVE_URL_START}\\?[^\\s"<>]*=[^\\s"<>]*` +
+    `|${RELATIVE_URL_START_WITH_SEPARATOR}#[^\\s"<>]+` +
+    `|${RELATIVE_URL_START}#[A-Z0-9_~%-]+=[^\\s"<>]*` +
+    `|(?<![A-Z0-9._~%/-])[?#][A-Z0-9_~%-]+=[^\\s"<>]*`,
   'gi'
 )
 
@@ -37,13 +39,15 @@ function redactUrlToken(token: string): string {
   for (;;) {
     const boundary = findGluedUrlBoundary(token, tokenStart)
     if (!boundary) {
-      return redacted + redactSingleUrlToken(token.slice(tokenStart))
+      redacted += redactSingleUrlToken(token.slice(tokenStart))
+      break
     }
     const { nextUrl, separator } = boundary
     redacted += redactSingleUrlToken(token.slice(tokenStart, separator))
     redacted += token.slice(separator, nextUrl)
     tokenStart = nextUrl
   }
+  return redacted.replace(/\/\/[^/\s"'<>]*@/gi, '//')
 }
 
 function redactSingleUrlToken(token: string): string {
@@ -63,7 +67,7 @@ function findGluedUrlBoundary(
   token: string,
   tokenStart: number
 ): { separator: number; nextUrl: number } | undefined {
-  const urlStartPattern = /(?:https?:)?\/\//g
+  const urlStartPattern = /(?:https?:)?\/\//gi
   urlStartPattern.lastIndex = tokenStart + 1
   for (const match of token.matchAll(urlStartPattern)) {
     const nextUrl = match.index
@@ -144,13 +148,6 @@ const MAX_REDACTION_NODES = 1_000
 /**
  * Copy a telemetry payload with URL metadata removed from every reachable
  * string.
- *
- * Only plain records, arrays, `Error`s, `URL`s and primitives survive the copy.
- * Every other object — `Date`, `Map`, `Request`, class instances — becomes
- * `[Redacted]`, because inspecting it safely is not possible for an arbitrary
- * accessor. Accessor properties are dropped rather than invoked for the same
- * reason. Traversal is bounded by depth and node count, and anything past
- * either bound also becomes `[Redacted]`.
  */
 export function redactTelemetryValues(
   values: Record<string, unknown> | undefined
@@ -283,9 +280,15 @@ function redactPlainObject(
   const output: Record<string, unknown> = Object.create(null)
   context.memo.set(value, output)
   context.ancestors.add(value)
+  const nextSuffixes = new Map<string, number>()
   try {
     for (const [key, nested] of entries) {
-      Object.defineProperty(output, redactTelemetryUrls(key), {
+      const redactedKey = uniqueRedactedKey(
+        redactTelemetryUrls(key),
+        output,
+        nextSuffixes
+      )
+      Object.defineProperty(output, redactedKey, {
         configurable: true,
         enumerable: true,
         value: redactValue(nested, context, depth + 1),
@@ -296,6 +299,21 @@ function redactPlainObject(
   } finally {
     context.ancestors.delete(value)
   }
+}
+
+function uniqueRedactedKey(
+  key: string,
+  output: Record<string, unknown>,
+  nextSuffixes: Map<string, number>
+): string {
+  let candidate = key
+  let suffix = nextSuffixes.get(key) ?? 2
+  while (Object.hasOwn(output, candidate)) {
+    candidate = `${key}~${suffix}`
+    suffix++
+  }
+  nextSuffixes.set(key, suffix)
+  return candidate
 }
 
 type ObjectClassification =
@@ -352,9 +370,7 @@ function redactError(
       output.name = redactTelemetryUrls(name)
     }
     const stack = readErrorString(source, properties, 'stack')
-    if (stack !== undefined) {
-      output.stack = redactTelemetryUrls(stack)
-    }
+    output.stack = stack === undefined ? undefined : redactTelemetryUrls(stack)
     return output
   } finally {
     context.ancestors.delete(source)
