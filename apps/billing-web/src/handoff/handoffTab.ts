@@ -1,5 +1,6 @@
 import { shallowRef, watch } from 'vue'
 
+import type { BillingOperationPointer } from '@comfyorg/account-core/billing'
 import { createOperationPointerStore } from '@comfyorg/account-core/billing'
 
 import { HANDOFF_STORAGE_KEY } from '@/handoff/captureHandoffToken'
@@ -42,7 +43,12 @@ export interface HandoffSession {
 }
 
 export type HandoffState =
-  | { readonly kind: 'session'; readonly session: HandoffSession }
+  | {
+      readonly kind: 'session'
+      readonly session: HandoffSession
+      /** Set before the first request that can start a charge leaves this tab; never unset. */
+      readonly chargeAttempted?: true
+    }
   | {
       readonly kind: 'ended'
       readonly ending: HandoffEnding
@@ -141,7 +147,10 @@ export function readHandoffState(
       parsed.kind === 'session'
         ? handoffSessionFrom(parsed.exchange)
         : undefined
-    return session && { kind: 'session', session }
+    if (!session) return undefined
+    return parsed.chargeAttempted === undefined
+      ? { kind: 'session', session }
+      : { kind: 'session', session, chargeAttempted: true }
   } catch {
     return undefined
   }
@@ -156,7 +165,11 @@ export function writeHandoffState(
       STORAGE_KEY,
       JSON.stringify(
         state.kind === 'session'
-          ? { kind: 'session', exchange: exchangeOf(state.session) }
+          ? {
+              kind: 'session',
+              exchange: exchangeOf(state.session),
+              chargeAttempted: state.chargeAttempted
+            }
           : state
       )
     )
@@ -168,23 +181,64 @@ export function writeHandoffState(
 
 export const handoffTab = shallowRef<HandoffState>()
 
+function forgetHandoffState(storage: TabStorage): void {
+  try {
+    storage.removeItem(STORAGE_KEY)
+  } catch {
+    return
+  }
+}
+
+/** Records, before the request leaves, that this session sent one that can start a charge. */
+export function noteChargeAttempt(storage: TabStorage): void {
+  const current = handoffTab.value
+  if (current?.kind !== 'session' || current.chargeAttempted) return
+  const attempted: HandoffState = { ...current, chargeAttempted: true }
+  if (!writeHandoffState(storage, attempted)) forgetHandoffState(storage)
+  handoffTab.value = attempted
+}
+
+function storageHoldsSession(storage: TabStorage): boolean {
+  const stored = readHandoffState(storage)
+  return typeof stored === 'object' && stored.kind === 'session'
+}
+
+function endingFrom(trace: {
+  readonly pointer: BillingOperationPointer | undefined
+  readonly chargeAttempted: boolean
+  readonly storageHoldsSession: boolean
+}): HandoffState {
+  const { pointer } = trace
+  if (pointer && pointer.kind !== 'cancel' && pointer.settled !== 'succeeded')
+    return {
+      kind: 'ended',
+      ending: 'payment_pending',
+      reference: pointer.operationId
+    }
+  const unused =
+    trace.storageHoldsSession && !trace.chargeAttempted && pointer === undefined
+  return {
+    kind: 'ended',
+    ending: unused ? 'link_unavailable' : 'session_ended'
+  }
+}
+
+/** How a live session ends: `link_unavailable` only when the tab can prove it never sent a charge. */
 export function sessionEnding(
   storage: TabStorage,
-  session: HandoffSession,
+  live: Extract<HandoffState, { kind: 'session' }>,
   now: () => number
 ): HandoffState {
-  const pointer = createOperationPointerStore(storage, now).read({
-    userId: session.userId,
-    workspaceId: session.workspace.id,
-    role: session.role
+  const { session } = live
+  return endingFrom({
+    storageHoldsSession: storageHoldsSession(storage),
+    chargeAttempted: live.chargeAttempted === true,
+    pointer: createOperationPointerStore(storage, now).read({
+      userId: session.userId,
+      workspaceId: session.workspace.id,
+      role: session.role
+    })
   })
-  return pointer && pointer.kind !== 'cancel' && pointer.settled !== 'succeeded'
-    ? {
-        kind: 'ended',
-        ending: 'payment_pending',
-        reference: pointer.operationId
-      }
-    : { kind: 'ended', ending: 'session_ended' }
 }
 
 export function endHandoffSession(
@@ -194,7 +248,7 @@ export function endHandoffSession(
 ): void {
   const current = handoffTab.value
   if (current?.kind !== 'session') return
-  const state = sessionEnding(storage, current.session, now)
+  const state = sessionEnding(storage, current, now)
   writeHandoffState(storage, state)
   writeTabMarker(marker, state)
   handoffTab.value = state

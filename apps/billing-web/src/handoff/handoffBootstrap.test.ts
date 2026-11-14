@@ -302,21 +302,56 @@ describe('runHandoffBootstrap', () => {
     }
   )
 
-  it('ends a stored session that expired before the reload', async () => {
+  it('restores a session that sent a payment request as one that still may have charged', async () => {
     const storage = memoryStorage()
     storage.setItem(
       'comfy.billing-web.handoff.v1',
       JSON.stringify({
         kind: 'session',
-        exchange: { ...exchanged, expires_at: '2026-11-09T11:59:59Z' }
+        exchange: exchanged,
+        chargeAttempted: true
       })
     )
-    const { env } = setup('/handoff', { storage })
 
-    await runHandoffBootstrap(env)
+    await runHandoffBootstrap(setup('/return/topup', { storage }).env)
 
-    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
+    expect(handoffTab.value).toEqual({ ...liveSession, chargeAttempted: true })
+    expect(readHandoffState(storage)).toEqual({
+      ...liveSession,
+      chargeAttempted: true
+    })
   })
+
+  it.for([
+    {
+      name: 'that sent nothing that can charge as a link that no longer works',
+      stored: {},
+      ending: 'link_unavailable'
+    },
+    {
+      name: 'that sent a payment request as a session end',
+      stored: { chargeAttempted: true },
+      ending: 'session_ended'
+    }
+  ])(
+    'ends a stored session $name when it expired before the reload',
+    async ({ stored, ending }) => {
+      const storage = memoryStorage()
+      storage.setItem(
+        'comfy.billing-web.handoff.v1',
+        JSON.stringify({
+          kind: 'session',
+          exchange: { ...exchanged, expires_at: '2026-11-09T11:59:59Z' },
+          ...stored
+        })
+      )
+      const { env } = setup('/handoff', { storage })
+
+      await runHandoffBootstrap(env)
+
+      expect(handoffTab.value).toEqual({ kind: 'ended', ending })
+    }
+  )
 
   it('restores an expired session with a payment still settling as checking that payment', async () => {
     const storage = memoryStorage()

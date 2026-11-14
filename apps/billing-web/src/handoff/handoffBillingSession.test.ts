@@ -3,7 +3,9 @@ import type { HandoffState, TabStorage } from '@/handoff/handoffTab'
 import {
   endHandoffAtExpiry,
   handoffTab,
-  readHandoffState
+  noteChargeAttempt,
+  readHandoffState,
+  writeHandoffState
 } from '@/handoff/handoffTab'
 
 const NOW = Date.parse('2026-11-09T12:00:00Z')
@@ -20,12 +22,23 @@ const live: HandoffState = {
   }
 }
 
-function memoryStorage(): TabStorage {
+const HANDOFF_KEY = 'comfy.billing-web.handoff.v1'
+const POINTER_KEY = 'comfy:billing:operation:user-1:ws-1'
+
+function memoryStorage(): TabStorage & { block: () => void } {
   const items = new Map<string, string>()
+  let blocked = false
+  const open = () => {
+    if (blocked) throw new DOMException('blocked', 'SecurityError')
+    return items
+  }
   return {
-    getItem: (key) => items.get(key) ?? null,
-    setItem: (key, value) => void items.set(key, value),
-    removeItem: (key) => void items.delete(key)
+    getItem: (key) => open().get(key) ?? null,
+    setItem: (key, value) => void open().set(key, value),
+    removeItem: (key) => void open().delete(key),
+    block: () => {
+      blocked = true
+    }
   }
 }
 
@@ -33,8 +46,21 @@ function setup(state: HandoffState = live) {
   handoffTab.value = state
   const clock = { now: NOW }
   const storage = memoryStorage()
+  writeHandoffState(storage, state)
   const session = createHandoffBillingSession(storage, () => clock.now)
   return { session, storage, clock }
+}
+
+function pointAt(storage: TabStorage, pointer: Record<string, unknown>) {
+  storage.setItem(
+    POINTER_KEY,
+    JSON.stringify({
+      operationId: 'op-1',
+      presentation: 'embedded',
+      attemptStartedAt: NOW,
+      ...pointer
+    })
+  )
 }
 
 describe('createHandoffBillingSession', () => {
@@ -53,73 +79,78 @@ describe('createHandoffBillingSession', () => {
     expect(session.getSnapshot().phase).toBe('authenticated')
   })
 
-  it('ends the handoff once the session expires, and the end survives a reload', async () => {
-    const { session, storage, clock } = setup()
-    clock.now = NOW + 31 * 60_000
-
-    await expect(session.ensureFresh()).resolves.toEqual({
-      status: 'error',
-      code: 'NOT_AUTHENTICATED'
-    })
-
-    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
-    expect(readHandoffState(storage)).toEqual({
-      kind: 'ended',
-      ending: 'session_ended'
-    })
-    expect(session.getSnapshot().phase).toBe('signed-out')
-  })
-
-  it.for([
+  it.for<{
+    name: string
+    arrange: (storage: TabStorage) => void
+    ended: HandoffState
+  }>([
+    {
+      name: 'a session that sent nothing that can charge',
+      arrange: () => {},
+      ended: { kind: 'ended', ending: 'link_unavailable' }
+    },
+    {
+      name: 'a payment request that left no operation behind',
+      arrange: (storage) => noteChargeAttempt(storage),
+      ended: { kind: 'ended', ending: 'session_ended' }
+    },
     {
       name: 'a payment this tab started and has not seen settle',
-      pointer: { kind: 'topup' },
-      ended: {
-        kind: 'ended',
-        ending: 'payment_pending',
-        reference: 'op-1'
-      }
+      arrange: (storage) => pointAt(storage, { kind: 'topup' }),
+      ended: { kind: 'ended', ending: 'payment_pending', reference: 'op-1' }
     },
     {
       name: 'a payment the server parked for reconciliation',
-      pointer: {
-        kind: 'subscription',
-        settled: 'reconciliation_needed',
-        awaited: true
-      },
-      ended: {
-        kind: 'ended',
-        ending: 'payment_pending',
-        reference: 'op-1'
-      }
+      arrange: (storage) =>
+        pointAt(storage, {
+          kind: 'subscription',
+          settled: 'reconciliation_needed',
+          awaited: true
+        }),
+      ended: { kind: 'ended', ending: 'payment_pending', reference: 'op-1' }
     },
     {
       name: 'a payment that already succeeded',
-      pointer: { kind: 'subscription', settled: 'succeeded' },
+      arrange: (storage) =>
+        pointAt(storage, { kind: 'subscription', settled: 'succeeded' }),
       ended: { kind: 'ended', ending: 'session_ended' }
     },
     {
       name: 'a cancellation',
-      pointer: { kind: 'cancel' },
+      arrange: (storage) => pointAt(storage, { kind: 'cancel' }),
+      ended: { kind: 'ended', ending: 'session_ended' }
+    },
+    {
+      name: 'storage that no longer holds the session',
+      arrange: (storage) => storage.removeItem(HANDOFF_KEY),
       ended: { kind: 'ended', ending: 'session_ended' }
     }
-  ])('ends on $name as $ended.ending', async ({ pointer, ended }) => {
-    const { session, storage, clock } = setup()
-    storage.setItem(
-      'comfy:billing:operation:user-1:ws-1',
-      JSON.stringify({
-        operationId: 'op-1',
-        presentation: 'embedded',
-        attemptStartedAt: NOW,
-        ...pointer
+  ])(
+    'ends on $name as $ended.ending, and the end survives a reload',
+    async ({ arrange, ended }) => {
+      const { session, storage, clock } = setup()
+      arrange(storage)
+      clock.now = NOW + 31 * 60_000
+
+      await expect(session.ensureFresh()).resolves.toEqual({
+        status: 'error',
+        code: 'NOT_AUTHENTICATED'
       })
-    )
+
+      expect(handoffTab.value).toEqual(ended)
+      expect(readHandoffState(storage)).toEqual(ended)
+      expect(session.getSnapshot().phase).toBe('signed-out')
+    }
+  )
+
+  it('ends as a session end when storage can no longer be read, never as an unused link', async () => {
+    const { session, storage, clock } = setup()
+    storage.block()
     clock.now = NOW + 31 * 60_000
 
     await session.ensureFresh()
 
-    expect(handoffTab.value).toEqual(ended)
-    expect(readHandoffState(storage)).toEqual(ended)
+    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
   })
 
   it('ends the handoff when the server refuses the session instead of minting another', async () => {
@@ -132,7 +163,10 @@ describe('createHandoffBillingSession', () => {
       code: 'NOT_AUTHENTICATED'
     })
 
-    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
+    expect(handoffTab.value).toEqual({
+      kind: 'ended',
+      ending: 'link_unavailable'
+    })
     expect(listener).toHaveBeenCalledWith(
       expect.objectContaining({ phase: 'signed-out' })
     )
@@ -164,10 +198,52 @@ describe('endHandoffAtExpiry', () => {
     expect(handoffTab.value).toEqual(live)
     vi.advanceTimersByTime(1)
 
-    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
+    expect(handoffTab.value).toEqual({
+      kind: 'ended',
+      ending: 'link_unavailable'
+    })
     expect(readHandoffState(storage)).toEqual({
       kind: 'ended',
-      ending: 'session_ended'
+      ending: 'link_unavailable'
     })
+  })
+})
+
+describe('noteChargeAttempt', () => {
+  it('keeps the attempt on the session across a reload', () => {
+    const { storage } = setup()
+
+    noteChargeAttempt(storage)
+
+    expect(handoffTab.value).toEqual({ ...live, chargeAttempted: true })
+    expect(readHandoffState(storage)).toEqual({
+      ...live,
+      chargeAttempted: true
+    })
+  })
+
+  it('drops the stored session when the attempt cannot be stored, so a reload never reads it as unused', () => {
+    const { storage } = setup()
+    const unwritable: TabStorage = {
+      ...storage,
+      setItem: () => {
+        throw new DOMException('full', 'QuotaExceededError')
+      }
+    }
+
+    noteChargeAttempt(unwritable)
+
+    expect(handoffTab.value).toEqual({ ...live, chargeAttempted: true })
+    expect(readHandoffState(storage)).toBeUndefined()
+  })
+
+  it('leaves a tab that is not a handoff untouched', () => {
+    handoffTab.value = undefined
+    const storage = memoryStorage()
+
+    noteChargeAttempt(storage)
+
+    expect(handoffTab.value).toBeUndefined()
+    expect(storage.getItem(HANDOFF_KEY)).toBeNull()
   })
 })

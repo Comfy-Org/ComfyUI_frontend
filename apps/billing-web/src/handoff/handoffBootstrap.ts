@@ -98,7 +98,7 @@ function fromMarker(env: HandoffBootEnv): HandoffState | undefined {
 
 function restored(env: HandoffBootEnv, state: HandoffState): HandoffState {
   return state.kind === 'session' && state.session.expiresAt <= env.now()
-    ? sessionEnding(env.storage, state.session, env.now)
+    ? sessionEnding(env.storage, state, env.now)
     : state
 }
 

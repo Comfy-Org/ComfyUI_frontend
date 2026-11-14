@@ -19,6 +19,7 @@
  */
 import type {
   BillingOperationPointerStorage,
+  BillingRequest,
   BillingScopeSource,
   BillingSession,
   BillingTransport,
@@ -26,6 +27,8 @@ import type {
   WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import {
+  PREVIEW_SUBSCRIBE_ROUTE,
+  TOPUP_QUOTE_ROUTE,
   createBillingCommands,
   createCredentialedBillingTransport,
   createBillingEventsReader,
@@ -46,6 +49,7 @@ import type { BillingClient } from '@comfyorg/account-ui/billing'
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebStripeKey } from '@/config/stripeKey'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
+import { noteChargeAttempt, sessionTabStorage } from '@/handoff/handoffTab'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 /** Tab-local, like the credential cache: a pointer must not outlive the tab. */
@@ -102,11 +106,20 @@ async function isScopedSessionRefusal(response: Response): Promise<boolean> {
   )
 }
 
+const CHARGELESS_WRITES: ReadonlySet<string> = new Set([
+  PREVIEW_SUBSCRIBE_ROUTE,
+  TOPUP_QUOTE_ROUTE
+])
+
+function canStartCharge({ method, route }: BillingRequest): boolean {
+  return method !== 'GET' && !CHARGELESS_WRITES.has(route)
+}
+
 export function createHandoffBillingClient(
   session: BillingSession,
   onSessionRefused: () => void
 ): BillingWebClient {
-  const transport = createSessionBillingTransport({
+  const send = createSessionBillingTransport({
     session,
     resolveUrl,
     workspaceId: () => pinnedWorkspaceId(session),
@@ -116,6 +129,10 @@ export function createHandoffBillingClient(
       return response
     }
   })
+  const transport: BillingTransport = (request) => {
+    if (canStartCharge(request)) noteChargeAttempt(sessionTabStorage)
+    return send(request)
+  }
   return composeBillingWebClient(transport, sessionBillingScopeSource(session))
 }
 

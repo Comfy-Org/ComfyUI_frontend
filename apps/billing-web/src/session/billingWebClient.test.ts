@@ -1,6 +1,9 @@
 import { datadogRum } from '@datadog/browser-rum'
 
-import type { BillingStatusResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingCapabilitiesResponse,
+  BillingStatusResponse
+} from '@comfyorg/ingest-types'
 import type { BillingSession } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 import { disposeBillingClient } from '@comfyorg/account-ui/billing'
@@ -8,7 +11,15 @@ import type {
   AccountCredential,
   SessionSnapshot
 } from '@comfyorg/account-core/session'
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 
+import type { HandoffState } from '@/handoff/handoffTab'
+import {
+  handoffTab,
+  readHandoffState,
+  sessionTabStorage,
+  writeHandoffState
+} from '@/handoff/handoffTab'
 import {
   createBillingWebClient,
   createHandoffBillingClient
@@ -431,4 +442,162 @@ describe('createHandoffBillingClient', () => {
     expect(onSessionRefused).not.toHaveBeenCalled()
     disposeBillingClient(client)
   })
+
+  const LIVE_HANDOFF: HandoffState = {
+    kind: 'session',
+    session: {
+      token: 'comfy-scoped-session-1',
+      expiresAt: Date.parse('2099-01-01T00:00:00Z'),
+      userId: 'uid-1',
+      email: 'a@example.com',
+      workspace: { id: 'ws-1', name: 'Personal', type: 'personal' },
+      role: 'owner'
+    }
+  }
+
+  const CAN_TOP_UP = {
+    auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'full_page',
+    capabilities: {
+      can_cancel: true,
+      can_change_seats: false,
+      can_delete_workspace: false,
+      can_downgrade_to_personal: false,
+      can_edit_workspace: false,
+      can_invite_members: false,
+      can_leave_workspace: false,
+      can_manage_auto_top_up: false,
+      can_manage_billing: true,
+      can_manage_members: false,
+      can_manage_partner_node_access: false,
+      can_manage_subscription: true,
+      can_open_plans: true,
+      can_reactivate: false,
+      can_revert_scheduled_change: false,
+      can_run_workflows: true,
+      can_subscribe_self_serve: true,
+      can_top_up: true,
+      can_upgrade: true,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
+      can_view_pending_invites: false,
+      can_view_team_usage: false
+    },
+    expires_at: '2099-01-01T00:00:00Z',
+    resolved_for: { user_id: 'uid-1', workspace_id: 'ws-1' },
+    revision: 1,
+    rollout_defaults_applied: {
+      can_downgrade_to_personal: false,
+      can_subscribe_self_serve: false,
+      can_top_up: false
+    }
+  } satisfies BillingCapabilitiesResponse
+
+  function openHandoffTab(): BillingClient {
+    handoffTab.value = LIVE_HANDOFF
+    writeHandoffState(sessionTabStorage, LIVE_HANDOFF)
+    onTestFinished(() => {
+      handoffTab.value = undefined
+      sessionTabStorage.removeItem('comfy.billing-web.handoff.v1')
+    })
+    stubBillingRoutes({ status: 'succeeded' })
+    respondToFetch(/\/api\/billing\/capabilities$/, () =>
+      Response.json(CAN_TOP_UP)
+    )
+    const client = createHandoffBillingClient(handoffSession(), vi.fn())
+    onTestFinished(() => disposeBillingClient(client))
+    return client
+  }
+
+  it.for<{
+    name: string
+    route: RegExp
+    send: (client: BillingClient) => Promise<unknown>
+  }>([
+    {
+      name: 'a subscribe',
+      route: /\/api\/billing\/subscribe$/,
+      send: (client) =>
+        client.commands.subscribe({ plan_slug: 'creator_monthly' })
+    },
+    {
+      name: 'a resubscribe',
+      route: /\/api\/billing\/subscription\/resubscribe$/,
+      send: (client) => client.commands.resubscribe()
+    },
+    {
+      name: 'a top-up on the card on file',
+      route: /\/api\/billing\/topup$/,
+      send: (client) => client.topup.createTopupCheckout({ amountCents: 2500 })
+    },
+    {
+      name: 'a pay-once top-up',
+      route: /\/api\/billing\/topup\/interactive$/,
+      send: (client) =>
+        client.topup.createInteractiveTopup({
+          amountCents: 2500,
+          payment: { savedPaymentMethodId: 'pm_1' },
+          idempotencyKey: 'key-1'
+        })
+    },
+    {
+      name: 'a hosted top-up checkout',
+      route: /\/api\/billing\/topup\/checkout$/,
+      send: (client) =>
+        client.topup.createHostedTopupCheckout({
+          amountCents: 2500,
+          returnUrl: 'https://testbilling.comfy.org/return/topup'
+        })
+    }
+  ])(
+    'records $name on the handoff tab before the request leaves',
+    async ({ route, send }) => {
+      const client = openHandoffTab()
+      const storedWhenSent: unknown[] = []
+      respondToFetch({ method: 'POST', url: route }, () => {
+        storedWhenSent.push(readHandoffState(sessionTabStorage))
+        return new Response(null, { status: 500 })
+      })
+
+      await send(client)
+
+      expect(storedWhenSent).toEqual([
+        { ...LIVE_HANDOFF, chargeAttempted: true }
+      ])
+    }
+  )
+
+  it.for<{
+    name: string
+    request: { method: string; url: RegExp }
+    send: (client: BillingClient) => Promise<unknown>
+  }>([
+    {
+      name: 'a subscription preview',
+      request: { method: 'POST', url: /\/api\/billing\/preview-subscribe$/ },
+      send: (client) =>
+        client.commands.previewSubscribe({ planSlug: 'creator_monthly' })
+    },
+    {
+      name: 'a top-up quote',
+      request: { method: 'POST', url: /\/api\/billing\/topup\/quote$/ },
+      send: (client) => client.topup.quoteTopup({ amountCents: 2500 })
+    },
+    {
+      name: 'a read',
+      request: { method: 'GET', url: /\/api\/billing\/balance$/ },
+      send: (client) => client.credits.read()
+    }
+  ])(
+    'leaves the handoff tab unused after $name, which cannot charge',
+    async ({ request, send }) => {
+      const client = openHandoffTab()
+
+      await send(client)
+
+      expect(fetchRequests(request)).toHaveLength(1)
+      expect(handoffTab.value).toEqual(LIVE_HANDOFF)
+      expect(readHandoffState(sessionTabStorage)).toEqual(LIVE_HANDOFF)
+    }
+  )
 })
