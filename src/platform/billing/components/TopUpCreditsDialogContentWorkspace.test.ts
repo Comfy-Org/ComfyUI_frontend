@@ -50,7 +50,7 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'

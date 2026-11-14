@@ -113,12 +113,12 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
-import { toFiniteNumber } from '@/services/customerEventParams'
-import type { AuditLog } from '@/services/customerEventsService'
+import { toFiniteNumber } from '@/platform/billing/api/customerEventParams'
+import type { AuditLog } from '@/platform/billing/api/customerEventsService'
 import {
   EventType,
   useCustomerEventsService
-} from '@/services/customerEventsService'
+} from '@/platform/billing/api/customerEventsService'
 
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
