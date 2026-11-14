@@ -98,7 +98,9 @@ Cloud rereads the session when a WebSocket closes before opening, including in
 hidden tabs. It waits for remembered-login recovery before reconnecting, or
 stops reconnecting when the session reports sign-out. Failed opens back off
 from one second to one minute; a successful open resets the delay. An established
-connection still reconnects after 300 ms. Session connection failures do not
+connection reconnects after a random delay of up to 5 seconds, or up to 15
+seconds when the server closes it for a restart, so tabs dropped together do not
+reconnect together. Session connection failures do not
 start queue polling, and a temporary session-read outage does not sign the user
 out. Cloud caps each session request at 15 seconds, body included, so a stalled
 read counts as an outage and the backoff continues.
