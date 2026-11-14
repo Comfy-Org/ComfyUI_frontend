@@ -25,8 +25,8 @@ vi.mock(import('@/composables/useLiveGraphNode'), async () => {
   const { computed, onScopeDispose, shallowRef } = await import('vue')
   return {
     useLiveGraphNode: (resolve) => {
-      const node = shallowRef(resolve() ?? null)
-      const reload = () => (node.value = resolve() ?? null)
+      const node = shallowRef(resolve() ?? undefined)
+      const reload = () => (node.value = resolve() ?? undefined)
       liveGraphNodes.reloads.add(reload)
       onScopeDispose(() => liveGraphNodes.reloads.delete(reload))
       return computed(() => node.value)

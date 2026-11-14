@@ -8,13 +8,15 @@ import { app } from '@/scripts/app'
 /** The node `resolve` returns, resolved again each time the root graph is configured. */
 export function useLiveGraphNode(
   resolve: () => LGraphNode | null | undefined
-): ComputedRef<LGraphNode | null> {
-  const node = shallowRef(resolve() ?? null)
-  watch(resolve, (current) => (node.value = current ?? null), { flush: 'sync' })
+): ComputedRef<LGraphNode | undefined> {
+  const node = shallowRef(resolve() ?? undefined)
+  watch(resolve, (current) => (node.value = current ?? undefined), {
+    flush: 'sync'
+  })
   useEventListener(
     () => app.rootGraphOrUndefined?.events,
     'configured',
-    () => (node.value = resolve() ?? null)
+    () => (node.value = resolve() ?? undefined)
   )
   return computed(() => node.value)
 }

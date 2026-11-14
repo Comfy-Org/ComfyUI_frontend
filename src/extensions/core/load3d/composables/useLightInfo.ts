@@ -31,7 +31,7 @@ import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 const EDITOR_WIDGET_NAME = 'editor_state'
 
 export function useLightInfo(
-  nodeRef: MaybeRef<LGraphNode | null>,
+  nodeRef: MaybeRef<LGraphNode | undefined>,
   historyScope: () => WidgetHistoryScope | null = () => null
 ) {
   let viewport: LightInfoViewport | null = null

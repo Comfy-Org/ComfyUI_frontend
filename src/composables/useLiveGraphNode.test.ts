@@ -32,7 +32,7 @@ describe(useLiveGraphNode, () => {
 
     current = undefined
     configureRootGraph()
-    expect(live?.value).toBeNull()
+    expect(live?.value).toBeUndefined()
   })
 
   it('stops following the graph once its scope is disposed', () => {

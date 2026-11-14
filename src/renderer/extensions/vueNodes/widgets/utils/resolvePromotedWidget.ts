@@ -7,7 +7,7 @@ interface ResolvedHostWidget {
 }
 
 export function resolveWidgetFromHostNode(
-  hostNode: LGraphNode | null,
+  hostNode: LGraphNode | undefined,
   widgetName: string
 ): ResolvedHostWidget | undefined {
   if (!hostNode) return undefined

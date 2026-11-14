@@ -37,7 +37,7 @@ describe('resolveWidgetFromHostNode', () => {
     expect(resolveWidgetFromHostNode(hostNode, 'missing')).toBeUndefined()
   })
 
-  it('returns undefined when there is no host node', () => {
-    expect(resolveWidgetFromHostNode(null, 'anything')).toBeUndefined()
+  it('returns undefined when the host node is undefined', () => {
+    expect(resolveWidgetFromHostNode(undefined, 'anything')).toBeUndefined()
   })
 })
