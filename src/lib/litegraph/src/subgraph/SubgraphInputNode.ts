@@ -50,11 +50,6 @@ export class SubgraphInputNode
     return [...this.slots, this.emptySlot]
   }
 
-  get slotAnchorX() {
-    const [x, , width] = this.boundingRect
-    return x + width - this.slotInset
-  }
-
   override arrange(): void {
     const [requestedWidth, requestedHeight] = this.size
     super.arrange()

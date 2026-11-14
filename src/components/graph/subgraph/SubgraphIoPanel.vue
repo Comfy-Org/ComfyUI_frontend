@@ -63,7 +63,7 @@ useEventListener(
   ],
   slots.trigger
 )
-const isInput = computed(() => ioNode === ioNode.subgraph.inputNode)
+const isInput = computed(() => ioNode.slotDirection === 'output')
 const side = computed(() =>
   isInput.value
     ? {

@@ -30,9 +30,7 @@
       @ready="onLinkOverlayReady"
       @dispose="onLinkOverlayDispose"
     />
-    <template
-      v-if="comfyApp.canvas && comfyAppReady && openSubgraph && !linearMode"
-    >
+    <template v-if="comfyAppReady && openSubgraph && !linearMode">
       <SubgraphIoPanel
         v-for="ioNode in [openSubgraph.inputNode, openSubgraph.outputNode]"
         :key="`${openSubgraph.id}:${ioNode.id}`"
