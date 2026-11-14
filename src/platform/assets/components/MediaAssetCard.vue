@@ -24,7 +24,10 @@
     <div
       class="relative aspect-square overflow-hidden"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
+      @dblclick.stop="
+        (fileKind === 'image' || fileKind === 'video' || isHdr) &&
+        handleZoomClick()
+      "
     >
       <!-- Loading State -->
       <div v-if="loading" class="size-full animate-pulse rounded-lg bg-muted" />
