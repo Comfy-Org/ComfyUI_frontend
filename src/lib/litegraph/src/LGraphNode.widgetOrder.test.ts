@@ -11,8 +11,50 @@ describe('LGraphNode widget ordering', () => {
   let node: LGraphNode
 
   beforeEach(() => {
+    const namedValuesRestore = LiteGraph.namedValuesRestore
     node = new LGraphNode('TestNode')
+    return () => {
+      LiteGraph.namedValuesRestore = namedValuesRestore
+    }
   })
+
+  it.for([
+    { positional: [37, 12345], named: { steps: 37, seed: 12345 } },
+    { positional: undefined, named: { steps: 37, seed: 12345 } }
+  ])(
+    'restores reordered widgets by name with positional values $positional and no global opt-in',
+    ({ positional, named }) => {
+      LiteGraph.namedValuesRestore = false
+      const seed = node.addWidget('number', 'seed', 0, null, {})
+      const steps = node.addWidget('number', 'steps', 20, null, {})
+      const extra = node.addWidget('number', 'extra', 9, null, {})
+      const info = {
+        id: 1,
+        type: 'TestNode',
+        pos: [0, 0],
+        size: [200, 100],
+        flags: {},
+        order: 0,
+        mode: 0
+      } satisfies ISerialisedNode
+
+      node.configure(
+        {
+          ...info,
+          widgets_values: positional,
+          widgets_values_named: named
+        },
+        { restoreNamed: true }
+      )
+
+      expect([seed.value, steps.value, extra.value]).toEqual([12345, 37, 9])
+
+      node.configure({ ...info, widgets_values: [54321, 23, 7] })
+
+      expect([seed.value, steps.value, extra.value]).toEqual([54321, 23, 7])
+      expect(LiteGraph.namedValuesRestore).toBe(false)
+    }
+  )
 
   describe('configure with widgets_values', () => {
     beforeEach(() => {
@@ -191,15 +233,20 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets!.map((w) => w.value)).toStrictEqual(expected)
     })
 
-    it('should restore widgets which are dynamically added', () => {
-      addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
+    it.for([false, true])(
+      'restores dynamically added widgets with namedValuesRestore=%s',
+      (namedValuesRestore) => {
+        LiteGraph.namedValuesRestore = namedValuesRestore
+        addDynamicCombo(node, [['INT'], ['INT', 'STRING']])
 
-      node.configure(
-        mockNode(undefined, { '0': 1, '0.0.0.0': 5, '0.0.0.1': 'test' })
-      )
+        node.configure(
+          mockNode(undefined, { '0': 1, '0.0.0.0': 5, '0.0.0.1': 'test' }),
+          { restoreNamed: !namedValuesRestore }
+        )
 
-      expect(node.widgets!.map((w) => w.value)).toStrictEqual([1, 5, 'test'])
-    })
+        expect(node.widgets!.map((w) => w.value)).toStrictEqual([1, 5, 'test'])
+      }
+    )
 
     it('does not restore delayed widgets by name', () => {
       node.configure(mockNode([30, 12345], { steps: 30, seed: 12345 }))
