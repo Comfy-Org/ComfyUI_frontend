@@ -43,9 +43,8 @@ export function openPlatformBilling(track: () => void): void {
 }
 
 /**
- * A link to Platform's billing page. `href` is undefined where a click opens it
- * through a local handoff, so render a button; call `open` on every click.
- * `button` is those props for a design-system `Button`.
+ * A link to Platform's billing page: `button` is the props for a design-system
+ * `Button`, and `open` runs on every click.
  */
 export function usePlatformBillingLink(
   path: MaybeRefOrGetter<`/${string}`>,
