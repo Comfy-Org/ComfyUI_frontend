@@ -6,6 +6,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDialogStore } from '@/stores/dialogStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -26,9 +28,15 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import {
+  nodeError,
+  runtimeError,
+  validationError
+} from '@/utils/__tests__/nodeErrorHelpers'
 
 import ErrorGroupList from './ErrorGroupList.vue'
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const rootGraph = {
@@ -187,6 +195,30 @@ function isSectionExpanded(section: HTMLElement) {
 }
 
 describe('ErrorGroupList selection emphasis', () => {
+  it('opens cloud deployment from a reported out-of-memory issue', async () => {
+    const pinia = getActivePinia()
+    if (!pinia) throw new Error('Pinia is required')
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
+    useExecutionErrorStore(pinia).recordExecutionError({
+      ...runtimeError('1'),
+      exception_type: 'torch.OutOfMemoryError',
+      exception_message: 'CUDA out of memory'
+    })
+    const { user } = renderList(pinia)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Deploy your setup to Comfy Cloud'
+      })
+    )
+
+    await waitFor(() =>
+      expect(
+        useDialogStore(pinia).isDialogOpen('global-run-on-comfy-cloud')
+      ).toBe(true)
+    )
+  })
+
   beforeEach(() => {
     ROOT_GRAPH.nodes.length = 0
     SUBGRAPH.nodes.length = 0

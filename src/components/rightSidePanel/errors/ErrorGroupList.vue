@@ -236,6 +236,7 @@
               >
                 {{ group.displayMessage }}
               </p>
+              <CloudErrorAction :catalog-id="group.catalogId" />
             </div>
 
             <!-- Missing Node Packs -->
@@ -382,6 +383,7 @@
 </template>
 
 <script setup lang="ts">
+import CloudErrorAction from '@/platform/openOnCloud/components/CloudErrorAction.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
