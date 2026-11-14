@@ -174,7 +174,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
         isLoading: { type: Boolean, default: false },
         locked: { type: Boolean, default: false }
       },
-      emits: ['confirm', 'phase'],
+      emits: ['confirm', 'phase', 'submittingChange'],
       setup(
         props: { canSubmit: boolean; isLoading: boolean; locked: boolean },
         {
@@ -3802,6 +3802,23 @@ describe('FullPageCheckoutView card choice on a plan change', () => {
       return_url: expect.stringContaining('/checkout')
     })
     expect(request).not.toHaveProperty('saved_payment_method_id')
+  })
+
+  it('holds the tabs while a new card is still turning into a token, so Saved cannot be switched to under it', async () => {
+    await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team'
+    )
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await userEvent.click(tab('Add new payment'))
+
+    form.emit('submittingChange', true)
+    await nextTick()
+    expect(screen.getByRole('tablist')).toHaveAttribute('inert')
+
+    form.emit('submittingChange', false)
+    await nextTick()
+    expect(screen.getByRole('tablist')).not.toHaveAttribute('inert')
   })
 
   it('keeps the picker after a declined upgrade, so another saved card is confirmed on the same page', async () => {

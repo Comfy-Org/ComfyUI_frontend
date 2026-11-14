@@ -20,7 +20,6 @@ export interface CheckoutChallengePort extends EmbeddedChallengePort {
   leavesPage: (clientSecret: string) => Promise<boolean>
 }
 
-/** A plan change on a new card authenticates a SetupIntent; everything else, a PaymentIntent. */
 const isSetupIntentSecret = (clientSecret: string) =>
   clientSecret.startsWith('seti_')
 
