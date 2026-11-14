@@ -7,8 +7,9 @@ globs:
 # Testing Principles
 
 These rules hold at every level: unit, store, component, integration, and E2E.
-Mechanics live elsewhere. `docs/guidance/vitest.md` and `docs/testing/*.md`
-cover Vitest; `browser_tests/README.md` covers Playwright. When a mechanic and
+Mechanics live elsewhere. `docs/guidance/vitest.md` and
+`docs/testing/component-testing.md` cover Vitest; `docs/guidance/playwright.md`
+covers Playwright. When a mechanic and
 a principle disagree, the principle wins and the mechanic gets fixed.
 
 We want the smallest set of tests that fails when a behavior users depend on
@@ -171,7 +172,8 @@ repository's own choices. Sources are linked at the end.
   A branch is two tests. A loop over inputs is a table. A loop over outputs is
   one assertion on the whole collection: map it and `toEqual` the expected
   array, or write a custom matcher. Narrowing is `assert.exists(x)` from
-  vitest or a typed builder, cleanup is `afterEach`. Existing tests that loop
+  vitest or a typed builder, cleanup is `onTestFinished` or a function
+  returned from `beforeEach`. Existing tests that loop
   are violations to fix when touched, not precedent.
 
 ## Use coverage to find gaps, not to hit a number
