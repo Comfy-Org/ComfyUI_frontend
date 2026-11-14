@@ -231,4 +231,4 @@ CRDT compatibility are explicitly not completion criteria for this phase.
 - [Verification audit](ecs-verification-audit.md)
 - [Documentation audit](ecs-documentation-audit.md)
 - [ECS target architecture](../ecs-target-architecture.md)
-- [Link registration migration](../../extensions/link-registration-migration.md)
+- [Link registration migration](https://docs.comfy.org/custom-nodes/js/link-registration-migration)
