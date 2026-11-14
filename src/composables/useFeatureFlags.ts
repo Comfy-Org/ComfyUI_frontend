@@ -1,4 +1,5 @@
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
+import { getActivePinia } from 'pinia'
 import { computed, reactive, readonly, watchEffect } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
@@ -53,6 +54,8 @@ function resolveStrictBooleanFlag(
   }
 }
 
+type RemoteConfigStore = ReturnType<typeof useRemoteConfigStore>
+
 /**
  * Resolves a per-user, Cloud-only flag that selects backend behavior. Off the
  * Cloud build it is always false; during the auth window it falls back to the
@@ -60,6 +63,7 @@ function resolveStrictBooleanFlag(
  * the wrong backend before authenticated config confirms the flag.
  */
 function resolveAuthGatedFlag(
+  store: RemoteConfigStore,
   flagKey: string,
   remoteConfigValue: boolean | undefined,
   cachedValue: boolean | undefined
@@ -71,8 +75,7 @@ function resolveAuthGatedFlag(
   if (override !== undefined) return override
 
   if (!isCloud) return false
-  if (!useRemoteConfigStore().isAuthenticatedConfigLoaded)
-    return cachedValue ?? false
+  if (!store.isAuthenticatedConfigLoaded) return cachedValue ?? false
 
   return remoteConfigValue ?? api.getServerFeature(flagKey, false)
 }
@@ -86,6 +89,7 @@ function resolveAuthGatedFlag(
  * same account (PM-1707).
  */
 function resolveWhitelistFlag(
+  store: RemoteConfigStore,
   flagKey: string,
   remoteConfigValue: boolean | undefined
 ): boolean {
@@ -96,7 +100,6 @@ function resolveWhitelistFlag(
   if (override !== undefined) return override
 
   if (!isCloud) return false
-  const store = useRemoteConfigStore()
   if (!store.isAuthenticatedConfigLoaded)
     return (
       store.agentGrant === true &&
@@ -110,7 +113,9 @@ function resolveWhitelistFlag(
  * Composable for reactive access to server-side feature flags
  */
 export function useFeatureFlags() {
-  const remoteConfig = () => useRemoteConfigStore().config
+  const ownerStore = getActivePinia() ? useRemoteConfigStore() : undefined
+  const remoteConfigStore = () => ownerStore ?? useRemoteConfigStore()
+  const remoteConfig = () => remoteConfigStore().config
   const hostedBillingDestination = () =>
     normalizeHostedBillingDestination(
       resolveFlag(
@@ -326,9 +331,10 @@ export function useFeatureFlags() {
     },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(
+        remoteConfigStore(),
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
         remoteConfig().billing_control_enabled,
-        useRemoteConfigStore().cachedBillingControlEnabled
+        remoteConfigStore().cachedBillingControlEnabled
       )
     },
     get memberCreditLimitsEnabled() {
@@ -390,9 +396,10 @@ export function useFeatureFlags() {
     },
     get v1PaymentRecovery() {
       return resolveAuthGatedFlag(
+        remoteConfigStore(),
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
         remoteConfig().v1_payment_recovery,
-        useRemoteConfigStore().cachedV1PaymentRecovery
+        remoteConfigStore().cachedV1PaymentRecovery
       )
     },
     get signupTurnstileMode() {
@@ -414,6 +421,7 @@ export function useFeatureFlags() {
     },
     get agentInAppExperienceEnabled() {
       return resolveWhitelistFlag(
+        remoteConfigStore(),
         ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
         remoteConfig()['agent-in-app-experience']
       )

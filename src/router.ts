@@ -211,6 +211,7 @@ function installCloudAuthGuards(router: Router): void {
     const apiKeyAuthStore = useApiKeyAuthStore()
     const webSession = useCloudWebSessionStore()
     const remoteConfigStore = useRemoteConfigStore()
+    const { flags: accountFlags } = useFeatureFlags()
     const account = computed(() => {
       if (authStore.isAuthenticated || apiKeyAuthStore.isAuthenticated)
         return 'signed_in'
@@ -224,7 +225,7 @@ function installCloudAuthGuards(router: Router): void {
     watch(
       [
         account,
-        () => flags.signedOutRerouteEnabled,
+        () => accountFlags.signedOutRerouteEnabled,
         () => remoteConfigStore.loadState,
         () => authStore.currentUser?.uid
       ],
