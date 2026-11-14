@@ -136,7 +136,7 @@ describe('useGpuSessionStore', () => {
 
   it.for([
     { name: 'another session keeps it on', listed: true },
-    { name: 'it was the last session', listed: false }
+    { name: 'Cloud turns it off after the end', listed: false }
   ])(
     'after an idle end the toggle shows the setting the listing reports when $name',
     ({ listed }) => {
@@ -146,6 +146,14 @@ describe('useGpuSessionStore', () => {
       })
       const pick = useDeploymentPickStore()
       store.install()
+      const listingSays = (editorGpu: boolean, number: number) =>
+        Object.assign(pick, {
+          pickedDeployment: deploymentWithGpu('dep-1', {
+            editor_gpu: editorGpu,
+            can_change_editor_gpu: true
+          }),
+          shownListing: number
+        })
 
       socketSays({
         session_id: 's-1',
@@ -154,18 +162,15 @@ describe('useGpuSessionStore', () => {
         reason: 'idle',
         runs: []
       })
+      listingSays(true, 1)
 
       expect(store.settings?.on).toBe(true)
       expect(pick.load).toHaveBeenCalledOnce()
 
-      Object.assign(pick, {
-        pickedDeployment: deploymentWithGpu('dep-1', {
-          editor_gpu: listed,
-          can_change_editor_gpu: true
-        }),
-        shownListing: 1
-      })
+      vi.advanceTimersByTime(5_000)
+      listingSays(listed, 2)
 
+      expect(pick.load).toHaveBeenCalledTimes(2)
       expect(store.settings?.on).toBe(listed)
     }
   )

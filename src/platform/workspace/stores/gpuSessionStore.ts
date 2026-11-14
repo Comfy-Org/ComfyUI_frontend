@@ -25,6 +25,8 @@ import { api } from '@/scripts/api'
 
 const HOLD_FOR_READY_MS = 10 * 60 * 1000
 
+const LISTING_RECHECK_AFTER_END_MS = 5_000
+
 type GpuStatus = 'starting' | 'on' | 'unavailable'
 
 type GpuChangeRefusal = 'ownerOnly' | 'failed'
@@ -59,7 +61,11 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
   let holdGeneration = 0
   let changedAsOfListing = 0
   let uninstall = () => {}
-  onScopeDispose(() => uninstall())
+  let listingRecheck: ReturnType<typeof setTimeout> | undefined
+  onScopeDispose(() => {
+    uninstall()
+    clearTimeout(listingRecheck)
+  })
 
   const deploymentId = computed(
     () => pickStore.pickedDeployment?.deployment_id ?? null
@@ -167,7 +173,16 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
       deploymentId: id
     }
     dispatch(received)
-    if (endsTheSession(received)) void pickStore.load()
+    if (endsTheSession(received)) rereadListingAfterEnd()
+  }
+
+  function rereadListingAfterEnd() {
+    void pickStore.load()
+    clearTimeout(listingRecheck)
+    listingRecheck = setTimeout(
+      () => void pickStore.load(),
+      LISTING_RECHECK_AFTER_END_MS
+    )
   }
 
   function install() {
