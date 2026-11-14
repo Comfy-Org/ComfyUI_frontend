@@ -209,11 +209,11 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
     page.evaluate((id) => {
       const node = window.app!.graph.getNodeById(id)
       return (node?.inputs ?? [])
-        .filter((input) => input.name.startsWith('model.images.'))
         .map((input, index) => ({
           name: input.name,
           connected: node!.getInputLink(index) !== null
         }))
+        .filter(({ name }) => name.startsWith('model.images.'))
     }, toNodeId(GPT_NODE_ID))
   const readNodeColor = () =>
     page.evaluate((id) => {
@@ -256,7 +256,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
       { name: IMAGE_1_NAME, connected: true },
       { name: IMAGE_2_NAME, connected: false }
     ])
-    await expect(vueNodes.getInputSlotRow(gptNodeId, 1)).toContainText(
+    await expect(vueNodes.getInputSlotRow(gptNodeId, 2)).toContainText(
       IMAGE_2_FRIENDLY_LABEL
     )
   })
