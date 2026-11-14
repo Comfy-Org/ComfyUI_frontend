@@ -1,6 +1,5 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { effectScope, ref } from 'vue'
+import { effectScope } from 'vue'
 
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -19,34 +18,45 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 const leave = () => window.dispatchEvent(new Event('blur'))
 const comeBack = () => window.dispatchEvent(new Event('focus'))
 
-function openBillingTab({ isCloud = false, isInitialized = true } = {}) {
-  distribution.isCloud = isCloud
-  onTestFinished(() => {
-    distribution.isCloud = false
-  })
+function heldRead() {
   const settles: Array<() => void> = []
-  const readAccount = vi.fn(
+  const read = vi.fn(
     () =>
       new Promise<void>((resolve) => {
         settles.push(resolve)
       })
   )
-  onTestFinished(onBillingRefresh(readAccount))
-  const readCapabilities = vi.fn(async () => {})
-  vi.mocked(useBillingContext).mockReturnValue(
-    fromPartial({ isInitialized: ref(isInitialized) })
-  )
-  vi.mocked(useBillingCapabilities).mockReturnValue(
-    fromPartial({ refresh: readCapabilities })
+  const settle = async (index: number) => {
+    settles[index]()
+    await vi.advanceTimersByTimeAsync(0)
+  }
+  return { read, settle }
+}
+
+function openBillingTab({ isCloud = false, isInitialized = true } = {}) {
+  distribution.isCloud = isCloud
+  onTestFinished(() => {
+    distribution.isCloud = false
+  })
+  const account = heldRead()
+  onTestFinished(onBillingRefresh(account.read))
+  const capabilities = heldRead()
+  const billing = useBillingContext()
+  billing.isInitialized.value = isInitialized
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+  vi.mocked(useBillingCapabilities().refresh).mockImplementation(
+    capabilities.read
   )
   const scope = effectScope()
   scope.run(useRefreshBillingOnReturn)
   onTestFinished(() => scope.stop())
-  const settle = async (index: number) => {
-    settles[index]()
-    await new Promise((resolve) => setTimeout(resolve))
+  return {
+    readAccount: account.read,
+    readCapabilities: capabilities.read,
+    settleAccount: account.settle,
+    settleCapabilities: capabilities.settle,
+    close: () => scope.stop()
   }
-  return { readAccount, readCapabilities, settle, close: () => scope.stop() }
 }
 
 describe('useRefreshBillingOnReturn', () => {
@@ -62,11 +72,12 @@ describe('useRefreshBillingOnReturn', () => {
   })
 
   it('re-reads on every later return', async () => {
-    const { readAccount, settle } = openBillingTab()
+    const { readAccount, settleAccount, settleCapabilities } = openBillingTab()
 
     leave()
     comeBack()
-    await settle(0)
+    await settleAccount(0)
+    await settleCapabilities(0)
     leave()
     comeBack()
 
@@ -83,15 +94,23 @@ describe('useRefreshBillingOnReturn', () => {
     expect(readCapabilities).not.toHaveBeenCalled()
   })
 
-  it('does not start a second read while the first is in flight', () => {
-    const { readAccount } = openBillingTab()
+  it('holds the read of a return that lands in flight until account and capabilities both settle', async () => {
+    const { readAccount, readCapabilities, settleAccount, settleCapabilities } =
+      openBillingTab()
 
     leave()
     comeBack()
     leave()
     comeBack()
+    await settleAccount(0)
 
     expect(readAccount).toHaveBeenCalledOnce()
+    expect(readCapabilities).toHaveBeenCalledOnce()
+
+    await settleCapabilities(0)
+
+    expect(readAccount).toHaveBeenCalledTimes(2)
+    expect(readCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('leaves the first load alone while billing has not initialized', () => {
