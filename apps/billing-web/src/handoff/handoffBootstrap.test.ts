@@ -302,40 +302,78 @@ describe('runHandoffBootstrap', () => {
     }
   )
 
-  it('restores a session that sent a payment request as one that still may have charged', async () => {
+  it.for<{ name: string; stored: object; knows: object }>([
+    {
+      name: 'a payment it saw succeed',
+      stored: { paid: 'op-7' },
+      knows: { paid: 'op-7' }
+    },
+    {
+      name: 'a subscription it kept',
+      stored: { kept: 'op-7' },
+      knows: { kept: 'op-7' }
+    },
+    {
+      name: 'a payment request that never got an answer',
+      stored: { unanswered: 'lost' },
+      knows: { unanswered: 'lost' }
+    },
+    {
+      name: 'a payment request the reload cut off before its answer, which is now lost',
+      stored: { unanswered: 'sent' },
+      knows: { unanswered: 'lost' }
+    },
+    {
+      name: "an older build's charge attempt, as a request that was never answered",
+      stored: { chargeAttempted: true },
+      knows: { unanswered: 'lost' }
+    }
+  ])('restores a live session that knows $name', async ({ stored, knows }) => {
     const storage = memoryStorage()
     storage.setItem(
       'comfy.billing-web.handoff.v1',
-      JSON.stringify({
-        kind: 'session',
-        exchange: exchanged,
-        chargeAttempted: true
-      })
+      JSON.stringify({ kind: 'session', exchange: exchanged, ...stored })
     )
 
     await runHandoffBootstrap(setup('/return/topup', { storage }).env)
 
-    expect(handoffTab.value).toEqual({ ...liveSession, chargeAttempted: true })
-    expect(readHandoffState(storage)).toEqual({
-      ...liveSession,
-      chargeAttempted: true
-    })
+    expect(handoffTab.value).toEqual({ ...liveSession, ...knows })
   })
 
-  it.for([
+  it.for<{ name: string; stored: object; ended: HandoffState }>([
     {
-      name: 'that sent nothing that can charge as a link that no longer works',
+      name: 'that started no payment as a link that no longer works',
       stored: {},
-      ending: 'link_unavailable'
+      ended: { kind: 'ended', ending: 'link_unavailable' }
     },
     {
-      name: 'that sent a payment request as an unconfirmed payment',
+      name: 'whose payment request never got an answer as an unconfirmed payment',
+      stored: { unanswered: 'lost' },
+      ended: { kind: 'ended', ending: 'unconfirmed' }
+    },
+    {
+      name: 'whose payment request was still waiting for its answer as an unconfirmed payment',
+      stored: { unanswered: 'sent' },
+      ended: { kind: 'ended', ending: 'unconfirmed' }
+    },
+    {
+      name: "with an older build's charge attempt as an unconfirmed payment",
       stored: { chargeAttempted: true },
-      ending: 'unconfirmed'
+      ended: { kind: 'ended', ending: 'unconfirmed' }
+    },
+    {
+      name: 'that saw a payment succeed before a later attempt failed as completed',
+      stored: { paid: 'op-7' },
+      ended: {
+        kind: 'ended',
+        ending: 'completed',
+        workspace: 'Studio',
+        reference: 'op-7'
+      }
     }
   ])(
     'ends a stored session $name when it expired before the reload',
-    async ({ stored, ending }) => {
+    async ({ stored, ended }) => {
       const storage = memoryStorage()
       storage.setItem(
         'comfy.billing-web.handoff.v1',
@@ -349,7 +387,7 @@ describe('runHandoffBootstrap', () => {
 
       await runHandoffBootstrap(env)
 
-      expect(handoffTab.value).toEqual({ kind: 'ended', ending })
+      expect(handoffTab.value).toEqual(ended)
     }
   )
 
@@ -392,7 +430,7 @@ describe('runHandoffBootstrap', () => {
       JSON.stringify({
         kind: 'session',
         exchange: { ...exchanged, expires_at: '2026-11-09T11:59:59Z' },
-        chargeAttempted: true
+        paid: 'op-7'
       })
     )
     storage.setItem(

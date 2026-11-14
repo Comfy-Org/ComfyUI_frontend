@@ -4,6 +4,8 @@ import type { BillingOperationPointer } from '@comfyorg/account-core/billing'
 import { createOperationPointerStore } from '@comfyorg/account-core/billing'
 
 import { HANDOFF_STORAGE_KEY } from '@/handoff/captureHandoffToken'
+import type { PaymentEvent, PaymentTrace } from '@/handoff/paymentTrace'
+import { tracePayment } from '@/handoff/paymentTrace'
 import type {
   BillingHandoffExchangeResponse,
   WorkspaceSummary
@@ -44,12 +46,10 @@ export interface HandoffSession {
 }
 
 export type HandoffState =
-  | {
+  | (PaymentTrace & {
       readonly kind: 'session'
       readonly session: HandoffSession
-      /** Set before the first request that can start a charge leaves this tab; never unset. */
-      readonly chargeAttempted?: true
-    }
+    })
   | {
       readonly kind: 'ended'
       readonly ending: Exclude<HandoffEnding, 'completed'>
@@ -148,6 +148,16 @@ function endedFrom(stored: Record<string, unknown>): HandoffState {
   return ending ? { kind: 'ended', ending, reference } : UNCONFIRMED
 }
 
+function traceAcrossReload(stored: Record<string, unknown>): PaymentTrace {
+  const sentBeforeReload =
+    stored.unanswered !== undefined || stored.chargeAttempted !== undefined
+  return {
+    paid: typeof stored.paid === 'string' ? stored.paid : undefined,
+    kept: typeof stored.kept === 'string' ? stored.kept : undefined,
+    unanswered: sentBeforeReload ? 'lost' : undefined
+  }
+}
+
 export function readHandoffState(
   storage: TabStorage
 ): HandoffState | 'unreadable' | undefined {
@@ -166,13 +176,16 @@ export function readHandoffState(
       parsed.kind === 'session'
         ? handoffSessionFrom(parsed.exchange)
         : undefined
-    if (!session) return undefined
-    return parsed.chargeAttempted === undefined
-      ? { kind: 'session', session }
-      : { kind: 'session', session, chargeAttempted: true }
+    return session && { kind: 'session', session, ...traceAcrossReload(parsed) }
   } catch {
     return undefined
   }
+}
+
+function storedForm(state: HandoffState) {
+  if (state.kind !== 'session') return state
+  const { session, ...known } = state
+  return { ...known, exchange: exchangeOf(session) }
 }
 
 export function writeHandoffState(
@@ -180,18 +193,7 @@ export function writeHandoffState(
   state: HandoffState
 ): boolean {
   try {
-    storage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(
-        state.kind === 'session'
-          ? {
-              kind: 'session',
-              exchange: exchangeOf(state.session),
-              chargeAttempted: state.chargeAttempted
-            }
-          : state
-      )
-    )
+    storage.setItem(STORAGE_KEY, JSON.stringify(storedForm(state)))
     return true
   } catch {
     return false
@@ -208,13 +210,16 @@ function forgetHandoffState(storage: TabStorage): void {
   }
 }
 
-/** Records, before the request leaves, that this session sent one that can start a charge. */
-export function noteChargeAttempt(storage: TabStorage): void {
+/** Applies a payment event to the live session and keeps the result for a reload. */
+export function notePayment(storage: TabStorage, event: PaymentEvent): void {
   const current = handoffTab.value
-  if (current?.kind !== 'session' || current.chargeAttempted) return
-  const attempted: HandoffState = { ...current, chargeAttempted: true }
-  if (!writeHandoffState(storage, attempted)) forgetHandoffState(storage)
-  handoffTab.value = attempted
+  if (current?.kind !== 'session') return
+  const { kind, session, ...known } = current
+  const learned = tracePayment(known, event)
+  if (learned === known) return
+  const next: HandoffState = { kind, session, ...learned }
+  if (!writeHandoffState(storage, next)) forgetHandoffState(storage)
+  handoffTab.value = next
 }
 
 function storageHoldsSession(storage: TabStorage): boolean {
@@ -222,27 +227,41 @@ function storageHoldsSession(storage: TabStorage): boolean {
   return typeof stored === 'object' && stored.kind === 'session'
 }
 
-function endingFrom(trace: {
+function paymentIn(
+  pointer: BillingOperationPointer | undefined,
+  trace: PaymentTrace
+): BillingOperationPointer | undefined {
+  const chargesNothing =
+    pointer?.kind === 'cancel' || pointer?.operationId === trace.kept
+  return chargesNothing ? undefined : pointer
+}
+
+function endingFrom(known: {
   readonly pointer: BillingOperationPointer | undefined
-  readonly chargeAttempted: boolean
+  readonly trace: PaymentTrace
   readonly storageHoldsSession: boolean
   readonly workspace: string
 }): HandoffState {
-  const { workspace } = trace
-  const payment = trace.pointer?.kind === 'cancel' ? undefined : trace.pointer
-  if (payment) {
-    const reference = payment.operationId
-    return payment.settled === 'succeeded'
-      ? { kind: 'ended', ending: 'completed', workspace, reference }
-      : { kind: 'ended', ending: 'payment_pending', reference }
-  }
-  const unused = trace.storageHoldsSession && !trace.chargeAttempted
-  return unused ? { kind: 'ended', ending: 'link_unavailable' } : UNCONFIRMED
+  const { trace, workspace } = known
+  const payment = paymentIn(known.pointer, trace)
+  if (payment && payment.settled !== 'succeeded')
+    return {
+      kind: 'ended',
+      ending: 'payment_pending',
+      reference: payment.operationId
+    }
+  if (trace.unanswered) return UNCONFIRMED
+  const reference = payment?.operationId ?? trace.paid
+  if (reference !== undefined)
+    return { kind: 'ended', ending: 'completed', workspace, reference }
+  return known.storageHoldsSession
+    ? { kind: 'ended', ending: 'link_unavailable' }
+    : UNCONFIRMED
 }
 
 /**
- * How a live session ends: on the payment its pointer records, else
- * `link_unavailable` only when the tab can prove it never sent a charge.
+ * How a live session ends: on the payment its pointer still awaits, then on what
+ * its trace knows, and as `link_unavailable` only when neither holds a charge.
  */
 export function sessionEnding(
   storage: TabStorage,
@@ -252,7 +271,7 @@ export function sessionEnding(
   const { session } = live
   return endingFrom({
     storageHoldsSession: storageHoldsSession(storage),
-    chargeAttempted: live.chargeAttempted === true,
+    trace: live,
     workspace: session.workspace.name,
     pointer: createOperationPointerStore(storage, now).read({
       userId: session.userId,

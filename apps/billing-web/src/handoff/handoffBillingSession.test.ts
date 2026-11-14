@@ -3,10 +3,11 @@ import type { HandoffState, TabStorage } from '@/handoff/handoffTab'
 import {
   endHandoffAtExpiry,
   handoffTab,
-  noteChargeAttempt,
+  notePayment,
   readHandoffState,
   writeHandoffState
 } from '@/handoff/handoffTab'
+import type { PaymentEvent } from '@/handoff/paymentTrace'
 
 const NOW = Date.parse('2026-11-09T12:00:00Z')
 
@@ -63,6 +64,27 @@ function pointAt(storage: TabStorage, pointer: Record<string, unknown>) {
   )
 }
 
+const SENT: PaymentEvent = { type: 'start_sent' }
+const ANSWERED: PaymentEvent = { type: 'start_answered' }
+const UNANSWERED: PaymentEvent = { type: 'start_unanswered' }
+const succeeded = (operationId: string): PaymentEvent => ({
+  type: 'payment_succeeded',
+  operationId
+})
+
+function learn(storage: TabStorage, ...events: PaymentEvent[]) {
+  events.forEach((event) => notePayment(storage, event))
+}
+
+const LINK: HandoffState = { kind: 'ended', ending: 'link_unavailable' }
+const UNCONFIRMED: HandoffState = { kind: 'ended', ending: 'unconfirmed' }
+const completed = (reference: string): HandoffState => ({
+  kind: 'ended',
+  ending: 'completed',
+  workspace: 'Studio',
+  reference
+})
+
 describe('createHandoffBillingSession', () => {
   it('hands the scoped session to billing calls for its own workspace', async () => {
     const { session } = setup()
@@ -85,71 +107,136 @@ describe('createHandoffBillingSession', () => {
     ended: HandoffState
   }>([
     {
-      name: 'a session that sent nothing that can charge',
+      name: 'a session that started no payment',
       arrange: () => {},
-      ended: { kind: 'ended', ending: 'link_unavailable' }
+      ended: LINK
     },
     {
-      name: 'a payment request that left no operation behind',
-      arrange: (storage) => noteChargeAttempt(storage),
-      ended: { kind: 'ended', ending: 'unconfirmed' }
+      name: 'a payment request still waiting for its answer',
+      arrange: (storage) => learn(storage, SENT),
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a payment request that never got an answer',
+      arrange: (storage) => learn(storage, SENT, UNANSWERED),
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a payment request Cloud refused, or one whose operation then failed',
+      arrange: (storage) => learn(storage, SENT, ANSWERED),
+      ended: LINK
     },
     {
       name: 'a payment this tab started and has not seen settle',
-      arrange: (storage) => pointAt(storage, { kind: 'topup' }),
+      arrange: (storage) => {
+        learn(storage, SENT, ANSWERED)
+        pointAt(storage, { kind: 'topup' })
+      },
       ended: { kind: 'ended', ending: 'payment_pending', reference: 'op-1' }
     },
     {
       name: 'a payment the server parked for reconciliation',
-      arrange: (storage) =>
+      arrange: (storage) => {
+        learn(storage, { type: 'payment_parked', operationId: 'op-1' })
         pointAt(storage, {
           kind: 'subscription',
           settled: 'reconciliation_needed',
           awaited: true
-        }),
+        })
+      },
       ended: { kind: 'ended', ending: 'payment_pending', reference: 'op-1' }
     },
     {
-      name: 'a payment that already succeeded',
+      name: 'a parked payment a later, declined attempt replaced',
+      arrange: (storage) =>
+        learn(
+          storage,
+          { type: 'payment_parked', operationId: 'op-1' },
+          SENT,
+          ANSWERED
+        ),
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a payment that succeeded',
       arrange: (storage) => {
-        noteChargeAttempt(storage)
+        learn(storage, SENT, ANSWERED, succeeded('op-1'))
         pointAt(storage, { kind: 'topup', settled: 'succeeded' })
       },
-      ended: {
-        kind: 'ended',
-        ending: 'completed',
-        workspace: 'Studio',
-        reference: 'op-1'
-      }
+      ended: completed('op-1')
     },
     {
-      name: 'a payment started elsewhere that this tab watched succeed',
+      name: 'a succeeded payment only the pointer still records',
       arrange: (storage) =>
         pointAt(storage, { kind: 'subscription', settled: 'succeeded' }),
-      ended: {
-        kind: 'ended',
-        ending: 'completed',
-        workspace: 'Studio',
-        reference: 'op-1'
-      }
+      ended: completed('op-1')
     },
     {
-      name: 'a cancellation this tab sent, which is not a payment that went through',
+      name: 'a payment that succeeded before a later attempt was declined',
+      arrange: (storage) =>
+        learn(storage, SENT, ANSWERED, succeeded('op-1'), SENT, ANSWERED),
+      ended: completed('op-1')
+    },
+    {
+      name: 'a payment that succeeded before a later request went unanswered',
       arrange: (storage) => {
-        noteChargeAttempt(storage)
-        pointAt(storage, { kind: 'cancel', settled: 'succeeded' })
+        learn(storage, SENT, ANSWERED, succeeded('op-1'), SENT, UNANSWERED)
+        pointAt(storage, { kind: 'topup', settled: 'succeeded' })
       },
-      ended: { kind: 'ended', ending: 'unconfirmed' }
+      ended: UNCONFIRMED
     },
     {
-      name: 'a cancellation started elsewhere, with nothing sent from this tab',
+      name: 'the same succeeded payment read again after a request went unanswered',
+      arrange: (storage) =>
+        learn(storage, succeeded('op-1'), SENT, UNANSWERED, succeeded('op-1')),
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'an unanswered request followed by a payment that succeeded',
+      arrange: (storage) =>
+        learn(storage, SENT, UNANSWERED, SENT, ANSWERED, succeeded('op-2')),
+      ended: completed('op-2')
+    },
+    {
+      name: 'an unanswered request followed by an attempt Cloud refused',
+      arrange: (storage) => learn(storage, SENT, UNANSWERED, SENT, ANSWERED),
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a cancellation this tab sent, which is not a payment',
+      arrange: (storage) =>
+        pointAt(storage, { kind: 'cancel', settled: 'succeeded' }),
+      ended: LINK
+    },
+    {
+      name: 'a cancellation still settling, which is not a payment',
       arrange: (storage) => pointAt(storage, { kind: 'cancel' }),
-      ended: { kind: 'ended', ending: 'link_unavailable' }
+      ended: LINK
+    },
+    {
+      name: 'a kept subscription, which charges nothing',
+      arrange: (storage) => {
+        learn(
+          storage,
+          { type: 'subscription_kept', operationId: 'op-1' },
+          succeeded('op-1')
+        )
+        pointAt(storage, { kind: 'subscription', settled: 'succeeded' })
+      },
+      ended: LINK
+    },
+    {
+      name: 'a kept subscription still settling, which charges nothing',
+      arrange: (storage) => {
+        learn(storage, { type: 'subscription_kept', operationId: 'op-1' })
+        pointAt(storage, { kind: 'subscription', awaited: true })
+      },
+      ended: LINK
     },
     {
       name: 'storage that no longer holds the session',
       arrange: (storage) => storage.removeItem(HANDOFF_KEY),
-      ended: { kind: 'ended', ending: 'unconfirmed' }
+      ended: UNCONFIRMED
     }
   ])(
     'ends on $name as $ended.ending, and the end survives a reload',
@@ -235,20 +322,25 @@ describe('endHandoffAtExpiry', () => {
   })
 })
 
-describe('noteChargeAttempt', () => {
-  it('keeps the attempt on the session across a reload', () => {
+describe('notePayment', () => {
+  it('keeps what the tab learned for a reload, where a request still waiting for its answer can no longer get one', () => {
     const { storage } = setup()
 
-    noteChargeAttempt(storage)
+    learn(storage, succeeded('op-1'), SENT)
 
-    expect(handoffTab.value).toEqual({ ...live, chargeAttempted: true })
+    expect(handoffTab.value).toEqual({
+      ...live,
+      paid: 'op-1',
+      unanswered: 'sent'
+    })
     expect(readHandoffState(storage)).toEqual({
       ...live,
-      chargeAttempted: true
+      paid: 'op-1',
+      unanswered: 'lost'
     })
   })
 
-  it('drops the stored session when the attempt cannot be stored, so a reload never reads it as unused', () => {
+  it('drops the stored session when what it learned cannot be stored, so a reload never reads it as unused', () => {
     const { storage } = setup()
     const unwritable: TabStorage = {
       ...storage,
@@ -257,9 +349,9 @@ describe('noteChargeAttempt', () => {
       }
     }
 
-    noteChargeAttempt(unwritable)
+    notePayment(unwritable, SENT)
 
-    expect(handoffTab.value).toEqual({ ...live, chargeAttempted: true })
+    expect(handoffTab.value).toEqual({ ...live, unanswered: 'sent' })
     expect(readHandoffState(storage)).toBeUndefined()
   })
 
@@ -267,7 +359,7 @@ describe('noteChargeAttempt', () => {
     handoffTab.value = undefined
     const storage = memoryStorage()
 
-    noteChargeAttempt(storage)
+    notePayment(storage, SENT)
 
     expect(handoffTab.value).toBeUndefined()
     expect(storage.getItem(HANDOFF_KEY)).toBeNull()
