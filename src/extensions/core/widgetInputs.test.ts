@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
+  LGraphEventMode,
   LGraphNode,
   LiteGraph,
   LLink
@@ -39,6 +40,7 @@ beforeEach(() => {
 })
 
 const { rerouteNodeExtension } = await import('./rerouteNode')
+const { graphToPrompt } = await import('@/utils/executionUtil')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.
@@ -401,6 +403,80 @@ describe('PrimitiveNode', () => {
     primitive.connect(0, target, 0)
 
     expect(primitive.widgets?.[0].value).toBe(111)
+  })
+
+  function stringTargetFixture() {
+    const graph = new LGraph()
+    const source = new LGraphNode('Source')
+    graph.add(source)
+    source.addWidget('text', 'subject', 'cat', () => {})
+    const target = new LGraphNode('Target')
+    target.comfyClass = 'Target'
+    graph.add(target)
+    target.addInput('text', 'STRING')
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    return { graph, primitive, target }
+  }
+
+  it.for([
+    {
+      label: 'sends its value',
+      mode: LGraphEventMode.ALWAYS,
+      replace: false,
+      value: 'a photo of %Source.subject%',
+      expected: 'a photo of %Source.subject%'
+    },
+    {
+      label: 'applies text replacements to its value',
+      mode: LGraphEventMode.ALWAYS,
+      replace: true,
+      value: 'a photo of %Source.subject%',
+      expected: 'a photo of cat'
+    },
+    {
+      label: 'sends nothing while muted',
+      mode: LGraphEventMode.NEVER,
+      replace: false,
+      value: 'a photo of cat',
+      expected: undefined
+    },
+    {
+      label: 'sends nothing while bypassed',
+      mode: LGraphEventMode.BYPASS,
+      replace: false,
+      value: 'a photo of cat',
+      expected: undefined
+    }
+  ])(
+    '$label to a forceInput without a widget',
+    async ({ mode, replace, value, expected }) => {
+      const { graph, primitive, target } = stringTargetFixture()
+      primitive.connect(0, target, 0)
+      primitive.mode = mode
+      primitive.properties['Run widget replace on values'] = replace
+      primitive.widgets![0].value = value
+
+      const { output } = await graphToPrompt(graph)
+
+      expect(output[String(target.id)].inputs.text).toBe(expected)
+    }
+  )
+
+  it("keeps the target widget's serialized value on a widget input", async () => {
+    const { graph, primitive, target } = stringTargetFixture()
+    target.inputs[0].widget = {
+      name: 'text',
+      [GET_CONFIG]: () => ['STRING', {}]
+    }
+    const widget = target.addWidget('text', 'text', '', () => {})
+    widget.serializeValue = () => String(widget.value).toUpperCase()
+    primitive.connect(0, target, 0)
+    primitive.widgets![0].value = 'a photo of cat'
+
+    const { output } = await graphToPrompt(graph)
+
+    expect(output[String(target.id)].inputs.text).toBe('A PHOTO OF CAT')
   })
 })
 

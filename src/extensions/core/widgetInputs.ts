@@ -53,15 +53,25 @@ export class PrimitiveNode extends LGraphNode {
   }
 
   override applyToGraph(extraLinks: LLink[] = []) {
-    const sourceWidget = this.widgets?.[0]
-    const graph = this.graph
-    if (!sourceWidget || !graph) return
+    applyFirstWidgetValueToGraph(this, extraLinks, (value) =>
+      this._applyTextReplacements(value)
+    )
+  }
 
-    let v = sourceWidget.value
-    if (v && this.properties[replacePropertyName]) {
-      v = applyTextReplacements(graph, v as string)
-    }
-    applyFirstWidgetValueToGraph(this, extraLinks, () => v)
+  override resolveVirtualValue() {
+    const widget = this.widgets?.[0]
+    if (!widget) return
+    return this._applyTextReplacements(
+      widget.serializeValue ? widget.serializeValue(this, 0) : widget.value
+    )
+  }
+
+  private _applyTextReplacements<T>(value: T): T | string {
+    return typeof value === 'string' &&
+      this.properties[replacePropertyName] &&
+      this.graph
+      ? applyTextReplacements(this.graph, value)
+      : value
   }
 
   override refreshComboInNode(defs?: Record<string, ComfyNodeDef>): void {

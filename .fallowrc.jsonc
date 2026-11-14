@@ -212,6 +212,12 @@
     "dupesBaseline": ".fallow-baselines/dupes.json"
   },
 
+  "usedClassMembers": [
+    // ExecutableNodeDTO calls this hook through the entity-registry
+    // LGraphNode interface, which Fallow does not link to subclass overrides.
+    { "extends": "LGraphNode", "members": ["resolveVirtualValue"] }
+  ],
+
   "rules": {
     "boundary-violation": "warn",
     "dev-dependencies-in-production": "error"

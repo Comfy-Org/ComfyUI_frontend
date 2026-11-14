@@ -1682,6 +1682,12 @@ export class LGraphNode
   ): { node: LGraphNode; slot: number } | undefined
 
   /**
+   * Returns the prompt value a virtual node sends from output {@link slot}
+   * to an input that has no widget to receive it.
+   */
+  resolveVirtualValue?(slot: number): unknown
+
+  /**
    * Returns the link info in the connection of an input slot
    * @returns object or null
    */

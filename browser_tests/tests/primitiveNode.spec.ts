@@ -150,3 +150,33 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     })
   })
 })
+
+test.describe(
+  'Primitive Node forced inputs',
+  { tag: ['@node', '@vue-nodes'] },
+  () => {
+    test('Can serialize to forced inputs', async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'primitive/primitive_node_force_input'
+      )
+      const input = comfyPage.vueNodes
+        .getNodeByTitle('Primitive')
+        .getByRole('spinbutton', { name: 'value', exact: true })
+      await expect(input).toHaveValue('3')
+
+      await input.fill('5')
+      await input.blur()
+
+      await expect
+        .poll(
+          async () =>
+            Object.values(
+              await comfyPage.workflow.getExportedWorkflow({ api: true })
+            ).find((entry) => entry.class_type === 'DevToolsNodeWithForceInput')
+              ?.inputs.int_input,
+          { message: 'Serialized prompt has primitive value' }
+        )
+        .toBe(5)
+    })
+  }
+)
