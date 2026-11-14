@@ -1,12 +1,17 @@
-import { useRafFn } from '@vueuse/core'
+import { tryOnScopeDispose } from '@vueuse/core'
 
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 
 const EDGE_THRESHOLD = 50
+const STALL_LIMIT_MS = 50
+const REFERENCE_FRAME_MS = 1000 / 60
 
 interface AutoPanOptions {
-  canvas: HTMLCanvasElement
-  ds: DragAndScale
+  canvas: {
+    canvas: HTMLCanvasElement
+    ds: DragAndScale
+  }
   maxPanSpeed: number
   onPan: (canvasDeltaX: number, canvasDeltaY: number) => void
 }
@@ -47,18 +52,17 @@ export function calculateEdgePanSpeed(
 export class AutoPanController {
   private pointerX = 0
   private pointerY = 0
-  private readonly canvas: HTMLCanvasElement
-  private readonly ds: DragAndScale
+  private readonly canvas: AutoPanOptions['canvas']
   private readonly maxPanSpeed: number
   private readonly onPan: (dx: number, dy: number) => void
-  private readonly raf: ReturnType<typeof useRafFn>
+  private stopFrame: (() => void) | undefined
+  private lastFrameTime = 0
 
   constructor(options: AutoPanOptions) {
     this.canvas = options.canvas
-    this.ds = options.ds
     this.maxPanSpeed = options.maxPanSpeed
     this.onPan = options.onPan
-    this.raf = useRafFn(() => this.tick(), { immediate: false })
+    tryOnScopeDispose(() => this.stop())
   }
 
   updatePointer(screenX: number, screenY: number) {
@@ -67,36 +71,47 @@ export class AutoPanController {
   }
 
   start() {
-    this.raf.resume()
+    if (this.stopFrame) return
+    this.lastFrameTime = performance.now()
+    this.stopFrame = onCanvasFrame(this.canvas, 'update', (frameIntervalMs) =>
+      this.tick(frameIntervalMs)
+    )
   }
 
   stop() {
-    this.raf.pause()
+    this.stopFrame?.()
+    this.stopFrame = undefined
   }
 
-  private tick() {
-    const rect = this.canvas.getBoundingClientRect()
-    const scale = this.ds.scale
+  private tick(frameIntervalMs: number) {
+    const { canvas, ds } = this.canvas
+    const now = performance.now()
+    const stallLimit = Math.max(STALL_LIMIT_MS, frameIntervalMs)
+    const elapsed = Math.min(stallLimit, now - this.lastFrameTime)
+    this.lastFrameTime = now
+    const maxPanSpeed = (this.maxPanSpeed * elapsed) / REFERENCE_FRAME_MS
+    const rect = canvas.getBoundingClientRect()
+    const scale = ds.scale
 
     const panX = calculateEdgePanSpeed(
       this.pointerX,
       rect.left,
       rect.right,
       scale,
-      this.maxPanSpeed
+      maxPanSpeed
     )
     const panY = calculateEdgePanSpeed(
       this.pointerY,
       rect.top,
       rect.bottom,
       scale,
-      this.maxPanSpeed
+      maxPanSpeed
     )
 
     if (panX === 0 && panY === 0) return
 
-    this.ds.offset[0] -= panX
-    this.ds.offset[1] -= panY
+    ds.offset[0] -= panX
+    ds.offset[1] -= panY
 
     this.onPan(panX, panY)
   }

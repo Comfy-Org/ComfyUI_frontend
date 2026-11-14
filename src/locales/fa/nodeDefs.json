@@ -497,6 +497,50 @@
       }
     }
   },
+  "BakeTextureFromViews": {
+    "description": "تصاویر را روی چیدمان UV مش بازفرافکنی می‌کند: با «رندر مش» رندر کنید، تصاویر را ویرایش یا بازتولید کنید، سپس آن‌ها را با همان مش و دوربین‌ها بپزید. تکسل‌هایی که هیچ نمایی پوشششان نمی‌دهد، بافت خود مش (یا رنگ‌های رأس) را حفظ می‌کنند. base_color را برای «اعمال بافت به مش» و یک ماسک اطمینان از میزان دیده‌شدن هر تکسل توسط نماها خروجی می‌دهد. رندرهای ایجادشده با تبدیل مدل نمایشگر، هم‌تراز نخواهند بود.",
+    "display_name": "پخت بافت از نماها",
+    "inputs": {
+      "blend_exponent": {
+        "name": "blend_exponent",
+        "tooltip": "به نماها بر اساس cos(view angle)^exponent وزن داده می‌شود. مقدار بالاتر، نمای روبه‌روتر را ترجیح می‌دهد (واضح‌تر، با درزهای سخت‌تر)؛ مقدار پایین‌تر، نماهای بیشتری را میانگین می‌گیرد (نرم‌تر)."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "دوربین‌هایی که تصاویر با آن‌ها رندر شده‌اند، همان‌طور که به «رندر مش» متصل شده‌اند. ریگ‌ها را با «دوربین‌های دسته‌ای» به‌هم بپیوندید. هیچ‌کدام: نمای جلویی با قاب‌بندی خودکارِ «رندر مش»."
+      },
+      "fill_unseen": {
+        "name": "fill_unseen",
+        "tooltip": "تکسل‌هایی که هیچ نمایی آن‌ها را نمی‌بیند، به‌جای بافت خود مش یا رنگ‌های رأس، رنگ گسترش‌یافته از سطح دیده‌شده را می‌گیرند. برای نماهایی که کل بافت را جایگزین می‌کنند."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "برای هر دوربین یک تصویر، به ترتیب دوربین‌ها (تصاویر دسته‌ای). هر وضوحی با نسبت ابعاد رندر قابل استفاده است؛ وضوح بالاتر پخت واضح‌تری می‌دهد."
+      },
+      "mask": {
+        "name": "ماسک",
+        "tooltip": "ناحیه‌های ویرایش‌شده در هر نما؛ فقط پیکسل‌های ماسک‌شده بازفرافکنی می‌شوند. یک ماسک واحد برای همهٔ نماها اعمال می‌شود."
+      },
+      "mesh": {
+        "name": "مش",
+        "tooltip": "مشی که UV آن باز شده و رندر شده است."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح مربعی بافت. ۰ = اندازهٔ فعلی بافت مش (اگر بافتی نداشته باشد، ۲۰۴۸)؛ در غیر این صورت، بافت فعلی با آن بازنمونه‌برداری می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "اطمینان",
+        "tooltip": "برای هر تکسل، میزان روبه‌روبودن بهترین نما هنگام دیدن آن؛ ۰ = دیده‌نشده. آن را به‌صورت بافت از ریگ دیگری رندر کنید تا ببینید آن نماها هنوز چه نواحی‌ای را باید پوشش دهند."
+      }
+    }
+  },
   "BakeTextureFromVoxel": {
     "description": "بافت‌های PBR را روی چیدمان UV موجود مش بیک می‌کند (نمونه‌برداری سه‌خطی از حجم وکسل تنک). UV باز نمی‌کند — یک node بازکردن UV را در بالادست متصل کنید. IMAGEهای خاکستری base_color + metallic/roughness را خروجی می‌دهد (اگر PBR وجود نداشته باشد، سیاه)؛ برای SaveGLB آن‌ها را به ApplyTextureToMesh (همان مش) وصل کنید.",
     "display_name": "بیک‌کردن بافت از وکسل",
@@ -565,6 +609,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchCameras": {
+    "description": "دوربین‌ها و مدارها را به‌ترتیب ورودی در یک فهرست دوربین ادغام می‌کند.",
+    "display_name": "دوربین‌های دسته‌ای",
+    "inputs": {
+      "cameras": {
+        "name": "دوربین‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
         "tooltip": null
       }
     }
@@ -838,6 +897,204 @@
     "outputs": {
       "0": {
         "name": "output",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeTextToSpeech": {
+    "description": "تبدیل متن به گفتار با Breeze TTS 2.",
+    "display_name": "تبدیل متن به گفتار Breeze",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "delivery": {
+        "name": "شیوهٔ بیان"
+      },
+      "delivery_speaker_boost": {
+        "name": "speaker_boost"
+      },
+      "language": {
+        "name": "زبان",
+        "tooltip": "زبان متن. برای انگلیسی و چینی می‌توان از هر دو مدل استفاده کرد؛ زبان‌های دیگر از Breeze TTS 2 Multilingual استفاده می‌کنند. هر صدا در زبان خودش بهترین کیفیت را دارد: برای زبانی دیگر، از نسخه‌ای استفاده کنید که با محلی‌سازی صدای Breeze ایجاد شده است."
+      },
+      "language_model": {
+        "name": "مدل"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "speed": {
+        "name": "سرعت",
+        "tooltip": "تمپو را بدون تغییر زیر و بمی تغییر می‌دهد."
+      },
+      "text": {
+        "name": "متن",
+        "tooltip": "تا ۱۰۰۰ نویسه. تگ‌های صوتی مانند (laughs) یا (sighs) اجرا می‌شوند، نه خوانده."
+      },
+      "voice": {
+        "name": "صدا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceClone": {
+    "description": "از ضبط صدای یک گوینده، صدا ایجاد کنید.",
+    "display_name": "شبیه‌سازی صدا با Breeze",
+    "inputs": {
+      "audio": {
+        "name": "صوت",
+        "tooltip": "یک گوینده، حداقل ۳ ثانیه. فقط ۶۰ ثانیهٔ نخست استفاده می‌شود."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "remove_background_noise": {
+        "name": "حذف نویز پس‌زمینه"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
+        "tooltip": null
+      },
+      "1": {
+        "name": "پیش‌نمایش",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceDesign": {
+    "description": "یک صدای جدید از توضیحات متنی ایجاد کنید.",
+    "display_name": "طراحی صدای Breeze",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "description": {
+        "name": "توضیحات",
+        "tooltip": "صدا را در ۳ تا ۵۰۰ نویسه توصیف کنید: سن، جنسیت، لهجه، لحن، سرعت."
+      },
+      "language": {
+        "name": "زبان",
+        "tooltip": "زبان متن پیش‌نمایش. برای انگلیسی و چینی می‌توان از هرکدام از مدل‌ها استفاده کرد؛ زبان‌های دیگر از مدل چندزبانهٔ Breeze TTS ۲ استفاده می‌کنند."
+      },
+      "language_model": {
+        "name": "مدل"
+      },
+      "preview_text": {
+        "name": "متن پیش‌نمایش",
+        "tooltip": "جمله‌ای که صدای جدید در پیش‌نمایش می‌گوید، تا ۵۰۰ نویسه. آن را به زبان انتخاب‌شده بنویسید: صدا بر اساس این پیش‌نمایش ساخته می‌شود."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "میزان تطابق صدا با توضیحات."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
+        "tooltip": null
+      },
+      "1": {
+        "name": "پیش‌نمایش",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceLocalize": {
+    "description": "یک کپی از صدا ایجاد کنید که به‌طور بومی به زبانی دیگر صحبت می‌کند.",
+    "display_name": "بومی‌سازی صدای Breeze",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "language": {
+        "name": "زبان",
+        "tooltip": "زبانی که صدای جدید با آن صحبت می‌کند."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "voice": {
+        "name": "صدا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
+        "tooltip": null
+      },
+      "1": {
+        "name": "پیش‌نمایش",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceRemix": {
+    "description": "یک کپی تغییر‌یافته از صدا را به همان زبان، بر اساس توضیحات یا یک پیش‌تنظیم ایجاد کنید.",
+    "display_name": "ریمیکس صدای Breeze",
+    "inputs": {
+      "change": {
+        "name": "تغییر"
+      },
+      "change_prompt": {
+        "name": "پرامپت"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "مقادیر بالاتر، صدا را بیشتر تغییر می‌دهند."
+      },
+      "voice": {
+        "name": "صدا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
+        "tooltip": null
+      },
+      "1": {
+        "name": "پیش‌نمایش",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceSelector": {
+    "description": "یک صدای منتخب Breeze را انتخاب کنید یا شناسهٔ هر صدای Breeze را وارد کنید.",
+    "display_name": "انتخاب‌گر صدای Breeze",
+    "inputs": {
+      "language": {
+        "name": "زبان"
+      },
+      "language_voice": {
+        "name": "صدا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صدا",
         "tooltip": null
       }
     }
@@ -1645,12 +1902,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "ویدیوی نهایی ۱۰۸۰p یک پیش‌نویس Seedance 2.5 را رندر می‌کند. نسخهٔ نهایی صحنه و حرکت پیش‌نویس را حفظ می‌کند و از prompt، مراجع، مدت‌زمان، نسبت ابعاد و تنظیم صوتی آن دوباره استفاده می‌کند.",
+    "description": "ویدیوی نهایی 1080p یا 4k یک پیش‌نویس Seedance 2.5 را رندر کنید. نسخهٔ نهایی صحنه و حرکت پیش‌نویس را حفظ می‌کند و پرامپت، مراجع، مدت‌زمان، نسبت تصویر و تنظیم صوتی آن را دوباره به‌کار می‌گیرد.",
     "display_name": "تبدیل پیش‌نویس ByteDance Seedance 2.5 به ویدیوی نهایی",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "خروجی draft_task_id از اجرای یک node ‏Seedance 2.5 با مدل Seedance 2.5 Draft، یا شناسهٔ وظیفهٔ پیش‌نویسِ جای‌گذاری‌شده. کنترل seed آن node را روی fixed تنظیم کنید؛ در غیر این صورت اجرای بعدی به‌جای استفادهٔ مجدد از پیش‌نویسی که بررسی کرده‌اید، پیش‌نویس جدیدی ایجاد می‌کند. پیش‌نویس را تا ۷ روز پس از ایجاد آن می‌توان رندر کرد."
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "وضوح ویدیوی نهایی."
       },
       "watermark": {
         "name": "واترمارک",
@@ -1688,7 +1949,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخهٔ نهایی ۱۰۸۰p را در node تبدیل Seedance 2.5 Draft به ویدیوی نهایی رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node ‏Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای حداکثر کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1720,7 +1981,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "شناسهٔ وظیفهٔ اجرای Seedance 2.5 Draft. آن را برای رندر نسخهٔ نهایی ۱۰۸۰p به node تبدیل Seedance 2.5 Draft به ویدیوی نهایی متصل کنید."
+        "tooltip": "شناسهٔ وظیفهٔ اجرای Seedance 2.5 Draft. آن را به node ‏Seedance 2.5 Draft to Final Video متصل کنید تا نسخهٔ نهایی 1080p یا 4k رندر شود."
       }
     }
   },
@@ -1733,7 +1994,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخهٔ نهایی ۱۰۸۰p را در node تبدیل Seedance 2.5 Draft به ویدیوی نهایی رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node ‏Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای حداکثر کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1786,7 +2047,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخهٔ نهایی ۱۰۸۰p را در node تبدیل Seedance 2.5 Draft به ویدیوی نهایی رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node ‏Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای حداکثر کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1830,7 +2091,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "شناسهٔ وظیفهٔ اجرای Seedance 2.5 Draft. آن را برای رندر نسخهٔ نهایی ۱۰۸۰p به node تبدیل Seedance 2.5 Draft به ویدیوی نهایی متصل کنید."
+        "tooltip": "شناسهٔ وظیفهٔ اجرای Seedance 2.5 Draft. آن را به node ‏Seedance 2.5 Draft to Final Video متصل کنید تا نسخهٔ نهایی 1080p یا 4k رندر شود."
       }
     }
   },
@@ -1843,7 +2104,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه و خروجی mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع ۴۸۰p که draft_task_id آن، نسخهٔ نهایی ۱۰۸۰p را در node تبدیل Seedance 2.5 Draft به ویدیوی نهایی رندر می‌کند؛ Seedance 2.0 برای بیشترین کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین و کم‌هزینه‌ترین تولید."
+        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node ‏Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای حداکثر کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1878,7 +2139,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "شناسهٔ وظیفهٔ اجرای Seedance 2.5 Draft. آن را برای رندر نسخهٔ نهایی ۱۰۸۰p به node تبدیل Seedance 2.5 Draft به ویدیوی نهایی متصل کنید."
+        "tooltip": "شناسهٔ وظیفهٔ اجرای Seedance 2.5 Draft. آن را به node ‏Seedance 2.5 Draft to Final Video متصل کنید تا نسخهٔ نهایی 1080p یا 4k رندر شود."
       }
     }
   },
@@ -2183,8 +2444,8 @@
     }
   },
   "ByteDanceSeedreamLayerSeparationNodeV2": {
-    "description": "تصویر را به یک صفحهٔ پس‌زمینه به‌علاوهٔ حداکثر ۱۶ لایهٔ شفافِ قابل‌بازموقعیت‌دهی تجزیه می‌کند که هرکدام دارای ترتیب لایه‌بندی، کادر محدودکننده، نام و توضیحات هستند.",
-    "display_name": "جداسازی لایهٔ ByteDance Seedream 5.0",
+    "description": "یک تصویر را به یک صفحهٔ پس‌زمینه به‌همراه لایه‌های شفافِ قابل‌بازجایی تجزیه می‌کند (تا 99 لایه با Seedream 5.5 و تا 16 لایه با 5.0) که هرکدام دارای ترتیب چیدمان، کادر مرزی، نام و توضیحات هستند.",
+    "display_name": "جداسازی لایهٔ ByteDance Seedream 5.0 و 5.5",
     "inputs": {
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -2195,11 +2456,11 @@
       "model_crop_layers": {
         "name": "crop_layers"
       },
+      "model_max_images": {
+        "name": "حداکثر_تصاویر"
+      },
       "model_prompt": {
         "name": "prompt"
-      },
-      "model_prompt_optimization": {
-        "name": "prompt_optimization"
       },
       "model_seed": {
         "name": "seed"
@@ -2339,7 +2600,7 @@
   },
   "ByteDanceSeedreamNodeV3": {
     "description": "تولید یکپارچه متن‌به‌تصویر و ویرایش دقیق با یک جمله، تا وضوح 4K.",
-    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "display_name": "ByteDance Seedream 4.5، 5.0 و 5.5",
     "inputs": {
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -2347,20 +2608,17 @@
       "model": {
         "name": "مدل"
       },
+      "model_background": {
+        "name": "پس‌زمینه"
+      },
       "model_height": {
         "name": "ارتفاع"
-      },
-      "model_prompt_optimization": {
-        "name": "prompt_optimization"
       },
       "model_seed": {
         "name": "بذر"
       },
       "model_size_preset": {
         "name": "size_preset"
-      },
-      "model_thinking": {
-        "name": "تفکر"
       },
       "model_watermark": {
         "name": "واترمارک"
@@ -4318,7 +4576,7 @@
       },
       "camera_type": {
         "name": "camera_type",
-        "tooltip": "پروژکشن مورد استفاده توسط Render Splat: پرسپکتیو (کوتاه‌شدگی) یا اورتوگرافیک (موازی)."
+        "tooltip": "نوع پروجکشنِ مورد استفاده در Render Splat و Render Mesh: پرسپکتیو (کوتاه‌نمایی) یا ارتوگرافیک (موازی)."
       },
       "fov": {
         "name": "fov",
@@ -4354,6 +4612,38 @@
       "zoom": {
         "name": "zoom",
         "tooltip": "بزرگنمایی دیجیتال (ضریب فاصله کانونی). بیشتر از ۱ بدون حرکت دوربین بزرگنمایی می‌کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
+  "CreateCameraOrbit": {
+    "description": "چندین دوربین پیرامون هدف دوربین اول: به‌طور پیش‌فرض یک چرخش گردان، در صورت نیاز با شیب، به‌همراه نماهایی مستقیم از بالا و پایین. Render Mesh برای هر دوربین یک تصویر رندر می‌کند؛ Bake Texture From Views آن‌ها را به عقب پروجکت می‌کند.",
+    "display_name": "ایجاد مدار دوربین",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "اولین دوربین مدار. یک فهرست دوربین، پیرامون همهٔ دوربین‌های موجود در آن مدار می‌زند."
+      },
+      "count": {
+        "name": "تعداد",
+        "tooltip": "دوربین‌هایی با فاصلهٔ یکنواخت در طول پیمایش."
+      },
+      "pitch": {
+        "name": "چرخش عمودی",
+        "tooltip": "شیب کلی روی هدف؛ مقادیر مثبت مانند pitch در Create Camera Info افزایش می‌یابند؛ پس از 90، دوربین‌ها از بالای آن عبور می‌کنند. چرخش‌های کامل مانند yaw حلقه می‌شوند."
+      },
+      "poles": {
+        "name": "قطب‌ها",
+        "tooltip": "نماهایی مستقیم از بالا و/یا پایین به هدف که پس از مدار افزوده می‌شوند. بالای تصویر آن‌ها در جهتی مخالف دوربین اول قرار می‌گیرد."
+      },
+      "yaw": {
+        "name": "چرخش افقی",
+        "tooltip": "میزان چرخش کلی پیرامون هدف، در جهت yaw مربوط به Create Camera Info. چرخش‌های کامل، یک گام مانده به دوربین اول متوقف می‌شوند؛ پیمایش‌های دیگر در دوربین آخر پایان می‌یابند."
       }
     },
     "outputs": {
@@ -7440,7 +7730,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "با استفاده از مدل‌های Gemini Omni Flash گوگل، از یک prompt متنی ویدئویی همراه با صدا تولید کنید. در صورت تمایل، تصاویر و/یا ویدئوهای مرجع ارائه دهید تا نتیجه هدایت یا ویرایش شود. طول موردنظر (۳-۱۰ ثانیه) را مستقیماً در prompt شرح دهید.",
+    "description": "با استفاده از مدل‌های Gemini Omni Flash گوگل، از یک پرامپت متنی ویدیویی همراه با صدا تولید کنید. در صورت تمایل، تصاویر و/یا ویدیوهای مرجع ارائه کنید تا نتیجه را هدایت یا ویرایش کنند. طول موردنظر را مستقیماً در پرامپت شرح دهید (۳–۱۵ ثانیه برای Omni Flash 1.2، ۳–۱۰ ثانیه برای مدل‌های قدیمی‌تر).",
     "display_name": "Google Gemini Omni (ویدئو)",
     "inputs": {
       "control_after_generate": {
@@ -7748,7 +8038,8 @@
         "name": "تصویر"
       },
       "model": {
-        "name": "مدل"
+        "name": "مدل",
+        "tooltip": "grok-imagine-image-quality و grok-imagine-image-pro توسط xAI بازنشسته شده‌اند و اکنون با کیفیت پایین به‌صورت grok-imagine-image-2.0 اجرا می‌شوند."
       },
       "number_of_images": {
         "name": "تعداد تصاویر",
@@ -7780,7 +8071,8 @@
         "name": "control after generate"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-image-quality و grok-imagine-image-pro توسط xAI بازنشسته شده‌اند و اکنون با کیفیت پایین به‌صورت grok-imagine-image-2.0 اجرا می‌شوند."
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
@@ -7820,7 +8112,8 @@
         "name": "کنترل پس از تولید"
       },
       "model": {
-        "name": "مدل"
+        "name": "مدل",
+        "tooltip": "grok-imagine-image-quality و grok-imagine-image-pro توسط xAI بازنشسته شده‌اند و اکنون با کیفیت پایین به‌صورت grok-imagine-image-2.0 اجرا می‌شوند."
       },
       "number_of_images": {
         "name": "تعداد تصاویر",
@@ -8255,6 +8548,9 @@
       "model": {
         "name": "مدل"
       },
+      "model_auto_duration": {
+        "name": "مدت‌زمان خودکار"
+      },
       "model_duration": {
         "name": "مدت‌زمان"
       },
@@ -8275,7 +8571,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "با استفاده از HeyGen Video 1.0، از یک پرامپت متنی ویدیویی با گفت‌وگو و صدای همگام‌سازی‌شده تولید کنید. در صورت تمایل، حداکثر ۱۲ تصویر مرجع، ویدیو و کلیپ صوتی متصل کنید و در پرامپت به آن‌ها با {'@'}Image1، {'@'}Video1، {'@'}Audio1 اشاره کنید.",
+    "description": "با استفاده از HeyGen Video 1.0، از یک متن راهنما ویدئویی با گفت‌وگو و صدای همگام تولید کنید. به‌صورت اختیاری، تا ۱۵ تصویر مرجع، ویدئو و کلیپ صوتی را متصل کنید و در متن راهنما با {'@'}Image1، {'@'}Video1، {'@'}Audio1 به آن‌ها اشاره کنید.",
     "display_name": "تبدیل مرجع به ویدیو با HeyGen Video 1.0",
     "inputs": {
       "control_after_generate": {
@@ -8286,6 +8582,9 @@
       },
       "model_aspect_ratio": {
         "name": "نسبت ابعاد"
+      },
+      "model_auto_duration": {
+        "name": "مدت‌زمان خودکار"
       },
       "model_duration": {
         "name": "مدت‌زمان"
@@ -10320,6 +10619,9 @@
       "model_aspect_ratio": {
         "name": "نسبت ابعاد"
       },
+      "model_audio": {
+        "name": "صدا"
+      },
       "model_prompt": {
         "name": "پرامپت"
       },
@@ -10337,7 +10639,7 @@
     }
   },
   "Kling4ImageToVideoNode": {
-    "description": "یک ویدیو همراه با صدا و با استفاده از حداکثر ۱۰ فریم کلیدی تولید کنید. فریم‌های میانی با فاصله یکنواخت قرار می‌گیرند؛ ویدیو نسبت ابعاد نخستین فریم کلیدی را می‌گیرد.",
+    "description": "با حداکثر ۱۰ فریم کلیدی در kling-4.0، یا از یک فریم نخست در kling-4.0-flash، ویدیویی همراه با صدا تولید کنید. فریم‌های میانی با فاصله‌ای یکنواخت قرار می‌گیرند؛ ویدیو نسبت ابعاد نخستین فریم کلیدی را می‌گیرد.",
     "display_name": "Kling 4.0 تصویر به ویدیو",
     "inputs": {
       "control_after_generate": {
@@ -11220,8 +11522,7 @@
         "tooltip": "تصویر مرجع که سبک آن بر تولید تأثیر می‌گذارد."
       },
       "strength": {
-        "name": "strength",
-        "tooltip": "قدرت مرجع؛ مقادیر منفی تأثیر سبک را معکوس می‌کند."
+        "name": "strength"
       },
       "style_reference": {
         "name": "style_reference",
@@ -13328,30 +13629,102 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "مفاهیم دوربین برای استفاده با گره‌های Luma Text to Video و Luma Image to Video.",
-    "display_name": "مفاهیم Luma",
+  "LtxApiVideoAlphaGen": {
+    "description": "یک مات آلفای خاکستری استخراج کنید (سفید، پیش‌زمینه است) که فریم‌به‌فریم با ویدیوی ورودی مطابقت دارد. برای تبدیل آن به یک mask، از Get Video Components و Image To Mask استفاده کنید. صدا حفظ نمی‌شود.",
+    "display_name": "LTX Video AlphaGen",
     "inputs": {
-      "concept1": {
-        "name": "concept1"
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
       },
-      "concept2": {
-        "name": "concept2"
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
       },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "مفاهیم دوربین اختیاری برای افزودن به موارد انتخاب‌شده در اینجا."
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "حداکثر ۱۰ ثانیه، با بیشترین وضوح ۳۸۴۰x۲۱۶۰ در هر جهت."
       }
     },
     "outputs": {
       "0": {
-        "name": "luma_concepts",
+        "name": "مات",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoReframe": {
+    "description": "یک ویدیو را به وضوح و نسبت ابعاد جدید بازقاب‌بندی کنید. نواحی خارج از ویدیوی اصلی برای هماهنگی با آن تولید می‌شوند.",
+    "display_name": "LTX Video بازقاب‌بندی",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "placement": {
+        "name": "جای‌گذاری",
+        "tooltip": "محل قرارگیری ویدیوی اصلی در قاب جدید. ویدیو همیشه یک ضلع قاب را پر می‌کند؛ بنابراین یک لنگر فقط آن را در امتداد ضلع دیگر جابه‌جا می‌کند."
+      },
+      "resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "حداکثر ۶۰ ثانیه و ۱۸۰۰ فریم، با اندازهٔ هر ضلع بین ۶۴ تا ۴۰۹۶ پیکسل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoSdrToHdr": {
+    "description": "یک ویدیوی SDR را با همان وضوح به یک ویدیوی HDR ده‌بیتی (BT.2020، HLG) تبدیل کنید. صدا حفظ نمی‌شود.",
+    "display_name": "LTX Video تبدیل SDR به HDR",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "حداکثر ۳۸۴۰x۲۱۶۰ در هر جهت. تا ۲۷۳ فریم در 1080p، ۱۹۳ فریم در 1440p و ۶۵ فریم در 4K."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoUpscale": {
+    "description": "یک ویدیو را با حفظ نسبت ابعاد، نرخ فریم و صدا به 1080p، 4K یا 8K ارتقای وضوح دهید.",
+    "display_name": "LTX Video ارتقای وضوح",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "resolution": {
+        "name": "وضوح",
+        "tooltip": "خروجی به‌اندازه‌ای بزرگ است که در ۱۹۲۰x۱۰۸۰، ۳۸۴۰x۲۱۶۰ یا ۷۶۸۰x۴۳۲۰ جا بگیرد (برای ویدیوهای عمودی چرخانده می‌شود)."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "کوتاه‌ترین ضلع دست‌کم ۴۸۰ پیکسل و حداکثر ۷۶۸۰x۴۳۲۰ در هر جهت. تا ۲۴۰۱ فریم برای 1080p، ۶۰۱ فریم برای 4k و ۲۴۱ فریم برای 8k."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13392,82 +13765,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "تغییر تصاویر به صورت همزمان بر اساس پرامپت و نسبت تصویر.",
-    "display_name": "Luma Image to Image",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_weight": {
-        "name": "image_weight",
-        "tooltip": "وزن تصویر؛ هرچه به ۱.۰ نزدیک‌تر باشد، تصویر کمتر تغییر می‌کند."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "پرامپت برای تولید تصویر"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "بذر برای تعیین اجرای مجدد گره؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "تولید تصاویر به صورت همزمان بر اساس پرامپت و نسبت تصویر.",
-    "display_name": "Luma Text to Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "character_image": {
-        "name": "character_image",
-        "tooltip": "تصاویر مرجع شخصیت؛ می‌تواند یک دسته از چند تصویر باشد، تا ۴ تصویر می‌تواند در نظر گرفته شود."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image_luma_ref": {
-        "name": "image_luma_ref",
-        "tooltip": "اتصال گره مرجع Luma برای تأثیرگذاری بر تولید با تصاویر ورودی؛ تا ۴ تصویر می‌تواند در نظر گرفته شود."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "پرامپت برای تولید تصویر"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "بذر برای تعیین اجرای مجدد گره؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
-      },
-      "style_image": {
-        "name": "style_image",
-        "tooltip": "تصویر مرجع سبک؛ فقط ۱ تصویر استفاده خواهد شد."
-      },
-      "style_image_weight": {
-        "name": "style_image_weight",
-        "tooltip": "وزن تصویر سبک. اگر style_image ارائه نشود، نادیده گرفته می‌شود."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "تولید تصویر از متن با استفاده از مدل Luma UNI-1.",
     "display_name": "تصویر Luma UNI-1",
@@ -13495,52 +13792,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "ویدیوها را به صورت همزمان بر اساس پرامپت، تصاویر ورودی و اندازه خروجی تولید می‌کند.",
-    "display_name": "تبدیل تصویر به ویدیو لاما",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "duration": {
-        "name": "مدت زمان"
-      },
-      "first_image": {
-        "name": "اولین تصویر",
-        "tooltip": "اولین فریم ویدیوی تولید شده."
-      },
-      "last_image": {
-        "name": "آخرین تصویر",
-        "tooltip": "آخرین فریم ویدیوی تولید شده."
-      },
-      "loop": {
-        "name": "حلقه"
-      },
-      "luma_concepts": {
-        "name": "مفاهیم لاما",
-        "tooltip": "مفاهیم دوربین اختیاری برای تعیین حرکت دوربین از طریق node مفاهیم لاما."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "پرامپت برای تولید ویدیو"
-      },
-      "resolution": {
-        "name": "وضوح"
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -13770,7 +14021,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "نسبت تصویر یک ویدیوی موجود را تغییر دهید و با استفاده از Luma Ray ۳.۲ نواحی جدید بوم را پر کنید. ویدیوی منبع تا ۳۰ ثانیه. هزینه بر اساس هر ثانیه خروجی محاسبه می‌شود.",
+    "description": "نسبت ابعاد یک ویدئوی موجود را تغییر دهید و با استفاده از Luma Ray 3.2 نواحی تازه آشکارشدهٔ بوم را پر کنید. ویدئوی منبع حداکثر تا ۱۰ ثانیه. هزینه به‌ازای هر ثانیه خروجی محاسبه می‌شود.",
     "display_name": "تغییر قاب ویدیو با Luma Ray ۳.۲",
     "inputs": {
       "aspect_ratio": {
@@ -13792,7 +14043,7 @@
       },
       "video": {
         "name": "ویدیو",
-        "tooltip": "ویدیوی منبع برای تغییر قاب. تا ۳۰ ثانیه."
+        "tooltip": "ویدئوی منبع برای تغییر کادر. حداکثر تا ۱۰ ثانیه."
       }
     },
     "outputs": {
@@ -13801,70 +14052,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "یک تصویر و وزن را برای استفاده در node تولید تصویر لاما نگه می‌دارد.",
-    "display_name": "مرجع لاما",
-    "inputs": {
-      "image": {
-        "name": "تصویر",
-        "tooltip": "تصویری که به عنوان مرجع استفاده می‌شود."
-      },
-      "luma_ref": {
-        "name": "مرجع لاما"
-      },
-      "weight": {
-        "name": "وزن",
-        "tooltip": "وزن مرجع تصویر."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "مرجع لاما",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "ویدیوها را به صورت همزمان بر اساس پرامپت و اندازه خروجی تولید می‌کند.",
-    "display_name": "تبدیل متن به ویدیو لاما",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "نسبت تصویر"
-      },
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "duration": {
-        "name": "مدت زمان"
-      },
-      "loop": {
-        "name": "حلقه"
-      },
-      "luma_concepts": {
-        "name": "مفاهیم لاما",
-        "tooltip": "مفاهیم دوربین اختیاری برای تعیین حرکت دوربین از طریق node مفاهیم لاما."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "پرامپت برای تولید ویدیو"
-      },
-      "resolution": {
-        "name": "وضوح"
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -15186,6 +15373,42 @@
       }
     }
   },
+  "MiniMaxH3ImageConditioning": {
+    "description": "تبدیل متن به تصویر، یا با تصاویر، ویرایشی هدایت‌شده بر اساس آن‌ها. پرامپت به آن‌ها با نام‌های <Picture 1>، <Picture 2>، ... اشاره می‌کند.",
+    "display_name": "شرطی‌سازی تصویر MiniMax H3",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "۰ از ارتفاع image_1 پس از مقیاس‌بندی مرجع آن استفاده می‌کند، یا بدون تصویر از ۲۰۴۸ استفاده می‌شود."
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "vae مربوط به MiniMax-H3-Image. با آن، تصاویر نیز به‌عنوان latentهای مرجع لنگر می‌شوند؛ بدون آن، فقط انکودر متن را شرطی می‌کنند."
+      },
+      "width": {
+        "name": "عرض",
+        "tooltip": "۰ از عرض image_1 پس از مقیاس‌بندی مرجع آن استفاده می‌کند، یا بدون تصویر از ۲۰۴۸ استفاده می‌شود. مدل برای مساحت ۲۰۴۸x۲۰۴۸ پیکسل تنظیم شده است."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "تبدیل تصویر به ویدیو MiniMax H3",
     "inputs": {
@@ -15359,6 +15582,50 @@
       },
       "1": {
         "name": "ثانیه",
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxH3ImageNode": {
+    "description": "با MiniMax H3-Image، از متن تصویر تولید کنید یا حداکثر ۱۶ تصویر مرجع را ویرایش و ترکیب کنید. با ترتیبشان در پرامپت به مراجع اشاره کنید: {'@'}Image1، {'@'}Image2، و غیره.",
+    "display_name": "تصویر MiniMax H3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "MiniMax پیش از تولید، پرامپت را به شرحی دقیق از صحنه بازنویسی می‌کند. ویرایش‌های تصویر همیشه بهبود می‌یابند. هنگام خاموش بودن، یک نسبت ابعاد یا اندازهٔ سفارشی انتخاب کنید."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویر مرجع اختیاری برای ویرایش یا ترکیب که در پرامپت، به‌ترتیب اتصال، با @Image1..@Image16 به آن‌ها اشاره می‌شود. حداکثر ۱۶ تصویر."
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "با اتصال تصاویر مرجع، پرامپت می‌تواند حداکثر ۸٬۰۰۰ نویسه داشته باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "size": {
+        "name": "اندازه",
+        "tooltip": "۲K و ۴K اندازه را از نسبت ابعاد تعیین می‌کنند؛ حالت سفارشی عرض و ارتفاع دقیق را تنظیم می‌کند."
+      },
+      "size_aspect_ratio": {
+        "name": "aspect_ratio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "revised_prompt",
         "tooltip": null
       }
     }
@@ -18750,7 +19017,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "میزان استدلال مدل پیش از پاسخ‌گویی. «default» انتخاب را به مدل واگذار می‌کند. سطوح پشتیبانی‌شده برای هر مدل متفاوت‌اند: GPT-6 Astra low-max، GPT-6 Sol/Luna و GPT-5.6 none-max (بدون minimal)، GPT-5.5 none-xhigh، GPT-5.5 Pro medium-xhigh، GPT-5 minimal-high، و o-series low-high؛ GPT-4.1 استدلال ندارد. سطوح پشتیبانی‌نشده پیش از ارسال درخواست رد می‌شوند."
+        "tooltip": "سطوح پشتیبانی‌شده بسته به مدل متفاوت‌اند. سطح پشتیبانی‌نشده اجرا را متوقف می‌کند و سطوح معتبر را فهرست می‌کند. 'default' اجازه می‌دهد مدل انتخاب کند."
       },
       "truncation": {
         "name": "truncation",
@@ -18855,9 +19122,55 @@
       }
     }
   },
+  "OpenAIGPTImageGIFNode": {
+    "description": "یک GIF متحرک از طریق endpoint ‏GPT Image شرکت OpenAI تولید می‌کند و فریم‌ها و نرخ فریم آن را خروجی می‌دهد.",
+    "display_name": "OpenAI GPT Image 2.6 GIF",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_background": {
+        "name": "پس‌زمینه"
+      },
+      "model_complexity": {
+        "name": "پیچیدگی"
+      },
+      "model_frame_count": {
+        "name": "frame_count"
+      },
+      "model_frame_duration_ms": {
+        "name": "frame_duration_ms"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "اندازه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "فریم‌ها",
+        "tooltip": null
+      },
+      "1": {
+        "name": "فریم بر ثانیه",
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImageNodeV2": {
     "description": "تولید تصویر از طریق سرویس GPT Image شرکت OpenAI.",
-    "display_name": "OpenAI GPT Image 2.5",
+    "display_name": "OpenAI GPT Image",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18867,6 +19180,9 @@
       },
       "model_background": {
         "name": "background"
+      },
+      "model_complexity": {
+        "name": "پیچیدگی"
       },
       "model_custom_height": {
         "name": "custom_height"
@@ -18891,6 +19207,82 @@
       "seed": {
         "name": "seed",
         "tooltip": "در backend هنوز پیاده‌سازی نشده است"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV3": {
+    "description": "تصاویر را از طریق نقطه‌پایانی GPT Image در OpenAI تولید و ویرایش می‌کند، با ویرایش‌های هدایت‌شده با حاشیه‌نویسی.",
+    "display_name": "OpenAI GPT Image 2.6",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_background": {
+        "name": "پس‌زمینه"
+      },
+      "model_complexity": {
+        "name": "پیچیدگی"
+      },
+      "model_custom_height": {
+        "name": "ارتفاع سفارشی"
+      },
+      "model_custom_width": {
+        "name": "عرض سفارشی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_size": {
+        "name": "اندازه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageSVGNode": {
+    "description": "یک SVG را از طریق نقطه‌پایانی GPT Image در OpenAI تولید می‌کند.",
+    "display_name": "OpenAI GPT Image 2.6 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_background": {
+        "name": "پس‌زمینه"
+      },
+      "model_complexity": {
+        "name": "پیچیدگی"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_quality": {
+        "name": "کیفیت"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_size": {
+        "name": "اندازه"
       }
     },
     "outputs": {
@@ -19010,6 +19402,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "تبدیل متن به تصویر، یا در صورت وجود تصویرها، ویرایش image_1 با استفاده از سایر تصویرها به‌عنوان مرجع. پرامپت به آن‌ها با عنوان <Picture 1>، <Picture 2>، ... اشاره می‌کند. مدل در 1.0/1.0 به ModelSamplingMiniMaxH3 نیاز دارد.",
+    "display_name": "شرطی‌سازی p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "ارتفاع",
+        "tooltip": "۰ از ارتفاع image_1 پس از مقیاس‌گذاری استفاده می‌کند، یا در صورت نبود تصویرها ۲۹۱۲."
+      },
+      "images": {
+        "name": "تصویرها"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "با تصویرها، پیش از یک دستور کوتاه عبارت \"Edit <Picture 1>. \" افزوده می‌شود؛ دستوری که با \"Edit <Picture\" آغاز شود و خلاصهٔ ویرایش از پرامپت upsampler بدون تغییر استفاده می‌شوند."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE مربوط به p-h3-image. با آن، تصویرها همچنین به‌صورت latentهای مرجع تثبیت می‌شوند؛ بدون آن، فقط رمزگذار متن را شرطی می‌کنند."
+      },
+      "width": {
+        "name": "عرض",
+        "tooltip": "۰ از عرض image_1 پس از مقیاس‌گذاری استفاده می‌کند، یا در صورت نبود تصویرها ۲۹۱۲."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -19661,6 +20090,183 @@
       },
       "positive": {
         "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex، مدل MiniMax H3 پس‌آموزش‌دیدهٔ Pika. ویدئو را با صدای همگام‌سازی‌شده و با راهنمایی تصاویر، ویدئوها و صداهای مرجع تولید یا ویرایش کنید.",
+    "display_name": "مرجع به ویدئوی Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto از یک ویدئوی مرجع پیروی می‌کند؛ در غیر این صورت، از prompt پیروی می‌کند. تصاویر مرجع بر آن تأثیری ندارند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "طول خروجی از یک شبکهٔ فریم پیروی می‌کند: ۵ ثانیه، ۱۲۴ فریم، یعنی حدود ۵٫۱۷ ثانیه، تولید می‌کند."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "در prompt به مراجع با @Image1، @Video1، @Audio1 یا <Picture 1>، <Video 1>، <Audio 1> اشاره کنید."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "حداکثر ۳ کلیپ که در prompt با @Audio1..@Audio3 به آن‌ها اشاره می‌شود. هرکدام ۲ تا ۱۵ ثانیه و در مجموع ۱۵ ثانیه. هنگام کپی در خروجی، کلیپ‌ها به‌ترتیب اتصال، پیش از صدای ویدئوهای متصل پخش می‌شوند؛ صرف‌نظر از شماره‌ای که prompt نام می‌برد."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "حداکثر ۹ تصویر که در prompt، به‌ترتیب اتصال، با @Image1..@Image9 به آن‌ها اشاره می‌شود. دست‌کم یک تصویر یا ویدئو لازم است."
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "صدای ویدئوهای متصل در خروجی کپی می‌شود. برای صدای محیط جدید یا انتقال حرکت همراه با موسیقی جدید، این گزینه را خاموش کنید. در این صورت، برای یک سر سخنگو که در prompt گفت‌وگویی ندارد، گفتاری ابداع می‌شود."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "حداکثر ۳ ویدئو که در prompt، به‌ترتیب اتصال، با @Video1..@Video3 به آن‌ها اشاره می‌شود. هرکدام ۲ تا ۱۵ ثانیه و در مجموع ۱۵ ثانیه. هزینه به‌ازای هر ثانیه محاسبه می‌شود."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "۱۰۸۰p و بالاتر در ۷۶۸p رندر می‌شوند و یک‌بار ارتقا مقیاس می‌یابند. seed یکسان در ۴۸۰p ویدئویی متفاوت تولید می‌کند."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "ابتدا به Pika اجازه دهید prompt را بسط دهد. در این صورت، seed یکسان در هر اجرا ویدئویی متفاوت تولید می‌کند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "با خاموش بودن rewrite_prompt، seed یکسان ویدئو را دقیقاً تکرار می‌کند. اجرای محلی با همان seed نتیجه‌ای متفاوت می‌دهد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex، مدل MiniMax H3 پس‌آموزش‌دیدهٔ Pika. ویدئو را با صدای همگام‌سازی‌شده از متن و فریم‌های اول و آخر اختیاری تولید کنید.",
+    "display_name": "ویدئوی Pika H3 Flex",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto از نخستین فریم متصل پیروی می‌کند؛ در غیر این صورت، از prompt پیروی می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "طول خروجی از یک شبکهٔ فریم پیروی می‌کند: ۵ ثانیه، ۱۲۴ فریم، یعنی حدود ۵٫۱۷ ثانیه، تولید می‌کند."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "۱۰۸۰p و بالاتر در ۷۶۸p رندر می‌شوند و یک‌بار ارتقا مقیاس می‌یابند. seed یکسان در ۴۸۰p ویدئویی متفاوت تولید می‌کند."
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "ابتدا به Pika اجازه دهید prompt را بسط دهد. در این صورت، seed یکسان در هر اجرا ویدئویی متفاوت تولید می‌کند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "با خاموش بودن rewrite_prompt، seed یکسان ویدئو را دقیقاً تکرار می‌کند. اجرای محلی با همان seed نتیجه‌ای متفاوت می‌دهد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "با Pika از توضیح متنی و متن ترانهٔ اختیاری موسیقی تولید کنید، یا یک آهنگ را کاور کنید.",
+    "display_name": "موسیقی Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "mode": {
+        "name": "حالت"
+      },
+      "mode_duration": {
+        "name": "مدت"
+      },
+      "mode_lyrics": {
+        "name": "متن ترانه"
+      },
+      "mode_prompt": {
+        "name": "پرامپت"
+      },
+      "mode_rewrite_prompt": {
+        "name": "بازنویسی پرامپت"
+      },
+      "mode_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "با Pika از یک توضیح متنی افکت صوتی تولید کنید.",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "با Pika برای یک ویدیو موسیقی متن همگام‌سازی‌شده تولید کنید. تصویر و مدت حفظ می‌شوند؛ فقط صدا جایگزین می‌شود.",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "instruction": {
+        "name": "دستورالعمل",
+        "tooltip": "صدا باید چگونه باشد: افکت‌های صوتی، صدای محیط، موسیقی یا سبک. برای استخراج آن از تصویر، خالی بگذارید."
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "تا ۱۰ دقیقه."
       }
     },
     "outputs": {
@@ -21713,8 +22319,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "شرطی‌سازی و latent خالی برای ارتقای وضوح ویدیوی RelayVSR؛ با ۱ گام و cfg ۱ نمونه‌برداری کنید. فقط هر فریم ۱۵ام از مدل عبور می‌کند؛ VSR Decode همهٔ آن‌ها را بازیابی می‌کند.",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "ویدیوی کم‌کیفیت با وضوح اصلی آن؛ مدل ضریب ارتقای وضوح را تعیین می‌کند."
+      },
+      "model": {
+        "name": "مدل"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "یک مش با مثلث‌بندی یکنواخت را از طریق میدان فاصلهٔ باند باریک + کانتورینگ دوگانه، روی دستگاه محاسباتی فعال دوباره استخراج می‌کند. توپولوژی نامرتب / غیرمنیفلد / خودمتقاطع را نرمال‌سازی می‌کند؛ برای رسیدن به تعداد دقیق وجه، پیش از Decimate Mesh اجرا کنید. خروجی جوش‌خورده باقی می‌ماند.",
+    "description": "یک مش با مثلث‌بندی یکنواخت را با استفاده از میدان فاصلهٔ باندباریک + Dual Contouring، روی دستگاه محاسباتی فعال دوباره استخراج می‌کند. توپولوژی نامرتب / non-manifold / خودمتقاطع را نرمال‌سازی می‌کند؛ برای رسیدن به تعداد دقیق وجه، پیش از Decimate Mesh اجرا کنید. خروجی جوش‌خورده باقی می‌ماند. مش‌هایی که از ۰٫۵۱ فراتر می‌روند یا گستره‌ای کمتر از ۰٫۵ دارند، ابتدا با مکعب [−۰٫۵،۰٫۵] برازش داده می‌شوند و سپس بازنگاشت می‌گردند.",
     "display_name": "مش‌بندی مجدد مش (DC باند باریک)",
     "inputs": {
       "band": {
@@ -21790,7 +22419,7 @@
     }
   },
   "RenderMesh": {
-    "description": "یک نمای تکی از یک مش را با پرتاب پرتو رندر می‌کند. دوربین و تبدیل اختیاری مدل می‌توانند از نمایشگر Load3D / Preview3D دریافت شوند.",
+    "description": "یک مش را رندر می‌کند؛ برای هر دوربین یک تصویر. دوربین‌ها از نمایشگر Load3D / Preview3D (همراه با تبدیل مدل آن)، Create Camera Info یا Create Camera Orbit می‌آیند؛ بدون دوربین، نمای جلویی با کادربندی خودکار استفاده می‌شود.",
     "display_name": "رندر مش",
     "inputs": {
       "background": {
@@ -21798,7 +22427,7 @@
       },
       "camera_info": {
         "name": "camera_info",
-        "tooltip": "دوربین از نمایشگر Load3D / Preview3D یا یک node از نوع Create Camera Info. اگر چیزی متصل نباشد، نمای پیش‌فرض روبه‌رو به‌طور خودکار کادربندی می‌شود."
+        "tooltip": "یک دوربین، یا فهرستی از Create Camera Orbit / Batch Cameras. None: نمای جلویی با کادربندی خودکار."
       },
       "height": {
         "name": "ارتفاع"
@@ -21808,11 +22437,15 @@
       },
       "mode": {
         "name": "حالت",
-        "tooltip": "مورد رندر را تعیین می‌کند. خودکار: در صورت وجود بافت، در غیر این صورت رنگ‌های راس‌ها، وگرنه خاک رس سایه‌دار."
+        "tooltip": "آنچه باید رندر شود. auto: در صورت وجود، بافت؛ در غیر این صورت رنگ‌های رأس؛ وگرنه گلِ سایه‌دار. normal: نرمال‌های فضای دید. world normal: نرمال‌های فضای جهان که با yaw دوربین اول چرخانده شده‌اند، گویی به‌جای دوربین مش چرخیده است."
       },
       "model_3d_info": {
         "name": "model_3d_info",
         "tooltip": "تبدیل مدل از همان نمایشگر Load3D / Preview3D. برای تطبیق کادربندی نمایشگر، آن را همراه با camera_info متصل کنید."
+      },
+      "texture": {
+        "name": "بافت",
+        "tooltip": "به‌جای بافت خود مش نمایش داده می‌شود؛ برای نمونه، خروجی Bake Texture From Views بدون Apply Texture to Mesh."
       },
       "width": {
         "name": "عرض"
@@ -21830,7 +22463,7 @@
     }
   },
   "RenderSplat": {
-    "description": "یک Gaussian Splat را به عنوان تصویر با یک رسترایزر EWA ناهمسانگرد (splatهای بیضوی جهت‌دار، ضدعلیاس، عمق‌مرتب‌شده از جلو به عقب) رندر کنید. دوربین از ورودی camera_info دریافت می‌شود (بارگذاری / پیش‌نمایش سه‌بعدی یا یک node ایجاد Camera Info)؛ اگر خالی باشد، splat به‌صورت خودکار قاب‌بندی می‌شود. برای ایجاد دسته‌ای از تصاویر چرخشی جهت استفاده در node ویدیو، مقدار فریم را بیشتر از ۱ قرار دهید.",
+    "description": "یک gaussian splat را با رسترایزر EWA ناهمسانگرد (splatهای بیضوی جهت‌دار، آنتی‌الیاس‌شده و مرتب‌شده بر اساس عمق از جلو به عقب) به‌صورت تصویر رندر می‌کند. دوربین از ورودی camera_info می‌آید (Load / Preview 3D، Create Camera Info، یا فهرست دوربین از Create Camera Orbit / Batch Cameras: برای هر دوربین یک تصویر)؛ برای کادربندی خودکار splat آن را خالی بگذارید. برای دسته‌ای چرخشی از تصاویر جهت تغذیهٔ یک node ویدیو، frames را بیشتر از ۱ تنظیم کنید.",
     "display_name": "رندر Splat",
     "inputs": {
       "background": {
@@ -21842,7 +22475,7 @@
       },
       "camera_info": {
         "name": "camera_info",
-        "tooltip": "دوربینی که از آن رندر می‌شود - یک دوربین Load3D / Preview3D یا node ایجاد Camera Info. اگر خالی باشد، splat به‌صورت خودکار از نمای پیش‌فرض سه‌چهارم قاب‌بندی می‌شود."
+        "tooltip": "دوربینی که باید از آن رندر شود — دوربین Load3D / Preview3D، Create Camera Info، یا فهرست دوربین‌ها (برای هر دوربین یک تصویر که هرکدام به‌اندازهٔ frames چرخانده می‌شود). اگر خالی باشد، splat از نمای پیش‌فرض ۳/۴ به‌طور خودکار کادربندی می‌شود."
       },
       "frames": {
         "name": "فریم‌ها",
@@ -24146,6 +24779,9 @@
       "format_bit_depth": {
         "name": "عمق بیت"
       },
+      "format_channels": {
+        "name": "کانال‌ها"
+      },
       "format_input_color_space": {
         "name": "فضای رنگ ورودی"
       },
@@ -24973,6 +25609,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "با استفاده از Sonilo Music ۱٫۵، از یک پرامپت متنی آهنگی با آواز خوانده‌شده تولید کنید.",
+    "display_name": "Sonilo Music ۱٫۵",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت‌زمان",
+        "tooltip": "'auto' طول ترانه را با متن ترانه هماهنگ می‌کند. طول سفارشی، متن‌های ترانه‌ای را که جا نمی‌شوند قطع می‌کند و متن‌های کوتاه را تکرار می‌کند."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "ترانه را توصیف کنید: سبک، حال‌وهوا، سازها و آواز. برای تعیین متن، یک بلوک 'Lyrics:' با برچسب‌های [Verse] / [Chorus] اضافه کنید؛ بدون آن، مدل متن ترانه را خودش می‌نویسد. حداکثر: ۲۰۰۰ نویسه."
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "تولید موسیقی از یک پرامپت متنی با استفاده از مدل هوش مصنوعی Sonilo. مدت زمان را روی ۰ قرار دهید تا مدل آن را از پرامپت تشخیص دهد.",
     "display_name": "تبدیل متن به موسیقی با Sonilo",
@@ -25052,6 +25714,10 @@
         "name": "افزایش وضوح رنگ",
         "tooltip": "بافت رأس را شفاف‌تر می‌کند: ۱.۰ = ترکیب فیزیکی صحیح؛ مقادیر بالاتر رنگ هر وکسل را به سمت غالب‌ترین gaussian متمایل می‌کند به جای میانگین‌گیری همسایه‌ها (تارشدگی بافت را کاهش می‌دهد). فقط رنگ - هندسه تغییر نمی‌کند."
       },
+      "fill": {
+        "name": "پُرکردن",
+        "tooltip": "فقط در حالت توپر. هزینهٔ بستن یک بازشدگی نسبت به دنبال‌کردن سطح. مقدار کمتر بازشدگی‌های بزرگ‌تر را می‌بندد: حدود ۳ اشیای توخالی را مهروموم می‌کند، اما روی فنجان‌ها و یقه‌ها نیز درپوش می‌گذارد."
+      },
       "kernel": {
         "name": "هسته",
         "tooltip": "حداکثر نیم‌عرض splat در وکسل‌ها. هر gaussian روی پنجره‌ای به اندازه ۳-سیگمای خودش rasterize می‌شود که اینجا محدود شده است - surfelهای کوچک ارزان باقی می‌مانند، بزرگ‌ها قطع نمی‌شوند. اگر splatهای پراکنده باعث ایجاد فاصله شدند، مقدار را افزایش دهید."
@@ -25075,6 +25741,10 @@
       "smooth": {
         "name": "نرمی",
         "tooltip": "تعداد تکرارهای صاف‌سازی مش Taubin. سطح را بدون کوچک کردن (حفظ حجم) صاف می‌کند، برخلاف محو کردن چگالی. ۰ = سطح خام."
+      },
+      "solid": {
+        "name": "توپر",
+        "tooltip": "برای ایجاد یک سطح بستهٔ واحد، داخل را بر اساس جهت‌گیری گاوسی‌ها پُر می‌کند. خاموش: کانتور چگالی خام که یک دیوارهٔ داخلی پنهان را پشت سطح حفظ می‌کند."
       },
       "splat": {
         "name": "splat"
@@ -25102,6 +25772,33 @@
       },
       "1": {
         "name": "راست",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "یک تصویر را به تصاویر قرمز، سبز و آبی و یک mask آلفا تفکیک می‌کند.",
+    "display_name": "تفکیک کانال‌های تصویر",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "قرمز",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سبز",
+        "tooltip": null
+      },
+      "2": {
+        "name": "آبی",
+        "tooltip": null
+      },
+      "3": {
+        "name": "آلفا",
         "tooltip": null
       }
     }
@@ -25813,6 +26510,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "با مدل Hy4 شرکت Tencent پاسخ‌های متنی تولید کنید. یک پرامپت متنی و در صورت نیاز یک یا چند تصویر برای زمینه فراهم کنید.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "پرامپت"
+      },
+      "model_reasoning": {
+        "name": "استدلال"
+      },
+      "model_seed": {
+        "name": "بذر"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "دما"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: تبدیل تصویر(ها) به مدل (پیشرفته)",
     "inputs": {
@@ -26421,7 +27153,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "تولید متن",
+    "display_name": "تولید متن (منسوخ‌شده)",
     "inputs": {
       "audio": {
         "name": "صدا"
@@ -26480,7 +27212,7 @@
       },
       "video": {
         "name": "ویدیو",
-        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
+        "tooltip": "فریم‌های ویدئو به‌صورت دستهٔ تصویر. نرخ فریم ۲۴ FPS فرض می‌شود؛ درون‌برنامه‌ای به نرخ فریم مدل نمونه‌برداری فرعی می‌شود."
       }
     },
     "outputs": {
@@ -26554,12 +27286,85 @@
       },
       "video": {
         "name": "ویدیو",
-        "tooltip": "فریم‌های ویدیو به صورت دسته‌ای از تصاویر. فرض بر ۲۴ فریم بر ثانیه است؛ به صورت داخلی به ۱ فریم بر ثانیه نمونه‌برداری می‌شود."
+        "tooltip": "فریم‌های ویدئو به‌صورت دستهٔ تصویر. نرخ فریم ۲۴ FPS فرض می‌شود؛ درون‌برنامه‌ای به نرخ فریم مدل نمونه‌برداری فرعی می‌شود."
       }
     },
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "تولید متن",
+    "inputs": {
+      "audios": {
+        "name": "صداها"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "رمزگشایی گمانه‌زن با سرِ پیش‌بینی چندتوکنی checkpoint. بدون وزن‌های MTP اثری ندارد. auto عمق و پهنای پیش‌نویس را با تطبیق‌های مشاهده‌شدهٔ توکن و هزینهٔ اجرا سازگار می‌کند؛ ۲–۵ یک عمق پیش‌نویس ثابت تعیین می‌کند؛ حالت‌های درختی هم پهنا و هم عمق را ثابت می‌کنند. خروجی نمونه‌برداری‌شده توزیع درست خود را حفظ می‌کند، اما برای بذر یکسان با خروجی غیر MTP تفاوت دارد."
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "جریمهٔ حضور"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "جریمهٔ تکرار"
+      },
+      "sampling_mode_seed": {
+        "name": "بذر"
+      },
+      "sampling_mode_temperature": {
+        "name": "دما"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "پرامپت سیستمی را در قالب گفت‌وگوی مدل جایگزین می‌کند. هنگامی که از قالب پیش‌فرض استفاده نمی‌شود، نادیده گرفته می‌شود."
+      },
+      "thinking": {
+        "name": "تفکر",
+        "tooltip": "اگر مدل از آن پشتیبانی می‌کند، در حالت تفکر عمل کنید."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "اگر مدل دارای پرامپت/قالب سیستمی داخلی است، از آن استفاده کنید."
+      },
+      "videos": {
+        "name": "ویدئوها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "متن تولیدشده",
         "tooltip": null
       },
       "1": {
@@ -28664,6 +29469,44 @@
       }
     }
   },
+  "UltraTexConditioning": {
+    "description": "شرطی‌سازی برای FLUX.2 Klein 9B با LoRAِ UltraTex: ظاهر یک تصویر مرجع را، به‌صورت یک تصویر برای هر نما، روی یک مش اعمال می‌کند. نماها از Render Mesh ('world normal') با Create Camera Orbit برابر با ۴، به‌علاوهٔ نماهای بالا و پایین، به‌دست می‌آیند؛ نتیجه را با Bake Texture From Views بپزید.",
+    "display_name": "شرطی‌سازی UltraTex",
+    "inputs": {
+      "conditioning": {
+        "name": "شرطی‌سازی",
+        "tooltip": "شرطی‌سازی متنی؛ UltraTex با یک پرامپت خالی آموزش دیده است."
+      },
+      "extra_views": {
+        "name": "نماهای اضافی",
+        "tooltip": "مراجع بیشتر: شیء از نماهای دیگر، که هرکدام همان‌گونه که مرجع به نمای جلو وابسته است، به نمای خود وابسته‌اند."
+      },
+      "masks": {
+        "name": "ماسک‌ها",
+        "tooltip": "ماسک‌های Render Mesh از همان نماها."
+      },
+      "normals": {
+        "name": "نرمال‌ها",
+        "tooltip": "رندرهای Render Mesh با «world normal»: ۶ نمای استاندارد یا ۴ نمای جانبی."
+      },
+      "reference": {
+        "name": "مرجع",
+        "tooltip": "شیء، آن‌گونه که باید دیده شود، از سمت دوربین جلو."
+      },
+      "reference_mask": {
+        "name": "ماسک مرجع",
+        "tooltip": "ماسک شیء در مرجع (سفید = شیء)"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "UnwrapMesh": {
     "description": "یک اطلس UV ایجاد می‌کند: سطح را به چارت‌ها بخش‌بندی می‌کند، هرکدام را پارامتری‌سازی کرده و در یک اطلس [۰،۱] جای می‌دهد. رأس‌های روی درزهای چارت تکرار می‌شوند (یک نسخه برای هر چارت، با موقعیت یکسان و UV اختصاصی)، بنابراین مش خروجی نسبت به ورودی رأس‌های بیشتری دارد. پس از Remesh/Decimate و پیش از پخت بافت اجرا کنید.",
     "display_name": "بازکردن UVهای مش",
@@ -29083,6 +29926,31 @@
       },
       "steps": {
         "name": "گام‌ها"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VSRDecode": {
+    "description": "فضاهای نهفتهٔ RelayVSR را با رمزگشای RelayVSR Flash رمزگشایی می‌کند که فریم‌های کم‌کیفیت را نیز می‌خواند.",
+    "display_name": "رمزگشایی VSR",
+    "inputs": {
+      "detail": {
+        "name": "جزئیات",
+        "tooltip": "مقدار جزئیاتی که رمزگشا به بزرگ‌نمایی bicubic هر فریم اضافه می‌کند و حفظ می‌شود؛ ۱ برابر با خروجی کامل مدل است."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "همان ویدیوی کم‌کیفیتی که به node شرطی‌سازی داده شده است."
+      },
+      "samples": {
+        "name": "نمونه‌ها"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -32204,6 +33072,55 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WeVisOneDetect": {
+    "display_name": "تشخیص WeVisOne-VL",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "کادرهای مرجع برای visual_prompt."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "یک رمزگذار متن WeVisOne-VL."
+      },
+      "image": {
+        "name": "تصویر"
+      },
+      "individual_masks": {
+        "name": "ماسک‌های مجزا",
+        "tooltip": "به‌جای یک ماسکِ اجتماع برای هر فریم، برای هر کادر یک ماسک خروجی بدهید؛ به ترتیب bboxes و فریم‌ها در توالی."
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "query": {
+        "name": "پرس‌وجو",
+        "tooltip": "چه چیزی را بیابد. freeform آن را به‌صورت کل پرامپت ارسال می‌کند."
+      },
+      "task": {
+        "name": "وظیفه",
+        "tooltip": "segmentation: کادرها و مات‌های آلفا. detection و point هرکدام یک برچسب در هر خط می‌پذیرند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ماسک‌ها",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "نقاط",
+        "tooltip": "نقاط به‌صورت JSON [{\"x\", \"y\", \"label\", \"frame\"}] بر حسب پیکسل، برای وظایف point و count_point."
+      },
+      "3": {
+        "name": "متن",
+        "tooltip": "پاسخ خام."
       }
     }
   },

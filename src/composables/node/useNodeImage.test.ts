@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import {
+  useNodeImage,
+  useNodeVideo,
+  videoFailureMessageKey
+} from '@/composables/node/useNodeImage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -9,6 +13,7 @@ import { LGraph } from '@/lib/litegraph/src/litegraph'
 
 const createDOMWidgetNode = useDOMWidgetTestNodes()
 
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/telemetry/imageFailureDiagnostics'), () => ({
@@ -168,5 +173,12 @@ describe('canvas node media failure telemetry', () => {
     await flush()
 
     expect(useTelemetry()?.trackImageLoadFailed).not.toHaveBeenCalled()
+  })
+})
+
+describe('videoFailureMessageKey', () => {
+  it('says the browser cannot play the video only when an attempt reported an unsupported source', () => {
+    expect(videoFailureMessageKey([2, 4])).toBe('g.videoFormatNotSupported')
+    expect(videoFailureMessageKey([2, undefined])).toBe('g.videoFailedToLoad')
   })
 })

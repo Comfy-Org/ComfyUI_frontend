@@ -69,9 +69,9 @@
           size="unset"
           :class="
             cn(
-              'flex-1 self-stretch px-2 text-xs transition-colors',
+              'flex-1 self-stretch px-2 text-xs',
               tool === PAINTER_TOOLS.BRUSH
-                ? 'rounded-sm bg-muted text-foreground'
+                ? 'rounded-sm bg-muted'
                 : 'text-muted-foreground hover:text-foreground'
             )
           "
@@ -84,9 +84,9 @@
           size="unset"
           :class="
             cn(
-              'flex-1 self-stretch px-2 text-xs transition-colors',
+              'flex-1 self-stretch px-2 text-xs',
               tool === PAINTER_TOOLS.ERASER
-                ? 'rounded-sm bg-muted text-foreground'
+                ? 'rounded-sm bg-muted'
                 : 'text-muted-foreground hover:text-foreground'
             )
           "

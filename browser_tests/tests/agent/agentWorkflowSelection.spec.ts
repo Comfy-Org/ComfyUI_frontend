@@ -508,7 +508,7 @@ test.describe(
         panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
       ).toHaveText('Unsaved Workflow')
 
-      for (let index = 0; index < 8; index++) {
+      for (let index = 0; index < 12; index++) {
         await page
           .getByRole('button', {
             name: enMessages.sideToolbar.newBlankWorkflow,

@@ -83,7 +83,7 @@ const started = {
   max_size_bytes: 2147483648
 }
 
-function serverAnswers(...answers: Array<Response | 'never'>) {
+function serverAnswers(...answers: Array<Response | Error | 'never'>) {
   const calls: Array<{ route: string; method?: string; body: unknown }> = []
   vi.mocked(api.fetchApi).mockImplementation((route, options) => {
     calls.push({
@@ -93,6 +93,7 @@ function serverAnswers(...answers: Array<Response | 'never'>) {
     })
     const answer =
       answers.shift() ?? json(500, { code: 'INTERNAL', message: 'x' })
+    if (answer instanceof Error) return Promise.reject(answer)
     if (answer !== 'never') return Promise.resolve(answer)
     return new Promise((_resolve, reject) => {
       options?.signal?.addEventListener('abort', () =>
@@ -152,13 +153,18 @@ describe('modelFileUploadApi.uploadModelFile', () => {
           filename: file.name,
           size_bytes: file.size,
           resumable: true,
-          tags
+          tags,
+          upload_analytics: { client: 'editor' }
         }
       },
       {
         route: `/assets/uploads/${UPLOAD_ID}/complete`,
         method: 'POST',
-        body: { filename: file.name, tags }
+        body: {
+          filename: file.name,
+          tags,
+          upload_analytics: { client: 'editor' }
+        }
       }
     ])
   })
@@ -192,7 +198,8 @@ describe('modelFileUploadApi.uploadModelFile', () => {
             filename: file.name,
             size_bytes: size,
             resumable: true,
-            tags
+            tags,
+            upload_analytics: { client: 'editor' }
           }
         },
         {
@@ -202,13 +209,18 @@ describe('modelFileUploadApi.uploadModelFile', () => {
             filename: file.name,
             size_bytes: size,
             resumable: false,
-            tags
+            tags,
+            upload_analytics: { client: 'editor' }
           }
         },
         {
           route: `/assets/uploads/${UPLOAD_ID}/complete`,
           method: 'POST',
-          body: { filename: file.name, tags }
+          body: {
+            filename: file.name,
+            tags,
+            upload_analytics: { client: 'editor' }
+          }
         }
       ])
     }
@@ -241,7 +253,8 @@ describe('modelFileUploadApi.uploadModelFile', () => {
           filename: file.name,
           size_bytes: size,
           resumable: true,
-          tags
+          tags,
+          upload_analytics: { client: 'editor' }
         }
       },
       {
@@ -251,7 +264,8 @@ describe('modelFileUploadApi.uploadModelFile', () => {
           filename: file.name,
           size_bytes: size,
           resumable: false,
-          tags
+          tags,
+          upload_analytics: { client: 'editor' }
         }
       }
     ])
@@ -733,5 +747,295 @@ describe('resumable model transfers', () => {
     await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
     expect(query.aborted).toBe(true)
     expect(StorageRequest.sent).toHaveLength(2)
+  })
+})
+
+const EVENTS_ROUTE = `/assets/uploads/${UPLOAD_ID}/events`
+
+function noContent() {
+  return new Response(null, { status: 204 })
+}
+
+describe('model upload reports', () => {
+  beforeEach(() => {
+    StorageRequest.sent = []
+    vi.stubGlobal('XMLHttpRequest', StorageRequest)
+    vi.useFakeTimers()
+    return () => vi.useRealTimers()
+  })
+
+  function upload(signal = new AbortController().signal) {
+    return modelFileUploadApi.uploadModelFile(file, {
+      tags,
+      signal,
+      onProgress: vi.fn()
+    })
+  }
+
+  function finishing(start: object) {
+    return serverAnswers(
+      json(201, { ...start, upload_analytics_version: 1 }),
+      json(202, { task_id: TASK_ID, status: 'created' })
+    )
+  }
+
+  function eventsCalls(calls: ReturnType<typeof serverAnswers>) {
+    return calls.filter((call) => call.route === EVENTS_ROUTE)
+  }
+
+  function lastRequest() {
+    const call = vi.mocked(api.fetchApi).mock.lastCall
+    return { route: call?.[0], signal: call?.[1]?.signal }
+  }
+
+  it('names the editor at start and reports a transfer that never needed recovery', async () => {
+    const calls = finishing(resumable)
+    const result = upload()
+    ;(await storageRequest()).finish(308, 'bytes=0-7')
+    ;(await storageRequest(2)).finish(200)
+
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(calls[0].body).toMatchObject({
+      upload_analytics: { client: 'editor' }
+    })
+    expect(calls.at(-1)).toEqual({
+      route: `/assets/uploads/${UPLOAD_ID}/complete`,
+      method: 'POST',
+      body: {
+        filename: file.name,
+        tags,
+        upload_analytics: { client: 'editor', resumed: false }
+      }
+    })
+    expect(calls).toHaveLength(2)
+  })
+
+  it('reports a resume after a status query finds held bytes', async () => {
+    const calls = finishing(resumable)
+    const result = upload()
+    ;(await storageRequest()).fail()
+    await vi.advanceTimersByTimeAsync(1000)
+    ;(await storageRequest(2)).finish(308, 'bytes=0-2')
+    ;(await storageRequest(3)).finish(308, 'bytes=0-10')
+    ;(await storageRequest(4)).finish(201)
+
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(calls.at(-1)?.body).toMatchObject({
+      upload_analytics: { client: 'editor', resumed: true }
+    })
+  })
+
+  it.for([
+    {
+      recovery: 'a status query with no held range restarts at zero',
+      answers: ['fail', 'wait', [308, null], [308, 'bytes=0-7'], [200, null]]
+    },
+    {
+      recovery: 'storage holds part of a piece without a status query',
+      answers: [
+        [308, 'bytes=0-2'],
+        [308, 'bytes=0-10'],
+        [200, null]
+      ]
+    },
+    {
+      recovery: 'a status query finds the whole file',
+      answers: ['fail', 'wait', [200, null]]
+    }
+  ] as const)(
+    'does not call it a resume when $recovery',
+    async ({ answers }) => {
+      const calls = finishing(resumable)
+      const result = upload()
+      let nth = 0
+      for (const answer of answers) {
+        if (answer === 'wait') {
+          await vi.advanceTimersByTimeAsync(1000)
+          continue
+        }
+        const request = await storageRequest(++nth)
+        if (answer === 'fail') request.fail()
+        else request.finish(answer[0], answer[1])
+      }
+
+      await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+      expect(calls.at(-1)?.body).toMatchObject({
+        upload_analytics: { client: 'editor', resumed: false }
+      })
+    }
+  )
+
+  it('leaves resume unknown for a single PUT', async () => {
+    const calls = finishing(started)
+    const result = upload()
+    ;(await storageRequest()).finish(200)
+
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(calls.at(-1)?.body).toEqual({
+      filename: file.name,
+      tags,
+      upload_analytics: { client: 'editor' }
+    })
+  })
+
+  it.for([
+    {
+      failure: 'storage expires the resumable session',
+      start: resumable,
+      storage: [404, null],
+      expected: { ok: false, reason: 'sessionExpired' },
+      report: { reason: 'session_expired', resumed: false }
+    },
+    {
+      failure: 'storage answers an unreadable range',
+      start: resumable,
+      storage: [308, 'bytes=3-7'],
+      expected: { ok: false, reason: 'failed' },
+      report: { reason: 'unknown', resumed: false }
+    },
+    {
+      failure: 'storage refuses a single PUT',
+      start: started,
+      storage: [403, null],
+      expected: { ok: false, reason: 'failed' },
+      report: { reason: 'http' }
+    },
+    {
+      failure: 'the connection drops during a single PUT',
+      start: started,
+      storage: 'fail',
+      expected: { ok: false, reason: 'failed' },
+      report: { reason: 'network' }
+    }
+  ] as const)(
+    'reports one failure when $failure',
+    async ({ start, storage, expected, report }) => {
+      const calls = serverAnswers(
+        json(201, { ...start, upload_analytics_version: 1 }),
+        noContent()
+      )
+      const result = upload()
+      const request = await storageRequest()
+      if (storage === 'fail') request.fail()
+      else request.finish(storage[0], storage[1])
+
+      await expect(result).resolves.toMatchObject(expected)
+      expect(calls).toHaveLength(2)
+      expect(calls[1]).toEqual({
+        route: EVENTS_ROUTE,
+        method: 'POST',
+        body: {
+          client: 'editor',
+          size_bytes: file.size,
+          model_folder: 'loras',
+          ...report
+        }
+      })
+    }
+  )
+
+  it('carries an observed resume into a later failure report', async () => {
+    const calls = serverAnswers(
+      json(201, { ...resumable, upload_analytics_version: 1 }),
+      noContent()
+    )
+    const result = upload()
+    ;(await storageRequest()).fail()
+    await vi.advanceTimersByTimeAsync(1000)
+    ;(await storageRequest(2)).finish(308, 'bytes=0-2')
+    ;(await storageRequest(3)).finish(403)
+
+    await expect(result).resolves.toMatchObject({ ok: false, reason: 'failed' })
+    expect(eventsCalls(calls)).toEqual([
+      expect.objectContaining({
+        body: expect.objectContaining({ reason: 'http', resumed: true })
+      })
+    ])
+  })
+
+  it('reports a cancel on its own request without changing the result', async () => {
+    const calls = serverAnswers(
+      json(201, { ...resumable, upload_analytics_version: 1 }),
+      noContent()
+    )
+    const controller = new AbortController()
+    const result = upload(controller.signal)
+    await storageRequest()
+    controller.abort()
+
+    await expect(result).resolves.toEqual({ ok: false, reason: 'cancelled' })
+    expect(eventsCalls(calls)).toEqual([
+      {
+        route: EVENTS_ROUTE,
+        method: 'POST',
+        body: {
+          client: 'editor',
+          size_bytes: file.size,
+          model_folder: 'loras',
+          reason: 'canceled',
+          resumed: false
+        }
+      }
+    ])
+    const report = lastRequest()
+    expect(report.route).toBe(EVENTS_ROUTE)
+    expect(report.signal?.aborted).toBe(false)
+  })
+
+  it('never reports a stop when start does not advertise reports', async () => {
+    const calls = serverAnswers(json(201, resumable), json(201, resumable))
+    const failed = upload()
+    ;(await storageRequest()).finish(404)
+    await expect(failed).resolves.toEqual({
+      ok: false,
+      reason: 'sessionExpired'
+    })
+
+    const controller = new AbortController()
+    const cancelled = upload(controller.signal)
+    await storageRequest(2)
+    controller.abort()
+    await expect(cancelled).resolves.toEqual({ ok: false, reason: 'cancelled' })
+
+    expect(calls.map((call) => call.route)).toEqual([
+      '/assets/uploads',
+      '/assets/uploads'
+    ])
+  })
+
+  it('returns the failure at once while the report hangs, then gives the report up', async () => {
+    serverAnswers(
+      json(201, { ...resumable, upload_analytics_version: 1 }),
+      'never'
+    )
+    const result = upload()
+    ;(await storageRequest()).finish(404)
+
+    await expect(result).resolves.toEqual({
+      ok: false,
+      reason: 'sessionExpired'
+    })
+    const report = lastRequest()
+    expect(report.route).toBe(EVENTS_ROUTE)
+    expect(report.signal?.aborted).toBe(false)
+    await vi.advanceTimersByTimeAsync(4999)
+    expect(report.signal?.aborted).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(report.signal?.aborted).toBe(true)
+  })
+
+  it('returns the original failure when the report is refused', async () => {
+    const calls = serverAnswers(
+      json(201, { ...resumable, upload_analytics_version: 1 }),
+      new TypeError('Failed to fetch')
+    )
+    const result = upload()
+    ;(await storageRequest()).finish(404)
+
+    await expect(result).resolves.toEqual({
+      ok: false,
+      reason: 'sessionExpired'
+    })
+    expect(eventsCalls(calls)).toHaveLength(1)
   })
 })

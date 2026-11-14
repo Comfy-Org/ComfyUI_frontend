@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { getPreservedQueryParam } from '@/platform/navigation/preservedQueryManager'
 import { useWorkspaceCreditsSource } from '@/platform/workspace/ports/workspaceCreditsSource'
 import { useDialogStore } from '@/stores/dialogStore'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
 

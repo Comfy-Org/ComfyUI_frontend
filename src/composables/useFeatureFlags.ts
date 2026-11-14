@@ -3,6 +3,7 @@ import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
+import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   isAuthenticatedConfigLoaded,
@@ -171,6 +172,13 @@ export function useFeatureFlags() {
         false
       )
     },
+    get signedOutRerouteEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED,
+        remoteConfig.value.signed_out_reroute_enabled,
+        false
+      )
+    },
     get partnerNodeGovernanceEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
@@ -300,6 +308,13 @@ export function useFeatureFlags() {
         remoteConfig.value.unified_web_session
       return value === true
     },
+    get webSessionLapseRecoveryEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED,
+        remoteConfig.value.web_session_lapse_recovery_enabled,
+        false
+      )
+    },
     get ssoEnabled() {
       if (!isCloud) return false
 
@@ -330,6 +345,18 @@ export function useFeatureFlags() {
         remoteConfig.value.member_credit_limits_enabled
       )
     },
+    get billingNewUxEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.BILLING_NEW_UX_ENABLED,
+        remoteConfig.value.billing_new_ux_enabled
+      )
+    },
+    get billingAutoTopUpAtCheckoutEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED,
+        remoteConfig.value.billing_auto_top_up_at_checkout_enabled
+      )
+    },
     get billingSdkTopupEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
@@ -350,6 +377,7 @@ export function useFeatureFlags() {
       return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
     },
     get unifiedBillingSettingsEnabled() {
+      if (!isCloud) return opensLocalBillingHandoff()
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
         remoteConfig.value.unified_billing_settings
@@ -426,6 +454,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,
+      [ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED]:
+        flags.signedOutRerouteEnabled,
       [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
         flags.partnerNodeGovernanceEnabled,
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
@@ -442,9 +472,14 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
       [ServerFeatureFlag.UNIFIED_WEB_SESSION]: flags.unifiedWebSessionEnabled,
       [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
+      [ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED]:
+        flags.webSessionLapseRecoveryEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,
+      [ServerFeatureFlag.BILLING_NEW_UX_ENABLED]: flags.billingNewUxEnabled,
+      [ServerFeatureFlag.BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED]:
+        flags.billingAutoTopUpAtCheckoutEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:

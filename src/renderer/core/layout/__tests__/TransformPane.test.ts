@@ -1,13 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { computed, nextTick } from 'vue'
+import { nextTick } from 'vue'
 
-import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
+import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import {
+  createMockCanvas,
+  createMockCanvasRenderingContext2D,
+  createTestCanvasElement,
+  stubCanvasGetContext
+} from '@/utils/__tests__/canvasTestUtils'
 
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
-
-vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 function createMockLGraphCanvas() {
   return createMockCanvas({
@@ -25,12 +28,9 @@ function createMockLGraphCanvas() {
 describe('TransformPane', () => {
   describe('component mounting', () => {
     it('should apply transform style from composable', async () => {
-      useTransformState().transformStyle = computed(() => ({
-        transform: 'scale(2) translate(100px, 50px)',
-        transformOrigin: '0 0'
-      }))
-
       const mockCanvas = createMockLGraphCanvas()
+      mockCanvas.ds.scale = 2
+      mockCanvas.ds.offset = [100, 50]
       render(TransformPane, {
         props: {
           canvas: mockCanvas
@@ -40,7 +40,7 @@ describe('TransformPane', () => {
 
       const transformPane = screen.getByTestId('transform-pane')
       expect(transformPane.getAttribute('style')).toContain(
-        'transform: scale(2) translate(100px, 50px)'
+        'transform: scale3d(2, 2, 2) translate3d(100px, 50px, 0)'
       )
     })
 
@@ -59,21 +59,48 @@ describe('TransformPane', () => {
     })
   })
 
-  describe('RAF synchronization', () => {
-    it('should call syncWithCanvas during RAF updates', async () => {
-      const mockCanvas = createMockLGraphCanvas()
+  describe('canvas presentation', () => {
+    it('presents camera changes only after drawing, including after canvas element replacement', async () => {
+      stubCanvasGetContext()
+      const ctx = createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+      const canvas = new LGraphCanvas(
+        createTestCanvasElement({ ctx }),
+        new LGraph(),
+        { skip_render: true, skip_events: true }
+      )
       render(TransformPane, {
         props: {
-          canvas: mockCanvas
+          canvas
         }
       })
-
       await nextTick()
+      const transformPane = screen.getByTestId('transform-pane')
 
-      vi.advanceTimersToNextFrame()
+      canvas.ds.offset = [37, -19]
+      canvas.ds.scale = 2
+      await nextTick()
+      expect(transformPane).toHaveStyle({
+        transform: 'scale3d(1, 1, 1) translate3d(0px, 0px, 0)'
+      })
 
-      const transformState = useTransformState()
-      expect(transformState.syncWithCanvas).toHaveBeenCalledWith(mockCanvas)
+      canvas.draw()
+      await nextTick()
+      expect(transformPane).toHaveStyle({
+        transform: 'scale3d(2, 2, 2) translate3d(37px, -19px, 0)'
+      })
+
+      canvas.setCanvas(createTestCanvasElement({ ctx }), true)
+      canvas.ds.offset = [-23, 41]
+      await nextTick()
+      expect(transformPane).toHaveStyle({
+        transform: 'scale3d(2, 2, 2) translate3d(37px, -19px, 0)'
+      })
+
+      canvas.draw()
+      await nextTick()
+      expect(transformPane).toHaveStyle({
+        transform: 'scale3d(2, 2, 2) translate3d(-23px, 41px, 0)'
+      })
     })
   })
 

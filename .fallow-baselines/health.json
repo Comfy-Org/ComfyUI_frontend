@@ -2742,7 +2742,7 @@
         "count": 1
       }
     },
-    "src/services/customerEventsService.ts": {
+    "src/platform/billing/api/customerEventsService.ts": {
       "crap_moderate": {
         "count": 1
       }
