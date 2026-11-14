@@ -1,10 +1,19 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
@@ -398,6 +407,85 @@ describe('showTextEditor', () => {
         screen.getByRole('button', { name: 'Normalize tags' })
       ).toBeDisabled()
     )
+  })
+
+  it.for([
+    {
+      maxlength: 5,
+      message:
+        'This action exceeds the text limit. Shorten the text and try again.'
+    },
+    {
+      maxlength: 100,
+      message:
+        'This action could not edit the text. Your text is unchanged. Edit it manually instead.'
+    }
+  ])(
+    'explains a refused text action with maxlength $maxlength',
+    async ({ maxlength, message }) => {
+      const user = userEvent.setup()
+      useExtensionStore().registerExtension({
+        name: 'test.expandingAction',
+        widgetAugmentations: [
+          {
+            id: 'expand',
+            kind: 'text-action',
+            target: { nodeType: 'TestNode', widgetName: 'prompt' },
+            label: 'Expand tag',
+            transform: () => 'blue eyes'
+          }
+        ]
+      })
+      renderDialogHost()
+      const { onEdit } = openEditor({
+        readText: () => 'blue',
+        textareaAttributes: () => ({ maxlength }),
+        augmentationTarget: { nodeType: 'TestNode', widgetName: 'prompt' }
+      })
+      const editor = await screen.findByRole('textbox')
+
+      await user.click(screen.getByRole('button', { name: 'Expand tag' }))
+
+      expect(editor).toHaveValue('blue')
+      expect(onEdit).not.toHaveBeenCalled()
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'warning',
+          title: message
+        })
+      )
+    }
+  )
+
+  it('discards an unfinished catalog import when another editor opens', async () => {
+    const user = userEvent.setup()
+    let finish: ((text: string) => void) | undefined
+    const pending = new Promise<string>((resolve) => (finish = resolve))
+    const file = new File(['blue_eyes'], 'old.txt', { type: 'text/plain' })
+    vi.spyOn(file, 'text').mockReturnValue(pending)
+    renderDialogHost()
+    const { close } = openEditor()
+    await screen.findByRole('textbox')
+    await user.upload(screen.getByLabelText('Import prompt tags'), file)
+    close()
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    openEditor()
+    const editor = await screen.findByRole('textbox')
+    await user.upload(
+      screen.getByLabelText('Import prompt tags'),
+      new File(['red_hair'], 'new.txt', { type: 'text/plain' })
+    )
+    expect(
+      await screen.findByText('1 tag loaded for this session')
+    ).toBeVisible()
+
+    assert.exists(finish)
+    finish('blue_eyes')
+    await pending
+    await nextTick()
+
+    expect(usePromptTagCatalogStore().tags).toEqual(['red hair'])
+    expect(editor).toHaveFocus()
   })
 
   it('reports an invalid import without losing the loaded catalog', async () => {

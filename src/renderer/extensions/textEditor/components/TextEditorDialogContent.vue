@@ -56,7 +56,14 @@
 
 <script setup lang="ts">
 import type { TextareaHTMLAttributes } from 'vue'
-import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
+import {
+  nextTick,
+  onMounted,
+  onScopeDispose,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
@@ -87,6 +94,8 @@ const catalogInput = useTemplateRef('catalogInput')
 const catalog = usePromptTagCatalogStore()
 const importState = ref<'idle' | 'loading' | 'error'>('idle')
 const isComposing = ref(false)
+let disposed = false
+onScopeDispose(() => (disposed = true))
 
 async function importTags(event: Event) {
   const input = event.target
@@ -103,9 +112,11 @@ async function importTags(event: Event) {
   try {
     text = await file.text()
   } catch {
+    if (disposed) return
     importState.value = 'error'
     return
   }
+  if (disposed) return
   importState.value = catalog.importCatalog(text) ? 'idle' : 'error'
   textareaElement()?.focus()
 }

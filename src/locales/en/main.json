@@ -4414,6 +4414,8 @@
     }
   },
   "textEditor": {
+    "actionTooLong": "This action exceeds the text limit. Shorten the text and try again.",
+    "actionUnavailable": "This action could not edit the text. Your text is unchanged. Edit it manually instead.",
     "characterCount": "{count} char | {count} chars",
     "expand": "Expand",
     "importTags": "Import prompt tags",

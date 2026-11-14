@@ -36,8 +36,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWidgetAugmentations } from '@/platform/extensions/useWidgetAugmentations'
 import type { WidgetAugmentationTarget } from '@/platform/extensions/widgetAugmentation'
 import TextareaAutocomplete from '@/renderer/extensions/textEditor/components/TextareaAutocomplete.vue'
@@ -63,6 +65,8 @@ const { registrations, contributions, evaluate } = useWidgetAugmentations(
 )
 const catalog = usePromptTagCatalogStore()
 const edit = useTextareaEdit(element, () => enabled)
+const { t } = useI18n()
+const toast = useToast()
 
 function requireText(result: unknown): string {
   if (typeof result !== 'string')
@@ -93,7 +97,19 @@ function apply(action: (typeof actions.value)[number]) {
     requireText(action.augmentation.transform(previous.value))
   )
   if (text === undefined || text === previous.value) return
-  edit.replace(previous, { from: 0, to: previous.value.length }, text)
+  const result = edit.replace(
+    previous,
+    { from: 0, to: previous.value.length },
+    text
+  )
+  if (!result.ok)
+    toast.warning(
+      t(
+        result.reason === 'maxlength'
+          ? 'textEditor.actionTooLong'
+          : 'textEditor.actionUnavailable'
+      )
+    )
 }
 
 function suggest(query: string): string[] {

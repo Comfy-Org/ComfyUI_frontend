@@ -6,6 +6,10 @@ interface TextSnapshot {
   end: number
 }
 
+type TextEditResult =
+  | { ok: true }
+  | { ok: false; reason: 'maxlength' | 'unavailable' }
+
 function sameSnapshot(current: TextSnapshot, previous: TextSnapshot): boolean {
   return (
     current.value === previous.value &&
@@ -37,24 +41,24 @@ export function useTextareaEdit(
     previous: TextSnapshot,
     range: { from: number; to: number },
     text: string
-  ): boolean {
+  ): TextEditResult {
     const input = element()
     const current = snapshot()
+    if (!input || !current || !sameSnapshot(current, previous))
+      return { ok: false, reason: 'unavailable' }
     if (
-      !input ||
-      !current ||
-      !sameSnapshot(current, previous) ||
-      typeof document.execCommand !== 'function' ||
-      (input.maxLength >= 0 &&
-        current.value.length - (range.to - range.from) + text.length >
-          input.maxLength)
+      input.maxLength >= 0 &&
+      current.value.length - (range.to - range.from) + text.length >
+        input.maxLength
     )
-      return false
+      return { ok: false, reason: 'maxlength' }
+    if (typeof document.execCommand !== 'function')
+      return { ok: false, reason: 'unavailable' }
     input.focus()
     input.setSelectionRange(range.from, range.to)
     const applied = document.execCommand('insertText', false, text)
     if (!applied) input.setSelectionRange(previous.start, previous.end)
-    return applied
+    return applied ? { ok: true } : { ok: false, reason: 'unavailable' }
   }
 
   return { snapshot, replace }
