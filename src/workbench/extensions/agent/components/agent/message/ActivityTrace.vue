@@ -81,7 +81,7 @@ function rowSignature(row: ActivityRow): string {
         row.canvasConfirmed,
         row.count
       ])
-    : `think:${row.state}:${row.text}`
+    : `think:${row.state}:${row.truncated === true}:${row.text}`
 }
 </script>
 
@@ -105,13 +105,20 @@ function rowSignature(row: ActivityRow): string {
         />
       </div>
       <div class="flex min-w-0 flex-1 items-start gap-2 pb-3">
-        <span
-          v-if="row.kind === 'thinking'"
-          :class="
-            cn(labelClass(row.state), 'wrap-break-word whitespace-pre-wrap')
-          "
-          >{{ row.text || t('agent.thinking') }}</span
-        >
+        <div v-if="row.kind === 'thinking'" class="flex min-w-0 flex-col">
+          <span
+            :class="
+              cn(labelClass(row.state), 'wrap-break-word whitespace-pre-wrap')
+            "
+            >{{ row.text || t('agent.thinking') }}</span
+          >
+          <span
+            v-if="row.truncated"
+            data-testid="agent-thinking-shortened"
+            class="text-xs text-muted-foreground italic"
+            >{{ t('agent.thinkingShortened') }}</span
+          >
+        </div>
         <template v-else>
           <span :class="cn(labelClass(row.state), 'truncate')">{{
             labelOf(row)

@@ -9,7 +9,8 @@ export const TestIds = {
   },
   agent: {
     conversationScroll: 'agent-conversation-scroll',
-    activityTrace: 'agent-activity-trace'
+    activityTrace: 'agent-activity-trace',
+    thinkingShortened: 'agent-thinking-shortened'
   },
   sidebar: {
     toolbar: 'side-toolbar',

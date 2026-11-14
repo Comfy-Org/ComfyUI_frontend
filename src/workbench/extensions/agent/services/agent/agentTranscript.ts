@@ -347,7 +347,13 @@ function insertThinking(
   for (const entry of raw as unknown[]) {
     const parsed = zPersistedThinkingEntry.safeParse(entry)
     if (!parsed.success || !parsed.data.text.trim()) continue
-    unplaced.push({ type: 'thinking', text: parsed.data.text, state: 'done' })
+    const part: ThinkingPart = {
+      type: 'thinking',
+      text: parsed.data.text,
+      state: 'done'
+    }
+    if (parsed.data.truncated) part.truncated = true
+    unplaced.push(part)
     const anchor = parsed.data.tool_call_id
     const index = anchor
       ? next.findIndex(
