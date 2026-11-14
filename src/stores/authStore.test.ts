@@ -82,8 +82,6 @@ vi.mock(import('firebase/auth'))
 
 vi.mock(import('@comfyorg/telemetry'))
 
-let mockResetSocket: Mock
-
 // Mock useDialogService
 vi.mock(import('@/services/dialogService'))
 vi.mock<unknown>(
@@ -92,7 +90,11 @@ vi.mock<unknown>(
 )
 vi.mock(import('@/composables/useFeatureFlags'))
 
-// Mock apiKeyAuthStore
+let mockResetSocket: Mock
+
+beforeEach(() => {
+  mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
+})
 
 describe('useAuthStore', () => {
   let store: ReturnType<typeof useAuthStore>
@@ -107,10 +109,8 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(async () => {
-    mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
-    // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
       showErrorDialog: vi.fn()
     })
@@ -134,10 +134,8 @@ describe('useAuthStore', () => {
     store = useAuthStore()
     await vi.waitFor(() => expect(store.isInitialized).toBe(true))
 
-    // Reset and set up getIdToken mock
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
 
-    // Default: no API key auth
     vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
     vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(null)
     Object.assign(useTeamWorkspaceStore(), {

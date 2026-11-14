@@ -14,6 +14,7 @@ import {
 import type { Mock } from 'vitest'
 import { setActivePinia } from 'pinia'
 import { defineComponent, effectScope } from 'vue'
+import type { Router } from 'vue-router'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type {
@@ -180,7 +181,13 @@ const { cloudSessionCookieExtension } =
   await import('@/extensions/core/cloudSessionCookie')
 useExtensionService().registerExtension(cloudSessionCookieExtension)
 const { createAppRouter } = await import('@/router')
-const router = await createAppRouter()
+let router: Router
+
+beforeEach(async () => {
+  router = await createAppRouter()
+  api.socket = null
+  Reflect.set(api, 'socketGeneration', 0)
+})
 
 installCloudApiAuth()
 installWorkspaceApiAuth()
