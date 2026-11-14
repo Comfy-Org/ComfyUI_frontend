@@ -7,7 +7,9 @@
       "path": "src/platform/navigation/**"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/platform/navigation/composables/usePreservedQueryDeepLink.ts"
+  ],
   "characterizationScenarios": [
     {
       "name": "Preserved query parameters survive redirects and are merged back by namespace",
@@ -20,6 +22,12 @@
     {
       "name": "Unmatched routes redirect to root and report a bounded path",
       "checks": ["src/platform/navigation/unmatchedRoute.test.ts"]
+    },
+    {
+      "name": "Deep-link loaders restore a preserved query parameter after login and strip it once consumed",
+      "checks": [
+        "src/platform/navigation/composables/usePreservedQueryDeepLink.test.ts"
+      ]
     }
   ],
   "adrs": [],
