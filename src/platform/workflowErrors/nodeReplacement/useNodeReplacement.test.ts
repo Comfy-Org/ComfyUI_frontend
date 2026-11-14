@@ -10,19 +10,21 @@ import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
 } from '@/core/graph/nodeShell/nodeShellState'
-import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {
+  graphScopeOf,
   toOwningGraphId,
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 import type { UUID } from '@/utils/uuid'
 import type { MissingNodeType, NodeReplacement } from './types'
 
@@ -30,16 +32,7 @@ vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
 LiteGraph.createNode = vi.fn()
 LiteGraph.registered_node_types = {}
 
-vi.mock(import('@/core/graph/nodeShell/nodeShellState'), () => ({
-  canTransferReplacementOwnership: vi.fn(() => true),
-  transferReplacementOwnership: vi.fn(
-    (node: LGraphNode, replacement: LGraphNode) => {
-      replacement.pos = [...node.pos]
-      replacement.size = [...node.size]
-      return true
-    }
-  )
-}))
+vi.mock(import('@/core/graph/nodeShell/nodeShellState'), { spy: true })
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { rootGraph: null },
@@ -58,6 +51,14 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {
+  vi.mocked(canTransferReplacementOwnership).mockReturnValue(true)
+  vi.mocked(transferReplacementOwnership).mockImplementation(
+    (node, replacement) => {
+      replacement.pos = [...node.pos]
+      replacement.size = [...node.size]
+      return true
+    }
+  )
   vi.mocked(st).mockImplementation((_key, fallback) => fallback)
   vi.mocked(t).mockImplementation((key: unknown, params?: unknown) =>
     params ? `${String(key)}:${JSON.stringify(params)}` : String(key)
@@ -213,6 +214,49 @@ function createNewNode(
   })
 }
 
+function createReplacementGraph(): LGraph {
+  const graph = new LGraph()
+  Object.assign(app, { rootGraph: graph })
+  return graph
+}
+
+function createSlottedNode(
+  type: string,
+  inputs: string[] = [],
+  outputs: string[] = []
+): LGraphNode {
+  const node = new LGraphNode(type, type)
+  for (const name of inputs) node.addInput(name, 'IMAGE')
+  for (const name of outputs) node.addOutput(name, 'IMAGE')
+  return node
+}
+
+function addSlottedNode(
+  graph: LGraph,
+  type: string,
+  inputs: string[] = [],
+  outputs: string[] = []
+): LGraphNode {
+  const node = createSlottedNode(type, inputs, outputs)
+  graph.add(node)
+  return node
+}
+
+function markPlaceholder(node: LGraphNode): void {
+  node.last_serialization = node.serialize()
+  vi.mocked(collectAllNodes).mockReturnValue([node])
+}
+
+function graphLinkIds(graph: LGraph) {
+  return [...graph.links.keys()].sort((a, b) => a - b)
+}
+
+function topologyLinkIds(graph: LGraph) {
+  return [...useLinkStore().graphTopologies(graphScopeOf(graph))]
+    .map((link) => link.id)
+    .sort((a, b) => a - b)
+}
+
 function makeMissingNodeType(
   type: string,
   replacement: NodeReplacement
@@ -346,23 +390,17 @@ describe('useNodeReplacement', () => {
     })
 
     it('should transfer input connections using input_mapping', () => {
-      const link = createMockLink(10, 5, 0, 1, 0)
-      const placeholder = createPlaceholderNode(
-        1,
-        'T2IAdapterLoader',
-        [{ name: 't2i_adapter_name', link: 10 }],
-        []
-      )
-      const graph = createMockGraph([placeholder], [link])
-      placeholder.graph = graph
-      Object.assign(app, { rootGraph: graph })
-
-      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
-
-      const newNode = createNewNode(
-        [{ name: 'control_net_name', link: null }],
-        []
-      )
+      const graph = createReplacementGraph()
+      const source = addSlottedNode(graph, 'Source', [], ['IMAGE'])
+      const placeholder = addSlottedNode(graph, 'T2IAdapterLoader', [
+        'unmapped',
+        't2i_adapter_name'
+      ])
+      const link = createTestLink(graph, source, 0, placeholder, 1)
+      markPlaceholder(placeholder)
+      const newNode = createSlottedNode('ControlNetLoader', [
+        'control_net_name'
+      ])
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
 
       const { replaceNodesInPlace } = useNodeReplacement()
@@ -379,28 +417,27 @@ describe('useNodeReplacement', () => {
       ])
 
       expect(result).toEqual(['T2IAdapterLoader'])
-      // Link should be updated to point at new node's input
-      expect(link.target_id).toBe(toNodeId(1))
+      expect(link.target_id).toBe(placeholder.id)
       expect(link.target_slot).toBe(0)
+      expect(graph.getNodeById(placeholder.id)).toBe(newNode)
+      expect(inputLink(graph, newNode.id, 0)).toBe(link)
     })
 
     it('should transfer output connections using output_mapping', () => {
-      const link = createMockLink(20, 1, 0, 5, 0)
-      const placeholder = createPlaceholderNode(
-        1,
+      const graph = createReplacementGraph()
+      const placeholder = addSlottedNode(
+        graph,
         'ResizeImagesByLongerEdge',
         [],
-        [{ name: 'IMAGE', links: [20] }]
+        ['IMAGE']
       )
-      const graph = createMockGraph([placeholder], [link])
-      placeholder.graph = graph
-      Object.assign(app, { rootGraph: graph })
-
-      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
-
-      const newNode = createNewNode(
-        [{ name: 'image', link: null }],
-        [{ name: 'IMAGE', links: null }]
+      const target = addSlottedNode(graph, 'Target', ['image'])
+      const link = createTestLink(graph, placeholder, 0, target, 0)
+      markPlaceholder(placeholder)
+      const newNode = createSlottedNode(
+        'ImageScaleToMaxDimension',
+        ['image'],
+        ['IMAGE']
       )
       vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
 
@@ -419,29 +456,27 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      // Output link should be remapped
-      expect(link.origin_id).toBe(toNodeId(1))
+      expect(link.origin_id).toBe(placeholder.id)
       expect(link.origin_slot).toBe(0)
+      expect(graph.getNodeById(placeholder.id)).toBe(newNode)
+      expect(outputLinks(graph, newNode.id, 0)).toEqual([link])
     })
 
     it('removes unmapped links without removing mapped links', () => {
-      const mapped = createMockLink(20, 1, 0, 5, 0)
-      const unmapped = createMockLink(21, 1, 1, 6, 0)
-      const placeholder = createPlaceholderNode(
-        1,
+      const graph = createReplacementGraph()
+      const placeholder = addSlottedNode(
+        graph,
         'OldNode',
         [],
-        [
-          { name: 'kept', links: [20] },
-          { name: 'removed', links: [21] }
-        ]
+        ['kept', 'removed']
       )
-      const graph = createMockGraph([placeholder], [mapped, unmapped])
-      placeholder.graph = graph
-      Object.assign(app, { rootGraph: graph })
-      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      const keptTarget = addSlottedNode(graph, 'KeptTarget', ['in'])
+      const removedTarget = addSlottedNode(graph, 'RemovedTarget', ['in'])
+      const mapped = createTestLink(graph, placeholder, 0, keptTarget, 0)
+      createTestLink(graph, placeholder, 1, removedTarget, 0)
+      markPlaceholder(placeholder)
       vi.mocked(LiteGraph.createNode).mockReturnValue(
-        createNewNode([], [{ name: 'kept', links: null }])
+        createSlottedNode('NewNode', [], ['kept'])
       )
 
       useNodeReplacement().replaceNodesInPlace([
@@ -454,31 +489,20 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(graph.links.has(toLinkId(20))).toBe(true)
-      expect(graph.links.has(toLinkId(21))).toBe(false)
-      expect(
-        [...useLinkStore().graphTopologies(GRAPH_SCOPE)].map((link) => link.id)
-      ).toEqual([toLinkId(20)])
+      expect(graphLinkIds(graph)).toEqual([mapped.id])
+      expect(topologyLinkIds(graph)).toEqual([mapped.id])
     })
 
     it('preserves output links when only input mappings are provided', () => {
-      const incoming = createMockLink(20, 5, 0, 1, 0)
-      const outgoing = createMockLink(21, 1, 0, 6, 0)
-      const placeholder = createPlaceholderNode(
-        1,
-        'OldNode',
-        [{ name: 'in', link: 20 }],
-        [{ name: 'out', links: [21] }]
-      )
-      const graph = createMockGraph([placeholder], [incoming, outgoing])
-      placeholder.graph = graph
-      Object.assign(app, { rootGraph: graph })
-      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      const graph = createReplacementGraph()
+      const source = addSlottedNode(graph, 'Source', [], ['out'])
+      const placeholder = addSlottedNode(graph, 'OldNode', ['in'], ['out'])
+      const target = addSlottedNode(graph, 'Target', ['in'])
+      const incoming = createTestLink(graph, source, 0, placeholder, 0)
+      const outgoing = createTestLink(graph, placeholder, 0, target, 0)
+      markPlaceholder(placeholder)
       vi.mocked(LiteGraph.createNode).mockReturnValue(
-        createNewNode(
-          [{ name: 'in', link: null }],
-          [{ name: 'out', links: null }]
-        )
+        createSlottedNode('NewNode', ['in'], ['out'])
       )
 
       useNodeReplacement().replaceNodesInPlace([
@@ -491,28 +515,20 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(graph.links.has(toLinkId(20))).toBe(true)
-      expect(graph.links.has(toLinkId(21))).toBe(true)
+      expect(graphLinkIds(graph)).toEqual([incoming.id, outgoing.id])
+      expect(topologyLinkIds(graph)).toEqual([incoming.id, outgoing.id])
     })
 
     it('preserves input links when only output mappings are provided', () => {
-      const incoming = createMockLink(20, 5, 0, 1, 0)
-      const outgoing = createMockLink(21, 1, 0, 6, 0)
-      const placeholder = createPlaceholderNode(
-        1,
-        'OldNode',
-        [{ name: 'in', link: 20 }],
-        [{ name: 'out', links: [21] }]
-      )
-      const graph = createMockGraph([placeholder], [incoming, outgoing])
-      placeholder.graph = graph
-      Object.assign(app, { rootGraph: graph })
-      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      const graph = createReplacementGraph()
+      const source = addSlottedNode(graph, 'Source', [], ['out'])
+      const placeholder = addSlottedNode(graph, 'OldNode', ['in'], ['out'])
+      const target = addSlottedNode(graph, 'Target', ['in'])
+      const incoming = createTestLink(graph, source, 0, placeholder, 0)
+      const outgoing = createTestLink(graph, placeholder, 0, target, 0)
+      markPlaceholder(placeholder)
       vi.mocked(LiteGraph.createNode).mockReturnValue(
-        createNewNode(
-          [{ name: 'in', link: null }],
-          [{ name: 'out', links: null }]
-        )
+        createSlottedNode('NewNode', ['in'], ['out'])
       )
 
       useNodeReplacement().replaceNodesInPlace([
@@ -525,24 +541,18 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(graph.links.has(toLinkId(20))).toBe(true)
-      expect(graph.links.has(toLinkId(21))).toBe(true)
+      expect(graphLinkIds(graph)).toEqual([incoming.id, outgoing.id])
+      expect(topologyLinkIds(graph)).toEqual([incoming.id, outgoing.id])
     })
 
     it('bails out when an untouched side cannot preserve a link', () => {
-      const outgoing = createMockLink(21, 1, 0, 6, 0)
-      const placeholder = createPlaceholderNode(
-        1,
-        'OldNode',
-        [{ name: 'in', link: null }],
-        [{ name: 'out', links: [21] }]
-      )
-      const graph = createMockGraph([placeholder], [outgoing])
-      placeholder.graph = graph
-      Object.assign(app, { rootGraph: graph })
-      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      const graph = createReplacementGraph()
+      const placeholder = addSlottedNode(graph, 'OldNode', ['in'], ['out'])
+      const target = addSlottedNode(graph, 'Target', ['in'])
+      const outgoing = createTestLink(graph, placeholder, 0, target, 0)
+      markPlaceholder(placeholder)
       vi.mocked(LiteGraph.createNode).mockReturnValue(
-        createNewNode([{ name: 'in', link: null }])
+        createSlottedNode('NewNode', ['in'])
       )
 
       const result = useNodeReplacement().replaceNodesInPlace([
@@ -557,26 +567,23 @@ describe('useNodeReplacement', () => {
 
       expect(result).toEqual([])
       expect(graph._nodes[0]).toBe(placeholder)
-      expect(graph.links.has(toLinkId(21))).toBe(true)
+      expect(graphLinkIds(graph)).toEqual([outgoing.id])
+      expect(outputLinks(graph, placeholder.id, 0)).toEqual([outgoing])
     })
 
     it('runs canonical disconnect lifecycle after committing removals', () => {
-      const link = createMockLink(21, 1, 0, 6, 0)
-      const placeholder = createPlaceholderNode(
-        1,
-        'OldNode',
-        [],
-        [{ name: 'removed', links: [21] }]
-      )
-      const peer = createPlaceholderNode(6, 'Peer', [{ name: 'in', link: 21 }])
+      const graph = createReplacementGraph()
+      const placeholder = addSlottedNode(graph, 'OldNode', [], ['removed'])
+      const peer = addSlottedNode(graph, 'Peer', ['in'])
+      const link = createTestLink(graph, placeholder, 0, peer, 0)
+      markPlaceholder(placeholder)
       placeholder.onConnectionsChange = vi.fn()
       peer.onConnectionsChange = vi.fn()
-      const graph = createMockGraph([placeholder, peer], [link])
-      placeholder.graph = graph
-      peer.graph = graph
-      Object.assign(app, { rootGraph: graph })
-      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
-      vi.mocked(LiteGraph.createNode).mockReturnValue(createNewNode())
+      const incrementVersion = vi.spyOn(graph, 'incrementVersion')
+      incrementVersion.mockClear()
+      vi.mocked(LiteGraph.createNode).mockReturnValue(
+        createSlottedNode('NewNode')
+      )
 
       useNodeReplacement().replaceNodesInPlace([
         makeMissingNodeType('OldNode', {
@@ -588,7 +595,8 @@ describe('useNodeReplacement', () => {
         })
       ])
 
-      expect(graph.links.has(toLinkId(21))).toBe(false)
+      expect(graphLinkIds(graph)).toEqual([])
+      expect(topologyLinkIds(graph)).toEqual([])
       expect(peer.onConnectionsChange).toHaveBeenCalledWith(
         NodeSlotType.INPUT,
         0,
@@ -603,7 +611,7 @@ describe('useNodeReplacement', () => {
         link,
         placeholder.outputs[0]
       )
-      expect(graph.incrementVersion).toHaveBeenCalledOnce()
+      expect(incrementVersion).toHaveBeenCalledOnce()
     })
 
     it('bails out before lifecycle when endpoint validation rejects', () => {
