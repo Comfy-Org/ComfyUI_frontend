@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -8,9 +8,16 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
+
+vi.mock(import('vue-router'))
+vi.mock(import('@vueuse/router'), async () => {
+  const { ref } = await import('vue')
+  return { useRouteHash: () => ref('') }
+})
 
 function addTwoHosts(subgraph: Subgraph, parent: LGraph = subgraph.rootGraph) {
   const a = createTestSubgraphNode(subgraph, { id: 11 })
@@ -27,6 +34,7 @@ async function showOnCanvas(root: LGraph) {
     skip_events: true
   })
   useCanvasStore().canvas = canvas
+  useSubgraphNavigationStore()
   await nextTick()
   return { canvas, store: useSubgraphInputValuesStore() }
 }
@@ -71,5 +79,24 @@ describe('subgraph input values instance selection', () => {
 
     canvas.setGraph(outer)
     expect(store.selected?.id).toBe(b.id)
+  })
+
+  it('edits the nested instance entered through when the definition also has a root instance', async () => {
+    const outer = createTestSubgraph({ name: 'outer' })
+    const root = outer.rootGraph
+    const nested = createTestSubgraph({ name: 'nested', rootGraph: root })
+    root.subgraphs.set(outer.id, outer)
+    root.subgraphs.set(nested.id, nested)
+    const outerHost = createTestSubgraphNode(outer, { id: 3 })
+    root.add(outerHost)
+    root.add(createTestSubgraphNode(nested, { id: 7 }))
+    const inner = createTestSubgraphNode(nested, { id: 5, parentGraph: outer })
+    outer.add(inner)
+    const { canvas, store } = await showOnCanvas(root)
+
+    canvas.openSubgraph(outer, outerHost)
+    canvas.openSubgraph(nested, inner)
+
+    expect(store.selected).toMatchObject({ graphId: outer.id, id: inner.id })
   })
 })
