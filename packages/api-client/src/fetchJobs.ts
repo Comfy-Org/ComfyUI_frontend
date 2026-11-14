@@ -48,6 +48,10 @@ export interface FetchHistoryPageResult {
   hasMore: boolean
 }
 
+/**
+ * Fetches raw jobs from /jobs endpoint
+ * @internal
+ */
 async function fetchJobsRaw(
   fetchApi: (url: string) => Promise<Response>,
   statuses: JobStatus[],
