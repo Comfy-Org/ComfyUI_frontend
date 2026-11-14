@@ -1,4 +1,7 @@
-import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
+import type {
+  ComfyDesktop2Bridge,
+  ComfyDownloadProgress
+} from '@comfyorg/comfyui-desktop-bridge-types'
 
 import type { DesktopHostAuthBridge } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import type {
@@ -264,6 +267,7 @@ declare global {
     __comfyDesktop2?: ComfyDesktop2Bridge & {
       Auth?: DesktopHostAuthBridge
       getInstallId?: () => string
+      listModelDownloads?: () => Promise<ComfyDownloadProgress[]>
     }
   }
 }
