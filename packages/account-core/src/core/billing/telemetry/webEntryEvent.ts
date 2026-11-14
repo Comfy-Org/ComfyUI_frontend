@@ -25,6 +25,7 @@ export type WebEntryBounceReason =
 export type WebEntryBounceTarget =
   | 'comfyui_workspace'
   | 'comfyui_credits'
+  | 'comfyui_local'
   | 'platform_account'
   | 'platform_billing'
   | 'pricing_table'

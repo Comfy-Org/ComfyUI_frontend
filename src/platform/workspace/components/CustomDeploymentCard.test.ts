@@ -2,11 +2,13 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CustomDeploymentCard from './CustomDeploymentCard.vue'
 
@@ -78,12 +80,27 @@ describe('CustomDeploymentCard', () => {
 
     expect(link).toHaveAttribute(
       'href',
-      'https://platform.comfy.org/profile/builds'
+      'https://platform.comfy.org/profile/builds?return_to=comfyui_local'
     )
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
     await user.click(link)
     expect(onDone).toHaveBeenCalledOnce()
+  })
+
+  it('points the platform link at a workspace that becomes active after the card opens', async () => {
+    renderCard()
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws_team-1' })
+    await nextTick()
+
+    expect(
+      screen.getByRole('link', { name: 'Deploy on Platform' })
+    ).toHaveAttribute(
+      'href',
+      'https://platform.comfy.org/profile/builds?return_to=comfyui_local&workspace=ws_team-1'
+    )
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
   })
 
   it.for([

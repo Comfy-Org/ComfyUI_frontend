@@ -130,7 +130,7 @@
           <small class="text-center text-muted-foreground">
             {{ t('auth.apiKey.helpText') }}
             <a
-              :href="`${comfyPlatformBaseUrl}/login`"
+              :href="platformLoginUrl"
               target="_blank"
               class="cursor-pointer text-blue-500"
             >
@@ -191,11 +191,6 @@ import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import {
-  configValueOrDefault,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import {
   desktopHostReportsSignInFailures,
@@ -203,6 +198,7 @@ import {
   requestDesktopHostSignIn
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
@@ -240,13 +236,7 @@ const signInWithDesktopHost = async () => {
   }
   toast.error(t('auth.desktopHost.signInFailed'), { duration: 6000 })
 }
-const comfyPlatformBaseUrl = computed(() =>
-  configValueOrDefault(
-    remoteConfig.value,
-    'comfy_platform_base_url',
-    getComfyPlatformBaseUrl()
-  )
-)
+const platformLoginUrl = computed(() => platformLink('/login'))
 
 const toggleState = () => {
   isSignIn.value = !isSignIn.value

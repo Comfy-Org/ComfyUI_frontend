@@ -106,7 +106,7 @@
           size="lg"
           class="w-full no-underline @xl:w-auto"
           as="a"
-          :href="createDeploymentUrl"
+          :href="customDeploymentCreateUrl()"
           target="_blank"
           rel="noopener noreferrer"
           data-testid="custom-deployment-platform"
@@ -156,6 +156,4 @@ const emit = defineEmits<{
 defineOptions({ inheritAttrs: false })
 
 const { isCopying, copied, copy } = useBriefCopy()
-
-const createDeploymentUrl = customDeploymentCreateUrl()
 </script>
