@@ -937,6 +937,7 @@
           "packages/api-client/src/ComfyApi.ts",
           "packages/api-client/src/ComfyApi.clientId.test.ts",
           "packages/api-client/src/ComfyApi.eventListeners.test.ts",
+          "packages/api-client/src/ComfyApi.jobLists.test.ts",
           "packages/api-client/src/apiTimeouts.ts",
           "src/renderer/extensions/firstRunTour/**",
           "src/services/useNewUserService.ts",

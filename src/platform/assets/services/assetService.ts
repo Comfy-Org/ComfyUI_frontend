@@ -242,6 +242,9 @@ function compareLoaderPaths(a: string, b: string): number {
 const WORKSPACE_LIBRARY_PARAM = 'workspace_library' satisfies keyof NonNullable<
   ListAssetsData['query']
 >
+const CAPPED_TOTAL_PARAM = 'capped_total' satisfies keyof NonNullable<
+  ListAssetsData['query']
+>
 
 /**
  * Validates asset response data using Zod schema
@@ -342,6 +345,9 @@ function createAssetService() {
     }
     if (workspaceLibrary) {
       queryParams.set(WORKSPACE_LIBRARY_PARAM, 'true')
+    }
+    if (isCloud) {
+      queryParams.set(CAPPED_TOTAL_PARAM, 'true')
     }
 
     const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`

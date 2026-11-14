@@ -5,6 +5,7 @@ import type { ListAssetsData } from '@comfyorg/ingest-types'
 
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { getPagedList, usePreemptableQueue } from '@/utils/pagedList'
 import type { SharedPagedListState, PagedList } from '@/utils/pagedList'
@@ -20,6 +21,10 @@ const BASE_PARAMS = {
   sort: 'created_at',
   tags_none: ['missing']
 } satisfies ListAssetsData['query']
+
+function baseParams(): ListAssetsData['query'] {
+  return isCloud ? { ...BASE_PARAMS, capped_total: true } : BASE_PARAMS
+}
 
 function assetsQueryInternal(
   params: ListAssetsData['query'] = {},
@@ -141,7 +146,11 @@ function assetsQueryInternal(
     signal?: AbortSignal
   ) {
     const requestOptions = { signal }
-    const query = encodeParams({ ...BASE_PARAMS, ...params, ...overrideParams })
+    const query = encodeParams({
+      ...baseParams(),
+      ...params,
+      ...overrideParams
+    })
     const resp = await api
       .fetchApi(`/assets?${query}`, requestOptions)
       .catch((e) => onError('asset fetch failed', e))
