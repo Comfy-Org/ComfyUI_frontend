@@ -9,7 +9,7 @@ import { useBillingRouting } from '@/platform/billing/composables/useBillingRout
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { AuthStoreError } from '@/stores/authStore'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import { useResubscribe as createResubscribe } from './useResubscribe'

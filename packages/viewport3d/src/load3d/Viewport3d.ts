@@ -79,7 +79,7 @@ export type Viewport3dDeps = {
 export class Viewport3d {
   protected readonly view: RendererView
   protected timer: THREE.Timer
-  private renderLoop: RenderLoopHandle | null = null
+  protected renderLoop: RenderLoopHandle | null = null
   private onContextMenuCallback?: (event: MouseEvent) => void
   private getDimensionsCallback?: () => Size2D | null
 
@@ -449,14 +449,17 @@ export class Viewport3d {
 
   updateStatusMouseOnNode(onNode: boolean): void {
     this.STATUS_MOUSE_ON_NODE = onNode
+    this.renderLoop?.wake()
   }
 
   updateStatusMouseOnScene(onScene: boolean): void {
     this.STATUS_MOUSE_ON_SCENE = onScene
+    this.renderLoop?.wake()
   }
 
   updateStatusMouseOnViewer(onViewer: boolean): void {
     this.STATUS_MOUSE_ON_VIEWER = onViewer
+    this.renderLoop?.wake()
   }
 
   isActive(): boolean {

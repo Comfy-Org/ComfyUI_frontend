@@ -75,6 +75,7 @@ interface RunErrorState {
     MissingResourceAbsorption
   >
   nodeErrors: Record<string, NodeError> | null
+  nodeErrorsJobId: string | null
   executionError: ExecutionErrorWsMessage | null
   promptError: PromptError | null
 }
@@ -118,6 +119,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const next: RunErrorState = {
       absorbedValidationErrors: new WeakMap(),
       nodeErrors: null,
+      nodeErrorsJobId: null,
       executionError: null,
       promptError: null,
       ...runErrorsByWorkflow.value.get(key),
@@ -434,12 +436,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    */
   function recordNodeErrors(
     nodeErrors: Record<string, NodeError> | null,
-    key: string | null = activeRunErrorKey.value
+    key: string | null = activeRunErrorKey.value,
+    jobId: string | null = null
   ) {
     const record =
       nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
     updateRunErrors(
-      { nodeErrors: record, absorbedValidationErrors: new WeakMap() },
+      {
+        nodeErrors: record,
+        nodeErrorsJobId: record ? jobId : null,
+        absorbedValidationErrors: new WeakMap()
+      },
       key
     )
     if (record && key !== null && key === activeRunErrorKey.value) {
@@ -451,6 +458,45 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         },
         key
       )
+    }
+  }
+
+  /**
+   * Records submission `jobId`'s node errors under `key`. An empty response
+   * keeps errors already recorded for `jobId` and clears any other job's.
+   */
+  function recordSubmissionNodeErrors(
+    nodeErrors: Record<string, NodeError> | null | undefined,
+    key: string | null,
+    jobId: string | undefined
+  ) {
+    if (nodeErrors && Object.keys(nodeErrors).length > 0) {
+      recordNodeErrors(nodeErrors, key, jobId ?? null)
+      return
+    }
+    const recordedJobId =
+      key === null ? null : runErrorsByWorkflow.value.get(key)?.nodeErrorsJobId
+    if (jobId === undefined || recordedJobId !== jobId) {
+      recordNodeErrors(null, key)
+    }
+  }
+
+  /**
+   * Records `nodeErrors` of job `jobId` under `key` and opens the error
+   * overlay when that run is on screen.
+   */
+  function surfaceNodeErrors(
+    nodeErrors: Record<string, NodeError>,
+    key: string,
+    jobId: string
+  ) {
+    recordNodeErrors(nodeErrors, key, jobId)
+    if (
+      key === activeRunErrorKey.value &&
+      hasNodeError.value &&
+      useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+    ) {
+      showErrorOverlay()
     }
   }
 
@@ -979,6 +1025,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Recording
     recordNodeErrors,
+    recordSubmissionNodeErrors,
+    surfaceNodeErrors,
     recordExecutionError,
     recordPromptError,
 

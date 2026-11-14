@@ -742,7 +742,7 @@
       "auth/account-exists-with-different-credential": "この方法ではサインインできませんでした。別のサインイン方法を試すか、パスワードをリセットして続行してください。",
       "auth/cancelled-popup-request": "別のサインインウィンドウがすでに開いていたため、このリクエストはキャンセルされました。もう一度お試しください。",
       "auth/email-already-in-use": "このメールアドレスではアカウントを作成できませんでした。代わりにサインインするか、パスワードをリセットしてください。",
-      "auth/invalid-credential": "ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。",
+      "auth/invalid-credential": "ログイン認証情報が無効です。メールアドレスとパスワードを確認してください。以前に Google または GitHub でサインインしたことがある場合は、そちらを使用してください。",
       "auth/invalid-email": "有効なメールアドレスを入力してください。",
       "auth/network-request-failed": "ネットワークエラー。接続を確認してからもう一度お試しください。",
       "auth/operation-not-allowed": "このサインイン方法は現在サポートされていません。",
@@ -803,6 +803,7 @@
       "userAvatar": "ユーザーアバター"
     },
     "loginButton": {
+      "signInToUsePartnerNodes": "パートナーノードを使用するにはサインイン",
       "tooltipHelp": "\"APIノード\"を使用するにはログインしてください",
       "tooltipLearnMore": "詳細を見る..."
     },
@@ -1588,9 +1589,7 @@
     "LOAD_3D": "3Dをロード",
     "LORA_MODEL": "LoRAモデル",
     "LOSS_MAP": "損失マップ",
-    "LUMA_CONCEPTS": "Lumaコンセプト",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "Luma参照",
     "MASK": "マスク",
     "MESH": "メッシュ",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -2766,6 +2765,7 @@
     "versionMismatchWarning": "バージョン互換性の警告",
     "videoFailedToLoad": "ビデオの読み込みに失敗しました",
     "videoFilenameExtensionRequired": "動画ファイル名は .mp4 などの拡張子で終わっている必要があります。ファイル名を変更して再試行してください。",
+    "videoFormatNotSupported": "この動画はブラウザで再生できません。",
     "videoPreview": "ビデオプレビュー - 矢印キーでビデオを切り替え",
     "viewGrid": "グリッド表示",
     "viewImageOfTotal": "画像 {index} / {total} を表示",
@@ -4146,6 +4146,7 @@
       "errorUnavailable": "現在この機能は利用できません。問題が続く場合はサポートにお問い合わせください。",
       "genericError": "OAuthリクエストに失敗しました。クライアントアプリから再起動してください。",
       "loading": "認可リクエストを読み込み中…",
+      "loginRequired": "続行するにはサインインしてください。",
       "missingRequest": "この認可リクエストが見つかりません。クライアントアプリから再起動してください。",
       "noWorkspaces": "このリクエストに利用可能なワークスペースがありません。",
       "notYou": "あなたではありませんか？",
@@ -4154,6 +4155,7 @@
       "resourceFallback": "このアプリ",
       "sessionError": "セッションの確立に失敗しました。もう一度お試しください。",
       "sessionErrorToastSummary": "OAuthサインインを続行できませんでした",
+      "signInAgain": "再度サインイン",
       "signedInAs": "ログイン中のアカウント",
       "subtitle": "続行するには{resource}にサインインしてください",
       "switchAccount": "アカウントを切り替える",
@@ -4161,6 +4163,7 @@
       "unverifiedBadge": "名前が未確認",
       "unverifiedNotice": "この名前は、このアプリを登録した人によって提供されたものです。続行すると、ブラウザは {host} に移動します。認識できるサイトであることを確認してください。",
       "unverifiedNoticeNoHost": "この名前は、このアプリを登録した人によって提供されたものであり、Comfy によって確認されていません。",
+      "verifiedNotice": "名前は未確認 · 確認済みの送信先: {platform} · {host} に戻ります",
       "workspaceLabel": "ワークスペース"
     },
     "scopes": {
@@ -4381,13 +4384,16 @@
     "balanceUnavailable": "残高を読み込めませんでした。",
     "billingSettings": "請求設定",
     "credits": "クレジット",
+    "paymentProcessing": "支払いを処理中…",
+    "planCredits": "プランクレジット",
     "planStatus": {
       "ended": "プラン終了",
       "noPlan": "プランなし",
       "paused": "一時停止中",
       "paymentDue": "支払い期限超過"
     },
-    "switchWorkspace": "ワークスペースを切り替え"
+    "switchWorkspace": "ワークスペースを切り替え",
+    "topUpCredits": "クレジットを追加購入"
   },
   "progressToast": {
     "allDownloadsCompleted": "すべてのダウンロードが完了しました",
@@ -6660,16 +6666,22 @@
   "workspaceSwitcher": {
     "cannotCreateWorkspace": "現在、このアカウントではワークスペースを作成できません。",
     "createWorkspace": "新しいワークスペースを作成",
+    "createWorkspaceAction": "ワークスペースを作成",
     "failedToSwitch": "ワークスペースの切り替えに失敗しました",
+    "loadFailed": "ワークスペースを読み込めませんでした。",
     "managedByOrganization": "組織がワークスペースを管理しているため、新しいワークスペースを作成できません。",
     "maxWorkspacesReached": "所有できるワークスペースは{max}個のみです。新しいワークスペースを作成するには削除してください。 | 所有できるワークスペースは{max}個のみです。新しいワークスペースを作成するには1つ削除してください。",
+    "noResults": "「{query}」に一致するワークスペースはありません。",
+    "ownedLimit": "所有できるのは最大 {max} 個です。",
     "personal": "個人用",
     "roleMember": "メンバー",
     "roleOwner": "オーナー",
     "scopeCaption": "ワークスペースは、使用するクレジットにのみ影響します。",
     "scopeTooltip": "パートナーノードを使用する実行では、このワークスペースのクレジットが消費されます。Cloudとは異なり、すべてのワークスペースは通常の出力フォルダーに保存されます。",
+    "searchPlaceholder": "ワークスペースを検索...",
     "subscribe": "サブスクライブ",
-    "switchWorkspace": "ワークスペースを切り替え"
+    "switchWorkspace": "ワークスペースを切り替え",
+    "tryAgain": "再試行"
   },
   "zoomControls": {
     "hideMinimap": "ミニマップを非表示",

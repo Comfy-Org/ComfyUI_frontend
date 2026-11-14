@@ -8548,6 +8548,9 @@
       "model": {
         "name": "מודל"
       },
+      "model_auto_duration": {
+        "name": "משך אוטומטי"
+      },
       "model_duration": {
         "name": "משך"
       },
@@ -8568,7 +8571,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "יצירת וידאו עם דיאלוג וקול מסונכרנים מפרומפט טקסט באמצעות HeyGen Video 1.0. אפשר לחבר עד 12 תמונות, סרטוני וידאו וקטעי שמע להפניה, ולציין אותם בפרומפט כ-{'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "description": "צרו וידאו עם דיאלוג וקול מסונכרנים מפרומפט טקסט באמצעות HeyGen Video 1.0. ניתן לחבר עד 15 תמונות ייחוס, סרטונים וקטעי שמע, ולהזכיר אותם בפרומפט כ-{'@'}Image1, {'@'}Video1, {'@'}Audio1.",
     "display_name": "HeyGen Video 1.0 הפניה לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8582,9 @@
       },
       "model_aspect_ratio": {
         "name": "יחס_גובה-רוחב"
+      },
+      "model_auto_duration": {
+        "name": "משך אוטומטי"
       },
       "model_duration": {
         "name": "משך"
@@ -13723,34 +13729,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "קונספטים של מצלמה לשימוש עם Luma Text to Video ו-Luma Image to Video צמתים.",
-    "display_name": "Luma Concepts",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "קונספטים של מצלמה נוספים להוספה לאלו שנבחרו כאן (אופציונלי)."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "עריכת תמונה קיימת באמצעות פרומפט טקסטואלי עם מודל Luma UNI-1.",
     "display_name": "Luma UNI-1 עריכת תמונה",
@@ -13787,82 +13765,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "שינוי תמונות באופן סינכרוני לפי פרומפט ויחס ממדים.",
-    "display_name": "Luma תמונה לתמונה",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_weight": {
-        "name": "image_weight",
-        "tooltip": "משקל התמונה; ככל שקרוב ל-1.0, כך התמונה תשתנה פחות."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט ליצירת התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed קובע האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "יוצר תמונות באופן סינכרוני לפי פרומפט ויחס ממדים.",
-    "display_name": "Luma טקסט לתמונה",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "character_image": {
-        "name": "character_image",
-        "tooltip": "תמונות ייחוס לדמות; ניתן להזין אצווה של מספר תמונות, עד 4 תמונות יילקחו בחשבון."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image_luma_ref": {
-        "name": "image_luma_ref",
-        "tooltip": "חיבור צומת Luma Reference להשפעה על יצירה עם תמונות קלט; ניתן לשקול עד 4 תמונות."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט ליצירת התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed קובע האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      },
-      "style_image": {
-        "name": "style_image",
-        "tooltip": "תמונת ייחוס לסגנון; רק תמונה אחת תילקח בחשבון."
-      },
-      "style_image_weight": {
-        "name": "style_image_weight",
-        "tooltip": "משקל תמונת הסגנון. מתעלם אם לא סופקה תמונת סגנון."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "יצירת תמונות מטקסט באמצעות מודל Luma UNI-1.",
     "display_name": "Luma UNI-1 תמונה",
@@ -13886,52 +13788,6 @@
       "prompt": {
         "name": "פרומפט",
         "tooltip": "תיאור טקסטואלי של התמונה הרצויה. 1–6000 תווים."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed קובע האם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "יוצר וידאו באופן סינכרוני על בסיס פרומפט, תמונות קלט ו-output_size.",
-    "display_name": "Luma תמונה לוידאו",
-    "inputs": {
-      "control_after_generate": {
-        "name": "שליטה לאחר יצירה"
-      },
-      "duration": {
-        "name": "משך"
-      },
-      "first_image": {
-        "name": "תמונה ראשונה",
-        "tooltip": "הפריים הראשון של הוידאו שנוצר."
-      },
-      "last_image": {
-        "name": "תמונה אחרונה",
-        "tooltip": "הפריים האחרון של הוידאו שנוצר."
-      },
-      "loop": {
-        "name": "לולאה"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "קונספטים אופציונליים של מצלמה לשליטה בתנועת המצלמה דרך צומת Luma Concepts."
-      },
-      "model": {
-        "name": "מודל"
-      },
-      "prompt": {
-        "name": "פרומפט",
-        "tooltip": "הנחיה ליצירת הוידאו"
-      },
-      "resolution": {
-        "name": "רזולוציה"
       },
       "seed": {
         "name": "seed",
@@ -14165,7 +14021,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "שינוי יחס הגובה-רוחב של וידאו קיים, תוך שימוש ב-Luma Ray 3.2 למילוי האזורים החדשים בקנבס. וידאו מקור עד 30 שניות. החיוב לפי שניית פלט.",
+    "description": "שנו את יחס הממדים של וידאו קיים באמצעות Luma Ray 3.2 כדי למלא את אזורי הקנבס שנחשפו. וידאו המקור יכול להיות באורך של עד 10 שניות. החיוב הוא לפי שניית פלט.",
     "display_name": "Luma Ray 3.2 שינוי יחס גובה-רוחב לווידאו",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14043,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "וידאו מקור לשינוי יחס גובה-רוחב. עד 30 שניות."
+        "tooltip": "וידאו המקור לשינוי המסגור. עד 10 שניות."
       }
     },
     "outputs": {
@@ -14196,70 +14052,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "שומר תמונה ומשקל לשימוש עם צומת Luma Generate Image.",
-    "display_name": "Luma Reference",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "תמונה לשימוש כהפניה."
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "weight",
-        "tooltip": "משקל של הפניית התמונה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "יוצר וידאו באופן סינכרוני על בסיס פרומפט ו-output_size.",
-    "display_name": "Luma Text to Video",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "loop": {
-        "name": "loop"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Camera Concepts אופציונלי לשליטה בתנועת מצלמה דרך צומת Luma Concepts."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט ליצירת הווידאו"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -24987,6 +24779,9 @@
       "format_bit_depth": {
         "name": "bit_depth"
       },
+      "format_channels": {
+        "name": "ערוצים"
+      },
       "format_input_color_space": {
         "name": "input_color_space"
       },
@@ -25977,6 +25772,33 @@
       },
       "1": {
         "name": "ימין",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "מפצל תמונה לתמונות אדומה, ירוקה וכחולה ולמסכת אלפא.",
+    "display_name": "פיצול ערוצי תמונה",
+    "inputs": {
+      "image": {
+        "name": "תמונה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "אדום",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ירוק",
+        "tooltip": null
+      },
+      "2": {
+        "name": "כחול",
+        "tooltip": null
+      },
+      "3": {
+        "name": "אלפא",
         "tooltip": null
       }
     }

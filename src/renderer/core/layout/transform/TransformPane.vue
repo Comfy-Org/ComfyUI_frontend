@@ -68,9 +68,7 @@ watch(
   (canvas, _, onCleanup) => {
     if (!canvas) return
     syncWithCanvas(canvas)
-    onCleanup(
-      onCanvasFrame(canvas.canvas, 'present', () => syncWithCanvas(canvas))
-    )
+    onCleanup(onCanvasFrame(canvas, 'present', () => syncWithCanvas(canvas)))
   },
   { immediate: true }
 )

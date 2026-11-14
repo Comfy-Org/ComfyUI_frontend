@@ -25,18 +25,26 @@ rejects a home in `src/platform` or `src/workbench` without new suppressions.
 The panel lives in one app home, `src/renderer/extensions/propertiesPanel`,
 named "properties panel" in files and symbols. Other modules use only three
 entry points: `PropertiesPanel.vue`, `propertiesPanelStore.ts`, and
-`favoritedWidgetsStore.ts`. Deep imports are enforced.
+`favoritedWidgetsStore.ts`. The domain record declares deep imports as
+enforced, and fallow reports a deep import into the home as a
+`boundary-violation`. That rule is a warning, so CI does not fail on it;
+review must still reject new deep imports.
 
 Workflow errors own the errors-tab request state
 (`errorsTabRequestStore.ts`) and the errors-tab indicator
 (`useErrorsTabIndicator.ts`). The panel consumes both; nothing in platform
-imports the panel. `openPanel` reports whether it opened, so callers request
-error details only when the panel is available.
+imports the panel. `openPanel` reports whether it opened, and callers send an
+errors-tab request only when it did. Leaving the errors tab drops every
+pending request.
 
 The panel remains the composition root that provides the workflow error
-manager and the ask-agent port to the errors tab, because platform code cannot
-import the workbench implementations. `GraphView.vue` passes the panel's open
-state to the shell layout telemetry snapshot.
+manager and the ask-agent port to the errors tab. The ask-agent
+implementation lives in the workbench, which platform code cannot import. The
+workflow error manager is a platform implementation, but it lives in the
+custom-node manager, which implements the `WorkflowErrorManager` interface that
+workflow errors define. A direct import from workflow errors would make the two
+domains depend on each other, so the manager is injected. `GraphView.vue`
+passes the panel's open state to the shell layout telemetry snapshot.
 
 The subgraph editor stays nested in the home under the subgraph-promotion
 claim. The collapse toggle is a design-system accordion control with label

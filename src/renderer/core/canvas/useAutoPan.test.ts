@@ -1,7 +1,8 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
+import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
 import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 import {
   AutoPanController,
@@ -67,32 +68,24 @@ describe('calculateEdgePanSpeed', () => {
 })
 
 describe('AutoPanController', () => {
-  let mockCanvas: HTMLCanvasElement
+  let mockCanvas: LGraphCanvas
   let mockDs: DragAndScale
   let onPanMock: ReturnType<typeof vi.fn<(dx: number, dy: number) => void>>
   let controller: AutoPanController
 
   beforeEach(() => {
-    mockCanvas = fromPartial<HTMLCanvasElement>({
-      getBoundingClientRect: () => ({
-        left: 0,
-        top: 0,
-        right: 800,
-        bottom: 600,
-        width: 800,
-        height: 600,
-        x: 0,
-        y: 0,
-        toJSON: () => {}
-      })
+    mockCanvas = new LGraphCanvas(createTestCanvasElement(), new LGraph(), {
+      skip_render: true,
+      skip_events: true
     })
-
-    mockDs = fromPartial<DragAndScale>({ offset: [0, 0], scale: 1 })
+    vi.spyOn(mockCanvas.canvas, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 800, 600)
+    )
+    mockDs = mockCanvas.ds
 
     onPanMock = vi.fn<(dx: number, dy: number) => void>()
     controller = new AutoPanController({
       canvas: mockCanvas,
-      ds: mockDs,
       maxPanSpeed: 15,
       onPan: onPanMock
     })
@@ -112,17 +105,20 @@ describe('AutoPanController', () => {
     expect(onPanMock).not.toHaveBeenCalled()
   })
 
-  it('pans when pointer is near the right edge', () => {
+  it('keeps panning against the replacement canvas bounds', () => {
     controller.updatePointer(790, 300)
     controller.start()
 
+    const replacement = createTestCanvasElement()
+    vi.spyOn(replacement, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(0, 0, 600, 600)
+    )
+    mockCanvas.setCanvas(replacement, true)
     vi.advanceTimersByTime(16)
     runCanvasFramePhase(mockCanvas, 'update')
 
-    expect(onPanMock).toHaveBeenCalled()
-    const [dx, dy] = onPanMock.mock.calls[0]
-    expect(dx).toBeGreaterThan(0)
-    expect(dy).toBe(0)
+    expect(mockDs.offset[0]).toBeCloseTo(-14.4)
+    expect(mockDs.offset[1]).toBe(0)
   })
 
   it('pans when pointer is near the bottom edge', () => {
@@ -151,22 +147,13 @@ describe('AutoPanController', () => {
     expect(dy).toBeGreaterThan(0)
   })
 
-  it('updates ds.offset when panning', () => {
-    controller.updatePointer(0, 300)
-    controller.start()
-
-    vi.advanceTimersByTime(16)
-    runCanvasFramePhase(mockCanvas, 'update')
-
-    expect(mockDs.offset[0]).toBeGreaterThan(0)
-    expect(mockDs.offset[1]).toBe(0)
-  })
-
   it.for([
     [10, 0, 9],
     [40, 0, 36],
     [500, 0, 45],
     [100, 100, 90],
+    [200, 200, 180],
+    [1000, 100, 90],
     [1000, 1000, 900],
     [2000, 1000, 900]
   ])(
@@ -222,7 +209,6 @@ describe('AutoPanController', () => {
   it('does not pan when maxPanSpeed is 0', () => {
     const disabledController = new AutoPanController({
       canvas: mockCanvas,
-      ds: mockDs,
       maxPanSpeed: 0,
       onPan: onPanMock
     })

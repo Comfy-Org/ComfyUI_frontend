@@ -52,8 +52,7 @@ describe('LGraphCanvas.renderInfo', () => {
 
     lgCanvas.renderInfo(ctx, 10, 0)
 
-    // lineCount = 5 (graph present, no info_text), lineHeight = 13
-    // y = canvas.height / DPR - (lineCount + 1) * lineHeight
-    expect(ctx.translate).toHaveBeenCalledWith(10, 2160 / 2 - 6 * 13)
+    expect(ctx.fillText).toHaveBeenCalledTimes(3)
+    expect(ctx.translate).toHaveBeenCalledWith(10, 1028)
   })
 })

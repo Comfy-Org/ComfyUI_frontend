@@ -880,8 +880,7 @@ export function useSlotLinkInteraction({
       }
     }
     autoPan = new AutoPanController({
-      canvas: canvas.canvas,
-      ds: canvas.ds,
+      canvas,
       maxPanSpeed: canvas.auto_pan_speed,
       onPan: () => {
         const [canvasX, canvasY] = conversion.clientPosToCanvasPos([

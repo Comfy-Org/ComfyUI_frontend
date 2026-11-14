@@ -110,7 +110,7 @@ export interface CapabilitiesSnapshot {
   >
   /** As received. Absent when the server omits it or sends an unknown variant. */
   readonly billingWebCheckoutUi?: CapabilitiesBody['billing_web_checkout_ui']
-  /** As received. Absent when the server omits it: unknown, not period-end. */
+  /** As received. Absent when the server omits it: unknown, never false. */
   readonly cancelTakesEffectImmediately?: boolean
   readonly hasParkedBillingOperation?: boolean
   readonly paymentRecoveryAvailable?: boolean

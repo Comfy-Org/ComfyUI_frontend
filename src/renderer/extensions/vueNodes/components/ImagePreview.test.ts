@@ -191,6 +191,8 @@ describe('ImagePreview', () => {
     expect(screen.getByTestId('main-image')).not.toHaveAttribute(
       'data-full-src'
     )
+    await fireEvent.error(screen.getByTestId('main-image'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(revoke).toHaveBeenCalledWith('blob:copy-0')
     resolveNext({
       source: defaultUrls[1],
@@ -397,6 +399,9 @@ describe('ImagePreview', () => {
       screen.getByRole('button', { name: 'Download image' })
     ).toBeInTheDocument()
 
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('main-image')).toHaveAttribute('src')
+    )
     await fireEvent.error(screen.getByTestId('main-image'))
     await nextTick()
 

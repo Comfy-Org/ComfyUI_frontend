@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 import {
   LGraph,
   LGraphCanvas,
@@ -124,6 +125,18 @@ describe('useSelectionToolboxPosition', () => {
       `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`
     )
     expect(toolbox.style.getPropertyValue('--tb-y')).not.toBe(initialY)
+    unmount()
+  })
+
+  it('follows the canvas transform on each presented frame', () => {
+    canvas.select(addNode(graph, 100, 200))
+    const { toolbox, unmount } = renderToolbox()
+    const initialX = parseFloat(toolbox.style.getPropertyValue('--tb-x'))
+
+    canvas.ds.offset[0] += 50
+    runCanvasFramePhase(canvas, 'present')
+
+    expect(toolbox.style.getPropertyValue('--tb-x')).toBe(`${initialX + 50}px`)
     unmount()
   })
 

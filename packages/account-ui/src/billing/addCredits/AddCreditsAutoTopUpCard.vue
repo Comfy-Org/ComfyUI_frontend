@@ -23,8 +23,9 @@
     </div>
 
     <template v-if="checked">
-      <AddCreditsAutoTopUpField
-        name="threshold"
+      <AddCreditsAmountField
+        input-test-id="add-credits-auto-top-up-threshold"
+        note-test-id="add-credits-auto-top-up-threshold-note"
         :input="input.threshold"
         :label="translate('autoTopUp.threshold')"
         :error="messageFor('threshold')"
@@ -33,8 +34,9 @@
         :ui
         @type="emit('edit', 'threshold', $event)"
       />
-      <AddCreditsAutoTopUpField
-        name="target"
+      <AddCreditsAmountField
+        input-test-id="add-credits-auto-top-up-target"
+        note-test-id="add-credits-auto-top-up-target-note"
         :input="input.target"
         :label="translate('autoTopUp.target')"
         :error="messageFor('target')"
@@ -56,9 +58,10 @@
             @update:model-value="emit('edit', 'limitOn', $event)"
           />
         </div>
-        <AddCreditsAutoTopUpField
+        <AddCreditsAmountField
           v-if="input.limitOn"
-          name="limit"
+          input-test-id="add-credits-auto-top-up-limit"
+          note-test-id="add-credits-auto-top-up-limit-note"
           prefix="$"
           :input="input.limit"
           :label="translate('autoTopUp.limit')"
@@ -112,7 +115,7 @@ import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
 import Switch from '@comfyorg/design-system/switch/Switch'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import AddCreditsAutoTopUpField from './AddCreditsAutoTopUpField.vue'
+import AddCreditsAmountField from './AddCreditsAmountField.vue'
 import type { AddCreditsFormat, AddCreditsUi } from './addCreditsPresentation'
 import type { AutoTopUpEdit } from './useAddCreditsAutoTopUp'
 import {

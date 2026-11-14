@@ -1,6 +1,7 @@
 import { mergeTests } from '@playwright/test'
 
 import type { NodeError } from '@comfyorg/api-client/types'
+import type { PromptOutputsSkippedNodeError } from '@comfyorg/ingest-types'
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -25,7 +26,8 @@ type PromptRequestBody = {
   prompt?: Record<string, PromptRequestNode>
 }
 
-function buildPreviewAnyValidationError(): NodeError {
+function buildPreviewAnyValidationError(): NodeError &
+  PromptOutputsSkippedNodeError {
   return {
     class_type: 'PreviewAny',
     dependent_outputs: [VALIDATION_ERROR_NODE_ID],
@@ -172,6 +174,32 @@ test.describe('Execution validation errors', { tag: '@workflow' }, () => {
       .poll(() => getValidationErrorMessage(comfyPage))
       .toBe(VALIDATION_ERROR_MESSAGE)
     await expect(errorOverlay).toBeVisible()
+  })
+
+  test('marks the outputs a run skipped as node errors', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    await comfyPage.workflow.loadWorkflow('execution/partial_execution')
+
+    const ws = await getWebSocket()
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const jobId = await exec.run()
+    exec.executionStart(jobId)
+    exec.outputsSkipped(jobId, {
+      [VALIDATION_ERROR_NODE_ID]: buildPreviewAnyValidationError()
+    })
+
+    await expect
+      .poll(() => getValidationErrorMessage(comfyPage))
+      .toBe(VALIDATION_ERROR_MESSAGE)
+    const errorOverlay = comfyPage.page.getByTestId(
+      TestIds.dialogs.errorOverlay
+    )
+    await expect(errorOverlay).toBeVisible()
+    await expect(errorOverlay).toContainText(
+      'Preview as Text is missing a required input: source'
+    )
   })
 
   test(

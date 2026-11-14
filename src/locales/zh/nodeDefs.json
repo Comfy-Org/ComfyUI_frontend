@@ -8548,6 +8548,9 @@
       "model": {
         "name": "模型"
       },
+      "model_auto_duration": {
+        "name": "自动时长"
+      },
       "model_duration": {
         "name": "时长"
       },
@@ -8568,7 +8571,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "使用 HeyGen Video 1.0 根据文本提示词生成带有同步对白和声音的视频。可选连接最多 12 个参考图像、视频和音频片段，并在提示词中将其提及为 {'@'}Image1、{'@'}Video1、{'@'}Audio1。",
+    "description": "使用 HeyGen Video 1.0 根据文本提示词生成带有同步对白和声音的视频。可选连接最多 15 个参考图像、视频和音频片段，并在提示词中将它们标注为 {'@'}Image1、{'@'}Video1、{'@'}Audio1。",
     "display_name": "HeyGen Video 1.0 参考转视频",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8582,9 @@
       },
       "model_aspect_ratio": {
         "name": "宽高比"
+      },
+      "model_auto_duration": {
+        "name": "自动时长"
       },
       "model_duration": {
         "name": "时长"
@@ -13723,34 +13729,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "包含一个或多个相机概念，可用于 Luma 文本转视频和 Luma 图像转视频节点。",
-    "display_name": "Luma 概念",
-    "inputs": {
-      "concept1": {
-        "name": "概念1"
-      },
-      "concept2": {
-        "name": "概念2"
-      },
-      "concept3": {
-        "name": "概念3"
-      },
-      "concept4": {
-        "name": "概念4"
-      },
-      "luma_concepts": {
-        "name": "Luma概念",
-        "tooltip": "可选的相机概念，将添加到此处选择的概念中。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "Luma概念",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "使用 Luma UNI-1 模型，通过文本提示编辑已有图像。",
     "display_name": "Luma UNI-1 图像编辑",
@@ -13787,82 +13765,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "根据提示词和宽高比同步修改图像。",
-    "display_name": "Luma 图像到图像",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image": {
-        "name": "图像"
-      },
-      "image_weight": {
-        "name": "图像权重",
-        "tooltip": "图像权重；越接近 1.0，图像被修改的程度越小。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于图像生成的提示词"
-      },
-      "seed": {
-        "name": "随机种",
-        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "根据提示词和宽高比同步生成图像。",
-    "display_name": "Luma 文生图",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比"
-      },
-      "character_image": {
-        "name": "角色参考图",
-        "tooltip": "角色参考图像；可为多张批量输入，最多可考虑 4 张图像。"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "image_luma_ref": {
-        "name": "Luma 参考图",
-        "tooltip": "Luma 参考节点连接，可用输入图像影响生成；最多可考虑 4 张图像。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于图像生成的提示词"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
-      },
-      "style_image": {
-        "name": "风格参考图",
-        "tooltip": "风格参考图像；仅使用 1 张图像。"
-      },
-      "style_image_weight": {
-        "name": "风格图权重",
-        "tooltip": "风格图像的权重。如果未提供风格图像则忽略。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "使用 Luma UNI-1 模型，根据文本生成图像。",
     "display_name": "Luma UNI-1 图像生成",
@@ -13890,52 +13792,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "种子控制节点是否重新运行；无论种子如何，结果都是非确定性的。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "根据提示词、输入图像和输出尺寸同步生成视频。",
-    "display_name": "Luma 图像转视频",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "first_image": {
-        "name": "首帧图像",
-        "tooltip": "生成视频的第一帧。"
-      },
-      "last_image": {
-        "name": "末帧图像",
-        "tooltip": "生成视频的最后一帧。"
-      },
-      "loop": {
-        "name": "循环"
-      },
-      "luma_concepts": {
-        "name": "Luma概念",
-        "tooltip": "可选的 Camera Concepts，通过 Luma Concepts 节点控制相机运动。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于视频生成的提示词"
-      },
-      "resolution": {
-        "name": "分辨率"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
       }
     },
     "outputs": {
@@ -14165,7 +14021,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "更改现有视频的宽高比，使用 Luma Ray 3.2 填充新暴露的画布区域。源视频最长 30 秒。按输出秒数计费。",
+    "description": "使用 Luma Ray 3.2 更改现有视频的宽高比，并填充新露出的画布区域。源视频最长 10 秒。按输出时长计费。",
     "display_name": "Luma Ray 3.2 视频重构",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14043,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "要重构的源视频。最长 30 秒。"
+        "tooltip": "要重新构图的源视频。最长 10 秒。"
       }
     },
     "outputs": {
@@ -14196,70 +14052,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "用于 Luma 生成图像节点，包含一张图片和权重。",
-    "display_name": "Luma 参考",
-    "inputs": {
-      "image": {
-        "name": "图片",
-        "tooltip": "用作参考的图片。"
-      },
-      "luma_ref": {
-        "name": "Luma参考"
-      },
-      "weight": {
-        "name": "权重",
-        "tooltip": "图片参考的权重。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "Luma参考",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "根据提示词和输出尺寸同步生成视频。",
-    "display_name": "Luma 文本转视频",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "宽高比"
-      },
-      "control_after_generate": {
-        "name": "生成后控制"
-      },
-      "duration": {
-        "name": "时长"
-      },
-      "loop": {
-        "name": "循环"
-      },
-      "luma_concepts": {
-        "name": "Luma概念",
-        "tooltip": "可选的相机概念，通过 Luma Concepts 节点控制相机运动。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示词",
-        "tooltip": "用于视频生成的提示词"
-      },
-      "resolution": {
-        "name": "分辨率"
-      },
-      "seed": {
-        "name": "种子",
-        "tooltip": "用于决定节点是否重新运行的种子；无论种子如何，实际结果都是非确定性的。"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -24987,6 +24779,9 @@
       "format_bit_depth": {
         "name": "位深度"
       },
+      "format_channels": {
+        "name": "通道"
+      },
       "format_input_color_space": {
         "name": "输入色彩空间"
       },
@@ -25977,6 +25772,33 @@
       },
       "1": {
         "name": "右声道",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "将图像拆分为红色、绿色和蓝色图像，以及一个 Alpha 蒙版。",
+    "display_name": "拆分图像通道",
+    "inputs": {
+      "image": {
+        "name": "图像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "红色",
+        "tooltip": null
+      },
+      "1": {
+        "name": "绿色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "蓝色",
+        "tooltip": null
+      },
+      "3": {
+        "name": "透明度",
         "tooltip": null
       }
     }

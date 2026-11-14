@@ -205,6 +205,20 @@ describe('useLocalBillingWebFlagStore', () => {
     expect(store.enabled).toBe(true)
   })
 
+  it('drops a read a disposed store started once a new store is created', async () => {
+    const { promise: answer, resolve } = pendingResponse()
+    respondToFetch(FEATURES, () => answer, { times: 1 })
+    const { store: previous } = await signInAndRead()
+    previous.$dispose()
+    stopDesktopHostSession()
+
+    const current = useLocalBillingWebFlagStore()
+    resolve(Response.json({ local_billing_web: true }))
+    await settle()
+
+    expect(current.enabled).toBe(false)
+  })
+
   it('clears the value before re-reading on a workspace switch', async () => {
     serveFlags({ local_billing_web: true })
     const { store, push } = await signInAndRead()

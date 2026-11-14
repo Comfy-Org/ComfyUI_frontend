@@ -94,8 +94,7 @@ export const useNodeDrag = createSharedComposable(() => {
     if (!lgCanvas?.ds) return
 
     autoPan = new AutoPanController({
-      canvas: lgCanvas.canvas,
-      ds: lgCanvas.ds,
+      canvas: lgCanvas,
       maxPanSpeed: lgCanvas.auto_pan_speed,
       onPan: (panX, panY) => {
         if (dragStartPos) {
@@ -168,7 +167,6 @@ export const useNodeDrag = createSharedComposable(() => {
         true
       )
     }
-    canvas.setDirty(true, true)
   }
 
   function handleDrag(event: PointerEvent, nodeId: NodeId) {
@@ -196,7 +194,7 @@ export const useNodeDrag = createSharedComposable(() => {
 
     const { canvas } = canvasStore
     if (stopFrame || !canvas) return
-    stopFrame = onCanvasFrame(canvas.canvas, 'update', () =>
+    stopFrame = onCanvasFrame(canvas, 'update', () =>
       updateNodePositions(nodeId)
     )
   }
