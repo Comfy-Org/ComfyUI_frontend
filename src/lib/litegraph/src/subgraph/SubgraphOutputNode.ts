@@ -48,7 +48,7 @@ export class SubgraphOutputNode
 
   get slotAnchorX() {
     const [x] = this.boundingRect
-    return x + this.slotInset
+    return x + SubgraphIONodeBase.roundedRadius
   }
 
   protected override dragNewLink(

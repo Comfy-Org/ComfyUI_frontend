@@ -51,7 +51,7 @@ export function resolvePointerTarget(
 ): PointerTarget {
   const point: Point = [e.canvasX, e.canvasY]
   const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
-  if (ioNode?.measured) return { kind: 'subgraphIO', ioNode }
+  if (ioNode) return { kind: 'subgraphIO', ioNode }
 
   if (node && (canvas.allow_interaction || node.flags.allow_interaction))
     return { kind: 'node', node }
@@ -66,8 +66,6 @@ export function resolvePointerTarget(
     point[1]
   )
   if (badgeLink) return { kind: 'linkBadge', link: badgeLink }
-
-  if (ioNode) return { kind: 'subgraphIO', ioNode }
 
   if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
     const reroute = findReroute(canvas, graph, point)
