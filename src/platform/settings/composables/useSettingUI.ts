@@ -235,7 +235,8 @@ export function useSettingUI(
       : planCreditsPanel
     const canViewMembers = pendingServerFact(
       'BE-24066',
-      isCloud || canManageMembers.value
+      isCloud ||
+        (canManageMembers.value && !flags.unifiedBillingSettingsEnabled)
     )
     const workspacePanels = canViewMembers
       ? [planPanel, membersPanel]
