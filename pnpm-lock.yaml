@@ -1142,6 +1142,9 @@ importers:
       '@comfyorg/settings-core':
         specifier: workspace:*
         version: link:../settings-core
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
       '@comfyorg/telemetry':
         specifier: workspace:*
         version: link:../telemetry

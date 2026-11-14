@@ -5,7 +5,7 @@ import { openHdrViewer } from '@/services/hdrViewerService'
 import { findActiveIndex, getOutputsForTask } from '@/services/jobOutputCache'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 
 /**

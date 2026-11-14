@@ -115,7 +115,10 @@ import JobDetailsHoverPopover from '@/components/queue/job/JobDetailsHoverPopove
 import Button from '@comfyorg/design-system/button/Button'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
-import { isImageResult, isVideoResult } from '@/utils/resultItem'
+import {
+  isImageResult,
+  isVideoResult
+} from '@comfyorg/api-client/results/resultItem'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'

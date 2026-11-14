@@ -10,8 +10,11 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { isAudioResult, isVideoResult } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
+import {
+  isAudioResult,
+  isVideoResult
+} from '@comfyorg/api-client/results/resultItem'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   appendNodeExecutionId,

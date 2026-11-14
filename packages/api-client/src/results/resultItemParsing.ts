@@ -3,7 +3,7 @@ import type {
   ResultItem
 } from '@comfyorg/api-client/executionTypes'
 import { zResultItem } from '@comfyorg/api-client/executionTypes'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from './resultItem'
 
 const METADATA_KEYS = new Set(['animated'])
 const resultItemSchema = zResultItem.passthrough()

@@ -11,7 +11,7 @@
 
 <script setup lang="ts">
 import { useTextFileContent } from '@/composables/useTextFileContent'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 
 const { result } = defineProps<{

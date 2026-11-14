@@ -1,12 +1,7 @@
 import { api } from '@/scripts/api'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
-const HDR_EXTENSIONS = ['.exr', '.hdr'] as const
-
-export function isHdrImageFilename(filename: string | undefined): boolean {
-  if (!filename) return false
-  const lower = filename.toLowerCase()
-  return HDR_EXTENSIONS.some((ext) => lower.endsWith(ext))
-}
+export { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 export function getImageFilenameFromUrl(url: string): string | undefined {
   if (!url) return undefined

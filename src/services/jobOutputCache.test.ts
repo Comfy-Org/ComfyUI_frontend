@@ -15,7 +15,7 @@ import {
   getOutputsForTask
 } from '@/services/jobOutputCache'
 import { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 
 vi.mock(import('@comfyorg/api-client/fetchJobs'), { spy: true })
 

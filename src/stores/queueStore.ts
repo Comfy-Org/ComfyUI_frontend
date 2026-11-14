@@ -12,9 +12,9 @@ import type {
   TaskOutput
 } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { filterPreviewableResults } from '@/utils/resultItem'
-import { parseTaskOutput } from '@/stores/resultItemParsing'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
+import { filterPreviewableResults } from '@comfyorg/api-client/results/resultItem'
+import { parseTaskOutput } from '@comfyorg/api-client/results/resultItemParsing'
 import type { ComfyApp } from '@/types/comfy'
 import { useExtensionServiceAccess } from '@/platform/extensions/services/extensionServiceAccess'
 import { getJobDetail } from '@/services/jobOutputCache'

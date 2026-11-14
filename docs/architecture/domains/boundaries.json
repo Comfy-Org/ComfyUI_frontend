@@ -17,7 +17,11 @@
       },
       {
         "name": "comfyui-api/public",
-        "patterns": ["packages/api-client/src/executionTypes.ts"]
+        "patterns": [
+          "packages/api-client/src/executionTypes.ts",
+          "packages/api-client/src/results/resultItem.ts",
+          "packages/api-client/src/results/resultItemParsing.ts"
+        ]
       },
       {
         "name": "image-compare/public",
@@ -766,6 +770,7 @@
           "src/utils/createAnnotatedPath.test.ts",
           "packages/api-client/src/executionTypes.ts",
           "packages/api-client/src/executionTypes.test.ts",
+          "packages/api-client/src/results/**",
           "packages/api-client/src/resultItemTypeSchema.ts",
           "packages/api-client/src/types.ts",
           "src/components/loader/**",
@@ -1157,14 +1162,11 @@
           "src/stores/queueStore.ts",
           "src/stores/queueStore.loadWorkflow.test.ts",
           "src/stores/queueStore.test.ts",
-          "src/stores/resultItemParsing.ts",
-          "src/stores/resultItemParsing.test.ts",
           "src/storybook/mocks/useJobList.ts",
           "src/types/queue.ts",
           "src/utils/queueDisplay.ts",
           "src/utils/queueDisplay.test.ts",
           "src/utils/queueUtil.ts",
-          "src/utils/resultItem.ts",
           "src/utils/resultItemUrl.ts",
           "src/utils/resultItemUrl.test.ts",
           "packages/api-client/src/fetchJobs.ts",

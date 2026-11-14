@@ -8,7 +8,7 @@ import type {
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { resultItemUrlWithTimestamp } from '@/utils/resultItemUrl'
-import { isImageResult } from '@/utils/resultItem'
+import { isImageResult } from '@comfyorg/api-client/results/resultItem'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
 const BANNER_DISMISS_DELAY_MS = 4000

@@ -1,7 +1,7 @@
 import type { JobModelDownload } from '@/stores/jobModelDownloadStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { resultItemUrl } from '@/utils/resultItemUrl'
-import { isImageResult } from '@/utils/resultItem'
+import { isImageResult } from '@comfyorg/api-client/results/resultItem'
 import type { JobState } from '@/types/queue'
 import { formatDuration, formatSize } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'

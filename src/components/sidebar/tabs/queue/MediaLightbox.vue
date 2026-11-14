@@ -85,14 +85,14 @@ import { computed, nextTick, ref, watch } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import Button from '@comfyorg/design-system/button/Button'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import {
   isAudioResult,
   isImageResult,
   isTextResult,
   isVideoResult
-} from '@/utils/resultItem'
+} from '@comfyorg/api-client/results/resultItem'
 
 import ResultAudio from './ResultAudio.vue'
 import ResultText from './ResultText.vue'

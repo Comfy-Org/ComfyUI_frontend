@@ -16,10 +16,10 @@ import {
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskOutput } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { findResultIndexByUrl } from '@/utils/resultItemUrl'
-import { filterPreviewableResults } from '@/utils/resultItem'
-import { parseTaskOutput } from '@/stores/resultItemParsing'
+import { filterPreviewableResults } from '@comfyorg/api-client/results/resultItem'
+import { parseTaskOutput } from '@comfyorg/api-client/results/resultItemParsing'
 
 /** The part of `TaskItemImpl` this cache reads; `queueStore` imports this module. */
 interface OutputsTask {

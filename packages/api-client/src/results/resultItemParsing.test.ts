@@ -1,11 +1,9 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
-
-vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+import { describe, expect, it } from 'vitest'
 
 import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
-import { isTextResult, resultItemSupportsPreview } from '@/utils/resultItem'
-import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'
+import { isTextResult, resultItemSupportsPreview } from './resultItem'
+import { parseNodeOutput, parseTaskOutput } from './resultItemParsing'
 
 function makeOutput(
   overrides: Partial<NodeExecutionOutput> = {}

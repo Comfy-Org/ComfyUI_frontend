@@ -9,7 +9,7 @@ import {
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 
 const storedOutputIdentityKey = Symbol('storedOutputIdentity')

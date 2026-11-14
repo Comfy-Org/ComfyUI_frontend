@@ -227,7 +227,7 @@ import {
 } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { WrappedList } from '@/utils/pagedList'
 
 const Load3dViewerContent = defineAsyncComponent(

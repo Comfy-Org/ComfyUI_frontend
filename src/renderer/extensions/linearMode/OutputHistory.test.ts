@@ -16,7 +16,7 @@ import type {
   InProgressItem,
   OutputSelection
 } from '@/renderer/extensions/linearMode/linearModeTypes'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import type { PagedList } from '@/utils/pagedList'
 
 import OutputHistory from './OutputHistory.vue'

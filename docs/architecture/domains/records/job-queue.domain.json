@@ -43,9 +43,6 @@
       "path": "src/stores/queueStore.ts"
     },
     {
-      "path": "src/stores/resultItemParsing.ts"
-    },
-    {
       "path": "src/storybook/mocks/useJobList.ts"
     },
     {
@@ -56,9 +53,6 @@
     },
     {
       "path": "src/utils/queueUtil.ts"
-    },
-    {
-      "path": "src/utils/resultItem.ts"
     },
     {
       "path": "src/utils/resultItemUrl.ts"
@@ -79,7 +73,7 @@
       "name": "Jobs client fetches queue, history pages, details, and assets with schema validation",
       "checks": [
         "packages/api-client/src/fetchJobs.test.ts",
-        "src/stores/resultItemParsing.test.ts"
+        "packages/api-client/src/results/resultItemParsing.test.ts"
       ]
     },
     {

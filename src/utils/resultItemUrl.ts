@@ -1,8 +1,8 @@
 import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { isImageResult } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
+import { isImageResult } from '@comfyorg/api-client/results/resultItem'
 
 function resultItemUrlParams(item: AugmentedResultItem): URLSearchParams {
   const params = new URLSearchParams()

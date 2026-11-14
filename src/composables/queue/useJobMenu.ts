@@ -20,9 +20,13 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
-import { isAudioResult, isImageResult, isVideoResult } from '@/utils/resultItem'
+import {
+  isAudioResult,
+  isImageResult,
+  isVideoResult
+} from '@comfyorg/api-client/results/resultItem'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'

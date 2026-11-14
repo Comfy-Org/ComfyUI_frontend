@@ -1,6 +1,6 @@
 import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
-import { parseNodeOutput } from '@/stores/resultItemParsing'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import { parseNodeOutput } from '@comfyorg/api-client/results/resultItemParsing'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 
 export function flattenNodeOutput([nodeId, nodeOutput]: [
   string | number,

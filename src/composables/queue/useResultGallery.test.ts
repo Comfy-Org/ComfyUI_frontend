@@ -8,7 +8,7 @@ import { openHdrViewer } from '@/services/hdrViewerService'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@comfyorg/api-client/jobTypes'
 import { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 
 const createResultItem = (
   url: string,

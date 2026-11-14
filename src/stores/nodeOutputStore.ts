@@ -15,7 +15,7 @@ import type {
   ResultItem
 } from '@comfyorg/api-client/executionTypes'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
-import { parseNodeOutput } from '@/stores/resultItemParsing'
+import { parseNodeOutput } from '@comfyorg/api-client/results/resultItemParsing'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'

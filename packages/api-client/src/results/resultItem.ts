@@ -1,7 +1,9 @@
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import {
+  getMediaTypeFromFilename,
+  isHdrImageFilename
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 
 export interface AugmentedResultItem extends ResultItem {
   filename: string

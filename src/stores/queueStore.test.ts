@@ -19,7 +19,7 @@ import {
   resultItemHtmlAudioType,
   resultItemHtmlVideoType,
   resultItemSupportsPreview
-} from '@/utils/resultItem'
+} from '@comfyorg/api-client/results/resultItem'
 
 // Fixture factory for JobListItem
 function createJob(

@@ -104,7 +104,7 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { is3DResult } from '@/utils/resultItem'
+import { is3DResult } from '@comfyorg/api-client/results/resultItem'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
