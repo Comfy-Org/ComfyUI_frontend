@@ -19,14 +19,7 @@
           :data-testid="row.testId"
           :data-widget-name="row.widget.simplified.name"
           :data-autogrow-group="row.autogrowGroup"
-          :class="
-            cn(
-              'group col-span-full grid grid-cols-subgrid items-stretch',
-              row.showsControl && 'lg-node-widget',
-              row.socketOnly && '-mb-(--node-widget-gap)',
-              row.inHoveredGroup && 'rounded-sm ring-1 ring-primary'
-            )
-          "
+          :class="row.rowClass"
         >
           <div class="z-10 flex items-stretch" :class="row.slotClass">
             <InputSlot
@@ -196,8 +189,10 @@ const renderedRows = computed(() =>
     const autogrowGroup = revealedAutogrowGroup(widget)
     const kind = rowKind(widget, autogrowGroup)
     if (!kind) return []
+    const { showsControl } = rowKinds[kind]
+    const inHoveredGroup = isInHoveredGroup(widget.simplified.name)
     const rowSize =
-      rowKinds[kind].showsControl &&
+      showsControl &&
       (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
         ? 'auto'
         : 'min-content'
@@ -206,13 +201,18 @@ const renderedRows = computed(() =>
         ...rowKinds[kind],
         widget,
         rowSize,
+        rowClass: cn(
+          'group col-span-full grid grid-cols-subgrid items-stretch',
+          showsControl && 'lg-node-widget',
+          widget.inputRole === 'socket' && '-mb-(--node-widget-gap)',
+          inHoveredGroup && 'rounded-sm ring-1 ring-primary'
+        ),
         controlClass: cn(
           'grid min-w-0 grid-cols-1',
           rowSize === 'min-content' && 'self-center'
         ),
         autogrowGroup,
-        inHoveredGroup: isInHoveredGroup(widget.simplified.name),
-        socketOnly: widget.inputRole === 'socket'
+        inHoveredGroup
       }
     ]
   })
