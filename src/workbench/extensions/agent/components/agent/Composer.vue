@@ -48,6 +48,7 @@ import RunModePopover from './composer/RunModePopover.vue'
 
 const {
   streaming = false,
+  sendDismissesAsk = false,
   submitting = false,
   canAttach = false,
   canOpenAssets = false,
@@ -62,6 +63,8 @@ const {
   getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
+  /** A new message would dismiss the card the turn waits on: typing turns Stop back into Send. */
+  sendDismissesAsk?: boolean
   submitting?: boolean
   canAttach?: boolean
   canOpenAssets?: boolean
@@ -99,8 +102,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const skills = useSkillPacksStore()
 
-const running = computed(() => streaming || submitting)
-
 const composer = useComposer({
   onSend: (_text, attachments) => {
     if (workflowSelecting || submitting) return
@@ -134,6 +135,12 @@ const composer = useComposer({
   isRunning: () => running.value,
   onStop: () => emit('stop', 'button')
 })
+
+const turnRunning = computed(() => streaming || submitting)
+const running = computed(
+  () =>
+    submitting || (streaming && !(sendDismissesAsk && composer.canSend.value))
+)
 
 const editorRef =
   useTemplateRef<InstanceType<typeof InlinePromptEditor>>('editorRef')
@@ -327,7 +334,7 @@ function requestKeyboardDescription(event: KeyboardEvent): void {
 }
 
 function stopRunOnEscape(event: KeyboardEvent): void {
-  if (event.key !== 'Escape' || !running.value) return
+  if (event.key !== 'Escape' || !turnRunning.value) return
   if (event.isComposing || event.repeat) return
   event.preventDefault()
   event.stopPropagation()
@@ -470,7 +477,7 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
   if (
     openingChat ||
     event.key !== 'Escape' ||
-    !running.value ||
+    !turnRunning.value ||
     event.isComposing
   )
     return false
