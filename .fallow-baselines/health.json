@@ -2940,7 +2940,7 @@
       }
     },
     "src/platform/queue/presentation/queueDisplay.ts": {
-      "complexity_moderate": {
+      "complexity_high": {
         "count": 1
       }
     },

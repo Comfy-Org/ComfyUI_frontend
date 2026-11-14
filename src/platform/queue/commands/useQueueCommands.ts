@@ -60,7 +60,7 @@ export function useQueueCommands(): ComfyCommand[] {
     return true
   }
 
-  return [
+  const commands: ComfyCommand[] = [
     {
       id: 'Comfy.Interrupt',
       icon: 'icon-[lucide--square]',
@@ -195,4 +195,6 @@ export function useQueueCommands(): ComfyCommand[] {
       }
     }
   ]
+
+  return commands
 }

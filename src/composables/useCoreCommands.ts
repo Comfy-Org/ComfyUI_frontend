@@ -114,7 +114,7 @@ export function useCoreCommands(): ComfyCommand[] {
     app.canvas.setDirty(true, true)
   }
 
-  const commands = [
+  const commands: ComfyCommand[] = [
     {
       id: 'Comfy.NewBlankWorkflow',
       icon: 'icon-[lucide--plus]',
@@ -306,7 +306,6 @@ export function useCoreCommands(): ComfyCommand[] {
         }
       }
     },
-    ...useQueueCommands(),
     {
       id: 'Comfy.BrowseTemplates',
       icon: 'icon-[lucide--folder-open]',
@@ -1253,5 +1252,7 @@ export function useCoreCommands(): ComfyCommand[] {
     }
   ]
 
-  return commands.map((command) => ({ ...command, source: 'System' }))
+  return commands
+    .concat(useQueueCommands())
+    .map((command) => ({ ...command, source: 'System' }))
 }
