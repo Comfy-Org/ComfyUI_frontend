@@ -8,6 +8,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { TaskItemImpl } from '@/stores/queueStore'
 import type { PagedList } from '@/utils/pagedList'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
   const assetItems: AssetItem[] = []
@@ -90,6 +91,7 @@ export const useJobOutputHistory = createSharedComposable(
           try {
             historyAssets.value = await fetchHistoryAssets(false)
           } catch (err) {
+            if (isAbortError(err)) continue
             reportError(err, {
               errorType: 'failure_loading_job_history',
               surface: 'assets'
@@ -118,6 +120,7 @@ export const useJobOutputHistory = createSharedComposable(
         historyAssets.value = await fetchHistoryAssets(true)
         return true
       } catch (err) {
+        if (isAbortError(err)) return false
         reportError(err, {
           errorType: 'failure_loading_job_history',
           surface: 'assets'

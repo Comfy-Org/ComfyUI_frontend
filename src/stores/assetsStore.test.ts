@@ -170,6 +170,63 @@ describe('assetsStore - OSS history pagination', () => {
 
     expect(api.getHistory).toHaveBeenCalledOnce()
   })
+
+  describe('failed fetches', () => {
+    beforeEach(() => {
+      vi.mocked(fetch).mockResolvedValue(Response.json([]))
+    })
+
+    const requestedOffsets = () =>
+      vi.mocked(api.getHistory).mock.calls.map(([, options]) => options?.offset)
+
+    it('re-requests the same page after a failed load-more', async () => {
+      vi.mocked(api.getHistory)
+        .mockResolvedValueOnce(createHistoryPage(0))
+        .mockRejectedValueOnce(new Error('Network'))
+        .mockResolvedValueOnce(createHistoryPage(200))
+      const store = useAssetsStore()
+      await store.outputAssets.loadMore()
+
+      await expect(store.outputAssets.loadMore()).resolves.toBe(false)
+      expect(toValue(store.outputAssets.items)).toHaveLength(200)
+      expect(toValue(store.outputAssets.hasMore)).toBe(true)
+
+      await expect(store.outputAssets.loadMore()).resolves.toBe(true)
+      expect(toValue(store.outputAssets.items)).toHaveLength(400)
+      expect(requestedOffsets()).toEqual([0, 200, 200])
+    })
+
+    it('keeps loaded pages when a refresh fails mid-pagination', async () => {
+      vi.mocked(api.getHistory)
+        .mockResolvedValueOnce(createHistoryPage(0))
+        .mockResolvedValueOnce(createHistoryPage(200))
+        .mockRejectedValueOnce(new Error('Network'))
+        .mockResolvedValueOnce(createHistoryPage(400))
+      const store = useAssetsStore()
+      await store.outputAssets.loadMore()
+      await store.outputAssets.loadMore()
+
+      await store.outputAssets.invalidate()
+      expect(toValue(store.outputAssets.items)).toHaveLength(400)
+
+      await store.outputAssets.loadMore()
+      expect(toValue(store.outputAssets.items)).toHaveLength(600)
+      expect(requestedOffsets()).toEqual([0, 200, 0, 400])
+    })
+
+    it('does not report an aborted fetch as an error', async () => {
+      vi.mocked(api.getHistory)
+        .mockResolvedValueOnce(createHistoryPage(0))
+        .mockRejectedValueOnce(new DOMException('Aborted', 'AbortError'))
+      const store = useAssetsStore()
+      await store.outputAssets.loadMore()
+
+      await store.outputAssets.invalidate()
+
+      expect(toValue(store.outputAssets.items)).toHaveLength(200)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+  })
 })
 
 describe('assetsStore - Model Assets Cache (Cloud)', () => {

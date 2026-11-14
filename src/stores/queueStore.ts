@@ -23,6 +23,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',
@@ -342,7 +343,7 @@ export const useQueueStore = defineStore('queue', () => {
     try {
       const [queueResult, historyResult] = await Promise.allSettled([
         api.getQueue({ throwOnError: true }),
-        api.getHistory(maxHistoryItems.value)
+        api.getHistory(maxHistoryItems.value, { throwOnError: true })
       ])
 
       if (queueResult.status === 'fulfilled') {
@@ -367,7 +368,7 @@ export const useQueueStore = defineStore('queue', () => {
         ])
         executionStore.reconcileInitializingJobs(activeJobIds)
         useJobModelDownloadStore().reconcileActiveJobs(activeJobIds)
-      } else {
+      } else if (!isAbortError(queueResult.reason)) {
         console.error('Failed to fetch queue:', queueResult.reason)
       }
 
@@ -410,7 +411,7 @@ export const useQueueStore = defineStore('queue', () => {
           historyTasks.value = nextHistoryTasks
         }
         hasFetchedHistorySnapshot.value = true
-      } else {
+      } else if (!isAbortError(historyResult.reason)) {
         console.error('Failed to fetch history:', historyResult.reason)
       }
     } finally {

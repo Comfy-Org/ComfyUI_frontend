@@ -88,6 +88,9 @@ import {
 
 const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
 
+const isAbortError = (error: unknown): boolean =>
+  error instanceof DOMException && error.name === 'AbortError'
+
 interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
@@ -1503,10 +1506,10 @@ export class ComfyApi extends EventTarget {
     Pending: JobListItem[]
   }> {
     try {
-      return await fetchQueue(this.fetchApi.bind(this), options)
+      return await fetchQueue(this.fetchApi.bind(this))
     } catch (error) {
       if (options?.throwOnError) throw error
-      console.error('Failed to fetch queue:', error)
+      if (!isAbortError(error)) console.error('Failed to fetch queue:', error)
       return { Running: [], Pending: [] }
     }
   }
@@ -1523,12 +1526,11 @@ export class ComfyApi extends EventTarget {
       return await fetchHistory(
         this.fetchApi.bind(this),
         max_items,
-        options?.offset,
-        options
+        options?.offset
       )
     } catch (error) {
       if (options?.throwOnError) throw error
-      console.error(error)
+      if (!isAbortError(error)) console.error('Failed to fetch history:', error)
       return []
     }
   }
