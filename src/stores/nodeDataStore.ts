@@ -91,6 +91,11 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     })
   }
 
+  function getNode(graphScope: GraphScope, id: NodeId): NodeState | undefined {
+    const state = roots.get(graphScope.rootGraphId)?.byId.get(id)
+    return state?.graphId === graphScope.owningGraphId ? state : undefined
+  }
+
   function ownsNode(graphScope: GraphScope, state: NodeState): boolean {
     const registered = roots.get(graphScope.rootGraphId)?.byId.get(state.id)
     return (
@@ -134,6 +139,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     clearGraph,
     deleteNode,
     getGraphNodesFor,
+    getNode,
     ownsNode,
     registerNode
   }

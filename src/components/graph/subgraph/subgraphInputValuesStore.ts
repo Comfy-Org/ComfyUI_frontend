@@ -5,15 +5,10 @@ import { computed, shallowRef, watch } from 'vue'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resolveInputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
-import type {
-  InputValueSource,
-  ValueSourceGraph
-} from '@/core/graph/subgraph/resolveInputValueSource'
+import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import type { UUID } from '@/utils/uuid'
 
@@ -22,8 +17,6 @@ export const useSubgraphInputValuesStore = defineStore(
   () => {
     const canvasStore = useCanvasStore()
     const nodeDataStore = useNodeDataStore()
-    const linkStore = useLinkStore()
-    const widgetStore = useWidgetValueStore()
     const enteredHosts = shallowRef<
       ReadonlyMap<UUID, Pick<NodeState, 'graphId' | 'id'>>
     >(new Map())
@@ -73,24 +66,11 @@ export const useSubgraphInputValuesStore = defineStore(
       const result = new Map<string, InputValueSource>()
       if (!host || !root) return result
       const scope = graphScopeOf({ id: host.graphId, rootGraph: root })
-      const sourceGraph: ValueSourceGraph = {
-        nodes: new Map(
-          nodeDataStore
-            .getGraphNodesFor(root.id, host.graphId)
-            .map((node) => [node.id, node])
-        ),
-        inputLink: (node, index) =>
-          linkStore.getInputSlotLink(scope, node.id, index),
-        widgetIds: (node) => widgetStore.getNodeWidgetIds(root.id, node.id),
-        widget: (id) => widgetStore.getWidget(id),
-        outputLinkCount: (node, index) =>
-          linkStore.getOutputSlotLinks(scope, node.id, index).size
-      }
       for (const [index, { name, widgetId }] of host.inputs.entries()) {
         if (widgetId)
           result.set(
             name,
-            resolveInputValueSource(sourceGraph, host, index, widgetId)
+            resolveInputValueSource(scope, host, index, widgetId)
           )
       }
       return result
