@@ -61,6 +61,75 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it.for([
+    [
+      'a Chrome touchmove intervention',
+      'intervention: Ignored attempt to cancel a touchmove event, cancelable=false'
+    ],
+    [
+      'a Chrome WebMediaPlayer intervention',
+      'intervention: Blocked attempt to create a WebMediaPlayer as there are too many WebMediaPlayers already in existence'
+    ],
+    [
+      'a ResizeObserver loop warning',
+      'ResizeObserver loop completed with undelivered notifications.'
+    ],
+    [
+      'a failed <img> load surfaced as an uncaught event',
+      'Uncaught {"type":"error","isTrusted":true,"currentTarget":null,"target":"[HTMLImageElement]"}'
+    ],
+    [
+      'a failed <img> load without the bracketed target',
+      'Uncaught {"isTrusted":true,"target":"HTMLImageElement"}'
+    ],
+    [
+      'the PostHog client rate-limit notice',
+      '[PostHog.js] This capture call is ignored due to client rate limiting'
+    ]
+  ])('drops non-actionable browser/environment noise: %s', ([, message]) => {
+    const event = createErrorEvent(message)
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
+  it.for([
+    [
+      'a drawImage TypeError naming HTMLImageElement in its overload list',
+      "Failed to execute 'drawImage' on 'CanvasRenderingContext2D': The provided value is not of type '(CSSImageValue or HTMLImageElement or SVGImageElement or HTMLVideoElement or HTMLCanvasElement or ImageBitmap or OffscreenCanvas or VideoFrame)'"
+    ],
+    [
+      'a texImage2D TypeError naming HTMLImageElement in its overload list',
+      "Failed to execute 'texImage2D' on 'WebGL2RenderingContext': The provided value is not of type '(HTMLImageElement or HTMLCanvasElement or HTMLVideoElement or ImageBitmap or ImageData or OffscreenCanvas or VideoFrame)'"
+    ],
+    [
+      'a deliberate report whose text mentions HTMLImageElement',
+      'Thumbnail decode failed for an HTMLImageElement supplied by the node pack'
+    ],
+    [
+      'an uncaught Error whose text mentions HTMLImageElement',
+      'Uncaught Error: HTMLImageElement cache initialization failed'
+    ]
+  ])(
+    'keeps first-party errors that merely name a matched noise term: %s',
+    ([, message]) => {
+      const event = createErrorEvent(
+        message,
+        'at render (https://cloud.comfy.org/assets/app.js:1:2)'
+      )
+
+      expect(rumBeforeSend(event, fromPartial({}))).toBe(true)
+    }
+  )
+
+  it('still drops the uncaught-event shape the img matcher targets', () => {
+    const event = createErrorEvent(
+      'Uncaught {"type":"error","isTrusted":true,"currentTarget":null,"target":"[HTMLImageElement]"}',
+      'at render (https://cloud.comfy.org/assets/app.js:1:2)'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
   it('drops the console echo of an assertion the reporter also reports', () => {
     const event = createErrorEvent(
       '[Assertion failed]: graph is corrupt',
