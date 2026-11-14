@@ -1,4 +1,6 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
+import { FirebaseError } from 'firebase/app'
+import { AuthErrorCodes } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
@@ -14,6 +16,7 @@ import {
 import { issueLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { signInFirebaseUser } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/i18n'))
@@ -240,5 +243,51 @@ describe('issueLocalBillingHandoff', () => {
       status: 'ok',
       url: ENTRY_URL
     })
+  })
+})
+
+describe('issueLocalBillingHandoff for a Firebase sign-in', () => {
+  function signIn(mint: () => Promise<string>) {
+    signInFirebaseUser(mint)
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+  }
+
+  it.for([
+    {
+      name: 'a token minted for this handoff instead of the cached one',
+      mint: async () => 'minted-token',
+      sent: 'Bearer minted-token'
+    },
+    {
+      name: 'the cached token when a new one cannot be minted',
+      mint: () =>
+        Promise.reject(
+          new FirebaseError(AuthErrorCodes.NETWORK_REQUEST_FAILED, 'offline')
+        ),
+      sent: 'Bearer cached-token'
+    }
+  ])('issues with $name', async ({ mint, sent }) => {
+    signIn(mint)
+    respondToFetch(HANDOFFS, issued)
+
+    await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+      status: 'ok',
+      url: ENTRY_URL
+    })
+
+    expect(fetchRequests(HANDOFFS)[0].headers.get('Authorization')).toBe(sent)
+  })
+
+  it('is not superseded by the ID token rotation it causes, nor is the next handoff', async () => {
+    signIn(async () => 'minted-token')
+    respondToFetch(HANDOFFS, issued)
+
+    const duringRotation = await issueLocalBillingHandoff(TOP_UP, live)
+    const afterRotation = await issueLocalBillingHandoff(TOP_UP, live)
+
+    expect([duringRotation, afterRotation]).toEqual([
+      { status: 'ok', url: ENTRY_URL },
+      { status: 'ok', url: ENTRY_URL }
+    ])
   })
 })
