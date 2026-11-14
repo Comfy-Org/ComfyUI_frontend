@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed, provide, ref, toRef, useId } from 'vue'
+import { computed, ref, toRef, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@comfyorg/viewport3d/load3d/constants'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
-import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
@@ -33,11 +32,6 @@ interface Props {
 
 const props = defineProps<Props>()
 const inputId = useId()
-
-provide(
-  AssetKindKey,
-  computed(() => props.assetKind)
-)
 
 const modelValue = defineModel<WidgetValue>({
   default(modelProps: Record<string, unknown>) {
