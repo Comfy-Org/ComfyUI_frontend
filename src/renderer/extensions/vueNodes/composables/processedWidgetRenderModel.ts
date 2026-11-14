@@ -438,6 +438,7 @@ function processWidget(
 
   return {
     handleContextMenu,
+    height: renderState?.height,
     layoutSize: renderState?.layoutSize,
     hasError: hasWidgetError(
       { name: widgetState.name, errorTarget },

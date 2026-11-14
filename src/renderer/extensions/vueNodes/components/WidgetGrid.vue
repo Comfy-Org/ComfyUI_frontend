@@ -2,7 +2,7 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] gap-y-(--node-widget-gap) pr-3 text-xs text-node-foreground"
+    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] pr-3 text-xs text-node-foreground [&>:first-child>:first-child]:mt-0 [&>:last-child>:last-child]:mb-0"
     :style="{
       'grid-template-rows': gridTemplateRows,
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
@@ -24,7 +24,7 @@
           :class="
             cn(
               'group col-span-full grid grid-cols-subgrid items-stretch',
-              row.showsControl && 'lg-node-widget'
+              row.showsControl && 'lg-node-widget my-0.5'
             )
           "
         >
@@ -112,8 +112,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import {
+  isGrowableWidgetRow,
+  ownedHeightTrack
+} from '@/renderer/extensions/vueNodes/layout/ownedWidgetHeights'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
-import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -123,6 +126,11 @@ const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>
   type === 'converted-widget' || type.startsWith('converted-widget:')
+
+function rowTrack(widget: WidgetGridItem, showsControl: boolean) {
+  if (!showsControl || !isGrowableWidgetRow(widget)) return 'min-content'
+  return widget.height === undefined ? 'auto' : ownedHeightTrack(widget.height)
+}
 
 const {
   processedWidgets,
@@ -169,11 +177,7 @@ const renderedRows = computed(() =>
           showsControl && widget.layoutSize
             ? `${widget.layoutSize.minHeight}px`
             : undefined,
-        rowSize:
-          showsControl &&
-          (shouldExpand(widget.simplified.type) || widget.layoutSize)
-            ? 'auto'
-            : 'min-content'
+        rowSize: rowTrack(widget, showsControl)
       }
     ]
   })

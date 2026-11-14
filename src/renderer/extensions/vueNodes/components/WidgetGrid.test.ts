@@ -194,6 +194,19 @@ describe('WidgetGrid', () => {
     )
   })
 
+  it('renders a row at the height its widget owns instead of filling the node', () => {
+    renderGrid([
+      widget('seed', 'number', 0),
+      { ...widget('text', 'customtext', 1), height: 120 }
+    ])
+
+    const grid = screen.getByTestId('node-widgets')
+    expect(grid.style.gridTemplateRows).toBe(
+      'min-content minmax(min-content, min(var(--node-height, 120px), 120px))'
+    )
+    expect(grid.style.flex).toBe('')
+  })
+
   it('resyncs slot offsets when a connected row swaps its control for a label', async () => {
     const { rerender, stored, moveSocket, resizeGrid } = renderLayoutGrid()
     resizeGrid()
