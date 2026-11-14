@@ -319,8 +319,13 @@ export class PrimitiveNode extends LGraphNode {
         !inputData[1]?.control_after_generate &&
         (widget.type === 'number' || widget.type === 'combo')
       ) {
-        addValueControlWidgets(this, widget, 'fixed', undefined, inputData)
-        if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
+        widget.linkedWidgets = addValueControlWidgets(
+          this,
+          widget,
+          'fixed',
+          undefined,
+          inputData
+        )
       }
 
       const controlValues = this.controlValues
