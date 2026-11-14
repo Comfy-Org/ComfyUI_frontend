@@ -3,7 +3,7 @@ import { vi } from 'vitest'
 import {
   hasParamsBeyondDetailsColumn,
   presentTooltipParamKeys
-} from '@/services/customerEventParams'
+} from '@/platform/billing/api/customerEventParams'
 import type * as real from '@/platform/billing/api/customerEventsService'
 
 type CustomerEventsService = ReturnType<typeof real.useCustomerEventsService>

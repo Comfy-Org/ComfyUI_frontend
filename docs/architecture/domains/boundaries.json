@@ -639,6 +639,7 @@
           "src/platform/billing/composables/useWorkspaceTierLabel.test.ts",
           "src/platform/billing/__tests__/mockBillingContext.ts",
           "src/platform/billing/api/__mocks__/customerEventsService.ts",
+          "src/platform/billing/api/customerEventParams.ts",
           "src/platform/billing/api/customerEventsService.ts",
           "src/platform/billing/api/customerEventsService.test.ts",
           "src/platform/billing/stores/billingOperationStore.ts",

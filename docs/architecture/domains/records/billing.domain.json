@@ -193,6 +193,9 @@
       "path": "src/platform/billing/api/__mocks__/customerEventsService.ts"
     },
     {
+      "path": "src/platform/billing/api/customerEventParams.ts"
+    },
+    {
       "path": "src/platform/billing/api/customerEventsService.ts"
     },
     {
