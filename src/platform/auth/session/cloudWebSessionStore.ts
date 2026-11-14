@@ -68,6 +68,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 
@@ -141,6 +142,7 @@ async function whenSettled(
 function resetForAccountChange(change: WebSessionAccountChange): void {
   useWorkspaceAuthStore().clearWorkspaceContext()
   useTeamWorkspaceStore().resetForIdentityChange()
+  void useAssetsStore().invalidateAll()
   void api.resetSocket()
   if (change.reason !== 'user_changed') return
   useToast().info(t('auth.accountChanged.title'), {

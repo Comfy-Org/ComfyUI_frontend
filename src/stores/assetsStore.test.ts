@@ -172,6 +172,25 @@ describe('assetsStore - OSS history pagination', () => {
   })
 })
 
+describe('assetsStore - OSS input files', () => {
+  it('refetches input files when asked for new items', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(Response.json(['old.png']))
+      .mockResolvedValueOnce(Response.json(['photo.png']))
+    const store = useAssetsStore()
+    await vi.waitFor(() =>
+      expect(toValue(store.inputAssets.isLoading)).toBe(false)
+    )
+
+    await store.inputAssets.loadNew()
+
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(toValue(store.inputAssets.items).map(({ name }) => name)).toEqual([
+      'photo.png'
+    ])
+  })
+})
+
 describe('assetsStore - Model Assets Cache (Cloud)', () => {
   beforeEach(() => {
     mockIsCloud.value = true
@@ -1713,11 +1732,11 @@ describe('assetsStore - assets.seed.completed', () => {
   const invalidated = { invalidate: 1, loadNew: 0 }
 
   it.for([
-    { phase: 'full', initialAll: ['older-all'] },
-    { phase: 'fast', initialAll: [] }
+    { phase: 'full', initialAll: ['older-all'], requests: 3 },
+    { phase: 'fast', initialAll: [], requests: 6 }
   ] as const)(
     'refreshes independent All results during $phase seeding',
-    async ({ phase, initialAll }) => {
+    async ({ phase, initialAll, requests }) => {
       vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       let seeded = false
       vi.mocked(api.fetchApi).mockImplementation(async (url) => {
@@ -1765,7 +1784,7 @@ describe('assetsStore - assets.seed.completed', () => {
       expect(toValue(store.allAssets.items).map(({ id }) => id)).toEqual([
         'seeded-output'
       ])
-      expect(api.fetchApi).toHaveBeenCalledTimes(3)
+      expect(api.fetchApi).toHaveBeenCalledTimes(requests)
     }
   )
 
