@@ -7722,6 +7722,100 @@ describe('AgentPanelRoot history', () => {
       expect(screen.queryByText(mismatchNotice())).toBeNull()
     })
 
+    describe('a saved tab that the workflow list has not told the id of', () => {
+      const workflowListRoute = /\/api\/workflows(?:\?|$)/
+      const incompleteWorkflowList = (
+        entries: { id: string; name: string }[] = []
+      ) =>
+        json(200, {
+          data: entries,
+          pagination: {
+            offset: 0,
+            limit: 100,
+            total: entries.length + 1,
+            has_more: true
+          }
+        })
+
+      it('LK-01: shows the plain new chat when a complete list does not contain the tab', async () => {
+        await openFirstChatWithHistory([])
+        const unlisted = addTab('workflows/fourth.json')
+
+        await activateTabAsUser(unlisted)
+        await settleFollow()
+
+        expect(screen.queryByText(listFailure('fourth'))).toBeNull()
+        expect(screen.queryByTestId('workflow-chat-list')).toBeNull()
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(unlisted.path)
+        expect(screen.queryByText(mismatchNotice())).toBeNull()
+      })
+
+      it('LK-02: shows the error in the list area when an incomplete list does not contain the tab', async () => {
+        await openFirstChatWithHistory([])
+        const unlisted = addTab('workflows/fourth.json')
+        respondToFetch(workflowListRoute, () =>
+          incompleteWorkflowList([{ id: 'wf-first', name: 'first' }])
+        )
+
+        await activateTabAsUser(unlisted)
+
+        expect(await screen.findByText(listFailure('fourth'))).toBeVisible()
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(userPrompts()).toEqual([])
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(unlisted.path)
+        expect(screen.queryByText(mismatchNotice())).toBeNull()
+      })
+
+      it('LK-03: lists the chats of the tab when an incomplete list contains it', async () => {
+        await openFirstChatWithHistory([
+          agentThread({
+            id: 'th-fourth',
+            title: 'Fourth chat',
+            last_message_at: '2026-09-22T10:00:00Z',
+            workflow_id: 'wf-fourth'
+          }),
+          agentThread({
+            id: 'th-fourth-earlier',
+            title: 'Earlier fourth chat',
+            last_message_at: '2026-09-21T10:00:00Z',
+            workflow_id: 'wf-fourth'
+          })
+        ])
+        const unlisted = addTab('workflows/fourth.json')
+        respondToFetch(workflowListRoute, () =>
+          incompleteWorkflowList([{ id: 'wf-fourth', name: 'fourth' }])
+        )
+
+        await activateTabAsUser(unlisted)
+
+        expect(await listedChats()).toEqual([
+          'Fourth chat',
+          'Earlier fourth chat'
+        ])
+        expect(screen.queryByText(listFailure('fourth'))).toBeNull()
+      })
+
+      it('LK-05: shows the plain new chat when retrying finds a complete list without the tab', async () => {
+        await openFirstChatWithHistory([])
+        const unlisted = addTab('workflows/fourth.json')
+        respondToFetch(workflowListRoute, () => incompleteWorkflowList(), {
+          times: 1
+        })
+        await activateTabAsUser(unlisted)
+        expect(await screen.findByText(listFailure('fourth'))).toBeVisible()
+
+        await retryListing('fourth')
+
+        await vi.waitFor(() =>
+          expect(screen.queryByText(listFailure('fourth'))).toBeNull()
+        )
+        expect(screen.queryByTestId('workflow-chat-list')).toBeNull()
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(unlisted.path)
+      })
+    })
+
     it('keeps the list area as it is while the user types a message for the new chat', async () => {
       const { second } = await openFirstChatWithHistory([])
       respondToFetch(threadListRoute, failedFollowListing, { times: 1 })

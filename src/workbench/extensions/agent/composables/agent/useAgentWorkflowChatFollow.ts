@@ -1,6 +1,7 @@
 import { computed, shallowRef } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { CloudWorkflowRefreshOutcome } from '@/workbench/extensions/agent/composables/agent/useAgentWorkflowResolver'
 import type { ThreadListing } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { ChatSession } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
@@ -78,7 +79,7 @@ type FollowDeps = {
   userEngaged: () => boolean
   switchBlocked: () => boolean
   cloudIdFor: (workflow: ComfyWorkflow) => string | undefined
-  refreshCloudWorkflowIds: () => Promise<boolean>
+  refreshCloudWorkflowListing: () => Promise<CloudWorkflowRefreshOutcome>
   refreshHistory: (
     uiTreatment?: 'error_overlay' | 'none',
     workflowId?: string
@@ -256,11 +257,11 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
   ): Promise<WorkflowLookup> {
     const existing = deps.cloudIdFor(workflow)
     if (existing !== undefined) return { status: 'found', workflowId: existing }
-    const listed = await deps.refreshCloudWorkflowIds()
+    const listing = await deps.refreshCloudWorkflowListing()
     const refreshed = deps.cloudIdFor(workflow)
     if (refreshed !== undefined)
       return { status: 'found', workflowId: refreshed }
-    return { status: listed ? 'none' : 'unknown' }
+    return { status: listing === 'complete' ? 'none' : 'unknown' }
   }
 
   async function openFollowedChat(

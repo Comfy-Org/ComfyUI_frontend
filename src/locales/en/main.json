@@ -314,7 +314,6 @@
     "agentModified": "Agent updated this workflow",
     "agentNeedsApproval": "Agent is waiting for your answer",
     "agentChat": "Agent chat for this workflow",
-    "unsavedChanges": "Unsaved changes",
     "job": "Job",
     "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",

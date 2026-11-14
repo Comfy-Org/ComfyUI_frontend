@@ -47,8 +47,6 @@
             </span>
             <span
               v-if="shouldShowUnsavedIndicator"
-              role="img"
-              :aria-label="t('g.unsavedChanges')"
               data-testid="workflow-dirty-indicator"
               class="shrink-0 font-inter text-sm leading-none text-inherit italic after:content-['*']"
             />

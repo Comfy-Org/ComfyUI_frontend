@@ -226,18 +226,17 @@ test.describe(
       expect(workflowSelection.postedMessages).toHaveLength(1)
     })
 
-    test('explains disabled node references until the selected workflow is visible', async ({
+    test('explains disabled node references while a send keeps the panel on another workflow', async ({
       page,
       workflowSelection
     }, testInfo) => {
       await new AgentPanel(page).open()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
+      workflowSelection.pauseMessagePosts()
       await composer.fill('Start in this workflow')
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Start in this workflow')
-      await composer.fill('')
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
@@ -289,32 +288,22 @@ test.describe(
       await expect(addToPrompt).toBeVisible()
       expect(workflowSelection.postedMessages).toHaveLength(1)
 
-      await panel
-        .getByRole('button', { name: enMessages.agent.switchWorkflow })
-        .click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
-      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-      workflowSelection.finishSave(true)
+      await page.getByTestId('workflow-tab').first().click()
       await addToPrompt.click()
       await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
       await page.keyboard.press('Escape')
       await expect(plusNodes).toBeHidden()
+
+      workflowSelection.resumeMessagePosts()
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      await addToPrompt.click()
-      await expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
-      await expect(plusNodes).toHaveAccessibleDescription(
-        /Switch to .+ to add nodes\./
-      )
-      await page.keyboard.press('Escape')
-      await expect(plusNodes).toBeHidden()
-      await page.getByTestId('workflow-tab').first().click()
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
+      ).toHaveText('Unsaved Workflow (3)')
       await addToPrompt.click()
       await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
     })
@@ -437,16 +426,25 @@ test.describe(
         })
         .click()
       await expect(editorTabs).toHaveCount(2)
+      await expect(
+        panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
+      ).toHaveText('Unsaved Workflow (2)')
+      await expect(composer).toHaveText('')
 
       await panel
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
         .click()
       const checkedTarget = page.getByRole('menuitemradio', { checked: true })
-      await expect(checkedTarget).toHaveText('Unsaved Workflow')
+      await expect(checkedTarget).toHaveText('Unsaved Workflow (2)')
       await expect(
         page
           .getByRole('group', { name: enMessages.agent.currentTab })
           .getByRole('menuitemradio')
+      ).toBeChecked()
+      await expect(
+        page
+          .getByRole('group', { name: enMessages.agent.otherOpenWorkflows })
+          .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
       ).not.toBeChecked()
       await testInfo.attach('agent-target-picker', {
         body: await page.getByRole('menu').screenshot({
@@ -467,7 +465,7 @@ test.describe(
         .click()
       await expect(
         panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
-      ).toHaveText('Unsaved Workflow')
+      ).toHaveText('Unsaved Workflow (2)')
 
       for (let index = 0; index < 12; index++) {
         await page

@@ -15,7 +15,7 @@ test.describe(
   "Deleting the open chat's target workflow",
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('says the target workflow is no longer available', async ({
+    test('follows the replacement tab instead of reporting the target as gone', async ({
       page,
       workflowSelection
     }) => {
@@ -45,13 +45,14 @@ test.describe(
           .click({ button: 'right' })
         await new ContextMenu(page).clickMenuItem('Delete')
         await new ConfirmDialog(page).delete.click()
+        await expect(
+          workflowsTab.getPersistedItem('Unsaved Workflow')
+        ).toHaveCount(0)
       })
 
-      await test.step('show the target as unavailable', async () => {
-        await expect(unavailable).toBeVisible()
-        await expect(targetPicker).toHaveText(
-          enMessages.agent.selectWorkflowForAgent
-        )
+      await test.step('follow the replacement tab without a notice', async () => {
+        await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+        await expect(unavailable).toBeHidden()
       })
     })
   }

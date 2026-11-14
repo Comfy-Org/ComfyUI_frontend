@@ -57,8 +57,6 @@ const agentAriaLabels = {
   agentChat: enMessages.g.agentChat
 }
 
-const unsavedLabel = enMessages.g.unsavedChanges
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -66,7 +64,6 @@ const i18n = createI18n({
     en: {
       g: {
         close: 'Close',
-        unsavedChanges: unsavedLabel,
         ...statusAriaLabels,
         ...agentAriaLabels
       }
@@ -214,11 +211,17 @@ describe('WorkflowTab - workflow status indicator', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
     expect(screen.getByText('test.json')).toHaveClass('italic')
-    const asterisk = screen.getByRole('img', { name: unsavedLabel })
-    expect(asterisk).toBe(screen.getByTestId('workflow-dirty-indicator'))
-    expect(asterisk).toHaveClass('italic', "after:content-['*']")
-    expect(screen.getAllByRole('img')).toHaveLength(1)
+    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
+      'italic',
+      "after:content-['*']"
+    )
     expect(screen.queryByTestId('workflow-chat-status')).toBeNull()
+  })
+
+  it('TS-09 shows an unsaved tab without a status as having no image, so a status stays the only image in a tab', () => {
+    renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
+
+    expect(screen.queryAllByRole('img')).toEqual([])
   })
 
   it('TS-09 marks a modified workflow the same way when autosave is off', () => {
@@ -396,7 +399,7 @@ describe('WorkflowTab - chat status', () => {
       screen.getByRole('img', { name: agentAriaLabels.agentChat })
     ).toBeVisible()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
-    expect(screen.getAllByRole('img')).toHaveLength(2)
+    expect(screen.getAllByRole('img')).toHaveLength(1)
   })
 
   it('TS-11 shows a failed run and an unseen chat together', async () => {

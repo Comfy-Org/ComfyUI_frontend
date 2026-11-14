@@ -532,6 +532,7 @@ const workflowResolver = useAgentWorkflowResolver({
 })
 const {
   refreshCloudWorkflowIds,
+  refreshCloudWorkflowListing,
   forgetCloudWorkflowId,
   cloudIdFor,
   boundOrOpenWorkflowFor,
@@ -1948,7 +1949,7 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
   userEngaged,
   switchBlocked,
   cloudIdFor,
-  refreshCloudWorkflowIds,
+  refreshCloudWorkflowListing,
   refreshHistory,
   loadThread,
   showBlankChat: showBlankChatForVisibleWorkflow,

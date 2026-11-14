@@ -13,6 +13,8 @@ type WorkflowSelection = {
   savedPaths: string[]
   postedMessages: string[]
   finishSave: (success: boolean) => void
+  pauseMessagePosts: () => void
+  resumeMessagePosts: () => void
   pauseWorkflowLookups: () => void
   resumeWorkflowLookups: () => void
   workflowLookups: () => number
@@ -67,6 +69,8 @@ export const workflowSelectionTest = base.extend<{
     let finishSave = (_success: boolean) => {}
     let pendingLookup: Promise<void> | undefined
     let resumeWorkflowLookups = () => {}
+    let pendingPost: Promise<void> | undefined
+    let resumeMessagePosts = () => {}
     let lookupCount = 0
     function forgetSavedWorkflow(path: string): void {
       const name = path.slice('workflows/'.length, -'.json'.length)
@@ -93,9 +97,11 @@ export const workflowSelectionTest = base.extend<{
         })
       )
     })
-    await page.route('**/api/agent/threads**', (route) => {
-      if (route.request().method() === 'POST')
+    await page.route('**/api/agent/threads**', async (route) => {
+      if (route.request().method() === 'POST') {
         postedMessages.push(route.request().postData() ?? '')
+        await pendingPost
+      }
       return route.fulfill(jsonRoute(emptyAgentThreadList()))
     })
     await page.route('**/api/userdata?*', (route) => {
@@ -175,6 +181,12 @@ export const workflowSelectionTest = base.extend<{
       savedPaths,
       postedMessages,
       finishSave: (success) => finishSave(success),
+      pauseMessagePosts: () => {
+        pendingPost = new Promise<void>((resolve) => {
+          resumeMessagePosts = resolve
+        })
+      },
+      resumeMessagePosts: () => resumeMessagePosts(),
       pauseWorkflowLookups: () => {
         pendingLookup = new Promise<void>((resolve) => {
           resumeWorkflowLookups = resolve
@@ -185,5 +197,6 @@ export const workflowSelectionTest = base.extend<{
     })
     finishSave(false)
     resumeWorkflowLookups()
+    resumeMessagePosts()
   }
 })

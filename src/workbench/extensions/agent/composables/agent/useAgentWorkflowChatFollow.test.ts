@@ -4,6 +4,7 @@ import { shallowRef } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+import type { CloudWorkflowRefreshOutcome } from '@/workbench/extensions/agent/composables/agent/useAgentWorkflowResolver'
 import type { ThreadListing } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { ChatSession } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
@@ -64,7 +65,7 @@ function createFollow(
     userEngaged: vi.fn(() => false),
     switchBlocked: vi.fn(() => false),
     cloudIdFor: () => undefined,
-    refreshCloudWorkflowIds: vi.fn(async () => true),
+    refreshCloudWorkflowListing: vi.fn(async () => 'complete' as const),
     refreshHistory: vi.fn(async () => 'complete' as const),
     loadThread: vi.fn(async () => true),
     showBlankChat: vi.fn(),
@@ -167,7 +168,7 @@ describe('useAgentWorkflowChatFollow', () => {
         ]
       })
       expect(deps.refreshHistory).toHaveBeenCalledWith('none', 'wf-portrait')
-      expect(deps.refreshCloudWorkflowIds).not.toHaveBeenCalled()
+      expect(deps.refreshCloudWorkflowListing).not.toHaveBeenCalled()
       listing.resolve('complete')
       await following
     })
@@ -221,7 +222,7 @@ describe('useAgentWorkflowChatFollow', () => {
 
         await follow.followTab(workflow)
 
-        expect(deps.refreshCloudWorkflowIds).toHaveBeenCalledOnce()
+        expect(deps.refreshCloudWorkflowListing).toHaveBeenCalledOnce()
         expect(deps.refreshHistory).not.toHaveBeenCalled()
         expect(deps.showBlankChat).toHaveBeenCalledOnce()
         expect(follow.landing.value).toBeNull()
@@ -233,7 +234,7 @@ describe('useAgentWorkflowChatFollow', () => {
 
         await follow.followTab(workflow)
 
-        expect(deps.refreshCloudWorkflowIds).not.toHaveBeenCalled()
+        expect(deps.refreshCloudWorkflowListing).not.toHaveBeenCalled()
         expect(deps.refreshHistory).not.toHaveBeenCalled()
         expect(deps.showBlankChat).toHaveBeenCalledOnce()
         expect(follow.landing.value).toBeNull()
@@ -300,17 +301,56 @@ describe('useAgentWorkflowChatFollow', () => {
         }
       )
 
-      it('shows the error when it cannot be told whether a saved tab has a cloud workflow', async () => {
+      it.for<CloudWorkflowRefreshOutcome>(['failed', 'incomplete'])(
+        'LK-02 LK-04: shows the error when the workflow list is %s, so it is unknown whether a saved tab has a cloud workflow',
+        async (outcome) => {
+          const workflow = savedTab()
+          const { follow, deps } = createFollow(workflow, {
+            refreshCloudWorkflowListing: vi.fn(async () => outcome)
+          })
+
+          await follow.followTab(workflow)
+
+          expect(deps.refreshHistory).not.toHaveBeenCalled()
+          expect(deps.showBlankChat).toHaveBeenCalledOnce()
+          expect(follow.landing.value).toMatchObject({ status: 'failed' })
+        }
+      )
+
+      it('LK-03: looks the chats up once an incomplete workflow list contains the saved tab', async () => {
         const workflow = savedTab()
+        let listed = false
         const { follow, deps } = createFollow(workflow, {
-          refreshCloudWorkflowIds: vi.fn(async () => false)
+          cloudIdFor: () => (listed ? 'wf-portrait' : undefined),
+          refreshCloudWorkflowListing: vi.fn(async () => {
+            listed = true
+            return 'incomplete' as const
+          })
         })
 
         await follow.followTab(workflow)
 
-        expect(deps.refreshHistory).not.toHaveBeenCalled()
-        expect(deps.showBlankChat).toHaveBeenCalledOnce()
+        expect(deps.refreshHistory).toHaveBeenCalledWith('none', 'wf-portrait')
+        expect(follow.landing.value).toBeNull()
+      })
+
+      it('LK-05: shows the plain new-chat screen when a retry gets a complete list without the saved tab', async () => {
+        const workflow = savedTab()
+        const refreshCloudWorkflowListing = vi
+          .fn<FollowDeps['refreshCloudWorkflowListing']>()
+          .mockResolvedValueOnce('incomplete')
+          .mockResolvedValueOnce('complete')
+        const { follow, deps } = createFollow(workflow, {
+          refreshCloudWorkflowListing
+        })
+        await follow.followTab(workflow)
         expect(follow.landing.value).toMatchObject({ status: 'failed' })
+
+        follow.retryFollow()
+
+        await vi.waitFor(() => expect(follow.landing.value).toBeNull())
+        expect(refreshCloudWorkflowListing).toHaveBeenCalledTimes(2)
+        expect(deps.refreshHistory).not.toHaveBeenCalled()
       })
 
       it('looks the chats up again in place when the user retries', async () => {
@@ -770,7 +810,7 @@ describe('useAgentWorkflowChatFollow', () => {
 
       await follow.followTab(workflow)
 
-      expect(deps.refreshCloudWorkflowIds).not.toHaveBeenCalled()
+      expect(deps.refreshCloudWorkflowListing).not.toHaveBeenCalled()
       expect(deps.loadThread).toHaveBeenCalledWith(...opensWith('th-bound'))
       expect(follow.landing.value).toBeNull()
     })
@@ -1059,7 +1099,7 @@ describe('useAgentWorkflowChatFollow', () => {
 
       await follow.followTab(tabOwningTheOpenChat)
 
-      expect(deps.refreshCloudWorkflowIds).not.toHaveBeenCalled()
+      expect(deps.refreshCloudWorkflowListing).not.toHaveBeenCalled()
       expect(deps.refreshHistory).not.toHaveBeenCalled()
       expect(deps.showBlankChat).not.toHaveBeenCalled()
       expect(deps.loadThread).not.toHaveBeenCalled()
