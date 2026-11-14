@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
@@ -69,6 +69,8 @@ const { t } = useI18n()
 
 const SECTION_LABEL = 'm-0 text-base font-normal text-foreground'
 
+const tokenizing = ref(false)
+
 const phase = computed(() => submitPhaseOf(page))
 const locked = computed(() => isLocked(page))
 
@@ -121,6 +123,14 @@ const elementLive = computed(() => {
     current.element !== 'failed'
   )
 })
+
+const formMounted = computed(() => elementLive.value && charge !== undefined)
+
+watch(formMounted, (mounted) => {
+  if (!mounted) tokenizing.value = false
+})
+
+const tabsLocked = computed(() => locked.value || tokenizing.value)
 
 const copy = computed<StripePaymentCopy>(() => ({
   paymentMethod: t('checkout.paymentMethod'),
@@ -196,7 +206,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           v-if="tabbed"
           :rail="tabbed"
           :methods="savedMethods"
-          :locked
+          :locked="tabsLocked"
           @select-tab="emit('selectTab', $event)"
           @pay-saved="
             emit('pay', {
@@ -237,6 +247,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           :pay-once="purchase === 'credits'"
           page-layout
           @phase="emit('phase', $event)"
+          @submitting-change="tokenizing = $event"
           @confirm="
             (token, methodType) =>
               emit('pay', { confirmationToken: token, methodType })

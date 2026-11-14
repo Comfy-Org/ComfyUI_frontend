@@ -5,6 +5,7 @@
  * failed rather than throwing into the lifecycle.
  */
 import type { EmbeddedChallengePort } from '@comfyorg/account-core/billing'
+import type { Stripe } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
 
 /** The one next step Stripe finishes without leaving this page. */
@@ -19,6 +20,15 @@ export interface CheckoutChallengePort extends EmbeddedChallengePort {
   leavesPage: (clientSecret: string) => Promise<boolean>
 }
 
+const isSetupIntentSecret = (clientSecret: string) =>
+  clientSecret.startsWith('seti_')
+
+async function retrieveIntent(provider: Stripe, clientSecret: string) {
+  if (!isSetupIntentSecret(clientSecret))
+    return (await provider.retrievePaymentIntent(clientSecret)).paymentIntent
+  return (await provider.retrieveSetupIntent(clientSecret)).setupIntent
+}
+
 export function createStripeChallengePort(
   publishableKey: string
 ): CheckoutChallengePort {
@@ -28,23 +38,21 @@ export function createStripeChallengePort(
       const provider = await stripe
       if (!provider) return { error: 'provider_unavailable' }
       try {
-        return await provider.handleNextAction({ clientSecret })
+        const result = await provider.handleNextAction({ clientSecret })
+        return result.setupIntent
+          ? { paymentIntent: result.setupIntent }
+          : result
       } catch (error) {
-        // Stripe throws for an intent that no longer requires action, e.g. a
-        // redirect payment finished before the server's status caught up.
-        // The intent's own status decides whether that counts as completed.
-        const { paymentIntent } =
-          await provider.retrievePaymentIntent(clientSecret)
-        if (paymentIntent) return { paymentIntent }
+        const intent = await retrieveIntent(provider, clientSecret)
+        if (intent) return { paymentIntent: intent }
         throw error
       }
     },
     leavesPage: async (clientSecret) => {
       const provider = await stripe
       if (!provider) return true
-      const { paymentIntent } =
-        await provider.retrievePaymentIntent(clientSecret)
-      return paymentIntent?.next_action?.type !== IN_PAGE_NEXT_ACTION
+      const intent = await retrieveIntent(provider, clientSecret)
+      return intent?.next_action?.type !== IN_PAGE_NEXT_ACTION
     }
   }
 }

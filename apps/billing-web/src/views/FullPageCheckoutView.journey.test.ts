@@ -14,6 +14,7 @@ import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
+import { awaitPlanChangeCardChoice } from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import type {
@@ -72,6 +73,8 @@ const SESSION: AccountCredential = {
   workspace: { id: 'ws-team', name: 'Acme Team', type: 'team' },
   role: 'owner'
 }
+
+vi.mock(import('@/config/checkoutUi'), { spy: true })
 
 vi.mock(import('@/session/billingWebSession'), async () => {
   const { computed } = await import('vue')
@@ -185,6 +188,7 @@ const REFUSED_BY_THE_SERVER = {
 const vueErrors: unknown[] = []
 
 beforeEach(() => {
+  vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(false)
   vueErrors.length = 0
 })
 
