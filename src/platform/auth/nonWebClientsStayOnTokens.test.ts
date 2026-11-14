@@ -283,7 +283,7 @@ const apiCalls = (auth: Record<string, string>): RecordedRequest[] => [
   }
 ]
 
-const apiKeyGolden = (uca: boolean): RecordedRequest[] => [
+const API_KEY_GOLDEN: RecordedRequest[] = [
   FEATURES_BOOTSTRAP,
   {
     method: 'POST',
@@ -291,7 +291,7 @@ const apiKeyGolden = (uca: boolean): RecordedRequest[] => [
     headers: { ...API_KEY_HEADER, 'content-type': 'application/json' },
     credentials: null
   },
-  ...apiCalls(uca ? {} : API_KEY_HEADER)
+  ...apiCalls(API_KEY_HEADER)
 ]
 
 const LOCALHOST_GOLDEN: RecordedRequest[] = [
@@ -355,7 +355,7 @@ describe('clients the web session leaves on tokens', () => {
       await sendApiCalls()
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(recorder.all).toEqual(apiKeyGolden(row.uca))
+      expect(recorder.all).toEqual(API_KEY_GOLDEN)
       expectNoSessionTraffic(recorder.all)
     }
   )

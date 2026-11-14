@@ -447,7 +447,16 @@ describe('auth token priority chain', () => {
       expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
     })
 
-    it('getAuthHeader returns null when signed out even if the unified token is stale', async () => {
+    it('getAuthHeader returns null when signed out with no stored API key', async () => {
+      authStateCallback(null)
+      useWorkspaceAuthStore().unifiedToken = null
+
+      const header = await store.getAuthHeader()
+
+      expect(header).toBeNull()
+    })
+
+    it('getAuthHeader sends the stored API key when an API key is the only login', async () => {
       authStateCallback(null)
       useWorkspaceAuthStore().unifiedToken = null
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
@@ -456,7 +465,40 @@ describe('auth token priority chain', () => {
 
       const header = await store.getAuthHeader()
 
-      expect(header).toBeNull()
+      expect(header).toEqual({ 'X-API-KEY': 'test-key' })
+    })
+
+    it('getWorkspaceAuthHeader sends the stored API key when an API key is the only login', async () => {
+      authStateCallback(null)
+      useWorkspaceAuthStore().unifiedToken = null
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
+      })
+
+      await expect(store.getWorkspaceAuthHeaderOrThrow()).resolves.toEqual({
+        'X-API-KEY': 'test-key'
+      })
+    })
+
+    it('getWorkspaceAuthHeader keeps the unified Cloud JWT for a signed-in user', async () => {
+      useWorkspaceAuthStore().unifiedToken = 'unified-jwt'
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
+      })
+
+      await expect(store.getWorkspaceAuthHeader()).resolves.toEqual({
+        Authorization: 'Bearer unified-jwt'
+      })
+      expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
+    })
+
+    it('getWorkspaceAuthHeader never sends a stored API key for a signed-in user whose mint failed', async () => {
+      useWorkspaceAuthStore().unifiedToken = null
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'test-key'
+      })
+
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
       expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
     })
 
