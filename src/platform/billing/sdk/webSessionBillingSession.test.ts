@@ -6,7 +6,10 @@ import type { AccountCredential } from '@comfyorg/account-core/session'
 import { createSessionBillingTransport } from '@comfyorg/account-core/billing'
 import type { BillingResult } from '@comfyorg/account-core/billing'
 import type { SessionTokenResult } from '@comfyorg/account-core/sessionTokenMint'
-import type { WebSession,WebSessionErrorCode } from '@comfyorg/account-core/webSession'
+import type {
+  WebSession,
+  WebSessionErrorCode
+} from '@comfyorg/account-core/webSession'
 
 import type {
   WebSessionRequestScope,
