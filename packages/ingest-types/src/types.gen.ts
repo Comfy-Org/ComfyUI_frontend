@@ -6654,7 +6654,12 @@ export type ListAssetsResponse = {
    */
   next_cursor?: string
   /**
-   * Total number of assets matching the filters
+   * Number of assets matching the filters. Exact by default. With
+   * `capped_total=true` it is counted up to 10,000, so 10,000 means
+   * "at least 10,000" and must not be read as the exact count or used
+   * to work out the last page. To page, follow `has_more` and
+   * `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -7350,7 +7355,13 @@ export type PaginationInfo = {
    */
   offset: number
   /**
-   * Total number of items matching filters (may be 0 when using cursor pagination)
+   * Number of items matching the filters (may be 0 when using cursor
+   * pagination). Exact by default. `GET /api/jobs` with
+   * `capped_total=true` counts it up to 10,000, so 10,000 there means
+   * "at least 10,000" and must not be read as the exact count or used
+   * to work out the last page. To page, follow `has_more` and
+   * `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -10100,7 +10111,12 @@ export type ListAssetsResponseWritable = {
    */
   next_cursor?: string
   /**
-   * Total number of assets matching the filters
+   * Number of assets matching the filters. Exact by default. With
+   * `capped_total=true` it is counted up to 10,000, so 10,000 means
+   * "at least 10,000" and must not be read as the exact count or used
+   * to work out the last page. To page, follow `has_more` and
+   * `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
