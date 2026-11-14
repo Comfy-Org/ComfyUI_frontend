@@ -25,20 +25,17 @@ import { api } from '@/scripts/api'
 
 const HOLD_FOR_READY_MS = 10 * 60 * 1000
 
-const LISTING_RECHECK_AFTER_END_MS = 5_000
-
 type GpuStatus = 'starting' | 'on' | 'unavailable'
 
 type GpuChangeRefusal = 'ownerOnly' | 'failed'
 
-function endsTheSession(event: GpuSessionEvent): boolean {
+function endsTheSession(
+  event: GpuSessionEvent,
+  next: GpuSessionState
+): boolean {
   switch (event.type) {
     case 'messageReceived':
-      return (
-        event.message.state === 'ended' &&
-        (event.message.deployment_id ?? event.deploymentId) ===
-          event.deploymentId
-      )
+      return event.message.state === 'ended' && next.session === event.message
     case 'changeSaved':
       return 'on' in event.change && (!event.change.on || event.gpu === 'off')
     case 'gpuAnswered':
@@ -61,11 +58,7 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
   let holdGeneration = 0
   let changedAsOfListing = 0
   let uninstall = () => {}
-  let listingRecheck: ReturnType<typeof setTimeout> | undefined
-  onScopeDispose(() => {
-    uninstall()
-    clearTimeout(listingRecheck)
-  })
+  onScopeDispose(() => uninstall())
 
   const deploymentId = computed(
     () => pickStore.pickedDeployment?.deployment_id ?? null
@@ -112,7 +105,7 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
   function dispatch(event: GpuSessionEvent) {
     const changedBefore = state.value.changed
     state.value = reduceGpuSession(state.value, event)
-    if (endsTheSession(event)) endHolds()
+    if (endsTheSession(event, state.value)) endHolds()
     settleWaitersFor(state.value.gpu)
     if (state.value.changed !== changedBefore) {
       changedAsOfListing = pickStore.listingsAsked()
@@ -173,16 +166,7 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
       deploymentId: id
     }
     dispatch(received)
-    if (endsTheSession(received)) rereadListingAfterEnd()
-  }
-
-  function rereadListingAfterEnd() {
-    void pickStore.load()
-    clearTimeout(listingRecheck)
-    listingRecheck = setTimeout(
-      () => void pickStore.load(),
-      LISTING_RECHECK_AFTER_END_MS
-    )
+    if (endsTheSession(received, state.value)) void pickStore.load()
   }
 
   function install() {

@@ -135,45 +135,98 @@ describe('useGpuSessionStore', () => {
   )
 
   it.for([
-    { name: 'another session keeps it on', listed: true },
-    { name: 'Cloud turns it off after the end', listed: false }
+    { name: 'another session keeps it on', editorGpu: true },
+    { name: 'Cloud turned it off', editorGpu: false }
   ])(
-    'after an idle end the toggle shows the setting the listing reports when $name',
-    ({ listed }) => {
+    'after an idle end the toggle shows the editor_gpu Cloud sends next when $name',
+    ({ editorGpu }) => {
       const store = storeForPicked({
         editor_gpu: true,
         can_change_editor_gpu: true
       })
       const pick = useDeploymentPickStore()
       store.install()
-      const listingSays = (editorGpu: boolean, number: number) =>
-        Object.assign(pick, {
-          pickedDeployment: deploymentWithGpu('dep-1', {
-            editor_gpu: editorGpu,
-            can_change_editor_gpu: true
-          }),
-          shownListing: number
-        })
-
-      socketSays({
+      const end = {
         session_id: 's-1',
         deployment_id: 'dep-1',
         state: 'ended',
         reason: 'idle',
         runs: []
-      })
-      listingSays(true, 1)
+      }
 
+      socketSays(end)
       expect(store.settings?.on).toBe(true)
+      socketSays({ ...end, status: 'success', editor_gpu: editorGpu })
+
+      expect(store.settings?.on).toBe(editorGpu)
       expect(pick.load).toHaveBeenCalledOnce()
-
-      vi.advanceTimersByTime(5_000)
-      listingSays(listed, 2)
-
-      expect(pick.load).toHaveBeenCalledTimes(2)
-      expect(store.settings?.on).toBe(listed)
     }
   )
+
+  it('shows the setting from a listing that lands after the end when Cloud sends no editor_gpu', () => {
+    const store = storeForPicked({
+      editor_gpu: true,
+      can_change_editor_gpu: true
+    })
+    const pick = useDeploymentPickStore()
+    store.install()
+
+    socketSays({
+      session_id: 's-1',
+      deployment_id: 'dep-1',
+      state: 'ended',
+      reason: 'idle',
+      runs: []
+    })
+    Object.assign(pick, {
+      pickedDeployment: deploymentWithGpu('dep-1', {
+        editor_gpu: false,
+        can_change_editor_gpu: true
+      }),
+      shownListing: 1
+    })
+
+    expect(pick.load).toHaveBeenCalledOnce()
+    expect(store.settings?.on).toBe(false)
+  })
+
+  it('a second ended message for the same session holds on to a request sent after the first', async () => {
+    const answers: Array<(response: Response) => void> = []
+    const send = vi.mocked(fetch)
+    send
+      .mockImplementationOnce(
+        () => new Promise((resolve) => answers.push(resolve))
+      )
+      .mockResolvedValue(new Response('ok', { status: 200 }))
+    const store = storeForPicked({
+      editor_gpu: true,
+      can_change_editor_gpu: true
+    })
+    store.install()
+    const end = {
+      session_id: 's-1',
+      deployment_id: 'dep-1',
+      state: 'ended',
+      reason: 'idle',
+      runs: []
+    }
+    socketSays(end)
+
+    const answered = fetch('/example_pack/preview')
+    socketSays({ ...end, status: 'success', editor_gpu: true })
+    answers[0](gpuStarting('starting'))
+    await flushPromises()
+
+    expect(store.status).toBe('starting')
+    socketSays({
+      session_id: 's-2',
+      deployment_id: 'dep-1',
+      state: 'ready',
+      runs: []
+    })
+    await expect(answered).resolves.toHaveProperty('status', 200)
+    expect(send).toHaveBeenCalledTimes(2)
+  })
 
   it('lets a held request go with its answer when the store is disposed', async () => {
     const send = vi.mocked(fetch)
