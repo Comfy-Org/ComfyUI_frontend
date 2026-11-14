@@ -26,6 +26,7 @@ import { authCredentialOf, notifyAuthCredential } from './authCredential'
 import { scopeMediaRoute } from './sessionMediaUrl'
 import { webSessionRequests } from './webSessionFetch'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from './apiTimeouts'
+import { reconnectDelayMs } from './reconnectBackoff'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -463,6 +464,7 @@ export class ComfyApi extends EventTarget {
    */
   private socketGeneration = 0
   private socketRetryDelayMs = 1_000
+  private consecutiveFailedConnects = 0
 
   private authProvider: ApiAuthProvider = anonymousApiAuthProvider
 
@@ -991,6 +993,7 @@ export class ComfyApi extends EventTarget {
       if (this.socket !== socket) return
       opened = true
       this.socketRetryDelayMs = 1_000
+      this.consecutiveFailedConnects = 0
 
       socket.send(
         JSON.stringify({
@@ -1017,7 +1020,10 @@ export class ComfyApi extends EventTarget {
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
       const recoverSession = sessionRequests && !opened
-      const delayMs = recoverSession ? this.socketRetryDelayMs : 300
+      const delayMs = recoverSession
+        ? this.socketRetryDelayMs
+        : reconnectDelayMs(this.consecutiveFailedConnects)
+      if (!opened) this.consecutiveFailedConnects++
       if (recoverSession) {
         this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
       }
@@ -1232,6 +1238,7 @@ export class ComfyApi extends EventTarget {
     // only `agent`): clearing it would downgrade every serverSupportsFeature()
     // caller until the next delivery.
     this.serverFeatureFlagsSettled.value = false
+    this.consecutiveFailedConnects = 0
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null
