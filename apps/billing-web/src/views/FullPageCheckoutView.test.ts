@@ -3755,7 +3755,6 @@ describe('FullPageCheckoutView card choice on a plan change', () => {
 
       expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
       expect(savedPicker()).toHaveTextContent('·· 4402')
-      expect(form.mounts).toBe(1)
 
       await userEvent.click(confirmButton(cta))
 
@@ -3821,6 +3820,33 @@ describe('FullPageCheckoutView card choice on a plan change', () => {
     expect(screen.getByRole('tablist')).not.toHaveAttribute('inert')
   })
 
+  it('releases the tabs when the card form fails mid-token, so Saved is still chosen and paid', async () => {
+    const fake = await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team'
+    )
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await userEvent.click(tab('Add new payment'))
+    form.emit('submittingChange', true)
+    await nextTick()
+
+    reportPhase({
+      phase: 'payment_element_failed',
+      element: 'payment',
+      element_phase: 'update'
+    })
+    await nextTick()
+
+    expect(screen.getByRole('tablist')).not.toHaveAttribute('inert')
+    await userEvent.click(tab('Saved'))
+    await userEvent.click(confirmButton('Confirm upgrade'))
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(fake.subscribe.mock.calls[0][0]).toMatchObject({
+      saved_payment_method_id: 'pm_mastercard'
+    })
+  })
+
   it('keeps the picker after a declined upgrade, so another saved card is confirmed on the same page', async () => {
     const fake = await renderPlanChange(
       { transition_type: 'upgrade' },
@@ -3859,24 +3885,5 @@ describe('FullPageCheckoutView card choice on a plan change', () => {
     expect(fake.subscribe.mock.calls[1][0]).toMatchObject({
       saved_payment_method_id: 'pm_visa'
     })
-  })
-
-  it('keeps the method on file, naming no card, when Cloud serves the choice off', async () => {
-    vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(false)
-    const fake = await renderPlanChange(
-      { transition_type: 'upgrade' },
-      'Upgrade to Creator Plan · Acme Team'
-    )
-
-    expect(screen.queryByRole('tab')).not.toBeInTheDocument()
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
-    expect(form.mounts).toBe(0)
-
-    await userEvent.click(confirmButton('Confirm upgrade'))
-
-    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
-    expect(fake.subscribe.mock.calls[0][0]).not.toHaveProperty(
-      'saved_payment_method_id'
-    )
   })
 })

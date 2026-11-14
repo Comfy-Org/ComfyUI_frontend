@@ -179,11 +179,6 @@ function quotedStop(
   return undefined
 }
 
-/**
- * How a quote collects the money: a card form, which arrives failed with no
- * Stripe key to mount on, or, for a plan change while Cloud does not serve
- * the card choice, the method on file, which needs no key.
- */
 function railOf(
   quoted: SubscriptionPreview,
   saved: SavedArrival,

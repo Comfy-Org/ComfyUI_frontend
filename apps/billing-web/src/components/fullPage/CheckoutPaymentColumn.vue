@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
@@ -124,6 +124,14 @@ const elementLive = computed(() => {
   )
 })
 
+const formMounted = computed(() => elementLive.value && charge !== undefined)
+
+watch(formMounted, (mounted) => {
+  if (!mounted) tokenizing.value = false
+})
+
+const tabsLocked = computed(() => locked.value || tokenizing.value)
+
 const copy = computed<StripePaymentCopy>(() => ({
   paymentMethod: t('checkout.paymentMethod'),
   methodChoice: t('checkout.methodChoice'),
@@ -198,7 +206,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           v-if="tabbed"
           :rail="tabbed"
           :methods="savedMethods"
-          :locked="locked || tokenizing"
+          :locked="tabsLocked"
           @select-tab="emit('selectTab', $event)"
           @pay-saved="
             emit('pay', {
