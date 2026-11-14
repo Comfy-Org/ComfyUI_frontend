@@ -50,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import QueueOverlayActive from '@/components/queue/QueueOverlayActive.vue'
@@ -67,8 +67,8 @@ import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTra
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useQueueStore } from '@/stores/queueStore'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 type OverlayState = 'hidden' | 'active' | 'expanded'
@@ -86,9 +86,9 @@ const { t, n } = useI18n()
 const queueStore = useQueueStore()
 const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
-const assetsStore = useAssetsStore()
 const sidebarTabStore = useSidebarTabStore()
 const assetSelectionStore = useAssetSelectionStore()
+const assetsStore = useAssetsStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
@@ -229,34 +229,28 @@ const toggleAssetsSidebar = () => {
   sidebarTabStore.toggleSidebarTab('assets')
 }
 
-const openAssetsSidebar = () => {
-  sidebarTabStore.activeSidebarTabId = 'assets'
-}
-
-let assetFocusRequest = 0
-
-const focusAssetInSidebar = async (item: JobListItem, request: number) => {
-  const task = item.taskRef
-  const jobId = task?.jobId
-  const preview = task?.previewOutput
-  if (!jobId || !preview || request !== assetFocusRequest) return
-
-  const assetId = String(jobId)
-  openAssetsSidebar()
-  await nextTick()
-  const found = await assetsStore.loadOutputAsset(assetId)
-  if (!found || request !== assetFocusRequest) return
-
-  assetSelectionStore.setSelection([assetId])
-  assetSelectionStore.setLastSelectedAssetId(assetId)
-}
-
+let inspectSequence = 0
 const inspectJobAsset = wrapWithErrorHandlingAsync(
   async (item: JobListItem) => {
-    const request = ++assetFocusRequest
+    const sequence = ++inspectSequence
     trackFeatureUsed()
     await openResultGallery(item)
-    await focusAssetInSidebar(item, request)
+    const jobId = item.taskRef?.jobId
+    if (sequence !== inspectSequence || !jobId || !item.taskRef?.previewOutput)
+      return
+
+    assetSelectionStore.setSource('output')
+    sidebarTabStore.activeSidebarTabId = 'assets'
+    await nextTick()
+    if (sequence !== inspectSequence) return
+
+    const asset = await assetsStore.loadOutputAssetByJobId(jobId)
+    if (sequence !== inspectSequence || !asset) return
+
+    assetSelectionStore.setSelectedIds(
+      [asset.id],
+      toValue(assetsStore.outputAssets.items)
+    )
   }
 )
 

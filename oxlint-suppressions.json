@@ -426,11 +426,6 @@
       "count": 2
     }
   },
-  "src/platform/assets/composables/useAssetSelection.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
   "src/platform/assets/composables/useMediaAssetActions.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 9

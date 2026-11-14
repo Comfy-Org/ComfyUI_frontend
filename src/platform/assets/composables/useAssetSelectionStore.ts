@@ -1,20 +1,20 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { AssetId } from '@/platform/assets/schemas/assetSchema'
+import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
+
+export type AssetSource = 'output' | 'input'
 
 export const useAssetSelectionStore = defineStore('assetSelection', () => {
-  // State
   const selectedAssetIds = ref<Set<AssetId>>(new Set())
   const lastSelectedIndex = ref<number>(-1)
   const lastSelectedAssetId = ref<AssetId | null>(null)
+  const activeSource = ref<AssetSource>('output')
 
-  // Getters
   const selectedCount = computed(() => selectedAssetIds.value.size)
   const hasSelection = computed(() => selectedAssetIds.value.size > 0)
   const selectedIdsArray = computed(() => Array.from(selectedAssetIds.value))
 
-  // Actions
   function addToSelection(assetId: AssetId) {
     selectedAssetIds.value.add(assetId)
   }
@@ -53,25 +53,152 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
     lastSelectedAssetId.value = assetId
   }
 
+  function setAnchor(index: number, assetId: AssetId | null) {
+    setLastSelectedIndex(index)
+    setLastSelectedAssetId(assetId)
+  }
+
+  function setSource(source: AssetSource) {
+    activeSource.value = source
+  }
+
+  function syncAnchorFromAssets(assets: AssetItem[]) {
+    const anchorId = lastSelectedAssetId.value
+    const anchorIndex = anchorId
+      ? assets.findIndex((asset) => asset.id === anchorId)
+      : -1
+
+    if (anchorIndex !== -1) {
+      setLastSelectedIndex(anchorIndex)
+      return
+    }
+
+    setAnchor(-1, null)
+  }
+
+  function toggleAssetSelection(asset: AssetItem, index: number) {
+    if (!asset.id || index < 0) {
+      console.warn('Invalid asset selection parameters')
+      return
+    }
+
+    toggleSelection(asset.id)
+    setAnchor(index, asset.id)
+  }
+
+  function handleAssetClick(
+    asset: AssetItem,
+    index: number,
+    allAssets: AssetItem[],
+    {
+      shiftKey,
+      ctrlKey,
+      metaKey
+    }: Pick<MouseEvent, 'shiftKey' | 'ctrlKey' | 'metaKey'>
+  ) {
+    if (!asset.id || index < 0) {
+      console.warn('Invalid asset selection parameters')
+      return
+    }
+
+    const assetId = asset.id
+
+    if (shiftKey && lastSelectedIndex.value >= 0) {
+      const start = Math.min(lastSelectedIndex.value, index)
+      const end = Math.max(lastSelectedIndex.value, index)
+      setSelection(allAssets.slice(start, end + 1).map((a) => a.id))
+      return
+    }
+
+    if (ctrlKey || metaKey) {
+      toggleAssetSelection(asset, index)
+      return
+    }
+
+    if (isSelected(assetId) && selectedCount.value === 1) {
+      return
+    }
+
+    clearSelection()
+    addToSelection(assetId)
+    setAnchor(index, assetId)
+  }
+
+  function selectAll(allAssets: AssetItem[]) {
+    setSelection(allAssets.map((a) => a.id))
+    if (allAssets.length > 0) {
+      const lastIndex = allAssets.length - 1
+      setAnchor(lastIndex, allAssets[lastIndex].id)
+    }
+  }
+
+  function setSelectedIds(ids: AssetId[], allAssets: readonly AssetItem[]) {
+    setSelection(ids)
+    const selected = new Set(ids)
+    const anchorIndex = allAssets.findLastIndex((asset) =>
+      selected.has(asset.id)
+    )
+    setAnchor(anchorIndex, anchorIndex >= 0 ? allAssets[anchorIndex].id : null)
+  }
+
+  function getSelectedAssets(allAssets: AssetItem[]): AssetItem[] {
+    return allAssets.filter((asset) => isSelected(asset.id))
+  }
+
+  function reconcileSelection(assets: AssetItem[]) {
+    if (selectedAssetIds.value.size === 0) {
+      return
+    }
+
+    if (assets.length === 0) {
+      clearSelection()
+      return
+    }
+
+    const visibleIds = new Set(assets.map((asset) => asset.id))
+    const nextSelectedIds: AssetId[] = []
+
+    for (const id of selectedAssetIds.value) {
+      if (visibleIds.has(id)) {
+        nextSelectedIds.push(id)
+      }
+    }
+
+    if (nextSelectedIds.length === selectedAssetIds.value.size) {
+      syncAnchorFromAssets(assets)
+      return
+    }
+
+    if (nextSelectedIds.length === 0) {
+      clearSelection()
+      return
+    }
+
+    setSelection(nextSelectedIds)
+    syncAnchorFromAssets(assets)
+  }
+
   return {
-    // State
     selectedAssetIds: computed(() => selectedAssetIds.value),
     lastSelectedIndex: computed(() => lastSelectedIndex.value),
     lastSelectedAssetId: computed(() => lastSelectedAssetId.value),
+    activeSource: computed(() => activeSource.value),
 
-    // Getters
     selectedCount,
     hasSelection,
     selectedIdsArray,
 
-    // Actions
-    addToSelection,
-    removeFromSelection,
     setSelection,
     clearSelection,
-    toggleSelection,
     isSelected,
     setLastSelectedIndex,
-    setLastSelectedAssetId
+    setLastSelectedAssetId,
+    setSource,
+    toggleAssetSelection,
+    handleAssetClick,
+    selectAll,
+    setSelectedIds,
+    getSelectedAssets,
+    reconcileSelection
   }
 })

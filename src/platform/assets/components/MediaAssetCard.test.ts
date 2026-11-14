@@ -302,24 +302,57 @@ describe('MediaAssetCard', () => {
     expect(emitted().zoom).toBeUndefined()
   })
 
+  it('plays a video preview on plain click without selecting the asset', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderCard({
+      loading: false,
+      asset: { ...asset, name: 'clip.mp4' }
+    })
+    const video =
+      await screen.findByTestId<HTMLVideoElement>('media-asset-video')
+    const playSpy = vi
+      .spyOn(video, 'play')
+      .mockImplementation(() => Promise.resolve())
+    Object.defineProperty(video, 'paused', {
+      value: true,
+      configurable: true
+    })
+
+    await user.click(video)
+
+    expect(playSpy).toHaveBeenCalledOnce()
+    expect(emitted().select).toBeUndefined()
+  })
+
   it.for([
-    { modifier: 'Shift', keyDown: '{Shift>}', keyUp: '{/Shift}' },
-    { modifier: 'Ctrl', keyDown: '{Control>}', keyUp: '{/Control}' },
-    { modifier: 'Meta', keyDown: '{Meta>}', keyUp: '{/Meta}' }
+    {
+      modifier: 'Shift',
+      keyDown: '{Shift>}',
+      keyUp: '{/Shift}',
+      expected: { shiftKey: true, ctrlKey: false, metaKey: false }
+    },
+    {
+      modifier: 'Ctrl',
+      keyDown: '{Control>}',
+      keyUp: '{/Control}',
+      expected: { shiftKey: false, ctrlKey: true, metaKey: false }
+    },
+    {
+      modifier: 'Meta',
+      keyDown: '{Meta>}',
+      keyUp: '{/Meta}',
+      expected: { shiftKey: false, ctrlKey: false, metaKey: true }
+    }
   ])(
     '$modifier-clicks a video preview to select without starting playback',
-    async ({ keyDown, keyUp }) => {
+    async ({ keyDown, keyUp, expected }) => {
       const user = userEvent.setup()
-      const { container, emitted } = renderCard({
+      const { emitted } = renderCard({
         loading: false,
         asset: { ...asset, name: 'clip.mp4' }
       })
-      const video = await vi.waitFor(() => {
-        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-        const element = container.querySelector('video')
-        expect(element).toBeInTheDocument()
-        return element!
-      })
+      const video =
+        await screen.findByTestId<HTMLVideoElement>('media-asset-video')
       const playSpy = vi
         .spyOn(video, 'play')
         .mockImplementation(() => Promise.resolve())
@@ -334,7 +367,8 @@ describe('MediaAssetCard', () => {
       await user.keyboard(keyUp)
 
       expect(playSpy).not.toHaveBeenCalled()
-      expect(emitted().select).toHaveLength(1)
+      expect(emitted().select).toEqual([[expect.objectContaining(expected)]])
+      expect(emitted().select).toEqual([[expect.any(MouseEvent)]])
     }
   )
 
@@ -464,7 +498,15 @@ describe('MediaAssetCard', () => {
     const { emitted } = renderCard({ loading: false })
 
     await user.click(screen.getByText('PNG'))
-    expect(emitted().select).toHaveLength(1)
+    expect(emitted().select).toEqual([
+      [
+        expect.objectContaining({
+          shiftKey: false,
+          ctrlKey: false,
+          metaKey: false
+        })
+      ]
+    ])
 
     await user.click(
       screen.getByRole('button', {

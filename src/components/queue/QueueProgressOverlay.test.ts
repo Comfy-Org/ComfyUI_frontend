@@ -1,14 +1,19 @@
+import { scheduler } from 'node:timers/promises'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent } from 'vue'
+import { defineComponent, h, toValue } from 'vue'
 
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
+import AssetsSidebarTab from '@/components/sidebar/tabs/AssetsSidebarTab.vue'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
-import type { JobStatus } from '@comfyorg/api-client/jobTypes'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type { JobDetail, JobStatus } from '@comfyorg/api-client/jobTypes'
+import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -16,6 +21,8 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 let itemToView: JobListViewItem | undefined
 
@@ -51,33 +58,10 @@ function createTask(id: string, status: JobStatus): TaskItemImpl {
   })
 }
 
-function createCompletedJobView(id: string): JobListViewItem {
-  const task = new TaskItemImpl({
-    id,
-    status: 'completed',
-    create_time: 0,
-    priority: 0,
-    preview_output: {
-      filename: `${id}.png`,
-      mediaType: 'images',
-      nodeId: '1',
-      subfolder: '',
-      type: 'output'
-    }
-  })
-  return {
-    id,
-    meta: '',
-    showClear: false,
-    state: 'completed',
-    taskRef: task,
-    title: id
-  }
-}
-
 function renderComponent(
   runningTasks: TaskItemImpl[],
-  pendingTasks: TaskItemImpl[]
+  pendingTasks: TaskItemImpl[],
+  mountAssetsSidebar = false
 ) {
   const pinia = getActivePinia()!
   const queueStore = useQueueStore(pinia)
@@ -88,21 +72,88 @@ function renderComponent(
 
   const user = userEvent.setup()
 
-  render(QueueProgressOverlay, {
-    props: {
-      expanded: true
-    },
+  const Host = defineComponent({
+    setup() {
+      return () => [
+        h(QueueProgressOverlay, { expanded: true }),
+        mountAssetsSidebar && sidebarTabStore.activeSidebarTabId === 'assets'
+          ? h(AssetsSidebarTab)
+          : null
+      ]
+    }
+  })
+
+  render(Host, {
     global: {
       plugins: [pinia, i18n],
       stubs: {
         QueueOverlayExpanded: QueueOverlayExpandedStub,
         QueueOverlayActive: true,
-        MediaLightbox: true
+        MediaLightbox: true,
+        SidebarTabTemplate: defineComponent({
+          setup(_, { slots }) {
+            return () => h('section', slots.body?.())
+          }
+        }),
+        AssetsSidebarGridView: true,
+        AssetsSidebarListView: true,
+        MediaAssetFilterBar: true,
+        MediaAssetSelectionBar: true,
+        Menu: true
       }
     }
   })
 
   return { assetSelectionStore, sidebarTabStore, user }
+}
+
+function createOutputAsset(id: string, jobId: string): AssetItem {
+  return {
+    id,
+    name: `${id}.png`,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    tags: ['output'],
+    user_metadata: { jobId, nodeId: '1', subfolder: '' }
+  }
+}
+
+function createInspectableItem(
+  jobId: string,
+  outputsCount = 1
+): JobListViewItem & { taskRef: TaskItemImpl } {
+  return {
+    id: jobId,
+    title: jobId,
+    meta: '',
+    state: 'completed',
+    taskRef: new TaskItemImpl({
+      id: jobId,
+      status: 'completed',
+      create_time: 0,
+      priority: 0,
+      outputs_count: outputsCount,
+      preview_output: {
+        filename: `${jobId}.png`,
+        subfolder: '',
+        type: 'output',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    })
+  }
+}
+
+function outputPage(assets: AssetItem[]) {
+  return Response.json({ assets, total: assets.length, has_more: false })
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((fulfill) => {
+    resolve = fulfill
+  })
+  return { promise, resolve }
 }
 
 describe('QueueProgressOverlay', () => {
@@ -149,71 +200,115 @@ describe('QueueProgressOverlay', () => {
     expect(sidebarTabStore.activeSidebarTabId).toBe(null)
   })
 
-  it('loads older pages before selecting a job asset', async () => {
-    itemToView = createCompletedJobView('target-job')
-    const loadOutputAsset = vi
-      .spyOn(useAssetsStore(), 'loadOutputAsset')
-      .mockResolvedValue(true)
-    const { assetSelectionStore, sidebarTabStore, user } = renderComponent(
-      [],
-      []
-    )
-
-    await user.click(screen.getByTestId('view-item-button'))
-
-    await waitFor(() =>
-      expect(assetSelectionStore.selectedIdsArray).toEqual(['target-job'])
-    )
-    expect(loadOutputAsset).toHaveBeenCalledWith('target-job')
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
-  })
-
-  it('does not select a missing job asset when pagination cannot advance', async () => {
-    itemToView = createCompletedJobView('missing-job')
-    const loadOutputAsset = vi
-      .spyOn(useAssetsStore(), 'loadOutputAsset')
-      .mockResolvedValue(false)
-    const { assetSelectionStore, sidebarTabStore, user } = renderComponent(
-      [],
-      []
-    )
-
-    await user.click(screen.getByTestId('view-item-button'))
-
-    await waitFor(() =>
-      expect(loadOutputAsset).toHaveBeenCalledWith('missing-job')
-    )
-    expect(assetSelectionStore.selectedIdsArray).toEqual([])
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
-  })
-
-  it('keeps the latest asset selection when an older request finishes last', async () => {
-    let resolveFirst!: (found: boolean) => void
-    const firstLoad = new Promise<boolean>((resolve) => {
-      resolveFirst = resolve
+  it('keeps the inspected cached asset selected after opening and refreshing the sidebar', async () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    const target = createOutputAsset('cached-asset', 'cached-job')
+    const replacement = deferred<Response>()
+    const refreshStarted = deferred<void>()
+    vi.spyOn(api, 'fetchApi').mockImplementation(async (route) => {
+      if (route.includes('input')) return outputPage([])
+      return outputPage([target])
     })
-    const loadOutputAsset = vi
-      .spyOn(useAssetsStore(), 'loadOutputAsset')
-      .mockImplementationOnce(() => firstLoad)
-      .mockResolvedValueOnce(true)
-    itemToView = createCompletedJobView('older-request')
+    const assetsStore = useAssetsStore()
+    await waitFor(() =>
+      expect(toValue(assetsStore.outputAssets.items)).toEqual([target])
+    )
+    vi.spyOn(api, 'fetchApi').mockImplementation(async (route) => {
+      if (route.includes('input')) return outputPage([])
+      refreshStarted.resolve()
+      return replacement.promise
+    })
+    itemToView = createInspectableItem('cached-job')
+    const { assetSelectionStore, sidebarTabStore, user } = renderComponent(
+      [],
+      [],
+      true
+    )
+    assetSelectionStore.setSource('input')
+
+    await user.click(screen.getByTestId('view-item-button'))
+    await refreshStarted.promise
+    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
+    replacement.resolve(outputPage([target]))
+
+    await waitFor(() =>
+      expect({
+        source: assetSelectionStore.activeSource,
+        selected: assetSelectionStore.selectedIdsArray
+      }).toEqual({ source: 'output', selected: ['cached-asset'] })
+    )
+  })
+
+  it('does not let an older output lookup replace the newer inspected selection', async () => {
+    const older = createOutputAsset('older-asset', 'older-lookup-job')
+    const newer = createOutputAsset('newer-asset', 'newer-lookup-job')
+    const olderLookup = deferred<AssetItem | undefined>()
+    const lookupStarted = deferred<void>()
+    const assetsStore = useAssetsStore()
+    vi.spyOn(assetsStore, 'loadOutputAssetByJobId')
+      .mockImplementationOnce(() => {
+        lookupStarted.resolve()
+        return olderLookup.promise
+      })
+      .mockResolvedValueOnce(newer)
+    itemToView = createInspectableItem('older-lookup-job')
     const { assetSelectionStore, user } = renderComponent([], [])
 
     await user.click(screen.getByTestId('view-item-button'))
-    await waitFor(() =>
-      expect(loadOutputAsset).toHaveBeenCalledWith('older-request')
-    )
-
-    itemToView = createCompletedJobView('latest-request')
+    await lookupStarted.promise
+    itemToView = createInspectableItem('newer-lookup-job')
     await user.click(screen.getByTestId('view-item-button'))
     await waitFor(() =>
-      expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
+      expect(assetSelectionStore.selectedIdsArray).toEqual(['newer-asset'])
     )
+    olderLookup.resolve(older)
+    await scheduler.yield()
 
-    resolveFirst(true)
-    await firstLoad
-    await Promise.resolve()
+    expect(assetSelectionStore.selectedIdsArray).toEqual(['newer-asset'])
+  })
 
-    expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
+  it('does not let an older gallery request replace the newer inspected selection', async () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    const older = createOutputAsset('older-asset', 'older-gallery-job')
+    const newer = createOutputAsset('newer-asset', 'newer-gallery-job')
+    vi.spyOn(api, 'fetchApi').mockImplementation(async (route) =>
+      outputPage(route.includes('input') ? [] : [older, newer])
+    )
+    const oldDetail = deferred<JobDetail>()
+    const oldRequestStarted = deferred<void>()
+    vi.spyOn(api, 'getJobDetail').mockImplementation(async () => {
+      oldRequestStarted.resolve()
+      return oldDetail.promise
+    })
+    const oldItem = createInspectableItem('older-gallery-job', 2)
+    const newItem = createInspectableItem('newer-gallery-job')
+    const queueStore = useQueueStore()
+    queueStore.historyTasks = [oldItem.taskRef, newItem.taskRef]
+    itemToView = oldItem
+    const { assetSelectionStore, user } = renderComponent([], [], true)
+
+    await user.click(screen.getByTestId('view-item-button'))
+    await oldRequestStarted.promise
+    itemToView = newItem
+    await user.click(screen.getByTestId('view-item-button'))
+    await waitFor(() =>
+      expect(assetSelectionStore.selectedIdsArray).toEqual(['newer-asset'])
+    )
+    oldDetail.resolve({
+      id: 'older-gallery-job',
+      status: 'completed',
+      create_time: 0,
+      priority: 0,
+      outputs: {
+        '1': {
+          images: [
+            { filename: 'older.png', subfolder: '', type: 'output' },
+            { filename: 'older-2.png', subfolder: '', type: 'output' }
+          ]
+        }
+      }
+    })
+    await scheduler.yield()
+    expect(assetSelectionStore.selectedIdsArray).toEqual(['newer-asset'])
   })
 })

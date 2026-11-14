@@ -124,7 +124,7 @@
       <div
         v-else-if="asset && adaptedAsset"
         class="flex items-end justify-between gap-1.5"
-        @click.stop="emit('select')"
+        @click.stop="emit('select', $event)"
       >
         <div class="flex min-w-0 flex-col gap-1">
           <MediaTitle :file-name="fileName" />
@@ -226,9 +226,7 @@ const isDeleting = computed(() =>
 )
 
 const emit = defineEmits<{
-  // Image and info clicks use the standard selection rules.
-  select: []
-  // The selection control toggles only this asset in the current selection.
+  select: [event: MouseEvent]
   'toggle-selection': []
   zoom: [asset: AssetItem]
   'output-count-click': []
@@ -340,7 +338,7 @@ const metaInfo = computed(() => {
 function handlePreviewClick(event: MouseEvent) {
   const hasSelectionModifier = event.shiftKey || event.metaKey || event.ctrlKey
   if (fileKind.value === 'video' && !hasSelectionModifier) return
-  emit('select')
+  emit('select', event)
 }
 
 const handleZoomClick = () => {

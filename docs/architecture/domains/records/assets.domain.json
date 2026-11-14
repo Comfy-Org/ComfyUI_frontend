@@ -80,7 +80,7 @@
         "src/platform/assets/utils/outputAssetUtil.test.ts",
         "src/platform/assets/composables/useOutputStacks.test.ts",
         "src/platform/assets/composables/useMediaAssetFiltering.test.ts",
-        "src/platform/assets/composables/useAssetSelection.test.ts",
+        "src/platform/assets/composables/useAssetSelectionStore.test.ts",
         "src/platform/assets/composables/useAssetGridSelection.test.ts",
         "src/platform/assets/utils/assetDragUtil.test.ts",
         "src/stores/workspace/assetsSidebarBadgeStore.test.ts",

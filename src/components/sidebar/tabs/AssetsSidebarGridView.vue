@@ -16,7 +16,7 @@
           :show-native-video-controls="
             gridMode !== MEDIA_ASSET_GRID_MODE.gridSmall
           "
-          @select="emit('select-asset', asset)"
+          @select="emit('select-asset', asset, $event)"
           @toggle-selection="emit('toggle-asset-selection', asset)"
           @context-menu="emit('context-menu', $event, asset)"
           @zoom="emit('zoom', asset)"
@@ -51,7 +51,7 @@ const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
   }>()
 
 const emit = defineEmits<{
-  (e: 'select-asset', asset: AssetItem): void
+  (e: 'select-asset', asset: AssetItem, event: MouseEvent): void
   (e: 'toggle-asset-selection', asset: AssetItem): void
   (e: 'context-menu', event: MouseEvent, asset: AssetItem): void
   (e: 'zoom', asset: AssetItem): void
