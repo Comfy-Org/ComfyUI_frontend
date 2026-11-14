@@ -7,6 +7,7 @@ import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
@@ -111,6 +112,34 @@ describe('subgraph IO renderer measurements', () => {
 
     expect(first.inputNode.boundingRect[3]).toBe(400)
     expect(second.inputNode.boundingRect[3]).not.toBe(400)
+  })
+
+  it('places the panel over its IO node on each canvas frame', async () => {
+    stubCanvasGetContext()
+    const graph = createTestSubgraph()
+    const canvas = new LGraphCanvas(document.createElement('canvas'), graph, {
+      skip_render: true,
+      skip_events: true
+    })
+    useCanvasStore().canvas = canvas
+    const panel = document.createElement('div')
+    const scope = effectScope()
+    scope.run(() =>
+      useSubgraphIoLayout(
+        () => graph.inputNode,
+        computed(() => panel),
+        () => graph.inputNode.allSlots
+      )
+    )
+    await nextTick()
+    graph.inputNode.pos = [100, 200]
+    canvas.ds.offset = [10, -20]
+    canvas.ds.scale = 2
+
+    canvas.draw(true, true)
+
+    expect(panel.style.transform).toBe('translate(220px, 360px) scale(2)')
+    scope.stop()
   })
 
   it('moves slot anchors as soon as the panel reports reordered rows', async () => {

@@ -82,7 +82,7 @@ export function useSubgraphIoLayout(
     (canvas, _, onCleanup) => {
       if (!canvas) return
       onCleanup(
-        onCanvasFrame(canvas.canvas, 'present', () => {
+        onCanvasFrame(canvas, 'present', () => {
           const current = element.value
           if (!current) return
           syncWithCanvas(canvas)
