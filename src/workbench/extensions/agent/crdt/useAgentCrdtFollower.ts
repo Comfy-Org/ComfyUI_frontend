@@ -629,8 +629,9 @@ function startAgentCrdtFollower(
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
     observedCounter: () => {
+      if (bridge.follower.updatesApplied === 0) return 0
       try {
-        return observedDocCounter(bridge.follower.doc)
+        return observedDocCounter(bridge.follower.doc) ?? 0
       } catch (error) {
         if (
           !counterReadFailureReported &&

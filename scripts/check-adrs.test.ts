@@ -52,12 +52,23 @@ describe('findLegacyAdrReferences', () => {
       ['current in ADR-LAYOUT/', '0008 and inventory'],
       ['This ADR (', '0008) defines the entity data model'],
       ['See ADR-', '0008 for details'],
-      ['See docs/adr/', '0008-entity-component-system.md']
+      ['See docs/adr/', '0008-entity-component-system.md'],
+      ['See ../adr/', '0008-entity-component-system.md'],
+      ['See ./docs/adr/', '0008-entity-component-system.md'],
+      ['See /docs/adr/', '0008-entity-component-system.md']
     ].map((parts) => parts.join(''))
   )('detects legacy reference form: %s', (reference) => {
     expect(findLegacyAdrReferences(reference)).toEqual([
       { line: reference, lineNumber: 1 }
     ])
+  })
+
+  test('ignores external ADR paths but detects a bare legacy path on the same line', () => {
+    const legacyPath = ['docs/adr/', '0005-lamport.md'].join('')
+    const url = `https://github.com/example/package/blob/main/${legacyPath}`
+    expect(findLegacyAdrReferences(url)).toEqual([])
+    const line = `${url} ${legacyPath}`
+    expect(findLegacyAdrReferences(line)).toEqual([{ line, lineNumber: 1 }])
   })
 
   test('does not confuse an amendment date with an ADR number', () => {
