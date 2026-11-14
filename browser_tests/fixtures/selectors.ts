@@ -205,6 +205,7 @@ export const TestIds = {
   },
   linear: {
     centerPanel: 'linear-center-panel',
+    imagePreview: 'linear-image-preview',
     mobile: 'linear-mobile',
     mobileNavigation: 'linear-mobile-navigation',
     mobileWorkflows: 'linear-mobile-workflows',
