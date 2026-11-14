@@ -260,7 +260,7 @@ function formatNum(value: number): string {
 }
 
 function handleDownload() {
-  downloadFile(toFullResolutionUrl(imageUrl))
+  downloadFile(toFullResolutionUrl(imageUrl), undefined, 'hdr')
 }
 
 onMounted(() => {

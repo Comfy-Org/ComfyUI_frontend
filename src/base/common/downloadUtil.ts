@@ -5,7 +5,11 @@ import { t } from '@/i18n'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { isCloud } from '@/platform/distribution/types'
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { AuthCredential } from '@comfyorg/api-client/authTypes'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AssetDownloadMetadata } from '@comfyorg/telemetry/types'
 
 // Constants
 const DEFAULT_DOWNLOAD_FILENAME = 'download.png'
@@ -30,9 +34,14 @@ function triggerLinkDownload(href: string, filename: string): void {
  * Download a file from a URL by creating a temporary anchor element
  * @param url - The URL of the file to download (must be a valid URL string)
  * @param filename - Optional filename override (will use URL filename or default if not provided)
+ * @param surface - The UI surface that started the download, for telemetry
  * @throws {Error} If the URL is invalid or empty
  */
-export function downloadFile(url: string, filename?: string): void {
+export function downloadFile(
+  url: string,
+  filename?: string,
+  surface = 'unknown'
+): void {
   if (!url || typeof url !== 'string' || url.trim().length === 0) {
     throw new Error('Invalid URL provided for download')
   }
@@ -42,7 +51,7 @@ export function downloadFile(url: string, filename?: string): void {
 
   if (isCloud) {
     // Assets from cross-origin (e.g., GCS) cannot be downloaded this way
-    void downloadFileAsBlob(url, { filename: inferredFilename }).catch(
+    void downloadFileAsBlob(url, { filename: inferredFilename, surface }).catch(
       (error) => {
         console.error('Failed to download file', error)
       }
@@ -118,6 +127,15 @@ export function extractFilenameFromContentDisposition(
   return null
 }
 
+class FetchStatusError extends Error {
+  constructor(
+    url: string,
+    readonly status: number
+  ) {
+    super(`Failed to fetch ${url}: ${status}`)
+  }
+}
+
 /**
  * Fetch a URL and return its body as a Blob.
  * Shared by download and open-in-new-tab cloud paths.
@@ -128,33 +146,139 @@ async function fetchAsBlob(
 ): Promise<Response> {
   const response = await fetchFile(url)
   if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status}`)
+    throw new FetchStatusError(url, response.status)
   }
   return response
 }
 
+type DownloadFailure = Pick<AssetDownloadMetadata, 'failure_kind' | 'status'>
+
+function classifyDownloadFailure(error: unknown): DownloadFailure {
+  if (error instanceof FetchStatusError) {
+    return { failure_kind: 'http', status: error.status }
+  }
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return { failure_kind: 'abort' }
+  }
+  if (error instanceof DOMException && error.name === 'TimeoutError') {
+    return { failure_kind: 'timeout' }
+  }
+  if (error instanceof TypeError) return { failure_kind: 'network' }
+  return { failure_kind: 'unknown' }
+}
+
+function isSameOrigin(url: string): boolean {
+  try {
+    return new URL(url, location.href).origin === location.origin
+  } catch {
+    return false
+  }
+}
+
+function downloadRoute(url: string): AssetDownloadMetadata['route'] {
+  const path = url.split(/[?#]/)[0] ?? ''
+  if (/\/assets\/[^/]+\/content\/?$/.test(path)) return 'assets_content'
+  if (/\/view\/?$/.test(path)) return 'view'
+  return 'other'
+}
+
+function mediaKindOf(
+  filename: string | null | undefined
+): AssetDownloadMetadata['media_kind'] {
+  const mediaType = getMediaTypeFromFilename(filename)
+  return mediaType === '3D' ? '3d' : mediaType
+}
+
+/**
+ * Fetches `url` and saves its body as a file. `fetch` receives a callback to
+ * report which credential the request carried; when omitted, the bare global
+ * fetch rides the session cookie on same-origin URLs only.
+ */
 export async function downloadFileAsBlob(
   url: string,
   {
     filename,
-    fetch: fetchFile = fetch,
-    preferResponseFilename = true
+    fetch: fetchFile,
+    preferResponseFilename = true,
+    surface = 'unknown'
   }: {
     filename?: string
-    fetch?: (url: string) => Promise<Response>
+    fetch?: (
+      url: string,
+      onAuthCredential: (credential: AuthCredential) => void
+    ) => Promise<Response>
     preferResponseFilename?: boolean
+    surface?: string
   } = {}
 ): Promise<void> {
-  const fallbackFilename =
-    filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
-  const response = await fetchAsBlob(url, fetchFile)
+  const knownFilename = filename || extractFilenameFromUrl(url)
+  const fallbackFilename = knownFilename || DEFAULT_DOWNLOAD_FILENAME
+  const startedAt = performance.now()
+  let authCredential: AssetDownloadMetadata['auth_credential'] = fetchFile
+    ? 'unreported'
+    : isSameOrigin(url)
+      ? 'session-cookie'
+      : 'none'
+
+  function report(
+    outcome: Pick<
+      AssetDownloadMetadata,
+      'outcome' | 'failure_kind' | 'status' | 'phase' | 'size_bytes'
+    >,
+    reportedFilename: string | null
+  ) {
+    const now = performance.now()
+    useTelemetry()?.trackAssetDownload({
+      ...outcome,
+      auth_credential: authCredential,
+      route: downloadRoute(url),
+      media_kind: mediaKindOf(reportedFilename),
+      surface,
+      duration_ms: Math.round(now - startedAt),
+      page_age_ms: Math.round(now),
+      online: navigator.onLine
+    })
+  }
+
+  let response: Response
+  try {
+    response = await fetchAsBlob(
+      url,
+      fetchFile &&
+        ((route) =>
+          fetchFile(route, (credential) => (authCredential = credential)))
+    )
+  } catch (error) {
+    report(
+      {
+        outcome: 'failed',
+        phase: 'headers',
+        ...classifyDownloadFailure(error)
+      },
+      knownFilename
+    )
+    throw error
+  }
 
   // Try to get filename from Content-Disposition header (set by backend)
   const contentDisposition = response.headers.get('Content-Disposition')
   const headerFilename =
     extractFilenameFromContentDisposition(contentDisposition)
 
-  const blob = await response.blob()
+  let blob: Blob
+  try {
+    blob = await response.blob()
+  } catch (error) {
+    report(
+      { outcome: 'failed', phase: 'body', failure_kind: 'body_read' },
+      headerFilename ?? knownFilename
+    )
+    throw error
+  }
+  report(
+    { outcome: 'completed', phase: 'body', size_bytes: blob.size },
+    headerFilename ?? knownFilename
+  )
   downloadBlob(
     preferResponseFilename
       ? (headerFilename ?? fallbackFilename)

@@ -866,12 +866,18 @@ describe('useMediaAssetActions', () => {
       const contentUrl = 'http://localhost:8188/api/assets/team-owned/content'
       expect(mockDownloadFileAsBlob).toHaveBeenCalledWith(
         contentUrl,
-        expect.objectContaining({ fetch: expect.any(Function) })
+        expect.objectContaining({
+          fetch: expect.any(Function),
+          surface: 'gallery'
+        })
       )
 
       const { fetch: authedFetch } = mockDownloadFileAsBlob.mock.calls[0][1]
-      await authedFetch(contentUrl)
-      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl)
+      const onAuthCredential = vi.fn()
+      await authedFetch(contentUrl, onAuthCredential)
+      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl, {
+        onAuthCredential
+      })
     })
 
     it('preserves successful OSS downloads when another file fails', async () => {

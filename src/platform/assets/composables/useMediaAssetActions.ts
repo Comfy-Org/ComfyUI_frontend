@@ -141,7 +141,9 @@ export function useMediaAssetActions() {
       mode: 'fetch',
       url,
       filename,
-      fetch: (route) => api.fetchApi(route)
+      fetch: (route, onAuthCredential) =>
+        api.fetchApi(route, { onAuthCredential }),
+      surface: 'gallery'
     }
   }
 

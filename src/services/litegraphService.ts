@@ -727,7 +727,11 @@ export const useLitegraphService = () => {
               callback: markCoreMediaMenuCallback(() => {
                 const url = getImageFileUrl(img)
                 const filename = new URLSearchParams(url.search).get('filename')
-                downloadFile(url.toString(), filename ?? undefined)
+                downloadFile(
+                  url.toString(),
+                  filename ?? undefined,
+                  'canvas_menu'
+                )
               }, 'preview')
             }
           )

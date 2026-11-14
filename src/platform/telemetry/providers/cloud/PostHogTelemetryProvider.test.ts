@@ -906,6 +906,32 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it.for([
+      ['completed', TelemetryEvents.ASSET_DOWNLOAD_COMPLETED],
+      ['failed', TelemetryEvents.ASSET_DOWNLOAD_FAILED]
+    ] as const)(
+      'captures a %s asset download',
+      async ([outcome, eventName]) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+        const metadata = {
+          outcome,
+          phase: 'headers',
+          auth_credential: 'session-cookie',
+          route: 'view',
+          media_kind: 'video',
+          surface: 'node_preview',
+          duration_ms: 80,
+          page_age_ms: 9000,
+          online: true
+        } as const
+
+        provider.trackAssetDownload(metadata)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(eventName, metadata)
+      }
+    )
+
     it('captures the startup breakdown so it is explorable alongside Datadog', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

@@ -96,7 +96,7 @@
   },
   "src/base/common/downloadUtil.ts": {
     "comfy/no-new-error-throw": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/builder/builderViewOptions.ts": {

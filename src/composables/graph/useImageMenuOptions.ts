@@ -132,7 +132,7 @@ export function useImageMenuOptions() {
 
     try {
       const url = getImageFileUrl(img)
-      downloadFile(url.toString())
+      downloadFile(url.toString(), undefined, 'canvas_menu')
     } catch (error) {
       console.error('Failed to save image:', error)
     }

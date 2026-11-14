@@ -78,13 +78,13 @@ function handleSelection(sel: OutputSelection) {
 
 function downloadAsset(item?: AssetItem) {
   for (const output of allOutputs(item))
-    downloadFile(resultItemUrl(output), output.filename)
+    downloadFile(resultItemUrl(output), output.filename, 'linear')
 }
 
 function downloadOutput(output?: AugmentedResultItem) {
   if (!output) return
   const url = resultItemUrl(output)
-  if (url) downloadFile(url)
+  if (url) downloadFile(url, undefined, 'linear')
 }
 
 async function loadWorkflow(item: AssetItem | undefined) {
