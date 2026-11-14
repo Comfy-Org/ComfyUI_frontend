@@ -327,6 +327,11 @@ describe('runHandoffBootstrap', () => {
       name: "an older build's charge attempt, as a request that was never answered",
       stored: { chargeAttempted: true },
       knows: { unanswered: 'lost' }
+    },
+    {
+      name: 'a payment Cloud accepted whose operation it had not stored yet',
+      stored: { accepted: 'op-7' },
+      knows: { accepted: 'op-7' }
     }
   ])('restores a live session that knows $name', async ({ stored, knows }) => {
     const storage = memoryStorage()
@@ -370,6 +375,11 @@ describe('runHandoffBootstrap', () => {
         workspace: 'Studio',
         reference: 'op-7'
       }
+    },
+    {
+      name: 'whose accepted payment had no stored operation yet as checking that payment',
+      stored: { accepted: 'op-7' },
+      ended: { kind: 'ended', ending: 'payment_pending', reference: 'op-7' }
     }
   ])(
     'ends a stored session $name when it expired before the reload',

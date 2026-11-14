@@ -18,6 +18,7 @@ import type { HandoffState } from '@/handoff/handoffTab'
 import {
   endHandoffSession,
   handoffTab,
+  readHandoffState,
   sessionTabStorage,
   writeHandoffState
 } from '@/handoff/handoffTab'
@@ -857,4 +858,65 @@ describe('createHandoffBillingClient', () => {
 
     expect(howTheSessionEnds()).toEqual(ended)
   })
+
+  function endingTheSessionWhenRead(answer: Response): Response {
+    const read = answer.text.bind(answer)
+    answer.text = () => {
+      endHandoffSession(sessionTabStorage)
+      return read()
+    }
+    return answer
+  }
+
+  const CHECKING_OP_1: HandoffState = {
+    kind: 'ended',
+    ending: 'payment_pending',
+    reference: 'op_1'
+  }
+
+  it.for<{
+    name: string
+    route: RegExp
+    accepted: () => Response
+    send: (client: BillingWebClient) => Promise<unknown>
+  }>([
+    {
+      name: 'a subscribe',
+      route: /\/api\/billing\/subscribe$/,
+      accepted: () =>
+        Response.json({ billing_op_id: 'op_1', status: 'pending_payment' }),
+      send: (client) =>
+        client.commands.subscribe({ plan_slug: 'creator_monthly' })
+    },
+    {
+      name: 'a top-up on the card on file',
+      route: TOPUP,
+      accepted: topUpStarted('op_1'),
+      send: topUp
+    },
+    {
+      name: 'a pay-once top-up',
+      route: /\/api\/billing\/topup\/interactive$/,
+      accepted: topUpStarted('op_1'),
+      send: (client) =>
+        client.topup.createInteractiveTopup({
+          amountCents: 2500,
+          payment: { savedPaymentMethodId: 'pm_1' },
+          idempotencyKey: 'key-1'
+        })
+    }
+  ])(
+    'ends as checking the payment Cloud accepted when the session ends before the tab stores the operation of $name',
+    async ({ route, accepted, send }) => {
+      const client = openHandoffTab()
+      respondToFetch({ method: 'POST', url: route }, () =>
+        endingTheSessionWhenRead(accepted())
+      )
+
+      await send(client)
+
+      expect(handoffTab.value).toEqual(CHECKING_OP_1)
+      expect(readHandoffState(sessionTabStorage)).toEqual(CHECKING_OP_1)
+    }
+  )
 })
