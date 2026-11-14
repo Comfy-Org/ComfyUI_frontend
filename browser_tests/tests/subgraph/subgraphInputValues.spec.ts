@@ -95,6 +95,7 @@ for (const renderer of [
               { id: '11', values: ['boundary-host-a'] },
               { id: '12', values: [''] }
             ])
+          await expect(panel).toHaveAccessibleName('Host B · #12')
           await comfyPage.keyboard.redo()
           await expect
             .poll(async () => (await savedValues()).hosts)

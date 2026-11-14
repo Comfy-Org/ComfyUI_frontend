@@ -1,14 +1,17 @@
 import QuickLRU from '@alloc/quick-lru'
 import { useRouteHash } from '@vueuse/router'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, shallowRef, watch } from 'vue'
 import {
   NavigationFailureType,
   isNavigationFailure,
   useRouter
 } from 'vue-router'
 
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { PanZoom as DragAndScaleState } from '@comfyorg/shared-frontend-utils/geometry'
+import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -40,6 +43,11 @@ export function provideWorkflowService(
 
 export const VIEWPORT_CACHE_MAX_SIZE = 32
 
+interface NavigationEntry {
+  readonly subgraphId: string
+  readonly hostId?: NodeId
+}
+
 /**
  * Stores the current subgraph navigation state; a stack representing subgraph
  * navigation history from the root graph to the subgraph that is currently
@@ -57,8 +65,7 @@ export const useSubgraphNavigationStore = defineStore(
     /** The currently opened subgraph. */
     const activeSubgraph = shallowRef<Subgraph>()
 
-    /** The stack of subgraph IDs from the root graph to the currently opened subgraph. */
-    const idStack = ref<string[]>([])
+    const entries = shallowRef<readonly NavigationEntry[]>([])
 
     /** LRU cache for viewport states. Key: `workflowPath:graphId` */
     const viewportCache = new QuickLRU<string, DragAndScaleState>({
@@ -101,25 +108,83 @@ export const useSubgraphNavigationStore = defineStore(
      * the current opened subgraph.
      */
     const navigationStack = computed(() =>
-      idStack.value
-        .map((id) => useApp().rootGraph.subgraphs.get(id))
+      entries.value
+        .map(({ subgraphId }) => useApp().rootGraph.subgraphs.get(subgraphId))
         .filter(isNonNullish)
     )
+
+    function withSharedPrefixHosts(subgraphIds: readonly string[]) {
+      const current = entries.value
+      const firstChange = current.findIndex(
+        (entry, index) => entry.subgraphId !== subgraphIds[index]
+      )
+      const shared = firstChange === -1 ? current.length : firstChange
+      return subgraphIds.map((subgraphId, index) =>
+        index < shared ? current[index] : { subgraphId }
+      )
+    }
 
     /**
      * Restore the navigation stack from a list of subgraph IDs.
      * @see exportState
      */
     const restoreState = (subgraphIds: string[]) => {
-      idStack.value.length = 0
-      for (const id of subgraphIds) idStack.value.push(id)
+      entries.value = withSharedPrefixHosts(subgraphIds)
     }
 
     /**
      * Export the navigation stack as a list of subgraph IDs.
      * @see restoreState
      */
-    const exportState = () => [...idStack.value]
+    const exportState = () => entries.value.map(({ subgraphId }) => subgraphId)
+
+    function pathThrough(parent: LGraph, subgraph: Subgraph): string[] {
+      const ids = exportState()
+      const index = ids.indexOf(subgraph.id)
+      if (index !== -1) return ids.slice(0, index + 1)
+      const parentPath =
+        parent === subgraph.rootGraph
+          ? []
+          : ids.includes(parent.id)
+            ? ids.slice(0, ids.indexOf(parent.id) + 1)
+            : undefined
+      const isChild = parent.nodes.some(
+        (node) => node.isSubgraphNode() && node.subgraph === subgraph
+      )
+      if (parentPath && isChild) return [...parentPath, subgraph.id]
+      return (
+        findSubgraphPathById(subgraph.rootGraph, subgraph.id) ?? [subgraph.id]
+      )
+    }
+
+    /** The SubgraphNode, and the graph holding it, that {@link subgraph} was entered through. */
+    function enteredHost(
+      subgraph: Subgraph
+    ): { graphId: string; id: NodeId } | undefined {
+      const stack = entries.value
+      const index = stack.findIndex(
+        ({ subgraphId }) => subgraphId === subgraph.id
+      )
+      const hostId = stack[index]?.hostId
+      if (hostId === undefined) return undefined
+      const graphId = stack[index - 1]?.subgraphId ?? subgraph.rootGraph.id
+      return { graphId, id: hostId }
+    }
+
+    useEventListener(
+      () => canvasStore.canvas?.canvas,
+      'subgraph-opened',
+      (event: CustomEvent<LGraphCanvasEventMap['subgraph-opened']>) => {
+        const { subgraph, closingGraph, fromNode } = event.detail
+        entries.value = [
+          ...withSharedPrefixHosts(pathThrough(closingGraph, subgraph)).slice(
+            0,
+            -1
+          ),
+          { subgraphId: subgraph.id, hostId: fromNode.id }
+        ]
+      }
+    )
 
     // ── Viewport save / restore ──────────────────────────────────────
 
@@ -181,9 +246,6 @@ export const useSubgraphNavigationStore = defineStore(
       subgraph: Subgraph | undefined,
       prevSubgraph: Subgraph | undefined
     ): void {
-      // During a workflow switch, beforeLoadNewGraph already saved the
-      // outgoing viewport — skip the save here to avoid caching stale
-      // canvas state from the transition.
       if (!isWorkflowSwitching) {
         if (prevSubgraph) {
           saveViewport(prevSubgraph.id)
@@ -192,21 +254,15 @@ export const useSubgraphNavigationStore = defineStore(
         }
       }
 
-      const isInRootGraph = !subgraph
-      if (isInRootGraph) {
-        idStack.value.length = 0
+      if (!subgraph) {
+        entries.value = []
         restoreViewport(getCurrentRootGraphId())
         return
       }
 
-      const path = findSubgraphPathById(subgraph.rootGraph, subgraph.id)
-      const isInReachableSubgraph = !!path
-      if (isInReachableSubgraph) {
-        idStack.value = [...path]
-      } else {
-        idStack.value = [subgraph.id]
-      }
-
+      entries.value = withSharedPrefixHosts(
+        pathThrough(prevSubgraph ?? subgraph.rootGraph, subgraph)
+      )
       restoreViewport(subgraph.id)
     }
 
@@ -606,6 +662,7 @@ export const useSubgraphNavigationStore = defineStore(
     return {
       activeSubgraph,
       navigationStack,
+      enteredHost,
       restoreState,
       exportState,
       saveViewport,

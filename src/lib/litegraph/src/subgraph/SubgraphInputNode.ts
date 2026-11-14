@@ -52,7 +52,7 @@ export class SubgraphInputNode
 
   get slotAnchorX() {
     const [x, , width] = this.boundingRect
-    return x + width - this.slotInset
+    return x + width - SubgraphIONodeBase.roundedRadius
   }
 
   override arrange(): void {
