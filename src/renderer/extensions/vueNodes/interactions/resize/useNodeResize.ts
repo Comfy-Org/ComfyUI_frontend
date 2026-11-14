@@ -17,8 +17,7 @@ import {
   hasWestEdge
 } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
-/** The element being resized and its canvas position when the gesture starts. */
-export interface ResizeOrigin {
+interface ResizeOrigin {
   element: HTMLElement
   position: Point
 }
