@@ -7,22 +7,12 @@ import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig,
-  remoteConfigErrorStatus,
-  remoteConfigRevision,
-  remoteConfigState,
-  sessionAgentGrant,
-  sessionAgentGrantValidUntil,
-  useRemoteConfigCache
-} from './remoteConfig'
+import { useRemoteConfigStore } from './remoteConfigStore'
 
 // Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
 // A same-origin GET against the local comfyui server should resolve in well under a second;
 // on timeout consumers retain the last known config or use build-time defaults.
 const FEATURES_FETCH_TIMEOUT_MS = 5_000
-const AGENT_GRANT_FALLBACK_MS = 15 * 60_000
 
 interface RefreshRemoteConfigOptions {
   /**
@@ -35,45 +25,14 @@ interface RefreshRemoteConfigOptions {
 
 let refreshGeneration = 0
 let authenticatedLoadingGeneration: number | undefined
-let agentGrantExpiryTimer: ReturnType<typeof setTimeout> | undefined
 const activeRefreshControllers = new Set<AbortController>()
-
-function clearSessionAgentGrant(): void {
-  clearTimeout(agentGrantExpiryTimer)
-  agentGrantExpiryTimer = undefined
-  sessionAgentGrant.value = undefined
-  sessionAgentGrantValidUntil.value = undefined
-}
-
-function cacheSessionAgentGrant(granted: boolean): void {
-  clearTimeout(agentGrantExpiryTimer)
-  sessionAgentGrant.value = granted
-  const validUntil = Date.now() + AGENT_GRANT_FALLBACK_MS
-  sessionAgentGrantValidUntil.value = validUntil
-  agentGrantExpiryTimer = setTimeout(() => {
-    if (sessionAgentGrantValidUntil.value !== validUntil) return
-    clearSessionAgentGrant()
-  }, AGENT_GRANT_FALLBACK_MS)
-}
 
 export function invalidateRemoteConfig(): void {
   refreshGeneration++
   authenticatedLoadingGeneration = undefined
   for (const controller of activeRefreshControllers) controller.abort()
   activeRefreshControllers.clear()
-  const { comfy_api_base_url, comfy_cloud_base_url, comfy_platform_base_url } =
-    remoteConfig.value
-  const retainedConfig = {
-    ...(comfy_api_base_url && { comfy_api_base_url }),
-    ...(comfy_cloud_base_url && { comfy_cloud_base_url }),
-    ...(comfy_platform_base_url && { comfy_platform_base_url })
-  }
-  window.__CONFIG__ = retainedConfig
-  remoteConfig.value = retainedConfig
-  remoteConfigErrorStatus.value = null
-  remoteConfigState.value = 'unloaded'
-  authenticatedRemoteConfigState.value = 'unloaded'
-  clearSessionAgentGrant()
+  useRemoteConfigStore().invalidate()
 }
 
 async function fetchRemoteConfig(
@@ -101,31 +60,6 @@ async function fetchRemoteConfig(
   return { response, authenticated }
 }
 
-function commitRemoteConfigSuccess(
-  config: Record<string, unknown>,
-  useAuth: boolean
-): void {
-  window.__CONFIG__ = config
-  remoteConfig.value = config
-  remoteConfigErrorStatus.value = null
-  remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
-  if (useAuth) {
-    authenticatedRemoteConfigState.value = 'authenticated'
-    authenticatedLoadingGeneration = undefined
-    const cache = useRemoteConfigCache()
-    cache.cachedBillingControlEnabled.value = Boolean(
-      config.billing_control_enabled
-    )
-    cache.cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
-    cacheSessionAgentGrant(config['agent-in-app-experience'] === true)
-  } else {
-    authenticatedRemoteConfigState.value = 'unloaded'
-    authenticatedLoadingGeneration = undefined
-    clearSessionAgentGrant()
-  }
-  remoteConfigRevision.value++
-}
-
 /**
  * The anonymous document answers `unified_web_session` false for a cookie-only
  * caller; only a credentialed read that names its client is authoritative.
@@ -141,65 +75,19 @@ async function readCredentialedWebSessionFlag(
     probe: async () => true
   })
   if (generation !== refreshGeneration) return
-  const merged: Record<string, unknown> = {
-    ...config,
-    unified_web_session: enabled
-  }
-  window.__CONFIG__ = merged
-  remoteConfig.value = merged
-  remoteConfigRevision.value++
+  useRemoteConfigStore().acceptUnifiedWebSession(enabled)
 }
 
-function commitRemoteConfigFailure(response: Response, useAuth: boolean): void {
-  console.warn('Failed to load remote config:', response.statusText)
-  if (response.status === 401 || response.status === 403) {
-    if (useAuth) {
-      remoteConfigErrorStatus.value = response.status
-      window.__CONFIG__ = {}
-      remoteConfig.value = {}
-      clearSessionAgentGrant()
-    } else {
-      remoteConfigErrorStatus.value = null
-    }
-  } else {
-    remoteConfigErrorStatus.value = null
-  }
-  if (useAuth) {
-    authenticatedRemoteConfigState.value = 'error'
-    authenticatedLoadingGeneration = undefined
-  }
-  remoteConfigState.value = 'error'
-  remoteConfigRevision.value++
-}
-
-function commitRemoteConfigException(error: unknown, useAuth: boolean): void {
-  console.error('Failed to fetch remote config:', error)
-  remoteConfigErrorStatus.value = null
-  if (useAuth) {
-    authenticatedRemoteConfigState.value = 'error'
-    authenticatedLoadingGeneration = undefined
-  }
-  remoteConfigState.value = 'error'
-  remoteConfigRevision.value++
-}
-
-/**
- * Loads remote configuration from the backend /features endpoint
- * and updates the reactive remoteConfig ref.
- *
- * Sets remoteConfigState to:
- * - 'anonymous' when loaded without auth
- * - 'authenticated' when loaded with auth
- * - 'error' when load fails
- */
+/** Loads `/features` into the remote config store, anonymously or with auth. */
 export async function refreshRemoteConfig(
   options: RefreshRemoteConfigOptions = {}
 ): Promise<void> {
   const { useAuth = true, signal } = options
   const generation = ++refreshGeneration
-  const previousAuthenticatedState = authenticatedRemoteConfigState.value
+  const store = useRemoteConfigStore()
+  const previousAuthenticatedState = store.authenticatedLoadState
   if (useAuth && previousAuthenticatedState !== 'authenticated') {
-    authenticatedRemoteConfigState.value = 'loading'
+    store.beginAuthenticatedLoad()
     authenticatedLoadingGeneration = generation
   }
   const controller = new AbortController()
@@ -226,28 +114,30 @@ export async function refreshRemoteConfig(
       if (generation !== refreshGeneration) return
       if (signal?.aborted) return
       if (useAuth && !authenticated) {
-        authenticatedRemoteConfigState.value = 'error'
-        authenticatedLoadingGeneration = undefined
-        remoteConfigErrorStatus.value = null
-        remoteConfigState.value = 'error'
         console.warn(
           'Rejected authenticated remote config response without credentials'
         )
-        remoteConfigRevision.value++
+        authenticatedLoadingGeneration = undefined
+        store.failLoad(true)
         return
       }
-      commitRemoteConfigSuccess(config, useAuth)
+      authenticatedLoadingGeneration = undefined
+      store.acceptConfig(config, useAuth)
       if (!useAuth) await readCredentialedWebSessionFlag(config, generation)
       return
     }
-    commitRemoteConfigFailure(response, useAuth)
+    console.warn('Failed to load remote config:', response.statusText)
+    if (useAuth) authenticatedLoadingGeneration = undefined
+    store.failLoad(useAuth, response.status)
   } catch (error) {
     if (generation !== refreshGeneration) return
     if (signal?.aborted) return
-    commitRemoteConfigException(error, useAuth)
+    console.error('Failed to fetch remote config:', error)
+    if (useAuth) authenticatedLoadingGeneration = undefined
+    store.failLoad(useAuth)
   } finally {
     if (authenticatedLoadingGeneration === generation) {
-      authenticatedRemoteConfigState.value = previousAuthenticatedState
+      store.abandonAuthenticatedLoad(previousAuthenticatedState)
       authenticatedLoadingGeneration = undefined
     }
     clearTimeout(timeoutId)
@@ -272,7 +162,7 @@ export async function loadRemoteConfigUntilReady(): Promise<void> {
   let unnamedProjectReads = 0
   for (let attempt = 0; ; attempt++) {
     await refreshRemoteConfig({ useAuth: false })
-    if (remoteConfigState.value !== 'error') {
+    if (useRemoteConfigStore().loadState !== 'error') {
       if (hasServerFirebaseConfig()) return
       unnamedProjectReads++
       if (unnamedProjectReads === 1) {

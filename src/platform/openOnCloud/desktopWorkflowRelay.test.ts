@@ -15,7 +15,7 @@ import {
   handleDesktopWorkflowHandoff,
   stageDesktopWorkflowHandoff
 } from '@/platform/openOnCloud/desktopWorkflowRelay'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
@@ -65,14 +65,7 @@ describe(handleDesktopWorkflowHandoff, () => {
     vi.mocked(fetch).mockImplementation(async () =>
       Response.json({ open_on_cloud_enabled: true })
     )
-    const previousConfig = remoteConfig.value
-    const previousWindowConfig = window.__CONFIG__
-    remoteConfig.value = {}
-    window.__CONFIG__ = {}
-    onTestFinished(() => {
-      remoteConfig.value = previousConfig
-      window.__CONFIG__ = previousWindowConfig
-    })
+    useRemoteConfigStore().acceptConfig({}, false)
   })
 
   it('lets the editor boot when the URL carries no relay', async () => {
@@ -154,12 +147,12 @@ describe(handleDesktopWorkflowHandoff, () => {
       comfy_cloud_base_url: 'https://custom-cloud.example.com',
       open_on_cloud_enabled: true
     }
-    remoteConfig.value = features
+    useRemoteConfigStore().acceptConfig(features, false)
     const { relay, record } = await stagedRelay()
     expect(new URL(record.destination).origin).toBe(
       features.comfy_cloud_base_url
     )
-    remoteConfig.value = {}
+    useRemoteConfigStore().acceptConfig({}, false)
     openAt(relay)
     vi.mocked(fetch).mockResolvedValue(Response.json(features))
     const replace = relayed()

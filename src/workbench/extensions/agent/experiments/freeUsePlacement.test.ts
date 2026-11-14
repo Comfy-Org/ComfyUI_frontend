@@ -2,10 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
@@ -19,7 +16,6 @@ import {
 
 const distribution = { isCloud: true }
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/utils/devFeatureFlagOverride'))
 vi.mock(import('@/utils/sessionFeatureFlagOverride'))
@@ -38,8 +34,6 @@ describe('useFreeUsePlacement', () => {
   beforeEach(() => {
     placementScope = effectScope()
     distribution.isCloud = true
-    authenticatedRemoteConfigState.value = 'unloaded'
-    remoteConfig.value = {}
   })
 
   afterEach(() => placementScope.stop())
@@ -48,10 +42,10 @@ describe('useFreeUsePlacement', () => {
     const { variant, reportNotice } = useFreeUsePlacement()
 
     expect(variant.value).toBe('control')
-    remoteConfig.value = {
-      'agent-free-use-message-placement': 'above-input'
-    }
-    authenticatedRemoteConfigState.value = 'authenticated'
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-free-use-message-placement': 'above-input' },
+      true
+    )
     await vi.waitFor(() => expect(variant.value).toBe('above-input'))
     expect(useTelemetry()?.trackAgentFreeUseExposure).toHaveBeenCalledWith({
       placement: 'above-input',
@@ -91,8 +85,10 @@ describe('useFreeUsePlacement', () => {
   })
 
   it('reports a served control arm, which is an arm like any other', () => {
-    remoteConfig.value = { 'agent-free-use-message-placement': 'control' }
-    authenticatedRemoteConfigState.value = 'authenticated'
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-free-use-message-placement': 'control' },
+      true
+    )
     const { variant } = useFreeUsePlacement()
 
     expect(variant.value).toBe('control')
@@ -111,8 +107,7 @@ describe('useFreeUsePlacement', () => {
       const wireConfig: Record<string, unknown> = {
         [FREE_USE_PLACEMENT_FLAG]: served
       }
-      remoteConfig.value = wireConfig
-      authenticatedRemoteConfigState.value = 'authenticated'
+      useRemoteConfigStore().acceptConfig(wireConfig, true)
       const { variant } = useFreeUsePlacement()
 
       expect(variant.value).toBe('control')
@@ -121,8 +116,10 @@ describe('useFreeUsePlacement', () => {
   )
 
   it('prefers session and dev overrides for QA', () => {
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = { 'agent-free-use-message-placement': 'top-banner' }
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-free-use-message-placement': 'top-banner' },
+      true
+    )
     vi.mocked(getDevOverride).mockReturnValue('near-composer')
     vi.mocked(getSessionOverride).mockReturnValue('inside-input')
 
@@ -163,8 +160,10 @@ describe('useFreeUsePlacement', () => {
   })
 
   it('reports exposure and the impression once per panel open', async () => {
-    remoteConfig.value = { 'agent-free-use-message-placement': 'top-banner' }
-    authenticatedRemoteConfigState.value = 'authenticated'
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-free-use-message-placement': 'top-banner' },
+      true
+    )
     const telemetry = useTelemetry()!
     vi.mocked(telemetry.trackAgentFreeUseExposure).mockClear()
     vi.mocked(telemetry.trackAgentFreeUseNotice).mockClear()
@@ -196,11 +195,10 @@ describe('useFreeUsePlacement', () => {
   })
 
   it('attributes a valid arm after a later authenticated config refresh', async () => {
-    authenticatedRemoteConfigState.value = 'authenticated'
     const malformedConfig: Record<string, unknown> = {
       [FREE_USE_PLACEMENT_FLAG]: 'unknown'
     }
-    remoteConfig.value = malformedConfig
+    useRemoteConfigStore().acceptConfig(malformedConfig, true)
     const { variant } = useFreeUsePlacement()
     const telemetry = useTelemetry()!
     vi.mocked(telemetry.trackAgentFreeUseExposure).mockClear()
@@ -208,15 +206,20 @@ describe('useFreeUsePlacement', () => {
     expect(variant.value).toBe('control')
     expect(telemetry.trackAgentFreeUseExposure).not.toHaveBeenCalled()
 
-    remoteConfig.value = { [FREE_USE_PLACEMENT_FLAG]: 'inside-input' }
+    useRemoteConfigStore().acceptConfig(
+      { [FREE_USE_PLACEMENT_FLAG]: 'inside-input' },
+      true
+    )
 
     await vi.waitFor(() => expect(variant.value).toBe('inside-input'))
     expect(telemetry.trackAgentFreeUseExposure).toHaveBeenCalledTimes(1)
   })
 
   it('returns to control when a later config refresh is invalid', async () => {
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = { [FREE_USE_PLACEMENT_FLAG]: 'inside-input' }
+    useRemoteConfigStore().acceptConfig(
+      { [FREE_USE_PLACEMENT_FLAG]: 'inside-input' },
+      true
+    )
     const { variant } = useFreeUsePlacement()
 
     expect(variant.value).toBe('inside-input')
@@ -224,14 +227,16 @@ describe('useFreeUsePlacement', () => {
     const malformedConfig: Record<string, unknown> = {
       [FREE_USE_PLACEMENT_FLAG]: 'unknown'
     }
-    remoteConfig.value = malformedConfig
+    useRemoteConfigStore().acceptConfig(malformedConfig, true)
 
     await vi.waitFor(() => expect(variant.value).toBe('control'))
   })
 
   it('re-attributes a mounted panel when it reopens', async () => {
-    remoteConfig.value = { [FREE_USE_PLACEMENT_FLAG]: 'top-banner' }
-    authenticatedRemoteConfigState.value = 'authenticated'
+    useRemoteConfigStore().acceptConfig(
+      { [FREE_USE_PLACEMENT_FLAG]: 'top-banner' },
+      true
+    )
     const panelStore = useAgentPanelStore()
     useFreeUsePlacement()
     const telemetry = useTelemetry()!
@@ -246,8 +251,10 @@ describe('useFreeUsePlacement', () => {
   })
 
   it('does not deduplicate interactions other than the impression', () => {
-    remoteConfig.value = { 'agent-free-use-message-placement': 'top-banner' }
-    authenticatedRemoteConfigState.value = 'authenticated'
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-free-use-message-placement': 'top-banner' },
+      true
+    )
     const { reportNotice } = useFreeUsePlacement()
 
     reportNotice({ action: 'learn_more_clicked', placement: 'top-banner' })

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -9,8 +9,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return mockIsCloud.value
   }
 }))
-
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const refreshRemoteConfig = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
@@ -33,7 +31,7 @@ describe('showSubscriptionRequiredDialog', () => {
 
   beforeEach(() => {
     mockIsCloud.value = true
-    remoteConfigState.value = 'unloaded'
+    useRemoteConfigStore().invalidate()
     window.__CONFIG__ = {}
   })
 
@@ -53,8 +51,7 @@ describe('showSubscriptionRequiredDialog', () => {
   })
 
   it('opens the pricing table immediately when config is already loaded', async () => {
-    remoteConfigState.value = 'authenticated'
-    window.__CONFIG__ = { subscription_required: true }
+    useRemoteConfigStore().acceptConfig({ subscription_required: true }, true)
 
     const opened = await useBillingDialogs().showSubscriptionRequiredDialog({
       reason: 'subscribe_now_button'
@@ -68,7 +65,7 @@ describe('showSubscriptionRequiredDialog', () => {
   })
 
   it('retries the /features fetch instead of trusting an unloaded config snapshot', async () => {
-    remoteConfigState.value = 'unloaded'
+    useRemoteConfigStore().invalidate()
     window.__CONFIG__ = {}
     refreshRemoteConfig.mockImplementation(() => {
       window.__CONFIG__ = { subscription_required: true }
@@ -84,7 +81,7 @@ describe('showSubscriptionRequiredDialog', () => {
   })
 
   it('resolves false instead of rejecting when the config refresh fails', async () => {
-    remoteConfigState.value = 'unloaded'
+    useRemoteConfigStore().invalidate()
     window.__CONFIG__ = {}
     refreshRemoteConfig.mockRejectedValueOnce(new Error('offline'))
 
@@ -102,8 +99,7 @@ describe('showSubscriptionRequiredDialog', () => {
   })
 
   it('reports a closed gate instead of returning silently', async () => {
-    remoteConfigState.value = 'authenticated'
-    window.__CONFIG__ = { subscription_required: false }
+    useRemoteConfigStore().acceptConfig({ subscription_required: false }, true)
 
     const opened = await useBillingDialogs().showSubscriptionRequiredDialog()
 

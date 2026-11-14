@@ -3,7 +3,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
-import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable, until } from '@vueuse/core'
 
@@ -156,13 +156,14 @@ function useBillingContextInternal(): BillingContext {
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
 
   const freeTierQuota = useFreeTierQuota()
+  const remoteConfigStore = useRemoteConfigStore()
 
   const canRunWorkflows = computed(
     () =>
       canAccessSubscriptionFeatures.value &&
       (!isFreeTier.value ||
         !isCloud ||
-        !isAuthenticatedConfigLoaded.value ||
+        !remoteConfigStore.isAuthenticatedConfigLoaded ||
         freeTierQuota.freeTierExecutionPermitted.value)
   )
 

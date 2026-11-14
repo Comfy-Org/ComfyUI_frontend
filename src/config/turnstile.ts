@@ -1,7 +1,7 @@
 import {
   configValueOrDefault,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+  useRemoteConfigStore
+} from '@/platform/remoteConfig/remoteConfigStore'
 
 /**
  * Cloudflare Turnstile always-pass test sitekey, used only in local dev so the
@@ -32,7 +32,7 @@ export function getTurnstileSiteKey(): string {
   }
 
   return configValueOrDefault(
-    remoteConfig.value,
+    useRemoteConfigStore().config,
     'turnstile_sitekey',
     __USE_PROD_CONFIG__ ? PROD_TURNSTILE_SITE_KEY : STAGING_TURNSTILE_SITE_KEY
   )

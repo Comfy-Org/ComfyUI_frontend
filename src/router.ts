@@ -26,7 +26,7 @@ import {
   readSsoHint
 } from '@/platform/auth/session/ssoReentryStorage'
 import { trackSsoRequiredShown } from '@/platform/auth/sso/ssoTelemetry'
-import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -210,6 +210,7 @@ function installCloudAuthGuards(router: Router): void {
     watchedAccounts.add(authStore)
     const apiKeyAuthStore = useApiKeyAuthStore()
     const webSession = useCloudWebSessionStore()
+    const remoteConfigStore = useRemoteConfigStore()
     const account = computed(() => {
       if (authStore.isAuthenticated || apiKeyAuthStore.isAuthenticated)
         return 'signed_in'
@@ -224,7 +225,7 @@ function installCloudAuthGuards(router: Router): void {
       [
         account,
         () => flags.signedOutRerouteEnabled,
-        remoteConfigState,
+        () => remoteConfigStore.loadState,
         () => authStore.currentUser?.uid
       ],
       ([state, enabled, configState, uid]) => {

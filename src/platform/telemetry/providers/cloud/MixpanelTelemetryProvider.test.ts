@@ -21,10 +21,6 @@ vi.mock(import('@/platform/telemetry/utils/surveyNormalization'), () => ({
   normalizeSurveyResponses: mockNormalizeSurveyResponses
 }))
 
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: { value: null }
-}))
-
 import { MixpanelTelemetryProvider } from '@/platform/telemetry/providers/cloud/MixpanelTelemetryProvider'
 import type {
   AuthMetadata,

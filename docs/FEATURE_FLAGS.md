@@ -289,7 +289,7 @@ They resolve in this order, first match wins:
    (`src/utils/sessionFeatureFlagOverride.ts`)
 2. **Dev override** — `getDevOverride()`
    (`src/utils/devFeatureFlagOverride.ts`)
-3. **Remote config** — the matching `remoteConfig.value.*` field, when the
+3. **Remote config** — the matching `useRemoteConfigStore().config.*` field, when the
    getter passes one
 4. **Server feature flag** — `api.getServerFeature(flagKey, defaultValue)`
 

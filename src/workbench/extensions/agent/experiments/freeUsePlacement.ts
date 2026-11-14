@@ -1,9 +1,6 @@
 import { readonly, ref, watch } from 'vue'
 
-import {
-  isAuthenticatedConfigLoaded,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   AgentFreeUseNoticeMetadata,
@@ -32,6 +29,7 @@ function isFreeUseVariant(value: unknown): value is FreeUseVariant {
 
 export function useFreeUsePlacement(isCloudDistribution: boolean) {
   const panelStore = useAgentPanelStore()
+  const remoteConfigStore = useRemoteConfigStore()
   const assigned = ref<FreeUseVariant>('control')
 
   const sessionOverride = getSessionOverride<unknown>(FREE_USE_PLACEMENT_FLAG)
@@ -42,7 +40,7 @@ export function useFreeUsePlacement(isCloudDistribution: boolean) {
   const hasQaOverride = override !== undefined
 
   function assign(): void {
-    const served = remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
+    const served = remoteConfigStore.config[FREE_USE_PLACEMENT_FLAG]
     if (!isFreeUseVariant(served)) {
       assigned.value = 'control'
       return
@@ -62,27 +60,30 @@ export function useFreeUsePlacement(isCloudDistribution: boolean) {
     if (isFreeUseVariant(override)) assigned.value = override
   } else if (!isCloudDistribution) {
     assigned.value = LOCAL_FREE_USE_PLACEMENT
-  } else if (isAuthenticatedConfigLoaded.value) {
+  } else if (remoteConfigStore.isAuthenticatedConfigLoaded) {
     assign()
   } else {
-    const stop = watch(isAuthenticatedConfigLoaded, (authenticated) => {
-      if (!authenticated) return
-      assign()
-      stop()
-    })
+    const stop = watch(
+      () => remoteConfigStore.isAuthenticatedConfigLoaded,
+      (authenticated) => {
+        if (!authenticated) return
+        assign()
+        stop()
+      }
+    )
   }
 
   if (!hasQaOverride && isCloudDistribution) {
     watch(
-      () => remoteConfig.value[FREE_USE_PLACEMENT_FLAG],
+      () => remoteConfigStore.config[FREE_USE_PLACEMENT_FLAG],
       () => {
-        if (isAuthenticatedConfigLoaded.value) assign()
+        if (remoteConfigStore.isAuthenticatedConfigLoaded) assign()
       }
     )
     watch(
       () => panelStore.isOpen,
       (isOpen) => {
-        if (isOpen && isAuthenticatedConfigLoaded.value) assign()
+        if (isOpen && remoteConfigStore.isAuthenticatedConfigLoaded) assign()
       }
     )
   }

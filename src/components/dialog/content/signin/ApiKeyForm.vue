@@ -78,18 +78,19 @@ import Input from '@comfyorg/design-system/input/Input'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+  useRemoteConfigStore
+} from '@/platform/remoteConfig/remoteConfigStore'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
+const remoteConfigStore = useRemoteConfigStore()
 const loading = computed(() => authStore.loading)
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(
-    remoteConfig.value,
+    remoteConfigStore.config,
     'comfy_platform_base_url',
     getComfyPlatformBaseUrl()
   )

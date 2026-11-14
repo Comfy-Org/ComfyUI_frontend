@@ -1,6 +1,6 @@
 import type { FirebaseOptions } from 'firebase/app'
 
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 const DEV_CONFIG: FirebaseOptions = {
   apiKey: 'AIzaSyDa_YMeyzV0SkVe92vBZ1tVikWBmOU5KVE',
@@ -31,16 +31,15 @@ const BUILD_TIME_CONFIG = __USE_PROD_CONFIG__ ? PROD_CONFIG : DEV_CONFIG
  * else the bundled DEV_CONFIG when the server reports a dev-tier backend, else the build-time default.
  */
 export function getFirebaseConfig(): FirebaseOptions {
-  const runtimeConfig = remoteConfig.value.firebase_config
+  const { config } = useRemoteConfigStore()
+  const runtimeConfig = config.firebase_config
   if (runtimeConfig) return runtimeConfig
-  if (remoteConfig.value.firebase_env === 'dev') return DEV_CONFIG
+  if (config.firebase_env === 'dev') return DEV_CONFIG
   return BUILD_TIME_CONFIG
 }
 
 /** Whether {@link getFirebaseConfig} names the project from the server rather than the build. */
 export function hasServerFirebaseConfig(): boolean {
-  return (
-    Boolean(remoteConfig.value.firebase_config) ||
-    remoteConfig.value.firebase_env === 'dev'
-  )
+  const { config } = useRemoteConfigStore()
+  return Boolean(config.firebase_config) || config.firebase_env === 'dev'
 }

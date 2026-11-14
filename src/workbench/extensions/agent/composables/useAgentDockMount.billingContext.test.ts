@@ -18,11 +18,7 @@ import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useA
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { BillingStatusResponse, Plan } from '@comfyorg/billing-core'
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import { useBillingContext as useSharedBillingContext } from '@/platform/billing/composables/useBillingContext'
 
@@ -42,29 +38,23 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   subscription_duration: 'MONTHLY'
 }
 
-const {
-  mockPlans,
-  mockFetchPlans,
-  mockBillingStatus,
-  mockIsCloud,
-  mockFreeTierExecutionPermitted
-} = vi.hoisted(() => {
-  const mockBillingStatus: { value: Partial<BillingStatusResponse> } = {
-    value: {
-      is_active: true,
-      has_funds: true,
-      subscription_tier: 'PRO',
-      subscription_duration: 'MONTHLY'
+const { mockPlans, mockFetchPlans, mockBillingStatus, mockIsCloud } =
+  vi.hoisted(() => {
+    const mockBillingStatus: { value: Partial<BillingStatusResponse> } = {
+      value: {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'PRO',
+        subscription_duration: 'MONTHLY'
+      }
     }
-  }
-  return {
-    mockPlans: { value: [] as Plan[] },
-    mockFetchPlans: vi.fn(async () => undefined),
-    mockBillingStatus,
-    mockIsCloud: { value: true },
-    mockFreeTierExecutionPermitted: { value: true }
-  }
-})
+    return {
+      mockPlans: { value: [] as Plan[] },
+      mockFetchPlans: vi.fn(async () => undefined),
+      mockBillingStatus,
+      mockIsCloud: { value: true }
+    }
+  })
 
 let mockIsPersonal: Ref<boolean>
 
@@ -77,18 +67,6 @@ vi.mock(import('@/platform/distribution/types'), () => {
 })
 
 vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
-
-vi.mock<unknown>(
-  import('@/platform/billing/subscription/composables/useFreeTierQuota'),
-  () => ({
-    useFreeTierQuota: () => ({
-      quotaEnabled: { value: false },
-      get freeTierExecutionPermitted() {
-        return mockFreeTierExecutionPermitted
-      }
-    })
-  })
-)
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
@@ -126,7 +104,6 @@ vi.mock<unknown>(import('@/platform/billing/api/billingApi'), () => ({
 describe('useAgentDockMount with the real billing context', () => {
   beforeEach(() => {
     mockIsCloud.value = true
-    mockFreeTierExecutionPermitted.value = true
 
     const workspaceStore = useTeamWorkspaceStore()
     const refs = storeToRefs(workspaceStore)
@@ -141,9 +118,9 @@ describe('useAgentDockMount with the real billing context', () => {
     })
     useAuthStore()
     vi.mocked(workspaceStore.updateActiveWorkspace).mockImplementation(() => {})
-    remoteConfig.value = {}
-    remoteConfigState.value = 'unloaded'
-    authenticatedRemoteConfigState.value = 'unloaded'
+    const remoteConfigStore = useRemoteConfigStore()
+    remoteConfigStore.acceptConfig({}, false)
+    remoteConfigStore.invalidate()
     mockIsPersonal.value = true
     mockPlans.value = []
     const subscription = useSubscription()

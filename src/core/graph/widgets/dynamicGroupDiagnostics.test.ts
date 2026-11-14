@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
@@ -54,12 +54,11 @@ function refuseInputChanges() {
 }
 
 beforeEach(() => {
-  remoteConfig.value = { enable_telemetry: true }
+  useRemoteConfigStore().acceptConfig({ enable_telemetry: true }, false)
 })
 
 afterEach(() => {
   distribution.isCloud = false
-  remoteConfig.value = {}
 })
 
 describe('DynamicGroup row refusal reports', () => {
@@ -155,7 +154,10 @@ describe('DynamicGroup row refusal reports', () => {
     'sends with cloud=$isCloud and host telemetry=$enableTelemetry: $reported',
     ({ isCloud, enableTelemetry, reported }) => {
       distribution.isCloud = isCloud
-      remoteConfig.value = { enable_telemetry: enableTelemetry }
+      useRemoteConfigStore().acceptConfig(
+        { enable_telemetry: enableTelemetry },
+        false
+      )
       const { widget } = group(`Gated ${isCloud} ${enableTelemetry}`)
       refuseInputChanges()
 
@@ -388,7 +390,7 @@ describe('remote DynamicGroup row count reports', () => {
   })
 
   it('counts but does not send a mismatch without telemetry consent', () => {
-    remoteConfig.value = {}
+    useRemoteConfigStore().acceptConfig({}, false)
     const { setRows } = remoteGroup('ConsentDynamicGroup')
     refuseInputChanges()
 

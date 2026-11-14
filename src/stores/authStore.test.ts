@@ -22,11 +22,8 @@ import {
   isSurveyReplayRequested,
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
-import {
-  remoteConfig,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
@@ -1446,7 +1443,7 @@ describe('useAuthStore', () => {
 
       authStateCallback(accountB)
       expect(accountASignal?.aborted).toBe(true)
-      expect(remoteConfigState.value).toBe('unloaded')
+      expect(useRemoteConfigStore().loadState).toBe('unloaded')
 
       await refreshRemoteConfig()
       resolveAccountA?.(
@@ -1456,7 +1453,7 @@ describe('useAuthStore', () => {
       )
       await accountARefresh
 
-      expect(remoteConfig.value.subscription_required).toBe(false)
+      expect(useRemoteConfigStore().config.subscription_required).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {
