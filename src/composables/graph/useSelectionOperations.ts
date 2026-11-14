@@ -1,6 +1,6 @@
-// import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems' // Unused for now
 import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { writeClipboardStorage } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -15,12 +15,22 @@ import { isSelectOnly } from '@/utils/litegraphUtil'
  * Composable for handling basic selection operations like copy, paste, duplicate, delete, rename
  */
 export function useSelectionOperations() {
-  // const { getSelectedNodes } = useSelectedLiteGraphItems() // Unused for now
   const canvasStore = useCanvasStore()
   const toast = useToast()
   const dialogService = useDialogService()
   const titleEditorStore = useTitleEditorStore()
   const workflowStore = useWorkflowStore()
+
+  function copySelectionToStorage(): boolean {
+    const stored = writeClipboardStorage(
+      JSON.stringify(app.canvas._serializeItems())
+    )
+    if (!stored)
+      toast.error(t('g.error'), {
+        description: t('clipboard.errorMessage')
+      })
+    return stored
+  }
 
   const copySelection = () => {
     const canvas = app.canvas
@@ -32,7 +42,7 @@ export function useSelectionOperations() {
       return
     }
 
-    canvas.copyToClipboard()
+    if (!copySelectionToStorage()) return
     toast.success(t('g.copied'), {
       description: t('g.itemsCopiedToClipboard'),
       duration: 2000
@@ -43,7 +53,6 @@ export function useSelectionOperations() {
     const canvas = app.canvas
     canvas.pasteFromClipboard({ connectInputs: false })
 
-    // Trigger change tracking
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
@@ -57,23 +66,17 @@ export function useSelectionOperations() {
       return
     }
 
-    // Copy current selection
-    canvas.copyToClipboard()
+    if (!copySelectionToStorage()) return
 
-    // Clear selection to avoid confusion
     canvas.deselectAll()
 
-    // Paste to create duplicates
     canvas.pasteFromClipboard({ connectInputs: false })
 
-    // Trigger change tracking
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const deleteSelection = () => {
     const canvas = app.canvas
-    // Picking nodes for the agent is not editing: deleting stays off until the
-    // mode ends.
     if (isSelectOnly(canvas)) return
     if (canvas.selectedItems.size === 0) {
       toast.warning(t('g.nothingToDelete'), {
@@ -86,24 +89,20 @@ export function useSelectionOperations() {
     canvas.deleteSelected()
     canvas.setDirty(true, true)
 
-    // Trigger change tracking
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const renameSelection = async () => {
     const selectedItems = Array.from(canvasStore.selectedItems)
 
-    // Handle single node selection
     if (selectedItems.length === 1) {
       const item = selectedItems[0]
 
-      // For nodes, use the title editor
       if (item instanceof LGraphNode) {
         titleEditorStore.titleEditorTarget = item
         return
       }
 
-      // For other items like groups, use prompt dialog
       const currentTitle = 'title' in item ? (item.title as string) : ''
       const newTitle = await dialogService.prompt({
         title: t('g.rename'),
@@ -113,7 +112,6 @@ export function useSelectionOperations() {
 
       if (newTitle && newTitle !== currentTitle) {
         if ('title' in item) {
-          // Type-safe assignment for items with title property
           const titledItem = item as { title: string }
           titledItem.title = newTitle
           app.canvas.setDirty(true, true)
@@ -123,7 +121,6 @@ export function useSelectionOperations() {
       return
     }
 
-    // Handle multiple selections - batch rename
     if (selectedItems.length > 1) {
       const baseTitle = await dialogService.prompt({
         title: t('g.batchRename'),
@@ -134,7 +131,6 @@ export function useSelectionOperations() {
       if (baseTitle) {
         selectedItems.forEach((item, index) => {
           if ('title' in item) {
-            // Type-safe assignment for items with title property
             const titledItem = item as { title: string }
             titledItem.title = `${baseTitle} ${index + 1}`
           }

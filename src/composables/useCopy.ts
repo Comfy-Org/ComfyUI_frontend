@@ -1,8 +1,8 @@
 import { useEventListener } from '@vueuse/core'
 
 import {
-  CANVAS_CLIPBOARD_ID_KEY,
-  CANVAS_CLIPBOARD_KEY
+  discardClipboardStorage,
+  readClipboardId
 } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -95,26 +95,22 @@ export const useCopy = () => {
 
   useEventListener(document, 'copy', (e) => {
     if (shouldIgnoreCopyPaste(e.target)) {
-      // Default system copy
       if (
         keyboardCopyId !== null &&
         hasTextSelection(e.target) &&
-        localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY) === keyboardCopyId
+        readClipboardId() === keyboardCopyId
       ) {
-        localStorage.removeItem(CANVAS_CLIPBOARD_KEY)
-        localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
+        discardClipboardStorage()
         keyboardCopyId = null
       }
       return
     }
-    // copy nodes and clear clipboard
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
       const serializedData = canvas.copyToClipboard()
-      keyboardCopyId = localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
+      keyboardCopyId = readClipboardId()
       try {
         const base64Data = encodeClipboardData(serializedData)
-        // clearData doesn't remove images from clipboard
         e.clipboardData?.setData('text/html', clipboardHtml(base64Data))
       } catch (error) {
         reportError(error, {

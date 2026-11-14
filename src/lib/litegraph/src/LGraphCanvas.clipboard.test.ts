@@ -41,6 +41,10 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
+import {
+  CANVAS_CLIPBOARD_ID_KEY,
+  CANVAS_CLIPBOARD_KEY
+} from './canvas/clipboardStorage'
 
 vi.mock(import('@/services/litegraphService'))
 const telemetryMocks = vi.hoisted(() => ({ reportError: vi.fn() }))
@@ -866,6 +870,91 @@ describe('copyToClipboard', () => {
       errorType: 'error_writing_clipboard_storage',
       surface: 'graph'
     })
+  })
+})
+
+describe('copyToClipboard when storage is full', () => {
+  it('leaves no stale entry behind when the write fails', () => {
+    const rootGraph = createTestRootGraph()
+    const previous = createTestNode(rootGraph)
+    const current = createTestNode(rootGraph)
+    const canvas = createCanvas(rootGraph)
+
+    canvas.copyToClipboard([previous])
+    const setItem = vi
+      .spyOn(window.localStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      })
+
+    try {
+      const copied = canvas.copyToClipboard([current])
+
+      expect(JSON.parse(copied)).toMatchObject({
+        nodes: [{ id: Number(current.id), type: current.type }]
+      })
+      expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBeNull()
+      expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBeNull()
+      expect(canvas._pasteFromClipboard()).toBeUndefined()
+      expect(rootGraph.nodes).toHaveLength(2)
+      expect(telemetryMocks.reportError).not.toHaveBeenCalled()
+    } finally {
+      setItem.mockRestore()
+    }
+  })
+
+  it('keeps the payload when only the copy stamp cannot be written', () => {
+    const rootGraph = createTestRootGraph()
+    const node = createTestNode(rootGraph)
+    const canvas = createCanvas(rootGraph)
+    canvas.copyToClipboard([node])
+    const setItem = vi
+      .spyOn(window.localStorage, 'setItem')
+      .mockImplementation((key, value) => {
+        if (key === CANVAS_CLIPBOARD_ID_KEY) {
+          throw new DOMException(
+            'The quota has been exceeded.',
+            'QuotaExceededError'
+          )
+        }
+        Storage.prototype.setItem.call(localStorage, key, value)
+      })
+
+    try {
+      const copied = canvas.copyToClipboard([node])
+
+      expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(copied)
+      expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBeNull()
+      expect(canvas._pasteFromClipboard()).toBeDefined()
+      expect(telemetryMocks.reportError).not.toHaveBeenCalled()
+    } finally {
+      setItem.mockRestore()
+    }
+  })
+
+  it('does not throw when storage rejects both the write and the discard', () => {
+    const rootGraph = createTestRootGraph()
+    const node = createTestNode(rootGraph)
+    const canvas = createCanvas(rootGraph)
+    const blocked = () => {
+      throw new DOMException('The operation is insecure.', 'SecurityError')
+    }
+    const setItem = vi
+      .spyOn(window.localStorage, 'setItem')
+      .mockImplementation(blocked)
+    const removeItem = vi
+      .spyOn(window.localStorage, 'removeItem')
+      .mockImplementation(blocked)
+
+    let copied = ''
+    try {
+      copied = canvas.copyToClipboard([node])
+    } finally {
+      setItem.mockRestore()
+      removeItem.mockRestore()
+    }
+    expect(copied).toContain('"nodes"')
+    expect(telemetryMocks.reportError).not.toHaveBeenCalled()
   })
 })
 

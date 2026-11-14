@@ -420,13 +420,9 @@ export const nodeTemplatesExtension: ComfyExtension = {
         if (!name?.trim()) return
 
         await clipboardAction(async () => {
-          app.canvas.copyToClipboard()
-          const data = localStorage.getItem('litegrapheditor_clipboard')
+          const data = app.canvas.copyToClipboard()
 
-          await manage.store((templates) => [
-            ...templates,
-            { name, data: data || '{}' }
-          ])
+          await manage.store((templates) => [...templates, { name, data }])
         })
       }
     })
