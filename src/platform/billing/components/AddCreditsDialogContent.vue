@@ -11,14 +11,15 @@
     :plan-line="planLine"
     :auto-top-up="autoTopUpChoice.offer.value"
     :billing-url="autoTopUpChoice.billingUrl.value"
-    :auto-top-up-setup-hidden="!autoTopUpChoice.platformAvailable.value"
+    :host-opens-billing="opensLocalBillingHandoff()"
     :opens-in="handsPopupsToSystemBrowser() ? 'browser' : 'tab'"
     :support-url="billingSupportUrl"
     :locale
     :translate
     :title-as="DialogTitle"
     @close="close"
-    @set-up-auto-top-up="autoTopUpOffer.track"
+    @open-billing="autoTopUpChoice.open"
+    @set-up-auto-top-up="autoTopUpOffer.open"
     @decline-auto-top-up="autoTopUpOffer.trackDeclined"
   >
     <template v-if="isInsufficientCredits" #description>

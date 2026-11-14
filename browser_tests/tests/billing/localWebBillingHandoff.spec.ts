@@ -80,7 +80,7 @@ test.describe('Local web billing handoff', () => {
       )
     })
 
-    test('shows the Billing tab without Platform links instead of Plan & Credits', async ({
+    test('shows the Billing tab with no plain Platform link instead of Plan & Credits', async ({
       comfyPage,
       openSettings
     }) => {
@@ -90,7 +90,6 @@ test.describe('Local web billing handoff', () => {
       const billingTab = comfyPage.page.getByTestId('billing-tab')
       await expect(billingTab).toBeVisible()
       await expect(billingTab.getByTestId('billing-plan-row')).toBeVisible()
-      await expect(billingTab.getByTestId('billing-handoff')).toHaveCount(0)
       await expect(billingTab.locator('a[href*="/profile/"]')).toHaveCount(0)
       await expect(
         billingTab
@@ -100,6 +99,69 @@ test.describe('Local web billing handoff', () => {
       await expect(
         settings.category('Plan & Credits', { exact: true })
       ).toHaveCount(0)
+    })
+
+    test.describe('with auto top-up offered', () => {
+      test.use({ autoTopUpOffered: true })
+
+      test('Turn on opens Platform billing at the issued entry URL', async ({
+        comfyPage,
+        handoffRequests,
+        openSettings
+      }) => {
+        const page = comfyPage.page
+        const settings = await openSettings()
+        await settings.category('Billing', { exact: true }).click()
+        const turnOn = page
+          .getByTestId('billing-auto-top-up-card')
+          .getByRole('button', { name: 'Turn on' })
+        await expect(turnOn).toBeVisible()
+        await expect(
+          page.getByTestId('billing-tab').locator('a[href*="/profile/"]')
+        ).toHaveCount(0)
+
+        const popupOpened = page.waitForEvent('popup')
+        await turnOn.click()
+        const popup = await popupOpened
+
+        await expect(popup).toHaveURL(ENTRY_URL)
+        expect(handoffRequests).toHaveLength(1)
+        const body = handoffRequests[0].postDataJSON()
+        expect(body).toEqual(
+          expect.objectContaining({
+            workspace_id: WORKSPACE_ID,
+            receiver: 'platform',
+            surface: 'local_web'
+          })
+        )
+        expect(body).not.toHaveProperty('intent')
+        expect(body).not.toHaveProperty('amount_cents')
+      })
+
+      test.describe('when Cloud refuses the handoff', () => {
+        test.use({ handoffReply: OWNER_ONLY })
+
+        test('closes the tab and shows the server message', async ({
+          comfyPage,
+          openSettings
+        }) => {
+          const page = comfyPage.page
+          const settings = await openSettings()
+          await settings.category('Billing', { exact: true }).click()
+
+          const popupOpened = page.waitForEvent('popup')
+          await page
+            .getByTestId('billing-auto-top-up-card')
+            .getByRole('button', { name: 'Turn on' })
+            .click()
+          const popup = await popupOpened
+
+          await expect(
+            page.getByTestId('toast').getByText(OWNER_ONLY_MESSAGE)
+          ).toBeVisible()
+          await expect.poll(() => popup.isClosed()).toBe(true)
+        })
+      })
     })
 
     test.describe('when Cloud refuses the handoff', () => {

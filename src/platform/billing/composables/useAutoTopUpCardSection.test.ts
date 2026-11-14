@@ -118,7 +118,7 @@ const AutoTopUpCard = {
         copy: card.copy.value,
         locale: 'en',
         actionHref: card.href.value,
-        onAction: card.track,
+        onAction: card.open,
         onRetry: card.retry
       })
   }

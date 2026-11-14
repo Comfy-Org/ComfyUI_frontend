@@ -13,7 +13,7 @@ import { useAutoTopUpBannerKind } from '@/platform/billing/composables/useAutoTo
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
 import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabilitiesView'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
@@ -128,10 +128,10 @@ beforeEach(() => {
     currentUser: { uid: 'firebase-user-1' }
   })
   vi.mocked(useAutoTopUpBannerKind).mockReturnValue(computed(() => null))
-  vi.mocked(usePlatformHandoff).mockReturnValue({
+  vi.mocked(usePlatformBillingLink).mockReturnValue({
     href: computed(() => 'https://platform.test/profile/billing'),
-    track: vi.fn(),
-    available: computed(() => true)
+    button: computed(() => ({ as: 'button' })),
+    open: vi.fn()
   })
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({

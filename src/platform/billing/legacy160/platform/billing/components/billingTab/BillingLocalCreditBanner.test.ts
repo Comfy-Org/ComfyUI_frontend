@@ -16,14 +16,15 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import { canManageBillingFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
 import { useAutoTopUpBannerKind } from '@/platform/billing/legacy160/platform/billing/composables/useAutoTopUpBannerKind'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import BillingLocalCreditBanner from '@/platform/billing/legacy160/platform/billing/components/billingTab/BillingLocalCreditBanner.vue'
 
-const track = vi.fn()
+const open = vi.fn()
+const PLATFORM_URL = 'https://platform.test/profile/billing'
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -68,12 +69,16 @@ function arrange(options: {
   autoTopUp?: 'autoTopUpFailed' | 'autoTopUpOff'
   workspaceType?: 'personal' | 'team'
   addCreditsVariant?: 'secondary' | 'inverted'
-  platformAvailable?: boolean
+  throughHandoff?: boolean
 }) {
-  vi.mocked(usePlatformHandoff).mockReturnValue({
-    href: computed(() => 'https://platform.test/profile/billing'),
-    track,
-    available: computed(() => options.platformAvailable ?? true)
+  vi.mocked(usePlatformBillingLink).mockReturnValue({
+    href: computed(() => (options.throughHandoff ? undefined : PLATFORM_URL)),
+    button: computed(() =>
+      options.throughHandoff
+        ? { as: 'button' }
+        : { as: 'a', href: PLATFORM_URL, target: '_blank', rel: 'noopener' }
+    ),
+    open
   })
   vi.mocked(useAutoTopUpBannerKind).mockReturnValue(
     computed(() => options.autoTopUp ?? null)
@@ -700,15 +705,17 @@ describe('BillingLocalCreditBanner', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('keeps the failed auto top-up banner without Update payment when Platform is unavailable', () => {
-    arrange({ autoTopUp: 'autoTopUpFailed', platformAvailable: false })
+  it('offers Update payment as a button with no Platform URL where billing opens through a handoff', async () => {
+    arrange({ autoTopUp: 'autoTopUpFailed', throughHandoff: true })
+    const banner = screen.getByTestId('billing-auto-top-up-banner')
 
-    expect(screen.getByTestId('billing-auto-top-up-banner')).toHaveTextContent(
-      'Auto top-up failed'
+    await userEvent.click(
+      within(banner).getByRole('button', { name: 'Update payment' })
     )
-    expect(
-      screen.queryByRole('link', { name: 'Update payment' })
-    ).not.toBeInTheDocument()
+
+    expect(open).toHaveBeenCalledOnce()
+    expect(within(banner).queryByRole('link')).not.toBeInTheDocument()
+    expect(banner.innerHTML).not.toContain('platform.test')
   })
 
   it('hands off the Update payment link to the platform billing page', async () => {
@@ -718,14 +725,11 @@ describe('BillingLocalCreditBanner', () => {
 
     await userEvent.click(link)
 
-    expect(link).toHaveAttribute(
-      'href',
-      'https://platform.test/profile/billing'
-    )
-    expect(usePlatformHandoff).toHaveBeenCalledWith('/profile/billing', {
+    expect(link).toHaveAttribute('href', PLATFORM_URL)
+    expect(usePlatformBillingLink).toHaveBeenCalledWith('/profile/billing', {
       target: 'auto_top_up',
       action: 'update_payment'
     })
-    expect(track).toHaveBeenCalled()
+    expect(open).toHaveBeenCalledOnce()
   })
 })
