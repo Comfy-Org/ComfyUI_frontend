@@ -117,9 +117,9 @@ test.describe(
       })
 
       await test.step('undo and redo the insertion through the native editor', async () => {
-        await dialog.editor.press('Control+z')
+        await dialog.editor.press('ControlOrMeta+z')
         await expect(dialog.editor).toHaveValue('blue')
-        await dialog.editor.press('Control+Shift+z')
+        await dialog.editor.press('ControlOrMeta+Shift+z')
         await expect(dialog.editor).toHaveValue('blue hair')
         await dialog.close()
         await expect(widget).toHaveValue('blue hair')

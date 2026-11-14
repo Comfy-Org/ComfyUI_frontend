@@ -18,6 +18,25 @@ describe('extensionStore', () => {
       expect(store.isExtensionInstalled('test.ext')).toBe(true)
     })
 
+    it('registers immutable extensions with valid augmentations', () => {
+      const store = useExtensionStore()
+      const extension = Object.freeze({
+        name: 'test.immutable',
+        widgetAugmentations: [
+          {
+            id: 'hint',
+            kind: 'hint',
+            target: { nodeType: 'TestNode', widgetName: 'prompt' },
+            text: () => 'Prompt hint'
+          }
+        ]
+      } satisfies ComfyExtension)
+
+      store.registerExtension(extension)
+
+      expect(store.extensions[0]).toBe(extension)
+    })
+
     it('throws for extension without name', () => {
       const store = useExtensionStore()
       expect(() => store.registerExtension({ name: '' })).toThrow(
@@ -39,7 +58,8 @@ describe('extensionStore', () => {
       { id: 'missing-callback', kind: 'hint', target: {} }
     ])('isolates malformed JavaScript augmentations: %j', (invalid) => {
       const store = useExtensionStore()
-      const extension: ComfyExtension = { name: 'test.invalid' }
+      const setup = vi.fn()
+      const extension: ComfyExtension = { name: 'test.invalid', setup }
       const valid = {
         id: 'valid',
         kind: 'hint',
@@ -47,6 +67,7 @@ describe('extensionStore', () => {
         text: (value: string) => `Length: ${value.length}`
       }
       Reflect.set(extension, 'widgetAugmentations', [invalid, valid])
+      Object.freeze(extension)
 
       store.registerExtension(extension)
       store.registerExtension({ name: 'test.neighbor' })
@@ -54,6 +75,8 @@ describe('extensionStore', () => {
       expect(
         store.extensions[0].widgetAugmentations?.map((item) => item.id)
       ).toEqual(['valid'])
+      expect(extension.widgetAugmentations).toEqual([invalid, valid])
+      expect(store.extensions[0].setup).toBe(setup)
       expect(store.isExtensionInstalled('test.neighbor')).toBe(true)
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),

@@ -103,8 +103,8 @@ export const useExtensionStore = defineStore('extension', () => {
           surface: 'platform',
           context: { extension: extension.name }
         })
+        extension = { ...extension, widgetAugmentations: valid }
       }
-      extension.widgetAugmentations = valid
     }
     extensionByName.value[extension.name] = markRaw(extension)
   }
