@@ -42,9 +42,11 @@ const i18n = createI18n({
       maskEditor: {
         title: 'Mask Editor',
         invert: 'Invert',
+        invertMask: 'Invert Mask',
         clear: 'Clear',
         undo: 'Undo',
         redo: 'Redo',
+        image: 'Image',
         rotateLeft: 'Rotate Left',
         rotateRight: 'Rotate Right',
         mirrorHorizontal: 'Mirror Horizontal',
@@ -91,19 +93,20 @@ describe('EditorToolbar', () => {
     })
   })
 
-  describe('canvas transform buttons', () => {
+  describe('image menu', () => {
     it.for([
       ['Rotate Left', 'rotateCounterclockwise'],
       ['Rotate Right', 'rotateClockwise'],
       ['Mirror Horizontal', 'mirrorHorizontal'],
       ['Mirror Vertical', 'mirrorVertical']
     ] as const)(
-      'should call canvasTransform.%s when %s button is clicked',
+      'should call canvasTransform.%s when %s is chosen',
       async ([label, method]) => {
         const user = userEvent.setup()
         renderHeader()
 
-        await user.click(screen.getByRole('button', { name: label }))
+        await user.click(screen.getByRole('button', { name: 'Image' }))
+        await user.click(screen.getByRole('menuitem', { name: label }))
 
         expect(mockCanvasTransform[method]).toHaveBeenCalledTimes(1)
       }
@@ -121,7 +124,8 @@ describe('EditorToolbar', () => {
         const user = userEvent.setup()
         renderHeader()
 
-        await user.click(screen.getByRole('button', { name: label }))
+        await user.click(screen.getByRole('button', { name: 'Image' }))
+        await user.click(screen.getByRole('menuitem', { name: label }))
 
         expect(console.error).toHaveBeenCalledWith(
           `[EditorToolbar] ${expectedMsg}`,
@@ -129,6 +133,14 @@ describe('EditorToolbar', () => {
         )
       }
     )
+
+    it('names the trigger from its visible text', () => {
+      renderHeader()
+
+      expect(screen.getByRole('button', { name: 'Image' })).not.toHaveAttribute(
+        'aria-label'
+      )
+    })
   })
 
   describe('mask edit buttons', () => {
@@ -136,7 +148,7 @@ describe('EditorToolbar', () => {
       const user = userEvent.setup()
       renderHeader()
 
-      await user.click(screen.getByRole('button', { name: 'Invert' }))
+      await user.click(screen.getByRole('button', { name: 'Invert Mask' }))
 
       expect(mockCanvasTools.invertMask).toHaveBeenCalledTimes(1)
     })

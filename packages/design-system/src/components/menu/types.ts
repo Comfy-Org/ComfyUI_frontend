@@ -1,4 +1,4 @@
-import type { OverlayIconProps } from '@comfyorg/design-system/common/OverlayIcon'
+import type { OverlayIconProps } from '@comfyorg/design-system/common/OverlayIcon.vue'
 
 export interface MenuItemCommandEvent {
   originalEvent: Event
