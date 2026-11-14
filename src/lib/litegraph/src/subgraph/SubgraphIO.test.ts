@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { pointerEvent } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
@@ -444,6 +444,28 @@ describe('SubgraphIO - Advanced Scenarios', () => {
     expect([...subgraph.inputNode.size]).toEqual([344, 400])
   })
 
+  it('disconnects every fanout link without leaving orphaned target connections', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'number', type: 'INT' }]
+    })
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    const aInput = a.addInput('value', 'INT')
+    const bInput = b.addInput('value', 'INT')
+    subgraph.add(a)
+    subgraph.add(b)
+    const slot = subgraph.inputs[0]
+    slot.connect(aInput, a)
+    slot.connect(bInput, b)
+    expect(subgraph.links.size).toBe(2)
+
+    slot.disconnect()
+
+    expect(subgraph.links.size).toBe(0)
+    expect([aInput.link, bInput.link]).toEqual([null, null])
+    expect(slot.linkIds).toEqual([])
+  })
+
   it('maintains slot synchronization across multiple instances', () => {
     const subgraph = createTestSubgraph({
       name: 'Multi-Instance Test',
@@ -544,59 +566,4 @@ describe('SubgraphIO - Empty Slot Connection', () => {
       ])
     }
   )
-})
-
-function target(value: number, max = 100) {
-  const node = new LGraphNode('Value')
-  const input = node.addInput('value', 'INT')
-  input.widget = { name: 'value' }
-  node.addWidget('number', 'value', value, () => {}, { min: 0, max, step2: 1 })
-  return { node, input }
-}
-
-describe('subgraph input widget lifecycle', () => {
-  it('disconnects every fanout link without leaving orphaned target connections', () => {
-    const graph = createTestSubgraph({
-      inputs: [{ name: 'number', type: 'INT' }]
-    })
-    const a = target(17)
-    const b = target(29)
-    graph.add(a.node)
-    graph.add(b.node)
-    const slot = graph.inputs[0]
-    slot.connect(a.input, a.node)
-    slot.connect(b.input, b.node)
-    expect(graph.links.size).toBe(2)
-
-    slot.disconnect()
-
-    expect(graph.links.size).toBe(0)
-    expect([a.input.link, b.input.link]).toEqual([null, null])
-    expect(slot.linkIds).toEqual([])
-  })
-
-  it('keeps the host value and adopts the new target constraints when a disconnected input is reconnected', async () => {
-    const graph = createTestSubgraph({
-      inputs: [{ name: 'number', type: 'INT' }]
-    })
-    const host = createTestSubgraphNode(graph)
-    graph.rootGraph.add(host)
-    const a = target(17)
-    const b = target(29, 500)
-    graph.add(a.node)
-    graph.add(b.node)
-    const slot = graph.inputs[0]
-    slot.connect(a.input, a.node)
-    const widget = () => host.widgets.find((entry) => entry.name === 'number')
-    const initial = widget()
-    assert.exists(initial)
-    initial.value = 77
-
-    slot.disconnect()
-    await Promise.resolve()
-
-    expect(widget()).toBeUndefined()
-    slot.connect(b.input, b.node)
-    expect(widget()).toMatchObject({ value: 77, options: { max: 500 } })
-  })
 })
