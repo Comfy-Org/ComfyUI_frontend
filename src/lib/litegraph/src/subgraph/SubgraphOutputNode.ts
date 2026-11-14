@@ -46,11 +46,6 @@ export class SubgraphOutputNode
     return [...this.slots, this.emptySlot]
   }
 
-  get slotAnchorX() {
-    const [x] = this.boundingRect
-    return x + this.slotInset
-  }
-
   protected override dragNewLink(
     linkConnector: LinkConnector,
     slot: SubgraphOutput

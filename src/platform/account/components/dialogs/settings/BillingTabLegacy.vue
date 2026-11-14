@@ -96,7 +96,11 @@
     </section>
 
     <div class="flex flex-col gap-6">
-      <section class="flex flex-col gap-3" data-testid="billing-handoff">
+      <section
+        v-if="handoffAvailable"
+        class="flex flex-col gap-3"
+        data-testid="billing-handoff"
+      >
         <h2 class="m-0 text-base font-medium text-foreground">
           {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
         </h2>
@@ -261,6 +265,12 @@ const action = computed(() =>
   })
 )
 
+const shownPlanAction = computed(() =>
+  action.value === 'contactSales' || handoffAvailable.value
+    ? action.value
+    : null
+)
+
 const { state: autoTopUp } = useBillingAutoTopUpCard()
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
@@ -274,7 +284,8 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
+      shownPlanAction.value === 'subscribe' ||
+      (shownPlanAction.value === 'choosePlan' && isCloud)
   })
 )
 
@@ -286,7 +297,11 @@ const salesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
-const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
+const {
+  href: handoffHref,
+  track: trackHandoff,
+  available: handoffAvailable
+} = usePlatformHandoff(
   () => HANDOFF[handoffAudience.value].path,
   () => ({ target: HANDOFF[handoffAudience.value].target })
 )

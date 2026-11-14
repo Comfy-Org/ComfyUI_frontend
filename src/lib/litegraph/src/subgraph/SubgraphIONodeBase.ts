@@ -68,12 +68,6 @@ export abstract class SubgraphIONodeBase<
     return layoutStore.contentSizeOf(this.subgraph.id, this.id)
   }
 
-  protected get slotInset(): number {
-    return this.measured
-      ? -LiteGraph.NODE_SLOT_HEIGHT / 2
-      : SubgraphIONodeBase.roundedRadius
-  }
-
   private fitted: Point | undefined
 
   private get layoutRect(): Rectangle {
@@ -210,7 +204,13 @@ export abstract class SubgraphIONodeBase<
     )
   }
 
-  abstract get slotAnchorX(): number
+  get slotAnchorX(): number {
+    const [x, , width] = this.boundingRect
+    const inset = this.measured
+      ? -LiteGraph.NODE_SLOT_HEIGHT / 2
+      : SubgraphIONodeBase.roundedRadius
+    return this.slotDirection === 'output' ? x + width - inset : x + inset
+  }
 
   onPointerMove(e: CanvasPointerEvent): CanvasItem {
     const containsPoint = this.boundingRect.containsXy(e.canvasX, e.canvasY)

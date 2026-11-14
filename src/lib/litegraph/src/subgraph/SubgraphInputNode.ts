@@ -51,11 +51,6 @@ export class SubgraphInputNode
     return [...this.slots, this.emptySlot]
   }
 
-  get slotAnchorX() {
-    const [x, , width] = this.boundingRect
-    return x + width - this.slotInset
-  }
-
   protected override fitSize(width: number, height: number): Point {
     const [requestedWidth, requestedHeight] = this.size
     return [Math.max(requestedWidth, width), Math.max(requestedHeight, height)]

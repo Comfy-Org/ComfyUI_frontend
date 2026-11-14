@@ -756,7 +756,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** Maximum frames per second to render. 0: unlimited. Default: 0 */
   public get maximumFps() {
     return this._maximumFrameGap > Number.EPSILON
-      ? this._maximumFrameGap / 1000
+      ? 1000 / this._maximumFrameGap
       : 0
   }
 
@@ -2478,8 +2478,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this._autoPan = new AutoPanController({
-      canvas: this.canvas,
-      ds: this.ds,
+      canvas: this,
       maxPanSpeed: this.auto_pan_speed,
       onPan: () => {
         const rect = this.canvas.getBoundingClientRect()
@@ -2566,7 +2565,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
         try {
-          runCanvasFramePhase(this.canvas, 'update', this._maximumFrameGap)
+          runCanvasFramePhase(this, 'update', this._maximumFrameGap)
           layoutStore.flushPendingChanges()
           const drawsSomething = this.dirty_canvas || this.dirty_bgcanvas
           this.draw()
@@ -4016,8 +4015,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _startNodeAutoPan(): void {
     this._autoPan = new AutoPanController({
-      canvas: this.canvas,
-      ds: this.ds,
+      canvas: this,
       maxPanSpeed: this.auto_pan_speed,
       onPan: (panX, panY) => {
         const selected = this.selectedItems
@@ -5206,7 +5204,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.drawFrontCanvas(nodesForFrontPass, graphForFrontPass)
     }
 
-    runCanvasFramePhase(this.canvas, 'present', this._maximumFrameGap)
+    runCanvasFramePhase(this, 'present', this._maximumFrameGap)
     this.fps = this.render_time ? 1.0 / this.render_time : 0
     this.frame++
   }
@@ -5599,7 +5597,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   renderInfo(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const lineHeight = 13
-    const lineCount = (this.graph ? 5 : 1) + (this.info_text ? 1 : 0)
+    const lineCount = (this.graph ? 3 : 1) + (this.info_text ? 1 : 0)
     x = x || 15
     y = y || this.canvas.height / this.dpr - (lineCount + 1) * lineHeight
 
@@ -5611,12 +5609,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.textAlign = 'left'
     let line = 1
     if (this.graph) {
-      ctx.fillText(
-        `T: ${this.graph.globaltime.toFixed(2)}s`,
-        0,
-        lineHeight * line++
-      )
-      ctx.fillText(`I: ${this.graph.iteration}`, 0, lineHeight * line++)
       ctx.fillText(
         `N: ${this.graph._nodes.length} [${this.visible_nodes.length}]`,
         0,

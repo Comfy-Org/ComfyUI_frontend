@@ -8548,6 +8548,9 @@
       "model": {
         "name": "modello"
       },
+      "model_auto_duration": {
+        "name": "durata automatica"
+      },
       "model_duration": {
         "name": "durata"
       },
@@ -8568,7 +8571,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "Genera un video con dialogo e audio sincronizzati da un prompt di testo usando HeyGen Video 1.0. Facoltativamente, collega fino a 12 immagini, video e clip audio di riferimento e menzionali nel prompt come {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "description": "Genera un video con dialoghi e audio sincronizzati a partire da un prompt di testo usando HeyGen Video 1.0. Facoltativamente, collega fino a 15 immagini, video e clip audio di riferimento e menzionali nel prompt come {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
     "display_name": "HeyGen Video 1.0 da riferimento a video",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8582,9 @@
       },
       "model_aspect_ratio": {
         "name": "rapporto_aspetto"
+      },
+      "model_auto_duration": {
+        "name": "durata automatica"
       },
       "model_duration": {
         "name": "durata"
@@ -13723,34 +13729,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "Concetti di fotocamera da utilizzare con i nodi Luma Text to Video e Luma Image to Video.",
-    "display_name": "Luma Concepts",
-    "inputs": {
-      "concept1": {
-        "name": "concetto1"
-      },
-      "concept2": {
-        "name": "concetto2"
-      },
-      "concept3": {
-        "name": "concetto3"
-      },
-      "concept4": {
-        "name": "concetto4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Concetti di fotocamera opzionali da aggiungere a quelli selezionati qui."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "Modifica un'immagine esistente con un prompt testuale utilizzando il modello Luma UNI-1.",
     "display_name": "Luma UNI-1 Modifica Immagine",
@@ -13787,82 +13765,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "Modifica le immagini in modo sincrono in base al prompt e al rapporto d'aspetto.",
-    "display_name": "Luma Da Immagine a Immagine",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controllo dopo la generazione"
-      },
-      "image": {
-        "name": "immagine"
-      },
-      "image_weight": {
-        "name": "peso_immagine",
-        "tooltip": "Peso dell'immagine; più vicino a 1.0, meno l'immagine verrà modificata."
-      },
-      "model": {
-        "name": "modello"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt per la generazione dell'immagine"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed per determinare se il nodo deve essere rieseguito; i risultati effettivi sono non deterministici indipendentemente dal seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "Genera immagini in modo sincrono in base al prompt e al rapporto d'aspetto.",
-    "display_name": "Luma Da Testo a Immagine",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "rapporto_d'aspetto"
-      },
-      "character_image": {
-        "name": "immagine_personaggio",
-        "tooltip": "Immagini di riferimento per il personaggio; può essere un batch di più immagini, fino a 4 immagini possono essere considerate."
-      },
-      "control_after_generate": {
-        "name": "controllo dopo la generazione"
-      },
-      "image_luma_ref": {
-        "name": "riferimento_luma_immagine",
-        "tooltip": "Connessione al nodo di riferimento Luma per influenzare la generazione con immagini di input; possono essere considerate fino a 4 immagini."
-      },
-      "model": {
-        "name": "modello"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt per la generazione dell'immagine"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed per determinare se il nodo deve essere rieseguito; i risultati effettivi sono non deterministici indipendentemente dal seed."
-      },
-      "style_image": {
-        "name": "immagine_stile",
-        "tooltip": "Immagine di riferimento per lo stile; verrà utilizzata solo 1 immagine."
-      },
-      "style_image_weight": {
-        "name": "peso_immagine_stile",
-        "tooltip": "Peso dell'immagine di stile. Ignorato se nessuna immagine di stile è fornita."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "Genera immagini da testo utilizzando il modello Luma UNI-1.",
     "display_name": "Luma UNI-1 Immagine",
@@ -13890,52 +13792,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "Il seed controlla se il nodo deve essere rieseguito; i risultati sono non deterministici indipendentemente dal seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "Genera video in modo sincrono basandosi su prompt, immagini di input e output_size.",
-    "display_name": "Luma Da Immagine a Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controllo dopo la generazione"
-      },
-      "duration": {
-        "name": "durata"
-      },
-      "first_image": {
-        "name": "prima_immagine",
-        "tooltip": "Primo fotogramma del video generato."
-      },
-      "last_image": {
-        "name": "ultima_immagine",
-        "tooltip": "Ultimo fotogramma del video generato."
-      },
-      "loop": {
-        "name": "loop"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Concetti Camera opzionali per dettare il movimento della camera tramite il nodo Luma Concepts."
-      },
-      "model": {
-        "name": "modello"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt per la generazione del video"
-      },
-      "resolution": {
-        "name": "risoluzione"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed per determinare se il nodo deve essere rieseguito; i risultati effettivi sono non deterministici indipendentemente dal seed."
       }
     },
     "outputs": {
@@ -14165,7 +14021,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "Cambia il rapporto d’aspetto di un video esistente, utilizzando Luma Ray 3.2 per riempire le nuove aree del canvas esposte. Video sorgente fino a 30 secondi. Fatturazione per secondo di output.",
+    "description": "Modifica le proporzioni di un video esistente, usando Luma Ray 3.2 per riempire le aree della tela appena esposte. Video sorgente fino a 10 secondi. Fatturato al secondo di output.",
     "display_name": "Luma Ray 3.2 Riquadratura Video",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14043,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "Video sorgente da riquadrare. Fino a 30 secondi."
+        "tooltip": "Video sorgente da riquadrare. Fino a 10 secondi."
       }
     },
     "outputs": {
@@ -14196,70 +14052,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "Contiene un'immagine e un peso da utilizzare con il nodo Luma Generate Image.",
-    "display_name": "Luma Reference",
-    "inputs": {
-      "image": {
-        "name": "immagine",
-        "tooltip": "Immagine da utilizzare come riferimento."
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "peso",
-        "tooltip": "Peso del riferimento immagine."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "Genera video in modo sincrono in base al prompt e alla dimensione di output.",
-    "display_name": "Luma Text to Video",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "rapporto d'aspetto"
-      },
-      "control_after_generate": {
-        "name": "controllo dopo generazione"
-      },
-      "duration": {
-        "name": "durata"
-      },
-      "loop": {
-        "name": "loop"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Concetti Camera opzionali per controllare il movimento della camera tramite il nodo Luma Concepts."
-      },
-      "model": {
-        "name": "modello"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt per la generazione del video"
-      },
-      "resolution": {
-        "name": "risoluzione"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed per determinare se il nodo deve essere rieseguito; i risultati effettivi sono comunque non deterministici."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -24987,6 +24779,9 @@
       "format_bit_depth": {
         "name": "profondità_bit"
       },
+      "format_channels": {
+        "name": "canali"
+      },
       "format_input_color_space": {
         "name": "spazio_colore_input"
       },
@@ -25977,6 +25772,33 @@
       },
       "1": {
         "name": "destro",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "Divide un'immagine in immagini rossa, verde e blu e in una mask alfa.",
+    "display_name": "Dividi canali immagine",
+    "inputs": {
+      "image": {
+        "name": "immagine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rosso",
+        "tooltip": null
+      },
+      "1": {
+        "name": "verde",
+        "tooltip": null
+      },
+      "2": {
+        "name": "blu",
+        "tooltip": null
+      },
+      "3": {
+        "name": "alfa",
         "tooltip": null
       }
     }

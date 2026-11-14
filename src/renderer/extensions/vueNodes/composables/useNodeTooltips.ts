@@ -34,15 +34,17 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
     )
   })
 
-  const describeInput = (inputName: string) =>
-    nodeDef.value
+  const describeInput = (inputName: string, type = unref(nodeType)) => {
+    const def = findNodeDef(type)
+    return def
       ? resolveNodeDefSlotText(
           'tooltip',
-          unref(nodeType),
+          type,
           inputName,
-          nodeDef.value.inputs[inputName]?.tooltip
+          def.inputs[inputName]?.tooltip
         )
       : ''
+  }
 
   const getInputSlotTooltip = (
     slot: Pick<INodeSlot, 'localized_name' | 'name'>
@@ -78,12 +80,13 @@ export function useNodeTooltips(nodeType: MaybeRef<string>) {
 
   const getWidgetTooltip = (
     widget: { name: string; tooltip?: string },
-    fullValue = ''
+    fullValue = '',
+    type = unref(nodeType)
   ) => {
     if (!tooltipsEnabled.value) return ''
 
-    const description = nodeDef.value
-      ? widget.tooltip || describeInput(widget.name)
+    const description = findNodeDef(type)
+      ? widget.tooltip || describeInput(widget.name, type)
       : ''
     return [description, fullValue].join('\n\n').trim()
   }

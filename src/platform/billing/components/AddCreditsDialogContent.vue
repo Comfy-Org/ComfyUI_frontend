@@ -11,6 +11,7 @@
     :plan-line="planLine"
     :auto-top-up="autoTopUpChoice.offer.value"
     :billing-url="autoTopUpChoice.billingUrl.value"
+    :auto-top-up-setup-hidden="!autoTopUpChoice.platformAvailable.value"
     :opens-in="handsPopupsToSystemBrowser() ? 'browser' : 'tab'"
     :support-url="billingSupportUrl"
     :locale
@@ -51,9 +52,9 @@ import { billingApi } from '@/platform/billing/api/billingApi'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import {
   issueLocalBillingHandoff,
-  opensLocalBillingHandoff,
   reserveBillingHandoffTab
 } from '@/platform/billing/localBillingHandoff'
+import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'

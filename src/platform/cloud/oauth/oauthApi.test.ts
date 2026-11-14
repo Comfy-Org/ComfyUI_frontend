@@ -5,7 +5,8 @@ import {
   fetchOAuthConsentChallenge,
   redirectHost,
   submitOAuthConsentDecision,
-  verifiedClient
+  verifiedClient,
+  verifiedClientIcon
 } from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
@@ -435,5 +436,15 @@ describe('verifiedClient', () => {
         verified_client: verified
       })
     ).toEqual(expected)
+  })
+})
+
+describe('verifiedClientIcon', () => {
+  it.for([
+    ['chatgpt', 'icon-[comfy--openai]'],
+    ['claude', 'icon-[comfy--anthropic]'],
+    ['cursor', undefined]
+  ] as const)('maps %s to %s', ([platform, icon]) => {
+    expect(verifiedClientIcon(platform)).toBe(icon)
   })
 })

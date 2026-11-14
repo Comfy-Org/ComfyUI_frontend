@@ -17,10 +17,7 @@ const props = defineProps<{
 
 const domEl = ref<HTMLElement>()
 
-const owner = useWidgetHostNode(
-  () => props.widget.hostNodeLocatorId,
-  () => props.nodeId
-)
+const owner = useWidgetHostNode(undefined, () => props.nodeId)
 const canvasStore = useCanvasStore()
 
 function findDOMWidget(): DOMWidget<HTMLElement, object | string> | undefined {

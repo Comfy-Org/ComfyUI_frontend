@@ -64,12 +64,14 @@ function arrange(options: {
   canManageBilling?: boolean
   canManageSubscription?: boolean
   autoTopUp?: 'autoTopUpFailed' | 'autoTopUpOff'
+  platformAvailable?: boolean
   workspaceType?: 'personal' | 'team'
   addCreditsVariant?: 'secondary' | 'inverted'
 }) {
   vi.mocked(usePlatformHandoff).mockReturnValue({
     href: computed(() => 'https://platform.test/profile/billing'),
-    track
+    track,
+    available: computed(() => options.platformAvailable ?? true)
   })
   vi.mocked(useAutoTopUpBannerKind).mockReturnValue(
     computed(() => options.autoTopUp ?? null)
@@ -735,5 +737,16 @@ describe('useCreditBanner', () => {
       action: 'update_payment'
     })
     expect(track).toHaveBeenCalled()
+  })
+
+  it('keeps the auto top-up status without a Platform link where Platform cannot receive a handoff', () => {
+    arrange({ autoTopUp: 'autoTopUpFailed', platformAvailable: false })
+
+    expect(screen.getByTestId('billing-banner-autoTopUp')).toHaveTextContent(
+      'Auto top-up failed'
+    )
+    expect(
+      screen.queryByRole('link', { name: 'Update payment' })
+    ).not.toBeInTheDocument()
   })
 })

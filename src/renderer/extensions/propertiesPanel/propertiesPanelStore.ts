@@ -41,7 +41,7 @@ export const usePropertiesPanelStore = defineStore('propertiesPanel', () => {
   })
 
   watch([isOpen, activeTab], ([open, tab]) => {
-    if (!open || tab !== 'errors') errorsTabRequestStore.clearDetailsRequest()
+    if (!open || tab !== 'errors') errorsTabRequestStore.clearRequests()
   })
 
   /** Opens the panel, optionally on a tab; returns false when it cannot open. */

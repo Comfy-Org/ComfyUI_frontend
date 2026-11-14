@@ -30,11 +30,12 @@
       @ready="onLinkOverlayReady"
       @dispose="onLinkOverlayDispose"
     />
-    <template
-      v-if="comfyApp.canvas && comfyAppReady && openSubgraph && !linearMode"
-    >
-      <SubgraphInputValues :graph="openSubgraph" />
-      <SubgraphOutputPorts :graph="openSubgraph" />
+    <template v-if="comfyAppReady && openSubgraph && !linearMode">
+      <SubgraphIoPanel
+        v-for="ioNode in [openSubgraph.inputNode, openSubgraph.outputNode]"
+        :key="`${openSubgraph.id}:${ioNode.id}`"
+        :io-node
+      />
     </template>
     <SelectionRectangle v-if="comfyAppReady" />
     <NodeTooltip v-if="tooltipEnabled" />
@@ -143,8 +144,7 @@ import AppBuilder from '@/components/builder/AppBuilder.vue'
 import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
-import SubgraphInputValues from '@/components/graph/subgraph/SubgraphInputValues.vue'
-import SubgraphOutputPorts from '@/components/graph/subgraph/SubgraphOutputPorts.vue'
+import SubgraphIoPanel from '@/components/graph/subgraph/SubgraphIoPanel.vue'
 import { useSubgraphInputValuesStore } from '@/components/graph/subgraph/subgraphInputValuesStore'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'

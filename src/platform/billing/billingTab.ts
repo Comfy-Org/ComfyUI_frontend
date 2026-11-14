@@ -1,6 +1,7 @@
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 
 export interface OpeningPage {
+  readonly lang: string
   readonly title: string
   readonly detail: string
 }
@@ -16,6 +17,7 @@ p { margin: 0; font-size: 12px; color: #8a8a8a; }
 `
 
 function paintOpeningPage(page: Document, opening: OpeningPage): void {
+  page.documentElement.lang = opening.lang
   page.title = opening.title
   const style = page.createElement('style')
   style.textContent = OPENING_PAGE_STYLE

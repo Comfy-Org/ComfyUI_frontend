@@ -13,11 +13,11 @@ import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 
-function addTwoHosts(subgraph: Subgraph, parent: LGraph = subgraph.rootGraph) {
+function addTwoHosts(subgraph: Subgraph) {
   const a = createTestSubgraphNode(subgraph, { id: 11 })
   const b = createTestSubgraphNode(subgraph, { id: 29 })
-  parent.add(a)
-  parent.add(b)
+  subgraph.rootGraph.add(a)
+  subgraph.rootGraph.add(b)
   return { a, b }
 }
 

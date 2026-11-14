@@ -121,7 +121,7 @@
         draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
-        @error="handleImageError(displayUrls[currentIndex])"
+        @error="mainImageSrc && handleImageError(displayUrls[currentIndex])"
       />
       <button
         v-else-if="!imageError && isHdr"

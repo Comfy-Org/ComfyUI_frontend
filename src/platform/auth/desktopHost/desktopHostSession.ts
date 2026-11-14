@@ -63,6 +63,11 @@ export function isDesktopHostSessionActive(): boolean {
   return session.value.status !== 'inactive'
 }
 
+/** Changes whenever the Desktop account or workspace changes. */
+export function desktopHostSessionRevision(): number {
+  return revision
+}
+
 /** True while a Desktop account is signed in; only then does it own auth. */
 export function isDesktopHostSignedIn(): boolean {
   return desktopHostUser.value !== null
@@ -112,19 +117,38 @@ export function stopDesktopHostSession(): void {
 export function desktopHostWorkspaceToken(
   workspaceId: string
 ): Promise<string | undefined> {
-  return fetchToken((current) => current.getWorkspaceToken(workspaceId))
+  return fetchToken((current) => current.getWorkspaceToken(workspaceId), {
+    tracksRecovery: true
+  })
+}
+
+/**
+ * The partner-node token Desktop minted and renews for `workspaceId`, under
+ * the same rules as {@link desktopHostWorkspaceToken}. Resolves undefined when
+ * Desktop has none or its build cannot mint one.
+ */
+export function desktopHostPartnerNodeToken(
+  workspaceId: string
+): Promise<string | undefined> {
+  return fetchToken(
+    async (current) =>
+      (await current.getPartnerNodeToken?.(workspaceId)) ?? null
+  )
 }
 
 async function fetchToken(
-  read: (current: DesktopHostAuthBridge) => Promise<string | null>
+  read: (current: DesktopHostAuthBridge) => Promise<string | null>,
+  { tracksRecovery = false }: { tracksRecovery?: boolean } = {}
 ): Promise<string | undefined> {
   const current = bridge
   if (!current || session.value.status !== 'signed_in') return undefined
   const before = revision
   const token = await read(current).catch(() => null)
   if (revision !== before) return undefined
-  if (token && lastTokenReadFailed) recoveredTokenReads.value++
-  lastTokenReadFailed = !token
+  if (tracksRecovery) {
+    if (token && lastTokenReadFailed) recoveredTokenReads.value++
+    lastTokenReadFailed = !token
+  }
   return token ?? undefined
 }
 

@@ -16,12 +16,18 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useErrorsTabRequestStore } from '@/platform/workflowErrors/panel/errorsTabRequestStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { app } from '@/scripts/app'
+import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -30,6 +36,8 @@ const getNodeById = vi.fn()
 const animateToBounds = vi.fn()
 
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 
 const WidgetItemStub = defineComponent({
   inheritAttrs: false,
@@ -244,6 +252,57 @@ describe('SectionWidgets', () => {
     expect(getNodeById).toHaveBeenCalledWith(node.id)
     expect(animateToBounds).toHaveBeenCalledWith(boundingRect)
   })
+
+  it.for([
+    { menu: 'Top', isOpen: true, activeTab: 'errors', focusedNodeId: '7' },
+    {
+      menu: 'Disabled',
+      isOpen: false,
+      activeTab: 'parameters',
+      focusedNodeId: null
+    }
+  ] as const)(
+    'See error with the $menu menu sets panel open=$isOpen and focused node $focusedNodeId',
+    async ({ menu, isOpen, activeTab, focusedNodeId }) => {
+      const { node, widget } = createSimpleNodeWithWidget()
+      app.rootGraph.add(node)
+      useCanvasStore().currentGraph = app.rootGraph
+      useSettingStore().$patch({
+        settingValues: {
+          'Comfy.UseNewMenu': menu,
+          'Comfy.RightSidePanel.IsOpen': false,
+          'Comfy.RightSidePanel.ShowErrorsTab': true
+        }
+      })
+      useExecutionErrorStore().recordNodeErrors({
+        '7': nodeError(
+          [validationError('value_not_in_list', 'ckpt_name')],
+          'CheckpointLoaderSimple'
+        )
+      })
+      const user = userEvent.setup()
+
+      render(SectionWidgets, {
+        props: {
+          widgets: [{ widget, node }]
+        },
+        global: {
+          plugins: [i18n],
+          stubs: {
+            WidgetItem: WidgetItemStub,
+            PropertiesAccordionItem: PropertiesAccordionItemStub
+          }
+        }
+      })
+
+      await user.click(screen.getByRole('button', { name: 'See error' }))
+
+      const propertiesPanelStore = usePropertiesPanelStore()
+      expect(propertiesPanelStore.isOpen).toBe(isOpen)
+      expect(propertiesPanelStore.activeTab).toBe(activeTab)
+      expect(useErrorsTabRequestStore().focusedNodeId).toBe(focusedNodeId)
+    }
+  )
 
   it('tracks and resets all widgets when the Reset all button is clicked', async () => {
     const { node, widget } = createSimpleNodeWithWidget()

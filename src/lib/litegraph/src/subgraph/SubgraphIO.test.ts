@@ -449,6 +449,28 @@ describe('SubgraphIO - Advanced Scenarios', () => {
     expect([width, height]).toEqual([344, 400])
   })
 
+  it('disconnects every fanout link without leaving orphaned target connections', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'number', type: 'INT' }]
+    })
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    const aInput = a.addInput('value', 'INT')
+    const bInput = b.addInput('value', 'INT')
+    subgraph.add(a)
+    subgraph.add(b)
+    const slot = subgraph.inputs[0]
+    slot.connect(aInput, a)
+    slot.connect(bInput, b)
+    expect(subgraph.links.size).toBe(2)
+
+    slot.disconnect()
+
+    expect(subgraph.links.size).toBe(0)
+    expect([aInput.link, bInput.link]).toEqual([null, null])
+    expect(slot.linkIds).toEqual([])
+  })
+
   it('maintains slot synchronization across multiple instances', () => {
     const subgraph = createTestSubgraph({
       name: 'Multi-Instance Test',

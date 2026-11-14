@@ -95,7 +95,7 @@ export function useAutoTopUpCardSection(shown: MaybeRefOrGetter<boolean>) {
       : 'turn_on'
   )
 
-  const { href, track } = usePlatformHandoff(
+  const { href, track, available } = usePlatformHandoff(
     () => platformAutoTopUpPath(action.value),
     () => ({ target: 'auto_top_up', action: action.value })
   )
@@ -107,6 +107,7 @@ export function useAutoTopUpCardSection(shown: MaybeRefOrGetter<boolean>) {
     copy,
     retry,
     href,
-    track
+    track,
+    available
   }
 }

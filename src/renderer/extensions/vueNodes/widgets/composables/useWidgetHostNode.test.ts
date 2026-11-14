@@ -1,31 +1,17 @@
-import {
-  assert,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { useWidgetHostNode } from './useWidgetHostNode'
 
 vi.mock(import('@/scripts/app'))
-
-vi.mock(import('@/utils/graphTraversalUtil'))
-
-const locatorId = createNodeLocatorId(null, 7)
-const locatedNode = new LGraphNode('located')
-const canvasNode = new LGraphNode('canvas')
 
 function scopedOwner(...args: Parameters<typeof useWidgetHostNode>) {
   const scope = effectScope()
@@ -35,43 +21,87 @@ function scopedOwner(...args: Parameters<typeof useWidgetHostNode>) {
   return owner
 }
 
+function showRootGraphWithNodes() {
+  const root = app.rootGraph
+  const canvasNode = new LGraphNode('canvas')
+  const locatedNode = new LGraphNode('located')
+  root.add(canvasNode)
+  root.add(locatedNode)
+  useCanvasStore().currentGraph = root
+  return { canvasNode, locatedNode }
+}
+
+function showSubgraph() {
+  const root = app.rootGraph
+  const subgraph = createTestSubgraph({ rootGraph: root })
+  root.subgraphs.set(subgraph.id, subgraph)
+  useCanvasStore().currentGraph = subgraph
+  return subgraph
+}
+
 describe('useWidgetHostNode', () => {
-  beforeEach(() => {
-    const graph = app.canvas.graph
-    assert.exists(graph)
-    useCanvasStore().currentGraph = graph
-    vi.mocked(getNodeByLocatorId).mockReturnValue(null)
-    vi.spyOn(graph, 'getNodeById').mockReturnValue(canvasNode)
-  })
-
   it('prefers the node found by its locator id', () => {
-    vi.mocked(getNodeByLocatorId).mockReturnValue(locatedNode)
+    const { canvasNode, locatedNode } = showRootGraphWithNodes()
 
-    const node = scopedOwner(locatorId, toNodeId(7))
+    const node = scopedOwner(
+      createNodeLocatorId(null, locatedNode.id),
+      canvasNode.id
+    )
 
     expect(node.value).toBe(locatedNode)
   })
 
-  it('falls back to the canvas graph by node id', () => {
-    const node = scopedOwner(undefined, toNodeId(7))
+  it('falls back to the root graph node with the given id', () => {
+    const { canvasNode } = showRootGraphWithNodes()
+
+    const node = scopedOwner(undefined, canvasNode.id)
 
     expect(node.value).toBe(canvasNode)
   })
 
-  it('falls back to the canvas graph when the locator id finds no node', () => {
-    const node = scopedOwner(locatorId, toNodeId(7))
+  it('falls back to the node id when the locator id finds no node', () => {
+    const { canvasNode } = showRootGraphWithNodes()
+
+    const node = scopedOwner(createNodeLocatorId(null, 999), canvasNode.id)
 
     expect(node.value).toBe(canvasNode)
-    expect(getNodeByLocatorId).toHaveBeenCalledWith(app.rootGraph, locatorId)
+  })
+
+  it('finds nothing for an id no node in the root graph has', () => {
+    showRootGraphWithNodes()
+
+    const node = scopedOwner(undefined, toNodeId(999))
+
+    expect(node.value).toBeUndefined()
+  })
+
+  it('finds a root graph node while the canvas shows a subgraph', () => {
+    const owner = new LGraphNode('owner')
+    app.rootGraph.add(owner)
+    showSubgraph()
+
+    const node = scopedOwner(undefined, owner.id)
+
+    expect(node.value).toBe(owner)
+  })
+
+  it('finds a node inside the subgraph the canvas shows', () => {
+    const subgraph = showSubgraph()
+    const interior = new LGraphNode('interior')
+    subgraph.add(interior)
+
+    const node = scopedOwner(undefined, interior.id)
+
+    expect(node.value).toBe(interior)
   })
 
   it('follows a changing locator id', () => {
+    const { canvasNode, locatedNode } = showRootGraphWithNodes()
     const changingLocatorId = ref<NodeLocatorId | undefined>()
-    const node = scopedOwner(changingLocatorId, toNodeId(7))
+    const node = scopedOwner(changingLocatorId, canvasNode.id)
     expect(node.value).toBe(canvasNode)
 
-    vi.mocked(getNodeByLocatorId).mockReturnValue(locatedNode)
-    changingLocatorId.value = locatorId
+    changingLocatorId.value = createNodeLocatorId(null, locatedNode.id)
 
     expect(node.value).toBe(locatedNode)
   })

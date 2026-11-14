@@ -26,12 +26,18 @@ export const useErrorsTabRequestStore = defineStore('errorsTabRequest', () => {
     detailsRequest.value = null
   }
 
+  function clearRequests() {
+    clearFocusedNode()
+    clearDetailsRequest()
+  }
+
   return {
     focusedNodeId,
     detailsRequest,
     focusNode,
     clearFocusedNode,
     requestDetails,
-    clearDetailsRequest
+    clearDetailsRequest,
+    clearRequests
   }
 })
