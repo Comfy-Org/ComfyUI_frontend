@@ -5,6 +5,7 @@ import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 export interface WidgetSlotMetadata {
+  alwaysVisible?: boolean
   index: number
   linked: boolean
   originNodeId?: NodeId
