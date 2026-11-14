@@ -16,6 +16,7 @@ import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useQueueSettingsStore } from '@/platform/queue/stores/queueSettingsStore'
 import { api } from '@/scripts/api'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
@@ -865,6 +866,24 @@ describe('useCoreCommands', () => {
   describe('Queue commands subscription gate', () => {
     const findCmd = (id: string) =>
       useCoreCommands().find((cmd) => cmd.id === id)!
+
+    it.for([
+      ['Comfy.QueuePrompt', 0],
+      ['Comfy.QueuePromptFront', -1]
+    ] as const)(
+      '%s preserves batch count and trigger attribution through the central command registry',
+      async ([id, number]) => {
+        useQueueSettingsStore().batchCount = 3
+        const metadata = { trigger_source: 'keybinding' }
+
+        await findCmd(id).function(metadata)
+
+        expect(app.queuePrompt).toHaveBeenCalledExactlyOnceWith(number, 3, {
+          intent: metadata
+        })
+        expect(useTelemetry()?.trackWorkflowExecution).toHaveBeenCalledOnce()
+      }
+    )
 
     it.for([
       ['Comfy.QueuePrompt', 0],

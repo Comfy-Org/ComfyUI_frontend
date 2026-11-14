@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
@@ -27,7 +27,7 @@ import { useQueueSettingsStore } from '@/platform/queue/stores/queueSettingsStor
 import { useQueuePendingTaskCountStore } from '@/platform/queue/stores/queueStore'
 
 function setupAndGetAutoQueueGraphChangedListener() {
-  setupAutoQueueHandler()
+  onTestFinished(setupAutoQueueHandler())
   const apiEvents: EventTarget = api
   return (event: Event) => apiEvents.dispatchEvent(event)
 }
@@ -129,5 +129,53 @@ describe('setupAutoQueueHandler', () => {
       app.queuePrompt,
       'a false from a busy processor already enqueued the item; do not queue it again'
     ).toHaveBeenCalledTimes(1)
+  })
+
+  it.for([
+    { mode: 'disabled', expected: 0 },
+    { mode: 'instant-idle', expected: 0 },
+    { mode: 'instant-running', expected: 1 },
+    { mode: 'change', expected: 0 }
+  ] as const)(
+    'queues $expected batches on drain in $mode mode without a deferred change',
+    async ({ mode, expected }) => {
+      useQueueSettingsStore().mode = mode
+      setupAndGetAutoQueueGraphChangedListener()
+      const queueCountStore = useQueuePendingTaskCountStore()
+
+      queueCountStore.count = 1
+      await nextTick()
+      queueCountStore.count = 0
+      await nextTick()
+
+      expect(app.queuePrompt).toHaveBeenCalledTimes(expected)
+    }
+  )
+
+  it('stops graph-change and queue-drain submissions when disposed', async () => {
+    const stop = setupAutoQueueHandler()
+    onTestFinished(stop)
+    stop()
+
+    api.dispatchCustomEvent('autoQueueGraphChanged')
+    useQueueSettingsStore().mode = 'instant-running'
+    const queueCountStore = useQueuePendingTaskCountStore()
+    queueCountStore.count = 1
+    await nextTick()
+    queueCountStore.count = 0
+    await nextTick()
+
+    expect(app.queuePrompt).not.toHaveBeenCalled()
+  })
+
+  it('does not retain a disposed handler when set up again', () => {
+    const stop = setupAutoQueueHandler()
+    onTestFinished(stop)
+    stop()
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    listener(new Event('autoQueueGraphChanged'))
+
+    expect(app.queuePrompt).toHaveBeenCalledOnce()
   })
 })

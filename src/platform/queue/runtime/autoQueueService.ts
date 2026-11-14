@@ -12,27 +12,24 @@ export function setupAutoQueueHandler() {
   const queueSettingsStore = useQueueSettingsStore()
 
   let graphHasChanged = false
-  let internalCount = 0 // Use an internal counter here so it is instantly updated when re-queuing
-  api.addEventListener('autoQueueGraphChanged', () => {
-    // Skip the whole submission while gated: never enqueue a prompt the gate
-    // would drop, and never treat queuePrompt's false as gate rejection — it
-    // also means the item was queued behind an active processor.
+  let internalCount = 0
+  const onGraphChanged = () => {
     if (partnerRunGateBlocksAutoQueue()) return
     if (queueSettingsStore.mode === 'change') {
       if (internalCount) {
         graphHasChanged = true
       } else {
         graphHasChanged = false
-        // Queue the prompt in the background
         void app.queuePrompt(0, queueSettingsStore.batchCount, {
           intent: { trigger_source: 'auto_queue' }
         })
         internalCount++
       }
     }
-  })
+  }
+  api.addEventListener('autoQueueGraphChanged', onGraphChanged)
 
-  queueCountStore.$subscribe(
+  const unsubscribe = queueCountStore.$subscribe(
     async () => {
       internalCount = queueCountStore.count
       if (
@@ -53,4 +50,9 @@ export function setupAutoQueueHandler() {
     },
     { detached: true }
   )
+
+  return () => {
+    api.removeEventListener('autoQueueGraphChanged', onGraphChanged)
+    unsubscribe()
+  }
 }

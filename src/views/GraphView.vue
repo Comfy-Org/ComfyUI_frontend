@@ -130,7 +130,7 @@ import BuilderToolbar from '@/components/builder/BuilderToolbar.vue'
 import LinearView from '@/views/LinearView.vue'
 import ManagerProgressToast from '@/platform/customNodes/manager/components/ManagerProgressToast.vue'
 
-setupAutoQueueHandler()
+onBeforeUnmount(setupAutoQueueHandler())
 useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()

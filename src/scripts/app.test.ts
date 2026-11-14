@@ -1817,23 +1817,94 @@ describe('ComfyApp', () => {
   })
 
   describe('queuePrompt', () => {
-    function prepareEmptyPromptQueue() {
+    function prepareEmptyPromptQueue(target = app) {
       const workflow = new ComfyWorkflow({
         path: 'workflows/review.json',
         modified: 0,
         size: 0
       })
       const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
+      Reflect.set(target, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      onTestFinished(attachLegacyUI(app))
+      onTestFinished(attachLegacyUI(target))
       useWorkflowStore().activeWorkflow = markLoaded(workflow)
-      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+      vi.spyOn(target, 'graphToPrompt').mockResolvedValue({
         output: {},
         workflow: createWorkflowGraphData()
       })
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
+
+    it('submits concurrent requests in LIFO order while enqueueing callers return false', async () => {
+      prepareEmptyPromptQueue()
+      let resolveFirst!: (value: { prompt_id: string }) => void
+      const firstResponse = new Promise<{ prompt_id: string }>((resolve) => {
+        resolveFirst = resolve
+      })
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockReturnValueOnce(firstResponse)
+        .mockResolvedValue({ prompt_id: 'job-next' })
+
+      const submission = app.queuePrompt(11)
+      await vi.waitFor(() => expect(queuePrompt).toHaveBeenCalledOnce())
+      await expect(app.queuePrompt(22)).resolves.toBe(false)
+      await expect(app.queuePrompt(33)).resolves.toBe(false)
+      expect(queuePrompt).toHaveBeenCalledOnce()
+
+      resolveFirst({ prompt_id: 'job-first' })
+      await expect(submission).resolves.toBe(true)
+
+      expect(queuePrompt.mock.calls.map(([number]) => number)).toEqual([
+        11, 33, 22
+      ])
+      expect(
+        vi
+          .mocked(api.dispatchCustomEvent)
+          .mock.calls.filter(([event]) => event === 'promptQueued')
+      ).toEqual([
+        ['promptQueued', { number: 11, batchCount: 1, requestId: 1 }],
+        ['promptQueued', { number: 33, batchCount: 1, requestId: 3 }],
+        ['promptQueued', { number: 22, batchCount: 1, requestId: 2 }]
+      ])
+    })
+
+    it('keeps pending submissions and request IDs independent for each app instance', async () => {
+      prepareEmptyPromptQueue()
+      const secondApp = new ComfyApp()
+      secondApp.canvas = mockCanvas
+      prepareEmptyPromptQueue(secondApp)
+      let resolveFirst!: (value: { prompt_id: string }) => void
+      const firstResponse = new Promise<{ prompt_id: string }>((resolve) => {
+        resolveFirst = resolve
+      })
+      const queuePrompt = vi
+        .spyOn(api, 'queuePrompt')
+        .mockReturnValueOnce(firstResponse)
+        .mockResolvedValue({ prompt_id: 'job-next' })
+
+      const submission = app.queuePrompt(11)
+      await vi.waitFor(() => expect(queuePrompt).toHaveBeenCalledOnce())
+      await expect(app.queuePrompt(22)).resolves.toBe(false)
+      await expect(secondApp.queuePrompt(33)).resolves.toBe(true)
+      expect(queuePrompt.mock.calls.map(([number]) => number)).toEqual([11, 33])
+
+      resolveFirst({ prompt_id: 'job-first' })
+      await expect(submission).resolves.toBe(true)
+
+      expect(queuePrompt.mock.calls.map(([number]) => number)).toEqual([
+        11, 33, 22
+      ])
+      expect(
+        vi
+          .mocked(api.dispatchCustomEvent)
+          .mock.calls.filter(([event]) => event === 'promptQueued')
+      ).toEqual([
+        ['promptQueued', { number: 33, batchCount: 1, requestId: 1 }],
+        ['promptQueued', { number: 11, batchCount: 1, requestId: 1 }],
+        ['promptQueued', { number: 22, batchCount: 1, requestId: 2 }]
+      ])
+    })
 
     it('waits for workspace authentication before submitting the prompt', async () => {
       prepareEmptyPromptQueue()

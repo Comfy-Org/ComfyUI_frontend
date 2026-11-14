@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
+import { setupAutoQueueHandler } from '@/platform/queue/runtime/autoQueueService'
 import { useReconnectQueueRefresh } from '@/platform/queue/runtime/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
@@ -191,7 +192,7 @@ vi.mock(
 )
 
 vi.mock(import('@/platform/queue/runtime/autoQueueService'), () => ({
-  setupAutoQueueHandler: vi.fn()
+  setupAutoQueueHandler: vi.fn(() => () => {})
 }))
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
@@ -295,6 +296,17 @@ describe('GraphView - reconnect wiring', () => {
     expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
     expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
     expect(useReconnectNodeDefinitionRefresh()).toHaveBeenCalledTimes(1)
+  })
+
+  it('stops auto-queue handling when the view unmounts', () => {
+    const stopAutoQueue = vi.fn()
+    vi.mocked(setupAutoQueueHandler).mockReturnValueOnce(stopAutoQueue)
+    const { unmount } = render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(stopAutoQueue).not.toHaveBeenCalled()
+    unmount()
+
+    expect(stopAutoQueue).toHaveBeenCalledOnce()
   })
 
   it.for([
