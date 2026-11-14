@@ -190,6 +190,37 @@ describe('useGpuSessionStore', () => {
     expect(store.settings?.on).toBe(false)
   })
 
+  it('shows the setting from the listing it reloads when the socket reconnects after missing the message after an end', () => {
+    const store = storeForPicked({
+      editor_gpu: true,
+      can_change_editor_gpu: true
+    })
+    const pick = useDeploymentPickStore()
+    store.install()
+    const listingSays = (editorGpu: boolean, number: number) =>
+      Object.assign(pick, {
+        pickedDeployment: deploymentWithGpu('dep-1', {
+          editor_gpu: editorGpu,
+          can_change_editor_gpu: true
+        }),
+        shownListing: number
+      })
+    socketSays({
+      session_id: 's-1',
+      deployment_id: 'dep-1',
+      state: 'ended',
+      reason: 'idle',
+      runs: []
+    })
+    listingSays(true, 1)
+
+    api.dispatchCustomEvent('reconnected')
+    listingSays(false, 2)
+
+    expect(pick.load).toHaveBeenCalledTimes(2)
+    expect(store.settings?.on).toBe(false)
+  })
+
   it('a second ended message for the same session holds on to a request sent after the first', async () => {
     const answers: Array<(response: Response) => void> = []
     const send = vi.mocked(fetch)
@@ -251,7 +282,9 @@ describe('useGpuSessionStore', () => {
     expect(window.fetch).not.toBe(pageFetch)
 
     store.$dispose()
+    api.dispatchCustomEvent('reconnected')
 
+    expect(useDeploymentPickStore().load).not.toHaveBeenCalled()
     expect(window.fetch).toBe(pageFetch)
     expect(api.removeCustomEventListener).toHaveBeenCalledWith(
       'gpu_session',

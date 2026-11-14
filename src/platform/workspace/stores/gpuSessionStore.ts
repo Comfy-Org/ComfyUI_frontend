@@ -169,16 +169,22 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
     if (endsTheSession(received, state.value)) void pickStore.load()
   }
 
+  function reloadListing() {
+    void pickStore.load()
+  }
+
   function install() {
     if (installed) return
     installed = true
     const pageFetch = window.fetch
     api.addCustomEventListener('gpu_session', receiveGpuSession)
+    api.addEventListener('reconnected', reloadListing)
     window.fetch = holdWhileGpuStarts(pageFetch.bind(window), {
       forRequest: holdForRequest
     })
     uninstall = () => {
       api.removeCustomEventListener('gpu_session', receiveGpuSession)
+      api.removeEventListener('reconnected', reloadListing)
       window.fetch = pageFetch
       endHolds()
     }
