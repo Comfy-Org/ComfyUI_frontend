@@ -103,7 +103,10 @@ import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
 import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
-import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
+import {
+  agentBoundWorkflowActiveKey,
+  agentBoundWorkflowIdKey
+} from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
@@ -1157,6 +1160,8 @@ const isBoundWorkflowActive = computed(() => {
     boundOrOpenWorkflowFor(bound)?.path === active.path
   )
 })
+
+provide(agentBoundWorkflowActiveKey, isBoundWorkflowActive)
 
 // The CRDT follower is the inbound content channel: subscribes to the
 // session's bound workflow while its tab is active. Suspending the background

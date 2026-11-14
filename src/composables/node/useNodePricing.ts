@@ -11,11 +11,15 @@
 //   - reactive tick to update UI when async evaluation completes.
 
 import {
+  estimateApiNodeRunCost,
+  evaluatePricingBasis,
   formatPricingResult,
   getCompiledRuleForNodeType,
   normalizeWidgetValue
 } from '@comfyorg/shared-frontend-utils/nodePricing'
 import type {
+  ApiNodeCostEntry,
+  ApiNodeCostEstimate,
   CompiledJsonataPricingRule,
   JsonataEvalContext,
   JsonataPricingRule,
@@ -24,11 +28,12 @@ import type {
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { PriceBadge } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { mapAllNodes } from '@/utils/graphTraversalUtil'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const getNodeConstructorData = (node: LGraphNode) => node.constructor.nodeData
@@ -205,6 +210,62 @@ const getNodePriceBadge = (nodeType: string): PriceBadge | undefined => {
 }
 
 // -----------------------------
+// Whole-graph cost basis
+// -----------------------------
+
+const EMPTY_EVAL_CONTEXT: JsonataEvalContext = {
+  widgets: {},
+  inputs: {},
+  inputGroups: {}
+}
+
+type CostBearingNode = {
+  node: LGraphNode
+  nodeData: NonNullable<ReturnType<typeof getNodeConstructorData>>
+}
+
+/**
+ * Every api-node instance a run of this graph would execute, including the
+ * ones inside subgraph instances. Instances are counted separately because
+ * each one executes: two copies of a subgraph cost twice. A subgraph wrapper
+ * is not itself an api node, so `api_node` is the whole filter.
+ */
+const collectApiNodes = (graph: LGraph): CostBearingNode[] =>
+  mapAllNodes(graph, (node) => {
+    const nodeData = getNodeConstructorData(node)
+    return nodeData?.api_node ? { node, nodeData } : undefined
+  })
+
+const costEntryFor = async ({
+  node,
+  nodeData
+}: CostBearingNode): Promise<ApiNodeCostEntry> => {
+  const badge = nodeData.price_badge
+  const rule = badge ? getCompiledRuleForNodeType(nodeData.name, badge) : null
+  const context = rule ? buildJsonataContext(node, rule) : EMPTY_EVAL_CONTEXT
+  return {
+    nodeType: nodeData.name,
+    nodeId: node.id,
+    price: await evaluatePricingBasis(nodeData.name, badge, context)
+  }
+}
+
+/**
+ * What one run of this graph would cost in api-node charges, bounded so the
+ * figure can only understate: a node whose price cannot be proven per-run is
+ * reported as excluded rather than summed, and an api node with no usable
+ * price is never treated as free. Cloud GPU/execution cost is not included —
+ * no duration prediction exists to price it — so the total is a floor for the
+ * run as a whole, not only when `isLowerBound` is set.
+ */
+const estimateGraphRunCost = async (
+  graph: LGraph
+): Promise<ApiNodeCostEstimate> =>
+  estimateApiNodeRunCost(
+    await Promise.all(collectApiNodes(graph).map(costEntryFor))
+  )
+
+// -----------------------------
 // Public composable API
 // -----------------------------
 export const useNodePricing = () => {
@@ -300,6 +361,7 @@ export const useNodePricing = () => {
 
   return {
     getNodeDisplayPrice,
+    estimateGraphRunCost,
     getRelevantWidgetNames,
     hasDynamicPricing,
     getInputGroupPrefixes,
