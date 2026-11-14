@@ -207,6 +207,13 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     return loadListing([])
   }
 
+  /** Loads the listing; resolves true once a listing at least as new as this request is shown. */
+  async function refresh(): Promise<boolean> {
+    const request = latestRequest + 1
+    await load()
+    return lastApplied >= request
+  }
+
   /**
    * Name a deployment whose start the server took on every listing, until one
    * asked for after the start offers Start on it again or no longer lists it.
@@ -571,6 +578,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     unsupportedPackFor,
     switcherOpenAsks,
     load,
+    refresh,
     loadOnce,
     followStart,
     bootOnComfyCloud,

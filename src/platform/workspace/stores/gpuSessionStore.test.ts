@@ -33,9 +33,11 @@ function deploymentWithGpu(
 }
 
 function storeForPicked(gpuFields: Record<string, unknown>) {
-  Object.assign(useDeploymentPickStore(), {
+  const pick = useDeploymentPickStore()
+  Object.assign(pick, {
     pickedDeployment: deploymentWithGpu('dep-1', gpuFields)
   })
+  vi.spyOn(pick, 'refresh').mockResolvedValue(false)
   Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
   return useGpuSessionStore()
 }
@@ -96,24 +98,56 @@ describe('useGpuSessionStore', () => {
     expect(store.session).toMatchObject({ session_id: 's-b', state: 'ready' })
   })
 
-  it('does not hold a request whose starting answer arrives after the GPU was turned off', async () => {
-    const answers: Array<(response: Response) => void> = []
+  it.for([
+    { name: 'turned off while it started', turnOnFirst: true, end: 'save' },
+    { name: 'turned off before it started', turnOnFirst: false, end: 'save' },
+    { name: 'ended by the server', turnOnFirst: false, end: 'socket' }
+  ] as const)(
+    'does not hold a request whose starting answer arrives after the GPU was $name',
+    async ({ turnOnFirst, end }) => {
+      const answers: Array<(response: Response) => void> = []
+      const send = vi.mocked(fetch)
+      send.mockImplementation(
+        () => new Promise((resolve) => answers.push(resolve))
+      )
+      vi.mocked(workspaceApi.setEditorGpu).mockResolvedValue('starting')
+      const store = storeForPicked(OFF_AND_CHANGEABLE)
+      store.install()
+      if (turnOnFirst) await store.setOn(true)
+
+      const answered = fetch('/example_pack/preview')
+      if (end === 'save') await store.setOn(false)
+      else {
+        socketSays({
+          session_id: 's-1',
+          deployment_id: 'dep-1',
+          state: 'ended',
+          reason: 'idle',
+          runs: []
+        })
+      }
+      answers[0](gpuStarting('starting'))
+
+      await expect(answered).resolves.toHaveProperty('status', 503)
+      expect(send).toHaveBeenCalledOnce()
+      expect(store.status).toBeNull()
+    }
+  )
+
+  it('lets a held request go with its answer when the store is disposed', async () => {
     const send = vi.mocked(fetch)
-    send.mockImplementation(
-      () => new Promise((resolve) => answers.push(resolve))
-    )
+    send.mockResolvedValue(gpuStarting('starting'))
     vi.mocked(workspaceApi.setEditorGpu).mockResolvedValue('starting')
     const store = storeForPicked(OFF_AND_CHANGEABLE)
     store.install()
     await store.setOn(true)
 
-    const answered = fetch('/example_pack/preview')
-    await store.setOn(false)
-    answers[0](gpuStarting('starting'))
+    const held = fetch('/example_pack/preview')
+    await flushPromises()
+    store.$dispose()
 
-    await expect(answered).resolves.toHaveProperty('status', 503)
+    await expect(held).resolves.toHaveProperty('status', 503)
     expect(send).toHaveBeenCalledOnce()
-    expect(store.status).toBeNull()
   })
 
   it('puts the page fetch and the socket listener back when the store is disposed', () => {
@@ -131,20 +165,36 @@ describe('useGpuSessionStore', () => {
     )
   })
 
-  it('shows a setting changed elsewhere once the listing reloads it', async () => {
-    const store = storeForPicked(OFF_AND_CHANGEABLE)
-    await store.setIdleMinutes(30)
-    expect(store.settings?.idleMinutes).toBe(30)
-
-    Object.assign(useDeploymentPickStore(), {
-      pickedDeployment: deploymentWithGpu('dep-1', {
-        ...OFF_AND_CHANGEABLE,
-        editor_gpu_idle_minutes: 3
+  it.for([
+    { name: 'another tab saved 3', reloaded: 3, landed: true, shown: 3 },
+    { name: 'another tab put back 10', reloaded: 10, landed: true, shown: 10 },
+    {
+      name: 'an older listing lands and the reload fails',
+      reloaded: 3,
+      landed: false,
+      shown: 30
+    }
+  ])(
+    'after saving 30 idle minutes, when $name the editor shows $shown',
+    async ({ reloaded, landed, shown }) => {
+      const store = storeForPicked(OFF_AND_CHANGEABLE)
+      const pick = useDeploymentPickStore()
+      vi.mocked(pick.refresh).mockImplementation(async () => {
+        Object.assign(pick, {
+          pickedDeployment: deploymentWithGpu('dep-1', {
+            ...OFF_AND_CHANGEABLE,
+            editor_gpu_idle_minutes: reloaded
+          })
+        })
+        return landed
       })
-    })
 
-    expect(store.settings?.idleMinutes).toBe(3)
-  })
+      await store.setIdleMinutes(30)
+      await flushPromises()
+
+      expect(store.settings?.idleMinutes).toBe(shown)
+    }
+  )
 
   it.for([
     {

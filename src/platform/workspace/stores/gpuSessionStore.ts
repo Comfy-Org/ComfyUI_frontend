@@ -29,6 +29,21 @@ type GpuStatus = 'starting' | 'on' | 'unavailable'
 
 type GpuChangeRefusal = 'ownerOnly' | 'failed'
 
+function endsTheSession(event: GpuSessionEvent): boolean {
+  switch (event.type) {
+    case 'messageReceived':
+      return (
+        event.message.state === 'ended' &&
+        (event.message.deployment_id ?? event.deploymentId) ===
+          event.deploymentId
+      )
+    case 'changeSaved':
+      return 'on' in event.change && (!event.change.on || event.gpu === 'off')
+    case 'gpuAnswered':
+      return event.answer === 'off'
+  }
+}
+
 /**
  * The editor's GPU toggle for the picked deployment, shown only when its list
  * entry carries `editor_gpu`, and the GPU session the server reports for it.
@@ -42,6 +57,7 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
   const readyWaiters = new Set<(ready: boolean) => void>()
   let installed = false
   let holdGeneration = 0
+  let overrideGeneration = 0
   let uninstall = () => {}
   onScopeDispose(() => uninstall())
 
@@ -82,11 +98,25 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
     else if (gpu !== 'starting') settleWaiters(false)
   }
 
+  function endHolds() {
+    holdGeneration++
+    settleWaiters(false)
+  }
+
+  async function keepChangesUntilListed() {
+    const asked = overrideGeneration
+    const listedSince = await pickStore.refresh()
+    if (listedSince && asked === overrideGeneration) {
+      state.value = { ...state.value, changed: {} }
+    }
+  }
+
   function dispatch(event: GpuSessionEvent) {
-    const wasIdle = state.value.gpu === 'idle'
+    const changedBefore = state.value.changed
     state.value = reduceGpuSession(state.value, event)
-    if (!wasIdle && state.value.gpu === 'idle') holdGeneration++
+    if (endsTheSession(event)) endHolds()
     settleWaitersFor(state.value.gpu)
+    if (state.value.changed !== changedBefore) overrideGeneration++
   }
 
   watch(
@@ -95,18 +125,6 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
       holdGeneration++
       state.value = INITIAL_GPU_SESSION
       settleWaiters(false)
-    },
-    { flush: 'sync' }
-  )
-
-  watch(
-    [
-      () => listed.value?.on,
-      () => listed.value?.idleMinutes,
-      () => listed.value?.endOnClose
-    ],
-    () => {
-      state.value = { ...state.value, changed: {} }
     },
     { flush: 'sync' }
   )
@@ -154,6 +172,7 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
     uninstall = () => {
       api.removeCustomEventListener('gpu_session', receiveGpuSession)
       window.fetch = pageFetch
+      endHolds()
     }
   }
 
@@ -168,6 +187,7 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
       const gpu = await workspaceApi.setEditorGpu(workspaceId, id, change)
       if (deploymentId.value === id) {
         dispatch({ type: 'changeSaved', change, gpu })
+        void keepChangesUntilListed()
       }
       return null
     } catch (err) {
