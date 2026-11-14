@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
@@ -7,6 +7,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   EditorGpuChange,
   GpuSessionEvent,
+  GpuSessionState,
   IdleMinutes
 } from '@/platform/workspace/gpuSession'
 import {
@@ -40,8 +41,9 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
   const saving = shallowRef(false)
   const readyWaiters = new Set<(ready: boolean) => void>()
   let installed = false
-  /** Counts picks, so a request knows whether its deployment is still the picked one. */
-  let pickGeneration = 0
+  let holdGeneration = 0
+  let uninstall = () => {}
+  onScopeDispose(() => uninstall())
 
   const deploymentId = computed(
     () => pickStore.pickedDeployment?.deployment_id ?? null
@@ -75,18 +77,36 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
     for (const settle of readyWaiters) settle(ready)
   }
 
+  function settleWaitersFor(gpu: GpuSessionState['gpu']) {
+    if (gpu === 'ready') settleWaiters(true)
+    else if (gpu !== 'starting') settleWaiters(false)
+  }
+
   function dispatch(event: GpuSessionEvent) {
+    const wasIdle = state.value.gpu === 'idle'
     state.value = reduceGpuSession(state.value, event)
-    if (state.value.gpu === 'ready') settleWaiters(true)
-    else if (state.value.gpu !== 'starting') settleWaiters(false)
+    if (!wasIdle && state.value.gpu === 'idle') holdGeneration++
+    settleWaitersFor(state.value.gpu)
   }
 
   watch(
     deploymentId,
     () => {
-      pickGeneration++
+      holdGeneration++
       state.value = INITIAL_GPU_SESSION
       settleWaiters(false)
+    },
+    { flush: 'sync' }
+  )
+
+  watch(
+    [
+      () => listed.value?.on,
+      () => listed.value?.idleMinutes,
+      () => listed.value?.endOnClose
+    ],
+    () => {
+      state.value = { ...state.value, changed: {} }
     },
     { flush: 'sync' }
   )
@@ -104,32 +124,37 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
     })
   }
 
-  /** A hold whose answer and wait count only while the deployment picked now stays picked. */
   function holdForRequest(): GpuRequestHold {
-    const sentFor = pickGeneration
-    const stillPicked = () => pickGeneration === sentFor
+    const sentFor = holdGeneration
+    const stillCurrent = () => holdGeneration === sentFor
     return {
       answered: (answer) => {
-        if (stillPicked()) dispatch({ type: 'gpuAnswered', answer })
+        if (stillCurrent()) dispatch({ type: 'gpuAnswered', answer })
       },
-      waitReady: () => (stillPicked() ? waitReady() : Promise.resolve(false))
+      waitReady: () => (stillCurrent() ? waitReady() : Promise.resolve(false))
     }
   }
 
-  /** Listens for `gpu_session` messages and holds requests while the GPU starts. Runs once. */
+  function receiveGpuSession(event: CustomEvent<unknown>) {
+    const message = parseGpuSessionMessage(event.detail)
+    const id = deploymentId.value
+    if (message && id) {
+      dispatch({ type: 'messageReceived', message, deploymentId: id })
+    }
+  }
+
   function install() {
     if (installed) return
     installed = true
-    api.addCustomEventListener('gpu_session', (event) => {
-      const message = parseGpuSessionMessage(event.detail)
-      const id = deploymentId.value
-      if (message && id) {
-        dispatch({ type: 'messageReceived', message, deploymentId: id })
-      }
-    })
-    window.fetch = holdWhileGpuStarts(window.fetch.bind(window), {
+    const pageFetch = window.fetch
+    api.addCustomEventListener('gpu_session', receiveGpuSession)
+    window.fetch = holdWhileGpuStarts(pageFetch.bind(window), {
       forRequest: holdForRequest
     })
+    uninstall = () => {
+      api.removeCustomEventListener('gpu_session', receiveGpuSession)
+      window.fetch = pageFetch
+    }
   }
 
   async function save(

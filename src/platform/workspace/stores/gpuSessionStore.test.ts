@@ -96,6 +96,56 @@ describe('useGpuSessionStore', () => {
     expect(store.session).toMatchObject({ session_id: 's-b', state: 'ready' })
   })
 
+  it('does not hold a request whose starting answer arrives after the GPU was turned off', async () => {
+    const answers: Array<(response: Response) => void> = []
+    const send = vi.mocked(fetch)
+    send.mockImplementation(
+      () => new Promise((resolve) => answers.push(resolve))
+    )
+    vi.mocked(workspaceApi.setEditorGpu).mockResolvedValue('starting')
+    const store = storeForPicked(OFF_AND_CHANGEABLE)
+    store.install()
+    await store.setOn(true)
+
+    const answered = fetch('/example_pack/preview')
+    await store.setOn(false)
+    answers[0](gpuStarting('starting'))
+
+    await expect(answered).resolves.toHaveProperty('status', 503)
+    expect(send).toHaveBeenCalledOnce()
+    expect(store.status).toBeNull()
+  })
+
+  it('puts the page fetch and the socket listener back when the store is disposed', () => {
+    const pageFetch = window.fetch
+    const store = storeForPicked(OFF_AND_CHANGEABLE)
+    store.install()
+    expect(window.fetch).not.toBe(pageFetch)
+
+    store.$dispose()
+
+    expect(window.fetch).toBe(pageFetch)
+    expect(api.removeCustomEventListener).toHaveBeenCalledWith(
+      'gpu_session',
+      expect.any(Function)
+    )
+  })
+
+  it('shows a setting changed elsewhere once the listing reloads it', async () => {
+    const store = storeForPicked(OFF_AND_CHANGEABLE)
+    await store.setIdleMinutes(30)
+    expect(store.settings?.idleMinutes).toBe(30)
+
+    Object.assign(useDeploymentPickStore(), {
+      pickedDeployment: deploymentWithGpu('dep-1', {
+        ...OFF_AND_CHANGEABLE,
+        editor_gpu_idle_minutes: 3
+      })
+    })
+
+    expect(store.settings?.idleMinutes).toBe(3)
+  })
+
   it.for([
     {
       name: 'no editor_gpu',
