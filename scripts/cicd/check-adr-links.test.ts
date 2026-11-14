@@ -92,6 +92,39 @@ describe('check-adr-links', () => {
     expect(result.status).toBe(0)
   })
 
+  it('ignores the ADR tooling tests, whose fixture paths never exist', () => {
+    // `check-adr-evil-merge.test.ts` writes `docs/adr/TOPIC-0001.md` into
+    // throwaway repos to exercise the evil-merge guard. Those strings are
+    // inputs to that script, not references a reader follows, so scanning
+    // them would make every fixture a permanent dangling ref here.
+    const { dir, git } = tempGitRepo()
+    write(
+      dir,
+      'scripts/cicd/check-adr-evil-merge.test.ts',
+      `write(dir, '${adrPath('TOPIC-0001.md')}', '# fixture\\n')\n`
+    )
+    git('add', '.')
+    git('commit', '-m', 'fixture')
+
+    const result = runScript(dir)
+    expect(result.status).toBe(0)
+  })
+
+  it('still scans ordinary files under scripts/cicd', () => {
+    const { dir, git } = tempGitRepo()
+    write(
+      dir,
+      'scripts/cicd/check-adr-links.sh',
+      `# see ${adrPath('TOPIC-0404-missing.md')}\n`
+    )
+    git('add', '.')
+    git('commit', '-m', 'fixture')
+
+    const result = runScript(dir)
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain(adrPath('TOPIC-0404-missing.md'))
+  })
+
   it('propagates git grep errors', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'adr-links-not-git-'))
     temporaryDirectories.push(dir)
