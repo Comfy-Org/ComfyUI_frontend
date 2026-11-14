@@ -62,11 +62,11 @@ describe('writeImageWidgetValue', () => {
     expect(node.properties['image']).toBe('masked.png [input]')
   })
 
-  it('leaves properties untouched when the widget exists nowhere', () => {
+  it('sets properties even when the widget exists nowhere', () => {
     const node = makeNode({ registered: false, hasWidget: false })
 
     writeImageWidgetValue(node, 'masked.png [input]')
 
-    expect(node.properties['image']).toBeUndefined()
+    expect(node.properties['image']).toBe('masked.png [input]')
   })
 })

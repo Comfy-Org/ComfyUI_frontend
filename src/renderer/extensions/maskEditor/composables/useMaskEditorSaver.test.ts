@@ -176,9 +176,9 @@ describe('useMaskEditorSaver', () => {
       useWidgetValueStore().getWidget(
         widgetId('maskeditor-saver-test', toNodeId(42), 'image')
       )?.value
-    ).toBe('clipspace-painted-masked-123.png [input]')
+    ).toBe('clipspace/clipspace-painted-masked-123.png [input]')
     expect(mockNode.properties['image']).toBe(
-      'clipspace-painted-masked-123.png [input]'
+      'clipspace/clipspace-painted-masked-123.png [input]'
     )
   })
 
@@ -222,7 +222,7 @@ describe('useMaskEditorSaver', () => {
     expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
   })
 
-  it('omits subfolder from the upload FormData under the unified contract', async () => {
+  it('includes clipspace subfolder in the upload FormData', async () => {
     const { save } = useMaskEditorSaver()
     await save()
 
@@ -234,7 +234,7 @@ describe('useMaskEditorSaver', () => {
     const body = init?.body as FormData
     expect(body).toBeInstanceOf(FormData)
     expect(body.get('type')).toBe('input')
-    expect(body.get('subfolder')).toBeNull()
+    expect(body.get('subfolder')).toBe('clipspace')
   })
 
   it('uploads each named product after setting the local preview', async () => {
