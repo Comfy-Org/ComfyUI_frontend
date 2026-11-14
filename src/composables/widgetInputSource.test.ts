@@ -19,7 +19,15 @@ import {
 } from './widgetInputSource'
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('vue-router'))
+vi.mock<unknown>(import('vue-router'), () => ({
+  NavigationFailureType: { cancelled: 8, duplicated: 16 },
+  isNavigationFailure: vi.fn(() => false),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    options: { history: { state: {} } }
+  })
+}))
 vi.mock(import('@vueuse/router'), async () => {
   const { ref } = await import('vue')
   return { useRouteHash: () => ref('') }
