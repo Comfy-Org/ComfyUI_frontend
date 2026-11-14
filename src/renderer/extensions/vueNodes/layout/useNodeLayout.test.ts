@@ -98,8 +98,26 @@ describe('useNodeLayout', () => {
     await nextTick()
     expect(container.textContent).toBe('100')
 
+    canvas.setCanvas(
+      createTestCanvasElement({
+        ctx: createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+      }),
+      true
+    )
     canvas.draw()
     await nextTick()
     expect(container.textContent).toBe('137')
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: FIRST_WORKFLOW,
+      nodeId: NODE,
+      position: { x: 174, y: 71 },
+      timestamp: 3,
+      source: LayoutSource.Vue
+    })
+    canvas.draw()
+    await nextTick()
+    expect(container.textContent).toBe('174')
   })
 })

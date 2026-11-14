@@ -104,8 +104,6 @@ const secondNode = LiteGraph.createNode('basic/sum')
 graph.add(secondNode)
 
 firstNode.connect(0, secondNode, 1)
-
-graph.start()
 ```
 
 ## Projects using it

@@ -28,8 +28,8 @@ movement before snapping; cancellation discards it.
 
 Keep the existing canvas loop and FPS setting. A separate application-owned
 loop would introduce competing lifecycle ownership for extension-created
-canvases. Frame participants attach to their canvas and detach with their
-interaction or component lifetime.
+canvases. Frame participants attach to the canvas owner, not its replaceable
+DOM element, and detach with their interaction or component lifetime.
 
 ## Alternatives and consequences
 
@@ -39,6 +39,7 @@ canvas again from each drag callback fixes one interaction by adding work and
 leaves group dragging and camera movement unsynchronized.
 
 DOM position updates now obey the canvas cadence, including low FPS limits.
-Auto-pan uses elapsed time, bounded after stalls, so ordinary frame limiting
-does not proportionally slow panning. This establishes alignment, not a
+Auto-pan uses elapsed time bounded by the greater of one configured frame
+interval or 50 ms. Intentional low frame rates preserve pan speed while stalls
+cannot accumulate an unbounded jump. This establishes alignment, not a
 frame-rate guarantee; drawing cost and frame-time tails need separate evidence.
