@@ -12833,6 +12833,173 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  it('agent_active_tab makes an open tab the target of the next message', async () => {
+    const first = makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-other',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+    )
+  })
+
+  it('agent_active_tab makes a tab it opens the target of the next message', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    vi.useFakeTimers()
+
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+    await vi.advanceTimersByTimeAsync(500)
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+        'workflows/Fresh.json'
+      )
+    )
+  })
+
+  it('opening the workflow from a run approval keeps the target of the next message', async () => {
+    const first = makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+
+    dispatchApiEvent('agent_ask', {
+      thread_id: 'th-1',
+      message_id: 'm-1',
+      ask_id: 'm-1:call-1',
+      kind: 'run_approval',
+      context: { workflow_id: 'wf-other', workflow_name: 'Other' },
+      prompt: 'Run it?',
+      options: [
+        { id: 'run', label: 'Run' },
+        { id: 'cancel', label: 'Cancel' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    })
+    await userEvent.click(await screen.findByRole('button', { name: 'Other' }))
+
+    await vi.waitFor(() =>
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(other)
+    )
+    await settleFollow()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+  })
+
+  it('agent_active_tab leaves a chat started during the move following the visible tab', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+    await vi.advanceTimersByTimeAsync(100)
+    await user.click(screen.getByRole('button', { name: 'New chat' }))
+    await vi.advanceTimersByTimeAsync(400)
+
+    await vi.waitFor(() =>
+      expect(useTelemetry()!.trackAgentWorkflowApplied).toHaveBeenCalledWith({
+        workflow_id: 'wf-new',
+        target: 'active_tab_open'
+      })
+    )
+    expect(useAgentPanelStore().followsVisibleWorkflow).toBe(true)
+  })
+
+  it('agent_active_tab leaves a chat restoring its own target', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    useAgentPanelStore().beginWorkflowRestoration()
+
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-other',
+      thread_id: 'th-1'
+    })
+
+    await vi.waitFor(() =>
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(other)
+    )
+    await settleFollow()
+    expect(useAgentPanelStore().canRestoreWorkflow).toBe(true)
+  })
+
+  it('agent_active_tab without a thread leaves the target', async () => {
+    const first = makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+
+    dispatchApiEvent('agent_active_tab', { workflow_id: 'wf-other' })
+
+    await vi.waitFor(() =>
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(other)
+    )
+    await settleFollow()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+  })
+
+  it('agent_active_tab leaves a target the user picks during the move', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json')
+    useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('work here')
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+    dispatchApiEvent('agent_active_tab', {
+      workflow_id: 'wf-new',
+      name: 'Fresh',
+      thread_id: 'th-1'
+    })
+    await vi.advanceTimersByTimeAsync(100)
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await user.click(screen.getByRole('menuitemradio', { name: 'other' }))
+    await vi.advanceTimersByTimeAsync(400)
+
+    await vi.waitFor(() =>
+      expect(useTelemetry()!.trackAgentWorkflowApplied).toHaveBeenCalledWith({
+        workflow_id: 'wf-new',
+        target: 'active_tab_open'
+      })
+    )
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+  })
+
   it('agent_active_tab reports when a bound tab cannot be opened', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -15120,7 +15287,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(app.loadGraphData).not.toHaveBeenCalled()
   })
 
-  it('disables target selection for an active turn and ignores agent tab changes for attribution', async () => {
+  it('disables target selection for an active turn and sends the next turn to the tab the agent moved to', async () => {
     makeTab('wf-42')
     const other = addTab('workflows/other.json')
     useAgentWorkflowTabBindingStore().bind('wf-other', other.path)
@@ -15140,7 +15307,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(other)
     )
-    expect(selector).toHaveTextContent('current')
+    await vi.waitFor(() => expect(selector).toHaveTextContent('other'))
 
     dispatchApiEvent('agent_message_done', {
       message_id: 'm-1',
@@ -15149,7 +15316,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await screen.findByRole('button', { name: 'Send' })
     await sendFromComposer('second turn')
     expect(bodies[1]).toMatchObject({
-      workflow_id: 'wf-42'
+      workflow_id: 'wf-other'
     })
   })
 
