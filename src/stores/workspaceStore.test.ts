@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
 import { fromAny } from '@total-typescript/shoehorn'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { Toast } from '@/components/ui/toast/toastStore'
@@ -137,4 +138,84 @@ describe('extension toast API', () => {
       expect(useToast().toasts).toEqual([])
     }
   )
+})
+
+const pointerEventTypes = ['pointerdown', 'pointermove', 'pointerup'] as const
+
+async function workspaceAfterEffects() {
+  const store = useWorkspaceStore()
+  await nextTick()
+  return store
+}
+
+function dispatchShiftKey(type: 'keydown' | 'keyup', shiftKey: boolean) {
+  window.dispatchEvent(new KeyboardEvent(type, { key: 'Shift', shiftKey }))
+}
+
+describe('shiftDown', () => {
+  it.for(pointerEventTypes)(
+    'clears Shift when %s reports it released after Shift was pressed and never released',
+    async (type) => {
+      const store = await workspaceAfterEffects()
+      dispatchShiftKey('keydown', true)
+      expect(store.shiftDown).toBe(true)
+
+      window.dispatchEvent(new PointerEvent(type, { shiftKey: false }))
+
+      expect(store.shiftDown).toBe(false)
+    }
+  )
+
+  it('clears Shift when a child stops a pointer move that reports it released', async () => {
+    const store = await workspaceAfterEffects()
+    dispatchShiftKey('keydown', true)
+    expect(store.shiftDown).toBe(true)
+
+    const child = document.createElement('div')
+    document.body.append(child)
+    child.addEventListener('pointermove', (event) => {
+      event.stopPropagation()
+    })
+    try {
+      child.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, shiftKey: false })
+      )
+      expect(store.shiftDown).toBe(false)
+    } finally {
+      child.remove()
+    }
+  })
+
+  it.for(pointerEventTypes)(
+    'keeps Shift pressed when %s reports shiftKey true',
+    async (type) => {
+      const store = await workspaceAfterEffects()
+      dispatchShiftKey('keydown', true)
+
+      window.dispatchEvent(new PointerEvent(type, { shiftKey: true }))
+
+      expect(store.shiftDown).toBe(true)
+    }
+  )
+
+  it('follows Shift keydown and keyup', async () => {
+    const store = await workspaceAfterEffects()
+    expect(store.shiftDown).toBe(false)
+
+    dispatchShiftKey('keydown', true)
+    expect(store.shiftDown).toBe(true)
+
+    dispatchShiftKey('keyup', false)
+    expect(store.shiftDown).toBe(false)
+  })
+
+  it('clears Shift when the window blurs', async () => {
+    const store = await workspaceAfterEffects()
+    dispatchShiftKey('keydown', true)
+    expect(store.shiftDown).toBe(true)
+
+    window.dispatchEvent(new Event('blur'))
+
+    expect(store.shiftDown).toBe(false)
+  })
 })
