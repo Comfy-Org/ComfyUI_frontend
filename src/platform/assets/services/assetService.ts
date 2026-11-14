@@ -29,6 +29,7 @@ import {
   getAssetFilename,
   isModelTypeCovered
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { cappedTotalParams } from '@/platform/assets/utils/cappedTotalParams'
 import { isCloud } from '@/platform/distribution/types'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { api } from '@/scripts/api'
@@ -325,13 +326,12 @@ function createAssetService() {
 
     const queryParams = new URLSearchParams({
       include_tags: normalizedIncludeTags.join(','),
-      limit: limit.toString()
+      limit: limit.toString(),
+      ...cappedTotalParams()
     })
     if (normalizedExcludeTags.length > 0) {
       queryParams.set('exclude_tags', normalizedExcludeTags.join(','))
     }
-    // `after` (keyset cursor) takes precedence over `offset`; the server ignores
-    // `offset` when a cursor is supplied, so we avoid sending a redundant param.
     if (after !== undefined) {
       queryParams.set('after', after)
     } else if (offset !== undefined && offset > 0) {

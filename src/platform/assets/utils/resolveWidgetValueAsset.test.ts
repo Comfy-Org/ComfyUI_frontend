@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
@@ -7,6 +7,13 @@ import { useAssetsStore } from '@/stores/assetsStore'
 
 import { resolveWidgetValueAsset } from './resolveWidgetValueAsset'
 
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
 
@@ -35,6 +42,25 @@ describe('resolveWidgetValueAsset', () => {
     expect(hashLookups[0].get('hash')).toBe(templateHash)
     expect(hashLookups[0].get('include_public')).toBe('true')
   })
+
+  it.for([
+    { runtime: 'cloud', isCloud: true, expected: 'true' },
+    { runtime: 'local', isCloud: false, expected: null }
+  ])(
+    'sends capped_total=$expected in the hash lookup on $runtime',
+    async ({ isCloud, expected }) => {
+      mockDistributionState.isCloud = isCloud
+      onTestFinished(() => {
+        mockDistributionState.isCloud = false
+      })
+
+      await resolveWidgetValueAsset(templateHash)
+
+      const [lookupUrl] = vi.mocked(api.fetchApi).mock.calls[0]
+      const params = new URL(lookupUrl, 'http://localhost').searchParams
+      expect(params.get('capped_total')).toBe(expected)
+    }
+  )
 
   it.for([
     { value: 'sky.exr', previewId: 'input-preview' },

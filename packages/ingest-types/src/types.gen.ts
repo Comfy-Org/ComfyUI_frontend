@@ -11532,6 +11532,17 @@ export type ListAssetsData = {
      *
      */
     after?: string
+    /**
+     * When true, `total` counts at most 10,000 matching assets, so a
+     * total of 10,000 means "at least 10,000", not an exact count. When
+     * false or omitted, the total is the exact count. A capped count
+     * stops after 10,000 matching assets instead of reading every one.
+     * Use it when the total is only shown, not used to work out the last
+     * page: `has_more` and `next_cursor` do not depend on the total
+     * either way.
+     *
+     */
+    capped_total?: boolean
   }
   url: '/api/assets'
 }
@@ -16983,6 +16994,18 @@ export type ListJobsData = {
      * Maximum items per page (1-1000)
      */
     limit?: number
+    /**
+     * When true, `pagination.total` counts at most 10,000 matching jobs,
+     * so a total of 10,000 means "at least 10,000", not an exact count.
+     * When false or omitted, the total is the exact count. A capped count
+     * stops after 10,000 matching jobs instead of reading every one. Use
+     * it when the total is only shown, not used to work out the last
+     * page: `has_more` and `next_cursor` do not depend on the total
+     * either way. A request with `after` reports no total, so this
+     * changes nothing there.
+     *
+     */
+    capped_total?: boolean
   }
   url: '/api/jobs'
 }
