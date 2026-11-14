@@ -302,21 +302,104 @@ describe('runHandoffBootstrap', () => {
     }
   )
 
-  it('ends a stored session that expired before the reload', async () => {
+  it.for<{ name: string; stored: object; knows: object }>([
+    {
+      name: 'a payment it saw succeed',
+      stored: { paid: 'op-7' },
+      knows: { paid: 'op-7' }
+    },
+    {
+      name: 'a subscription it kept',
+      stored: { kept: 'op-7' },
+      knows: { kept: 'op-7' }
+    },
+    {
+      name: 'a payment request that never got an answer',
+      stored: { unanswered: 'lost' },
+      knows: { unanswered: 'lost' }
+    },
+    {
+      name: 'a payment request the reload cut off before its answer, which is now lost',
+      stored: { unanswered: 'sent' },
+      knows: { unanswered: 'lost' }
+    },
+    {
+      name: "an older build's charge attempt, as a request that was never answered",
+      stored: { chargeAttempted: true },
+      knows: { unanswered: 'lost' }
+    },
+    {
+      name: 'a payment Cloud accepted whose operation it had not stored yet',
+      stored: { accepted: 'op-7' },
+      knows: { accepted: 'op-7' }
+    }
+  ])('restores a live session that knows $name', async ({ stored, knows }) => {
     const storage = memoryStorage()
     storage.setItem(
       'comfy.billing-web.handoff.v1',
-      JSON.stringify({
-        kind: 'session',
-        exchange: { ...exchanged, expires_at: '2026-11-09T11:59:59Z' }
-      })
+      JSON.stringify({ kind: 'session', exchange: exchanged, ...stored })
     )
-    const { env } = setup('/handoff', { storage })
 
-    await runHandoffBootstrap(env)
+    await runHandoffBootstrap(setup('/return/topup', { storage }).env)
 
-    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
+    expect(handoffTab.value).toEqual({ ...liveSession, ...knows })
   })
+
+  it.for<{ name: string; stored: object; ended: HandoffState }>([
+    {
+      name: 'that started no payment as a link that no longer works',
+      stored: {},
+      ended: { kind: 'ended', ending: 'link_unavailable' }
+    },
+    {
+      name: 'whose payment request never got an answer as an unconfirmed payment',
+      stored: { unanswered: 'lost' },
+      ended: { kind: 'ended', ending: 'unconfirmed' }
+    },
+    {
+      name: 'whose payment request was still waiting for its answer as an unconfirmed payment',
+      stored: { unanswered: 'sent' },
+      ended: { kind: 'ended', ending: 'unconfirmed' }
+    },
+    {
+      name: "with an older build's charge attempt as an unconfirmed payment",
+      stored: { chargeAttempted: true },
+      ended: { kind: 'ended', ending: 'unconfirmed' }
+    },
+    {
+      name: 'that saw a payment succeed before a later attempt failed as completed',
+      stored: { paid: 'op-7' },
+      ended: {
+        kind: 'ended',
+        ending: 'completed',
+        workspace: 'Studio',
+        reference: 'op-7'
+      }
+    },
+    {
+      name: 'whose accepted payment had no stored operation yet as checking that payment',
+      stored: { accepted: 'op-7' },
+      ended: { kind: 'ended', ending: 'payment_pending', reference: 'op-7' }
+    }
+  ])(
+    'ends a stored session $name when it expired before the reload',
+    async ({ stored, ended }) => {
+      const storage = memoryStorage()
+      storage.setItem(
+        'comfy.billing-web.handoff.v1',
+        JSON.stringify({
+          kind: 'session',
+          exchange: { ...exchanged, expires_at: '2026-11-09T11:59:59Z' },
+          ...stored
+        })
+      )
+      const { env } = setup('/handoff', { storage })
+
+      await runHandoffBootstrap(env)
+
+      expect(handoffTab.value).toEqual(ended)
+    }
+  )
 
   it('restores an expired session with a payment still settling as checking that payment', async () => {
     const storage = memoryStorage()
@@ -350,20 +433,67 @@ describe('runHandoffBootstrap', () => {
     expect(handoffTab.value).toEqual(ended)
   })
 
-  it('keeps a terminal state across a reload', async () => {
+  it('restores an expired session whose payment succeeded as completed, with its workspace and reference', async () => {
     const storage = memoryStorage()
     storage.setItem(
       'comfy.billing-web.handoff.v1',
-      JSON.stringify({ kind: 'ended', ending: 'link_unavailable' })
+      JSON.stringify({
+        kind: 'session',
+        exchange: { ...exchanged, expires_at: '2026-11-09T11:59:59Z' },
+        paid: 'op-7'
+      })
+    )
+    storage.setItem(
+      'comfy:billing:operation:user-1:ws-1',
+      JSON.stringify({
+        operationId: 'op-7',
+        kind: 'topup',
+        presentation: 'embedded',
+        attemptStartedAt: NOW - 40 * 60_000,
+        settled: 'succeeded'
+      })
+    )
+    const ended = {
+      kind: 'ended',
+      ending: 'completed',
+      workspace: 'Studio',
+      reference: 'op-7'
+    }
+
+    await runHandoffBootstrap(setup('/return/topup', { storage }).env)
+    expect(handoffTab.value).toEqual(ended)
+
+    await runHandoffBootstrap(setup('/handoff', { storage }).env)
+    expect(handoffTab.value).toEqual(ended)
+  })
+
+  it.for<{ name: string; stored: object; restored: HandoffState }>([
+    {
+      name: 'a link that no longer works',
+      stored: { ending: 'link_unavailable' },
+      restored: { kind: 'ended', ending: 'link_unavailable' }
+    },
+    {
+      name: "an older build's session end as unconfirmed",
+      stored: { ending: 'session_ended' },
+      restored: { kind: 'ended', ending: 'unconfirmed' }
+    },
+    {
+      name: 'a completed payment that lost its workspace as unconfirmed',
+      stored: { ending: 'completed', reference: 'op-7' },
+      restored: { kind: 'ended', ending: 'unconfirmed' }
+    }
+  ])('keeps $name across a reload', async ({ stored, restored }) => {
+    const storage = memoryStorage()
+    storage.setItem(
+      'comfy.billing-web.handoff.v1',
+      JSON.stringify({ kind: 'ended', ...stored })
     )
     const { env } = setup('/handoff', { storage })
 
     await runHandoffBootstrap(env)
 
-    expect(handoffTab.value).toEqual({
-      kind: 'ended',
-      ending: 'link_unavailable'
-    })
+    expect(handoffTab.value).toEqual(restored)
   })
 
   it('treats /handoff with no token and nothing stored as a broken link', async () => {
@@ -378,14 +508,14 @@ describe('runHandoffBootstrap', () => {
     })
   })
 
-  it('ends a live handoff whose storage became unreadable as a session end, which never says nothing was charged', async () => {
+  it('ends a live handoff whose storage became unreadable as unconfirmed, which never says nothing was charged', async () => {
     const marker = memoryMarker()
     await runHandoffBootstrap(setup('/handoff#token=tok-1', { marker }).env)
 
     const reload = setup('/', { storage: blockedStorage, marker })
 
     await expect(runHandoffBootstrap(reload.env)).resolves.toBe('handoff')
-    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
+    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'unconfirmed' })
   })
 
   it('keeps the storage ending across a reload when storage was blocked from the start', async () => {
@@ -412,8 +542,23 @@ describe('runHandoffBootstrap', () => {
       'handoff'
     )
 
-    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
+    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'unconfirmed' })
   })
+
+  it.for([
+    { name: 'a completed payment', marked: 'completed' },
+    { name: "an older build's session end", marked: 'session_ended' }
+  ])(
+    'ends a tab marked as $name whose storage is gone as unconfirmed',
+    async ({ marked }) => {
+      const marker = memoryMarker()
+      marker.write(`comfy-billing-handoff:${marked}`)
+
+      await runHandoffBootstrap(setup('/handoff', { marker }).env)
+
+      expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'unconfirmed' })
+    }
+  )
 
   it('leaves a normal tab with blocked storage to its own sign-in', async () => {
     const { env } = setup('/v1/subscription', { storage: blockedStorage })
