@@ -24,6 +24,7 @@ import {
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import BillingAutoTopUpCard from '@/platform/billing/legacy160/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
@@ -37,6 +38,7 @@ vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/localBillingHandoff'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) => {
     const url = new URL(`https://platform.test${path}`)
@@ -370,7 +372,7 @@ describe('BillingAutoTopUpCard', () => {
     }
   )
 
-  it('keeps the status and lines without the Platform action when local billing uses a handoff', async () => {
+  it('offers the Platform action as a button that opens billing through a handoff when local billing uses one', async () => {
     setLocalBillingWebEnabled(true)
     onTestFinished(() => setLocalBillingWebEnabled(false))
     renderCard(notConfigured)
@@ -383,9 +385,10 @@ describe('BillingAutoTopUpCard', () => {
         .getAllByTestId('billing-auto-top-up-line')
         .map((line) => line.textContent.trim())
     ).toEqual(['Refills credits when your balance runs low.'])
-    expect(
-      screen.queryByRole('link', { name: 'Turn on' })
-    ).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Turn on' }))
+
+    expect(openPlatformBillingHandoff).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 
   it.for([

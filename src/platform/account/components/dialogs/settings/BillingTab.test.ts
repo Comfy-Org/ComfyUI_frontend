@@ -43,6 +43,7 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
@@ -67,6 +68,7 @@ vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/localBillingHandoff'))
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionActions')
 )
@@ -680,6 +682,21 @@ describe('BillingTab', () => {
     expect(
       screen.queryByRole('link', { name: 'Manage' })
     ).not.toBeInTheDocument()
+  })
+
+  it("keeps a member's usage link hidden once billing opens through a local handoff, which only reaches Platform billing", async () => {
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    arrange({
+      canManageSubscription: false,
+      canManageBilling: false,
+      canOpenPlans: false
+    })
+    expect(screen.getByRole('link', { name: 'View usage' })).toBeVisible()
+
+    setLocalBillingWebEnabled(true)
+    await nextTick()
+
+    expect(screen.queryByTestId('billing-handoff')).toBeNull()
   })
 
   it('gives a member usage instead of billing and no plan action', () => {
@@ -2134,7 +2151,7 @@ describe('BillingTab', () => {
       })
     })
 
-    it('drops the Platform links but keeps the status once billing opens through a local handoff', async () => {
+    it('turns the Platform billing links into buttons that open through a handoff, and drops the Plans link, once billing opens through a local handoff', async () => {
       onTestFinished(() => setLocalBillingWebEnabled(false))
       arrange()
       const credits = screen.getByTestId('billing-credits-section')
@@ -2156,11 +2173,22 @@ describe('BillingTab', () => {
       expect(
         within(credits).getByTestId('billing-auto-top-up-status')
       ).toHaveTextContent('Off')
-      expect(
-        within(credits).queryByRole('link', { name: /Turn on/ })
-      ).toBeNull()
       expect(within(plan).queryByRole('link', { name: 'Manage' })).toBeNull()
-      expect(screen.queryByTestId('billing-handoff')).toBeNull()
+      expect(within(plan).queryByRole('button', { name: 'Manage' })).toBeNull()
+      const handoff = screen.getByTestId('billing-handoff')
+      expect(within(credits).queryByRole('link')).toBeNull()
+      expect(within(handoff).queryByRole('link')).toBeNull()
+      expect(screen.getByTestId('billing-tab').innerHTML).not.toContain(
+        '/profile/'
+      )
+
+      await userEvent.click(
+        within(credits).getByRole('button', { name: /Turn on/ })
+      )
+      for (const action of within(handoff).getAllByRole('button'))
+        await userEvent.click(action)
+
+      expect(openPlatformBillingHandoff).toHaveBeenCalledTimes(3)
     })
 
     it('reads the auto top-up settings once for the card and the banner', async () => {

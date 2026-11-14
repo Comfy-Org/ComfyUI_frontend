@@ -134,8 +134,7 @@
         :copy="autoTopUpCardCopy"
         :locale
         :action-href="autoTopUpHref"
-        :action-hidden="!autoTopUpAvailable"
-        @action="trackAutoTopUp"
+        @action="openAutoTopUp"
         @retry="retryAutoTopUp"
       />
       <BillingAutoTopUpMemberBlock
@@ -316,8 +315,7 @@ const {
   setup: autoTopUpSetup,
   copy: autoTopUpCardCopy,
   href: autoTopUpHref,
-  track: trackAutoTopUp,
-  available: autoTopUpAvailable,
+  open: openAutoTopUp,
   retry: retryAutoTopUp
 } = useAutoTopUpCardSection(
   () => load.value === 'ready' && autoTopUpSection.value.kind === 'card'
