@@ -19,9 +19,9 @@ export function useWidgetHostNode(
     const locatorId = toValue(nodeLocatorId)
     const owner = locatorId && getNodeByLocatorId(app.rootGraph, locatorId)
     if (owner) return owner
-    const { rootGraphId } = canvasStore
-    if (!rootGraphId) return undefined
-    const state = nodeDataStore.getNode(rootGraphId, toValue(nodeId))
-    return state && getNodeByState(app.rootGraph, state)
+    const root = canvasStore.currentGraph?.rootGraph
+    if (!root) return undefined
+    const state = nodeDataStore.getNode(root.id, toValue(nodeId))
+    return state && getNodeByState(root, state)
   })
 }
