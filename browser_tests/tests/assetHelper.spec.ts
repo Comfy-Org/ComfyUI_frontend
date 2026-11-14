@@ -1,5 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
@@ -128,9 +129,10 @@ test.describe('AssetHelper', () => {
       const { body } = await assetApi.fetch(
         `${comfyPage.url}/api/assets?include_tags=models,checkpoints`
       )
-      const data = body as { assets: Array<{ id: string }> }
+      const data = body as ListAssetsResponse
       expect(data.assets).toHaveLength(1)
       expect(data.assets[0].id).toBe(STABLE_CHECKPOINT.id)
+      expect(data.total).toBe(1)
     })
 
     test('GET /assets filters by exclude_tags', async ({
