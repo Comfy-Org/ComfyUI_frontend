@@ -1,6 +1,7 @@
 import type { TextareaHTMLAttributes } from 'vue'
 
 import { t } from '@/i18n'
+import type { WidgetAugmentationTarget } from '@/platform/extensions/widgetAugmentation'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import TextEditorDialogContent from '@/renderer/extensions/textEditor/components/TextEditorDialogContent.vue'
 import TextEditorDialogHeader from '@/renderer/extensions/textEditor/components/TextEditorDialogHeader.vue'
@@ -11,6 +12,7 @@ interface TextEditorOptions {
   readText: () => string
   widgetLabel: string
   nodeTitle?: string
+  augmentationTarget?: WidgetAugmentationTarget
   readOnly: () => boolean
   onEdit: (text: string) => void
   textareaAttributes?: () => TextareaHTMLAttributes
@@ -20,6 +22,7 @@ export function showTextEditor({
   readText,
   widgetLabel,
   nodeTitle,
+  augmentationTarget,
   readOnly,
   onEdit,
   textareaAttributes
@@ -42,6 +45,7 @@ export function showTextEditor({
     props: {
       readText,
       label: widgetLabel,
+      augmentationTarget,
       readOnly,
       attributes: textareaAttributes,
       onEdit: (value: string) => {

@@ -1,4 +1,5 @@
 import type { ShallowRef } from 'vue'
+import type { WidgetAugmentation } from '@/platform/extensions/widgetAugmentation'
 
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
@@ -294,6 +295,7 @@ export interface ActionBarButton {
 }
 
 export interface ComfyExtension {
+  widgetAugmentations?: readonly WidgetAugmentation[]
   /**
    * The name of the extension
    */

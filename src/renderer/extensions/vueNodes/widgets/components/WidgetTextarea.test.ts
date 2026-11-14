@@ -11,6 +11,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
+import { usePromptTagCatalogStore } from '@/renderer/extensions/textEditor/promptTagCatalogStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -405,6 +406,34 @@ describe('WidgetTextarea contextmenu', () => {
 
     expect(preventDefaultSpy).not.toHaveBeenCalled()
     expect(stopPropagationSpy).toHaveBeenCalled()
+  })
+})
+
+describe('WidgetTextarea autocomplete', () => {
+  it('uses the shared catalog and closes suggestions when the node becomes read-only', async () => {
+    const user = userEvent.setup()
+    usePromptTagCatalogStore().importCatalog('blue_eyes,20\nblue_hair,10')
+    const widget = createTextareaWidget('')
+    const view = renderComponent(widget, '')
+    const textarea = screen.getByRole('textbox')
+
+    await user.type(textarea, 'blue')
+
+    expect(await screen.findByRole('listbox')).toBeVisible()
+    expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
+      'blue eyes'
+    )
+    expect(textarea).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(textarea).toHaveAttribute(
+      'aria-activedescendant',
+      screen.getByRole('option', { name: 'blue hair' }).id
+    )
+
+    await view.rerender({ widget: { ...widget, options: { read_only: true } } })
+
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(textarea).toHaveAttribute('readonly')
   })
 })
 

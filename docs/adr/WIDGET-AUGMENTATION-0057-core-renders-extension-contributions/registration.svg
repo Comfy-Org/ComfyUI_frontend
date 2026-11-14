@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="330" viewBox="0 0 1060 330" role="img" aria-labelledby="title description">
+  <title id="title">Extensions supply behavior and core renders it</title>
+  <desc id="description">An extension registers targeted contributions. Core resolves enabled contributions for a widget and renders hints, text actions, and completions without giving the extension its input element.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L8 4 L0 8" fill="#4169a1"/></marker>
+  </defs>
+  <rect width="1060" height="330" rx="10" fill="#fff"/>
+  <g font-family="system-ui, sans-serif" fill="#17212e">
+    <text x="24" y="34" font-size="19" font-weight="600">Extensions supply behavior. Core owns the widget.</text>
+    <rect x="24" y="124" width="200" height="74" rx="7" fill="#f5f7fa" stroke="#c1cad6"/>
+    <text x="124" y="151" text-anchor="middle" font-size="15">Register contributions</text>
+    <text x="124" y="176" text-anchor="middle" font-size="12">app.registerExtension</text>
+    <rect x="284" y="124" width="220" height="74" rx="7" fill="#f5f7fa" stroke="#c1cad6"/>
+    <text x="394" y="151" text-anchor="middle" font-size="15">Match enabled targets</text>
+    <text x="394" y="176" text-anchor="middle" font-size="12">useWidgetAugmentations</text>
+    <rect x="564" y="124" width="220" height="74" rx="7" fill="#edf3fd" stroke="#4169a1"/>
+    <text x="674" y="151" text-anchor="middle" font-size="15">Render core controls</text>
+    <text x="674" y="176" text-anchor="middle" font-size="12">TextareaAugmentations</text>
+    <rect x="854" y="62" width="182" height="52" rx="7" fill="#f5f7fa" stroke="#c1cad6"/>
+    <text x="945" y="84" text-anchor="middle" font-size="14">Live hint</text>
+    <text x="945" y="102" text-anchor="middle" font-size="11">text(value)</text>
+    <rect x="854" y="135" width="182" height="52" rx="7" fill="#f5f7fa" stroke="#c1cad6"/>
+    <text x="945" y="157" text-anchor="middle" font-size="14">Text action button</text>
+    <text x="945" y="175" text-anchor="middle" font-size="11">transform(value)</text>
+    <rect x="854" y="208" width="182" height="52" rx="7" fill="#f5f7fa" stroke="#c1cad6"/>
+    <text x="945" y="230" text-anchor="middle" font-size="14">Autocomplete list</text>
+    <text x="945" y="248" text-anchor="middle" font-size="11">suggest(query)</text>
+    <g stroke="#4169a1" stroke-width="1.5" fill="none" marker-end="url(#arrow)">
+      <path d="M224 161 H282"/>
+      <path d="M504 161 H562"/>
+      <path d="M784 161 H817 V88 H852"/>
+      <path d="M784 161 H852"/>
+      <path d="M817 161 V234 H852"/>
+    </g>
+    <text x="254" y="145" text-anchor="middle" font-size="10" fill="#526071">target</text>
+    <text x="534" y="145" text-anchor="middle" font-size="10" fill="#526071">resolve</text>
+    <text x="24" y="302" font-size="13" fill="#526071">Disable or unregister an extension: its contributions disappear, while the existing widget remains.</text>
+  </g>
+</svg>
