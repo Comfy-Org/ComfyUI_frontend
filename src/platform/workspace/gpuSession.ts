@@ -28,7 +28,7 @@ interface GpuSessionMessage {
 
 const IDLE_CHOICES = [3, 10, 30, 0] as const
 
-type IdleMinutes = (typeof IDLE_CHOICES)[number]
+export type IdleMinutes = (typeof IDLE_CHOICES)[number]
 
 interface EditorGpuSettings {
   on: boolean
@@ -143,6 +143,12 @@ export function readEditorGpuSettings(
       asIdleMinutes(entry.editor_gpu_idle_minutes) ?? DEFAULT_IDLE_MINUTES,
     endOnClose: entry.editor_gpu_end_on_close !== false
   }
+}
+
+/** Whether the deployment list entry lets this person change the GPU settings (`can_change_editor_gpu`). */
+export function readCanChangeEditorGpu(entry: unknown): boolean {
+  if (!isRecord(entry)) return false
+  return entry.can_change_editor_gpu === true
 }
 
 /** The `gpu` field of a 503 `gpu_starting` answer, or null for any other body. */
