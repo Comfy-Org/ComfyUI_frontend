@@ -30,7 +30,17 @@
       "types": "./dist-types/zod.gen.d.ts",
       "default": "./src/zod.gen.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./homepage-consent": {
+      "@comfyorg/ingest-types": "./src/homepage-consent/zod.gen.ts",
+      "types": "./dist-types/homepage-consent/zod.gen.d.ts",
+      "default": "./src/homepage-consent/zod.gen.ts"
+    },
+    "./homepage-consent/types": {
+      "@comfyorg/ingest-types": "./src/homepage-consent/index.ts",
+      "types": "./dist-types/homepage-consent/index.d.ts",
+      "default": "./src/homepage-consent/index.ts"
+    }
   },
   "publishConfig": {
     "exports": {
@@ -42,7 +52,15 @@
         "types": "./dist/zod.gen.d.ts",
         "import": "./dist/zod.gen.js"
       },
-      "./package.json": "./package.json"
+      "./package.json": "./package.json",
+      "./homepage-consent": {
+        "types": "./dist/homepage-consent/zod.gen.d.ts",
+        "import": "./dist/homepage-consent/zod.gen.js"
+      },
+      "./homepage-consent/types": {
+        "types": "./dist/homepage-consent/index.d.ts",
+        "import": "./dist/homepage-consent/index.js"
+      }
     },
     "access": "public"
   },
@@ -53,7 +71,8 @@
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "prepack": "pnpm run build",
     "generate": "openapi-ts",
-    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit",
+    "generate:homepage-consent": "openapi-ts -f openapi-homepage-consent.config.ts"
   },
   "devDependencies": {
     "@comfyorg/published-package-build": "workspace:*",
