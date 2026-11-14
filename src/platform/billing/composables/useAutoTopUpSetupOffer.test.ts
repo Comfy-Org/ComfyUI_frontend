@@ -10,6 +10,7 @@ import {
   canManageAutoTopUpFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import { useAutoTopUpSetupOffer } from './useAutoTopUpSetupOffer'
@@ -17,6 +18,7 @@ import { useAutoTopUpSetupOffer } from './useAutoTopUpSetupOffer'
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/localBillingHandoff'))
 vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) =>
     `https://platform.test${path}&correlation_id=${correlationId}`
@@ -80,17 +82,22 @@ describe('useAutoTopUpSetupOffer', () => {
     }
   )
 
-  it('offers nothing when local billing switches to a handoff while the settings are read', async () => {
+  it('still offers setup where billing opens through a local handoff, and Set up opens Platform billing through one', async () => {
     onTestFinished(() => setLocalBillingWebEnabled(false))
-    const { setupUrl } = await serve()
-    const read = vi.mocked(billingApi.getBillingAutoReload)
-    const settings = await read()
-    read.mockImplementationOnce(async () => {
-      setLocalBillingWebEnabled(true)
-      return settings
-    })
+    setLocalBillingWebEnabled(true)
+    const { setupUrl, open } = await serve()
 
-    await expect(setupUrl()).resolves.toBeNull()
+    await expect(setupUrl()).resolves.toEqual(expect.any(String))
+    open()
+
+    expect(openPlatformBillingHandoff).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'platform_handoff',
+        target: 'auto_top_up',
+        action: 'turn_on'
+      })
+    )
   })
 
   it('offers nothing once auto top-up is already on', async () => {
@@ -139,10 +146,11 @@ describe('useAutoTopUpSetupOffer', () => {
   })
 
   it('reports the Set up click as a Turn on handoff', async () => {
-    const { track } = await serve()
+    const { open } = await serve()
 
-    track()
+    open()
 
+    expect(openPlatformBillingHandoff).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         operation: 'platform_handoff',

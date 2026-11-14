@@ -993,3 +993,82 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     expect(screen.queryByRole('checkbox')).toBeNull()
   })
 })
+
+describe('AddCreditsDialog when the host opens billing itself', () => {
+  const BILLING_URL = 'https://platform.test/profile/billing'
+
+  function expectNoPlatformLink(container: Element) {
+    expect(screen.queryAllByRole('link')).toEqual([])
+    expect(container.innerHTML).not.toContain('platform.test')
+  }
+
+  it('offers Manage as a button that asks the host to open billing', async () => {
+    const { user, emitted, container } = renderDialog({
+      autoTopUp: { kind: 'on' },
+      billingUrl: BILLING_URL,
+      hostOpensBilling: true
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Manage' }))
+
+    expect(emitted().openBilling).toHaveLength(1)
+    expectNoPlatformLink(container)
+  })
+
+  it('offers Set up as a button that asks the host and closes the dialog', async () => {
+    const { user, ports, emitted, container } = renderDialog({
+      hostOpensBilling: true
+    })
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(continueButton())
+    ports.landed?.()
+
+    await user.click(await screen.findByRole('button', { name: 'Set up' }))
+
+    expect(emitted().setUpAutoTopUp).toHaveLength(1)
+    expect(emitted().close).toHaveLength(1)
+    expectNoPlatformLink(container)
+  })
+
+  it('turns a shown Set up link into a button once the host starts opening billing itself', async () => {
+    const { user, ports, emitted, rerender, container } = renderDialog({
+      autoTopUp: {
+        kind: 'checkbox',
+        rules: {
+          minReloadCredits: 1055,
+          maxReloadCredits: 12_660_000,
+          maxMonthlyBudgetCents: 6_000_000
+        },
+        defaultCard: null
+      },
+      billingUrl: BILLING_URL
+    })
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(
+      screen.getByRole('checkbox', { name: /Turn on auto top-up/ })
+    )
+    await user.click(continueButton())
+    ports.landed?.({ status: 'failed' })
+    await screen.findByRole('link', { name: 'Set up' })
+
+    await rerender({ hostOpensBilling: true })
+    await user.click(screen.getByRole('button', { name: 'Set up' }))
+
+    expect(emitted().openBilling).toHaveLength(1)
+    expectNoPlatformLink(container)
+  })
+
+  it('does not ask the host to open a plain link', async () => {
+    const { user, emitted } = renderDialog({
+      autoTopUp: { kind: 'on' },
+      billingUrl: BILLING_URL
+    })
+    const manage = screen.getByRole('link', { name: 'Manage' })
+    manage.addEventListener('click', (event) => event.preventDefault())
+
+    await user.click(manage)
+
+    expect(manage).toHaveAttribute('href', BILLING_URL)
+    expect(emitted().openBilling).toBeUndefined()
+  })
+})

@@ -2,17 +2,22 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import type {
   DesktopHostAuthBridge,
-  DesktopHostAuthState
+  DesktopHostAuthState,
+  DesktopHostBillingHandoff
 } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { issueLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import {
+  issueLocalBillingHandoff,
+  openPlatformBillingHandoff
+} from '@/platform/billing/localBillingHandoff'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -70,6 +75,17 @@ const ENTRY_URL =
   'https://billing.comfy.org/handoff?intent=top-up&amount_cents=2500#token=abc'
 const TOP_UP = { intent: 'top-up', amountCents: 2500 } as const
 const live = new AbortController().signal
+
+function reservedTab() {
+  const tab = {
+    opener: window,
+    document: document.implementation.createHTMLDocument(''),
+    location: { href: '' },
+    close: vi.fn()
+  }
+  const open = vi.spyOn(window, 'open').mockReturnValue(tab as never)
+  return { tab, open }
+}
 
 function issued() {
   return Response.json(
@@ -130,6 +146,23 @@ describe('issueLocalBillingHandoff', () => {
 
     const body = JSON.parse(String(fetchRequests(HANDOFFS)[0].body))
     expect(body.intent).toBe('subscription')
+    expect(body).not.toHaveProperty('amount_cents')
+  })
+
+  it('issues a Platform handoff with no intent or amount', async () => {
+    respondToFetch(HANDOFFS, issued)
+
+    await expect(
+      issueLocalBillingHandoff({ receiver: 'platform' }, live)
+    ).resolves.toEqual({ status: 'ok', url: ENTRY_URL })
+
+    const body = JSON.parse(String(fetchRequests(HANDOFFS)[0].body))
+    expect(body).toMatchObject({
+      workspace_id: 'ws-1',
+      receiver: 'platform',
+      surface: 'local_web'
+    })
+    expect(body).not.toHaveProperty('intent')
     expect(body).not.toHaveProperty('amount_cents')
   })
 
@@ -254,6 +287,79 @@ describe('issueLocalBillingHandoff', () => {
     })
   })
 
+  describe('opening Platform billing', () => {
+    it('reserves a tab in the click, issues for Platform, then navigates the tab', async () => {
+      const { tab, open } = reservedTab()
+      respondToFetch(HANDOFFS, issued)
+
+      const opening = openPlatformBillingHandoff()
+      expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
+      expect(tab.location.href).toBe('')
+      await opening
+
+      expect(tab.location.href).toBe(ENTRY_URL)
+      expect(tab.close).not.toHaveBeenCalled()
+      const [request] = fetchRequests(HANDOFFS)
+      const body = JSON.parse(String(request.body))
+      expect(body.receiver).toBe('platform')
+      expect(body).not.toHaveProperty('intent')
+      expect(useToast().error).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      {
+        name: 'the server message when Cloud explained the refusal',
+        respond: () =>
+          Response.json(
+            { code: 'BILLING_FORBIDDEN', message: 'Owners only' },
+            { status: 403 }
+          ),
+        message: 'Owners only'
+      },
+      {
+        name: 'a generic message when the refusal is unexplained',
+        respond: () => new Response(null, { status: 503 }),
+        message: 'subscription.billingPortalUnavailable'
+      }
+    ])('closes the tab and shows $name', async ({ respond, message }) => {
+      const { tab } = reservedTab()
+      respondToFetch(HANDOFFS, respond)
+
+      await openPlatformBillingHandoff()
+
+      expect(tab.close).toHaveBeenCalledOnce()
+      expect(tab.location.href).toBe('')
+      expect(useToast().error).toHaveBeenCalledExactlyOnceWith(message)
+    })
+
+    it('ignores a second click while the first is still opening', async () => {
+      const { tab, open } = reservedTab()
+      respondToFetch(HANDOFFS, issued)
+
+      await Promise.all([
+        openPlatformBillingHandoff(),
+        openPlatformBillingHandoff()
+      ])
+
+      expect(open).toHaveBeenCalledOnce()
+      expect(fetchRequests(HANDOFFS)).toHaveLength(1)
+      expect(tab.location.href).toBe(ENTRY_URL)
+      expect(tab.close).not.toHaveBeenCalled()
+      expect(useToast().error).not.toHaveBeenCalled()
+    })
+
+    it('issues nothing when the browser blocks the tab', async () => {
+      vi.spyOn(window, 'open').mockReturnValue(null)
+
+      await openPlatformBillingHandoff()
+
+      expect(fetchRequests(HANDOFFS)).toHaveLength(0)
+      expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
+        'subscription.billingTabBlocked'
+      )
+    })
+  })
+
   describe('on Desktop', () => {
     const issue =
       vi.fn<NonNullable<DesktopHostAuthBridge['issueBillingHandoff']>>()
@@ -301,6 +407,47 @@ describe('issueLocalBillingHandoff', () => {
         'subscription',
         undefined
       )
+    })
+
+    it('asks Desktop for a Platform handoff with no intent or amount', async () => {
+      issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
+
+      await expect(
+        issueLocalBillingHandoff({ receiver: 'platform' }, live)
+      ).resolves.toEqual({ status: 'ok', url: ENTRY_URL })
+
+      expect(issue).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        'platform',
+        undefined,
+        undefined
+      )
+      expect(fetchRequests(HANDOFFS)).toHaveLength(0)
+    })
+
+    it('opens Platform billing in the system browser only once Desktop issued it', async () => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      let answer: (issued: DesktopHostBillingHandoff) => void = () => {}
+      issue.mockReturnValue(
+        new Promise((resolve) => {
+          answer = resolve
+        })
+      )
+
+      const opening = openPlatformBillingHandoff()
+      await vi.waitFor(() => expect(issue).toHaveBeenCalledOnce())
+      expect(open).not.toHaveBeenCalled()
+      answer({ status: 'issued', entryUrl: ENTRY_URL })
+      await opening
+
+      expect(issue).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        'platform',
+        undefined,
+        undefined
+      )
+      expect(open).toHaveBeenCalledExactlyOnceWith(ENTRY_URL, '_blank')
+      expect(fetchRequests(HANDOFFS)).toHaveLength(0)
     })
 
     it.for([

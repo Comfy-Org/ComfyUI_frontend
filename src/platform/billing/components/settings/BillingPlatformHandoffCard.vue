@@ -1,6 +1,6 @@
 <template>
   <section
-    v-if="available"
+    v-if="audience === 'owner' || href"
     class="flex flex-col gap-3"
     data-testid="billing-handoff"
   >
@@ -18,26 +18,32 @@
         class="m-0 text-sm text-muted-foreground"
       >
         <template #platform>
-          <a
-            :href
-            target="_blank"
-            rel="noopener"
-            class="text-muted-foreground underline hover:text-foreground"
-            @click="track"
+          <component
+            :is="href ? 'a' : 'button'"
+            v-bind="
+              href
+                ? { href, target: '_blank', rel: 'noopener' }
+                : { type: 'button' }
+            "
+            :class="
+              cn(
+                'text-muted-foreground underline hover:text-foreground',
+                !href &&
+                  'cursor-pointer appearance-none border-none bg-transparent p-0 font-[inherit]'
+              )
+            "
+            @click="open"
           >
             {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}
-          </a>
+          </component>
         </template>
       </i18n-t>
       <Button
-        as="a"
-        :href
-        target="_blank"
-        rel="noopener"
+        v-bind="button"
         variant="secondary"
         size="md"
         class="ml-auto shrink-0 no-underline"
-        @click="track"
+        @click="open"
       >
         {{ $t(`workspacePanel.billingTab.handoff.${audience}.action`) }}
         <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
@@ -48,7 +54,9 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
 
 const { audience } = defineProps<{ audience: 'owner' | 'member' }>()
 
@@ -57,7 +65,7 @@ const HANDOFF = {
   member: { path: '/profile/usage', target: 'usage' }
 } as const
 
-const { href, track, available } = usePlatformHandoff(
+const { href, button, open } = usePlatformBillingLink(
   () => HANDOFF[audience].path,
   () => ({ target: HANDOFF[audience].target })
 )

@@ -38,11 +38,9 @@
     </p>
   </div>
   <div :class="footerBarClass(ui, 'justify-end')">
-    <a
+    <AddCreditsBillingLink
       v-if="linkUrl"
-      :href="linkUrl"
-      target="_blank"
-      rel="noopener"
+      :to="linkUrl"
       :class="
         cn(
           buttonVariants({ variant: 'muted-textonly', size: 'lg' }),
@@ -50,10 +48,11 @@
         )
       "
       data-testid="add-credits-auto-top-up-link"
+      @click="emit('openBilling')"
     >
       {{ translate(settings ? 'autoTopUp.manage' : 'autoTopUpOffer.setUp') }}
       <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
-    </a>
+    </AddCreditsBillingLink>
     <button
       type="button"
       :class="primaryActionClass(ui)"
@@ -73,16 +72,21 @@ import type {
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { AddCreditsFormat, AddCreditsUi } from './addCreditsPresentation'
+import AddCreditsBillingLink from './AddCreditsBillingLink.vue'
+import type {
+  AddCreditsBillingLinkTarget,
+  AddCreditsFormat,
+  AddCreditsUi
+} from './addCreditsPresentation'
 import { footerBarClass, primaryActionClass } from './addCreditsPresentation'
 
 const { settings, linkUrl, translate, format, ui } = defineProps<{
   settings?: AutoTopUpActivation
-  linkUrl?: string
+  linkUrl?: AddCreditsBillingLinkTarget
   translate: AddCreditsTranslate
   format: AddCreditsFormat
   ui: AddCreditsUi
 }>()
 
-const emit = defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: []; openBilling: [] }>()
 </script>

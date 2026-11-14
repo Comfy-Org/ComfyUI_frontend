@@ -1,7 +1,7 @@
 import type { AutoTopUpSetup } from '@comfyorg/ingest-types'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -17,6 +17,7 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import TopUpAutoTopUpCard from '@/platform/billing/components/TopUpAutoTopUpCard.vue'
@@ -28,6 +29,7 @@ vi.mock(
     import('@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard')
 )
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/localBillingHandoff'))
 vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) => {
     const url = new URL(`https://platform.test${path}`)
@@ -65,7 +67,7 @@ function renderCard(served: Partial<Served> = {}) {
   capabilities.canManageAutoTopUp = canManageAutoTopUpFact(canManage)
   capabilities.autoTopUpSetup = computed(() => setup)
   vi.mocked(useBillingAutoTopUpCard).mockReturnValue(autoTopUpCard(card))
-  render(TopUpAutoTopUpCard, {
+  return render(TopUpAutoTopUpCard, {
     global: {
       plugins: [
         createI18n({
@@ -106,8 +108,7 @@ describe('TopUpAutoTopUpCard', () => {
     { name: 'auto top-up is already on', card: loadedAutoTopUp('on') },
     { name: 'auto top-up has failed', card: loadedAutoTopUp('failed') },
     { name: 'the status is still loading', card: { kind: 'loading' } },
-    { name: 'the status read failed', card: { kind: 'unavailable' } },
-    { name: 'billing opens through a local handoff', localBillingWeb: true }
+    { name: 'the status read failed', card: { kind: 'unavailable' } }
   ])('shows nothing when $name', ({ name: _, ...served }) => {
     renderCard(served)
 
@@ -134,11 +135,30 @@ describe('TopUpAutoTopUpCard', () => {
     expect(useBillingAutoTopUpCard().ensureRead).toHaveBeenCalledOnce()
   })
 
+  it('offers Set up as a button with no Platform URL that opens billing through a handoff on local web', async () => {
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    const { container } = renderCard({ localBillingWeb: true })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Set up' }))
+
+    expect(openPlatformBillingHandoff).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        operation: 'platform_handoff',
+        target: 'auto_top_up',
+        action: 'turn_on'
+      })
+    )
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(container.innerHTML).not.toContain('platform.test')
+  })
+
   it('reports the hand-off to the billing site', async () => {
     renderCard()
 
     await userEvent.click(screen.getByRole('link', { name: 'Set up' }))
 
+    expect(openPlatformBillingHandoff).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         operation: 'platform_handoff',
