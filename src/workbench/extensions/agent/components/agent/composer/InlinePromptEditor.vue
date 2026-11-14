@@ -794,17 +794,17 @@ function captureInsertion(from?: number, to?: number) {
 
 function selectSkill(
   reference: SkillReferenceMetadata,
-  from: number,
-  to: number
+  from?: number,
+  to?: number
 ): void {
   if (!view) return
-  const position = promptDocumentPosition(view.state.doc, from)
-  // Text offsets exclude atoms. Preserve the live caret so a following reference
-  // at the query's end offset is not included in the replacement.
+  const { doc, selection } = view.state
+  const position =
+    from === undefined ? selection.from : promptDocumentPosition(doc, from)
   const end =
-    promptTextOffset(view.state.doc, view.state.selection.to) === to
-      ? view.state.selection.to
-      : promptDocumentPosition(view.state.doc, to)
+    to === undefined || promptTextOffset(doc, selection.to) === to
+      ? selection.to
+      : promptDocumentPosition(doc, to)
   const node = inlinePromptSchema.nodes.skill.create({
     ...reference,
     scope: skillScope
@@ -819,7 +819,6 @@ function selectSkill(
     if (item.type === inlinePromptSchema.nodes.skill && offset !== position)
       previous.push(offset)
   })
-  // Remove the prior skill in this transaction so one undo restores its identity.
   for (const offset of previous.reverse())
     transaction.delete(offset, offset + 1)
   view.dispatch(transaction.scrollIntoView())

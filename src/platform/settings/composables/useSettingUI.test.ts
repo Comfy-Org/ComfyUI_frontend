@@ -12,6 +12,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import { useSettingUI as useSettingUIComposable } from './useSettingUI'
@@ -387,6 +388,16 @@ describe('useSettingUI', () => {
         key: 'credits',
         label: 'Credits'
       })
+    })
+
+    it('lists no skills category even when skills are enabled for a signed-in user', () => {
+      useSkillPacksStore().flagsEnabled = true
+      const { findPanelByKey, navGroups } = useSettingUI()
+
+      expect(
+        navGroups.value.flatMap((group) => group.items.map(({ id }) => id))
+      ).not.toContain('skill-packs')
+      expect(findPanelByKey('skill-packs')).toBeNull()
     })
   })
 

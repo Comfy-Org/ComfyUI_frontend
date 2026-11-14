@@ -10,8 +10,8 @@ export interface PromptEditor {
   replaceText: (from: number, to: number, text: string) => void
   selectSkill: (
     reference: SkillReferenceMetadata,
-    from: number,
-    to: number
+    from?: number,
+    to?: number
   ) => void
   captureInsertion: (
     from?: number,
