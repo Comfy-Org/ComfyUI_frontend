@@ -14673,6 +14673,7 @@ describe('AgentPanelRoot workflow binding', () => {
           failure_kind: 'bad_state',
           feature_area: 'agent',
           operation: 'send',
+          stale_cause: 'socket_closed',
           outcome: 'withheld'
         },
         context: { workflowId: 'wf-42' }

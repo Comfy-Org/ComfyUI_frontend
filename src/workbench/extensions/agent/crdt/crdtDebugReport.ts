@@ -440,6 +440,7 @@ function crdtSection(crdt: CrdtDebugSnapshot): string {
     `- **Enabled:** ${crdt.status.enabled}`,
     `- **Connected:** ${crdt.status.connected}`,
     `- **Canvas may be stale:** ${crdt.status.canvasMayBeStale}`,
+    `- **Stale cause:** ${crdt.status.canvasStaleCause ?? 'none'}`,
     `- **Doc id:** ${crdt.status.workflowId ?? 'none'}`,
     `- **Updates applied:** ${crdt.status.updatesApplied}`,
     `- **Last frame:** ${crdt.status.lastFrameType ?? 'none'}`,
