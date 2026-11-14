@@ -377,7 +377,7 @@ describe('in a billing handoff tab', () => {
   ) {
     const checkoutUi = await freshCheckoutUi()
     const { handoffTab } = await import('@/handoff/handoffTab')
-    handoffTab.value = { kind: 'ended', ending: 'session_ended' }
+    handoffTab.value = { kind: 'ended', ending: 'unconfirmed' }
     checkoutUi.provideHandoffCheckoutUiRead(read)
     return checkoutUi
   }
