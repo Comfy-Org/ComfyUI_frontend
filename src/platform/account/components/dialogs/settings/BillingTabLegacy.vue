@@ -52,7 +52,7 @@
         data-testid="billing-load-error"
       >
         <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.billingTab.loadError') }}
+          {{ $t(loadErrorKey) }}
         </p>
         <Button variant="secondary" size="md" class="shrink-0" @click="retry">
           {{ $t('workspacePanel.billingTab.tryAgain') }}
@@ -233,6 +233,9 @@ const { state: creditsCard } = useBillingCreditsCard(planRow)
 const planCreditNote = useTopUpPlanCreditCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
+const loadErrorKey = isCloud
+  ? 'workspacePanel.billingTab.loadError'
+  : 'workspacePanel.billingTab.localLoadError'
 const { isLoadingSupport, handleMessageSupport } = useMessageSupport()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const partnerNodesPricingHref = computed(() =>
