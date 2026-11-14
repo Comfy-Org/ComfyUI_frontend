@@ -1223,6 +1223,7 @@
           "src/lib/litegraph/src/canvas/linkBadges.ts",
           "src/lib/litegraph/src/canvas/linkBadges.test.ts",
           "src/lib/litegraph/src/canvas/linkGeometry.ts",
+          "src/lib/litegraph/src/canvas/linkGeometry.test.ts",
           "src/lib/litegraph/src/canvas/linkRevealState.ts",
           "src/lib/litegraph/src/canvas/linkRevealState.test.ts",
           "src/lib/litegraph/src/canvas/linkVisibility.ts",
