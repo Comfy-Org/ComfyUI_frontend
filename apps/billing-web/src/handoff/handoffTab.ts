@@ -26,8 +26,9 @@ export type HandoffEnding =
   | 'exchange_lost'
   | 'storage_unavailable'
   | 'refused'
-  | 'session_ended'
   | 'payment_pending'
+  | 'completed'
+  | 'unconfirmed'
 
 const zHandoffExchange = zBillingHandoffExchangeResponse.extend({
   workspace: zWorkspaceSummary
@@ -51,8 +52,16 @@ export type HandoffState =
     }
   | {
       readonly kind: 'ended'
-      readonly ending: HandoffEnding
+      readonly ending: Exclude<HandoffEnding, 'completed'>
       /** The operation still settling when a `payment_pending` session ended. */
+      readonly reference?: string
+    }
+  | {
+      readonly kind: 'ended'
+      readonly ending: 'completed'
+      /** The workspace the payment was for, kept because the session is gone. */
+      readonly workspace: string
+      /** The operation that succeeded. */
       readonly reference?: string
     }
 
@@ -63,9 +72,12 @@ const ENDINGS: readonly HandoffEnding[] = [
   'exchange_lost',
   'storage_unavailable',
   'refused',
-  'session_ended',
-  'payment_pending'
+  'payment_pending',
+  'completed',
+  'unconfirmed'
 ]
+
+const UNCONFIRMED: HandoffState = { kind: 'ended', ending: 'unconfirmed' }
 
 export function handoffSessionFrom(body: unknown): HandoffSession | undefined {
   const parsed = zHandoffExchange.safeParse(body)
@@ -115,13 +127,25 @@ export function readTabMarker(
   const value = marker.read()
   if (!value.startsWith(MARKER_PREFIX)) return undefined
   const rest = value.slice(MARKER_PREFIX.length)
-  return rest === 'live' ? 'live' : ENDINGS.find((e) => e === rest)
+  if (rest === 'live') return 'live'
+  return ENDINGS.find((e) => e === rest) ?? 'unconfirmed'
 }
 
 export function writeTabMarker(marker: TabMarker, state: HandoffState): void {
   marker.write(
     MARKER_PREFIX + (state.kind === 'session' ? 'live' : state.ending)
   )
+}
+
+function endedFrom(stored: Record<string, unknown>): HandoffState {
+  const ending = ENDINGS.find((e) => e === stored.ending)
+  const reference =
+    typeof stored.reference === 'string' ? stored.reference : undefined
+  if (ending === 'completed')
+    return typeof stored.workspace === 'string'
+      ? { kind: 'ended', ending, workspace: stored.workspace, reference }
+      : UNCONFIRMED
+  return ending ? { kind: 'ended', ending, reference } : UNCONFIRMED
 }
 
 export function readHandoffState(
@@ -137,12 +161,7 @@ export function readHandoffState(
     if (raw === null) return undefined
     const parsed: unknown = JSON.parse(raw)
     if (!isRecord(parsed)) return undefined
-    if (parsed.kind === 'ended') {
-      const ending = ENDINGS.find((e) => e === parsed.ending)
-      const reference =
-        typeof parsed.reference === 'string' ? parsed.reference : undefined
-      return ending && { kind: 'ended', ending, reference }
-    }
+    if (parsed.kind === 'ended') return endedFrom(parsed)
     const session =
       parsed.kind === 'session'
         ? handoffSessionFrom(parsed.exchange)
@@ -207,23 +226,24 @@ function endingFrom(trace: {
   readonly pointer: BillingOperationPointer | undefined
   readonly chargeAttempted: boolean
   readonly storageHoldsSession: boolean
+  readonly workspace: string
 }): HandoffState {
-  const { pointer } = trace
-  if (pointer && pointer.kind !== 'cancel' && pointer.settled !== 'succeeded')
-    return {
-      kind: 'ended',
-      ending: 'payment_pending',
-      reference: pointer.operationId
-    }
-  const unused =
-    trace.storageHoldsSession && !trace.chargeAttempted && pointer === undefined
-  return {
-    kind: 'ended',
-    ending: unused ? 'link_unavailable' : 'session_ended'
+  const { workspace } = trace
+  const payment = trace.pointer?.kind === 'cancel' ? undefined : trace.pointer
+  if (payment) {
+    const reference = payment.operationId
+    return payment.settled === 'succeeded'
+      ? { kind: 'ended', ending: 'completed', workspace, reference }
+      : { kind: 'ended', ending: 'payment_pending', reference }
   }
+  const unused = trace.storageHoldsSession && !trace.chargeAttempted
+  return unused ? { kind: 'ended', ending: 'link_unavailable' } : UNCONFIRMED
 }
 
-/** How a live session ends: `link_unavailable` only when the tab can prove it never sent a charge. */
+/**
+ * How a live session ends: on the payment its pointer records, else
+ * `link_unavailable` only when the tab can prove it never sent a charge.
+ */
 export function sessionEnding(
   storage: TabStorage,
   live: Extract<HandoffState, { kind: 'session' }>,
@@ -233,6 +253,7 @@ export function sessionEnding(
   return endingFrom({
     storageHoldsSession: storageHoldsSession(storage),
     chargeAttempted: live.chargeAttempted === true,
+    workspace: session.workspace.name,
     pointer: createOperationPointerStore(storage, now).read({
       userId: session.userId,
       workspaceId: session.workspace.id,

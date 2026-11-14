@@ -92,7 +92,7 @@ describe('createHandoffBillingSession', () => {
     {
       name: 'a payment request that left no operation behind',
       arrange: (storage) => noteChargeAttempt(storage),
-      ended: { kind: 'ended', ending: 'session_ended' }
+      ended: { kind: 'ended', ending: 'unconfirmed' }
     },
     {
       name: 'a payment this tab started and has not seen settle',
@@ -111,19 +111,45 @@ describe('createHandoffBillingSession', () => {
     },
     {
       name: 'a payment that already succeeded',
-      arrange: (storage) =>
-        pointAt(storage, { kind: 'subscription', settled: 'succeeded' }),
-      ended: { kind: 'ended', ending: 'session_ended' }
+      arrange: (storage) => {
+        noteChargeAttempt(storage)
+        pointAt(storage, { kind: 'topup', settled: 'succeeded' })
+      },
+      ended: {
+        kind: 'ended',
+        ending: 'completed',
+        workspace: 'Studio',
+        reference: 'op-1'
+      }
     },
     {
-      name: 'a cancellation',
+      name: 'a payment started elsewhere that this tab watched succeed',
+      arrange: (storage) =>
+        pointAt(storage, { kind: 'subscription', settled: 'succeeded' }),
+      ended: {
+        kind: 'ended',
+        ending: 'completed',
+        workspace: 'Studio',
+        reference: 'op-1'
+      }
+    },
+    {
+      name: 'a cancellation this tab sent, which is not a payment that went through',
+      arrange: (storage) => {
+        noteChargeAttempt(storage)
+        pointAt(storage, { kind: 'cancel', settled: 'succeeded' })
+      },
+      ended: { kind: 'ended', ending: 'unconfirmed' }
+    },
+    {
+      name: 'a cancellation started elsewhere, with nothing sent from this tab',
       arrange: (storage) => pointAt(storage, { kind: 'cancel' }),
-      ended: { kind: 'ended', ending: 'session_ended' }
+      ended: { kind: 'ended', ending: 'link_unavailable' }
     },
     {
       name: 'storage that no longer holds the session',
       arrange: (storage) => storage.removeItem(HANDOFF_KEY),
-      ended: { kind: 'ended', ending: 'session_ended' }
+      ended: { kind: 'ended', ending: 'unconfirmed' }
     }
   ])(
     'ends on $name as $ended.ending, and the end survives a reload',
@@ -143,14 +169,14 @@ describe('createHandoffBillingSession', () => {
     }
   )
 
-  it('ends as a session end when storage can no longer be read, never as an unused link', async () => {
+  it('ends as unconfirmed when storage can no longer be read, never as an unused link', async () => {
     const { session, storage, clock } = setup()
     storage.block()
     clock.now = NOW + 31 * 60_000
 
     await session.ensureFresh()
 
-    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'session_ended' })
+    expect(handoffTab.value).toEqual({ kind: 'ended', ending: 'unconfirmed' })
   })
 
   it('ends the handoff when the server refuses the session instead of minting another', async () => {

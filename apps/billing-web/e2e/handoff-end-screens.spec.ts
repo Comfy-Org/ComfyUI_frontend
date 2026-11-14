@@ -12,6 +12,8 @@ const TOPUP_HANDOFF =
 const payButton = (page: Page) =>
   page.getByRole('button', { name: 'Pay', exact: true })
 const nothingCharged = (page: Page) => page.getByText(/Nothing was charged/)
+const endedOn = (page: Page, name: string) =>
+  page.getByTestId('handoff-ending').getByRole('heading', { name })
 
 test.beforeEach(async ({ context, page, cloud }) => {
   await installFakeStripe(context)
@@ -36,9 +38,7 @@ test('a handoff session that never started a payment ends on the link screen, an
 
   await page.clock.fastForward(SESSION_MS)
 
-  const ended = page.getByRole('heading', {
-    name: 'This checkout link no longer works'
-  })
+  const ended = endedOn(page, 'This checkout link no longer works')
   await expect(ended).toBeVisible()
   await expect(nothingCharged(page)).toBeVisible()
   await expect(page).toHaveURL(/\/handoff$/)
@@ -48,7 +48,7 @@ test('a handoff session that never started a payment ends on the link screen, an
   await expect(ended).toBeVisible()
 })
 
-test('a handoff session that already paid ends without saying nothing was charged, and keeps that across a reload', async ({
+test('a handoff session that already paid ends on the payment that went through, with its workspace and reference, and keeps that across a reload', async ({
   page,
   cloud
 }) => {
@@ -65,10 +65,39 @@ test('a handoff session that already paid ends without saying nothing was charge
 
   await page.clock.fastForward(SESSION_MS)
 
-  const ended = page.getByRole('heading', {
-    name: 'This checkout session has ended'
-  })
+  const ended = endedOn(page, "You're all set")
   await expect(ended).toBeVisible()
+  await expect(page.getByText('A payment for Acme went through.')).toBeVisible()
+  await expect(page.getByTestId('checkout-ending-code')).toHaveText('op_topup')
+  await expect(page.getByRole('button', { name: 'Close' })).toBeHidden()
+  await expect(nothingCharged(page)).toBeHidden()
+
+  await page.reload()
+
+  await expect(ended).toBeVisible()
+  await expect(page.getByText('A payment for Acme went through.')).toBeVisible()
+  await expect(nothingCharged(page)).toBeHidden()
+})
+
+test('a handoff session whose payment request got no readable answer ends unconfirmed, without saying nothing was charged, and keeps that across a reload', async ({
+  page,
+  cloud
+}) => {
+  cloud.reply('POST', '/billing/topup', () => ({
+    status: 500,
+    body: { code: 'INTERNAL', message: 'boom' }
+  }))
+  await page.goto(TOPUP_HANDOFF)
+  await payButton(page).click()
+  await expect
+    .poll(() => cloud.requests.some(({ path }) => path === '/billing/topup'))
+    .toBe(true)
+
+  await page.clock.fastForward(SESSION_MS)
+
+  const ended = endedOn(page, "We couldn't confirm your payment")
+  await expect(ended).toBeVisible()
+  await expect(page.getByText(/Don't pay again yet/)).toBeVisible()
   await expect(nothingCharged(page)).toBeHidden()
 
   await page.reload()

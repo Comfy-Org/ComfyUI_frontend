@@ -1,9 +1,4 @@
-import type {
-  HandoffEnding,
-  HandoffState,
-  TabMarker,
-  TabStorage
-} from '@/handoff/handoffTab'
+import type { HandoffState, TabMarker, TabStorage } from '@/handoff/handoffTab'
 import type { HandoffCapture } from '@/handoff/captureHandoffToken'
 import {
   handoffSessionFrom,
@@ -40,7 +35,7 @@ function storageWorks(storage: TabStorage): boolean {
   }
 }
 
-function endingFor(status: number): HandoffEnding {
+function endingFor(status: number) {
   if (status === 410) return 'link_unavailable'
   if (status === 403) return 'refused'
   return 'exchange_lost'
@@ -92,8 +87,10 @@ function settle(env: HandoffBootEnv, state: HandoffState): 'handoff' {
 function fromMarker(env: HandoffBootEnv): HandoffState | undefined {
   const marked = readTabMarker(env.marker)
   if (marked === undefined) return undefined
-  if (marked !== 'live') return { kind: 'ended', ending: marked }
-  return { kind: 'ended', ending: 'session_ended' }
+  const needsStoredRecord = marked === 'live' || marked === 'completed'
+  return needsStoredRecord
+    ? { kind: 'ended', ending: 'unconfirmed' }
+    : { kind: 'ended', ending: marked }
 }
 
 function restored(env: HandoffBootEnv, state: HandoffState): HandoffState {
