@@ -4193,6 +4193,7 @@
     "planCredits": "Plan credits",
     "topUpCredits": "Top-up credits",
     "paymentProcessing": "Payment processing…",
+    "purchasesStopped": "Buying credits isn't available right now",
     "planStatus": {
       "noPlan": "No plan",
       "paused": "Paused",
