@@ -24,7 +24,8 @@ export function useWidgetAugmentations(
     extensions.extensions
       .filter((extension) => extensions.contributes(extension.name))
       .flatMap((extension) =>
-        (extension.widgetAugmentations ?? [])
+        extensions
+          .getWidgetAugmentations(extension)
           .filter(
             (augmentation) =>
               augmentation.target.nodeType === nodeType.value &&

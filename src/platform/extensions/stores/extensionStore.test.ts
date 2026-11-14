@@ -37,6 +37,27 @@ describe('extensionStore', () => {
       expect(store.extensions[0]).toBe(extension)
     })
 
+    it('retains prototype hooks when excluding malformed augmentations', () => {
+      class Extension implements ComfyExtension {
+        [key: string]: unknown
+        name = 'test.prototype'
+        widgetAugmentations = []
+        initialized = false
+
+        setup() {
+          this.initialized = true
+        }
+      }
+      const store = useExtensionStore()
+      const extension = new Extension()
+      Reflect.set(extension, 'widgetAugmentations', [null])
+
+      store.registerExtension(extension)
+
+      expect(store.extensions[0]).toBe(extension)
+      expect(store.extensions[0].setup).toBe(extension.setup)
+    })
+
     it('throws for extension without name', () => {
       const store = useExtensionStore()
       expect(() => store.registerExtension({ name: '' })).toThrow(
@@ -73,7 +94,7 @@ describe('extensionStore', () => {
       store.registerExtension({ name: 'test.neighbor' })
 
       expect(
-        store.extensions[0].widgetAugmentations?.map((item) => item.id)
+        store.getWidgetAugmentations(store.extensions[0]).map((item) => item.id)
       ).toEqual(['valid'])
       expect(extension.widgetAugmentations).toEqual([invalid, valid])
       expect(store.extensions[0].setup).toBe(setup)
