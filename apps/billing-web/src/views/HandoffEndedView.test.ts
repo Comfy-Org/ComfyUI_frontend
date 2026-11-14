@@ -1,5 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 
+import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
+
 import type { HandoffState } from '@/handoff/handoffTab'
 import { handoffTab } from '@/handoff/handoffTab'
 import { createBillingI18n } from '@/i18n'
@@ -13,10 +15,22 @@ function renderEnded(state: HandoffState | undefined) {
 }
 
 const LINK = 'This checkout link no longer works'
+const OUTCOME = 'https://testcloud.comfy.org/api/billing/ops/op-7/outcome'
+
+const CHECKING: HandoffState = {
+  kind: 'ended',
+  ending: 'payment_pending',
+  reference: 'op-7',
+  workspace: 'Studio',
+  token: 'comfy-scoped-session-1'
+}
+
+const reports = (status: string) => () => Response.json({ status })
 
 describe('HandoffEndedView', () => {
   afterEach(() => {
     handoffTab.value = undefined
+    sessionStorage.clear()
   })
 
   it.for([
@@ -38,6 +52,7 @@ describe('HandoffEndedView', () => {
       expect(
         screen.getByRole('link', { name: 'Contact support' })
       ).toHaveAttribute('href', expect.stringMatching(/^mailto:/))
+      expect(fetch).not.toHaveBeenCalled()
     }
   )
 
@@ -83,6 +98,7 @@ describe('HandoffEndedView', () => {
       expect(screen.queryByText(/Nothing was charged/)).toBeNull()
       expect(screen.queryByText(/automatically update/)).toBeNull()
       expect(screen.queryByTestId('checkout-ending-code')).toBeNull()
+      expect(fetch).not.toHaveBeenCalled()
     }
   )
 
@@ -110,5 +126,69 @@ describe('HandoffEndedView', () => {
       screen.getByRole('heading', { name: 'Checking your payment' })
     ).toBeVisible()
     expect(screen.queryByTestId('checkout-ending-code')).toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('turns into the payment that went through once Cloud reports it, with no reload', async () => {
+    vi.useFakeTimers()
+    respondToFetch(OUTCOME, reports('succeeded'))
+    respondToFetch(OUTCOME, reports('pending'), { times: 1 })
+    renderEnded(CHECKING)
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(
+      screen.getByRole('heading', { name: 'Checking your payment' })
+    ).toBeVisible()
+
+    await vi.advanceTimersByTimeAsync(1_500)
+
+    expect(
+      screen.getByRole('heading', { name: "You're all set" })
+    ).toBeVisible()
+    expect(
+      screen.getByText(/A payment for Studio went through\./)
+    ).toBeVisible()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent('op-7')
+    expect(screen.queryByText(/Nothing was charged/)).toBeNull()
+  })
+
+  it('turns into an unconfirmed payment, named for support, once Cloud refuses the ended session', async () => {
+    vi.useFakeTimers()
+    respondToFetch(OUTCOME, () =>
+      Response.json(
+        {
+          code: 'INVALID_CREDENTIAL',
+          message: 'The billing session has ended'
+        },
+        { status: 401 }
+      )
+    )
+    renderEnded(CHECKING)
+
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(
+      screen.getByRole('heading', { name: "We couldn't confirm your payment" })
+    ).toBeVisible()
+    expect(screen.getByText(/Don't pay again yet/)).toBeVisible()
+    expect(screen.getByText(/contact support with this code:/)).toBeVisible()
+    expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent('op-7')
+    expect(
+      screen.getByRole('link', { name: 'Contact support' })
+    ).toHaveAttribute('href', expect.stringContaining('Reference%3A%20op-7'))
+    expect(screen.getByText('You can close this tab.')).toBeVisible()
+    expect(screen.queryByText(/Nothing was charged/)).toBeNull()
+  })
+
+  it('stops asking Cloud when the page goes away', async () => {
+    vi.useFakeTimers()
+    respondToFetch(OUTCOME, reports('pending'))
+    const { unmount } = renderEnded(CHECKING)
+    await vi.advanceTimersByTimeAsync(0)
+
+    unmount()
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(fetchRequests(OUTCOME)).toHaveLength(1)
   })
 })

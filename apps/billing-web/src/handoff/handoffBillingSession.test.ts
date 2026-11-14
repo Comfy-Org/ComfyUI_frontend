@@ -99,7 +99,9 @@ const completed = (reference: string): HandoffState => ({
 const checking = (reference: string): HandoffState => ({
   kind: 'ended',
   ending: 'payment_pending',
-  reference
+  reference,
+  workspace: 'Studio',
+  token: 'comfy-scoped-session-1'
 })
 
 describe('createHandoffBillingSession', () => {
@@ -399,6 +401,18 @@ describe('endHandoffAtExpiry', () => {
       kind: 'ended',
       ending: 'link_unavailable'
     })
+  })
+
+  it('ends nothing and keeps no bearer in a tab that never held a handoff', () => {
+    vi.useFakeTimers()
+    handoffTab.value = undefined
+    const storage = memoryStorage()
+    onTestFinished(endHandoffAtExpiry(storage, () => NOW))
+
+    vi.advanceTimersByTime(60 * 60_000)
+
+    expect(handoffTab.value).toBeUndefined()
+    expect(storage.getItem(HANDOFF_KEY)).toBeNull()
   })
 })
 

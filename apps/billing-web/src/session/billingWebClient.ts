@@ -23,6 +23,7 @@ import type {
   BillingSession,
   BillingTransport,
   CredentialedWebSession,
+  OperationOutcomeRead,
   WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import {
@@ -38,6 +39,7 @@ import {
   createSessionBillingTransport,
   createTopupCommand,
   createWorkspaceInviteCommands,
+  readOperationOutcome,
   sessionBillingScopeSource,
   toBillingTelemetryEvent
 } from '@comfyorg/account-core/billing'
@@ -47,6 +49,7 @@ import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebStripeKey } from '@/config/stripeKey'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
 import { notePayment, sessionTabStorage } from '@/handoff/handoffTab'
+import type { CheckingPayment } from '@/handoff/paymentOutcome'
 import type { PaymentEvent } from '@/handoff/paymentTrace'
 import { TRACED_WRITES, paymentEventOf } from '@/handoff/paymentTrace'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
@@ -153,6 +156,19 @@ export function createHandoffBillingClient(
     noteHandoffPayment(paymentEventOf(operation))
   )
   return client
+}
+
+/** Reads how the payment an ended handoff tab is still checking ended, with the bearer that tab kept. */
+export function readPaymentOutcome(
+  { reference, token }: CheckingPayment,
+  signal: AbortSignal
+): Promise<OperationOutcomeRead> {
+  return readOperationOutcome({
+    operationId: reference,
+    token,
+    resolveUrl,
+    signal
+  })
 }
 
 /**

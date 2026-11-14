@@ -478,6 +478,8 @@ describe('createHandoffBillingClient', () => {
       can_reactivate: false,
       can_revert_scheduled_change: false,
       can_run_workflows: true,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_subscribe_self_serve: true,
       can_top_up: true,
       can_upgrade: true,
@@ -871,7 +873,9 @@ describe('createHandoffBillingClient', () => {
   const CHECKING_OP_1: HandoffState = {
     kind: 'ended',
     ending: 'payment_pending',
-    reference: 'op_1'
+    reference: 'op_1',
+    workspace: 'Personal',
+    token: 'comfy-scoped-session-1'
   }
 
   it.for<{
