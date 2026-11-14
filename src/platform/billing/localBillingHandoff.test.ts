@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -17,6 +18,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/i18n'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/refreshOnReturn'), () => ({
@@ -36,7 +38,9 @@ function signedIn(workspaceId: string): DesktopHostAuthState {
   return { status: 'signed_in', userId: 'user-1', workspaceId }
 }
 
-async function signIn() {
+async function signIn(
+  issueBillingHandoff?: DesktopHostAuthBridge['issueBillingHandoff']
+) {
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   let state = signedIn('ws-1')
   const bridge = {
@@ -49,7 +53,8 @@ async function signIn() {
     onChanged: (callback: (next: DesktopHostAuthState) => void) => {
       listeners.add(callback)
       return () => listeners.delete(callback)
-    }
+    },
+    issueBillingHandoff
   } satisfies DesktopHostAuthBridge
   await startDesktopHostSession(bridge)
   return {
@@ -109,6 +114,13 @@ describe('issueLocalBillingHandoff', () => {
       amount_cents: 2500
     })
     expect(registerRefreshOnReturn).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith({
+      operation: 'local_handoff',
+      stage: 'launched',
+      outcome: 'pending',
+      surface: 'local_web',
+      result: 'opened'
+    })
   })
 
   it('sends no amount for a subscription', async () => {
@@ -239,6 +251,348 @@ describe('issueLocalBillingHandoff', () => {
     await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
       status: 'ok',
       url: ENTRY_URL
+    })
+  })
+
+  describe('on Desktop', () => {
+    const issue =
+      vi.fn<NonNullable<DesktopHostAuthBridge['issueBillingHandoff']>>()
+
+    beforeEach(async () => {
+      vi.stubGlobal('__comfyDesktop2', {})
+      stopDesktopHostSession()
+      session = await signIn(issue)
+    })
+
+    it('asks Desktop to issue the picked flow and returns only its entry URL', async () => {
+      issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
+
+      await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+        status: 'ok',
+        url: ENTRY_URL
+      })
+
+      expect(issue).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        'billing_web',
+        'top-up',
+        TOP_UP.amountCents
+      )
+      expect(fetchRequests(HANDOFFS)).toHaveLength(0)
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+        {
+          operation: 'local_handoff',
+          stage: 'launched',
+          outcome: 'pending',
+          surface: 'desktop',
+          result: 'opened'
+        }
+      )
+    })
+
+    it('asks Desktop for a subscription handoff without an amount', async () => {
+      issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
+
+      await issueLocalBillingHandoff({ intent: 'subscription' }, live)
+
+      expect(issue).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        'billing_web',
+        'subscription',
+        undefined
+      )
+    })
+
+    it.for([
+      {
+        name: 'a refusal carries the server message',
+        answer: {
+          status: 'refused',
+          code: 'HANDOFF_DISABLED',
+          message: 'Billing is off'
+        },
+        message: 'Billing is off',
+        signIn: 0
+      },
+      {
+        name: 'an ended sign-in asks to sign in again',
+        answer: { status: 'sign_in_again' },
+        message: 'billingHandoff.signInAgain',
+        signIn: 1
+      },
+      {
+        name: 'an entry URL that is not https is refused',
+        answer: {
+          status: 'issued',
+          entryUrl: 'http://billing.comfy.org/handoff'
+        },
+        message: undefined,
+        signIn: 0
+      },
+      {
+        name: 'a bridge that turned itself off is refused',
+        answer: { status: 'disabled' },
+        message: undefined,
+        signIn: 0
+      }
+    ] as const)('$name', async ({ answer, message, signIn: prompts }) => {
+      issue.mockResolvedValue(answer)
+
+      await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+        status: 'error',
+        message
+      })
+      expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledTimes(prompts)
+    })
+
+    it('reports the code of a refusal Desktop explained', async () => {
+      issue.mockResolvedValue({
+        status: 'refused',
+        code: 'HANDOFF_DISABLED',
+        message: 'Billing is off'
+      })
+
+      await issueLocalBillingHandoff(TOP_UP, live)
+
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+        {
+          operation: 'local_handoff',
+          stage: 'launched',
+          outcome: 'failed',
+          surface: 'desktop',
+          result: 'refused',
+          error_code: 'HANDOFF_DISABLED'
+        }
+      )
+    })
+
+    it('gives up on a bridge that never answers, so later clicks are not stuck', async () => {
+      issue.mockReturnValue(new Promise(() => {}))
+
+      const stuck = issueLocalBillingHandoff(TOP_UP, live)
+      await vi.advanceTimersByTimeAsync(40_000)
+
+      await expect(stuck).resolves.toEqual({
+        status: 'error',
+        message: undefined
+      })
+      issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
+      await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+        status: 'ok',
+        url: ENTRY_URL
+      })
+    })
+
+    it('frees the next handoff as soon as the caller abandons one Desktop has not answered', async () => {
+      issue.mockReturnValueOnce(new Promise(() => {}))
+      const abandoned = new AbortController()
+
+      const dropped = issueLocalBillingHandoff(TOP_UP, abandoned.signal)
+      abandoned.abort()
+
+      await expect(dropped).resolves.toEqual({
+        status: 'error',
+        message: undefined
+      })
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
+      issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
+      await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+        status: 'ok',
+        url: ENTRY_URL
+      })
+    })
+
+    it.for([
+      {
+        name: 'switches to another workspace',
+        leave: () => session.switchWorkspace('ws-2')
+      },
+      {
+        name: 'switches away and back',
+        leave: () => {
+          session.switchWorkspace('ws-2')
+          session.switchWorkspace('ws-1')
+        }
+      },
+      { name: 'signs out', leave: () => stopDesktopHostSession() }
+    ])(
+      'drops the entry URL Desktop issues when the user $name while Desktop is issuing',
+      async ({ leave }) => {
+        issue.mockImplementation(async () => {
+          leave()
+          return { status: 'issued', entryUrl: ENTRY_URL }
+        })
+
+        await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+          status: 'error',
+          message: 'billingHandoff.superseded'
+        })
+        expect(registerRefreshOnReturn).not.toHaveBeenCalled()
+        expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+      }
+    )
+
+    it('asks Desktop once while a handoff is in flight', async () => {
+      issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
+
+      const issues = [
+        issueLocalBillingHandoff(TOP_UP, live),
+        issueLocalBillingHandoff(TOP_UP, live)
+      ]
+
+      await expect(Promise.all(issues)).resolves.toEqual([
+        { status: 'ok', url: ENTRY_URL },
+        { status: 'error', message: undefined }
+      ])
+      expect(issue).toHaveBeenCalledOnce()
+    })
+
+    it('keeps the next handoff when the abandoned one is answered late', async () => {
+      let answerAbandoned: (answer: {
+        status: 'sign_in_again'
+      }) => void = () => {}
+      issue.mockReturnValueOnce(
+        new Promise((resolve) => {
+          answerAbandoned = resolve
+        })
+      )
+      const abandoned = new AbortController()
+      const dropped = issueLocalBillingHandoff(TOP_UP, abandoned.signal)
+      abandoned.abort()
+      await dropped
+      let answerNext: (answer: {
+        status: 'issued'
+        entryUrl: string
+      }) => void = () => {}
+      issue.mockReturnValueOnce(
+        new Promise((resolve) => {
+          answerNext = resolve
+        })
+      )
+
+      const next = issueLocalBillingHandoff(TOP_UP, live)
+      answerAbandoned({ status: 'sign_in_again' })
+      await vi.advanceTimersByTimeAsync(0)
+      const whileNextIsPending = issueLocalBillingHandoff(TOP_UP, live)
+      answerNext({ status: 'issued', entryUrl: ENTRY_URL })
+
+      await expect(whileNextIsPending).resolves.toEqual({
+        status: 'error',
+        message: undefined
+      })
+      await expect(next).resolves.toEqual({ status: 'ok', url: ENTRY_URL })
+      expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ result: 'opened' })
+      )
+    })
+
+    it('does not ask Desktop for a handoff the caller already abandoned', async () => {
+      const abandoned = new AbortController()
+      abandoned.abort()
+
+      await expect(
+        issueLocalBillingHandoff(TOP_UP, abandoned.signal)
+      ).resolves.toEqual({ status: 'error', message: undefined })
+      expect(issue).not.toHaveBeenCalled()
+    })
+
+    it('stops listening to the caller once Desktop answers', async () => {
+      issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
+      const caller = new AbortController()
+      const listen = vi.spyOn(caller.signal, 'addEventListener')
+      const unlisten = vi.spyOn(caller.signal, 'removeEventListener')
+
+      await issueLocalBillingHandoff(TOP_UP, caller.signal)
+
+      expect(listen).toHaveBeenCalledOnce()
+      expect(unlisten).toHaveBeenCalledExactlyOnceWith(
+        'abort',
+        listen.mock.calls[0][1]
+      )
+    })
+
+    it('asks to sign in again when Desktop ends its session over the handoff it refused', async () => {
+      issue.mockImplementation(async () => {
+        stopDesktopHostSession()
+        return { status: 'sign_in_again' }
+      })
+
+      await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+        status: 'error',
+        message: 'billingHandoff.signInAgain'
+      })
+      expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({ result: 'sign_in_again' })
+      )
+    })
+
+    it('drops a sign-in refusal that arrives after the user switched workspace', async () => {
+      issue.mockImplementation(async () => {
+        session.switchWorkspace('ws-2')
+        return { status: 'sign_in_again' }
+      })
+
+      await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+        status: 'error',
+        message: 'billingHandoff.superseded'
+      })
+      expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+    })
+
+    it.for<{ name: string; replace: () => Promise<void> }>([
+      {
+        name: 'switched workspace',
+        replace: async () => session.switchWorkspace('ws-2')
+      },
+      {
+        name: 'signed out and back in',
+        replace: async () => {
+          stopDesktopHostSession()
+          session = await signIn(issue)
+        }
+      }
+    ])(
+      'keeps a refusal superseded when the user $name and then signed out',
+      async ({ replace }) => {
+        issue.mockImplementation(async () => {
+          await replace()
+          stopDesktopHostSession()
+          return { status: 'sign_in_again' }
+        })
+
+        await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+          status: 'error',
+          message: 'billingHandoff.superseded'
+        })
+        expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+        expect(
+          useTelemetry()?.trackBillingEvent
+        ).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({ result: 'superseded' })
+        )
+      }
+    )
+
+    it('treats a bridge that throws before answering as an unexplained refusal', async () => {
+      issue.mockImplementation(() => {
+        throw new Error('ipc boundary')
+      })
+
+      await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+        status: 'error',
+        message: undefined
+      })
+    })
+
+    it('treats a failed bridge call as an unexplained refusal', async () => {
+      issue.mockRejectedValue(new Error('ipc closed'))
+
+      await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+        status: 'error',
+        message: undefined
+      })
     })
   })
 })

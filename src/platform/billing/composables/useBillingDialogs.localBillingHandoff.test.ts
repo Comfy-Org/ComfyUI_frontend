@@ -41,7 +41,7 @@ const signedIn: DesktopHostAuthState = {
   workspaceId: 'ws-1'
 }
 
-async function signInWithFlag(localBillingWeb: boolean) {
+async function signInWithFlag(localBillingWeb: boolean, handoffBridge = false) {
   respondToFetch(/\/api\/features$/, () =>
     Response.json({ local_billing_web: localBillingWeb })
   )
@@ -50,7 +50,10 @@ async function signInWithFlag(localBillingWeb: boolean) {
     getWorkspaceToken: async () => 'token-ws-1',
     requestSignIn: async () => signedIn,
     signOut: async () => ({ status: 'signed_out' }),
-    onChanged: () => () => {}
+    onChanged: () => () => {},
+    ...(handoffBridge && {
+      issueBillingHandoff: async () => ({ status: 'disabled' as const })
+    })
   })
   const flag = useLocalBillingWebFlagStore()
   await vi.waitFor(() => expect(flag.enabled).toBe(localBillingWeb))
@@ -76,15 +79,29 @@ describe('Add credits on local ComfyUI', () => {
       component: TopUpCreditsDialogContentWorkspace
     },
     {
-      name: 'a Desktop build with the flag on',
+      name: 'a Desktop build without the handoff bridge, flag on',
       flag: true,
       isDesktop: true,
+      component: TopUpCreditsDialogContentWorkspace
+    },
+    {
+      name: 'a Desktop build with the handoff bridge, flag on',
+      flag: true,
+      isDesktop: true,
+      bridge: true,
+      component: AddCreditsDialogContent
+    },
+    {
+      name: 'a Desktop build with the handoff bridge, flag off',
+      flag: false,
+      isDesktop: true,
+      bridge: true,
       component: TopUpCreditsDialogContentWorkspace
     }
   ])(
     '$name opens the Add credits dialog that matches its checkout',
-    async ({ flag, component, isDesktop = false }) => {
-      await signInWithFlag(flag)
+    async ({ flag, component, isDesktop = false, bridge = false }) => {
+      await signInWithFlag(flag, bridge)
       distribution.isDesktop = isDesktop
 
       await useBillingDialogs().showTopUpCreditsDialog()
