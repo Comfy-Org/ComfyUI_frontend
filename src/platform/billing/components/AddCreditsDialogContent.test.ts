@@ -20,19 +20,20 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import {
-  autoTopUpCardState,
+  autoTopUpCard,
   loadedAutoTopUp
 } from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
 import {
   autoTopUpEnabledFact,
   canManageAutoTopUpFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import type { BillingTab } from '@/platform/billing/billingTab'
@@ -185,7 +186,9 @@ function renderDialog({
   capabilities.autoTopUpEnabled = autoTopUpEnabledFact(true)
   capabilities.canManageAutoTopUp = canManageAutoTopUpFact(true)
   capabilities.autoTopUpSetup = computed(() => ({ state: 'ready' }))
-  autoTopUpCardState.value = loadedAutoTopUp('off')
+  vi.mocked(useBillingAutoTopUpCard).mockReturnValue(
+    autoTopUpCard(loadedAutoTopUp('off'))
+  )
   vi.mocked(useBillingSdkStore().readPaymentMethods).mockResolvedValue({
     status: 'ok',
     value: []

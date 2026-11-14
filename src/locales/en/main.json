@@ -2159,9 +2159,7 @@
     "LOAD3D_MODEL_INFO": "LOAD3D_MODEL_INFO",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
-    "LUMA_CONCEPTS": "LUMA_CONCEPTS",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -4193,6 +4191,7 @@
     "planCredits": "Plan credits",
     "topUpCredits": "Top-up credits",
     "paymentProcessing": "Payment processing…",
+    "purchasesStopped": "Buying credits isn't available right now",
     "planStatus": {
       "noPlan": "No plan",
       "paused": "Paused",

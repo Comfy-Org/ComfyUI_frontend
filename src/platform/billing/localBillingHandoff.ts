@@ -1,4 +1,5 @@
 import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import type { BillingHandoffCreateRequest } from '@comfyorg/ingest-types'
 import {
   zBillingHandoffCreateResponse,
   zErrorResponse
@@ -44,6 +45,20 @@ async function serverMessage(response: Response): Promise<string | undefined> {
   return body.success ? body.data.message : undefined
 }
 
+function issueBody(
+  workspaceId: string,
+  request: BillingHandoffRequest
+): BillingHandoffCreateRequest {
+  return {
+    workspace_id: workspaceId,
+    receiver: 'billing_web',
+    surface: 'local_web',
+    intent: request.intent,
+    ...('amountCents' in request ? { amount_cents: request.amountCents } : {}),
+    client_version: __COMFYUI_FRONTEND_VERSION__.slice(0, 64)
+  }
+}
+
 async function issueBillingHandoff(
   token: string,
   workspaceId: string,
@@ -59,16 +74,7 @@ async function issueBillingHandoff(
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        workspace_id: workspaceId,
-        receiver: 'billing_web',
-        surface: 'local_web',
-        intent: request.intent,
-        ...('amountCents' in request
-          ? { amount_cents: request.amountCents }
-          : {}),
-        client_version: __COMFYUI_FRONTEND_VERSION__.slice(0, 64)
-      }),
+      body: JSON.stringify(issueBody(workspaceId, request)),
       signal: combineAbortSignals([
         signal,
         AbortSignal.timeout(ISSUE_TIMEOUT_MS)
