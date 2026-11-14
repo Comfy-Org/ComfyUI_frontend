@@ -37,6 +37,12 @@ class JobsApiError extends Error {}
 
 interface FetchJobsOptions {
   throwOnError?: boolean
+  /**
+   * Ask the server to count `total` only up to its cap (`capped_total=true`,
+   * cloud). A capped total is a lower bound once the cap is reached; paging
+   * still follows `has_more`.
+   */
+  cappedTotal?: boolean
 }
 
 export interface FetchHistoryPageResult {
@@ -59,7 +65,8 @@ async function fetchJobsRaw(
   options?: FetchJobsOptions
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
-  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
+  const cappedTotalParam = options?.cappedTotal ? '&capped_total=true' : ''
+  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}${cappedTotalParam}`
   try {
     const res = await fetchApi(url)
     if (!res.ok) {
@@ -128,6 +135,8 @@ export async function fetchHistoryPage(
     options
   )
 
+  // A capped total makes these numbers fall below zero past the cap, but they
+  // still fall with list position and stay below every queued job.
   return {
     jobs: assignPriority(result.jobs, result.total - result.offset),
     total: result.total,

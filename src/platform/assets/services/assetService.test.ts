@@ -1142,6 +1142,28 @@ describe(assetService.getAssetsByTag, () => {
     expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
 
+  it.for([
+    { isCloud: true, cappedTotal: 'true' },
+    { isCloud: false, cappedTotal: null }
+  ])(
+    'sends capped_total=$cappedTotal when isCloud is $isCloud',
+    async ({ isCloud, cappedTotal }) => {
+      mockDistributionState.isCloud = isCloud
+      onTestFinished(() => {
+        mockDistributionState.isCloud = false
+      })
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
+      )
+
+      await assetService.getAssetsByTag('input')
+
+      const requestedUrl = vi.mocked(api.fetchApi).mock.calls[0]?.[0]
+      const params = new URL(requestedUrl, 'http://localhost').searchParams
+      expect(params.get('capped_total')).toBe(cappedTotal)
+    }
+  )
+
   it('normalizes tag query parameters', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])

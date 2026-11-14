@@ -13,6 +13,15 @@ import { api } from '@/scripts/api'
 // pagination-dedup assertions no longer match current `doLoadMore`/`loadNew`
 // behavior on `main` (no overlap dedup, no updated knownIds mid-walk) and would
 // need separate, unrelated fixes to re-add; out of scope for this row.
+const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
+  ...(await importOriginal()),
+  get isCloud() {
+    return mockDistributionState.isCloud
+  }
+}))
+
 vi.mock(import('@/scripts/api'))
 
 const fetchApiMock = vi.mocked(api.fetchApi)
@@ -82,6 +91,28 @@ const transientFailures: {
     reason: 'asset fetch failed'
   }
 ]
+
+describe('useAssetsQuery capped total', () => {
+  it.for([
+    { isCloud: true, cappedTotal: 'true' },
+    { isCloud: false, cappedTotal: null }
+  ])(
+    'sends capped_total=$cappedTotal when isCloud is $isCloud',
+    async ({ isCloud, cappedTotal }) => {
+      mockDistributionState.isCloud = isCloud
+      onTestFinished(() => {
+        mockDistributionState.isCloud = false
+      })
+
+      await createList(`capped-total-${isCloud}`, ['newest'])
+
+      const [url] = fetchApiMock.mock.calls[0]
+      expect(
+        new URL(url, 'http://localhost').searchParams.get('capped_total')
+      ).toBe(cappedTotal)
+    }
+  )
+})
 
 describe('useAssetsQuery loadMore transient failure retry', () => {
   beforeEach(() => {

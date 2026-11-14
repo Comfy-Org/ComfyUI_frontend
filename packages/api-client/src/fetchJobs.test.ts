@@ -217,6 +217,62 @@ describe('fetchJobs', () => {
       expect(result.jobs[0].priority).toBe(5)
       expect(result.jobs[1].priority).toBe(4)
     })
+
+    it.for([
+      {
+        cappedTotal: true,
+        url: '/jobs?status=completed,failed,cancelled&limit=200&offset=0&capped_total=true'
+      },
+      {
+        cappedTotal: false,
+        url: '/jobs?status=completed,failed,cancelled&limit=200&offset=0'
+      }
+    ])(
+      'requests a capped total only when asked (cappedTotal: $cappedTotal)',
+      async ({ cappedTotal, url }) => {
+        const mockFetch = vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(createMockResponse([]))
+        })
+
+        await fetchHistory(mockFetch, 200, 0, { cappedTotal })
+
+        expect(mockFetch).toHaveBeenCalledWith(url)
+      }
+    )
+
+    it('keeps history priorities falling with position past a capped total', async () => {
+      const cappedTotal = 10_000
+      const page = (offset: number) => ({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse(
+              [
+                createMockJob(`job${offset}`, 'completed'),
+                createMockJob(`job${offset + 1}`, 'completed')
+              ],
+              cappedTotal,
+              { offset, limit: 2, has_more: true }
+            )
+          )
+      })
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(page(9_999))
+        .mockResolvedValueOnce(page(10_001))
+
+      const first = await fetchHistoryPage(mockFetch, 2, 9_999, {
+        cappedTotal: true
+      })
+      const second = await fetchHistoryPage(mockFetch, 2, 10_001, {
+        cappedTotal: true
+      })
+
+      expect(
+        [...first.jobs, ...second.jobs].map((job) => job.priority)
+      ).toEqual([1, 0, -1, -2])
+    })
   })
 
   describe('fetchQueue', () => {
@@ -264,6 +320,19 @@ describe('fetchJobs', () => {
       // Pending should have higher priority than running
       expect(result.Pending[0].priority).toBeGreaterThan(
         result.Running[0].priority
+      )
+    })
+
+    it('requests a capped total when asked', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createMockResponse([]))
+      })
+
+      await fetchQueue(mockFetch, { cappedTotal: true })
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/jobs?status=in_progress,pending&limit=200&offset=0&capped_total=true'
       )
     })
 
