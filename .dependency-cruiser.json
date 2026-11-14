@@ -8,6 +8,34 @@
       "to": { "circular": true }
     },
     {
+      "name": "queue-package-does-not-import-application",
+      "severity": "error",
+      "from": { "path": "^packages/api-client/src/(jobs|results)/" },
+      "to": { "path": "^src/" }
+    },
+    {
+      "name": "queue-consumers-use-public-entry-points",
+      "severity": "error",
+      "from": { "path": "^src/", "pathNot": "^src/platform/queue/" },
+      "to": {
+        "path": "^src/platform/queue/",
+        "pathNot": [
+          "^src/platform/queue/stores/(queueStore|queueSettingsStore|jobModelDownloadStore)\\.ts$",
+          "^src/platform/queue/components/(QueueControls|QueueInlineProgress|QueueInlineProgressSummary|QueueNotificationBannerHost|QueueProgressOverlay)\\.vue$",
+          "^src/platform/queue/components/run/ComfyQueueButton\\.vue$",
+          "^src/platform/queue/composables/useQueueFeatureFlags\\.ts$",
+          "^src/platform/queue/presentation/queueDisplay\\.ts$",
+          "^src/platform/queue/runtime/(autoQueueService|legacyAutoQueue|useQueuePolling|useReconnectQueueRefresh)\\.ts$",
+          "^src/platform/queue/legacy/(ComfyList|types)\\.ts$",
+          "^src/platform/queue/commands/useQueueCommands\\.ts$",
+          "^src/platform/queue/settings/queueSettings\\.ts$",
+          "^src/platform/queue/sidebar/useJobHistorySidebarTab\\.ts$",
+          "^src/platform/queue/services/jobOutputCache\\.ts$",
+          "^src/platform/queue/submission/queueSubmission\\.ts$"
+        ]
+      }
+    },
+    {
       "name": "agent-feedback-through-platform-support",
       "severity": "error",
       "from": { "path": "^src/workbench/extensions/agent/" },

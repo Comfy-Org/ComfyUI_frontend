@@ -68,6 +68,9 @@
     },
     {
       "path": "src/utils/splitterWidthUtil.ts"
+    },
+    {
+      "path": "src/components/actionbar/**"
     }
   ],
   "publicEntryPoints": [],
