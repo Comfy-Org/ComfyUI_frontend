@@ -105,7 +105,7 @@ const SAVED_FILES: UserDataFullInfo[] = [
 ].map((path) => ({ path, modified: Date.parse(SAVED_AT), size: 64 }))
 
 test.describe(
-  'Agent history reports an unresolvable chat workflow',
+  'Agent history opens a chat whose workflow cannot be resolved',
   { tag: ['@cloud', '@agent'] },
   () => {
     test.beforeEach(async ({ page, agentFlagEnabled }) => {
@@ -131,7 +131,7 @@ test.describe(
       })
     })
 
-    test('logs why a chat whose workflow cannot be resolved does not open', async ({
+    test('opens the chat with its target unavailable when two saved workflows share its name', async ({
       page
     }) => {
       const agentPanel = new AgentPanel(page)
@@ -148,18 +148,20 @@ test.describe(
         .click()
       await historyRow.click()
 
-      await expect(panel.getByRole('alert')).toHaveText(
-        enMessages.agent.historyOpenFailed
-      )
-      await expect
-        .poll(() =>
-          consoleErrors.errors.filter((error) =>
-            error.startsWith(
-              `${REPORTED_ERROR_PREFIX}agent_workflow_restore_failed`
-            )
+      await expect(agentPanel.userMessageBubbles).toHaveText([USER_REQUEST])
+      await expect(
+        panel.getByText(enMessages.agent.targetWorkflowUnavailable)
+      ).toBeVisible()
+      await expect(
+        panel.getByText(enMessages.agent.historyOpenFailed)
+      ).toBeHidden()
+      expect(
+        consoleErrors.errors.filter((error) =>
+          error.startsWith(
+            `${REPORTED_ERROR_PREFIX}agent_workflow_restore_failed`
           )
         )
-        .toHaveLength(1)
+      ).toEqual([])
     })
   }
 )

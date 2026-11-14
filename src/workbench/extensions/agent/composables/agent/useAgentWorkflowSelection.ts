@@ -23,7 +23,7 @@ import type {
 } from './useAgentWorkflowResolver'
 
 type RestorationOutcome =
-  | { outcome: 'open'; target: ComfyWorkflow | null }
+  | { outcome: 'open'; target: ComfyWorkflow | null; confirmedListed: boolean }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
 
@@ -52,7 +52,7 @@ function restorationOutcomeFor(
       return { outcome: 'deleted' }
     case 'live':
     case 'unknown':
-      return { outcome: 'open', target }
+      return { outcome: 'open', target, confirmedListed: false }
   }
 }
 
@@ -93,6 +93,7 @@ export function useAgentWorkflowSelection({
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,
     storedWorkflowFor,
+    completeCloudListingIncludes,
     cloudListingOmits,
     cloudWorkflowLifecycle
   } = resolver
@@ -257,11 +258,6 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
-  /**
-   * A complete listing that omits the id is conclusive only when nothing local
-   * owns it. With a local owner, `GET /api/workflows/{id}` decides, because the
-   * listing hides version-less drafts.
-   */
   async function resolveRestorationTarget(
     workflowId: string,
     isCurrent: () => boolean
@@ -275,7 +271,11 @@ export function useAgentWorkflowSelection({
       target = localOwnerFor(workflowId)
     }
     if (!listed || !cloudListingOmits(workflowId))
-      return { outcome: 'open', target }
+      return {
+        outcome: 'open',
+        target,
+        confirmedListed: listed && completeCloudListingIncludes(workflowId)
+      }
     if (target === null) return { outcome: 'deleted' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
@@ -313,45 +313,42 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return NOT_RESTORED
     const cached = cachedOpenWorkflowFor(workflowId)
     if (cached !== null)
-      return openRestoredWorkflow(cached, workflowId, isCurrent)
+      return openRestoredWorkflow(cached, workflowId, isCurrent, false)
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
     if (resolved.outcome === 'superseded') return RESTORE_ABANDONED
     if (resolved.outcome === 'deleted') {
       panelStore.markWorkflowTargetUnavailable()
       return NOT_RESTORED
     }
-    return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
+    return openRestoredWorkflow(
+      resolved.target,
+      workflowId,
+      isCurrent,
+      resolved.confirmedListed
+    )
   }
 
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
     workflowId: string,
-    isCurrent: () => boolean
+    isCurrent: () => boolean,
+    confirmedListed: boolean
   ): Promise<WorkflowRestoration> {
     try {
       if (target === null) {
-        await workflowStore.syncWorkflows()
+        const synced = await workflowStore.syncWorkflows()
         if (!isCurrent()) return RESTORE_ABANDONED
         target = storedWorkflowFor(workflowId)
-      }
-      if (target === null) {
-        panelStore.setWorkflowTarget(null)
-        failRestore(
-          workflowId,
-          new Error('No saved workflow resolves to the chat target')
-        )
-        return RESTORE_ABANDONED
+        if (target === null)
+          return restoreUnresolved(workflowId, confirmedListed, synced)
       }
       const opened = await workflowService.openWorkflow(target, { isCurrent })
       if (!isCurrent()) return RESTORE_ABANDONED
-      if (!opened) {
-        panelStore.setWorkflowTarget(null)
-        failRestore(
+      if (!opened)
+        return abandonRestore(
           workflowId,
-          new Error('The chat target workflow did not open')
+          'The chat target workflow did not open'
         )
-        return RESTORE_ABANDONED
-      }
       commitWorkflowTarget(target, workflowId, 'restored')
       return { ready: true, committedWorkflowId: workflowId }
     } catch (error) {
@@ -359,6 +356,44 @@ export function useAgentWorkflowSelection({
       failRestore(workflowId, error)
       return RESTORE_ABANDONED
     }
+  }
+
+  function restoreUnresolved(
+    workflowId: string,
+    confirmedListed: boolean,
+    synced: boolean
+  ): WorkflowRestoration {
+    if (!synced)
+      return abandonRestore(workflowId, 'The saved workflow sync failed')
+    if (
+      !confirmedListed ||
+      !completeCloudListingIncludes(workflowId) ||
+      !workflowStore.tabsRestored
+    )
+      return abandonRestore(
+        workflowId,
+        'No saved workflow resolves to the chat target'
+      )
+    reportError(
+      new Error('A listed workflow resolves to no single saved file'),
+      {
+        surface: 'agent',
+        errorType: 'agent_workflow_target_unavailable',
+        level: 'warning',
+        context: { workflowId }
+      }
+    )
+    panelStore.markWorkflowTargetUnavailable()
+    return NOT_RESTORED
+  }
+
+  function abandonRestore(
+    workflowId: string,
+    message: string
+  ): WorkflowRestoration {
+    panelStore.setWorkflowTarget(null)
+    failRestore(workflowId, new Error(message))
+    return RESTORE_ABANDONED
   }
 
   function failRestore(workflowId: string, cause: unknown): void {

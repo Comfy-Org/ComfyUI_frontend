@@ -69,7 +69,7 @@ function setup({ tabsRestored = true }: { tabsRestored?: boolean } = {}) {
   workflows.attachWorkflow(current)
   workflows.openWorkflowsInBackground({ right: [current.path] })
   workflows.activeWorkflow = current
-  vi.mocked(workflows.syncWorkflows).mockResolvedValue(undefined)
+  vi.mocked(workflows.syncWorkflows).mockResolvedValue(true)
   vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
     async (workflow) => {
       workflows.openWorkflowsInBackground({ right: [workflow.path] })
@@ -198,8 +198,8 @@ describe('historical workflow restoration', () => {
     let finishSync = () => {}
     vi.mocked(workflows.syncWorkflows).mockImplementationOnce(
       () =>
-        new Promise<void>((resolve) => {
-          finishSync = resolve
+        new Promise<boolean>((resolve) => {
+          finishSync = () => resolve(true)
         })
     )
     const restoration = selection.restoreTarget('wf-saved', () => true)
@@ -303,6 +303,7 @@ describe('historical workflow restoration', () => {
     saved.load = vi.fn(async () => saved)
     vi.mocked(workflows.syncWorkflows).mockImplementationOnce(async () => {
       workflows.attachWorkflow(saved)
+      return true
     })
 
     await selection.restoreTarget('wf-saved', () => true)
@@ -340,6 +341,7 @@ describe('historical workflow restoration', () => {
       markStarted()
       await pending
       workflows.attachWorkflow(saved)
+      return true
     })
     const restoration = selection.restoreTarget('wf-saved', () => true)
     await started
@@ -358,24 +360,171 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it('keeps the current view and reports a failed restore when a listed workflow has no saved file', async () => {
+  it('opens the chat with its workflow unavailable when a listed workflow has no saved file', async () => {
     const { selection, workflows, panel, current, warnRestoreFailed } = setup()
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: true,
+      committedWorkflowId: null
+    })
+
+    expect(workflows.syncWorkflows).toHaveBeenCalledOnce()
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('A listed workflow resolves to no single saved file'),
+      {
+        surface: 'agent',
+        errorType: 'agent_workflow_target_unavailable',
+        level: 'warning',
+        context: { workflowId: 'wf-saved' }
+      }
+    )
+  })
+
+  it('opens the chat with its workflow unavailable when two saved files share its name', async () => {
+    const { selection, workflows, panel, current, warnRestoreFailed } = setup()
+    workflows.attachWorkflow(
+      createMockLoadedWorkflow({
+        path: 'workflows/saved.json',
+        filename: 'saved',
+        isTemporary: false
+      })
+    )
+    workflows.attachWorkflow(
+      createMockLoadedWorkflow({
+        path: 'workflows/a/saved.json',
+        filename: 'saved',
+        isTemporary: false
+      })
+    )
+
+    expect(await selection.restoreTarget('wf-saved', () => true)).toEqual({
+      ready: true,
+      committedWorkflowId: null
+    })
+
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
+  it('fails and stays retryable when an incomplete listing names a workflow with no saved file', async () => {
+    const { selection, panel, listCloudWorkflows, warnRestoreFailed } = setup()
+    listCloudWorkflows.mockImplementationOnce(async () =>
+      listing([{ id: 'wf-saved', name: 'saved' }], false)
+    )
 
     expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
       false
     )
 
-    expect(workflows.activeWorkflow?.path).toBe(current.path)
-    expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(false)
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
-    expect(reportError).toHaveBeenCalledWith(
-      new Error('No saved workflow resolves to the chat target'),
-      {
-        surface: 'agent',
-        errorType: 'agent_workflow_restore_failed',
-        context: { workflowId: 'wf-saved' }
-      }
+  })
+
+  it('fails and stays retryable when the listing fails after an earlier one named the workflow', async () => {
+    const {
+      selection,
+      resolver,
+      panel,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup()
+    await resolver.refreshCloudWorkflowIds()
+    listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+  })
+
+  it('fails and stays retryable when an incomplete listing replaces the index during the sync', async () => {
+    const {
+      selection,
+      workflows,
+      resolver,
+      panel,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup()
+    const saved = createMockLoadedWorkflow({
+      path: 'workflows/saved.json',
+      filename: 'saved',
+      isTemporary: false
+    })
+    vi.mocked(workflows.syncWorkflows).mockImplementationOnce(async () => {
+      workflows.attachWorkflow(saved)
+      listCloudWorkflows.mockImplementationOnce(async () =>
+        listing([{ id: 'wf-current', name: 'current' }], false)
+      )
+      await resolver.refreshCloudWorkflowIds()
+      return true
+    })
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+  })
+
+  it('opens the chat with its workflow unavailable when startup restores tabs during the restore', async () => {
+    const { selection, panel, listCloudWorkflows, workflows } = setup({
+      tabsRestored: false
+    })
+
+    const restoration = selection.restoreTarget('wf-saved', () => true)
+    await vi.waitFor(() => expect(listCloudWorkflows).toHaveBeenCalled())
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(panel.targetUnavailable).toBe(false)
+
+    workflows.markTabsRestored()
+
+    expect(await restoration).toEqual({
+      ready: true,
+      committedWorkflowId: null
+    })
+    expect(panel.targetUnavailable).toBe(true)
+  })
+
+  it('fails and stays retryable when startup has not restored tabs for a listed workflow', async () => {
+    vi.useFakeTimers()
+    try {
+      const { selection, panel, warnRestoreFailed } = setup({
+        tabsRestored: false
+      })
+      const restoration = selection.restoreTarget('wf-saved', () => true)
+
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect((await restoration).ready).toBe(false)
+      expect(panel.targetUnavailable).toBe(false)
+      expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('fails and stays retryable when the sync for a listed workflow fails', async () => {
+    const { selection, workflows, panel, warnRestoreFailed } = setup()
+    vi.mocked(workflows.syncWorkflows).mockResolvedValueOnce(false)
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      false
+    )
+
+    expect(panel.targetUnavailable).toBe(false)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenLastCalledWith(
+      new Error('The saved workflow sync failed'),
+      expect.objectContaining({ errorType: 'agent_workflow_restore_failed' })
     )
   })
 
