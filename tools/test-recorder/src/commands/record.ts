@@ -28,8 +28,16 @@ import { writeFileExclusive } from '../cli/exclusiveWrite'
 import { runCommand } from '../cli/run'
 import { detectAgentClis } from '../checks/agentCli'
 import { runAgentRefactor } from '../agent/refactor'
-import { stepHeader } from '../ui/steps'
-import { pass, fail, warn, alert, info, blank, box } from '../ui/logger'
+import {
+  stepHeader,
+  pass,
+  fail,
+  warn,
+  alert,
+  info,
+  blank,
+  box
+} from '../ui/logger'
 import { toSlug } from '../cli/slug'
 import { TAG_REGISTRY } from '../tags'
 import { USE_CASES, useCaseById } from '../useCases'
