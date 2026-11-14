@@ -146,23 +146,42 @@ export function writeTabMarker(marker: TabMarker, state: HandoffState): void {
   )
 }
 
+function textOf(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined
+}
+
+function checkingFrom(
+  stored: Record<string, unknown>
+): CheckingPayment | undefined {
+  const { reference, workspace, token, since } = stored
+  const complete =
+    typeof reference === 'string' &&
+    typeof workspace === 'string' &&
+    typeof token === 'string' &&
+    typeof since === 'number'
+  return complete
+    ? {
+        kind: 'ended',
+        ending: 'payment_pending',
+        reference,
+        workspace,
+        token,
+        since
+      }
+    : undefined
+}
+
 function endedFrom(stored: Record<string, unknown>): HandoffState {
   const ending = ENDINGS.find((e) => e === stored.ending)
-  const reference =
-    typeof stored.reference === 'string' ? stored.reference : undefined
-  const workspace =
-    typeof stored.workspace === 'string' ? stored.workspace : undefined
-  const { token } = stored
+  const reference = textOf(stored.reference)
+  const workspace = textOf(stored.workspace)
   if (ending === 'completed')
     return workspace === undefined
       ? UNCONFIRMED
       : { kind: 'ended', ending, workspace, reference }
-  const canReadOutcome =
-    reference !== undefined &&
-    workspace !== undefined &&
-    typeof token === 'string'
-  if (ending === 'payment_pending' && canReadOutcome)
-    return { kind: 'ended', ending, reference, workspace, token }
+  const checking =
+    ending === 'payment_pending' ? checkingFrom(stored) : undefined
+  if (checking) return checking
   return ending ? { kind: 'ended', ending, reference } : UNCONFIRMED
 }
 
@@ -261,6 +280,7 @@ function endingFrom(known: {
   readonly storageHoldsSession: boolean
   readonly workspace: string
   readonly token: string
+  readonly endedAt: number
 }): HandoffState {
   const { trace, workspace, token } = known
   const payment = paymentIn(known.pointer, trace)
@@ -274,7 +294,8 @@ function endingFrom(known: {
       ending: 'payment_pending',
       reference: unsettled,
       workspace,
-      token
+      token,
+      since: known.endedAt
     }
   if (trace.unanswered) return UNCONFIRMED
   const reference = payment?.operationId ?? trace.paid
@@ -300,6 +321,7 @@ export function sessionEnding(
     trace: live,
     workspace: session.workspace.name,
     token: session.token,
+    endedAt: now(),
     pointer: createOperationPointerStore(storage, now).read({
       userId: session.userId,
       workspaceId: session.workspace.id,
@@ -367,17 +389,11 @@ export interface PaymentOutcomeEnv {
 }
 
 /**
- * Reads the outcome of the payment an ended tab is still checking, one read at
- * a time, until an ending replaces it. Returns how to stop.
+ * Reads the outcome of the payment an ended tab is checking, one read at a
+ * time, until an ending replaces it. Returns how to stop.
  */
 export function followPaymentOutcome(env: PaymentOutcomeEnv): () => void {
   const { storage, readOutcome, marker = windowNameMarker } = env
-  const checking = handoffTab.value
-  if (checking === undefined || !('token' in checking)) return () => {}
-
-  const stopped = new AbortController()
-  const startedAt = Date.now()
-  let timer: ReturnType<typeof setTimeout> | undefined
 
   function end(ending: HandoffState): void {
     if (!writeHandoffState(storage, ending)) forgetHandoffState(storage)
@@ -385,21 +401,39 @@ export function followPaymentOutcome(env: PaymentOutcomeEnv): () => void {
     handoffTab.value = ending
   }
 
-  async function read(
-    watched: CheckingPayment,
-    previousDelayMs?: number
-  ): Promise<void> {
-    const answer = await readOutcome(watched, stopped.signal)
-    if (stopped.signal.aborted || handoffTab.value !== watched) return
-    const next = afterOutcomeRead(watched, answer, Date.now() - startedAt)
-    if (next !== watched) return end(next)
-    const delayMs = backoffDelayMs(previousDelayMs)
-    timer = setTimeout(() => void read(watched, delayMs), delayMs)
+  function follow(checking: CheckingPayment): () => void {
+    const stopped = new AbortController()
+    let timer: ReturnType<typeof setTimeout> | undefined
+
+    async function read(previousDelayMs?: number): Promise<void> {
+      const answer = await readOutcome(checking, stopped.signal)
+      if (stopped.signal.aborted) return
+      const waitedMs = Date.now() - checking.since
+      const next = afterOutcomeRead(checking, answer, waitedMs)
+      if (next !== checking) return end(next)
+      const delayMs = backoffDelayMs(previousDelayMs)
+      timer = setTimeout(() => void read(delayMs), delayMs)
+    }
+
+    void read()
+    return () => {
+      stopped.abort()
+      clearTimeout(timer)
+    }
   }
 
-  void read(checking)
+  let stopFollowing = () => {}
+  const stopWatching = watch(
+    handoffTab,
+    (state) => {
+      stopFollowing()
+      stopFollowing =
+        state !== undefined && 'token' in state ? follow(state) : () => {}
+    },
+    { immediate: true, flush: 'sync' }
+  )
   return () => {
-    stopped.abort()
-    clearTimeout(timer)
+    stopWatching()
+    stopFollowing()
   }
 }

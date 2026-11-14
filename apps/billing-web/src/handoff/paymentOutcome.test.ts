@@ -2,6 +2,7 @@ import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 
 import type { HandoffState, TabMarker } from '@/handoff/handoffTab'
 import {
+  endHandoffSession,
   followPaymentOutcome,
   handoffTab,
   readHandoffState,
@@ -16,13 +17,26 @@ const OUTCOME = 'https://testcloud.comfy.org/api/billing/ops/op-7/outcome'
 const HANDOFF_KEY = 'comfy.billing-web.handoff.v1'
 const BEARER = 'comfy-scoped-session-1'
 const FIVE_MINUTES = 5 * 60_000
+const NOW = Date.parse('2026-11-09T12:30:00Z')
 
 const CHECKING: CheckingPayment = {
   kind: 'ended',
   ending: 'payment_pending',
   reference: 'op-7',
   workspace: 'Studio',
-  token: BEARER
+  token: BEARER,
+  since: NOW
+}
+const LIVE: HandoffState = {
+  kind: 'session',
+  session: {
+    token: BEARER,
+    expiresAt: NOW,
+    userId: 'user-1',
+    email: 'a@example.com',
+    workspace: { id: 'ws-1', name: 'Studio', type: 'team' },
+    role: 'owner'
+  }
 }
 type Ended = Extract<HandoffState, { kind: 'ended' }>
 
@@ -76,7 +90,7 @@ const passes = (ms: number) => vi.advanceTimersByTimeAsync(ms)
 const outcomeReads = () => fetchRequests(OUTCOME).length
 
 beforeEach(() => {
-  vi.useFakeTimers()
+  vi.useFakeTimers({ now: NOW })
   sessionStorage.clear()
   handoffTab.value = undefined
 })
@@ -206,6 +220,43 @@ describe('followPaymentOutcome', () => {
     expect(outcomeReads()).toBe(readsWhenItGaveUp)
   })
 
+  it.for<{ name: string; answer: () => Response; ended: Ended }>([
+    {
+      name: 'is still pending, as unconfirmed',
+      answer: reports('pending'),
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'went through meanwhile, as completed',
+      answer: reports('succeeded'),
+      ended: COMPLETED
+    }
+  ])(
+    'reads once more after a reload past the five minutes and ends a payment that $name',
+    async ({ answer, ended }) => {
+      respondToFetch(OUTCOME, answer)
+      openEndedTab({ ...CHECKING, since: NOW - FIVE_MINUTES - 60_000 })
+
+      await passes(FIVE_MINUTES)
+
+      expect(handoffTab.value).toEqual(ended)
+      expect(outcomeReads()).toBe(1)
+    }
+  )
+
+  it('starts checking when the session it was opened over ends on an unsettled payment', async () => {
+    respondToFetch(OUTCOME, reports('succeeded'))
+    const { marker } = openEndedTab({ ...LIVE, accepted: 'op-7' })
+    await passes(0)
+    expect(fetch).not.toHaveBeenCalled()
+
+    endHandoffSession(sessionTabStorage, () => NOW, marker)
+    await passes(0)
+
+    expect(handoffTab.value).toEqual(COMPLETED)
+    expect(outcomeReads()).toBe(1)
+  })
+
   it.for<{ name: string; answer: () => Response | Promise<Response> }>([
     {
       name: 'server errors',
@@ -304,20 +355,7 @@ describe('followPaymentOutcome', () => {
 
   it.for<{ name: string; state: HandoffState | undefined }>([
     { name: 'a tab that never held a handoff', state: undefined },
-    {
-      name: 'a live handoff session',
-      state: {
-        kind: 'session',
-        session: {
-          token: BEARER,
-          expiresAt: Date.parse('2026-11-09T12:30:00Z'),
-          userId: 'user-1',
-          email: 'a@example.com',
-          workspace: { id: 'ws-1', name: 'Studio', type: 'team' },
-          role: 'owner'
-        }
-      }
-    },
+    { name: 'a live handoff session', state: LIVE },
     {
       name: 'a tab that ended with no payment to check',
       state: { kind: 'ended', ending: 'link_unavailable' }

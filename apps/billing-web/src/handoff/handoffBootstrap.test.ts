@@ -29,7 +29,8 @@ const CHECKING: HandoffState = {
   ending: 'payment_pending',
   reference: 'op-7',
   workspace: 'Studio',
-  token: 'comfy-scoped-session-1'
+  token: 'comfy-scoped-session-1',
+  since: NOW
 }
 
 const liveSession: HandoffState = {

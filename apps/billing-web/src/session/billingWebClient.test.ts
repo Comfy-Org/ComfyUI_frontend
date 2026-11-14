@@ -875,7 +875,8 @@ describe('createHandoffBillingClient', () => {
     ending: 'payment_pending',
     reference: 'op_1',
     workspace: 'Personal',
-    token: 'comfy-scoped-session-1'
+    token: 'comfy-scoped-session-1',
+    since: expect.any(Number)
   }
 
   it.for<{

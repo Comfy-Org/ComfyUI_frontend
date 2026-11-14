@@ -1,5 +1,5 @@
-import type { BillingOpOutcomeResponse } from '@comfyorg/ingest-types'
 import { zGetBillingOpOutcomeResponse } from '@comfyorg/ingest-types/zod'
+import type { z } from 'zod'
 
 import type { BillingErrorCode } from './billingContracts'
 import { operationRoute } from './operationLifecycle'
@@ -18,7 +18,7 @@ export function operationOutcomeRoute(operationId: string): string {
 export type OperationOutcomeRead =
   | {
       readonly kind: 'outcome'
-      readonly status: BillingOpOutcomeResponse['status']
+      readonly status: z.infer<typeof zGetBillingOpOutcomeResponse>['status']
     }
   | { readonly kind: 'refused' }
   | { readonly kind: 'unknown' }

@@ -16,13 +16,15 @@ function renderEnded(state: HandoffState | undefined) {
 
 const LINK = 'This checkout link no longer works'
 const OUTCOME = 'https://testcloud.comfy.org/api/billing/ops/op-7/outcome'
+const NOW = Date.parse('2026-11-09T12:30:00Z')
 
 const CHECKING: HandoffState = {
   kind: 'ended',
   ending: 'payment_pending',
   reference: 'op-7',
   workspace: 'Studio',
-  token: 'comfy-scoped-session-1'
+  token: 'comfy-scoped-session-1',
+  since: NOW
 }
 
 const reports = (status: string) => () => Response.json({ status })
@@ -130,7 +132,7 @@ describe('HandoffEndedView', () => {
   })
 
   it('turns into the payment that went through once Cloud reports it, with no reload', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ now: NOW })
     respondToFetch(OUTCOME, reports('succeeded'))
     respondToFetch(OUTCOME, reports('pending'), { times: 1 })
     renderEnded(CHECKING)
@@ -153,7 +155,7 @@ describe('HandoffEndedView', () => {
   })
 
   it('turns into an unconfirmed payment, named for support, once Cloud refuses the ended session', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ now: NOW })
     respondToFetch(OUTCOME, () =>
       Response.json(
         {
@@ -181,7 +183,7 @@ describe('HandoffEndedView', () => {
   })
 
   it('stops asking Cloud when the page goes away', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ now: NOW })
     respondToFetch(OUTCOME, reports('pending'))
     const { unmount } = renderEnded(CHECKING)
     await vi.advanceTimersByTimeAsync(0)

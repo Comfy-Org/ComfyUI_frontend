@@ -11,6 +11,8 @@ export interface CheckingPayment {
   readonly workspace: string
   /** The ended session's bearer, kept to read that operation's outcome and for nothing else. */
   readonly token: string
+  /** When the tab started checking. The time it keeps reading counts from here, across reloads. */
+  readonly since: number
 }
 
 type OutcomeEnding =
