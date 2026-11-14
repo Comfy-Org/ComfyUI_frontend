@@ -142,10 +142,9 @@ export class WorkflowHelper {
   }
 
   async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {
-    await this.comfyPage.page.evaluate(
-      (wf) => window.app!.loadGraphData(wf),
-      workflow
-    )
+    await this.comfyPage.page.evaluate(async (wf) => {
+      await window.app!.loadGraphData(wf)
+    }, workflow)
     await this.comfyPage.nextFrame()
     if (test.info().tags.includes('@vue-nodes')) {
       await this.comfyPage.vueNodes.waitForNodes()

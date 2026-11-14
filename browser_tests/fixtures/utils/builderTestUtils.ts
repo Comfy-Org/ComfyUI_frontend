@@ -98,6 +98,9 @@ export async function openWorkflowFromSidebar(
 ) {
   await comfyPage.workflow.loadWorkflow('default')
   await comfyPage.nextFrame()
+  if (await comfyPage.menu.topbar.getWorkflowTab(name).count()) {
+    await comfyPage.menu.topbar.closeWorkflowTab(name)
+  }
   const { workflowsTab } = comfyPage.menu
   await workflowsTab.open()
   await workflowsTab.getPersistedItem(name).dblclick()
@@ -114,6 +117,7 @@ export async function saveAndReopenInAppMode(
   workflowName: string
 ) {
   await comfyPage.menu.topbar.saveWorkflow(workflowName)
+  await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
 
   const { workflowsTab } = comfyPage.menu
   await workflowsTab.open()

@@ -3,7 +3,7 @@ import { toRaw } from 'vue'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createToastId } from '@/types/toastId'
@@ -42,10 +42,13 @@ import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWor
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
-import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import {
+  graphsAwaitingNodeTypes,
+  nodeTypesMayStillArrive
+} from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
 import { useAppMode } from '@/composables/useAppMode'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -85,24 +88,14 @@ function linearModeToAppMode(linearMode: unknown): AppMode | null {
   return linearMode ? 'app' : 'graph'
 }
 
-/**
- * Returns the root graph id to scope run errors by, minting one when the graph
- * carries the zero id. Every caller passes `rootGraph.serialize()` as
- * `workflowData`, and `app.clean()` mints a fresh root id before `loadApiJson`
- * and `importA1111` populate the graph, so the zero id only survives here when
- * something upstream skipped both. The id is written back into `workflowData`
- * only in that zero-id case, so a `configure()`-based load (where
- * `rootGraph.id` already came from `workflowData.id`) can never have this
- * rewrite the incoming workflow's identity to a stale graph's id.
- */
-function adoptRootGraphId(workflowData: ComfyWorkflowJSON): UUID | null {
-  if (!useApp().isGraphReady) return null
-
-  const rootGraph = useApp().rootGraph
-  if (rootGraph.id === zeroUuid) {
-    workflowData.id = ensureNonZeroUuid(rootGraph)
+function adoptRootGraphId(
+  workflowData: ComfyWorkflowJSON,
+  graph: LGraph
+): UUID {
+  if (graph.id === zeroUuid) {
+    workflowData.id = ensureNonZeroUuid(graph)
   }
-  return rootGraph.id
+  return graph.id
 }
 
 // TRANSITIONAL (decision log D14): deletable when ECS scopes workflow
@@ -253,7 +246,6 @@ export const useWorkflowService = () => {
   const toast = useToast()
   const dialogService = useDialogService()
   const workflowThumbnail = useWorkflowThumbnail()
-  const domWidgetStore = useDomWidgetStore()
   const missingNodesErrorStore = useMissingNodesErrorStore()
   const workflowDraftStore = useWorkflowDraftStoreV2()
 
@@ -484,10 +476,6 @@ export const useWorkflowService = () => {
   const loadBlankWorkflow = () =>
     queueWorkflowLoad(() => useApp().loadGraphData(blankGraph))
 
-  /**
-   * Reload the current workflow
-   * Waits for queued loads; skipped when a later open replaces the workflow.
-   */
   const reloadCurrentWorkflow = async () => {
     await workflowLoadTail
     const workflow = workflowStore.activeWorkflow
@@ -500,36 +488,41 @@ export const useWorkflowService = () => {
     }
   }
 
-  /**
-   * Open a workflow in the current workspace
-   * @param workflow The workflow to open
-   * @param options The options for opening the workflow
-   * @returns false when the graph load failed, the stored file is unreadable
-   * or the open was skipped mid-close; true otherwise
-   */
   const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
     const retained = getActiveWorkflow()
     if (!retained || retained.path === failed.path || !retained.isLoaded) return
 
     const canvasAwaitsRetained = () =>
       workflowStore.isActive(retained) &&
-      !(
-        retained.changeTracker !== null && isCanvasOwner(retained.changeTracker)
-      )
-    const load = () =>
-      useApp().loadGraphData(
-        toRaw(retained.activeState) as ComfyWorkflowJSON,
-        true,
-        true,
+      !(retained.changeTracker && isCanvasOwner(retained.changeTracker))
+    if (!canvasAwaitsRetained()) return
+    if (
+      !retained.graph ||
+      !(await switchToWorkflowGraph(
         retained,
-        {
-          checkForRerouteMigration: false,
-          deferWarnings: true,
-          skipAssetScans: true,
-          isCurrent: canvasAwaitsRetained
-        }
-      )
-    await (retained.isModified ? keepingSavedBaseline(retained, load) : load())
+        retained.graph,
+        undefined,
+        canvasAwaitsRetained
+      ))
+    ) {
+      const load = () =>
+        useApp().loadGraphData(
+          toRaw(retained.activeState) as ComfyWorkflowJSON,
+          true,
+          true,
+          retained,
+          {
+            checkForRerouteMigration: false,
+            deferWarnings: true,
+            skipAssetScans: true,
+            isCurrent: canvasAwaitsRetained
+          }
+        )
+      await (retained.isModified
+        ? keepingSavedBaseline(retained, load)
+        : load())
+    }
+    showPendingWarnings(undefined, { silent: true })
   }
 
   function getActiveWorkflow(): ComfyWorkflow | null {
@@ -549,26 +542,69 @@ export const useWorkflowService = () => {
     workflow.isModified = wasModified
   }
 
-  function loadOpenedGraph(
+  const switchToWorkflowGraph = (
     workflow: ComfyWorkflow,
-    {
-      force,
-      isCurrent,
-      keepSavedBaseline,
-      loadFromRemote,
-      navigationIntentId
-    }: {
-      force?: boolean
-      isCurrent?: () => boolean
+    graph: NonNullable<ComfyWorkflow['graph']>,
+    navigationIntentId?: number,
+    isCurrent?: () => boolean
+  ): Promise<boolean> =>
+    useApp().enqueueGraphLoad(async () => {
+      if (
+        isCurrent?.() === false ||
+        workflow.graph !== graph ||
+        graphsAwaitingNodeTypes.has(graph)
+      )
+        return false
+      await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+      if (
+        isCurrent?.() === false ||
+        workflow.graph !== graph ||
+        graphsAwaitingNodeTypes.has(graph)
+      )
+        return false
+      try {
+        beforeLoadNewGraph(true)()
+        const app = useApp()
+        useSubgraphNavigationStore().suppressRootGraphHash(graph)
+        app.activateRootGraph(graph)
+        useMissingModelStore().createVerificationAbortController().abort()
+        useMissingMediaStore().createVerificationAbortController().abort()
+        useMissingModelStore().setMissingModels([])
+        useMissingMediaStore().setMissingMedia([])
+        missingNodesErrorStore.setMissingNodeTypes([])
+        const loaded = await workflowStore.openWorkflow(workflow)
+        bindCanvasTracker(loaded.changeTracker)
+        useExecutionErrorStore().setActiveGraph(graph.id, loaded.path)
+        useAppModeStore().loadSelections(loaded.activeState.extra?.linearData)
+        loaded.changeTracker.restore()
+        useNodeOutputStore().restorePreviewsForWorkflow(loaded.path)
+        await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+        requestAnimationFrame(() => {
+          app.canvas.setDirty(true, true)
+        })
+        return true
+      } finally {
+        void useSubgraphNavigationStore().updateHash(
+          'workflow-load',
+          navigationIntentId
+        )
+      }
+    })
+
+  const loadWorkflowState = async (
+    workflow: ComfyWorkflow,
+    options: {
       keepSavedBaseline?: boolean
+      isCurrent?: () => boolean
       loadFromRemote: boolean
-      navigationIntentId: number
-    }
-  ) {
-    workflow.changeTracker?.prepareForSave()
+      wasModified: boolean
+    },
+    skipAssetScans: boolean,
+    navigationIntentId: number
+  ) => {
     const graphLoadIsCurrent = workflowStore.isActive(workflow)
       ? undefined
-      : isCurrent
+      : options.isCurrent
     const load = () =>
       useApp().loadGraphData(
         toRaw(workflow.activeState) as ComfyWorkflowJSON,
@@ -578,16 +614,41 @@ export const useWorkflowService = () => {
         {
           checkForRerouteMigration: false,
           deferWarnings: true,
-          skipAssetScans: !loadFromRemote && !force,
+          skipAssetScans,
           workflowNavigationId: navigationIntentId,
           isCurrent: graphLoadIsCurrent
         }
       )
-    return keepSavedBaseline && workflow.isModified
-      ? keepingSavedBaseline(workflow, load)
-      : load()
+    const loaded =
+      options.keepSavedBaseline && workflow.isModified
+        ? await keepingSavedBaseline(workflow, load)
+        : await load()
+    if (
+      loaded === false &&
+      options.loadFromRemote &&
+      options.isCurrent?.() === false
+    )
+      discardSupersededLoad(workflow, options.wasModified)
+    return loaded
   }
 
+  const completeActivation = (
+    workflow: ComfyWorkflow,
+    initiator: 'user' | undefined,
+    silent: boolean
+  ) => {
+    showPendingWarnings(undefined, { silent })
+    if (initiator === 'user') workflowStore.reportUserActivation(workflow)
+  }
+
+  /**
+   * Open a workflow in the current workspace
+   * @param workflow The workflow to open
+   * @param options The options for opening the workflow
+   * @returns false when the graph load reported failure (the error dialog was
+   * shown and the workflow never painted) or when the open was skipped because
+   * the workflow is mid-close; true otherwise
+   */
   const openWorkflow = (
     workflow: ComfyWorkflow,
     options: {
@@ -604,6 +665,7 @@ export const useWorkflowService = () => {
     if (
       pendingWorkflowLoads === 0 &&
       workflowStore.isActive(workflow) &&
+      !(workflow.graph && graphsAwaitingNodeTypes.has(workflow.graph)) &&
       workflow.changeTracker !== null &&
       isCanvasOwner(workflow.changeTracker) &&
       !options.force
@@ -622,6 +684,20 @@ export const useWorkflowService = () => {
           return false
         }
         wasUnreadable = unreadableWorkflows.delete(workflow)
+
+        if (
+          workflow.graph &&
+          !options.force &&
+          (await switchToWorkflowGraph(
+            workflow,
+            workflow.graph,
+            navigationIntentId
+          ))
+        ) {
+          completeActivation(workflow, options.initiator, true)
+          return true
+        }
+
         const loadFromRemote = !workflow.isLoaded
         const wasModified = workflow.isModified
         if (loadFromRemote) {
@@ -633,24 +709,21 @@ export const useWorkflowService = () => {
           return false
         }
 
-        const loaded = await loadOpenedGraph(workflow, {
-          ...options,
-          loadFromRemote,
+        workflow.changeTracker?.prepareForSave()
+        const reusesScans = !loadFromRemote && !options.force
+        const loaded = await loadWorkflowState(
+          workflow,
+          { ...options, loadFromRemote, wasModified },
+          reusesScans,
           navigationIntentId
-        })
+        )
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
-          if (loadFromRemote && options.isCurrent?.() === false)
-            discardSupersededLoad(workflow, wasModified)
           await restoreRetainedWorkflow(workflow)
           return false
         }
         dismissUnreadableWorkflowToast(workflow)
-        showPendingWarnings(undefined, {
-          silent: !loadFromRemote && !options.force
-        })
-        if (options.initiator === 'user')
-          workflowStore.reportUserActivation(workflow)
+        completeActivation(workflow, options.initiator, reusesScans)
         return true
       } catch (error) {
         useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
@@ -941,7 +1014,6 @@ export const useWorkflowService = () => {
       } else {
         useNodeOutputStore().addLivePreviewsToStash(activeWorkflow.path)
       }
-      domWidgetStore.clear()
 
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
     }
@@ -962,11 +1034,10 @@ export const useWorkflowService = () => {
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
+    graph: LGraph,
     shareId?: string
   ) => {
-    const graphState = useApp().rootGraphOrUndefined?.state
-    await activateLoadedWorkflow(value, workflowData, shareId)
-    if (graphState !== useApp().rootGraphOrUndefined?.state) return
+    await activateLoadedWorkflow(value, workflowData, graph, shareId)
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
@@ -975,16 +1046,17 @@ export const useWorkflowService = () => {
   const activateLoadedWorkflow = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
+    graph: LGraph,
     shareId?: string
   ) => {
-    const graphState = useApp().rootGraphOrUndefined?.state
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
     const wasAppMode = isAppMode.value
-    const rootGraphId = adoptRootGraphId(workflowData)
+    const rootGraphId = adoptRootGraphId(workflowData, graph)
 
-    function activateRunErrors(workflow: ComfyWorkflow) {
+    function activateLoadedGraph(workflow: ComfyWorkflow) {
       useExecutionErrorStore().setActiveGraph(rootGraphId, workflow.path)
+      workflow.adoptGraph(graph)
     }
 
     async function bindStoredToCanvas(workflow: ComfyWorkflow) {
@@ -999,13 +1071,12 @@ export const useWorkflowService = () => {
 
     async function bindToCanvas(workflow: ComfyWorkflow) {
       const loadedWorkflow = await workflowStore.openWorkflow(workflow)
-      if (graphState !== useApp().rootGraphOrUndefined?.state) return null
+      if (useApp().rootGraphOrUndefined !== graph) return null
       bindCanvasTracker(loadedWorkflow.changeTracker)
+      activateLoadedGraph(loadedWorkflow)
       return loadedWorkflow
     }
 
-    // Determine the initial app mode for fresh loads from serialized state.
-    // null means linearMode was never explicitly set (not builder-saved).
     const freshLoadMode = linearModeToAppMode(workflowData.extra?.linearMode)
     useAppModeStore().loadSelections(workflowData.extra?.linearData)
 
@@ -1016,17 +1087,10 @@ export const useWorkflowService = () => {
     }
 
     if (value === null || typeof value === 'string') {
-      // Check if a persisted workflow with this path exists
       if (value) {
         const fullPath = ComfyWorkflow.basePath + appendJsonExt(value)
         const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
 
-        // Reuse an existing workflow when this is a restoration case
-        // (persisted but currently unloaded) or an idempotent repeated load
-        // of the currently active same-path workflow.
-        //
-        // This prevents accidental duplicate tabs when startup/load flows
-        // invoke loadGraphData more than once for the same workflow name.
         const existingId = existingWorkflow?.activeState?.id
         const isSameActiveWorkflowLoad =
           !!existingWorkflow &&
@@ -1047,11 +1111,7 @@ export const useWorkflowService = () => {
         if (reused !== undefined) {
           const loadedWorkflow = reused
           if (!loadedWorkflow) return
-          activateRunErrors(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
-            // Prefer the file's linearMode over the draft's since the file
-            // is the authoritative saved state.
-            // `initialState` is null when the tracker never loaded.
             const initialState = (loadedWorkflow as ComfyWorkflow).initialState
             if (!initialState) {
               reportWorkflowStateAnomaly(
@@ -1088,15 +1148,12 @@ export const useWorkflowService = () => {
         tempWorkflow.shareId = shareId
       }
       trackIfEnteringApp(tempWorkflow)
-      const loadedWorkflow = await bindToCanvas(tempWorkflow)
-      if (!loadedWorkflow) return
-      activateRunErrors(loadedWorkflow)
+      await bindToCanvas(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await bindToCanvas(value)
     if (!loadedWorkflow) return
-    activateRunErrors(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
     }

@@ -355,13 +355,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
       forgetNodeHistories(workflow)
       clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
+      workflow.releaseGraph()
     } else {
-      workflow.unload()
-      // Closing discards the in-memory edits and their draft. A modified mark
-      // left behind keeps the workflow in `modifiedWorkflows`, where a later
-      // bulk save (sign-out) would write the unloaded state, `null`, over
-      // the stored file.
       workflow.isModified = false
+      workflow.unload()
     }
   }
 
@@ -475,7 +472,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
           openWorkflowPaths.value = openWorkflowPaths.value.filter(
             (openPath) => openPath !== path
           )
-          forgetNodeHistories(workflow)
+          workflow.unload()
           return true
         }
       )

@@ -7,7 +7,6 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useUserBusy } from '@/platform/customNodes/useUserBusy'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { couldBootOnDeployment } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { useApp } from '@/scripts/appInstance'
 import type { StartupHookFailure } from '@/platform/extensions/services/extensionService'
@@ -23,6 +22,7 @@ import type {
   CpuServerWatch
 } from './cpuServerStep'
 import { isBeingSetUp, watchCpuServer } from './cpuServerStep'
+import { markOpenGraphsAwaitingNodeTypes } from './lateNodeTypes'
 import {
   showFailedToast,
   showReadyToast,
@@ -149,13 +149,10 @@ function watchLateWork(signal: AbortSignal, onAbort: () => void) {
 }
 
 async function rebuildOpenWorkflow() {
-  const workflow = useWorkflowStore().activeWorkflow
-  const baseline = workflow?.changeTracker.initialState
-  const wasModified = workflow?.isModified ?? false
+  await useApp().enqueueGraphLoad(async () => {
+    markOpenGraphsAwaitingNodeTypes()
+  })
   await useWorkflowService().reloadCurrentWorkflow()
-  if (!workflow || !baseline) return
-  workflow.changeTracker.initialState = baseline
-  workflow.isModified = wasModified
 }
 
 function reportLateCustomNodeFailure(
