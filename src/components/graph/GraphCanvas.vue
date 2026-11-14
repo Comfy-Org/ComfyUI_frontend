@@ -537,11 +537,14 @@ let disposed = false
 const lateCustomNodeWork = new AbortController()
 const startupOwner = Symbol()
 
-function finishStartup(outcome: 'completed' | 'failed') {
+function finishStartup(
+  outcome: 'completed' | 'failed',
+  terminal?: { error: unknown }
+) {
   if (activeStartup !== startupOwner) return
   activeStartup = undefined
   workspaceStore.spinner = false
-  bootstrapTracer.complete(outcome)
+  bootstrapTracer.complete(outcome, terminal)
 }
 
 function showDeploymentLookupToast() {
@@ -562,6 +565,7 @@ onMounted(async () => {
   let startupOutcome: StartupOutcome | undefined
   let urlTemplateId: string | undefined
   let bootstrapOutcome: 'completed' | 'failed' = 'failed'
+  let startupError: { error: unknown } | undefined
   try {
     ChangeTracker.init()
 
@@ -630,10 +634,13 @@ onMounted(async () => {
       await useFirstRunEntry().handleStartupOutcome(startupOutcome)
     })
     bootstrapOutcome = 'completed'
+  } catch (error) {
+    startupError = { error }
+    throw error
   } finally {
     if (!disposed) {
       workflowStore.markTabsRestored()
-      finishStartup(bootstrapOutcome)
+      finishStartup(bootstrapOutcome, startupError)
     }
   }
   const sharedStatus =
