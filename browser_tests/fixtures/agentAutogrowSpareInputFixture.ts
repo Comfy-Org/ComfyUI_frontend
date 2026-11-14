@@ -11,6 +11,11 @@ import {
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
+import {
+  agentThreadPage,
+  agentThreadSummary,
+  agentUserTranscript
+} from '@e2e/fixtures/data/agent/agentThreadList'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -161,6 +166,34 @@ const seed: WorkflowJSON = {
   version: 0.4
 }
 
+async function mockServerThatRemembersTheTurn(page: Page) {
+  let accepted = false
+  await page.route('**/api/agent/threads?*', (route) =>
+    route.fulfill(
+      jsonRoute(
+        agentThreadPage(
+          accepted
+            ? [
+                agentThreadSummary(THREAD_ID, 'hello', {
+                  workflow_id: WORKFLOW_ID
+                })
+              ]
+            : []
+        )
+      )
+    )
+  )
+  await page.route('**/api/agent/threads/*/messages', (route) => {
+    if (route.request().method() === 'POST') {
+      accepted = true
+      return route.fallback()
+    }
+    return route.fulfill(
+      jsonRoute(agentUserTranscript(THREAD_ID, WORKFLOW_ID, 'hello'))
+    )
+  })
+}
+
 async function wireAutogrowNodeAndSwitchTabs(page: Page) {
   // `objectInfo: 'server'` (passed to `bootAgentApp` below) stops
   // `mockCloudBootRoutes` from also registering an (empty) handler for
@@ -192,6 +225,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
         message_id: MESSAGE_ID,
         workflow_id: WORKFLOW_ID
       })
+      await mockServerThatRemembersTheTurn(page)
       await mockWorkflowPersistence(page, WORKFLOW_ID)
     }
   })
