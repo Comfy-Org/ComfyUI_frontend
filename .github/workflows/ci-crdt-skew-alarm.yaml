@@ -64,7 +64,7 @@ jobs:
       # revision, and setup-node's post step would write it into a lockfile-keyed cache
       # that the publish workflows restore.
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version-file: '.nvmrc'
 
@@ -142,7 +142,7 @@ jobs:
 
       - name: Upload the skew report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: crdt-skew-alarm
           path: |

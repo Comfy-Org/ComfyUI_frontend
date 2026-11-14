@@ -265,7 +265,7 @@ jobs:
 
       - name: Upload size data
         if: ${{ !cancelled() && steps.size.outcome == 'success' }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: size-data
           path: temp/size
