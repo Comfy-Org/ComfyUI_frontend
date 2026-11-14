@@ -2,6 +2,7 @@ import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { computed, reactive, readonly, watchEffect } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
+import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
@@ -299,6 +300,13 @@ export function useFeatureFlags() {
         remoteConfig().unified_web_session
       return value === true
     },
+    get webSessionLapseRecoveryEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED,
+        remoteConfig().web_session_lapse_recovery_enabled,
+        false
+      )
+    },
     get ssoEnabled() {
       if (!isCloud) return false
 
@@ -361,6 +369,7 @@ export function useFeatureFlags() {
       return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
     },
     get unifiedBillingSettingsEnabled() {
+      if (!isCloud) return opensLocalBillingHandoff()
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
         remoteConfig().unified_billing_settings
@@ -453,6 +462,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
       [ServerFeatureFlag.UNIFIED_WEB_SESSION]: flags.unifiedWebSessionEnabled,
       [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
+      [ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED]:
+        flags.webSessionLapseRecoveryEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,

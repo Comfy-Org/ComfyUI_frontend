@@ -68,10 +68,12 @@ function arrange(options: {
   autoTopUp?: 'autoTopUpFailed' | 'autoTopUpOff'
   workspaceType?: 'personal' | 'team'
   addCreditsVariant?: 'secondary' | 'inverted'
+  platformAvailable?: boolean
 }) {
   vi.mocked(usePlatformHandoff).mockReturnValue({
     href: computed(() => 'https://platform.test/profile/billing'),
-    track
+    track,
+    available: computed(() => options.platformAvailable ?? true)
   })
   vi.mocked(useAutoTopUpBannerKind).mockReturnValue(
     computed(() => options.autoTopUp ?? null)
@@ -695,6 +697,17 @@ describe('BillingLocalCreditBanner', () => {
 
     expect(
       screen.queryByTestId('billing-auto-top-up-banner')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the failed auto top-up banner without Update payment when Platform is unavailable', () => {
+    arrange({ autoTopUp: 'autoTopUpFailed', platformAvailable: false })
+
+    expect(screen.getByTestId('billing-auto-top-up-banner')).toHaveTextContent(
+      'Auto top-up failed'
+    )
+    expect(
+      screen.queryByRole('link', { name: 'Update payment' })
     ).not.toBeInTheDocument()
   })
 

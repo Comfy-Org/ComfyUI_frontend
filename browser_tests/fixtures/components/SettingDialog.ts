@@ -99,8 +99,8 @@ export class SettingDialog extends BaseDialog {
     await expect.poll(() => this.comfyPage.settings.getSetting(id)).toBe(value)
   }
 
-  category(name: string) {
-    return this.root.locator('nav').getByRole('button', { name })
+  category(name: string, options: { exact?: boolean } = {}) {
+    return this.root.locator('nav').getByRole('button', { name, ...options })
   }
 
   async goToAboutPanel() {

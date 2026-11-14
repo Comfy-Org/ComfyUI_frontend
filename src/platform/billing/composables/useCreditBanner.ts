@@ -56,7 +56,7 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
   const { subscription, balance, isTeamPlan } = billing
 
   const autoTopUp = useAutoTopUpBannerKind()
-  const { href, track } = usePlatformHandoff('/profile/billing', {
+  const { href, track, available } = usePlatformHandoff('/profile/billing', {
     target: 'auto_top_up',
     action: 'update_payment'
   })
@@ -227,8 +227,9 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
         kind: 'autoTopUp',
         title: t(`${bs}.${shown}.title`),
         body: t(`${bs}.${shown}.body`),
-        action: 'updatePayment',
-        href: href.value
+        ...(available.value
+          ? { action: 'updatePayment', href: href.value }
+          : { action: null, href: null })
       }
     }
     if (shown === 'outOfCredits') return outOfCreditsView()

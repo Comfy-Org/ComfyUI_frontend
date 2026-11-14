@@ -7,13 +7,14 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { isReactive, isReadonly, nextTick } from 'vue'
+import { computed, isReactive, isReadonly, nextTick } from 'vue'
 
 import {
   startFeatureFlagTelemetry,
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -30,6 +31,7 @@ vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
 // Mock the distribution types module
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
+  isDesktop: false,
   isNightly: false
 }))
 
@@ -47,6 +49,11 @@ function persistFromAnotherTab(key: string, value: string) {
 }
 
 describe('useFeatureFlags', () => {
+  afterEach(() => {
+    vi.mocked(distributionTypes).isCloud = false
+    vi.mocked(distributionTypes).isNightly = false
+  })
+
   describe('flags object', () => {
     it('should provide reactive readonly flags', () => {
       const { flags } = useFeatureFlags()
@@ -287,10 +294,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('billingSdkTopupRailEnabled', () => {
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-    })
-
     it.for([
       { auth: 'off', unifiedCloudAuth: false, expected: false },
       { auth: 'on', unifiedCloudAuth: true, expected: true }
@@ -339,10 +342,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('billingSdkSubscriptionRailEnabled', () => {
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-    })
-
     it.for([
       { auth: 'off', unifiedCloudAuth: false, expected: false },
       { auth: 'on', unifiedCloudAuth: true, expected: true }
@@ -366,10 +365,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('ssoEnabled', () => {
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-    })
-
     it.for([
       {
         case: 'missing on cloud',
@@ -406,13 +401,9 @@ describe('useFeatureFlags', () => {
   describe.for([
     {
       flag: 'unifiedBillingSettingsEnabled' as const,
-      offCloudTrue: true
+      offCloudTrue: false
     }
   ])('$flag', ({ flag, offCloudTrue }) => {
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-    })
-
     it.for([
       {
         case: 'missing on cloud',
@@ -471,11 +462,53 @@ describe('useFeatureFlags', () => {
     })
   })
 
-  describe('localWebSsoEnabled', () => {
+  describe('unifiedBillingSettingsEnabled off cloud', () => {
     afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
+      setLocalBillingWebEnabled(false)
     })
 
+    it.for([
+      {
+        case: 'local web with local_billing_web on',
+        desktop: false,
+        flag: true,
+        expected: true
+      },
+      {
+        case: 'local web with local_billing_web off',
+        desktop: false,
+        flag: false,
+        expected: false
+      },
+      {
+        case: 'Desktop with local_billing_web on',
+        desktop: true,
+        flag: true,
+        expected: false
+      }
+    ])('is $expected on $case', ({ desktop, flag, expected }) => {
+      vi.stubGlobal('__comfyDesktop2', desktop ? {} : undefined)
+      setLocalBillingWebEnabled(flag)
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      expect(useFeatureFlags().flags.unifiedBillingSettingsEnabled).toBe(
+        expected
+      )
+    })
+
+    it('follows the flag as it changes on local web', () => {
+      const { flags } = useFeatureFlags()
+      const shown = computed(() => flags.unifiedBillingSettingsEnabled)
+
+      expect(shown.value).toBe(false)
+      setLocalBillingWebEnabled(true)
+      expect(shown.value).toBe(true)
+      setLocalBillingWebEnabled(false)
+      expect(shown.value).toBe(false)
+    })
+  })
+
+  describe('localWebSsoEnabled', () => {
     it.for([
       {
         case: 'missing locally',
@@ -502,10 +535,6 @@ describe('useFeatureFlags', () => {
   describe('nodeLibraryEssentialsEnabled', () => {
     beforeEach(() => {
       vi.mocked(distributionTypes).isNightly = true
-    })
-
-    afterEach(() => {
-      vi.mocked(distributionTypes).isNightly = false
     })
 
     it('defaults on when nightly serves no value for the flag', () => {
@@ -771,10 +800,6 @@ describe('useFeatureFlags', () => {
       vi.mocked(distributionTypes).isCloud = true
     })
 
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-    })
-
     it.for([
       { stored: 'false', expected: false },
       { stored: 'true', expected: true }
@@ -915,10 +940,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('feature flag telemetry', () => {
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-    })
-
     it('synchronizes resolved values when their sources change', async () => {
       vi.mocked(distributionTypes).isCloud = true
       useRemoteConfigStore().acceptConfig(
@@ -1056,10 +1077,6 @@ describe('useFeatureFlags', () => {
       )
     })
 
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-    })
-
     it.for([
       {
         name: 'is off when /api/features lacks the flag',
@@ -1185,10 +1202,6 @@ describe('useFeatureFlags', () => {
   })
 
   describe('session override precedence', () => {
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
-    })
-
     it('beats the dev override, remote config and the server value', () => {
       vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
         flagKey === ServerFeatureFlag.SIGNUP_TURNSTILE ? 'enforce' : undefined
@@ -1248,10 +1261,6 @@ describe('useFeatureFlags', () => {
   describe('agentInAppExperienceEnabled', () => {
     beforeEach(() => {
       vi.mocked(distributionTypes).isCloud = true
-    })
-
-    afterEach(() => {
-      vi.mocked(distributionTypes).isCloud = false
     })
 
     it('is false off-cloud even when the authenticated config grants it', () => {

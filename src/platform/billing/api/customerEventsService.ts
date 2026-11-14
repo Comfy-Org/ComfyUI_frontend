@@ -7,7 +7,7 @@ import {
   hasParamsBeyondDetailsColumn,
   presentTooltipParamKeys,
   toFiniteNumber
-} from '@/services/customerEventParams'
+} from '@/platform/billing/api/customerEventParams'
 import { d, i18n, t } from '@/i18n'
 import type { components } from '@/types/comfyRegistryTypes'
 

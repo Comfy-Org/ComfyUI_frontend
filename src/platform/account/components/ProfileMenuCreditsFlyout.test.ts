@@ -133,31 +133,35 @@ describe('ProfileMenuCreditsFlyout', () => {
     expect(addCredits()).not.toBeInTheDocument()
   })
 
-  it('dims Add credits with the reason while purchases are stopped', () => {
-    renderFlyout({ canTopUp: false, denial: 'topup_purchases_paused' })
+  it.for([
+    {
+      name: 'purchases are stopped',
+      denial: 'topup_purchases_paused' as const,
+      reason: "Buying credits isn't available right now"
+    },
+    {
+      name: 'paused or payment is due',
+      denial: 'payment_past_due' as const,
+      reason: 'Update your payment method to add credits.'
+    }
+  ])(
+    'dims Add credits with the reason under Top-up and in a tooltip while $name',
+    async ({ denial, reason }) => {
+      const user = userEvent.setup()
+      renderFlyout({ canTopUp: false, denial })
 
-    expect(addCredits()).toBeDisabled()
-    expect(addCredits()).toHaveAccessibleDescription(
-      enMessages.credits.addCreditsRefusal.topupPurchasesPaused
-    )
-  })
+      expect(addCredits()).toBeDisabled()
+      expect(addCredits()).toHaveAccessibleDescription(reason)
+      await user.hover(screen.getByTestId('add-credits-trigger'))
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        reason
+      )
+    }
+  )
 
-  it('dims Add credits and says to update payment while paused or payment is due', async () => {
+  it('shows no tooltip on Add credits while it is enabled', async () => {
     const user = userEvent.setup()
-    renderFlyout({ canTopUp: false, denial: 'payment_past_due' })
-    const reason = 'Update your payment method to add credits.'
-
-    expect(addCredits()).toBeDisabled()
-    expect(addCredits()).toHaveAccessibleDescription(reason)
-    await user.hover(screen.getByTestId('add-credits-trigger'))
-    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
-      reason
-    )
-  })
-
-  it('shows no tooltip on Add credits while purchases are stopped', async () => {
-    const user = userEvent.setup()
-    renderFlyout({ canTopUp: false, denial: 'topup_purchases_paused' })
+    renderFlyout()
 
     await user.hover(screen.getByTestId('add-credits-trigger'))
     expect(screen.queryByTestId('tooltip-content')).not.toBeInTheDocument()
