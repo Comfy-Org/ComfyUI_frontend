@@ -2300,3 +2300,24 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
     }
   )
 })
+
+describe('BillingTab refresh on return', () => {
+  it.for([
+    { where: 'local', isCloud: false, reads: 1 },
+    { where: 'Cloud', isCloud: true, reads: 0 }
+  ])(
+    're-reads capabilities $reads time(s) when the user returns to the tab on $where',
+    ({ isCloud, reads }) => {
+      distribution.isCloud = isCloud
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      const { refresh } = arrange()
+
+      window.dispatchEvent(new Event('blur'))
+      window.dispatchEvent(new Event('focus'))
+
+      expect(refresh).toHaveBeenCalledTimes(reads)
+    }
+  )
+})
