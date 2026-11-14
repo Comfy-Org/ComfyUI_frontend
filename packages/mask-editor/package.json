@@ -61,6 +61,11 @@
       "@comfyorg/mask-editor": "./src/extensionTypes.ts",
       "types": "./dist/extensionTypes.d.ts",
       "default": "./src/extensionTypes.ts"
+    },
+    "./useCoordinateTransform": {
+      "@comfyorg/mask-editor": "./src/useCoordinateTransform.ts",
+      "types": "./dist/useCoordinateTransform.d.ts",
+      "default": "./src/useCoordinateTransform.ts"
     }
   },
   "scripts": {

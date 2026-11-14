@@ -23,7 +23,8 @@
     "packages/mask-editor/src/ui/EditorToolbar.vue",
     "packages/mask-editor/src/ui/style.css",
     "packages/mask-editor/src/extensionTypes.ts",
-    "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts"
+    "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.ts",
+    "packages/mask-editor/src/useCoordinateTransform.ts"
   ],
   "characterizationScenarios": [
     {
@@ -61,9 +62,20 @@
       ]
     },
     {
-      "name": "External tool registration validates descriptors and releases registrations",
+      "name": "External tool sessions preserve native history, image pixels, and widget serialization",
       "checks": [
-        "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.test.ts"
+        "src/renderer/extensions/maskEditor/composables/maskEditorToolSession.test.ts",
+        "src/renderer/extensions/maskEditor/composables/useMaskEditorExtensionTools.test.ts",
+        "src/renderer/extensions/maskEditor/stores/maskEditorExtensionStore.test.ts",
+        "browser_tests/tests/maskEditor/mask-editor-extension-tools.spec.ts",
+        "browser_tests/tests/maskEditor/mask-editor-extension-drag.spec.ts"
+      ]
+    },
+    {
+      "name": "Host extension tools reuse editor image coordinate conversion",
+      "checks": [
+        "packages/mask-editor/src/useCoordinateTransform.test.ts",
+        "browser_tests/tests/maskEditor/mask-editor-extension-coordinates.spec.ts"
       ]
     }
   ],

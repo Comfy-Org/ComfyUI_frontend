@@ -1,7 +1,9 @@
 <template>
   <div class="maskEditor_sidePanel">
     <div class="maskEditor_sidePanelContainer">
-      <component :is="currentPanelComponent" />
+      <slot>
+        <component :is="currentPanelComponent" />
+      </slot>
     </div>
   </div>
 </template>

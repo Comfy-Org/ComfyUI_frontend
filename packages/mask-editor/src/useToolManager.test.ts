@@ -1,6 +1,6 @@
 import { useMaskEditorStore } from './maskEditorStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope, nextTick } from 'vue'
+import { effectScope, nextTick, ref } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { useBrushDrawing } from './useBrushDrawing'
@@ -95,13 +95,20 @@ const pointerEvent = ({
 
 let scope: EffectScope | null = null
 
-const setup = (): ReturnType<typeof useToolManager> => {
+const setup = (
+  extensionTools?: Parameters<typeof useToolManager>[3]
+): ReturnType<typeof useToolManager> => {
   scope = effectScope()
   return scope.run(() =>
-    useToolManager(mockKeyboard, mockPanZoom, {
-      useDominantAxis: true,
-      brushAdjustmentSpeed: 2.5
-    })
+    useToolManager(
+      mockKeyboard,
+      mockPanZoom,
+      {
+        useDominantAxis: true,
+        brushAdjustmentSpeed: 2.5
+      },
+      extensionTools
+    )
   )!
 }
 
@@ -134,7 +141,52 @@ describe('useToolManager', () => {
     })
   })
 
+  it.for([
+    { handler: 'handlePointerDown', type: 'pointerdown' },
+    { handler: 'handlePointerMove', type: 'pointermove' },
+    { handler: 'handlePointerUp', type: 'pointerup' }
+  ] as const)(
+    'keeps $type touch input out of an active extension',
+    async ({ handler, type }) => {
+      const handlePointer = vi.fn().mockResolvedValue(undefined)
+      const tm = setup({
+        isActive: () => true,
+        deactivate: vi.fn(),
+        handlePointer
+      })
+
+      await tm[handler](
+        pointerEvent({ type, pointerType: 'touch', buttons: 1 })
+      )
+
+      expect(handlePointer).not.toHaveBeenCalled()
+    }
+  )
+
   describe('switchTool', () => {
+    it.for([Tools.MaskPen, Tools.MaskBucket])(
+      'restores the native cursor after an external tool ends: %s',
+      (nativeTool) => {
+        const active = ref(false)
+        const tm = setup({
+          isActive: () => active.value,
+          deactivate: () => {
+            active.value = false
+          },
+          handlePointer: async () => {}
+        })
+        tm.switchTool(nativeTool)
+        const cursor = mockStore.pointerZone!.style.cursor
+        const brushVisible = mockStore.brushVisible
+        active.value = true
+        expect(mockStore.pointerZone!.style.cursor).toBe('crosshair')
+        expect(mockStore.brushVisible).toBe(false)
+        active.value = false
+        expect(mockStore.pointerZone!.style.cursor).toBe(cursor)
+        expect(mockStore.brushVisible).toBe(brushVisible)
+      }
+    )
+
     it('should set the current tool on the store', () => {
       const tm = setup()
       tm.switchTool(Tools.Eraser)
@@ -473,6 +525,36 @@ describe('useToolManager', () => {
   })
 
   describe('handlePointerUp', () => {
+    it.for([
+      {
+        gesture: 'tool interaction',
+        button: 0,
+        buttons: 1,
+        expected: ['pointerdown', 'pointerup']
+      },
+      { gesture: 'pan', button: 1, buttons: 4, expected: [] }
+    ])(
+      'delivers only extension-owned pointer phases after a $gesture',
+      async ({ button, buttons, expected }) => {
+        const phases: string[] = []
+        mockPanZoom.handlePanStart.mockImplementation(() => {
+          mockStore.isPanning = true
+        })
+        const tm = setup({
+          isActive: () => true,
+          deactivate: () => {},
+          handlePointer: async (event) => {
+            phases.push(event.type)
+          }
+        })
+
+        await tm.handlePointerDown(pointerEvent({ button, buttons }))
+        await tm.handlePointerUp(pointerEvent({ type: 'pointerup', button }))
+
+        expect(phases).toEqual(expected)
+      }
+    )
+
     it('should reset panning and brush state', async () => {
       const tm = setup()
       mockStore.isPanning = true
