@@ -4144,6 +4144,14 @@
     "notChecked": "Not checked"
   },
   "openOnCloud": {
+    "deploySetup": "Deploy your setup to Comfy Cloud",
+    "deployWithAgent": "Deploy with your agent",
+    "deploySetupDialog": {
+      "body": "This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.",
+      "pointGpu": "Work in ComfyUI on the GPU you choose",
+      "pointApi": "Call it from your product as an autoscaling API",
+      "pointNodes": "Bring your custom nodes and models"
+    },
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
     "handoffFailed": "Couldn't open the workflow from ComfyUI on your computer",
@@ -4165,8 +4173,16 @@
       "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },
-    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
-    "cannotRunYet": "Comfy Cloud is missing nodes or models this workflow uses."
+    "agentMenu": {
+      "openInClaude": "Open in Claude desktop",
+      "openInCodex": "Open in Codex",
+      "copyPrompt": "Copy prompt"
+    },
+    "missingModels": {
+      "title": "Missing {count} model | Missing {count} models",
+      "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
+    },
+    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again."
   },
   "selectionToolbox": {
     "executeButton": {

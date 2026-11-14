@@ -24,6 +24,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { useAgentConsent } from './useAgentConsent'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
