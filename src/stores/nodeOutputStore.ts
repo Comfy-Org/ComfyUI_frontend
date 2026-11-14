@@ -37,6 +37,7 @@ import {
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
+import { isResultItemType } from '@/utils/typeGuardUtil'
 import {
   isAnimatedOutput,
   isVideoNode,
@@ -52,17 +53,22 @@ const PREVIEW_REVOKE_DELAY_MS = 400
 
 const createOutputs = (
   filenames: string[],
-  type: ResultItemType,
+  fallbackType: ResultItemType,
   isAnimated: boolean
 ): ExecutedWsMessage['output'] => {
+  const paths = filenames.map((image) =>
+    parseAnnotatedPath(image, fallbackType)
+  )
   return {
-    images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
-    animated: filenames.map((image) => {
-      const { filepath } = parseAnnotatedPath(image, type)
-      return (
+    isInputPreview: true,
+    images: paths.map(({ filepath, rootFolder }) => ({
+      type: isResultItemType(rootFolder) ? rootFolder : fallbackType,
+      ...parseFilePath(filepath)
+    })),
+    animated: paths.map(
+      ({ filepath }) =>
         isAnimated && (filepath.endsWith('.webp') || filepath.endsWith('.png'))
-      )
-    })
+    )
   }
 }
 

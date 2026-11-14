@@ -11,9 +11,31 @@ import { webSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { isResultItemType } from '@/utils/typeGuardUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { isHdrImageFilename, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
+
+export function assetContentUrl(id: string): string {
+  return api.apiURL(`/assets/${id}/content?disposition=inline`)
+}
+
+export function getAssetPreviewUrl(asset: AssetItem, fallbackUrl = ''): string {
+  const mediaType = getMediaTypeFromFilename(asset.name)
+  if (!['image', 'video', 'audio'].includes(mediaType)) return ''
+  const isHdr = isHdrImageFilename(asset.name)
+  if (asset.preview_id && (isHdr || mediaType === 'video'))
+    return assetContentUrl(asset.preview_id)
+  const previewUrl = [asset.thumbnail_url, asset.preview_url].find(
+    (url) => url && (!isHdr || !isHdrImageUrl(url))
+  )
+  if (previewUrl) return resolveMediaSrc(previewUrl)
+  if (isHdr) return ''
+  return (
+    fallbackUrl || (mediaType === 'image' ? '' : getAssetInlineMediaUrl(asset))
+  )
+}
 
 /**
  * Get the download/view URL for an asset

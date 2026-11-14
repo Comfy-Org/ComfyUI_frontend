@@ -1148,9 +1148,9 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     })
 
     expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
-      filename: 'preview.png [temp]',
+      filename: 'preview.png',
       subfolder: 'nested',
-      type: 'input'
+      type: 'temp'
     })
     const previewUrl = new URL(
       store.getNodeImageUrls(node)?.[0] ?? '',

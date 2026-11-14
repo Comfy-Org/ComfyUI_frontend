@@ -8,8 +8,10 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 
+import { downloadFile } from '@/base/common/downloadUtil'
 import { resetImageFailureProbesForTest } from '@/platform/telemetry/imageFailureDiagnostics'
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadFile: vi.fn()
@@ -38,12 +40,19 @@ const i18n = createI18n({
   }
 })
 
+function videoOutput(filename: string): AugmentedResultItem {
+  return {
+    filename,
+    subfolder: '',
+    type: 'output',
+    nodeId: '1',
+    mediaType: 'video'
+  }
+}
+
 describe('VideoPreview', () => {
   const defaultProps: ComponentProps<typeof VideoPreview> = {
-    imageUrls: [
-      '/api/view?filename=test1.mp4&type=output',
-      '/api/view?filename=test2.mp4&type=output'
-    ]
+    items: [videoOutput('test1.mp4'), videoOutput('test2.mp4')]
   }
 
   function renderVideoPreview(
@@ -59,15 +68,35 @@ describe('VideoPreview', () => {
     })
   }
 
+  describe('stored preview', () => {
+    it('plays the stored preview of a video but downloads the original file', async () => {
+      renderVideoPreview({
+        items: [{ ...videoOutput('render.mov'), preview_id: 'proxy-1' }]
+      })
+      const user = userEvent.setup()
+
+      expect(screen.getByTestId('main-video')).toHaveAttribute(
+        'src',
+        '/api/assets/proxy-1/content?disposition=inline'
+      )
+
+      await user.hover(screen.getByRole('region'))
+      await user.click(screen.getByRole('button', { name: 'Download video' }))
+
+      expect(downloadFile).toHaveBeenCalledExactlyOnceWith(
+        '/api/view?filename=render.mov&type=output&subfolder=',
+        'render.mov'
+      )
+    })
+  })
+
   describe('load failure telemetry', () => {
     it('reports a failed video load once, attributed to the Vue node preview', async () => {
       resetImageFailureProbesForTest()
       vi.mocked(fetch).mockImplementation(
         async () => new Response(null, { status: 404 })
       )
-      renderVideoPreview({
-        imageUrls: ['/api/view?filename=broken.mp4&type=output']
-      })
+      renderVideoPreview({ items: [videoOutput('broken.mp4')] })
 
       await fireEvent.error(screen.getByTestId('main-video'))
       await nextTick()
@@ -91,13 +120,12 @@ describe('VideoPreview', () => {
 
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical videos', async () => {
-      const sameUrl = '/api/view?filename=test.mp4&type=output'
+      const sameVideo = videoOutput('test.mp4')
       const { container } = renderVideoPreview({
-        imageUrls: [sameUrl, sameUrl, sameUrl]
+        items: [sameVideo, sameVideo, sameVideo]
       })
       const user = userEvent.setup()
 
-      // Simulate initial video load
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const videoEl = container.querySelector('video')
       expect(videoEl).not.toBeNull()
@@ -108,12 +136,10 @@ describe('VideoPreview', () => {
         container.querySelector('[aria-busy="true"]')
       ).not.toBeInTheDocument()
 
-      // Click second navigation dot to cycle to identical URL
       const dots = screen.getAllByRole('button', { name: /^View video/ })
       await user.click(dots[1])
       await nextTick()
 
-      // Should NOT be in loading state since URL didn't change
       expect(
         // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[aria-busy="true"]')
@@ -122,14 +148,10 @@ describe('VideoPreview', () => {
 
     it('should show loader when cycling to a different URL', async () => {
       const { container } = renderVideoPreview({
-        imageUrls: [
-          '/api/view?filename=a.mp4&type=output',
-          '/api/view?filename=b.mp4&type=output'
-        ]
+        items: [videoOutput('a.mp4'), videoOutput('b.mp4')]
       })
       const user = userEvent.setup()
 
-      // Simulate initial video load
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const videoEl = container.querySelector('video')
       expect(videoEl).not.toBeNull()
@@ -140,12 +162,10 @@ describe('VideoPreview', () => {
         container.querySelector('[aria-busy="true"]')
       ).not.toBeInTheDocument()
 
-      // Click second dot — different URL
       const dots = screen.getAllByRole('button', { name: /^View video/ })
       await user.click(dots[1])
       await nextTick()
 
-      // Should be in loading state since URL changed
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
     })

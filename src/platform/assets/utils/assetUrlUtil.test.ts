@@ -5,6 +5,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetFileUrl,
   getAssetInlineMediaUrl,
+  getAssetPreviewUrl,
   getAssetSubfolder,
   getAssetUrl,
   getAssetViewUrl
@@ -38,6 +39,78 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     ...overrides
   } as AssetItem
 }
+
+describe(getAssetPreviewUrl, () => {
+  it.for([
+    {
+      name: 'render.mov',
+      preview_id: 'proxy-1',
+      preview_url: '/view?filename=original.mov',
+      thumbnail_url: '/view?filename=thumbnail.jpg',
+      expected:
+        'http://localhost:8188/api/assets/proxy-1/content?disposition=inline'
+    },
+    {
+      name: 'render.exr',
+      preview_id: 'proxy-1',
+      preview_url: '/view?filename=original.exr',
+      thumbnail_url: undefined,
+      expected:
+        'http://localhost:8188/api/assets/proxy-1/content?disposition=inline'
+    },
+    {
+      name: 'photo.png',
+      preview_id: 'proxy-1',
+      preview_url: '/view?filename=original.png',
+      thumbnail_url: '/view?filename=thumbnail.webp',
+      expected: 'http://localhost:8188/api/view?filename=thumbnail.webp'
+    },
+    {
+      name: 'render.mp4',
+      preview_id: undefined,
+      preview_url: '/view?filename=original.mp4',
+      thumbnail_url: undefined,
+      expected: 'http://localhost:8188/api/view?filename=original.mp4'
+    },
+    {
+      name: 'photo.png',
+      preview_id: undefined,
+      preview_url: 'https://cdn.example.com/image.png?signature=original',
+      thumbnail_url: undefined,
+      expected: 'https://cdn.example.com/image.png?signature=original'
+    },
+    {
+      name: 'sound.wav',
+      preview_id: undefined,
+      preview_url: '/view?filename=sound.wav',
+      thumbnail_url: undefined,
+      expected: 'http://localhost:8188/api/view?filename=sound.wav'
+    },
+    {
+      name: 'render.exr',
+      preview_id: undefined,
+      preview_url: '/view?filename=render.exr',
+      thumbnail_url: undefined,
+      expected: ''
+    },
+    {
+      name: 'render.exr',
+      preview_id: undefined,
+      preview_url: '/view?filename=preview.png',
+      thumbnail_url: '/view?filename=render.exr',
+      expected: 'http://localhost:8188/api/view?filename=preview.png'
+    },
+    {
+      name: 'scene.glb',
+      preview_id: undefined,
+      preview_url: '/view?filename=scene.glb',
+      thumbnail_url: undefined,
+      expected: ''
+    }
+  ])('selects the display source for $name', ({ expected, ...asset }) => {
+    expect(getAssetPreviewUrl(createAsset(asset))).toBe(expected)
+  })
+})
 
 describe('getAssetSubfolder', () => {
   it('reads the subfolder from preview_url', () => {

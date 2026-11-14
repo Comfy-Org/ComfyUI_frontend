@@ -14,7 +14,8 @@ import {
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { assetContentUrl } from '@/platform/assets/utils/assetUrlUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 
 const EXPORT_DIALOG_KEY = 'node-outputs-export'
@@ -42,7 +43,7 @@ export function useNodeOutputsExport() {
     if (!isHdrImageFilename(output.filename)) {
       return getGridThumbnailUrl(outputFileUrl(output))
     }
-    return output.preview_id ? hdrPreviewAssetUrl(output.preview_id) : undefined
+    return output.preview_id ? assetContentUrl(output.preview_id) : undefined
   }
 
   function closeExportDialog() {

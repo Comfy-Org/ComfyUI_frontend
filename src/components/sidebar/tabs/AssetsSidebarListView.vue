@@ -32,7 +32,11 @@
                 item.isChild && 'pl-6'
               )
             "
-            :preview-url="getAssetPreviewUrl(item.asset)"
+            :preview-url="
+              getAssetMediaType(item.asset) === 'audio'
+                ? ''
+                : getAssetPreviewUrl(item.asset)
+            "
             :preview-alt="getAssetDisplayName(item.asset)"
             :icon-name="iconForMediaType(getAssetMediaType(item.asset))"
             :is-video-preview="isVideoAsset(item.asset)"
@@ -81,7 +85,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
+import { getAssetPreviewUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
@@ -90,7 +94,6 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
-import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { isPaged, pagedItems } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -141,15 +144,6 @@ function getAssetMediaType(asset: AssetItem) {
 
 function isVideoAsset(asset: AssetItem): boolean {
   return getAssetMediaType(asset) === 'video'
-}
-
-function getAssetPreviewUrl(asset: AssetItem): string {
-  const mediaType = getAssetMediaType(asset)
-  if (asset.preview_id && isHdrImageFilename(asset.name))
-    return hdrPreviewAssetUrl(asset.preview_id)
-  if (mediaType === 'image' || mediaType === 'video')
-    return resolveMediaSrc(asset.preview_url)
-  return ''
 }
 
 function getAssetSecondaryText(asset: AssetItem): string {

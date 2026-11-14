@@ -2,13 +2,13 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import {
-  getHdrPreviewUrl,
   getImageFileUrl,
   getImageFilenameFromUrl,
   isHdrImageFilename,
   isHdrImageUrl,
   toFullResolutionUrl
 } from './hdrFormatUtil'
+import { getHdrPreviewUrl } from './resultItemUrl'
 
 describe('isHdrImageFilename', () => {
   it('detects exr and hdr regardless of case', () => {

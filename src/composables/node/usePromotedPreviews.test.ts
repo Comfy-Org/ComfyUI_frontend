@@ -181,6 +181,37 @@ describe(usePromotedPreviews, () => {
     }
   )
 
+  it('returns the interior output items, stored preview included, for a promoted video', () => {
+    const setup = createSetup()
+    addInteriorNode(setup, { id: 10, previewMediaType: 'video' })
+    exposePreview(setup, '10')
+    const locatorId = createNodeLocatorId(setup.subgraph.id, toNodeId(10))
+    useNodeOutputStore().nodeOutputs[locatorId] = {
+      images: [{ filename: 'render.mov', type: 'output', preview_id: 'p1' }]
+    }
+
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+    expect(promotedPreviews.value).toEqual([
+      {
+        sourceNodeId: '10',
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+        type: 'video',
+        items: [
+          {
+            filename: 'render.mov',
+            subfolder: '',
+            type: 'output',
+            preview_id: 'p1',
+            mediaType: 'images',
+            nodeId: '10',
+            url: expect.stringMatching(/^\/api\/view\?filename=render\.mov&/),
+            previewUrl: expect.stringMatching(/^\/api\/assets\/p1\/content\?/)
+          }
+        ]
+      }
+    ])
+  })
+
   it('defaults preview type to image when previewMediaType is unset', () => {
     const { setup, items } = arrangePromotedPreview()
 

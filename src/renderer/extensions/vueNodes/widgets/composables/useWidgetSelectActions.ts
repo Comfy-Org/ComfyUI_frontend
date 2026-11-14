@@ -16,6 +16,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
@@ -80,7 +81,11 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     async (widgetValue: string | undefined) => {
       if (!widgetValue) return
       const { filename, subfolder, type } = parseImageWidgetValue(widgetValue)
-      if (!isHdrImageFilename(filename)) return
+      if (
+        !isHdrImageFilename(filename) &&
+        getMediaTypeFromFilename(filename) !== 'video'
+      )
+        return
 
       const asset = await resolveWidgetValueAsset(widgetValue)
       if (!asset?.preview_id || modelValue.value !== widgetValue) return

@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="imageUrls.length > 0"
+    v-if="items.length > 0"
     class="video-preview flex size-full min-h-55 min-w-16 flex-col px-2"
     @keydown="handleKeyDown"
   >
@@ -28,7 +28,7 @@
           {{ $t(videoFailureMessageKey([errorCode])) }}
         </p>
         <p class="mt-1 text-xs">
-          {{ getVideoFilename(currentVideoUrl) }}
+          {{ currentItem?.filename }}
         </p>
       </div>
 
@@ -42,7 +42,7 @@
       <video
         v-if="!videoError"
         data-testid="main-video"
-        :src="currentVideoUrl"
+        :src="currentPlaybackUrl"
         :class="
           cn(
             'absolute inset-0 size-full object-contain',
@@ -56,7 +56,11 @@
         @loadeddata="handleVideoLoad"
         @error="handleVideoError"
       />
-
+      <span
+        v-if="currentItem?.preview_id && !videoError"
+        class="absolute top-2 left-2 rounded-sm bg-node/80 px-1.5 text-xs"
+        v-text="$t('g.preview')"
+      />
       <!-- Floating Action Buttons (appear on hover) -->
       <div
         v-if="isHovered || isFocused"
@@ -93,13 +97,13 @@
         class="absolute inset-x-2 bottom-2 flex justify-center gap-1"
       >
         <button
-          v-for="(_, index) in imageUrls"
+          v-for="(_, index) in items"
           :key="index"
           :class="getNavigationDotClass(index)"
           :aria-label="
             $t('g.viewVideoOfTotal', {
               index: index + 1,
-              total: imageUrls.length
+              total: items.length
             })
           "
           @click="setCurrentIndex(index)"
@@ -137,11 +141,12 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface VideoPreviewProps {
-  /** Array of video URLs to display */
-  readonly imageUrls: readonly string[] // Named imageUrls for consistency with parent components
+  readonly items: readonly AugmentedResultItem[]
   /** Optional node ID for context-aware actions */
   readonly nodeId?: NodeId
 }
@@ -163,12 +168,18 @@ const errorCode = ref<number>()
 const videoWrapperEl = ref<HTMLDivElement>()
 
 // Computed values
-const currentVideoUrl = computed(() => props.imageUrls[currentIndex.value])
-const hasMultipleVideos = computed(() => props.imageUrls.length > 1)
+const playbackUrls = computed(() =>
+  props.items.map((item) => resultItemPreviewUrl(item))
+)
+const currentItem = computed(() => props.items.at(currentIndex.value))
+const currentPlaybackUrl = computed(
+  () => playbackUrls.value[currentIndex.value]
+)
+const hasMultipleVideos = computed(() => props.items.length > 1)
 
 // Watch for URL changes and reset state
 watch(
-  () => props.imageUrls,
+  playbackUrls,
   (newUrls, oldUrls) => {
     // Only reset state if URLs actually changed (not just array reference)
     const urlsChanged =
@@ -211,7 +222,7 @@ const handleVideoError = (event: Event) => {
       ? event.target.error?.code
       : undefined
 
-  const failedUrl = currentVideoUrl.value
+  const failedUrl = currentPlaybackUrl.value
   if (!failedUrl) return
   void describeImageLoadFailure(failedUrl).then((metadata) => {
     useTelemetry()?.trackImageLoadFailed({
@@ -222,8 +233,10 @@ const handleVideoError = (event: Event) => {
 }
 
 const handleDownload = () => {
+  const item = currentItem.value
+  if (!item) return
   try {
-    downloadFile(currentVideoUrl.value)
+    downloadFile(resultItemUrl(item), item.filename)
   } catch (error) {
     useToast().error(t('g.error'), {
       description: t('g.failedToDownloadVideo'),
@@ -239,8 +252,8 @@ const handleRemove = () => {
 
 const setCurrentIndex = (index: number) => {
   if (currentIndex.value === index) return
-  if (index >= 0 && index < props.imageUrls.length) {
-    const urlChanged = props.imageUrls[index] !== currentVideoUrl.value
+  if (index >= 0 && index < props.items.length) {
+    const urlChanged = playbackUrls.value[index] !== currentPlaybackUrl.value
     currentIndex.value = index
     videoError.value = false
     if (urlChanged) {
@@ -277,23 +290,19 @@ const getNavigationDotClass = (index: number) =>
   )
 
 const handleKeyDown = (event: KeyboardEvent) => {
-  if (props.imageUrls.length <= 1) return
+  if (props.items.length <= 1) return
 
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value > 0
-          ? currentIndex.value - 1
-          : props.imageUrls.length - 1
+        currentIndex.value > 0 ? currentIndex.value - 1 : props.items.length - 1
       )
       break
     case 'ArrowRight':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value < props.imageUrls.length - 1
-          ? currentIndex.value + 1
-          : 0
+        currentIndex.value < props.items.length - 1 ? currentIndex.value + 1 : 0
       )
       break
     case 'Home':
@@ -302,19 +311,8 @@ const handleKeyDown = (event: KeyboardEvent) => {
       break
     case 'End':
       event.preventDefault()
-      setCurrentIndex(props.imageUrls.length - 1)
+      setCurrentIndex(props.items.length - 1)
       break
-  }
-}
-
-const getVideoFilename = (url: string): string => {
-  try {
-    return (
-      new URL(url, window.location.href).searchParams.get('filename') ||
-      'Unknown file'
-    )
-  } catch {
-    return 'Invalid URL'
   }
 }
 </script>

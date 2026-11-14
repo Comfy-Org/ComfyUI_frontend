@@ -61,7 +61,13 @@ describe('resultItemPreviewUrl', () => {
       preview_id: 'p1',
       pathname: '/api/assets/p1/content'
     },
-    { filename: 'render.png', preview_id: 'p1', pathname: '/api/view' }
+    { filename: 'render.png', preview_id: 'p1', pathname: '/api/view' },
+    {
+      filename: 'render.mov',
+      preview_id: 'p1',
+      pathname: '/api/assets/p1/content'
+    },
+    { filename: 'render.mov', preview_id: undefined, pathname: '/api/view' }
   ])(
     'resolves $filename with preview_id $preview_id to $pathname',
     ({ filename, preview_id, pathname }) => {
