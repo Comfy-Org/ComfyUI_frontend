@@ -1307,6 +1307,106 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  describe('a send refused with TURN_IN_PROGRESS while a run approval is pending', () => {
+    const pendingApprovalHistory: AgentMessages = [
+      historyRow(1, 'user', 'turn-1', 'Run it'),
+      {
+        ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+        status: 'streaming',
+        pending_ask: {
+          message_id: 'msg-1',
+          ask_id: 'turn-1:call-1',
+          kind: 'run_approval',
+          context: { workflow_id: 'wf-1' },
+          prompt: 'Run it?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      }
+    ]
+    const turnInProgress = () =>
+      new AgentApiError('a turn is already in progress for this thread', 409, {
+        error: 'a turn is already in progress for this thread',
+        type: 'TURN_IN_PROGRESS',
+        active_message_id: 'msg-1',
+        turn_id: 'turn-1'
+      })
+
+    it('points at the approval card and leaves the card pending', async () => {
+      const postMessage = vi
+        .fn<AgentRestClient['postMessage']>()
+        .mockRejectedValue(turnInProgress())
+      const rest = fakeRest({
+        postMessage,
+        getMessages: vi.fn(async () => pendingApprovalHistory)
+      })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
+      await session.loadThread('th-1')
+
+      expect(await session.sendMessage('yes')).toBe(false)
+
+      expect(session.entries.value.at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: enMessages.agent.sendAwaitingRunApproval
+          }
+        ]
+      })
+      expect(rest.answerAsk).not.toHaveBeenCalled()
+      expect(
+        useAgentConversationStore().messages.some((message) =>
+          message.parts.some(
+            (part) =>
+              part.type === 'runApproval' && part.askId === 'turn-1:call-1'
+          )
+        )
+      ).toBe(true)
+    })
+
+    it('keeps the running-turn notice when no approval card is pending', async () => {
+      const postMessage = vi
+        .fn<AgentRestClient['postMessage']>()
+        .mockRejectedValue(turnInProgress())
+      const runningHistory: AgentMessages = [
+        historyRow(1, 'user', 'turn-1', 'Run it'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ]
+      const rest = fakeRest({
+        postMessage,
+        getMessages: vi.fn(async () => runningHistory)
+      })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
+      await session.loadThread('th-1')
+
+      expect(await session.sendMessage('yes')).toBe(false)
+
+      expect(session.entries.value.at(-1)).toMatchObject({
+        role: 'assistant',
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: enMessages.agent.sendTurnInProgress
+          }
+        ]
+      })
+    })
+  })
+
   it('does not let a timed-out re-attachment replace a newer turn', async () => {
     vi.useFakeTimers()
     try {

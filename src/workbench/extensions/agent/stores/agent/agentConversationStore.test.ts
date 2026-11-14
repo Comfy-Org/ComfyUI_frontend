@@ -952,6 +952,18 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  it('awaits run approval only for a card on the active turn', () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    store.ingest(runApproval('t1', 'older-ask'))
+    expect(store.awaitsRunApproval).toBe(true)
+
+    store.startTurn(T2)
+    store.ingest(delta('t2', 'working'))
+
+    expect(store.awaitsRunApproval).toBe(false)
+  })
+
   describe('ask_user', () => {
     const pendingAskUser = {
       message_id: 'assistant-message-1',
