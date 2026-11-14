@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 
@@ -22,7 +23,7 @@ vi.mock<unknown>(import('@comfyorg/telemetry'), () => ({
 }))
 
 describe('useErrorActions', () => {
-  let windowOpenSpy: ReturnType<typeof vi.spyOn>
+  let windowOpenSpy: MockInstance<typeof window.open>
 
   beforeEach(() => {
     mocks.telemetry = {
@@ -134,7 +135,7 @@ describe('useErrorActions', () => {
 
       findOnGitHub('error with spaces & symbols?')
 
-      const [[url]] = windowOpenSpy.mock.calls as unknown as [[string]]
+      const url = String(windowOpenSpy.mock.calls[0][0])
       expect(url).toContain('?q=')
       const queryPart = url.split('?q=')[1]
       expect(decodeURIComponent(queryPart)).toBe(

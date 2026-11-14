@@ -130,7 +130,7 @@ function setWidgetOp(
     widget,
     value,
     promoted: { value_index: valueIndex, host_widgets_values: [value] }
-  } as unknown as Op
+  }
 }
 
 function bindProjection(workflowId: string, graph: LGraph) {

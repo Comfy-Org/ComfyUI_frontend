@@ -42,7 +42,7 @@ jobs:
         uses: fallow-rs/fallow@34269241152fa2e7e6a9de1aba698dcae93035b3 # v3.41.0
         with:
           command: audit
-          version: '3.24.1'
+          version: '3.37.0'
           format: json
           branded-token: false
           changed-since: ${{ steps.audit-base.outputs.sha }}

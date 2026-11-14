@@ -3077,11 +3077,13 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
   })
 
   it('storeJob populates queuedJobs and tracks the workflow path', () => {
-    const workflow = {
+    const workflow = fromPartial<
+      Parameters<typeof store.storeJob>[0]['workflow']
+    >({
       activeState: { id: 'wf-1' },
       initialState: { id: 'wf-1' },
       path: '/workflows/foo.json'
-    } as unknown as Parameters<typeof store.storeJob>[0]['workflow']
+    })
 
     store.storeJob({
       nodes: ['a', 'b'],

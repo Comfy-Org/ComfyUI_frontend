@@ -4,7 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { useCompositorEditor } from './useCompositorEditor'
@@ -39,7 +39,8 @@ function mountComposable(): ReturnType<typeof useCompositorEditor> {
 }
 
 describe('useCompositorEditor', () => {
-  const node = { id: toNodeId(1) } as unknown as LGraphNode
+  const node = new LGraphNode('Compositor')
+  node.id = toNodeId(1)
 
   beforeEach(() => {
     clearCompositorLayers(node)

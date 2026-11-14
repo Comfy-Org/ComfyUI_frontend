@@ -183,7 +183,6 @@ export function rasterizeLeafPlaced(
   const bounds = leafPlacedBounds(node.transform, doc)
   const captured: HTMLCanvasElement[] = []
   const ctx: RenderNodeCtx = {
-    compositor: null as unknown as Compositor,
     content: content as ContentStore,
     renderChild: () => null,
     placed: (_key, _stamp, bitmap, tf, linear) => {

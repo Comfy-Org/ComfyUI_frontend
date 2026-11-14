@@ -82,10 +82,7 @@ async function recordPortalOpens(page: Page) {
       return window
     }
   })
-  return () =>
-    page.evaluate(() => [
-      ...(window as unknown as { __portalOpens: string[] }).__portalOpens
-    ])
+  return () => page.evaluate(() => [...window.__portalOpens!])
 }
 
 /**

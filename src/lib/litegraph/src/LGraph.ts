@@ -235,7 +235,9 @@ function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
 }
 
 function nodeStatusArray<T>(): T[] & Partial<Record<NodeId, T>> {
-  return [] as unknown as T[] & Partial<Record<NodeId, T>>
+  const nodes: T[] = []
+  const status: Partial<Record<NodeId, T>> = {}
+  return Object.assign(nodes, status)
 }
 
 function executionPriority(node: LGraphNode): number {
@@ -1371,7 +1373,7 @@ export class LGraph
     const nodes = this._nodes_in_order
 
     for (const node of nodes) {
-      const handler = (node as unknown as Record<string, unknown>)[eventname]
+      const handler: unknown = Reflect.get(node, eventname)
       if (typeof handler !== 'function' || node.mode != mode) continue
       if (params === undefined) {
         handler.call(node)

@@ -59,10 +59,9 @@ describe('createPromotedMultilineWidget', () => {
     const widget = promote()
 
     expect(widget).toBeDefined()
-    const domWidget = widget as unknown as DOMWidget<
-      HTMLTextAreaElement,
-      string
-    >
+    const domWidget = fromAny<DOMWidget<HTMLTextAreaElement, string>, unknown>(
+      widget
+    )
     expect(domWidget.element).toBeInstanceOf(HTMLTextAreaElement)
     expect(useDomWidgetStore().widgetStates.has(domWidget.id)).toBe(true)
   })
@@ -74,8 +73,8 @@ describe('createPromotedMultilineWidget', () => {
 
   it('writes textarea edits back to the host widget store entry', () => {
     const widget = promote()
-    const element = (
-      widget as unknown as DOMWidget<HTMLTextAreaElement, string>
+    const element = fromAny<DOMWidget<HTMLTextAreaElement, string>, unknown>(
+      widget
     ).element
 
     element.value = 'edited'

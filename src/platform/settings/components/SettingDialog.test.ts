@@ -2,7 +2,6 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
-import type { Ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -13,22 +12,26 @@ import type { SettingDialogProps } from '@comfyorg/settings-core/types'
 
 import SettingDialog from './SettingDialog.vue'
 
-const settingUiMocks = vi.hoisted(() => ({
-  navGroups: null as unknown as Ref<NavGroupData[]>
-}))
+const settingUiMocks = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return { navGroups: ref<NavGroupData[]>([]) }
+})
 const unifiedBillingSettingsEnabled = ref(false)
 const defaultCategory = ref({
   key: 'workspace-allowlist',
   label: 'Allowlist',
   children: []
 })
-const searchMocks = vi.hoisted(() => ({
-  inSearch: null as unknown as Ref<boolean>,
-  matchedNavItemKeys: null as unknown as Ref<Set<string>>,
-  searchQuery: null as unknown as Ref<string>,
-  searchResultsCategories: null as unknown as Ref<Set<string>>,
-  handleSearch: vi.fn()
-}))
+const searchMocks = await vi.hoisted(async () => {
+  const { ref } = await import('vue')
+  return {
+    inSearch: ref(false),
+    matchedNavItemKeys: ref(new Set<string>()),
+    searchQuery: ref(''),
+    searchResultsCategories: ref(new Set<string>()),
+    handleSearch: vi.fn()
+  }
+})
 
 vi.mock<unknown>(
   import('@/platform/settings/composables/useSettingUI'),

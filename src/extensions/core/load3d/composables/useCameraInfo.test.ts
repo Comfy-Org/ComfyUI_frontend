@@ -1,9 +1,9 @@
 import { useToast } from '@/components/ui/toast/toastStore'
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { ref, shallowRef } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 interface ViewportInstance {
   ctorArgs: unknown[]
@@ -50,32 +50,28 @@ vi.mock<unknown>(
 
 import { useCameraInfo } from './useCameraInfo'
 
-interface FakeWidget {
-  name: string
-  value: unknown
-  callback?: (value: unknown, ...rest: unknown[]) => void
+class TestNode extends LGraphNode {
+  declare widgets: IBaseWidget[]
+  override onMouseEnter?: () => void
+  override onMouseLeave?: () => void
 }
 
-interface FakeNode {
-  widgets: FakeWidget[]
-  onMouseEnter?: () => void
-  onMouseLeave?: () => void
+function makeNode(values: Record<string, IBaseWidget['value']>): TestNode {
+  const node = new TestNode('Camera Info')
+  node.widgets = Object.entries(values).map(([name, value]) =>
+    fromPartial<IBaseWidget>({ name, value })
+  )
+  return node
 }
 
-function makeNode(values: Record<string, unknown>): FakeNode {
-  return {
-    widgets: Object.entries(values).map(([name, value]) => ({ name, value }))
-  }
-}
-
-function widget(node: FakeNode, name: string): FakeWidget {
+function widget(node: TestNode, name: string): IBaseWidget {
   const found = node.widgets.find((w) => w.name === name)
   if (!found) throw new Error(`missing widget ${name}`)
   return found
 }
 
-function nodeRef(node: FakeNode) {
-  return ref(node) as unknown as Ref<LGraphNode | null>
+function nodeRef(node: TestNode) {
+  return shallowRef<LGraphNode | null>(node)
 }
 
 beforeEach(() => {

@@ -1,4 +1,3 @@
-import type * as childProcess from 'node:child_process'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 // The startup branch is worth asserting at the boundary it actually crosses,
@@ -19,13 +18,10 @@ const spawnedChild = {
   kill: vi.fn()
 }
 
-// `spawn` is overloaded per stdio shape and `spawnedChild` is deliberately not
-// a whole ChildProcess, so the module shape is asserted here rather than grown
-// into a full stub the assertions would not read.
-vi.mock(import('node:child_process'), () => {
-  const mocked = { spawn } as unknown as typeof childProcess
-  return { default: mocked, spawn: mocked.spawn }
-})
+vi.mock<unknown>(import('node:child_process'), () => ({
+  default: { spawn },
+  spawn
+}))
 vi.mock(import('../checks/devServer'), { spy: true })
 
 import { probeDevServer } from '../checks/devServer'

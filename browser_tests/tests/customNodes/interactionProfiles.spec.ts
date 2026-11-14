@@ -1,3 +1,5 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -42,9 +44,9 @@ for (const entry of interactionProfileEntries) {
     comfyPage
   }) => {
     test.setTimeout(entry.timeoutMs + 120_000)
-    const defs = (await comfyPage.page.evaluate(() =>
-      window.app!.api.getNodeDefs()
-    )) as unknown as Record<string, RawNodeDef>
+    const defs = fromPartial<Record<string, RawNodeDef>>(
+      await comfyPage.page.evaluate(() => window.app!.api.getNodeDefs())
+    )
     const plans = planInteractionProbes(defs, entry.pack)
     expect(
       plans.length,

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   endingNoticeStartsAtFact,
@@ -492,7 +493,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   describe('sales-managed tiers (FE-1662)', () => {
     const runtimeTier = (tier: string) =>
-      tier as unknown as SubscriptionInfo['tier']
+      fromAny<SubscriptionInfo['tier'], unknown>(tier)
 
     // Mirrors billing-api hideLifecycleCapabilities: lifecycle actions and the
     // self-serve catalog close, credit top-up stays open.

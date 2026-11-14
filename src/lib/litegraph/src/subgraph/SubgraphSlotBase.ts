@@ -10,7 +10,6 @@ import { canvasClass } from '@/lib/litegraph/src/canvas/canvasClassAccess'
 
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
-import { SlotShape } from '@/lib/litegraph/src/draw'
 import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { DefaultConnectionColors } from '@comfyorg/graph-model/interfaces'
@@ -25,6 +24,7 @@ import type {
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import type {
   CanvasPointerEvent,
   Hoverable
@@ -184,8 +184,6 @@ export abstract class SubgraphSlot
     fromSlot,
     editorAlpha = 1
   }: SubgraphSlotDrawOptions): void {
-    // Assertion: SlotShape is a subset of RenderShape
-    const shape = this.shape as unknown as SlotShape
     const {
       isPointerOver,
       pos: [x, y]
@@ -213,7 +211,7 @@ export abstract class SubgraphSlot
 
       ctx.rect(x - 4, y - 4, 8, 8)
       ctx.fill()
-    } else if (shape === SlotShape.HollowCircle) {
+    } else if (this.shape === RenderShape.HollowCircle) {
       ctx.lineWidth = 3
       ctx.strokeStyle = color
 

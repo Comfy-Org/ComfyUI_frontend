@@ -324,9 +324,7 @@ export class GroupNodeConfig {
                 typeof mergeIfValid
               >[4]
               const res = mergeIfValid(
-                { widget: widgetSpec } as unknown as Parameters<
-                  typeof mergeIfValid
-                >[0],
+                { widget: widgetSpec } as Parameters<typeof mergeIfValid>[0],
                 targetWidget,
                 false,
                 undefined,

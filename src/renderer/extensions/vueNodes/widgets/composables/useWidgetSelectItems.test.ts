@@ -403,6 +403,38 @@ describe('useWidgetSelectItems', () => {
       )
     })
 
+    it.for([
+      { result: '', name: 'empty string' },
+      { result: undefined, name: 'undefined' }
+    ])('uses the fallback value when the label is $name', ({ result }) => {
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          modelValue: 'template_image.png',
+          getOptionLabel: () => () => result
+        })
+      )
+
+      expect(pagedItems(dropdownItems.value)[0].label).toBe(
+        'template_image.png'
+      )
+    })
+
+    it('uses the fallback value when the label function throws', () => {
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          modelValue: 'template_image.png',
+          getOptionLabel: () => () => {
+            throw new Error('fail')
+          }
+        })
+      )
+
+      expect(pagedItems(dropdownItems.value)[0].label).toBe(
+        'template_image.png'
+      )
+      expect(console.warn).toHaveBeenCalled()
+    })
+
     it('leaves the fallback preview empty for mesh kind', () => {
       const { dropdownItems } = useWidgetSelectItems(
         createDefaultOptions({

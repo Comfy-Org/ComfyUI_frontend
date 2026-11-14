@@ -9,8 +9,12 @@ import { api } from '@/scripts/api'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LGraphEventMode
+} from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { ReleaseModelOptions } from '@/platform/workflowErrors/missingModel/missingModelScan'
@@ -136,8 +140,10 @@ vi.mock(
   })
 )
 
-function createWorkflowGraphData(): ComfyWorkflowJSON {
+function createWorkflowGraphData() {
   return {
+    id: 'test-graph',
+    revision: 0,
     last_node_id: 0,
     last_link_id: 0,
     nodes: [],
@@ -146,13 +152,13 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
     config: {},
     extra: {},
     version: 0.4
-  }
+  } satisfies ComfyWorkflowJSON & ISerialisedGraph
 }
 
 function createGraph(graphData = createWorkflowGraphData()): LGraph {
-  return {
-    serialize: vi.fn(() => graphData)
-  } as unknown as LGraph
+  const graph = new LGraph()
+  vi.spyOn(graph, 'serialize').mockReturnValue(graphData)
+  return graph
 }
 
 function deferModelVerification() {
@@ -664,10 +670,14 @@ describe('missingModelPipeline', () => {
         isAssetSupported: false
       } satisfies MissingModelCandidate
       mockHandles.state.enrichedCandidates = [confirmedCandidate]
-      const widget = { name: 'ckpt_name', value: 'missing.safetensors' }
-      vi.mocked(graphTraversal.getNodeByExecutionId).mockReturnValue({
-        widgets: [widget]
-      } as unknown as LGraphNode)
+      const node = new LGraphNode('Checkpoint loader')
+      const widget = node.addWidget(
+        'text',
+        'ckpt_name',
+        'missing.safetensors',
+        () => undefined
+      )
+      vi.mocked(graphTraversal.getNodeByExecutionId).mockReturnValue(node)
       let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
         undefined
       vi.mocked(api.getFolderPaths).mockReturnValueOnce(

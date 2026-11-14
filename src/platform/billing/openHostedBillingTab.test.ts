@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import {
   afterEach,
   beforeEach,
@@ -55,7 +56,7 @@ const BILLING_WEB_ROUTE = {
 }
 
 function fakeTab(): Window {
-  return { opener: undefined, location: { href: '' } } as unknown as Window
+  return fromPartial<Window>({ opener: undefined, location: { href: '' } })
 }
 
 describe('openHostedBillingTab', () => {

@@ -1,25 +1,11 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { BoundingBox } from '@comfyorg/graph-model/boundingBoxes'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import { BoundingBoxesWidget } from './BoundingBoxesWidget'
-
-function fakeCtx() {
-  return {
-    save: vi.fn(),
-    restore: vi.fn(),
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    fillText: vi.fn(),
-    fillStyle: '',
-    strokeStyle: '',
-    font: '',
-    textAlign: '',
-    textBaseline: ''
-  } as unknown as CanvasRenderingContext2D
-}
 
 describe('BoundingBoxesWidget', () => {
   it('has the boundingboxes type and draws the Vue-only placeholder', () => {
@@ -35,7 +21,7 @@ describe('BoundingBoxesWidget', () => {
       node
     )
     expect(widget.type).toBe('boundingboxes')
-    const ctx = fakeCtx()
+    const ctx = createMockCanvasRenderingContext2D()
     widget.drawWidget(ctx, { width: 200 })
     expect(ctx.fillText).toHaveBeenCalled()
     expect(() => widget.onClick({} as never)).not.toThrow()

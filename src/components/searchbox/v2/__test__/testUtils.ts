@@ -1,6 +1,6 @@
-import type { DetachedWindowAPI } from 'happy-dom'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { setHappyDomViewport } from '@/utils/__tests__/happyDomTestUtils'
 
 export function createMockNodeDef(
   overrides: Partial<ComfyNodeDef> = {}
@@ -23,10 +23,5 @@ export function createMockNodeDef(
 }
 
 export function setViewport(viewport: { width: number; height: number }) {
-  const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
-    .happyDOM
-  if (!happyDOM) {
-    throw new Error('window.happyDOM is unavailable to set viewport')
-  }
-  happyDOM.setViewport(viewport)
+  setHappyDomViewport(viewport)
 }

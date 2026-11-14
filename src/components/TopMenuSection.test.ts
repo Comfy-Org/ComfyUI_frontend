@@ -14,7 +14,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import type { DetachedWindowAPI } from 'happy-dom'
+import { DetachedWindowAPI } from 'happy-dom'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -756,7 +756,9 @@ describe('TopMenuSection', () => {
 
   describe('Cloud button', () => {
     function servedFrom(origin: string) {
-      const { happyDOM } = window as unknown as { happyDOM: DetachedWindowAPI }
+      assert('happyDOM' in window)
+      const { happyDOM } = window
+      assert.instanceOf(happyDOM, DetachedWindowAPI)
       const previous = window.location.href
       happyDOM.setURL(`${origin}/`)
       onTestFinished(() => happyDOM.setURL(previous))

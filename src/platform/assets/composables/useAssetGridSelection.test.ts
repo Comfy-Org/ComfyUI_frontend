@@ -78,19 +78,19 @@ async function renderHarness(callbacks: ReturnType<typeof createCallbacks>) {
   render(Harness)
   await nextTick()
   vi.spyOn(screen.getByTestId('grid'), 'getBoundingClientRect').mockReturnValue(
-    fromPartial<DOMRect>({ left: 0, top: 0, right: 1000, bottom: 1000 })
+    new DOMRect(0, 0, 1000, 1000)
   )
   for (const id of Object.keys(cardBoxes)) {
     vi.spyOn(
       screen.getByTestId(`card-${id}`),
       'getBoundingClientRect'
     ).mockReturnValue(
-      fromPartial<DOMRect>({
-        left: cardBoxes[id].left,
-        right: cardBoxes[id].right,
-        top: 0,
-        bottom: 50
-      })
+      new DOMRect(
+        cardBoxes[id].left,
+        0,
+        cardBoxes[id].right - cardBoxes[id].left,
+        50
+      )
     )
   }
 }
@@ -663,14 +663,7 @@ describe('useAssetGridSelection', () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)
       vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue(
-        fromPartial<DOMRect>({
-          left: 0,
-          top: 0,
-          right: 500,
-          bottom: 500,
-          width: 500,
-          height: 500
-        })
+        new DOMRect(0, 0, 500, 500)
       )
 
       panel().dispatchEvent(new MouseEvent('mouseenter'))
@@ -691,14 +684,7 @@ describe('useAssetGridSelection', () => {
       const callbacks = createCallbacks()
       await renderHarness(callbacks)
       vi.spyOn(panel(), 'getBoundingClientRect').mockReturnValue(
-        fromPartial<DOMRect>({
-          left: 0,
-          top: 0,
-          right: 500,
-          bottom: 500,
-          width: 500,
-          height: 500
-        })
+        new DOMRect(0, 0, 500, 500)
       )
 
       window.dispatchEvent(

@@ -3,6 +3,7 @@ import {
   WIDGET_FORM_KEY,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
+import { fromAny } from '@total-typescript/shoehorn'
 import * as Y from 'yjs'
 
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
@@ -187,13 +188,12 @@ function projectDefinitionEntry(
 function projectSubgraphDefinition(
   source: Y.Map<unknown>,
   excludedDefinitionIds: ReadonlySet<string>
-): ExportedSubgraph {
-  const definition = Object.fromEntries(
+): unknown {
+  return Object.fromEntries(
     [...source.entries()].flatMap(([key, value]) =>
       projectDefinitionEntry(source, key, value, excludedDefinitionIds)
     )
   )
-  return definition as unknown as ExportedSubgraph
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -295,7 +295,9 @@ function readDefinition(
   excludedDefinitionIds: ReadonlySet<string>
 ): ExportedSubgraph | null {
   const definition = projectSubgraphDefinition(source, excludedDefinitionIds)
-  return isSafeDefinition(definition) ? definition : null
+  return isSafeDefinition(definition)
+    ? fromAny<ExportedSubgraph, unknown>(definition)
+    : null
 }
 
 function readField(source: unknown, key: string): unknown {

@@ -1,7 +1,7 @@
 import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -705,7 +705,7 @@ describe('CreditsTile', () => {
 
   it('does not borrow a catalog monthly pool for an unrecognized tier', () => {
     activeProSubscription()
-    const galactic = 'GALACTIC' as unknown as SubscriptionInfo['tier']
+    const galactic = fromAny<SubscriptionInfo['tier'], string>('GALACTIC')
     state.tier = galactic
     state.subscription = {
       tier: galactic,

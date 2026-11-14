@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
@@ -66,12 +66,11 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
 
     capturedEntries.length = 0
     originalContextMenu = LiteGraph.ContextMenu
-    const MockContextMenu = vi.fn(function (
-      this: unknown,
-      values: MenuEntry[]
-    ) {
-      capturedEntries.push(values)
-    }) as unknown as typeof LiteGraph.ContextMenu
+    const MockContextMenu = fromAny<typeof LiteGraph.ContextMenu, unknown>(
+      vi.fn(function (this: unknown, values: MenuEntry[]) {
+        capturedEntries.push(values)
+      })
+    )
     LiteGraph.ContextMenu = MockContextMenu
   })
 

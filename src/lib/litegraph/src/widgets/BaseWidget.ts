@@ -476,7 +476,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // `node` has no setter - Object.assign will throw.
     // TODO: Resolve this workaround. Ref: https://github.com/Comfy-Org/litegraph.js/issues/1022
     const { label, hidden, disabled, value } = widget
-    const safeValues = { ...widget } as unknown as Record<string, unknown>
+    const safeValues = { ...widget }
     for (const key of [
       'node',
       'outline_color',
@@ -497,7 +497,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       'options',
       'type'
     ]) {
-      delete safeValues[key]
+      Reflect.deleteProperty(safeValues, key)
     }
 
     Object.assign(this, safeValues)
@@ -769,10 +769,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   createCopyForNode(node: LGraphNode): this {
     const WidgetConstructor = this.constructor as new (
-      widget: TWidget,
+      widget: this,
       node: LGraphNode
     ) => this
-    const cloned = new WidgetConstructor(this as unknown as TWidget, node)
+    const cloned = new WidgetConstructor(this, node)
     cloned.value = this.value
     return cloned
   }

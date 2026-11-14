@@ -1,4 +1,4 @@
-import { computed, ref, toRaw, toRef } from 'vue'
+import { computed, ref, toRaw, unref } from 'vue'
 import type { MaybeRef } from 'vue'
 
 import {
@@ -13,7 +13,6 @@ import {
   readStateFromWidgets,
   writeWidgetValue
 } from '@/extensions/core/load3d/cameraInfo/widgetBridge'
-import type { NodeWithWidgets } from '@/extensions/core/load3d/cameraInfo/widgetBridge'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -40,7 +39,6 @@ const WIDGET_NAMES = [
 ] as const
 
 export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
-  const node = toRef(nodeRef)
   const wiring = useViewportNodeWiring()
   let viewport: CameraInfoViewport | null = null
 
@@ -48,20 +46,20 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
   const mode = computed(() => cameraState.value.mode)
 
   const initialize = (container: HTMLElement): void => {
-    const raw = toRaw(node.value)
+    const raw = toRaw(unref(nodeRef))
     if (!raw) return
     if (viewport) cleanup()
 
     try {
-      const initialState = readStateFromWidgets(raw as NodeWithWidgets)
+      const initialState = readStateFromWidgets(raw)
       cameraState.value = initialState
       viewport = new CameraInfoViewport(container, initialState, {
         onHandleDrag: (fieldName, value) => {
-          writeWidgetValue(raw as NodeWithWidgets, fieldName, value)
+          writeWidgetValue(raw, fieldName, value)
         }
       })
-      wireWidgetsToOverlay(raw as NodeWithWidgets)
-      wiring.wireNode(raw as LGraphNode, { viewport: () => viewport?.viewport })
+      wireWidgetsToOverlay(raw)
+      wiring.wireNode(raw, { viewport: () => viewport?.viewport })
     } catch (error) {
       console.error('Failed to initialize CameraInfoViewport:', error)
       cleanup()
@@ -91,7 +89,7 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     viewport?.setLookThrough(on)
   }
 
-  function wireWidgetsToOverlay(target: NodeWithWidgets): void {
+  function wireWidgetsToOverlay(target: LGraphNode): void {
     wiring.wireWidgets(target, WIDGET_NAMES, (widget) => {
       if (widget.name === 'mode') wireWidgetsToOverlay(target)
       if (!viewport) return

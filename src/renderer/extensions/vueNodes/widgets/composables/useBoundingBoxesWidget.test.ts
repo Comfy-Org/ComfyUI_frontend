@@ -1,20 +1,20 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { useBoundingBoxesWidget } from './useBoundingBoxesWidget'
 
 const widgetOptions = { serialize: true, hideInPanel: true }
 
 function mockNode() {
-  return { addWidget: vi.fn(() => ({})) } as unknown as LGraphNode & {
-    addWidget: ReturnType<typeof vi.fn>
-  }
+  const node = new LGraphNode('Test')
+  const addWidget = vi.spyOn(node, 'addWidget')
+  return { node, addWidget }
 }
 
 describe('useBoundingBoxesWidget', () => {
   it('adds a boundingboxes widget seeded with the spec default', () => {
-    const node = mockNode()
+    const { node, addWidget } = mockNode()
     const boxes = [
       {
         x: 0,
@@ -29,7 +29,7 @@ describe('useBoundingBoxesWidget', () => {
       name: 'editor_state',
       default: boxes
     })
-    expect(node.addWidget).toHaveBeenCalledWith(
+    expect(addWidget).toHaveBeenCalledWith(
       'boundingboxes',
       'editor_state',
       boxes,
@@ -39,12 +39,12 @@ describe('useBoundingBoxesWidget', () => {
   })
 
   it('defaults to an empty box list', () => {
-    const node = mockNode()
+    const { node, addWidget } = mockNode()
     useBoundingBoxesWidget()(node, {
       type: 'BOUNDING_BOXES',
       name: 'editor_state'
     })
-    expect(node.addWidget).toHaveBeenCalledWith(
+    expect(addWidget).toHaveBeenCalledWith(
       'boundingboxes',
       'editor_state',
       [],
@@ -54,7 +54,7 @@ describe('useBoundingBoxesWidget', () => {
   })
 
   it('deep-clones the spec default so edits never leak into shared state', () => {
-    const node = mockNode()
+    const { node, addWidget } = mockNode()
     const shared = [
       {
         x: 0,
@@ -69,7 +69,7 @@ describe('useBoundingBoxesWidget', () => {
       name: 'editor_state',
       default: shared
     })
-    const passed = node.addWidget.mock.calls[0][2] as typeof shared
+    const passed = addWidget.mock.calls[0][2] as typeof shared
     expect(passed).not.toBe(shared)
     expect(passed[0]).not.toBe(shared[0])
     expect(passed[0].metadata.palette).not.toBe(shared[0].metadata.palette)
@@ -77,13 +77,13 @@ describe('useBoundingBoxesWidget', () => {
   })
 
   it('forwards max_boxes from the spec to the widget options', () => {
-    const node = mockNode()
+    const { node, addWidget } = mockNode()
     useBoundingBoxesWidget()(node, {
       type: 'BOUNDING_BOXES',
       name: 'editor_state',
       max_boxes: 3
     })
-    expect(node.addWidget).toHaveBeenCalledWith(
+    expect(addWidget).toHaveBeenCalledWith(
       'boundingboxes',
       'editor_state',
       [],

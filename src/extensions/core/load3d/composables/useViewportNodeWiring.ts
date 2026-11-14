@@ -1,14 +1,11 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { Viewport3d } from '@comfyorg/viewport3d/load3d/Viewport3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
-type WidgetCallback = (value: unknown, ...rest: unknown[]) => void
+type WidgetCallback = NonNullable<IBaseWidget['callback']>
 
-export interface WirableWidget {
-  name: string
-  value: unknown
-  callback?: WidgetCallback
-}
+type WirableWidget = Pick<IBaseWidget, 'name' | 'value' | 'callback'>
 
 interface NodeWithWirableWidgets {
   widgets?: WirableWidget[]

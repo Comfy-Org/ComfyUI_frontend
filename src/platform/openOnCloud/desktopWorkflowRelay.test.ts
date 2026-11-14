@@ -1,4 +1,4 @@
-import type { DetachedWindowAPI } from 'happy-dom'
+import { DetachedWindowAPI } from 'happy-dom'
 import {
   assert,
   beforeEach,
@@ -26,9 +26,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-const { happyDOM } = window as unknown as { happyDOM: DetachedWindowAPI }
-
 function openAt(url: string) {
+  assert('happyDOM' in window)
+  const { happyDOM } = window
+  assert.instanceOf(happyDOM, DetachedWindowAPI)
   const previous = window.location.href
   happyDOM.setURL(url)
   onTestFinished(() => happyDOM.setURL(previous))

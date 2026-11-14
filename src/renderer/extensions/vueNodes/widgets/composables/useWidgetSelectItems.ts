@@ -41,7 +41,10 @@ import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { pagedItems, WrappedList } from '@/utils/pagedList'
 import type { MaybePaged } from '@/utils/pagedList'
 
-function getDisplayLabel(value: string, getLabel?: (v: string) => string) {
+function getDisplayLabel(
+  value: string,
+  getLabel?: (value: string) => string | undefined
+) {
   try {
     return getLabel?.(value) || value
   } catch (e) {
@@ -86,7 +89,9 @@ function getAnnotatedValueMediaUrl(
 }
 
 export interface UseWidgetSelectItemsOptions {
-  getOptionLabel: MaybeRefOrGetter<((value: string) => string) | undefined>
+  getOptionLabel: MaybeRefOrGetter<
+    ((value: string) => string | undefined) | undefined
+  >
   modelValue: MaybeRefOrGetter<string | undefined>
   assetKind: MaybeRefOrGetter<AssetKind | undefined>
   assetData: ReturnType<typeof useAssetWidgetData> | null

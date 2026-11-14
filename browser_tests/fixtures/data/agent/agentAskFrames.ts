@@ -4,6 +4,7 @@ import type {
   AgentAskResolvedFrame,
   AgentPendingAskUser
 } from '@comfyorg/ingest-types'
+import { fromAny } from '@total-typescript/shoehorn'
 
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
@@ -160,7 +161,7 @@ export function pausedAskFrame(askId: string): AgentAskFrame {
 }
 
 export function unknownKindAskFrame(askId: string): AgentAskFrame {
-  return {
+  return fromAny<AgentAskFrame, unknown>({
     type: 'agent_ask',
     data: {
       ...askTurnIds,
@@ -172,7 +173,7 @@ export function unknownKindAskFrame(askId: string): AgentAskFrame {
       max_selections: 1,
       allow_other: false
     }
-  } as unknown as AgentAskFrame
+  })
 }
 
 export function deleteApprovalFrame(askId: string): AgentAskFrame {

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { reactive } from 'vue'
 import { afterEach, describe, expect, vi } from 'vitest'
 
@@ -23,7 +24,7 @@ vi.mock(import('@comfyorg/shared-frontend-utils/colorUtil'), {
 })
 
 function createMockContext() {
-  return {
+  return fromPartial<CanvasRenderingContext2D>({
     beginPath: vi.fn(),
     rect: vi.fn(),
     fill: vi.fn(),
@@ -35,9 +36,9 @@ function createMockContext() {
     fillStyle: '',
     strokeStyle: '',
     globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-    textBaseline: 'alphabetic' as CanvasTextBaseline
-  } as unknown as CanvasRenderingContext2D
+    textAlign: 'left',
+    textBaseline: 'alphabetic'
+  })
 }
 
 const graphCanvas = { editor_alpha: 1 } as Partial<LGraphCanvas> as LGraphCanvas

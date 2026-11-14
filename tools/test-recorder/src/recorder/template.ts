@@ -115,18 +115,12 @@ const FILE_HEADER = `/**
  */`
 
 function recorderBlock(pageExpr: string, safeOutputPath: string): string {
-  return `  interface RecorderEnabledContext {
-    _enableRecorder(params: {
-      language: string
-      mode: string
-      pauseOnNextStatement: boolean
-      outputFile: string
-    }): Promise<void>
-  }
-  try {
-    await (
-      ${pageExpr}.context() as unknown as RecorderEnabledContext
-    )._enableRecorder({
+  return `  try {
+    const context = ${pageExpr}.context()
+    if (!('_enableRecorder' in context) || typeof context._enableRecorder !== 'function') {
+      throw new Error('Playwright recorder is unavailable')
+    }
+    await context._enableRecorder({
       language: 'playwright-test',
       mode: 'inspecting',
       pauseOnNextStatement: false,

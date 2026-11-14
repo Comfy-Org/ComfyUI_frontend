@@ -1,9 +1,10 @@
-import { ref } from 'vue'
-import type { Ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { ref, shallowRef } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 interface ViewportInstance {
@@ -51,43 +52,35 @@ vi.mock<unknown>(
 
 import { useCameraAngle } from './useCameraAngle'
 
-interface FakeWidget {
-  name: string
-  value: unknown
-  callback?: (value: unknown, ...rest: unknown[]) => void
-}
+class TestNode extends LGraphNode {
+  declare widgets: IBaseWidget[]
+  imageSource: TestNode | null = null
+  override onMouseEnter?: () => void
+  override onMouseLeave?: () => void
+  override onConnectionsChange?: () => void
 
-interface FakeNode {
-  widgets: FakeWidget[]
-  imageSource: FakeNode | null
-  findInputSlot(name: string): number
-  getInputNode(slot: number): FakeNode | null
-  onMouseEnter?: () => void
-  onMouseLeave?: () => void
-  onConnectionsChange?: () => void
-}
-
-function makeNode(values: Record<string, unknown>): FakeNode {
-  return {
-    widgets: Object.entries(values).map(([name, value]) => ({ name, value })),
-    imageSource: null,
-    findInputSlot(name) {
-      return name === 'image' ? 0 : -1
-    },
-    getInputNode() {
-      return this.imageSource
-    }
+  override getInputNode(): LGraphNode | null {
+    return this.imageSource
   }
 }
 
-function widget(node: FakeNode, name: string): FakeWidget {
+function makeNode(values: Record<string, IBaseWidget['value']>): TestNode {
+  const node = new TestNode('Camera Angle')
+  node.addInput('image', 'IMAGE')
+  node.widgets = Object.entries(values).map(([name, value]) =>
+    fromPartial<IBaseWidget>({ name, value })
+  )
+  return node
+}
+
+function widget(node: TestNode, name: string): IBaseWidget {
   const found = node.widgets.find((w) => w.name === name)
   if (!found) throw new Error(`missing widget ${name}`)
   return found
 }
 
-function nodeRef(node: FakeNode) {
-  return ref(node) as unknown as Ref<LGraphNode | null>
+function nodeRef(node: TestNode) {
+  return shallowRef<LGraphNode | null>(node)
 }
 
 function ctorState(instance: ViewportInstance) {

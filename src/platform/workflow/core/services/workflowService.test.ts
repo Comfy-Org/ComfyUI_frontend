@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useDialogService } from '@/services/dialogService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
@@ -5,8 +6,6 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { fromAny } from '@total-typescript/shoehorn'
 
 import { useTelemetry } from '@comfyorg/telemetry'
 
@@ -3516,9 +3515,12 @@ describe('useWorkflowService', () => {
       beforeEach(() => {
         // Runtime fixture, not a compiler-error assertion: reproduce the state
         // the LoadedComfyWorkflow cast claims is impossible.
-        const tracker = existingWorkflow.changeTracker as unknown as {
-          activeState: ComfyWorkflowJSON | null
-        }
+        const tracker = fromAny<
+          {
+            activeState: ComfyWorkflowJSON | null
+          },
+          unknown
+        >(existingWorkflow.changeTracker)
         tracker.activeState = null
       })
 
