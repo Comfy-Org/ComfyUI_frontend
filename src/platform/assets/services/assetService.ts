@@ -242,8 +242,6 @@ function compareLoaderPaths(a: string, b: string): number {
 const WORKSPACE_LIBRARY_PARAM = 'workspace_library' satisfies keyof NonNullable<
   ListAssetsData['query']
 >
-// Cloud counts `total` only up to a cap with this set; nothing here reads the
-// total, and paging follows `has_more` and `next_cursor`.
 const CAPPED_TOTAL_PARAM = 'capped_total' satisfies keyof NonNullable<
   ListAssetsData['query']
 >

@@ -15,8 +15,7 @@ import { api } from '@/scripts/api'
 // need separate, unrelated fixes to re-add; out of scope for this row.
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }

@@ -22,8 +22,6 @@ const BASE_PARAMS = {
   tags_none: ['missing']
 } satisfies ListAssetsData['query']
 
-// Cloud counts `total` only up to a cap with `capped_total`; these lists page
-// by cursor and never read the total.
 function baseParams(): ListAssetsData['query'] {
   return isCloud ? { ...BASE_PARAMS, capped_total: true } : BASE_PARAMS
 }
