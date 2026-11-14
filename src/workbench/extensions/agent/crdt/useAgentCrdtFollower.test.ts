@@ -3777,6 +3777,18 @@ describe('useAgentCrdtFollower', () => {
         writer.unmount()
       })
 
+      it('HC-09: settles the held batches as any teardown does and leaves the workflow recorded as unsynced for the next panel', async () => {
+        const writer = await startUnconfirmed('wf-hc-09')
+        await followToBlankTab(writer)
+
+        writer.unmount()
+
+        expect(await settledStates()).toEqual(['unconfirmed', 'undeliverable'])
+        expect(lostEditReports()).toHaveLength(2)
+        expect(hasUnsyncedHumanOps('wf-hc-09')).toBe(true)
+        expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      })
+
       it('HC-10: reports only the held workflow, from the hold until it resumes or ends', async () => {
         const writer = await startUnconfirmed('wf-hc-10')
         expect(writer.holdsWorkflow('wf-hc-10')).toBe(false)
