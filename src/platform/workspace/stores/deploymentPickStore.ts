@@ -203,15 +203,15 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   let reportedLoadFailure = false
   let requestBeforeStart: ReadonlyMap<string, number> = new Map()
 
+  const shownListing = shallowRef(0)
+
   function load(): Promise<void> {
     return loadListing([])
   }
 
-  /** Loads the listing; resolves true once a listing at least as new as this request is shown. */
-  async function refresh(): Promise<boolean> {
-    const request = latestRequest + 1
-    await load()
-    return lastApplied >= request
+  /** How many listing requests were asked for so far; `shownListing` is the number of the one on screen. */
+  function listingsAsked(): number {
+    return latestRequest
   }
 
   /**
@@ -270,6 +270,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     }
     lastApplied = request
     dispatch(event)
+    if (event.type === 'loaded') shownListing.value = request
     listingRefused.value = event.type === 'loadRefused'
     if (event.type === 'loaded') noteListing(event.gonePickedDeploymentId)
     if (event.type === 'loadRefused' && bootDeployment.value === undefined) {
@@ -577,8 +578,9 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     changeSinceBoot,
     unsupportedPackFor,
     switcherOpenAsks,
+    shownListing,
+    listingsAsked,
     load,
-    refresh,
     loadOnce,
     followStart,
     bootOnComfyCloud,

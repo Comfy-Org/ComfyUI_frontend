@@ -57,7 +57,7 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
   const readyWaiters = new Set<(ready: boolean) => void>()
   let installed = false
   let holdGeneration = 0
-  let overrideGeneration = 0
+  let changedAsOfListing = 0
   let uninstall = () => {}
   onScopeDispose(() => uninstall())
 
@@ -103,20 +103,14 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
     settleWaiters(false)
   }
 
-  async function keepChangesUntilListed() {
-    const asked = overrideGeneration
-    const listedSince = await pickStore.refresh()
-    if (listedSince && asked === overrideGeneration) {
-      state.value = { ...state.value, changed: {} }
-    }
-  }
-
   function dispatch(event: GpuSessionEvent) {
     const changedBefore = state.value.changed
     state.value = reduceGpuSession(state.value, event)
     if (endsTheSession(event)) endHolds()
     settleWaitersFor(state.value.gpu)
-    if (state.value.changed !== changedBefore) overrideGeneration++
+    if (state.value.changed !== changedBefore) {
+      changedAsOfListing = pickStore.listingsAsked()
+    }
   }
 
   watch(
@@ -125,6 +119,16 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
       holdGeneration++
       state.value = INITIAL_GPU_SESSION
       settleWaiters(false)
+    },
+    { flush: 'sync' }
+  )
+
+  watch(
+    () => pickStore.shownListing,
+    (shown) => {
+      if (shown > changedAsOfListing) {
+        state.value = { ...state.value, changed: {} }
+      }
     },
     { flush: 'sync' }
   )
@@ -187,7 +191,7 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
       const gpu = await workspaceApi.setEditorGpu(workspaceId, id, change)
       if (deploymentId.value === id) {
         dispatch({ type: 'changeSaved', change, gpu })
-        void keepChangesUntilListed()
+        void pickStore.load()
       }
       return null
     } catch (err) {

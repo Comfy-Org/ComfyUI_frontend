@@ -37,7 +37,7 @@ function storeForPicked(gpuFields: Record<string, unknown>) {
   Object.assign(pick, {
     pickedDeployment: deploymentWithGpu('dep-1', gpuFields)
   })
-  vi.spyOn(pick, 'refresh').mockResolvedValue(false)
+  vi.spyOn(pick, 'load').mockResolvedValue(undefined)
   Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
   return useGpuSessionStore()
 }
@@ -166,32 +166,51 @@ describe('useGpuSessionStore', () => {
   })
 
   it.for([
-    { name: 'another tab saved 3', reloaded: 3, landed: true, shown: 3 },
-    { name: 'another tab put back 10', reloaded: 10, landed: true, shown: 10 },
     {
-      name: 'an older listing lands and the reload fails',
-      reloaded: 3,
-      landed: false,
+      name: 'a reload shows another tab saved 3',
+      listed: 3,
+      askedBeforeSave: 0,
+      landed: 1,
+      shown: 3
+    },
+    {
+      name: 'a reload shows another tab put back 10',
+      listed: 10,
+      askedBeforeSave: 0,
+      landed: 1,
+      shown: 10
+    },
+    {
+      name: 'a listing asked before the save lands',
+      listed: 3,
+      askedBeforeSave: 5,
+      landed: 4,
       shown: 30
+    },
+    {
+      name: 'a later listing lands after the reload failed',
+      listed: 3,
+      askedBeforeSave: 5,
+      landed: 6,
+      shown: 3
     }
   ])(
     'after saving 30 idle minutes, when $name the editor shows $shown',
-    async ({ reloaded, landed, shown }) => {
+    async ({ listed, askedBeforeSave, landed, shown }) => {
       const store = storeForPicked(OFF_AND_CHANGEABLE)
       const pick = useDeploymentPickStore()
-      vi.mocked(pick.refresh).mockImplementation(async () => {
-        Object.assign(pick, {
-          pickedDeployment: deploymentWithGpu('dep-1', {
-            ...OFF_AND_CHANGEABLE,
-            editor_gpu_idle_minutes: reloaded
-          })
-        })
-        return landed
+      vi.spyOn(pick, 'listingsAsked').mockReturnValue(askedBeforeSave)
+      await store.setIdleMinutes(30)
+
+      Object.assign(pick, {
+        pickedDeployment: deploymentWithGpu('dep-1', {
+          ...OFF_AND_CHANGEABLE,
+          editor_gpu_idle_minutes: listed
+        }),
+        shownListing: landed
       })
 
-      await store.setIdleMinutes(30)
-      await flushPromises()
-
+      expect(pick.load).toHaveBeenCalledOnce()
       expect(store.settings?.idleMinutes).toBe(shown)
     }
   )
