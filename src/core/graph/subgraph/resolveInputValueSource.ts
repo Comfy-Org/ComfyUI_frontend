@@ -60,7 +60,7 @@ export function resolveInputValueSource(
   let shared = false
   while (!seen.has(link.originNodeId)) {
     seen.add(link.originNodeId)
-    const node = nodes.getNode(scope, link.originNodeId)
+    const node = nodes.getNode(scope.rootGraphId, link.originNodeId)
     if (!node) break
     shared ||=
       links.getOutputSlotLinks(scope, node.id, link.originSlot).size > 1

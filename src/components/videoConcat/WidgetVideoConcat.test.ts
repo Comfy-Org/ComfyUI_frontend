@@ -2,7 +2,7 @@ import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IWidgetVideoConcatOptions,
   VideoConcatValue
@@ -53,7 +53,7 @@ const widget: SimplifiedWidget<VideoConcatValue, IWidgetVideoConcatOptions> = {
 }
 
 function buildConcat(files: string[]) {
-  const graph = new LGraph()
+  const graph = app.rootGraph
   const concat = new LGraphNode('ConcatenateVideo')
   for (const slot of files.keys())
     concat.addInput(`videos.video${slot}`, 'VIDEO')
@@ -89,8 +89,7 @@ describe('WidgetVideoConcat', () => {
 
   function mountWith(modelValue: VideoConcatValue) {
     const concat = buildConcat(['red.mp4', 'green.mp4', 'blue.mp4'])
-    vi.spyOn(app.canvas.graph!, 'getNodeById').mockReturnValue(concat)
-    useCanvasStore().currentGraph = app.canvas.graph
+    useCanvasStore().currentGraph = app.rootGraph
     return renderWidget(concat, modelValue)
   }
 

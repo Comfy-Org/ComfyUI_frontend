@@ -73,13 +73,11 @@ import {
 } from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import { useCompositorPsdDownload } from '@/renderer/extensions/layerEditor/compositor/useCompositorPsdDownload'
 import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-const { nodeId, widget } = defineProps<{
+const { nodeId } = defineProps<{
   nodeId: NodeId
-  widget: SimplifiedWidget
 }>()
 
 const { t } = useI18n()
@@ -90,10 +88,7 @@ const { exporting, downloadPsd } = useCompositorPsdDownload()
 const naturalSize = ref<CompactSize | null>(null)
 const outputUrl = ref<string | null>(null)
 
-const litegraphNode = useWidgetHostNode(
-  () => widget.hostNodeLocatorId,
-  () => nodeId
-)
+const litegraphNode = useWidgetHostNode(undefined, () => nodeId)
 
 function updateOutputUrl(): void {
   const node = litegraphNode.value

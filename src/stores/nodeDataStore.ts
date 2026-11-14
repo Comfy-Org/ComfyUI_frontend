@@ -91,9 +91,8 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     })
   }
 
-  function getNode(graphScope: GraphScope, id: NodeId): NodeState | undefined {
-    const state = roots.get(graphScope.rootGraphId)?.byId.get(id)
-    return state?.graphId === graphScope.owningGraphId ? state : undefined
+  function getNode(rootGraphId: UUID, id: NodeId): NodeState | undefined {
+    return roots.get(toRootGraphId(rootGraphId))?.byId.get(id)
   }
 
   function ownsNode(graphScope: GraphScope, state: NodeState): boolean {

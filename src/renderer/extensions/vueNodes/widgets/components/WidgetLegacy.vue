@@ -25,10 +25,7 @@ const canvasEl = ref()
 const containerHeight = ref(20)
 
 const canvasStore = useCanvasStore()
-const owner = useWidgetHostNode(
-  () => props.widget.hostNodeLocatorId,
-  () => props.nodeId
-)
+const owner = useWidgetHostNode(undefined, () => props.nodeId)
 const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined

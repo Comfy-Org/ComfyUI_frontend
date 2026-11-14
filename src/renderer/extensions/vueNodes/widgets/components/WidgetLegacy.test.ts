@@ -5,13 +5,11 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import {
-  LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -82,7 +80,7 @@ describe('WidgetLegacy canvas sizing', () => {
   it.for(heightCases)(
     'renders the canvas for $name',
     async ({ widget: overrides, expectedCanvasHeight }) => {
-      const graph = new LGraph()
+      const graph = app.rootGraph
       const node = new LGraphNode('Legacy')
       const widget = node.addWidget('text', 'stack_data', '[]', () => {})
       graph.add(node)
@@ -113,7 +111,7 @@ describe('WidgetLegacy canvas sizing', () => {
 
 describe('WidgetLegacy canvas width', () => {
   it('uses the untransformed layout width when the canvas is zoomed', async () => {
-    const graph = new LGraph()
+    const graph = app.rootGraph
     const node = new LGraphNode('Legacy')
     const widget = node.addWidget('number', 'frame_load_cap', 0, () => {})
     graph.add(node)
@@ -169,7 +167,7 @@ describe('WidgetLegacy repaint', () => {
       onTestFinished(() => {
         LiteGraph.vueNodesMode = false
       })
-      const graph = new LGraph()
+      const graph = app.rootGraph
       const node = new LGraphNode('Legacy')
       const widget = node.addWidget('text', 'stack_data', '[]', () => {})
       graph.add(node)
@@ -222,7 +220,7 @@ describe('WidgetLegacy pointer events', () => {
   ]
 
   it.for(buttonCases)('$name', async ({ button, expectedPositions }) => {
-    const graph = new LGraph()
+    const graph = app.rootGraph
     const node = new LGraphNode('Legacy')
     node.pos = [100, 200]
     const mouse = vi.fn<NonNullable<IBaseWidget['mouse']>>(() => true)
@@ -267,11 +265,10 @@ describe('WidgetLegacy pointer events', () => {
 })
 
 describe('WidgetLegacy ownership', () => {
-  it('sends pointer edits to the located owner, not the canvas node with the same id', async () => {
-    const interior = createTestSubgraph()
-    const root = interior.rootGraph
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(root)
-    const nodes = [new LGraphNode('Owner'), new LGraphNode('Decoy')]
+  it('sends pointer edits to the root graph owner while the canvas shows a subgraph', async () => {
+    const root = app.rootGraph
+    const interior = createTestSubgraph({ rootGraph: root })
+    const nodes = [new LGraphNode('Owner'), new LGraphNode('Interior')]
     root.add(nodes[0])
     interior.add(nodes[1])
     const widgets = nodes.map((node, index) => {
@@ -302,12 +299,11 @@ describe('WidgetLegacy ownership', () => {
     useCanvasStore().currentGraph = interior
     render(WidgetLegacy, {
       props: {
-        nodeId: nodes[1].id,
+        nodeId: nodes[0].id,
         widget: {
           name: 'value',
           type: 'owner-test-legacy',
-          value: undefined,
-          hostNodeLocatorId: createNodeLocatorId(null, nodes[0].id)
+          value: undefined
         }
       }
     })

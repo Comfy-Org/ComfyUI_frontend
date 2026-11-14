@@ -52,10 +52,12 @@ export const useSubgraphInputValuesStore = defineStore(
           .getGraphNodesFor(root.id, graphId)
           .filter((node) => node.type === current.id)
       const entered = enteredHosts.value.get(current.id)
-      if (entered)
-        return instancesIn(entered.graphId).find(
-          (node) => node.id === entered.id
-        )
+      if (entered) {
+        const host = nodeDataStore.getNode(root.id, entered.id)
+        return host?.graphId === entered.graphId && host.type === current.id
+          ? host
+          : undefined
+      }
       const instances = [root.id, ...root.subgraphs.keys()].flatMap(instancesIn)
       return instances.length === 1 ? instances[0] : undefined
     })

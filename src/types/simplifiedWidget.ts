@@ -82,9 +82,6 @@ export interface SimplifiedWidget<
   /** NodeLocatorId for the node that owns this widget's execution outputs */
   nodeLocatorId?: NodeLocatorId
 
-  /** NodeLocatorId for the node that renders this widget, such as the SubgraphNode hosting a promoted widget */
-  hostNodeLocatorId?: NodeLocatorId
-
   /** Override for use with subgraph promoted asset widgets*/
   nodeType?: string
 
