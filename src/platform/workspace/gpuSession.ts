@@ -67,12 +67,6 @@ export const INITIAL_GPU_SESSION: GpuSessionState = {
 
 const DEFAULT_IDLE_MINUTES: IdleMinutes = 10
 
-const REASONS_THAT_TURN_THE_TOGGLE_OFF: ReadonlySet<string> = new Set([
-  'idle',
-  'tab_closed',
-  'editor_gpu_off'
-])
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -195,17 +189,8 @@ function receiveMessage(
   if (message.deployment_id && message.deployment_id !== deploymentId) {
     return state
   }
-  if (message.state !== 'ended') {
-    return { ...state, gpu: message.state, session: message }
-  }
-  const turnsOff =
-    message.reason !== undefined &&
-    REASONS_THAT_TURN_THE_TOGGLE_OFF.has(message.reason)
-  return {
-    changed: turnsOff ? { ...state.changed, on: false } : state.changed,
-    gpu: 'idle',
-    session: message
-  }
+  const gpu = message.state === 'ended' ? 'idle' : message.state
+  return { ...state, gpu, session: message }
 }
 
 function turnOff(state: GpuSessionState): GpuSessionState {

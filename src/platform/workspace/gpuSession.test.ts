@@ -50,14 +50,9 @@ describe('gpu_session messages', () => {
     ])
   })
 
-  it.for([
-    { reason: 'idle', on: false },
-    { reason: 'tab_closed', on: false },
-    { reason: 'editor_gpu_off', on: false },
-    { reason: 'machine_lost', on: true }
-  ])(
-    'an ended session with reason $reason leaves the toggle on: $on',
-    ({ reason, on }) => {
+  it.for(['idle', 'tab_closed', 'editor_gpu_off', 'machine_lost'])(
+    'an ended session with reason %s ends the GPU and leaves the setting as it was',
+    (reason) => {
       const next = receive(starting, {
         session_id: 's-1',
         deployment_id: DEPLOYMENT,
@@ -66,7 +61,8 @@ describe('gpu_session messages', () => {
       })
 
       expect(next.gpu).toBe('idle')
-      expect(next.changed.on).toBe(on)
+      expect(next.changed).toEqual(starting.changed)
+      expect(next.session?.state).toBe('ended')
     }
   )
 
