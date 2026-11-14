@@ -3,17 +3,17 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { getPricingCheckoutSelection } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
-import type { CheckoutTierKey } from '@/composables/billing/types'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import { getPricingCheckoutSelection } from '@/platform/billing/subscription/composables/usePricingTableUrlLoader'
+import type { CheckoutTierKey } from '@/platform/billing/composables/types'
 
-import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 
 function isBillingCycle(value: string): value is BillingCycle {
   return value === 'monthly' || value === 'yearly'
@@ -125,11 +125,16 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
 
   if (isPaidPersonalTierKey(tierKeyParam)) {
     if (!isCheckoutTierKey(tierKeyParam)) {
-      showPricingTable({ reason: 'deep_link', planMode: 'personal' })
+      showPricingTable({
+        reason: 'deep_link',
+        sameTab: true,
+        planMode: 'personal'
+      })
       return
     }
     showPricingTable({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal',
       initialCheckout: {
         planMode: 'personal',
@@ -151,6 +156,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   )
   showPricingTable({
     reason: 'deep_link',
+    sameTab: true,
     planMode: 'team',
     initialCheckout
   })
@@ -180,7 +186,7 @@ onMounted(() => {
           })
         }}
       </p>
-      <Spinner v-if="planLabel" class="size-8" />
+      <AppSpinner v-if="planLabel" class="size-8" />
       <Button v-if="planLabel" as="a" href="/" variant="link">
         {{ t('cloudOnboarding.skipToCloudApp') }}
       </Button>

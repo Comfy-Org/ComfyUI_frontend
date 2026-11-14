@@ -1,0 +1,128 @@
+name: SDK Release PR
+
+# Opens, or refreshes, one Release-labelled bump PR for the SDK packages whose
+# published contents changed since their last release. Merging it publishes
+# through publish-package-on-merge.yaml, as a hand-dispatched bump would.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/ingest-types/src/**'
+      - 'packages/account-core/src/**'
+      - 'packages/account-core/package.json'
+      - 'packages/account-ui/src/**'
+      - 'packages/account-ui/package.json'
+      - 'packages/billing-contract/src/**'
+      - 'packages/billing-contract/package.json'
+      - 'pnpm-workspace.yaml'
+  workflow_dispatch:
+
+concurrency:
+  group: sdk-release-pr
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  release-pr:
+    name: Open SDK Release PR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      # A refresh keeps any version a reviewer raised on the open release PR.
+      - name: Find the open release PR
+        id: open
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "$(gh pr list --repo "$GITHUB_REPOSITORY" --head sdk-release/auto --state open --json number --jq '.[].number')" ]; then
+            echo 'ref=origin/sdk-release/auto' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Plan the release
+        id: plan
+        env:
+          SDK_RELEASE_REF: ${{ steps.open.outputs.ref }}
+        run: node scripts/sdk-release-plan.ts
+
+      # A revert since the release PR opened can leave nothing to release.
+      # A release merge skips planning, so its empty plan says nothing about
+      # the open release PR.
+      - name: Close the stale release PR
+        if: steps.plan.outputs.plan == '[]' && steps.plan.outputs.skipped != 'true' && steps.open.outputs.ref != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr close sdk-release/auto --repo "$GITHUB_REPOSITORY" --delete-branch \
+            --comment 'Closing: no package changes remain since the last release.'
+
+      - name: Bump versions
+        id: bump
+        if: steps.plan.outputs.plan != '[]'
+        env:
+          PLAN: ${{ steps.plan.outputs.plan }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TITLE=''
+          {
+            echo 'body<<EOF'
+            cat <<'MD'
+          Opened by `sdk-release-plan.ts`: these packages changed since their last release. Merging publishes them, `ingest-types` first.
+
+          `ingest-types` defaults to a patch; raise it on this PR for an added field (minor) or a removed or renamed one (major), per ADR-RELEASES-PACKAGES-0033. A later refresh keeps the raised version.
+
+          MD
+          } >> "$GITHUB_OUTPUT"
+          for PACKAGE in $(jq -r '.[].package' <<<"$PLAN"); do
+            VERSION=$(jq -r --arg p "$PACKAGE" '.[] | select(.package == $p) | .version' <<<"$PLAN")
+            pnpm -C "packages/$PACKAGE" version "$VERSION" --no-git-tag-version --no-git-checks
+            TITLE="${TITLE}${TITLE:+, }${PACKAGE} ${VERSION}"
+            {
+              echo "### @comfyorg/${PACKAGE} ${VERSION}"
+              jq -r --arg p "$PACKAGE" '
+                .[] | select(.package == $p) | .reasons
+                | (.[:30][] | "- `\(.)`"), (if length > 30 then "- …and \(length - 30) more" else empty end)
+              ' <<<"$PLAN"
+              echo ''
+            } >> "$GITHUB_OUTPUT"
+          done
+          echo 'EOF' >> "$GITHUB_OUTPUT"
+          echo "title=SDK release: ${TITLE}" >> "$GITHUB_OUTPUT"
+
+      - name: Open or refresh the Release PR
+        if: steps.plan.outputs.plan != '[]'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.PR_GH_TOKEN }}
+          commit-message: '[release] ${{ steps.bump.outputs.title }}'
+          title: ${{ steps.bump.outputs.title }}
+          body: ${{ steps.bump.outputs.body }}
+          branch: sdk-release/auto
+          base: main
+          labels: |
+            Release

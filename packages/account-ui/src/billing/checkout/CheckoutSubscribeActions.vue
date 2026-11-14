@@ -81,7 +81,7 @@ import type {
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 
-import type { StripePaymentPhase } from '../stripe/stripePaymentPhase'
+import type { StripePaymentPhase } from '#/billing/stripe/stripePaymentPhase'
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPaymentForm from './CheckoutPaymentForm.vue'
 import CheckoutPaymentNotices from './CheckoutPaymentNotices.vue'

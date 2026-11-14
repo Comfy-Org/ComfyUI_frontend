@@ -1,15 +1,43 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
-import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { JobOutputAsset } from '@comfyorg/api-client/jobTypes'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import {
   getJobAssets,
   getJobDetail,
   getPreviewableOutputsFromJobDetail
 } from '@/services/jobOutputCache'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
+
+const storedOutputIdentityKey = Symbol('storedOutputIdentity')
+
+type StoredOutputIdentity = {
+  type: ResultItemType
+  hash?: string
+}
+
+type WithStoredOutputIdentity = {
+  [storedOutputIdentityKey]?: StoredOutputIdentity
+}
+
+function withStoredOutputIdentity(
+  item: AssetItem,
+  { type, hash }: AugmentedResultItem
+): AssetItem {
+  if (!type) return item
+  const identity: StoredOutputIdentity = { type, hash }
+  return Object.assign(item, { [storedOutputIdentityKey]: identity })
+}
+
+/** Root and stored hash of the grouped output an expanded stack item was built from. */
+export function getStoredOutputIdentity(
+  asset: AssetItem & WithStoredOutputIdentity
+): StoredOutputIdentity | undefined {
+  return asset[storedOutputIdentityKey]
+}
 
 type OutputAssetMapOptions = {
   jobId: string
@@ -23,6 +51,7 @@ type OutputAssetMapOptions = {
 type ResolveOutputAssetItemsOptions = {
   createdAt?: string
   excludeOutputKey?: string
+  fallbackItems?: AssetItem[]
 }
 
 function shouldLoadFullOutputs(
@@ -70,7 +99,7 @@ function mapOutputsToAssetItems({
     }
     seenOutputKeys.add(outputKey)
 
-    items.push({
+    const item: AssetItem = {
       id: output.assetId || `${jobId}-${outputKey}`,
       name: output.filename,
       display_name: output.display_name,
@@ -87,7 +116,8 @@ function mapOutputsToAssetItems({
         executionTimeInSeconds,
         workflow
       }
-    })
+    }
+    items.push(withStoredOutputIdentity(item, output))
 
     return items
   }, [])
@@ -227,18 +257,22 @@ async function enrichWithJobAssets(
 
 export async function resolveOutputAssetItems(
   metadata: OutputAssetMetadata,
-  { createdAt, excludeOutputKey }: ResolveOutputAssetItemsOptions = {}
+  {
+    createdAt,
+    excludeOutputKey,
+    fallbackItems
+  }: ResolveOutputAssetItemsOptions = {}
 ): Promise<AssetItem[]> {
   let outputsToDisplay = metadata.allOutputs ?? []
   if (shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
     const jobDetail = await getJobDetail(metadata.jobId)
+    if (!jobDetail && fallbackItems) return fallbackItems
     const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
     if (previewableOutputs.length) {
       outputsToDisplay = previewableOutputs
     }
   }
 
-  // Reverse so the most recent outputs appear first
   const items = mapOutputsToAssetItems({
     jobId: metadata.jobId,
     outputs: [...outputsToDisplay].reverse(),

@@ -13,11 +13,12 @@ import {
   addGroup,
   addNode,
   createCanvas,
+  keyEvent,
   loseCapture,
   pointerEvent,
   selectedTitles
 } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   LGraphCanvas,
   LGraphGroup,
@@ -30,7 +31,8 @@ import {
   LiteGraph,
   Reroute
 } from '@/lib/litegraph/src/litegraph'
-import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { getSelectedLinkIds } from '@/lib/litegraph/src/canvas/linkSelection'
+import { LinkRenderType } from '@comfyorg/graph-model/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
@@ -440,26 +442,32 @@ describe('LGraphCanvas pointer gestures', () => {
       }
     )
 
-    it('click selects on release without moving', () => {
-      gesture.press(A_BODY)
-      expect(selectedTitles(canvas)).toEqual([])
+    it.for(['panning', 'select'] as const)(
+      'click selects on release without moving in %s mode',
+      (mode) => {
+        LiteGraph.leftMouseClickBehavior = mode
+        gesture.press(A_BODY)
+        expect(selectedTitles(canvas)).toEqual([])
 
-      gesture.release(A_BODY)
+        gesture.release(A_BODY)
 
-      expect(selectedTitles(canvas)).toEqual(['A'])
-      expect(posOf(a)).toEqual([20, 40])
-      expect(log).toEqual([
-        'bringToFront',
-        'node.onMouseDown',
-        'node.onSelected',
-        'canvas.onNodeSelected',
-        'canvas.onSelectionChange'
-      ])
-      expect(callbackArgs.get('node.onMouseDown')?.[0]?.[0]).toBeInstanceOf(
-        PointerEvent
-      )
-      expect(callbackArgs.get('canvas.onNodeSelected')).toEqual([[a]])
-    })
+        expect(selectedTitles(canvas)).toEqual(['A'])
+        expect(posOf(a)).toEqual([20, 40])
+        expect(canvas.ds.offset).toEqual([0, 0])
+        expect(canvas.dragging_rectangle).toBeNull()
+        expect(log).toEqual([
+          'bringToFront',
+          'node.onMouseDown',
+          'node.onSelected',
+          'canvas.onNodeSelected',
+          'canvas.onSelectionChange'
+        ])
+        expect(callbackArgs.get('node.onMouseDown')?.[0]?.[0]).toBeInstanceOf(
+          PointerEvent
+        )
+        expect(callbackArgs.get('canvas.onNodeSelected')).toEqual([[a]])
+      }
+    )
 
     it('press brings an unpinned node to front before release', () => {
       gesture.press(A_BODY)
@@ -531,7 +539,7 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(log).toContain('canvas.onNodeMoved')
     })
 
-    it.fails('releases a hovered node with the pointerup event', () => {
+    it('releases a hovered node with the pointerup event', () => {
       canvas.visible_nodes = [...graph.nodes]
       gesture.move(A_BODY)
       gesture.press(A_BODY)
@@ -543,6 +551,29 @@ describe('LGraphCanvas pointer gestures', () => {
       expect(callbackArgs.get('node.onMouseUp')?.[0]?.[0]).toMatchObject({
         type: 'pointerup'
       })
+    })
+
+    it('releases a hovered node that also captures input once', () => {
+      canvas.visible_nodes = [...graph.nodes]
+      canvas.node_capturing_input = a
+      gesture.move(A_BODY)
+      gesture.press(A_BODY)
+      gesture.release(A_BODY)
+
+      expect(callbackArgs.get('node.onMouseUp')).toHaveLength(1)
+    })
+
+    it('does not release a node when the pointerup ends a link gesture from its slot', () => {
+      a.addOutput('value', 'number')
+      a.updateArea()
+      canvas.visible_nodes = [...graph.nodes]
+      const outputPosition = a.getOutputPos(0)
+      const slot: Point = [outputPosition[0], outputPosition[1]]
+      gesture.move(slot)
+      gesture.press(slot)
+      gesture.release(slot)
+
+      expect(callbackArgs.get('node.onMouseUp')).toBeUndefined()
     })
 
     it('starts a link drag from an output slot', () => {
@@ -773,6 +804,92 @@ describe('LGraphCanvas pointer gestures', () => {
       gesture.release(shifted(G_RESIZE, [4, 3]))
 
       expect([...group.size]).toEqual([500, 300])
+    })
+  })
+
+  describe('slot click', () => {
+    function connectTwoOutputLinks() {
+      const c = addNode(graph, 'C', 300, 200)
+      a.addOutput('out', '*')
+      b.addInput('in', '*')
+      c.addInput('in', '*')
+      const links = [a.connect(0, b, 0), a.connect(0, c, 0)]
+      for (const node of [a, b, c]) {
+        node._setConcreteSlots()
+        node.arrange()
+        node.updateArea()
+      }
+      return links.map((link) => {
+        assert(link)
+        return link.id
+      })
+    }
+
+    it.for([
+      { slot: 'output', point: () => a.getOutputPos(0), expected: [0, 1] },
+      { slot: 'input', point: () => b.getInputPos(0), expected: [0] }
+    ])(
+      'clicking an $slot selects its links and clears the canvas selection',
+      ({ point, expected }) => {
+        const linkIds = connectTwoOutputLinks()
+        canvas.selectItems([b])
+
+        gesture.click(point())
+
+        expect(getSelectedLinkIds(graph)).toEqual(
+          expected.map((index) => linkIds[index])
+        )
+        expect(selectedTitles(canvas)).toEqual([])
+      }
+    )
+
+    it.for([
+      {
+        name: 'Shift-click on an input',
+        point: () => b.getInputPos(0),
+        modifiers: { shiftKey: true }
+      },
+      {
+        name: 'Ctrl-click on an output',
+        point: () => a.getOutputPos(0),
+        modifiers: { ctrlKey: true }
+      },
+      {
+        name: 'Meta-click on an output',
+        point: () => a.getOutputPos(0),
+        modifiers: { metaKey: true }
+      }
+    ])(
+      'a $name keeps the canvas selection and selects no links',
+      ({ point, modifiers }) => {
+        LiteGraph.leftMouseClickBehavior = 'select'
+        connectTwoOutputLinks()
+        canvas.selectItems([b])
+
+        gesture.click(point(), modifiers)
+
+        expect(getSelectedLinkIds(graph)).toEqual([])
+        expect(selectedTitles(canvas)).toEqual(['B'])
+      }
+    )
+
+    it('dragging from an output selects no links', () => {
+      connectTwoOutputLinks()
+
+      gesture.drag(a.getOutputPos(0), FAR)
+
+      expect(getSelectedLinkIds(graph)).toEqual([])
+    })
+
+    it('clicking a slot without links keeps the canvas selection', () => {
+      a.addOutput('out', '*')
+      a.updateArea()
+      canvas.selectItems([b])
+
+      gesture.click(a.getOutputPos(0))
+
+      expect(getSelectedLinkIds(graph)).toEqual([])
+      expect(selectedTitles(canvas)).toEqual(['B'])
     })
   })
 
@@ -1147,6 +1264,138 @@ describe('LGraphCanvas pointer gestures', () => {
       gesture.move(EMPTY, { ...modifiers, buttons: 0 })
 
       expect(canvas.read_only).toBe(false)
+    })
+  })
+
+  describe('navigation outcomes', () => {
+    beforeEach(() => {
+      const previous = {
+        mouseWheelScroll: LiteGraph.mouseWheelScroll,
+        canvasNavigationMode: LiteGraph.canvasNavigationMode,
+        leftMouseClickBehavior: LiteGraph.leftMouseClickBehavior
+      }
+      onTestFinished(() => {
+        Object.assign(LiteGraph, previous)
+      })
+    })
+
+    it.for([
+      {
+        route: 'middle button',
+        options: { button: 1 },
+        key: 'Unbound',
+        left: 'select'
+      },
+      {
+        route: 'Alt+Shift in legacy mode',
+        options: { altKey: true, shiftKey: true },
+        key: 'Unbound',
+        left: 'panning'
+      },
+      {
+        route: 'Space overrides selection',
+        options: {},
+        key: ' ',
+        left: 'select'
+      }
+    ] as const)(
+      'pans at non-unit scale using $route',
+      ({ options, key, left }) => {
+        LiteGraph.canvasNavigationMode = 'legacy'
+        LiteGraph.leftMouseClickBehavior = left
+        canvas.ds.scale = 2
+        canvas.select(a)
+        canvas.processKey(keyEvent('keydown', key))
+
+        gesture.drag(EMPTY, [138, -82], options)
+        canvas.processKey(keyEvent('keyup', key))
+
+        expect(canvas.ds.offset).toEqual([69, -41])
+        expect(canvas.ds.scale).toBe(2)
+        expect(selectedTitles(canvas)).toEqual(['A'])
+        expect(posOf(a)).toEqual([20, 40])
+        expect(canvas.read_only).toBe(false)
+      }
+    )
+
+    it.for([
+      {
+        route: 'legacy wheel in',
+        wheel: 'zoom',
+        event: { deltaY: -120 },
+        scale: 2.5,
+        offset: [-15, -27]
+      },
+      {
+        route: 'legacy wheel out',
+        wheel: 'zoom',
+        event: { deltaY: 120 },
+        scale: 1.6,
+        offset: [57, 13.5]
+      },
+      {
+        route: 'Ctrl overrides panning',
+        wheel: 'panning',
+        event: { deltaY: -120, ctrlKey: true },
+        scale: 2.5,
+        offset: [-15, -27]
+      },
+      {
+        route: 'Shift maps vertical wheel to horizontal pan',
+        wheel: 'panning',
+        event: { deltaY: 120, shiftKey: true },
+        scale: 2,
+        offset: [-43.49998, -9]
+      },
+      {
+        route: 'two-axis trackpad pan',
+        wheel: 'panning',
+        event: { deltaX: 40, deltaY: -80 },
+        scale: 2,
+        offset: [-6.6, 38.2]
+      }
+    ] as const)(
+      'routes $route without moving graph content',
+      ({ wheel, event, scale, offset }) => {
+        LiteGraph.mouseWheelScroll = wheel
+        canvas.ds.scale = 2
+        canvas.ds.offset = [17, -9]
+        canvas.zoom_speed = 1.25
+        canvas.select(a)
+
+        canvas.processMouseWheel(
+          Object.assign(new WheelEvent('wheel', event), {
+            clientX: 320,
+            clientY: 180,
+            ctrlKey: false,
+            altKey: false,
+            shiftKey: false,
+            metaKey: false,
+            ...event
+          })
+        )
+
+        expect(canvas.ds.scale).toBeCloseTo(scale, 5)
+        expect(canvas.ds.offset[0]).toBeCloseTo(offset[0], 5)
+        expect(canvas.ds.offset[1]).toBeCloseTo(offset[1], 5)
+        expect(selectedTitles(canvas)).toEqual(['A'])
+        expect(posOf(a)).toEqual([20, 40])
+      }
+    )
+
+    it.for([
+      { deltaY: -60, scale: 2.6 },
+      { deltaY: 120, scale: 0.8 }
+    ])('drag zoom uses signed displacement $deltaY', ({ deltaY, scale }) => {
+      canvas.ds.scale = 2
+      canvas.dragZoomEnabled = true
+      const modifiers = { ctrlKey: true, shiftKey: true }
+
+      gesture.drag(EMPTY, [0, deltaY], modifiers)
+
+      expect(canvas.ds.scale).toBeCloseTo(scale, 5)
+      expect(canvas.read_only).toBe(false)
+      expect(posOf(a)).toEqual([20, 40])
     })
   })
 })

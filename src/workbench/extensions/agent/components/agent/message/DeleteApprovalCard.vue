@@ -2,12 +2,12 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 import type {
   AskUserResolution,
   DeleteApprovalPart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { part, answering = false } = defineProps<{
   part: DeleteApprovalPart
@@ -46,9 +46,7 @@ const decision = computed(() => {
     :aria-label="t('agent.deleteApproval.card')"
     class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md"
   >
-    <p
-      class="m-0 text-sm/5 wrap-break-word whitespace-pre-line text-foreground"
-    >
+    <p class="m-0 text-sm/5 wrap-break-word whitespace-pre-line">
       {{ part.prompt }}
     </p>
 

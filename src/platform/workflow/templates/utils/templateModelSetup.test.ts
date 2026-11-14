@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ModelWithUrl } from '@/platform/missingModel/missingModelDownload'
+import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
 import type { TemplateModelMetadataBatchResult } from '@/platform/workflow/templates/utils/templateModelMetadata'
 import type { ResolvedTemplateModelAvailability } from '@/platform/workflow/templates/utils/templateModelAvailability'
 import type { TemplateModelRequirementDetail } from '@/platform/workflow/templates/utils/templateModelRequirements'
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import {
   deriveTemplateModelSetup,
   isModelDownloadCandidate,
@@ -286,7 +286,7 @@ describe('deriveTemplateModelSetup', () => {
 })
 
 describe('remainingModelDownloadTotal', () => {
-  const idle = () => ({ status: 'idle' })
+  const idle = { stateFor: () => ({ status: 'idle' }), canResume: () => true }
 
   function rowsFor(...sizes: [ModelFile, number | null][]) {
     return deriveTemplateModelSetup(
@@ -325,14 +325,130 @@ describe('remainingModelDownloadTotal', () => {
     const starting = model('a.safetensors')
     const running = model('b.safetensors')
     const rows = rowsFor([starting, 1024], [running, 4096])
-    const stateFor = (m: ModelWithUrl) =>
-      m.name === running.name ? { status: 'downloading' } : { status: 'idle' }
+    const downloads = {
+      stateFor: (m: ModelWithUrl) =>
+        m.name === running.name
+          ? { status: 'downloading' }
+          : { status: 'idle' },
+      canResume: () => true
+    }
 
-    expect(remainingModelDownloadTotal(rows, stateFor)).toEqual({
+    expect(remainingModelDownloadTotal(rows, downloads)).toEqual({
       bytes: 1024,
       isComplete: true
     })
-    expect(isModelDownloadCandidate(rows[1], stateFor)).toBe(false)
-    expect(isModelRowComplete(rows[1], stateFor)).toBe(false)
+    expect(isModelDownloadCandidate(rows[1], downloads)).toBe(false)
+    expect(isModelRowComplete(rows[1], downloads.stateFor)).toBe(false)
+  })
+
+  describe('a paused download', () => {
+    const paused = model('paused.safetensors')
+    const pausedAt = (receivedBytes: number) => (m: ModelWithUrl) =>
+      m.name === paused.name
+        ? { status: 'downloading', activity: 'paused', receivedBytes }
+        : { status: 'idle' }
+
+    it('counts only what is left of it', () => {
+      const idleModel = model('idle.safetensors')
+      const rows = rowsFor([idleModel, 1024], [paused, 4096])
+
+      expect(
+        remainingModelDownloadTotal(rows, {
+          stateFor: pausedAt(3072),
+          canResume: () => true
+        })
+      ).toEqual({ bytes: 2048, isComplete: true })
+    })
+
+    it('does not let its excess bytes reduce another model', () => {
+      const idleModel = model('idle.safetensors')
+      const rows = rowsFor([idleModel, 4096], [paused, 1024])
+
+      expect(
+        remainingModelDownloadTotal(rows, {
+          stateFor: pausedAt(2048),
+          canResume: () => true
+        })
+      ).toEqual({ bytes: 4096, isComplete: false })
+    })
+
+    it('measures what is left by the host size when the host knows it', () => {
+      const unsized = model('unsized.safetensors')
+      const rows = rowsFor([paused, 4096], [unsized, null])
+      const stateFor = (m: ModelWithUrl) => ({
+        status: 'downloading',
+        activity: 'paused',
+        receivedBytes: 1024,
+        totalBytes: m.name === paused.name ? 2048 : 3072
+      })
+
+      expect(
+        remainingModelDownloadTotal(rows, { stateFor, canResume: () => true })
+      ).toEqual({ bytes: 3072, isComplete: true })
+    })
+
+    it.for([
+      {
+        name: 'an unknown host total',
+        state: { receivedBytes: 1024, totalBytes: 0 },
+        bytes: 3072
+      },
+      {
+        name: 'a host total below what arrived',
+        state: { receivedBytes: 1024, totalBytes: 512 },
+        bytes: 3072
+      },
+      {
+        name: 'only a fraction',
+        state: { receivedBytes: null, fraction: 0.25 },
+        bytes: 3072
+      },
+      {
+        name: 'a fraction that leaves part of a byte',
+        state: { receivedBytes: null, fraction: 0.1 },
+        bytes: 3687
+      }
+    ])('falls back to the declared size given $name', ({ state, bytes }) => {
+      const rows = rowsFor([paused, 4096])
+
+      expect(
+        remainingModelDownloadTotal(rows, {
+          stateFor: () => ({
+            status: 'downloading',
+            activity: 'paused',
+            ...state
+          }),
+          canResume: () => true
+        })
+      ).toEqual({ bytes, isComplete: true })
+    })
+
+    it('reports an unknown size when more arrived than the declared size', () => {
+      const rows = rowsFor([paused, 4096])
+
+      expect(
+        remainingModelDownloadTotal(rows, {
+          stateFor: pausedAt(8192),
+          canResume: () => true
+        })
+      ).toMatchObject({ isComplete: false })
+    })
+
+    it.for([
+      { canResume: true, candidate: true },
+      { canResume: false, candidate: false }
+    ])(
+      'is a candidate only when it can be resumed ($canResume)',
+      ({ canResume, candidate }) => {
+        const rows = rowsFor([paused, 4096])
+
+        expect(
+          isModelDownloadCandidate(rows[0], {
+            stateFor: pausedAt(0),
+            canResume: () => canResume
+          })
+        ).toBe(candidate)
+      }
+    )
   })
 })

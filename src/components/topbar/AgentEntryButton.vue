@@ -43,7 +43,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const {

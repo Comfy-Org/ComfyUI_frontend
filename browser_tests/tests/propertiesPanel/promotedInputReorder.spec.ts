@@ -2,7 +2,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 const SUBGRAPH_NODE_ID = '11'
 const SUBGRAPH_TITLE = 'New Subgraph'
@@ -12,10 +12,12 @@ test.describe(
   'Subgraph promoted-input reorder',
   { tag: ['@node', '@widget'] },
   () => {
-    let panel: PropertiesPanelHelper
+    let panel: PropertiesPanel
+
+    test.use({ viewport: { width: 1280, height: 1080 } })
 
     test.beforeEach(async ({ comfyPage }) => {
-      panel = new PropertiesPanelHelper(comfyPage.page)
+      panel = new PropertiesPanel(comfyPage.page)
 
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/subgraph-three-promoted-widgets'
@@ -40,6 +42,7 @@ test.describe(
         .poll(() => comfyPage.subgraph.getPromotedWidgetOrder(SUBGRAPH_NODE_ID))
         .toEqual(PROMOTED_WIDGETS)
 
+      await expect(panel.sectionWidgetRows.nth(2)).toBeInViewport({ ratio: 1 })
       await panel.dragSectionWidgetRow(0, 2)
 
       await expect

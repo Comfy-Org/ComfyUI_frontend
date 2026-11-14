@@ -2,7 +2,6 @@
   <div class="relative">
     <Button
       :tooltip="localizedCurrentColorName ?? t('color.noColor')"
-      data-testid="color-picker-button"
       variant="muted-textonly"
       :aria-label="t('g.color')"
       @click="() => (showColorPicker = !showColorPicker)"
@@ -56,9 +55,10 @@ import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
-import TextTooltip from '@/components/ui/tooltip/TextTooltip.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import type {
   ColorOption as CanvasColorOption,
   LiteGraphCanvasEvent,
@@ -71,14 +71,14 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const colorPaletteStore = useColorPaletteStore()
+const themeStore = useThemeStore()
 const workflowStore = useWorkflowStore()
-const isLightTheme = computed(() => colorPaletteStore.colorScheme === 'light')
+const isLightTheme = computed(() => themeStore.colorScheme === 'light')
 
 const showColorPicker = ref(false)
 

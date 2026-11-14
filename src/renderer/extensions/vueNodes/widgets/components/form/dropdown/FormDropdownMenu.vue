@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import type { CSSProperties } from 'vue'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 
-import VirtualGrid from '@/components/common/VirtualGrid.vue'
+import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownMenuActions from './FormDropdownMenuActions.vue'
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
@@ -16,7 +18,7 @@ import FormDropdownMenuItem from './FormDropdownMenuItem.vue'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: FormDropdownItem[]
+  items: MaybePaged<FormDropdownItem>
   isSelected: (item: FormDropdownItem, index: number) => boolean
   uploadable: boolean
   filterOptions: FilterOption[]
@@ -27,9 +29,6 @@ interface Props {
   baseModelOptions?: FilterOption[]
   candidateIndex?: number
   candidateLabel?: string
-  loadingMore?: boolean
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
 }
 
 const {
@@ -43,8 +42,7 @@ const {
   showBaseModelFilter,
   baseModelOptions,
   candidateIndex = -1,
-  candidateLabel,
-  loadingMore = false
+  candidateLabel
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
@@ -98,13 +96,13 @@ const gridStyle = computed<CSSProperties>(() => ({
   width: '100%'
 }))
 
-type VirtualDropdownItem = FormDropdownItem & { key: string }
-const virtualItems = computed<VirtualDropdownItem[]>(() =>
-  items.map((item) => ({
-    ...item,
-    key: item.id
-  }))
-)
+const menuItems = computed(() => pagedItems(items))
+const hasMore = computed(() => isPaged(items) && toValue(items.hasMore))
+const isLoadingMore = computed(() => isPaged(items) && toValue(items.isLoading))
+
+function loadMore() {
+  return isPaged(items) ? items.loadMore() : undefined
+}
 
 const onWheel = (event: WheelEvent) => {
   if (event.ctrlKey || event.metaKey) event.preventDefault()
@@ -140,7 +138,7 @@ const onWheel = (event: WheelEvent) => {
       @search-enter="emit('search-enter')"
     />
     <div
-      v-if="items.length === 0 && !canLoadMore"
+      v-if="menuItems.length === 0 && !hasMore"
       class="flex h-50 items-center justify-center"
     >
       <i
@@ -152,15 +150,15 @@ const onWheel = (event: WheelEvent) => {
     <VirtualGrid
       v-else
       :key="layoutMode"
-      :items="virtualItems"
+      :items="menuItems"
       :grid-style
       :max-columns="layoutConfig.maxColumns"
       :default-item-height="layoutConfig.itemHeight"
       :default-item-width="layoutConfig.itemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
-      :on-load-more
-      :can-load-more
+      :on-load-more="loadMore"
+      :can-load-more="hasMore"
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem
@@ -176,7 +174,7 @@ const onWheel = (event: WheelEvent) => {
       </template>
     </VirtualGrid>
     <div
-      v-if="loadingMore"
+      v-if="isLoadingMore"
       class="flex items-center justify-center py-2"
       data-testid="form-dropdown-loading-more"
     >

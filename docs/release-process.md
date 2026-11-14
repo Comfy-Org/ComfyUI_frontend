@@ -59,6 +59,72 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 2. `pr-backport.yaml` cherry-picks and creates a backport PR
 3. Conflicts produce a comment with details and an agent prompt
 
+Release labels alone do not start the backport. A merged PR with a
+`core/X.Y` or `cloud/X.Y` label but no `needs-backport` gets a comment saying
+the backport did not run. Each label is warned about once, and labels whose
+target already has an open or merged backport PR are left out.
+
+To re-check a finished PR, run `pr-backport.yaml` by hand with its PR number.
+The PR does not need `needs-backport` for this. Without `force_rerun`, targets
+with an open or merged backport PR the workflow can find are reported and
+skipped. Every other release label is cherry-picked: a backport that was on
+hold starts, and one whose backport PR was closed without merging is opened
+again. Remove the release label first if that target should stay skipped.
+
+### Desktop partner-node token backports (FRONT-3925)
+
+[Frontend PR #23229](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23229)
+adds the optional Desktop `Auth.getPartnerNodeToken(workspaceId)` path. Track
+its backports to `core/1.58`, `core/1.59` and `core/1.60` here. Local Desktop
+views load the frontend pinned by ComfyUI, so a standalone frontend release
+does not establish that Desktop users have the change.
+
+The fallback depends on whether the Desktop session stayed the same:
+
+| Queue-time result                                                      | Credential queued                                                      |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Desktop returns a partner-node token for the unchanged session         | Desktop's token, without a frontend mint                               |
+| Bridge method is missing, rejects or returns `null`; session unchanged | Frontend mint result, or the original workspace token if minting fails |
+| Account or workspace changes during the bridge lookup or fallback mint | Original workspace token; discard the asynchronous result              |
+
+The session-change guard also applies to older Desktop builds without the
+bridge method. Returning the original token preserves the prompt's original
+credential; it does not obtain a replacement account's credential or guarantee
+that the original token is still valid. Cloud, Firebase sign-in and the flag-off
+paths retain their existing behavior.
+
+The [before/after comparison](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23229#issuecomment-6860320532)
+records a mocked Desktop bridge and simulated expiry. It shows the bridge token
+being queued without a frontend mint and the workflow rendering its text
+preview. It does not establish a live partner-node run, native Desktop bridge
+integration or Windows behavior. The PR also records a local cross-repository
+fixture run with a real 17-minute wait; that is separate from a live service
+check.
+
+Record the backport PR, released frontend version, ComfyUI version and its
+frontend pin, Desktop version/commit, OS, and a link to the live run evidence
+for each line. All live checks below remain pending; fixture results do not
+complete them.
+
+| Target      | Backport / released frontend | ComfyUI pin / Desktop build / OS | Live partner-node evidence |
+| ----------- | ---------------------------- | -------------------------------- | -------------------------- |
+| `core/1.58` | Pending                      | Pending                          | Pending                    |
+| `core/1.59` | Pending                      | Pending                          | Pending                    |
+| `core/1.60` | Pending                      | Pending                          | Pending                    |
+
+For each backport, use a Desktop build containing
+[Comfy-Desktop PR #1983](https://github.com/Comfy-Org/Comfy-Desktop/pull/1983)
+and the ComfyUI installation that actually pins that backport:
+
+1. Sign in through Desktop and run a real partner-node workflow with the partner-node token flag enabled. Record sanitized evidence that the Desktop bridge returned the queued token and that no frontend mint occurred.
+2. Keep the job running or polling past the workspace token's actual expiry. Record a partner-node request that executes after that expiry without the partner-node sign-in error, and record job completion separately. Do not substitute a mocked bridge or simulated expiry.
+3. Verify ComfyUI's partner-token renewal against the live service during a sufficiently long run, and record the outcome separately from job completion.
+4. Record missing platform coverage explicitly, including Windows if only macOS was exercised. Include timestamps and sanitized outcomes without token values.
+
+Track removal of the temporary Cloud mint exception separately; a merged
+backport or a fixture run alone does not prove the frontend and Desktop changes
+have reached users. See the dependency and rollout notes in PR #23229.
+
 ## Release Sheriff Assignment
 
 The sheriff is a **fixed role**, declared in `.github/release-sheriff.json`:
@@ -156,8 +222,15 @@ breakage is announced within the hour rather than on the spot.
 ## Publishing
 
 Merged PRs with the `Release` label trigger `release-draft-create.yaml`,
-publishing to GitHub Releases (`dist.zip`), PyPI (`comfyui-frontend-package`),
-and npm (`@comfyorg/comfyui-frontend-types`).
+publishing to GitHub Releases (`dist.zip` and `dist-desktop.zip`) and npm
+(`@comfyorg/comfyui-frontend-types`).
+
+Stable PyPI versions of `comfyui-frontend-package` are published only by
+`release-weekly-comfyui.yaml`, for the version each run targets
+(`release-pypi-dev.yaml` publishes `.devN` builds from the ref it is
+dispatched on, normally `main`). A patch
+released through a `Release` PR on any other line is on GitHub Releases but not
+on PyPI until that workflow runs for it.
 
 ## Weekly ComfyUI Integration
 
@@ -165,14 +238,22 @@ and npm (`@comfyorg/comfyui-frontend-types`).
 branch has unreleased commits, it triggers a patch bump and drafts a PR to
 `Comfy-Org/ComfyUI` updating `requirements.txt`.
 
+Every run reuses one branch and PR (`automation/comfyui-frontend-bump`). If
+ComfyUI master, or that PR while it is still open, already pins a newer
+frontend than the run's target, the run leaves it unchanged rather than
+downgrading it, so a patch on an older line never replaces a pending bump to a
+newer minor. If master already pins the target and the open bump PR does not
+pin anything newer, the run closes that PR, since merging it could only
+downgrade or do nothing.
+
 ## Workflows
 
 | Workflow                         | Purpose                                          |
 | -------------------------------- | ------------------------------------------------ |
 | `release-version-bump.yaml`      | Bump version, create Release PR                  |
-| `release-draft-create.yaml`      | Build + publish to GitHub/PyPI/npm               |
+| `release-draft-create.yaml`      | Build + publish to GitHub Releases/npm           |
 | `release-branch-create.yaml`     | Create `core/` + `cloud/` branches (minor/major) |
-| `release-weekly-comfyui.yaml`    | Weekly auto-patch + ComfyUI requirements PR      |
+| `release-weekly-comfyui.yaml`    | Auto-patch, PyPI publish, ComfyUI pin PR         |
 | `pr-backport.yaml`               | Cherry-pick fixes to stable branches             |
 | `cloud-backport-tag.yaml`        | Tag cloud branch merges                          |
 | `pr-assign-release-sheriff.yaml` | Assign the sheriff to backport/release/bot PRs   |

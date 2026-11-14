@@ -3,9 +3,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -27,7 +27,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
-const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
+const { outputs, allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
 const { runButtonClick, mobile } = defineProps<{
   runButtonClick?: (e: Event) => void
@@ -60,8 +60,10 @@ const selectedItemMenuEntries = computed<MenuItem[]>(() => {
       : []),
     {
       icon: 'icon-[lucide--trash-2]',
-      label: t('linearMode.deleteAllAssets'),
-      command: () => mediaActions.deleteAssets(item)
+      label: t('g.delete'),
+      command: async () => {
+        if (await mediaActions.deleteAssets(item)) await outputs.invalidate()
+      }
     }
   ]
 })

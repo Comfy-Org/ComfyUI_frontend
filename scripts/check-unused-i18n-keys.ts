@@ -6,7 +6,11 @@ import type { LocaleData } from './i18n-types'
 import { isNestedLocaleData } from './i18n-types'
 
 // Configuration
-const SOURCE_PATTERNS = ['src/**/*.{js,ts,vue}', '!src/locales/**/*']
+const SOURCE_PATTERNS = [
+  'src/**/*.{js,ts,vue}',
+  'packages/mask-editor/src/ui/**/*.{ts,vue}',
+  '!src/locales/**/*'
+]
 const IGNORE_PATTERNS = [
   // Keys that might be dynamically constructed
   /^commands\./, // Command definitions are loaded dynamically
@@ -17,6 +21,7 @@ const IGNORE_PATTERNS = [
   /^contextMenu\./, // Context menu items might be dynamic
   /^color\./, // Color names might be used dynamically
   /^onboardingCoachmarks\.[^.]+\.[^.]+\./, // Step keys derived as onboardingCoachmarks.<tour>.<step>.*
+  /^addCreditsDialog\./,
   // Auto-generated categories from collect-i18n-general.ts
   /^menuLabels\./, // Menu labels generated from command labels
   /^settingsCategories\./, // Settings categories generated from setting definitions

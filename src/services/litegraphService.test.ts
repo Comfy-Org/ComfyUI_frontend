@@ -1,18 +1,41 @@
 import { cloneDeep } from 'es-toolkit'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/scripts/app'))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetStore } from '@/stores/widgetStore'
+import {
+  createMockCanvasRenderingContext2D,
+  stubCanvasGetContext
+} from '@/utils/__tests__/canvasTestUtils'
 
 const enMessages = cloneDeep(i18n.global.getLocaleMessage('en'))
 const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
+
+function createNodeDefV1(
+  overrides: Partial<ComfyNodeDefV1> = {}
+): ComfyNodeDefV1 {
+  return {
+    name: 'TestNode',
+    display_name: 'Test Node',
+    category: 'test',
+    python_module: 'test',
+    description: 'Test node',
+    output: ['IMAGE'],
+    output_is_list: [false],
+    output_name: ['IMAGE'],
+    output_node: false,
+    input: { required: {} },
+    ...overrides
+  }
+}
 
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
@@ -220,5 +243,220 @@ describe('useLitegraphService().registerNodeDef custom widget metadata', () => {
     expect(widget?.options.advanced).toBe(true)
     expect(widget?.options.hidden).toBe(true)
     expect(widget?.hidden).toBe(true)
+  })
+})
+
+describe('canvas image context menu', () => {
+  it.for([
+    { state: 'selected', imageIndex: 0, overIndex: null },
+    { state: 'hovered', imageIndex: null, overIndex: 0 }
+  ])(
+    'offers image actions for the $state image at index zero',
+    async (state) => {
+      const nodeName = 'TestFirstImageMenu'
+      await useLitegraphService().registerNodeDef(
+        nodeName,
+        createNodeDefV1({ name: nodeName })
+      )
+      const node = LiteGraph.createNode(nodeName)
+      assert.exists(node)
+      const image = document.createElement('img')
+      image.src = 'http://localhost/view?filename=first.png'
+      node.imgs = [image]
+      node.imageIndex = state.imageIndex
+      node.overIndex = state.overIndex
+      const options: (IContextMenuValue | null)[] = []
+
+      node.getExtraMenuOptions?.(app.canvas, options)
+
+      expect(options).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ content: 'Open Image' }),
+          expect.objectContaining({ content: 'Copy Image' }),
+          expect.objectContaining({ content: 'Save Image' })
+        ])
+      )
+    }
+  )
+})
+
+describe('canvas Copy Image action', () => {
+  it('preserves original bounds when clipboard requires PNG conversion', async () => {
+    const nodeName = 'TestOriginalImageCopy'
+    await useLitegraphService().registerNodeDef(
+      nodeName,
+      createNodeDefV1({ name: nodeName })
+    )
+    const node = LiteGraph.createNode(nodeName)
+    assert.exists(node)
+    const display = document.createElement('img')
+    display.src = 'blob:display-copy'
+    display.dataset.fullSrc = 'http://localhost/view?filename=original.webp'
+    display.width = 1024
+    display.height = 512
+    node.imgs = [display]
+    node.imageIndex = 0
+    const original = document.createElement('img')
+    original.width = 4096
+    original.height = 2048
+    vi.stubGlobal('createImageBitmap', undefined)
+    vi.spyOn(globalThis, 'Image').mockImplementation(function () {
+      queueMicrotask(() => original.dispatchEvent(new Event('load')))
+      return original
+    })
+    const context = createMockCanvasRenderingContext2D()
+    stubCanvasGetContext(context)
+    let bounds: number[] = []
+    const png = new Blob(['original pixels'], { type: 'image/png' })
+    vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
+      function (this: HTMLCanvasElement, callback) {
+        bounds = [this.width, this.height]
+        callback(png)
+      }
+    )
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(new Blob(['original'], { type: 'image/webp' }))
+    )
+    const write = vi
+      .spyOn(navigator.clipboard, 'write')
+      .mockRejectedValueOnce(new Error('Unsupported image/webp'))
+      .mockResolvedValue(undefined)
+    const options: (IContextMenuValue | null)[] = []
+    node.getExtraMenuOptions?.(app.canvas, options)
+    const copy = options.find((option) => option?.content === 'Copy Image')
+    assert.exists(copy?.callback)
+
+    await copy.callback.call(document.createElement('div'))
+
+    expect(fetch).toHaveBeenCalledWith(
+      new URL('http://localhost/view?filename=original.webp')
+    )
+    expect(bounds).toEqual([4096, 2048])
+    expect(context.drawImage).toHaveBeenCalledWith(original, 0, 0)
+    expect(write).toHaveBeenCalledTimes(2)
+    expect(await write.mock.calls[1][0][0].getType('image/png')).toBe(png)
+  })
+})
+
+describe('addInputs ordering with forceInput', () => {
+  it('preserves declaration order when forceInput is in the middle', async () => {
+    const nodeDef = createNodeDefV1({
+      name: 'ForceInputMiddle',
+      input: {
+        required: {
+          seed: ['INT', { default: 0 }],
+          image: ['IMAGE', {}],
+          steps: ['INT', { default: 20 }]
+        }
+      },
+      input_order: { required: ['seed', 'image', 'steps'] }
+    })
+
+    await useLitegraphService().registerNodeDef('ForceInputMiddle', nodeDef)
+    const node = LiteGraph.createNode('ForceInputMiddle')!
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'seed',
+      'image',
+      'steps'
+    ])
+  })
+
+  it('preserves order with forceInput INT between widget inputs', async () => {
+    const nodeDef = createNodeDefV1({
+      name: 'ForceInputBetween',
+      input: {
+        required: {
+          cfg: ['FLOAT', { default: 7 }],
+          forced_seed: ['INT', { default: 0, forceInput: true }],
+          steps: ['INT', { default: 20 }]
+        }
+      },
+      input_order: { required: ['cfg', 'forced_seed', 'steps'] }
+    })
+
+    await useLitegraphService().registerNodeDef('ForceInputBetween', nodeDef)
+    const node = LiteGraph.createNode('ForceInputBetween')!
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'cfg',
+      'forced_seed',
+      'steps'
+    ])
+  })
+
+  it('preserves order with multiple interspersed forceInput inputs', async () => {
+    const nodeDef = createNodeDefV1({
+      name: 'MultiForceInput',
+      input: {
+        required: {
+          width: ['INT', { default: 512 }],
+          model: ['MODEL', {}],
+          height: ['INT', { default: 512 }],
+          clip: ['CLIP', {}],
+          steps: ['INT', { default: 20 }]
+        }
+      },
+      input_order: {
+        required: ['width', 'model', 'height', 'clip', 'steps']
+      }
+    })
+
+    await useLitegraphService().registerNodeDef('MultiForceInput', nodeDef)
+    const node = LiteGraph.createNode('MultiForceInput')!
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'width',
+      'model',
+      'height',
+      'clip',
+      'steps'
+    ])
+  })
+
+  it('keeps all-widget input order unchanged', async () => {
+    const nodeDef = createNodeDefV1({
+      name: 'AllWidgets',
+      input: {
+        required: {
+          seed: ['INT', { default: 0 }],
+          cfg: ['FLOAT', { default: 7 }],
+          steps: ['INT', { default: 20 }]
+        }
+      },
+      input_order: { required: ['seed', 'cfg', 'steps'] }
+    })
+
+    await useLitegraphService().registerNodeDef('AllWidgets', nodeDef)
+    const node = LiteGraph.createNode('AllWidgets')!
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'seed',
+      'cfg',
+      'steps'
+    ])
+  })
+
+  it('keeps all-socket input order unchanged', async () => {
+    const nodeDef = createNodeDefV1({
+      name: 'AllSockets',
+      input: {
+        required: {
+          model: ['MODEL', {}],
+          clip: ['CLIP', {}],
+          vae: ['VAE', {}]
+        }
+      },
+      input_order: { required: ['model', 'clip', 'vae'] }
+    })
+
+    await useLitegraphService().registerNodeDef('AllSockets', nodeDef)
+    const node = LiteGraph.createNode('AllSockets')!
+
+    expect(node.inputs.map((input) => input.name)).toEqual([
+      'model',
+      'clip',
+      'vae'
+    ])
   })
 })

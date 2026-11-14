@@ -1,4 +1,4 @@
-import type { LLink, Reroute } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LLink, Reroute } from '@comfyorg/graph-model/entityRegistry'
 /**
  * Litegraph Link Adapter
  *
@@ -8,25 +8,28 @@ import type { LLink, Reroute } from '@/lib/litegraph/src/types/entityRegistry'
  * Maintains backward compatibility with existing litegraph integration.
  */
 
-import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
+import type { CanvasColour } from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Point2D as PointObj,
+  Bounds
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import {
   LinkDirection,
   LinkMarkerShape,
   LinkRenderType
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
 import type {
   ArrowShape,
   Direction,
   LinkRenderData,
   RenderContext as PathRenderContext,
-  Point as PointObj,
   RenderMode
 } from '@/renderer/core/canvas/pathRenderer'
 import { setLinkPolyline } from '@/renderer/core/canvas/linkPolylines'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Bounds } from '@/renderer/core/layout/types'
 
 export interface LinkRenderContext {
   // Canvas settings
@@ -52,8 +55,26 @@ export interface LinkRenderContext {
 
 export class LitegraphLinkAdapter {
   private readonly pathRenderer = new CanvasPathRenderer()
+  private readonly pathContexts = new WeakMap<
+    LinkRenderContext,
+    PathRenderContext
+  >()
 
   constructor(public readonly enableLayoutStoreWrites = true) {}
+
+  private pathRenderContextFor(
+    context: LinkRenderContext,
+    skipBorder: boolean
+  ): PathRenderContext {
+    const cached = this.pathContexts.get(context)
+    const pathContext = cached ?? this.convertToPathRenderContext(context)
+    if (!cached) this.pathContexts.set(context, pathContext)
+
+    pathContext.style.borderWidth =
+      !skipBorder && context.renderBorder ? 4 : undefined
+    pathContext.animation = { time: litegraph().getTime() * 0.001 }
+    return pathContext
+  }
 
   /**
    * Convert LinkDirection enum to Direction string
@@ -283,11 +304,7 @@ export class LitegraphLinkAdapter {
       }
     }
 
-    const pathContext = this.convertToPathRenderContext(context)
-
-    if (skip_border) {
-      pathContext.style.borderWidth = undefined
-    }
+    const pathContext = this.pathRenderContextFor(context, skip_border)
 
     const path = this.pathRenderer.drawLink(ctx, linkData, pathContext)
 

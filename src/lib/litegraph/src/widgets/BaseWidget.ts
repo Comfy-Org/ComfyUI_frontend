@@ -1,23 +1,29 @@
 import type {
   LGraphCanvas,
   LGraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import type { Point, Size } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/types/nodeId'
+import type {
+  PointTuple as Point,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { NodeBindable } from '@/lib/litegraph/src/utils/type'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/types/widgetId'
-import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
-import type { WidgetState } from '@/types/widgetState'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import {
+  ensureUniqueWidgetNames,
+  widgetId
+} from '@comfyorg/graph-model/widgetId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import {
   applyLegacyAdvancedWrite,
   applyLegacyCanvasOnlyWrite,
@@ -86,9 +92,15 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
+/** A value write from code rather than a pointer event may lack the event and the canvas. */
+export type WidgetValueOptions = Pick<WidgetEventOptions, 'node'> &
+  Partial<Pick<WidgetEventOptions, 'e' | 'canvas'>>
+
 export function extensionValue<T>(value: T): T | null | undefined {
   return value
 }
+
+export interface BaseWidget extends IBaseWidget {}
 
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   implements IBaseWidget, NodeBindable
@@ -359,7 +371,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       this._state.disabled = this.disabled ?? false
   }
 
-  // fallow-ignore-next-line unused-class-member
   element?: HTMLElement
   callback?(
     value: TWidget['value'],
@@ -730,19 +741,19 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   setValue(
     value: TWidget['value'],
-    { e, node, canvas }: WidgetEventOptions
+    { e, node, canvas }: WidgetValueOptions = { node: this.node }
   ): void {
     const oldValue = this.value
-    if (value === this.value) return
+    const isNumber = this.type === 'number'
+    const v = isNumber ? Number(value) : value
+    if (v === oldValue || (isNumber && Number.isNaN(v))) return
 
-    const v = this.type === 'number' ? Number(value) : value
     this.value = v
     const property = extensionValue(this.options)?.property
     if (property && node.properties[property] !== undefined) {
       node.setProperty(property, v)
     }
-    const pos = canvas.graph_mouse
-    this.callback?.(this.value, canvas, node, pos, e)
+    this.callback?.(this.value, canvas, node, canvas?.graph_mouse, e)
 
     node.onWidgetChanged?.(extensionValue(this.name) ?? '', v, oldValue, this)
     if (node.graph) node.graph.incrementVersion()

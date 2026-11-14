@@ -12,7 +12,7 @@
         @click="handleCopy"
         @pointerdown.capture.stop
       >
-        <i class="icon-[lucide--copy] size-4 text-foreground" />
+        <i class="icon-[lucide--copy] text-foreground" />
       </Button>
       <Button
         v-if="downloadUrl"
@@ -24,7 +24,7 @@
         @click="handleDownload"
         @pointerdown.capture.stop
       >
-        <i class="icon-[lucide--download] size-4 text-foreground" />
+        <i class="icon-[lucide--download] text-foreground" />
       </Button>
     </div>
 
@@ -61,9 +61,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Button from '@comfyorg/design-system/button/Button'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -72,16 +72,16 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import type {
   NodeOutputWith,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import { cn } from '@comfyorg/tailwind-utils'

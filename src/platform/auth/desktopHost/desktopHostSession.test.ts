@@ -6,6 +6,8 @@ import type {
 } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
   canDesktopHostSwitchWorkspace,
+  desktopHostPartnerNodeToken,
+  desktopHostTokenRecoveries,
   desktopHostUser,
   desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
@@ -31,9 +33,9 @@ function fakeBridge(initial: DesktopHostAuthState) {
       async (_workspaceId: string): Promise<string | null> => 'host-token'
     ),
     requestSignIn: vi.fn(async (): Promise<DesktopHostAuthState> => SIGNED_IN),
-    signOut: vi.fn(
-      async (): Promise<DesktopHostAuthState> => ({ status: 'signed_out' })
-    ),
+    signOut: vi.fn(async (): Promise<DesktopHostAuthState> => ({
+      status: 'signed_out'
+    })),
     switchWorkspace: vi.fn(
       async (workspaceId: string): Promise<DesktopHostAuthState> => ({
         status: 'signed_in',
@@ -131,6 +133,76 @@ describe('desktopHostSession', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'hands over the token Desktop minted',
+      getPartnerNodeToken: async () => 'partner-node-token',
+      expected: 'partner-node-token'
+    },
+    {
+      name: 'has none when Desktop has none',
+      getPartnerNodeToken: async () => null,
+      expected: undefined
+    },
+    {
+      name: 'has none when the bridge call fails',
+      getPartnerNodeToken: async () => {
+        throw new Error('ipc failed')
+      },
+      expected: undefined
+    },
+    {
+      name: 'has none on a Desktop build without the method',
+      getPartnerNodeToken: undefined,
+      expected: undefined
+    }
+  ] satisfies {
+    name: string
+    getPartnerNodeToken: (() => Promise<string | null>) | undefined
+    expected: string | undefined
+  }[])(
+    'a partner-node token read $name',
+    async ({ getPartnerNodeToken, expected }) => {
+      const { bridge } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession({ ...bridge, getPartnerNodeToken })
+
+      await expect(desktopHostPartnerNodeToken('ws-1')).resolves.toBe(expected)
+    }
+  )
+
+  it.for([
+    { name: 'has none', getPartnerNodeToken: async () => null },
+    { name: 'lacks the method', getPartnerNodeToken: undefined }
+  ] satisfies {
+    name: string
+    getPartnerNodeToken: (() => Promise<string | null>) | undefined
+  }[])(
+    'does not count a workspace-token read as a recovery when Desktop $name for a partner-node token',
+    async ({ getPartnerNodeToken }) => {
+      const { bridge } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession({ ...bridge, getPartnerNodeToken })
+      const before = desktopHostTokenRecoveries.value
+
+      await desktopHostWorkspaceToken('ws-1')
+      await desktopHostPartnerNodeToken('ws-1')
+      await desktopHostWorkspaceToken('ws-1')
+
+      expect(desktopHostTokenRecoveries.value).toBe(before)
+    }
+  )
+
+  it('counts a workspace-token read that succeeds after a failed one', async () => {
+    const { bridge } = fakeBridge(SIGNED_IN)
+    bridge.getWorkspaceToken.mockResolvedValueOnce(null)
+    await startDesktopHostSession(bridge)
+    const before = desktopHostTokenRecoveries.value
+
+    await desktopHostWorkspaceToken('ws-1')
+    await desktopHostWorkspaceToken('ws-1')
+
+    expect(desktopHostTokenRecoveries.value).toBe(before + 1)
+  })
+
   describe('when Desktop changes state while a request is pending', () => {
     function deferred<T>() {
       let resolve!: (value: T) => void
@@ -152,6 +224,21 @@ describe('desktopHostSession', () => {
       expect(desktopHostUser.value).toBeNull()
     })
 
+    it('drops a partner-node token fetched across a sign-out', async () => {
+      const { bridge, push } = fakeBridge(SIGNED_IN)
+      const token = deferred<string | null>()
+      await startDesktopHostSession({
+        ...bridge,
+        getPartnerNodeToken: () => token.promise
+      })
+
+      const fetching = desktopHostPartnerNodeToken('ws-1')
+      push({ status: 'signed_out' })
+      token.resolve('stale-partner-node-token')
+
+      await expect(fetching).resolves.toBeUndefined()
+    })
+
     it('drops a token fetched across a sign-out', async () => {
       const { bridge, push } = fakeBridge(SIGNED_IN)
       await startDesktopHostSession(bridge)
@@ -163,6 +250,44 @@ describe('desktopHostSession', () => {
       token.resolve('stale-token')
 
       await expect(fetching).resolves.toBeUndefined()
+    })
+
+    it.for([
+      {
+        name: 'keeps it across the same session announced again',
+        next: { ...SIGNED_IN },
+        expected: 'host-token'
+      },
+      {
+        name: 'keeps it when a renewed token adds profile details',
+        next: { ...SIGNED_IN, name: 'Ada', email: 'ada@example.com' },
+        expected: 'host-token'
+      },
+      {
+        name: 'drops it when the session moves to another workspace',
+        next: { ...SIGNED_IN, workspaceId: 'ws-2' },
+        expected: undefined
+      },
+      {
+        name: 'drops it when another account signs in to the same workspace',
+        next: { ...SIGNED_IN, userId: 'user-2' },
+        expected: undefined
+      }
+    ] satisfies {
+      name: string
+      next: DesktopHostAuthState
+      expected: string | undefined
+    }[])('a token fetch $name', async ({ next, expected }) => {
+      const { bridge, push } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession(bridge)
+      const token = deferred<string | null>()
+      bridge.getWorkspaceToken.mockReturnValue(token.promise)
+
+      const fetching = desktopHostWorkspaceToken('ws-1')
+      push(next)
+      token.resolve('host-token')
+
+      await expect(fetching).resolves.toBe(expected)
     })
 
     it('ignores a sign-in result that a newer change overtook', async () => {

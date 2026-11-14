@@ -28,16 +28,17 @@ import type {
   GraphAddOptions,
   IContextMenuValue,
   INodeInputSlot,
-  Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import type {
   ExportedSubgraphInstance,
   ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -47,20 +48,20 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
 import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV2ToV1 } from '@comfyorg/object-info-parser/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
   InputSpec,
   OutputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec as InputSpecV1
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import {
   getInputSpecType,
   zDynamicGroupInputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { useApp } from '@/scripts/appInstance'
 import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
 import {
@@ -77,16 +78,16 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { parseNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
-import { getImageFileUrl } from '@/utils/hdrFormatUtil'
-import { getErrorMessage } from '@/utils/errorUtil'
-import type { WidgetId } from '@/types/widgetId'
+import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
@@ -96,17 +97,9 @@ import {
 } from '@/utils/litegraphUtil'
 import { getOrderedInputSpecs } from '@/workbench/utils/nodeDefOrderingUtil'
 
-import { useExtensionService } from './extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 
-async function reencodeAsPngBlob(
-  blob: Blob,
-  width: number,
-  height: number
-): Promise<Blob> {
-  const canvas = $el('canvas', { width, height })
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('Could not get canvas context')
-
+async function reencodeAsPngBlob(blob: Blob): Promise<Blob> {
   let image: ImageBitmap | HTMLImageElement
   if (typeof window.createImageBitmap === 'undefined') {
     const img = new Image()
@@ -125,7 +118,10 @@ async function reencodeAsPngBlob(
     image = await createImageBitmap(blob)
   }
 
+  const canvas = $el('canvas', { width: image.width, height: image.height })
   try {
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Could not get canvas context')
     ctx.drawImage(image, 0, 0)
   } finally {
     if ('close' in image && typeof image.close === 'function') {
@@ -140,9 +136,6 @@ async function reencodeAsPngBlob(
     }, 'image/png')
   })
 }
-
-export const CONFIG = Symbol()
-export const GET_CONFIG = Symbol()
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,
@@ -375,15 +368,15 @@ export const useLitegraphService = () => {
    * @internal Add inputs to the node.
    */
   function addInputs(node: LGraphNode, inputs: Record<string, InputSpec>) {
-    // Use input_order if available to ensure consistent widget ordering
     const orderedInputSpecs = getOrderedInputSpecs(
       node.constructor.nodeData ?? {},
       inputs
     )
 
-    // Create sockets and widgets in the determined order
-    for (const inputSpec of orderedInputSpecs) addInputSocket(node, inputSpec)
-    for (const inputSpec of orderedInputSpecs) addInputWidget(node, inputSpec)
+    for (const inputSpec of orderedInputSpecs) {
+      addInputSocket(node, inputSpec)
+      addInputWidget(node, inputSpec)
+    }
   }
 
   /**
@@ -679,7 +672,7 @@ export const useLitegraphService = () => {
         {
           content: 'Copy Image',
           callback: markCoreMediaMenuCallback(async () => {
-            const url = new URL(img.src)
+            const url = new URL(fullResolutionSrc(img), img.baseURI)
             url.searchParams.delete('preview')
 
             try {
@@ -690,13 +683,8 @@ export const useLitegraphService = () => {
                   new ClipboardItem({ [blob.type]: blob })
                 ])
               } catch (error) {
-                // Chrome seems to only support PNG on write, convert and try again
                 if (blob.type !== 'image/png') {
-                  const pngBlob = await reencodeAsPngBlob(
-                    blob,
-                    img.naturalWidth,
-                    img.naturalHeight
-                  )
+                  const pngBlob = await reencodeAsPngBlob(blob)
                   await navigator.clipboard.write([
                     new ClipboardItem({ 'image/png': pngBlob })
                   ])
@@ -776,7 +764,7 @@ export const useLitegraphService = () => {
           {
             content: 'Edit Subgraph Widgets',
             callback: () => {
-              useRightSidePanelStore().openPanel('subgraph')
+              usePropertiesPanelStore().openPanel('subgraph')
             }
           },
           {

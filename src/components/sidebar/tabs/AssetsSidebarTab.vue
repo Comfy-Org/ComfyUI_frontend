@@ -21,7 +21,7 @@
             :aria-label="$t('sideToolbar.backToAssets')"
             @click="exitFolderView"
           >
-            <i class="icon-[lucide--arrow-left] size-4" />
+            <i class="icon-[lucide--arrow-left]" />
           </Button>
           <span class="shrink-0 font-bold">
             {{ $t('assetBrowser.jobId') }}:
@@ -37,7 +37,7 @@
             :aria-label="$t('g.copyJobId')"
             @click="copyFolderJobId"
           >
-            <i class="icon-[lucide--copy] size-4" />
+            <i class="icon-[lucide--copy]" />
           </Button>
         </div>
         <div class="shrink-0">
@@ -82,7 +82,7 @@
         </div>
         <div v-else-if="showEmptyState">
           <NoResultsPlaceholder
-            icon="pi pi-info-circle"
+            icon="icon-[lucide--info]"
             :title="
               $t(
                 activeTab === 'input'
@@ -100,26 +100,24 @@
         >
           <AssetsSidebarListView
             v-if="isListView"
-            :asset-items="listViewAssetItems"
-            :is-selected="isSelected"
+            :asset-items="
+              isInFolderView ? listViewAssetItems : pagedListViewAssets
+            "
+            :is-selected
             :selectable-assets="listViewSelectableAssets"
             :is-stack-expanded="isListViewStackExpanded"
             :toggle-stack="toggleListViewStack"
-            :on-load-more="loadMoreAssets"
-            :can-load-more="canLoadMoreAssets"
             @select-asset="handleAssetSelect"
             @preview-asset="handleZoomClick"
             @context-menu="handleAssetContextMenu"
           />
           <div v-else class="size-full">
             <AssetsSidebarGridView
-              :assets="displayAssets"
+              :assets="isInFolderView ? filteredAssets : pagedFilteredAssets"
               :is-selected
               :show-output-count
               :get-output-count
               :grid-mode
-              :on-load-more="loadMoreAssets"
-              :can-load-more="canLoadMoreAssets"
               @select-asset="handleAssetSelect"
               @toggle-asset-selection="handleAssetSelectionToggle"
               @context-menu="handleAssetContextMenu"
@@ -144,7 +142,7 @@
   <Teleport to="body">
     <div
       v-if="marqueeStyle"
-      class="pointer-events-none fixed z-9999 border border-primary bg-primary/20"
+      class="pointer-events-none fixed z-overlay border border-primary bg-primary/20"
       :style="marqueeStyle"
     />
   </Teleport>
@@ -152,10 +150,10 @@
     v-model:active-index="galleryActiveIndex"
     :all-gallery-items="galleryItems"
   />
-  <ContextMenu
+  <Menu
     :id="contextMenuId"
-    ref="contextMenuRef"
-    :model="contextMenuItems"
+    v-bind="contextMenuProps"
+    :items="contextMenuItems"
   />
 </template>
 
@@ -175,18 +173,19 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
-import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
+import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/extensions/core/load3d/components/load3dViewerDialog'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import Tab from '@/components/tab/Tab.vue'
-import TabList from '@/components/tab/TabList.vue'
-import Button from '@/components/ui/button/Button.vue'
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
@@ -211,6 +210,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
   getAssetFileUrl,
+  getAssetInlineMediaUrl,
   getAssetSubfolder,
   getAssetViewUrl
 } from '@/platform/assets/utils/assetUrlUtil'
@@ -228,9 +228,10 @@ import {
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
+import { WrappedList } from '@/utils/pagedList'
 
 const Load3dViewerContent = defineAsyncComponent(
-  () => import('@/components/load3d/Load3dViewerContent.vue')
+  () => import('@/extensions/core/load3d/components/Load3dViewerContent.vue')
 )
 
 const { t } = useI18n()
@@ -269,14 +270,19 @@ const skeletonGridStyle = computed(() => ({
   gridTemplateColumns: getMediaAssetGridColumns(gridMode.value)
 }))
 
-const contextMenuRef = useTemplateRef('contextMenuRef')
+const {
+  open: contextMenuOpen,
+  menuProps: contextMenuProps,
+  show: showContextMenu,
+  hide: hideContextMenu
+} = usePointMenu()
 const contextMenuId = useId()
 const contextMenuItems = ref<MenuItem[]>([])
 
 useDismissableOverlay({
-  isOpen: () => contextMenuRef.value?.visible ?? false,
+  isOpen: () => contextMenuOpen.value,
   getOverlayEl: () => document.getElementById(contextMenuId),
-  onDismiss: () => contextMenuRef.value?.hide(),
+  onDismiss: hideContextMenu,
   dismissOnScroll: true
 })
 
@@ -379,21 +385,23 @@ const baseAssets = computed(() => {
 const { searchQuery, sortBy, dateFilter, mediaTypeFilters, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
-const displayAssets = computed(() => {
-  return filteredAssets.value
-})
-
 const {
   assetItems: listViewAssetItems,
   selectableAssets: listViewSelectableAssets,
   isStackExpanded: isListViewStackExpanded,
   toggleStack: toggleListViewStack
 } = useOutputStacks({
-  assets: computed(() => displayAssets.value)
+  assets: filteredAssets
 })
+const pagedListViewAssets = computed(
+  () => new WrappedList(currentAssets.value, () => listViewAssetItems.value)
+)
+const pagedFilteredAssets = computed(
+  () => new WrappedList(currentAssets.value, () => filteredAssets.value)
+)
 
 const visibleAssets = computed(() => {
-  if (!isListView.value) return displayAssets.value
+  if (!isListView.value) return filteredAssets.value
   return listViewSelectableAssets.value
 })
 
@@ -425,7 +433,8 @@ const isFolderLoading = computed(
 
 const showLoadingState = computed(
   () =>
-    (loading.value || isFolderLoading.value) && displayAssets.value.length === 0
+    (loading.value || isFolderLoading.value) &&
+    filteredAssets.value.length === 0
 )
 
 const showEmptyState = computed(
@@ -433,7 +442,7 @@ const showEmptyState = computed(
     !loading.value &&
     !isFolderLoading.value &&
     !canLoadMoreAssets.value &&
-    displayAssets.value.length === 0
+    filteredAssets.value.length === 0
 )
 
 watch(visibleAssets, (newAssets) => {
@@ -463,7 +472,8 @@ const galleryItems = computed<AugmentedResultItem[]>(() => {
       type: 'output',
       nodeId: '0',
       mediaType: mediaType === 'image' ? 'images' : mediaType,
-      url: asset.preview_url || ''
+      url: getAssetInlineMediaUrl(asset),
+      filenameIsDisplayName: isCloud
     }
   })
 })
@@ -594,7 +604,7 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
       }
     ]
   }
-  contextMenuRef.value?.show(event)
+  showContextMenu(event)
 }
 
 const handleBulkDownload = (assets: AssetItem[]) => {
@@ -727,7 +737,6 @@ const copyFolderJobId = async () => {
   }
 }
 
-const loadMoreAssets = () => currentAssets.value.loadMore()
 const canLoadMoreAssets = computed(
   () => !isInFolderView.value && toValue(currentAssets.value.hasMore)
 )

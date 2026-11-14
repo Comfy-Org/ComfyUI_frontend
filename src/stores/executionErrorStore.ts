@@ -13,30 +13,33 @@ import {
   resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { useDialogService } from '@/services/dialogService'
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
-} from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
 import {
   executionIdToNodeLocatorId,
   getExecutionIdByNode,
   getNodeByExecutionId
 } from '@/utils/graphTraversalUtil'
 import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import {
   SIMPLE_ERROR_TYPES,
   errorsForSlot,
@@ -46,7 +49,7 @@ import {
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 
 interface SlotNodeErrorClearTarget {
   executionId: NodeExecutionId
@@ -72,6 +75,7 @@ interface RunErrorState {
     MissingResourceAbsorption
   >
   nodeErrors: Record<string, NodeError> | null
+  nodeErrorsJobId: string | null
   executionError: ExecutionErrorWsMessage | null
   promptError: PromptError | null
 }
@@ -115,6 +119,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const next: RunErrorState = {
       absorbedValidationErrors: new WeakMap(),
       nodeErrors: null,
+      nodeErrorsJobId: null,
       executionError: null,
       promptError: null,
       ...runErrorsByWorkflow.value.get(key),
@@ -431,12 +436,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    */
   function recordNodeErrors(
     nodeErrors: Record<string, NodeError> | null,
-    key: string | null = activeRunErrorKey.value
+    key: string | null = activeRunErrorKey.value,
+    jobId: string | null = null
   ) {
     const record =
       nodeErrors && Object.keys(nodeErrors).length > 0 ? nodeErrors : null
     updateRunErrors(
-      { nodeErrors: record, absorbedValidationErrors: new WeakMap() },
+      {
+        nodeErrors: record,
+        nodeErrorsJobId: record ? jobId : null,
+        absorbedValidationErrors: new WeakMap()
+      },
       key
     )
     if (record && key !== null && key === activeRunErrorKey.value) {
@@ -448,6 +458,45 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         },
         key
       )
+    }
+  }
+
+  /**
+   * Records submission `jobId`'s node errors under `key`. An empty response
+   * keeps errors already recorded for `jobId` and clears any other job's.
+   */
+  function recordSubmissionNodeErrors(
+    nodeErrors: Record<string, NodeError> | null | undefined,
+    key: string | null,
+    jobId: string | undefined
+  ) {
+    if (nodeErrors && Object.keys(nodeErrors).length > 0) {
+      recordNodeErrors(nodeErrors, key, jobId ?? null)
+      return
+    }
+    const recordedJobId =
+      key === null ? null : runErrorsByWorkflow.value.get(key)?.nodeErrorsJobId
+    if (jobId === undefined || recordedJobId !== jobId) {
+      recordNodeErrors(null, key)
+    }
+  }
+
+  /**
+   * Records `nodeErrors` of job `jobId` under `key` and opens the error
+   * overlay when that run is on screen.
+   */
+  function surfaceNodeErrors(
+    nodeErrors: Record<string, NodeError>,
+    key: string,
+    jobId: string
+  ) {
+    recordNodeErrors(nodeErrors, key, jobId)
+    if (
+      key === activeRunErrorKey.value &&
+      hasNodeError.value &&
+      useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
+    ) {
+      showErrorOverlay()
     }
   }
 
@@ -976,6 +1025,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Recording
     recordNodeErrors,
+    recordSubmissionNodeErrors,
+    surfaceNodeErrors,
     recordExecutionError,
     recordPromptError,
 

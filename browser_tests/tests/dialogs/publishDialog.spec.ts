@@ -4,6 +4,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { PublishDialog } from '@e2e/fixtures/components/PublishDialog'
 
 import { publishFixture as test } from '@e2e/fixtures/helpers/PublishApiHelper'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const PUBLISH_FEATURE_FLAGS = {
   comfyhub_upload_enabled: true,
@@ -397,7 +398,8 @@ test.describe('Publish dialog - layout', () => {
         })
         await comfyPage.page.mouse.move(0, 0)
 
-        await expect(comfyPage.page).toHaveScreenshot(
+        await expectElementScreenshot(
+          publishDialog.root,
           `publish-dialog-${name}.png`
         )
       }

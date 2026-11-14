@@ -30,10 +30,10 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { toNodeId } from '@/types/nodeId'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
+import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
+import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const ossTest = mergeTests(test, jobsRouteFixture)
 
@@ -271,7 +271,7 @@ async function getCachedMissingMediaWarningNames(
 async function expectNoErrorsTab(comfyPage: ComfyPage) {
   await expect(getErrorOverlay(comfyPage)).toBeHidden()
 
-  const panel = new PropertiesPanelHelper(comfyPage.page)
+  const panel = new PropertiesPanel(comfyPage.page)
   await panel.open(comfyPage.actionbar.propertiesButton)
   await expect(
     panel.root.getByTestId(TestIds.propertiesPanel.errorsTab)
@@ -439,6 +439,25 @@ ossTest.describe(
   'Errors tab - OSS missing media runtime sources',
   { tag: '@ui' },
   () => {
+    ossTest(
+      'excludes explicit temp inputs while reporting missing permanent media',
+      async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_media_temp_annotation'
+        )
+
+        const rows = comfyPage.page.getByTestId(TestIds.dialogs.missingMediaRow)
+        await expect(rows).toHaveCount(1)
+        await expect(
+          rows.getByRole('button', {
+            name: 'Missing permanent image - image',
+            exact: true
+          })
+        ).toBeVisible()
+      }
+    )
+
     ossTest(
       'resolves annotated output media from job history',
       async ({ comfyPage, jobsRoutes }) => {
@@ -616,7 +635,7 @@ test.describe(
         `${promotedMediaHostTitle} - ${promotedMediaHostWidgetName}`
       )
 
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.close()
       await comfyPage.subgraph.enterSubgraphWithFallback(
         String(promotedMediaHostNodeId)
@@ -647,7 +666,7 @@ test.describe(
       await expectNoErrorsTab(comfyPage)
       await expect(missingMediaRow).toHaveCount(0)
 
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.close()
       await comfyPage.subgraph.enterSubgraphWithFallback(
         String(promotedMediaHostNodeId)
@@ -686,7 +705,7 @@ test.describe(
 
       await comfyPage.keyboard.bypass()
       await expect(host.getByText('Bypassed', { exact: true })).toBeHidden()
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)
       await expect(panel.errorsTab).toBeHidden()
       await expect(getErrorOverlay(comfyPage)).toBeHidden()
@@ -738,6 +757,25 @@ cloudOutputTest.describe(
     cloudOutputTest.beforeEach(async ({ comfyPage }) => {
       await closeTemplatesDialogIfOpen(comfyPage)
     })
+
+    cloudOutputTest(
+      'excludes explicit temp inputs while reporting missing permanent media',
+      async ({ comfyPage }) => {
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_media_temp_annotation'
+        )
+
+        const rows = comfyPage.page.getByTestId(TestIds.dialogs.missingMediaRow)
+        await expect(rows).toHaveCount(1)
+        await expect(
+          rows.getByRole('button', {
+            name: 'Missing permanent image - image',
+            exact: true
+          })
+        ).toBeVisible()
+      }
+    )
 
     cloudOutputTest(
       'resolves compact annotated output media from output assets',

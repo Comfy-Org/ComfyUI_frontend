@@ -1,15 +1,15 @@
-import type { LGraph } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4 } from '@/utils/uuid'
-import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import type { Point } from '../interfaces'
-import type { INodeInputSlot } from '../types/slots'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 
-import { LGraphNode } from '../LGraphNode'
-import { LiteGraph } from '../litegraphInstance'
-import type { ISerialisedNode } from '../types/serialisation'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 
 export type UnpackedTargetInput =
   | {

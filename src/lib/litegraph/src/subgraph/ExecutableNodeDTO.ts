@@ -3,19 +3,20 @@ import type {
   LGraphNode,
   Subgraph,
   SubgraphNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
 
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { LinkId } from '@/types/linkId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 export type ExecutionId = string
 
@@ -48,8 +49,8 @@ type ResolvedInput = {
  */
 export class ExecutableNodeDTO implements ExecutableLGraphNode {
   applyToGraph?(
-    ...args: Parameters<NonNullable<typeof this.node.applyToGraph>>
-  ): ReturnType<NonNullable<typeof this.node.applyToGraph>>
+    ...args: Parameters<NonNullable<LGraphNode['applyToGraph']>>
+  ): ReturnType<NonNullable<LGraphNode['applyToGraph']>>
 
   /** The graph that this node is a part of. */
   readonly graph: LGraph | Subgraph
@@ -88,7 +89,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     return this.node.comfyClass
   }
 
-  // fallow-ignore-next-line unused-class-member
   get properties() {
     return this.node.properties
   }
@@ -408,17 +408,28 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     if (!node.isSubgraphNode())
       throw new TypeError(`Node is not a subgraph node: ${node.id}`)
 
-    // Link inside the subgraph
     const innerResolved = node.resolveSubgraphOutputLink(slot)
     if (!innerResolved) return
 
-    const innerNode = innerResolved.outputNode
-    if (!innerNode)
-      throw new Error(
-        `No output node found for id [${this.id}] slot [${slot}] ${output.name}`
+    if (innerResolved.link.originIsIoNode) {
+      return this.resolvePassThroughOutput(
+        node,
+        innerResolved.link.origin_slot,
+        visited,
+        type
       )
+    }
 
-    // Recurse into the subgraph
+    const innerNode = innerResolved.outputNode
+    if (!innerNode) {
+      console.warn(
+        `[ExecutableNodeDTO] Subgraph output link has no origin node; skipping output [${slot}] ${output.name}`,
+        { id: this.id, originId: innerResolved.link.origin_id }
+      )
+      reportDanglingSubgraphOutput(node.subgraph)
+      return
+    }
+
     const innerNodeExecutionId: ExecutionId = [
       ...this.subgraphNodePath,
       node.id,
@@ -435,5 +446,55 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       type,
       visited
     )
+  }
+
+  private resolvePassThroughOutput(
+    node: SubgraphNode,
+    inputSlot: number,
+    visited: Set<string>,
+    type: ISlotType
+  ): ResolvedInput | undefined {
+    const input = this.inputs.at(inputSlot)
+    if (!input) {
+      console.warn(
+        `[ExecutableNodeDTO] Subgraph output passes through a missing input; skipping it`,
+        { id: this.id, inputSlot }
+      )
+      return
+    }
+    if (input.linkId != null) return this.resolveInput(inputSlot, visited, type)
+
+    const id = node.inputs.at(inputSlot)?.widgetId
+    if (!id) return
+    return {
+      node: this,
+      origin_id: this.id,
+      origin_slot: -1,
+      widgetInfo: { value: useWidgetValueStore().getWidget(id)?.value }
+    }
+  }
+}
+
+const reportedDanglingSubgraphs = new WeakSet<object>()
+
+function reportDanglingSubgraphOutput(subgraph: object): void {
+  if (reportedDanglingSubgraphs.has(subgraph)) return
+  reportedDanglingSubgraphs.add(subgraph)
+  reportError(new Error('Subgraph output link has no origin node'), {
+    surface: 'graph',
+    errorType: 'error_resolving_subgraph_output_origin',
+    level: 'warning',
+    fingerprint: ['error_resolving_subgraph_output_origin'],
+    logToConsole: false
+  })
+}
+
+type RegisteredExecutableLGraphNode = ExecutableLGraphNode
+type RegisteredExecutionId = ExecutionId
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    ExecutableLGraphNode: RegisteredExecutableLGraphNode
+    ExecutionId: RegisteredExecutionId
   }
 }

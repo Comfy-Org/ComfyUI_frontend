@@ -1,16 +1,15 @@
 import { expect } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type {
-  BillingStatusResponse,
-  WorkspaceWithRole
-} from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 type CustomerBalanceResponse = NonNullable<
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
@@ -37,6 +36,7 @@ const mockListWorkspacesResponse: { workspaces: WorkspaceWithRole[] } = {
 const mockTokenResponse: WorkspaceTokenResponse = {
   token: 'mock-workspace-token',
   expires_at: FUTURE_DATE,
+  user_id: 'uid-1',
   workspace: {
     id: 'ws-personal',
     name: PERSONAL_WORKSPACE_NAME,
@@ -54,8 +54,10 @@ const mockBillingStatus: BillingStatusResponse = {
   is_active: true,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -106,14 +108,6 @@ const test = comfyPageFixture.extend({
       route.fulfill({ status: 204 })
     )
 
-    await page.route('**/customers/balance', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(mockBalance)
-      })
-    )
-
     // The popover sources its data from the workspace billing endpoints.
     await page.route('**/api/billing/capabilities', (route) => {
       if (route.request().method() !== 'GET') return route.fallback()
@@ -157,32 +151,6 @@ const test = comfyPageFixture.extend({
 })
 
 test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
-  test('keeps both action buttons inside the popover when cancelled but active', async ({
-    comfyPage
-  }) => {
-    const page = comfyPage.page
-
-    await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
-
-    const popover = page.locator('.current-user-popover')
-    await expect(popover).toBeVisible()
-
-    const addCredits = page.getByTestId('add-credits-button')
-    const resubscribe = page.getByRole('button', { name: 'Resubscribe' })
-    await expect(addCredits).toBeVisible()
-    await expect(resubscribe).toBeVisible()
-
-    const popoverBox = await popover.boundingBox()
-    const resubscribeBox = await resubscribe.boundingBox()
-    expect(popoverBox).not.toBeNull()
-    expect(resubscribeBox).not.toBeNull()
-
-    const popoverRight = popoverBox!.x + popoverBox!.width
-    const resubscribeRight = resubscribeBox!.x + resubscribeBox!.width
-    expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
-  })
-
   test('keeps the user card inside the single popover frame', async ({
     page
   }) => {
@@ -222,42 +190,78 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
       })
       .toBe(true)
   })
+})
 
-  test(
-    'renders Manage plan as a plain full-width menu row',
-    { tag: '@screenshot' },
-    async ({ page }) => {
-      test.setTimeout(60_000)
-      await setupCloudApp(page, {
-        workspace: workspace('personal', 'owner'),
-        features: { subscription_required: false }
-      })
-      await page.goto(APP_URL)
-      await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-        timeout: 45_000
-      })
-      await page.getByRole('button', { name: 'Close dialog' }).click()
-      await expect(page.getByTestId('dialog-overlay')).toBeHidden()
+test.describe(
+  'Current user popover credits row (previous menu)',
+  { tag: '@cloud' },
+  () => {
+    test.use({ billingNewUx: false })
 
+    test('keeps both action buttons inside the popover when cancelled but active', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
       await page.getByRole('button', { name: 'Current user' }).click()
 
-      const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
-      await expect(workspaceSelector).toBeVisible()
-      await expect(workspaceSelector).toHaveScreenshot(
-        'workspace-selector-menu-item.png'
-      )
+      const popover = page.locator('.current-user-popover')
+      await expect(popover).toBeVisible()
 
-      const managePlan = page.getByRole('button', { name: 'Manage plan' })
-      await expect(managePlan).toBeVisible()
-      await expect(managePlan).toHaveScreenshot('manage-plan-menu-item.png')
+      const addCredits = page.getByTestId('add-credits-button')
+      const resubscribe = page.getByRole('button', { name: 'Resubscribe' })
+      await expect(addCredits).toBeVisible()
+      await expect(resubscribe).toBeVisible()
 
-      await managePlan.focus()
-      await page.keyboard.press('Shift+Tab')
-      await page.keyboard.press('Tab')
-      await expect(managePlan).toBeFocused()
-      await expect(managePlan).toHaveScreenshot(
-        'manage-plan-menu-item-focused.png'
-      )
-    }
-  )
-})
+      const popoverBox = await popover.boundingBox()
+      const resubscribeBox = await resubscribe.boundingBox()
+      expect(popoverBox).not.toBeNull()
+      expect(resubscribeBox).not.toBeNull()
+
+      const popoverRight = popoverBox!.x + popoverBox!.width
+      const resubscribeRight = resubscribeBox!.x + resubscribeBox!.width
+      expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
+    })
+
+    test(
+      'renders Manage plan as a plain full-width menu row',
+      { tag: '@screenshot' },
+      async ({ page }) => {
+        test.setTimeout(60_000)
+        await setupCloudApp(page, {
+          workspace: workspace('personal', 'owner'),
+          features: { subscription_required: false }
+        })
+        await page.goto(APP_URL)
+        await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+          timeout: 45_000
+        })
+        await page.getByRole('button', { name: 'Close dialog' }).click()
+        await expect(page.getByTestId('dialog-overlay')).toBeHidden()
+
+        await page.getByRole('button', { name: 'Current user' }).click()
+
+        const workspaceSelector = page.getByTestId('workspace-switcher-trigger')
+        await expect(workspaceSelector).toBeVisible()
+        await expectElementScreenshot(
+          workspaceSelector,
+          'workspace-selector-menu-item.png'
+        )
+
+        const managePlan = page.getByRole('button', { name: 'Manage plan' })
+        await expect(managePlan).toBeVisible()
+        await expectElementScreenshot(managePlan, 'manage-plan-menu-item.png')
+
+        await managePlan.focus()
+        await page.keyboard.press('Shift+Tab')
+        await page.keyboard.press('Tab')
+        await expect(managePlan).toBeFocused()
+        await expectElementScreenshot(
+          managePlan,
+          'manage-plan-menu-item-focused.png'
+        )
+      }
+    )
+  }
+)

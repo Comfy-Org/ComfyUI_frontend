@@ -1,11 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { toTurnId } from '../schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   ChatSession,
   HistoryGroups
-} from '../stores/agent/agentChatHistoryStore'
-import type { ConversationEntry } from '../stores/agent/agentConversationStore'
+} from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
 import { deriveSessionTitle, withCurrentSessionTitle } from './sessionTitle'
 
@@ -32,6 +32,40 @@ describe('deriveSessionTitle', () => {
 
   it('returns undefined without a user message', () => {
     expect(deriveSessionTitle([])).toBeUndefined()
+  })
+
+  it('defers building the grapheme segmenter until a title is derived', async () => {
+    vi.spyOn(Intl, 'Segmenter')
+    vi.resetModules()
+
+    const sessionTitle = await import('./sessionTitle')
+    expect(Intl.Segmenter).not.toHaveBeenCalled()
+
+    expect(sessionTitle.deriveSessionTitle([userEntry('hello')])).toBe('hello')
+    expect(Intl.Segmenter).toHaveBeenCalledOnce()
+  })
+
+  it('falls back to code points when Intl.Segmenter is unavailable', async () => {
+    const originalIntl = Intl
+    vi.stubGlobal(
+      'Intl',
+      Object.create(originalIntl, {
+        Segmenter: { value: undefined, configurable: true }
+      })
+    )
+
+    try {
+      vi.resetModules()
+      const sessionTitle = await import('./sessionTitle')
+
+      expect(
+        sessionTitle.deriveSessionTitle([
+          userEntry(`${'a'.repeat(59)}🙂trailing`)
+        ])
+      ).toBe(`${'a'.repeat(59)}🙂`)
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 })
 

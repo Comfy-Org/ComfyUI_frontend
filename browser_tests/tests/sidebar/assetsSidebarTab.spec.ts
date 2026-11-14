@@ -1,6 +1,7 @@
 import { expect, mergeTests } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+import { assetsStartupFixture } from '@e2e/fixtures/assetsStartupFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   PM_1150_JOB_ID,
@@ -16,13 +17,14 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
-import type {
-  JobDetail,
-  RawJobListItem
-} from '@/platform/remote/comfyui/jobs/jobTypes'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
+import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
-const test = mergeTests(comfyPageFixture, jobsRouteFixture)
+const test = mergeTests(
+  comfyPageFixture,
+  jobsRouteFixture,
+  assetsStartupFixture
+)
 
 const alphaJob = createRouteMockJob({
   id: 'alpha',
@@ -167,11 +169,16 @@ const bulkInsertionTest = comfyPageFixture.extend({
 })
 
 test.describe('FE-130 assets sidebar route mocks', () => {
-  test.beforeEach(async ({ jobsRoutes, page }) => {
-    await jobsRoutes.mockJobsQueue([])
-    await jobsRoutes.mockJobsHistory(generatedJobs)
-    await mockInputFiles(page, ['imported.png'])
-    await mockViewFiles(page, viewFiles)
+  test.use({
+    assetMocks: {
+      setup: async (_, page) => {
+        const jobsRoutes = new JobsRouteMocker(page)
+        await jobsRoutes.mockJobsQueue([])
+        await jobsRoutes.mockJobsHistory(generatedJobs)
+        await mockInputFiles(page, ['imported.png'])
+        await mockViewFiles(page, viewFiles)
+      }
+    }
   })
 
   for (const area of ['padding', 'content'] as const) {
@@ -209,8 +216,6 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
     await tab.open()
 
     await expect(tab.getAssetCardByName('alpha')).toBeVisible()
@@ -232,8 +237,6 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
     await tab.open()
 
     await comfyPage.page.getByRole('img', { name: 'alpha.png' }).dblclick()
@@ -263,8 +266,6 @@ test.describe('FE-130 assets sidebar route mocks', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
 
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
     await tab.open()
 
     await tab.getAssetCardByName('alpha').click()
@@ -281,62 +282,78 @@ test.describe('FE-130 assets sidebar route mocks', () => {
     await expect(tab.downloadSelectedButton).toBeVisible()
   })
 
-  test('loads full generated job outputs from job detail', async ({
-    comfyPage,
-    jobsRoutes
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-
-    await jobsRoutes.mockJobsHistory([multiOutputJob])
-    await jobsRoutes.mockJobDetail('multi-output', multiOutputJobDetail)
-
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-    await tab.open()
-
-    await tab
-      .getAssetCardByName('multi-output-a')
-      .getByRole('button', { name: 'See more outputs' })
-      .click()
-
-    await expect(tab.backToAssetsButton).toBeVisible()
-    const folderJobId = comfyPage.page.getByText('multi-output', {
-      exact: true
+  test.describe('full generated job outputs', () => {
+    test.use({
+      assetMocks: {
+        setup: async (_, page) => {
+          const jobsRoutes = new JobsRouteMocker(page)
+          await jobsRoutes.mockJobsQueue([])
+          await jobsRoutes.mockJobsHistory([multiOutputJob])
+          await jobsRoutes.mockJobDetail('multi-output', multiOutputJobDetail)
+          await mockInputFiles(page, ['imported.png'])
+          await mockViewFiles(page, viewFiles)
+        }
+      }
     })
-    await expect(folderJobId).toBeVisible()
-    await expect(
-      comfyPage.page.getByRole('button', { name: 'Copy Job ID' })
-    ).toBeVisible()
-    await expect(tab.getAssetCardByName('multi-output-b')).toBeVisible()
-    await expect(
-      comfyPage.page.getByRole('img', { name: 'multi-output-b.png' })
-    ).toHaveJSProperty('naturalWidth', 1)
+
+    test('loads full generated job outputs from job detail', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+
+      await tab
+        .getAssetCardByName('multi-output-a')
+        .getByRole('button', { name: 'See more outputs' })
+        .click()
+
+      await expect(tab.backToAssetsButton).toBeVisible()
+      const folderJobId = comfyPage.page.getByText('multi-output', {
+        exact: true
+      })
+      await expect(folderJobId).toBeVisible()
+      await expect(
+        comfyPage.page.getByRole('button', { name: 'Copy Job ID' })
+      ).toBeVisible()
+      await expect(tab.getAssetCardByName('multi-output-b')).toBeVisible()
+      await expect(
+        comfyPage.page.getByRole('img', { name: 'multi-output-b.png' })
+      ).toHaveJSProperty('naturalWidth', 1)
+    })
   })
 
-  test('group badge shows previewable_outputs_count, matching the expanded drilldown', async ({
-    comfyPage,
-    jobsRoutes
-  }) => {
-    const tab = comfyPage.menu.assetsTab
+  test.describe('previewable output count', () => {
+    test.use({
+      assetMocks: {
+        setup: async (_, page) => {
+          const jobsRoutes = new JobsRouteMocker(page)
+          await jobsRoutes.mockJobsQueue([])
+          await jobsRoutes.mockJobsHistory([previewableCountJob])
+          await jobsRoutes.mockJobDetail(
+            'previewable-count-job',
+            previewableCountJobDetail
+          )
+          await mockInputFiles(page, ['imported.png'])
+          await mockViewFiles(page, viewFiles)
+        }
+      }
+    })
 
-    await jobsRoutes.mockJobsHistory([previewableCountJob])
-    await jobsRoutes.mockJobDetail(
-      'previewable-count-job',
-      previewableCountJobDetail
-    )
+    test('group badge shows previewable_outputs_count, matching the expanded drilldown', async ({
+      comfyPage
+    }) => {
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
 
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-    await tab.open()
+      const badge = tab
+        .getAssetCardByName('previewable-count-a')
+        .getByRole('button', { name: 'See more outputs' })
+      await expect(badge).toHaveText('2')
 
-    const badge = tab
-      .getAssetCardByName('previewable-count-a')
-      .getByRole('button', { name: 'See more outputs' })
-    await expect(badge).toHaveText('2')
-
-    await badge.click()
-    await expect(tab.backToAssetsButton).toBeVisible()
-    await expect(tab.assetCards).toHaveCount(2)
+      await badge.click()
+      await expect(tab.backToAssetsButton).toBeVisible()
+      await expect(tab.assetCards).toHaveCount(2)
+    })
   })
 
   test('deletes a generated output asset through explicit history refresh', async ({
@@ -376,9 +393,9 @@ bulkInsertionTest.describe(
 
     bulkInsertionTest.beforeEach(async ({ comfyPage }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
       await comfyPage.toast.closeToasts()
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
@@ -394,7 +411,7 @@ bulkInsertionTest.describe(
       'does not surface errors for inserted output assets',
       async ({ comfyPage }) => {
         const tab = comfyPage.menu.assetsTab
-        const panel = new PropertiesPanelHelper(comfyPage.page)
+        const panel = new PropertiesPanel(comfyPage.page)
         await expect(panel.root).toBeVisible()
 
         await tab.getAssetCardByName('alpha').click()
@@ -420,13 +437,19 @@ bulkInsertionTest.describe(
 )
 
 test.describe('FE-910 marquee selection and select all', () => {
-  test.beforeEach(async ({ jobsRoutes, page, comfyPage }) => {
-    await jobsRoutes.mockJobsQueue([])
-    await jobsRoutes.mockJobsHistory(generatedJobs)
-    await mockInputFiles(page, ['imported.png'])
-    await mockViewFiles(page, viewFiles)
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
+  test.use({
+    assetMocks: {
+      setup: async (_, page) => {
+        const jobsRoutes = new JobsRouteMocker(page)
+        await jobsRoutes.mockJobsQueue([])
+        await jobsRoutes.mockJobsHistory(generatedJobs)
+        await mockInputFiles(page, ['imported.png'])
+        await mockViewFiles(page, viewFiles)
+      }
+    }
+  })
+
+  test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.menu.assetsTab.open()
   })
 

@@ -3,10 +3,71 @@ import type { Route } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
+  test(
+    'starting a new chat releases upload capacity for the next draft',
+    {
+      annotation: {
+        type: 'regression',
+        description:
+          'https://github.com/Comfy-Org/ComfyUI_frontend/pull/21588#discussion_r4378869451'
+      }
+    },
+    async ({ comfyPage, agentPanel }) => {
+      const page = comfyPage.page
+      let releaseUploads = () => {}
+      const uploadsHeld = new Promise<void>((resolve) => {
+        releaseUploads = resolve
+      })
+      const uploadsSettled = new Set<Promise<void>>()
+      let uploadCount = 0
+      function holdUpload(route: Route) {
+        uploadCount += 1
+        const uploadSettled = uploadsHeld.then(() => route.abort())
+        uploadsSettled.add(uploadSettled)
+        return uploadSettled
+      }
+      await page.route('**/api/upload/image', holdUpload)
+
+      try {
+        await agentPanel.open()
+        await agentPanel.fileInput.setInputFiles(
+          Array.from({ length: 3 }, (_, index) => ({
+            name: `old-draft-${index}.png`,
+            mimeType: 'image/png',
+            buffer: Buffer.from(`old draft ${index}`)
+          }))
+        )
+        await expect.poll(() => uploadCount).toBe(3)
+        await expect(agentPanel.attachmentChips).toHaveCount(3)
+
+        await agentPanel.root
+          .getByRole('button', {
+            name: enMessages.agent.newChat,
+            exact: true
+          })
+          .click()
+        await expect(agentPanel.attachmentChips).toHaveCount(0)
+        await agentPanel.fileInput.setInputFiles({
+          name: 'new-draft.png',
+          mimeType: 'image/png',
+          buffer: Buffer.from('new draft')
+        })
+
+        await expect(agentPanel.attachmentChip('new-draft.png')).toBeVisible()
+        await expect.poll(() => uploadCount).toBe(4)
+      } finally {
+        releaseUploads()
+        await Promise.all(uploadsSettled)
+        await page.unroute('**/api/upload/image', holdUpload)
+      }
+    }
+  )
+
   test('closing the panel removes a pending upload and preserves a sendable draft', async ({
     comfyPage,
     agentPanel
@@ -93,13 +154,12 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     await expect(agentPanel.sendButton).toBeDisabled()
     await agentPanel.sendButton.hover()
     await expect(
-      comfyPage.page.getByRole('tooltip', {
-        name: enMessages.agent.sendBlockedByInvalidVideo.replace(
+      new Tooltip(comfyPage.page).named(
+        enMessages.agent.sendBlockedByInvalidVideo.replace(
           '{name}',
           'renamed.mp4'
-        ),
-        exact: true
-      })
+        )
+      )
     ).toBeVisible()
     await agentPanel.composer.press('Enter')
     await expect(agentPanel.composer).toHaveText('Describe this video')
@@ -107,13 +167,9 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     await agentPanel.open()
     await agentPanel.attachmentChip('renamed.mp4').getByRole('status').hover()
     await expect(
-      comfyPage.page.getByRole('tooltip', {
-        name: enMessages.agent.attachmentInvalidVideo.replace(
-          '{name}',
-          'renamed.mp4'
-        ),
-        exact: true
-      })
+      new Tooltip(comfyPage.page).named(
+        enMessages.agent.attachmentInvalidVideo.replace('{name}', 'renamed.mp4')
+      )
     ).toBeVisible()
     await expect(agentPanel.sendButton).toBeDisabled()
     await expect(
@@ -176,13 +232,9 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     ).toBeVisible()
     await agentPanel.attachmentChip('renamed.mp4').getByRole('status').hover()
     await expect(
-      comfyPage.page.getByRole('tooltip', {
-        name: enMessages.agent.attachmentInvalidVideo.replace(
-          '{name}',
-          'renamed.mp4'
-        ),
-        exact: true
-      })
+      new Tooltip(comfyPage.page).named(
+        enMessages.agent.attachmentInvalidVideo.replace('{name}', 'renamed.mp4')
+      )
     ).toBeVisible()
   })
 })

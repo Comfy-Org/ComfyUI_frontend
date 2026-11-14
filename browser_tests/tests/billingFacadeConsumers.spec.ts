@@ -2,19 +2,16 @@ import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import {
-  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
-  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse
-} from '@/platform/workspace/api/workspaceApi'
+} from '@comfyorg/billing-core'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { expectPlatformPlansOpened } from '@e2e/fixtures/utils/platformPlans'
 import {
   mockWorkspaceTokenMint,
   workspace
@@ -37,12 +34,6 @@ const jsonRoute = (body: unknown) => ({
   body: JSON.stringify(body)
 })
 
-const mockBalance: BillingBalanceResponse = {
-  amount_micros: 6000, // -> 12,660 credits
-  currency: 'usd',
-  effective_balance_micros: 6000
-}
-
 const mockWorkspaceBalance: BillingBalanceResponse = {
   amount_micros: 0,
   currency: 'usd',
@@ -52,22 +43,21 @@ const mockWorkspaceBalance: BillingBalanceResponse = {
 async function mockCloudBoot(
   page: Page,
   subscriptionStatus: Partial<BillingStatusResponse>,
-  remoteConfig: RemoteConfig = {},
-  billingRail?: BillingStatusResponse['billing_rail']
+  remoteConfig: RemoteConfig = {}
 ) {
   const resolvedSubscriptionStatus: BillingStatusResponse = {
+    billing_rail: 'stripe',
     is_active: false,
     has_funds: false,
     max_seats: 0,
     occupied_seats: 0,
+    ended_at: null,
     team_credit_stop: null,
     scheduled_change: null,
-    ...subscriptionStatus,
-    ...(billingRail === undefined ? {} : { billing_rail: billingRail })
+    next_charge: null,
+    ...subscriptionStatus
   }
   const billingRequests = {
-    legacyStatus: 0,
-    legacyBalance: 0,
     workspaceStatus: 0,
     workspaceBalance: 0
   }
@@ -117,15 +107,6 @@ async function mockCloudBoot(
     )
   )
 
-  await page.route('**/customers/balance', (r) => {
-    billingRequests.legacyBalance++
-    return r.fulfill(jsonRoute(mockBalance))
-  })
-  await page.route('**/customers/cloud-subscription-status', (r) => {
-    billingRequests.legacyStatus++
-    return r.fulfill(jsonRoute(resolvedSubscriptionStatus))
-  })
-
   // Cloud personal workspaces route through `/api/billing/*`.
   await page.route('**/api/billing/status', (r) => {
     billingRequests.workspaceStatus++
@@ -160,83 +141,7 @@ async function bootApp(page: Page) {
 }
 
 test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
-  test('avatar popover renders a legacy-rail balance from the facade', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-
-    const billingRequests = await mockCloudBoot(
-      page,
-      {
-        is_active: true,
-        subscription_tier: 'PRO',
-        subscription_duration: 'MONTHLY',
-        renewal_date: '2099-02-20T10:00:00Z',
-        has_funds: true
-      },
-      {},
-      'legacy_stripe'
-    )
-    await bootApp(page)
-    await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(1)
-
-    await page.getByRole('button', { name: 'Current user' }).click()
-    const popover = page.locator('.current-user-popover')
-    await expect(popover).toBeVisible()
-    await expect(popover.getByText('12,660')).toBeVisible()
-
-    await page.evaluate((storageKey) => {
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify({
-          attempt_id: 'rail-selection-regression',
-          started_at_ms: Date.now(),
-          tier: 'pro',
-          cycle: 'monthly',
-          checkout_type: 'change'
-        })
-      )
-    }, PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
-    billingRequests.workspaceStatus = 0
-    await page.evaluate(
-      (eventName) => window.dispatchEvent(new Event(eventName)),
-      PENDING_SUBSCRIPTION_CHECKOUT_EVENT
-    )
-
-    await expect(popover.getByText('12,660')).toBeVisible()
-    await expect(popover.getByText('0', { exact: true })).toHaveCount(0)
-    await expect(popover.getByTestId('add-credits-button')).toBeVisible()
-    await expect.poll(() => billingRequests.workspaceStatus).toBeGreaterThan(0)
-    expect(billingRequests.legacyStatus).toBe(0)
-    expect(billingRequests.legacyBalance).toBeGreaterThan(0)
-  })
-
-  test('rollout flag migrates a legacy Stripe workspace to workspace billing', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-
-    const billingRequests = await mockCloudBoot(
-      page,
-      {
-        is_active: true,
-        subscription_tier: 'PRO',
-        subscription_duration: 'MONTHLY',
-        has_funds: true
-      },
-      { legacy_billing_migration_enabled: true },
-      'legacy_stripe'
-    )
-    await bootApp(page)
-
-    await expect
-      .poll(() => billingRequests.workspaceBalance, { timeout: 30_000 })
-      .toBeGreaterThan(0)
-    expect(billingRequests.legacyStatus).toBe(0)
-    expect(billingRequests.legacyBalance).toBe(0)
-  })
-
-  test('subscribe-to-run routes an inactive FREE user to the pricing table', async ({
+  test('subscribe-to-run routes an inactive FREE user to the platform Plans page', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -259,16 +164,13 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       },
       {
         subscription_required: true
-      },
-      'stripe'
+      }
     )
     await bootApp(page)
 
-    await page.getByTestId('subscribe-to-run-button').click()
-
-    await expect(
-      page.getByRole('heading', { name: 'Choose a Plan' })
-    ).toBeVisible()
+    await expectPlatformPlansOpened(page, () =>
+      page.getByTestId('subscribe-to-run-button').click()
+    )
   })
 
   test('keeps the free-tier quota inside the top action bars', async ({
@@ -278,7 +180,6 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
 
     const freeTierRemoteConfig = {
       subscription_required: true,
-      free_tier_job_allowance_enabled: true,
       free_tier_balance: { allowance: 5, remaining: 3, used: 2 }
     } satisfies RemoteConfig
 
@@ -291,8 +192,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
         renewal_date: '2099-02-20T10:00:00Z',
         has_funds: false
       },
-      freeTierRemoteConfig,
-      'stripe'
+      freeTierRemoteConfig
     )
     await bootApp(page)
 

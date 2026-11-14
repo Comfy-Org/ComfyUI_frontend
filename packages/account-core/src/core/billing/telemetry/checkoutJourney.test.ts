@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import type { CheckoutJourneyTelemetryEvent } from './checkoutJourney.js'
+import type { CheckoutJourneyTelemetryEvent } from './checkoutJourney'
 import {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   CHECKOUT_JOURNEY_SCHEMA_VERSION,
   getCheckoutJourneyTelemetryEventName,
   getCheckoutJourneyTelemetryEventPayload
-} from './checkoutJourney.js'
+} from './checkoutJourney'
 
 const CONTEXT = {
   checkout_journey_id: 'journey-1',

@@ -15,10 +15,6 @@ test.describe(
   () => {
     test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
 
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('Resizing', async ({ comfyPage }) => {
       const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
       const box = (await node.boundingBox())!

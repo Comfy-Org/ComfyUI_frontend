@@ -6,7 +6,7 @@ import type {
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type {
   AgentTurnAccepted,
@@ -58,9 +58,6 @@ test.describe(
       const staleWorkflowId = workflow.id
       const host = new HostDoc(staleWorkflowId, workflow.seed, workflow.catalog)
 
-      // The previous tab's own in-app cleanup never ran (its browser tab was
-      // simply closed), so the binding cache and the thread pointer survive
-      // untouched into this brand-new page load.
       await page.addInitScript(
         ([bindingKey, threadKey, id, path, threadId]) => {
           localStorage.setItem(bindingKey, JSON.stringify({ [id]: path }))
@@ -111,14 +108,13 @@ test.describe(
         pagination: { offset: 0, limit: 100, total: 1, has_more: false }
       }
       const posted: unknown[] = []
-      await page.route('**/api/agent/threads', (route) =>
+      await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threads))
       )
       await page.route('**/api/agent/threads/*/messages', (route) => {
         if (route.request().method() === 'GET')
           return route.fulfill(jsonRoute(history))
         posted.push(route.request().postDataJSON())
-        // The thread's server-side pointer still names the abandoned workflow.
         const accepted: AgentTurnAccepted = {
           thread_id: THREAD_ID,
           message_id: TURN_ID,
@@ -142,17 +138,13 @@ test.describe(
       )
 
       await bootAgentApp(page, agentFlagEnabled, {
-        // Only the Vue node renderer projects follower edits onto the canvas.
         settings: {
           'Comfy.VueNodes.Enabled': true,
           'Comfy.Graph.CanvasInfo': false
         },
-        // The replayed nodes materialize from registered node types.
         objectInfo: 'server'
       })
 
-      // Re-targeting the fresh tab saves it as a new cloud workflow. These
-      // routes go on after boot so they win over the boot mocks' userdata stub.
       const savedFiles: UserDataFullInfo[] = []
       await page.route('**/api/userdata?*', (route) => {
         const dir = new URL(route.request().url()).searchParams.get('dir')
@@ -194,7 +186,6 @@ test.describe(
         .getByTestId('node-title')
         .allTextContents()
 
-      // A brand-new page on the surviving thread: nobody has sent anything.
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       const panel = agentPanel.root
@@ -202,13 +193,11 @@ test.describe(
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         EARLIER_REQUEST
       ])
-      // The Cloud no longer lists the abandoned workflow, so the chat says so.
       const unavailable = panel.getByText(
         enMessages.agent.targetWorkflowUnavailable
       )
       await expect(unavailable).toBeVisible()
 
-      // The user continues the thread in the fresh tab.
       const workflowPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow
       })

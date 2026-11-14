@@ -2,7 +2,7 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const {
   title,
@@ -32,16 +32,12 @@ const errorId = useId()
       class="min-w-0 justify-start text-left text-xs font-normal"
       @click="emit('select')"
     >
-      <span
+      <i
         v-if="loading"
         aria-hidden="true"
-        class="icon-[lucide--loader-circle] size-4 shrink-0 animate-spin"
+        class="icon-[lucide--loader-circle] animate-spin"
       />
-      <span
-        v-else
-        aria-hidden="true"
-        class="icon-[lucide--circle-check] size-4 shrink-0"
-      />
+      <i v-else aria-hidden="true" class="icon-[lucide--circle-check]" />
       <span class="truncate">{{ displayTitle }}</span>
     </Button>
     <span v-if="loading" role="status" class="sr-only">{{

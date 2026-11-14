@@ -1,10 +1,10 @@
-import type { CurveData } from '@/components/curve/types'
+import type { CurveData } from '@comfyorg/graph-model/curve'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ICurveWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ICurveWidget } from '@comfyorg/graph-model/widgets'
 import type {
   CurveInputSpec,
   InputSpec as InputSpecV2
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 const DEFAULT_CURVE_DATA: CurveData = {

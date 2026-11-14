@@ -22,7 +22,7 @@ The ±30% cap is the deliberate balance: it is roughly six tiebreak bands, enoug
 
 ## Browse ordering (sort dropdown)
 
-Implemented in [`src/composables/useTemplateFiltering.ts`](../src/composables/useTemplateFiltering.ts).
+Implemented in [`src/platform/workflow/templates/composables/useTemplateFiltering.ts`](../src/platform/workflow/templates/composables/useTemplateFiltering.ts).
 
 | Mode                     | Ordering                                                        |
 | ------------------------ | --------------------------------------------------------------- |

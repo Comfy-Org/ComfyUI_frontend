@@ -5,9 +5,10 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
@@ -87,6 +88,25 @@ describe('WidgetToggleSwitch Value Binding', () => {
 
     expect(onModelUpdate).toHaveBeenCalledWith(true)
   })
+
+  it.for([{}, { on: 'enabled', off: 'disabled' }])(
+    'toggles from either state through the widget label with options=%j',
+    async (options) => {
+      let currentValue = false
+      const { user } = mountComponent(
+        createToggleWidget(false, options),
+        false,
+        (value) => (currentValue = value ?? currentValue)
+      )
+      const label = screen.getByText('test_toggle')
+
+      await user.click(label)
+      expect(currentValue).toBe(true)
+
+      await user.click(label)
+      expect(currentValue).toBe(false)
+    }
+  )
 
   it.for([
     { name: 'switch', options: {}, role: 'switch', label: 'test_toggle' },

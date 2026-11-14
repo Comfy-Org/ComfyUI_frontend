@@ -7,7 +7,7 @@
       :aria-checked="modelValue === option.value"
       :class="
         cn(
-          'flex items-center gap-2 self-stretch rounded-lg border-none bg-transparent py-2 pr-4 pl-2 transition-colors hover:bg-secondary',
+          'flex self-stretch py-2 pr-4 pl-2 hover:bg-secondary',
           heightClass,
           modelValue === option.value && 'bg-secondary'
         )
@@ -20,7 +20,7 @@
       <div
         class="flex size-8 min-h-8 items-center justify-center rounded-lg bg-accent"
       >
-        <i :class="cn(option.icon, 'size-4')" aria-hidden="true" />
+        <i :class="option.icon" aria-hidden="true" />
       </div>
       <div class="mx-2 flex flex-1 flex-col items-start">
         <span class="text-sm font-medium text-foreground">
@@ -32,7 +32,7 @@
       </div>
       <i
         v-if="modelValue === option.value"
-        class="icon-[lucide--check] size-4 text-foreground"
+        class="icon-[lucide--check] text-foreground"
         aria-hidden="true"
       />
     </Button>
@@ -40,7 +40,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 

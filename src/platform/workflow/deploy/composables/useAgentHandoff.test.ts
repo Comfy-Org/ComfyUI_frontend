@@ -5,8 +5,9 @@ import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -22,8 +23,12 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: vi.fn()
 }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
+}))
+
+vi.mock(import('@/platform/workflow/deploy/utils/agentApps'), () => ({
+  openAgentApp: vi.fn()
 }))
 
 const GRAPH = { nodes: [{ id: 1, type: 'KSampler' }], links: [] }
@@ -115,6 +120,64 @@ describe('useAgentHandoff', () => {
       expect(downloadBlob).toHaveBeenCalledTimes(downloads)
     }
   )
+
+  it.for([
+    { app: 'claude', distribution: 'localhost', downloads: 1 },
+    { app: 'codex', distribution: 'desktop', downloads: 0 }
+  ] as const)(
+    'opens the brief in the $app desktop app, downloading the workflow $downloads times on $distribution',
+    ({ app, distribution, downloads }) => {
+      setActiveWorkflow()
+
+      useAgentHandoff(distribution).openBriefIn(app)
+
+      expect(openAgentApp).toHaveBeenCalledExactlyOnceWith(
+        app,
+        expect.stringContaining(
+          '# Turn `portrait-upscale` into a Comfy API Build'
+        )
+      )
+      expect(downloadBlob).toHaveBeenCalledTimes(downloads)
+    }
+  )
+
+  it('downloads the workflow before opening the agent app', () => {
+    setActiveWorkflow()
+    const order: string[] = []
+    vi.mocked(downloadBlob).mockImplementationOnce(() => {
+      order.push('download')
+    })
+    vi.mocked(openAgentApp).mockImplementationOnce(() => {
+      order.push('open')
+    })
+
+    useAgentHandoff().openBriefIn('claude')
+
+    expect(order).toEqual(['download', 'open'])
+  })
+
+  it('reports a failed download and leaves the agent app closed', () => {
+    setActiveWorkflow()
+    const downloadError = new Error('download blocked')
+    vi.mocked(downloadBlob).mockImplementationOnce(() => {
+      throw downloadError
+    })
+
+    useAgentHandoff().openBriefIn('claude')
+
+    expect(openAgentApp).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(downloadError, {
+      errorType: 'error_opening_deploy_agent_brief',
+      surface: 'platform'
+    })
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        description:
+          'The brief for your agent could not be prepared. Try again.',
+        kind: 'error'
+      })
+    ])
+  })
 
   it('lists the model a known loader loads, and not prompt text ending in .pt', async () => {
     useNodeDefStore().nodeDefsByName = {

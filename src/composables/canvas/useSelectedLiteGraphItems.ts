@@ -135,6 +135,7 @@ export function useSelectedLiteGraphItems() {
     getSelectableItems,
     hasSelectableItems,
     hasMultipleSelectableItems,
+    getSelectedNodesShallow,
     getSelectedNodes,
     areAllSelectedNodesInMode,
     toggleSelectedNodesMode

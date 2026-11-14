@@ -23,11 +23,11 @@
 import { useIntersectionObserver } from '@vueuse/core'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
   findServerPreviewUrl,
   isAssetPreviewSupported
-} from '../utils/assetPreviewUtil'
+} from '@/platform/assets/utils/assetPreviewUtil'
 
 const { asset } = defineProps<{ asset: AssetMeta }>()
 

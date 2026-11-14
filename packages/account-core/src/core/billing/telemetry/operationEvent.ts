@@ -1,11 +1,11 @@
-import type { BillingPresentation } from '../operationState.js'
-import type { BillingOperationTerminal, BillingStarted } from './stages.js'
+import type { BillingPresentation } from '#/core/billing/operationState'
+import type { BillingOperationTerminal, BillingStarted } from './stages'
 import type {
   BillingCycle,
   PaymentIntentSource,
   SubscriptionCheckoutTier,
   SubscriptionCheckoutType
-} from './vocabulary.js'
+} from './vocabulary'
 
 export type BillingOperationBillingEvent = {
   operation: 'operation'

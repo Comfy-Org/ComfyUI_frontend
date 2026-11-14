@@ -63,46 +63,6 @@ export function ensureWorkflowSuffix(
   return name + '.' + suffix
 }
 
-interface HighlightQueryPart {
-  text: string
-  highlighted: boolean
-}
-
-export function highlightQuery(
-  text: string,
-  query: string
-): HighlightQueryPart[] {
-  if (!query) return [{ text, highlighted: false }]
-
-  // Escape special regex characters, then join with an optional single
-  // space so cross-word matches (e.g. "geto" → "imaGE TO") are
-  // highlighted without spanning tabs, newlines, or multi-space gaps.
-  const pattern = Array.from(query)
-    .map((ch) => ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-    .join('[ ]?')
-
-  const regex = new RegExp(pattern, 'gi')
-  const parts: HighlightQueryPart[] = []
-  let lastIndex = 0
-
-  for (const match of text.matchAll(regex)) {
-    if (match.index > lastIndex) {
-      parts.push({
-        text: text.slice(lastIndex, match.index),
-        highlighted: false
-      })
-    }
-    parts.push({ text: match[0], highlighted: true })
-    lastIndex = match.index + match[0].length
-  }
-
-  if (lastIndex < text.length || parts.length === 0) {
-    parts.push({ text: text.slice(lastIndex), highlighted: false })
-  }
-
-  return parts
-}
-
 export function formatNumberWithSuffix(
   num: number,
   {
@@ -338,11 +298,11 @@ function normalizeFilePathSeparators(filepath: string): string {
  * @param filepath The filepath to parse
  * @returns Object containing filename and subfolder
  */
-export function parseFilePath(filepath: string): {
+export function parseFilePath(filepath?: string): {
   filename: string
   subfolder: string
 } {
-  if (!filepath.trim()) return { filename: '', subfolder: '' }
+  if (!filepath?.trim()) return { filename: '', subfolder: '' }
 
   const normalizedPath = normalizeFilePathSeparators(filepath)
     .replace(/^\//, '') // Remove leading slash
@@ -630,16 +590,19 @@ export function formatDuration(milliseconds: number): string {
 }
 
 const IMAGE_EXTENSIONS = [
-  'png',
-  'jpg',
-  'jpeg',
-  'gif',
-  'webp',
-  'bmp',
   'avif',
+  'bmp',
+  'exr',
+  'hdr',
+  'ico',
+  'gif',
+  'jpeg',
+  'jpg',
+  'png',
+  'svg',
   'tif',
   'tiff',
-  'svg'
+  'webp'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus', 'm4a'] as const

@@ -3,11 +3,24 @@ import type {
   ComfyDesktop2AuthState
 } from '@comfyorg/comfyui-desktop-bridge-types'
 
-export type DesktopHostAuthState = ComfyDesktop2AuthState
+type DesktopHostSignedIn = Extract<
+  ComfyDesktop2AuthState,
+  { status: 'signed_in' }
+>
 
-/** `switchWorkspace` is absent on Desktop builds before Comfy-Desktop #1671. */
+/** A signed-in state may also carry the account's display name. */
+export type DesktopHostAuthState =
+  | Exclude<ComfyDesktop2AuthState, { status: 'signed_in' }>
+  | (DesktopHostSignedIn & { name?: string })
+
+/**
+ * `switchWorkspace` is absent on Desktop builds before Comfy-Desktop #1671,
+ * `getPartnerNodeToken` on builds before Comfy-Desktop #1983.
+ */
 export type DesktopHostAuthBridge = Omit<
   ComfyDesktop2AuthBridge,
   'switchWorkspace'
 > &
-  Partial<Pick<ComfyDesktop2AuthBridge, 'switchWorkspace'>>
+  Partial<Pick<ComfyDesktop2AuthBridge, 'switchWorkspace'>> & {
+    getPartnerNodeToken?: (workspaceId: string) => Promise<string | null>
+  }

@@ -7,10 +7,13 @@ import type {
   SelectionCommand
 } from '@/core/selection/selectionState'
 import { useSelectionStore } from '@/core/selection/selectionStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
-import { toGroupId } from '@/types/groupId'
-import { toNodeId } from '@/types/nodeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const root = toRootGraphId('root')
 const rootScope: GraphScope = {

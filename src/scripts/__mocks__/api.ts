@@ -1,6 +1,6 @@
 import { TestRunner, assert, vi } from 'vitest'
 
-import type { api as RealApi } from '../api'
+import type { api as RealApi } from '@/scripts/api'
 
 type ApiState = Pick<
   typeof RealApi,
@@ -122,7 +122,7 @@ const actions = vi.mockObject<
     getQueue: async () => ({ Running: [], Pending: [] }),
     getHistory: async () => [],
     async clearItems() {},
-    async deleteItem() {},
+    deleteItem: async () => true,
     async cancelJob() {},
     getJobDetail: async () => undefined,
     async getJobAssets() {
