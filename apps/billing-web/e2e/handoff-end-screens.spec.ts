@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 
 import { E2E_USER } from './fixtures/env'
-import { succeededOperation } from './fixtures/scenario'
+import { declinedOperation, succeededOperation } from './fixtures/scenario'
 import { installFakeStripe } from './fixtures/stripe'
 import { expect, test } from './fixtures/test'
 
@@ -12,6 +12,8 @@ const TOPUP_HANDOFF =
 const payButton = (page: Page) =>
   page.getByRole('button', { name: 'Pay', exact: true })
 const nothingCharged = (page: Page) => page.getByText(/Nothing was charged/)
+const unknownResult = (page: Page) =>
+  page.getByText(/may or may not have gone through/)
 const endedOn = (page: Page, name: string) =>
   page.getByTestId('handoff-ending').getByRole('heading', { name })
 
@@ -104,4 +106,52 @@ test('a handoff session whose payment request got no readable answer ends unconf
 
   await expect(ended).toBeVisible()
   await expect(nothingCharged(page)).toBeHidden()
+})
+
+test('a handoff session whose payment the card declined ends on the link screen, where nothing was charged, and keeps it across a reload', async ({
+  page,
+  cloud
+}) => {
+  cloud.scenario.operations.op_topup = declinedOperation('op_topup')
+  await page.goto(TOPUP_HANDOFF)
+  await payButton(page).click()
+  await expect(page.getByRole('alert')).toContainText('Payment declined')
+
+  await page.clock.fastForward(SESSION_MS)
+
+  const ended = endedOn(page, 'This checkout link no longer works')
+  await expect(ended).toBeVisible()
+  await expect(nothingCharged(page)).toBeVisible()
+  await expect(unknownResult(page)).toBeHidden()
+
+  await page.reload()
+
+  await expect(ended).toBeVisible()
+  await expect(unknownResult(page)).toBeHidden()
+})
+
+test('a handoff session that only cancelled a subscription ends on the link screen, not on an unconfirmed payment, and keeps it across a reload', async ({
+  page,
+  cloud
+}) => {
+  await page.goto('/handoff?intent=subscription#token=one-time-token')
+  await page.getByRole('button', { name: 'Cancel subscription' }).click()
+  await page.getByRole('button', { name: 'Confirm cancellation' }).click()
+  await expect
+    .poll(() =>
+      cloud.requests.some(({ path }) => path === '/billing/ops/op_cancel')
+    )
+    .toBe(true)
+
+  await page.clock.fastForward(SESSION_MS)
+
+  const ended = endedOn(page, 'This checkout link no longer works')
+  await expect(ended).toBeVisible()
+  await expect(nothingCharged(page)).toBeVisible()
+  await expect(unknownResult(page)).toBeHidden()
+
+  await page.reload()
+
+  await expect(ended).toBeVisible()
+  await expect(unknownResult(page)).toBeHidden()
 })

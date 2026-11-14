@@ -13,13 +13,15 @@ import type {
 } from '@comfyorg/account-core/session'
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 
+import { createHandoffBillingSession } from '@/handoff/handoffBillingSession'
 import type { HandoffState } from '@/handoff/handoffTab'
 import {
+  endHandoffSession,
   handoffTab,
-  readHandoffState,
   sessionTabStorage,
   writeHandoffState
 } from '@/handoff/handoffTab'
+import type { BillingWebClient } from '@/session/billingWebClient'
 import {
   createBillingWebClient,
   createHandoffBillingClient
@@ -493,111 +495,366 @@ describe('createHandoffBillingClient', () => {
     }
   } satisfies BillingCapabilitiesResponse
 
-  function openHandoffTab(): BillingClient {
+  function openHandoffTab(): BillingWebClient {
+    globalThis.sessionStorage.clear()
     handoffTab.value = LIVE_HANDOFF
     writeHandoffState(sessionTabStorage, LIVE_HANDOFF)
     onTestFinished(() => {
       handoffTab.value = undefined
-      sessionTabStorage.removeItem('comfy.billing-web.handoff.v1')
+      globalThis.sessionStorage.clear()
     })
     stubBillingRoutes({ status: 'succeeded' })
     respondToFetch(/\/api\/billing\/capabilities$/, () =>
       Response.json(CAN_TOP_UP)
     )
-    const client = createHandoffBillingClient(handoffSession(), vi.fn())
+    const client = createHandoffBillingClient(
+      createHandoffBillingSession(sessionTabStorage),
+      () => endHandoffSession(sessionTabStorage)
+    )
     onTestFinished(() => disposeBillingClient(client))
     return client
   }
 
+  function howTheSessionEnds(): HandoffState | undefined {
+    endHandoffSession(sessionTabStorage)
+    return handoffTab.value
+  }
+
+  const LINK: HandoffState = { kind: 'ended', ending: 'link_unavailable' }
+  const UNCONFIRMED: HandoffState = { kind: 'ended', ending: 'unconfirmed' }
+  const completed = (reference: string): HandoffState => ({
+    kind: 'ended',
+    ending: 'completed',
+    workspace: 'Personal',
+    reference
+  })
+
+  const SERVER_ERROR = () => new Response(null, { status: 500 })
+
   it.for<{
     name: string
     route: RegExp
-    send: (client: BillingClient) => Promise<unknown>
+    send: (client: BillingWebClient) => Promise<unknown>
+    ended: HandoffState
   }>([
     {
-      name: 'a subscribe',
+      name: 'a subscribe, which starts a payment',
       route: /\/api\/billing\/subscribe$/,
       send: (client) =>
-        client.commands.subscribe({ plan_slug: 'creator_monthly' })
+        client.commands.subscribe({ plan_slug: 'creator_monthly' }),
+      ended: UNCONFIRMED
     },
     {
-      name: 'a resubscribe',
-      route: /\/api\/billing\/subscription\/resubscribe$/,
-      send: (client) => client.commands.resubscribe()
-    },
-    {
-      name: 'a top-up on the card on file',
+      name: 'a top-up on the card on file, which starts a payment',
       route: /\/api\/billing\/topup$/,
-      send: (client) => client.topup.createTopupCheckout({ amountCents: 2500 })
+      send: (client) => client.topup.createTopupCheckout({ amountCents: 2500 }),
+      ended: UNCONFIRMED
     },
     {
-      name: 'a pay-once top-up',
+      name: 'a pay-once top-up, which starts a payment',
       route: /\/api\/billing\/topup\/interactive$/,
       send: (client) =>
         client.topup.createInteractiveTopup({
           amountCents: 2500,
           payment: { savedPaymentMethodId: 'pm_1' },
           idempotencyKey: 'key-1'
-        })
+        }),
+      ended: UNCONFIRMED
     },
     {
-      name: 'a hosted top-up checkout',
+      name: 'a hosted top-up checkout, which starts a payment',
       route: /\/api\/billing\/topup\/checkout$/,
       send: (client) =>
         client.topup.createHostedTopupCheckout({
           amountCents: 2500,
           returnUrl: 'https://testbilling.comfy.org/return/topup'
-        })
+        }),
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a keep-subscription request, which charges nothing',
+      route: /\/api\/billing\/subscription\/resubscribe$/,
+      send: (client) => client.commands.resubscribe(),
+      ended: LINK
+    },
+    {
+      name: 'a subscription cancellation, which charges nothing',
+      route: /\/api\/billing\/subscription\/cancel$/,
+      send: (client) => client.commands.cancelSubscription(),
+      ended: LINK
+    },
+    {
+      name: 'a payment portal request, which charges nothing',
+      route: /\/api\/billing\/payment-portal$/,
+      send: (client) =>
+        client.commands.openPaymentPortal({
+          returnUrl: 'https://example.test'
+        }),
+      ended: LINK
+    },
+    {
+      name: 'an operation cancellation, which charges nothing',
+      route: /\/api\/billing\/ops\/op_9\/cancel$/,
+      send: (client) => client.commands.cancelOperation('op_9'),
+      ended: LINK
+    },
+    {
+      name: 'a workspace invite, which charges nothing',
+      route: /\/api\/workspace\/invites$/,
+      send: (client) => client.invites.createInvite('b@example.com'),
+      ended: LINK
+    },
+    {
+      name: 'a subscription preview, which charges nothing',
+      route: /\/api\/billing\/preview-subscribe$/,
+      send: (client) =>
+        client.commands.previewSubscribe({ planSlug: 'creator_monthly' }),
+      ended: LINK
+    },
+    {
+      name: 'a top-up quote, which charges nothing',
+      route: /\/api\/billing\/topup\/quote$/,
+      send: (client) => client.topup.quoteTopup({ amountCents: 2500 }),
+      ended: LINK
     }
   ])(
-    'records $name on the handoff tab before the request leaves',
-    async ({ route, send }) => {
+    'ends as $ended.ending after a server error on $name',
+    async ({ route, send, ended }) => {
       const client = openHandoffTab()
-      const storedWhenSent: unknown[] = []
-      respondToFetch({ method: 'POST', url: route }, () => {
-        storedWhenSent.push(readHandoffState(sessionTabStorage))
-        return new Response(null, { status: 500 })
-      })
+      respondToFetch({ method: 'POST', url: route }, SERVER_ERROR)
 
       await send(client)
 
-      expect(storedWhenSent).toEqual([
-        { ...LIVE_HANDOFF, chargeAttempted: true }
-      ])
+      expect(fetchRequests({ method: 'POST', url: route })).toHaveLength(1)
+      expect(howTheSessionEnds()).toEqual(ended)
     }
   )
+
+  const TOPUP = /\/api\/billing\/topup$/
+  const topUp = (client: BillingWebClient) =>
+    client.topup.createTopupCheckout({ amountCents: 2500 })
+  const topUpStarted = (operationId: string) => () =>
+    Response.json({
+      billing_op_id: operationId,
+      topup_id: operationId,
+      status: 'pending',
+      amount_cents: 2500
+    })
+  const REFUSED = () =>
+    Response.json({ code: 'INVALID_AMOUNT', message: 'no' }, { status: 400 })
+
+  function operationEnds(operationId: string, outcome: object) {
+    respondToFetch(new RegExp(`/api/billing/ops/${operationId}$`), () =>
+      Response.json({
+        id: operationId,
+        started_at: '2026-09-14T00:00:00.000Z',
+        ...outcome
+      })
+    )
+  }
+
+  const DECLINED = { status: 'failed', decline_reason: 'card_declined' }
 
   it.for<{
     name: string
-    request: { method: string; url: RegExp }
-    send: (client: BillingClient) => Promise<unknown>
+    run: (client: BillingWebClient) => Promise<unknown>
+    ended: HandoffState
   }>([
     {
-      name: 'a subscription preview',
-      request: { method: 'POST', url: /\/api\/billing\/preview-subscribe$/ },
-      send: (client) =>
-        client.commands.previewSubscribe({ planSlug: 'creator_monthly' })
+      name: 'a session that only read',
+      run: (client) => client.credits.read(),
+      ended: LINK
     },
     {
-      name: 'a top-up quote',
-      request: { method: 'POST', url: /\/api\/billing\/topup\/quote$/ },
-      send: (client) => client.topup.quoteTopup({ amountCents: 2500 })
+      name: 'a top-up the card declined',
+      run: (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, topUpStarted('op_1'))
+        operationEnds('op_1', DECLINED)
+        return topUp(client)
+      },
+      ended: LINK
     },
     {
-      name: 'a read',
-      request: { method: 'GET', url: /\/api\/billing\/balance$/ },
-      send: (client) => client.credits.read()
+      name: 'a subscription the card declined',
+      run: (client) => {
+        operationEnds('op_1', DECLINED)
+        return client.commands.subscribe({ plan_slug: 'creator_monthly' })
+      },
+      ended: LINK
+    },
+    {
+      name: 'a top-up Cloud refused',
+      run: (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, REFUSED)
+        return topUp(client)
+      },
+      ended: LINK
+    },
+    {
+      name: 'a top-up on which Cloud refused the session itself',
+      run: (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, () =>
+          Response.json({ code: 'INVALID_CREDENTIAL' }, { status: 401 })
+        )
+        return topUp(client)
+      },
+      ended: LINK
+    },
+    {
+      name: 'a top-up the network dropped',
+      run: (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, () =>
+          Promise.reject(new TypeError('offline'))
+        )
+        return topUp(client)
+      },
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a top-up accepted in a shape the tab cannot follow',
+      run: (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, () => Response.json({}))
+        return topUp(client)
+      },
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a session that ended while the top-up request was still out',
+      run: (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, () => {
+          endHandoffSession(sessionTabStorage)
+          return topUpStarted('op_1')()
+        })
+        return topUp(client)
+      },
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a hosted top-up checkout the customer was sent to',
+      run: (client) => {
+        respondToFetch(
+          { method: 'POST', url: /\/api\/billing\/topup\/checkout$/ },
+          () =>
+            Response.json({
+              checkout_url: 'https://checkout.stripe.com/c/pay/cs_1',
+              session_id: 'cs_1'
+            })
+        )
+        return client.topup.createHostedTopupCheckout({
+          amountCents: 2500,
+          returnUrl: 'https://testbilling.comfy.org/return/topup'
+        })
+      },
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a top-up that went through',
+      run: (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, topUpStarted('op_1'))
+        return topUp(client)
+      },
+      ended: completed('op_1')
+    },
+    {
+      name: 'a top-up that went through before a later one was declined',
+      run: async (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, topUpStarted('op_2'))
+        respondToFetch({ method: 'POST', url: TOPUP }, topUpStarted('op_1'), {
+          times: 1
+        })
+        operationEnds('op_2', DECLINED)
+        await topUp(client)
+        return topUp(client)
+      },
+      ended: completed('op_1')
+    },
+    {
+      name: 'a top-up that went through before a later one got a server error',
+      run: async (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, SERVER_ERROR)
+        respondToFetch({ method: 'POST', url: TOPUP }, topUpStarted('op_1'), {
+          times: 1
+        })
+        await topUp(client)
+        return topUp(client)
+      },
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a server error on a top-up that Cloud then refused on the retry',
+      run: async (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, REFUSED)
+        respondToFetch({ method: 'POST', url: TOPUP }, SERVER_ERROR, {
+          times: 1
+        })
+        await topUp(client)
+        return topUp(client)
+      },
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a server error on a top-up whose retry was declined',
+      run: async (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, topUpStarted('op_1'))
+        respondToFetch({ method: 'POST', url: TOPUP }, SERVER_ERROR, {
+          times: 1
+        })
+        operationEnds('op_1', DECLINED)
+        await topUp(client)
+        return topUp(client)
+      },
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a server error on a top-up whose retry went through',
+      run: async (client) => {
+        respondToFetch({ method: 'POST', url: TOPUP }, topUpStarted('op_1'))
+        respondToFetch({ method: 'POST', url: TOPUP }, SERVER_ERROR, {
+          times: 1
+        })
+        await topUp(client)
+        return topUp(client)
+      },
+      ended: completed('op_1')
+    },
+    {
+      name: 'a subscription the customer cancelled',
+      run: (client) => {
+        respondToFetch(
+          { method: 'POST', url: /\/api\/billing\/subscription\/cancel$/ },
+          () =>
+            Response.json({
+              billing_op_id: 'op_1',
+              cancel_at: '2026-10-24T12:00:00Z'
+            })
+        )
+        return client.commands.cancelSubscription()
+      },
+      ended: LINK
+    },
+    {
+      name: 'a subscription the customer kept',
+      run: (client) => client.commands.resubscribe(),
+      ended: LINK
+    },
+    {
+      name: 'a payment portal the customer opened',
+      run: (client) => {
+        respondToFetch(
+          { method: 'POST', url: /\/api\/billing\/payment-portal$/ },
+          () => Response.json({ url: 'https://billing.stripe.com/p/session/1' })
+        )
+        return client.commands.openPaymentPortal({
+          returnUrl: 'https://example.test'
+        })
+      },
+      ended: LINK
     }
-  ])(
-    'leaves the handoff tab unused after $name, which cannot charge',
-    async ({ request, send }) => {
-      const client = openHandoffTab()
+  ])('ends as $ended.ending after $name', async ({ run, ended }) => {
+    const client = openHandoffTab()
 
-      await send(client)
+    await run(client)
 
-      expect(fetchRequests(request)).toHaveLength(1)
-      expect(handoffTab.value).toEqual(LIVE_HANDOFF)
-      expect(readHandoffState(sessionTabStorage)).toEqual(LIVE_HANDOFF)
-    }
-  )
+    expect(howTheSessionEnds()).toEqual(ended)
+  })
 })
