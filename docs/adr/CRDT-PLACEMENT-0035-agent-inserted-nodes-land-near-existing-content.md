@@ -4,13 +4,15 @@ Date: 2026-09-19
 
 ## Status
 
-Proposed
+Accepted
+
+## Amendments
 
 Amended 2026-09-24 by
 [FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation):
 the trigger, offset, and pure decision function are unchanged; the seam moved
 from `graphMutations`' prepare/commit batch and its `SemanticPlacementPort` to
-`LiveGraphApplier.#placeBatch`, which runs after each frame's nodes are created
+`LiveGraphApplier.placeBatch`, which runs after each frame's nodes are created
 on the live graph.
 
 Amended 2026-10-21 by
@@ -78,7 +80,7 @@ condition alone decides.
 All decision logic is a pure function in workbench
 (`src/workbench/extensions/agent/crdt/batchPlacement.ts`): given the existing
 nodes' rects, the viewport rect (nullable), and the incoming batch's rects, it
-returns a single `{ dx, dy }` or `null`. `LiveGraphApplier.#placeBatch` calls
+returns a single `{ dx, dy }` or `null`. `LiveGraphApplier.placeBatch` calls
 it after a frame's nodes and links are on the graph, with "existing" being
 every live node the frame did not create and "incoming" the nodes it did. The
 offset is applied by assigning `node.pos` inside the same remote-provenance
@@ -88,7 +90,7 @@ remote actor and nothing mints it back.
 Eligibility is "created by this pass". A node the frame only updated, or
 recreated because its document `type` changed, is not moved. Applying the
 changes collected while a tab was inactive (`applyCollected`) uses the same
-`#placeBatch` for the nodes it creates, with the lost rule only: the collected
+`placeBatch` for the nodes it creates, with the lost rule only: the collected
 changes do not record which writer made them, so the collision rule (see
 "Trigger"), which needs a live agent-turn writer, does not run there. A client
 that returns to a tab and finds far, offscreen nodes inserted while it was away
@@ -118,18 +120,19 @@ also owns not splitting.
 
 ### Trigger
 
-Nothing moves unless the scope already contains at least one node before the
-batch. An empty canvas keeps the template's own layout, matching the human
+Nothing moves unless the scope already contains at least one node or group
+before the batch. An empty canvas keeps the template's own layout, matching the human
 template flow. Otherwise the batch moves in either of two cases.
 
 **Collision.** The frame is a live write by an agent turn (its `actor` is
-`agent:…` and it is not a subscribe catch-up), and any incoming node's rect
-intersects any existing node's rect. A template inserted into a populated tab
+`agent:…` and it is not a subscribe catch-up), and any incoming node or group
+intersects any existing node or group. A new group that frames only existing
+nodes is not part of the incoming batch and stays where the document put it. A template inserted into a populated tab
 arrives at its baked-in coordinates, which commonly sit on top of the user's
 graph (PM-2232: the Z-Image template's nodes span x −420 to 1350, the same
 region as the default workflow). The agent does not overlap nodes on purpose,
 so the viewport does not veto this case. A batch that sits inside or near the
-existing hull without touching any node is not a collision and is left alone.
+existing hull without touching any node or group is not a collision and is left alone.
 
 Catch-up frames, changes applied on tab return (`applyCollected`) and human
 writes never move for a collision: a replay can recreate a node a human

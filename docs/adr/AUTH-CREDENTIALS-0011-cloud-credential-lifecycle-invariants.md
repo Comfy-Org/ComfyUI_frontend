@@ -4,9 +4,7 @@ Date: 2026-07-09
 
 ## Status
 
-Proposed
-
-<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-IDENTIFIER](IDENTIFIER-title.md)] -->
+Accepted
 
 ## Context
 

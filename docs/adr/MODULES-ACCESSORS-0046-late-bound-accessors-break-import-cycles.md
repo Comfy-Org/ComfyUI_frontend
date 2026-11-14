@@ -37,44 +37,11 @@ ADR-TYPES-LITEGRAPH-0044 removed the type-level cycles. It requires runtime
 providers to stay statically reachable from `main.ts`. This ADR covers the
 runtime accessors.
 
-## Inventory
-
-The cycle column shows the import path from the provider to a reader.
-Importing the provider directly from that reader would close the path into a
-cycle. The paths come from the dependency-cruiser graph of `src` at the date
-above. A dashed arrow (`⇢`) is a type-only edge and a wavy arrow (`⤳`) is a
-dynamic `import()`. The table is a snapshot for planning the follow-ups and
-will drift as they land; decisions 1–6 are the rules.
-
-| Setter                             | Provider (calls the setter)                         | Readers                                                                             | Cycle the accessor breaks                                                                                                  | Fate                            |
-| ---------------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
-| `provideCanvasClass`               | `LGraphCanvas`                                      | `LGraph`, `LGraphNode`, `LGraphGroup`, `SubgraphSlotBase`                           | `LGraphCanvas → LGraphNode`                                                                                                | Keep, barrel-registered         |
-| `provideSubgraphGuard`             | `LGraph`                                            | `LGraphNode`, `selectionAdapter`                                                    | `LGraph → LGraphNode`                                                                                                      | Keep, barrel-registered         |
-| `provideGraphNodeGuard`            | `LGraphNode`                                        | `collections`                                                                       | `LGraphNode → collections`                                                                                                 | Keep, barrel-registered         |
-| `provideNodeInputSlotGuard`        | `NodeInputSlot`                                     | `NodeSlot`                                                                          | `NodeInputSlot → NodeSlot` (subclass imports its base)                                                                     | Keep, barrel-registered         |
-| `provideSubgraphInputGuard`        | `SubgraphInputNode`                                 | `NodeInputSlot`, `SubgraphOutput`, `subgraphUtils` (re-export)                      | `SubgraphInputNode → SubgraphIONodeBase ⇢ EmptySubgraphOutput → SubgraphOutput`                                            | Delete after follow-up 5        |
-| `provideSubgraphOutputGuard`       | `SubgraphOutputNode`                                | `NodeOutputSlot`, `SubgraphInput`, `subgraphUtils` (re-export)                      | `SubgraphOutputNode → SubgraphIONodeBase ⇢ EmptySubgraphInput → SubgraphInput`                                             | Delete after follow-up 5        |
-| `provideChangeTracker`             | `changeTracker`                                     | `workflowStore`, `executionErrorStore`                                              | `changeTracker → workflowStore`                                                                                            | Keep, register in bootstrap     |
-| `provideExtensionService`          | `extensionService`                                  | `queueStore`                                                                        | `extensionService → widgetStore → widgets → useComboWidget → assetsStore → queueStore`                                     | Keep, register a listener       |
-| `provideLitegraphService`          | `litegraphService` (and its `__mocks__`)            | `promotionUtils`, `dynamicWidgets`, `dynamicGroupWidget`, `subgraphNavigationStore` | `litegraphService → promotionUtils`, `litegraphService → dynamicWidgets`                                                   | Keep, register in bootstrap     |
-| `provideWorkflowService`           | `workflowService`                                   | `subgraphNavigationStore`                                                           | `workflowService → subgraphNavigationStore`                                                                                | Keep, register in bootstrap     |
-| `providePromoteRecommendedWidgets` | `promotionUtils`                                    | `canvasStore`                                                                       | `promotionUtils → canvasStore`                                                                                             | Keep, register a listener       |
-| `provideAuthStore`                 | `authStore`                                         | `useSessionCookie`, `useContinueWithSso`, `workspaceAuthStore`, `apiKeyAuthStore`   | `authStore → workspaceAuthStore`, `authStore → apiKeyAuthStore`                                                            | Keep, register in bootstrap     |
-| `provideEnsureSessionCookie`       | `authStore` (thunk that imports `useSessionCookie`) | `workspaceAuthStore`, `teamWorkspaceStore`, `legacyWorkspaceTokenRail`              | `useSessionCookie → cloudWebSessionStore → workspaceAuthStore`                                                             | Keep, register in bootstrap     |
-| `provideCurrentUser`               | `useCurrentUser` (and its `__mocks__`)              | `useSessionCookie`, `teamWorkspaceStore`                                            | `useCurrentUser → authStore → teamWorkspaceStore`                                                                          | Keep, register in bootstrap     |
-| `provideTeamWorkspaceStore`        | `teamWorkspaceStore`                                | `workspaceAuthStore`                                                                | `teamWorkspaceStore → workspaceAuthStore`                                                                                  | Keep, register in bootstrap     |
-| `provideUnifiedRemint`             | `workspaceAuthStore`                                | `remintRetry`                                                                       | `workspaceAuthStore → remintRetry`                                                                                         | Keep, register in bootstrap     |
-| `provideBillingSdkStore`           | `billingSdkStore`                                   | `useBillingReadRail`                                                                | `billingSdkStore → useBillingReadRail`                                                                                     | Keep, register in bootstrap     |
-| `provideWebSessionRequests`        | `cloudWebSessionStore`, while a web session runs    | `webSessionFetch` and its callers                                                   | `cloudWebSessionStore → webSessionFetch`                                                                                   | Keep as a scoped registration   |
-| `provideCheckoutOperationReader`   | `useBillingContext`, per effect scope               | `billingRefresh`, `openHostedBillingTab`                                            | `useBillingContext → billingRefresh`                                                                                       | Keep as a scoped registration   |
-| `provideBillingDialogs`            | `useBillingDialogs` (and its `__mocks__`)           | `useSubscriptionPaywall`, `useSubscriptionCheckout`                                 | `useBillingDialogs → useSubscriptionDialog ⤳ SubscriptionRequiredDialogContent → SubscribeButton → useSubscriptionPaywall` | Replace with `provide`/`inject` |
-| `provideSubscriptionDialog`        | `useSubscriptionDialog` (and its `__mocks__`)       | `useSubscriptionPaywall`, `InviteMemberUpsellDialogContent`                         | `useSubscriptionDialog → useWorkspaceDialogs ⤳ InviteMemberUpsellDialogContent`                                            | Replace with `provide`/`inject` |
-
-None of these cycles has been removed since its accessor was introduced, so
-no accessor can be deleted yet.
-`registerLiteGraphInstance`, `registerApp`, `registerExtensionDialogService` and
-`setAssertReporter` follow the same pattern under other names. They are
-outside this inventory but follow the same rules.
+The accessors are the `provide*` setters, plus `registerLiteGraphInstance`,
+`registerApp`, `registerExtensionDialogService` and `setAssertReporter`, which
+follow the same pattern under other names.
+The inventory of accessors and the follow-up plan are tracked in
+[Linear](https://linear.app/comfyorg/issue/FRONT-3789/adr-hygiene-sweep-and-adrcheck-extensions#comment-499d4637).
 
 ## Decision
 
@@ -128,29 +95,5 @@ outside this inventory but follow the same rules.
   rejected the same option for the litegraph classes.
 - **Consequence of moving registration into bootstrap.** Registration becomes
   a list that bootstrap must keep complete. A missing entry fails at the first
-  read, not at load. Decision 6 makes that failure name the provider. A
-  reachability check (follow-up 6) catches the omission in CI.
-
-## Follow-ups
-
-1. Change the unassigned bindings, exported and module-private, and the
-   optional `remintUnified` read to asserting getters (decision 6).
-2. Add the bootstrap registration step and remove the top-level `provide*`
-   calls from app-level providers (decision 2). This edits `main.ts`, so it
-   waits for the concurrent bootstrap work there to land.
-3. Turn `provideExtensionService` and `providePromoteRecommendedWidgets` into
-   listeners that the provider registers (decision 3).
-4. Move `useBillingDialogs` and `useSubscriptionDialog` to app-level
-   `provide`/`inject` (decision 4).
-5. Change the type-only imports of `EmptySubgraphInput` and
-   `EmptySubgraphOutput` in `SubgraphIONodeBase` to the entity registry. The
-   subgraph slot guards' providers then no longer reach their readers. Delete
-   both setters and import the guards directly, after checking that the
-   barrel's evaluation order still defines `SubgraphIONodeBase` before its
-   subclasses.
-6. Add a `deps:audit` check that fails when an exported `provide*` setter has
-   no call site in a module statically reachable from `main.ts` through
-   runtime imports. The call site is the provider module today and the
-   bootstrap step after follow-up 2, so the check covers both. It catches a
-   deleted or unreachable call site, not a call that never executes; decision
-   6 covers that case at the first read.
+  read, not at load. Decision 6 makes that failure name the provider.
+  `deps:audit` does not check for a missing registration.

@@ -6,6 +6,16 @@ Date: 2026-08-28
 
 Proposed
 
+## Amendments
+
+Rule 4 is implemented: `docFrameClient` sends `known_lineage_seq` on subscribe
+and `layoutFollowerBridge` keeps the `lineage_seq` it reads from every frame.
+The code treats any different lineage, older or newer, as a lineage break
+(`rejectForeignLineageUpdate`, `adoptSubscribedLineage`), where rule 5 discards
+older-lineage updates instead. Rule 6 no longer applies. The Context paragraph
+on the frontend not using lineage identity and the Consequences bullets on rule
+4 being unshipped describe the code before this change.
+
 ## Context
 
 The in-app agent's CRDT follower integrates Yjs updates from one authoritative doc
@@ -64,7 +74,7 @@ is what this ADR asks for.
 Rules 1-3 restate ADR-GRAPH-DOCUMENT-0024's replacement rule. **This ADR supersedes
 no clause of it.**
 
-### Required follower change (not implemented)
+### Lineage tracking
 
 4. The follower MUST store the `lineage_seq` of the Y.Doc it holds, send it as
    `known_lineage_seq` on `doc_subscribe`, and read `lineage_seq` from every

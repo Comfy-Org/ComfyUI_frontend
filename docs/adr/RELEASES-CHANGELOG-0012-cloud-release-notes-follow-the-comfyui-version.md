@@ -6,8 +6,6 @@ Date: 2026-07-13
 
 Accepted
 
-<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-IDENTIFIER](IDENTIFIER-title.md)] -->
-
 ## Context
 
 The release-note system (`releaseStore`) decides whether to surface new-release

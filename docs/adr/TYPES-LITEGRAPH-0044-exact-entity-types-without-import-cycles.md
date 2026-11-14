@@ -4,7 +4,13 @@ Date: 2026-10-11
 
 ## Status
 
-Proposed
+Accepted
+
+## Amendments
+
+The entity registry moved to `packages/graph-model` with
+[ADR-GRAPH-TYPES-0050](GRAPH-TYPES-0050-declaration-backed-graph-contracts.md);
+providers augment `@comfyorg/graph-model/entityRegistry`.
 
 ## Context
 
@@ -17,7 +23,8 @@ assignability, and extensions subclass these classes.
 
 ## Decision
 
-Use same-name interfaces in `types/entityRegistry.ts`. Each implementation
+Use same-name interfaces in `packages/graph-model/src/entityRegistry.ts`. Each
+implementation
 augments its interface to extend the exact concrete type through a local alias.
 Keep union, tuple, and primitive aliases in the merged
 `LitegraphEntityRegistry` interface because an interface cannot preserve those

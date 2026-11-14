@@ -4,9 +4,12 @@ Date: 2025-08-25
 
 ## Status
 
-Accepted (Nx tooling choice superseded by [ADR-DEVEX-BUILD-0010](DEVEX-BUILD-0010-remove-nx-orchestration.md))
+Accepted
 
-<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-IDENTIFIER](IDENTIFIER-title.md)] -->
+## Amendments
+
+The Nx tooling choice is superseded by
+[ADR-DEVEX-BUILD-0010](DEVEX-BUILD-0010-remove-nx-orchestration.md).
 
 ## Context
 
@@ -46,7 +49,3 @@ There's a [whole list here](https://monorepo.tools/#tools-review) if you're inte
 
 - Monorepos take some getting used to
 - Reviews and code contribution management has to account for the different projects' situations and constraints
-
-<!-- ## Notes
-
-Optional section for additional information, references, or clarifications. -->

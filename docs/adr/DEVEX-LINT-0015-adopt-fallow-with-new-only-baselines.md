@@ -4,9 +4,13 @@ Date: 2026-06-29
 
 ## Status
 
-Proposed
+Accepted
 
-<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-IDENTIFIER](IDENTIFIER-title.md)] -->
+## Amendments
+
+Since this ADR, `fallow audit` gates CI on changed files through
+`ci-fallow.yaml`, which the E2E workflow's `preflight` job requires, and runs
+in the pre-push hook. knip still runs alongside it.
 
 ## Context
 

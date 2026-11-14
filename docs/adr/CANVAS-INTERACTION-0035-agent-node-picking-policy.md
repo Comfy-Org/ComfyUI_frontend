@@ -4,7 +4,15 @@ Date: 2026-09-19
 
 ## Status
 
-Proposed
+Accepted
+
+## Amendments
+
+Decision 1's store ownership is superseded by
+[ADR-AGENT-SELECTION-0040](AGENT-SELECTION-0040-composer-owns-node-references.md):
+`agentNodeSelectionStore` was deleted and `canvasStore.isPickingNodes` is the
+one fact that picking is on; the `agentNodeSelectionStore.isActive` reads in
+Decisions 3 and 4 now read it. The input guards in the other decisions stand.
 
 ## Context
 
@@ -31,25 +39,6 @@ paste, group and subgraph commands did not; Ctrl+Z ran through
 `changeTracker.ts` and plain Ctrl+V through `usePaste.ts`, neither via the
 command store. The picker leaves nodes selected, so Ctrl+B during picking
 bypassed the picked nodes.
-
-An intermediate revision of this PR pinned `canvas.read_only`, which closed
-those gaps and broke the one interaction the mode needs: every press became
-a pan and Vue nodes went `pointer-events-none`, so click-to-select died.
-
-A later revision projected `isActive` outward: a pure `resolvePickingPolicy`
-truth table, a per-canvas `selectOnly` pin that installed an own accessor on
-the canvas instance and tracked owner symbols, a `useCanvasPickingPolicySync`
-composable that wrote the pin, `canvas.show_info` and a
-`commandPolicyStore.graphMutationsLocked` flag, and `canEditNodes` /
-`canFocusWidgets` capabilities read by about twenty surfaces: the node
-header's collapse button and title editor, the node body's resize handles,
-context menu, alt-clone, advanced toggle and drop handlers, the widget grid,
-the slot link interaction, the node event handlers, the DOM widget layer and
-the media preview. Review found that this spread one policy across every
-surface: each new surface had to know the capability to read, the pin
-depended on `Object.defineProperty` against the canvas instance, and the
-lock and pin owner sets released on different events, which produced two
-rounds of ownership fixes.
 
 [ADR-CANVAS-SELECTION-0028](CANVAS-SELECTION-0028-single-selection-store.md)
 requires picker mode to keep "its current edit and drag guards through
