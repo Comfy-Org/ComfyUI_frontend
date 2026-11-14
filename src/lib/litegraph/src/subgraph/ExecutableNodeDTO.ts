@@ -6,15 +6,16 @@ import type {
 } from '@comfyorg/graph-model/entityRegistry'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
 import { hostInputOf } from '@/lib/litegraph/src/subgraph/hostInput'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'
 import type { ISlotType } from '@comfyorg/graph-model/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -175,6 +176,26 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     })
   }
 
+  /** The value of the subgraph node's widget for an unlinked `input`. */
+  private _hostWidgetInput(
+    subgraphNode: SubgraphNode,
+    input: INodeInputSlot
+  ): ResolvedInput | undefined {
+    const widget = subgraphNode.getWidgetFromSlot(input)
+    if (
+      !widget ||
+      widget.serialize === false ||
+      widget.options.serialize === false
+    )
+      return
+    return {
+      node: this,
+      origin_id: this.id,
+      origin_slot: -1,
+      widgetInfo: { value: widget.value }
+    }
+  }
+
   /** Returns either the DTO itself, or the DTOs of the inner nodes of the subgraph. */
   getInnerNodes(): ExecutableLGraphNode[] {
     return this.node.isSubgraphNode()
@@ -215,12 +236,16 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         `No input found for flattened id [${this.id}] slot [${slot}]`
       )
 
-    if (input.ownerSlot !== undefined)
-      return this._subgraphNodeDto()?.resolveInput(
+    if (input.ownerSlot !== undefined) {
+      const resolved = this._subgraphNodeDto()?.resolveInput(
         input.ownerSlot,
         visited,
         type
       )
+      const ownerInput = this.subgraphNode?.inputs[input.ownerSlot]
+      if (resolved || !this.subgraphNode || !ownerInput) return resolved
+      return this._hostWidgetInput(this.subgraphNode, ownerInput)
+    }
 
     if (input.linkId == null) return
 
@@ -251,17 +276,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         subgraphNode.id,
         subgraphNode.inputs.indexOf(subgraphNodeInput)
       )
-      if (linkId === undefined) {
-        const id = subgraphNodeInput.widgetId
-        if (!id) return
-
-        return {
-          node: this,
-          origin_id: this.id,
-          origin_slot: -1,
-          widgetInfo: { value: useWidgetValueStore().getWidget(id)?.value }
-        }
-      }
+      if (linkId === undefined)
+        return this._hostWidgetInput(subgraphNode, subgraphNodeInput)
 
       const outerLink = subgraphNode.graph.getLink(linkId)
       if (!outerLink)
