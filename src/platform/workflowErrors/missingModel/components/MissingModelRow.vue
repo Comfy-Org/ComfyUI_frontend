@@ -252,17 +252,12 @@
         </span>
       </template>
 
-      <Button
+      <LocateNodeButton
         v-if="!hasMultipleReferences && !isUnknownCategory && primaryReference"
         data-testid="missing-model-locate"
-        variant="muted-textonly"
-        size="icon-sm"
-        :aria-label="t('rightSidePanel.missingModels.locateNode')"
-        class="size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
-        @click="handleLocatePrimary"
-      >
-        <i aria-hidden="true" class="icon-[lucide--locate]" />
-      </Button>
+        :label="locateNodeLabelFor(primaryReference.nodeId)"
+        @locate="handleLocatePrimary"
+      />
     </div>
 
     <MissingModelDownloadProgress
@@ -346,16 +341,12 @@
                 getNodeDisplayLabel(ref.nodeId, model.representative.nodeType)
               }}
             </button>
-            <Button
+            <LocateNodeButton
               data-testid="missing-model-locate"
-              variant="muted-textonly"
-              size="icon-sm"
-              :aria-label="t('rightSidePanel.missingModels.locateNode')"
-              class="ml-auto size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
-              @click="emit('locateModel', String(ref.nodeId))"
-            >
-              <i aria-hidden="true" class="icon-[lucide--locate]" />
-            </Button>
+              class="ml-auto"
+              :label="locateNodeLabelFor(ref.nodeId)"
+              @locate="emit('locateModel', String(ref.nodeId))"
+            />
           </div>
         </li>
       </ul>
@@ -377,6 +368,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectionEmphasis'
+import LocateNodeButton from '@/platform/workflowErrors/panel/LocateNodeButton.vue'
 import Badge from '@comfyorg/design-system/badge/Badge'
 import Button from '@comfyorg/design-system/button/Button'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
@@ -645,6 +637,14 @@ function handleOpenGatedRepo() {
 function handleLocatePrimary() {
   const ref = primaryReference.value
   if (ref) emit('locateModel', String(ref.nodeId))
+}
+
+function locateNodeLabelFor(nodeId: string | number): string {
+  return t(
+    'rightSidePanel.locateNodeFor',
+    { item: getNodeDisplayLabel(nodeId, model.representative.nodeType) },
+    { escapeParameter: false }
+  )
 }
 
 function copyModelLink() {
