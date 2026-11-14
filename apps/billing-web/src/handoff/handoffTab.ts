@@ -59,7 +59,7 @@ export type HandoffState =
   | {
       readonly kind: 'ended'
       readonly ending: 'completed'
-      /** The workspace the payment was for, kept because the session is gone. */
+      /** The workspace the payment was for. */
       readonly workspace: string
       /** The operation that succeeded. */
       readonly reference?: string
