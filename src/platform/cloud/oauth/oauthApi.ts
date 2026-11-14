@@ -57,7 +57,8 @@ const verifiedClientIcons: Partial<
   Record<OAuthConsentVerifiedClient['platform'], string>
 > = {
   chatgpt: 'icon-[comfy--openai]',
-  claude: 'icon-[comfy--anthropic]'
+  claude: 'icon-[comfy--anthropic]',
+  cursor: 'icon-[comfy--cursor]'
 }
 
 export function verifiedClientIcon(
