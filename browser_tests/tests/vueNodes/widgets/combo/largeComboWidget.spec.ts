@@ -22,8 +22,15 @@ test.describe(
     test('renders only a window of the options, also while searching', async ({
       comfyPage
     }) => {
-      const combo = loraCombo(comfyPage, 'LoRA first')
+      const combo = loraCombo(comfyPage, 'LoRA deep')
       await combo.open()
+      await expect
+        .poll(async () =>
+          Number(await combo.options.first().getAttribute('aria-setsize'))
+        )
+        .toBeGreaterThan(700)
+      await expect.poll(() => combo.options.count()).toBeLessThan(100)
+      await combo.searchInput.fill('.safetensors')
 
       await expect(combo.options.first()).toHaveAttribute(
         'aria-setsize',
@@ -46,7 +53,7 @@ test.describe(
       await combo.open()
 
       const selected = combo.menu.getByRole('option', {
-        name: DEEP_LORA,
+        name: 'zz_deep_target_v1.safetensors',
         exact: true,
         selected: true
       })
@@ -79,9 +86,13 @@ test.describe(
       await test.step('reopening reveals the selection', async () => {
         await combo.open()
         await expect(
-          combo.menu.getByRole('option', { name: target, selected: true })
+          combo.menu.getByRole('option', {
+            name: 'hatsune_miku_v3.safetensors',
+            selected: true
+          })
         ).toBeInViewport()
-        await combo.close()
+        await combo.searchInput.press('Escape')
+        await expect(combo.menu).toBeHidden()
       })
 
       await test.step('undo restores the previous value', async () => {
@@ -100,6 +111,7 @@ test.describe(
       const option = (name: string) =>
         combo.menu.getByRole('option', { name, exact: true })
       await combo.open()
+      await combo.searchInput.fill('.safetensors')
 
       await test.step('End highlights the last option', async () => {
         await comfyPage.page.keyboard.press('End')
@@ -159,15 +171,18 @@ test.describe(
 
       const releaseFrames = await holdAnimationFrames(comfyPage.page)
       await combo.open()
-      await comfyPage.page.keyboard.press('ArrowDown')
-      const nextLora = LORA_NAMES[LORA_NAMES.indexOf(DEEP_LORA) + 1]
+      await comfyPage.page.keyboard.press('ArrowUp')
+      const previousLora = LORA_NAMES[LORA_NAMES.indexOf(DEEP_LORA) - 1]
       await releaseFrames()
       await expect(
-        combo.menu.getByRole('option', { name: nextLora, exact: true })
+        combo.menu.getByRole('option', {
+          name: previousLora.slice(previousLora.lastIndexOf('/') + 1),
+          exact: true
+        })
       ).toHaveAttribute('data-highlighted')
 
       await comfyPage.page.keyboard.press('Enter')
-      await expect.poll(() => widget.getValue()).toBe(nextLora)
+      await expect.poll(() => widget.getValue()).toBe(previousLora)
     })
 
     test('a very long name keeps the popup inside the viewport', async ({
