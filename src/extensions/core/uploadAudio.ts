@@ -21,6 +21,7 @@ import type { NodeLocatorId } from '@/types'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import { findViewableResultItem, toViewRequest } from '@/utils/resultItemUtil'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -145,14 +146,10 @@ export const audioWidgetExtension: ComfyExtension = {
           const onExecuted = node.onExecuted
           node.onExecuted = function (output: NodeExecutionOutput) {
             onExecuted?.call(this, output)
-            const audios = output.audio
-            if (!audios?.length) return
-            const audio = audios[0]
-            const resourceUrl = getResourceURL(
-              audio.subfolder ?? '',
-              audio.filename ?? '',
-              audio.type
-            )
+            const audio = findViewableResultItem(output.audio)
+            if (!audio) return
+            const { subfolder, filename, type } = toViewRequest(audio)
+            const resourceUrl = getResourceURL(subfolder, filename, type)
             updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
           }
         }
@@ -183,7 +180,8 @@ export const audioWidgetExtension: ComfyExtension = {
     nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
   ) {
     for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
-      if (!output.audio?.length) continue
+      const audio = findViewableResultItem(output.audio)
+      if (!audio) continue
 
       const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
       if (!node) continue
@@ -191,12 +189,8 @@ export const audioWidgetExtension: ComfyExtension = {
       const audioUIWidget = node.widgets?.find(
         (w) => w.name === 'audioUI'
       ) as unknown as DOMWidget<HTMLAudioElement, string>
-      const audio = output.audio[0]
-      const resourceUrl = getResourceURL(
-        audio.subfolder ?? '',
-        audio.filename ?? '',
-        audio.type
-      )
+      const { subfolder, filename, type } = toViewRequest(audio)
+      const resourceUrl = getResourceURL(subfolder, filename, type)
       updateUIWidget(audioUIWidget, api.apiURL(resourceUrl))
     }
   }

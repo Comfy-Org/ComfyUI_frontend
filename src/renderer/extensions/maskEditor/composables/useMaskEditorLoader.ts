@@ -15,6 +15,8 @@ import {
   extractWidgetStringValue,
   parseImageWidgetValue
 } from '@/utils/imageUtil'
+import type { ViewableResultItem } from '@/utils/resultItemUtil'
+import { findViewableResultItem, toViewRequest } from '@/utils/resultItemUtil'
 
 import { imageLayerFilenamesIfApplicable } from './layerFilenames'
 
@@ -31,6 +33,11 @@ function toRef(filename: string, subfolder: string): ImageRef {
     subfolder,
     type: 'input'
   }
+}
+
+function buildViewUrl(image: ViewableResultItem): string {
+  const params = new URLSearchParams(toViewRequest(image))
+  return api.apiURL(`/view?${params.toString()}`)
 }
 
 function mkFileUrl(props: { ref: ImageRef; preview?: boolean }): string {
@@ -203,29 +210,13 @@ export function useMaskEditorLoader() {
   }
 
   function getNodeImageUrl(node: LGraphNode): string {
-    const nodeImage = node.images?.[0]
-    if (nodeImage?.filename) {
-      const params = new URLSearchParams({
-        filename: nodeImage.filename,
-        type: nodeImage.type || 'output',
-        subfolder: nodeImage.subfolder || ''
-      })
-      return api.apiURL(`/view?${params.toString()}`)
-    }
+    const widgetImage = findViewableResultItem(node.images)
+    if (widgetImage) return buildViewUrl(widgetImage)
 
-    const outputs = nodeOutputStore.getNodeOutputs(node)
-    if (outputs?.images?.[0]) {
-      const img = outputs.images[0]
-      if (!img.filename) {
-        throw new Error('nodeOutputStore image missing filename')
-      }
-
-      const params = new URLSearchParams()
-      params.set('filename', img.filename)
-      params.set('type', img.type || 'output')
-      params.set('subfolder', img.subfolder || '')
-      return api.apiURL(`/view?${params.toString()}`)
-    }
+    const outputImage = findViewableResultItem(
+      nodeOutputStore.getNodeOutputs(node)?.images
+    )
+    if (outputImage) return buildViewUrl(outputImage)
 
     if (node.imgs?.length) {
       const index = node.imageIndex ?? 0
