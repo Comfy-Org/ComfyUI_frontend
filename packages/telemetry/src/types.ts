@@ -105,13 +105,22 @@ export interface UnifiedAuthRefreshMetadata {
  */
 export interface ImageLoadFailureMetadata {
   /**
-   * Which surface failed. `node_image_preview` is the Vue node renderer;
-   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
-   * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
-   * unless App Builder turns it on. Splitting on this is what keeps a rate
-   * measured on one renderer from being read as the rate for everyone.
+   * Which surface failed. `node_image_preview` / `node_video_preview` are the
+   * Vue node renderer; `canvas_node_image` / `canvas_node_video` are the
+   * litegraph canvas previews. `Comfy.VueNodes.Enabled` defaults off, but on
+   * for Cloud and Desktop users whose `Comfy.InstalledVersion` is 1.41.0 or
+   * later, and App Builder turns it on.
+   * Splitting on this is what keeps a rate measured on one renderer from being
+   * read as the rate for everyone.
+   * Under Vue nodes, an upload widget still loads its preview through the
+   * canvas loader, so one broken upload can report under both a `canvas_*`
+   * and a `node_*` source. Count per source rather than summing them.
    */
-  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  source:
+    | 'node_image_preview'
+    | 'node_video_preview'
+    | 'canvas_node_image'
+    | 'canvas_node_video'
   /** Load attempts made before giving up, including the first. */
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
@@ -160,6 +169,8 @@ export interface BootstrapCompleteMetadata {
   phase_count: number
   /** Wall-clock ms not covered by any recorded phase. */
   untraced_ms: number
+  /** Wall-clock ms the tab was hidden during startup. */
+  hidden_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
@@ -467,6 +478,24 @@ export interface EnterLinearMetadata {
   source?: string
 }
 
+export type WorkflowLinkOutOfSyncReason =
+  | 'no_sidebar_path'
+  | 'name_ambiguous'
+  | 'file_missing'
+  | 'content_mismatch'
+  | 'unknown'
+
+export type WorkflowLinkOpenedMetadata =
+  | {
+      outcome: 'opened' | 'not_found' | 'error'
+      workspace_id: string | null
+    }
+  | {
+      outcome: 'out_of_sync'
+      reason: WorkflowLinkOutOfSyncReason
+      workspace_id: string | null
+    }
+
 export interface WorkflowSavedMetadata {
   is_app: boolean
   is_new: boolean
@@ -658,7 +687,12 @@ export type AgentPanelCloseSource =
   | 'topbar_button'
   | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
-  source: 'restored' | 'topbar_button' | 'automatic_consent' | 'activation'
+  source:
+    | 'restored'
+    | 'topbar_button'
+    | 'automatic_consent'
+    | 'activation'
+    | 'error_context'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
@@ -769,6 +803,11 @@ export type AgentComposerDropReason =
   | 'no_target'
   | 'empty'
   | 'attachment_uploading'
+/**
+ * The session refused a submitted send: `send_busy` while another is in
+ * flight, `target_unavailable` when its workflow target changed or has no canvas.
+ */
+export type AgentSessionRefusalReason = 'send_busy' | 'target_unavailable'
 /** `not_completed`: the consent flow ended without accept, decline or dismiss. */
 export type AgentConsentDropReason =
   | 'declined'
@@ -793,6 +832,13 @@ type AgentSendGateOutcome =
       outcome: 'dropped'
       reason: AgentComposerDropReason
       client_message_id: null
+      held_ms: null
+    }
+  | {
+      gate: 'composer'
+      outcome: 'dropped'
+      reason: AgentSessionRefusalReason
+      client_message_id: string | null
       held_ms: null
     }
   | {
@@ -945,7 +991,11 @@ export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
  * the user wrote themselves. Each send falls into exactly one — a chip the user
  * then reworded stays `suggestion`, because the chip is still what it came from.
  */
-export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
+export type AgentInputMethod =
+  | 'typed'
+  | 'suggestion'
+  | 'edited'
+  | 'error_context'
 /**
  * A starter prompt by the slot it occupies in the empty state, not by the text
  * it shows: the copy is owned elsewhere and changes without the funnel
@@ -1605,6 +1655,7 @@ export interface TelemetryProvider {
   // Workflow management events
   trackWorkflowImported?(metadata: WorkflowImportMetadata): void
   trackWorkflowOpened?(metadata: WorkflowImportMetadata): void
+  trackWorkflowLinkOpened?(metadata: WorkflowLinkOpenedMetadata): void
   trackWorkflowSaved?(metadata: WorkflowSavedMetadata): void
   trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
@@ -1806,6 +1857,7 @@ export const TelemetryEvents = {
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
+  WORKFLOW_LINK_OPENED: 'app:workflow_link_opened',
   ENTER_LINEAR_MODE: 'app:app_mode_opened',
   SHARE_FLOW: 'app:share_flow',
   SHARE_LINK_OPENED: 'app:share_link_opened',
@@ -1993,6 +2045,7 @@ export type TelemetryEventProperties =
   | EnterLinearMetadata
   | ShareFlowMetadata
   | ShareLinkOpenedMetadata
+  | WorkflowLinkOpenedMetadata
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata

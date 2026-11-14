@@ -30,7 +30,7 @@
             variant="textonly"
             :class="
               cn(
-                'flex w-full items-center justify-start',
+                'flex w-full justify-start',
                 activeCategory === category && 'bg-muted'
               )
             "

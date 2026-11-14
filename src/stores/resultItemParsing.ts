@@ -2,50 +2,45 @@ import type {
   NodeExecutionOutput,
   ResultItem
 } from '@comfyorg/api-client/executionTypes'
-import { resultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import { zResultItem } from '@comfyorg/api-client/executionTypes'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-const METADATA_KEYS = new Set(['animated', 'text'])
+const METADATA_KEYS = new Set(['animated'])
+const resultItemSchema = zResultItem.passthrough()
 
 function isUnknownArray(value: unknown): value is unknown[] {
   return Array.isArray(value)
 }
 
-/**
- * Validates that an unknown value is a well-formed ResultItem.
- *
- * Requires `filename` (string) since it is needed for a valid URL.
- * `subfolder` is optional here — URL building falls back to ''.
- */
-function isResultItem(
-  item: unknown
-): item is ResultItem & { filename: string } {
-  if (!item || typeof item !== 'object' || Array.isArray(item)) return false
-
-  if (!('filename' in item) || typeof item.filename !== 'string') return false
-
-  if (
-    'type' in item &&
-    item.type !== undefined &&
-    !resultItemType.safeParse(item.type).success
-  ) {
-    return false
-  }
-
-  return true
+function isResultItem(item: unknown, mediaType: string): item is ResultItem {
+  const parsed = resultItemSchema.safeParse(item)
+  if (!parsed.success) return false
+  if (parsed.data.filename !== undefined) return true
+  return mediaType === 'text' && typeof parsed.data.content === 'string'
 }
 
 export function parseNodeOutput(
   nodeId: string | number,
-  nodeOutput: NodeExecutionOutput | null | undefined
+  nodeOutput: Record<string, unknown> | null | undefined
 ): AugmentedResultItem[] {
   if (!nodeOutput) return []
 
   return Object.entries(nodeOutput).flatMap(([mediaType, items]) => {
     if (METADATA_KEYS.has(mediaType) || !isUnknownArray(items)) return []
     return items
-      .filter(isResultItem)
-      .map((item) => ({ subfolder: '', ...item, mediaType, nodeId }))
+      .map((item) =>
+        mediaType === 'text' && typeof item === 'string'
+          ? { content: item }
+          : item
+      )
+      .filter((item) => isResultItem(item, mediaType))
+      .map((item) => ({
+        subfolder: '',
+        ...item,
+        filename: item.filename ?? '',
+        mediaType,
+        nodeId
+      }))
   })
 }
 

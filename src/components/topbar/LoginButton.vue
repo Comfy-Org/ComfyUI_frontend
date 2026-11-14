@@ -1,5 +1,22 @@
 <template>
-  <PopoverRoot v-model:open="open">
+  <Button
+    v-if="!isLoggedIn && flags.billingNewUxEnabled"
+    data-testid="login-button"
+    variant="textonly"
+    size="icon"
+    :class="cn('group rounded-full p-0', className)"
+    :aria-label="t('auth.loginButton.signInToUsePartnerNodes')"
+    :tooltip="t('auth.loginButton.signInToUsePartnerNodes')"
+    tooltip-side="right"
+    @click="handleSignIn()"
+  >
+    <span
+      class="flex size-full items-center justify-center rounded-full bg-secondary transition-colors group-hover:bg-transparent"
+    >
+      <i class="icon-[lucide--user]" />
+    </span>
+  </Button>
+  <PopoverRoot v-else v-model:open="open">
     <PopoverAnchor as-child>
       <Button
         v-if="!isLoggedIn"
@@ -55,6 +72,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className } = defineProps<{
@@ -63,6 +81,7 @@ const { class: className } = defineProps<{
 
 const { t } = useI18n()
 const { isLoggedIn, handleSignIn } = useCurrentUser()
+const { flags } = useFeatureFlags()
 const { buildDocsUrl } = useExternalLink()
 const apiNodesOverviewUrl = buildDocsUrl(
   '/tutorials/api-nodes/overview#api-nodes',

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { openBillingUrl, reserveBillingTab } from './billingTab'
 
@@ -15,11 +15,7 @@ const checkoutUrl = 'https://checkout.stripe.com/c/pay/cs_test'
 describe('reserveBillingTab', () => {
   beforeEach(() => {
     distribution.isDesktop = false
-    delete window.__comfyDesktop2
-  })
-
-  afterEach(() => {
-    delete window.__comfyDesktop2
+    vi.stubGlobal('__comfyDesktop2', undefined)
   })
 
   describe('on the web', () => {
@@ -33,6 +29,33 @@ describe('reserveBillingTab', () => {
 
       reserved?.navigate(checkoutUrl)
       expect(tab.location.href).toBe(checkoutUrl)
+    })
+
+    it('shows the opening page in the reserved tab until it navigates', () => {
+      const tab = {
+        opener: window,
+        document: document.implementation.createHTMLDocument(''),
+        location: { href: '' },
+        close: vi.fn()
+      }
+      vi.spyOn(window, 'open').mockReturnValue(tab as never)
+
+      reserveBillingTab({
+        lang: 'ko',
+        title: 'Opening checkout…',
+        detail: 'This takes a few seconds.'
+      })
+
+      expect(tab.document.documentElement.lang).toBe('ko')
+      expect(tab.document.title).toBe('Opening checkout…')
+      expect(
+        tab.document
+          .querySelector('[role="progressbar"]')
+          ?.getAttribute('aria-label')
+      ).toBe('Opening checkout…')
+      expect(tab.document.body.textContent).toBe(
+        'Opening checkout…This takes a few seconds.'
+      )
     })
 
     it('reports a blocked tab', () => {
@@ -52,7 +75,7 @@ describe('reserveBillingTab', () => {
     {
       host: 'cloud Desktop',
       arrange: () => {
-        window.__comfyDesktop2 = {}
+        vi.stubGlobal('__comfyDesktop2', {})
       }
     }
   ])('on $host', ({ arrange }) => {
@@ -74,11 +97,7 @@ describe('reserveBillingTab', () => {
 describe('openBillingUrl', () => {
   beforeEach(() => {
     distribution.isDesktop = false
-    delete window.__comfyDesktop2
-  })
-
-  afterEach(() => {
-    delete window.__comfyDesktop2
+    vi.stubGlobal('__comfyDesktop2', undefined)
   })
 
   it.for([
@@ -105,7 +124,7 @@ describe('openBillingUrl', () => {
     {
       host: 'cloud Desktop',
       arrange: () => {
-        window.__comfyDesktop2 = {}
+        vi.stubGlobal('__comfyDesktop2', {})
       },
       handle: null,
       opened: true

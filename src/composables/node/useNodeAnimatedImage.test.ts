@@ -1,19 +1,25 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
-import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useDOMWidgetTestNodes } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { isDOMWidget } from '@/scripts/domWidget'
+
+const createDOMWidgetNode = useDOMWidgetTestNodes()
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@/scripts/app'))
 
 describe('useNodeAnimatedImage', () => {
   function setup() {
-    const node = createMockMediaNode({ imgs: [document.createElement('img')] })
+    const node = createDOMWidgetNode({ imgs: [document.createElement('img')] })
     const { showAnimatedPreview, removeAnimatedPreview } =
       useNodeAnimatedImage()
     showAnimatedPreview(node)
-    const element = node.widgets[0].element
+    const widget = node.widgets?.[0]
+    assert.exists(widget)
+    assert(isDOMWidget(widget))
+    const element = widget.element
     document.body.append(element)
     onTestFinished(() => element.remove())
     return { node, element, showAnimatedPreview, removeAnimatedPreview }
