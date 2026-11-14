@@ -16,6 +16,7 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { signInFirebaseUser } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'))
 
@@ -293,6 +294,33 @@ describe('useLocalBillingWebFlagStore', () => {
     await settle()
 
     expect(store.enabled).toBe(true)
+  })
+
+  it('reads the flag with the cached ID token of a Firebase sign-in, minting none', async () => {
+    const mint = vi.fn(async () => 'minted-token')
+    signInFirebaseUser(mint)
+    serveFlags({ local_billing_web: false })
+
+    useLocalBillingWebFlagStore()
+    await settle()
+
+    expect(fetchRequests(FEATURES)[0].headers.get('Authorization')).toBe(
+      'Bearer cached-token'
+    )
+    expect(mint).not.toHaveBeenCalled()
+  })
+
+  it('stays on, without another read, while the Firebase ID token rotates', async () => {
+    signInFirebaseUser(async () => 'minted-token')
+    serveFlags({ local_billing_web: true })
+    const store = useLocalBillingWebFlagStore()
+    await settle()
+
+    await useAuthStore().getFreshIdToken()
+    await settle()
+
+    expect(store.enabled).toBe(true)
+    expect(fetchRequests(FEATURES)).toHaveLength(1)
   })
 
   it('never falls back to a stored API key for a signed-in account without a token', async () => {

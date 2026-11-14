@@ -796,6 +796,67 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('getFreshIdToken', () => {
+    const cachedUnless =
+      (mint: () => Promise<string>) => (forceRefresh?: boolean) =>
+        forceRefresh ? mint() : Promise.resolve('cached-token')
+
+    it.for([
+      {
+        name: 'a token minted now although a cached one exists',
+        mint: async () => 'minted-token',
+        token: 'minted-token'
+      },
+      {
+        name: 'the cached token when a new one cannot be minted',
+        mint: () =>
+          Promise.reject(
+            new FirebaseError(
+              firebaseAuth.AuthErrorCodes.NETWORK_REQUEST_FAILED,
+              'offline'
+            )
+          ),
+        token: 'cached-token'
+      }
+    ])('returns $name', async ({ mint, token }) => {
+      mockUser.getIdToken.mockImplementation(cachedUnless(mint))
+
+      await expect(store.getFreshIdToken()).resolves.toBe(token)
+    })
+
+    it('leaves getIdToken on the cached token', async () => {
+      mockUser.getIdToken.mockImplementation(
+        cachedUnless(async () => 'minted-token')
+      )
+
+      await expect(store.getIdToken()).resolves.toBe('cached-token')
+    })
+
+    it('returns no token when no user is signed in', async () => {
+      authStateCallback(null)
+
+      await expect(store.getFreshIdToken()).resolves.toBeUndefined()
+    })
+
+    it('discards a token minted for an account the tab has since left', async () => {
+      let finishMint: (token: string) => void = () => {}
+      mockUser.getIdToken.mockImplementation(
+        cachedUnless(
+          () =>
+            new Promise((resolve) => {
+              finishMint = resolve
+            })
+        )
+      )
+      const token = store.getFreshIdToken()
+
+      authStateCallback({ ...mockUser, uid: 'different-user-id' })
+      finishMint('minted-token')
+
+      await expect(token).resolves.toBeUndefined()
+    })
+  })
+
   describe('getAuthHeader', () => {
     it('should handle network errors gracefully when getting Firebase token (reproduces issue #4468)', async () => {
       // This test reproduces the issue where getAuthHeader fails due to network errors
@@ -1637,6 +1698,19 @@ describe('useAuthStore in local/desktop distribution', () => {
       await expect(store.getUserAuthHeader()).resolves.toEqual(hostHeader)
       await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(hostHeader)
       expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-host')
+      expect(mockUser.getIdToken).not.toHaveBeenCalled()
+    })
+
+    it('answers a fresh-token request from Desktop without minting through Firebase', async () => {
+      await startDesktopHostSession(
+        hostBridge({
+          status: 'signed_in',
+          userId: 'host-user',
+          workspaceId: 'ws-host'
+        })
+      )
+
+      await expect(store.getFreshIdToken()).resolves.toBe('host-token')
       expect(mockUser.getIdToken).not.toHaveBeenCalled()
     })
 

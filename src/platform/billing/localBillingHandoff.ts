@@ -143,7 +143,7 @@ async function issueForScope(
   request: BillingHandoffRequest,
   signal: AbortSignal
 ): Promise<HandoffIssue> {
-  const token = await useAuthStore().getIdToken()
+  const token = await useAuthStore().getFreshIdToken()
   if (!token) return SIGN_IN_AGAIN
   return issueBillingHandoff(
     token,
