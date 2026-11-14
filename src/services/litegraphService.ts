@@ -16,7 +16,6 @@ import {
   bindPromotedDynamicInput,
   unbindPromotedDynamicInput
 } from '@/core/graph/widgets/dynamicWidgets'
-import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
   LGraphCanvas,
@@ -245,7 +244,7 @@ export const useLitegraphService = () => {
     )
       return
 
-    const input = node.addInput(inputName, inputSpec.type, {
+    node.addInput(inputName, inputSpec.type, {
       shape: inputSpec.isOptional ? RenderShape.HollowCircle : undefined,
       localized_name: resolveNodeDefSlotText(
         'name',
@@ -255,7 +254,6 @@ export const useLitegraphService = () => {
         inputName
       )
     })
-    if (inputSpec.advanced) addShimWidget(node, input, { advanced: true })
   }
   /**
    * @internal Setup stroke styles for the node under various conditions.
@@ -508,7 +506,7 @@ export const useLitegraphService = () => {
           return inputData
             ? {
                 ...inputData,
-                ...pick(input, RESERVED_KEYS.concat('widget', 'alwaysVisible'))
+                ...pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })
@@ -600,7 +598,7 @@ export const useLitegraphService = () => {
           return inputData
             ? {
                 ...inputData,
-                ...pick(input, RESERVED_KEYS.concat('widget', 'alwaysVisible'))
+                ...pick(input, RESERVED_KEYS.concat('widget'))
               }
             : input
         })

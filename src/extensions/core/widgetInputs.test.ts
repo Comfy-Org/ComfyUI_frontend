@@ -14,7 +14,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
-import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
@@ -277,20 +276,6 @@ describe('PrimitiveNode', () => {
       false
     )
   })
-
-  it.for(['IMAGE', 'INT'])(
-    'treats a shimmed %s input like a widgetless one',
-    (type) => {
-      const primitive = new PrimitiveNode('Primitive')
-      const target = new LGraphNode('Target')
-      target.addInput('value', type)
-      addShimWidget(target, target.inputs[0])
-
-      expect(
-        primitive.onConnectOutput(0, '*', target.inputs[0], target, 0)
-      ).toBe(type === 'INT')
-    }
-  )
 
   it('restores its serialized value through the reroute lifecycle', async () => {
     await widgetInputsExtension.registerCustomNodes?.(app)

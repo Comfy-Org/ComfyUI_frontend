@@ -24,7 +24,8 @@ export interface WidgetGridItem {
   renderKey: string
   simplified: SimplifiedWidget
   visible: boolean
-  vueComponent: Component
+  vueComponent?: Component
+  inputRole?: 'socket' | 'autogrowGroup'
   handleContextMenu?: (e: PointerEvent) => void
   hasError?: boolean
   hasLayoutSize?: boolean

@@ -23,7 +23,6 @@ import {
   zMatchTypeOptions
 } from '@comfyorg/object-info-parser'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
-import { addShimWidget } from '@/core/graph/widgets/inputWidgetShim'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
@@ -78,6 +77,31 @@ function commitMutatedInputs(
   return replaceNodeInputs(node, previous, finalInputs, assignments)
 }
 
+/** `onConnectionsChange` at each input's live slot: a callback can grow a group and shift later inputs. */
+function notifyRelinked(
+  node: LGraphNode,
+  relinked: readonly { input: INodeInputSlot; link: LLink }[]
+) {
+  for (const { input, link } of relinked) {
+    const slot = node.inputs.indexOf(input)
+    if (slot !== -1)
+      node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
+  }
+}
+
+/** Moves each removed input's link onto the input that replaced it by name. */
+function carryLinks(
+  node: LGraphNode,
+  removedInputs: INodeInputSlot[],
+  inputLinks: Map<INodeInputSlot, LLink>
+) {
+  for (const input of removedInputs) {
+    const replacement = node.inputs.find((item) => item.name === input.name)
+    const link = inputLinks.get(input)
+    if (replacement && link) inputLinks.set(replacement, link)
+  }
+}
+
 function syncNodeWidgetOrder(node: LGraphNode) {
   const graphId = resolveNodeRootGraphId(node)
   if (!graphId || !node.widgets) return
@@ -86,31 +110,6 @@ function syncNodeWidgetOrder(node: LGraphNode) {
     node.id,
     getWidgetIds(node.widgets)
   )
-}
-
-function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
-  const name = input.widget?.name ?? input.name
-  const existing = node.widgets?.find((w) => w.name === name)
-  if (existing) {
-    input.widget ??= { name }
-    if (existing.type === 'shim') input.alwaysVisible = true
-    return
-  }
-  addShimWidget(node, input)
-
-  const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const widgets = node.widgets
-  const shim = widgets?.pop()
-  if (!widgets || !shim) return
-  const lastGroupWidget = widgets.findLastIndex(
-    (w) => w.name === groupName || w.name.startsWith(`${groupName}.`)
-  )
-  widgets.splice(
-    lastGroupWidget === -1 ? widgets.length : lastGroupWidget + 1,
-    0,
-    shim
-  )
-  syncNodeWidgetOrder(node)
 }
 
 function dynamicComboWidget(
@@ -179,99 +178,70 @@ function dynamicComboWidget(
         addedWidget.value = removed.value
     }
   }
+  function addOptionInputs(spec: (typeof options)[string] | undefined) {
+    const inputTypes: [Record<string, InputSpec> | undefined, boolean][] = [
+      [spec?.required, false],
+      [spec?.optional, true]
+    ]
+    for (const [inputs, isOptional] of inputTypes)
+      for (const [key, inputSpec] of Object.entries(inputs ?? {})) {
+        const name = `${widget.name}.${key}`
+        const specToAdd = transformInputSpecV1ToV2(inputSpec, {
+          name,
+          isOptional
+        })
+        specToAdd.display_name = key
+        addNodeInput(node, specToAdd)
+      }
+  }
+  /** Moves inputs added past `start` to after the combo's socket, reusing same-named existing inputs. */
+  function placeAddedInputs(start: number, hasAddedWidgets: boolean) {
+    const socket = node.inputs.findIndex((i) => i.name === widget.name)
+    if (socket === -1 && node.inputs.length > start && !hasAddedWidgets)
+      throw new Error('Failed to find input socket for ' + widget.name)
+    const added = node.inputs.splice(start).map((input) => {
+      const existing = node.inputs.findIndex((i) => i.name === input.name)
+      return existing === -1 ? input : node.inputs.splice(existing, 1)[0]
+    })
+    node.inputs.splice(socket + 1 || node.inputs.length, 0, ...added)
+  }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec =
       value && !widget.connectionSuppressed ? options[value] : undefined
-    const removedOption = activeOption
+    const optionValues = removedWidgetValues.get(activeOption) ?? new Map()
+    removedWidgetValues.set(activeOption, optionValues)
     activeOption = value
 
     const previous = captureInputLayout(node)
     const inputLinks = new Map(previous.links)
     const removedInputs = remove(node.inputs, isInGroup)
-    for (const widget of node.widgets.filter(isInGroup)) {
-      const optionValues = removedWidgetValues.get(removedOption) ?? new Map()
-      optionValues.set(widget.name, {
-        type: widget.type,
-        value: widget.value
-      })
-      removedWidgetValues.set(removedOption, optionValues)
-      node.removeWidget(widget)
+    for (const child of node.widgets.filter(isInGroup)) {
+      optionValues.set(child.name, { type: child.type, value: child.value })
+      node.removeWidget(child)
     }
     forgetDynamicChildren(node, inputName)
 
-    if (!newSpec) {
-      const result = commitMutatedInputs(node, previous, inputLinks)
-      if (!result.ok) return
-      syncNodeWidgetOrder(node)
-      return
-    }
-
-    const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
-    const startingWidgets = new Set(node.widgets)
-    const startingInputLength = node.inputs.length
-
+    const insertionPoint = node.widgets.indexOf(widget) + 1
     if (insertionPoint === 0)
       throw new Error("Dynamic widget doesn't exist on node")
-    const inputTypes: (Record<string, InputSpec> | undefined)[] = [
-      newSpec.required,
-      newSpec.optional
-    ]
-    inputTypes.forEach((inputType, idx) => {
-      for (const key in inputType ?? {}) {
-        const name = `${widget.name}.${key}`
-        const specToAdd = transformInputSpecV1ToV2(inputType![key], {
-          name,
-          isOptional: idx !== 0
-        })
-        specToAdd.display_name = key
-        addNodeInput(node, specToAdd)
-      }
-    })
+    const startingWidgets = new Set(node.widgets)
+    const startingInputLength = node.inputs.length
+    addOptionInputs(newSpec)
 
-    const inputInsertionPoint =
-      node.inputs.findIndex((i) => i.name === widget.name) + 1
     const addedWidgets = remove(node.widgets, (w) => !startingWidgets.has(w))
-    const addedWidgetNames = addedWidgets.map(({ name }) => name)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     syncNodeWidgetOrder(node)
-    if (inputInsertionPoint === 0) {
-      if (
-        addedWidgets.length === 0 &&
-        node.inputs.length !== startingInputLength
-      )
-        throw new Error('Failed to find input socket for ' + widget.name)
-      const result = commitMutatedInputs(node, previous, inputLinks)
-      if (!result.ok) return
-      restoreRemovedValues(value, addedWidgetNames)
-      return
-    }
-    const addedInputs = node.inputs
-      .splice(startingInputLength)
-      .map((addedInput) => {
-        const existingInput = node.inputs.findIndex(
-          (existingInput) => addedInput.name === existingInput.name
-        )
-        return existingInput === -1
-          ? addedInput
-          : node.inputs.splice(existingInput, 1)[0]
-      })
-    node.inputs.splice(inputInsertionPoint, 0, ...addedInputs)
+    placeAddedInputs(startingInputLength, addedWidgets.length > 0)
+    carryLinks(node, removedInputs, inputLinks)
 
-    for (const input of removedInputs) {
-      const replacement = node.inputs.find((item) => item.name === input.name)
-      const link = inputLinks.get(input)
-      if (replacement && link) inputLinks.set(replacement, link)
-    }
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return
-    for (const { input, link } of result.replacements) {
-      const slot = node.inputs.indexOf(input)
-      if (slot === -1) continue
-      node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
-    }
-    restoreRemovedValues(value, addedWidgetNames)
-
+    notifyRelinked(node, result.replacements)
+    restoreRemovedValues(
+      value,
+      addedWidgets.map(({ name }) => name)
+    )
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
@@ -556,9 +526,7 @@ function addAutogrowGroup(
   )
   const newInputs = namedSpecs.map((namedSpec) => {
     addNodeInput(node, namedSpec)
-    const input = node.inputs.splice(node.inputs.length - 1, 1)[0]
-    ensureWidgetForInput(node, input)
-    return input
+    return node.inputs.splice(node.inputs.length - 1, 1)[0]
   })
   for (const newInput of newInputs) {
     for (const existingInput of remove(
@@ -589,7 +557,6 @@ function addAutogrowGroup(
   node.inputs.splice(insertionIndex, 0, ...newInputs)
   const result = commitMutatedInputs(node, previous, inputLinks)
   if (!result.ok) return
-  syncNodeWidgetOrder(node)
   node.graph?.setDirtyCanvas(true, true)
 }
 
@@ -635,6 +602,15 @@ export function liveAutogrowGroupOf(
     }
   }
   return undefined
+}
+
+export function autogrowInputRole(
+  node: LGraphNode,
+  input: INodeInputSlot
+): 'group' | 'child' | undefined {
+  if (!hasAutogrowGroups(node) || input.widget) return undefined
+  if (Object.hasOwn(node.comfyDynamic.autogrow, input.name)) return 'group'
+  return liveAutogrowGroupOf(node, input.name) ? 'child' : undefined
 }
 
 /**
@@ -722,18 +698,11 @@ function reconcileAutogrowGroup(
   if (!result.ok) return
   node.graph?.setDirtyCanvas(true, true)
 
-  for (const { input, link } of moved) {
-    const slot = node.inputs.indexOf(input)
-    if (slot !== -1)
-      node.onConnectionsChange(LiteGraph.INPUT, slot, true, link, input)
-  }
-  for (const input of removed) {
-    const widgetName = input.widget?.name
-    if (!widgetName) continue
-    for (const widget of node.widgets.filter((w) => w.name === widgetName))
-      node.removeWidget(widget)
-    syncNodeWidgetOrder(node)
-  }
+  notifyRelinked(node, moved)
+  const removedNames = new Set(removed.map((input) => input.widget?.name))
+  for (const widget of node.widgets.filter((w) => removedNames.has(w.name)))
+    node.removeWidget(widget)
+  syncNodeWidgetOrder(node)
   refitHeight(node)
 }
 
@@ -766,13 +735,10 @@ function isAutogrowGroupConnected(node: LGraphNode, groupName: string) {
 }
 
 function syncAutogrowGroup(node: AutogrowNode, groupName: string) {
-  const children = node.inputs.filter((input) =>
-    input.name.startsWith(`${groupName}.`)
-  )
   if (isAutogrowGroupConnected(node, groupName))
     removeGroupChildren(node, groupName)
-  else if (!children.length) growAutogrowToMin(node, groupName)
-  else for (const input of children) ensureWidgetForInput(node, input)
+  else if (!node.inputs.some((input) => input.name.startsWith(`${groupName}.`)))
+    growAutogrowToMin(node, groupName)
 }
 
 function growAutogrowToMin(node: AutogrowNode, groupName: string) {
@@ -870,12 +836,9 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
         if (!useApp().configuringGraph) syncAutogrowGroup(this, input.name)
         return
       }
+      if (useApp().configuringGraph) return
       const groupName = liveAutogrowGroupOf(this, input.name)
       if (groupName === undefined) return
-      if (useApp().configuringGraph) {
-        if (input.widget) ensureWidgetForInput(node, input)
-        return
-      }
       if (iscon) return reconcileAutogrowGroup(groupName, this)
       const { min } = this.comfyDynamic.autogrow[groupName]
       const ordinal = resolveAutogrowOrdinal(input.name, groupName, this)
@@ -888,13 +851,10 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
 }
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   const groupName = inputSpecV2.name
-  const groupInput =
-    node.inputs.find((input) => input.name === groupName) ??
+  if (!node.inputs.some((input) => input.name === groupName))
     node.addInput(groupName, inputSpecV2.type, {
       localized_name: inputSpecV2.display_name
     })
-  if (!node.widgets?.some((w) => w.name === groupName))
-    addShimWidget(node, groupInput, { autogrowGroup: true })
   withComfyAutogrow(node)
 
   const parseResult = zAutogrowOptions.safeParse(inputSpecV2)
