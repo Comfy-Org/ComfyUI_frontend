@@ -88,7 +88,7 @@ import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
 import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import {
   isAnimatedOutput,
   isVideoNode,
@@ -328,7 +328,8 @@ export const useLitegraphService = () => {
     const result = widgetConstructor(node, inputName, inputData, useApp())
     const wrappedResult = result && !('type' in result) ? result : undefined
     const { minWidth = 1, minHeight = 1 } = wrappedResult ?? {}
-    const returnedWidget = result && 'type' in result ? result : result?.widget
+    const returnedWidget =
+      result && 'type' in result ? result : wrappedResult?.widget
     if (returnedWidget) {
       // oxlint-disable-next-line typescript/no-unnecessary-condition -- extension widgets may omit options at runtime
       returnedWidget.options ??= {}
