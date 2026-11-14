@@ -137,19 +137,21 @@ interface ScopeWatch {
 
 function watchScopeChange(): ScopeWatch {
   const started = scopeKey(currentScope())
-  let changed = false
   let signedOut = false
   let replaced = false
   const stop = watch(
     () => scopeKey(currentScope()),
     (key) => {
-      changed = true
       if (key === '') signedOut = true
       else if (key !== started || signedOut) replaced = true
     },
     { flush: 'sync' }
   )
-  return { changed: () => changed, replaced: () => replaced, stop }
+  return {
+    changed: () => signedOut || replaced,
+    replaced: () => replaced,
+    stop
+  }
 }
 
 let inFlight = false
