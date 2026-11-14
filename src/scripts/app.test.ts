@@ -6514,6 +6514,45 @@ describe('ComfyApp', () => {
       ).toEqual(['blob:1'])
     })
 
+    it('calls the onExecuted of the node an executed event names', () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('Executed')
+      node.onExecuted = vi.fn()
+      graph.add(node)
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const workflow = markLoaded(
+        new ComfyWorkflow({ path: 'workflows/a.json', modified: 0, size: 0 })
+      )
+      workflow.changeTracker.activeState = workflowGraphData(workflowAId)
+      useWorkflowStore().activeWorkflow = workflow
+      const addEventListener = vi
+        .spyOn(api, 'addEventListener')
+        .mockImplementation(() => {})
+      vi.spyOn(api, 'init').mockResolvedValue()
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const handler = addEventListener.mock.calls.find(
+        ([name]) => name === 'executed'
+      )?.[1]
+      assert(typeof handler === 'function')
+      useExecutionStore().activeJobId = 'job'
+
+      handler(
+        new CustomEvent('executed', {
+          detail: {
+            node: String(node.id),
+            display_node: String(node.id),
+            prompt_id: 'job',
+            workflow_id: workflowAId,
+            output: { text: ['done'] }
+          }
+        })
+      )
+
+      expect(node.onExecuted).toHaveBeenCalledExactlyOnceWith({
+        text: ['done']
+      })
+    })
+
     it('restores the failed run state when returning to a workflow tab', async () => {
       const workflowService = await useRealWorkflowService()
       const graph = new LGraph()

@@ -348,9 +348,27 @@ describe('connection, property and pointer hooks', () => {
       assert(kept)
       const event = kept
 
-      expect(() => event.setValue(1)).toThrow(TypeError)
-      expect(() => event.reject()).toThrow(TypeError)
+      expect(() => event.setValue(1)).toThrow(/^setValue can only be called/)
+      expect(() => event.reject()).toThrow(/^reject can only be called/)
       expect(node.properties.max).toBe(50)
+    })
+
+    it('copies the new value once however many hooks read it', () => {
+      const values: unknown[] = []
+      changes((event) => values.push(event.value))
+      changes((event) => values.push(event.value, event.value))
+      changes(() => {})
+      const node = probe()
+      const stringify = vi.spyOn(JSON, 'stringify')
+
+      node.setProperty('max', { deep: 1 })
+      const copies = stringify.mock.calls.length
+      stringify.mockClear()
+      stringify.mockRestore()
+
+      expect(copies).toBe(1)
+      expect(new Set(values).size).toBe(1)
+      expect(values).toHaveLength(3)
     })
 
     it('keeps a refusal the type itself makes, without telling the hooks', () => {

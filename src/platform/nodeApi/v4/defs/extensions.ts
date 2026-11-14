@@ -71,7 +71,7 @@ export interface Extensions {
   ): readonly HookCallbacks[K][]
   /** How many applied extensions have a callback for `hook`. */
   demand(hook: HookName): number
-  /** Changes each time an extension's hooks are added to or removed from a type. */
+  /** Changes each time an extension's hooks are removed from a type. */
   revision(): number
 }
 
@@ -130,7 +130,6 @@ export function createExtensions(installer: HookInstaller): Extensions {
         (first, second) => first.extension.sequence - second.extension.sequence
       )
     )
-    revision++
     extension.appliedTo.add(nodeType.type)
     countDemand(applied, 1)
     installer.install(nodeType, hooks)
