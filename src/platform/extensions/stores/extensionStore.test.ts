@@ -3,6 +3,12 @@ import { describe, expect, it, vi } from 'vitest'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ComfyExtension } from '@/types/comfy'
+
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 describe('extensionStore', () => {
   describe('registerExtension', () => {
@@ -24,6 +30,37 @@ describe('extensionStore', () => {
       store.registerExtension({ name: 'dup' })
       expect(() => store.registerExtension({ name: 'dup' })).toThrow(
         "Extension named 'dup' already registered."
+      )
+    })
+
+    it.for([
+      null,
+      { id: 'missing-target', kind: 'hint', text: () => 'broken' },
+      { id: 'missing-callback', kind: 'hint', target: {} }
+    ])('isolates malformed JavaScript augmentations: %j', (invalid) => {
+      const store = useExtensionStore()
+      const extension: ComfyExtension = { name: 'test.invalid' }
+      const valid = {
+        id: 'valid',
+        kind: 'hint',
+        target: { nodeType: 'TestNode', widgetName: 'prompt' },
+        text: (value: string) => `Length: ${value.length}`
+      }
+      Reflect.set(extension, 'widgetAugmentations', [invalid, valid])
+
+      store.registerExtension(extension)
+      store.registerExtension({ name: 'test.neighbor' })
+
+      expect(
+        store.extensions[0].widgetAugmentations?.map((item) => item.id)
+      ).toEqual(['valid'])
+      expect(store.isExtensionInstalled('test.neighbor')).toBe(true)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'error_registering_widget_augmentation',
+          context: { extension: 'test.invalid' }
+        })
       )
     })
 

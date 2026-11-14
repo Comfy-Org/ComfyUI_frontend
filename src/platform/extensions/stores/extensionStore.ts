@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef } from 'vue'
 
+import { isWidgetAugmentation } from '@/platform/extensions/widgetAugmentation'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyExtension } from '@/types/comfy'
@@ -91,6 +92,20 @@ export const useExtensionStore = defineStore('extension', () => {
       console.warn(`Extension ${extension.name} is disabled.`)
     }
 
+    if (extension.widgetAugmentations !== undefined) {
+      const supplied: unknown = extension.widgetAugmentations
+      const valid = Array.isArray(supplied)
+        ? supplied.filter(isWidgetAugmentation)
+        : []
+      if (!Array.isArray(supplied) || valid.length !== supplied.length) {
+        reportError(new TypeError('Invalid widget augmentation registration'), {
+          errorType: 'error_registering_widget_augmentation',
+          surface: 'platform',
+          context: { extension: extension.name }
+        })
+      }
+      extension.widgetAugmentations = valid
+    }
     extensionByName.value[extension.name] = markRaw(extension)
   }
 
