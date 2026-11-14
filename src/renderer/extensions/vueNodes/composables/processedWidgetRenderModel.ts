@@ -69,7 +69,6 @@ interface WidgetErrorTarget {
 }
 
 export interface ProcessedWidget extends WidgetGridItem {
-  handleContextMenu: (e: PointerEvent) => void
   hasError: boolean
   hasLayoutSize: boolean
   tooltipText: string
@@ -78,8 +77,12 @@ export interface ProcessedWidget extends WidgetGridItem {
 }
 
 export interface WidgetUiCallbacks {
-  getTooltipText: (widget: WidgetTooltipSource, fullValue?: string) => string
-  handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
+  getTooltipText: (
+    widget: WidgetTooltipSource,
+    fullValue: string | undefined,
+    nodeType: string
+  ) => string
+  handleNodeRightClick?: (e: PointerEvent, nodeId: NodeId) => void
 }
 
 export interface ComputeProcessedWidgetsOptions {
@@ -359,6 +362,20 @@ interface WidgetProcessingContext {
   ui: WidgetUiCallbacks
 }
 
+function widgetContextMenu(
+  ctx: WidgetProcessingContext,
+  widgetName: string
+): ((e: PointerEvent) => void) | undefined {
+  const { handleNodeRightClick } = ctx.ui
+  if (!handleNodeRightClick) return undefined
+  return (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    handleNodeRightClick(e, ctx.nodeData.id)
+    showNodeOptions(e, { nodeId: ctx.nodeData.id, widgetName })
+  }
+}
+
 function processWidget(
   id: WidgetId,
   ctx: WidgetProcessingContext
@@ -428,20 +445,12 @@ function processWidget(
       : undefined
   const tooltipText = ctx.ui.getTooltipText(
     { name: widgetState.name, tooltip: renderState?.tooltip },
-    fullValue
+    fullValue,
+    ctx.nodeData.type
   )
-  const handleContextMenu = (e: PointerEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    ctx.ui.handleNodeRightClick(e, ctx.nodeData.id)
-    showNodeOptions(e, {
-      nodeId: ctx.nodeData.id,
-      widgetName: widgetState.name
-    })
-  }
 
   return {
-    handleContextMenu,
+    handleContextMenu: widgetContextMenu(ctx, widgetState.name),
     hasLayoutSize: renderState?.hasLayoutSize ?? false,
     hasError: hasWidgetError(
       { name: widgetState.name, errorTarget },

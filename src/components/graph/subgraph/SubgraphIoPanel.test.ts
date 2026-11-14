@@ -18,7 +18,7 @@ import { app } from '@/scripts/app'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 import { testI18n } from '@/utils/__tests__/testI18n'
 
-import SubgraphInputValues from './SubgraphInputValues.vue'
+import SubgraphIoPanel from './SubgraphIoPanel.vue'
 import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 
 vi.mock(import('@/scripts/app'))
@@ -81,7 +81,11 @@ async function renderInputNode() {
       return () =>
         h(TooltipProvider, null, {
           default: () =>
-            context.graph && h(SubgraphInputValues, { graph: context.graph })
+            context.graph &&
+            h(SubgraphIoPanel, {
+              key: context.graph.id,
+              ioNode: context.graph.inputNode
+            })
         })
     }
   })
