@@ -835,7 +835,11 @@ export class LinkConnector {
         }
       }
     } else {
-      this.dropOnNothing(event)
+      console.error(
+        'Invalid connectingTo state &/ ioNode',
+        connectingTo,
+        ioNode
+      )
     }
   }
 
