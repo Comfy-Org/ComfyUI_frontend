@@ -11,7 +11,7 @@ const REFUSALS = [
 ]
 
 for (const { name, status, code } of REFUSALS) {
-  test(`a handoff tab shows the session has ended, without an error, when Cloud ${name} mid-session`, async ({
+  test(`a handoff tab ends on the link screen, without an error, when Cloud ${name} mid-session`, async ({
     page,
     cloud
   }) => {
@@ -46,7 +46,7 @@ for (const { name, status, code } of REFUSALS) {
     await page.getByRole('button', { name: 'Confirm cancellation' }).click()
 
     await expect(
-      page.getByRole('heading', { name: 'This checkout session has ended' })
+      page.getByRole('heading', { name: 'This checkout link no longer works' })
     ).toBeVisible()
     await expect(page).toHaveURL(/\/handoff$/)
     expect(pageErrors).toEqual([])
