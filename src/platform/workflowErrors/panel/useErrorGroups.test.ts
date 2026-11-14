@@ -1944,6 +1944,23 @@ describe('useErrorGroups', () => {
       expect(groups.selectionMatchedCardIds.value.has('node-2:5')).toBe(true)
     })
 
+    it('does not match an unresolved interior id by its last segment', async () => {
+      const { store, groups } = createErrorGroups()
+      addSubgraphHost(2)
+      selectedItems.value = [addNode(5)]
+      store.recordNodeErrors({
+        '2:5': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
+        }
+      })
+      await nextTick()
+
+      expect(groups.selectionErrorCount.value).toBe(0)
+      expect(groups.selectionMatchedCardIds.value.has('node-2:5')).toBe(false)
+    })
+
     it('matches interior errors when a subgraph container is selected', async () => {
       const { store, groups } = createErrorGroups()
       const { host, subgraph } = addSubgraphHost(2)
