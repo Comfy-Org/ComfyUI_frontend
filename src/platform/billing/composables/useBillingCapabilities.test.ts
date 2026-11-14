@@ -18,7 +18,7 @@ import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabi
 import { attachCapabilityRevisionInterceptor } from '@/platform/remote/ingest/capabilityRevision'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
 import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
@@ -1201,7 +1201,6 @@ describe('useBillingCapabilities', () => {
 
     afterEach(() => {
       localStorage.removeItem(LAPSE_RECOVERY_FLAG)
-      remoteConfig.value = {}
     })
 
     it('stays denied after the session is restored with the flag off', async () => {
@@ -1224,10 +1223,14 @@ describe('useBillingCapabilities', () => {
       await denyThenRestoreSession()
       expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
-      remoteConfig.value = {
-        ...remoteConfig.value,
-        web_session_lapse_recovery_enabled: true
-      }
+      const remoteConfigStore = useRemoteConfigStore()
+      remoteConfigStore.acceptConfig(
+        {
+          ...remoteConfigStore.config,
+          web_session_lapse_recovery_enabled: true
+        },
+        false
+      )
       await vi.advanceTimersByTimeAsync(0)
 
       expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
@@ -1276,10 +1279,14 @@ describe('useBillingCapabilities', () => {
         })
       )
       const initialized = billingCapabilities.initialize()
-      remoteConfig.value = {
-        ...remoteConfig.value,
-        web_session_lapse_recovery_enabled: true
-      }
+      const remoteConfigStore = useRemoteConfigStore()
+      remoteConfigStore.acceptConfig(
+        {
+          ...remoteConfigStore.config,
+          web_session_lapse_recovery_enabled: true
+        },
+        false
+      )
       await vi.advanceTimersByTimeAsync(0)
 
       scope.stop()
@@ -1305,10 +1312,14 @@ describe('useBillingCapabilities', () => {
         .mockResolvedValueOnce(capabilitiesResponse(true))
       const initialized = billingCapabilities.initialize()
 
-      remoteConfig.value = {
-        ...remoteConfig.value,
-        web_session_lapse_recovery_enabled: true
-      }
+      const remoteConfigStore = useRemoteConfigStore()
+      remoteConfigStore.acceptConfig(
+        {
+          ...remoteConfigStore.config,
+          web_session_lapse_recovery_enabled: true
+        },
+        false
+      )
       await vi.advanceTimersByTimeAsync(0)
       rejectRead(new WorkspaceApiError('authentication required', 401))
       await initialized

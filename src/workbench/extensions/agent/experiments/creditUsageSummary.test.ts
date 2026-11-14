@@ -1,9 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
@@ -13,22 +10,18 @@ import {
   useCreditUsageSummary
 } from './creditUsageSummary'
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/utils/devFeatureFlagOverride'))
 vi.mock(import('@/utils/sessionFeatureFlagOverride'))
 
 describe('useCreditUsageSummary', () => {
-  beforeEach(() => {
-    authenticatedRemoteConfigState.value = 'unloaded'
-    remoteConfig.value = {}
-  })
-
   it.for([['control', false] as const, ['treatment', true] as const])(
     'attributes the %s arm after a charged reply renders',
     ([arm, shown]) => {
-      remoteConfig.value = { [CREDIT_USAGE_SUMMARY_FLAG]: arm }
-      authenticatedRemoteConfigState.value = 'authenticated'
+      useRemoteConfigStore().acceptConfig(
+        { [CREDIT_USAGE_SUMMARY_FLAG]: arm },
+        true
+      )
       const experiment = useCreditUsageSummary()
 
       expect(experiment.showSummary.value).toBe(shown)
@@ -52,10 +45,10 @@ describe('useCreditUsageSummary', () => {
     experiment.expose()
     expect(useTelemetry()?.trackAgentCreditUsageExposure).not.toHaveBeenCalled()
 
-    authenticatedRemoteConfigState.value = 'authenticated'
-    ;(remoteConfig.value as Record<string, unknown>)[
-      CREDIT_USAGE_SUMMARY_FLAG
-    ] = 'unexpected'
+    const malformedConfig: Record<string, unknown> = {
+      [CREDIT_USAGE_SUMMARY_FLAG]: 'unexpected'
+    }
+    useRemoteConfigStore().acceptConfig(malformedConfig, true)
     experiment.expose()
     expect(useTelemetry()?.trackAgentCreditUsageExposure).not.toHaveBeenCalled()
 
@@ -67,8 +60,10 @@ describe('useCreditUsageSummary', () => {
   })
 
   it('permits one new exposure after the panel reopens', () => {
-    remoteConfig.value = { [CREDIT_USAGE_SUMMARY_FLAG]: 'treatment' }
-    authenticatedRemoteConfigState.value = 'authenticated'
+    useRemoteConfigStore().acceptConfig(
+      { [CREDIT_USAGE_SUMMARY_FLAG]: 'treatment' },
+      true
+    )
     const panelStore = useAgentPanelStore()
     const experiment = useCreditUsageSummary()
     experiment.expose()

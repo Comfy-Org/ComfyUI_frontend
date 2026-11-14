@@ -12,7 +12,7 @@ import {
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useLocalBillingWebFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -103,7 +103,7 @@ describe('useLocalBillingWebFlagStore', () => {
   })
 
   it('exposes only local_billing_web from a Cloud document with other keys', async () => {
-    const localConfig = { ...remoteConfig.value }
+    const localConfig = { ...useRemoteConfigStore().config }
     serveFlags({
       local_billing_web: true,
       unified_billing_settings: true,
@@ -114,7 +114,7 @@ describe('useLocalBillingWebFlagStore', () => {
     const { store } = await signInAndRead()
 
     expect(store.enabled).toBe(true)
-    expect(remoteConfig.value).toEqual(localConfig)
+    expect(useRemoteConfigStore().config).toEqual(localConfig)
   })
 
   it.for([

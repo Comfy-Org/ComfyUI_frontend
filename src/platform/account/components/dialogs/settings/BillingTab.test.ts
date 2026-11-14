@@ -33,7 +33,6 @@ import {
 } from '@/platform/billing/composables/__mocks__/servedBillingNotices'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { BillingTopUpDenial, Plan } from '@comfyorg/billing-core'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
@@ -64,7 +63,6 @@ vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
-vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(
@@ -273,13 +271,6 @@ function arrange(scenario: Scenario = {}) {
       ),
       initialize: vi.fn(async () => {}),
       refresh
-    })
-  )
-  vi.mocked(useFreeTierQuota).mockReturnValue(
-    fromPartial({
-      quotaEnabled: computed(() => false),
-      available: ref(0),
-      maxAvailable: ref(0)
     })
   )
 

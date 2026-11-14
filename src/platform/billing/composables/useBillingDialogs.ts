@@ -116,9 +116,9 @@ export function useBillingDialogs() {
 
     try {
       if (!window.__CONFIG__?.subscription_required) {
-        const { remoteConfigState } =
-          await import('@/platform/remoteConfig/remoteConfig')
-        if (remoteConfigState.value === 'unloaded') {
+        const { useRemoteConfigStore } =
+          await import('@/platform/remoteConfig/remoteConfigStore')
+        if (useRemoteConfigStore().loadState === 'unloaded') {
           const { refreshRemoteConfig } =
             await import('@/platform/remoteConfig/refreshRemoteConfig')
           await refreshRemoteConfig()

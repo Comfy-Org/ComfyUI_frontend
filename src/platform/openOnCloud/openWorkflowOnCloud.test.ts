@@ -30,7 +30,7 @@ vi.mock(import('@/platform/openOnCloud/serializeRootGraph'), () => ({
   serializeRootGraph: vi.fn(() => structuredClone(defaultGraph))
 }))
 
-const cloudOrigin = new URL(getComfyCloudBaseUrl()).origin
+const cloudOrigin = () => new URL(getComfyCloudBaseUrl()).origin
 const PREPARE_FAILED_TOAST = expect.objectContaining({
   kind: 'error',
   title: "Couldn't prepare this workflow for Comfy Cloud"
@@ -56,7 +56,7 @@ function openedNonce(tabs: ReturnType<typeof fakeTabs>['tabs']): string {
 
 function sendFromTab(
   data: unknown,
-  { origin = cloudOrigin, fromTab = true } = {}
+  { origin = cloudOrigin(), fromTab = true } = {}
 ) {
   window.dispatchEvent(
     new MessageEvent('message', {
@@ -74,7 +74,7 @@ describe('openWorkflowOnCloud in a browser', () => {
     await openWorkflowOnCloud(tabs)
 
     const url = new URL(tabs.open.mock.calls[0][0])
-    expect(url.origin).toBe(cloudOrigin)
+    expect(url.origin).toBe(cloudOrigin())
     expect(url.searchParams.get('from_local')).toMatch(/^[\w-]{24}$/)
     expect(tabs.openDisowned).not.toHaveBeenCalled()
     expect(useToast().toasts).not.toContainEqual(PREPARE_FAILED_TOAST)
@@ -99,7 +99,7 @@ describe('openWorkflowOnCloud in a browser', () => {
           ])
         })
       },
-      cloudOrigin
+      cloudOrigin()
     )
   })
 
@@ -120,7 +120,7 @@ describe('openWorkflowOnCloud in a browser', () => {
 
   it.for([
     { name: 'another origin', origin: 'https://evil.example', fromTab: true },
-    { name: 'another window', origin: cloudOrigin, fromTab: false }
+    { name: 'another window', origin: undefined, fromTab: false }
   ])('ignores a ready message from $name', async ({ origin, fromTab }) => {
     const { tab, tabs } = fakeTabs()
     await openWorkflowOnCloud(tabs)

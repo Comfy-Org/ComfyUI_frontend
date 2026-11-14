@@ -19,7 +19,6 @@ import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/deskt
 import * as distributionTypes from '@/platform/distribution/types'
 import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -340,7 +339,6 @@ describe('clients the web session leaves on tokens', () => {
   afterEach(() => {
     hooks?.stop()
     hooks = undefined
-    remoteConfig.value = {}
   })
 
   it.for([...FEATURE_ROWS, ...API_KEY_SESSION_ROWS])(

@@ -1,17 +1,11 @@
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
+import { getActivePinia } from 'pinia'
 import { computed, reactive, readonly, watchEffect } from 'vue'
-import type { Ref } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
 import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
-import {
-  isAuthenticatedConfigLoaded,
-  remoteConfig,
-  sessionAgentGrant,
-  sessionAgentGrantValidUntil,
-  useRemoteConfigCache
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
@@ -60,6 +54,8 @@ function resolveStrictBooleanFlag(
   }
 }
 
+type RemoteConfigStore = ReturnType<typeof useRemoteConfigStore>
+
 /**
  * Resolves a per-user, Cloud-only flag that selects backend behavior. Off the
  * Cloud build it is always false; during the auth window it falls back to the
@@ -67,9 +63,10 @@ function resolveStrictBooleanFlag(
  * the wrong backend before authenticated config confirms the flag.
  */
 function resolveAuthGatedFlag(
+  store: RemoteConfigStore,
   flagKey: string,
   remoteConfigValue: boolean | undefined,
-  cachedValue: Ref<boolean | undefined>
+  cachedValue: boolean | undefined
 ): boolean {
   const sessionOverride = getSessionOverride<boolean>(flagKey)
   if (sessionOverride !== undefined) return sessionOverride
@@ -78,7 +75,7 @@ function resolveAuthGatedFlag(
   if (override !== undefined) return override
 
   if (!isCloud) return false
-  if (!isAuthenticatedConfigLoaded.value) return cachedValue.value ?? false
+  if (!store.isAuthenticatedConfigLoaded) return cachedValue ?? false
 
   return remoteConfigValue ?? api.getServerFeature(flagKey, false)
 }
@@ -92,10 +89,9 @@ function resolveAuthGatedFlag(
  * same account (PM-1707).
  */
 function resolveWhitelistFlag(
+  store: RemoteConfigStore,
   flagKey: string,
-  remoteConfigValue: boolean | undefined,
-  grantedThisSession: Ref<boolean | undefined>,
-  grantValidUntil: Ref<number | undefined>
+  remoteConfigValue: boolean | undefined
 ): boolean {
   const sessionOverride = getSessionOverride<boolean>(flagKey)
   if (sessionOverride !== undefined) return sessionOverride
@@ -104,10 +100,10 @@ function resolveWhitelistFlag(
   if (override !== undefined) return override
 
   if (!isCloud) return false
-  if (!isAuthenticatedConfigLoaded.value)
+  if (!store.isAuthenticatedConfigLoaded)
     return (
-      grantedThisSession.value === true &&
-      (grantValidUntil.value ?? 0) > Date.now()
+      store.agentGrant === true &&
+      (store.agentGrantValidUntil ?? 0) > Date.now()
     )
 
   return remoteConfigValue === true
@@ -117,11 +113,14 @@ function resolveWhitelistFlag(
  * Composable for reactive access to server-side feature flags
  */
 export function useFeatureFlags() {
+  const ownerStore = getActivePinia() ? useRemoteConfigStore() : undefined
+  const remoteConfigStore = () => ownerStore ?? useRemoteConfigStore()
+  const remoteConfig = () => remoteConfigStore().config
   const hostedBillingDestination = () =>
     normalizeHostedBillingDestination(
       resolveFlag(
         ServerFeatureFlag.HOSTED_BILLING_DESTINATION,
-        remoteConfig.value.hosted_billing_destination,
+        remoteConfig().hosted_billing_destination,
         'stripe'
       )
     )
@@ -147,7 +146,7 @@ export function useFeatureFlags() {
     get modelUploadButtonEnabled() {
       return resolveFlag(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
-        remoteConfig.value.model_upload_button_enabled,
+        remoteConfig().model_upload_button_enabled,
         false
       )
     },
@@ -161,54 +160,54 @@ export function useFeatureFlags() {
     get privateModelsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PRIVATE_MODELS_ENABLED,
-        remoteConfig.value.private_models_enabled,
+        remoteConfig().private_models_enabled,
         false
       )
     },
     get onboardingSurveyEnabled() {
       return resolveFlag(
         ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED,
-        remoteConfig.value.onboarding_survey_enabled,
+        remoteConfig().onboarding_survey_enabled,
         false
       )
     },
     get signedOutRerouteEnabled() {
       return resolveFlag(
         ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED,
-        remoteConfig.value.signed_out_reroute_enabled,
+        remoteConfig().signed_out_reroute_enabled,
         false
       )
     },
     get partnerNodeGovernanceEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
-        remoteConfig.value.partner_node_governance_enabled,
+        remoteConfig().partner_node_governance_enabled,
         false
       )
     },
     get partnerRunGateEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PARTNER_RUN_GATE_ENABLED,
-        remoteConfig.value.partner_run_gate_enabled,
+        remoteConfig().partner_run_gate_enabled,
         true
       )
     },
     get deploymentStartEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.DEPLOYMENT_START_ENABLED,
-        remoteConfig.value.deployment_start_enabled
+        remoteConfig().deployment_start_enabled
       )
     },
     get partnerNodeTokenEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.PARTNER_NODE_TOKEN,
-        remoteConfig.value.partner_node_token
+        remoteConfig().partner_node_token
       )
     },
     get userSecretsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.USER_SECRETS_ENABLED,
-        remoteConfig.value.user_secrets_enabled,
+        remoteConfig().user_secrets_enabled,
         false
       )
     },
@@ -218,7 +217,7 @@ export function useFeatureFlags() {
     get openOnCloudEnabled() {
       return resolveFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
-        remoteConfig.value.open_on_cloud_enabled,
+        remoteConfig().open_on_cloud_enabled,
         import.meta.env.DEV
       )
     },
@@ -228,35 +227,35 @@ export function useFeatureFlags() {
     get nodeLibraryEssentialsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED,
-        remoteConfig.value.node_library_essentials_enabled,
+        remoteConfig().node_library_essentials_enabled,
         isNightly || import.meta.env.DEV
       )
     },
     get comfyHubUploadEnabled() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED,
-        remoteConfig.value.comfyhub_upload_enabled,
+        remoteConfig().comfyhub_upload_enabled,
         false
       )
     },
     get comfyHubProfileGateEnabled() {
       return resolveFlag(
         ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED,
-        remoteConfig.value.comfyhub_profile_gate_enabled,
+        remoteConfig().comfyhub_profile_gate_enabled,
         false
       )
     },
     get deploymentCompatibilityMarksEnabled() {
       return resolveFlag(
         ServerFeatureFlag.DEPLOYMENT_COMPATIBILITY_MARKS_ENABLED,
-        remoteConfig.value.deployment_compatibility_marks_enabled,
+        remoteConfig().deployment_compatibility_marks_enabled,
         false
       )
     },
     get runtimeLibraryModelsEnabled() {
       return resolveFlag(
         ServerFeatureFlag.RUNTIME_LIBRARY_MODELS_ENABLED,
-        remoteConfig.value.runtime_library_models_enabled,
+        remoteConfig().runtime_library_models_enabled,
         false
       )
     },
@@ -264,14 +263,14 @@ export function useFeatureFlags() {
     get modelUploadFolders(): readonly string[] {
       return resolveFlag<readonly string[]>(
         ServerFeatureFlag.MODEL_UPLOAD_FOLDERS,
-        remoteConfig.value.model_upload_folders,
+        remoteConfig().model_upload_folders,
         []
       )
     },
     get lateCustomNodesEnabled() {
       return resolveFlag(
         ServerFeatureFlag.LATE_CUSTOM_NODES_ENABLED,
-        remoteConfig.value.late_custom_nodes_enabled,
+        remoteConfig().late_custom_nodes_enabled,
         false
       )
     },
@@ -292,7 +291,7 @@ export function useFeatureFlags() {
 
       return resolveFlag(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
-        remoteConfig.value.unified_cloud_auth,
+        remoteConfig().unified_cloud_auth,
         false
       )
     },
@@ -300,18 +299,16 @@ export function useFeatureFlags() {
       if (!isCloud) return false
 
       const key = ServerFeatureFlag.UNIFIED_WEB_SESSION
-      // Overrides skip the server's web_session_enabled pairing; whoever overrides
-      // this key must also be in the web_session_enabled set.
       const value =
         getSessionOverride<unknown>(key) ??
         getDevOverride<unknown>(key) ??
-        remoteConfig.value.unified_web_session
+        remoteConfig().unified_web_session
       return value === true
     },
     get webSessionLapseRecoveryEnabled() {
       return resolveFlag(
         ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED,
-        remoteConfig.value.web_session_lapse_recovery_enabled,
+        remoteConfig().web_session_lapse_recovery_enabled,
         false
       )
     },
@@ -320,7 +317,7 @@ export function useFeatureFlags() {
 
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.SSO_ENABLED,
-        remoteConfig.value.sso_enabled
+        remoteConfig().sso_enabled
       )
     },
     /** Browser sign-in for a local ComfyUI that Desktop does not host. */
@@ -329,38 +326,39 @@ export function useFeatureFlags() {
 
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.LOCAL_WEB_SSO,
-        remoteConfig.value.local_web_sso
+        remoteConfig().local_web_sso
       )
     },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(
+        remoteConfigStore(),
         ServerFeatureFlag.BILLING_CONTROL_ENABLED,
-        remoteConfig.value.billing_control_enabled,
-        useRemoteConfigCache().cachedBillingControlEnabled
+        remoteConfig().billing_control_enabled,
+        remoteConfigStore().cachedBillingControlEnabled
       )
     },
     get memberCreditLimitsEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED,
-        remoteConfig.value.member_credit_limits_enabled
+        remoteConfig().member_credit_limits_enabled
       )
     },
     get billingNewUxEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_NEW_UX_ENABLED,
-        remoteConfig.value.billing_new_ux_enabled
+        remoteConfig().billing_new_ux_enabled
       )
     },
     get billingAutoTopUpAtCheckoutEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED,
-        remoteConfig.value.billing_auto_top_up_at_checkout_enabled
+        remoteConfig().billing_auto_top_up_at_checkout_enabled
       )
     },
     get billingSdkTopupEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
-        remoteConfig.value.billing_sdk_topup_enabled
+        remoteConfig().billing_sdk_topup_enabled
       )
     },
     /** The SDK rail runs on the unified session, so it needs both flags. */
@@ -370,7 +368,7 @@ export function useFeatureFlags() {
     get billingSdkSubscriptionEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED,
-        remoteConfig.value.billing_sdk_subscription_enabled
+        remoteConfig().billing_sdk_subscription_enabled
       )
     },
     get billingSdkSubscriptionRailEnabled() {
@@ -380,40 +378,41 @@ export function useFeatureFlags() {
       if (!isCloud) return opensLocalBillingHandoff()
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
-        remoteConfig.value.unified_billing_settings
+        remoteConfig().unified_billing_settings
       )
     },
     get pricingTableFallback() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.PRICING_TABLE_FALLBACK,
-        remoteConfig.value.pricing_table_fallback
+        remoteConfig().pricing_table_fallback
       )
     },
     get oauthConsentSwitchAccountEnabled() {
       return resolveFlag(
         ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED,
-        remoteConfig.value.oauth_consent_switch_account_enabled,
+        remoteConfig().oauth_consent_switch_account_enabled,
         false
       )
     },
     get v1PaymentRecovery() {
       return resolveAuthGatedFlag(
+        remoteConfigStore(),
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
-        remoteConfig.value.v1_payment_recovery,
-        useRemoteConfigCache().cachedV1PaymentRecovery
+        remoteConfig().v1_payment_recovery,
+        remoteConfigStore().cachedV1PaymentRecovery
       )
     },
     get signupTurnstileMode() {
       return resolveFlag(
         ServerFeatureFlag.SIGNUP_TURNSTILE,
-        remoteConfig.value.signup_turnstile,
+        remoteConfig().signup_turnstile,
         'off'
       )
     },
     get supportsModelTypeTags() {
       return resolveFlag(
         ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
-        remoteConfig.value.supports_model_type_tags,
+        remoteConfig().supports_model_type_tags,
         false
       )
     },
@@ -422,10 +421,9 @@ export function useFeatureFlags() {
     },
     get agentInAppExperienceEnabled() {
       return resolveWhitelistFlag(
+        remoteConfigStore(),
         ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE,
-        remoteConfig.value['agent-in-app-experience'],
-        sessionAgentGrant,
-        sessionAgentGrantValidUntil
+        remoteConfig()['agent-in-app-experience']
       )
     }
   })

@@ -20,7 +20,6 @@ import {
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
@@ -395,7 +394,9 @@ const SIGN_OUT: RecordedRequest[] = [
 
 const CUSTOMER_PROVISIONING: RecordedRequest = {
   method: 'POST',
-  path: `${getComfyApiBaseUrl()}/customers`,
+  get path() {
+    return `${getComfyApiBaseUrl()}/customers`
+  },
   headers: {
     authorization: 'Bearer firebase-id-token',
     'content-type': 'application/json'
@@ -498,7 +499,6 @@ describe('cloud auth requests with unified_web_session off', () => {
   afterEach(() => {
     hooks?.stop()
     hooks = undefined
-    remoteConfig.value = {}
   })
 
   it.for([
@@ -629,7 +629,6 @@ describe.for([
   afterEach(() => {
     hooks?.stop()
     hooks = undefined
-    remoteConfig.value = {}
   })
 
   it('reads on the Firebase-minted Cloud JWT and re-mints a 401 through Firebase once', async () => {
@@ -749,10 +748,6 @@ describe.for([
       identity.reset()
     })
 
-    afterEach(() => {
-      remoteConfig.value = {}
-    })
-
     it.for([
       { name: 'a Firebase login', user: FIREBASE_USER, expected: 'signed_in' },
       { name: 'no login', user: null, expected: 'signed_out' }
@@ -777,10 +772,6 @@ describe('an interactive sign-in with unified_web_session off', () => {
     sessionStorage.clear()
   })
 
-  afterEach(() => {
-    remoteConfig.value = {}
-  })
-
   it('never consumes the marker and sends no session request or session event', async () => {
     const recorder = installFetchRecorder({ unified_cloud_auth: false })
     await refreshRemoteConfig({ useAuth: false })
@@ -799,10 +790,6 @@ describe('an interactive sign-in with unified_web_session off', () => {
 describe('Firebase-only account actions with unified_web_session off', () => {
   beforeEach(() => {
     identity.reset()
-  })
-
-  afterEach(() => {
-    remoteConfig.value = {}
   })
 
   const EMAIL_USER = fromPartial<User>({

@@ -1,14 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import en from '@/locales/en/main.json'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-
-vi.mock(import('@/platform/remoteConfig/remoteConfig'))
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -26,12 +24,11 @@ function renderDialog(onClose = vi.fn()) {
 }
 
 describe('ManagerSurveyDialog', () => {
-  beforeEach(() => {
-    remoteConfig.value = {}
-  })
-
   it('embeds the configured survey URL with the logged-in user', () => {
-    remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    useRemoteConfigStore().acceptConfig(
+      { manager_survey_url: SURVEY_URL },
+      false
+    )
     useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-123' }))
 
     renderDialog()
@@ -45,7 +42,10 @@ describe('ManagerSurveyDialog', () => {
   })
 
   it('omits distinct_id when there is no logged-in user', () => {
-    remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    useRemoteConfigStore().acceptConfig(
+      { manager_survey_url: SURVEY_URL },
+      false
+    )
 
     renderDialog()
 
@@ -63,7 +63,10 @@ describe('ManagerSurveyDialog', () => {
   })
 
   it('shows the error state when the configured survey url is malformed', () => {
-    remoteConfig.value = { manager_survey_url: 'not a valid url' }
+    useRemoteConfigStore().acceptConfig(
+      { manager_survey_url: 'not a valid url' },
+      false
+    )
 
     renderDialog()
 
@@ -75,7 +78,10 @@ describe('ManagerSurveyDialog', () => {
     renderDialog()
     expect(screen.getByTestId('manager-survey-error')).toBeTruthy()
 
-    remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    useRemoteConfigStore().acceptConfig(
+      { manager_survey_url: SURVEY_URL },
+      false
+    )
     await nextTick()
 
     expect(screen.queryByTestId('manager-survey-error')).toBeNull()
@@ -83,7 +89,10 @@ describe('ManagerSurveyDialog', () => {
   })
 
   it('clears the loading state once the iframe loads', async () => {
-    remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    useRemoteConfigStore().acceptConfig(
+      { manager_survey_url: SURVEY_URL },
+      false
+    )
 
     renderDialog()
     expect(screen.getByTestId('manager-survey-loading')).toBeTruthy()
@@ -96,9 +105,13 @@ describe('ManagerSurveyDialog', () => {
   })
 
   it('applies survey height messages even when the url has a trailing slash', async () => {
-    remoteConfig.value = {
-      manager_survey_url: 'https://us.posthog.com/external_surveys/survey-123/'
-    }
+    useRemoteConfigStore().acceptConfig(
+      {
+        manager_survey_url:
+          'https://us.posthog.com/external_surveys/survey-123/'
+      },
+      false
+    )
 
     renderDialog()
     const iframe = screen.getByTestId('manager-survey-iframe')
@@ -119,7 +132,10 @@ describe('ManagerSurveyDialog', () => {
   })
 
   it('removes the iframe and shows the error state when loading times out', async () => {
-    remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    useRemoteConfigStore().acceptConfig(
+      { manager_survey_url: SURVEY_URL },
+      false
+    )
 
     renderDialog()
     expect(screen.getByTestId('manager-survey-iframe')).toBeTruthy()
@@ -133,7 +149,10 @@ describe('ManagerSurveyDialog', () => {
 
   it('closes the dialog when the close button is clicked', async () => {
     const onClose = vi.fn()
-    remoteConfig.value = { manager_survey_url: SURVEY_URL }
+    useRemoteConfigStore().acceptConfig(
+      { manager_survey_url: SURVEY_URL },
+      false
+    )
     renderDialog(onClose)
 
     await userEvent.click(screen.getByRole('button', { name: 'Close' }))

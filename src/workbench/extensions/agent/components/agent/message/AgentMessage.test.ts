@@ -4,10 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { microUsdToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 import { i18n, loadLocale } from '@/i18n'
-import {
-  authenticatedRemoteConfigState,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
@@ -48,8 +45,10 @@ function paywallMessage(message?: string): AssistantMessage {
 
 describe('AgentMessage credit usage', () => {
   beforeEach(() => {
-    authenticatedRemoteConfigState.value = 'authenticated'
-    remoteConfig.value = { 'agent-credit-usage-summary': 'treatment' }
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-credit-usage-summary': 'treatment' },
+      true
+    )
   })
 
   it('shows the completed turn charge without presenting it as a session total', () => {
@@ -196,7 +195,10 @@ describe('AgentMessage credit usage', () => {
   })
 
   it('hides usage in the control arm', () => {
-    remoteConfig.value = { 'agent-credit-usage-summary': 'control' }
+    useRemoteConfigStore().acceptConfig(
+      { 'agent-credit-usage-summary': 'control' },
+      true
+    )
     render(AgentMessage, {
       props: {
         message: {

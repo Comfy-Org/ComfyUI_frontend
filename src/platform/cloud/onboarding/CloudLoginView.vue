@@ -112,7 +112,7 @@ import { useCloudAuthPage } from '@/platform/cloud/onboarding/composables/useClo
 import { useSsoSignIn } from '@/platform/cloud/onboarding/composables/useSsoSignIn'
 import { CLOUD_AUTH_LINK_BUTTON_CLASS } from '@/platform/cloud/onboarding/constants/authClasses'
 import { SSO_ERROR_MESSAGE_KEY } from '@/platform/cloud/onboarding/sso/ssoErrorMessages'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import type { SignInData } from '@/schemas/signInSchema'
 
 const { t } = useI18n()
@@ -122,8 +122,9 @@ const authActions = useAuthActions()
 const { flags } = useFeatureFlags()
 const { state: ssoState, busy: ssoBusy, trySso } = useSsoSignIn('cloud_login')
 
+const remoteConfigStore = useRemoteConfigStore()
 const freeRunsSuffix = computed(() => {
-  const offer = remoteConfig.value.free_tier_offer
+  const offer = remoteConfigStore.config.free_tier_offer
   if (!offer) return null
   const key = offer.requires_google_sign_in
     ? 'auth.login.freeRunsSuffixGoogle'
