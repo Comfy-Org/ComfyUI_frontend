@@ -406,7 +406,7 @@ async function verifyOrSwitchPrCheckout(
     return continueWithoutVerifiedPr(
       pr,
       projectRoot,
-      `the project files have unsaved changes; refusing to switch versions`,
+      `the project files have uncommitted changes; refusing to switch versions`,
       allowExplicitFallback,
       details.branch,
       details.head
@@ -798,7 +798,7 @@ export async function runRecord(
     ? true
     : answered(
         await confirm({
-          message: 'Turn on optional experimental app settings for this test?',
+          message: 'Change optional experimental app settings for this test?',
           initialValue: false
         })
       )

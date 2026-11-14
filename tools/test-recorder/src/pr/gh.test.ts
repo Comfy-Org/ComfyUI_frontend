@@ -85,7 +85,7 @@ describe('createPr', () => {
 
     expect(result.success).toBe(false)
     expect(consoleLines.join('\n')).toContain(
-      'Add at least one `await expect(...)` call'
+      'Add at least one check like this'
     )
   })
 
