@@ -67,6 +67,7 @@
                     :is="row.widget.vueComponent"
                     :model-value="row.widget.simplified.value"
                     :widget="row.widget.simplified"
+                    :widget-id="row.widget.widgetId"
                     :node-id
                     :node-type
                     :node-title

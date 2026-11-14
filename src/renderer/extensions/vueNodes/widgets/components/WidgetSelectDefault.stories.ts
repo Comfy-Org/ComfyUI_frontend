@@ -66,6 +66,49 @@ const meta: Meta<{
 export default meta
 type Story = StoryObj<typeof meta>
 
+function labyrinthBranch(directory: string, depth: number): string[] {
+  return [
+    ...Array.from(
+      { length: 3 },
+      (_, index) => `${directory}/model-${index}.safetensors`
+    ),
+    ...(depth === 0
+      ? []
+      : Array.from({ length: 3 }, (_, index) =>
+          labyrinthBranch(`${directory}/door-${index}`, depth - 1)
+        ).flat())
+  ]
+}
+
+const labyrinthCorridor = Array.from(
+  { length: 48 },
+  (_, index) => `turn-${String(index + 1).padStart(2, '0')}`
+)
+const labyrinthDeepFolder = [
+  'Labyrinth',
+  'vault',
+  ...labyrinthCorridor.slice(0, 40)
+].join('/')
+const labyrinthOptions = [
+  'None',
+  ...labyrinthBranch('Labyrinth/atrium', 7),
+  ...labyrinthCorridor.flatMap((_, index) => {
+    const directory = [
+      'Labyrinth',
+      'vault',
+      ...labyrinthCorridor.slice(0, index + 1)
+    ].join('/')
+    return [
+      `${directory}/anchor.safetensors`,
+      `${directory}/exit.safetensors`,
+      ...Array.from({ length: 3 }, (_, branch) => [
+        `${directory}/detour-${branch}/portrait.safetensors`,
+        `${directory}/detour-${branch}/landscape.safetensors`
+      ]).flat()
+    ]
+  })
+]
+
 export const Default: Story = {
   args: {
     value: 'portrait.safetensors',
@@ -245,5 +288,54 @@ export const ManyOptions: Story = {
       await expect(option.top).toBeGreaterThanOrEqual(viewport.top)
       await expect(option.bottom).toBeLessThanOrEqual(viewport.bottom)
     })
+  }
+}
+
+export const Labyrinth: Story = {
+  args: {
+    value: `${labyrinthDeepFolder}/anchor.safetensors`,
+    options: labyrinthOptions
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const popup = within(canvasElement.ownerDocument.body)
+    const trigger = canvas.getByRole('combobox', { name: 'ckpt_name' })
+    const previous = canvas.getByRole('button', { name: 'ckpt_name: Previous' })
+    const next = canvas.getByRole('button', { name: 'ckpt_name: Next' })
+    await userEvent.click(trigger)
+    await userEvent.click(popup.getByRole('button', { name: /^Lock folder:/ }))
+    await expect(previous).toBeDisabled()
+    await expect(next).toBeEnabled()
+    const search = popup.getByRole('combobox', { name: 'Search' })
+    await userEvent.type(search, 'atrium')
+    await expect(popup.getByRole('status', { name: '' })).toHaveTextContent(
+      'No Results Found'
+    )
+    await userEvent.tab({ shift: true })
+    await expect(
+      popup.getByRole('button', { name: /^Unlock folder:/ })
+    ).toHaveFocus()
+    await userEvent.keyboard(' ')
+    await expect(search).toHaveFocus()
+    await expect(search).toHaveValue('atrium')
+    await expect(
+      await popup.findByRole('option', {
+        name: 'Labyrinth/atrium/model-0.safetensors'
+      })
+    ).toBeVisible()
+    await userEvent.clear(search)
+    await userEvent.click(popup.getByRole('button', { name: /^Lock folder:/ }))
+    await userEvent.click(
+      popup.getByRole('option', { name: 'exit.safetensors' })
+    )
+    await userEvent.click(previous)
+    await expect(canvas.getByLabelText('Selected model')).toHaveTextContent(
+      `${labyrinthDeepFolder}/anchor.safetensors`
+    )
+    await expect(previous).toBeDisabled()
+    await userEvent.click(trigger)
+    await expect(
+      popup.getByRole('option', { name: 'Folder: turn-41' })
+    ).toBeVisible()
+    await expect(popup.queryByRole('option', { name: /^Back:/ })).toBeNull()
   }
 }
