@@ -13,6 +13,7 @@ import { createBoundingBoxesExtension } from './createBoundingBoxes'
 import { customWidgetsExtension } from './customWidgets'
 import { dynamicPromptsExtension } from './dynamicPrompts'
 import { editAttentionExtension } from './editAttention'
+import { goToNodeExtension } from './goToNode'
 import { registerElectronAdapterExtension } from './electronAdapter'
 import { groupNodeExtension } from './groupNode'
 import { groupOptionsExtension } from './groupOptions'
@@ -47,6 +48,7 @@ const baseCoreExtensions: ComfyExtension[] = [
   customWidgetsExtension,
   dynamicPromptsExtension,
   editAttentionExtension,
+  goToNodeExtension,
   widgetInputsExtension,
   groupNodeExtension,
   groupOptionsExtension,
