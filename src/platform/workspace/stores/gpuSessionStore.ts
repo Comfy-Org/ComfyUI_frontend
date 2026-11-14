@@ -160,9 +160,14 @@ export const useGpuSessionStore = defineStore('gpuSession', () => {
   function receiveGpuSession(event: CustomEvent<unknown>) {
     const message = parseGpuSessionMessage(event.detail)
     const id = deploymentId.value
-    if (message && id) {
-      dispatch({ type: 'messageReceived', message, deploymentId: id })
+    if (!message || !id) return
+    const received: GpuSessionEvent = {
+      type: 'messageReceived',
+      message,
+      deploymentId: id
     }
+    dispatch(received)
+    if (endsTheSession(received)) void pickStore.load()
   }
 
   function install() {

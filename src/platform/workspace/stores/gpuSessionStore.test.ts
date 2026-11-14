@@ -134,6 +134,42 @@ describe('useGpuSessionStore', () => {
     }
   )
 
+  it.for([
+    { name: 'another session keeps it on', listed: true },
+    { name: 'it was the last session', listed: false }
+  ])(
+    'after an idle end the toggle shows the setting the listing reports when $name',
+    ({ listed }) => {
+      const store = storeForPicked({
+        editor_gpu: true,
+        can_change_editor_gpu: true
+      })
+      const pick = useDeploymentPickStore()
+      store.install()
+
+      socketSays({
+        session_id: 's-1',
+        deployment_id: 'dep-1',
+        state: 'ended',
+        reason: 'idle',
+        runs: []
+      })
+
+      expect(store.settings?.on).toBe(true)
+      expect(pick.load).toHaveBeenCalledOnce()
+
+      Object.assign(pick, {
+        pickedDeployment: deploymentWithGpu('dep-1', {
+          editor_gpu: listed,
+          can_change_editor_gpu: true
+        }),
+        shownListing: 1
+      })
+
+      expect(store.settings?.on).toBe(listed)
+    }
+  )
+
   it('lets a held request go with its answer when the store is disposed', async () => {
     const send = vi.mocked(fetch)
     send.mockResolvedValue(gpuStarting('starting'))
