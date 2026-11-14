@@ -1191,7 +1191,7 @@ describe(assetService.getAllAssetsByTag, () => {
             validAsset({ id: 'a', tags: ['input'] }),
             validAsset({ id: 'b', tags: ['input'] })
           ],
-          { hasMore: true, total: 10_000, nextCursor: 'cursor-page-2' }
+          { hasMore: true, total: 2, nextCursor: 'cursor-page-2' }
         )
       )
       .mockResolvedValueOnce(
@@ -1200,12 +1200,12 @@ describe(assetService.getAllAssetsByTag, () => {
             validAsset({ id: 'c', tags: ['input'] }),
             validAsset({ id: 'd', tags: ['input'] })
           ],
-          { hasMore: true, total: 10_000, nextCursor: 'cursor-page-3' }
+          { hasMore: true, total: 2, nextCursor: 'cursor-page-3' }
         )
       )
       .mockResolvedValueOnce(
         buildAssetListResponse([validAsset({ id: 'e', tags: ['input'] })], {
-          total: 10_000
+          total: 2
         })
       )
 

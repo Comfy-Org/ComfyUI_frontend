@@ -469,13 +469,13 @@ describe('useAssetsQuery capped totals', () => {
     const list = await createList('capped-total-paging', ['newest'], {
       hasMore: true,
       nextCursor: 'page-2',
-      total: 10_000
+      total: 1
     })
     fetchApiMock.mockResolvedValueOnce(
       response(['older'], {
         hasMore: true,
         nextCursor: 'page-3',
-        total: 10_000
+        total: 1
       })
     )
 
