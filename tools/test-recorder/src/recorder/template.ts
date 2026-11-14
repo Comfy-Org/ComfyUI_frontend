@@ -202,6 +202,11 @@ ${reuseLoginBlock}test(${safeName}, async ({ page }) => {
 ${persistLoginBlock}  // The cloud app may show a sign-in screen first — sign in manually, then
   // record. Nothing is captured until the Record button is clicked, so the
   // recorder opens immediately rather than gating on app boot.
+  //
+  // Cloud sign-in notes: SSO may be rejected in this separate browser
+  // profile — expect a 2FA prompt and fall back to email + password once.
+  // Sign in BEFORE pressing Record; the session is saved every few seconds
+  // and later recordings reuse it, so you only sign in once.
 ${recorderBlock('page', safeOutputPath)}})
 `
 }
