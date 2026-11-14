@@ -64,7 +64,8 @@ import type {
 import { toAskResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   isAttachmentKind,
-  normalizeAgentTranscript
+  normalizeAgentTranscript,
+  openPendingAsk
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
@@ -3009,10 +3010,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (latest && !isTerminalTurnStatus(latest.status))
         return {
           kind: 'streaming',
-          pendingAsk: rows.findLast(
-            (row) =>
-              !isTerminalTurnStatus(row.status) && row.pending_ask !== undefined
-          )?.pending_ask
+          pendingAsk: rows
+            .filter((row) => !isTerminalTurnStatus(row.status))
+            .map(openPendingAsk)
+            .findLast((ask) => ask !== undefined)
         }
       return {
         kind: 'terminal',

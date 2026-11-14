@@ -3,6 +3,7 @@ import {
   zAgentAnswerAccepted,
   zAgentAskKind,
   zAgentAskResolvedData,
+  zAgentAskStatus,
   zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
@@ -73,6 +74,14 @@ const zTolerantPendingAsk = zAgentPendingAskBase.extend({
   kind: zAgentAskKind.or(z.literal('unknown')).catch('unknown'),
   context: z.unknown().optional()
 })
+
+export const zAgentResolvedAsk = zTolerantPendingAsk.extend({
+  status: zAgentAskStatus,
+  selected: z.array(z.string()).nullish(),
+  other_text: z.string().nullish(),
+  after_tool_calls: z.number().int().nonnegative().optional()
+})
+export type AgentResolvedAsk = z.infer<typeof zAgentResolvedAsk>
 
 export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
   ({ mode, credit_limit }, ctx) => {
@@ -187,7 +196,8 @@ const zAgentMessageContent = z
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
     content: zAgentMessageContent.optional(),
-    pending_ask: zTolerantPendingAsk.optional()
+    pending_ask: zTolerantPendingAsk.optional(),
+    resolved_asks: z.unknown().optional()
   })
   .passthrough()
 

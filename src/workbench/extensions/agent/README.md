@@ -190,7 +190,10 @@ settles.
 
 ## Ask cards
 
-An `ask_user` question stays on screen, read-only, after it resolves, until
-the thread is loaded again. The server's transcript keeps only a pending ask
-(`pending_ask`), so a reload, or opening another chat and coming back, drops a
-card whose ask has resolved.
+An `ask_user` or `delete_approval` card stays on screen, read-only, after it
+resolves. A server that lists finished asks on the row (`resolved_asks`) keeps
+those cards across a reload, or opening another chat and coming back, placed
+by `after_tool_calls` among the row's tool calls; an entry without it goes
+after the row's last tool call. A server that sends only the pending ask
+(`pending_ask`) drops a resolved card when the thread is loaded again. A
+`run_approval` card leaves no trace once answered, live or after a reload.
