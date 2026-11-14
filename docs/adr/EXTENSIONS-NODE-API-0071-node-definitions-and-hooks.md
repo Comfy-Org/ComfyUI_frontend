@@ -180,7 +180,7 @@ registered, so `extend` cannot depend on the order.
     method as it was when the copy was made. A node that copied the method
     after the dispatcher was there already calls it, so no node hears a hook
     twice. It looks up the callbacks for its type at each call, and again
-    when an extension was added or removed since, so a callback an extension
+    when an extension's hooks were removed since, so a callback an extension
     removed, even by an earlier hook of the same delivery, is not called, and
     delivering to k callbacks costs k, not k squared. A dispatcher put on a
     prototype delivers only for a node whose type is the type it was made

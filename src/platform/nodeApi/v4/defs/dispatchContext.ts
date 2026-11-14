@@ -10,7 +10,7 @@ export interface HookSource {
     hook: K
   ): readonly HookCallbacks[K][]
   demand(hook: HookName): number
-  /** Changes each time an extension's hooks are added to or removed from a type. */
+  /** Changes each time an extension's hooks are removed from a type. */
   revision(): number
 }
 

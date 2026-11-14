@@ -225,6 +225,19 @@ describe('delivering hooks at the edges', () => {
     stringify.mockRestore()
   })
 
+  it('copies an output once however many hooks receive it', () => {
+    extend((builder) => builder.onExecuted(() => {}))
+    extend((builder) => builder.onExecuted(() => {}))
+    const node = addedNode()
+    const stringify = vi.spyOn(JSON, 'stringify')
+
+    node.onExecuted?.({ text: ['kept'] })
+    const copies = stringify.mock.calls.length
+    stringify.mockRestore()
+
+    expect(copies).toBe(1)
+  })
+
   it('calls a hook added during a delivery only from the next event, and each hook once', () => {
     const added = vi.fn()
     const first = vi.fn(() => {
