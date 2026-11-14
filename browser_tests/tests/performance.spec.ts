@@ -368,6 +368,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
             contentType: 'image/png'
           })
           await expectPngsToMatch(
+            comfyPage.page,
             testInfo,
             'far-edge-node',
             framed.exported,

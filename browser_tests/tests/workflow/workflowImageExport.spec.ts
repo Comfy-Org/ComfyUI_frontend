@@ -76,7 +76,13 @@ for (const { renderer, tags, workflow, imageCount } of [
           body: exported,
           contentType: 'image/png'
         })
-        await expectPngsToMatch(testInfo, 'workflow-image', exported, live)
+        await expectPngsToMatch(
+          comfyPage.page,
+          testInfo,
+          'workflow-image',
+          exported,
+          live
+        )
       })
     })
   })

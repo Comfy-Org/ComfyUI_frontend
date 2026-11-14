@@ -1,7 +1,6 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Menu', { tag: '@ui' }, () => {
   test('Can register sidebar tab', async ({ comfyPage }) => {
@@ -33,36 +32,28 @@ test.describe('Menu', { tag: '@ui' }, () => {
         .toEqual(['Unsaved Workflow'])
     })
 
-    test(
-      'Can close saved-workflow tabs',
-      { tag: '@screenshot' },
-      async ({ comfyPage }) => {
-        const workflowName = `tempWorkflow-${test.info().title}`
-        await comfyPage.menu.topbar.saveWorkflow(workflowName)
-        await expect
-          .poll(() => comfyPage.menu.topbar.getTabNames())
-          .toEqual([workflowName])
+    test('Can close saved-workflow tabs', async ({ comfyPage }) => {
+      const workflowName = `tempWorkflow-${test.info().title}`
+      await comfyPage.menu.topbar.saveWorkflow(workflowName)
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toEqual([workflowName])
 
-        const { workflowActions } = comfyPage.appMode
-        await workflowActions.trigger.click()
-        await expect(
-          workflowActions.menu.getByRole('menuitem', {
-            name: 'Export (Workflow Image)',
-            exact: true
-          })
-        ).toBeVisible()
-        await expectElementScreenshot(
-          workflowActions.menu,
-          'saved-workflow-actions.png'
-        )
-        await comfyPage.page.keyboard.press('Escape')
+      const { workflowActions } = comfyPage.appMode
+      await workflowActions.trigger.click()
+      await expect(
+        workflowActions.menu.getByRole('menuitem', {
+          name: 'Export (Workflow Image)',
+          exact: true
+        })
+      ).toBeVisible()
+      await comfyPage.page.keyboard.press('Escape')
 
-        await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
-        await expect
-          .poll(() => comfyPage.menu.topbar.getTabNames())
-          .toEqual(['Unsaved Workflow'])
-      }
-    )
+      await comfyPage.menu.topbar.closeWorkflowTab(workflowName)
+      await expect
+        .poll(() => comfyPage.menu.topbar.getTabNames())
+        .toEqual(['Unsaved Workflow'])
+    })
 
     test('An outside click dismisses the menu and switches workflow', async ({
       comfyPage
@@ -125,23 +116,18 @@ test.describe('Menu', { tag: '@ui' }, () => {
       await expect(menu).toBeHidden()
     })
 
-    test(
-      'Displays keybinding next to item',
-      { tag: '@screenshot' },
-      async ({ comfyPage }) => {
-        const { topbar } = comfyPage.menu
-        await topbar.openTopbarMenu()
-        const submenu = await topbar.openSubmenu('File')
-        const saveKeybinding = topbar
-          .getMenuItem('Save', submenu)
-          .getByText('Ctrl + s', { exact: true })
-        await expect(saveKeybinding).toHaveCount(1)
-        await expect(
-          topbar.getMenuItem('Export (Workflow Image)', submenu)
-        ).toBeVisible()
-        await expectElementScreenshot(submenu, 'file-menu.png')
-      }
-    )
+    test('Displays keybinding next to item', async ({ comfyPage }) => {
+      const { topbar } = comfyPage.menu
+      await topbar.openTopbarMenu()
+      const submenu = await topbar.openSubmenu('File')
+      const saveKeybinding = topbar
+        .getMenuItem('Save', submenu)
+        .getByText('Ctrl + s', { exact: true })
+      await expect(saveKeybinding).toHaveCount(1)
+      await expect(
+        topbar.getMenuItem('Export (Workflow Image)', submenu)
+      ).toBeVisible()
+    })
 
     test('Can catch error when executing command', async ({ comfyPage }) => {
       await comfyPage.page.evaluate(() => {

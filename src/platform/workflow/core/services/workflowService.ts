@@ -378,10 +378,10 @@ export const useWorkflowService = () => {
     return false
   }
 
-  const exportWorkflowImage = async (
+  async function exportWorkflowImage(
     filename: string,
     renderImage: () => Promise<WorkflowImageRender>
-  ): Promise<void> => {
+  ): Promise<void> {
     const workflow = workflowStore.activeWorkflow
     if (workflow?.path) {
       filename = workflow.filename
