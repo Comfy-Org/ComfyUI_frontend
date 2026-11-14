@@ -103,7 +103,7 @@ const { t } = useI18n()
 const props = defineProps<{
   readonly?: boolean
   nodeId: NodeId
-  widget?: SimplifiedWidget
+  widget: SimplifiedWidget
 }>()
 
 // Audio element ref
@@ -155,7 +155,7 @@ const { isPlaying, audioElementKey } = playback
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
 const litegraphNode = useWidgetHostNode(
-  () => props.widget?.hostNodeLocatorId,
+  () => props.widget.hostNodeLocatorId,
   () => props.nodeId
 )
 

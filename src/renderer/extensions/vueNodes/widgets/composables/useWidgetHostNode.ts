@@ -14,9 +14,8 @@ export function useWidgetHostNode(
 ) {
   const canvasStore = useCanvasStore()
   return useLiveGraphNode(() => {
-    const graph = canvasStore.currentGraph ?? app.canvas.graph
     const locatorId = toValue(nodeLocatorId)
     const owner = locatorId && getNodeByLocatorId(app.rootGraph, locatorId)
-    return owner || graph?.getNodeById(toValue(nodeId))
+    return owner || canvasStore.currentGraph?.getNodeById(toValue(nodeId))
   })
 }

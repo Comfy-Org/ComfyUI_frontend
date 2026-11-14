@@ -163,11 +163,42 @@ export abstract class SubgraphIONodeBase<
     return true
   }
 
-  abstract onPointerDown(
+  protected abstract dragNewLink(
+    linkConnector: LinkConnector,
+    slot: TSlot
+  ): void
+
+  onPointerDown(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,
     linkConnector: LinkConnector
-  ): void
+  ): void {
+    const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
+    if (!slot) return
+    if (e.button === 2) {
+      this.showSlotContextMenu(slot, e)
+      return
+    }
+    if (e.button !== 0) return
+
+    if (
+      LiteGraph.ctrl_alt_click_do_break_link &&
+      (e.ctrlKey || e.metaKey) &&
+      e.altKey &&
+      !e.shiftKey
+    ) {
+      pointer.onClick = () => {
+        this.subgraph.beforeChange()
+        slot.disconnect()
+        this.subgraph.afterChange()
+      }
+      return
+    }
+    pointer.onDragStart = () => this.dragNewLink(linkConnector, slot)
+    pointer.onDragEnd = (eUp) => linkConnector.dropLinks(this.subgraph, eUp)
+    pointer.onDoubleClick = () => this.handleSlotDoubleClick(slot, e)
+    pointer.finally = () => linkConnector.reset(true)
+  }
 
   // #region Hoverable
 

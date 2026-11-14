@@ -5,7 +5,6 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -22,7 +21,6 @@ import type {
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
-import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { SubgraphIO } from '@comfyorg/graph-model/serialisation'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 
@@ -53,35 +51,11 @@ export class SubgraphOutputNode
     return x + this.slotInset
   }
 
-  override onPointerDown(
-    e: CanvasPointerEvent,
-    pointer: CanvasPointer,
-    linkConnector: LinkConnector
+  protected override dragNewLink(
+    linkConnector: LinkConnector,
+    slot: SubgraphOutput
   ): void {
-    // Left-click handling for dragging connections
-    if (e.button === 0) {
-      for (const slot of this.allSlots) {
-        // Check if click is within the full slot area (including label)
-        if (slot.boundingRect.containsXy(e.canvasX, e.canvasY)) {
-          pointer.onDragStart = () => {
-            linkConnector.dragNewFromSubgraphOutput(this.subgraph, this, slot)
-          }
-          pointer.onDragEnd = (eUp) => {
-            linkConnector.dropLinks(this.subgraph, eUp)
-          }
-          pointer.onDoubleClick = () => {
-            this.handleSlotDoubleClick(slot, e)
-          }
-          pointer.finally = () => {
-            linkConnector.reset(true)
-          }
-        }
-      }
-      // Check for right-click
-    } else if (e.button === 2) {
-      const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
-      if (slot) this.showSlotContextMenu(slot, e)
-    }
+    linkConnector.dragNewFromSubgraphOutput(this.subgraph, this, slot)
   }
 
   /** @inheritdoc */

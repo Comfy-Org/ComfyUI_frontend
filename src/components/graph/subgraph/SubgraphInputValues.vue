@@ -5,16 +5,17 @@ import { useI18n } from 'vue-i18n'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getNodeByState } from '@/utils/graphTraversalUtil'
 import SubgraphInputValue from './SubgraphInputValue.vue'
 import SubgraphIoPanel from './SubgraphIoPanel.vue'
 import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 
+const { graph } = defineProps<{ graph: Subgraph }>()
+
 const { t } = useI18n()
 const context = useSubgraphInputValuesStore()
-const canvasStore = useCanvasStore()
 const { focusNodeInstance } = useFocusNode()
 
 const sources = computed(() =>
@@ -29,8 +30,7 @@ const hint = computed(() => {
 })
 
 async function locate(node: NodeState) {
-  const root = context.graph?.rootGraph
-  const live = root && getNodeByState(root, node)
+  const live = getNodeByState(graph.rootGraph, node)
   if (live) await focusNodeInstance(live)
 }
 
@@ -41,10 +41,9 @@ function captureEdits() {
 
 <template>
   <SubgraphIoPanel
-    v-if="context.graph && !canvasStore.linearMode"
-    :key="context.graph.id"
+    :key="graph.id"
     v-slot="{ slots }"
-    :io-node="context.graph.inputNode"
+    :io-node="graph.inputNode"
     data-testid="subgraph-input-values"
   >
     <div class="contents" @focusout="captureEdits">

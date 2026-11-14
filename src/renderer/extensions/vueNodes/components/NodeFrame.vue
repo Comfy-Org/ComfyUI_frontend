@@ -20,11 +20,10 @@ defineExpose({ element })
 <template>
   <div
     ref="element"
-    tabindex="0"
     v-bind="attrsWithoutClass"
     :class="
       cn(
-        'group/node lg-node absolute isolate flex touch-none flex-col text-xs text-node-foreground drop-shadow-lg contain-layout contain-style',
+        'group/node lg-node absolute isolate flex touch-none flex-col text-xs text-node-foreground contain-layout contain-style',
         attrsClass
       )
     "
@@ -41,12 +40,7 @@ defineExpose({ element })
     >
       <div
         data-testid="node-inner-wrapper"
-        :class="
-          cn(
-            'flex w-(--node-width) flex-1 flex-col bg-node-header',
-            containerClass
-          )
-        "
+        :class="cn('flex flex-1 flex-col', containerClass)"
         :style="containerStyle"
       >
         <slot />

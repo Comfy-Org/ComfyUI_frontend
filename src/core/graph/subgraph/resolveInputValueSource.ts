@@ -50,9 +50,8 @@ function primitiveValueStep(
       (id) =>
         node.type === 'PrimitiveNode' || graph.widget(id)?.name === 'value'
     )
-  const name = widgetId && graph.widget(widgetId)?.name
-  if (!widgetId || !name) return undefined
-  const index = node.inputs.findIndex((entry) => entry.widget?.name === name)
+  if (!widgetId) return undefined
+  const index = node.inputs.findIndex((entry) => entry.widget?.name === 'value')
   return {
     widgetId,
     upstream: index < 0 ? undefined : graph.inputLink(node, index)
@@ -79,20 +78,17 @@ function passesValueThrough(node: NodeState, link: LinkTopology): boolean {
 export function resolveInputValueSource(
   graph: ValueSourceGraph,
   host: NodeState,
-  inputName: string
+  inputIndex: number,
+  hostWidgetId: WidgetId
 ): InputValueSource {
-  const input = host.inputs.find((input) => input.name === inputName)
-  if (!input) return { kind: 'unavailable' }
-  let link = graph.inputLink(host, host.inputs.indexOf(input))
+  let link = graph.inputLink(host, inputIndex)
   if (!link)
-    return input.widgetId
-      ? {
-          kind: 'editable',
-          node: host,
-          widgetId: input.widgetId,
-          shared: false
-        }
-      : { kind: 'unavailable' }
+    return {
+      kind: 'editable',
+      node: host,
+      widgetId: hostWidgetId,
+      shared: false
+    }
 
   const seen = new Set<NodeState>()
   let shared = false

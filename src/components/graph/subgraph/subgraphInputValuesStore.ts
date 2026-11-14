@@ -88,11 +88,11 @@ export const useSubgraphInputValuesStore = defineStore(
         outputLinkCount: (node, index) =>
           linkStore.getOutputSlotLinks(scope, node.id, index).size
       }
-      for (const input of host.inputs) {
-        if (input.widgetId)
+      for (const [index, { name, widgetId }] of host.inputs.entries()) {
+        if (widgetId)
           result.set(
-            input.name,
-            resolveInputValueSource(sourceGraph, host, input.name)
+            name,
+            resolveInputValueSource(sourceGraph, host, index, widgetId)
           )
       }
       return result

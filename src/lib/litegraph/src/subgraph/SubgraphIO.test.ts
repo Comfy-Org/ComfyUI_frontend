@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { pointerEvent } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
+import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
@@ -392,15 +395,44 @@ describe('SubgraphIO - Advanced Scenarios', () => {
     expect(subgraphNode.outputs.length).toBe(0)
   })
 
+  it.for(['inputNode', 'outputNode'] as const)(
+    'disconnects a port on the %s with Ctrl+Alt click',
+    (ioNodeKey) => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'in', type: 'INT' }],
+        outputs: [{ name: 'out', type: 'INT' }]
+      })
+      const inner = new LGraphNode('Inner')
+      inner.addInput('value', 'INT')
+      inner.addOutput('value', 'INT')
+      subgraph.add(inner)
+      subgraph.inputs[0].connect(inner.inputs[0], inner)
+      subgraph.outputs[0].connect(inner.outputs[0], inner)
+      const ioNode = subgraph[ioNodeKey]
+      ioNode.arrange()
+      const [x, y, width, height] = ioNode.slots[0].boundingRect
+      const center = [x + width / 2, y + height / 2] as const
+      const modifiers = { ctrlKey: true, altKey: true }
+      const pointer = new CanvasPointer(document.createElement('canvas'))
+      const down = pointerEvent('pointerdown', ...center, modifiers)
+
+      pointer.down(down)
+      ioNode.onPointerDown(down, pointer, new LinkConnector(() => {}))
+      pointer.up(pointerEvent('pointerup', ...center, modifiers))
+
+      expect(subgraph.links.size).toBe(1)
+      expect(ioNode.slots[0].linkIds).toEqual([])
+    }
+  )
+
   it('shrinks the output node when outputs are removed', () => {
     const subgraph = createTestSubgraph()
-    const outputs = ['a', 'b', 'c', 'd'].map((name) =>
-      subgraph.addOutput(name, 'STRING')
-    )
+    subgraph.addOutput('a', 'STRING')
+    const removed = subgraph.addOutput('b', 'STRING')
     subgraph.outputNode.arrange()
     const tall = subgraph.outputNode.boundingRect[3]
 
-    for (const output of outputs.slice(1)) subgraph.removeOutput(output)
+    subgraph.removeOutput(removed)
     subgraph.outputNode.arrange()
 
     expect(subgraph.outputNode.boundingRect[3]).toBeLessThan(tall)

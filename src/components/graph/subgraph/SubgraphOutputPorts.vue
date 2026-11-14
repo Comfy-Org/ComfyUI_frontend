@@ -1,26 +1,23 @@
 <script setup lang="ts">
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import SubgraphIoLabel from './SubgraphIoLabel.vue'
 import SubgraphIoPanel from './SubgraphIoPanel.vue'
 import SubgraphIoPort from './SubgraphIoPort.vue'
-import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 
-const context = useSubgraphInputValuesStore()
-const canvasStore = useCanvasStore()
+const { graph } = defineProps<{ graph: Subgraph }>()
 </script>
 
 <template>
   <SubgraphIoPanel
-    v-if="context.graph && !canvasStore.linearMode"
-    :key="context.graph.id"
+    :key="graph.id"
     v-slot="{ slots }"
-    :io-node="context.graph.outputNode"
+    :io-node="graph.outputNode"
     data-testid="subgraph-output-ports"
   >
     <div v-for="slot in slots" :key="slot.id" data-subgraph-port class="flex">
       <SubgraphIoPort :port="slot" :label="slot.displayName" />
       <SubgraphIoLabel
-        v-if="slot !== context.graph.outputNode.emptySlot"
+        v-if="slot !== graph.outputNode.emptySlot"
         :label="slot.displayName"
       />
     </div>

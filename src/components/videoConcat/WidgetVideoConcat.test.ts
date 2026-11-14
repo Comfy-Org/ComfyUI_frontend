@@ -8,6 +8,7 @@ import type {
   VideoConcatValue
 } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
@@ -89,6 +90,7 @@ describe('WidgetVideoConcat', () => {
   function mountWith(modelValue: VideoConcatValue) {
     const concat = buildConcat(['red.mp4', 'green.mp4', 'blue.mp4'])
     vi.spyOn(app.canvas.graph!, 'getNodeById').mockReturnValue(concat)
+    useCanvasStore().currentGraph = app.canvas.graph
     return renderWidget(concat, modelValue)
   }
 
