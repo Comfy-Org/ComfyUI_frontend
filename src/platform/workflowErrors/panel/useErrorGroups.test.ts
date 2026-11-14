@@ -7,6 +7,7 @@ import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import '@/scripts/changeTracker'
@@ -1757,6 +1758,71 @@ describe('useErrorGroups', () => {
           (group) => group.type === 'missing_media'
         )
       ).toMatchObject({ blockedLastRun: true })
+    })
+  })
+
+  describe('deprecatedNodeGroups', () => {
+    function seedDeprecatedNodes() {
+      useDeprecatedNodesStore().nodeTypes = [
+        {
+          type: 'ImageBatch',
+          nodeId: '2',
+          isReplaceable: true,
+          replacement: {
+            new_node_id: 'BatchImagesNode',
+            old_node_id: 'ImageBatch',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        },
+        {
+          type: 'TextGenerate',
+          nodeId: '3',
+          isReplaceable: true,
+          replacement: {
+            new_node_id: 'TextGenerateV2',
+            old_node_id: 'TextGenerate',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        }
+      ]
+    }
+
+    it.for([
+      { query: '', expected: ['ImageBatch', 'TextGenerate'] },
+      { query: 'textgen', expected: ['TextGenerate'] },
+      { query: 'BatchImages', expected: ['ImageBatch'] },
+      { query: 'zzzz', expected: [] }
+    ])(
+      'matches "$query" against the deprecated and replacement names',
+      async ({ query, expected }) => {
+        const { groups, searchQuery } = createErrorGroups()
+        seedDeprecatedNodes()
+        searchQuery.value = query
+        await nextTick()
+
+        expect(
+          groups.deprecatedNodeGroups.value.map((group) => group.type)
+        ).toEqual(expected)
+      }
+    )
+
+    it('highlights a selected deprecated node without counting it as an error', async () => {
+      const { groups } = createErrorGroups()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) =>
+        createSelectedNode(nodeId)
+      )
+      selectedItems.value = [createSelectedNode('2')]
+      seedDeprecatedNodes()
+      await nextTick()
+
+      expect([...groups.selectionMatchedAssetNodeIds.value]).toEqual(['2'])
+      expect(groups.selectionErrorCount.value).toBe(0)
+      expect(groups.errorNodeCount.value).toBe(0)
     })
   })
 

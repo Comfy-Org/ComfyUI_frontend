@@ -16,6 +16,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import type { PropertiesPanelTab } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -134,33 +135,48 @@ const { hasRelevantErrors, hasPendingErrorScanSelected, hasBlockingError } =
     currentGraph: () => canvasStore.currentGraph
   })
 
+const deprecatedNodesStore = useDeprecatedNodesStore()
+const hasDeprecatedNodes = computed(
+  () => deprecatedNodesStore.nodeTypes.length > 0
+)
+
+function errorsTabIcon() {
+  if (hasRelevantErrors.value)
+    return {
+      className: cn(
+        'ml-1',
+        hasBlockingError.value
+          ? 'icon-[lucide--octagon-alert] bg-destructive'
+          : 'icon-[lucide--triangle-alert] bg-warning'
+      ),
+      label: () =>
+        t(
+          hasBlockingError.value
+            ? 'rightSidePanel.severityErrorLabel'
+            : 'rightSidePanel.severitySetupLabel'
+        )
+    }
+  if (hasDeprecatedNodes.value)
+    return {
+      className: 'ml-1 icon-[lucide--info] bg-muted-foreground',
+      label: () => t('nodeReplacement.deprecatedNodesLabel')
+    }
+  return undefined
+}
+
 const tabs = computed<PropertiesPanelTabList>(() => {
   const list: PropertiesPanelTabList = []
 
   if (
     settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
     (hasRelevantErrors.value ||
+      hasDeprecatedNodes.value ||
       (activeTab.value === 'errors' && hasPendingErrorScanSelected.value))
   ) {
     list.push({
       label: () => t('rightSidePanel.errors'),
       value: 'errors',
-      icon: hasRelevantErrors.value
-        ? {
-            className: cn(
-              'ml-1',
-              hasBlockingError.value
-                ? 'icon-[lucide--octagon-alert] bg-destructive'
-                : 'icon-[lucide--triangle-alert] bg-warning'
-            ),
-            label: () =>
-              t(
-                hasBlockingError.value
-                  ? 'rightSidePanel.severityErrorLabel'
-                  : 'rightSidePanel.severitySetupLabel'
-              )
-          }
-        : undefined
+      icon: errorsTabIcon()
     })
   }
 

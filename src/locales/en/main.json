@@ -5232,7 +5232,10 @@
     "replaceAll": "Replace All",
     "unknownNode": "Unknown",
     "replaceAllWarning": "Replaces all available nodes in this group.",
-    "swapNodesTitle": "Swap Nodes"
+    "swapNodesTitle": "Swap Nodes",
+    "deprecatedNodesTitle": "Deprecated Nodes",
+    "deprecatedNodesMessage": "These nodes still run, but have newer replacements. Replacing them updates the workflow.",
+    "deprecatedNodesLabel": "Deprecated nodes can be replaced"
   },
   "rightSidePanel": {
     "togglePanel": "Toggle properties panel",
