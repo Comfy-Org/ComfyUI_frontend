@@ -36,7 +36,7 @@ vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
-  import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
+  import('@/platform/queue/components/run/ComfyQueueButton.vue'),
   () => ({
     default: {
       name: 'ComfyQueueButton',

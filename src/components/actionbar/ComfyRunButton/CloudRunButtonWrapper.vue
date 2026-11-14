@@ -17,7 +17,7 @@
 import { useEventListener } from '@vueuse/core'
 import { computed } from 'vue'
 
-import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'
+import ComfyQueueButton from '@/platform/queue/components/run/ComfyQueueButton.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import SubscribeToRunButton from '@/platform/billing/subscription/components/SubscribeToRun.vue'
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'

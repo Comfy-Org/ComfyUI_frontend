@@ -28,7 +28,7 @@ import OutputPreviewItem from '@/renderer/extensions/linearMode/OutputPreviewIte
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { outputs, allOutputs, selectFirstHistory, mayBeActiveWorkflowPending } =

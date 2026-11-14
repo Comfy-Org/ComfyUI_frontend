@@ -11,10 +11,10 @@ const CloudRunButtonWrapper = defineAsyncComponent(
   () => import('./CloudRunButtonWrapper.vue')
 )
 const ComfyQueueButton = defineAsyncComponent(
-  () => import('./ComfyQueueButton.vue')
+  () => import('@/platform/queue/components/run/ComfyQueueButton.vue')
 )
 const LocalRunButtonWrapper = defineAsyncComponent(
-  () => import('./LocalRunButtonWrapper.vue')
+  () => import('@/platform/auth/components/LocalRunButtonWrapper.vue')
 )
 
 function selectRunButton() {

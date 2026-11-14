@@ -94,8 +94,9 @@ const config: StorybookConfig = {
             replacement: process.cwd() + '/.storybook/style.css'
           },
           {
-            find: '@/composables/queue/useJobList',
-            replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'
+            find: '@/platform/queue/composables/useJobList',
+            replacement:
+              process.cwd() + '/src/platform/queue/testing/useJobList.ts'
           },
           {
             find: '@/platform/billing/composables/useBillingContext',

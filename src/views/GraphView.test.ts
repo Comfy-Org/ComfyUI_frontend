@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
-import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
+import { useReconnectQueueRefresh } from '@/platform/queue/runtime/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
@@ -135,7 +135,7 @@ vi.mock(
   }
 )
 
-vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
+vi.mock(import('@/platform/queue/runtime/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
   return { useReconnectQueueRefresh: () => refreshOnReconnect }
 })
@@ -155,7 +155,7 @@ vi.mock(import('@/composables/useBrowserTabTitle'), () => ({
 vi.mock(import('@/composables/useCoreCommands'), () => ({
   useCoreCommands: () => []
 }))
-vi.mock(import('@/platform/remote/comfyui/useQueuePolling'), () => ({
+vi.mock(import('@/platform/queue/runtime/useQueuePolling'), () => ({
   useQueuePolling: vi.fn()
 }))
 vi.mock(import('@/composables/useErrorHandling'))
@@ -190,7 +190,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/services/autoQueueService'), () => ({
+vi.mock(import('@/platform/queue/runtime/autoQueueService'), () => ({
   setupAutoQueueHandler: vi.fn()
 }))
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({

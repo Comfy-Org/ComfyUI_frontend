@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { useAssetsSidebarBadgeStore } from '@/stores/workspace/assetsSidebarBadgeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 

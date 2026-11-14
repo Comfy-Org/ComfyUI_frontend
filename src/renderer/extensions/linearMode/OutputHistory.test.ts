@@ -1,7 +1,7 @@
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { RenderResult } from '@testing-library/vue'

@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
-import type { TaskItemImpl } from '@/stores/queueStore'
-import { useQueueStore } from '@/stores/queueStore'
+import type { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const getAddedAssetCount = (task: TaskItemImpl): number => {

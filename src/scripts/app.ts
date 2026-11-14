@@ -38,7 +38,6 @@ import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { ISerialisedGraph, Vector2 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
-import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -46,16 +45,9 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { normalizeExecutionTriggerSource } from '@comfyorg/telemetry/types'
-import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionContext'
 import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
-import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowExecutionContext'
 import type {
-  ExecutionContext,
-  WorkflowExecutionContext,
-  WorkflowExecutionIntent,
-  WorkflowOpenSource,
-  WorkflowQueueIntent
+  WorkflowOpenSource
 } from '@comfyorg/telemetry/types'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { restoreDynamicGroupInputs } from '@/platform/workflow/core/utils/restoreDynamicGroupInputs'
@@ -99,11 +91,9 @@ import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import {
-  promptErrorHasLockedCredits,
   resolveAccountPrecondition
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
-import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useJobModelDownloadStore } from '@/platform/queue/stores/jobModelDownloadStore'
 import { useDialogService } from '@/services/dialogService'
 import {
   isGraphLoadHookOrigin,
@@ -116,16 +106,12 @@ import {
 } from '@/services/graphLoadFailure'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useSubgraphService } from '@/services/subgraphService'
-import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
-import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { createCanvasInteractionMode } from '@/renderer/core/canvas/interaction/canvasInteractionMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
-import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import {
@@ -151,12 +137,10 @@ import type {
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
-import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
@@ -170,18 +154,15 @@ import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMed
 import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 
-import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
-  collectAllNodes,
   forEachNode,
   getNodeByExecutionId,
   isAncestorPathActive,
   triggerCallbackOnAllNodes
 } from '@/utils/graphTraversalUtil'
 import {
-  executeWidgetsCallback,
   isImageNode,
   isSelectOnly,
   isVideoNode
@@ -199,10 +180,8 @@ import {
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
-import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { api } from './api'
 import { importA1111 } from './pnginfo'
-import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
 import type { ComfyUI } from './ui'
 import type { ComfyAppMenu } from './ui/menu/index'

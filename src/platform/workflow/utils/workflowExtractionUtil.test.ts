@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { assetItemSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-vi.mock(import('@/services/jobOutputCache'), () => ({
+vi.mock(import('@/platform/queue/services/jobOutputCache'), () => ({
   getJobWorkflow: vi.fn(),
   getJobApiPrompt: vi.fn()
 }))
@@ -17,7 +17,10 @@ vi.mock(import('@/scripts/metadata/parser'), () => ({
 import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { getJobApiPrompt, getJobWorkflow } from '@/services/jobOutputCache'
+import {
+  getJobApiPrompt,
+  getJobWorkflow
+} from '@/platform/queue/services/jobOutputCache'
 
 import {
   extractApiPromptFromAsset,

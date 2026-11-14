@@ -1,7 +1,7 @@
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useQueueStore } from '@/stores/queueStore'
+import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import { fromPartial } from '@total-typescript/shoehorn'
 
@@ -43,7 +43,7 @@ const { jobDetailResults } = vi.hoisted(() => ({
   jobDetailResults: new Map<string, unknown>()
 }))
 
-vi.mock<unknown>(import('@/services/jobOutputCache'), () => ({
+vi.mock<unknown>(import('@/platform/queue/services/jobOutputCache'), () => ({
   getJobDetail: (jobId: string) =>
     Promise.resolve(jobDetailResults.get(jobId) ?? undefined)
 }))

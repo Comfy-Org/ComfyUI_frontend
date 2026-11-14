@@ -26,7 +26,7 @@ import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErr
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { useQueueSettingsStore } from '@/platform/queue/stores/queueSettingsStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'

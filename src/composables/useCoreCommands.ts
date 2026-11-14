@@ -58,8 +58,11 @@ import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useHelpCenterStore } from '@/stores/helpCenterStore'
-import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
-import { useQueueStore, useQueueUIStore } from '@/stores/queueStore'
+import { useQueueSettingsStore } from '@/platform/queue/stores/queueSettingsStore'
+import {
+  useQueueStore,
+  useQueueUIStore
+} from '@/platform/queue/stores/queueStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'

@@ -15,14 +15,20 @@ vi.mock<unknown>(import('./CloudRunButtonWrapper.vue'), () => ({
   __esModule: true,
   default: { template: '<button>cloud subscription run</button>' }
 }))
-vi.mock<unknown>(import('./ComfyQueueButton.vue'), () => ({
-  __esModule: true,
-  default: { template: '<button>queue run</button>' }
-}))
-vi.mock<unknown>(import('./LocalRunButtonWrapper.vue'), () => ({
-  __esModule: true,
-  default: { template: '<button>local run</button>' }
-}))
+vi.mock<unknown>(
+  import('@/platform/queue/components/run/ComfyQueueButton.vue'),
+  () => ({
+    __esModule: true,
+    default: { template: '<button>queue run</button>' }
+  })
+)
+vi.mock<unknown>(
+  import('@/platform/auth/components/LocalRunButtonWrapper.vue'),
+  () => ({
+    __esModule: true,
+    default: { template: '<button>local run</button>' }
+  })
+)
 
 const originalConfig = window.__CONFIG__
 

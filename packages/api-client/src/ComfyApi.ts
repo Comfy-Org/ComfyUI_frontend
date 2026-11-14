@@ -70,7 +70,7 @@ import type {
   ComfyWorkflowJSON
 } from '@comfyorg/graph-model/workflowSchema'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { JobAssetsResult, JobDetail, JobListItem } from './jobTypes'
+import type { JobAssetsResult, JobDetail, JobListItem } from './jobs/jobTypes'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { AuthCredential, AuthScheme } from './authTypes'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -84,7 +84,7 @@ import {
   fetchJobAssets,
   fetchJobDetail,
   fetchQueue
-} from './fetchJobs'
+} from './jobs/fetchJobs'
 
 const SERVER_FEATURE_FLAGS_TIMEOUT_MS = 5_000
 
