@@ -27,7 +27,7 @@ jobs:
       - name: Checkout branch or tag
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.tag || inputs.branch }}
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || inputs.branch }}
           fetch-depth: 0
 
       - name: Resolve the version to recover
