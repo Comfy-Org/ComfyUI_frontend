@@ -60,7 +60,10 @@ export type {
 } from '@comfyorg/graph-model/slotId'
 export { slotId } from '@comfyorg/graph-model/slotId'
 export type { ComfyExtension } from './comfy'
-export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
+export type {
+  ComfyDesktop2Bridge,
+  ComfyDownloadProgress
+} from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 export type { ComfyApp } from '@/types/comfy'
 export type { ComfyNodeDef } from '@comfyorg/object-info-parser'
