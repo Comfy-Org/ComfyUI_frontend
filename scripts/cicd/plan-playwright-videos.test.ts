@@ -1,15 +1,18 @@
 import { spawnSync } from 'node:child_process'
 import {
+  accessSync,
+  constants,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
+import { basename, delimiter, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { assert, describe, expect, it, onTestFinished } from 'vitest'
@@ -17,7 +20,24 @@ import { parse } from 'yaml'
 import { z } from 'zod'
 
 const script = join(import.meta.dirname, 'plan-playwright-videos.sh')
-const bash = '/bin/bash'
+function isExecutableFile(path: string): boolean {
+  try {
+    if (!statSync(path).isFile()) return false
+    accessSync(path, constants.X_OK)
+    return true
+  } catch {
+    return false
+  }
+}
+function resolveOnPath(name: string): string {
+  const found = (process.env.PATH ?? '')
+    .split(delimiter)
+    .filter(isAbsolute)
+    .map((dir) => join(dir, name))
+    .find(isExecutableFile)
+  if (!found) throw new Error(`${name} not found on PATH`)
+  return found
+}
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
 const bin = join(import.meta.dirname, '../../node_modules/.bin')
 
@@ -283,6 +303,9 @@ describe('independent video workflow', () => {
       const bin = join(root, 'bin')
       mkdirSync(bin)
       symlinkSync(process.execPath, join(bin, 'node'))
+      for (const tool of ['mkdir', 'touch']) {
+        symlinkSync(resolveOnPath(tool), join(bin, tool))
+      }
       writeFileSync(
         join(bin, 'pnpm'),
         `#!${process.execPath}
@@ -301,6 +324,7 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
         { mode: 0o755 }
       )
       const specs = files.map((file, i) => ({ file, key: `key${i}` }))
+      const bash = resolveOnPath('bash')
       const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
         cwd: root,
         encoding: 'utf8',
@@ -382,6 +406,7 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
       writeFileSync(join(root, 'previous-cache', 'hit.zip'), 'blob')
       spawnSync('touch', recorded, { cwd: join(root, 'video-blobs') })
 
+      const bash = resolveOnPath('bash')
       const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
         cwd: root,
         encoding: 'utf8',
