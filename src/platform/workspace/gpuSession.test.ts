@@ -66,6 +66,52 @@ describe('gpu_session messages', () => {
     }
   )
 
+  it.for([
+    { editorGpu: false, on: false },
+    { editorGpu: true, on: true }
+  ])(
+    'the message after an end with editor_gpu $editorGpu shows the setting on: $on',
+    ({ editorGpu, on }) => {
+      const end = {
+        session_id: 's-1',
+        deployment_id: DEPLOYMENT,
+        state: 'ended',
+        reason: 'idle'
+      }
+      const ended = receive(starting, end)
+
+      const next = receive(ended, {
+        ...end,
+        status: 'success',
+        editor_gpu: editorGpu
+      })
+
+      expect(next.changed.on).toBe(on)
+      expect(next.gpu).toBe('idle')
+      expect(next.session).toBe(ended.session)
+    }
+  )
+
+  it('the message after an older session ended does not stop the GPU starting again', () => {
+    const end = {
+      session_id: 's-1',
+      deployment_id: DEPLOYMENT,
+      state: 'ended',
+      reason: 'idle'
+    }
+    const startingAgain = receive(receive(starting, end), {
+      session_id: 's-2',
+      deployment_id: DEPLOYMENT,
+      state: 'starting'
+    })
+
+    const next = receive(startingAgain, { ...end, editor_gpu: true })
+
+    expect(next.gpu).toBe('starting')
+    expect(next.session?.session_id).toBe('s-2')
+    expect(next.changed.on).toBe(true)
+  })
+
   it('ignores a message for another deployment', () => {
     const next = receive(starting, {
       session_id: 's-2',

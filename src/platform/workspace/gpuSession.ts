@@ -23,6 +23,7 @@ interface GpuSessionMessage {
   requests?: number
   machine?: GpuMachine
   runs: GpuSessionRun[]
+  editor_gpu?: boolean
 }
 
 const IDLE_CHOICES = [3, 10, 30, 0] as const
@@ -125,7 +126,9 @@ export function parseGpuSessionMessage(
     reason: optionalString(value.reason),
     requests: optionalNumber(value.requests),
     machine: parseMachine(value.machine),
-    runs: Array.isArray(value.runs) ? value.runs.flatMap(parseRun) : []
+    runs: Array.isArray(value.runs) ? value.runs.flatMap(parseRun) : [],
+    editor_gpu:
+      typeof value.editor_gpu === 'boolean' ? value.editor_gpu : undefined
   }
 }
 
@@ -189,8 +192,21 @@ function receiveMessage(
   if (message.deployment_id && message.deployment_id !== deploymentId) {
     return state
   }
+  const changed =
+    message.editor_gpu === undefined
+      ? state.changed
+      : { ...state.changed, on: message.editor_gpu }
+  if (!movesTheSession(state.session, message)) return { ...state, changed }
   const gpu = message.state === 'ended' ? 'idle' : message.state
-  return { ...state, gpu, session: message }
+  return { changed, gpu, session: message }
+}
+
+function movesTheSession(
+  current: GpuSessionMessage | null,
+  message: GpuSessionMessage
+): boolean {
+  if (message.state !== 'ended' || current === null) return true
+  return current.session_id === message.session_id && current.state !== 'ended'
 }
 
 function turnOff(state: GpuSessionState): GpuSessionState {
