@@ -18,8 +18,9 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import NodeFrame from '@/renderer/extensions/vueNodes/components/NodeFrame.vue'
+import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import NodeResizeHandle from '@/renderer/extensions/vueNodes/components/NodeResizeHandle.vue'
+import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -28,7 +29,6 @@ import { app } from '@/scripts/app'
 import { getNodeByState } from '@/utils/graphTraversalUtil'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { cn } from '@comfyorg/tailwind-utils'
-import SubgraphIoPort from './SubgraphIoPort.vue'
 import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 import { useSubgraphIoLayout } from './useSubgraphIoLayout'
 
@@ -68,12 +68,14 @@ const side = computed(() =>
   isInput.value
     ? {
         testId: 'subgraph-input-values',
+        direction: 'input',
         panel: 'w-(--node-width)',
         row: '',
         edge: '-right-px rounded-r-(--node-radius) border-l-0'
       }
     : {
         testId: 'subgraph-output-ports',
+        direction: 'output',
         panel: 'w-fit max-w-(--node-width)',
         row: 'flex-row-reverse',
         edge: '-left-px rounded-l-(--node-radius) border-r-0'
@@ -133,9 +135,14 @@ const rows = computed(() =>
   slots.value.map((port) => {
     const source = isInput.value ? context.sources.get(port.name) : undefined
     const editable = source?.kind === 'editable' ? source : undefined
+    const isAddPort = port === ioNode.emptySlot
     return {
       port,
-      isAddPort: port === ioNode.emptySlot,
+      isAddPort,
+      portTestId: isAddPort
+        ? `subgraph-add-${side.value.direction}`
+        : `subgraph-${side.value.direction}-port`,
+      portLabel: isAddPort ? undefined : port.displayName,
       shared: editable?.shared,
       editor: editable && editorFor(editable),
       upstream: upstreamOf(source),
@@ -160,8 +167,15 @@ function captureEdits() {
   useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
 }
 
-const nodeView = useTemplateRef('nodeView')
-const panel = computed(() => nodeView.value?.element ?? null)
+const { state: linkDrag } = useSlotLinkDragUIState()
+function isDimmed(port: TNode['allSlots'][number]) {
+  const from = linkDrag.active
+    ? canvasStore.canvas?.linkConnector.renderLinks[0]?.fromSlot
+    : undefined
+  return !!from && !port.isValidTarget(from)
+}
+
+const panel = useTemplateRef('panel')
 const { style, startResize } = useSubgraphIoLayout(
   () => ioNode,
   panel,
@@ -190,8 +204,8 @@ function forwardUnlessOnButton(event: PointerEvent) {
 </script>
 
 <template>
-  <NodeFrame
-    ref="nodeView"
+  <div
+    ref="panel"
     data-subgraph-io
     :data-testid="side.testId"
     :inert="canvasStore.isPickingNodes"
@@ -199,7 +213,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
     :aria-label="title"
     :class="
       cn(
-        'pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) origin-top-left',
+        'group/node lg-node pointer-events-auto absolute top-0 left-0 isolate z-panel flex min-h-(--node-height) origin-top-left touch-none flex-col text-xs text-node-foreground contain-layout contain-style',
         side.panel
       )
     "
@@ -275,28 +289,38 @@ function forwardUnlessOnButton(event: PointerEvent) {
             >
           </div>
         </div>
-        <SubgraphIoPort :port="row.port" :label="row.port.displayName" />
+        <div
+          data-port-anchor
+          :data-testid="row.portTestId"
+          :aria-label="row.portLabel"
+          :class="
+            cn(
+              'lg-slot flex h-(--node-widget-height) w-0 shrink-0 cursor-crosshair items-center justify-center',
+              isDimmed(row.port) && 'opacity-40'
+            )
+          "
+        >
+          <SlotConnectionDot class="shrink-0" :slot-data="row.port" />
+        </div>
       </div>
       <p v-if="hint" class="mx-3 my-0 text-muted-foreground">
         {{ hint }}
       </p>
     </div>
-    <template #after>
-      <div
-        aria-hidden="true"
-        :class="
-          cn(
-            'pointer-events-none absolute inset-y-0 -z-1 border-2 border-foreground',
-            side.edge
-          )
-        "
-        :style="{ width: `${SubgraphIONodeBase.roundedRadius}px` }"
-      />
-      <NodeResizeHandle
-        v-if="isInput"
-        :handle="RESIZE_HANDLES[0]"
-        @resize="startResize"
-      />
-    </template>
-  </NodeFrame>
+    <div
+      aria-hidden="true"
+      :class="
+        cn(
+          'pointer-events-none absolute inset-y-0 -z-1 border-2 border-foreground',
+          side.edge
+        )
+      "
+      :style="{ width: `${SubgraphIONodeBase.roundedRadius}px` }"
+    />
+    <NodeResizeHandle
+      v-if="isInput"
+      :handle="RESIZE_HANDLES[0]"
+      @resize="startResize"
+    />
+  </div>
 </template>

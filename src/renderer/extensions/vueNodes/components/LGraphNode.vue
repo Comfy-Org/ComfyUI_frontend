@@ -2,9 +2,9 @@
   <div v-if="renderError" class="node-error p-2 text-sm text-destructive">
     {{ st('nodeErrors.render', 'Node Render Error') }}
   </div>
-  <NodeFrame
+  <div
     v-else
-    ref="frame"
+    ref="nodeElement"
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
@@ -12,6 +12,8 @@
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
+        'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
+        'flex flex-col contain-layout contain-style',
         'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
@@ -32,25 +34,6 @@
       opacity: nodeOpacity
     }"
     :inert="isGhostPlacing"
-    :content-visibility="!isCollapsed"
-    :container-class="
-      cn(
-        'w-(--node-width) bg-node-header',
-        !isRerouteNode && 'min-w-(--min-node-width)',
-        shapeClass,
-        hasAnyError && 'ring-4',
-        errorSeverity === 'missing' && 'ring-warning',
-        errorSeverity === 'error' && 'ring-destructive',
-        bypassed && bypassOverlayClass,
-        muted && mutedOverlayClass,
-        isDraggingOver && 'bg-primary/10 ring-4 ring-primary'
-      )
-    "
-    :container-style="{
-      '--node': applyLightThemeColor(nodeData.bgcolor),
-      '--component-node-background': 'var(--node)',
-      backgroundColor: applyLightThemeColor(nodeData?.color)
-    }"
     v-bind="pointerHandlers"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
@@ -58,138 +41,167 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
-    <template #before>
-      <NodeBadges
-        v-if="!isRerouteNode && !isTransparentHeaderless"
-        v-bind="badges"
-        class="absolute right-0 bottom-full"
-        :style="badgesStyle"
-      />
-      <AppOutput
-        v-if="
-          lgraphNode?.constructor?.nodeData?.output_node &&
-          isSelectOutputsMode &&
-          nodeData.mode === LGraphEventMode.ALWAYS &&
-          !hasAnyError
-        "
-        :id="nodeId"
-      />
-      <div
-        data-testid="node-state-outline-overlay"
-        :class="
-          cn(
-            'pointer-events-none absolute z-0 outline-offset-2 group-focus-visible/node:block group-focus-visible/node:[outline-style:auto]',
-            selectionShapeClass,
-            hasAnyError ? '-inset-1.75' : '-inset-0.75',
-            isEmphasized || executing ? 'block border-3' : 'hidden',
-            isEmphasized ? 'border-foreground' : executing && 'border-primary'
-          )
-        "
-      />
-    </template>
-
+    <NodeBadges
+      v-if="!isRerouteNode && !isTransparentHeaderless"
+      v-bind="badges"
+      class="absolute right-0 bottom-full"
+      :style="badgesStyle"
+    />
+    <AppOutput
+      v-if="
+        lgraphNode?.constructor?.nodeData?.output_node &&
+        isSelectOutputsMode &&
+        nodeData.mode === LGraphEventMode.ALWAYS &&
+        !hasAnyError
+      "
+      :id="nodeId"
+    />
     <div
-      v-if="displayHeader"
-      class="relative flex flex-col items-center justify-center"
-    >
-      <template v-if="isCollapsed">
-        <SlotConnectionDot
-          v-if="hasInputs"
-          multi
-          class="absolute left-0 -translate-x-1/2"
-        />
-        <SlotConnectionDot
-          v-if="nodeData.outputs.length"
-          multi
-          class="absolute right-0 translate-x-1/2"
-        />
-        <NodeSlots :node-data unified />
-      </template>
-      <NodeHeader
-        :node-data
-        :collapsed="isCollapsed"
-        :show-missing-warning="
-          errorSeverity === 'missing' && !showErrorsTabEnabled
-        "
-        @collapse="handleCollapse"
-        @update:title="handleHeaderTitleUpdate"
-      />
-    </div>
-
-    <div
-      v-if="isCollapsed && executing && progress !== undefined"
+      data-testid="node-state-outline-overlay"
       :class="
         cn(
-          'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
-          progressClasses
+          'pointer-events-none absolute z-0 outline-offset-2 group-focus-visible/node:block group-focus-visible/node:[outline-style:auto]',
+          selectionShapeClass,
+          hasAnyError ? '-inset-1.75' : '-inset-0.75',
+          isEmphasized || executing ? 'block border-3' : 'hidden',
+          isEmphasized ? 'border-foreground' : executing && 'border-primary'
         )
       "
-      :style="{ width: `${Math.min(progress * 100, 100)}%` }"
     />
-
-    <template v-if="!isCollapsed && isRerouteNode">
-      <NodeSlots :node-data />
-    </template>
-
-    <template v-else-if="!isCollapsed">
-      <div class="relative">
+    <div
+      :class="
+        cn(
+          'relative flex flex-1 flex-col',
+          !isCollapsed &&
+            '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] group-data-measured/node:[content-visibility:auto] group-data-measured/node:[overflow-clip-margin:16px]'
+        )
+      "
+    >
+      <div
+        data-testid="node-inner-wrapper"
+        :class="
+          cn(
+            'flex flex-1 flex-col bg-node-header',
+            'w-(--node-width)',
+            !isRerouteNode && 'min-w-(--min-node-width)',
+            shapeClass,
+            hasAnyError && 'ring-4',
+            errorSeverity === 'missing' && 'ring-warning',
+            errorSeverity === 'error' && 'ring-destructive',
+            bypassed && bypassOverlayClass,
+            muted && mutedOverlayClass,
+            isDraggingOver && 'bg-primary/10 ring-4 ring-primary'
+          )
+        "
+        :style="{
+          '--node': applyLightThemeColor(nodeData.bgcolor),
+          '--component-node-background': 'var(--node)',
+          backgroundColor: applyLightThemeColor(nodeData?.color)
+        }"
+      >
         <div
-          v-if="executing && progress !== undefined"
+          v-if="displayHeader"
+          class="relative flex flex-col items-center justify-center"
+        >
+          <template v-if="isCollapsed">
+            <SlotConnectionDot
+              v-if="hasInputs"
+              multi
+              class="absolute left-0 -translate-x-1/2"
+            />
+            <SlotConnectionDot
+              v-if="nodeData.outputs.length"
+              multi
+              class="absolute right-0 translate-x-1/2"
+            />
+            <NodeSlots :node-data unified />
+          </template>
+          <NodeHeader
+            :node-data
+            :collapsed="isCollapsed"
+            :show-missing-warning="
+              errorSeverity === 'missing' && !showErrorsTabEnabled
+            "
+            @collapse="handleCollapse"
+            @update:title="handleHeaderTitleUpdate"
+          />
+        </div>
+
+        <div
+          v-if="isCollapsed && executing && progress !== undefined"
           :class="
             cn(
-              'absolute inset-x-0 top-1/2 -translate-y-1/2',
-              !!(progress < 1) && 'rounded-r-full',
+              'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
               progressClasses
             )
           "
           :style="{ width: `${Math.min(progress * 100, 100)}%` }"
         />
-      </div>
 
-      <div
-        :class="cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)"
-        :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
-        :data-testid="`node-body-${nodeData.id}`"
-      >
-        <NodeSlots :node-data />
+        <template v-if="!isCollapsed && isRerouteNode">
+          <NodeSlots :node-data />
+        </template>
 
-        <NodeWidgets
-          v-if="hasRenderableWidgets"
-          :node-data
-          :processed-widget-model
-        />
-
-        <div
-          v-if="hasCustomContent"
-          :class="
-            cn(
-              'flex min-h-0 flex-col',
-              nodeMedia?.type === 'image' && hasExpandingWidget
-                ? 'shrink-0'
-                : 'flex-1'
-            )
-          "
-        >
-          <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
-          <template
-            v-for="preview in promotedPreviews"
-            :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
-          >
-            <LivePreview
-              v-if="preview.type === 'preview'"
-              :image-url="preview.url"
+        <template v-else-if="!isCollapsed">
+          <div class="relative">
+            <div
+              v-if="executing && progress !== undefined"
+              :class="
+                cn(
+                  'absolute inset-x-0 top-1/2 -translate-y-1/2',
+                  !!(progress < 1) && 'rounded-r-full',
+                  progressClasses
+                )
+              "
+              :style="{ width: `${Math.min(progress * 100, 100)}%` }"
             />
-            <NodeContent v-else :node-data :media="preview" />
-          </template>
-        </div>
-        <LivePreview
-          v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
-          :image-url="latestPreviewUrl"
-        />
-      </div>
-    </template>
+          </div>
 
-    <template #after>
+          <div
+            :class="
+              cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
+            "
+            :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
+            :data-testid="`node-body-${nodeData.id}`"
+          >
+            <NodeSlots :node-data />
+
+            <NodeWidgets
+              v-if="hasRenderableWidgets"
+              :node-data
+              :processed-widget-model
+            />
+
+            <div
+              v-if="hasCustomContent"
+              :class="
+                cn(
+                  'flex min-h-0 flex-col',
+                  nodeMedia?.type === 'image' && hasExpandingWidget
+                    ? 'shrink-0'
+                    : 'flex-1'
+                )
+              "
+            >
+              <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
+              <template
+                v-for="preview in promotedPreviews"
+                :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
+              >
+                <LivePreview
+                  v-if="preview.type === 'preview'"
+                  :image-url="preview.url"
+                />
+                <NodeContent v-else :node-data :media="preview" />
+              </template>
+            </div>
+            <LivePreview
+              v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
+              :image-url="latestPreviewUrl"
+            />
+          </div>
+        </template>
+      </div>
       <NodeFooter
         v-if="!isRerouteNode"
         :is-subgraph="!!lgraphNode?.isSubgraphNode()"
@@ -218,8 +230,8 @@
           @resize="handleResizePointerDown"
         />
       </template>
-    </template>
-  </NodeFrame>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -292,7 +304,6 @@ import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resi
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
-import NodeFrame from './NodeFrame.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
 import NodeResizeHandle from './NodeResizeHandle.vue'
@@ -409,7 +420,7 @@ const handleContextMenu = (event: MouseEvent) => {
   showNodeOptions(event, { nodeId: nodeData.id })
 }
 
-const frame = useTemplateRef('frame')
+const nodeElement = useTemplateRef('nodeElement')
 const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
   const node = resolveLGraphNode()
@@ -437,7 +448,7 @@ const handleResizePointerDown = (
   if (!shouldHandleNodePointerEvents.value) return
   if (nodeData.flags?.pinned) return
   if (nodeData.resizable === false) return
-  const element = frame.value?.element
+  const element = nodeElement.value
   if (element) startResize(event, corner, { element, position: position.value })
 }
 

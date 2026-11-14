@@ -1,7 +1,8 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const resolveMock = vi.hoisted(() => vi.fn())
@@ -18,6 +19,7 @@ vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
 }))
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 
 import WidgetDOM from './WidgetDOM.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -117,6 +119,34 @@ describe('WidgetDOM', () => {
 
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-testid="hosted-dom"]')).toBeNull()
+  })
+
+  it('mounts the DOM widget of the located owner, not the canvas node with the same id', () => {
+    const owner = new LGraphNode('Owner')
+    const root = new LGraph()
+    root.add(owner)
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(root)
+    const owned = document.createElement('div')
+    owned.setAttribute('data-testid', 'owned-dom')
+    resolveMock.mockImplementation((node) =>
+      node === owner
+        ? { node, widget: { element: owned, name: 'dom' } }
+        : undefined
+    )
+
+    render(WidgetDOM, {
+      props: {
+        widget: createMockWidget<undefined>({
+          value: undefined,
+          name: 'dom',
+          type: 'dom',
+          hostNodeLocatorId: createNodeLocatorId(null, owner.id)
+        }),
+        nodeId: owner.id
+      }
+    })
+
+    expect(screen.getByTestId('owned-dom')).toBe(owned)
   })
 
   it('renders a visible root element for pointer-event capture', () => {

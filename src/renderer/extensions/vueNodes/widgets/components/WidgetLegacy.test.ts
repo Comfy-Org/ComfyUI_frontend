@@ -11,6 +11,9 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { app } from '@/scripts/app'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   createMockCanvasRenderingContext2D,
@@ -260,5 +263,61 @@ describe('WidgetLegacy pointer events', () => {
     ])
 
     expect(mouse.mock.calls.map(([, pos]) => pos)).toEqual(expectedPositions)
+  })
+})
+
+describe('WidgetLegacy ownership', () => {
+  it('sends pointer edits to the located owner, not the canvas node with the same id', async () => {
+    const interior = createTestSubgraph()
+    const root = interior.rootGraph
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(root)
+    const nodes = [new LGraphNode('Owner'), new LGraphNode('Decoy')]
+    root.add(nodes[0])
+    interior.add(nodes[1])
+    const widgets = nodes.map((node, index) => {
+      const widget = node.addCustomWidget<IBaseWidget>({
+        name: 'value',
+        type: 'owner-test-legacy',
+        value: 1,
+        y: 0,
+        options: {},
+        draw() {},
+        mouse() {
+          widget.value = [17, 29][index]
+          return true
+        }
+      })
+      return widget
+    })
+    stubCanvasGetContext()
+    const canvas = new LGraphCanvas(
+      document.createElement('canvas'),
+      interior,
+      {
+        skip_render: true,
+        skip_events: true
+      }
+    )
+    useCanvasStore().canvas = canvas
+    useCanvasStore().currentGraph = interior
+    render(WidgetLegacy, {
+      props: {
+        nodeId: nodes[1].id,
+        widget: {
+          name: 'value',
+          type: 'owner-test-legacy',
+          value: undefined,
+          hostNodeLocatorId: createNodeLocatorId(null, nodes[0].id)
+        }
+      }
+    })
+
+    await userEvent.pointer({
+      keys: '[MouseLeft]',
+      target: screen.getByTestId('legacy-widget-canvas'),
+      coords: { offsetX: 28, offsetY: 11 }
+    })
+
+    expect(widgets.map((widget) => widget.value)).toEqual([17, 1])
   })
 })
