@@ -18,11 +18,21 @@ jobs:
       issues: write # labels are applied through the issues API
 
     steps:
+      - name: Create release token
+        id: release_token
+        if: vars.RELEASE_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-workflows: write
+
       - name: Checkout repository
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-          token: ${{ secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ steps.release_token.outputs.token || secrets.PR_GH_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
