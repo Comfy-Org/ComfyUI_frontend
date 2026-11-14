@@ -118,6 +118,7 @@
           <NodeHeader
             :node-data
             :collapsed="isCollapsed"
+            :recent-press-dragged="recentPressDragged"
             :show-missing-warning="
               errorSeverity === 'missing' && !showErrorsTabEnabled
             "
@@ -435,7 +436,9 @@ const nodeSizeStyle = computed(() =>
       }
 )
 
-const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
+const { pointerHandlers, recentPressDragged } = useNodePointerInteractions(
+  () => nodeData
+)
 const badges = usePartitionedBadges(nodeData)
 
 // Handle right-click context menu
