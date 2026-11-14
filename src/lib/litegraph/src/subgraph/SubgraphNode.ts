@@ -386,6 +386,36 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
   }
 
+  private _sortSlotsToCanonicalOrder(): void {
+    const canonicalInputs = this.subgraph.inputNode.slots
+    this.inputs.sort((a, b) => {
+      const ai = canonicalInputs.indexOf(a._subgraphSlot!)
+      const bi = canonicalInputs.indexOf(b._subgraphSlot!)
+      return ai - bi
+    })
+    // Fix input link target_slot indices after reorder
+    for (const [i, input] of this.inputs.entries()) {
+      if (input.link == null) continue
+      const link = this.graph?._links.get(input.link)
+      if (link) link.target_slot = i
+    }
+
+    const canonicalOutputs = this.subgraph.outputNode.slots
+    this.outputs.sort((a, b) => {
+      const ai = canonicalOutputs.findIndex((s) => s.name === a.name)
+      const bi = canonicalOutputs.findIndex((s) => s.name === b.name)
+      return ai - bi
+    })
+    // Fix output link origin_slot indices after reorder
+    for (const [i, output] of this.outputs.entries()) {
+      if (!output.links?.length) continue
+      for (const linkId of output.links) {
+        const link = this.graph?._links.get(linkId)
+        if (link) link.origin_slot = i
+      }
+    }
+  }
+
   private _rebindInputSubgraphSlots(): void {
     this.invalidatePromotedViews()
 
@@ -538,6 +568,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.inputs = this.inputs.filter((input) => input._subgraphSlot)
     this.invalidatePromotedViews()
 
+    this._sortSlotsToCanonicalOrder()
     this._hydratePreviewExposures()
 
     for (const input of this.inputs) {
