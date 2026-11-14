@@ -1,13 +1,16 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSubgraphInputValuesStore } from '@/components/graph/subgraph/subgraphInputValuesStore'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
@@ -16,25 +19,24 @@ import {
 } from './widgetInputSource'
 
 vi.mock(import('@/scripts/app'))
-vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
-vi.mock<unknown>(import('vue-router'), () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() })
-}))
 
-function hostedConsumer() {
-  const rootGraph = app.rootGraph
-  const subgraph = createTestSubgraph({
-    rootGraph,
-    inputs: [{ name: 'image', type: 'IMAGE' }]
-  })
-  rootGraph.subgraphs.set(subgraph.id, subgraph)
+function addConnectedHost(subgraph: Subgraph) {
   const host = createTestSubgraphNode(subgraph)
-  rootGraph.add(host)
-
+  app.rootGraph.add(host)
   const source = new LGraphNode('LoadImage')
   source.addOutput('IMAGE', 'IMAGE')
-  rootGraph.add(source)
+  app.rootGraph.add(source)
   source.connect(0, host, 0)
+  return { host, source }
+}
+
+function hostedConsumer() {
+  const subgraph = createTestSubgraph({
+    rootGraph: app.rootGraph,
+    inputs: [{ name: 'image', type: 'IMAGE' }]
+  })
+  app.rootGraph.subgraphs.set(subgraph.id, subgraph)
+  const { host, source } = addConnectedHost(subgraph)
 
   const consumer = new LGraphNode('Consumer')
   consumer.id = toNodeId(99)
@@ -46,10 +48,6 @@ function hostedConsumer() {
 }
 
 describe('resolveWidgetInputSource', () => {
-  beforeEach(() => {
-    useSubgraphNavigationStore().restoreState([])
-  })
-
   it('follows the input out through the subgraph node the widget is promoted to', () => {
     const { host, source, consumer } = hostedConsumer()
 
@@ -58,7 +56,7 @@ describe('resolveWidgetInputSource', () => {
 
   it('follows the input out through the only instance of the opened subgraph', () => {
     const { subgraph, source, consumer } = hostedConsumer()
-    useSubgraphNavigationStore().restoreState([subgraph.id])
+    useCanvasStore().currentGraph = subgraph
 
     expect(resolveWidgetInputSource(consumer, 0, consumer.id)).toBe(source)
   })
@@ -66,9 +64,29 @@ describe('resolveWidgetInputSource', () => {
   it('stops at the subgraph boundary when the opened subgraph has several instances', () => {
     const { subgraph, consumer } = hostedConsumer()
     app.rootGraph.add(createTestSubgraphNode(subgraph))
-    useSubgraphNavigationStore().restoreState([subgraph.id])
+    useCanvasStore().currentGraph = subgraph
 
     expect(resolveWidgetInputSource(consumer, 0, consumer.id)).toBeUndefined()
+  })
+
+  it('follows the input out through the instance the subgraph was opened from', async () => {
+    const { subgraph, consumer } = hostedConsumer()
+    const opened = addConnectedHost(subgraph)
+    stubCanvasGetContext()
+    const canvas = new LGraphCanvas(
+      document.createElement('canvas'),
+      app.rootGraph,
+      { skip_render: true, skip_events: true }
+    )
+    useCanvasStore().canvas = canvas
+    await nextTick()
+    useSubgraphInputValuesStore()
+
+    canvas.openSubgraph(subgraph, opened.host)
+
+    expect(resolveWidgetInputSource(consumer, 0, consumer.id)).toBe(
+      opened.source
+    )
   })
 
   it('resolves a root graph input directly', () => {
@@ -85,10 +103,6 @@ describe('resolveWidgetInputSource', () => {
 })
 
 describe('isWidgetInputConnected', () => {
-  beforeEach(() => {
-    useSubgraphNavigationStore().restoreState([])
-  })
-
   it('follows the subgraph node input the widget is promoted to', () => {
     const { host, consumer } = hostedConsumer()
     expect(isWidgetInputConnected(consumer, 0, host.id)).toBe(true)
@@ -101,7 +115,7 @@ describe('isWidgetInputConnected', () => {
   it('treats a subgraph input as connected when the instance cannot be identified', () => {
     const { subgraph, host, consumer } = hostedConsumer()
     app.rootGraph.add(createTestSubgraphNode(subgraph))
-    useSubgraphNavigationStore().restoreState([subgraph.id])
+    useCanvasStore().currentGraph = subgraph
     host.disconnectInput(0)
 
     expect(isWidgetInputConnected(consumer, 0, consumer.id)).toBe(true)

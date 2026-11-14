@@ -1,6 +1,6 @@
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 
-interface ResizeHandle {
+export interface ResizeHandle {
   readonly corner: CompassCorners
   readonly positionClasses: string
   readonly cursorClass: string

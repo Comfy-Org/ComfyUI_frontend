@@ -30,6 +30,15 @@
       @ready="onLinkOverlayReady"
       @dispose="onLinkOverlayDispose"
     />
+    <template
+      v-if="comfyApp.canvas && comfyAppReady && openSubgraph && !linearMode"
+    >
+      <SubgraphIoPanel
+        v-for="ioNode in [openSubgraph.inputNode, openSubgraph.outputNode]"
+        :key="`${openSubgraph.id}:${ioNode.id}`"
+        :io-node
+      />
+    </template>
     <SelectionRectangle v-if="comfyAppReady" />
     <NodeTooltip v-if="tooltipEnabled" />
     <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -137,6 +146,8 @@ import AppBuilder from '@/components/builder/AppBuilder.vue'
 import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
+import SubgraphIoPanel from '@/components/graph/subgraph/SubgraphIoPanel.vue'
+import { useSubgraphInputValuesStore } from '@/components/graph/subgraph/subgraphInputValuesStore'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
@@ -243,6 +254,7 @@ const nodeProgressCanvasSync = createNodeProgressCanvasSync(
   workflowStore.nodeToNodeLocatorId
 )
 const { linearMode } = storeToRefs(canvasStore)
+const { graph: openSubgraph } = storeToRefs(useSubgraphInputValuesStore())
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()

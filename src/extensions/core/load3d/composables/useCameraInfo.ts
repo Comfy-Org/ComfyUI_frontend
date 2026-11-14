@@ -39,7 +39,7 @@ const WIDGET_NAMES = [
   'mode.quat_w'
 ] as const
 
-export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
+export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | undefined>) {
   const node = toRef(nodeRef)
   const wiring = useViewportNodeWiring()
   let viewport: CameraInfoViewport | null = null

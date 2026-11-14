@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, describe, expect, onTestFinished, test, vi } from 'vitest'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphNode,
   LinkConnector,
+  LiteGraph,
   ToInputRenderLink
 } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
@@ -95,5 +96,19 @@ describe('LinkConnector dropping onto a node', () => {
     connector.dropOnNode(incompatible, dropEventAt(incompatible, 0))
 
     expect(incompatible.inputs[0].link).toBeNull()
+  })
+
+  test('connects when dropped on a Vue nodes slot outside the node body', () => {
+    target.inputs[1].pos = [-10, 20]
+    const event = dropEventAt(target, 1)
+    expect(graph.getNodeOnPos(event.canvasX, event.canvasY)).toBeNull()
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = false
+    })
+
+    connector.dropLinks(graph, event)
+
+    expect(target.inputs.some((input) => input.link !== null)).toBe(true)
   })
 })

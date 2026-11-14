@@ -12,6 +12,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import { useThemeStore } from '@/platform/theme/themeStore'
+import { useWidgetHostNode } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetHostNode'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -24,6 +25,10 @@ const canvasEl = ref()
 const containerHeight = ref(20)
 
 const canvasStore = useCanvasStore()
+const owner = useWidgetHostNode(
+  () => props.widget.hostNodeLocatorId,
+  () => props.nodeId
+)
 const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
 let node: LGraphNode | undefined
 let widgetInstance: IBaseWidget | undefined
@@ -36,8 +41,7 @@ function findLegacyWidget():
       widget: IBaseWidget
     }
   | undefined {
-  const hostNode = canvas.graph?.getNodeById(props.nodeId) ?? undefined
-  return resolveWidgetFromHostNode(hostNode, props.widget.name)
+  return resolveWidgetFromHostNode(owner.value, props.widget.name)
 }
 
 function bindWidget() {
@@ -75,7 +79,7 @@ onBeforeUnmount(() => {
 })
 
 whenever(() => !canvasStore.linearMode, bindWidget)
-watch(() => canvasStore.currentGraph, bindWidget)
+watch(owner, bindWidget, { flush: 'post' })
 
 function getWidgetHeight(
   widget: IBaseWidget,

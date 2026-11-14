@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -53,7 +54,10 @@ const graphNode = { id: nodeId, graph: null } as unknown as LGraphNode
 
 function renderWidget() {
   return render(WidgetCompositor, {
-    props: { nodeId },
+    props: {
+      nodeId,
+      widget: { name: 'compositor', type: 'compositor', value: undefined }
+    },
     global: {
       plugins: [i18n]
     }
@@ -65,6 +69,7 @@ describe('WidgetCompositor', () => {
     const graph = app.canvas.graph
     if (!graph) throw new Error('Expected the app mock to provide a graph')
     vi.spyOn(graph, 'getNodeById').mockReturnValue(null)
+    useCanvasStore().currentGraph = graph
     clearCompositorLayers(graphNode)
   })
 

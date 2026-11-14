@@ -102,7 +102,7 @@ import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { Reroute } from './Reroute'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { CanvasInteractionModeReader } from '@comfyorg/graph-model/CanvasInteractionMode'
-import { LinkConnector } from './canvas/LinkConnector'
+import { getNodeOrSlotOwnerOnPos, LinkConnector } from './canvas/LinkConnector'
 import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
@@ -2711,20 +2711,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (!is_inside) return
 
-    let node =
-      graph.getNodeOnPos(e.canvasX, e.canvasY, this.visible_nodes) ?? undefined
-
-    // In Vue nodes mode, slots extend beyond node bounds due to CSS transforms.
-    // If no node was found, check if the click is on a slot and use its owning node.
-    if (!node && LiteGraph.vueNodesMode) {
-      const slotLayout = getSlotLayoutAtPoint(graph, {
-        x: e.canvasX,
-        y: e.canvasY
-      })
-      if (slotLayout) {
-        node = graph.getNodeById(slotLayout.nodeId) ?? undefined
-      }
-    }
+    const node = getNodeOrSlotOwnerOnPos(
+      graph,
+      e.canvasX,
+      e.canvasY,
+      this.visible_nodes
+    )
 
     this.mouse[0] = x
     this.mouse[1] = y

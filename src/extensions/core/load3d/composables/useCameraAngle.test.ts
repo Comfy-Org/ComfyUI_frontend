@@ -87,7 +87,7 @@ function widget(node: FakeNode, name: string): FakeWidget {
 }
 
 function nodeRef(node: FakeNode) {
-  return ref(node) as unknown as Ref<LGraphNode | null>
+  return ref(node) as unknown as Ref<LGraphNode | undefined>
 }
 
 function ctorState(instance: ViewportInstance) {
@@ -144,7 +144,7 @@ describe('useCameraAngle', () => {
   })
 
   it('does nothing when the node is null', () => {
-    const camera = useCameraAngle(ref(null))
+    const camera = useCameraAngle(ref())
     camera.initialize(document.createElement('div'))
 
     expect(ViewportMock).not.toHaveBeenCalled()

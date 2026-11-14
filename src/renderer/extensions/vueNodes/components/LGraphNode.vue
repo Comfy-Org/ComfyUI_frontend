@@ -4,6 +4,7 @@
   </div>
   <div
     v-else
+    ref="nodeElement"
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
@@ -222,41 +223,12 @@
           !isSelectMode
         "
       >
-        <div
+        <NodeResizeHandle
           v-for="handle in RESIZE_HANDLES"
           :key="handle.corner"
-          role="button"
-          :data-corner="handle.corner"
-          :aria-label="t(handle.i18nKey)"
-          :class="
-            cn(
-              baseResizeHandleClasses,
-              handle.positionClasses,
-              handle.cursorClass,
-              'group-hover/node:opacity-100'
-            )
-          "
-          @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 12 12"
-            :class="cn('absolute size-2/5', handle.svgPositionClasses)"
-            :style="
-              handle.svgTransform
-                ? { transform: handle.svgTransform }
-                : undefined
-            "
-          >
-            <path
-              d="M11 1L1 11M11 6L6 11"
-              stroke="var(--color-muted-foreground)"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
+          :handle
+          @resize="handleResizePointerDown"
+        />
       </template>
     </div>
   </div>
@@ -264,8 +236,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onErrorCaptured, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, onErrorCaptured, ref, useTemplateRef } from 'vue'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
@@ -335,6 +306,7 @@ import LivePreview from './LivePreview.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
+import NodeResizeHandle from './NodeResizeHandle.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 import {
@@ -345,8 +317,6 @@ import {
 const { nodeData } = defineProps<{
   nodeData: NodeState
 }>()
-
-const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
@@ -450,9 +420,7 @@ const handleContextMenu = (event: MouseEvent) => {
   showNodeOptions(event, { nodeId: nodeData.id })
 }
 
-const baseResizeHandleClasses =
-  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
-
+const nodeElement = useTemplateRef('nodeElement')
 const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
   const node = resolveLGraphNode()
@@ -480,7 +448,8 @@ const handleResizePointerDown = (
   if (!shouldHandleNodePointerEvents.value) return
   if (nodeData.flags?.pinned) return
   if (nodeData.resizable === false) return
-  startResize(event, corner)
+  const element = nodeElement.value
+  if (element) startResize(event, corner, { element, position: position.value })
 }
 
 // Check if node has custom content (like image/video outputs)
