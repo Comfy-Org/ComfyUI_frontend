@@ -72,6 +72,7 @@ const handleVideoError = () => {
 }
 
 async function onVideoClick(event: MouseEvent) {
+  if (event.detail > 1) return event.preventDefault()
   if (
     event.shiftKey ||
     event.metaKey ||
