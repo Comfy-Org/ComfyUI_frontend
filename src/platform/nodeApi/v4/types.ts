@@ -75,6 +75,18 @@ export interface Comfy {
   readonly workflow: WorkflowHandle
   /** Running the workflow, and hearing runs start, finish and fail. */
   readonly queue: QueueHandle
+  /** Declaring, reading, writing and watching settings. */
+  readonly settings: SettingsHandle
+  /** Text the pack keeps in the current user's data on the server. */
+  readonly storage: StorageHandle
+  /** Commands, their default keys, and notifications. */
+  readonly commands: CommandsHandle
+  /** Calls to the backend and the messages it sends. */
+  readonly backend: BackendHandle
+  /** The model files the backend lists. */
+  readonly models: ModelsHandle
+  /** What a pack adds to the app around the graph. */
+  readonly ui: UiHandle
 }
 
 /** The graph on screen. An argument a member cannot use throws a `TypeError`. */
@@ -1309,13 +1321,6 @@ export interface PreviewFrame {
   readonly blob: Blob
 }
 
-export interface Comfy {
-  /** Declaring, reading, writing and watching settings. */
-  readonly settings: SettingsHandle
-  /** Text the pack keeps in the current user's data on the server. */
-  readonly storage: StorageHandle
-}
-
 /** A setting's value as the settings file holds it. A value read is a frozen copy. */
 export type SettingValue =
   | string
@@ -1403,11 +1408,6 @@ export type StoredText =
   | { readonly ok: true; readonly text: string | undefined }
   | { readonly ok: false }
 
-export interface Comfy {
-  /** Commands, their default keys, and notifications. */
-  readonly commands: CommandsHandle
-}
-
 export interface CommandsHandle {
   /**
    * Adds a command for the life of the page. An id already registered throws.
@@ -1450,11 +1450,6 @@ export interface NotifyDef {
   readonly life?: number
 }
 
-export interface Comfy {
-  /** Calls to the backend and the messages it sends. */
-  readonly backend: BackendHandle
-}
-
 /** A route starts with exactly one `/`. */
 export interface BackendHandle {
   /** The URL of an API route, such as `/view?filename=a.png`, under the host's base path. */
@@ -1470,22 +1465,12 @@ export interface BackendHandle {
   on(event: string, listener: (detail: unknown) => void): Unsubscribe
 }
 
-export interface Comfy {
-  /** The model files the backend lists. */
-  readonly models: ModelsHandle
-}
-
 export interface ModelsHandle {
   /**
    * The model names in a folder such as `loras`, each once, in the backend's order.
    * An unknown folder lists none; `undefined` if the server could not list them.
    */
   list(folder: string): Promise<readonly string[] | undefined>
-}
-
-export interface Comfy {
-  /** What a pack adds to the app around the graph. */
-  readonly ui: UiHandle
 }
 
 /** The pack renders a contribution's content into the element it is given. */
