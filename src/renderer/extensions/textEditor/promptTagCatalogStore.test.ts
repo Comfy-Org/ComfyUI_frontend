@@ -10,6 +10,14 @@ describe('prompt tag catalog', () => {
     },
     { text: 'blue_eyes,4\nblue_hair,9', expected: ['blue hair', 'blue eyes'] },
     {
+      text: 'name,"count"\nblue_eyes,"4"\nblue_hair,"19"',
+      expected: ['blue hair', 'blue eyes']
+    },
+    {
+      text: '"name","category","post_count","aliases"\n"blue_eyes","0","14",""\n"blue_hair","0","9",""',
+      expected: ['blue eyes', 'blue hair']
+    },
+    {
       text: 'name,category,post_count,aliases\nblue_eyes,0,4,"azure_eyes,cyan_eyes"\nblue_hair,0,9,""\nblue_eyes,0,12,""',
       expected: ['blue eyes', 'blue hair']
     },

@@ -9,7 +9,8 @@ function readCatalogFields(line: string) {
     .replaceAll('_', ' ')
     .trim()
   const columns = fields.at(3)?.split(',') ?? []
-  return { name, frequency: columns.at(columns.length > 1 ? 1 : 0) }
+  const frequency = columns.at(columns.length > 1 ? 1 : 0)
+  return { name, frequency: frequency?.replace(/^"(.*)"$/, '$1') }
 }
 
 function parseCatalogLine(
