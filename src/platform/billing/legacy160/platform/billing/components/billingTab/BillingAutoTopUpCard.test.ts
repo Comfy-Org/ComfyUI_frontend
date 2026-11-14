@@ -2,7 +2,7 @@ import type { AutoTopUpSetup } from '@comfyorg/ingest-types'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -24,6 +24,7 @@ import {
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import BillingAutoTopUpCard from '@/platform/billing/legacy160/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingLocalCreditBanner from '@/platform/billing/legacy160/platform/billing/components/billingTab/BillingLocalCreditBanner.vue'
@@ -368,6 +369,24 @@ describe('BillingAutoTopUpCard', () => {
       })
     }
   )
+
+  it('keeps the status and lines without the Platform action when local billing uses a handoff', async () => {
+    setLocalBillingWebEnabled(true)
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    renderCard(notConfigured)
+
+    expect(
+      await screen.findByTestId('billing-auto-top-up-status')
+    ).toHaveTextContent('Off')
+    expect(
+      screen
+        .getAllByTestId('billing-auto-top-up-line')
+        .map((line) => line.textContent.trim())
+    ).toEqual(['Refills credits when your balance runs low.'])
+    expect(
+      screen.queryByRole('link', { name: 'Turn on' })
+    ).not.toBeInTheDocument()
+  })
 
   it.for([
     { status: 'off', action: 'Turn on', reported: 'turn_on' },

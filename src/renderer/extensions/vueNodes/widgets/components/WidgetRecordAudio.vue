@@ -91,7 +91,6 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
@@ -103,7 +102,6 @@ const { t } = useI18n()
 const props = defineProps<{
   readonly?: boolean
   nodeId: NodeId
-  widget?: SimplifiedWidget
 }>()
 
 // Audio element ref
@@ -154,10 +152,7 @@ const { isPlaying, audioElementKey } = playback
 
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
-const litegraphNode = useWidgetHostNode(
-  () => props.widget?.hostNodeLocatorId,
-  () => props.nodeId
-)
+const litegraphNode = useWidgetHostNode(undefined, () => props.nodeId)
 
 function handleRecordingComplete(blob: Blob) {
   // Create a widget-owned blob URL (independent of useAudioRecorder's

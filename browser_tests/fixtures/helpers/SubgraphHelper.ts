@@ -30,7 +30,6 @@ type SubgraphDefinitionInventory = SubgraphDefinitionRow[]
 export class SubgraphHelper {
   public readonly editor: SubgraphEditor
   public readonly inputPanel: Locator
-  public readonly outputPanel: Locator
   public readonly inputPorts: Locator
   public readonly outputPorts: Locator
   public readonly addInputSocket: Locator
@@ -40,13 +39,13 @@ export class SubgraphHelper {
     this.editor = new SubgraphEditor(comfyPage)
     const { subgraphIo, node } = TestIds
     this.inputPanel = comfyPage.page.getByTestId(subgraphIo.inputPanel)
-    this.outputPanel = comfyPage.page.getByTestId(subgraphIo.outputPanel)
+    const outputPanel = comfyPage.page.getByTestId(subgraphIo.outputPanel)
     this.inputPorts = this.inputPanel.getByTestId(subgraphIo.inputPort)
-    this.outputPorts = this.outputPanel.getByTestId(subgraphIo.outputPort)
+    this.outputPorts = outputPanel.getByTestId(subgraphIo.outputPort)
     this.addInputSocket = this.inputPanel
       .getByTestId(subgraphIo.addInput)
       .getByTestId(node.slotConnectionDot)
-    this.addOutputSocket = this.outputPanel
+    this.addOutputSocket = outputPanel
       .getByTestId(subgraphIo.addOutput)
       .getByTestId(node.slotConnectionDot)
   }

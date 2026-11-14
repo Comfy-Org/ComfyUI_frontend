@@ -157,7 +157,7 @@ const invokeReadyCallback = (
   }
 }
 
-export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
+export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | undefined>) => {
   const nodeRef = toRef(nodeOrRef)
   let load3d: Load3d | null = null
   let viewerContainer: HTMLElement | null = null

@@ -18,7 +18,8 @@ import { app } from '@/scripts/app'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 import { testI18n } from '@/utils/__tests__/testI18n'
 
-import SubgraphInputValues from './SubgraphInputValues.vue'
+import SubgraphIoPanel from './SubgraphIoPanel.vue'
+import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 
 vi.mock(import('@/scripts/app'))
 
@@ -66,7 +67,6 @@ async function renderInputNode() {
     ]
   })
   const host = createTestSubgraphNode(graph)
-  host.title = 'Host A'
   graph.rootGraph.add(host)
   vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph.rootGraph)
   const store = useCanvasStore()
@@ -76,8 +76,18 @@ async function renderInputNode() {
   })
   store.currentGraph = graph
   const Probe = defineComponent({
-    setup: () => () =>
-      h(TooltipProvider, {}, { default: () => h(SubgraphInputValues) })
+    setup() {
+      const context = useSubgraphInputValuesStore()
+      return () =>
+        h(TooltipProvider, null, {
+          default: () =>
+            context.graph &&
+            h(SubgraphIoPanel, {
+              key: context.graph.id,
+              ioNode: context.graph.inputNode
+            })
+        })
+    }
   })
   const pinia = getActivePinia()
   assert.exists(pinia)
@@ -92,14 +102,6 @@ async function renderInputNode() {
 }
 
 describe('subgraph input node ports', () => {
-  it('identifies the current instance without a picker', async () => {
-    const { host } = await renderInputNode()
-
-    expect(
-      screen.getByRole('group', { name: `${host.title} · #${host.id}` })
-    ).toBeVisible()
-  })
-
   it('does not start resizing a pinned input node', async () => {
     const { graph } = await renderInputNode()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })

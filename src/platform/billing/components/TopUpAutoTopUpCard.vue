@@ -52,14 +52,18 @@ watch(
   { immediate: true }
 )
 
+const { href, track, available } = usePlatformHandoff(
+  platformAutoTopUpPath('turn_on'),
+  {
+    target: 'auto_top_up',
+    action: 'turn_on'
+  }
+)
+
 const visible = computed(() => {
+  if (!available.value) return false
   if (!canSetUp.value) return false
   const read = state.value
   return read.kind === 'loaded' && read.settings.status === 'off'
-})
-
-const { href, track } = usePlatformHandoff(platformAutoTopUpPath('turn_on'), {
-  target: 'auto_top_up',
-  action: 'turn_on'
 })
 </script>

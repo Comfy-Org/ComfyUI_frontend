@@ -28,10 +28,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
-import type {
-  ItemLocator,
-  LinkNetwork
-} from '@comfyorg/graph-model/linkNetwork'
+import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
@@ -717,7 +714,7 @@ export class LinkConnector {
    * Connects the links being dropped
    * @param event Contains the drop location, in canvas space
    */
-  dropLinks(locator: LGraph & ItemLocator, event: CanvasPointerEvent): void {
+  dropLinks(graph: LGraph, event: CanvasPointerEvent): void {
     if (!this.isConnecting) {
       const mayContinue = this.events.dispatch('before-drop-links', {
         renderLinks: this.renderLinks,
@@ -729,17 +726,18 @@ export class LinkConnector {
     try {
       const { canvasX, canvasY } = event
 
-      const ioNode = locator.getIoNodeOnPos?.(canvasX, canvasY)
+      const ioNode =
+        graph instanceof Subgraph && graph.getIoNodeOnPos(canvasX, canvasY)
       if (ioNode) {
         this.dropOnIoNode(ioNode, event)
         return
       }
 
-      const node = getNodeOrSlotOwnerOnPos(locator, canvasX, canvasY)
+      const node = getNodeOrSlotOwnerOnPos(graph, canvasX, canvasY)
       if (node) {
         this.dropOnNode(node, event)
       } else {
-        const reroute = locator.getRerouteOnPos(canvasX, canvasY)
+        const reroute = graph.getRerouteOnPos(canvasX, canvasY)
         if (reroute && this.isRerouteValidDrop(reroute)) {
           this.dropOnReroute(reroute, event)
         } else {

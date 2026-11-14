@@ -2,8 +2,9 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] gap-y-(--node-widget-gap) pr-3 text-xs text-node-foreground"
-    :style="gridStyle"
+    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] gap-y-(--node-widget-gap) pr-3 text-xs text-node-foreground data-expands:flex-1"
+    :data-expands="expands || undefined"
+    :style="{ 'grid-template-rows': gridTemplateRows }"
   >
     <div
       v-for="section in sections"
@@ -289,13 +290,12 @@ async function restoreRowFocus(name: string) {
   }
 }
 
-const gridStyle = computed(() => {
-  const rows = renderedRows.value.map((row) => row.rowSize).join(' ')
-  return {
-    'grid-template-rows': rows,
-    flex: rows.includes('auto') ? 1 : undefined
-  }
-})
+const gridTemplateRows = computed(() =>
+  renderedRows.value.map((row) => row.rowSize).join(' ')
+)
+const expands = computed(() =>
+  renderedRows.value.some((row) => row.rowSize === 'auto')
+)
 
 const layoutKey = computed(() =>
   renderedRows.value

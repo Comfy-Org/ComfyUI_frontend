@@ -132,7 +132,8 @@ beforeEach(() => {
   vi.mocked(useAutoTopUpBannerKind).mockReturnValue(computed(() => null))
   vi.mocked(usePlatformHandoff).mockReturnValue({
     href: computed(() => 'https://platform.test/profile/billing'),
-    track: vi.fn()
+    track: vi.fn(),
+    available: computed(() => true)
   })
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({

@@ -3,20 +3,22 @@ import { describe, expect, it } from 'vitest'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
-import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+
+import { useLinkStore } from '@/stores/linkStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { resolveInputValueSource } from './resolveInputValueSource'
-import type { ValueSourceGraph } from './resolveInputValueSource'
 
 const rootId = '00000000-0000-4000-8000-000000000001'
 const scope = graphScopeOf({ id: rootId, rootGraph: { id: rootId } })
+const hostValue = widgetId(rootId, toNodeId(29), 'value')
 
-function node(id: number, type: string): NodeState {
-  return {
+function node(id: number, type: string, widgetName = 'value'): NodeState {
+  const state: NodeState = {
     id: toNodeId(id),
     graphId: rootId,
     type,
@@ -36,51 +38,25 @@ function node(id: number, type: string): NodeState {
     mode: LGraphEventMode.ALWAYS,
     properties: {}
   }
+  useNodeDataStore().registerNode(scope, state)
+  useWidgetValueStore().registerWidget(widgetId(rootId, state.id, widgetName), {
+    type: 'number',
+    value: 37,
+    options: {}
+  })
+  return state
 }
 
-function link(source: NodeState, target: NodeState): LinkTopology {
-  return {
-    id: toLinkId(Number(target.id)),
+function link(source: NodeState, target: NodeState) {
+  useLinkStore().registerLink(scope, {
+    id: toLinkId(Number(target.id) * 100 + Number(source.id)),
     graphId: scope.owningGraphId,
     originNodeId: source.id,
     originSlot: 0,
     targetNodeId: target.id,
     targetSlot: 0,
     type: 'INT'
-  }
-}
-
-function fixture(
-  nodes: NodeState[],
-  links: LinkTopology[] = [],
-  widgetName = 'value'
-): ValueSourceGraph {
-  const widgets = new Map(
-    nodes.map((node) => [
-      widgetId(rootId, node.id, widgetName),
-      {
-        nodeId: node.id,
-        name: widgetName,
-        type: 'number',
-        value: 37,
-        y: 0,
-        options: {}
-      } satisfies WidgetState
-    ])
-  )
-  return {
-    nodes: new Map(nodes.map((node) => [node.id, node])),
-    inputLink: (node, index) =>
-      links.find(
-        (link) => link.targetNodeId === node.id && link.targetSlot === index
-      ),
-    outputLinkCount: (node, index) =>
-      links.filter(
-        (link) => link.originNodeId === node.id && link.originSlot === index
-      ).length,
-    widgetIds: (node) => [widgetId(rootId, node.id, widgetName)],
-    widget: (id) => widgets.get(id)
-  }
+  })
 }
 
 describe('subgraph input value source', () => {
@@ -97,23 +73,19 @@ describe('subgraph input value source', () => {
       const reroute = node(7, 'Reroute')
       const downstream = node(11, 'PrimitiveInt')
       const other = node(37, 'subgraph')
+      const unrelated = node(41, 'PrimitiveInt')
       const branchingNode = {
-        no: undefined,
+        no: unrelated,
         source,
         reroute,
         'downstream Primitive': downstream
       }[branch]
-      const graph = fixture(
-        [host, source, reroute, downstream, other],
-        [
-          link(source, reroute),
-          link(reroute, downstream),
-          link(downstream, host),
-          ...(branchingNode ? [link(branchingNode, other)] : [])
-        ]
-      )
+      link(source, reroute)
+      link(reroute, downstream)
+      link(downstream, host)
+      link(branchingNode, other)
 
-      expect(resolveInputValueSource(graph, host, 'value')).toEqual({
+      expect(resolveInputValueSource(scope, host, 0, hostValue)).toEqual({
         kind: 'editable',
         node: source,
         widgetId: widgetId(rootId, source.id, 'value'),
@@ -125,8 +97,7 @@ describe('subgraph input value source', () => {
   it('addresses an unconnected promoted input by its existing widget ID', () => {
     const host = node(29, 'subgraph')
     const id = widgetId(rootId, host.id, 'value')
-    host.inputs[0].widgetId = id
-    expect(resolveInputValueSource(fixture([host]), host, 'value')).toEqual({
+    expect(resolveInputValueSource(scope, host, 0, id)).toEqual({
       kind: 'editable',
       node: host,
       widgetId: id,
@@ -134,17 +105,14 @@ describe('subgraph input value source', () => {
     })
   })
 
-  it.for([
-    { type: 'PrimitiveInt', widgetName: 'value' },
-    { type: 'PrimitiveNode', widgetName: 'seed' }
-  ])('edits the stored $widgetName widget of $type', ({ type, widgetName }) => {
+  it('edits the stored widget of a legacy PrimitiveNode', () => {
     const host = node(29, 'subgraph')
-    const source = node(11, type)
-    const graph = fixture([host, source], [link(source, host)], widgetName)
-    expect(resolveInputValueSource(graph, host, 'value')).toEqual({
+    const source = node(11, 'PrimitiveNode', 'seed')
+    link(source, host)
+    expect(resolveInputValueSource(scope, host, 0, hostValue)).toEqual({
       kind: 'editable',
       node: source,
-      widgetId: widgetId(rootId, source.id, widgetName),
+      widgetId: widgetId(rootId, source.id, 'seed'),
       shared: false
     })
   })
@@ -169,21 +137,21 @@ describe('subgraph input value source', () => {
     const host = node(29, 'subgraph')
     const source = node(11, type)
     source.mode = mode
-    expect(
-      resolveInputValueSource(
-        fixture([host, source], [link(source, host)]),
-        host,
-        'value'
-      )
-    ).toEqual({ kind: 'linked', node: source })
+    link(source, host)
+    expect(resolveInputValueSource(scope, host, 0, hostValue)).toEqual({
+      kind: 'linked',
+      node: source
+    })
   })
 
   it('terminates an upstream cycle without exposing an editable value', () => {
     const host = node(29, 'subgraph')
     const a = node(11, 'PrimitiveInt')
     const b = node(7, 'PrimitiveInt')
-    const graph = fixture([host, a, b], [link(a, host), link(b, a), link(a, b)])
-    expect(resolveInputValueSource(graph, host, 'value')).toEqual({
+    link(a, host)
+    link(b, a)
+    link(a, b)
+    expect(resolveInputValueSource(scope, host, 0, hostValue)).toEqual({
       kind: 'unavailable'
     })
   })

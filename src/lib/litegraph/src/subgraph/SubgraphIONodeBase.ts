@@ -61,12 +61,6 @@ export abstract class SubgraphIONodeBase<
     return layoutStore.contentSizeOf(this.subgraph.id, this.id)
   }
 
-  protected get slotInset(): number {
-    return this.measured
-      ? -LiteGraph.NODE_SLOT_HEIGHT / 2
-      : SubgraphIONodeBase.roundedRadius
-  }
-
   get boundingRect(): Rectangle {
     const { measured } = this
     if (!measured) return this._boundingRect
@@ -145,11 +139,42 @@ export abstract class SubgraphIONodeBase<
     return true
   }
 
-  abstract onPointerDown(
+  protected abstract dragNewLink(
+    linkConnector: LinkConnector,
+    slot: TSlot
+  ): void
+
+  onPointerDown(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,
     linkConnector: LinkConnector
-  ): void
+  ): void {
+    const slot = this.getSlotInPosition(e.canvasX, e.canvasY)
+    if (!slot) return
+    if (e.button === 2) {
+      this.showSlotContextMenu(slot, e)
+      return
+    }
+    if (e.button !== 0) return
+
+    if (
+      LiteGraph.ctrl_alt_click_do_break_link &&
+      (e.ctrlKey || e.metaKey) &&
+      e.altKey &&
+      !e.shiftKey
+    ) {
+      pointer.onClick = () => {
+        this.subgraph.beforeChange()
+        slot.disconnect()
+        this.subgraph.afterChange()
+      }
+      return
+    }
+    pointer.onDragStart = () => this.dragNewLink(linkConnector, slot)
+    pointer.onDragEnd = (eUp) => linkConnector.dropLinks(this.subgraph, eUp)
+    pointer.onDoubleClick = () => this.handleSlotDoubleClick(slot, e)
+    pointer.finally = () => linkConnector.reset(true)
+  }
 
   // #region Hoverable
 
@@ -161,7 +186,13 @@ export abstract class SubgraphIONodeBase<
     )
   }
 
-  abstract get slotAnchorX(): number
+  get slotAnchorX(): number {
+    const [x, , width] = this.boundingRect
+    const inset = this.measured
+      ? -LiteGraph.NODE_SLOT_HEIGHT / 2
+      : SubgraphIONodeBase.roundedRadius
+    return this.slotDirection === 'output' ? x + width - inset : x + inset
+  }
 
   onPointerMove(e: CanvasPointerEvent): CanvasItem {
     const containsPoint = this.boundingRect.containsXy(e.canvasX, e.canvasY)

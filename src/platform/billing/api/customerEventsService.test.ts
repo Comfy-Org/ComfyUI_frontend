@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   EventType,
   useCustomerEventsService
-} from '@/services/customerEventsService'
+} from '@/platform/billing/api/customerEventsService'
 
 const mockI18n = vi.hoisted(() => ({
   d: vi.fn()
@@ -295,7 +295,7 @@ describe('useCustomerEventsService', () => {
       async ([locale, one, seven]) => {
         const { createI18n } = await import('vue-i18n')
         const { default: messages } = await import(
-          `../locales/${locale}/main.json`
+          `../../../locales/${locale}/main.json`
         )
         const i18n = createI18n({
           legacy: false,

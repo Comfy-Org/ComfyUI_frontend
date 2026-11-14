@@ -2,7 +2,10 @@ import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { resolveInputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
+import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -49,13 +52,31 @@ export const useSubgraphInputValuesStore = defineStore(
           .getGraphNodesFor(root.id, graphId)
           .filter((node) => node.type === current.id)
       const entered = enteredHosts.value.get(current.id)
-      if (entered)
-        return instancesIn(entered.graphId).find(
-          (node) => node.id === entered.id
-        )
+      if (entered) {
+        const host = nodeDataStore.getNode(root.id, entered.id)
+        return host?.graphId === entered.graphId && host.type === current.id
+          ? host
+          : undefined
+      }
       const instances = [root.id, ...root.subgraphs.keys()].flatMap(instancesIn)
       return instances.length === 1 ? instances[0] : undefined
     })
-    return { graph, selected }
+
+    const sources = computed(() => {
+      const host = selected.value
+      const root = graph.value?.rootGraph
+      const result = new Map<string, InputValueSource>()
+      if (!host || !root) return result
+      const scope = graphScopeOf({ id: host.graphId, rootGraph: root })
+      for (const [index, { name, widgetId }] of host.inputs.entries()) {
+        if (widgetId)
+          result.set(
+            name,
+            resolveInputValueSource(scope, host, index, widgetId)
+          )
+      }
+      return result
+    })
+    return { graph, selected, sources }
   }
 )
