@@ -39,6 +39,8 @@ function capabilities(): Capabilities {
     can_reactivate: false,
     can_revert_scheduled_change: false,
     can_run_workflows: true,
+    can_set_budgets: false,
+    can_set_hard_caps: false,
     can_subscribe_self_serve: true,
     can_top_up: true,
     can_upgrade: true
@@ -81,6 +83,8 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_reactivate: boolean
   can_revert_scheduled_change: boolean
   can_run_workflows: boolean
+  can_set_budgets: boolean
+  can_set_hard_caps: boolean
   can_subscribe_self_serve: boolean
   can_top_up: boolean
   can_upgrade: boolean

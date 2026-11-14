@@ -42,6 +42,8 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
           can_manage_subscription: false,
           can_open_plans: false,
           can_run_workflows: false,
+          can_set_budgets: false,
+          can_set_hard_caps: false,
           can_upgrade: false,
           can_reactivate: false,
           can_revert_scheduled_change: false,
@@ -59,6 +61,7 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
       }
     },
     getBillingAutoReload: async () => ({
+      auto_top_up_conflict: false,
       card_expiry: null,
       configured: false,
       cycle_resets_at: null,

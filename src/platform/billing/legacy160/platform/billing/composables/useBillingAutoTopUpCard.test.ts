@@ -54,6 +54,7 @@ function settingsWith(
   status: AutoReloadSettings['status']
 ): AutoReloadSettings {
   return {
+    auto_top_up_conflict: false,
     card_expiry: null,
     configured: status !== 'off',
     cycle_resets_at: '2026-11-28T00:00:00Z',

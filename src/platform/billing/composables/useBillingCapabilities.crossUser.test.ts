@@ -65,6 +65,8 @@ function capabilitiesFor(
       can_manage_subscription: isOwner,
       can_open_plans: isOwner,
       can_run_workflows: isOwner,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: isOwner
     },
     rollout_defaults_applied: {

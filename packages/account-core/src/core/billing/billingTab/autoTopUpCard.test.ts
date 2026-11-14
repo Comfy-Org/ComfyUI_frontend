@@ -14,6 +14,7 @@ import type {
 } from './autoTopUpCard'
 
 const settings: AutoReloadSettings = {
+  auto_top_up_conflict: false,
   card_expiry: null,
   configured: true,
   cycle_resets_at: null,
