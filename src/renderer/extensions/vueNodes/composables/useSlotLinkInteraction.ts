@@ -648,8 +648,10 @@ export function useSlotLinkInteraction({
 
     const isCanvasSurface =
       dropTarget === app.canvas.canvas ||
-      (dropTarget instanceof Element &&
-        dropTarget.closest('[data-subgraph-io]') !== null)
+      !!app.canvas.subgraph?.getIoNodeOnPos(
+        canvasEvent.canvasX,
+        canvasEvent.canvasY
+      )
     if (!hasConnected && isCanvasSurface) {
       activeAdapter?.dropOnCanvas(canvasEvent)
     }

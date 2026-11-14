@@ -1,19 +1,31 @@
 import { computedWithControl, useResizeObserver } from '@vueuse/core'
-import { computed, shallowRef, watch } from 'vue'
+import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 import type { Ref } from 'vue'
 
-import type { Size2D as Size } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  RectTuple,
+  Size2D as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 
 type SubgraphIoNode = SubgraphInputNode | SubgraphOutputNode
+
+function portHitRect(port: Element, origin: DOMRect, scale: number): RectTuple {
+  const rect = port.getBoundingClientRect()
+  const haloWidth = Number.parseFloat(getComputedStyle(port, '::after').width)
+  const width = Math.max(rect.width / scale, haloWidth || 0)
+  const height = rect.height / scale
+  const centerX = (rect.left + rect.width / 2 - origin.left) / scale
+  const centerY = (rect.top + rect.height / 2 - origin.top) / scale
+  return [centerX - width / 2, centerY - height / 2, width, height]
+}
 
 export function useSubgraphIoLayout(
   ioNode: () => SubgraphIoNode,
@@ -36,29 +48,30 @@ export function useSubgraphIoLayout(
     const panel = element.value
     if (!panel?.offsetHeight) return
     const node = ioNode()
-    const type = node.slotDirection
     const panelRect = panel.getBoundingClientRect()
     const scale = panelRect.height / panel.offsetHeight
-    const x = type === 'input' ? 0 : panel.offsetWidth
-    layoutStore.reportContentSize(
-      node.subgraph.id,
-      node.id,
-      override ?? { width: panel.offsetWidth, height: panel.offsetHeight }
-    )
-    layoutStore.updateNodeSlotOffsets(
-      node.subgraph.id,
-      node.id,
-      rows.value.map((row, index) => {
-        const port = row.querySelector('[data-port-anchor]') ?? row
-        const rect = port.getBoundingClientRect()
-        const y = (rect.top + rect.height / 2 - panelRect.top) / scale
-        return { index, type, position: { x, y } }
-      }),
-      'expanded'
-    )
+    const { width, height } = override ?? {
+      width: panel.offsetWidth,
+      height: panel.offsetHeight
+    }
+    node.renderedLayout = {
+      width,
+      height,
+      ports: rows.value.map((row) =>
+        portHitRect(
+          row.querySelector('[data-port-anchor]') ?? row,
+          panelRect,
+          scale
+        )
+      )
+    }
     node.arrange()
     canvasStore.canvas?.setDirty(true, true)
   }
+
+  onScopeDispose(() => {
+    ioNode().renderedLayout = undefined
+  })
 
   useResizeObserver(
     () => [element.value, ...rows.value],
