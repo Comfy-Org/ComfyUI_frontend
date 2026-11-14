@@ -288,6 +288,7 @@ function onMentionHover(index: number): void {
 }
 
 function onEditorInput(): void {
+  prefillFadeMs.value = null
   syncMention()
   if (mentionVisible.value) requestDescription('input')
 }
@@ -335,6 +336,7 @@ function stopRunOnEscape(event: KeyboardEvent): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
+  prefillFadeMs.value = null
   if (event.key === 'Enter') event.stopPropagation()
   if (openingChat) {
     event.preventDefault()
@@ -457,7 +459,7 @@ const composerContainerRef = useTemplateRef<HTMLDivElement>(
   'composerContainerRef'
 )
 
-function focusAllowsComposerStop(): boolean {
+function focusIsWithinComposerOrUnset(): boolean {
   const active = document.activeElement
   return (
     active === null ||
@@ -476,7 +478,7 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
     return false
   if (event.defaultPrevented) return false
 
-  if (!focusAllowsComposerStop()) return false
+  if (!focusIsWithinComposerOrUnset()) return false
 
   event.preventDefault()
   if (!event.repeat) emit('stop', 'escape')
@@ -491,6 +493,35 @@ onMounted(() => {
 onUnmounted(() => {
   unregisterEscapeOverride?.()
 })
+
+const prefillFadeMs = ref<number | null>(null)
+const prefillFade = computed(() =>
+  prefillFadeMs.value === null
+    ? {}
+    : {
+        class: 'agent-talk-fade',
+        style: { '--talk-delay': `${prefillFadeMs.value}ms` }
+      }
+)
+
+function focusIsWithinEditorOrUnset(): boolean {
+  const active = document.activeElement
+  return (
+    active === null ||
+    active === document.body ||
+    (editorHostRef.value?.contains(active) === true &&
+      active.getAttribute('contenteditable') === 'true')
+  )
+}
+
+async function focusPrefill(delayMs: number): Promise<void> {
+  const prefilled = composer.prompt.value
+  prefillFadeMs.value = delayMs
+  await nextTick()
+  if (composer.prompt.value !== prefilled || !focusIsWithinEditorOrUnset())
+    return
+  editorRef.value?.focusAtEnd()
+}
 
 function insert(
   text: string,
@@ -512,6 +543,7 @@ function removeAttachment(id: string): void {
 
 defineExpose({
   insert,
+  focusPrefill,
   replaceDraft,
   addAttachment: composer.addAttachment,
   updateAttachment: composer.updateAttachment,
@@ -629,6 +661,8 @@ defineExpose({
         <div class="grid flex-1">
           <div
             ref="editorHostRef"
+            data-testid="composer-editor"
+            v-bind="prefillFade"
             class="col-start-1 row-start-1 flex flex-col"
           >
             <InlinePromptEditor

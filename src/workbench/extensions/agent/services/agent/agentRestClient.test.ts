@@ -1780,3 +1780,34 @@ describe('user auth on agent requests', () => {
     )
   })
 })
+
+describe('usage status', () => {
+  it('reads whether the agent has been used from the usage-status endpoint', async () => {
+    respond(jsonResponse(200, { has_used_agent: false }))
+
+    await expect(makeClient().getUsageStatus()).resolves.toEqual({
+      has_used_agent: false
+    })
+    expect(lastCall().route).toBe('/agent/usage-status')
+  })
+
+  it('rejects a successful response missing has_used_agent', async () => {
+    respond(jsonResponse(200, {}))
+
+    await expect(makeClient().getUsageStatus()).rejects.toMatchObject({
+      name: 'ZodError',
+      issues: expect.arrayContaining([
+        expect.objectContaining({ path: ['has_used_agent'] })
+      ])
+    })
+  })
+
+  it('rejects with the HTTP status when the request fails', async () => {
+    respond(jsonResponse(500, { error: 'unavailable' }))
+
+    await expect(makeClient().getUsageStatus()).rejects.toMatchObject({
+      name: 'AgentApiError',
+      status: 500
+    })
+  })
+})

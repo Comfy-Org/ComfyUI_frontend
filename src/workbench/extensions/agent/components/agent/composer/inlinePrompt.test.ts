@@ -95,6 +95,44 @@ describe('inline prompt', () => {
     expect(promptDraft(promptDocument(draft))).toEqual(draft)
   })
 
+  it('round-trips mixed workflow, node and skill references without changing their metadata or order', () => {
+    const draft: ComposerPrompt = {
+      text: '😀 before\n after',
+      references: [
+        {
+          kind: 'workflow',
+          id: 'workflow-reference',
+          name: 'Reference workflow',
+          unavailable: true,
+          textOffset: 0
+        },
+        {
+          kind: 'node',
+          scope: 'workflow-A',
+          node: {
+            id: '12',
+            title: 'KSampler',
+            locatorId: createNodeLocatorId(
+              'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+              toNodeId('12')
+            )
+          },
+          textOffset: 10
+        },
+        {
+          kind: 'skill',
+          name: 'portrait',
+          description: 'Private\nDescription',
+          scope: 'user-a/workspace-a',
+          resolvePastedName: true,
+          textOffset: 10
+        }
+      ]
+    }
+
+    expect(promptDraft(promptDocument(draft))).toEqual(draft)
+  })
+
   it('normalizes clipboard workflow IDs while preserving labels and availability', () => {
     const content = document.createElement('div')
     const chip = document.createElement('span')

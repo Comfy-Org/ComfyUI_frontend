@@ -6288,6 +6288,36 @@
     "skip": "Skip",
     "gotIt": "Got it",
     "greeting": "Hello {name},",
+    "proactiveGreeting": {
+      "emptyCanvas": {
+        "title": "Have something in mind?",
+        "description": "Tell Comfy Agent what you'd like to create."
+      },
+      "workflowOpen": {
+        "title": "Ask a question or describe a change.",
+        "description": "Comfy Agent shows you what it plans to do before anything in your workflow changes.",
+        "prompt": "Help me improve this workflow"
+      },
+      "firstOpen": {
+        "title": "A little help to get you started!",
+        "description": "Not sure where to begin? Send the question below, or write your own.",
+        "prompt": "What can you help me with?"
+      },
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ]
+    },
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Describe what you want to create",
     "placeholderWithoutSkills": "Describe what you want to create",
