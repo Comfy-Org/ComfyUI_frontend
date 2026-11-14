@@ -62,7 +62,8 @@ const resolvedInputs = useResolvedSelectedInputs()
 
 function ensureSelectedWidgetState(
   widgetId: WidgetId,
-  widget: IBaseWidget
+  widget: IBaseWidget,
+  node: LGraphNode
 ): void {
   if (widgetValueStore.getWidget(widgetId)) return
 
@@ -76,7 +77,7 @@ function ensureSelectedWidgetState(
       serialize: widget.serialize,
       disabled: widget.disabled
     },
-    deriveWidgetRenderState(widget)
+    deriveWidgetRenderState(widget, node)
   )
 }
 
@@ -91,7 +92,7 @@ watchEffect(() => {
   for (const entry of resolvedInputs.value) {
     if (entry.status !== 'resolved') continue
     if (entry.node.mode !== LGraphEventMode.ALWAYS) continue
-    ensureSelectedWidgetState(entry.widgetId, entry.widget)
+    ensureSelectedWidgetState(entry.widgetId, entry.widget, entry.node)
   }
 })
 

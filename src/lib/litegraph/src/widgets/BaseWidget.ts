@@ -14,7 +14,10 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type {
+  IBaseWidget,
+  WidgetLayoutSize
+} from '@comfyorg/graph-model/widgets'
 import type { NodeBindable } from '@/lib/litegraph/src/utils/type'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -118,12 +121,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
 
   declare computedHeight?: number
   declare serialize?: boolean
-  computeLayoutSize?(node: LGraphNode): {
-    minHeight: number
-    maxHeight?: number
-    minWidth: number
-    maxWidth?: number
-  }
+  computeLayoutSize?(node: LGraphNode): WidgetLayoutSize
 
   private _node: LGraphNode
   /** The node that this widget belongs to. */
@@ -428,7 +426,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         value: this.value,
         y: this.y
       },
-      deriveWidgetRenderState(this),
+      deriveWidgetRenderState(this, this.node),
       this._visibility
     )
     if (!registered) return
