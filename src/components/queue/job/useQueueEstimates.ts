@@ -27,13 +27,18 @@ export const formatElapsedTime = (ms: number): string => {
   return `${minutes}m ${seconds}s`
 }
 
-const pickRecentDurations = (queueStore: QueueStore) =>
-  queueStore.historyTasks
+function pickRecentDurations(queueStore: QueueStore, workflowId?: string) {
+  return queueStore.historyTasks
+    .filter(
+      (task) => workflowId === undefined || task.workflowId === workflowId
+    )
     .map((task: TaskItemImpl) => Number(task.executionTimeInSeconds))
     .filter(
       (value: number | undefined) =>
         typeof value === 'number' && !Number.isNaN(value)
     )
+    .slice(-20)
+}
 
 export const useQueueEstimates = ({
   queueStore,
@@ -56,28 +61,36 @@ export const useQueueEstimates = ({
   )
 
   const recentDurations = computed<number[]>(() =>
-    pickRecentDurations(queueStore).slice(-20)
+    pickRecentDurations(queueStore)
   )
 
+  function durationsForTask(task: TaskItemImpl | null): number[] {
+    const workflowId = task?.workflowId
+    if (!workflowId) return recentDurations.value
+    const durations = pickRecentDurations(queueStore, workflowId)
+    return durations.length ? durations : recentDurations.value
+  }
+
   const runningRemainingRangeSeconds = computed<EstimateRange | null>(() => {
-    const durations = recentDurations.value
-    if (!durations.length) return null
-    const sorted = durations.slice().sort((a, b) => a - b)
-    const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
-    const p75 =
-      sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
     const running = queueStore.runningTasks
     const now = nowTs.value
-    const remaining = running
-      .map((task) => task.executionStartTimestamp)
-      .filter((timestamp): timestamp is number => typeof timestamp === 'number')
-      .map((startTs) => {
-        const elapsed = Math.max(0, Math.floor((now - startTs) / 1000))
-        return {
+    const remaining = running.flatMap((task) => {
+      const startTs = task.executionStartTimestamp
+      if (typeof startTs !== 'number') return []
+      const durations = durationsForTask(task)
+      if (!durations.length) return []
+      const sorted = durations.slice().sort((a, b) => a - b)
+      const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
+      const p75 =
+        sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
+      const elapsed = Math.max(0, Math.floor((now - startTs) / 1000))
+      return [
+        {
           lo: Math.max(0, Math.round(avg - elapsed)),
           hi: Math.max(0, Math.round(p75 - elapsed))
         }
-      })
+      ]
+    })
     if (!remaining.length) return null
     const minLo = remaining.reduce(
       (min, range) => Math.min(min, range.lo),
@@ -108,7 +121,7 @@ export const useQueueEstimates = ({
   })
 
   const estimateRemainingRangeSeconds = computed<EstimateRange | null>(() => {
-    const durations = recentDurations.value
+    const durations = durationsForTask(taskForJob.value)
     if (!durations.length) return null
     const sorted = durations.slice().sort((a, b) => a - b)
     const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
