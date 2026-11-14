@@ -155,6 +155,7 @@ import {
   isLoopbackOnlyRefusal
 } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
+import { useAgentChatDrafts } from './composables/agent/useAgentChatDrafts'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
@@ -1149,6 +1150,11 @@ const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
 )
 
+if (agentPanelStore.blankChatTab === null)
+  agentPanelStore.blankChatTab =
+    workflowStore.activeWorkflow?.instanceId ?? null
+const chatDrafts = useAgentChatDrafts({ threadId, isSending })
+
 const isBoundWorkflowActive = computed(() => {
   const bound = boundWorkflowId.value
   const active = workflowStore.activeWorkflow
@@ -1913,9 +1919,21 @@ const historyGroups = computed(() => {
   )
 })
 
+function openBlankChat(source?: Parameters<typeof newChat>[0]): void {
+  agentPanelStore.blankChatTab =
+    workflowStore.activeWorkflow?.instanceId ?? null
+  newChat(source)
+}
+
 function showBlankChatForVisibleWorkflow(): void {
+  const alreadyShowsIt =
+    threadId.value === null &&
+    agentPanelStore.followsVisibleWorkflow &&
+    agentPanelStore.blankChatTab ===
+      (workflowStore.activeWorkflow?.instanceId ?? null)
+  if (alreadyShowsIt) return
   provisionalTitle.value = undefined
-  newChat()
+  openBlankChat()
   agentPanelStore.startFollowingVisibleWorkflow()
 }
 
@@ -1927,13 +1945,12 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
   openChatFor: openChats.recall,
   forgetOpenChat: openChats.forget,
   followsVisibleWorkflow: () => agentPanelStore.followsVisibleWorkflow,
-  hasDraft: () => composerStore.hasDraft,
   userEngaged,
+  switchBlocked,
   cloudIdFor,
   refreshCloudWorkflowIds,
   refreshHistory,
   loadThread,
-  clearDraft: () => composerStore.setText(''),
   showBlankChat: showBlankChatForVisibleWorkflow,
   trackThreadStarted: () =>
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' }),
@@ -2008,7 +2025,11 @@ async function onOpenLandingChat(id: string): Promise<void> {
 }
 
 function userEngaged(): boolean {
-  return composerStore.hasDraft || isSending.value || workflowSelecting.value
+  return composerStore.hasDraft || switchBlocked()
+}
+
+function switchBlocked(): boolean {
+  return isSending.value || workflowSelecting.value
 }
 
 function restoreChatWorkflow(
@@ -2033,7 +2054,9 @@ const mountedOn = workflowStore.activeWorkflow
 if (
   mountedOn !== null &&
   selectedTarget.value !== null &&
-  selectedTarget.value.path !== mountedOn.path
+  (selectedTarget.value.path !== mountedOn.path ||
+    (threadId.value === null &&
+      agentPanelStore.blankChatTab !== mountedOn.instanceId))
 )
   void followTab(mountedOn)
 
@@ -2276,6 +2299,7 @@ function onDeleteHistory(id: string): void {
     (history.activeId === null && id === threadId.value)
   history.remove(id)
   openChats.forget(id)
+  chatDrafts.discardChatDraft(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
   if (isCurrent) onNewChat('history_delete')
 }
@@ -2285,7 +2309,7 @@ function onNewChat(
 ): void {
   retireFollow()
   if (source === 'history_back') {
-    newChat()
+    openBlankChat()
     agentPanelStore.startFollowingVisibleWorkflow()
     return
   }
@@ -2293,12 +2317,11 @@ function onNewChat(
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
-  attachment.cancelAllUploads()
   replaceSelectionTags([])
   dismissedSelectionSignature.value = null
   errorAttachRun++
+  openBlankChat(source)
   composerStore.clearDraft()
-  newChat(source)
   agentPanelStore.startFollowingVisibleWorkflow()
 }
 

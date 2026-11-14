@@ -75,8 +75,8 @@ type FollowDeps = {
   openChatFor: (workflowId: string) => string | undefined
   forgetOpenChat: (threadId: string) => void
   followsVisibleWorkflow: () => boolean
-  hasDraft: () => boolean
   userEngaged: () => boolean
+  switchBlocked: () => boolean
   cloudIdFor: (workflow: ComfyWorkflow) => string | undefined
   refreshCloudWorkflowIds: () => Promise<boolean>
   refreshHistory: (
@@ -88,7 +88,6 @@ type FollowDeps = {
     isCurrent: () => boolean,
     options: { keepOpenChatUntilLoaded: boolean }
   ) => Promise<boolean>
-  clearDraft: () => void
   showBlankChat: () => void
   trackThreadStarted: () => void
   restoreThreadWorkflow: (
@@ -224,7 +223,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     const target = deps.selectedTarget()
     const chatTargetsWorkflow =
       !deps.followsVisibleWorkflow() && target?.path === workflow.path
-    return deps.userEngaged() || chatTargetsWorkflow
+    return deps.switchBlocked() || chatTargetsWorkflow
   }
 
   function isCurrent(operation: FollowOperation): boolean {
@@ -236,6 +235,16 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
 
   function isCurrentAndIdle(operation: FollowOperation): boolean {
     return isCurrent(operation) && !deps.userEngaged()
+  }
+
+  function isOpeningWanted(
+    operation: FollowOperation,
+    threadId: string
+  ): boolean {
+    return (
+      isCurrent(operation) &&
+      (deps.currentThreadId() === threadId || !deps.userEngaged())
+    )
   }
 
   function isUnsavedTabWithoutBinding(workflow: ComfyWorkflow): boolean {
@@ -252,19 +261,6 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     if (refreshed !== undefined)
       return { status: 'found', workflowId: refreshed }
     return { status: listed ? 'none' : 'unknown' }
-  }
-
-  function showBlankChat(): void {
-    const blankChatAlreadyFollowsVisibleTab =
-      deps.currentThreadId() === null && deps.followsVisibleWorkflow()
-    if (blankChatAlreadyFollowsVisibleTab) return
-    deps.showBlankChat()
-    if (!deps.hasDraft()) deps.clearDraft()
-  }
-
-  function openingFinished(): void {
-    if (!deps.hasDraft()) deps.clearDraft()
-    deps.trackThreadStarted()
   }
 
   async function openFollowedChat(
@@ -290,7 +286,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       return 'failed'
     }
     dispatch({ type: 'opening_done', generation: operation.generation })
-    openingFinished()
+    deps.trackThreadStarted()
     return 'settled'
   }
 
@@ -324,7 +320,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     const outcome = await openFollowedChat(
       operation,
       { threadId, workflowId, source: 'only_chat' },
-      () => isCurrentAndIdle(operation)
+      () => isOpeningWanted(operation, threadId)
     )
     if (outcome === 'failed') showList(operation, workflowId, 'ready')
   }
@@ -408,18 +404,20 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       dispatch({ type: 'retired' })
       return
     }
-    showBlankChat()
-    if (remembered) {
+    deps.showBlankChat()
+    let failedThreadId: string | undefined
+    if (remembered !== undefined && !deps.userEngaged()) {
       const outcome = await openFollowedChat(
         operation,
         { ...remembered, source: 'resume' },
-        () => isCurrentAndIdle(operation)
+        () => isOpeningWanted(operation, remembered.threadId)
       )
       if (outcome === 'settled') return
       deps.forgetOpenChat(remembered.threadId)
+      failedThreadId = remembered.threadId
     }
     if (isCurrent(operation))
-      await showLanding(workflow, operation, remembered?.threadId)
+      await showLanding(workflow, operation, failedThreadId)
   }
 
   async function openChat(threadId: string): Promise<void> {
@@ -454,7 +452,11 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
   }
 
   function userEngagementChanged(engaged: boolean): void {
-    if (engaged) dispatch({ type: 'abandoned' })
+    if (!engaged) return
+    const followed = state.value
+    const opening = followed.status === 'following' ? followed.opening : null
+    if (opening?.threadId === deps.currentThreadId()) return
+    dispatch({ type: 'abandoned' })
   }
 
   function isOpeningThread(id: string): boolean {

@@ -61,13 +61,12 @@ function createFollow(
     openChatFor: () => undefined,
     forgetOpenChat: vi.fn(),
     followsVisibleWorkflow: () => false,
-    hasDraft: () => false,
     userEngaged: vi.fn(() => false),
+    switchBlocked: vi.fn(() => false),
     cloudIdFor: () => undefined,
     refreshCloudWorkflowIds: vi.fn(async () => true),
     refreshHistory: vi.fn(async () => 'complete' as const),
     loadThread: vi.fn(async () => true),
-    clearDraft: vi.fn(),
     showBlankChat: vi.fn(),
     trackThreadStarted: vi.fn(),
     restoreThreadWorkflow: () => true,
@@ -255,16 +254,7 @@ describe('useAgentWorkflowChatFollow', () => {
         await following
       })
 
-      it('clears whitespace left in the composer along with the chat it replaces', async () => {
-        const workflow = unsavedTab()
-        const { follow, deps } = createFollow(workflow)
-
-        await follow.followTab(workflow)
-
-        expect(deps.clearDraft).toHaveBeenCalledOnce()
-      })
-
-      it('leaves a blank chat that already follows the visible tab alone', async () => {
+      it("asks for the tab's own blank chat even when a blank chat already follows the visible tab", async () => {
         const workflow = unsavedTab()
         const { follow, deps } = createFollow(workflow, {
           currentThreadId: () => null,
@@ -273,8 +263,7 @@ describe('useAgentWorkflowChatFollow', () => {
 
         await follow.followTab(workflow)
 
-        expect(deps.showBlankChat).not.toHaveBeenCalled()
-        expect(deps.clearDraft).not.toHaveBeenCalled()
+        expect(deps.showBlankChat).toHaveBeenCalledOnce()
       })
 
       it('releases a blank chat that is pinned to another tab', async () => {
@@ -667,6 +656,27 @@ describe('useAgentWorkflowChatFollow', () => {
       expect(deps.trackThreadStarted).not.toHaveBeenCalled()
     })
 
+    it("does not open the remembered chat over text the tab's new-chat screen already holds", async () => {
+      const typed = { engaged: false }
+      const { follow, deps, history, workflow } = resumable({
+        showBlankChat: vi.fn(() => {
+          typed.engaged = true
+        }),
+        userEngaged: () => typed.engaged
+      })
+      history.value = [
+        session('th-portrait', 'wf-portrait', 1),
+        session('th-landscape', 'wf-portrait', 2)
+      ]
+
+      await follow.followTab(workflow)
+
+      expect(deps.showBlankChat).toHaveBeenCalledOnce()
+      expect(deps.loadThread).not.toHaveBeenCalled()
+      expect(follow.openingWorkflowName.value).toBeUndefined()
+      expect(follow.landing.value).toMatchObject({ status: 'ready' })
+    })
+
     it('does not resume a chat the cloud workflow of the tab is not known for', async () => {
       const workflow = unsavedTab()
       const { follow, deps } = createFollow(workflow, {
@@ -1021,10 +1031,21 @@ describe('useAgentWorkflowChatFollow', () => {
   describe('a tab the follow is held back from', () => {
     const tabOwningTheOpenChat = unsavedTab()
 
+    it('moves on while the user has typed text, because a draft stays with its chat', async () => {
+      const workflow = unsavedTab()
+      const { follow, deps } = createFollow(workflow, {
+        userEngaged: () => true
+      })
+
+      await follow.followTab(workflow)
+
+      expect(deps.showBlankChat).toHaveBeenCalledOnce()
+    })
+
     it.for([
       {
-        reason: 'the user is typing, sending or selecting',
-        overrides: { userEngaged: () => true }
+        reason: 'a message is being sent or a workflow is being selected',
+        overrides: { switchBlocked: () => true }
       },
       {
         reason: 'the open chat already belongs to the tab',
