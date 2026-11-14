@@ -1,8 +1,13 @@
 import { computed, readonly, ref, shallowRef } from 'vue'
 
+import { z } from 'zod'
+
 import type {
   DesktopHostAuthBridge,
-  DesktopHostAuthState
+  DesktopHostAuthState,
+  DesktopHostBillingHandoff,
+  DesktopHostBillingIntent,
+  DesktopHostBillingReceiver
 } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 
 interface DesktopHostUser {
@@ -170,6 +175,67 @@ export async function requestDesktopHostSignOut(): Promise<boolean> {
   const next = await current.signOut().catch(() => undefined)
   if (next && bridge === current && revision === before) apply(next)
   return desktopHostUser.value === null
+}
+
+const zDesktopHostBillingHandoff = z.discriminatedUnion('status', [
+  z.object({
+    status: z.literal('issued'),
+    entryUrl: z.url({ protocol: /^https$/ })
+  }),
+  z.object({ status: z.literal('sign_in_again') }),
+  z.object({
+    status: z.literal('refused'),
+    code: z.string().optional(),
+    message: z.string().optional()
+  }),
+  z.object({ status: z.literal('disabled') })
+])
+
+const UNEXPLAINED_REFUSAL: DesktopHostBillingHandoff = { status: 'refused' }
+
+const BILLING_HANDOFF_TIMEOUT_MS = 40_000
+
+function refusedAfter(ms: number): {
+  refusal: Promise<DesktopHostBillingHandoff>
+  cancel: () => void
+} {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const refusal = new Promise<DesktopHostBillingHandoff>((resolve) => {
+    timer = setTimeout(() => resolve(UNEXPLAINED_REFUSAL), ms)
+  })
+  return { refusal, cancel: () => clearTimeout(timer) }
+}
+
+export function canDesktopHostIssueBillingHandoff(): boolean {
+  return isDesktopHostSignedIn() && bridge?.issueBillingHandoff !== undefined
+}
+
+/** Asks Desktop to issue a billing handoff with its own credential; only the entry URL comes back. */
+export async function issueDesktopHostBillingHandoff(
+  workspaceId: string,
+  receiver: DesktopHostBillingReceiver,
+  intent: DesktopHostBillingIntent,
+  amountCents?: number
+): Promise<DesktopHostBillingHandoff> {
+  const current = bridge
+  if (!current?.issueBillingHandoff || !isDesktopHostSignedIn())
+    return { status: 'disabled' }
+  const deadline = refusedAfter(BILLING_HANDOFF_TIMEOUT_MS)
+  const answer = await Promise.race([
+    Promise.resolve()
+      .then(() =>
+        current.issueBillingHandoff?.(
+          workspaceId,
+          receiver,
+          intent,
+          amountCents
+        )
+      )
+      .catch(() => UNEXPLAINED_REFUSAL),
+    deadline.refusal
+  ]).finally(deadline.cancel)
+  const parsed = zDesktopHostBillingHandoff.safeParse(answer)
+  return parsed.success ? parsed.data : UNEXPLAINED_REFUSAL
 }
 
 /** True when this Desktop can re-scope its session to another workspace. */

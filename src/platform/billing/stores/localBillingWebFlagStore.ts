@@ -16,6 +16,7 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useAuthStore } from '@/stores/authStore'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 const REREAD_INTERVAL_MS = 10 * 60_000
 const READ_TIMEOUT_MS = 10_000
@@ -23,6 +24,8 @@ const READ_TIMEOUT_MS = 10_000
 const zAllowlistedCloudFlags = z.object({ local_billing_web: z.boolean() })
 
 async function readLocalBillingWeb(): Promise<boolean> {
+  const override = getDevOverride<boolean>('local_billing_web')
+  if (typeof override === 'boolean') return override
   try {
     const token = await useAuthStore().getIdToken()
     if (!token) return false

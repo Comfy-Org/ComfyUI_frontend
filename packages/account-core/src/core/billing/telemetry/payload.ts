@@ -33,6 +33,7 @@ export const BILLING_PAYLOAD_FIELD_HANDLING = {
   source: 'required',
   status: 'required',
   step: 'required',
+  surface: 'required',
   target: 'required',
   to: 'required',
   action: 'optional',
