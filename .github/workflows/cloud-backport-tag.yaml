@@ -58,11 +58,20 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
 
+      - name: Create release token
+        id: release_token
+        if: vars.RELEASE_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-workflows: write
+
       - name: Create tag for cloud backport
         id: tag
         env:
-          # The refs API returned HTTP 403 with GITHUB_TOKEN in live recovery.
-          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          GH_TOKEN: ${{ steps.release_token.outputs.token || secrets.PR_GH_TOKEN }}
           EVENT_NAME: ${{ github.event_name }}
           BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.event.pull_request.base.ref }}
           SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.commit || github.event.pull_request.merge_commit_sha }}
