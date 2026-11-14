@@ -1,4 +1,3 @@
-/** Gates store-backed telemetry setup until `main.ts` installs Pinia into the app. */
 let storesReady: Promise<void> = Promise.resolve()
 let resolveStoresReady: (() => void) | undefined
 
