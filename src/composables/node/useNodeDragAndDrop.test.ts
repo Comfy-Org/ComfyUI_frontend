@@ -1,62 +1,44 @@
-import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { useNodeDragAndDrop } from './useNodeDragAndDrop'
-
-function createNode(overrides: Record<string, unknown> = {}): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
-    ...overrides
-  })
-}
 
 function createFile(name: string, type = 'image/png'): File {
   return new File(['data'], name, { type })
 }
 
 function createDragEvent(options: {
-  items?: Array<{ kind: string }>
   files?: File[]
   types?: string[]
   uri?: string
   assetInfo?: string
 }): DragEvent {
-  const {
-    items = [],
-    files = [],
-    types = [],
-    uri = '',
-    assetInfo = ''
-  } = options
+  const { files = [], types = [], uri = '', assetInfo = '' } = options
   const data: Record<string, string> = {
     'text/uri-list': uri,
     [MIME_ASSET_INFO]: assetInfo
   }
-  return fromAny<DragEvent, unknown>({
-    dataTransfer: {
-      items: fromAny<DataTransferItemList, unknown>(items),
-      files: fromAny<FileList, unknown>(files),
-      types,
-      getData: vi.fn((format: string) => data[format] ?? '')
-    }
-  })
+  const dataTransfer = new DataTransfer()
+  for (const file of files) dataTransfer.items.add(file)
+  for (const type of types) dataTransfer.setData(type, data[type] ?? '')
+  return Object.assign(new MouseEvent('drop'), { dataTransfer })
 }
 
 describe('useNodeDragAndDrop', () => {
   it('onDragOver detects file items by default', () => {
-    const node = createNode()
+    const node = new LGraphNode('test')
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
 
     const isDragging = node.onDragOver?.(
-      createDragEvent({ items: [{ kind: 'file' }] })
+      createDragEvent({ files: [createFile('image.png')] })
     )
 
     expect(isDragging).toBe(true)
   })
 
   it('onDragOver delegates to custom handler result', () => {
-    const node = createNode()
+    const node = new LGraphNode('test')
     const onDragOver = vi.fn().mockReturnValue(false)
 
     useNodeDragAndDrop(node, {
@@ -65,7 +47,7 @@ describe('useNodeDragAndDrop', () => {
     })
 
     const isDragging = node.onDragOver?.(
-      createDragEvent({ items: [{ kind: 'file' }] })
+      createDragEvent({ files: [createFile('image.png')] })
     )
 
     expect(onDragOver).toHaveBeenCalledTimes(1)
@@ -73,28 +55,31 @@ describe('useNodeDragAndDrop', () => {
   })
 
   it('onDragOver returns true for uri list drops without file items', () => {
-    const node = createNode()
+    const node = new LGraphNode('test')
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
 
     const isDragging = node.onDragOver?.(
-      createDragEvent({ items: [{ kind: 'string' }], types: ['text/uri-list'] })
+      createDragEvent({ types: ['text/uri-list'] })
     )
 
     expect(isDragging).toBe(true)
   })
 
   it('onDragOver returns false when drag event has no items', () => {
-    const node = createNode()
+    const node = new LGraphNode('test')
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
 
-    const isDragging = node.onDragOver?.(fromAny<DragEvent, unknown>({}))
+    const isDragging = node.onDragOver?.(
+      Object.assign(new MouseEvent('dragover'), { dataTransfer: null })
+    )
 
     expect(isDragging).toBe(false)
+    expect(node.onDragOver?.(createDragEvent({}))).toBe(false)
   })
 
   it('onDragDrop calls onDrop with filtered files', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
-    const node = createNode()
+    const node = new LGraphNode('test')
     const keep = createFile('keep.png')
     const skip = createFile('skip.jpg', 'image/jpeg')
 
@@ -104,7 +89,7 @@ describe('useNodeDragAndDrop', () => {
     })
 
     const result = await node.onDragDrop?.(
-      createDragEvent({ files: [keep, skip], items: [{ kind: 'file' }] })
+      createDragEvent({ files: [keep, skip] })
     )
 
     expect(result).toBe(true)
@@ -113,7 +98,7 @@ describe('useNodeDragAndDrop', () => {
 
   it('onDragDrop passes an untyped HDR file to an image filter as an image', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
-    const node = createNode()
+    const node = new LGraphNode('test')
 
     useNodeDragAndDrop(node, {
       onDrop,
@@ -122,8 +107,7 @@ describe('useNodeDragAndDrop', () => {
 
     const result = await node.onDragDrop?.(
       createDragEvent({
-        files: [createFile('sky.exr', '')],
-        items: [{ kind: 'file' }]
+        files: [createFile('sky.exr', '')]
       })
     )
 
@@ -135,7 +119,7 @@ describe('useNodeDragAndDrop', () => {
 
   it('onDragDrop returns false for invalid drops', async () => {
     const onDrop = vi.fn().mockResolvedValue([])
-    const node = createNode()
+    const node = new LGraphNode('test')
     useNodeDragAndDrop(node, { onDrop })
 
     const result = await node.onDragDrop?.(createDragEvent({}))
@@ -147,16 +131,14 @@ describe('useNodeDragAndDrop', () => {
   it('onDragDrop claims rejected files when a rejection handler is present', async () => {
     const onReject = vi.fn().mockReturnValue(true)
     const file = createFile('extensionless', 'video/mp4')
-    const node = createNode()
+    const node = new LGraphNode('test')
     useNodeDragAndDrop(node, {
       onDrop: vi.fn().mockResolvedValue([]),
       fileFilter: () => false,
       onReject
     })
 
-    const result = await node.onDragDrop?.(
-      createDragEvent({ files: [file], items: [{ kind: 'file' }] })
-    )
+    const result = await node.onDragDrop?.(createDragEvent({ files: [file] }))
 
     expect(result).toBe(true)
     expect(onReject).toHaveBeenCalledWith([file])
@@ -165,27 +147,25 @@ describe('useNodeDragAndDrop', () => {
   it('does not claim a rejected file when the rejection handler declines it', async () => {
     const onReject = vi.fn().mockReturnValue(false)
     const file = createFile('image.png')
-    const node = createNode()
+    const node = new LGraphNode('test')
     useNodeDragAndDrop(node, {
       onDrop: vi.fn().mockResolvedValue([]),
       fileFilter: () => false,
       onReject
     })
 
-    const result = await node.onDragDrop?.(
-      createDragEvent({ files: [file], items: [{ kind: 'file' }] })
-    )
+    const result = await node.onDragDrop?.(createDragEvent({ files: [file] }))
 
     expect(result).toBe(false)
     expect(onReject).toHaveBeenCalledWith([file])
   })
 
   it('does not fetch the page for a non-file drop without a uri', async () => {
-    const node = createNode()
+    const node = new LGraphNode('test')
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
 
     const result = await node.onDragDrop?.(
-      createDragEvent({ items: [{ kind: 'string' }], types: ['text/plain'] })
+      createDragEvent({ types: ['text/plain'] })
     )
 
     expect(result).toBe(false)
@@ -199,16 +179,11 @@ describe('useNodeDragAndDrop', () => {
     )
     const onDrop = vi.fn().mockResolvedValue([])
     vi.mocked(fetch).mockResolvedValue(
-      fromAny<Response, unknown>({
-        ok: true,
-        blob: vi
-          .fn()
-          .mockResolvedValue(new Blob(['uri'], { type: 'image/png' }))
-      })
+      new Response(new Blob(['uri'], { type: 'image/png' }))
     )
     const uri = `${location.origin}/api/file?filename=uri.png`
 
-    const node = createNode()
+    const node = new LGraphNode('test')
     useNodeDragAndDrop(node, { onDrop })
 
     const result = await node.onDragDrop?.(
@@ -258,15 +233,10 @@ describe('useNodeDragAndDrop', () => {
     async ({ assetInfo, name }) => {
       const onDrop = vi.fn().mockResolvedValue([])
       vi.mocked(fetch).mockResolvedValue(
-        fromAny<Response, unknown>({
-          ok: true,
-          blob: vi
-            .fn()
-            .mockResolvedValue(new Blob(['uri'], { type: 'audio/wav' }))
-        })
+        new Response(new Blob(['uri'], { type: 'audio/wav' }))
       )
 
-      const node = createNode()
+      const node = new LGraphNode('test')
       useNodeDragAndDrop(node, { onDrop })
 
       const result = await node.onDragDrop?.(
@@ -283,7 +253,7 @@ describe('useNodeDragAndDrop', () => {
   )
 
   it('onDragDrop returns false for cross-origin uri drops', async () => {
-    const node = createNode()
+    const node = new LGraphNode('test')
     const onDrop = vi.fn().mockResolvedValue([])
     useNodeDragAndDrop(node, { onDrop })
 
@@ -304,7 +274,7 @@ describe('useNodeDragAndDrop', () => {
     vi.mocked(fetch).mockRejectedValue(new Error('network'))
     const uri = `${location.origin}/api/file?filename=uri.png`
 
-    const node = createNode()
+    const node = new LGraphNode('test')
     useNodeDragAndDrop(node, { onDrop })
 
     const result = await node.onDragDrop?.(
@@ -319,24 +289,17 @@ describe('useNodeDragAndDrop', () => {
     const onDrop = vi.fn().mockResolvedValue([])
     const uri = `${location.origin}/api/file?filename=uri.jpg`
 
-    const nodeA = createNode()
-    vi.mocked(fetch).mockResolvedValueOnce(
-      fromAny<Response, unknown>({ ok: false })
-    )
+    const nodeA = new LGraphNode('test')
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 404 }))
     useNodeDragAndDrop(nodeA, { onDrop })
     const badResponseResult = await nodeA.onDragDrop?.(
       createDragEvent({ uri, types: ['text/uri-list'] })
     )
     expect(badResponseResult).toBe(false)
 
-    const nodeB = createNode()
+    const nodeB = new LGraphNode('test')
     vi.mocked(fetch).mockResolvedValueOnce(
-      fromAny<Response, unknown>({
-        ok: true,
-        blob: vi
-          .fn()
-          .mockResolvedValue(new Blob(['uri'], { type: 'image/jpeg' }))
-      })
+      new Response(new Blob(['uri'], { type: 'image/jpeg' }))
     )
     useNodeDragAndDrop(nodeB, {
       onDrop,
@@ -352,13 +315,14 @@ describe('useNodeDragAndDrop', () => {
 
   it('onRemoved clears handlers and chains existing onRemoved', () => {
     const previousOnRemoved = vi.fn()
-    const node = createNode({ onRemoved: previousOnRemoved })
+    const node = new LGraphNode('test')
+    node.onRemoved = previousOnRemoved
 
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
     expect(node.onDragOver).toBeTypeOf('function')
     expect(node.onDragDrop).toBeTypeOf('function')
 
-    node.onRemoved?.call(node)
+    node.onRemoved.call(node)
 
     expect(previousOnRemoved).toHaveBeenCalledTimes(1)
     expect(node.onDragOver).toBeUndefined()
@@ -366,7 +330,7 @@ describe('useNodeDragAndDrop', () => {
   })
 
   it('onRemoved preserves handlers replaced by another extension', () => {
-    const node = createNode()
+    const node = new LGraphNode('test')
     useNodeDragAndDrop(node, { onDrop: vi.fn().mockResolvedValue([]) })
 
     const replacementDragOver = vi.fn()
