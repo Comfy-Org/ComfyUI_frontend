@@ -98,11 +98,10 @@ function forwardUnlessOnButton(event: PointerEvent) {
     :aria-label="title"
     :class="
       cn(
-        'pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) origin-top-left drop-shadow-none [--node-header:transparent]',
+        'pointer-events-auto top-0 left-0 z-panel min-h-(--node-height) origin-top-left',
         isInput ? 'w-(--node-width)' : 'w-fit max-w-(--node-width)'
       )
     "
-    container-class="w-full"
     :style
     @wheel="handleWheel"
     @pointerdown.capture="handlePointerDown"

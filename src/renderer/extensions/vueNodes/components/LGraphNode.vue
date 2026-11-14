@@ -4,13 +4,15 @@
   </div>
   <NodeFrame
     v-else
+    ref="frame"
+    tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
     :data-emphasized="isEmphasized || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
-        'outline-none',
+        'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
@@ -33,6 +35,7 @@
     :content-visibility="!isCollapsed"
     :container-class="
       cn(
+        'w-(--node-width) bg-node-header',
         !isRerouteNode && 'min-w-(--min-node-width)',
         shapeClass,
         hasAnyError && 'ring-4',
@@ -221,7 +224,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, useTemplateRef } from 'vue'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
@@ -406,6 +409,7 @@ const handleContextMenu = (event: MouseEvent) => {
   showNodeOptions(event, { nodeId: nodeData.id })
 }
 
+const frame = useTemplateRef('frame')
 const { startResize } = useNodeResize((result) => {
   if (isCollapsed.value) return
   const node = resolveLGraphNode()
@@ -433,7 +437,8 @@ const handleResizePointerDown = (
   if (!shouldHandleNodePointerEvents.value) return
   if (nodeData.flags?.pinned) return
   if (nodeData.resizable === false) return
-  startResize(event, corner)
+  const element = frame.value?.element
+  if (element) startResize(event, corner, { element, position: position.value })
 }
 
 // Check if node has custom content (like image/video outputs)

@@ -14,6 +14,8 @@ import type {
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -242,6 +244,7 @@ describe('WidgetVideoEdit node history', () => {
 
 describe('WidgetVideoEdit', () => {
   beforeEach(() => {
+    useCanvasStore().currentGraph = app.canvas.graph
     recorded.props = undefined
     mocks.resolvedSource = undefined
     mocks.sourceStatus.value = 'loading'

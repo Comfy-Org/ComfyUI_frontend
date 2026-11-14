@@ -718,43 +718,45 @@ export class ChangeTracker implements WorkflowChangeTracker {
     const dialogStore = useDialogStore()
 
     let keyIgnored = false
+    const keyOwnedElsewhere = () =>
+      !!clipspace.maskEditorIsOpened?.() ||
+      isModalOpen(dialogStore.dialogStack.length) ||
+      useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)
+
+    function onHistoryShortcut(e: KeyboardEvent, shortcut: 'undo' | 'redo') {
+      if (isEditingText(document.activeElement) || keyOwnedElsewhere()) return
+      if (!e.repeat && travelFocusedNodeHistory(shortcut)) return
+      keyIgnored = false
+      e.preventDefault()
+      if (e.repeat) return
+      const selectOnly = isSelectOnly(useApp().canvas)
+      requestAnimationFrame(async () => {
+        await getCurrentChangeTracker()?.undoRedo(e, selectOnly)
+      })
+    }
+
+    function onEditKey(e: KeyboardEvent) {
+      if (e.repeat) return
+      const activeEl = document.activeElement
+      if (isEditingText(activeEl) && !isAutoQueueOnChange()) return
+      if (keyOwnedElsewhere()) return
+      keyIgnored = ['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)
+      if (keyIgnored) return
+      requestAnimationFrame(() => {
+        const changeTracker = getCurrentChangeTracker()
+        if (!changeTracker) return
+        if (ChangeTracker.bindInput(isAutoQueueOnChange() ? null : activeEl))
+          return
+        changeTracker.captureCanvasState()
+      })
+    }
+
     window.addEventListener(
       'keydown',
       (e: KeyboardEvent) => {
         const shortcut = historyShortcut(e)
-        if (e.repeat && !shortcut) return
-
-        if (clipspace.maskEditorIsOpened?.()) return
-
-        const activeEl = document.activeElement
-        if (isEditingText(activeEl) && (shortcut || !isAutoQueueOnChange()))
-          return
-        if (isModalOpen(dialogStore.dialogStack.length)) return
-
-        if (useDialogStore().isDialogOpen(LAYER_EDITOR_DIALOG_KEY)) return
-
-        if (shortcut && !e.repeat && travelFocusedNodeHistory(shortcut)) return
-
-        keyIgnored = ['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)
-        if (keyIgnored) return
-        if (shortcut) e.preventDefault()
-        if (e.repeat) return
-
-        const selectOnlyAtKeydown = isSelectOnly(useApp().canvas)
-        requestAnimationFrame(async () => {
-          let bindInputEl: Element | null = null
-          if (!isAutoQueueOnChange()) {
-            bindInputEl = activeEl
-          }
-
-          const changeTracker = getCurrentChangeTracker()
-          if (!changeTracker) return
-
-          if (await changeTracker.undoRedo(e, selectOnlyAtKeydown)) return
-
-          if (ChangeTracker.bindInput(bindInputEl)) return
-          changeTracker.captureCanvasState()
-        })
+        if (shortcut) onHistoryShortcut(e, shortcut)
+        else onEditKey(e)
       },
       true
     )

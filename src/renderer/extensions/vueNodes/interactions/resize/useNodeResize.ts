@@ -7,7 +7,6 @@ import type {
   Point2D as Point,
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
@@ -17,7 +16,12 @@ import {
   hasNorthEdge,
   hasWestEdge
 } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
+/** The element being resized and its canvas position when the gesture starts. */
+export interface ResizeOrigin {
+  element: HTMLElement
+  position: Point
+}
 
 export interface ResizeCallbackPayload {
   size: Size
@@ -48,18 +52,13 @@ export function useNodeResize(
 
   const startResize = (
     event: PointerEvent,
-    corner: CompassCorners = 'SE',
-    resized?: HTMLElement
+    corner: CompassCorners,
+    { element: nodeElement, position }: ResizeOrigin
   ) => {
     event.stopPropagation()
 
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
-
-    const nodeElement = resized ?? target.closest<HTMLElement>('[data-node-id]')
-    if (!nodeElement) return
-
-    const rawNodeId = nodeElement.dataset.nodeId
 
     const rect = nodeElement.getBoundingClientRect()
     const scale = transformState.camera.z
@@ -81,14 +80,7 @@ export function useNodeResize(
       return measured / currentScale
     }
 
-    const { rootGraphId } = useCanvasStore()
-    const nodeLayout =
-      rootGraphId && rawNodeId
-        ? layoutStore.getNodeLayout(rootGraphId, toNodeId(rawNodeId))
-        : null
-    const startPosition: Point = nodeLayout
-      ? { ...nodeLayout.position }
-      : { x: 0, y: 0 }
+    const startPosition: Point = { ...position }
 
     const stopShiftSync = trackShiftKey(event.shiftKey)
 

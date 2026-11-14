@@ -79,7 +79,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 const { nodeId, widget } = defineProps<{
   nodeId: NodeId
-  widget?: SimplifiedWidget
+  widget: SimplifiedWidget
 }>()
 
 const { t } = useI18n()
@@ -91,7 +91,7 @@ const naturalSize = ref<CompactSize | null>(null)
 const outputUrl = ref<string | null>(null)
 
 const litegraphNode = useWidgetHostNode(
-  () => widget?.hostNodeLocatorId,
+  () => widget.hostNodeLocatorId,
   () => nodeId
 )
 

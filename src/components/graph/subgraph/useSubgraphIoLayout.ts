@@ -104,8 +104,12 @@ export function useSubgraphIoLayout(
   })
 
   function startResize(event: PointerEvent) {
-    if (event.button !== 0 || canvasStore.isReadOnly || ioNode().pinned) return
-    resize(event, 'SE', element.value ?? undefined)
+    const panel = element.value
+    const node = ioNode()
+    if (event.button !== 0 || !panel || canvasStore.isReadOnly || node.pinned)
+      return
+    const [x, y] = node.boundingRect
+    resize(event, 'SE', { element: panel, position: { x, y } })
   }
 
   return { style, startResize }
