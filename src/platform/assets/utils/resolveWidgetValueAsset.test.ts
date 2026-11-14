@@ -56,9 +56,14 @@ describe('resolveWidgetValueAsset', () => {
 
       await resolveWidgetValueAsset(templateHash)
 
-      const [lookupUrl] = vi.mocked(api.fetchApi).mock.calls[0]
-      const params = new URL(lookupUrl, 'http://localhost').searchParams
-      expect(params.get('capped_total')).toBe(expected)
+      const hashLookups = vi
+        .mocked(api.fetchApi)
+        .mock.calls.map(
+          ([url]) => new URL(url, 'http://localhost').searchParams
+        )
+        .filter((params) => params.has('hash'))
+      expect(hashLookups).toHaveLength(1)
+      expect(hashLookups[0].get('capped_total')).toBe(expected)
     }
   )
 
