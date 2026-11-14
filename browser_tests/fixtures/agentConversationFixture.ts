@@ -349,7 +349,7 @@ export class AgentConversationHarness {
     ).filter((type) => !this.displayNames.has(type))
     if (unregistered.length > 0)
       throw new Error(
-        `${this.page.url()} serves no node definitions for ${unregistered.join(', ')}; the replay needs a ComfyUI backend behind the dev server (browser_tests/README.md, "Replay coverage for agent bug fixes")`
+        `${this.page.url()} serves no node definitions for ${unregistered.join(', ')}; the replay needs a ComfyUI backend behind the dev server (browser_tests/fixtures/data/agent/README.md, "Replaying")`
       )
 
     await loadSeedIntoActiveTab(this.page, this.conversation.workflow.seed)

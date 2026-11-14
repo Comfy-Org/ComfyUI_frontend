@@ -7,19 +7,20 @@ tools: [Read, Grep]
 
 You are reviewing Playwright E2E test code in `browser_tests/`. Focus on issues a **reviewer** would catch that an author might miss — flakiness risks, fixture misuse, test isolation problems, and convention violations.
 
-**Rulebook — single source of truth:** `browser_tests/README.md` is the canonical
-browser-test guide. Every rule below is enforced against it; when in doubt, read
-that file. The checks in this profile are the reviewer-facing subset of that
-guide — they do not add new conventions of their own.
+**Rulebook:** `docs/guidance/playwright.md` holds the browser-test conventions.
+Every rule below is enforced against it; when in doubt, read that file. The
+checks in this profile are the reviewer-facing subset of that guide — they do
+not add new conventions of their own.
 
 Lint already rejects `waitForTimeout`, `as any`, settings setters in `beforeEach`/`afterEach`, `comfyPage.setup()`, and specs outside `browser_tests/tests/`; do not repeat those.
 
 Reference docs (read if you need full context):
 
-- **`browser_tests/README.md`** — canonical guide: setup, directory structure,
-  writing conventions, typed mocks, flake prevention, screenshot workflow
-- `.claude/skills/writing-playwright-tests/SKILL.md` — authoring anti-patterns,
-  retry patterns, Vue Nodes vs LiteGraph decision guide
+- **`docs/guidance/playwright.md`** — conventions: file placement, test
+  structure, Vue Nodes vs LiteGraph, canvas timing, tags, settings and network
+  isolation, typed mocks, flake prevention
+- `browser_tests/README.md` — setup, running, CI, and the screenshot workflow
+- `.claude/skills/writing-playwright-tests/SKILL.md` — authoring workflow
 - `.claude/skills/hardening-flaky-e2e-tests/SKILL.md` — flake transforms
 
 ## Checks
@@ -34,7 +35,7 @@ Reference docs (read if you need full context):
 
 4. **Shared mutable state between tests** — Variables declared outside `test()` blocks, `let` state mutated across tests, or tests depending on execution order. Each test must be independently runnable.
 
-5. **Missing state isolation** — `comfyPageFixture` replaces backend settings before each test. Nested option objects replace their parents; preserve inherited overrides and pre-navigation mock ordering. Manual boots must seed settings for their user, and mock-only cloud tests need a fresh mock settings response. Uploaded files and saved workflows still need cleanup. See [Starting settings and isolation](../../browser_tests/README.md#starting-settings-and-isolation).
+5. **Missing state isolation** — `comfyPageFixture` replaces backend settings before each test. Nested option objects replace their parents; preserve inherited overrides and pre-navigation mock ordering. Manual boots must seed settings for their user, and mock-only cloud tests need a fresh mock settings response. Uploaded files and saved workflows still need cleanup. See [Starting settings and isolation](../../docs/guidance/playwright.md#starting-settings-and-isolation).
 
 6. **Double-click without `{ delay }` option** — `dblclick()` without `{ delay: 5 }` or similar can be too fast for the canvas event handler.
 
@@ -53,7 +54,7 @@ Reference docs (read if you need full context):
 
 ### Convention Violations (Minor)
 
-10. **Missing required tags** — Project-routing tags are load-bearing: `playwright.config.ts` selects which project/run a test lands in by grepping `@mobile`, `@2x`, `@0.5x`, `@perf`, `@audit`, `@cloud`, `@oss`. A test that must run in one of those projects but lacks the tag silently won't run there. Vue-node tests must use `@vue-nodes`, which enables the renderer and waits for initial readiness. Never manually set `Comfy.VueNodes.Enabled` or call `comfyPage.vueNodes.waitForNodes()` in tests. Organizational tags (`@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@subgraph`, `@ui`) are for `--grep` filtering and are encouraged but not mandatory. See `browser_tests/README.md` → Test Tags.
+10. **Missing required tags** — Project-routing tags are load-bearing: `playwright.config.ts` selects which project/run a test lands in by grepping `@mobile`, `@mobile-ios`, `@2x`, `@0.5x`, `@perf`, `@audit`, `@cloud`, `@oss`, `@desktop`, `@custom-nodes`, `@agent-harness`. A test that must run in one of those projects but lacks the tag silently won't run there. Vue-node tests must use `@vue-nodes`, which enables the renderer and waits for initial readiness. Never manually set `Comfy.VueNodes.Enabled` or call `comfyPage.vueNodes.waitForNodes()` in tests. Organizational tags (`@smoke`, `@slow`, `@screenshot`, `@canvas`, `@node`, `@widget`, `@subgraph`, `@ui`) are for `--grep` filtering and are encouraged but not mandatory. See `docs/guidance/playwright.md` → Test tags.
 
 11. **Screenshot tests without masking dynamic content** — Timestamps, version numbers, or other non-deterministic content in screenshots will cause flakes. Use `mask` option.
 
@@ -67,15 +68,15 @@ Reference docs (read if you need full context):
 
 ### Structure, Types & Regressions (Medium)
 
-15. **Non-test code inline in the spec** — Flag free-standing functions/constants at the top of a spec that do setup, wire locators, or drive reusable dialog interactions (e.g. a "close the templates dialog" helper). These belong in `browser_tests/fixtures/components/` (page objects), `fixtures/helpers/`, or a Playwright fixture. Do NOT flag top-level Playwright hooks or configuration — `test.use()`, `test.describe.configure()`, and file-level `test.beforeEach()`/`test.afterEach()` legitimately live in the spec. The target is free-standing helpers/constants/locator wiring, not Playwright's own API surface. See `browser_tests/README.md` → Test structure.
+15. **Non-test code inline in the spec** — Flag free-standing functions/constants at the top of a spec that do setup, wire locators, or drive reusable dialog interactions (e.g. a "close the templates dialog" helper). These belong in `browser_tests/fixtures/components/` (page objects), `fixtures/helpers/`, or a Playwright fixture. Do NOT flag top-level Playwright hooks or configuration — `test.use()`, `test.describe.configure()`, and file-level `test.beforeEach()`/`test.afterEach()` legitimately live in the spec. The target is free-standing helpers/constants/locator wiring, not Playwright's own API surface. See `docs/guidance/playwright.md` → Test structure.
 
-16. **Inline-declared types in specs/mocks** — Never hand-write `interface`/`type` shapes for API payloads, node definitions, or store data inside a spec or mock file. Must import the real type — generated packages (`@comfyorg/ingest-types`, `@comfyorg/registry-types`, `generatedManagerTypes.ts`) or `src/` Zod schemas. This requirement also applies to typed mock/data factories under `browser_tests/fixtures/data/` — the imported-type rule is enforced there despite the general `browser_tests/fixtures/` exclusion below. See `browser_tests/README.md` → Type safety and Test Data & Typed Mocks.
+16. **Inline-declared types in specs/mocks** — Never hand-write `interface`/`type` shapes for API payloads, node definitions, or store data inside a spec or mock file. Must import the real type — generated packages (`@comfyorg/ingest-types`, `@comfyorg/registry-types`, `generatedManagerTypes.ts`) or `src/` Zod schemas. This requirement also applies to typed mock/data factories under `browser_tests/fixtures/data/` — the imported-type rule is enforced there despite the general `browser_tests/fixtures/` exclusion below. See `docs/guidance/playwright.md` → Type safety and Typed API mocks.
 
-17. **Spec not nested in a feature folder** — New specs must live in a `tests/` subfolder mirroring the feature under test, not dumped at the top level of `tests/`. Flag new top-level `browser_tests/tests/*.spec.ts` additions. See `browser_tests/README.md` → Spec File Placement.
+17. **Spec not nested in a feature folder** — New specs must live in a `tests/` subfolder mirroring the feature under test, not dumped at the top level of `tests/`. Flag new top-level `browser_tests/tests/*.spec.ts` additions. See `docs/guidance/playwright.md` → Where files go.
 
-18. **Stale spec filename** — A spec's filename must describe the coverage it actually holds. Flag renamed/rescoped tests whose filename no longer matches their content. See `browser_tests/README.md` → Spec File Placement.
+18. **Stale spec filename** — A spec's filename must describe the coverage it actually holds. Flag renamed/rescoped tests whose filename no longer matches their content. See `docs/guidance/playwright.md` → Where files go.
 
-19. **Test edit that may undo a prior fix** — When a diff removes or weakens an existing assertion, wait, or timeout in a test, confirm the change isn't silently undoing a deliberate regression/flake fix. The author should have run a `git blame` regression-detection pass; a reviewer flags removals of load-bearing guards whose history shows they fixed a specific race or bug. See `browser_tests/README.md` → Before changing an existing test.
+19. **Test edit that may undo a prior fix** — When a diff removes or weakens an existing assertion, wait, or timeout in a test, confirm the change isn't silently undoing a deliberate regression/flake fix. The author should have run a `git blame` regression-detection pass; a reviewer flags removals of load-bearing guards whose history shows they fixed a specific race or bug. See `docs/guidance/playwright.md` → Before changing an existing test.
 
 ## Rules
 

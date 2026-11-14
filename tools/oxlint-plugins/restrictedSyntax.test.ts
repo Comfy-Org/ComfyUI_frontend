@@ -448,7 +448,7 @@ describe('restricted syntax rules', () => {
     expect(findingsFor('no-new-zod-for-remote-api-types')).toEqual([
       expect.objectContaining({
         message:
-          'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".',
+          'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See docs/guidance/playwright.md "Typed API mocks".',
         severity: 'error'
       })
     ])

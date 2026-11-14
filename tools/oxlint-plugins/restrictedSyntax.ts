@@ -371,7 +371,7 @@ export const noVitestMockMethodNames = {
 
 export const noNewZodForRemoteApiTypes = restrictImports(
   (source) => source === 'zod',
-  'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See browser_tests/README.md "Sources of truth for mock types".'
+  'Do not hand-write new Zod schemas for remote API types. Use generated types from packages/ingest-types (@comfyorg/ingest-types) instead. See docs/guidance/playwright.md "Typed API mocks".'
 )
 
 export const noMisplacedSpecFiles = reportProgram(
@@ -389,7 +389,7 @@ export const noUnitTestFilesInBrowserTests = reportProgram(
 
 export const noDeprecatedApiSchema = restrictModules(
   (source) => source === '@/schemas/apiSchema',
-  'This module was removed. Use a generated or domain-owned contract as documented in browser_tests/README.md.'
+  'This module was removed. Use a generated or domain-owned contract as documented in docs/guidance/playwright.md.'
 )
 
 export const noNewZodServerResponseSchema = restrictModules(
