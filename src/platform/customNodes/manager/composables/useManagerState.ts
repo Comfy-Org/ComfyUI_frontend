@@ -46,19 +46,13 @@ export function getManagerUIState(): ManagerUIState {
   const supportsCsrfPost = api.getServerFeature(
     'extension.manager.supports_csrf_post'
   )
-  const hasEnableManager =
-    systemStatsStore.systemStats?.system.argv.includes('--enable-manager')
+  const argv = systemStatsStore.systemStats?.system.argv
 
-  if (!hasEnableManager) {
-    return ManagerUIState.DISABLED
-  }
-
-  if (
-    systemStatsStore.systemStats?.system.argv.includes(
-      '--enable-manager-legacy-ui'
-    )
-  ) {
+  if (argv?.includes('--enable-manager-legacy-ui')) {
     return ManagerUIState.LEGACY_UI
+  }
+  if (!argv?.includes('--enable-manager')) {
+    return ManagerUIState.DISABLED
   }
 
   if (serverSupportsV4 === true && supportsCsrfPost !== true) {
