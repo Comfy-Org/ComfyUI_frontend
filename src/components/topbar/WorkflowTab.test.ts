@@ -14,6 +14,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useExecutionStore } from '@/stores/executionStore'
 import type { WorkflowExecutionStatus } from '@/stores/executionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 import WorkflowTab from './WorkflowTab.vue'
 vi.mock(import('firebase/auth'))
@@ -41,8 +42,6 @@ vi.mock<unknown>(
   })
 )
 
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-
 type WorkflowTabProps = ComponentProps<typeof WorkflowTab>
 
 const statusAriaLabels: Record<WorkflowExecutionStatus, string> = {
@@ -54,16 +53,23 @@ const statusAriaLabels: Record<WorkflowExecutionStatus, string> = {
 const agentAriaLabels = {
   agentWorking: enMessages.g.agentWorking,
   agentModified: enMessages.g.agentModified,
-  agentNeedsApproval: enMessages.g.agentNeedsApproval
+  agentNeedsApproval: enMessages.g.agentNeedsApproval,
+  agentChat: enMessages.g.agentChat
 }
+
+const unsavedLabel = enMessages.g.unsavedChanges
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close', ...statusAriaLabels, ...agentAriaLabels },
-      agent: { targetForThisChat: 'Agent target for this chat' }
+      g: {
+        close: 'Close',
+        unsavedChanges: unsavedLabel,
+        ...statusAriaLabels,
+        ...agentAriaLabels
+      }
     }
   }
 })
@@ -204,56 +210,117 @@ describe('WorkflowTab - workflow status indicator', () => {
     expect(screen.queryByRole('img')).toBeNull()
   })
 
-  it('shows unsaved dot when no workflow status and workflow is unsaved', () => {
+  it('TS-09 marks an unsaved workflow with an italic name and an asterisk, not a dot', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
-    expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'bg-muted-foreground'
-    )
+    expect(screen.getByText('test.json')).toHaveClass('italic')
+    const asterisk = screen.getByRole('img', { name: unsavedLabel })
+    expect(asterisk).toBe(screen.getByTestId('workflow-dirty-indicator'))
+    expect(asterisk).toHaveClass('italic', "after:content-['*']")
+    expect(screen.getAllByRole('img')).toHaveLength(1)
+    expect(screen.queryByTestId('workflow-chat-status')).toBeNull()
   })
 
-  it('keeps an unsaved inactive tab dot muted when workflow keys collide', () => {
-    renderTab({
-      workflowOption: makeWorkflowOption({ isPersisted: false }),
-      activeWorkflowKey: 'test-key',
-      activeWorkflowPath: '/workflows/other.json'
-    })
-
-    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'bg-muted-foreground'
-    )
-  })
-
-  it('shows the unsaved dot when modified and autosave is off', () => {
+  it('TS-09 marks a modified workflow the same way when autosave is off', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
 
-    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'rounded-full'
-    )
+    expect(screen.getByText('test.json')).toHaveClass('italic')
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
   })
 
-  it('workflow status replaces the unsaved dot', () => {
+  it('TS-09 leaves a saved, unmodified workflow plain', () => {
+    renderTab()
+
+    expect(screen.getByText('test.json')).not.toHaveClass('italic')
+    expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
+  })
+
+  it('TS-09 shows no mark while Shift is held', async () => {
+    renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
+
+    Object.assign(useWorkspaceStore(), { shiftDown: true })
+    await nextTick()
+
+    expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
+    expect(screen.getByText('test.json')).not.toHaveClass('italic')
+  })
+
+  it('TS-10 keeps the asterisk outside the part of the name that is cut', () => {
+    renderTab({
+      workflowOption: makeWorkflowOption({
+        isPersisted: false,
+        filename: 'a-very-long-workflow-name-that-does-not-fit'
+      })
+    })
+
+    const name = screen.getByText('a-very-long-workflow-name-that-does-not-fit')
+    const asterisk = screen.getByTestId('workflow-dirty-indicator')
+    expect(name).toHaveClass('truncate')
+    expect(name).not.toContainElement(asterisk)
+    expect(asterisk).toHaveClass('shrink-0')
+  })
+
+  it('TS-11 shows the run status of a background tab next to the unsaved mark', () => {
     const workflowOption = makeWorkflowOption({ isPersisted: false })
     vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
 
     renderTab({ workflowOption })
+
     expect(
       screen.getByRole('img', { name: statusAriaLabels.running })
-    ).toBeTruthy()
-    expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
+    ).toBeVisible()
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
+  })
+
+  it('TS-11 treats a tab that shares the active tab key, but not its path, as a background tab', () => {
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
+
+    renderTab({
+      workflowOption: makeWorkflowOption(),
+      activeWorkflowKey: 'test-key',
+      activeWorkflowPath: '/workflows/other.json'
+    })
+
+    expect(
+      screen.getByRole('img', { name: statusAriaLabels.running })
+    ).toBeVisible()
   })
 })
 
-describe('WorkflowTab - agent activity indicators', () => {
+describe('WorkflowTab - chat status', () => {
+  const path = '/workflows/test.json'
+
   beforeEach(() => {
     vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(undefined)
   })
 
+  it('TS-01 shows no chat status on a tab without a chat', () => {
+    renderTab()
+
+    expect(screen.queryByTestId('workflow-chat-status')).toBeNull()
+  })
+
+  it.for([
+    { name: 'a background tab', activeWorkflowKey: 'other-key' },
+    { name: 'the active tab', activeWorkflowKey: 'test-key' }
+  ])(
+    'TS-02 shows a gray dot on $name that has a chat',
+    async ({ activeWorkflowKey }) => {
+      renderTab({ activeWorkflowKey })
+      useWorkflowTabActivityStore().setChatPaths([path])
+      await nextTick()
+
+      expect(
+        screen.getByRole('img', { name: agentAriaLabels.agentChat })
+      ).toHaveClass('bg-muted-foreground')
+    }
+  )
+
   it('T-17 / PM-658 / FE-1289 renders the active workflow tab loading state', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
     useWorkflowTabActivityStore().setAgentTurnTabs([
-      { path: '/workflows/test.json', awaitingApproval: false }
+      { path, awaitingApproval: false }
     ])
     await nextTick()
 
@@ -262,39 +329,20 @@ describe('WorkflowTab - agent activity indicators', () => {
     ).toBeTruthy()
   })
 
-  it('the agent spinner wins over the unseen-changes dot', async () => {
+  it('TS-04 shows the waiting dot ahead of the spinner', async () => {
     renderTab()
     const activity = useWorkflowTabActivityStore()
-    activity.setAgentTurnTabs([
-      { path: '/workflows/test.json', awaitingApproval: false }
-    ])
-    activity.markModified('/workflows/test.json')
-    await nextTick()
-
-    expect(
-      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
-    ).toBeTruthy()
-    expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
-  })
-
-  it('the needs-approval dot wins over the agent spinner', async () => {
-    renderTab()
-    const activity = useWorkflowTabActivityStore()
-    activity.setAgentTurnTabs([
-      { path: '/workflows/test.json', awaitingApproval: true }
-    ])
+    activity.setAgentTurnTabs([{ path, awaitingApproval: true }])
     await nextTick()
 
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentNeedsApproval })
-    ).toBeVisible()
+    ).toHaveClass('bg-warning')
     expect(
       screen.queryByRole('img', { name: agentAriaLabels.agentWorking })
     ).toBeNull()
 
-    activity.setAgentTurnTabs([
-      { path: '/workflows/test.json', awaitingApproval: false }
-    ])
+    activity.setAgentTurnTabs([{ path, awaitingApproval: false }])
     await nextTick()
     expect(
       screen.queryByRole('img', { name: agentAriaLabels.agentNeedsApproval })
@@ -304,51 +352,98 @@ describe('WorkflowTab - agent activity indicators', () => {
     ).toBeVisible()
   })
 
-  it('shows the unseen-changes dot ahead of non-failed execution status', async () => {
-    const workflowOption = makeWorkflowOption()
-    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
-    renderTab({ workflowOption })
-    useWorkflowTabActivityStore().markModified('/workflows/test.json')
+  it('TS-05 shows a green dot for a finished turn until the tab is seen, then a gray one', async () => {
+    renderTab()
+    const activity = useWorkflowTabActivityStore()
+    activity.setChatPaths([path])
+    activity.markModified(path)
     await nextTick()
 
-    expect(screen.getByTestId('agent-modified-indicator')).toHaveClass(
-      'size-2',
-      'bg-primary'
-    )
     expect(
-      screen.queryByRole('img', { name: statusAriaLabels.running })
+      screen.getByRole('img', { name: agentAriaLabels.agentModified })
+    ).toHaveClass('bg-success')
+
+    activity.markSeen(path)
+    await nextTick()
+    expect(
+      screen.queryByRole('img', { name: agentAriaLabels.agentModified })
     ).toBeNull()
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentChat })
+    ).toBeVisible()
   })
 
-  it('a failed run outranks the unseen-changes dot', async () => {
-    const workflowOption = makeWorkflowOption()
+  it('TS-07 shows one chat indicator when several states hold', async () => {
+    renderTab()
+    const activity = useWorkflowTabActivityStore()
+    activity.setChatPaths([path])
+    activity.markModified(path)
+    activity.setAgentTurnTabs([{ path, awaitingApproval: false }])
+    await nextTick()
+
+    expect(screen.getAllByTestId('workflow-chat-status')).toHaveLength(1)
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeVisible()
+  })
+
+  it('TS-09 shows the chat status and the unsaved mark together, each once', async () => {
+    renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
+    useWorkflowTabActivityStore().setChatPaths([path])
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentChat })
+    ).toBeVisible()
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
+    expect(screen.getAllByRole('img')).toHaveLength(2)
+  })
+
+  it('TS-11 shows a failed run and an unseen chat together', async () => {
     vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('failed')
-    renderTab({ workflowOption })
-    useWorkflowTabActivityStore().markModified('/workflows/test.json')
+    renderTab()
+    useWorkflowTabActivityStore().markModified(path)
     await nextTick()
 
     expect(
       screen.getByRole('img', { name: statusAriaLabels.failed })
-    ).toBeTruthy()
-    expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
+    ).toBeVisible()
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentModified })
+    ).toBeVisible()
   })
 
-  it('clearing the store restores the existing indicators', async () => {
-    renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
-    const activity = useWorkflowTabActivityStore()
-    activity.markModified('/workflows/test.json')
+  it('TS-11 shows a running run and an unseen chat together', async () => {
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
+    renderTab()
+    useWorkflowTabActivityStore().markModified(path)
     await nextTick()
-    expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
 
-    activity.markSeen('/workflows/test.json')
+    expect(
+      screen.getByRole('img', { name: statusAriaLabels.running })
+    ).toBeVisible()
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentModified })
+    ).toBeVisible()
+  })
+
+  it('TS-14 shows no chat status once the agent activity is cleared', async () => {
+    renderTab()
+    const activity = useWorkflowTabActivityStore()
+    activity.setChatPaths([path])
+    activity.markModified(path)
     await nextTick()
-    expect(screen.getByTestId('workflow-dirty-indicator')).toBeTruthy()
-    expect(screen.queryByTestId('agent-modified-indicator')).toBeNull()
+    expect(screen.getByTestId('workflow-chat-status')).toBeVisible()
+
+    activity.clearAgentActivity()
+    await nextTick()
+
+    expect(screen.queryByTestId('workflow-chat-status')).toBeNull()
   })
 })
 
 describe('WorkflowTab - close button', () => {
-  it('reveals Close on a compact inactive tab without a status indicator', () => {
+  it('reveals Close on a compact inactive tab without a run status', () => {
     renderTab({ compact: true })
 
     expect(screen.getByTestId('close-workflow-button')).toHaveClass(
@@ -356,7 +451,7 @@ describe('WorkflowTab - close button', () => {
     )
   })
 
-  it('keeps the close button hidden while an active status indicator shows', async () => {
+  it('TS-12 keeps Close visible on the active tab while a chat status shows', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
     useWorkflowTabActivityStore().setAgentTurnTabs([
       { path: '/workflows/test.json', awaitingApproval: false }
@@ -366,9 +461,46 @@ describe('WorkflowTab - close button', () => {
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
     ).toBeInTheDocument()
-    expect(screen.getByTestId('close-workflow-button')).toHaveClass('invisible')
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass('visible')
     expect(screen.getByTestId('close-workflow-button')).not.toHaveClass(
-      'visible'
+      'invisible'
+    )
+  })
+
+  it('TS-12 keeps Close visible on the active tab while it is unsaved', () => {
+    renderTab({
+      workflowOption: makeWorkflowOption({ isPersisted: false }),
+      activeWorkflowKey: 'test-key'
+    })
+
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass('visible')
+  })
+
+  it('TS-12 reveals Close on hover on a compact inactive tab that is unsaved or has a chat', async () => {
+    renderTab({
+      workflowOption: makeWorkflowOption({ isPersisted: false }),
+      compact: true
+    })
+    useWorkflowTabActivityStore().setChatPaths(['/workflows/test.json'])
+    await nextTick()
+
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
+    expect(screen.getByTestId('workflow-chat-status')).toBeVisible()
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass(
+      'group-hover/tab:visible'
+    )
+  })
+
+  it('TS-12 keeps the run status of a compact inactive tab in place on hover', () => {
+    vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
+    renderTab({ compact: true })
+
+    expect(
+      screen.getByRole('img', { name: statusAriaLabels.running })
+    ).toBeVisible()
+    expect(screen.getByTestId('close-workflow-button')).not.toHaveClass(
+      'group-hover/tab:visible'
     )
   })
 
@@ -397,97 +529,38 @@ describe('WorkflowTab - compact', () => {
   })
 })
 
-describe('WorkflowTab - Agent target', () => {
-  const targetLabel = 'Agent target for this chat'
-
-  it('keeps the target, status, and filename visible in a compact mode tab', async () => {
+describe('WorkflowTab - chat status next to the other tab content', () => {
+  it('keeps the chat status, run status and filename visible in a compact mode tab', async () => {
     const workflowOption = makeWorkflowOption({ initialMode: 'app' })
     vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue('running')
     renderTab({ workflowOption, compact: true })
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    panel.setWorkflowTarget(workflowOption.workflow)
+    useWorkflowTabActivityStore().setChatPaths([workflowOption.workflow.path])
     await nextTick()
 
     expect(screen.queryByTestId('workflow-mode-icon')).toBeNull()
     expect(screen.getByText('test.json')).toBeVisible()
-    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentChat })
+    ).toBeVisible()
     expect(
       screen.getByRole('img', { name: statusAriaLabels.running })
     ).toBeVisible()
   })
 
-  it('follows the selected target independently of the visible tab and panel visibility', async () => {
-    const workflowOption = makeWorkflowOption()
-    const other = makeWorkflowOption({ path: '/workflows/other.json' }).workflow
-    renderTab({ workflowOption, otherOpenWorkflows: [other] })
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
-
-    panel.setWorkflowTarget(workflowOption.workflow)
-    await nextTick()
-    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
-
-    panel.isOpen = true
-    await nextTick()
-    panel.isOpen = false
-    await nextTick()
-    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
-
-    panel.setWorkflowTarget(other)
-    await nextTick()
-    expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
-
-    panel.setWorkflowTarget(workflowOption.workflow)
-    await nextTick()
-    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
-    panel.setWorkflowTarget(null)
-    await nextTick()
-    expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
-  })
-
-  it('hides a retained target when Agent is disabled', async () => {
-    const workflowOption = makeWorkflowOption()
-    renderTab({ workflowOption, activeWorkflowKey: 'test-key' })
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    panel.setWorkflowTarget(workflowOption.workflow)
-    await nextTick()
-    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
-
-    panel.enabled = false
-    await nextTick()
-    expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
-  })
-
-  it('keeps target identity alongside Agent activity, dirty state and Close', async () => {
+  it('keeps the chat status and the unsaved mark beside a working Close button', async () => {
     const workflowOption = makeWorkflowOption({ isModified: true })
-    renderTab({ workflowOption })
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    panel.setWorkflowTarget(workflowOption.workflow)
-    const activity = useWorkflowTabActivityStore()
-    activity.setAgentTurnTabs([
+    renderTab({ workflowOption, activeWorkflowKey: 'test-key' })
+    useWorkflowTabActivityStore().setAgentTurnTabs([
       { path: workflowOption.workflow.path, awaitingApproval: false }
     ])
     await nextTick()
-    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
     ).toBeVisible()
-
-    activity.setAgentTurnTabs([])
-    activity.markModified(workflowOption.workflow.path)
-    await nextTick()
-    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
-    expect(screen.getByTestId('agent-modified-indicator')).toBeVisible()
-
-    activity.markSeen(workflowOption.workflow.path)
-    await nextTick()
-    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
+
     await userEvent.setup().click(screen.getByTestId('close-workflow-button'))
+
     expect(useWorkflowService().closeWorkflows).toHaveBeenCalledWith(
       [workflowOption.workflow],
       expect.objectContaining({ initiator: 'user' })

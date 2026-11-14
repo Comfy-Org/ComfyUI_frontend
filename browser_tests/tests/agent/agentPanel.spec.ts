@@ -133,11 +133,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.open()
     const panel = agentPanel.root
 
-    await expect(
-      panel.getByRole('note').filter({
-        hasText: enMessages.agent.targetFollowsVisibleWorkflow
-      })
-    ).toBeVisible()
     await agentPanel.selectWorkflow()
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()

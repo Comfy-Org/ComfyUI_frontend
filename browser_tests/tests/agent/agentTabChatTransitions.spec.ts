@@ -35,13 +35,7 @@ test.describe(
         await expect(tabChats.panel.workflowPicker).toContainText('Portrait')
         await expect(tabChats.panel.composer).toBeEditable()
         await expect(
-          tabChats.panel.root.getByRole('button', {
-            name: enMessages.agent.retryFollowedChat.replace(
-              '{workflowName}',
-              tabChats.workflows[1].name
-            ),
-            exact: true
-          })
+          tabChats.panel.root.getByText(enMessages.agent.historyOpenFailed)
         ).toHaveCount(0)
       })
     }

@@ -2599,6 +2599,79 @@ describe('useWorkflowService', () => {
       expect(workflowStore.activeWorkflow?.path).toBe(clicked.path)
       expect(settled).toHaveBeenCalledWith(clicked)
     })
+
+    describe('a blank workflow', () => {
+      function newBlankTab(): LoadedComfyWorkflow {
+        return createWorkflow(null, {
+          loadable: true,
+          path: 'Unsaved Workflow.json'
+        }) as LoadedComfyWorkflow
+      }
+
+      it.for([
+        {
+          name: 'reports the new tab when a user creates it',
+          options: { initiator: 'user' as const },
+          reported: true
+        },
+        {
+          name: 'does not report a blank tab loaded programmatically',
+          options: {},
+          reported: false
+        }
+      ])('$name', async ({ options, reported }) => {
+        const workflowStore = useWorkflowStore()
+        const blank = newBlankTab()
+        vi.mocked(app.loadGraphData).mockImplementation(async () => {
+          workflowStore.activeWorkflow = blank
+          return blank
+        })
+        const activated = vi.fn()
+        workflowStore.onUserActivation(activated)
+
+        await useWorkflowService().loadBlankWorkflow(options)
+
+        expect(app.loadGraphData).toHaveBeenCalledWith(blankGraph)
+        expect(activated.mock.calls).toEqual(reported ? [[blank]] : [])
+      })
+
+      it.for([
+        { name: 'fails', loaded: false },
+        { name: 'is superseded by a later load', loaded: undefined }
+      ])(
+        'does not report a user-created tab whose load $name',
+        async ({ loaded }) => {
+          const workflowStore = useWorkflowStore()
+          vi.mocked(app.loadGraphData).mockResolvedValue(loaded)
+          const activated = vi.fn()
+          workflowStore.onUserActivation(activated)
+
+          await useWorkflowService().loadBlankWorkflow({ initiator: 'user' })
+
+          expect(activated).not.toHaveBeenCalled()
+        }
+      )
+
+      it('does not report a new tab the user has already left', async () => {
+        const workflowStore = useWorkflowStore()
+        const blank = newBlankTab()
+        const other = createWorkflow(null, {
+          loadable: true,
+          path: 'workflows/other.json'
+        }) as LoadedComfyWorkflow
+        vi.mocked(app.loadGraphData).mockImplementation(async () => {
+          workflowStore.activeWorkflow = blank
+          workflowStore.activeWorkflow = other
+          return blank
+        })
+        const activated = vi.fn()
+        workflowStore.onUserActivation(activated)
+
+        await useWorkflowService().loadBlankWorkflow({ initiator: 'user' })
+
+        expect(activated).not.toHaveBeenCalled()
+      })
+    })
   })
 
   describe('openWorkflow deferred warnings', () => {

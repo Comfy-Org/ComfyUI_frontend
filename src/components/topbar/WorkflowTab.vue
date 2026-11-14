@@ -31,13 +31,27 @@
               class="icon-[lucide--panels-top-left] bg-primary"
             />
           </template>
-          <WorkflowAgentTargetIndicator
+          <WorkflowTabChatStatus
             :workflow-path="workflowOption.workflow.path"
           />
-          <span
-            class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
-          >
-            {{ workflowOption.workflow.filename }}
+          <span class="inline-flex min-w-0 items-center">
+            <span
+              :class="
+                cn(
+                  'workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit',
+                  shouldShowUnsavedIndicator && 'italic'
+                )
+              "
+            >
+              {{ workflowOption.workflow.filename }}
+            </span>
+            <span
+              v-if="shouldShowUnsavedIndicator"
+              role="img"
+              :aria-label="t('g.unsavedChanges')"
+              data-testid="workflow-dirty-indicator"
+              class="shrink-0 font-inter text-sm leading-none text-inherit italic after:content-['*']"
+            />
           </span>
           <span
             :class="
@@ -47,43 +61,14 @@
               )
             "
           >
-            <span
-              v-if="isAgentAwaitingApproval"
-              role="img"
-              :aria-label="t('g.agentNeedsApproval')"
-              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-warning"
-            />
             <i
-              v-else-if="isAgentEditing"
-              role="img"
-              :aria-label="t('g.agentWorking')"
-              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] -translate-1/2 text-muted-foreground motion-safe:animate-spin"
-            />
-            <span
-              v-else-if="showUnseenAgentDot"
-              role="img"
-              :aria-label="t('g.agentModified')"
-              data-testid="agent-modified-indicator"
-              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary"
-            />
-            <i
-              v-else-if="workflowStatus"
+              v-if="workflowStatus"
               role="img"
               :aria-label="workflowStatusLabel"
               :class="
                 cn(
                   'absolute top-1/2 left-1/2 z-10 -translate-1/2',
                   workflowStatusIconClasses[workflowStatus]
-                )
-              "
-            />
-            <span
-              v-else-if="shouldShowUnsavedIndicator"
-              data-testid="workflow-dirty-indicator"
-              :class="
-                cn(
-                  'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full',
-                  isActiveTab ? 'bg-foreground' : 'bg-muted-foreground'
                 )
               "
             />
@@ -147,13 +132,12 @@ import {
   useExecutionStore,
   WORKFLOW_STATUS_I18N_KEYS
 } from '@/stores/executionStore'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
-import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
+import WorkflowTabChatStatus from './WorkflowTabChatStatus.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -244,16 +228,6 @@ const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
   failed: 'icon-[lucide--octagon-alert] text-destructive'
 }
 
-const tabActivity = useWorkflowTabActivityStore()
-
-const isAgentAwaitingApproval = computed(() =>
-  tabActivity.awaitingApprovalPaths.has(workflowOption.workflow.path)
-)
-
-const isAgentEditing = computed(() =>
-  tabActivity.editingPaths.has(workflowOption.workflow.path)
-)
-
 // The active tab doesn't badge its own status - the user is already looking
 // at it. Background tabs surface the recorded execution status.
 const workflowStatus = computed(() =>
@@ -262,34 +236,18 @@ const workflowStatus = computed(() =>
     : executionStore.getWorkflowStatus(workflowOption.workflow)
 )
 
-// A failed run outranks the unseen-changes dot so the failure isn't masked.
-const showUnseenAgentDot = computed(
-  () =>
-    tabActivity.unseenModifiedPaths.has(workflowOption.workflow.path) &&
-    workflowStatus.value !== 'failed'
-)
-
 const workflowStatusLabel = computed(() =>
   workflowStatus.value
     ? t(WORKFLOW_STATUS_I18N_KEYS[workflowStatus.value])
     : undefined
 )
 
-const hasStatusIndicator = computed(
-  () =>
-    isAgentAwaitingApproval.value ||
-    isAgentEditing.value ||
-    showUnseenAgentDot.value ||
-    workflowStatus.value !== undefined ||
-    shouldShowUnsavedIndicator.value
-)
-
 const revealsCloseOnHover = computed(
-  () => isActiveTab.value || !compact || !hasStatusIndicator.value
+  () => isActiveTab.value || !compact || workflowStatus.value === undefined
 )
 
 const closeButtonVisibility = computed(() =>
-  isActiveTab.value && !hasStatusIndicator.value ? 'visible' : 'invisible'
+  isActiveTab.value ? 'visible' : 'invisible'
 )
 
 const thumbnailUrl = computed(() => {

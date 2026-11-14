@@ -1,5 +1,6 @@
 import { useDialogService } from '@/services/dialogService'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { pick } from 'es-toolkit'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -804,6 +805,16 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.OpenClipspace').function()
 
       expect(app.openClipspace).toHaveBeenCalled()
+    })
+
+    it('Comfy.NewBlankWorkflow creates the tab as a user activation', async () => {
+      Object.assign(app.rootGraph, { _nodes: [] })
+
+      await findCmd('Comfy.NewBlankWorkflow').function()
+
+      expect(useWorkflowService().loadBlankWorkflow).toHaveBeenCalledWith({
+        initiator: 'user'
+      })
     })
 
     it('Comfy.RefreshNodeDefinitions rescans missing models after refreshing combos', async () => {
