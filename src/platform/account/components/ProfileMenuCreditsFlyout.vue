@@ -33,7 +33,10 @@
     </BillingCreditsBreakdown>
     <div class="-mx-2 my-1 border-t border-border" role="separator" />
     <div class="flex flex-col gap-2">
-      <Tooltip v-if="addCredits.kind !== 'hidden'" :disabled="!paymentPastDue">
+      <Tooltip
+        v-if="addCredits.kind !== 'hidden'"
+        :disabled="!paymentPastDue && !purchasesStopped"
+      >
         <TooltipTrigger as-child>
           <span class="flex flex-col" data-testid="add-credits-trigger">
             <Button
@@ -148,9 +151,17 @@ const paymentPastDue = computed(
     topUpDenial.value === 'payment_past_due'
 )
 const refusalReasonId = useId()
-const refusalReason = computed(() =>
-  addCredits.value.kind === 'disabled' ? t(addCredits.value.reasonKey) : null
+const purchasesStopped = computed(
+  () =>
+    addCredits.value.kind === 'disabled' &&
+    topUpDenial.value === 'topup_purchases_paused'
 )
+const refusalReason = computed(() => {
+  if (addCredits.value.kind !== 'disabled') return null
+  return purchasesStopped.value
+    ? t('profileMenu.purchasesStopped')
+    : t(addCredits.value.reasonKey)
+})
 
 function handleTopUp() {
   useTelemetry()?.trackAddApiCreditButtonClicked({ source: 'avatar_menu' })

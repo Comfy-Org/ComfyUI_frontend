@@ -49,6 +49,10 @@
       :error="amountError"
       :locked="view.locked"
       :label="translate('customAmountLabel')"
+      prefix="$"
+      reserve-note
+      input-test-id="add-credits-amount-input"
+      note-test-id="add-credits-amount-error"
       :ui
       @type="emit('type', $event)"
     />

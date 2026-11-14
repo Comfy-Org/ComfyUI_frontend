@@ -6,7 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo } from '@/platform/billing/composables/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 import CreditsPanel from './CreditsPanel.vue'
 

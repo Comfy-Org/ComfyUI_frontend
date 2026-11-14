@@ -3,17 +3,18 @@ import { expect } from '@playwright/test'
 
 import type {
   BillingHandoffCreateResponse,
-  CreateTopupQuoteRequest,
   ErrorResponse,
   ListSavedPaymentMethodsResponse,
-  TopupQuoteResponse
+  ListTopupCheckoutsResponse
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
+import type { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { WORKSPACE_SWITCHER_REMOTE_CONFIG } from '@e2e/fixtures/data/workspaceSwitcher'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspaceSwitcherTest } from '@e2e/fixtures/workspaceSwitcherFixture'
+import { mockTopupQuote } from '@e2e/fixtures/utils/topupQuoteRoute'
 
 const CLOUD_BASE_URL = 'https://cloud.local-billing.test'
 const BILLING_WEB_ORIGIN = 'https://billing.local-billing.test'
@@ -60,6 +61,7 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
   handoffRequests: Request[]
   cloudFlagReads: Request[]
   openAddCredits: () => Promise<void>
+  openSettings: () => Promise<SettingDialog>
 }>({
   localBillingWeb: [false, { option: true }],
   handoffReply: [ISSUED, { option: true }],
@@ -77,6 +79,15 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
       await page.getByRole('button', { name: 'Current user' }).click()
       await page.getByRole('button', { name: /^Credits/ }).hover()
       await page.getByRole('button', { name: 'Add credits' }).click()
+    })
+  },
+  openSettings: async ({ comfyPage, cloudFlagReads }, use) => {
+    await use(async () => {
+      await expect
+        .poll(() => cloudFlagReads.length, 'Cloud flag never read')
+        .toBeGreaterThan(0)
+      await comfyPage.settingDialog.open()
+      return comfyPage.settingDialog
     })
   },
   page: async (
@@ -107,18 +118,15 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
     await page.route('**/api/billing/payment-methods', (route) =>
       route.fulfill({ json: [] satisfies ListSavedPaymentMethodsResponse })
     )
-    await page.route('**/api/billing/topup/quote', (route) => {
-      const { amount_cents } = route
-        .request()
-        .postDataJSON() as CreateTopupQuoteRequest
-      return route.fulfill({
+    await page.route(`${CLOUD_BASE_URL}/api/billing/topup/checkouts`, (route) =>
+      route.fulfill({
         json: {
-          amount_cents,
-          credits: Math.round(amount_cents * 2.11),
-          expires_at: '2099-01-01T00:00:00Z'
-        } satisfies TopupQuoteResponse
+          checkouts: [],
+          next_cursor: null
+        } satisfies ListTopupCheckoutsResponse
       })
-    })
+    )
+    await mockTopupQuote(page)
     await page.context().route(`${BILLING_WEB_ORIGIN}/**`, (route) =>
       route.fulfill({
         contentType: 'text/html',

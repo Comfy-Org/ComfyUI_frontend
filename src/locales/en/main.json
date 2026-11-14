@@ -72,6 +72,7 @@
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
+    "videoFormatNotSupported": "This video can't be played in the browser.",
     "audioFailedToLoad": "Audio failed to load",
     "textFailedToLoad": "Text failed to load",
     "liveSamplingPreview": "Live sampling preview",
@@ -4192,6 +4193,7 @@
     "planCredits": "Plan credits",
     "topUpCredits": "Top-up credits",
     "paymentProcessing": "Payment processing…",
+    "purchasesStopped": "Buying credits isn't available right now",
     "planStatus": {
       "noPlan": "No plan",
       "paused": "Paused",

@@ -63,6 +63,7 @@
           size="unset"
           class="w-full justify-start gap-3 p-1 text-left font-normal"
           :disabled="isSelectionDisabled"
+          :aria-current="workspace.ariaCurrent"
           @click="handleSelectWorkspace(workspace.id)"
         >
           <WorkspaceProfilePic
@@ -86,7 +87,7 @@
             </span>
           </span>
           <i
-            v-if="workspace.id === workspaceId"
+            v-if="workspace.ariaCurrent"
             class="icon-[lucide--check] text-foreground"
           />
         </Button>
@@ -140,7 +141,8 @@ const visibleWorkspaces = computed(() =>
         id: w.id,
         name: w.name,
         subscriptionTier: billingState.getSummary(w).subscriptionTier,
-        planLine: profileMenuPlanLabel(w.plan_summary, t)
+        planLine: profileMenuPlanLabel(w.plan_summary, t),
+        ariaCurrent: w.id === workspaceId.value ? ('true' as const) : undefined
       }))
 )
 
