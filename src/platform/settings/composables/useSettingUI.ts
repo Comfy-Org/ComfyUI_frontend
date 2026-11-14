@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
@@ -62,6 +63,7 @@ export function useSettingUI(
 ) {
   const { t } = useI18n()
   const { isLoggedIn } = useCurrentUser()
+  const { canManageMembers } = useBillingCapabilities()
   const settingStore = useSettingStore()
   const activeCategory = ref<SettingTreeNode | null>(null)
 
@@ -231,7 +233,11 @@ export function useSettingUI(
     const planPanel = flags.unifiedBillingSettingsEnabled
       ? billingPanel
       : planCreditsPanel
-    const canViewMembers = pendingServerFact('BE-24066', isCloud)
+    const canViewMembers = pendingServerFact(
+      'BE-24066',
+      isCloud ||
+        (canManageMembers.value && !flags.unifiedBillingSettingsEnabled)
+    )
     const workspacePanels = canViewMembers
       ? [planPanel, membersPanel]
       : [planPanel]
