@@ -1015,7 +1015,7 @@ async function onWorkflowRestoredAndBound(
 }
 
 function bindRestoredWorkflow(workflowId: string): void {
-  if (hasUnsyncedHumanOps(workflowId)) return
+  if (hasUnsyncedHumanOps(workflowId) && !holdsWorkflow(workflowId)) return
   if (boundWorkflowId.value !== workflowId) bindWorkflow(workflowId)
 }
 
@@ -1191,7 +1191,8 @@ const {
   mayWritePromotedHost,
   docHasSubgraphDefinition,
   notifyWidgetWriteRefused,
-  subscriptionSent
+  subscriptionSent,
+  holdsWorkflow
 } = useAgentCrdtFollower(boundWorkflowId, {
   transport: docTransport,
   userId: () => agentUserId.value,
