@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -17,9 +18,15 @@ const { t } = useI18n()
 const context = useSubgraphInputValuesStore()
 const { focusNodeInstance } = useFocusNode()
 
+const sources = computed(() =>
+  context.selected
+    ? context.sourcesFor(context.selected)
+    : new Map<string, InputValueSource>()
+)
+
 const hint = computed(() => {
   if (!context.selected) return t('subgraphInputValues.enterInstanceHint')
-  return context.sources.size ? undefined : t('subgraphInputValues.noInputs')
+  return sources.value.size ? undefined : t('subgraphInputValues.noInputs')
 })
 
 async function locate(node: NodeState) {
@@ -46,7 +53,7 @@ function captureEdits() {
         :port="slot"
         :label="slot.displayName"
         :host="context.selected"
-        :source="context.sources.get(slot.name)"
+        :source="sources.get(slot.name)"
         @locate="locate"
       />
       <p v-if="hint" class="mx-3 my-0 text-muted-foreground">

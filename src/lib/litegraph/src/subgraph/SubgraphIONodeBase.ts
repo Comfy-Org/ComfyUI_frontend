@@ -31,6 +31,15 @@ import type {
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import {
+  attachIoNodeLayout,
+  nodeGeometryBuffer,
+  nodePositionView,
+  nodeSizeView,
+  refreshNodeGeometry,
+  setNodePosition,
+  setNodeSize
+} from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { snapPoint } from '@/lib/litegraph/src/measure'
@@ -52,8 +61,6 @@ export abstract class SubgraphIONodeBase<
   static minWidth = 100
   static roundedRadius = 14 // Matches NODE_SLOT_HEIGHT * 0.7 for slot alignment
 
-  private readonly _boundingRect: Rectangle = new Rectangle()
-
   abstract readonly id: NodeId
   abstract readonly slotDirection: SlotDirection
 
@@ -67,10 +74,21 @@ export abstract class SubgraphIONodeBase<
       : SubgraphIONodeBase.roundedRadius
   }
 
+  private fitted: Point | undefined
+
+  private get layoutRect(): Rectangle {
+    refreshNodeGeometry(this)
+    const [x, y, width, height] = nodeGeometryBuffer(this)
+    const [fittedWidth, fittedHeight] = this.fitted
+      ? this.fitSize(...this.fitted)
+      : [width, height]
+    return new Rectangle(x, y, fittedWidth, fittedHeight)
+  }
+
   get boundingRect(): Rectangle {
-    const { measured } = this
-    if (!measured) return this._boundingRect
-    const [x, y, width] = this._boundingRect
+    const { measured, layoutRect } = this
+    if (!measured) return layoutRect
+    const [x, y, width] = layoutRect
     const offsetX = this.slotDirection === 'output' ? width - measured.width : 0
     return new Rectangle(x + offsetX, y, measured.width, measured.height)
   }
@@ -98,19 +116,19 @@ export abstract class SubgraphIONodeBase<
   abstract readonly emptySlot: EmptySubgraphInput | EmptySubgraphOutput
 
   get pos() {
-    return this._boundingRect.pos
+    return nodePositionView(this)
   }
 
   set pos(value) {
-    this._boundingRect.pos = value
+    setNodePosition(this, value)
   }
 
   get size() {
-    return this._boundingRect.size
+    return nodeSizeView(this)
   }
 
   set size(value) {
-    this._boundingRect.size = value
+    setNodeSize(this, value)
   }
 
   protected get sideLineWidth(): number {
@@ -396,7 +414,11 @@ export abstract class SubgraphIONodeBase<
     }
 
     if (!measured)
-      this.size = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
+      this.fitted = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
+  }
+
+  protected fitSize(width: number, height: number): Point {
+    return [width, height]
   }
 
   draw(
@@ -454,14 +476,15 @@ export abstract class SubgraphIONodeBase<
   }
 
   configure(data: ExportedSubgraphIONode): void {
-    this._boundingRect.set(data.bounding)
+    nodeGeometryBuffer(this).set(data.bounding)
+    attachIoNodeLayout(this)
     this.pinned = data.pinned ?? false
   }
 
   asSerialisable(): ExportedSubgraphIONode {
     return {
       id: serializeNodeId(this.id),
-      bounding: this._boundingRect.export(),
+      bounding: this.layoutRect.export(),
       pinned: this.pinned ? true : undefined
     }
   }

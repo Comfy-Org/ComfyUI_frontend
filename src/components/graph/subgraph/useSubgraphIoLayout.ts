@@ -1,4 +1,4 @@
-import { computedWithControl, useResizeObserver } from '@vueuse/core'
+import { useResizeObserver } from '@vueuse/core'
 import { computed, shallowRef, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -22,14 +22,13 @@ export function useSubgraphIoLayout(
 ) {
   const canvasStore = useCanvasStore()
   const { camera, syncWithCanvas } = useTransformState()
-  const size = computedWithControl(ioNode, () => {
+  const style = computed(() => {
     const [width, height] = ioNode().size
-    return { width: Math.max(MIN_NODE_WIDTH, width), height }
+    return {
+      '--node-width': `${Math.max(MIN_NODE_WIDTH, width)}px`,
+      '--node-height': `${height}px`
+    }
   })
-  const style = computed(() => ({
-    '--node-width': `${size.value.width}px`,
-    '--node-height': `${size.value.height}px`
-  }))
 
   const rows = shallowRef<HTMLElement[]>([])
   function report(override?: Size) {
@@ -95,11 +94,7 @@ export function useSubgraphIoLayout(
   )
 
   const { startResize: resize } = useNodeResize(({ size: next }) => {
-    const node = ioNode()
-    const [x, y] = node.boundingRect
-    node.pos = [x, y]
-    node.size = [next.width, next.height]
-    size.trigger()
+    ioNode().size = [next.width, next.height]
     report(next)
   })
 
