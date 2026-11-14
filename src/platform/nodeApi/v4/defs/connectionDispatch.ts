@@ -73,21 +73,18 @@ export function connectionInstallers(
   }
 }
 
+const NO_PEER = Object.freeze({ peerNodeId: undefined, peerIndex: undefined })
+
 function peerOf(
   link: LLink | undefined,
   side: ConnectionChangeEvent['side']
 ): Pick<ConnectionChangeEvent, 'peerNodeId' | 'peerIndex'> {
-  const fromInput = side === 'input'
-  const nodeId = fromInput ? link?.origin_id : link?.target_id
-  if (
-    nodeId === undefined ||
-    nodeId === SUBGRAPH_INPUT_ID ||
-    nodeId === SUBGRAPH_OUTPUT_ID
-  ) {
-    return { peerNodeId: undefined, peerIndex: undefined }
-  }
-  return {
-    peerNodeId: String(nodeId),
-    peerIndex: fromInput ? link?.origin_slot : link?.target_slot
-  }
+  if (!link) return NO_PEER
+  const [nodeId, peerIndex] =
+    side === 'input'
+      ? [link.origin_id, link.origin_slot]
+      : [link.target_id, link.target_slot]
+  return nodeId === SUBGRAPH_INPUT_ID || nodeId === SUBGRAPH_OUTPUT_ID
+    ? NO_PEER
+    : { peerNodeId: String(nodeId), peerIndex }
 }
