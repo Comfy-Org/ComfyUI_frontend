@@ -6,6 +6,7 @@
  * All distributions use the /jobs endpoint.
  */
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import type { JobId } from './executionTypes'
@@ -75,7 +76,11 @@ async function fetchJobsRaw(
     }
   } catch (error) {
     if (options?.throwOnError) throw error
-    console.error('[Jobs API] Error fetching jobs:', error)
+    reportError(error, {
+      errorType: 'failure_fetching_jobs',
+      surface: 'platform',
+      context: { statuses: statusParam }
+    })
     return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
   }
 }

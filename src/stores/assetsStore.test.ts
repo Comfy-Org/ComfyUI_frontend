@@ -431,6 +431,11 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['existing'])
       expect(store.getError(nodeType)?.message).toBe('backend down')
+      expect(reportError).toHaveBeenCalledWith(store.getError(nodeType), {
+        errorType: 'failure_loading_model_asset_batch',
+        surface: 'assets',
+        context: { category: 'checkpoints' }
+      })
     })
   })
 
@@ -1104,9 +1109,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
-      vi.mocked(assetService.updateAsset).mockRejectedValueOnce(
-        new Error('500 Internal Error')
-      )
+      const failure = new Error('500 Internal Error')
+      vi.mocked(assetService.updateAsset).mockRejectedValueOnce(failure)
 
       await store.updateAssetMetadata(
         original,
@@ -1116,6 +1120,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       const cached = store.getAssets('CheckpointLoaderSimple')[0]
       expect(cached.user_metadata).toEqual({ note: 'before' })
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        errorType: 'error_updating_asset_metadata',
+        surface: 'assets'
+      })
     })
   })
 
@@ -1226,9 +1234,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         removed: ['loras'],
         total_tags: ['models']
       })
+      const compensationFailure = new Error('503 compensation failed')
       vi.mocked(assetService.addAssetTags)
         .mockRejectedValueOnce(new Error('500 add failed'))
-        .mockRejectedValueOnce(new Error('503 compensation failed'))
+        .mockRejectedValueOnce(compensationFailure)
 
       await store.updateAssetTags(
         asset,
@@ -1238,6 +1247,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
 
       expect(store.hasCategory('loras')).toBe(false)
       expect(assetService.addAssetTags).toHaveBeenCalledTimes(2)
+      expect(reportError).toHaveBeenCalledWith(compensationFailure, {
+        errorType: 'failure_restoring_asset_tags',
+        surface: 'assets'
+      })
     })
 
     it('invalidates overlapping tag caches that also contain the asset when cacheKey is provided', async () => {
@@ -1283,9 +1296,8 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
       )
       await store.updateModelsForNodeType('CheckpointLoaderSimple')
 
-      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(
-        new Error('500 add failed')
-      )
+      const failure = new Error('500 add failed')
+      vi.mocked(assetService.addAssetTags).mockRejectedValueOnce(failure)
 
       await store.updateAssetTags(
         asset,
@@ -1293,6 +1305,10 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
         'CheckpointLoaderSimple'
       )
 
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        errorType: 'error_updating_asset_tags',
+        surface: 'assets'
+      })
       expect(assetService.addAssetTags).toHaveBeenCalledTimes(1)
       expect(assetService.removeAssetTags).not.toHaveBeenCalled()
       expect(store.getAssets('CheckpointLoaderSimple')[0].tags).toEqual([
@@ -1688,6 +1704,51 @@ describe('assetsStore - Model Assets Cache (non-cloud)', () => {
       expect.anything()
     )
     expect(store.getAssets('tag:models')).toHaveLength(2)
+  })
+})
+
+describe('assetsStore - failure reporting', () => {
+  it('reports history load failures to telemetry', async () => {
+    const failure = new Error('history unavailable')
+    vi.mocked(api.getHistory).mockRejectedValueOnce(failure)
+
+    const store = useAssetsStore()
+
+    await expect(store.outputAssets.loadMore()).resolves.toBe(false)
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'failure_loading_job_history',
+      surface: 'assets'
+    })
+  })
+
+  it('reports history refresh failures to telemetry', async () => {
+    const failure = new Error('refresh unavailable')
+    vi.mocked(api.getHistory)
+      .mockResolvedValueOnce(createHistoryPage(0))
+      .mockRejectedValueOnce(failure)
+
+    const store = useAssetsStore()
+    await store.outputAssets.loadMore()
+    await store.outputAssets.loadNew()
+
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'failure_loading_job_history',
+      surface: 'assets'
+    })
+  })
+
+  it('reports input file fetch failures to telemetry', async () => {
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      new Response(null, { status: 500 })
+    )
+
+    const store = useAssetsStore()
+    await store.inputAssets.invalidate()
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'failure_fetching_input_assets',
+      surface: 'assets'
+    })
   })
 })
 

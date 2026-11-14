@@ -10,7 +10,10 @@ import {
   fetchQueue
 } from './fetchJobs'
 import type { RawJobListItem, zJobsListResponse } from './jobTypes'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { z } from 'zod'
+
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
 
@@ -134,23 +137,32 @@ describe('fetchJobs', () => {
       expect(result[0].priority).toBe(999)
     })
 
-    it('returns empty array on error', async () => {
-      const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'))
-
-      const result = await fetchHistory(mockFetch)
+    it.for([
+      {
+        name: 'a network error',
+        mockFetch: () => vi.fn().mockRejectedValue(new Error('Network error'))
+      },
+      {
+        name: 'a non-ok response',
+        mockFetch: () => vi.fn().mockResolvedValue({ ok: false, status: 500 })
+      },
+      {
+        name: 'a JSON parse error',
+        mockFetch: () =>
+          vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.reject(new Error('Invalid JSON'))
+          })
+      }
+    ])('returns an empty array and reports $name', async ({ mockFetch }) => {
+      const result = await fetchHistory(mockFetch())
 
       expect(result).toEqual([])
-    })
-
-    it('returns empty array on non-ok response', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'failure_fetching_jobs',
+        surface: 'platform',
+        context: { statuses: 'completed,failed,cancelled' }
       })
-
-      const result = await fetchHistory(mockFetch)
-
-      expect(result).toEqual([])
     })
 
     it('parses batch containing text-only preview outputs', async () => {
@@ -273,6 +285,11 @@ describe('fetchJobs', () => {
       const result = await fetchQueue(mockFetch)
 
       expect(result).toEqual({ Running: [], Pending: [] })
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'failure_fetching_jobs',
+        surface: 'platform',
+        context: { statuses: 'in_progress,pending' }
+      })
     })
 
     it('propagates errors when requested', async () => {

@@ -107,7 +107,10 @@ export const useAssetsStore = defineStore('assets', () => {
     immediate: false,
     resetOnExecute: false,
     onError: (err) => {
-      console.error('Error fetching input assets:', err)
+      reportError(err, {
+        errorType: 'failure_fetching_input_assets',
+        surface: 'assets'
+      })
     }
   })
 
@@ -611,14 +614,19 @@ export const useAssetsStore = defineStore('assets', () => {
               return
             }
             if (isStale(category, state)) return
-            console.error(`Error loading batch for ${category}:`, err)
-
-            if (category === libraryCategory) {
-              reportError(err, {
-                surface: 'assets',
-                errorType: 'error_loading_workspace_library_models'
-              })
-            }
+            reportError(
+              err,
+              category === libraryCategory
+                ? {
+                    surface: 'assets',
+                    errorType: 'error_loading_workspace_library_models'
+                  }
+                : {
+                    errorType: 'failure_loading_model_asset_batch',
+                    surface: 'assets',
+                    context: { category }
+                  }
+            )
             state.error = err instanceof Error ? err : new Error(String(err))
             state.hasMore = false
             state.isLoading = false
@@ -838,10 +846,10 @@ export const useAssetsStore = defineStore('assets', () => {
           try {
             await assetService.addAssetTags(asset.id, removedTagsOnServer)
           } catch (compensationError) {
-            console.error(
-              'Failed to restore tags after partial failure; invalidating cache to force refetch:',
-              compensationError
-            )
+            reportError(compensationError, {
+              errorType: 'failure_restoring_asset_tags',
+              surface: 'assets'
+            })
             const categoriesToInvalidate = new Set<string>()
             const resolved = cacheKey ? resolveCategory(cacheKey) : undefined
             if (resolved) {
@@ -938,9 +946,10 @@ export const useAssetsStore = defineStore('assets', () => {
 
       for (const result of results) {
         if (result.status === 'rejected') {
-          console.error(
-            `Failed to refresh model cache for provider: ${result.reason}`
-          )
+          reportError(result.reason, {
+            errorType: 'failure_refreshing_model_asset_cache',
+            surface: 'assets'
+          })
         }
       }
     }
