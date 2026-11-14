@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import { graphToPrompt } from '@/utils/executionUtil'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -72,6 +73,106 @@ describe('SubgraphIO - Input Slot Dual-Nature Behavior', () => {
       // Connection should be cleaned up
       expect(subgraphNode.inputs.length).toBe(0)
       expect(externalNode.outputs[0].links).toBeNull()
+    }
+  )
+
+  subgraphTest(
+    'removing an input disconnects every internal link it has',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const input = subgraph.inputs[0]
+
+      const internalNodes = Array.from({ length: 4 }, (_, i) => {
+        const node = new LGraphNode(`Internal ${i}`)
+        node.addInput('in', '*')
+        subgraph.add(node)
+        input.connect(node.inputs[0], node)
+        return node
+      })
+      expect(input.linkIds.length).toBe(4)
+
+      subgraph.removeInput(input)
+
+      expect(internalNodes.map((node) => node.inputs[0].link)).toEqual([
+        null,
+        null,
+        null,
+        null
+      ])
+      const ioLinks = [...subgraph.links.values()].filter(
+        (link) => link.originIsIoNode
+      )
+      expect(ioLinks).toHaveLength(0)
+    }
+  )
+
+  subgraphTest(
+    'removing an input keeps the links of the inputs after it on the right slot',
+    ({ subgraphWithNode }) => {
+      const { subgraph } = subgraphWithNode
+      const first = subgraph.inputs[0]
+      const second = subgraph.addInput('second', '*')
+
+      const firstTargets = Array.from({ length: 2 }, (_, i) => {
+        const node = new LGraphNode(`First target ${i}`)
+        node.addInput('in', '*')
+        subgraph.add(node)
+        first.connect(node.inputs[0], node)
+        return node
+      })
+      const secondTarget = new LGraphNode('Second target')
+      secondTarget.addInput('in', '*')
+      subgraph.add(secondTarget)
+      second.connect(secondTarget.inputs[0], secondTarget)
+
+      subgraph.removeInput(first)
+
+      expect(subgraph.inputs).toEqual([second])
+      expect(firstTargets.map((node) => node.inputs[0].link)).toEqual([
+        null,
+        null
+      ])
+      const link = subgraph.getLink(secondTarget.inputs[0].link)
+      expect(link?.origin_slot).toBe(0)
+      expect(second.linkIds).toEqual([link?.id])
+    }
+  )
+
+  subgraphTest(
+    'removing an input keeps the next input on its upstream output in the prompt',
+    async ({ subgraphWithNode }) => {
+      const { subgraph, subgraphNode, parentGraph } = subgraphWithNode
+      const first = subgraph.inputs[0]
+      const second = subgraph.addInput('second', '*')
+
+      const upstream = new LGraphNode('Upstream')
+      upstream.addOutput('a', '*')
+      upstream.addOutput('b', '*')
+      parentGraph.add(upstream)
+      upstream.connect(0, subgraphNode, 0)
+      upstream.connect(1, subgraphNode, 1)
+
+      const firstTargets = Array.from({ length: 2 }, (_, i) => {
+        const node = new LGraphNode(`First target ${i}`)
+        node.addInput('in', '*')
+        subgraph.add(node)
+        first.connect(node.inputs[0], node)
+        return node
+      })
+      const secondTarget = new LGraphNode('Second target')
+      secondTarget.addInput('in', '*')
+      subgraph.add(secondTarget)
+      second.connect(secondTarget.inputs[0], secondTarget)
+
+      subgraph.removeInput(first)
+
+      const { output } = await graphToPrompt(parentGraph)
+      const promptInputs = (node: LGraphNode) =>
+        output[`${subgraphNode.id}:${node.id}`].inputs
+      expect(firstTargets.map(promptInputs)).toEqual([{}, {}])
+      expect(promptInputs(secondTarget)).toEqual({
+        in: [String(upstream.id), 1]
+      })
     }
   )
 

@@ -550,6 +550,22 @@ export class SubgraphHelper {
     }, type)
   }
 
+  async getInteriorLinkCounts(): Promise<{
+    ioLinks: number
+    connectedInputs: number
+  }> {
+    return this.page.evaluate(() => {
+      const graph = window.app!.canvas.graph!
+      return {
+        ioLinks: [...graph.links.values()].filter((link) => link.originIsIoNode)
+          .length,
+        connectedInputs: graph.nodes
+          .flatMap((node) => node.inputs)
+          .filter((input) => input.link != null).length
+      }
+    })
+  }
+
   async getSlotLabel(
     type: 'input' | 'output',
     index = 0
