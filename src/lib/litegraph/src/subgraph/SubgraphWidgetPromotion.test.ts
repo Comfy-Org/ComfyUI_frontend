@@ -1,5 +1,5 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ExportedSubgraphInstance,
@@ -448,6 +448,32 @@ describe('SubgraphWidgetPromotion', () => {
         promotedInputs(subgraphNode).length
       )
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
+    })
+
+    it('keeps the host value and adopts the new target constraints when a disconnected input is reconnected', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'number', type: 'INT' }]
+      })
+      const host = createTestSubgraphNode(subgraph)
+      subgraph.rootGraph.add(host)
+      const a = createNodeWithWidget('A', 'number', 17, 'INT')
+      const b = createNodeWithWidget('B', 'number', 29, 'INT')
+      b.widget.options.max = 500
+      subgraph.add(a.node)
+      subgraph.add(b.node)
+      const slot = subgraph.inputs[0]
+      slot.connect(a.input, a.node)
+      const widget = () => host.widgets.find((entry) => entry.name === 'number')
+      const initial = widget()
+      assert.exists(initial)
+      initial.value = 77
+
+      slot.disconnect()
+      await Promise.resolve()
+
+      expect(widget()).toBeUndefined()
+      slot.connect(b.input, b.node)
+      expect(widget()).toMatchObject({ value: 77, options: { max: 500 } })
     })
 
     it('keeps the host widget promoted while another interior widget is still connected', async () => {
