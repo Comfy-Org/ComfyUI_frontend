@@ -8548,6 +8548,9 @@
       "model": {
         "name": "モデル"
       },
+      "model_auto_duration": {
+        "name": "自動デュレーション"
+      },
       "model_duration": {
         "name": "長さ"
       },
@@ -8568,7 +8571,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "HeyGen Video 1.0 を使用して、テキストプロンプトから同期した会話と音声を含む動画を生成します。最大12個の参照画像、動画、オーディオクリップを任意で接続し、プロンプト内で {'@'}Image1、{'@'}Video1、{'@'}Audio1 として指定できます。",
+    "description": "HeyGen Video 1.0 を使用して、テキストプロンプトから同期した台詞と音声を含む動画を生成します。オプションで最大15個の参照画像、動画、音声クリップを接続し、プロンプト内で {'@'}Image1、{'@'}Video1、{'@'}Audio1 のように指定できます。",
     "display_name": "HeyGen Video 1.0 参照から動画",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8582,9 @@
       },
       "model_aspect_ratio": {
         "name": "アスペクト比"
+      },
+      "model_auto_duration": {
+        "name": "自動デュレーション"
       },
       "model_duration": {
         "name": "長さ"
@@ -13723,34 +13729,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "Luma Text to VideoおよびLuma Image to Videoノードで使用するための1つ以上のカメラコンセプトを保持します。",
-    "display_name": "Lumaコンセプト",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "ここで選択したものに追加するオプションのカメラコンセプト。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "Luma UNI-1モデルを使用して、テキストプロンプトで既存の画像を編集します。",
     "display_name": "Luma UNI-1 画像編集",
@@ -13787,82 +13765,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "プロンプトとアスペクト比に基づいて画像を同期的に変更します。",
-    "display_name": "Luma 画像から画像へ",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "image": {
-        "name": "画像"
-      },
-      "image_weight": {
-        "name": "画像の重み",
-        "tooltip": "画像の重み。1.0に近いほど画像の変更が少なくなります。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "画像生成のためのプロンプト"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "プロンプトとアスペクト比に基づいて同期的に画像を生成します。",
-    "display_name": "Luma テキストから画像へ",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "アスペクト比"
-      },
-      "character_image": {
-        "name": "キャラクター参照画像",
-        "tooltip": "キャラクター参照画像。複数のバッチが可能で、最大4枚の画像が考慮されます。"
-      },
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "image_luma_ref": {
-        "name": "Luma参照画像",
-        "tooltip": "入力画像で生成を補助するLuma参照ノード接続。最大4枚の画像が考慮されます。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "画像生成のためのプロンプト"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
-      },
-      "style_image": {
-        "name": "スタイル参照画像",
-        "tooltip": "スタイル参照画像。1枚のみ使用されます。"
-      },
-      "style_image_weight": {
-        "name": "スタイル画像の重み",
-        "tooltip": "スタイル画像の重み。style_imageが指定されていない場合は無視されます。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "Luma UNI-1モデルを使用してテキストから画像を生成します。",
     "display_name": "Luma UNI-1 画像生成",
@@ -13890,52 +13792,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "シードはノードの再実行を制御しますが、シードに関係なく結果は非決定的です。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "プロンプト、入力画像、およびoutput_sizeに基づいて同期的に動画を生成します。",
-    "display_name": "Luma画像から動画へ",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後の制御"
-      },
-      "duration": {
-        "name": "再生時間"
-      },
-      "first_image": {
-        "name": "最初の画像",
-        "tooltip": "生成された動画の最初のフレーム。"
-      },
-      "last_image": {
-        "name": "最後の画像",
-        "tooltip": "生成された動画の最後のフレーム。"
-      },
-      "loop": {
-        "name": "ループ"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Luma Conceptsノードを通じてカメラの動きを制御するためのオプションのカメラコンセプト。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "動画生成用のプロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
       }
     },
     "outputs": {
@@ -14165,7 +14021,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "既存のビデオのアスペクト比を変更し、新たに露出したキャンバス領域をLuma Ray 3.2で埋めます。ソースビデオは最大30秒まで対応。出力秒数ごとに課金されます。",
+    "description": "Luma Ray 3.2 を使用して、新たに露出したキャンバス領域を補完し、既存の動画のアスペクト比を変更します。入力動画は最大10秒です。出力の秒数に応じて課金されます。",
     "display_name": "Luma Ray 3.2 ビデオリフレーム",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14043,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "リフレームするソースビデオ。最大30秒まで。"
+        "tooltip": "リフレームする入力動画。最大10秒。"
       }
     },
     "outputs": {
@@ -14196,70 +14052,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "Luma Generate Imageノードで使用する画像と重みを保持します。",
-    "display_name": "Luma Reference",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "参照として使用する画像。"
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "weight",
-        "tooltip": "画像参照の重み。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "プロンプトと出力サイズに基づいて同期的にビデオを生成します。",
-    "display_name": "Luma テキストからビデオへ",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "アスペクト比"
-      },
-      "control_after_generate": {
-        "name": "生成後のコントロール"
-      },
-      "duration": {
-        "name": "再生時間"
-      },
-      "loop": {
-        "name": "ループ"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Luma Conceptsノードを通じてカメラの動きを指示するためのオプションのカメラコンセプト。"
-      },
-      "model": {
-        "name": "モデル"
-      },
-      "prompt": {
-        "name": "プロンプト",
-        "tooltip": "ビデオ生成のためのプロンプト"
-      },
-      "resolution": {
-        "name": "解像度"
-      },
-      "seed": {
-        "name": "シード",
-        "tooltip": "ノードを再実行するかどうかを決定するシード。実際の結果はシードに関係なく非決定的です。"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -24987,6 +24779,9 @@
       "format_bit_depth": {
         "name": "ビット深度"
       },
+      "format_channels": {
+        "name": "チャンネル"
+      },
       "format_input_color_space": {
         "name": "入力カラースペース"
       },
@@ -25977,6 +25772,33 @@
       },
       "1": {
         "name": "右",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "画像を赤、緑、青の画像とアルファマスクに分割します。",
+    "display_name": "画像チャンネルを分割",
+    "inputs": {
+      "image": {
+        "name": "画像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "赤",
+        "tooltip": null
+      },
+      "1": {
+        "name": "緑",
+        "tooltip": null
+      },
+      "2": {
+        "name": "青",
+        "tooltip": null
+      },
+      "3": {
+        "name": "アルファ",
         "tooltip": null
       }
     }

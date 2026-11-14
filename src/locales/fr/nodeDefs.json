@@ -8548,6 +8548,9 @@
       "model": {
         "name": "modèle"
       },
+      "model_auto_duration": {
+        "name": "durée_automatique"
+      },
       "model_duration": {
         "name": "durée"
       },
@@ -8568,7 +8571,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "Génère une vidéo avec des dialogues et du son synchronisés à partir d’une invite textuelle à l’aide de HeyGen Video 1.0. Connectez éventuellement jusqu’à 12 images, vidéos et extraits audio de référence, et mentionnez-les dans l’invite sous la forme {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "description": "Générez une vidéo avec des dialogues et du son synchronisés à partir d’une invite textuelle à l’aide de HeyGen Video 1.0. Connectez éventuellement jusqu’à 15 images, vidéos et extraits audio de référence, puis mentionnez-les dans l’invite sous la forme {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
     "display_name": "HeyGen Video 1.0 Référence vers vidéo",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8582,9 @@
       },
       "model_aspect_ratio": {
         "name": "rapport_largeur_hauteur"
+      },
+      "model_auto_duration": {
+        "name": "durée_automatique"
       },
       "model_duration": {
         "name": "durée"
@@ -13723,34 +13729,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "Contient un ou plusieurs Concepts de Caméra à utiliser avec les nœuds Luma Text to Video et Luma Image to Video.",
-    "display_name": "Luma Concepts",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Concepts de Caméra optionnels à ajouter à ceux sélectionnés ici."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "Modifiez une image existante avec une invite textuelle en utilisant le modèle Luma UNI-1.",
     "display_name": "Luma UNI-1 Image Edit",
@@ -13787,82 +13765,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "Modifie les images de manière synchrone en fonction du prompt et du format d'image.",
-    "display_name": "Luma Image vers Image",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_weight": {
-        "name": "poids de l'image",
-        "tooltip": "Poids de l'image ; plus la valeur est proche de 1.0, moins l'image sera modifiée."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt pour la génération d'image"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels sont non déterministes quel que soit la graine."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "Génère des images de manière synchrone à partir d'une invite et d'un ratio d'aspect.",
-    "display_name": "Luma Texte vers Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "ratio_d'aspect"
-      },
-      "character_image": {
-        "name": "image_de_personnage",
-        "tooltip": "Images de référence de personnage ; peut être un lot de plusieurs, jusqu'à 4 images peuvent être prises en compte."
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "image_luma_ref": {
-        "name": "référence_image_luma",
-        "tooltip": "Connexion au nœud de référence Luma pour influencer la génération avec des images d'entrée ; jusqu'à 4 images peuvent être prises en compte."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "invite",
-        "tooltip": "Invite pour la génération d'image"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes, quelle que soit la graine."
-      },
-      "style_image": {
-        "name": "image_de_style",
-        "tooltip": "Image de référence de style ; seule 1 image sera utilisée."
-      },
-      "style_image_weight": {
-        "name": "poids_image_de_style",
-        "tooltip": "Poids de l'image de style. Ignoré si aucune image de style n'est fournie."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "Générez des images à partir de texte en utilisant le modèle Luma UNI-1.",
     "display_name": "Luma UNI-1 Image",
@@ -13890,52 +13792,6 @@
       "seed": {
         "name": "graine",
         "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats sont non déterministes quel que soit la graine."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "Génère des vidéos de manière synchrone à partir d'un prompt, d'images d'entrée et de la taille de sortie.",
-    "display_name": "Luma Image to Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée"
-      },
-      "first_image": {
-        "name": "première_image",
-        "tooltip": "Première image de la vidéo générée."
-      },
-      "last_image": {
-        "name": "dernière_image",
-        "tooltip": "Dernière image de la vidéo générée."
-      },
-      "loop": {
-        "name": "boucle"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Concepts de caméra optionnels pour dicter le mouvement de la caméra via le nœud Luma Concepts."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt pour la génération de la vidéo"
-      },
-      "resolution": {
-        "name": "résolution"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit le seed."
       }
     },
     "outputs": {
@@ -14165,7 +14021,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "Modifiez le format d'image d'une vidéo existante, en utilisant Luma Ray 3.2 pour remplir les nouvelles zones exposées de la toile. Vidéo source jusqu'à 30 secondes. Facturation à la seconde de sortie.",
+    "description": "Modifiez le ratio d’aspect d’une vidéo existante en utilisant Luma Ray 3.2 pour remplir les zones nouvellement exposées du canevas. Vidéo source d’une durée maximale de 10 secondes. Facturé par seconde de sortie.",
     "display_name": "Luma Ray 3.2 Recadrage Vidéo",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14043,7 @@
       },
       "video": {
         "name": "vidéo",
-        "tooltip": "Vidéo source à recadrer. Jusqu'à 30 secondes."
+        "tooltip": "Vidéo source à recadrer. Durée maximale : 10 secondes."
       }
     },
     "outputs": {
@@ -14196,70 +14052,6 @@
       },
       "1": {
         "name": "identifiant_génération",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "Contient une image et un poids à utiliser avec le nœud Luma Générer Image.",
-    "display_name": "Référence Luma",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "Image à utiliser comme référence."
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "poids",
-        "tooltip": "Poids de la référence d'image."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "Génère des vidéos de manière synchrone à partir du prompt et de la taille de sortie.",
-    "display_name": "Luma Texte vers Vidéo",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "rapport d'aspect"
-      },
-      "control_after_generate": {
-        "name": "contrôle après génération"
-      },
-      "duration": {
-        "name": "durée"
-      },
-      "loop": {
-        "name": "boucle"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Concepts de caméra optionnels pour dicter le mouvement de la caméra via le nœud Luma Concepts."
-      },
-      "model": {
-        "name": "modèle"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt pour la génération de la vidéo"
-      },
-      "resolution": {
-        "name": "résolution"
-      },
-      "seed": {
-        "name": "graine",
-        "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quelle que soit la graine."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -24987,6 +24779,9 @@
       "format_bit_depth": {
         "name": "profondeur_bits"
       },
+      "format_channels": {
+        "name": "canaux"
+      },
       "format_input_color_space": {
         "name": "espace_couleur_entrée"
       },
@@ -25977,6 +25772,33 @@
       },
       "1": {
         "name": "droite",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "Sépare une image en images rouge, verte et bleue, ainsi qu’en un mask alpha.",
+    "display_name": "Séparer les canaux de l’image",
+    "inputs": {
+      "image": {
+        "name": "image"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rouge",
+        "tooltip": null
+      },
+      "1": {
+        "name": "vert",
+        "tooltip": null
+      },
+      "2": {
+        "name": "bleu",
+        "tooltip": null
+      },
+      "3": {
+        "name": "alpha",
         "tooltip": null
       }
     }

@@ -8548,6 +8548,9 @@
       "model": {
         "name": "模型"
       },
+      "model_auto_duration": {
+        "name": "自動時長"
+      },
       "model_duration": {
         "name": "時長"
       },
@@ -8568,7 +8571,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "使用 HeyGen Video 1.0 根據文字提示詞生成具有同步對話與聲音的影片。可選擇連接最多 12 張參考圖像、影片和音訊片段，並在提示詞中以 {'@'}Image1、{'@'}Video1、{'@'}Audio1 提及它們。",
+    "description": "使用 HeyGen Video 1.0，根據文字提示詞產生具有同步對話與音效的影片。您也可以選擇連接最多 15 張參考圖片、影片和音訊片段，並在提示詞中以 {'@'}Image1、{'@'}Video1、{'@'}Audio1 提及它們。",
     "display_name": "HeyGen Video 1.0 參考資料轉影片",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8582,9 @@
       },
       "model_aspect_ratio": {
         "name": "長寬比"
+      },
+      "model_auto_duration": {
+        "name": "自動時長"
       },
       "model_duration": {
         "name": "時長"
@@ -13723,34 +13729,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "包含一個或多個相機概念，可用於 Luma 文字轉影片與 Luma 圖片轉影片節點。",
-    "display_name": "Luma 概念",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "可選的相機概念，將會加入到此處選擇的概念中。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "使用 Luma UNI-1 模型，透過文字提示編輯現有圖像。",
     "display_name": "Luma UNI-1 圖像編輯",
@@ -13787,82 +13765,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "根據提示詞與長寬比同步修改影像。",
-    "display_name": "Luma 影像轉換",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "image_weight": {
-        "name": "影像權重",
-        "tooltip": "影像的權重；越接近 1.0，影像修改幅度越小。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影像生成的提示詞"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "決定此節點是否重新執行的種子值；實際結果無論種子值為何都不具決定性。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "根據提示詞與長寬比同步生成圖像。",
-    "display_name": "Luma 文字轉圖像",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比"
-      },
-      "character_image": {
-        "name": "角色參考圖",
-        "tooltip": "角色參考圖像；可為多張批次圖像，最多可考慮 4 張圖像。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image_luma_ref": {
-        "name": "Luma 參考圖",
-        "tooltip": "Luma 參考節點連接，可用輸入圖像影響生成；最多可考慮 4 張圖像。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於圖像生成的提示詞"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子值如何都不具決定性。"
-      },
-      "style_image": {
-        "name": "風格參考圖",
-        "tooltip": "風格參考圖像；僅會使用 1 張圖像。"
-      },
-      "style_image_weight": {
-        "name": "風格圖權重",
-        "tooltip": "風格圖像的權重。如果未提供風格圖像則忽略。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "使用 Luma UNI-1 模型，根據文字生成圖像。",
     "display_name": "Luma UNI-1 圖像",
@@ -13890,52 +13792,6 @@
       "seed": {
         "name": "種子",
         "tooltip": "種子控制此節點是否重新執行；無論種子如何，結果皆為非確定性。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "根據提示詞、輸入圖片與輸出尺寸同步產生影片。",
-    "display_name": "Luma 圖像轉影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "時長"
-      },
-      "first_image": {
-        "name": "第一張圖片",
-        "tooltip": "生成影片的第一幀。"
-      },
-      "last_image": {
-        "name": "最後一張圖片",
-        "tooltip": "生成影片的最後一幀。"
-      },
-      "loop": {
-        "name": "循環"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "（選填）透過 Luma Concepts 節點指定相機運動的相機概念。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影片生成的提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "決定此節點是否重新執行的種子值；實際結果無論種子值如何都不具決定性。"
       }
     },
     "outputs": {
@@ -14165,7 +14021,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "更改現有影片的長寬比，使用 Luma Ray 3.2 填補新顯露的畫布區域。來源影片最長 30 秒。依輸出秒數計費。",
+    "description": "變更現有影片的長寬比，並使用 Luma Ray 3.2 填補新露出的畫布區域。來源影片最長 10 秒。依輸出秒數計費。",
     "display_name": "Luma Ray 3.2 影片重構比例",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14043,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "要重構比例的來源影片。最長 30 秒。"
+        "tooltip": "要重新取景的來源影片。最長 10 秒。"
       }
     },
     "outputs": {
@@ -14196,70 +14052,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "保存一張圖片及其權重，供 Luma 生成圖片節點使用。",
-    "display_name": "Luma 參考",
-    "inputs": {
-      "image": {
-        "name": "影像",
-        "tooltip": "用作參考的圖片。"
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "權重",
-        "tooltip": "圖片參考的權重。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "根據提示詞與輸出尺寸同步產生影片。",
-    "display_name": "Luma 文字轉影片",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "時長"
-      },
-      "loop": {
-        "name": "循環"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "（選填）透過 Luma Concepts 節點指定相機運動的相機概念。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影片生成的提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -24987,6 +24779,9 @@
       "format_bit_depth": {
         "name": "位元深度"
       },
+      "format_channels": {
+        "name": "通道"
+      },
       "format_input_color_space": {
         "name": "輸入色彩空間"
       },
@@ -25977,6 +25772,33 @@
       },
       "1": {
         "name": "右聲道",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "將影像分離為紅色、綠色和藍色影像，以及 alpha 遮罩。",
+    "display_name": "分離影像通道",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "紅色",
+        "tooltip": null
+      },
+      "1": {
+        "name": "綠色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "藍色",
+        "tooltip": null
+      },
+      "3": {
+        "name": "alpha",
         "tooltip": null
       }
     }
