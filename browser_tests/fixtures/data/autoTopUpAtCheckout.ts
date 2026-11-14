@@ -29,6 +29,7 @@ export const FIFTY_DOLLAR_QUOTE: TopupQuoteResponse = {
 }
 
 export const AUTO_TOP_UP_OFF: AutoReloadSettings = {
+  auto_top_up_conflict: false,
   card_expiry: null,
   configured: false,
   cycle_resets_at: null,

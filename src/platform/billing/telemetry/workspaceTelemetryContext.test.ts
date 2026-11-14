@@ -185,6 +185,8 @@ describe('useBillingCapabilities workspace scope mismatch', () => {
         can_manage_subscription: false,
         can_open_plans: false,
         can_run_workflows: false,
+        can_set_budgets: false,
+        can_set_hard_caps: false,
         can_upgrade: false
       },
       rollout_defaults_applied: {

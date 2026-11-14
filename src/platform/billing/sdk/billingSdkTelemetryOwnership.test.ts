@@ -163,6 +163,8 @@ const CAPABILITIES = {
     can_manage_subscription: false,
     can_open_plans: false,
     can_run_workflows: false,
+    can_set_budgets: false,
+    can_set_hard_caps: false,
     can_upgrade: false,
     can_reactivate: true,
     can_revert_scheduled_change: false,
