@@ -8,11 +8,15 @@ import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useUpdatePassword } from '@/composables/auth/useUpdatePassword'
+import { signOutWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workflow/persistence/base/storageIO'), {
+  spy: true
+})
 vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   firebaseIdentity: fromPartial<FirebaseIdentity>({
     onUserChanged: () => () => {},
@@ -81,6 +85,10 @@ describe(useUpdatePassword, () => {
       expect.objectContaining({ title: 'Password Updated' })
     ])
     expect(useAuthActions().reportError).not.toHaveBeenCalled()
+    expect(
+      signOutWorkflowStorage,
+      'a password reauthentication must not delete the drafts of the user who is still here'
+    ).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -112,6 +120,7 @@ describe(useUpdatePassword, () => {
       expect(authStore.updatePassword).toHaveBeenCalledOnce()
       expect(successToasts()).toEqual([])
       expect(useAuthActions().reportError).not.toHaveBeenCalled()
+      expect(signOutWorkflowStorage).not.toHaveBeenCalled()
     }
   )
 

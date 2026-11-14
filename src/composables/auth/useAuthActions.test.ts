@@ -18,6 +18,7 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import { signOutWorkflowStorage } from '@/platform/workflow/persistence/base/storageIO'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
@@ -33,9 +34,6 @@ const mockDistributionState = vi.hoisted(() => ({
   isCloud: false,
   isDesktop: false
 }))
-const mockClearAllWorkspaceStorage = vi.hoisted(() => vi.fn())
-const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
-
 const authErrorMessages: Record<string, string> = enLocale.auth.errors
 
 const firebaseCodesWithOwnMessage = Object.keys(authErrorMessages).filter(
@@ -73,8 +71,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
-  clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
-  prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
+  signOutWorkflowStorage: vi.fn()
 }))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
@@ -143,7 +140,7 @@ describe('useAuthActions.logout', () => {
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
-    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(signOutWorkflowStorage).not.toHaveBeenCalled()
   })
 
   it('logs out without prompting when no workflows are modified', async () => {
@@ -164,18 +161,14 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
-    expect(mockClearAllWorkspaceStorage).toHaveBeenCalledExactlyOnceWith()
+    expect(signOutWorkflowStorage).toHaveBeenCalledExactlyOnceWith()
     expect(
       vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
     ).toBeLessThan(
-      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
+      vi.mocked(signOutWorkflowStorage).mock.invocationCallOrder[0]
     )
     expect(
-      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
-    ).toBeLessThan(mockClearAllWorkspaceStorage.mock.invocationCallOrder[0])
-    expect(
-      mockClearAllWorkspaceStorage.mock.invocationCallOrder[0]
+      vi.mocked(signOutWorkflowStorage).mock.invocationCallOrder[0]
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })
 
@@ -206,8 +199,7 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
-    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(signOutWorkflowStorage).not.toHaveBeenCalled()
   })
 
   it('cancels sign-out when the dialog is dismissed (null)', async () => {
@@ -339,7 +331,7 @@ describe('useAuthActions.logout', () => {
     await logout({ beforeSignOut: async () => false })
 
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
-    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
+    expect(signOutWorkflowStorage).not.toHaveBeenCalled()
     expect(useToast().toasts).toEqual([])
   })
 

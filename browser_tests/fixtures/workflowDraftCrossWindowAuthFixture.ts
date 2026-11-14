@@ -17,7 +17,7 @@ const BOOT_SETTINGS = {
   'Comfy.Workflow.Persist': true
 }
 
-class WorkflowDraftForeignWindowSignInHelper {
+class WorkflowDraftCrossWindowAuthHelper {
   public readonly logoutButton: Locator
 
   constructor(private readonly page: Page) {
@@ -120,6 +120,20 @@ class WorkflowDraftForeignWindowSignInHelper {
     })
   }
 
+  async triggerForeignWindowSignOut(): Promise<void> {
+    const secondWindow = await this.page.context().newPage()
+    await this.bootWindow(secondWindow)
+    await secondWindow.evaluate(async () => {
+      await window.app!.extensionManager.command.execute('Comfy.User.SignOut')
+    })
+  }
+
+  async firePageHide(): Promise<void> {
+    await this.page.evaluate(() => {
+      window.dispatchEvent(new PageTransitionEvent('pagehide'))
+    })
+  }
+
   private async bootWindow(page: Page): Promise<void> {
     await mockCloudBoot(page, {
       features: BOOT_FEATURES,
@@ -136,11 +150,11 @@ class WorkflowDraftForeignWindowSignInHelper {
   }
 }
 
-export const workflowDraftForeignWindowSignInFixture = cloudAppFixture.extend<{
-  workflowDraft: WorkflowDraftForeignWindowSignInHelper
+export const workflowDraftCrossWindowAuthFixture = cloudAppFixture.extend<{
+  workflowDraft: WorkflowDraftCrossWindowAuthHelper
 }>({
   workflowDraft: async ({ page }, use) => {
-    const workflowDraft = new WorkflowDraftForeignWindowSignInHelper(page)
+    const workflowDraft = new WorkflowDraftCrossWindowAuthHelper(page)
     await workflowDraft.boot()
     await use(workflowDraft)
   }

@@ -1104,10 +1104,9 @@ describe('useWorkflowPersistenceV2', () => {
     sessionStorage.setItem('Comfy.Workflow.ActivePath:test-client', '{}')
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    storageIO.signOutWorkflowStorage()
 
     expect(localStorage).toHaveLength(0)
     expect(sessionStorage).toHaveLength(0)
@@ -1147,12 +1146,11 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-b' })
-    onLogout()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-c' })
 
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-c' })
@@ -1170,10 +1168,9 @@ describe('useWorkflowPersistenceV2', () => {
     )
     mountWorkflowPersistence()
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-a' })
 
     expect(completeTransitionSpy).not.toHaveBeenCalled()
@@ -1201,10 +1198,9 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.state.currentGraph = { marker: 'stale-source-edit' }
     apiEvents.dispatchEvent(new Event('graphChanged'))
 
-    const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
       .calls[0][0]
-    onLogout()
+    storageIO.signOutWorkflowStorage()
     onUserResolved({ id: 'user-b' })
     await vi.runAllTimersAsync()
 
