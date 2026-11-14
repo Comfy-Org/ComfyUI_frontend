@@ -83,6 +83,30 @@ describe('extensionStore', () => {
       expect(store.isExtensionPathEnabledAtBoot('/extensions/b/')).toBe(false)
     })
 
+    it('maps each path to its current setting and lists those that differ from boot', () => {
+      const settingStore = useSettingStore()
+      const store = useExtensionStore()
+      store.loadExtensionPaths(
+        ['/extensions/a/', '/extensions/b/', '/extensions/c/'],
+        ['/extensions/b/']
+      )
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = [
+        '/extensions/a/',
+        '/extensions/b/'
+      ]
+
+      expect(store.enabledByPath).toEqual({
+        '/extensions/a/': false,
+        '/extensions/b/': false,
+        '/extensions/c/': true
+      })
+      expect(store.changedExtensionPaths).toEqual(['/extensions/a/'])
+
+      settingStore.settingValues['Comfy.Extension.DisabledPacks'] = []
+
+      expect(store.changedExtensionPaths).toEqual(['/extensions/b/'])
+    })
+
     it('restores a refused extension path change before a successful retry', async () => {
       const settingStore = useSettingStore()
       const store = useExtensionStore()
@@ -185,16 +209,42 @@ describe('extensionStore', () => {
     })
   })
 
-  describe('inactiveDisabledExtensionNames', () => {
-    it('returns disabled names not currently installed', () => {
+  describe('extension toggles', () => {
+    it('saves toggles against the current setting, keeping absent names and skipping read-only ones', async () => {
+      const settingStore = useSettingStore()
       const store = useExtensionStore()
-      store.loadDisabledExtensionNames(['ghost.ext', 'installed.ext'])
-      store.registerExtension({ name: 'installed.ext' })
+      vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
+      store.registerExtension({ name: 'a.ext' })
+      store.registerExtension({ name: 'b.ext' })
+      store.registerExtension({ name: 'pysssss.Locking' })
+      store.loadDisabledExtensionNames([
+        'ghost.ext',
+        'b.ext',
+        'pysssss.Locking'
+      ])
+      settingStore.settingValues['Comfy.Extension.Disabled'] = [
+        'ghost.ext',
+        'b.ext',
+        'pysssss.Locking'
+      ]
 
-      expect(store.inactiveDisabledExtensionNames).toContain('ghost.ext')
-      expect(store.inactiveDisabledExtensionNames).not.toContain(
-        'installed.ext'
-      )
+      await store.setExtensionsEnabled(['a.ext', 'pysssss.Locking'], false)
+      await store.setExtensionsEnabled(['b.ext', 'pysssss.Locking'], true)
+
+      expect(settingStore.get('Comfy.Extension.Disabled')).toEqual([
+        'ghost.ext',
+        'pysssss.Locking',
+        'a.ext'
+      ])
+      expect(store.enabledByName).toEqual({
+        'a.ext': false,
+        'b.ext': true,
+        'pysssss.Locking': false
+      })
+      expect(store.changedExtensions.map((ext) => ext.name)).toEqual([
+        'a.ext',
+        'b.ext'
+      ])
     })
   })
 

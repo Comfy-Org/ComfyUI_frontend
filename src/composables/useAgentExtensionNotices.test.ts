@@ -128,7 +128,7 @@ describe('useAgentExtensionNotices', () => {
     )
   })
 
-  it('keeps the page open and reports an explicitly refused disable', async () => {
+  it('keeps the page open and the unconfirmed disable when the save returns 403', async () => {
     const settingStore = useSettingStore()
     vi.mocked(api.getSettings).mockResolvedValue({} as Settings)
     vi.mocked(api.storeSetting).mockResolvedValue(new Response())
@@ -137,6 +137,7 @@ describe('useAgentExtensionNotices', () => {
       .thenResolve(new Response(null, { status: 403, statusText: 'Forbidden' }))
     await settingStore.load()
     settingStore.settingValues['Comfy.Extension.SeenAgentExtensions'] = []
+    settingStore.settingValues['Comfy.Extension.Disabled'] = []
     const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
     renderNotices()
 
@@ -146,15 +147,16 @@ describe('useAgentExtensionNotices', () => {
     await notice.actions[1].onClick()
 
     expect(reload).not.toHaveBeenCalled()
-    expect(settingStore.get('Comfy.Extension.Disabled')).toBeUndefined()
+    expect(settingStore.get('Comfy.Extension.Disabled')).toEqual([
+      'agent.tools.sidebar'
+    ])
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
-        message: 'Failed to disable extension: 403 Forbidden'
+        message: 'Failed to store disabled extension names: 403 Forbidden'
       }),
       {
         surface: 'platform',
-        errorType: 'failure_disabling_agent_extension',
-        context: { extension_name: 'agent.tools.sidebar' }
+        errorType: 'failure_saving_extension_name_setting'
       }
     )
     expect(useToast().toasts.at(-1)).toMatchObject({
