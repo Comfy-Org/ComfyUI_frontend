@@ -9,11 +9,12 @@ import type {
 import {
   autoTopUpActivationFor,
   autoTopUpTargetFor,
-  CREDITS_PER_USD,
   parseAutoTopUpForm,
   startAutoTopUpForm,
   validateAutoTopUp
 } from '@comfyorg/account-core/billing'
+
+import { centsToCredits } from '#/billing/tab/creditsCardCopy'
 
 export type AddCreditsAutoTopUpRequest =
   | { readonly kind: 'not_offered' }
@@ -33,7 +34,7 @@ export function useAddCreditsAutoTopUp(
   const edits = shallowRef<Partial<AutoTopUpFormInput>>({})
 
   const creditsPicked = computed(() =>
-    Math.round(((toValue(amountCents) ?? 0) * CREDITS_PER_USD) / 100)
+    centsToCredits(toValue(amountCents) ?? 0)
   )
 
   const input = computed<AutoTopUpFormInput>(() => {

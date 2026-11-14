@@ -41,13 +41,14 @@ import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import {
-  autoTopUpCardState,
+  autoTopUpCard,
   loadedAutoTopUp
 } from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
 import {
   autoTopUpEnabledFact,
   canManageAutoTopUpFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
@@ -2669,7 +2670,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       capabilities.autoTopUpSetup = computed(() => ({
         state: 'ready' as const
       }))
-      autoTopUpCardState.value = loadedAutoTopUp('off')
+      vi.mocked(useBillingAutoTopUpCard).mockReturnValue(
+        autoTopUpCard(loadedAutoTopUp('off'))
+      )
     })
 
     it('sits above Add credits on the amount step', () => {
