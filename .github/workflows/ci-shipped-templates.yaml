@@ -1,0 +1,97 @@
+# Holds every workflow template we ship against this repo's own workflow
+# schema.
+#
+# `useTemplateWorkflows` falls back to `zLegacyLoadableWorkflow` when
+# `validateComfyWorkflow` rejects a template, loads it anyway, and reports
+# `error_validating_workflow_template_schema` at warning level. So a template
+# this schema rejects does not look broken to a user, and nothing was checking
+# it: the templates repo validates its own index and JSON syntax, ComfyUI
+# checks the graph against its node registry, and neither knows what this
+# schema considers loadable.
+#
+# Two triggers, because the two ways this breaks come from different repos:
+#
+#   * pull_request / push on the schema or the test, for a schema change that
+#     starts rejecting workflows already in the wild
+#   * a daily run, for a templates release that adds a template this schema
+#     rejects, which no frontend change would ever surface
+#
+# The corpus is the templates release ComfyUI pins, so it is the set that
+# actually ships beside a given core release rather than whatever is newest.
+# Only the JSON bundle is installed: the media bundles are ~500 MB of
+# thumbnails this has no use for.
+name: 'CI: Shipped Templates'
+
+on:
+  pull_request:
+    paths:
+      - 'packages/graph-model/src/workflowSchema.ts'
+      - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+      - '.github/workflows/ci-shipped-templates.yaml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/graph-model/src/workflowSchema.ts'
+      - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+      - '.github/workflows/ci-shipped-templates.yaml'
+  schedule:
+    - cron: '45 7 * * *'
+  workflow_dispatch:
+    inputs:
+      templates_version:
+        description: 'comfyui-workflow-templates version to check (empty = the version ComfyUI pins)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The meta package pins each bundle exactly, so the JSON bundle that
+      # belongs to a given templates release is read off its metadata rather
+      # than guessed. Installing the JSON bundle unpinned would drift from the
+      # release ComfyUI ships.
+      # The meta package pins each bundle exactly, so the JSON bundle that
+      # belongs to a release is read off its metadata rather than guessed.
+      - name: Resolve the templates release ComfyUI pins
+        id: templates
+        run: |
+          python3 scripts/cicd/resolve-shipped-templates.py "${{ inputs.templates_version }}" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Install the templates JSON bundle
+        run: pip install "comfyui-workflow-templates-json==${{ steps.templates.outputs.json_pin }}"
+
+      - name: Locate the installed templates
+        id: corpus
+        run: |
+          set -euo pipefail
+          DIR="$(python3 -c 'import importlib.resources as r, comfyui_workflow_templates_json as m; print(r.files(m) / "templates")')"
+          test -d "$DIR"
+          echo "dir=$DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Check every shipped template against the workflow schema
+        env:
+          COMFYUI_TEMPLATES_DIR: ${{ steps.corpus.outputs.dir }}
+        run: pnpm vitest run src/platform/workflow/validation/schemas/shippedTemplates.test.ts
