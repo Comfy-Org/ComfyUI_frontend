@@ -15,8 +15,9 @@ on:
         type: string
 
 concurrency:
-  group: release-recover-tag-${{ inputs.branch }}
+  group: release-recover-tag
   cancel-in-progress: false
+  queue: max
 
 jobs:
   recover:
