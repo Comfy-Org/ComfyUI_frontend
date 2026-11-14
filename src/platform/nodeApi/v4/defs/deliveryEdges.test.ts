@@ -130,10 +130,10 @@ describe('delivering hooks at the edges', () => {
 
   describe('saved state', () => {
     it('copies saved state only when a hook asks for it', () => {
-      const node = addedNode()
-      const saved = node.serialize()
+      const saved = addedNode().serialize()
       const stringify = vi.spyOn(JSON, 'stringify')
       const copiesWhileConfiguring = () => {
+        const node = addedNode()
         stringify.mockClear()
         node.configure(saved)
         return stringify.mock.calls.length

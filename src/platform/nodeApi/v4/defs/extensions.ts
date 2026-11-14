@@ -27,9 +27,7 @@ export interface NodeType {
 
 /** What the extensions need from whoever delivers their hooks. */
 export interface HookInstaller {
-  /** Records a class registered for a type, so its nodes count as the type's. */
-  registered(nodeType: NodeType): void
-  /** Makes sure the type's nodes, those that exist and those to come, call back for each of `hooks`. */
+  /** Makes sure the nodes made from the type's class call back for each of `hooks`. */
   install(nodeType: NodeType, hooks: readonly HookName[]): void
   /** The number of applied extensions with a callback for some hook changed. */
   demandChanged(): void
@@ -64,13 +62,16 @@ export interface Extensions {
   nodeType(type: string): NodeType | undefined
   /** Every type, in the order it first registered. */
   nodeTypes(): readonly NodeType[]
-  /** The callbacks for `hook` on `type`, in the order they were added. */
+  /** The callbacks for `hook` on `type` of the extensions made before a node joined, in the order they were added. */
   callbacksFor<K extends HookName>(
     type: string,
-    hook: K
+    hook: K,
+    joined: number
   ): readonly HookCallbacks[K][]
   /** How many applied extensions have a callback for `hook`. */
   demand(hook: HookName): number
+  /** The number of extensions made so far. */
+  clock(): number
   /** Changes each time an extension's hooks are removed from a type. */
   revision(): number
 }
@@ -175,7 +176,6 @@ export function createExtensions(installer: HookInstaller): Extensions {
     typeRegistered(nodeType) {
       removeApplications(nodeType.type, () => true)
       nodeTypes.set(nodeType.type, nodeType)
-      installer.registered(nodeType)
       const candidate = candidateFor(nodeType)
       for (const extension of Array.from(extensions)) {
         applyIfSelected(extension, nodeType, candidate)
@@ -192,11 +192,12 @@ export function createExtensions(installer: HookInstaller): Extensions {
 
     nodeType: (type) => nodeTypes.get(type),
     nodeTypes: () => Array.from(nodeTypes.values()),
-    callbacksFor(type, hook) {
-      return (applications.get(type) ?? []).flatMap(
-        ({ callbacks }) => callbacks[hook]
-      )
+    callbacksFor(type, hook, joined) {
+      return (applications.get(type) ?? [])
+        .filter(({ extension }) => extension.sequence <= joined)
+        .flatMap(({ callbacks }) => callbacks[hook])
     },
+    clock: () => sequence,
     demand: (hook) => demand.get(hook) ?? 0,
     revision: () => revision
   }

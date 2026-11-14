@@ -59,7 +59,8 @@ registered, so `extend` cannot depend on the order.
    order their extensions were made, whatever order the applications ran in,
    so an extension made inside another's `apply` keeps its place when the type
    registers again. An extension made after nodes of the type exist reaches
-   them too (decision 17). Every stored pack extends while its module
+   only the nodes that join a graph after it was made (decision 17). Every
+   stored pack extends while its module
    evaluates: the 63 `extend` calls that are not at the top of their module,
    in 30 packs, run in a loop or a function the module calls as it loads,
    and none from an event, a timer or `onReady`.
@@ -165,35 +166,55 @@ registered, so `extend` cannot depend on the order.
     graph, so a node in a subgraph has a handle there. A hook is called only
     for a node that is in a graph; a node being built, or one configured before
     it joins, has no handle yet.
-17. The API reaches a type's nodes the way packs do through
-    `beforeRegisterNodeDef`: it puts a dispatcher on the prototype of the class
-    the host made for the type, calling what was there first. A dispatcher is
-    put on a class the first time a hook needs it and stays, so extending and
-    unsubscribing any number of times leaves one dispatcher per method and
-    class. When a hook first needs a method on a class while nodes of the type
-    are in the open document, the API also puts the dispatcher on each of
-    those nodes' classes, earlier classes of the type included, and on each
-    node that has its own copy of the method: the host gives a node its own
-    `onConnectionsChange` when the error hooks track it
-    (`useErrorClearingHooks`), and its own `onRemoved` and `onResize` when it
-    gets a DOM widget (`domWidget.ts`), and such a copy calls the prototype's
-    method as it was when the copy was made. A node that copied the method
-    after the dispatcher was there already calls it, so no node hears a hook
-    twice. It looks up the callbacks for its type at each call, and again
-    when an extension's hooks were removed since, so a callback an extension
-    removed, even by an earlier hook of the same delivery, is not called, and
-    delivering to k callbacks costs k, not k squared. A dispatcher put on a
-    prototype delivers only for a node whose type is the type it was made
-    for, so a class registered under another name that extends a registered
-    class hears none of that class's hooks. A type the host
-    registers again gets a new class; its extensions are applied again and
-    their dispatchers are put on the new class. `onCreated` and menus are
-    found by the node's type name, not through a prototype, so they are given
-    only for a node whose class, or one it extends, is a class registered
-    through the API's index (by the host's hook or by `define`). A class a legacy pack registers over an extended type
-    therefore hears no hook at all, by name or by prototype, until the host
-    registers the type again; and a second API instance in one page does not
-    hear the nodes of a class only the first one registered.
+17. Hooks are listeners, not overrides. A hook reaches a node if the node
+    joined a graph after the extension that registered it was made, and then
+    every event of that node it covers, from the moment it joins; it never
+    reaches a node that was already in a graph, and it is never replayed for
+    past events (`onCreated` is not told of existing nodes). Each extension
+    has a number (the count of extensions made before it), and the API stamps
+    a node with the number of extensions made so far when it joins, through
+    the host's `add_node` graph intent, which a load, a paste, an undo or redo
+    and a node added to a subgraph all raise. A node is eligible for an
+    extension whose number is not above its stamp; a node that joined while
+    no extension had a hook has no stamp and is eligible for none made later.
+    Because the rule does not depend on how the host wired a node, a node that
+    core gave its own copy of a method (`useErrorClearingHooks`' per-node
+    `onConnectionsChange`, a DOM widget's `onRemoved` and `onResize`) behaves
+    like every other node that was already there: not reached by a late
+    extension, reached by one made before it joined. The API reaches the nodes
+    with a dispatcher put on the prototype of the class the host made for the
+    type, calling what was there first. It never changes a prototype chain,
+    never patches a node, and never replaces a method core or a pack put on a
+    node. A dispatcher is put on a class the first time a hook needs it and
+    stays, so extending and unsubscribing any number of times leaves one
+    dispatcher per method and class; a pack that assigns its own method on the
+    prototype or on a node over a dispatcher replaces it, as it would replace
+    any wrapper, and the node then hears no hook through that method. For a
+    notification the method the class already had runs first, unchanged; then
+    each reached extension's hooks run in the order the extensions were made.
+    A failing hook is reported and the others run. The dispatcher looks up the
+    callbacks for the type at each call, and again when an extension's hooks
+    were removed since, so a callback removed even by an earlier hook of the
+    same delivery is not called, and delivering to k callbacks costs k, not k
+    squared; a hook added during a delivery is not part of it. A hook sees a
+    value as a frozen copy and can change it only where its contract says so
+    (`onBeforeConnect` refuses with `false`, `onSerialize` adds fields, the
+    property event's `setValue` and `reject`); with several extensions, any
+    `false` refuses, the added fields are merged in order (a later extension's
+    field wins), and the last `setValue` wins. A dispatcher delivers only for
+    a node whose type is the one it was made for: a class registered under
+    another name that extends a registered class hears none of its hooks.
+    `onCreated` and menus are found by the node's type name, not through a
+    prototype, so they are given only for a node whose class, or one it
+    extends, has a dispatcher (the class the host registered for the type, or
+    one `define` made). A class a legacy pack registers over an extended type
+    hears no hook at all until the host registers the type again; and a
+    second API instance in one page does not hear the nodes of a class only
+    the first one registered. A node of a class the host replaced since is not
+    reached by an extension made after the replacement, as it is not one that
+    joined later. The API listens for the graph intent only while some
+    extension has a hook; a node cannot be told its stamp otherwise, which is
+    why an extension made while none did sees no node that joined before it.
 18. `onCreated` hears a node join a graph through the host's graph intents: the
     `add_node` intent `LGraph.add` announces, whose source is `load` while a
     workflow loads (`LGraph.configure`) and while API-JSON and A1111 imports
@@ -206,8 +227,8 @@ registered, so `extend` cannot depend on the order.
     reaches `onConfigured` right after `onCreated`, and overwrites what an
     `onCreated` hook set from defaults. Telling a paste apart needs the host to
     mark clipboard adds, which is a core change (ticket draft in the report).
-    The API listens for intents only while some extension has an `onCreated`
-    or `onConfigured` hook.
+    The API listens for intents while some extension has a hook (decision
+    17).
 19. `onConfigured` gives a frozen JSON copy of the saved node, made only when
     some hook asks for it. A node
     configured before it joined a graph is told once it joins, after
@@ -347,6 +368,32 @@ registered, so `extend` cannot depend on the order.
     no asynchronous hooks. `onPromptSerialize` was awaited, and `onDrop` was
     asynchronous, so that a sandboxed pack could answer; neither is built.
 
+42. Conversion rows (V1 pattern, V4 form, not one to one because):
+    - A prototype patch or `nodeCreated` override made after nodes exist,
+      which reached those nodes (unless core gave them a copy) -> a late
+      `extend`, which reaches only nodes that join afterwards. The V4 form is
+      the same for every node whatever core did to it; the pack reads
+      existing nodes through `comfy.graph`.
+    - An override that reads or writes `this` -> a hook given a handle and
+      frozen copies; fields go through the read and edit members.
+    - An override that runs its code before the previous method, or changes
+      its arguments or return value -> no form: hooks run after the method
+      the class had, and answer only where the contract says (decision 17).
+    - An override whose exception stops the caller -> a hook that throws is
+      reported and the host and the other hooks go on.
+    - An override that also runs for a node being built or not yet added (a
+      `setSize` or `setProperty` in a constructor) -> hooks run only for a
+      node in a graph (decision 16).
+    - `nodeCreated` at construction -> `onCreated` when the node joins a
+      graph (decision 18).
+    - An `onSerialize` override that edits the saved object -> hooks return the
+      fields to add, and refuse a field the node saves itself.
+    - Overrides that run in module order -> hooks in the order the
+      extensions were made (decision 3).
+    - An assignment over a method -> unchanged: it replaces the dispatcher.
+    - A subclass registered under another name -> hears none of the hooks of
+      the class it extends; extend its own type.
+
 ## Alternatives considered
 
 - Call the API from `litegraphService.registerNodeDef`, as the earlier
@@ -392,10 +439,9 @@ registered, so `extend` cannot depend on the order.
   is false for a subgraph's id.
 - Hooks on a type run in the order their extensions were made, a definition's
   own first, however the pack modules loaded.
-- An extension made late reaches the nodes of the open document only; a node
-  in a graph the editor has not opened is made when it opens, from the
-  current class. Finding the existing nodes costs a pass over the open
-  document each time a hook first needs a method on a class.
+- An extension made late reaches the nodes that join a graph afterwards, and
+  never one that was already there (decision 17); a pack that needs the
+  existing nodes reads them with `comfy.graph` and acts on them itself.
 - A legacy pack that replaces a prototype method without calling the one it
   replaced drops the API's dispatcher for that type, as it drops another
   pack's today.

@@ -1,5 +1,6 @@
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IContextMenuValue, LGraph } from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 
 import {
   callListener,
@@ -21,6 +22,7 @@ import { menuEntry } from './nodeMenu'
 import type { CheckedMenuItem } from './nodeMenu'
 import { pointerInstallers } from './pointerDispatch'
 import { propertyInstallers } from './propertyDispatch'
+import { HOOK_NAMES } from './nodeHooks'
 import type { HookName } from './nodeHooks'
 
 const METHODS_FOR: Readonly<Record<HookName, readonly string[]>> = {
@@ -45,36 +47,25 @@ interface HookDispatch extends HookInstaller {
 export function createHookDispatch(
   nodes: NodeHandles,
   source: HookSource,
-  copyOfSaved: SavedCopier,
-  openGraph: () => LGraph | null
+  copyOfSaved: SavedCopier
 ): HookDispatch {
   const installed = new WeakMap<LGraphNode, Set<string>>()
   const knownPrototypes = new WeakSet<LGraphNode>()
+  const joined = new WeakMap<LGraphNode, number>()
+  let stopHearingAdds: (() => void) | undefined
   const failedMenuItems = new WeakSet<CheckedMenuItem>()
 
   function isInGraph(node: LGraphNode): boolean {
     return node.graph?.getNodeById(node.id) === node
   }
 
-  function knownPrototypeOf(node: LGraphNode): LGraphNode | undefined {
+  function isMadeFromKnownClass(node: LGraphNode): boolean {
     let prototype: unknown = Object.getPrototypeOf(node)
     while (prototype instanceof LGraphNode) {
-      if (knownPrototypes.has(prototype)) return prototype
+      if (knownPrototypes.has(prototype)) return true
       prototype = Object.getPrototypeOf(prototype)
     }
-    return undefined
-  }
-
-  function isMadeFromKnownClass(node: LGraphNode): boolean {
-    return knownPrototypeOf(node) !== undefined
-  }
-
-  function liveNodesOf(type: string): LGraphNode[] {
-    const root = openGraph()?.rootGraph
-    if (!root) return []
-    return [root, ...root.subgraphs.values()].flatMap((graph) =>
-      graph.nodes.filter((node) => node.type === type)
-    )
+    return false
   }
 
   function menuEntryReportedOnce(item: CheckedMenuItem, handle: NodeHandle) {
@@ -90,7 +81,8 @@ export function createHookDispatch(
   }
 
   const deliver: Deliver = (type, hook, node, call) => {
-    const callbacks = source.callbacksFor(type, hook)
+    const stamp = joined.get(node) ?? 0
+    const callbacks = source.callbacksFor(type, hook, stamp)
     const { graph } = node
     if (callbacks.length === 0 || node.type !== type) return []
     if (!graph || !isInGraph(node)) return []
@@ -101,7 +93,7 @@ export function createHookDispatch(
     return callbacks.map((callback) => {
       if (source.revision() !== revision) {
         revision = source.revision()
-        current = new Set<unknown>(source.callbacksFor(type, hook))
+        current = new Set<unknown>(source.callbacksFor(type, hook, stamp))
       }
       return !current || current.has(callback)
         ? callListener(hook, () => call(callback, handle))
@@ -125,35 +117,30 @@ export function createHookDispatch(
   }
 
   return {
-    registered(nodeType: NodeType) {
-      knownPrototypes.add(nodeType.nodeClass.prototype)
-    },
     install(nodeType: NodeType, hooks: readonly HookName[]) {
-      const methods = new Set(hooks.flatMap((hook) => METHODS_FOR[hook]))
-      const addedTo = new Map<LGraphNode, readonly string[]>()
-      const installOn = (prototype: LGraphNode) => {
-        if (addedTo.has(prototype)) return
-        const done = installed.get(prototype) ?? new Set<string>()
-        installed.set(prototype, done)
-        const added = [...methods].filter((method) => !done.has(method))
-        for (const method of added) {
-          done.add(method)
-          installers[method](prototype, nodeType.type)
-        }
-        addedTo.set(prototype, added)
-      }
-      installOn(nodeType.nodeClass.prototype)
-      for (const node of liveNodesOf(nodeType.type)) {
-        const prototype = knownPrototypeOf(node)
-        if (!prototype) continue
-        installOn(prototype)
-        for (const method of addedTo.get(prototype) ?? []) {
-          if (Object.hasOwn(node, method))
-            installers[method](node, nodeType.type)
-        }
+      const { prototype } = nodeType.nodeClass
+      knownPrototypes.add(prototype)
+      const done = installed.get(prototype) ?? new Set<string>()
+      installed.set(prototype, done)
+      for (const method of hooks.flatMap((hook) => METHODS_FOR[hook])) {
+        if (done.has(method)) continue
+        done.add(method)
+        installers[method](prototype, nodeType.type)
       }
     },
-    demandChanged: lifecycle.demandChanged,
+    demandChanged() {
+      const needed = HOOK_NAMES.some((hook) => source.demand(hook) > 0)
+      if (needed && !stopHearingAdds) {
+        stopHearingAdds = onGraphIntent((intent) => {
+          if (intent.type !== 'add_node') return
+          joined.set(intent.node, source.clock())
+          lifecycle.nodeAdded(intent.node, intent.source === 'load')
+        })
+      } else if (!needed && stopHearingAdds) {
+        stopHearingAdds()
+        stopHearingAdds = undefined
+      }
+    },
     menuItemsFor(node) {
       if (!isMadeFromKnownClass(node)) return []
       const entries = deliver(
