@@ -49,6 +49,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { resetAccountScopedState } from '@/platform/auth/accountStateReset'
 import { provideAuthStore } from '@/platform/auth/authStoreAccess'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
@@ -216,6 +217,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (identityChanged) {
       clearOnboardingReplay(previousUserId)
       useTeamWorkspaceStore().resetForIdentityChange()
+      resetAccountScopedState({ signedIn: nextUserId !== null })
       invalidateRemoteConfig()
     }
 

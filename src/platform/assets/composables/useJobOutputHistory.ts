@@ -8,6 +8,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { api } from '@/scripts/api'
 import { TaskItemImpl } from '@/stores/queueStore'
 import type { PagedList } from '@/utils/pagedList'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
   const assetItems: AssetItem[] = []
@@ -40,7 +41,8 @@ const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000
 
 export const useJobOutputHistory = createSharedComposable(
-  (): PagedList<AssetItem> => {
+  (): PagedList<AssetItem> & { clear: () => void } => {
+    let identityController = new AbortController()
     const historyOffset = ref(0)
     const hasMoreHistory = ref(true)
     const isLoadingMore = ref(false)
@@ -49,11 +51,14 @@ export const useJobOutputHistory = createSharedComposable(
     const fetchHistoryAssets = async (
       loadMore = false
     ): Promise<AssetItem[]> => {
+      const { signal } = identityController
       const offset = loadMore ? historyOffset.value : 0
       const history = await api.getHistory(BATCH_SIZE, {
         offset,
+        signal,
         throwOnError: true
       })
+      signal.throwIfAborted()
       const newAssets = mapHistoryToAssets(history)
       const items = loadMore ? [...historyAssets.value] : []
       const loadedIds = new Set(items.map(({ id }) => id))
@@ -90,6 +95,7 @@ export const useJobOutputHistory = createSharedComposable(
           try {
             historyAssets.value = await fetchHistoryAssets(false)
           } catch (err) {
+            if (isAbortError(err)) return
             reportError(err, {
               errorType: 'failure_loading_job_history',
               surface: 'assets'
@@ -104,10 +110,11 @@ export const useJobOutputHistory = createSharedComposable(
     const updateHistory = () => {
       refreshRequest++
       if (!refreshPromise) {
-        refreshPromise = historyQueue.then(doUpdateHistory).finally(() => {
-          refreshPromise = undefined
+        const operation = historyQueue.then(doUpdateHistory).finally(() => {
+          if (refreshPromise === operation) refreshPromise = undefined
         })
-        historyQueue = refreshPromise
+        refreshPromise = operation
+        historyQueue = operation
       }
       return refreshPromise
     }
@@ -118,6 +125,7 @@ export const useJobOutputHistory = createSharedComposable(
         historyAssets.value = await fetchHistoryAssets(true)
         return true
       } catch (err) {
+        if (isAbortError(err)) return false
         reportError(err, {
           errorType: 'failure_loading_job_history',
           surface: 'assets'
@@ -133,15 +141,32 @@ export const useJobOutputHistory = createSharedComposable(
         const operation = historyQueue.then(() =>
           hasMoreHistory.value ? doLoadMoreHistory() : false
         )
-        loadMorePromise = operation.finally(() => {
-          loadMorePromise = undefined
+        const settled = operation.finally(() => {
+          if (loadMorePromise === settled) loadMorePromise = undefined
         })
+        loadMorePromise = settled
         historyQueue = operation.then(() => undefined)
       }
       return loadMorePromise
     }
 
+    /**
+     * Abort the previous identity's requests and drop every loaded item. The
+     * next refresh or page load starts a new operation instead of joining one
+     * issued for the previous identity.
+     */
+    const clear = () => {
+      identityController.abort()
+      identityController = new AbortController()
+      historyOffset.value = 0
+      hasMoreHistory.value = true
+      historyAssets.value = []
+      refreshPromise = undefined
+      loadMorePromise = undefined
+    }
+
     const outputAssets = {
+      clear,
       hasMore: hasMoreHistory,
       invalidate: updateHistory,
       isLoading: computed(() => historyLoading.value || isLoadingMore.value),

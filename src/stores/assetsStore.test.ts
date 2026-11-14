@@ -1708,6 +1708,213 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
   })
 })
 
+describe('assetsStore - reset() on identity change', () => {
+  function deferred<T>() {
+    let resolve!: (value: T) => void
+    let reject!: (reason: unknown) => void
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res
+      reject = rej
+    })
+    return { promise, resolve, reject }
+  }
+
+  const inputFilesResponse = (names: string[]) =>
+    new Response(JSON.stringify(names), {
+      headers: { 'Content-Type': 'application/json' }
+    })
+
+  it('clears loaded history outputs and restarts paging from the head', async () => {
+    vi.mocked(api.getHistory).mockResolvedValue(createHistoryPage(0))
+    const store = useAssetsStore()
+    await store.outputAssets.invalidate()
+    expect(toValue(store.outputAssets.items)).toHaveLength(200)
+
+    store.reset()
+
+    expect(toValue(store.outputAssets.items)).toEqual([])
+    expect(toValue(store.outputAssets.hasMore)).toBe(true)
+
+    await store.outputAssets.loadMore()
+    expect(api.getHistory).toHaveBeenLastCalledWith(
+      200,
+      expect.objectContaining({ offset: 0 })
+    )
+  })
+
+  it('does not commit a history fetch that resolves after the reset', async () => {
+    const previousIdentityPage = deferred<JobListItem[]>()
+    vi.mocked(api.getHistory).mockReturnValueOnce(previousIdentityPage.promise)
+    const store = useAssetsStore()
+    const inFlightRefresh = store.outputAssets.invalidate()
+    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledOnce())
+
+    store.reset()
+    previousIdentityPage.resolve(createHistoryPage(0))
+    await inFlightRefresh
+
+    expect(toValue(store.outputAssets.items)).toEqual([])
+    expect(toValue(store.outputAssets.isLoading)).toBe(false)
+  })
+
+  it('aborts the previous identity history request and loads the new one', async () => {
+    let previousSignal: AbortSignal | undefined
+    vi.mocked(api.getHistory)
+      .mockResolvedValueOnce([])
+      .mockImplementationOnce(
+        (_max, options) =>
+          new Promise<JobListItem[]>((resolve) => {
+            previousSignal = options?.signal
+            previousSignal?.addEventListener('abort', () =>
+              resolve(createHistoryPage(0))
+            )
+          })
+      )
+      .mockResolvedValueOnce(createHistoryPage(1000))
+    const store = useAssetsStore()
+    await store.outputAssets.loadMore()
+    const previousRefresh = store.outputAssets.invalidate()
+    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledTimes(2))
+
+    store.reset()
+    await store.outputAssets.invalidate()
+    await previousRefresh
+
+    expect(previousSignal?.aborted).toBe(true)
+    const ids = toValue(store.outputAssets.items).map(({ id }) => id)
+    expect(ids).toHaveLength(200)
+    expect(ids).not.toContain('job_0')
+  })
+
+  it('does not commit an input fetch that resolves after the reset', async () => {
+    const previousIdentityInputs = deferred<Response>()
+    vi.mocked(fetch).mockReturnValueOnce(previousIdentityInputs.promise)
+    const store = useAssetsStore()
+    const inFlightRefresh = store.inputAssets.invalidate()
+
+    store.reset()
+    previousIdentityInputs.resolve(inputFilesResponse(['account-a.png']))
+    await inFlightRefresh
+
+    expect(toValue(store.inputAssets.items)).toEqual([])
+    expect(toValue(store.inputAssets.isLoading)).toBe(false)
+  })
+
+  it('clears loaded input assets', async () => {
+    vi.mocked(fetch).mockImplementation(async () =>
+      inputFilesResponse(['account-a.png'])
+    )
+    const store = useAssetsStore()
+    await store.inputAssets.invalidate()
+    expect(toValue(store.inputAssets.items)).toHaveLength(1)
+
+    store.reset()
+
+    expect(toValue(store.inputAssets.items)).toEqual([])
+  })
+
+  it('drops the cached model inventory', async () => {
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue({
+      assets: [fromPartial({ id: 'm1', name: 'a.safetensors', tags: [] })],
+      total: 1,
+      has_more: false
+    })
+    const store = useAssetsStore()
+    await store.updateModelsForTag('models')
+    expect(store.getAssets('tag:models')).toHaveLength(1)
+
+    store.reset()
+
+    expect(store.getAssets('tag:models')).toEqual([])
+    expect(store.hasAssetKey('tag:models')).toBe(false)
+    expect(assetService.invalidateModelBuckets).toHaveBeenCalled()
+  })
+
+  describe('with the assets API', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    })
+
+    afterEach(() => {
+      mockIsCloud.value = false
+    })
+
+    it('replaces the previous identity outputs with the new identity', async () => {
+      let identity = 'account-a'
+      vi.mocked(api.fetchApi).mockImplementation(async (url) => {
+        const body: AssetResponse = url.includes('tags_any=input')
+          ? { assets: [], total: 0, has_more: false }
+          : {
+              assets: [
+                fromPartial<AssetItem>({
+                  id: `${identity}-output`,
+                  name: `${identity}.png`,
+                  tags: ['output'],
+                  created_at: '2026-09-22T00:00:00Z',
+                  updated_at: '2026-09-22T00:00:00Z'
+                })
+              ],
+              total: 1,
+              has_more: false
+            }
+        return new Response(JSON.stringify(body), {
+          headers: { 'Content-Type': 'application/json' }
+        })
+      })
+      const store = useAssetsStore()
+      await vi.waitFor(() =>
+        expect(toValue(store.outputAssets.items).map(({ id }) => id)).toEqual([
+          'account-a-output'
+        ])
+      )
+
+      identity = 'account-b'
+      store.reset()
+
+      await vi.waitFor(() =>
+        expect(toValue(store.outputAssets.items).map(({ id }) => id)).toEqual([
+          'account-b-output'
+        ])
+      )
+    })
+
+    it('clears loaded assets without reloading when no account is signed in', async () => {
+      vi.mocked(api.fetchApi).mockImplementation(
+        async () =>
+          new Response(
+            JSON.stringify({
+              assets: [
+                fromPartial<AssetItem>({
+                  id: 'account-a-output',
+                  name: 'account-a.png',
+                  tags: ['output'],
+                  created_at: '2026-09-22T00:00:00Z',
+                  updated_at: '2026-09-22T00:00:00Z'
+                })
+              ],
+              total: 1,
+              has_more: false
+            }),
+            { headers: { 'Content-Type': 'application/json' } }
+          )
+      )
+      const store = useAssetsStore()
+      await vi.waitFor(() =>
+        expect(toValue(store.outputAssets.items)).toHaveLength(1)
+      )
+      vi.mocked(api.fetchApi).mockClear()
+
+      store.reset({ signedIn: false })
+      await store.outputAssets.invalidate([])
+
+      expect(toValue(store.outputAssets.items)).toEqual([])
+      expect(toValue(store.inputAssets.items)).toEqual([])
+      expect(api.fetchApi).not.toHaveBeenCalled()
+    })
+  })
+})
+
 describe('assetsStore - assets.seed.completed', () => {
   const seed = { created: 0, elapsed: 0, enriched: 0, skipped: 0, total: 0 }
   const invalidated = { invalidate: 1, loadNew: 0 }

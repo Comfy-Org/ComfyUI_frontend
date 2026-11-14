@@ -30,6 +30,7 @@ import type {
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
+  clearAll,
   useAssetsQuery,
   invalidateAll,
   loadNewAll
@@ -44,11 +45,13 @@ import {
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { assetService } from '@/platform/assets/services/assetService'
+import { onAccountIdentityChange } from '@/platform/auth/accountStateReset'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { AssetSeedCompletedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
+import { isAbortError } from '@/utils/typeGuardUtil'
 
 import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
@@ -56,11 +59,14 @@ import { useModelToNodeStore } from './modelToNodeStore'
 /**
  * Fetch input files from the internal API (OSS version)
  */
-async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
+async function fetchInputFilesFromAPI(
+  signal: AbortSignal
+): Promise<AssetItem[]> {
   const response = await fetch(api.internalURL('/files/input'), {
     headers: {
       'Comfy-User': api.user
-    }
+    },
+    signal
   })
 
   if (!response.ok) {
@@ -68,6 +74,7 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
   }
 
   const filenames: string[] = await response.json()
+  signal.throwIfAborted()
   return filenames.map((name, index) =>
     mapInputFileToAssetItem(name, index, 'input')
   )
@@ -97,19 +104,25 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  const fetchInputFiles = fetchInputFilesFromAPI
+  let identityController = new AbortController()
 
   const {
     state: rawInputAssets,
     isLoading: inputLoading,
     execute: executeUpdateInputs
-  } = useAsyncState(fetchInputFiles, [], {
-    immediate: false,
-    resetOnExecute: false,
-    onError: (err) => {
-      console.error('Error fetching input assets:', err)
+  } = useAsyncState(
+    () => fetchInputFilesFromAPI(identityController.signal),
+    [],
+    {
+      immediate: false,
+      resetOnExecute: false,
+      onError: (err) => {
+        if (!isAbortError(err)) {
+          console.error('Error fetching input assets:', err)
+        }
+      }
     }
-  })
+  )
 
   const historyInputs: PagedList<AssetItem> = {
     hasMore: false,
@@ -122,7 +135,10 @@ export const useAssetsStore = defineStore('assets', () => {
     loadNew: async () => undefined
   }
 
-  function useHistoryAssets(): [PagedList<AssetItem>, PagedList<AssetItem>] {
+  function useHistoryAssets(): [
+    ReturnType<typeof useJobOutputHistory>,
+    PagedList<AssetItem>
+  ] {
     const history = useJobOutputHistory()
     const resolvedAssetsCache = ref<Partial<Record<string, AssetItem[]>>>({})
     watch(
@@ -163,6 +179,7 @@ export const useAssetsStore = defineStore('assets', () => {
   const outputAssets = ref<PagedList<AssetItem>>(undefined!)
   const flatOutputAssets = ref<PagedList<AssetItem>>(undefined!)
   const allAssets = ref<PagedList<AssetItem>>(undefined!)
+  let historyOutputs: ReturnType<typeof useHistoryAssets>[0] | undefined
   let assetsScope: EffectScope | undefined
   onScopeDispose(() => assetsScope?.stop())
   watch(
@@ -170,6 +187,7 @@ export const useAssetsStore = defineStore('assets', () => {
     (isAssets) => {
       assetsScope?.stop()
       assetsScope = effectScope()
+      historyOutputs = undefined
       assetsScope.run(() => {
         if (isAssets) {
           inputAssets.value = useAssetsQuery({ tags_any: ['input'] })
@@ -185,7 +203,8 @@ export const useAssetsStore = defineStore('assets', () => {
           })
         } else {
           inputAssets.value = historyInputs
-          ;[outputAssets.value, flatOutputAssets.value] = useHistoryAssets()
+          ;[historyOutputs, flatOutputAssets.value] = useHistoryAssets()
+          outputAssets.value = historyOutputs
           allAssets.value = new WrappedList(
             flatOutputAssets.value,
             (outputItems) => [...toValue(historyInputs.items), ...outputItems]
@@ -874,6 +893,21 @@ export const useAssetsStore = defineStore('assets', () => {
       invalidateCategory('tag:models')
     }
 
+    /**
+     * Drop every cached category, aborting any walk still in flight. Used on an
+     * identity change, where the whole model inventory belongs to the previous
+     * account.
+     */
+    function invalidateAllCategories(): void {
+      const categories = new Set([
+        ...modelStateByCategory.value.keys(),
+        ...pendingRequestByCategory.keys(),
+        ...pendingPromiseByCategory.keys(),
+        ...abortByCategory.keys()
+      ])
+      for (const category of categories) invalidateCategory(category)
+    }
+
     return {
       getAssets,
       isLoading,
@@ -886,7 +920,8 @@ export const useAssetsStore = defineStore('assets', () => {
       invalidateCategory,
       updateAssetMetadata,
       updateAssetTags,
-      invalidateModelsForCategory
+      invalidateModelsForCategory,
+      invalidateAllCategories
     }
   }
 
@@ -902,8 +937,23 @@ export const useAssetsStore = defineStore('assets', () => {
     invalidateCategory,
     updateAssetMetadata,
     updateAssetTags,
-    invalidateModelsForCategory
+    invalidateModelsForCategory,
+    invalidateAllCategories
   } = getModelState()
+
+  /** Drop the previous account's cached assets and abort its requests. */
+  const reset = ({ signedIn = true }: { signedIn?: boolean } = {}) => {
+    identityController.abort()
+    identityController = new AbortController()
+
+    rawInputAssets.value = []
+    historyOutputs?.clear()
+    if (flags.assetsEnabled) void (signedIn ? invalidateAll() : clearAll())
+
+    invalidateAllCategories()
+    assetService.invalidateModelBuckets()
+  }
+  onScopeDispose(onAccountIdentityChange('assets', reset))
 
   // Watch for completed downloads and refresh model caches
   whenever(
@@ -954,6 +1004,7 @@ export const useAssetsStore = defineStore('assets', () => {
     outputAssets,
     invalidateAll,
     loadOutputAsset,
+    reset,
 
     // Deletion tracking
     deletingAssetIds,

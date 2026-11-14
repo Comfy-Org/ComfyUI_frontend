@@ -19,7 +19,9 @@ vi.mock(
   async () => {
     const { mockPagedList } = await import('@/utils/__tests__/pagedListUtils')
     const { onTestFinished } = await import('vitest')
-    const history = mockPagedList<AssetItem>({})
+    const history = Object.assign(mockPagedList<AssetItem>({}), {
+      clear: vi.fn()
+    })
     return {
       useJobOutputHistory: vi.fn(() => {
         onTestFinished(() => {
