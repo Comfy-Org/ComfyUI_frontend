@@ -190,6 +190,8 @@ export const useExtensionStore = defineStore('extension', () => {
   }
 
   function unregisterExtension(name: string) {
+    if (isExtensionInstalled(name))
+      widgetAugmentations.delete(extensionByName.value[name])
     delete extensionByName.value[name]
   }
 

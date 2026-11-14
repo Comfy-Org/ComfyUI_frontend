@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import { useWidgetAugmentations } from '@/platform/extensions/useWidgetAugmentations'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -35,6 +36,28 @@ describe('extensionStore', () => {
       store.registerExtension(extension)
 
       expect(store.extensions[0]).toBe(extension)
+    })
+
+    it('does not restore removed augmentations when registering the same object again', () => {
+      const store = useExtensionStore()
+      const target = { nodeType: 'TestNode', widgetName: 'prompt' }
+      const extension: ComfyExtension = {
+        name: 'test.reregister',
+        widgetAugmentations: [
+          { id: 'hint', kind: 'hint', target, text: () => 'Prompt hint' }
+        ]
+      }
+      const { contributions } = useWidgetAugmentations(() => target)
+      store.registerExtension(extension)
+      expect(contributions.value.map((item) => item.key)).toEqual([
+        'test.reregister:hint'
+      ])
+
+      store.unregisterExtension(extension.name)
+      delete extension.widgetAugmentations
+      store.registerExtension(extension)
+
+      expect(contributions.value).toEqual([])
     })
 
     it('retains prototype hooks when excluding malformed augmentations', () => {
