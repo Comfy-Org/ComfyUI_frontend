@@ -661,7 +661,10 @@ describe('useExecutionStore - workflowStatus', () => {
     try {
       callStoreJob('job-1', workflowA)
       fireExecutionStart('job-1')
-      api.dispatchCustomEvent('executing', null)
+      api.dispatchCustomEvent('executing_with_metadata', {
+        node: null,
+        prompt_id: 'job-1'
+      })
       now.mockReturnValue(142)
       fireExecutionSuccess('job-1')
 
@@ -1825,6 +1828,10 @@ describe('useExecutionStore - RAF batching', () => {
   beforeEach(() => {
     store = useExecutionStore()
     store.bindExecutionEvents()
+    api.dispatchCustomEvent('execution_start', {
+      prompt_id: 'job-1',
+      timestamp: 0
+    })
   })
 
   describe('handleProgress', () => {
@@ -2114,7 +2121,10 @@ describe('useExecutionStore - RAF batching', () => {
         }
       })
 
-      apiEvents.dispatchEvent(new CustomEvent('executing', { detail: '1' }))
+      api.dispatchCustomEvent('executing_with_metadata', {
+        node: '1',
+        prompt_id: 'job-1'
+      })
       vi.advanceTimersToNextFrame()
 
       expect(store.nodeProgressStates['1']).toEqual(
@@ -2138,7 +2148,10 @@ describe('useExecutionStore - RAF batching', () => {
         }
       })
 
-      api.dispatchCustomEvent('executing', null)
+      api.dispatchCustomEvent('executing_with_metadata', {
+        node: null,
+        prompt_id: 'job-1'
+      })
       vi.advanceTimersToNextFrame()
 
       expect(Object.keys(store.nodeProgressStates)).toHaveLength(0)
@@ -2523,7 +2536,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         node: '1'
       }
 
-      fire('executing', null)
+      fire('executing_with_metadata', { node: null, prompt_id: 'job-1' })
 
       expect(store._executingNodeProgress).toBeNull()
       expect(store.activeJobId).toBeNull()
@@ -2532,7 +2545,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     it('keeps the active job when a numeric node id is executing', () => {
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
-      fire('executing', 123)
+      fire('executing_with_metadata', { node: 123, prompt_id: 'job-1' })
 
       expect(store.activeJobId).toBe('job-1')
       expect(store.queuedJobs['job-1']).toBeDefined()
@@ -2541,7 +2554,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     it('discards a progress update still queued when the next node starts', () => {
       fire('progress', { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' })
 
-      fire('executing', 'n2')
+      fire('executing_with_metadata', { node: 'n2', prompt_id: 'job-1' })
       vi.advanceTimersToNextFrame()
 
       expect(store._executingNodeProgress).toBeNull()
@@ -2552,8 +2565,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     it('sets _executingNodeProgress from the event payload (RAF-batched)', () => {
       const payload = { value: 3, max: 10, prompt_id: 'job-1', node: 'n1' }
 
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
       fire('progress', payload)
-      // RAF-batched: not applied synchronously
       expect(store._executingNodeProgress).toBeNull()
 
       vi.advanceTimersToNextFrame()
@@ -2720,7 +2733,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         'execution_interrupted',
         'execution_success',
         'executed',
-        'executing',
+        'executing_with_metadata',
         'progress',
         'progress_state',
         'execution_error',
@@ -2802,6 +2815,110 @@ describe('useExecutionStore - frames from a background workflow', () => {
     expect(store.activeJobId).toBeNull()
     expect(store.getWorkflowStatus(backgroundWorkflow)).toBe('running')
     expect(store.getWorkflowStatus(visibleWorkflow)).toBeUndefined()
+  })
+
+  it.for(['2', null])(
+    'keeps visible progress when a background job executes node %s',
+    (node) => {
+      fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+      fireProgressState('job-visible', '1')
+      fire('progress', {
+        value: 7,
+        max: 10,
+        prompt_id: 'job-visible',
+        node: '1'
+      })
+
+      fire('executing_with_metadata', { node, prompt_id: 'job-background' })
+      vi.advanceTimersToNextFrame()
+
+      expect(store.activeJobId).toBe('job-visible')
+      expect(store.executingNodeProgress).toBe(0.7)
+      expect(store.nodeProgressStates['1'].prompt_id).toBe('job-visible')
+    }
+  )
+
+  it('keeps the selected run when another run of the same workflow stops', () => {
+    queueJob('job-second', visibleWorkflow)
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-second', timestamp: 0 })
+    fire('progress', {
+      value: 7,
+      max: 10,
+      prompt_id: 'job-second',
+      node: '1'
+    })
+
+    fire('executing_with_metadata', {
+      node: null,
+      prompt_id: 'job-visible'
+    })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.activeJobId).toBe('job-second')
+    expect(store.executingNodeProgress).toBe(0.7)
+  })
+
+  it('ignores a node transition that supplies no prompt identity', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('progress', {
+      value: 7,
+      max: 10,
+      prompt_id: 'job-visible',
+      node: '1'
+    })
+
+    fire('executing_with_metadata', { node: null })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.activeJobId).toBe('job-visible')
+    expect(store.executingNodeProgress).toBe(0.7)
+  })
+
+  it('applies a background snapshot still queued when the visible job stops', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    const nodes = {
+      '1': {
+        value: 9,
+        max: 10,
+        state: 'running',
+        node_id: '1',
+        prompt_id: 'job-background'
+      }
+    } satisfies Record<string, NodeProgressState>
+    fire('progress_state', { prompt_id: 'job-background', nodes })
+
+    fire('executing_with_metadata', {
+      node: null,
+      prompt_id: 'job-visible'
+    })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.activeJobId).toBeNull()
+    expect(store.nodeProgressStatesByJob['job-background']).toEqual(nodes)
+  })
+
+  it('keeps visible scalar progress empty after the active job stops', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fireProgressState('job-background', '1')
+    fire('progress', {
+      value: 7,
+      max: 10,
+      prompt_id: 'job-background',
+      node: '1'
+    })
+
+    fire('executing_with_metadata', {
+      node: null,
+      prompt_id: 'job-visible'
+    })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.activeJobId).toBeNull()
+    expect(store._executingNodeProgress).toBeNull()
+    expect(store.nodeProgressStatesByJob['job-background']['1'].state).toBe(
+      'running'
+    )
   })
 
   it('records background progress per job without painting the canvas', () => {

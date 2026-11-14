@@ -896,6 +896,7 @@
           "src/scripts/__mocks__/**",
           "src/scripts/api.ts",
           "src/scripts/api.cancel.test.ts",
+          "src/scripts/api.executionEvents.test.ts",
           "src/scripts/api.featureFlags.test.ts",
           "src/scripts/api.fetchApi.test.ts",
           "src/scripts/api.folderPaths.test.ts",

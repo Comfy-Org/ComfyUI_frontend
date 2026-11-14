@@ -25,6 +25,7 @@ import type {
   ExecutionInterruptedWsMessage,
   ExecutionStartWsMessage,
   ExecutionSuccessWsMessage,
+  ExecutingWsMessage,
   JobId,
   NodeProgressState,
   NotificationWsMessage,
@@ -469,7 +470,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.addEventListener('execution_interrupted', handleExecutionInterrupted)
     api.addEventListener('execution_success', handleExecutionSuccess)
     api.addEventListener('executed', handleExecuted)
-    api.addEventListener('executing', handleExecuting)
+    api.addEventListener('executing_with_metadata', handleExecuting)
     api.addEventListener('progress', handleProgress)
     api.addEventListener('progress_state', handleProgressState)
     api.addEventListener('status', handleStatus)
@@ -484,7 +485,7 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('execution_interrupted', handleExecutionInterrupted)
     api.removeEventListener('execution_success', handleExecutionSuccess)
     api.removeEventListener('executed', handleExecuted)
-    api.removeEventListener('executing', handleExecuting)
+    api.removeEventListener('executing_with_metadata', handleExecuting)
     api.removeEventListener('progress', handleProgress)
     api.removeEventListener('progress_state', handleProgressState)
     api.removeEventListener('status', handleStatus)
@@ -697,20 +698,22 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<string | number | null>): void {
-    pendingProgressByJob.clear()
-    progressCoalescer.cancel()
-    if (e.detail == null) {
-      pendingProgressStatesByJob.clear()
-      progressStateCoalescer.cancel()
+  function handleExecuting(e: CustomEvent<ExecutingWsMessage>): void {
+    const { prompt_id: jobId, workflow_id: workflowId, node } = e.detail
+    if (!jobId) return
+    rememberStampedWorkflowId(jobId, workflowId)
+
+    if (node === null) {
+      cancelPendingProgressUpdates(jobId)
+    } else {
+      pendingProgressByJob.delete(jobId)
+      if (pendingProgressByJob.size === 0) progressCoalescer.cancel()
     }
+
+    if (activeJobId.value !== jobId) return
     _executingNodeProgress.value = null
 
-    if (!activeJob.value) return
-
-    if (e.detail == null) {
-      activeJobId.value = null
-    }
+    if (node === null) activeJobId.value = null
   }
 
   /**
@@ -807,7 +810,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const updates = [...pendingProgressByJob.values()]
     pendingProgressByJob.clear()
     for (const detail of updates) {
-      if (activeJobId.value && detail.prompt_id !== activeJobId.value) continue
+      if (detail.prompt_id !== activeJobId.value) continue
       _executingNodeProgress.value = detail
     }
   }, 'raf:progress')
