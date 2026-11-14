@@ -65,10 +65,22 @@ function pointAt(storage: TabStorage, pointer: Record<string, unknown>) {
 }
 
 const SENT: PaymentEvent = { type: 'start_sent' }
-const ANSWERED: PaymentEvent = { type: 'start_answered' }
+const REFUSED: PaymentEvent = { type: 'start_refused' }
 const UNANSWERED: PaymentEvent = { type: 'start_unanswered' }
+const accepted = (operationId: string): PaymentEvent => ({
+  type: 'start_accepted',
+  operationId
+})
 const succeeded = (operationId: string): PaymentEvent => ({
   type: 'payment_succeeded',
+  operationId
+})
+const failed = (operationId: string): PaymentEvent => ({
+  type: 'payment_failed',
+  operationId
+})
+const parked = (operationId: string): PaymentEvent => ({
+  type: 'payment_parked',
   operationId
 })
 
@@ -82,6 +94,11 @@ const completed = (reference: string): HandoffState => ({
   kind: 'ended',
   ending: 'completed',
   workspace: 'Studio',
+  reference
+})
+const checking = (reference: string): HandoffState => ({
+  kind: 'ended',
+  ending: 'payment_pending',
   reference
 })
 
@@ -122,45 +139,86 @@ describe('createHandoffBillingSession', () => {
       ended: UNCONFIRMED
     },
     {
-      name: 'a payment request Cloud refused, or one whose operation then failed',
-      arrange: (storage) => learn(storage, SENT, ANSWERED),
+      name: 'a payment request Cloud refused',
+      arrange: (storage) => learn(storage, SENT, REFUSED),
+      ended: LINK
+    },
+    {
+      name: 'a payment Cloud accepted whose operation the tab has not stored yet',
+      arrange: (storage) => learn(storage, SENT, accepted('op-1')),
+      ended: checking('op-1')
+    },
+    {
+      name: 'an accepted payment after an earlier request went unanswered',
+      arrange: (storage) =>
+        learn(storage, SENT, UNANSWERED, SENT, accepted('op-2')),
+      ended: checking('op-2')
+    },
+    {
+      name: 'an accepted payment while an earlier payment fails',
+      arrange: (storage) =>
+        learn(
+          storage,
+          SENT,
+          accepted('op-1'),
+          SENT,
+          accepted('op-2'),
+          failed('op-1')
+        ),
+      ended: checking('op-2')
+    },
+    {
+      name: 'an accepted payment whose operation then failed',
+      arrange: (storage) =>
+        learn(storage, SENT, accepted('op-1'), failed('op-1')),
       ended: LINK
     },
     {
       name: 'a payment this tab started and has not seen settle',
       arrange: (storage) => {
-        learn(storage, SENT, ANSWERED)
+        learn(storage, SENT, accepted('op-1'))
         pointAt(storage, { kind: 'topup' })
       },
-      ended: { kind: 'ended', ending: 'payment_pending', reference: 'op-1' }
+      ended: checking('op-1')
     },
     {
       name: 'a payment the server parked for reconciliation',
       arrange: (storage) => {
-        learn(storage, { type: 'payment_parked', operationId: 'op-1' })
+        learn(storage, SENT, accepted('op-1'), parked('op-1'))
         pointAt(storage, {
           kind: 'subscription',
           settled: 'reconciliation_needed',
           awaited: true
         })
       },
-      ended: { kind: 'ended', ending: 'payment_pending', reference: 'op-1' }
+      ended: checking('op-1')
     },
     {
       name: 'a parked payment a later, declined attempt replaced',
       arrange: (storage) =>
         learn(
           storage,
-          { type: 'payment_parked', operationId: 'op-1' },
           SENT,
-          ANSWERED
+          accepted('op-1'),
+          parked('op-1'),
+          SENT,
+          accepted('op-2'),
+          failed('op-2')
         ),
+      ended: UNCONFIRMED
+    },
+    {
+      name: 'a parked payment whose pointer a later cancellation took',
+      arrange: (storage) => {
+        learn(storage, SENT, accepted('op-1'), parked('op-1'))
+        pointAt(storage, { kind: 'cancel', operationId: 'op-2' })
+      },
       ended: UNCONFIRMED
     },
     {
       name: 'a payment that succeeded',
       arrange: (storage) => {
-        learn(storage, SENT, ANSWERED, succeeded('op-1'))
+        learn(storage, SENT, accepted('op-1'), succeeded('op-1'))
         pointAt(storage, { kind: 'topup', settled: 'succeeded' })
       },
       ended: completed('op-1')
@@ -174,13 +232,28 @@ describe('createHandoffBillingSession', () => {
     {
       name: 'a payment that succeeded before a later attempt was declined',
       arrange: (storage) =>
-        learn(storage, SENT, ANSWERED, succeeded('op-1'), SENT, ANSWERED),
+        learn(
+          storage,
+          SENT,
+          accepted('op-1'),
+          succeeded('op-1'),
+          SENT,
+          accepted('op-2'),
+          failed('op-2')
+        ),
       ended: completed('op-1')
     },
     {
       name: 'a payment that succeeded before a later request went unanswered',
       arrange: (storage) => {
-        learn(storage, SENT, ANSWERED, succeeded('op-1'), SENT, UNANSWERED)
+        learn(
+          storage,
+          SENT,
+          accepted('op-1'),
+          succeeded('op-1'),
+          SENT,
+          UNANSWERED
+        )
         pointAt(storage, { kind: 'topup', settled: 'succeeded' })
       },
       ended: UNCONFIRMED
@@ -194,12 +267,19 @@ describe('createHandoffBillingSession', () => {
     {
       name: 'an unanswered request followed by a payment that succeeded',
       arrange: (storage) =>
-        learn(storage, SENT, UNANSWERED, SENT, ANSWERED, succeeded('op-2')),
+        learn(
+          storage,
+          SENT,
+          UNANSWERED,
+          SENT,
+          accepted('op-2'),
+          succeeded('op-2')
+        ),
       ended: completed('op-2')
     },
     {
       name: 'an unanswered request followed by an attempt Cloud refused',
-      arrange: (storage) => learn(storage, SENT, UNANSWERED, SENT, ANSWERED),
+      arrange: (storage) => learn(storage, SENT, UNANSWERED, SENT, REFUSED),
       ended: UNCONFIRMED
     },
     {

@@ -154,6 +154,7 @@ function traceAcrossReload(stored: Record<string, unknown>): PaymentTrace {
   return {
     paid: typeof stored.paid === 'string' ? stored.paid : undefined,
     kept: typeof stored.kept === 'string' ? stored.kept : undefined,
+    accepted: typeof stored.accepted === 'string' ? stored.accepted : undefined,
     unanswered: sentBeforeReload ? 'lost' : undefined
   }
 }
@@ -244,12 +245,12 @@ function endingFrom(known: {
 }): HandoffState {
   const { trace, workspace } = known
   const payment = paymentIn(known.pointer, trace)
-  if (payment && payment.settled !== 'succeeded')
-    return {
-      kind: 'ended',
-      ending: 'payment_pending',
-      reference: payment.operationId
-    }
+  const unsettled =
+    payment && payment.settled !== 'succeeded'
+      ? payment.operationId
+      : trace.accepted
+  if (unsettled !== undefined)
+    return { kind: 'ended', ending: 'payment_pending', reference: unsettled }
   if (trace.unanswered) return UNCONFIRMED
   const reference = payment?.operationId ?? trace.paid
   if (reference !== undefined)

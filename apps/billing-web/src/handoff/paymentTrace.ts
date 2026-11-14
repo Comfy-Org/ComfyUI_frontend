@@ -18,17 +18,30 @@ export interface PaymentTrace {
   readonly paid?: string
   /** A payment the tab cannot account for: `sent` awaits its answer, `lost` never will get one. */
   readonly unanswered?: 'sent' | 'lost'
+  /** The operation of a payment Cloud accepted, until the tab learns what became of it. */
+  readonly accepted?: string
   /** The operation a keep-subscription request started, which charges nothing. */
   readonly kept?: string
 }
 
 export type PaymentEvent =
   | { readonly type: 'start_sent' }
-  | { readonly type: 'start_answered' }
+  | { readonly type: 'start_refused' }
+  | { readonly type: 'start_accepted'; readonly operationId: string }
   | { readonly type: 'start_unanswered' }
   | { readonly type: 'payment_succeeded'; readonly operationId: string }
+  | { readonly type: 'payment_failed'; readonly operationId: string }
   | { readonly type: 'payment_parked'; readonly operationId: string }
   | { readonly type: 'subscription_kept'; readonly operationId: string }
+
+function outcomeLearned(
+  trace: PaymentTrace,
+  operationId: string
+): PaymentTrace {
+  return trace.accepted === operationId
+    ? { ...trace, accepted: undefined }
+    : trace
+}
 
 function afterSuccess(trace: PaymentTrace, operationId: string): PaymentTrace {
   if (operationId === trace.kept || operationId === trace.paid) return trace
@@ -39,6 +52,12 @@ function afterSuccess(trace: PaymentTrace, operationId: string): PaymentTrace {
   }
 }
 
+function afterParking(trace: PaymentTrace, operationId: string): PaymentTrace {
+  return operationId === trace.kept || trace.unanswered === 'lost'
+    ? trace
+    : { ...trace, unanswered: 'lost' }
+}
+
 /** Returns the same trace when the event teaches the tab nothing new. */
 export function tracePayment(
   trace: PaymentTrace,
@@ -47,20 +66,32 @@ export function tracePayment(
   switch (event.type) {
     case 'start_sent':
       return trace.unanswered ? trace : { ...trace, unanswered: 'sent' }
-    case 'start_answered':
+    case 'start_refused':
       return trace.unanswered === 'sent'
         ? { ...trace, unanswered: undefined }
         : trace
+    case 'start_accepted':
+      return {
+        ...trace,
+        accepted: event.operationId,
+        unanswered: trace.unanswered === 'sent' ? undefined : trace.unanswered
+      }
     case 'start_unanswered':
       return trace.unanswered === 'lost'
         ? trace
         : { ...trace, unanswered: 'lost' }
     case 'payment_succeeded':
-      return afterSuccess(trace, event.operationId)
+      return afterSuccess(
+        outcomeLearned(trace, event.operationId),
+        event.operationId
+      )
+    case 'payment_failed':
+      return outcomeLearned(trace, event.operationId)
     case 'payment_parked':
-      return event.operationId === trace.kept || trace.unanswered === 'lost'
-        ? trace
-        : { ...trace, unanswered: 'lost' }
+      return afterParking(
+        outcomeLearned(trace, event.operationId),
+        event.operationId
+      )
     case 'subscription_kept':
       return { ...trace, kept: event.operationId }
   }
@@ -75,6 +106,8 @@ export function paymentEventOf(
     return { type: 'payment_succeeded', operationId: operation.id }
   if (operation.phase === 'reconciliation_needed')
     return { type: 'payment_parked', operationId: operation.id }
+  if (operation.phase === 'failed')
+    return { type: 'payment_failed', operationId: operation.id }
   return undefined
 }
 
@@ -88,14 +121,18 @@ export interface TracedWrite {
   ) => PaymentEvent | undefined
 }
 
-function paymentStart(follows: (accepted: unknown) => boolean): TracedWrite {
+function paymentStart(
+  acceptedOperation: (body: unknown) => string | undefined
+): TracedWrite {
   return {
     sent: { type: 'start_sent' },
     unanswered: { type: 'start_unanswered' },
     answered: ({ ok, status }, body) => {
+      const operationId = ok ? acceptedOperation(body) : undefined
+      if (operationId !== undefined)
+        return { type: 'start_accepted', operationId }
       const refused = status >= 400 && status < 500
-      const outcomeKnown = ok ? follows(body) : refused
-      return { type: outcomeKnown ? 'start_answered' : 'start_unanswered' }
+      return { type: refused ? 'start_refused' : 'start_unanswered' }
     }
   }
 }
@@ -109,22 +146,22 @@ const KEEP_SUBSCRIPTION: TracedWrite = {
   }
 }
 
-const PAYMENT_ON_A_HOSTED_PAGE = paymentStart(() => false)
+const PAYMENT_ON_A_HOSTED_PAGE = paymentStart(() => undefined)
+
+const TOPUP = paymentStart(
+  (body) => zCreateTopupResponse.safeParse(body).data?.billing_op_id
+)
 
 /** The write routes whose exchange with Cloud a handoff tab traces, by route. */
 export const TRACED_WRITES: ReadonlyMap<string, TracedWrite> = new Map([
   [
     SUBSCRIBE_ROUTE,
-    paymentStart((body) => zSubscribeResponse.safeParse(body).success)
+    paymentStart(
+      (body) => zSubscribeResponse.safeParse(body).data?.billing_op_id
+    )
   ],
-  [
-    TOPUP_ROUTE,
-    paymentStart((body) => zCreateTopupResponse.safeParse(body).success)
-  ],
-  [
-    INTERACTIVE_TOPUP_ROUTE,
-    paymentStart((body) => zCreateTopupResponse.safeParse(body).success)
-  ],
+  [TOPUP_ROUTE, TOPUP],
+  [INTERACTIVE_TOPUP_ROUTE, TOPUP],
   [TOPUP_CHECKOUT_ROUTE, PAYMENT_ON_A_HOSTED_PAGE],
   [RESUBSCRIBE_ROUTE, KEEP_SUBSCRIPTION]
 ])
