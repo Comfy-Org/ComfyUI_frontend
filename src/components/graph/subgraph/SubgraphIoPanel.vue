@@ -206,7 +206,6 @@ function forwardUnlessOnButton(event: PointerEvent) {
 <template>
   <div
     ref="panel"
-    data-subgraph-io
     :data-testid="side.testId"
     :inert="canvasStore.isPickingNodes"
     role="group"
@@ -290,7 +289,6 @@ function forwardUnlessOnButton(event: PointerEvent) {
           </div>
         </div>
         <div
-          data-port-anchor
           :data-testid="row.portTestId"
           :aria-label="row.portLabel"
           :class="
@@ -300,7 +298,11 @@ function forwardUnlessOnButton(event: PointerEvent) {
             )
           "
         >
-          <SlotConnectionDot class="shrink-0" :slot-data="row.port" />
+          <SlotConnectionDot
+            data-port-anchor
+            class="shrink-0"
+            :slot-data="row.port"
+          />
         </div>
       </div>
       <p v-if="hint" class="mx-3 my-0 text-muted-foreground">
