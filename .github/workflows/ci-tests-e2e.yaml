@@ -63,6 +63,9 @@ jobs:
     needs: changes
     if: ${{ needs.changes.outputs.should-build == 'true' }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     env:
       EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
     steps:
@@ -74,6 +77,34 @@ jobs:
           include_build_step: true
         env:
           COLLECT_COVERAGE: 'true'
+
+      - name: Load timings from the last successful main E2E run
+        run: pnpm exec tsx scripts/cicd/load-playwright-timings.ts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
+
+      - name: Plan cloud shards by historical duration
+        run: pnpm exec playwright test --project=cloud --list --reporter=./scripts/cicd/plan-playwright-shards.ts
+        env:
+          PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
+          PLAYWRIGHT_SHARD_TOTAL: '4'
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/cloud
+
+      - name: Plan chromium shards by historical duration
+        run: pnpm exec playwright test --project=chromium --list --reporter=./scripts/cicd/plan-playwright-shards.ts
+        env:
+          PLAYWRIGHT_SHARD_TIMINGS_DIR: ${{ runner.temp }}/playwright-shard-timings
+          PLAYWRIGHT_SHARD_TOTAL: '16'
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/chromium
+
+      - name: Share shard plans
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: playwright-shard-plans
+          path: ${{ runner.temp }}/playwright-shard-plans
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Verify localhost Assets default
         run: pnpm test:assets-flag-artifact
@@ -199,11 +230,19 @@ jobs:
         with:
           node_cache: 'false'
 
+      - name: Download shard plans
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: playwright-shard-plans
+          path: ${{ runner.temp }}/playwright-shard-plans
+
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
+        run: pnpm exec playwright test --project=chromium --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/chromium
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-chromium-${{ matrix.shardIndex }}.zip
           COLLECT_COVERAGE: 'true'
 
       - name: Upload blob report
@@ -274,11 +313,19 @@ jobs:
         with:
           node_cache: 'false'
 
+      - name: Download shard plans
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: playwright-shard-plans
+          path: ${{ runner.temp }}/playwright-shard-plans
+
       - name: Run Playwright tests (cloud, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
+        run: pnpm exec playwright test --project=cloud --test-list="$PLAYWRIGHT_SHARD_PLAN_DIR/${{ matrix.shardIndex }}.txt" --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
+          PLAYWRIGHT_SHARD_PLAN_DIR: ${{ runner.temp }}/playwright-shard-plans/cloud
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-cloud-${{ matrix.shardIndex }}.zip
 
       - name: Upload blob report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
