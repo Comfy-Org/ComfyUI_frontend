@@ -50,12 +50,13 @@ jobs:
               exit 1
             fi
             STATUS=0
-            OUTPUT=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json tagName 2>&1) || STATUS=$?
+            OUTPUT=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft 2>&1) || STATUS=$?
             if [[ "$STATUS" -eq 0 ]]; then
-              echo "::error title=Nothing to recover::${TAG} already has a release."
-              exit 1
-            fi
-            if [[ "$OUTPUT" != *"release not found"* ]]; then
+              if [[ "$(jq -r '.isDraft' <<<"$OUTPUT")" != "true" ]]; then
+                echo "::error title=Nothing to recover::${TAG} already has a published release."
+                exit 1
+              fi
+            elif [[ "$OUTPUT" != *"release not found"* ]]; then
               echo "::error title=Release lookup failed::${OUTPUT}"
               exit 1
             fi
