@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -9,6 +11,32 @@ import { consultEscapeOverride } from './escapeOverride'
 import { KeyComboImpl } from '@comfyorg/keybindings/keyCombo'
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { zKeybinding } from '@comfyorg/keybindings/types'
+
+function readSavedBindings(saved: unknown[]) {
+  const valid = saved.flatMap((entry) => {
+    const parsed = zKeybinding.safeParse(entry)
+    return parsed.success ? [parsed.data] : []
+  })
+  return {
+    bindings: valid
+      .filter((binding) => !isExcludedFromDistribution(binding))
+      .map((binding) => new KeybindingImpl(binding)),
+    invalidCount: saved.length - valid.length
+  }
+}
+
+function reportDegradedRestore(
+  message: string,
+  context: Record<string, unknown>
+) {
+  reportError(new Error(message), {
+    errorType: 'failure_restoring_user_keybindings',
+    surface: 'platform',
+    tags: { outcome: 'degraded' },
+    context
+  })
+}
 
 function isExcludedFromDistribution(keybinding: { commandId: string }) {
   return (
@@ -146,15 +174,31 @@ export function useKeybindingService() {
   }
 
   function registerUserKeybindings() {
-    const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
-    for (const keybinding of unsetBindings) {
-      if (isExcludedFromDistribution(keybinding)) continue
-      keybindingStore.addUserUnsetKeybinding(new KeybindingImpl(keybinding))
+    const unset = readSavedBindings(
+      settingStore.get('Comfy.Keybinding.UnsetBindings')
+    )
+    const added = readSavedBindings(
+      settingStore.get('Comfy.Keybinding.NewBindings')
+    )
+    const conflicts = keybindingStore.restoreSavedChoices({
+      unsetBindings: unset.bindings,
+      newBindings: added.bindings
+    })
+
+    const invalidCount = unset.invalidCount + added.invalidCount
+    if (invalidCount > 0) {
+      reportDegradedRestore('Saved keybindings contain malformed entries', {
+        invalidCount
+      })
     }
-    const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
-    for (const keybinding of newBindings) {
-      if (isExcludedFromDistribution(keybinding)) continue
-      keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
+    const conflict = conflicts.at(0)
+    if (conflict) {
+      reportDegradedRestore('Saved keybindings claim the same key combo', {
+        combo: conflict.incoming.combo.serialize(),
+        existingCommandId: conflict.existing.commandId,
+        incomingCommandId: conflict.incoming.commandId,
+        conflictCount: conflicts.length
+      })
     }
   }
 

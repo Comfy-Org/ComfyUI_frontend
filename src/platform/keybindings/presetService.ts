@@ -15,7 +15,14 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingService } from './keybindingService'
-import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import {
+  findSavedChoiceConflicts,
+  useKeybindingStore
+} from '@comfyorg/keybindings/keybindingStore'
+import type {
+  KeybindingConflict,
+  KeymapChange
+} from '@comfyorg/keybindings/keybindingStore'
 import type { KeybindingPreset } from '@comfyorg/keybindings/types'
 import { zKeybindingPreset } from '@comfyorg/keybindings/types'
 
@@ -111,22 +118,28 @@ export function useKeybindingPresetService() {
     return { ...result.data, name }
   }
 
-  function applyPreset(preset: KeybindingPreset) {
-    keybindingStore.resetAllKeybindings()
-    for (const binding of preset.unsetBindings) {
-      keybindingStore.addUserUnsetKeybinding(new KeybindingImpl(binding))
-    }
-    for (const binding of preset.newBindings) {
-      keybindingStore.addUserKeybinding(new KeybindingImpl(binding))
-    }
-    // Snapshot savedPresetData from the store's actual state after applying,
-    // because addUserKeybinding may auto-unset conflicting defaults beyond
-    // what the raw preset specifies.
+  function applyPreset(preset: KeybindingPreset): KeymapChange {
+    const applied = keybindingStore.applySavedChoices({
+      newBindings: preset.newBindings.map((b) => new KeybindingImpl(b)),
+      unsetBindings: preset.unsetBindings.map((b) => new KeybindingImpl(b))
+    })
+    if (!applied.ok) return applied
+
     keybindingStore.savedPresetData = buildPresetFromStore(
       preset.name,
       keybindingStore
     )
     keybindingStore.currentPresetName = preset.name
+    return applied
+  }
+
+  function notifyPresetConflict(name: string, conflict: KeybindingConflict) {
+    toast.error(
+      t('g.keybindingPresets.presetConflict', {
+        name,
+        key: conflict.incoming.combo.toString()
+      })
+    )
   }
 
   async function savePreset(name: string) {
@@ -198,14 +211,20 @@ export function useKeybindingPresetService() {
     }
     const preset = result.data
 
-    // Save the imported preset file to storage
+    const conflict = findSavedChoiceConflicts(
+      preset.newBindings.map((b) => new KeybindingImpl(b))
+    ).at(0)
+    if (conflict) {
+      notifyPresetConflict(preset.name, conflict)
+      return
+    }
+
     await api.storeUserData(
       presetFilePath(preset.name),
       JSON.stringify(preset),
       { overwrite: true, stringify: false }
     )
 
-    // Switch to the imported preset (handles dirty check)
     await switchPreset(preset.name)
 
     toast.success(t('g.keybindingPresets.presetImported'), { duration: 3000 })
@@ -260,7 +279,11 @@ export function useKeybindingPresetService() {
     }
 
     const preset = await loadPreset(targetName)
-    applyPreset(preset)
+    const applied = applyPreset(preset)
+    if (!applied.ok) {
+      notifyPresetConflict(targetName, applied.conflict)
+      return
+    }
     await keybindingService.persistUserKeybindings()
     await settingStore.set('Comfy.Keybinding.CurrentPreset', targetName)
   }
