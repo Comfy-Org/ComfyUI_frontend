@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import {
@@ -50,6 +51,21 @@ const i18n = createI18n({
 })
 
 describe('SubgraphEditor', () => {
+  function renderEditor(
+    draggableListStub: Component = {
+      template:
+        '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
+    }
+  ) {
+    return render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: {
+        plugins: [i18n],
+        stubs: { DraggableList: draggableListStub }
+      }
+    })
+  }
+
   it('renders preview exposures after promoted inputs without drag handles', () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
@@ -78,18 +94,7 @@ describe('SubgraphEditor', () => {
     )
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     const shown = screen.getByTestId('subgraph-editor-shown-section')
     expect(
@@ -143,13 +148,7 @@ describe('SubgraphEditor', () => {
         return () => slots.default?.({ dragClass: 'draggable-item' })
       }
     }
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: { DraggableList: draggableListStub }
-      }
-    })
+    renderEditor(draggableListStub)
     await nextTick()
 
     const shown = screen.getByTestId('subgraph-editor-shown-section')
@@ -194,18 +193,7 @@ describe('SubgraphEditor', () => {
     sourceInput.widget = { name: sourceWidget.name }
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     const hidden = screen.getByTestId('subgraph-editor-hidden-section')
     await userEvent.click(within(hidden).getByTestId('subgraph-widget-toggle'))
@@ -264,18 +252,7 @@ describe('SubgraphEditor', () => {
     promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     expect(host.inputs.filter((input) => input.widgetId)).toHaveLength(2)
 
@@ -284,6 +261,40 @@ describe('SubgraphEditor', () => {
     await userEvent.click(hideAllLink)
 
     expect(host.inputs.filter((input) => input.widgetId)).toHaveLength(0)
+  })
+
+  it('re-shows a demoted widget in the hidden section so it can be re-promoted', async () => {
+    i18n.global.mergeLocaleMessage('en', {
+      rightSidePanel: { hideInput: 'Hide input', showInput: 'Show input' }
+    })
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const sourceNode = new LGraphNode('SourceNode')
+    subgraph.add(sourceNode)
+
+    const sourceInput = sourceNode.addInput('first', 'STRING')
+    const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
+    sourceInput.widget = { name: sourceWidget.name }
+    promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget)
+    setCanvasSelection([host])
+
+    renderEditor()
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    await userEvent.click(
+      within(shown).getByRole('button', { name: 'Hide input' })
+    )
+    await nextTick()
+
+    const hidden = screen.getByTestId('subgraph-editor-hidden-section')
+    expect(
+      within(hidden).getByRole('button', { name: 'Show input' })
+    ).toBeEnabled()
+    expect(
+      within(hidden)
+        .getAllByTestId('subgraph-widget-label')
+        .map((el) => el.textContent.trim())
+    ).toEqual(['first'])
   })
 
   it('does not shrink a user-resized subgraph node merely by mounting the panel (FE-853)', () => {
@@ -297,18 +308,7 @@ describe('SubgraphEditor', () => {
     promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget)
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     expect(Array.from(host.size)).toEqual([640, 480])
   })
@@ -324,18 +324,7 @@ describe('SubgraphEditor', () => {
     sourceInput.widget = { name: sourceWidget.name }
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     const hidden = screen.getByTestId('subgraph-editor-hidden-section')
     await userEvent.click(within(hidden).getByTestId('subgraph-widget-toggle'))
@@ -358,18 +347,7 @@ describe('SubgraphEditor', () => {
 
     setCanvasSelection([host])
 
-    render(SubgraphEditor, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: {
-        plugins: [i18n],
-        stubs: {
-          DraggableList: {
-            template:
-              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
-          }
-        }
-      }
-    })
+    renderEditor()
 
     expect(
       previewStore.getExposures(subgraph.rootGraph.id, String(host.id))
