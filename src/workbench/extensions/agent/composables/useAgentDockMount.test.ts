@@ -29,10 +29,9 @@ vi.mock(import('@/platform/settings/globalSettingsApi'), () => ({
   getGlobalSetting: accountApi.get,
   setGlobalSetting: accountApi.set
 }))
-vi.mock(
-  import('@/workbench/extensions/agent/services/agent/agentAuth'),
-  () => ({ agentSettingsAuthHeader: accountApi.header })
-)
+vi.mock(import('@/platform/auth/agentAuth'), () => ({
+  agentSettingsAuthHeader: accountApi.header
+}))
 
 const billingContext = useBillingContext()
 const { loadDockedAgentPanel } = vi.hoisted(() => ({

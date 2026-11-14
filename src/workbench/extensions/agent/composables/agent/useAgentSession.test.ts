@@ -62,7 +62,7 @@ import type {
 } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
+vi.mock(import('@/platform/auth/agentAuth'))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@comfyorg/telemetry'))

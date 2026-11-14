@@ -157,7 +157,7 @@ import {
 } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
-import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
+import { ensureSignedIn, hasAgentCredential } from '@/platform/auth/agentAuth'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
