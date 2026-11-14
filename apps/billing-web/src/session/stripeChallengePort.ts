@@ -40,7 +40,9 @@ export function createStripeChallengePort(
       if (!provider) return { error: 'provider_unavailable' }
       try {
         const result = await provider.handleNextAction({ clientSecret })
-        return result.setupIntent ? { paymentIntent: result.setupIntent } : result
+        return result.setupIntent
+          ? { paymentIntent: result.setupIntent }
+          : result
       } catch (error) {
         const intent = await retrieveIntent(provider, clientSecret)
         if (intent) return { paymentIntent: intent }
