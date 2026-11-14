@@ -85,6 +85,7 @@
           "packages/mask-editor/src/StrokeProcessor.ts",
           "packages/mask-editor/src/types.ts",
           "packages/mask-editor/src/imageOutput.ts",
+          "packages/mask-editor/src/pngEncodeUtil.ts",
           "packages/mask-editor/src/useCanvasTransform.ts",
           "packages/mask-editor/src/ui/EditorCanvas.vue",
           "packages/mask-editor/src/ui/EditorToolbar.vue",

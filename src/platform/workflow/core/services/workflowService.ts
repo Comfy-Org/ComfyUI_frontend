@@ -68,6 +68,11 @@ import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { UUID } from '@/utils/uuid'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { ensureNonZeroUuid } from '@/utils/uuid'
+import { insertPngTextChunk } from '@comfyorg/mask-editor/pngEncodeUtil'
+
+export type WorkflowImageRender =
+  | { ok: true; image: Blob }
+  | { ok: false; cause?: unknown }
 
 export function readWorkflowDraftLineage(path: string) {
   return useWorkflowDraftStoreV2().getDraft(path)?.lineage ?? null
@@ -299,7 +304,10 @@ export const useWorkflowService = () => {
     })
   }
 
-  async function getFilename(defaultName: string): Promise<string | null> {
+  async function getFilename(
+    defaultName: string,
+    extension = '.json'
+  ): Promise<string | null> {
     if (settingStore.get('Comfy.PromptFilename')) {
       let filename = await dialogService.prompt({
         title: t('workflowService.exportWorkflow'),
@@ -307,19 +315,17 @@ export const useWorkflowService = () => {
         defaultValue: defaultName
       })
       if (!filename) return null
-      if (!filename.toLowerCase().endsWith('.json')) {
-        filename += '.json'
+      if (!filename.toLowerCase().endsWith(extension)) {
+        filename += extension
       }
       return filename
     }
     return defaultName
   }
 
-  /**
-   * Adds scale and offset from litegraph canvas to the workflow JSON.
-   * @param workflow The workflow to add the view restore data to
-   */
-  function addViewRestore(workflow: ComfyWorkflowJSON) {
+  function addViewRestore(
+    workflow: Pick<ComfyWorkflowJSON | SerialisableGraph, 'extra'>
+  ) {
     if (!settingStore.get('Comfy.EnableWorkflowViewRestore')) return
 
     const { offset, scale } = useApp().canvas.ds
@@ -378,6 +384,50 @@ export const useWorkflowService = () => {
     return false
   }
 
+  async function exportWorkflowImage(
+    filename: string,
+    renderImage: () => Promise<WorkflowImageRender>
+  ): Promise<void> {
+    const workflow = workflowStore.activeWorkflow
+    if (workflow?.path) {
+      filename = workflow.filename
+    }
+    const file = await getFilename(`${filename}.png`, '.png')
+    if (!file) return
+
+    let json = ''
+    let render: WorkflowImageRender
+    try {
+      const app = useApp()
+      const graph = app.rootGraph
+      const activeGraph = app.canvas.graph
+      const snapshot = graph.serialize()
+      addViewRestore(snapshot)
+      json = JSON.stringify(snapshot)
+      const version = graph._version
+      const rendering = renderImage()
+      const unchanged =
+        app.rootGraph === graph &&
+        app.canvas.graph === activeGraph &&
+        graph._version === version
+      render = await rendering
+      if (!unchanged) render = { ok: false }
+    } catch (cause) {
+      render = { ok: false, cause }
+    }
+    if (!render.ok) {
+      if (render.cause !== undefined)
+        reportError(render.cause, {
+          surface: 'graph',
+          errorType: 'error_rendering_workflow_image'
+        })
+      toast.error(t('g.error'), {
+        description: t('toastMessages.failedToExportWorkflowImage')
+      })
+      return
+    }
+    downloadBlob(file, await insertPngTextChunk(render.image, 'workflow', json))
+  }
   /**
    * Save a workflow as a new file
    * @param workflow The workflow to save
@@ -1267,6 +1317,7 @@ export const useWorkflowService = () => {
 
   return {
     exportWorkflow,
+    exportWorkflowImage,
     saveWorkflowAs,
     saveWorkflow,
     loadDefaultWorkflow,

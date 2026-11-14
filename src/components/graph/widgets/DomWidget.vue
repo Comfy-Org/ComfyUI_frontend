@@ -3,6 +3,7 @@
     v-show="widgetState.visible"
     ref="widgetElement"
     class="dom-widget size-full"
+    :data-widget-id="widget.id"
     :title="tooltip"
     :style="style"
   >
