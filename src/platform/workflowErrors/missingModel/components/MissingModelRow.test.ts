@@ -364,12 +364,14 @@ describe('MissingModelRow', () => {
     mockIsCloud.value = false
     const firstWidget = { name: 'ckpt_name', value: 'model.safetensors' }
     const secondWidget = { name: 'ckpt_name', value: 'model.safetensors' }
-    const onWidgetChanged = vi.fn()
+    const firstOnWidgetChanged = vi.fn()
+    const secondOnWidgetChanged = vi.fn()
     mockRootGraph.value = {}
-    mockGetNodeByExecutionId.mockImplementation((_graph, nodeId) => ({
-      widgets: [nodeId === '1' ? firstWidget : secondWidget],
-      onWidgetChanged
-    }))
+    mockGetNodeByExecutionId.mockImplementation((_graph, nodeId) =>
+      nodeId === '1'
+        ? { widgets: [firstWidget], onWidgetChanged: firstOnWidgetChanged }
+        : { widgets: [secondWidget], onWidgetChanged: secondOnWidgetChanged }
+    )
     const model = makeModel([
       { nodeId: '1', widgetName: 'ckpt_name' },
       { nodeId: '2', widgetName: 'ckpt_name' }
@@ -409,8 +411,10 @@ describe('MissingModelRow', () => {
     expect(recordedValues).toEqual([
       ['model_bf16.safetensors', 'model_bf16.safetensors']
     ])
-    expect(onWidgetChanged.mock.calls).toEqual([
-      ['ckpt_name', 'model_bf16.safetensors', 'model.safetensors', firstWidget],
+    expect(firstOnWidgetChanged.mock.calls).toEqual([
+      ['ckpt_name', 'model_bf16.safetensors', 'model.safetensors', firstWidget]
+    ])
+    expect(secondOnWidgetChanged.mock.calls).toEqual([
       ['ckpt_name', 'model_bf16.safetensors', 'model.safetensors', secondWidget]
     ])
   })
