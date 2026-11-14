@@ -8,6 +8,7 @@ import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionType
 import type { NodeError } from '@comfyorg/api-client/types'
 import type { ExtensionDialogService } from '@/services/dialogServiceTypes'
 import type { ComfyCommand } from '@comfyorg/keybindings/commandStore'
+import type { MaskEditorExtensionAPI } from '@comfyorg/mask-editor/extensionTypes'
 
 export interface ExtensionProvenance {
   createdBy: 'comfy-agent'
@@ -94,6 +95,7 @@ export interface ExtensionManager {
   toast: ToastManager
   dialog: ExtensionDialogService
   command: CommandManager
+  maskEditor: MaskEditorExtensionAPI
   setting: {
     // oxlint-disable-next-line typescript/no-unnecessary-type-parameters -- Custom extensions declare settings outside the generated schema.
     get: <T = unknown>(id: string) => T | undefined

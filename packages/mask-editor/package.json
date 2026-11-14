@@ -56,6 +56,11 @@
       "@comfyorg/mask-editor": "./src/useCanvasTransform.ts",
       "types": "./dist/useCanvasTransform.d.ts",
       "default": "./src/useCanvasTransform.ts"
+    },
+    "./extensionTypes": {
+      "@comfyorg/mask-editor": "./src/extensionTypes.ts",
+      "types": "./dist/extensionTypes.d.ts",
+      "default": "./src/extensionTypes.ts"
     }
   },
   "scripts": {
