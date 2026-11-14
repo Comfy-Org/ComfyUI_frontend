@@ -262,8 +262,15 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     )
 
     const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
-    errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
     if (errors.length > 0) {
+      reportError(errors[0], {
+        errorType: 'subgraph_blueprint_load_failure',
+        surface: 'graph',
+        context: { failedBlueprintCount: errors.length }
+      })
+      errors
+        .slice(1)
+        .forEach((e) => console.error('Failed to load subgraph blueprint', e))
       useToast().error(t('subgraphStore.loadFailure'), {
         description:
           errors.length > 3

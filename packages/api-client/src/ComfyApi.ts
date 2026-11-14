@@ -1513,6 +1513,8 @@ export class ComfyApi extends EventTarget {
 
   /**
    * Gets the prompt execution history
+   * @param options.throwOnError Reject on failure instead of resolving to an
+   * empty list, so callers can tell an outage apart from an empty history.
    * @returns Prompt history including node outputs
    */
   async getHistory(

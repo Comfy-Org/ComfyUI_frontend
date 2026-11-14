@@ -1,12 +1,17 @@
-import { describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 function addNode(id: number, title: string, widgetNames: string[]) {
   const node = new LGraphNode(title)
@@ -92,5 +97,53 @@ describe('useFavoritedWidgetsStore', () => {
 
     expect(store.isFavorited(sampler, 'seed')).toBe(false)
     expect(app.rootGraph.extra.favoritedWidgets).toEqual({ favorites: [] })
+  })
+
+  describe('when workflow.extra cannot be read or written', () => {
+    const storedFavorites = {
+      favorites: [{ nodeLocatorId: '1', widgetName: 'seed' }]
+    }
+
+    beforeEach(() => {
+      app.rootGraph.extra = {}
+    })
+
+    it('clears favorites and reports when the workflow data cannot be loaded', async () => {
+      app.rootGraph.extra.favoritedWidgets = storedFavorites
+      const store = useFavoritedWidgetsStore()
+      expect(store.favoritedWidgets).toHaveLength(1)
+
+      app.rootGraph.extra.favoritedWidgets = { favorites: 'not-a-list' }
+      useWorkflowStore().activeWorkflow = fromPartial({
+        path: 'workflows/malformed.json'
+      })
+      await nextTick()
+
+      expect(store.favoritedWidgets).toEqual([])
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(TypeError),
+        {
+          errorType: 'favorited_widgets_load_failure',
+          surface: 'workspace'
+        }
+      )
+    })
+
+    it('keeps the persisted favorites and reports when saving fails', () => {
+      app.rootGraph.extra = Object.freeze({ favoritedWidgets: storedFavorites })
+      const store = useFavoritedWidgetsStore()
+
+      store.clearFavorites()
+
+      expect(store.favoritedWidgets).toEqual([])
+      expect(app.rootGraph.extra.favoritedWidgets).toBe(storedFavorites)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(TypeError),
+        {
+          errorType: 'favorited_widgets_save_failure',
+          surface: 'workspace'
+        }
+      )
+    })
   })
 })

@@ -30,6 +30,7 @@ const mockDistributionTypes = vi.hoisted(() => ({
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/services/dialogService'))
@@ -357,10 +358,11 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(console.error).toHaveBeenCalledWith(
-      'Failed to load subgraph blueprint',
-      expect.any(Error)
-    )
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'subgraph_blueprint_load_failure',
+      surface: 'graph',
+      context: { failedBlueprintCount: 1 }
+    })
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
   })
 
@@ -418,10 +420,11 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(console.error).toHaveBeenCalledWith(
-      'Failed to load subgraph blueprint',
-      expect.any(Error)
-    )
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'subgraph_blueprint_load_failure',
+      surface: 'graph',
+      context: { failedBlueprintCount: 1 }
+    })
     expect(useToast().toasts).toEqual([
       expect.objectContaining({ description: 'Network error', kind: 'error' })
     ])
@@ -444,8 +447,24 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(console.error).toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledOnce()
     expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(1)
+  })
+
+  it('reports one aggregated failure when several blueprints fail', async () => {
+    await mockFetch(
+      {},
+      {
+        first: { name: 'First', info: { node_pack: 'test_pack' }, data: '' },
+        second: { name: 'Second', info: { node_pack: 'test_pack' }, data: '' }
+      }
+    )
+    expect(reportError).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'subgraph_blueprint_load_failure',
+      surface: 'graph',
+      context: { failedBlueprintCount: 2 }
+    })
   })
 
   describe('search_aliases support', () => {
