@@ -317,22 +317,37 @@ describe('useSettingUI', () => {
       expect(findPanelByKey('workspace-allowlist')).toBeNull()
     })
 
-    it('shows Members off Cloud when the server says the actor can manage them', () => {
+    it('keeps Members off local even when the server says the actor can manage them', () => {
       env.state.isCloud = false
       vi.mocked(useBillingCapabilities()).canManageMembers = computed(() =>
         receiveServerFact('can_manage_members', true)
       )
 
-      const { navGroups } = useSettingUI()
-      const workspaceItems = navGroups.value
+      const { findPanelByKey, navGroups } = useSettingUI()
+      const workspaceItemIds = navGroups.value
         .find((group) => group.title === 'Workspace')
-        ?.items.map(({ id, label }) => ({ id, label }))
+        ?.items.map(({ id }) => id)
 
-      expect(workspaceItems).toEqual([
-        { id: 'workspace', label: 'PlanCredits' },
-        { id: 'workspace-members', label: 'Members' }
-      ])
+      expect(workspaceItemIds).toEqual(['workspace'])
+      expect(findPanelByKey('workspace-members')).toBeNull()
     })
+
+    it.for([false, true])(
+      'shows Members on cloud when the actor can manage members is %s',
+      (canManage) => {
+        env.state.isCloud = true
+        vi.mocked(useBillingCapabilities()).canManageMembers = computed(() =>
+          receiveServerFact('can_manage_members', canManage)
+        )
+
+        const { navGroups } = useSettingUI()
+        const workspaceItemIds = navGroups.value
+          .find((group) => group.title === 'Workspace')
+          ?.items.map(({ id }) => id)
+
+        expect(workspaceItemIds).toEqual(['workspace', 'workspace-members'])
+      }
+    )
 
     it('mounts the Billing tab on local when unified billing settings is on', () => {
       env.state.isCloud = false
