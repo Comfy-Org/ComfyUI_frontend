@@ -26,10 +26,12 @@ export interface Comfy {
   sameEntity(a: unknown, b: unknown): boolean
   /** Node types: their definitions, and the hooks a pack adds to them. */
   readonly defs: DefRegistry
+  /** Every change a pack makes to the document. */
+  readonly edit: Edits
 }
 
 /** The graph on screen. An argument a member cannot use throws a `TypeError`. */
-export interface GraphHandle {
+export interface GraphHandle extends GraphHandleEdits {
   /** The id of the graph on screen, or `undefined` before there is one. */
   readonly id: string | undefined
   /** The node with this id in the graph on screen. */
@@ -43,10 +45,15 @@ export interface GraphHandle {
   root(): GraphScopeHandle | undefined
   /** Every subgraph definition in the open document. */
   subgraphs(): readonly GraphScopeHandle[]
+  /**
+   * Advances with each `comfy.edit` call that is applied and when nodes or links come or go; host moves,
+   * colors and widget values leave it, and undo or a load sets it back. A different reading means a change.
+   */
+  readonly version: number | undefined
 }
 
 /** One particular graph: the root graph, or a subgraph definition. */
-export interface GraphScopeHandle {
+export interface GraphScopeHandle extends GraphScopeHandleMembers {
   readonly id: string
   /**
    * True while the entity is gone, and every other read is `undefined`. Undo
@@ -74,7 +81,7 @@ export interface NodeQuery {
   readonly type?: string | readonly string[]
 }
 
-export interface NodeHandle {
+export interface NodeHandle extends NodeHandleEdits {
   /** The node's id. Another document will use the same ids. */
   readonly id: string
   /** The id of the graph the node is in. With `id`, this names the node. */
@@ -123,21 +130,6 @@ interface Size {
 }
 
 export interface Bounds extends Point, Size {}
-
-export interface Comfy {
-  /** Every change a pack makes to the document. */
-  readonly edit: Edits
-}
-
-export interface NodeHandle extends NodeHandleEdits {}
-
-export interface GraphHandle extends GraphHandleEdits {
-  /**
-   * Advances with each `comfy.edit` call that is applied and when nodes or links come or go; host moves,
-   * colors and widget values leave it, and undo or a load sets it back. A different reading means a change.
-   */
-  readonly version: number | undefined
-}
 
 /**
  * The one place a pack changes the document. Each call is one undo step, or part of `batch`'s;
@@ -343,8 +335,6 @@ export interface GraphHandleEdits {
   /** The groups in the graph on screen, in draw order. */
   groups(): readonly GroupHandle[] | undefined
 }
-
-export interface GraphScopeHandle extends GraphScopeHandleMembers {}
 
 export interface GraphScopeHandleMembers {
   /** The groups in this graph, in draw order. */
