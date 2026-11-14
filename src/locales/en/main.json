@@ -6689,6 +6689,7 @@
     "superseded": "Your account or workspace changed while billing was opening. Try again.",
     "signInAgain": "Sign in again to open billing.",
     "opening": "Opening checkout…",
-    "openingDetail": "This takes a few seconds."
+    "openingDetail": "This takes a few seconds.",
+    "openingTabTitle": "Opening checkout · Comfy"
   }
 }

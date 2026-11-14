@@ -174,6 +174,7 @@ function settle(
 export function reserveBillingHandoffTab(): BillingTab | null {
   return reserveBillingTab({
     lang: i18n.global.locale.value,
+    tabTitle: t('billingHandoff.openingTabTitle'),
     title: t('billingHandoff.opening'),
     detail: t('billingHandoff.openingDetail')
   })
