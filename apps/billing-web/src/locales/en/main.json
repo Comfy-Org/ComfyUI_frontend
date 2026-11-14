@@ -613,10 +613,6 @@
       "body": "This can take a minute. Don't pay again while we check, you could be charged twice.",
       "codeLabel": "If this page still can't confirm it after a few minutes, contact support with this code:",
       "closeLine": "You can close this tab. We'll email your invoice once the payment goes through."
-    },
-    "session": {
-      "title": "This checkout session has ended",
-      "body": "Return to ComfyUI and try again."
     }
   }
 }

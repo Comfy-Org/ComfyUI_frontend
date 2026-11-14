@@ -23,6 +23,7 @@ import type {
   BillingSession,
   BillingTransport,
   CredentialedWebSession,
+  OperationOutcomeRead,
   WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import {
@@ -38,6 +39,7 @@ import {
   createSessionBillingTransport,
   createTopupCommand,
   createWorkspaceInviteCommands,
+  readOperationOutcome,
   sessionBillingScopeSource,
   toBillingTelemetryEvent
 } from '@comfyorg/account-core/billing'
@@ -46,6 +48,10 @@ import type { BillingClient } from '@comfyorg/account-ui/billing'
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebStripeKey } from '@/config/stripeKey'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
+import { notePayment, sessionTabStorage } from '@/handoff/handoffTab'
+import type { CheckingPayment } from '@/handoff/paymentOutcome'
+import type { PaymentEvent } from '@/handoff/paymentTrace'
+import { TRACED_WRITES, paymentEventOf } from '@/handoff/paymentTrace'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 /** Tab-local, like the credential cache: a pointer must not outlive the tab. */
@@ -102,6 +108,36 @@ async function isScopedSessionRefusal(response: Response): Promise<boolean> {
   )
 }
 
+const TRACED_WRITE_URLS = new Map(
+  Array.from(TRACED_WRITES, ([route, write]) => [resolveUrl(route), write])
+)
+
+function noteHandoffPayment(event: PaymentEvent | undefined): void {
+  if (event) notePayment(sessionTabStorage, event)
+}
+
+function handoffFetch(onSessionRefused: () => void): typeof fetch {
+  return async (input, init) => {
+    const write = TRACED_WRITE_URLS.get(String(input))
+    noteHandoffPayment(write?.sent)
+    const exchange = globalThis.fetch(input, init)
+    const response = await exchange.catch(() => undefined)
+    if (response === undefined) {
+      noteHandoffPayment(write?.unanswered)
+      return exchange
+    }
+    if (write) {
+      const body: unknown = await response
+        .clone()
+        .json()
+        .catch(() => undefined)
+      noteHandoffPayment(write.answered(response, body))
+    }
+    if (await isScopedSessionRefusal(response)) onSessionRefused()
+    return response
+  }
+}
+
 export function createHandoffBillingClient(
   session: BillingSession,
   onSessionRefused: () => void
@@ -110,13 +146,29 @@ export function createHandoffBillingClient(
     session,
     resolveUrl,
     workspaceId: () => pinnedWorkspaceId(session),
-    fetchImpl: async (...args) => {
-      const response = await globalThis.fetch(...args)
-      if (await isScopedSessionRefusal(response)) onSessionRefused()
-      return response
-    }
+    fetchImpl: handoffFetch(onSessionRefused)
   })
-  return composeBillingWebClient(transport, sessionBillingScopeSource(session))
+  const client = composeBillingWebClient(
+    transport,
+    sessionBillingScopeSource(session)
+  )
+  client.lifecycle.subscribe((operation) =>
+    noteHandoffPayment(paymentEventOf(operation))
+  )
+  return client
+}
+
+/** Reads how the payment an ended handoff tab is still checking ended, with the bearer that tab kept. */
+export function readPaymentOutcome(
+  { reference, token }: CheckingPayment,
+  signal: AbortSignal
+): Promise<OperationOutcomeRead> {
+  return readOperationOutcome({
+    operationId: reference,
+    token,
+    resolveUrl,
+    signal
+  })
 }
 
 /**

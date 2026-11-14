@@ -162,6 +162,7 @@ export {
 export {
   OPERATION_POLL_BUDGET,
   OPERATION_POLL_TIMING,
+  backoffDelayMs,
   customerCanActHere,
   hasExhaustedPollBudget,
   isParkedOnCustomer,
@@ -196,6 +197,11 @@ export {
   failureCategoryFor,
   operationRoute
 } from './operationLifecycle'
+export type {
+  OperationOutcomeRead,
+  OperationOutcomeReadOptions
+} from './operationOutcome'
+export { operationOutcomeRoute, readOperationOutcome } from './operationOutcome'
 export {
   BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
   BILLING_OPERATION_TELEMETRY_EVENT
