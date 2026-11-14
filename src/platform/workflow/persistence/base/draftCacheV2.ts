@@ -10,6 +10,73 @@ import { MAX_DRAFTS } from './draftTypes'
 import { hashPath } from './hashUtil'
 
 /**
+ * @returns `path`'s existing draft key, otherwise one absent from `index.entries`.
+ */
+export function resolveDraftKey(index: DraftIndexV2, path: string): string {
+  const existing = Object.entries(
+    index.entries as Record<string, unknown>
+  ).find(
+    ([, entry]) =>
+      typeof entry === 'object' &&
+      entry !== null &&
+      'path' in entry &&
+      entry.path === path
+  )?.[0]
+  if (existing !== undefined) return existing
+
+  const hash = hashPath(path)
+  const taken = (key: string) => Object.hasOwn(index.entries, key)
+  if (!taken(hash)) return hash
+  let key = `${hash}:${path}`
+  for (let suffix = 2; taken(key); suffix++) key = `${hash}:${path}:${suffix}`
+  return key
+}
+
+/**
+ * Takes over the slot `path` would use from the index as stored, when stored
+ * shows a different path holding it.
+ *
+ * A rename keeps its slot (see {@link moveEntry}), so a slot no longer implies
+ * `hashPath(path)`. A tab caches its index for the whole session, so one whose
+ * cache predates another tab's rename still believes it owns that slot and
+ * would read, overwrite or delete the renamed draft's payload. Adopting the
+ * stored owner makes {@link resolveDraftKey} allocate a fresh slot for `path`
+ * instead — a cost paid by the write that raced, not by the rename.
+ *
+ * The fallback slot can be taken too, by a repeated rename that parked a third
+ * path there, so this settles instead of adopting once: each round imports one
+ * stored owner and so rules out the candidate it just checked, leaving the loop
+ * bounded by `stored`'s entry count.
+ *
+ * @returns `cached` itself when nothing else owns the slot.
+ */
+export function adoptContendedSlot(
+  cached: DraftIndexV2,
+  stored: DraftIndexV2 | null,
+  path: string
+): DraftIndexV2 {
+  if (!stored) return cached
+
+  const storedByKey: Partial<Record<string, DraftEntryMeta>> = stored.entries
+  let index = cached
+
+  for (;;) {
+    const draftKey = resolveDraftKey(index, path)
+    const owner = storedByKey[draftKey]
+    if (!owner || owner.path === path) return index
+
+    index = {
+      v: 2,
+      updatedAt: Date.now(),
+      order: index.order.includes(draftKey)
+        ? index.order
+        : [...index.order, draftKey],
+      entries: { ...index.entries, [draftKey]: owner }
+    }
+  }
+}
+
+/**
  * Creates an empty draft index.
  */
 export function createEmptyIndex(): DraftIndexV2 {
@@ -39,9 +106,9 @@ export function upsertEntry(
   index: DraftIndexV2,
   path: string,
   meta: Omit<DraftEntryMeta, 'path'>,
-  limit: number = MAX_DRAFTS
+  limit: number = MAX_DRAFTS,
+  draftKey: string = resolveDraftKey(index, path)
 ): { index: DraftIndexV2; evicted: string[] } {
-  const draftKey = hashPath(path)
   const effectiveLimit = Math.max(1, limit)
 
   const entries = {
@@ -84,7 +151,7 @@ export function removeEntry(
   index: DraftIndexV2,
   path: string
 ): { index: DraftIndexV2; removedKey: string | null } {
-  const draftKey = hashPath(path)
+  const draftKey = resolveDraftKey(index, path)
 
   if (!(draftKey in index.entries)) {
     return { index, removedKey: null }
@@ -105,10 +172,12 @@ export function removeEntry(
 }
 
 /**
- * Moves a draft from one path to another (rename operation).
- * Updates index recency only; callers keep the payload timestamp unchanged.
+ * Re-points a draft from one path to another (rename operation), keeping its
+ * slot. Updates index recency only; callers keep the payload timestamp
+ * unchanged.
  *
- * @returns Object with updated index and keys involved
+ * @returns Object with updated index and keys involved, or null when `oldPath`
+ * has no draft or `newPath` has its own.
  */
 export function moveEntry(
   index: DraftIndexV2,
@@ -116,37 +185,31 @@ export function moveEntry(
   newPath: string,
   newName: string
 ): { index: DraftIndexV2; oldKey: string; newKey: string } | null {
-  const oldKey = hashPath(oldPath)
-  const newKey = hashPath(newPath)
-
   const entriesByKey: Partial<Record<string, DraftEntryMeta>> = index.entries
-  const oldEntry = entriesByKey[oldKey]
-  if (!oldEntry) return null
-  if (oldKey !== newKey && entriesByKey[newKey]) return null
+  const draftKey = resolveDraftKey(index, oldPath)
+  const entry = entriesByKey[draftKey]
+  if (!entry) return null
 
-  const entries = { ...index.entries }
-  delete entries[oldKey]
-
-  entries[newKey] = {
-    ...oldEntry,
-    path: newPath,
-    name: newName,
-    updatedAt: Date.now()
-  }
-
-  const order = index.order
-    .filter((key) => key !== oldKey && key !== newKey)
-    .concat(newKey)
+  const occupant = getEntryByPath(index, newPath)
+  if (occupant && occupant !== entry) return null
 
   return {
     index: {
       v: 2,
       updatedAt: Date.now(),
-      order,
-      entries
+      order: touchOrder(index.order, draftKey),
+      entries: {
+        ...index.entries,
+        [draftKey]: {
+          ...entry,
+          path: newPath,
+          name: newName,
+          updatedAt: Date.now()
+        }
+      }
     },
-    oldKey,
-    newKey
+    oldKey: draftKey,
+    newKey: draftKey
   }
 }
 
@@ -164,7 +227,7 @@ export function getEntryByPath(
   index: DraftIndexV2,
   path: string
 ): DraftEntryMeta | null {
-  const draftKey = hashPath(path)
+  const draftKey = resolveDraftKey(index, path)
   return index.entries[draftKey] ?? null
 }
 

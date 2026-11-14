@@ -1,12 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
+import type { DraftIndexV2 } from './draftTypes'
 import {
+  adoptContendedSlot,
   createEmptyIndex,
   getEntryByPath,
   getMostRecentKey,
   moveEntry,
   removeEntry,
   removeOrphanedEntries,
+  resolveDraftKey,
   touchOrder,
   upsertEntry
 } from './draftCacheV2'
@@ -183,7 +186,55 @@ describe('draftCacheV2', () => {
       expect(result!.index.entries[result!.newKey].path).toBe(
         'workflows/new.json'
       )
-      expect(result!.index.entries[result!.oldKey]).toBeUndefined()
+      expect(getEntryByPath(result!.index, 'workflows/new.json')).toMatchObject(
+        {
+          name: 'new',
+          path: 'workflows/new.json'
+        }
+      )
+      expect(getEntryByPath(result!.index, 'workflows/old.json')).toBeNull()
+    })
+
+    it('keeps the entry in the slot it was written to', () => {
+      let index = createEmptyIndex()
+      index = upsertEntry(index, 'workflows/old.json', {
+        name: 'old',
+        isTemporary: true,
+        updatedAt: 1000
+      }).index
+
+      const result = moveEntry(
+        index,
+        'workflows/old.json',
+        'workflows/new.json',
+        'new'
+      )
+
+      expect(result!.oldKey).toBe(result!.newKey)
+      expect(result!.newKey).toBe(hashPath('workflows/old.json'))
+      expect(Object.keys(result!.index.entries)).toEqual([result!.newKey])
+    })
+
+    it('keeps the slot when the destination shares the source hash', () => {
+      let index = createEmptyIndex()
+      index = upsertEntry(index, 'workflows/ewip.json', {
+        name: 'a',
+        isTemporary: true,
+        updatedAt: 1000
+      }).index
+
+      const result = moveEntry(
+        index,
+        'workflows/ewip.json',
+        'workflows/4hbab.json',
+        'renamed'
+      )
+
+      expect(result!.oldKey).toBe(result!.newKey)
+      expect(
+        getEntryByPath(result!.index, 'workflows/4hbab.json')
+      ).toMatchObject({ name: 'renamed', path: 'workflows/4hbab.json' })
+      expect(getEntryByPath(result!.index, 'workflows/ewip.json')).toBeNull()
     })
 
     it('returns null for non-existent source', () => {
@@ -240,8 +291,67 @@ describe('draftCacheV2', () => {
       )
 
       const keyB = hashPath('workflows/b.json')
-      const keyC = hashPath('workflows/c.json')
-      expect(result!.index.order).toEqual([keyB, keyC])
+      expect(result!.index.order).toEqual([keyB, result!.newKey])
+    })
+  })
+
+  describe('adoptContendedSlot', () => {
+    function indexWith(path: string, name: string): DraftIndexV2 {
+      return upsertEntry(createEmptyIndex(), path, {
+        name,
+        isTemporary: false,
+        updatedAt: 1000
+      }).index
+    }
+
+    it('leaves an uncontended index untouched', () => {
+      const cached = indexWith('workflows/a.json', 'a')
+
+      expect(adoptContendedSlot(cached, cached, 'workflows/a.json')).toBe(
+        cached
+      )
+      expect(adoptContendedSlot(cached, null, 'workflows/a.json')).toBe(cached)
+      expect(
+        adoptContendedSlot(cached, createEmptyIndex(), 'workflows/a.json')
+      ).toBe(cached)
+    })
+
+    it('hands a renamed-into slot to the path that holds it', () => {
+      const cached = indexWith('workflows/a.json', 'a')
+      const stored = moveEntry(
+        cached,
+        'workflows/a.json',
+        'workflows/b.json',
+        'b'
+      )!.index
+
+      const adopted = adoptContendedSlot(cached, stored, 'workflows/a.json')
+
+      const slot = hashPath('workflows/a.json')
+      expect(adopted.entries[slot]).toMatchObject({ path: 'workflows/b.json' })
+      expect(getEntryByPath(adopted, 'workflows/a.json')).toBeNull()
+      // So the next write for the old path allocates somewhere else.
+      expect(resolveDraftKey(adopted, 'workflows/a.json')).not.toBe(slot)
+      expect(adopted.order).toContain(slot)
+    })
+
+    it('adopts a slot the cached index has never seen', () => {
+      const stored = moveEntry(
+        indexWith('workflows/a.json', 'a'),
+        'workflows/a.json',
+        'workflows/b.json',
+        'b'
+      )!.index
+
+      const adopted = adoptContendedSlot(
+        createEmptyIndex(),
+        stored,
+        'workflows/a.json'
+      )
+
+      const slot = hashPath('workflows/a.json')
+      expect(adopted.entries[slot]).toMatchObject({ path: 'workflows/b.json' })
+      expect(adopted.order).toEqual([slot])
     })
   })
 

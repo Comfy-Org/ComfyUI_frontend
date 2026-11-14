@@ -18,16 +18,17 @@ import type {
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import {
+  adoptContendedSlot,
   createEmptyIndex,
   getEntryByPath,
   getMostRecentKey,
   moveEntry,
   removeEntry,
   removeOrphanedEntries,
+  resolveDraftKey,
   touchOrder,
   upsertEntry
 } from '@/platform/workflow/persistence/base/draftCacheV2'
-import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import {
   deleteOrphanPayloads,
@@ -58,6 +59,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   // Key is workspaceId, value is the cached index
   const indexCacheByWorkspace = ref<Record<string, DraftIndexV2>>({})
   const lineageByDraft = new Map<string, DraftLineage>()
+  const pendingLineageByPath = new Map<string, DraftLineage>()
   const authSubject = ref<string | null | undefined>(undefined)
 
   /**
@@ -87,11 +89,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function payloadFor(
     workspaceId: string,
     draftKey: string,
+    path: string,
     data: string,
     updatedAt: number
   ): DraftPayloadV2 {
     const lineage =
       lineageByDraft.get(lineageKey(workspaceId, draftKey)) ??
+      pendingLineageByPath.get(lineageKey(workspaceId, path)) ??
       readPayload(workspaceId, draftKey)?.lineage
     return { data, updatedAt, ...(lineage && { lineage }) }
   }
@@ -129,6 +133,32 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   }
 
   /**
+   * The index to resolve `path`'s slot from. {@link loadIndex} answers from an
+   * in-memory cache that is never re-read, so it cannot see a rename another
+   * tab made — and a renamed draft keeps its slot. Re-reading storage here is
+   * what stops this tab attributing that slot to `path`.
+   */
+  function ownedIndex(workspaceId: string, path: string): DraftIndexV2 {
+    return adoptContendedSlot(loadIndex(), readIndex(workspaceId), path)
+  }
+
+  /**
+   * Follows a draft to a new slot. The lineage was recorded for this path's
+   * draft, so it belongs wherever that draft is now written.
+   */
+  function rekeyLineage(
+    workspaceId: string,
+    fromKey: string,
+    toKey: string
+  ): void {
+    if (fromKey === toKey) return
+    const lineage = lineageByDraft.get(lineageKey(workspaceId, fromKey))
+    if (!lineage) return
+    lineageByDraft.delete(lineageKey(workspaceId, fromKey))
+    lineageByDraft.set(lineageKey(workspaceId, toKey), lineage)
+  }
+
+  /**
    * Persists the current index to localStorage.
    */
   function persistIndex(index: DraftIndexV2): boolean {
@@ -145,25 +175,29 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     if (!isStorageAvailable()) return false
 
     const workspaceId = currentWorkspaceId()
-    const draftKey = hashPath(path)
     const now = Date.now()
 
-    const index = loadIndex()
+    const cached = loadIndex()
+    const index = adoptContendedSlot(cached, readIndex(workspaceId), path)
+    const draftKey = resolveDraftKey(index, path)
+    if (index !== cached)
+      rekeyLineage(workspaceId, resolveDraftKey(cached, path), draftKey)
 
     const payloadWritten = writePayload(
       workspaceId,
       draftKey,
-      payloadFor(workspaceId, draftKey, data, now)
+      payloadFor(workspaceId, draftKey, path, data, now)
     )
 
     if (!payloadWritten) {
-      return handleQuotaExceeded(path, data, meta)
+      return handleQuotaExceeded(path, data, meta, index, draftKey)
     }
     const { index: newIndex, evicted } = upsertEntry(
       index,
       path,
       { ...meta, updatedAt: now },
-      MAX_DRAFTS
+      MAX_DRAFTS,
+      draftKey
     )
 
     if (!persistIndex(newIndex)) {
@@ -172,6 +206,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       return false
     }
 
+    pendingLineageByPath.delete(lineageKey(workspaceId, path))
     deletePayloads(workspaceId, evicted)
     deleteLineages(workspaceId, evicted)
     return true
@@ -184,6 +219,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * entry in `entries` are stripped in-place and the loop continues, rather
    * than bailing out and leaving evictable drafts behind.
    *
+   * `index` and `draftKey` are the slot the caller already resolved, so the
+   * retries here cannot land on a different one.
+   *
    * Recovery writes (`persistIndex(currentIndex)` after a failed write) are
    * best-effort; their return value is intentionally ignored because there
    * is no useful action to take when the recovery itself also fails — the
@@ -193,12 +231,12 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function handleQuotaExceeded(
     path: string,
     data: string,
-    meta: DraftMeta
+    meta: DraftMeta,
+    index: DraftIndexV2,
+    draftKey: string
   ): boolean {
     const workspaceId = currentWorkspaceId()
-    const draftKey = hashPath(path)
-
-    let currentIndex = loadIndex()
+    let currentIndex = index
     let evictedCount = 0
 
     while (currentIndex.order.length > 0) {
@@ -224,20 +262,22 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         writePayload(
           workspaceId,
           draftKey,
-          payloadFor(workspaceId, draftKey, data, now)
+          payloadFor(workspaceId, draftKey, path, data, now)
         )
       ) {
         const { index: finalIndex } = upsertEntry(
           currentIndex,
           path,
           { ...meta, updatedAt: now },
-          MAX_DRAFTS
+          MAX_DRAFTS,
+          draftKey
         )
         if (!persistIndex(finalIndex)) {
           deletePayload(workspaceId, draftKey)
           persistIndex(currentIndex)
           return false
         }
+        pendingLineageByPath.delete(lineageKey(workspaceId, path))
         return true
       }
     }
@@ -300,7 +340,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    */
   function removeDraft(path: string): void {
     const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
+    const index = ownedIndex(workspaceId, path)
     const { index: newIndex, removedKey } = removeEntry(index, path)
 
     if (removedKey) {
@@ -315,34 +355,31 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    */
   function moveDraft(oldPath: string, newPath: string, name: string): void {
     const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
+    const index = ownedIndex(workspaceId, oldPath)
+    movePendingLineage(workspaceId, index, oldPath, newPath)
     const result = moveEntry(index, oldPath, newPath, name)
+    if (result) persistIndex(result.index)
+  }
 
-    if (result) {
-      const isRenameOntoSelf = result.oldKey === result.newKey
-      if (isRenameOntoSelf) {
-        persistIndex(result.index)
-        return
-      }
-      const oldPayload = readPayload(workspaceId, result.oldKey)
-      if (oldPayload) {
-        const written = writePayload(workspaceId, result.newKey, oldPayload)
-        if (!written) return
+  /**
+   * A lineage parked under `oldPath` belongs to the workflow being renamed, not
+   * to whatever is created at `oldPath` next, so it follows the rename. It is
+   * dropped rather than moved when the destination has a draft of its own,
+   * because that draft's own lineage is the one that applies there.
+   */
+  function movePendingLineage(
+    workspaceId: string,
+    index: DraftIndexV2,
+    oldPath: string,
+    newPath: string
+  ): void {
+    const parkedKey = lineageKey(workspaceId, oldPath)
+    const parked = pendingLineageByPath.get(parkedKey)
+    if (!parked) return
 
-        if (!persistIndex(result.index)) {
-          deletePayload(workspaceId, result.newKey)
-          return
-        }
-        deletePayload(workspaceId, result.oldKey)
-        const lineage = lineageByDraft.get(
-          lineageKey(workspaceId, result.oldKey)
-        )
-        if (lineage) {
-          lineageByDraft.set(lineageKey(workspaceId, result.newKey), lineage)
-          lineageByDraft.delete(lineageKey(workspaceId, result.oldKey))
-        }
-      }
-    }
+    pendingLineageByPath.delete(parkedKey)
+    if (!getEntryByPath(index, newPath))
+      pendingLineageByPath.set(lineageKey(workspaceId, newPath), parked)
   }
 
   /**
@@ -356,11 +393,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     lineage?: DraftLineage
   } | null {
     const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
+    const index = ownedIndex(workspaceId, path)
     const entry = getEntryByPath(index, path)
     if (!entry) return null
 
-    const draftKey = hashPath(path)
+    const draftKey = resolveDraftKey(index, path)
     const payload = readPayload(workspaceId, draftKey)
     if (!payload) {
       removeDraft(path)
@@ -380,7 +417,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   function setLineage(path: string, lineage: DraftLineage): void {
     const workspaceId = currentWorkspaceId()
-    const draftKey = hashPath(path)
+    const index = ownedIndex(workspaceId, path)
+    if (!getEntryByPath(index, path)) {
+      pendingLineageByPath.set(lineageKey(workspaceId, path), lineage)
+      return
+    }
+
+    const draftKey = resolveDraftKey(index, path)
     lineageByDraft.set(lineageKey(workspaceId, draftKey), lineage)
     const payload = readPayload(workspaceId, draftKey)
     if (
@@ -399,7 +442,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const entry = getEntryByPath(index, path)
     if (!entry) return
 
-    const draftKey = hashPath(path)
+    const draftKey = resolveDraftKey(index, path)
     persistIndex({
       ...index,
       updatedAt: Date.now(),
@@ -481,6 +524,9 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     delete indexCacheByWorkspace.value[workspaceId]
     for (const key of lineageByDraft.keys()) {
       if (key.startsWith(`${workspaceId}:`)) lineageByDraft.delete(key)
+    }
+    for (const key of pendingLineageByPath.keys()) {
+      if (key.startsWith(`${workspaceId}:`)) pendingLineageByPath.delete(key)
     }
   }
 
