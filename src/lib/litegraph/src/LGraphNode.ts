@@ -1366,7 +1366,8 @@ export class LGraphNode
         }
 
         let positionalIndex = 0
-        for (const widget of this.widgets) {
+        for (let index = 0; index < this.widgets.length; index++) {
+          const widget = this.widgets[index]
           if (widget.serialize === false) continue
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,

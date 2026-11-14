@@ -138,6 +138,7 @@ export class LinkConnector {
   overWidget?: IBaseWidget
   /** The type (returned by downstream callback) for {@link overWidget} */
   overWidgetType?: string
+  overInput?: INodeInputSlot
 
   /** The reroute beneath the pointer, if it is a valid connection target. */
   overReroute?: Reroute
@@ -848,10 +849,8 @@ export class LinkConnector {
     const { connectingTo } = state
     const { canvasX, canvasY } = event
 
-    // Do nothing if every connection would loop back
     if (renderLinks.every((link) => link.node === node)) return
 
-    // To output
     if (connectingTo === 'output') {
       const output = node.getOutputOnPos([canvasX, canvasY])
 
@@ -860,12 +859,11 @@ export class LinkConnector {
       } else {
         this.connectToNode(node, event)
       }
-      // To input
     } else if (connectingTo === 'input') {
-      const input = node.getInputOnPos([canvasX, canvasY])
+      const hoveredInput = node.inputs.find((i) => i === this.overInput)
+      const input = hoveredInput ?? node.getInputOnPos([canvasX, canvasY])
       const inputOrSocket = input ?? node.getSlotFromWidget(this.overWidget)
 
-      // Input slot; fall back to a free compatible input if the slot rejects it
       const droppedOnSlot =
         inputOrSocket != null && this._dropOnInput(node, inputOrSocket)
       const hasFreeCompatibleInput = node.inputs.some(
@@ -873,7 +871,6 @@ export class LinkConnector {
           candidate.link == null && this.isInputValidDrop(node, candidate)
       )
       if (!droppedOnSlot && (inputOrSocket == null || hasFreeCompatibleInput)) {
-        // Node background / title
         this.connectToNode(node, event)
       }
     }
@@ -1220,6 +1217,7 @@ export class LinkConnector {
     outputLinks.length = 0
     floatingLinks.length = 0
     hiddenReroutes.clear()
+    this.overInput = undefined
     state.multi = false
     state.draggingExistingLinks = false
     state.snapLinksPos = undefined

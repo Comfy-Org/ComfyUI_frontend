@@ -8,6 +8,7 @@ import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards'
 import { commonType } from '@/lib/litegraph/src/utils/type'
 import {
   getWidgetIds,
@@ -26,6 +27,7 @@ import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import {
   captureInputLayout,
+  inputLink,
   replaceNodeInputs
 } from '@/lib/litegraph/src/node/slotLinks'
 import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
@@ -53,10 +55,17 @@ type AutogrowNode = LGraphNode &
           inputSpecs: InputSpecV2[]
           prefix?: string
           names?: string[]
+          inputSpec: InputSpecV2
         }
       >
     }
   }
+
+type DynamicComboNode = LGraphNode & {
+  comfyDynamic: {
+    dynamicCombo: Record<string, { inputSpec: InputSpec; sync(): void }>
+  }
+}
 
 function commitMutatedInputs(
   node: LGraphNode,
@@ -66,6 +75,29 @@ function commitMutatedInputs(
   const finalInputs = [...node.inputs]
   node.inputs.splice(0, node.inputs.length, ...previous.inputs)
   return replaceNodeInputs(node, previous, finalInputs, assignments)
+}
+
+function notifyRelinked(
+  node: LGraphNode,
+  relinked: readonly { input: INodeInputSlot; link: LLink }[]
+) {
+  for (const { input, link } of relinked) {
+    const slot = node.inputs.indexOf(input)
+    if (slot !== -1)
+      node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
+  }
+}
+
+function carryLinks(
+  node: LGraphNode,
+  removedInputs: INodeInputSlot[],
+  inputLinks: Map<INodeInputSlot, LLink>
+) {
+  for (const input of removedInputs) {
+    const replacement = node.inputs.find((item) => item.name === input.name)
+    const link = inputLinks.get(input)
+    if (replacement && link) inputLinks.set(replacement, link)
+  }
 }
 
 function syncNodeWidgetOrder(node: LGraphNode) {
@@ -78,27 +110,6 @@ function syncNodeWidgetOrder(node: LGraphNode) {
   )
 }
 
-function ensureWidgetForInput(node: LGraphNode, input: INodeInputSlot) {
-  node.widgets ??= []
-  const { widget } = input
-  if (widget && node.widgets.some((w) => w.name === widget.name)) return
-  node.widgets.push({
-    draw(ctx, _n, _w, y) {
-      ctx.save()
-      ctx.fillStyle = LiteGraph.NODE_TEXT_COLOR
-      ctx.fillText(input.label ?? input.name, 20, y + 15)
-      ctx.restore()
-    },
-    name: input.name,
-    options: {},
-    serialize: false,
-    type: 'shim',
-    y: 0
-  })
-  input.alwaysVisible = true
-  input.widget = { name: input.name }
-}
-
 function dynamicComboWidget(
   node: LGraphNode,
   inputName: string,
@@ -107,7 +118,6 @@ function dynamicComboWidget(
   widgetName?: string
 ) {
   const { addNodeInput } = useLitegraphServiceAccess()
-  const { deleteWidget } = useWidgetValueStore()
   const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
   if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
   const inputData = parseResult.data
@@ -161,121 +171,80 @@ function dynamicComboWidget(
               positionalIndex
             )
           : undefined
-      if (!restored && removed?.type === addedWidget.type) {
+      if (restored) addedWidget.value = restored.value
+      else if (removed?.type === addedWidget.type)
         addedWidget.value = removed.value
-      }
     }
+  }
+  function addOptionInputs(spec: (typeof options)[string] | undefined) {
+    const inputTypes: [Record<string, InputSpec> | undefined, boolean][] = [
+      [spec?.required, false],
+      [spec?.optional, true]
+    ]
+    for (const [inputs, isOptional] of inputTypes)
+      for (const [key, inputSpec] of Object.entries(inputs ?? {})) {
+        const name = `${widget.name}.${key}`
+        const specToAdd = transformInputSpecV1ToV2(inputSpec, {
+          name,
+          isOptional
+        })
+        specToAdd.display_name = key
+        addNodeInput(node, specToAdd)
+      }
+  }
+  function placeAddedInputs(start: number, hasAddedWidgets: boolean) {
+    const socket = node.inputs.findIndex((i) => i.name === widget.name)
+    if (socket === -1 && node.inputs.length > start && !hasAddedWidgets)
+      throw new Error('Failed to find input socket for ' + widget.name)
+    const added = node.inputs.splice(start).map((input) => {
+      const existing = node.inputs.findIndex((i) => i.name === input.name)
+      return existing === -1 ? input : node.inputs.splice(existing, 1)[0]
+    })
+    node.inputs.splice(socket + 1 || node.inputs.length, 0, ...added)
   }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
-    const newSpec = value ? options[value] : undefined
-    const removedOption = activeOption
+    const newSpec =
+      value && !widget.connectionSuppressed ? options[value] : undefined
+    const optionValues = removedWidgetValues.get(activeOption) ?? new Map()
+    removedWidgetValues.set(activeOption, optionValues)
     activeOption = value
 
     const previous = captureInputLayout(node)
     const inputLinks = new Map(previous.links)
     const removedInputs = remove(node.inputs, isInGroup)
-    for (const widget of remove(node.widgets, isInGroup)) {
-      const optionValues = removedWidgetValues.get(removedOption) ?? new Map()
-      optionValues.set(widget.name, {
-        type: widget.type,
-        value: widget.value
-      })
-      removedWidgetValues.set(removedOption, optionValues)
-      widget.onRemove?.()
-      if (widget.widgetId) deleteWidget(widget.widgetId)
+    for (const child of node.widgets.filter(isInGroup)) {
+      optionValues.set(child.name, { type: child.type, value: child.value })
+      node.removeWidget(child)
     }
+    forgetDynamicChildren(node, inputName)
 
-    if (!newSpec) {
-      const result = commitMutatedInputs(node, previous, inputLinks)
-      if (!result.ok) return
-      syncNodeWidgetOrder(node)
-      return
-    }
-
-    const insertionPoint = node.widgets.findIndex((w) => w === widget) + 1
-    const startingLength = node.widgets.length
-    const startingInputLength = node.inputs.length
-
+    const insertionPoint = node.widgets.indexOf(widget) + 1
     if (insertionPoint === 0)
       throw new Error("Dynamic widget doesn't exist on node")
-    const inputTypes: (Record<string, InputSpec> | undefined)[] = [
-      newSpec.required,
-      newSpec.optional
-    ]
-    inputTypes.forEach((inputType, idx) => {
-      for (const key in inputType ?? {}) {
-        const name = `${widget.name}.${key}`
-        const specToAdd = transformInputSpecV1ToV2(inputType![key], {
-          name,
-          isOptional: idx !== 0
-        })
-        specToAdd.display_name = key
-        addNodeInput(node, specToAdd)
-      }
-    })
+    const startingWidgets = new Set(node.widgets)
+    const startingInputLength = node.inputs.length
+    addOptionInputs(newSpec)
 
-    const inputInsertionPoint =
-      node.inputs.findIndex((i) => i.name === widget.name) + 1
-    const addedWidgets = node.widgets.splice(startingLength)
-    const addedWidgetNames = addedWidgets.map(({ name }) => name)
+    const addedWidgets = remove(node.widgets, (w) => !startingWidgets.has(w))
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     syncNodeWidgetOrder(node)
-    if (inputInsertionPoint === 0) {
-      if (
-        addedWidgets.length === 0 &&
-        node.inputs.length !== startingInputLength
-      )
-        //input is inputOnly, but lacks an insertion point
-        throw new Error('Failed to find input socket for ' + widget.name)
-      const result = commitMutatedInputs(node, previous, inputLinks)
-      if (!result.ok) return
-      restoreRemovedValues(value, addedWidgetNames)
-      return
-    }
-    const addedInputs = node.inputs
-      .splice(startingInputLength)
-      .map((addedInput) => {
-        const existingInput = node.inputs.findIndex(
-          (existingInput) => addedInput.name === existingInput.name
-        )
-        return existingInput === -1
-          ? addedInput
-          : node.inputs.splice(existingInput, 1)[0]
-      })
-    //assume existing inputs are in correct order
-    node.inputs.splice(inputInsertionPoint, 0, ...addedInputs)
+    placeAddedInputs(startingInputLength, addedWidgets.length > 0)
+    carryLinks(node, removedInputs, inputLinks)
 
-    for (const input of removedInputs) {
-      const replacement = node.inputs.find((item) => item.name === input.name)
-      const link = inputLinks.get(input)
-      if (replacement && link) inputLinks.set(replacement, link)
-    }
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return
-    //A callback can grow the group it lands on, shifting every input after
-    //it, so the slot captured before the batch is stale for later entries.
-    for (const { input, link } of result.replacements) {
-      const slot = node.inputs.indexOf(input)
-      if (slot === -1) continue
-      node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
-    }
-    restoreRemovedValues(value, addedWidgetNames)
-
+    notifyRelinked(node, result.replacements)
+    restoreRemovedValues(
+      value,
+      addedWidgets.map(({ name }) => name)
+    )
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
     node.graph.setDirtyCanvas(true, true)
   }
-  //Refit height on the callback channel: interaction fires it after the value
-  //setter, while configure (load, clone, paste) only fires the setter and must
-  //keep the serialised height.
-  widget.callback = useChainCallback(widget.callback, () => {
-    node.size = [node.size[0], node.computeSize([...node.size])[1]]
-    node.graph?.setDirtyCanvas(true, true)
-  })
-  //A little hacky, but onConfigure won't work.
-  //It fires too late and is overly disruptive
+  widget.callback = useChainCallback(widget.callback, () => refitHeight(node))
   let widgetValue = widget.value
   const getState = () => {
     const graphId = resolveNodeRootGraphId(node)
@@ -296,7 +265,61 @@ function dynamicComboWidget(
     }
   })
   widget.value = widgetValue
+  withComfyDynamicCombo(node)
+  node.comfyDynamic.dynamicCombo[widget.name] = {
+    inputSpec: untypedInputData,
+    sync() {
+      const hasChildren =
+        node.inputs.some(isInGroup) || !!node.widgets?.some(isInGroup)
+      if (!!widget.connectionSuppressed !== hasChildren) return
+      updateWidgets(activeOption)
+      refitHeight(node)
+    }
+  }
   return { widget, minWidth, minHeight }
+}
+
+function refitHeight(node: LGraphNode) {
+  node.size = [node.size[0], node.computeSize([...node.size])[1]]
+  node.graph?.setDirtyCanvas(true, true)
+}
+
+function hasDynamicCombos(node: LGraphNode): node is DynamicComboNode {
+  return !!node.comfyDynamic?.dynamicCombo
+}
+
+function withComfyDynamicCombo(
+  node: LGraphNode
+): asserts node is DynamicComboNode {
+  if (hasDynamicCombos(node)) return
+  node.comfyDynamic ??= {}
+  const combos: DynamicComboNode['comfyDynamic']['dynamicCombo'] = {}
+  node.comfyDynamic.dynamicCombo = combos
+
+  const originalOnConnectInput = node.onConnectInput
+  node.onConnectInput = function (slot: number, ...args) {
+    const name = this.inputs.at(slot)?.widget?.name
+    if (name && Object.hasOwn(combos, name) && !isSubgraphInput(args[1]))
+      return false
+    return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
+  }
+
+  node.onAfterGraphConfigured = useChainCallback(
+    node.onAfterGraphConfigured,
+    () => {
+      for (const name of Object.keys(combos))
+        if (Object.hasOwn(combos, name)) combos[name].sync()
+    }
+  )
+  node.onConnectionsChange = useChainCallback(
+    node.onConnectionsChange,
+    function (this: LGraphNode, contype: ISlotType, slot: number) {
+      const name = this.inputs.at(slot)?.widget?.name
+      if (contype !== LiteGraph.INPUT || !name || useApp().configuringGraph)
+        return
+      if (Object.hasOwn(combos, name)) combos[name].sync()
+    }
+  )
 }
 
 export const dynamicWidgets = {
@@ -486,7 +509,7 @@ function addAutogrowGroup(
 ) {
   const { addNodeInput } = useLitegraphServiceAccess()
   const { max, min, inputSpecs } = node.comfyDynamic.autogrow[groupName]
-  if (ordinal >= max) return
+  if (ordinal >= max || isAutogrowGroupConnected(node, groupName)) return
 
   const previous = captureInputLayout(node)
   const inputLinks = new Map(previous.links)
@@ -501,11 +524,8 @@ function addAutogrowGroup(
   )
   const newInputs = namedSpecs.map((namedSpec) => {
     addNodeInput(node, namedSpec)
-    const input = node.inputs.splice(node.inputs.length - 1, 1)[0]
-    if (inputSpecs.length !== 1) ensureWidgetForInput(node, input)
-    return input
+    return node.inputs.splice(node.inputs.length - 1, 1)[0]
   })
-
   for (const newInput of newInputs) {
     for (const existingInput of remove(
       node.inputs,
@@ -523,8 +543,8 @@ function addAutogrowGroup(
     groupName,
     node
   ).name
-  const lastIndex = node.inputs.findLastIndex((inp) =>
-    inp.name.startsWith(targetName)
+  const lastIndex = node.inputs.findLastIndex(
+    (inp) => inp.name.startsWith(targetName) || inp.name === groupName
   )
   const insertionIndex =
     lastIndex !== -1
@@ -582,6 +602,15 @@ export function liveAutogrowGroupOf(
   return undefined
 }
 
+export function autogrowInputRole(
+  node: LGraphNode,
+  input: INodeInputSlot
+): 'group' | 'child' | undefined {
+  if (!hasAutogrowGroups(node) || input.widget) return undefined
+  if (Object.hasOwn(node.comfyDynamic.autogrow, input.name)) return 'group'
+  return liveAutogrowGroupOf(node, input.name) ? 'child' : undefined
+}
+
 /**
  * Grows the autogrow group `name` belongs to until the node holds an input by
  * that name, and returns its live index. Undefined when `name` belongs to no
@@ -598,6 +627,36 @@ export function growAutogrowInput(
   })
   const index = node.inputs.findIndex((input) => input.name === name)
   return index === -1 ? undefined : index
+}
+
+function assignPackedLinks(
+  packed: readonly LLink[][],
+  layout: InputLayoutSnapshot,
+  {
+    start,
+    last,
+    inputAt
+  }: {
+    start: number
+    last: number
+    inputAt: (ordinal: number, column: number) => INodeInputSlot | undefined
+  }
+) {
+  const assignments = new Map(layout.links)
+  const moved: { input: INodeInputSlot; link: LLink }[] = []
+  for (const [column, links] of packed.entries()) {
+    for (const ordinal of range(start, last + 1)) {
+      const input = inputAt(ordinal, column)
+      if (input) assignments.delete(input)
+    }
+    for (const [offset, link] of links.entries()) {
+      const input = inputAt(start + offset, column)
+      if (!input) continue
+      assignments.set(input, link)
+      if (layout.links.get(input) !== link) moved.push({ input, link })
+    }
+  }
+  return { assignments, moved }
 }
 
 function reconcileAutogrowGroup(
@@ -637,20 +696,11 @@ function reconcileAutogrowGroup(
     if (!inputAt(ordinal, 0)) addAutogrowGroup(ordinal, groupName, node)
 
   const layout = captureInputLayout(node)
-  const assignments = new Map(layout.links)
-  const moved: { input: INodeInputSlot; link: LLink }[] = []
-  for (const [column, links] of packed.entries()) {
-    for (const ordinal of range(start, last + 1)) {
-      const input = inputAt(ordinal, column)
-      if (input) assignments.delete(input)
-    }
-    for (const [offset, link] of links.entries()) {
-      const input = inputAt(start + offset, column)
-      if (!input) continue
-      assignments.set(input, link)
-      if (layout.links.get(input) !== link) moved.push({ input, link })
-    }
-  }
+  const { assignments, moved } = assignPackedLinks(packed, layout, {
+    start,
+    last,
+    inputAt
+  })
   const removed = layout.inputs.filter((input) => {
     if (!input.name.startsWith(`${groupName}.`)) return false
     const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
@@ -667,21 +717,12 @@ function reconcileAutogrowGroup(
   if (!result.ok) return
   node.graph?.setDirtyCanvas(true, true)
 
-  for (const { input, link } of moved) {
-    const slot = node.inputs.indexOf(input)
-    if (slot !== -1)
-      node.onConnectionsChange(LiteGraph.INPUT, slot, true, link, input)
-  }
-  for (const input of removed) {
-    const widgetName = input.widget?.name
-    if (!widgetName) continue
-    for (const widget of remove(node.widgets, (w) => w.name === widgetName)) {
-      widget.onRemove?.()
-      if (widget.widgetId) useWidgetValueStore().deleteWidget(widget.widgetId)
-    }
-    syncNodeWidgetOrder(node)
-  }
-  node.size = [node.size[0], node.computeSize([...node.size])[1]]
+  notifyRelinked(node, moved)
+  const removedNames = new Set(removed.map((input) => input.widget?.name))
+  for (const widget of node.widgets.filter((w) => removedNames.has(w.name)))
+    node.removeWidget(widget)
+  syncNodeWidgetOrder(node)
+  refitHeight(node)
 }
 
 function restoreAutogrowGroup(
@@ -706,10 +747,67 @@ function trimAutogrowGroups(node: AutogrowNode) {
     reconcileAutogrowGroup(groupName, node, { compactFrom: max })
 }
 
+function isAutogrowGroupConnected(node: LGraphNode, groupName: string) {
+  const index = node.inputs.findIndex((input) => input.name === groupName)
+  if (index === -1 || !node.graph) return false
+  return inputLink(node.graph, node.id, index)?.type === node.inputs[index].type
+}
+
+function syncAutogrowGroup(node: AutogrowNode, groupName: string) {
+  if (isAutogrowGroupConnected(node, groupName))
+    removeGroupChildren(node, groupName)
+  else if (!node.inputs.some((input) => input.name.startsWith(`${groupName}.`)))
+    growAutogrowToMin(node, groupName)
+}
+
+function growAutogrowToMin(node: AutogrowNode, groupName: string) {
+  const { min } = node.comfyDynamic.autogrow[groupName]
+  for (let i = 0; i === 0 || i < min + 1; i++)
+    addAutogrowGroup(i, groupName, node)
+}
+
+function removeGroupChildren(node: LGraphNode, groupName: string) {
+  const prefix = `${groupName}.`
+  for (let slot = node.inputs.length - 1; slot >= 0; slot--) {
+    if (
+      node.inputs[slot].name.startsWith(prefix) &&
+      node.isInputConnected(slot)
+    )
+      node.disconnectInput(slot)
+  }
+  const previous = captureInputLayout(node)
+  const finalInputs = previous.inputs.filter(
+    (input) => !input.name.startsWith(prefix)
+  )
+  if (finalInputs.length === previous.inputs.length) return
+  const result = replaceNodeInputs(node, previous, finalInputs)
+  if (!result.ok) return
+  for (const widget of node.widgets?.filter((w) => w.name.startsWith(prefix)) ??
+    [])
+    node.removeWidget(widget)
+  forgetDynamicChildren(node, groupName)
+  syncNodeWidgetOrder(node)
+  refitHeight(node)
+}
+
+function dynamicRegistries(node: LGraphNode): Record<string, unknown>[] {
+  return [
+    hasAutogrowGroups(node) && node.comfyDynamic.autogrow,
+    hasDynamicCombos(node) && node.comfyDynamic.dynamicCombo
+  ].filter((registry) => registry !== false)
+}
+
+function forgetDynamicChildren(node: LGraphNode, groupName: string) {
+  for (const registry of dynamicRegistries(node))
+    for (const nested of Object.keys(registry))
+      if (nested.startsWith(`${groupName}.`)) delete registry[nested]
+}
+
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   if (node.comfyDynamic?.autogrow) return
   node.comfyDynamic ??= {}
-  node.comfyDynamic.autogrow = {}
+  const groups: AutogrowNode['comfyDynamic']['autogrow'] = {}
+  node.comfyDynamic.autogrow = groups
 
   node.onConfigure = useChainCallback(
     node.onConfigure,
@@ -728,12 +826,36 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     }
   )
 
+  const originalOnConnectInput = node.onConnectInput
+  node.onConnectInput = function (slot: number, ...args) {
+    const groupInput = this.inputs.at(slot)
+    if (
+      groupInput &&
+      Object.hasOwn(groups, groupInput.name) &&
+      !isSubgraphInput(args[1])
+    )
+      return false
+    return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
+  }
+
+  node.onAfterGraphConfigured = useChainCallback(
+    node.onAfterGraphConfigured,
+    function (this: AutogrowNode) {
+      for (const groupName of Object.keys(groups))
+        syncAutogrowGroup(this, groupName)
+    }
+  )
+
   node.onConnectionsChange = useChainCallback(
     node.onConnectionsChange,
     function (this: AutogrowNode, contype: ISlotType, slot: number, iscon) {
       const input = this.inputs.at(slot)
-      if (contype !== LiteGraph.INPUT || !input || useApp().configuringGraph)
+      if (contype !== LiteGraph.INPUT || !input) return
+      if (Object.hasOwn(this.comfyDynamic.autogrow, input.name)) {
+        if (!useApp().configuringGraph) syncAutogrowGroup(this, input.name)
         return
+      }
+      if (useApp().configuringGraph) return
       const groupName = liveAutogrowGroupOf(this, input.name)
       if (groupName === undefined) return
       if (iscon) return reconcileAutogrowGroup(groupName, this)
@@ -747,6 +869,11 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   )
 }
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
+  const groupName = inputSpecV2.name
+  if (!node.inputs.some((input) => input.name === groupName))
+    node.addInput(groupName, inputSpecV2.type, {
+      localized_name: inputSpecV2.display_name
+    })
   withComfyAutogrow(node)
 
   const parseResult = zAutogrowOptions.safeParse(inputSpecV2)
@@ -763,13 +890,117 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
       transformInputSpecV1ToV2(v, { name, isOptional: index === 1 })
     )
   )
-  node.comfyDynamic.autogrow[inputSpecV2.name] = {
+  node.comfyDynamic.autogrow[groupName] = {
     names,
     min,
     max: names?.length ?? max,
     prefix,
-    inputSpecs: inputsV2
+    inputSpecs: inputsV2,
+    inputSpec: inputSpecV2
   }
-  for (let i = 0; i === 0 || i < min + 1; i++)
-    addAutogrowGroup(i, inputSpecV2.name, node)
+  growAutogrowToMin(node, groupName)
+}
+
+/**
+ * Makes `node` own the dynamic children (autogrow group or dynamic combo
+ * options) `interiorInput` defines, through `input`. False if it defines none.
+ */
+export function bindPromotedDynamicInput(
+  node: LGraphNode,
+  input: INodeInputSlot,
+  interiorNode: LGraphNode,
+  interiorInput: INodeInputSlot
+): boolean {
+  return (
+    bindPromotedAutogrowGroup(node, input, interiorNode, interiorInput) ||
+    bindPromotedDynamicCombo(node, input, interiorNode, interiorInput)
+  )
+}
+
+/** Removes the dynamic children `node` owns through `input`; false if none. */
+export function unbindPromotedDynamicInput(
+  node: LGraphNode,
+  input: INodeInputSlot
+): boolean {
+  const registry = dynamicRegistries(node).find((r) =>
+    Object.hasOwn(r, input.name)
+  )
+  if (!registry) return false
+  removeGroupChildren(node, input.name)
+  delete registry[input.name]
+  const groupWidget = node.widgets?.find((w) => w.name === input.name)
+  if (groupWidget) node.removeWidget(groupWidget)
+  input.widget = undefined
+  syncNodeWidgetOrder(node)
+  return true
+}
+
+function bindPromotedDynamicCombo(
+  node: LGraphNode,
+  input: INodeInputSlot,
+  interiorNode: LGraphNode,
+  interiorInput: INodeInputSlot
+): boolean {
+  const interiorName = interiorInput.widget?.name
+  if (
+    !interiorName ||
+    !hasDynamicCombos(interiorNode) ||
+    !Object.hasOwn(interiorNode.comfyDynamic.dynamicCombo, interiorName)
+  )
+    return false
+  const { inputSpec } = interiorNode.comfyDynamic.dynamicCombo[interiorName]
+  if (
+    hasDynamicCombos(node) &&
+    Object.hasOwn(node.comfyDynamic.dynamicCombo, input.name) &&
+    node.comfyDynamic.dynamicCombo[input.name].inputSpec === inputSpec
+  )
+    return true
+  unbindPromotedDynamicInput(node, input)
+  input.widget = { name: input.name }
+  const { widget } = dynamicComboWidget(node, input.name, inputSpec, useApp())
+  if (input.label) widget.label = input.label
+  copyComboValues(interiorNode, interiorName, node, input.name)
+  return true
+}
+
+function copyComboValues(
+  from: LGraphNode,
+  fromName: string,
+  to: LGraphNode,
+  toName: string
+) {
+  for (const { name, value } of from.widgets ?? []) {
+    if (name !== fromName && !name.startsWith(`${fromName}.`)) continue
+    const targetName = toName + name.slice(fromName.length)
+    const target = to.widgets?.find((w) => w.name === targetName)
+    if (target) target.value = value
+  }
+}
+
+function bindPromotedAutogrowGroup(
+  node: LGraphNode,
+  input: INodeInputSlot,
+  interiorNode: LGraphNode,
+  interiorInput: INodeInputSlot
+): boolean {
+  if (
+    !hasAutogrowGroups(interiorNode) ||
+    !Object.hasOwn(interiorNode.comfyDynamic.autogrow, interiorInput.name)
+  )
+    return false
+  const { inputSpec } = interiorNode.comfyDynamic.autogrow[interiorInput.name]
+  if (
+    hasAutogrowGroups(node) &&
+    Object.hasOwn(node.comfyDynamic.autogrow, input.name) &&
+    node.comfyDynamic.autogrow[input.name].inputSpec.template ===
+      inputSpec.template
+  )
+    return true
+  unbindPromotedDynamicInput(node, input)
+  applyAutogrow(node, {
+    ...inputSpec,
+    name: input.name,
+    display_name: input.label ?? inputSpec.display_name
+  })
+  return true
 }
