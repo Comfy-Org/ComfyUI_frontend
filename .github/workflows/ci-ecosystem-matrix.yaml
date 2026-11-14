@@ -41,6 +41,12 @@ on:
       - '!.storybook/**'
       - '!**/*.md'
   workflow_dispatch:
+    inputs:
+      registry_forms:
+        description: Run the opt-in per-pack widget-form census
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -253,7 +259,7 @@ jobs:
     needs: corpus
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: ${{ inputs.registry_forms && 40 || 20 }}
     strategy:
       fail-fast: false
       matrix:
@@ -262,6 +268,7 @@ jobs:
     env:
       MATRIX_RENDERER: ${{ matrix.renderer }}
       MATRIX_VUE: ${{ matrix.renderer == 'vue' && '1' || '' }}
+      MATRIX_REGISTRY_FORMS: ${{ inputs.registry_forms && '1' || '' }}
     steps:
       # This job EXECUTES unreviewed third-party pack code under vitest;
       # the checkout must not leave a usable git credential behind for it.
@@ -343,7 +350,7 @@ jobs:
           row_names=()
           for f in matrix-rows/*.json; do
             name=$(basename "$f" .json)
-            case "$name" in _manifest*) continue ;; esac
+            case "$name" in _manifest*|_registry-baseline) continue ;; esac
             row_names+=("$name")
           done
           echo "specs=$built rows=${#row_names[@]}"
@@ -448,6 +455,7 @@ jobs:
         env:
           MATRIX_RUN_ID: ${{ github.run_id }}
           MATRIX_EXPECT_SHARDS: '4'
+          MATRIX_EXPECT_REGISTRY_FORMS: ${{ inputs.registry_forms && '1' || '' }}
         run: |
           set +e
           MATRIX_OUT="$PWD/matrix-rows" \
