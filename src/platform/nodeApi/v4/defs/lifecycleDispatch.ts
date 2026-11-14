@@ -1,7 +1,6 @@
 import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { isPlainObject, once } from 'es-toolkit'
 
-import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import { isNodeCanonicalField } from '@/lib/litegraph/src/extensionPersistence'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -17,13 +16,11 @@ const NO_FIELDS: Readonly<Record<string, unknown>> = Object.freeze({})
 /** Delivers the hooks of a node's life: joining a graph, saved state, running, saving, resizing, leaving. */
 export function createLifecycleDispatch({
   deliver,
-  source,
   copyOfSaved,
   isInGraph,
   isMadeFromKnownClass
 }: DispatchContext) {
   const configuredBeforeAdded = new WeakMap<LGraphNode, ISerialisedNode>()
-  let stopHearingAdds: (() => void) | undefined
 
   function deliverConfigured(
     type: string,
@@ -126,23 +123,7 @@ export function createLifecycleDispatch({
     return copyOfSaved('onSerialize', fields) ?? NO_FIELDS
   }
 
-  return {
-    installers,
-    demandChanged() {
-      const needed =
-        source.demand('onCreated') + source.demand('onConfigured') > 0
-      if (needed && !stopHearingAdds) {
-        stopHearingAdds = onGraphIntent((intent) => {
-          if (intent.type === 'add_node') {
-            nodeAdded(intent.node, intent.source === 'load')
-          }
-        })
-      } else if (!needed && stopHearingAdds) {
-        stopHearingAdds()
-        stopHearingAdds = undefined
-      }
-    }
-  }
+  return { installers, nodeAdded }
 }
 
 function executionResult(raw: unknown): ExecutionResult {

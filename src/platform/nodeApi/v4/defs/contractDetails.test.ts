@@ -275,16 +275,21 @@ describe('contract details', () => {
       expect(results.map((result) => result.raw)).toEqual([{}])
     })
 
-    it('listens for nodes joining only for the hooks that need it', () => {
+    it('listens for nodes joining only while some extension has a hook', () => {
       const listeners = new Set<unknown>()
       vi.mocked(onGraphIntent).mockImplementation((listener) => {
         listeners.add(listener)
         return () => listeners.delete(listener)
       })
+      const before = listeners.size
 
-      defs.extend(hostType(), (builder) => builder.onRemoved(() => {}))
+      const stop = defs.extend(hostType(), (builder) =>
+        builder.onRemoved(() => {})
+      )
+      const during = listeners.size
+      stop()
 
-      expect(listeners.size).toBe(0)
+      expect([before, during, listeners.size]).toEqual([0, 1, 0])
     })
 
     it('stops every hook on a defined type once its definition is unsubscribed', () => {

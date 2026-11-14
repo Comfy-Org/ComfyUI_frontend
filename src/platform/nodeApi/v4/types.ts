@@ -488,7 +488,8 @@ export interface SlotCollection<THandle> {
 export interface DefRegistry {
   /**
    * Calls `apply` once for each node type `selector` picks, now and as types
-   * register; its hooks reach the open document's existing nodes. Unsubscribing removes them.
+   * register; its hooks reach the nodes that join a graph after this call, not those already there.
+   * Unsubscribing removes them.
    */
   extend(
     selector: DefSelector,
@@ -537,7 +538,7 @@ export type DefSelector =
 
 /**
  * Extends one node type. Its methods throw a `TypeError` once the callback
- * given to `extend` returns. Hooks run for nodes in a graph, in the order added.
+ * given to `extend` returns. Hooks run for nodes in a graph that joined after the extension was made, in the order added.
  */
 export interface NodeDefBuilder {
   /** The definition of the type being extended. */
