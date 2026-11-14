@@ -30,6 +30,119 @@ describe('ChatHistorySelectButton', () => {
     expect(emitted().select).toEqual([[]])
   })
 
+  it('shows no icon at rest and a spinner after the title only while loading', async () => {
+    const { rerender } = render(ChatHistorySelectButton, {
+      props: { title: 'Portrait chat' },
+      global: { plugins: [i18n] }
+    })
+    const button = screen.getByRole('button', { name: 'Portrait chat' })
+
+    expect(button.innerHTML).not.toContain('lucide')
+
+    await rerender({ loading: true })
+
+    expect(button.innerHTML).toContain('lucide--loader-circle')
+    expect(button.innerHTML.indexOf('Portrait chat')).toBeLessThan(
+      button.innerHTML.indexOf('lucide--loader-circle')
+    )
+
+    await rerender({ loading: false })
+
+    expect(button.innerHTML).not.toContain('lucide')
+  })
+
+  it('shimmers the title and describes the row as working only while the agent works', async () => {
+    const { rerender } = render(ChatHistorySelectButton, {
+      props: { title: 'Portrait chat' },
+      global: { plugins: [i18n] }
+    })
+    const button = screen.getByRole('button', { name: 'Portrait chat' })
+
+    expect(screen.getByText('Portrait chat')).not.toHaveClass(
+      'agent-shimmer-text'
+    )
+    expect(button).not.toHaveAccessibleDescription(
+      i18n.global.t('agent.historyWorking')
+    )
+
+    await rerender({ working: true })
+
+    expect(screen.getByText('Portrait chat')).toHaveClass('agent-shimmer-text')
+    expect(
+      screen.getByText(i18n.global.t('agent.historyWorking'))
+    ).not.toHaveClass('sr-only')
+    expect(button).toHaveAccessibleDescription(
+      i18n.global.t('agent.historyWorking')
+    )
+
+    await rerender({ working: false })
+
+    expect(screen.getByText('Portrait chat')).not.toHaveClass(
+      'agent-shimmer-text'
+    )
+    expect(
+      screen.queryByText(i18n.global.t('agent.historyWorking'))
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the working label once, in the date line, on a result row', () => {
+    render(ChatHistorySelectButton, {
+      props: { title: 'Weekly plan', date: 'Sep 9', working: true },
+      global: { plugins: [i18n] }
+    })
+    const button = screen.getByRole('button', { name: 'Weekly plan' })
+
+    expect(
+      screen.getAllByText(i18n.global.t('agent.historyWorking'))
+    ).toHaveLength(1)
+    expect(button).toHaveAccessibleDescription(
+      new RegExp(`Sep 9.*${i18n.global.t('agent.historyWorking')}`)
+    )
+  })
+
+  it('keeps the opening spinner and the working shimmer independent', () => {
+    render(ChatHistorySelectButton, {
+      props: { title: 'Portrait chat', loading: true, working: true },
+      global: { plugins: [i18n] }
+    })
+    const button = screen.getByRole('button', { name: 'Portrait chat' })
+
+    expect(screen.getByText('Portrait chat')).toHaveClass('agent-shimmer-text')
+    expect(button.innerHTML).toContain('lucide--loader-circle')
+  })
+
+  it('describes a result row with its preview, date, current marker and workflow', () => {
+    render(ChatHistorySelectButton, {
+      props: {
+        title: 'Weekly plan',
+        preview: 'Help me plan the week',
+        date: 'Sep 9',
+        current: true,
+        workflowName: 'Portrait flow'
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const button = screen.getByRole('button', { name: 'Weekly plan' })
+
+    expect(button).toHaveAccessibleDescription(
+      expect.stringMatching(
+        /Help me plan the week.*Sep 9.*Current chat.*Portrait flow/
+      )
+    )
+  })
+
+  it('keeps a dense row described by nothing but its own error', () => {
+    render(ChatHistorySelectButton, {
+      props: { title: 'Portrait chat' },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByRole('button', { name: 'Portrait chat' })
+    ).not.toHaveAccessibleDescription()
+  })
+
   it('describes the failed chat with an external alert and clears it on retry', async () => {
     const { rerender } = render(ChatHistorySelectButton, {
       props: { title: 'Portrait chat', failed: true },

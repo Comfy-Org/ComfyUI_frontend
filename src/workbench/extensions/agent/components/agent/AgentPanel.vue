@@ -80,9 +80,11 @@ const {
   customTitle,
   openingWorkflowName,
   historyGroups,
+  workflowNameFor,
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
+  workingChatIds = new Set<string>(),
   freeUsePlacement = 'control',
   syncRetryAvailable = false,
   blocked = false
@@ -125,9 +127,12 @@ const {
   customTitle?: string
   openingWorkflowName?: string
   historyGroups: HistoryGroups
+  workflowNameFor?: (session: { workflowId?: string }) => string | undefined
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
+  /** Chats the agent is working in right now, for the history list. */
+  workingChatIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
   syncRetryAvailable?: boolean
   blocked?: boolean
@@ -433,8 +438,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <ChatHistoryScreen
         :inert="blocked"
         :groups="historyGroups"
+        :workflow-name-for="workflowNameFor"
         :loading-id="loadingHistoryId"
         :failed-id="failedHistoryId"
+        :working-ids="workingChatIds"
         class="min-h-0 flex-1"
         @back="onBackFromHistory"
         @select="onSelectHistory"

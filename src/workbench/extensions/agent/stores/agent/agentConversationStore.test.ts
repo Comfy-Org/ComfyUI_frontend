@@ -2030,6 +2030,25 @@ describe('useAgentConversationStore', () => {
     expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
   })
 
+  it('lists the threads with a live turn, stashed ones included, until they settle', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'go')
+    store.ingest(delta('t1', 'working'))
+
+    expect([...store.liveThreadIds]).toEqual(['th'])
+
+    store.stashActiveTurn()
+    store.setThreadId('th-b')
+
+    expect([...store.liveThreadIds]).toEqual(['th'])
+
+    store.ingest(done('t1'))
+
+    expect([...store.liveThreadIds]).toEqual([])
+  })
+
   it('resumes one live transport with the persisted turn identity and attachments', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
