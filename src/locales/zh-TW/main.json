@@ -742,7 +742,7 @@
       "auth/account-exists-with-different-credential": "我們無法使用此方法讓您登入。請嘗試其他登入選項，或重設密碼以繼續。",
       "auth/cancelled-popup-request": "另一個登入視窗已開啟，因此此視窗已取消。請再試一次。",
       "auth/email-already-in-use": "我們無法使用此電子郵件地址建立帳戶。請改為嘗試登入或重設密碼。",
-      "auth/invalid-credential": "登入憑證無效。請檢查您的電子郵件和密碼。",
+      "auth/invalid-credential": "登入憑證無效。請檢查您的電子郵件地址和密碼。如果您之前曾使用 Google 或 GitHub 登入，請改用該方式。",
       "auth/invalid-email": "請輸入有效的電子郵件地址。",
       "auth/network-request-failed": "網路錯誤。請檢查您的連線並再試一次。",
       "auth/operation-not-allowed": "目前不支援此登入方式。",
@@ -803,6 +803,7 @@
       "userAvatar": "用戶頭像"
     },
     "loginButton": {
+      "signInToUsePartnerNodes": "登入以使用合作夥伴節點",
       "tooltipHelp": "登入以使用「API 節點」",
       "tooltipLearnMore": "了解更多..."
     },
@@ -1588,9 +1589,7 @@
     "LOAD_3D": "載入 3D",
     "LORA_MODEL": "LoRA模型",
     "LOSS_MAP": "損失圖",
-    "LUMA_CONCEPTS": "LUMA 概念",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "LUMA 參考",
     "MASK": "遮罩",
     "MESH": "網格",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -2766,6 +2765,7 @@
     "versionMismatchWarning": "版本相容性警告",
     "videoFailedToLoad": "無法載入影片",
     "videoFilenameExtensionRequired": "影片檔案名稱必須以副檔名結尾，例如 .mp4。請重新命名檔案後再試一次。",
+    "videoFormatNotSupported": "此影片無法在瀏覽器中播放。",
     "videoPreview": "影片預覽 - 使用方向鍵在影片間導航",
     "viewGrid": "網格檢視",
     "viewImageOfTotal": "檢視第 {index} 張圖片（共 {total} 張）",
@@ -4146,6 +4146,7 @@
       "errorUnavailable": "此功能目前無法使用。如問題持續，請聯絡客服。",
       "genericError": "OAuth 請求失敗。請從用戶端應用程式重新啟動。",
       "loading": "正在載入授權請求…",
+      "loginRequired": "登入以繼續。",
       "missingRequest": "找不到此授權請求。請從用戶端應用程式重新啟動。",
       "noWorkspaces": "此請求沒有可用的合格工作區。",
       "notYou": "不是您嗎？",
@@ -4154,6 +4155,7 @@
       "resourceFallback": "此應用程式",
       "sessionError": "建立工作階段失敗。請再試一次。",
       "sessionErrorToastSummary": "無法繼續 OAuth 登入",
+      "signInAgain": "再次登入",
       "signedInAs": "登入身分",
       "subtitle": "登入 {resource} 以繼續",
       "switchAccount": "切換帳號",
@@ -4161,6 +4163,7 @@
       "unverifiedBadge": "名稱未經驗證",
       "unverifiedNotice": "此名稱由註冊此應用程式的人提供。繼續後，您的瀏覽器將前往 {host} — 請確認您認得此網站。",
       "unverifiedNoticeNoHost": "此名稱由註冊此應用程式的人提供，且尚未經 Comfy 驗證。",
+      "verifiedNotice": "名稱未經驗證 · 已驗證的目的地：{platform} · 您將返回 {host}",
       "workspaceLabel": "工作區"
     },
     "scopes": {
@@ -4381,13 +4384,16 @@
     "balanceUnavailable": "無法載入您的餘額。",
     "billingSettings": "帳務設定",
     "credits": "點數",
+    "paymentProcessing": "付款處理中…",
+    "planCredits": "方案點數",
     "planStatus": {
       "ended": "方案已結束",
       "noPlan": "沒有方案",
       "paused": "已暫停",
       "paymentDue": "付款到期"
     },
-    "switchWorkspace": "切換工作區"
+    "switchWorkspace": "切換工作區",
+    "topUpCredits": "儲值點數"
   },
   "progressToast": {
     "allDownloadsCompleted": "所有下載已完成",
@@ -6660,16 +6666,22 @@
   "workspaceSwitcher": {
     "cannotCreateWorkspace": "您目前無法在此帳戶建立工作區。",
     "createWorkspace": "建立新工作區",
+    "createWorkspaceAction": "建立工作區",
     "failedToSwitch": "切換工作區失敗",
+    "loadFailed": "無法載入您的工作區。",
     "managedByOrganization": "您的組織管理您的工作區，因此您無法建立工作區。",
     "maxWorkspacesReached": "您只能擁有 {max} 個工作區。刪除它即可建立新的工作區。|您只能擁有 {max} 個工作區。刪除其中一個即可建立新的工作區。",
+    "noResults": "沒有符合「{query}」的工作區。",
+    "ownedLimit": "您最多可擁有 {max} 個。",
     "personal": "個人",
     "roleMember": "成員",
     "roleOwner": "擁有者",
     "scopeCaption": "工作區只會影響您使用的額度。",
     "scopeTooltip": "使用合作夥伴節點的執行會從此工作區扣除額度。與雲端不同，每個工作區都會儲存至您慣用的輸出資料夾。",
+    "searchPlaceholder": "搜尋工作區...",
     "subscribe": "訂閱",
-    "switchWorkspace": "切換工作區"
+    "switchWorkspace": "切換工作區",
+    "tryAgain": "再試一次"
   },
   "zoomControls": {
     "hideMinimap": "隱藏小地圖",
