@@ -14,6 +14,7 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
+import type { DetachedWindowAPI } from 'happy-dom'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -59,10 +60,13 @@ vi.mock(
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-const distribution = vi.hoisted(() => ({ isCloud: false }))
+const distribution = vi.hoisted(() => ({ isCloud: false, isDesktop: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
+  },
+  get isDesktop() {
+    return distribution.isDesktop
   },
   isNightly: false
 }))
@@ -163,8 +167,10 @@ function createWrapper({
         QueueProgressOverlay: true,
         QueueInlineProgressSummary: true,
         QueueNotificationBannerHost: true,
-        CurrentUserButton: true,
-        LoginButton: true,
+        CurrentUserButton: {
+          template: '<div data-testid="current-user-button" />'
+        },
+        LoginButton: { template: '<div data-testid="login-button" />' },
         ContextMenu: {
           name: 'ContextMenu',
           props: ['model'],
@@ -240,19 +246,29 @@ describe('TopMenuSection', () => {
     describe('when user is logged in', () => {
       it('should display CurrentUserButton and not display LoginButton', () => {
         useCurrentUser().isLoggedIn = computed(() => true)
-        const { container } = createLegacyTabBarWrapper()
-        expect(
-          container.querySelector('current-user-button-stub')
-        ).not.toBeNull()
-        expect(container.querySelector('login-button-stub')).toBeNull()
+        createLegacyTabBarWrapper()
+        expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+        expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
       })
+    })
+
+    it('moves CurrentUserButton out of the top bar while billing_new_ux_enabled is on', () => {
+      useCurrentUser().isLoggedIn = computed(() => true)
+      Object.assign(useFeatureFlags().flags, { billingNewUxEnabled: true })
+      createLegacyTabBarWrapper()
+      expect(
+        screen.queryByTestId('current-user-button')
+      ).not.toBeInTheDocument()
+      expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
     })
 
     describe('when user is not logged in', () => {
       it('should display LoginButton and not display CurrentUserButton', () => {
-        const { container } = createLegacyTabBarWrapper()
-        expect(container.querySelector('login-button-stub')).not.toBeNull()
-        expect(container.querySelector('current-user-button-stub')).toBeNull()
+        createLegacyTabBarWrapper()
+        expect(screen.getByTestId('login-button')).toBeInTheDocument()
+        expect(
+          screen.queryByTestId('current-user-button')
+        ).not.toBeInTheDocument()
       })
     })
   })
@@ -299,7 +315,7 @@ describe('TopMenuSection', () => {
     expect(screen.queryByTestId('error-overlay')).toBeNull()
   })
 
-  it('tracks right side panel opens', async () => {
+  it('tracks properties panel opens', async () => {
     const { user } = createWrapper()
 
     await user.click(
@@ -735,6 +751,89 @@ describe('TopMenuSection', () => {
     ).toBeInTheDocument()
     expect(container.querySelector('.actionbar-container')).not.toHaveClass(
       'w-0'
+    )
+  })
+
+  describe('Cloud button', () => {
+    function servedFrom(origin: string) {
+      const { happyDOM } = window as unknown as { happyDOM: DetachedWindowAPI }
+      const previous = window.location.href
+      happyDOM.setURL(`${origin}/`)
+      onTestFinished(() => happyDOM.setURL(previous))
+    }
+
+    it.for([
+      { origin: 'http://127.0.0.1:8188', count: 1 },
+      { origin: 'http://192.168.1.20:8188', count: 1 },
+      { origin: 'https://comfy.example.com', count: 0 }
+    ])(
+      'renders $count Cloud button when ComfyUI is served from $origin',
+      ({ origin, count }) => {
+        servedFrom(origin)
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
+
+        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+
+        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(
+          count
+        )
+      }
+    )
+
+    it.for([
+      {
+        host: 'the Desktop distribution',
+        enter: () => {
+          distribution.isDesktop = true
+        },
+        leave: () => {
+          distribution.isDesktop = false
+        }
+      },
+      {
+        host: 'a Desktop 2 host serving a localhost build',
+        enter: () => {
+          window.__comfyDesktop2 = {}
+        },
+        leave: () => {
+          delete window.__comfyDesktop2
+        }
+      }
+    ])(
+      'renders no Cloud button on $host until its relay ships',
+      ({ enter, leave }) => {
+        enter()
+        onTestFinished(leave)
+        servedFrom('http://127.0.0.1:8188')
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
+
+        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+
+        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(0)
+      }
+    )
+
+    it.for([
+      { openOnCloudEnabled: false, cloud: 0, deploy: 1 },
+      { openOnCloudEnabled: true, cloud: 1, deploy: 0 }
+    ])(
+      'renders $cloud Cloud and $deploy deploy buttons when the Open on Cloud gate is $openOnCloudEnabled',
+      ({ openOnCloudEnabled, cloud, deploy }) => {
+        servedFrom('http://127.0.0.1:8188')
+        Object.assign(useFeatureFlags().flags, {
+          openOnCloudEnabled,
+          deployToCloud: true
+        })
+
+        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+
+        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(
+          cloud
+        )
+        expect(
+          screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
+        ).toHaveLength(deploy)
+      }
     )
   })
 

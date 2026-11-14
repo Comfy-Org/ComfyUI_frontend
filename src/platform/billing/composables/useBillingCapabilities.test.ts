@@ -1,7 +1,10 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { WebSession } from '@comfyorg/account-core/webSession'
 import { setTelemetryRegistry } from '@comfyorg/telemetry'
 import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
@@ -15,6 +18,7 @@ import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabi
 import { attachCapabilityRevisionInterceptor } from '@/platform/remote/ingest/capabilityRevision'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
 import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
@@ -62,6 +66,7 @@ function capabilitiesResponse(
 ): BillingCapabilitiesResponse {
   return {
     auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'full_page',
     resolved_for: {
       user_id: 'canonical-user-1',
       workspace_id: workspaceId
@@ -83,6 +88,8 @@ function capabilitiesResponse(
       can_view_team_usage: false,
       can_edit_workspace: false,
       can_manage_auto_top_up: false,
+      can_view_auto_top_up: false,
+      can_view_auto_top_up_member_notice: false,
       can_manage_subscription: false,
       can_open_plans: false,
       can_run_workflows: false,
@@ -410,6 +417,30 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.topUpDenial.value).toBe('payment_past_due')
     expect(billingCapabilities.canManageBilling.value).toBe(true)
   })
+
+  it.for(['unspecified', 'billing_operation_in_progress'])(
+    'drops the off-contract top-up denial %s',
+    async (reason) => {
+      const response = capabilitiesResponse(
+        true,
+        'workspace-1',
+        true,
+        {},
+        {
+          can_top_up: false
+        }
+      )
+      response.denied_reasons = { can_top_up: reason as never }
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+      expect(billingCapabilities.topUpDenial.value).toBeUndefined()
+    }
+  )
 
   it.for([
     { served: true, expected: true },
@@ -1142,6 +1173,152 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.isReady.value).toBe(true)
   })
 
+  describe('a read denied because the web session lapsed', () => {
+    const LAPSE_RECOVERY_FLAG = 'ff:web_session_lapse_recovery_enabled'
+    const sessionFor = (id: string) =>
+      fromPartial<WebSession>({ user: { id, email: `${id}@example.com` } })
+
+    async function denyThenRestoreSession() {
+      const webSession = useCloudWebSessionStore()
+      webSession.state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockRejectedValueOnce(
+          new WorkspaceApiError('authentication required', 401)
+        )
+        .mockResolvedValueOnce(capabilitiesResponse(true))
+      await billingCapabilities.initialize()
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+
+      webSession.state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      await vi.advanceTimersByTimeAsync(0)
+    }
+
+    afterEach(() => {
+      localStorage.removeItem(LAPSE_RECOVERY_FLAG)
+      remoteConfig.value = {}
+    })
+
+    it('stays denied after the session is restored with the flag off', async () => {
+      await denyThenRestoreSession()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+    })
+
+    it('reads again once the session is restored with the flag on', async () => {
+      localStorage.setItem(LAPSE_RECOVERY_FLAG, 'true')
+
+      await denyThenRestoreSession()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it('reads again when the flag arrives after the session is restored', async () => {
+      await denyThenRestoreSession()
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+
+      remoteConfig.value = {
+        ...remoteConfig.value,
+        web_session_lapse_recovery_enabled: true
+      }
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it.for([
+      { name: '403', error: new WorkspaceApiError('forbidden', 403) },
+      {
+        name: 'AuthStoreError',
+        error: Object.assign(new Error('no token'), { name: 'AuthStoreError' })
+      }
+    ])(
+      'leaves a $name denial alone on a session heartbeat',
+      async ({ error }) => {
+        localStorage.setItem(LAPSE_RECOVERY_FLAG, 'true')
+        const webSession = useCloudWebSessionStore()
+        webSession.state = {
+          phase: 'signed_in',
+          session: sessionFor('firebase-user-1')
+        }
+        vi.mocked(billingApi.getBillingCapabilities).mockRejectedValueOnce(
+          error
+        )
+        await billingCapabilities.initialize()
+
+        webSession.state = {
+          phase: 'signed_in',
+          session: sessionFor('firebase-user-1')
+        }
+        await vi.advanceTimersByTimeAsync(0)
+
+        expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+      }
+    )
+
+    it('does not read again once its scope is disposed mid-flight', async () => {
+      useCloudWebSessionStore().state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      let rejectRead: (error: Error) => void = () => {}
+      vi.mocked(billingApi.getBillingCapabilities).mockReturnValueOnce(
+        new Promise((_resolve, reject) => {
+          rejectRead = reject
+        })
+      )
+      const initialized = billingCapabilities.initialize()
+      remoteConfig.value = {
+        ...remoteConfig.value,
+        web_session_lapse_recovery_enabled: true
+      }
+      await vi.advanceTimersByTimeAsync(0)
+
+      scope.stop()
+      rejectRead(new WorkspaceApiError('authentication required', 401))
+      await initialized
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    })
+
+    it('reads again when the flag arrives while the denied read is in flight', async () => {
+      useCloudWebSessionStore().state = {
+        phase: 'signed_in',
+        session: sessionFor('firebase-user-1')
+      }
+      let rejectRead: (error: Error) => void = () => {}
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockReturnValueOnce(
+          new Promise((_resolve, reject) => {
+            rejectRead = reject
+          })
+        )
+        .mockResolvedValueOnce(capabilitiesResponse(true))
+      const initialized = billingCapabilities.initialize()
+
+      remoteConfig.value = {
+        ...remoteConfig.value,
+        web_session_lapse_recovery_enabled: true
+      }
+      await vi.advanceTimersByTimeAsync(0)
+      rejectRead(new WorkspaceApiError('authentication required', 401))
+      await initialized
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+  })
+
   it('paces the refresh on a fixed interval when the snapshot arrives expired', async () => {
     vi.mocked(billingApi.getBillingCapabilities).mockResolvedValue(
       capabilitiesResponse(true, 'workspace-1', true, {
@@ -1463,6 +1640,8 @@ describe('useBillingCapabilities on the SDK rail', () => {
           can_view_team_usage: false,
           can_edit_workspace: false,
           can_manage_auto_top_up: false,
+          can_view_auto_top_up: false,
+          can_view_auto_top_up_member_notice: false,
           can_manage_subscription: false,
           can_open_plans: false,
           can_run_workflows: false,
@@ -1628,6 +1807,50 @@ describe('useBillingCapabilities capability gates', () => {
         }
       }))
   }
+
+  it.for([
+    { view: true, manage: false, topUp: false },
+    { view: false, manage: true, topUp: true }
+  ])(
+    'renders the auto top-up card as the served can_view_auto_top_up $view, not can_manage_auto_top_up $manage with can_top_up $topUp',
+    async ({ view, manage, topUp }) => {
+      response.capabilities.can_view_auto_top_up = view
+      response.capabilities.can_manage_auto_top_up = manage
+      response.capabilities.can_top_up = topUp
+
+      const billingCapabilities = await mount()
+
+      expect(billingCapabilities.canViewAutoTopUpCard.value).toBe(view)
+    }
+  )
+
+  it.for([
+    { notice: true, topUp: false },
+    { notice: false, topUp: true }
+  ])(
+    'renders the member auto top-up notice as the served can_view_auto_top_up_member_notice $notice, not can_top_up $topUp',
+    async ({ notice, topUp }) => {
+      response.capabilities.can_view_auto_top_up_member_notice = notice
+      response.capabilities.can_top_up = topUp
+
+      const billingCapabilities = await mount()
+
+      expect(billingCapabilities.canViewAutoTopUpMemberNotice.value).toBe(
+        notice
+      )
+    }
+  )
+
+  it('keeps the auto top-up card independent of the local member role', async () => {
+    response.capabilities.can_view_auto_top_up = true
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspace: { id: 'workspace-1', role: 'member' }
+    })
+
+    const billingCapabilities = await mount()
+
+    expect(billingCapabilities.canViewAutoTopUpCard.value).toBe(true)
+  })
 
   describe.for([
     ['can_top_up', 'canTopUp'],

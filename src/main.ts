@@ -10,7 +10,6 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
-import { provideTeamWorkspaceDialog } from '@/platform/billing/ports/teamWorkspaceDialog'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
@@ -28,6 +27,7 @@ import { flushErrorReports } from '@comfyorg/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import { createAppRouter } from '@/router'
+import { captureSafeExtensionBoot } from '@/platform/customNodes/safeExtensionBoot'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/billing/subscription/utils/paymentReturnUrl'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -36,6 +36,7 @@ import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAu
 import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
+import { handleDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowRelay'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
@@ -106,6 +107,13 @@ function showLocalSignInFailure(pinia: Pinia, failed: boolean): void {
   if (failed) useToast(pinia).error(t('auth.desktopHost.signInFailed'))
 }
 
+function startLocalBillingWebFlag(pinia: Pinia): void {
+  if (isCloud) return
+  void import('@/platform/billing/stores/localBillingWebFlagStore').then(
+    ({ useLocalBillingWebFlagStore }) => useLocalBillingWebFlagStore(pinia)
+  )
+}
+
 function initFirebaseIdentity(): void {
   const phaseFirebase = bootstrapTracer.startPhase('startup/firebase-init')
   try {
@@ -159,17 +167,13 @@ function installSubgraphGraphHooks(): void {
 async function bootstrap(): Promise<void> {
   bootstrapTracer.recordSinceTimeOrigin('startup/entry-modules')
   api.captureLaunchContext()
+  captureSafeExtensionBoot()
 
   if (isCloud) {
     stripPaymentReturnParams()
     installCloudApiAuth()
   }
   installWorkspaceApiAuth()
-  provideTeamWorkspaceDialog(async (onConfirm) => {
-    const { useWorkspaceDialogs } =
-      await import('@/platform/account/composables/useWorkspaceDialogs')
-    return useWorkspaceDialogs().showTeamWorkspacesDialog(onConfirm)
-  })
 
   bootstrapTracer.armWatchdog()
 
@@ -192,6 +196,7 @@ async function bootstrap(): Promise<void> {
   markStoresReady()
 
   showLocalSignInFailure(pinia, localSignInFailed)
+  startLocalBillingWebFlag(pinia)
 
   if (isCloud && hasHostTelemetryBridge) {
     syncHostUserIdWithFirebaseAuth()
@@ -208,4 +213,4 @@ async function bootstrap(): Promise<void> {
   bootstrapTracer.milestone('app-mounted')
 }
 
-await bootstrap()
+if (!(await handleDesktopWorkflowHandoff())) await bootstrap()

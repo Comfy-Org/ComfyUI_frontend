@@ -7,6 +7,7 @@ import {
   defineComponent,
   h,
   markRaw,
+  nextTick,
   ref
 } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -148,6 +149,10 @@ function renderLayoutGrid(syncLayout = true) {
   const resizeGrid = () => {
     for (const observer of observers) observer.resize(grid)
   }
+  const resizeRow = () => {
+    const row = screen.getByTestId('node-widget')
+    for (const observer of observers) observer.resize(row)
+  }
   const stored = () =>
     layoutStore.getSlotOffset(
       'widget-grid-graph',
@@ -156,7 +161,7 @@ function renderLayoutGrid(syncLayout = true) {
       'input',
       'expanded'
     )
-  return { rerender, stored, moveSocket, resizeGrid }
+  return { rerender, stored, moveSocket, resizeGrid, resizeRow }
 }
 
 describe('WidgetGrid', () => {
@@ -187,6 +192,18 @@ describe('WidgetGrid', () => {
         }
       ]
     })
+
+    expect(stored()).toEqual({ x: 0, y: 74 })
+  })
+
+  it('resyncs slot offsets when a row resizes inside a grid that keeps its size', async () => {
+    const { stored, moveSocket, resizeGrid, resizeRow } = renderLayoutGrid()
+    await nextTick()
+    resizeGrid()
+    expect(stored()).toEqual({ x: 0, y: 114 })
+
+    moveSocket(100)
+    resizeRow()
 
     expect(stored()).toEqual({ x: 0, y: 74 })
   })

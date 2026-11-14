@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
   getPromotedWidgetNames,
@@ -678,17 +679,17 @@ test(
 
     await test.step('widgets display in order promoted', async () => {
       await expect(editor.promotionItems.first()).toContainText('steps')
-      await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
-        'steps'
-      )
+      await expect(
+        subgraphNode.getByTestId(TestIds.widgets.layoutFieldLabel).first()
+      ).toHaveText('steps')
     })
 
     await test.step('Reorder widgets', async () => {
       await editor.dragItem(0, 1)
       await expect(editor.promotionItems.first()).toContainText('cfg')
-      await expect(subgraphNode.locator('.lg-node-widget').first()).toHaveText(
-        'cfg'
-      )
+      await expect(
+        subgraphNode.getByTestId(TestIds.widgets.layoutFieldLabel).first()
+      ).toHaveText('cfg')
     })
 
     await comfyPage.vueNodes.enterSubgraph('2')

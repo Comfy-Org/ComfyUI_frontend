@@ -304,6 +304,7 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
       const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
         cwd: root,
         encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
         env: {
           PATH: `${bin}:/usr/bin:/bin`,
           PROJECT: 'cloud',

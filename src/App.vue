@@ -13,6 +13,7 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
 import { computed, onMounted, watch } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
@@ -23,6 +24,7 @@ import SessionReconnecting from '@/platform/auth/session/components/SessionRecon
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   reportPreloadError,
+  reportPreloadErrorUnlessExtensionImport,
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
 import { app } from '@/scripts/app'
@@ -30,6 +32,7 @@ import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
+import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
@@ -70,7 +73,11 @@ onMounted(() => {
 
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
-  window.addEventListener('vite:preloadError', (event) => {
+  useEventListener(window, 'vite:preloadError', (event) => {
+    if (parsePreloadError(event.payload).url === null) {
+      reportPreloadErrorUnlessExtensionImport(event.payload)
+      return
+    }
     event.preventDefault()
     reportPreloadError(event.payload)
     // No toast: third-party custom node extensions frequently trigger this

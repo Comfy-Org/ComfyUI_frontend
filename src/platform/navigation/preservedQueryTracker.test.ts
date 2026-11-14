@@ -299,6 +299,44 @@ describe('installPreservedQueryTracker', () => {
     )
   })
 
+  it('clears a stale rejectRepeated value when the URL supplies an empty value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [rejectRepeatedDefinition])
+
+    await router.push('/?workspace=ws-team')
+    await router.push('/?workspace=')
+
+    expect(router.currentRoute.value.fullPath).toBe('/?workspace=')
+    expect(
+      getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')
+    ).toBeUndefined()
+  })
+
+  it('stashes an empty markEmpty value as a bare comma in place of a stale value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [
+      { ...rejectRepeatedDefinition, markEmpty: true }
+    ])
+
+    await router.push('/?workspace=ws-team')
+    await router.push('/?workspace=')
+
+    expect(router.currentRoute.value.fullPath).toBe('/?workspace=')
+    expect(getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')).toBe(
+      ','
+    )
+  })
+
+  it('keeps a plain namespace stash when the URL supplies an empty value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [plainDefinition])
+
+    await router.push('/?plain_code=abc')
+    await router.push('/?plain_code=')
+
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')).toBe('abc')
+  })
+
   it('drops a bare param of a non-rejectRepeated namespace like any empty value', async () => {
     const router = createTestRouter()
     installPreservedQueryTracker(router, [

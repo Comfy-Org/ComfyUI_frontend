@@ -4,6 +4,8 @@
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
+
 const WidgetButton = defineAsyncComponent(
   () =>
     import('@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue')
@@ -52,10 +54,6 @@ const WidgetTextPreview = defineAsyncComponent(
   () =>
     import('@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue')
 )
-const WidgetLegacy = defineAsyncComponent(
-  () =>
-    import('@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue')
-)
 const WidgetRecordAudio = defineAsyncComponent(
   () =>
     import('@/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue')
@@ -94,7 +92,7 @@ const WidgetPainter = defineAsyncComponent(
 )
 const WidgetCompositor = defineAsyncComponent(
   () =>
-    import('@/renderer/extensions/compositor/components/WidgetCompositor.vue')
+    import('@/renderer/extensions/layerEditor/compositor/WidgetCompositor.vue')
 )
 const WidgetRange = defineAsyncComponent(
   () => import('@/components/range/WidgetRange.vue')

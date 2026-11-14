@@ -11,6 +11,7 @@
       "@comfyorg/api-client",
       "@comfyorg/billing-contract",
       "@comfyorg/billing-core",
+      "@comfyorg/comfyui-api-types",
       "@comfyorg/design-system",
       "@comfyorg/graph-model",
       "@comfyorg/ingest-types",
@@ -24,6 +25,7 @@
       "@comfyorg/tailwind-utils",
       "@comfyorg/telemetry",
       "@comfyorg/test-utils",
+      "@comfyorg/theme-core",
       "@comfyorg/viewport3d"
     ]
   },
@@ -39,6 +41,7 @@
       "enablers": ["fallow"],
       "entryPoints": [
         "**/.storybook/{main.ts,preview.ts,style.css}",
+        "packages/comfyui-api-types/openapi-ts.config.ts",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}"
       ],
@@ -63,7 +66,14 @@
     // Devtools browser-extension artifacts, loaded dynamically (mirrors knip).
     "tools/devtools/**",
     // Storybook-only mocks, reached through Storybook's vite alias, not the prod graph.
-    "src/storybook/mocks/**"
+    "src/storybook/mocks/**",
+    // The 1.60 Billing tab, restored verbatim behind billing_new_ux_enabled; deleted with the flag.
+    "src/platform/billing/legacy160/**",
+    "src/platform/account/components/dialogs/settings/BillingTabLegacy.*",
+    // Flag-off-only screens restored to their 1.60 content in place.
+    "src/platform/account/components/CurrentUserPopoverWorkspace.*",
+    "src/platform/billing/components/TopUpCreditsDialogContentWorkspace.*",
+    "src/platform/billing/components/TopUpAutoTopUpCard.*"
   ],
 
   "ignoreDependencies": [
@@ -95,6 +105,18 @@
   ],
 
   "ignoreExports": [
+    // Generated from core's pinned OpenAPI spec. openapi-ts emits the whole
+    // operation surface for the filtered endpoint; src/index.ts re-exports only
+    // the members this repo consumes, and is NOT ignored, so an unused
+    // derivation there still surfaces.
+    {
+      "file": "packages/comfyui-api-types/src/generated/index.ts",
+      "exports": ["*"]
+    },
+    {
+      "file": "packages/comfyui-api-types/src/generated/types.gen.ts",
+      "exports": ["*"]
+    },
     // Public extension API surface, deliberately exported for the 40+ custom-node
     // ecosystem (ADR-LAYOUT / ADR-ECS). No internal importer by design.
     { "file": "src/types/index.ts", "exports": ["*"] },

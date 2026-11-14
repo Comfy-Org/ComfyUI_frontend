@@ -13,6 +13,7 @@ import {
   addGroup,
   addNode,
   createCanvas,
+  keyEvent,
   loseCapture,
   pointerEvent,
   selectedTitles
@@ -441,26 +442,32 @@ describe('LGraphCanvas pointer gestures', () => {
       }
     )
 
-    it('click selects on release without moving', () => {
-      gesture.press(A_BODY)
-      expect(selectedTitles(canvas)).toEqual([])
+    it.for(['panning', 'select'] as const)(
+      'click selects on release without moving in %s mode',
+      (mode) => {
+        LiteGraph.leftMouseClickBehavior = mode
+        gesture.press(A_BODY)
+        expect(selectedTitles(canvas)).toEqual([])
 
-      gesture.release(A_BODY)
+        gesture.release(A_BODY)
 
-      expect(selectedTitles(canvas)).toEqual(['A'])
-      expect(posOf(a)).toEqual([20, 40])
-      expect(log).toEqual([
-        'bringToFront',
-        'node.onMouseDown',
-        'node.onSelected',
-        'canvas.onNodeSelected',
-        'canvas.onSelectionChange'
-      ])
-      expect(callbackArgs.get('node.onMouseDown')?.[0]?.[0]).toBeInstanceOf(
-        PointerEvent
-      )
-      expect(callbackArgs.get('canvas.onNodeSelected')).toEqual([[a]])
-    })
+        expect(selectedTitles(canvas)).toEqual(['A'])
+        expect(posOf(a)).toEqual([20, 40])
+        expect(canvas.ds.offset).toEqual([0, 0])
+        expect(canvas.dragging_rectangle).toBeNull()
+        expect(log).toEqual([
+          'bringToFront',
+          'node.onMouseDown',
+          'node.onSelected',
+          'canvas.onNodeSelected',
+          'canvas.onSelectionChange'
+        ])
+        expect(callbackArgs.get('node.onMouseDown')?.[0]?.[0]).toBeInstanceOf(
+          PointerEvent
+        )
+        expect(callbackArgs.get('canvas.onNodeSelected')).toEqual([[a]])
+      }
+    )
 
     it('press brings an unpinned node to front before release', () => {
       gesture.press(A_BODY)
@@ -1257,6 +1264,138 @@ describe('LGraphCanvas pointer gestures', () => {
       gesture.move(EMPTY, { ...modifiers, buttons: 0 })
 
       expect(canvas.read_only).toBe(false)
+    })
+  })
+
+  describe('navigation outcomes', () => {
+    beforeEach(() => {
+      const previous = {
+        mouseWheelScroll: LiteGraph.mouseWheelScroll,
+        canvasNavigationMode: LiteGraph.canvasNavigationMode,
+        leftMouseClickBehavior: LiteGraph.leftMouseClickBehavior
+      }
+      onTestFinished(() => {
+        Object.assign(LiteGraph, previous)
+      })
+    })
+
+    it.for([
+      {
+        route: 'middle button',
+        options: { button: 1 },
+        key: 'Unbound',
+        left: 'select'
+      },
+      {
+        route: 'Alt+Shift in legacy mode',
+        options: { altKey: true, shiftKey: true },
+        key: 'Unbound',
+        left: 'panning'
+      },
+      {
+        route: 'Space overrides selection',
+        options: {},
+        key: ' ',
+        left: 'select'
+      }
+    ] as const)(
+      'pans at non-unit scale using $route',
+      ({ options, key, left }) => {
+        LiteGraph.canvasNavigationMode = 'legacy'
+        LiteGraph.leftMouseClickBehavior = left
+        canvas.ds.scale = 2
+        canvas.select(a)
+        canvas.processKey(keyEvent('keydown', key))
+
+        gesture.drag(EMPTY, [138, -82], options)
+        canvas.processKey(keyEvent('keyup', key))
+
+        expect(canvas.ds.offset).toEqual([69, -41])
+        expect(canvas.ds.scale).toBe(2)
+        expect(selectedTitles(canvas)).toEqual(['A'])
+        expect(posOf(a)).toEqual([20, 40])
+        expect(canvas.read_only).toBe(false)
+      }
+    )
+
+    it.for([
+      {
+        route: 'legacy wheel in',
+        wheel: 'zoom',
+        event: { deltaY: -120 },
+        scale: 2.5,
+        offset: [-15, -27]
+      },
+      {
+        route: 'legacy wheel out',
+        wheel: 'zoom',
+        event: { deltaY: 120 },
+        scale: 1.6,
+        offset: [57, 13.5]
+      },
+      {
+        route: 'Ctrl overrides panning',
+        wheel: 'panning',
+        event: { deltaY: -120, ctrlKey: true },
+        scale: 2.5,
+        offset: [-15, -27]
+      },
+      {
+        route: 'Shift maps vertical wheel to horizontal pan',
+        wheel: 'panning',
+        event: { deltaY: 120, shiftKey: true },
+        scale: 2,
+        offset: [-43.49998, -9]
+      },
+      {
+        route: 'two-axis trackpad pan',
+        wheel: 'panning',
+        event: { deltaX: 40, deltaY: -80 },
+        scale: 2,
+        offset: [-6.6, 38.2]
+      }
+    ] as const)(
+      'routes $route without moving graph content',
+      ({ wheel, event, scale, offset }) => {
+        LiteGraph.mouseWheelScroll = wheel
+        canvas.ds.scale = 2
+        canvas.ds.offset = [17, -9]
+        canvas.zoom_speed = 1.25
+        canvas.select(a)
+
+        canvas.processMouseWheel(
+          Object.assign(new WheelEvent('wheel', event), {
+            clientX: 320,
+            clientY: 180,
+            ctrlKey: false,
+            altKey: false,
+            shiftKey: false,
+            metaKey: false,
+            ...event
+          })
+        )
+
+        expect(canvas.ds.scale).toBeCloseTo(scale, 5)
+        expect(canvas.ds.offset[0]).toBeCloseTo(offset[0], 5)
+        expect(canvas.ds.offset[1]).toBeCloseTo(offset[1], 5)
+        expect(selectedTitles(canvas)).toEqual(['A'])
+        expect(posOf(a)).toEqual([20, 40])
+      }
+    )
+
+    it.for([
+      { deltaY: -60, scale: 2.6 },
+      { deltaY: 120, scale: 0.8 }
+    ])('drag zoom uses signed displacement $deltaY', ({ deltaY, scale }) => {
+      canvas.ds.scale = 2
+      canvas.dragZoomEnabled = true
+      const modifiers = { ctrlKey: true, shiftKey: true }
+
+      gesture.drag(EMPTY, [0, deltaY], modifiers)
+
+      expect(canvas.ds.scale).toBeCloseTo(scale, 5)
+      expect(canvas.read_only).toBe(false)
+      expect(posOf(a)).toEqual([20, 40])
     })
   })
 })

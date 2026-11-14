@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { disarmHostedBillingReturnRefresh } from '@/platform/billing/openHostedBillingTab'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -181,9 +180,6 @@ beforeEach(() => {
   Object.assign(useTeamWorkspaceStore(), {
     activeWorkspace: { id: 'workspace-1' }
   })
-  vi.mocked(
-    useWorkspaceBillingStateStore().setWorkspaceBillingRail
-  ).mockImplementation(() => {})
 })
 
 describe('useWorkspaceBilling', () => {
@@ -288,6 +284,23 @@ describe('useWorkspaceBilling', () => {
       }
     )
 
+    it.for([
+      { case: 'a recorded end', endedAt: '2026-05-20T00:00:00Z' },
+      { case: 'an unrecorded end', endedAt: null }
+    ])('passes the served ended_at through for $case', async ({ endedAt }) => {
+      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+        ...activeStatus,
+        subscription_status: 'ended',
+        subscription_state: 'ended',
+        ended_at: endedAt
+      })
+
+      const billing = setupBilling()
+      await billing.fetchStatus()
+
+      expect(billing.subscription.value?.endedAt).toBe(endedAt)
+    })
+
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
@@ -315,9 +328,6 @@ describe('useWorkspaceBilling', () => {
       })
       expect(billing.canAccessSubscriptionFeatures.value).toBe(true)
       expect(billing.isFreeTier.value).toBe(false)
-      expect(
-        useWorkspaceBillingStateStore().setWorkspaceBillingRail
-      ).toHaveBeenCalledWith('workspace-1', 'stripe')
     })
 
     it.for([
@@ -607,9 +617,6 @@ describe('useWorkspaceBilling', () => {
       await billing.fetchStatus()
 
       expect(billing.isFreeTier.value).toBe(true)
-      expect(
-        useWorkspaceBillingStateStore().setWorkspaceBillingRail
-      ).not.toHaveBeenCalled()
     })
 
     it('sets error and rethrows when fetchStatus fails', async () => {
@@ -772,6 +779,27 @@ describe('useWorkspaceBilling', () => {
         await billing.fetchBalance()
 
         expect(billing.balance.value?.lowBalance).toBe(expected)
+      }
+    )
+
+    it.for([
+      { case: 'served', served: 844.5 },
+      { case: 'omitted', served: undefined }
+    ])(
+      'passes the display plan balance through as received when $case',
+      async ({ served }) => {
+        mockWorkspaceApi.getBillingBalance.mockResolvedValue({
+          ...positiveBalance,
+          cloud_credit_display_balance_cents: served
+        })
+
+        const billing = setupBilling()
+        await billing.fetchBalance()
+
+        expect(billing.balance.value).toMatchObject({
+          cloudCreditBalanceMicros: 2_000_000,
+          cloudCreditDisplayBalanceCents: served
+        })
       }
     )
 

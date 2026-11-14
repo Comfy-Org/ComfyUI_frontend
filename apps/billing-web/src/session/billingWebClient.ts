@@ -46,6 +46,9 @@ import type { BillingClient } from '@comfyorg/account-ui/billing'
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebStripeKey } from '@/config/stripeKey'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
+import { notePayment, sessionTabStorage } from '@/handoff/handoffTab'
+import type { PaymentEvent } from '@/handoff/paymentTrace'
+import { TRACED_WRITES, paymentEventOf } from '@/handoff/paymentTrace'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 
 /** Tab-local, like the credential cache: a pointer must not outlive the tab. */
@@ -86,6 +89,70 @@ export function createBillingWebClient(
     workspaceId: () => targetWorkspaceId(session)
   })
   return composeBillingWebClient(transport, sessionBillingScopeSource(session))
+}
+
+async function isScopedSessionRefusal(response: Response): Promise<boolean> {
+  if (response.status !== 401) return false
+  const body: unknown = await response
+    .clone()
+    .json()
+    .catch(() => undefined)
+  return (
+    typeof body === 'object' &&
+    body !== null &&
+    'code' in body &&
+    body.code === 'INVALID_CREDENTIAL'
+  )
+}
+
+const TRACED_WRITE_URLS = new Map(
+  Array.from(TRACED_WRITES, ([route, write]) => [resolveUrl(route), write])
+)
+
+function noteHandoffPayment(event: PaymentEvent | undefined): void {
+  if (event) notePayment(sessionTabStorage, event)
+}
+
+function handoffFetch(onSessionRefused: () => void): typeof fetch {
+  return async (input, init) => {
+    const write = TRACED_WRITE_URLS.get(String(input))
+    noteHandoffPayment(write?.sent)
+    const exchange = globalThis.fetch(input, init)
+    const response = await exchange.catch(() => undefined)
+    if (response === undefined) {
+      noteHandoffPayment(write?.unanswered)
+      return exchange
+    }
+    if (write) {
+      const body: unknown = await response
+        .clone()
+        .json()
+        .catch(() => undefined)
+      noteHandoffPayment(write.answered(response, body))
+    }
+    if (await isScopedSessionRefusal(response)) onSessionRefused()
+    return response
+  }
+}
+
+export function createHandoffBillingClient(
+  session: BillingSession,
+  onSessionRefused: () => void
+): BillingWebClient {
+  const transport = createSessionBillingTransport({
+    session,
+    resolveUrl,
+    workspaceId: () => pinnedWorkspaceId(session),
+    fetchImpl: handoffFetch(onSessionRefused)
+  })
+  const client = composeBillingWebClient(
+    transport,
+    sessionBillingScopeSource(session)
+  )
+  client.lifecycle.subscribe((operation) =>
+    noteHandoffPayment(paymentEventOf(operation))
+  )
+  return client
 }
 
 /**

@@ -23,6 +23,9 @@
       "path": "./packages/ingest-types/tsconfig.declarations.json"
     },
     {
+      "path": "./packages/comfyui-api-types/tsconfig.declarations.json"
+    },
+    {
       "path": "./packages/registry-types/tsconfig.declarations.json"
     },
     {

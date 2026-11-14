@@ -6,18 +6,12 @@ import { effectScope, nextTick, computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/billing/subscription/composables/useSubscription'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { billingApi } from '@/platform/billing/api/billingApi'
-import type {
-  BillingRail,
-  BillingStatusResponse,
-  Plan
-} from '@comfyorg/billing-core'
+import type { BillingStatusResponse, Plan } from '@comfyorg/billing-core'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
@@ -71,7 +65,6 @@ const mockBillingStatus: { value: Partial<BillingStatusResponse> } = {
 }
 
 let mockIsPersonal: Ref<boolean>
-let mockBillingRail: Ref<BillingRail | null | undefined>
 
 vi.mock(import('@/platform/distribution/types'), () => {
   return {
@@ -131,9 +124,6 @@ describe('useBillingContext', () => {
     const workspaceStore = useTeamWorkspaceStore()
     const refs = storeToRefs(workspaceStore)
     mockIsPersonal = refs.isInPersonalWorkspace
-    mockBillingRail = storeToRefs(
-      useWorkspaceBillingStateStore()
-    ).activeWorkspaceBillingRail
     Object.assign(workspaceStore, {
       activeWorkspaceId: computed(() =>
         mockIsPersonal.value ? 'personal-123' : 'team-456'
@@ -145,9 +135,6 @@ describe('useBillingContext', () => {
         })
       )
     })
-    const authStore = useAuthStore()
-    authStore.balance = { currency: 'usd', amount_micros: 5000000 }
-    vi.mocked(authStore.fetchBalance).mockResolvedValue(authStore.balance)
     vi.mocked(useWorkspaceBillingStateStore().updateSummary).mockImplementation(
       () => {}
     )
@@ -155,12 +142,6 @@ describe('useBillingContext', () => {
     remoteConfigState.value = 'unloaded'
     authenticatedRemoteConfigState.value = 'unloaded'
     mockIsPersonal.value = true
-    mockBillingRail.value = undefined
-    vi.mocked(
-      useWorkspaceBillingStateStore().setWorkspaceBillingRail
-    ).mockImplementation((_workspaceId: string, billingRail: BillingRail) => {
-      mockBillingRail.value = billingRail
-    })
     mockPlans.value = []
     const subscription = useSubscription()
     subscription.subscriptionStatus.value = {
@@ -193,26 +174,6 @@ describe('useBillingContext', () => {
 
     const { type } = useBillingContext()
     expect(type.value).toBe('workspace')
-  })
-
-  it('provides subscription info from legacy billing', () => {
-    mockBillingRail.value = 'legacy_stripe'
-    const { subscription } = useBillingContext()
-
-    expect(subscription.value).toEqual({
-      isActive: true,
-      tier: 'PRO',
-      duration: 'MONTHLY',
-      planSlug: null,
-      scheduledChange: null,
-      renewalDate: '2025-01-01T00:00:00Z',
-      endDate: null,
-      isCancelled: false,
-      hasFunds: true,
-      agentHasFunds: true,
-      agentScopedHasFunds: undefined,
-      agentScopedHasFundsAuthoritative: false
-    })
   })
 
   describe('canRunWorkflows', () => {
@@ -298,7 +259,6 @@ describe('useBillingContext', () => {
       amount_due: 5000,
       currency: 'usd'
     }
-    mockBillingRail.value = 'stripe'
     mockBillingStatus.value.renewal_invoice = invoice
 
     const context = useBillingContext()
@@ -307,49 +267,31 @@ describe('useBillingContext', () => {
     expect(context.renewalInvoice.value).toStrictEqual(invoice)
   })
 
-  it('provides balance info from legacy billing', () => {
-    mockBillingRail.value = 'legacy_stripe'
-    const { balance } = useBillingContext()
-
-    expect(balance.value).toEqual({
-      amountMicros: 5000000,
-      currency: 'usd',
-      effectiveBalanceMicros: 5000000,
-      prepaidBalanceMicros: 0,
-      cloudCreditBalanceMicros: 0
-    })
-  })
-
-  it('passes canonical status fields through legacy billing', () => {
-    mockBillingRail.value = 'legacy_stripe'
-    useSubscription().subscriptionStatus.value = {
-      ...DEFAULT_BILLING_STATUS,
-      billing_status: 'payment_failed',
-      subscription_status: 'ended',
-      subscription_state: 'activating',
-      team_credit_stop: {
-        id: 'stop-1',
-        credits_monthly: 1000,
-        stop_usd: 10
-      }
+  it('forwards the period credit grant from workspace billing', async () => {
+    const grant = {
+      state: 'amount' as const,
+      credits: 2000,
+      period: 'MONTHLY' as const
     }
+    mockBillingStatus.value.period_credit_grant = grant
 
-    const {
-      billingStatus,
-      subscriptionStatus,
-      subscriptionState,
-      currentTeamCreditStop
-    } = useBillingContext()
+    const context = useBillingContext()
+    await context.initialize()
 
-    expect(billingStatus.value).toBe('payment_failed')
-    expect(subscriptionStatus.value).toBe('ended')
-    expect(subscriptionState.value).toBe('activating')
-    expect(currentTeamCreditStop.value).toEqual({
-      id: 'stop-1',
-      credits_monthly: 1000,
-      stop_usd: 10
-    })
+    expect(context.periodCreditGrant.value).toStrictEqual(grant)
   })
+
+  it.for([{ served: '2026-12-01T00:00:00Z' }, { served: undefined }] as const)(
+    'forwards the next credit refill as served ($served)',
+    async ({ served }) => {
+      mockBillingStatus.value.next_credit_refill_at = served
+
+      const context = useBillingContext()
+      await context.initialize()
+
+      expect(context.nextCreditRefillAt.value).toBe(served ?? null)
+    }
+  )
 
   it('exposes initialize action', async () => {
     const { initialize } = useBillingContext()
@@ -374,73 +316,9 @@ describe('useBillingContext', () => {
     })
   })
 
-  it('reports the legacy billing portal as opened', async () => {
-    mockBillingRail.value = 'legacy_stripe'
-    const { manageSubscription } = useBillingContext()
-    await expect(manageSubscription()).resolves.toEqual({ ok: true })
-  })
-
-  it('converts topup cents to whole dollars for the legacy credit endpoint', async () => {
-    mockBillingRail.value = 'legacy_stripe'
-    const { topup } = useBillingContext()
-    await topup(500)
-
-    expect(useAuthActions().purchaseCreditsDirect).toHaveBeenCalledWith(5)
-  })
-
-  it('uses workspace checkout while keeping legacy topups on legacy Stripe', async () => {
-    mockBillingRail.value = 'legacy_stripe'
-    mockPlans.value = [
-      {
-        slug: 'creator-annual',
-        tier: 'CREATOR',
-        duration: 'ANNUAL',
-        price_cents: 33600,
-        credits_cents: 42086,
-        max_seats: 1,
-        action: 'subscribe',
-        availability: { available: true },
-        seat_summary: {
-          seat_count: 1,
-          total_cost_cents: 33600,
-          total_credits_cents: 42086
-        }
-      }
-    ]
-
-    const context = useBillingContext()
-    vi.clearAllMocks()
-
-    expect(context.type.value).toBe('legacy')
-    expect(context.plans.value).toEqual(mockPlans.value)
-
-    await context.fetchPlans()
-    await context.fetchStatus()
-
-    expect(mockFetchPlans).toHaveBeenCalledOnce()
-    expect(useSubscription().fetchStatusDirect).toHaveBeenCalled()
-    expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
-
-    await context.previewSubscribe('creator-annual')
-    await context.subscribe('creator-annual')
-    await context.topup(500)
-
-    expect(billingApi.previewSubscribe).toHaveBeenCalledWith(
-      'creator-annual',
-      undefined
-    )
-    expect(billingApi.subscribe).toHaveBeenCalledWith(
-      'creator-annual',
-      undefined
-    )
-    expect(useSubscription().subscribeDirect).not.toHaveBeenCalled()
-    expect(useAuthActions().purchaseCreditsDirect).toHaveBeenCalledWith(5)
-  })
-
   it('routes migrated Stripe topups through workspace billing', async () => {
     remoteConfigState.value = 'authenticated'
     authenticatedRemoteConfigState.value = 'authenticated'
-    mockBillingRail.value = 'stripe'
 
     const context = useBillingContext()
     await nextTick()
@@ -450,54 +328,6 @@ describe('useBillingContext', () => {
     await context.topup(500)
 
     expect(billingApi.createTopup).toHaveBeenCalledWith(500, expect.any(String))
-    expect(useAuthActions().purchaseCreditsDirect).not.toHaveBeenCalled()
-  })
-
-  it('switches billing adapters before refreshing a migrated balance', async () => {
-    mockBillingRail.value = 'legacy_stripe'
-    mockBillingStatus.value = {
-      ...DEFAULT_BILLING_STATUS,
-      billing_rail: 'stripe'
-    }
-
-    const context = useBillingContext()
-    await vi.waitFor(() => {
-      expect(useSubscription().fetchStatusDirect).toHaveBeenCalled()
-      expect(useAuthStore().fetchBalance).toHaveBeenCalled()
-    })
-    vi.clearAllMocks()
-
-    await context.reconcileSubscriptionSuccess()
-
-    expect(
-      useWorkspaceBillingStateStore().setWorkspaceBillingRail
-    ).toHaveBeenCalledWith('personal-123', 'stripe')
-    expect(context.type.value).toBe('workspace')
-    expect(billingApi.getBillingStatus).toHaveBeenCalled()
-    expect(billingApi.getBillingBalance).toHaveBeenCalled()
-    expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
-    expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
-  })
-
-  it('does not refresh a balance through a stale rail after discovery fails', async () => {
-    mockBillingRail.value = 'legacy_stripe'
-
-    const context = useBillingContext()
-    await vi.waitFor(() => {
-      expect(useSubscription().fetchStatusDirect).toHaveBeenCalled()
-      expect(useAuthStore().fetchBalance).toHaveBeenCalled()
-    })
-    vi.clearAllMocks()
-    vi.mocked(billingApi.getBillingStatus).mockRejectedValueOnce(
-      new Error('status unavailable')
-    )
-
-    await expect(context.reconcileSubscriptionSuccess()).rejects.toThrow(
-      'status unavailable'
-    )
-
-    expect(billingApi.getBillingBalance).not.toHaveBeenCalled()
-    expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -538,35 +368,7 @@ describe('useBillingContext', () => {
     await expect(topup(99.5)).rejects.toThrow()
   })
 
-  it('provides canAccessSubscriptionFeatures convenience computed', () => {
-    mockBillingRail.value = 'legacy_stripe'
-    const { canAccessSubscriptionFeatures } = useBillingContext()
-    expect(canAccessSubscriptionFeatures.value).toBe(true)
-  })
-
   describe('announced billing refreshes', () => {
-    it.for([
-      { scope: 'account' as const, status: 1, balance: 1 },
-      { scope: 'subscription' as const, status: 1, balance: 1 }
-    ])(
-      'refetches on the legacy rail for a $scope refresh',
-      async ({ scope, status, balance }) => {
-        mockBillingRail.value = 'legacy_stripe'
-        useBillingContext()
-        await vi.waitFor(() => {
-          expect(useAuthStore().fetchBalance).toHaveBeenCalled()
-        })
-        vi.clearAllMocks()
-
-        await refreshBilling(scope)
-
-        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledTimes(
-          status
-        )
-        expect(useAuthStore().fetchBalance).toHaveBeenCalledTimes(balance)
-      }
-    )
-
     it('stops answering refreshes and checkout reads once its scope stops', async () => {
       const scope = effectScope()
       scope.run(useSharedBillingContext)
@@ -588,28 +390,6 @@ describe('useBillingContext', () => {
     })
   })
 
-  it('reports the rail in effect when cancelSubscription was dispatched, not the one after it resolves', async () => {
-    mockBillingRail.value = 'legacy_stripe'
-    let finishPortal!: () => void
-    vi.mocked(useSubscription().manageSubscription).mockReturnValueOnce(
-      new Promise<void>((resolve) => {
-        finishPortal = resolve
-      })
-    )
-    const context = useBillingContext()
-    expect(context.type.value).toBe('legacy')
-
-    const cancelling = context.cancelSubscription()
-    await vi.waitFor(() =>
-      expect(useSubscription().manageSubscription).toHaveBeenCalled()
-    )
-    mockIsPersonal.value = false
-    expect(context.type.value).toBe('workspace')
-    finishPortal()
-
-    expect(await cancelling).toBe('legacy')
-  })
-
   describe('workspace not loaded yet', () => {
     function holdWorkspaceUnloaded(type: 'personal' | 'team') {
       const loaded = ref(false)
@@ -627,33 +407,8 @@ describe('useBillingContext', () => {
       return loaded
     }
 
-    it('makes no billing call while unknown, then routes to legacy for a personal legacy_stripe workspace', async () => {
-      const loaded = holdWorkspaceUnloaded('personal')
-      mockBillingRail.value = 'legacy_stripe'
-      const context = useBillingContext()
-      vi.clearAllMocks()
-
-      const initializing = context.initialize()
-      await context.fetchStatus()
-      await context.fetchBalance()
-
-      expect(context.type.value).toBe('unknown')
-      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
-      expect(useAuthStore().fetchBalance).not.toHaveBeenCalled()
-      expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
-
-      loaded.value = true
-      await initializing
-
-      expect(context.isInitialized.value).toBe(true)
-      expect(useSubscription().fetchStatusDirect).toHaveBeenCalled()
-      expect(context.type.value).toBe('legacy')
-      expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
-    })
-
     it('runs a fresh read asked for while unknown once routing is known', async () => {
       const loaded = holdWorkspaceUnloaded('personal')
-      mockBillingRail.value = 'legacy_stripe'
       const context = useBillingContext()
       vi.clearAllMocks()
 
@@ -663,19 +418,16 @@ describe('useBillingContext', () => {
       loaded.value = true
 
       await vi.waitFor(() => {
-        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledWith({
-          fresh: true
-        })
+        expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(2)
       })
     })
 
     it('reports a deferred fresh read failure with the same telemetry as an immediate one', async () => {
       const loaded = holdWorkspaceUnloaded('personal')
-      mockBillingRail.value = 'legacy_stripe'
       const context = useBillingContext()
       vi.clearAllMocks()
       const failure = new Error('status read rejected')
-      vi.mocked(useSubscription().fetchStatusDirect).mockRejectedValue(failure)
+      vi.mocked(billingApi.getBillingStatus).mockRejectedValue(failure)
 
       await context.fetchStatus({ fresh: true })
       expect(reportError).not.toHaveBeenCalled()
@@ -692,10 +444,9 @@ describe('useBillingContext', () => {
 
     it('still runs the owed fresh read when initializing the billing context throws', async () => {
       const loaded = holdWorkspaceUnloaded('personal')
-      mockBillingRail.value = 'legacy_stripe'
       const context = useBillingContext()
       vi.clearAllMocks()
-      vi.mocked(useAuthStore().fetchBalance).mockRejectedValue(
+      vi.mocked(billingApi.getBillingBalance).mockRejectedValue(
         new Error('balance read rejected')
       )
 
@@ -704,11 +455,76 @@ describe('useBillingContext', () => {
       loaded.value = true
 
       await vi.waitFor(() => {
-        expect(useSubscription().fetchStatusDirect).toHaveBeenCalledWith({
-          fresh: true
-        })
+        expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(2)
       })
       expect(context.isInitialized.value).toBe(false)
+    })
+
+    it('shares one adapter initialization between concurrent callers', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      let settleStatus!: () => void
+      vi.mocked(billingApi.getBillingStatus).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            settleStatus = () =>
+              resolve({ ...DEFAULT_BILLING_STATUS, ...mockBillingStatus.value })
+          })
+      )
+      const settled = { first: false, second: false }
+      const first = context.initialize().then(() => (settled.first = true))
+      const second = context.initialize().then(() => (settled.second = true))
+      loaded.value = true
+      await vi.waitFor(() =>
+        expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(1)
+      )
+
+      expect(settled).toEqual({ first: false, second: false })
+
+      settleStatus()
+      await Promise.all([first, second])
+
+      expect(settled).toEqual({ first: true, second: true })
+      expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(1)
+    })
+
+    it('reads empty and makes no billing call while unknown, then routes to workspace billing for a personal workspace', async () => {
+      const loaded = holdWorkspaceUnloaded('personal')
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      const initializing = context.initialize()
+      await context.fetchStatus()
+      await context.fetchBalance()
+
+      expect(context.type.value).toBe('unknown')
+      expect(context.subscription.value).toBeNull()
+      expect(context.balance.value).toBeNull()
+      expect(context.canAccessSubscriptionFeatures.value).toBe(false)
+      expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(billingApi.getBillingBalance).not.toHaveBeenCalled()
+      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
+
+      loaded.value = true
+      await initializing
+
+      expect(context.type.value).toBe('workspace')
+      expect(context.isInitialized.value).toBe(true)
+      expect(billingApi.getBillingStatus).toHaveBeenCalled()
+      expect(billingApi.getBillingBalance).toHaveBeenCalled()
+      expect(useSubscription().fetchStatusDirect).not.toHaveBeenCalled()
+    })
+
+    it('lets off-Cloud users run workflows before any workspace loads', () => {
+      holdWorkspaceUnloaded('personal')
+      mockIsCloud.value = false
+      const context = useBillingContext()
+
+      expect(context.type.value).toBe('unknown')
+      expect(context.canAccessSubscriptionFeatures.value).toBe(true)
+      expect(context.canRunWorkflows.value).toBe(true)
     })
 
     it('makes no billing call while unknown, then routes to workspace billing for a team', async () => {
@@ -922,7 +738,6 @@ describe('useBillingContext', () => {
         500,
         expect.any(String)
       )
-      expect(useAuthActions().purchaseCreditsDirect).not.toHaveBeenCalled()
     })
   })
 

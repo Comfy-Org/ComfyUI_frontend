@@ -155,7 +155,9 @@ describe('MediaAssetCard', () => {
     })
 
     it('includes the asset metadata with display_name in the drag payload', () => {
-      const { container } = renderCard()
+      const { container } = renderCard({
+        asset: { ...asset, display_name: 'Display A', tags: ['output'] }
+      })
 
       const { event, add } = dispatchDragStart(container)
 

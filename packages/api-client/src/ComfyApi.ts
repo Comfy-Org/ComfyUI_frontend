@@ -4,13 +4,15 @@ import type {
   GetI18nResponse,
   ModelDownloadData,
   ModelFile,
-  PostAssetsFromWorkflowResponse
+  PostAssetsFromWorkflowResponse,
+  PromptOutputsSkippedData
 } from '@comfyorg/ingest-types'
 import {
   zGetEmbeddingsResponse,
   zGetExtensionsResponse,
   zPostAssetsFromWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
+import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
 import axios from 'axios'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
@@ -72,6 +74,7 @@ import type { JobAssetsResult, JobDetail, JobListItem } from './jobTypes'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { AuthCredential, AuthScheme } from './authTypes'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { getFetchRouteTemplate } from './fetchRouteTemplate'
 import { retryingSend } from './fetchWithRetry'
 import { NO_RETRY_POLICY } from './retryPolicy'
@@ -89,6 +92,7 @@ interface QueuePromptRequestBody {
   client_id: string
   prompt: ComfyApiWorkflow
   partial_execution_targets?: NodeExecutionId[]
+  workflow_metadata?: Pick<PromptWorkflowMetadata, 'workflow_id'>
   extra_data: {
     extra_pnginfo: {
       workflow: ComfyWorkflowJSON
@@ -202,6 +206,7 @@ interface BackendApiCalls {
   execution_error: ExecutionErrorWsMessage
   execution_interrupted: ExecutionInterruptedWsMessage
   execution_cached: ExecutionCachedWsMessage
+  prompt_outputs_skipped: PromptOutputsSkippedData
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob
@@ -213,6 +218,7 @@ interface BackendApiCalls {
     displayNodeId: string
     realNodeId: string
     jobId: string
+    workflowId?: string
   }
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
@@ -1105,7 +1111,8 @@ export class ComfyApi extends EventTarget {
                 displayNodeId: metadata.display_node_id,
                 parentNodeId: metadata.parent_node_id,
                 realNodeId: metadata.real_node_id,
-                jobId: metadata.prompt_id
+                jobId: metadata.prompt_id,
+                workflowId: metadata.workflow_id
               })
 
               this.dispatchCustomEvent('b_preview', imageBlob4)
@@ -1142,6 +1149,7 @@ export class ComfyApi extends EventTarget {
             case 'execution_interrupted':
             case 'execution_cached':
             case 'execution_success':
+            case 'prompt_outputs_skipped':
             case 'progress':
             case 'progress_state':
             case 'executed':
@@ -1344,6 +1352,10 @@ export class ComfyApi extends EventTarget {
       ...(options?.partialExecutionTargets && {
         partial_execution_targets: options.partialExecutionTargets
       }),
+      ...(workflow.id &&
+        workflow.id !== zeroUuid && {
+          workflow_metadata: { workflow_id: workflow.id }
+        }),
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
@@ -1505,15 +1517,17 @@ export class ComfyApi extends EventTarget {
    */
   async getHistory(
     max_items: number = 200,
-    options?: { offset?: number }
+    options?: { offset?: number; throwOnError?: boolean }
   ): Promise<JobListItem[]> {
     try {
       return await fetchHistory(
         this.fetchApi.bind(this),
         max_items,
-        options?.offset
+        options?.offset,
+        options
       )
     } catch (error) {
+      if (options?.throwOnError) throw error
       console.error(error)
       return []
     }
@@ -1551,32 +1565,27 @@ export class ComfyApi extends EventTarget {
     return await res.json()
   }
 
-  /**
-   * Sends a POST request to the API
-   * @param {*} type The endpoint to post to
-   * @param {*} body Optional POST data
-   */
-  private async _postItem(type: string, body?: Record<string, unknown>) {
+  private async _postItem(
+    type: string,
+    body?: Record<string, unknown>
+  ): Promise<boolean> {
     try {
-      await this.fetchApi('/' + type, {
+      const response = await this.fetchApi('/' + type, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: body ? JSON.stringify(body) : undefined
       })
+      return response.ok
     } catch (error) {
       console.error(error)
+      return false
     }
   }
 
-  /**
-   * Deletes an item from the specified list
-   * @param {string} type The type of item to delete, queue or history
-   * @param {number} id The id of the item to delete
-   */
-  async deleteItem(type: string, id: string) {
-    await this._postItem(type, { delete: [id] })
+  async deleteItem(type: string, id: string): Promise<boolean> {
+    return this._postItem(type, { delete: [id] })
   }
 
   /**

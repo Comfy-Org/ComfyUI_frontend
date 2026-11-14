@@ -59,8 +59,11 @@ function createAssetWidgetPath(asset: AssetItem): string {
     : getAssetType(asset, 'input')
 
   return createAnnotatedPath({
-    filename: getAssetStoredFilename(asset),
-    subfolder: getOutputSubfolder(asset.user_metadata) ?? '',
+    filename: getAssetStoredFilename(
+      asset,
+      asset.hash ?? getStoredOutputIdentity(asset)?.hash
+    ),
+    subfolder: getOutputSubfolder(asset) ?? '',
     type: isResultItemType(assetType) ? assetType : undefined
   })
 }
@@ -577,11 +580,6 @@ export function useMediaAssetActions() {
     }
   }
 
-  /**
-   * Show confirmation dialog and delete asset(s) if confirmed
-   * @param assets Single asset or array of assets to delete
-   * @returns true if user confirmed and deletion was attempted, false if cancelled
-   */
   async function deleteAssets(input: AssetItem[] | AssetItem) {
     const assets = Array.isArray(input) ? input : [input]
     interface BaseDeleteOperation {
@@ -602,24 +600,11 @@ export function useMediaAssetActions() {
     }
     type DeleteOperation = AssetDeletion | JobDeletion
 
-    function getDeletionPlan(): DeleteOperation[] {
-      if (!flags.assetsEnabled) {
-        const operations: JobDeletion[] = assets.flatMap((asset) => {
-          const markDeletionId = asset.id
-          const { jobId } = getOutputAssetMetadata(asset.user_metadata) ?? {}
-          if (!jobId) return []
-
-          const name = getAssetDisplayName(asset)
-          return [{ kind: 'job', id: jobId, name, markDeletionId }]
-        })
-        return uniqBy(operations, (op) => op.id)
-      }
-      return assets.flatMap((asset) => {
-        const markDeletionId = asset.id
-        const metadata = getOutputAssetMetadata(asset.user_metadata)
-        const childAssets: AssetDeletion[] = (
-          metadata?.allOutputs ?? []
-        ).flatMap((output) => {
+    function getAssetDeletions(asset: AssetItem): AssetDeletion[] {
+      const markDeletionId = asset.id
+      const metadata = getOutputAssetMetadata(asset.user_metadata)
+      const childAssets: AssetDeletion[] = (metadata?.allOutputs ?? []).flatMap(
+        (output) => {
           if (!output.assetId) return []
 
           const variants = widgetValueVariants(
@@ -636,29 +621,64 @@ export function useMediaAssetActions() {
             tags: asset.tags,
             variants
           }
-        })
-        if (childAssets.length > 0) return childAssets
+        }
+      )
+      if (childAssets.length > 0) return childAssets
 
-        const stored = getStoredOutputIdentity(asset)
-        const variants = widgetValueVariants(
-          asset.name,
-          isGeneratedTempOutput(asset)
-            ? 'temp'
-            : (stored?.type ?? getAssetType(asset, 'input')),
-          getOutputSubfolder(asset.user_metadata),
-          asset.hash ?? stored?.hash
+      const stored = getStoredOutputIdentity(asset)
+      const variants = widgetValueVariants(
+        asset.name,
+        isGeneratedTempOutput(asset)
+          ? 'temp'
+          : (stored?.type ?? getAssetType(asset, 'input')),
+        getOutputSubfolder(asset),
+        asset.hash ?? stored?.hash
+      )
+      return [
+        {
+          kind: 'asset',
+          id: asset.id,
+          markDeletionId,
+          name: getAssetDisplayName(asset),
+          tags: asset.tags,
+          variants
+        }
+      ]
+    }
+
+    async function getDeletionPlan(): Promise<DeleteOperation[] | null> {
+      if (!flags.assetsEnabled) {
+        const operations: JobDeletion[] = assets.flatMap((asset) => {
+          const markDeletionId = asset.id
+          const { jobId } = getOutputAssetMetadata(asset.user_metadata) ?? {}
+          if (!jobId) return []
+
+          const name = getAssetDisplayName(asset)
+          return [{ kind: 'job', id: jobId, name, markDeletionId }]
+        })
+        return uniqBy(operations, (op) => op.id)
+      }
+      const operations: DeleteOperation[] = []
+      for (const asset of assets) {
+        const metadata = getOutputAssetMetadata(asset.user_metadata)
+        if (metadata?.jobId !== asset.id || metadata.assetId) {
+          operations.push(...getAssetDeletions(asset))
+          continue
+        }
+        const jobAssets = await api.getJobAssets(metadata.jobId)
+        if (!jobAssets.complete) return null
+        const records = await Promise.all(
+          jobAssets.assets.map(({ id }) => assetService.getAssetDetails(id))
         )
-        return [
-          {
-            kind: 'asset',
-            id: asset.id,
-            markDeletionId,
-            name: getAssetDisplayName(asset),
-            tags: asset.tags,
-            variants
-          }
-        ]
-      })
+        operations.push({
+          kind: 'job',
+          id: metadata.jobId,
+          markDeletionId: asset.id,
+          name: getAssetDisplayName(asset),
+          dependents: records.flatMap(getAssetDeletions)
+        })
+      }
+      return operations
     }
 
     function getNames(operation: DeleteOperation): string[] {
@@ -694,8 +714,9 @@ export function useMediaAssetActions() {
     }
     let deletedJobCount = 0
     async function deleteJob(operation: JobDeletion) {
-      await api.deleteItem('history', operation.id)
-      deletedJobCount++
+      const deleted = await api.deleteItem('history', operation.id)
+      if (deleted) deletedJobCount++
+      return deleted
     }
     async function performDelete(
       operation: DeleteOperation
@@ -712,7 +733,7 @@ export function useMediaAssetActions() {
 
         try {
           if (operation.kind === 'asset') await deleteAsset(operation)
-          else await deleteJob(operation)
+          else if (!(await deleteJob(operation))) return [operation]
         } catch (err) {
           return [err]
         }
@@ -724,7 +745,21 @@ export function useMediaAssetActions() {
       return []
     }
 
-    const deletionPlan = getDeletionPlan()
+    let deletionPlan: DeleteOperation[] | null
+    try {
+      deletionPlan = await getDeletionPlan()
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_resolving_asset_deletion',
+        surface: 'assets'
+      })
+      toast.error(t('mediaAsset.assetDelete.error'))
+      return false
+    }
+    if (!deletionPlan) {
+      toast.error(t('mediaAsset.assetDelete.error'))
+      return false
+    }
     if (!deletionPlan.length) return false
 
     const plannedAssetCount = getOperationCount('asset', deletionPlan)

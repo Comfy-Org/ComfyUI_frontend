@@ -68,6 +68,7 @@ const STATUS_WITH_PENDING_SUBSCRIPTION = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1,
   pending_billing_op_id: RECOVERY_OPERATION_ID,

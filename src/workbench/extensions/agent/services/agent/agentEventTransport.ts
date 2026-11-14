@@ -37,16 +37,21 @@ export type AgentChatEvent = Extract<
       | 'agent_active_tab'
       | 'agent_ask'
       | 'agent_ask_resolved'
+      | 'agent_extension_changed'
   }
 >
 type AgentNonTerminalEvent = Exclude<
   AgentChatEvent,
-  { type: 'agent_message_done' }
+  { type: 'agent_message_done' | 'agent_extension_changed' }
 >
 
 type AgentToolCallEvent = Extract<AgentChatEvent, { type: 'agent_tool_call' }>
 type AgentActiveTabEvent = Extract<AgentChatEvent, { type: 'agent_active_tab' }>
 type AgentAskEvent = Extract<AgentChatEvent, { type: 'agent_ask' }>
+type AgentExtensionChangedEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_extension_changed' }
+>
 type AgentThinkingEvent = Extract<AgentChatEvent, { type: 'agent_thinking' }>
 type AgentAskResolvedEvent = Extract<
   AgentChatEvent,
@@ -233,7 +238,20 @@ export function createAgentEventTransport(
     return pendingCanvasSync.size > 0
   }
 
+  function settleUnresolvedToolParts(): void {
+    for (const part of message.parts) {
+      if (
+        part.type !== 'tool' ||
+        part.state !== 'streaming' ||
+        part.ok !== undefined
+      )
+        continue
+      part.state = 'done'
+    }
+  }
+
   function dispose(): void {
+    settled = true
     flushPendingCanvasSync()
   }
 
@@ -298,7 +316,8 @@ export function createAgentEventTransport(
         type: 'tool',
         callId: data.tool_call_id,
         name: data.tool_name,
-        state: 'streaming'
+        state: 'streaming',
+        ...(data.status === 'running' && { startedAtMs: Date.now() })
       }
       tools.set(data.tool_call_id, part)
       message.parts.push(part)
@@ -341,6 +360,23 @@ export function createAgentEventTransport(
       name: data.name
     })
     return true
+  }
+
+  function handleExtensionChangedEvent(
+    data: AgentExtensionChangedEvent['data']
+  ): void {
+    dropThinkingDraft()
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    message.parts.push({
+      type: 'extensionChange',
+      action: data.action,
+      pack: data.pack,
+      agentCreated: data.agent_created,
+      restartRequired: data.restart_required
+    })
   }
 
   function reportUnrenderedAsk(data: AgentAskEvent['data']): void {
@@ -550,6 +586,11 @@ export function createAgentEventTransport(
       settle()
       return
     }
+    if (event.type === 'agent_extension_changed') {
+      handleExtensionChangedEvent(event.data)
+      emit(snapshotMessage(message))
+      return
+    }
     if (applyChatEvent(event)) emit(snapshotMessage(message))
   }
 
@@ -559,6 +600,7 @@ export function createAgentEventTransport(
     dropDrafts()
     closeOpenText()
     closeOpenThinking()
+    settleUnresolvedToolParts()
     message.thinking = false
     message.thinkingText = undefined
     message.streaming = false

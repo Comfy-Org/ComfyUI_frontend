@@ -6,7 +6,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
-import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import type { RemoteWidgetConfig } from '@comfyorg/object-info-parser'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 

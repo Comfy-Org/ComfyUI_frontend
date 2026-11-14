@@ -12,13 +12,9 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 import {
   EMPTY_BILLING_BALANCE,
   EMPTY_BILLING_PLANS,
-  LEGACY_PERSONAL_BILLING_STATUS
+  PERSONAL_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import {
-  UNSUBSCRIBED,
-  ZERO_BALANCE
-} from '@e2e/fixtures/data/subscriptionFixtures'
 import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
@@ -45,6 +41,7 @@ import { ConfirmDialog } from '@e2e/fixtures/components/ConfirmDialog'
 import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
 import { CurrentUserPopover } from '@e2e/fixtures/components/CurrentUserPopover'
 import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { TemplatesDialog } from '@e2e/fixtures/components/TemplatesDialog'
@@ -78,28 +75,6 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 
 dotenvConfig()
 
-class ComfyPropertiesPanel {
-  readonly root: Locator
-  readonly panelTitle: Locator
-  readonly searchBox: Locator
-  readonly titleEditor: TitleEditor
-  readonly toggleButton: Locator
-  readonly closeButton: Locator
-
-  constructor(readonly page: Page) {
-    this.root = page.getByTestId(TestIds.propertiesPanel.root)
-    this.panelTitle = this.root.locator('h3')
-    this.searchBox = this.root.getByPlaceholder(/^Search/)
-    this.titleEditor = new TitleEditor(this.root)
-    this.toggleButton = page.getByRole('button', {
-      name: 'Toggle properties panel'
-    })
-    this.closeButton = this.root.getByRole('button', {
-      name: 'Toggle properties panel'
-    })
-  }
-}
-
 class ComfyMenu {
   private _appsTab: SidebarTab | null = null
   private _jobHistoryTab: SidebarTab | null = null
@@ -111,14 +86,14 @@ class ComfyMenu {
   private _topbar: Topbar | null = null
 
   public readonly sideToolbar: Locator
-  public readonly propertiesPanel: ComfyPropertiesPanel
+  public readonly propertiesPanel: PropertiesPanel
   public readonly modeToggleButton: Locator
   public readonly buttons: Locator
 
   constructor(public readonly page: Page) {
     this.sideToolbar = page.getByTestId(TestIds.sidebar.toolbar)
     this.modeToggleButton = page.getByTestId(TestIds.sidebar.modeToggle)
-    this.propertiesPanel = new ComfyPropertiesPanel(page)
+    this.propertiesPanel = new PropertiesPanel(page)
     this.buttons = this.sideToolbar.locator('.side-bar-button')
   }
 
@@ -704,7 +679,13 @@ export const comfyPageFixture = base.extend<{
           route.fulfill({ status: 204 })
         )
         await context.route('**/api/billing/status', (route) =>
-          route.fulfill({ json: LEGACY_PERSONAL_BILLING_STATUS })
+          route.fulfill({
+            json: {
+              ...PERSONAL_BILLING_STATUS,
+              is_active: true,
+              subscription_status: undefined
+            }
+          })
         )
         await context.route('**/api/billing/capabilities', (route) =>
           route.fulfill({ json: createBillingCapabilities('ws-personal') })
@@ -714,12 +695,6 @@ export const comfyPageFixture = base.extend<{
         )
         await context.route('**/api/billing/plans', (route) =>
           route.fulfill({ json: EMPTY_BILLING_PLANS })
-        )
-        await context.route('**/customers/cloud-subscription-status', (route) =>
-          route.fulfill({ json: UNSUBSCRIBED })
-        )
-        await context.route('**/customers/balance', (route) =>
-          route.fulfill({ json: ZERO_BALANCE })
         )
         await mockWorkspace(context, workspace('personal', 'owner'), [])
       }
@@ -777,6 +752,13 @@ export const comfyPageFixture = base.extend<{
     const comfyFiles = new ComfyFiles(comfyPage)
     await use(comfyFiles)
     await comfyFiles.teardown()
+  }
+})
+
+export const mockCloudComfyPageFixture = comfyPageFixture.extend({
+  comfyPage: async ({ page, request }, use, testInfo) => {
+    testInfo.setTimeout(Math.max(testInfo.timeout, 45_000))
+    await use(new ComfyPage(page, request))
   }
 })
 

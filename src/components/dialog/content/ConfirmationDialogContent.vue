@@ -58,14 +58,18 @@
         <i class="icon-[lucide--undo-2]" />
         {{ $t('g.cancel') }}
       </Button>
-      <Button v-if="type === 'default'" variant="primary" @click="onConfirm">
+      <Button
+        v-if="type === 'default'"
+        variant="primary"
+        @click="handleConfirm"
+      >
         <i class="icon-[lucide--check]" />
         {{ $t('g.confirm') }}
       </Button>
       <Button
         v-else-if="type === 'delete'"
         variant="destructive"
-        @click="onConfirm"
+        @click="handleConfirm"
       >
         <i class="icon-[lucide--trash-2]" />
         {{ $t('g.delete') }}
@@ -73,7 +77,7 @@
       <Button
         v-else-if="type === 'overwrite' || type === 'overwriteBlueprint'"
         variant="destructive"
-        @click="onConfirm"
+        @click="handleConfirm"
       >
         <i class="icon-[lucide--save]" />
         {{ $t('g.overwrite') }}
@@ -83,7 +87,7 @@
           <i class="icon-[lucide--x]" />
           {{ denyLabel ?? $t('g.no') }}
         </Button>
-        <Button autofocus @click="onConfirm">
+        <Button autofocus @click="handleConfirm">
           <i class="icon-[lucide--save]" />
           {{ confirmLabel ?? $t('g.save') }}
         </Button>
@@ -91,7 +95,7 @@
       <Button
         v-else-if="type === 'reinstall'"
         variant="destructive"
-        @click="onConfirm"
+        @click="handleConfirm"
       >
         <i class="icon-[lucide--eraser]" />
         {{ $t('desktopMenu.reinstall') }}
@@ -145,7 +149,7 @@ const onDeny = () => {
   useDialogStore().closeDialog()
 }
 
-const onConfirm = () => {
+const handleConfirm = () => {
   if (props.type === 'overwriteBlueprint' && doNotAskAgain.value)
     void useSettingStore().set('Comfy.Workflow.WarnBlueprintOverwrite', false)
   props.onConfirm(true)

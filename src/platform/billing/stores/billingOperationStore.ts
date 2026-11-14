@@ -186,6 +186,7 @@ interface BillingOperation {
   actionUrl: string | null
   paymentMethodUrl: string | null
   authenticationState: BillingAuthenticationState | null
+  authenticationDeadline?: string
   isAuthenticating: boolean
   canRetryAuthentication: boolean
   authenticationRequiredSeen: boolean
@@ -560,7 +561,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       updateOperationPhase(opId, response.phase ?? null)
       if (stopIfTimedOut(opId, operations.value.get(opId) ?? operation)) return
 
-      updateOperationActionUrl(opId, validateActionUrl(response.action_url))
+      updateOperationActionUrl(
+        opId,
+        validateActionUrl(response.action_url),
+        response.authentication_deadline
+      )
       scheduleNextPoll(opId)
     } catch {
       const currentOperation = operations.value.get(opId)
@@ -728,7 +733,11 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     return keeps ? operation.paymentMethodUrl : null
   }
 
-  function updateOperationActionUrl(opId: string, actionUrl: string | null) {
+  function updateOperationActionUrl(
+    opId: string,
+    actionUrl: string | null,
+    authenticationDeadline?: string
+  ) {
     const operation = operations.value.get(opId)
     if (!operation || operation.status !== 'pending') return
     const paymentMethodUrl = keptPaymentMethodUrl(operation, actionUrl)
@@ -737,6 +746,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       ...operation,
       actionUrl: shownUrl,
       paymentMethodUrl,
+      authenticationDeadline,
       authenticationRequiredSeen:
         operation.authenticationRequiredSeen || shownUrl !== null
     }

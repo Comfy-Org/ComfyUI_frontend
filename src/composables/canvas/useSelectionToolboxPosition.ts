@@ -1,9 +1,10 @@
-import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
+import { useElementBounding, useEventListener } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type {
   ReadOnlyRect,
   Rect,
@@ -79,17 +80,14 @@ export function useSelectionToolboxPosition(
     }
   )
 
-  // World position of selection center
   const worldPosition = ref({ x: 0, y: 0 })
 
   const visible = ref(false)
 
-  // Use VueUse to reactively track canvas bounding rect
   const { left: canvasLeft, top: canvasTop } = useElementBounding(
     lgCanvas.canvas
   )
 
-  // Unified dragging state - combines both LiteGraph and Vue node dragging
   const isDragging = computed((): boolean => {
     const vueNodeDragging =
       shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
@@ -145,22 +143,15 @@ export function useSelectionToolboxPosition(
     const screenY =
       (worldPosition.value.y + offset[1]) * scale + canvasTop.value
 
-    // Update CSS custom properties directly for best performance
     if (toolboxRef.value) {
       toolboxRef.value.style.setProperty('--tb-x', `${screenX}px`)
       toolboxRef.value.style.setProperty('--tb-y', `${screenY}px`)
     }
   }
 
-  // Sync with canvas transform
-  const { resume: startSync, pause: stopSync } = useRafFn(updateTransform)
-
-  watchEffect(() => {
-    if (visible.value) {
-      startSync()
-    } else {
-      stopSync()
-    }
+  watchEffect((onCleanup) => {
+    if (!visible.value) return
+    onCleanup(onCanvasFrame(lgCanvas, 'present', updateTransform))
   })
 
   const handleSelectionMembershipChange = () => {
@@ -212,14 +203,12 @@ export function useSelectionToolboxPosition(
   const handleDragStart = () => {
     visible.value = false
 
-    // Early return if more options wasn't open
     if (!moreOptionsOpen.value) {
       moreOptionsRestorePending.value = false
       moreOptionsWasOpenBeforeDrag = false
       return
     }
 
-    // Handle more options cleanup
     const currentSig = buildSelectionSignature(canvasStore)
     const selectionChanged = currentSig !== moreOptionsSelectionSignature
 
@@ -249,7 +238,6 @@ export function useSelectionToolboxPosition(
         moreOptionsRestorePending.value &&
         selectionMatches
 
-      // Single point of assignment for each ref
       moreOptionsRestorePending.value =
         shouldRestore && moreOptionsRestorePending.value
       moreOptionsWasOpenBeforeDrag = false

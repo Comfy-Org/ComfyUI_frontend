@@ -36,6 +36,7 @@ export const BILLING_TELEMETRY_EVENTS = {
   BILLING_WEB_HANDOFF_OPENED: 'billing.web_handoff.opened',
   BILLING_ENTRY_PAYWALL_SHOWN: 'billing.entry.paywall_shown',
   BILLING_ENTRY_ADD_CREDITS_CLICKED: 'billing.entry.add_credits_clicked',
+  BILLING_ENTRY_PRICING_LINK_REFUSED: 'billing.entry.pricing_link_refused',
   BILLING_CANCEL_INTENT: 'billing.cancel.intent',
   BILLING_CANCEL_ABANDONED: 'billing.cancel.abandoned',
   BILLING_CANCEL_FAILED: 'billing.cancel.failed',
@@ -43,5 +44,7 @@ export const BILLING_TELEMETRY_EVENTS = {
   BILLING_PORTAL_FAILED: 'billing.portal.failed',
   BILLING_PORTAL_RETURNED: 'billing.portal.returned',
   BILLING_AUTO_TOP_UP_CARD_VIEWED: 'billing.auto_top_up_card.viewed',
+  BILLING_AUTO_TOP_UP_OFFER_VIEWED: 'billing.auto_top_up_offer.viewed',
+  BILLING_AUTO_TOP_UP_OFFER_DECLINED: 'billing.auto_top_up_offer.declined',
   BILLING_PLATFORM_HANDOFF_OPENED: 'billing.platform_handoff.opened'
 } as const satisfies Record<string, BillingTelemetryEventName>

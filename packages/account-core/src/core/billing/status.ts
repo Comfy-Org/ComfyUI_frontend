@@ -8,7 +8,8 @@ import { createScopedReader } from './scopedReader'
 export const BILLING_STATUS_ROUTE = '/billing/status'
 
 const BillingStatusBodySchema = zBillingStatusResponse.extend({
-  ended_at: zBillingStatusResponse.shape.ended_at.optional()
+  ended_at: zBillingStatusResponse.shape.ended_at.optional(),
+  next_charge: zBillingStatusResponse.shape.next_charge.optional()
 })
 
 export type BillingStatusData = z.infer<typeof BillingStatusBodySchema>

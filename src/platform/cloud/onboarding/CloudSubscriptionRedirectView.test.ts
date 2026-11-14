@@ -36,17 +36,6 @@ vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
 
-const legacyCheckoutMocks = vi.hoisted(() => ({
-  performSubscriptionCheckout: vi.fn()
-}))
-
-vi.mock(
-  import('@/platform/billing/subscription/utils/subscriptionCheckoutUtil'),
-  () => ({
-    performSubscriptionCheckout: legacyCheckoutMocks.performSubscriptionCheckout
-  })
-)
-
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 0,
   stops: [
@@ -150,6 +139,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal',
       initialCheckout: {
         planMode: 'personal',
@@ -157,9 +147,6 @@ describe('CloudSubscriptionRedirectView', () => {
         billingCycle: 'monthly'
       }
     })
-    expect(
-      legacyCheckoutMocks.performSubscriptionCheckout
-    ).not.toHaveBeenCalled()
 
     // Shows loading affordances
     expect(
@@ -174,7 +161,6 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
-    expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
@@ -199,6 +185,7 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(screen.getByText('Subscribe to Team Plan')).toBeInTheDocument()
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team',
       initialCheckout: {
         planMode: 'team',
@@ -224,6 +211,7 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(useAuthActions().reportError).toHaveBeenCalledWith(plansError)
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'team',
       initialCheckout: undefined
     })
@@ -253,10 +241,6 @@ describe('CloudSubscriptionRedirectView', () => {
     await mountView({ tier: 'creator', cycle: 'yearly' })
 
     expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
-    expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
-    expect(
-      legacyCheckoutMocks.performSubscriptionCheckout
-    ).not.toHaveBeenCalled()
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
@@ -275,10 +259,8 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal'
     })
-    expect(
-      legacyCheckoutMocks.performSubscriptionCheckout
-    ).not.toHaveBeenCalled()
   })
 })

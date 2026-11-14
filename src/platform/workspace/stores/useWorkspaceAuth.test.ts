@@ -1065,6 +1065,43 @@ describe('useWorkspaceAuthStore', () => {
       expect(fetch).toHaveBeenCalledTimes(1)
     })
 
+    it.for([
+      { failure: 'a 500', status: 500, reports: 1 },
+      { failure: 'a 403', status: 403, reports: 0 }
+    ])(
+      'reports $failure during recovery as a transient failure $reports time(s)',
+      async ({ status, reports }) => {
+        vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+          'firebase-token-xyz'
+        )
+        respondToFetch(TOKEN_URL, () =>
+          Response.json({ message: 'nope' }, { status })
+        )
+
+        const store = useWorkspaceAuthStore()
+        await store.ensureWorkspaceToken('workspace-123')
+
+        const transientReports = vi
+          .mocked(reportError)
+          .mock.calls.filter(
+            ([, options]) =>
+              options.errorType === 'workspace_token_recovery_failure'
+          )
+        expect(transientReports).toEqual(
+          Array.from({ length: reports }, () => [
+            expect.objectContaining({ code: 'TOKEN_EXCHANGE_FAILED' }),
+            {
+              surface: 'auth',
+              errorType: 'workspace_token_recovery_failure',
+              level: 'warning',
+              tags: { failure_code: 'TOKEN_EXCHANGE_FAILED' },
+              logToConsole: false
+            }
+          ])
+        )
+      }
+    )
+
     it('forgets the revoked active workspace on a permanent workspace-selection failure', async () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'
@@ -2038,23 +2075,40 @@ describe('useWorkspaceAuthStore', () => {
       {
         name: 'a 5xx response',
         respond: async () => new Response('upstream down', { status: 503 }),
-        httpStatus: 503
+        httpStatus: 503,
+        reason: 'none',
+        detail: 'none'
       },
       {
         name: 'a 2xx response with an unusable body',
         respond: async () => Response.json({ token: 'missing-fields' }),
-        httpStatus: 200
+        httpStatus: 200,
+        reason: 'schema_mismatch',
+        detail: 'expires_at,permissions,role,user_id,workspace'
+      },
+      {
+        name: 'a 2xx response whose token expired before it arrived',
+        respond: async () =>
+          Response.json({
+            ...mockTokenResponse,
+            expires_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+          }),
+        httpStatus: 200,
+        reason: 'expired_on_arrival',
+        detail: expect.stringMatching(/^expires_in_ms=-72\d{5}$/)
       },
       {
         name: 'a network failure',
         respond: async (): Promise<Response> => {
           throw new TypeError('Failed to fetch')
         },
-        httpStatus: 'none'
+        httpStatus: 'none',
+        reason: 'none',
+        detail: 'none'
       }
     ])(
-      'reports a transient login mint failure from $name with its HTTP status',
-      async ({ respond, httpStatus }) => {
+      'reports a transient login mint failure from $name with its HTTP status and reason',
+      async ({ respond, httpStatus, reason, detail }) => {
         vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
           'firebase-token-xyz'
         )
@@ -2070,7 +2124,9 @@ describe('useWorkspaceAuthStore', () => {
             errorType: 'unified_login_mint_failure',
             tags: {
               failure_code: 'TOKEN_EXCHANGE_FAILED',
-              http_status: httpStatus
+              http_status: httpStatus,
+              failure_reason: reason,
+              failure_detail: detail
             }
           })
         )

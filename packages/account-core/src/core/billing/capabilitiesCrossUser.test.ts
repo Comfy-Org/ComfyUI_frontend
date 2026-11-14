@@ -59,6 +59,8 @@ const NO_RIGHTS: BillingCapabilities = {
   can_invite_members: false,
   can_leave_workspace: false,
   can_manage_auto_top_up: false,
+  can_view_auto_top_up: false,
+  can_view_auto_top_up_member_notice: false,
   can_manage_billing: false,
   can_manage_members: false,
   can_manage_partner_node_access: false,

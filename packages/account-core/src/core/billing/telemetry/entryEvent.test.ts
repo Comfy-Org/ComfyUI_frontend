@@ -57,6 +57,25 @@ describe('the entry events', () => {
         payment_intent_source: 'deep_link',
         billing_surface: 'cloud_app'
       }
+    },
+    {
+      name: 'a refused pricing deep link with its reason and phase',
+      event: {
+        operation: 'entry',
+        stage: 'pricing_link_refused',
+        outcome: 'pending',
+        reason: 'pricing_surface_unavailable',
+        phase: 'after_catalog_fetch'
+      },
+      eventName: 'billing.entry.pricing_link_refused',
+      payload: {
+        operation: 'entry',
+        stage: 'pricing_link_refused',
+        outcome: 'pending',
+        reason: 'pricing_surface_unavailable',
+        phase: 'after_catalog_fetch',
+        billing_surface: 'cloud_app'
+      }
     }
   ])('names and reports $name', ({ event, eventName, payload }) => {
     expect(getBillingTelemetryEventName(event)).toBe(eventName)

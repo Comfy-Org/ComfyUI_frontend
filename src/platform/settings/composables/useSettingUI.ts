@@ -1,4 +1,11 @@
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  defineComponent,
+  h,
+  onMounted,
+  ref
+} from 'vue'
 import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -170,15 +177,25 @@ export function useSettingUI(
     props: { section: 'planCredits' }
   }
 
+  const BillingTabCurrent = defineAsyncComponent(
+    () =>
+      import('@/platform/account/components/dialogs/settings/BillingTab.vue')
+  )
+  // shortcut: the 1.60 tab, kept whole for the billing_new_ux_enabled rollback; delete with the flag.
+  const BillingTabLegacy = defineAsyncComponent(
+    () =>
+      import('@/platform/account/components/dialogs/settings/BillingTabLegacy.vue')
+  )
+
   const billingPanel: SettingPanelItem = {
     node: {
       key: 'workspace',
       label: 'Billing',
       children: []
     },
-    component: defineAsyncComponent(
-      () =>
-        import('@/platform/account/components/dialogs/settings/BillingTab.vue')
+    component: defineComponent(
+      () => () =>
+        h(flags.billingNewUxEnabled ? BillingTabCurrent : BillingTabLegacy)
     )
   }
 

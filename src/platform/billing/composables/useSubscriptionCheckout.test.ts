@@ -370,7 +370,8 @@ vi.mock<unknown>(
 
 provideBillingDialogs(() => ({
   showSubscriptionRequiredDialog: vi.fn(),
-  showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
+  showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog,
+  showTopUpCreditsDialog: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/platform/billing/api/billingApi'), () => ({
@@ -634,6 +635,8 @@ describe('useSubscriptionCheckout', () => {
         credits_today_cents: 3150,
         credits_next_period_cents: 4200,
         requires_reactivation_confirmation: true,
+        requires_reactivation_charge_confirmation: false,
+        cancel_at: '2026-11-20T00:00:00Z',
         current_plan: {
           ...makeCreatorMonthly(),
           period_end: '2026-11-27T00:00:00Z'

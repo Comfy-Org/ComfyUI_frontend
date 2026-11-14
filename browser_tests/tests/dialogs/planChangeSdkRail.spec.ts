@@ -20,6 +20,7 @@ import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -69,6 +70,7 @@ const ACTIVE_STANDARD_STATUS = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -242,6 +244,8 @@ const successHeading = (page: Page) =>
   page.getByRole('heading', { name: "You're all set" })
 
 test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('keeps the legacy calls while the SDK rail is off', async ({ page }) => {
     test.setTimeout(60_000)
     const routes = await setupPlanChange(page)

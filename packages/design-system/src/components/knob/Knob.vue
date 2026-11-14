@@ -124,7 +124,7 @@ function onKeydown(event: KeyboardEvent) {
         stroke-linecap="round"
         stroke-dasharray="75 100"
         :stroke-dashoffset="dashOffset"
-        class="text-primary"
+        class="text-foreground"
       />
     </svg>
   </div>

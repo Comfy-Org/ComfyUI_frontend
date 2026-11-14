@@ -19,6 +19,8 @@ const SNAPSHOT: CapabilitiesSnapshot = {
     can_view_team_usage: false,
     can_edit_workspace: false,
     can_manage_auto_top_up: false,
+    can_view_auto_top_up: false,
+    can_view_auto_top_up_member_notice: false,
     can_manage_subscription: false,
     can_open_plans: false,
     can_run_workflows: false,
@@ -56,6 +58,35 @@ describe('projectBillingCapabilities', () => {
       ).toBe(served)
     }
   )
+
+  it.for([
+    { state: 'ready' },
+    { state: 'frozen', reason: 'payment_past_due' },
+    { state: 'unavailable' }
+  ] as const)(
+    'passes auto_top_up_setup $state through to the capabilities read',
+    (served) => {
+      expect(
+        projectBillingCapabilities({ ...SNAPSHOT, autoTopUpSetup: served })
+          .auto_top_up_setup
+      ).toStrictEqual(served)
+    }
+  )
+
+  it('passes auto_top_up_member_view through to the capabilities read', () => {
+    const served = {
+      status: 'on',
+      threshold_credits: 1000,
+      target_credits: 6275,
+      cycle_resets_at: null,
+      monthly_budget_is_default: false
+    } as const
+
+    expect(
+      projectBillingCapabilities({ ...SNAPSHOT, autoTopUpMemberView: served })
+        .auto_top_up_member_view
+    ).toStrictEqual(served)
+  })
 
   it('reads the snapshot back as the response the composable holds', () => {
     expect(projectBillingCapabilities(SNAPSHOT)).toStrictEqual({

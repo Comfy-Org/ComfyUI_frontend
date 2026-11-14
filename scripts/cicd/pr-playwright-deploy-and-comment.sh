@@ -285,14 +285,9 @@ else
     fi
 
     if [ $total_failed -gt 0 ]; then
-        comment="$comment
-
-> ❌ $total_failed tests failed. Expand the failed tests below, review their reports and fix the failures before merging.
-
-<details>
-<summary>Failed tests</summary>
-
-"
+        failed_test_lines=""
+        failed_tests_label="$total_failed tests"
+        [ "$total_failed" -eq 1 ] && failed_tests_label="1 test"
 
         for counts_json in "${counts_array[@]}"; do
             [ -z "$counts_json" ] || [ "$counts_json" = "{}" ] && continue
@@ -312,15 +307,29 @@ else
                             test_line="$test_line: [View test report]($report_url)"
                         fi
                         
-                        comment="$comment
+                        failed_test_lines="$failed_test_lines
 $test_line"
                     done <<< "$failures"
                 fi
             fi
         done
-        comment="$comment
+
+        if [ -n "$failed_test_lines" ]; then
+            comment="$comment
+
+> ❌ $failed_tests_label failed. Expand the failed tests below, review their reports and fix the failures before merging.
+
+<details>
+<summary>Failed tests</summary>
+
+${failed_test_lines#$'\n'}
 
 </details>"
+        else
+            comment="$comment
+
+> ❌ $failed_tests_label failed. Open the browser reports below, review the failed tests and fix the failures before merging."
+        fi
     fi
     
     screenshot_diffs=$(count_screenshot_diffs) || screenshot_diffs=0
