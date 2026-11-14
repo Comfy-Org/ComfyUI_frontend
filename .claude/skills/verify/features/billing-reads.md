@@ -44,7 +44,7 @@ Preconditions:
 
 ## Gotchas
 
-- **`fetch` alone does not prove the SDK rail. Check the path too.** A legacy personal workspace reads its balance from `https://<api-host>/customers/balance`, cross-origin and on `fetch`. The SDK rail is `fetch` + a `/api/billing/*` path. See `useBillingRouting.ts:17-42` (`shouldUseWorkspaceBilling`), the axis orthogonal to the rail.
+- **`fetch` alone does not prove the SDK rail. Check the path too.** A legacy personal workspace reads its balance from `https://<api-host>/customers/balance`, cross-origin and on `fetch`. The SDK rail is `fetch` + a `/api/billing/*` path. See `shouldUseWorkspaceBilling` in `src/platform/billing/composables/useBillingRouting.ts`, the axis orthogonal to the rail.
 - **Run the matrix on a workspace-billing account.** With both SDK flags ON, a legacy personal workspace still reads `/customers/balance`; nothing about the rail is under test there.
 - **Switching workspace reloads the whole app**, so cross-workspace row leakage cannot happen in-page on this build. Re-check if switching ever becomes client-side.
 - `read-parity` is the single most important section in the migration. A rail that works but returns a different number is worse than a rail that fails loudly.

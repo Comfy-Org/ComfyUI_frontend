@@ -10,7 +10,7 @@ Cherry-pick backport management for Comfy-Org/ComfyUI_frontend stable release br
 ## Quick Start
 
 1. **Discover** — Collect candidates from Slack bot + git log gap, then **reconcile both lists** (`reference/discovery.md`)
-2. **Pre-filter by path** — Auto-skip PRs whose changed files are entirely under `apps/website/`, `browser_tests/`, `.github/`, `packages/design-system/`, `packages/{cloud,registry}-types/`, `.claude/`, `docs/`. Don't read PR bodies for these — they don't ship to core ComfyUI users (`reference/analysis.md`)
+2. **Pre-filter by path** — Auto-skip PRs whose changed files are entirely under `browser_tests/`, `.github/`, `packages/design-system/`, `packages/{ingest,registry}-types/`, `.claude/`, `.agents/`, `docs/`. Don't read PR bodies for these — they don't ship to core ComfyUI users (`reference/analysis.md`)
 3. **Verify target file existence** — For each surviving candidate, run `git cat-file -e origin/$TARGET:$path` for primary changed files. If they don't exist on the target, auto-mark SKIP with reason `feature-not-on-branch`
 4. **Tiered triage** — Bucket into **Tier 1 (core editor must-haves)**, **Tier 2 (cloud-distribution only)**, **Tier 3 (skip)** before reviewing individually (`reference/analysis.md`)
 5. **Analyze** — Categorize remaining MUST/SHOULD, check deps (`reference/analysis.md`)
@@ -18,26 +18,28 @@ Cherry-pick backport management for Comfy-Org/ComfyUI_frontend stable release br
 7. **Plan** — Order by dependency (leaf fixes first), group into waves per branch
 8. **Test-then-resolve dry-run** — Classify clean vs conflict before committing time (`reference/execution.md`)
 9. **Execute** — Label-driven automation for clean PRs → worktree fallback for conflicts (`reference/execution.md`)
-10. **Public-API conflict review** — If conflict resolution touches a public LiteGraph callback, extension API, or `node.*` method, consult oracle for compat-regression review BEFORE pushing (`reference/execution.md`)
-11. **Verify** — Per-PR validation (typecheck + targeted tests + lint on changed files) AND per-wave verification (full typecheck + test:unit on branch HEAD)
+10. **Public-API conflict review** — If conflict resolution touches a public LiteGraph callback, extension API, or `node.*` method, get an independent compat-regression review BEFORE pushing (`reference/execution.md`)
+11. **Verify** — Per-PR validation (targeted tests + lint on changed files; git hooks typecheck staged files) AND per-wave verification (CI on the target branch after merges)
 12. **Log & Report** — Generate session report + author accountability report + Slack status update (`reference/logging.md`)
 
 ## System Context
 
-| Item           | Value                                                                       |
-| -------------- | --------------------------------------------------------------------------- |
-| Repo           | `~/ComfyUI_frontend` (Comfy-Org/ComfyUI_frontend)                           |
-| Merge strategy | Auto-merge via workflow (`--auto --squash`); `--admin` only after CI passes |
-| Automation     | `pr-backport.yaml` GitHub Action (label-driven, auto-merge enabled)         |
-| Tracking dir   | `~/temp/backport-session/`                                                  |
+| Item         | Value                                                                  |
+| ------------ | ---------------------------------------------------------------------- |
+| Repo         | `~/ComfyUI_frontend` (Comfy-Org/ComfyUI_frontend)                      |
+| Opens PRs    | `pr-backport.yaml` (label-driven)                                      |
+| Review       | `pr-assign-release-sheriff.yaml` requests the release sheriff's review |
+| Merges PRs   | `backport-auto-merge.yaml` squash-merges once approved and checks pass |
+| Tracking dir | `~/temp/backport-session/`                                             |
+
+See `docs/release-process.md` for the release and backport automation.
 
 ## CI Safety Rules
 
-**NEVER merge a backport PR without all CI checks passing.** This applies to both automation-created and manual cherry-pick PRs.
+Branch protection on `core/**` and `cloud/**` requires an approval and the required checks, and cannot be bypassed. Never try `gh pr merge --admin`; `backport-auto-merge.yaml` merges automation and manual backport PRs once they qualify.
 
-- **Automation PRs:** The `pr-backport.yaml` workflow now enables `gh pr merge --auto --squash`, so clean PRs auto-merge once CI passes. Monitor with polling (`gh pr list --base TARGET_BRANCH --state open`). Do not intervene unless CI fails.
-- **Manual cherry-pick PRs:** After `gh pr create`, wait for CI before merging. Poll with `gh pr checks $PR --watch` or use a sleep+check loop. Only merge after all checks pass.
-- **CI failures:** DO NOT use `--admin` to bypass failing CI. Analyze the failure, present it to the user with possible causes (test backported without implementation, missing dependency, flaky test), and let the user decide the next step.
+- **Monitoring:** poll `gh pr list --base TARGET_BRANCH --state open` and `gh pr checks $PR`. Do not intervene unless CI fails or the review stalls.
+- **CI failures:** analyze the failure, present it to the user with possible causes (test backported without implementation, missing dependency, flaky test), and let the user decide the next step.
 
 ## Branch Scope Rules
 
@@ -100,17 +102,17 @@ When PR A on main depends on code introduced by PR B (which was merged before A)
 
 **Common pattern:** Composables, component files, or type definitions introduced by an earlier PR and used by the cherry-picked PR.
 
-**Detection:** `pnpm typecheck` fails with "Cannot find module" or "is not defined" errors after cherry-pick.
+**Detection:** the pre-commit typecheck or CI fails with "Cannot find module" or "is not defined" errors after cherry-pick.
 
-**Fix:** Use `git show MERGE_SHA:path/to/missing/file > path/to/missing/file` to bring the missing files from main. Always verify with typecheck.
+**Fix:** Use `git show MERGE_SHA:path/to/missing/file > path/to/missing/file` to bring the missing files from main.
 
-### Use `--no-verify` for Worktree Pushes
+### Install Dependencies in Worktrees
 
-Husky hooks fail in worktrees (can't find lint-staged config). Always use `git push --no-verify` and `git commit --no-verify` when working in `/tmp/` worktrees.
+Git hooks run `lint-staged`, `knip` and other repository tools, and fail in a fresh worktree that has no `node_modules`. Run `pnpm install --frozen-lockfile` in the worktree before committing. Never bypass hooks; fix what they report.
 
-### Automation Success Varies Wildly by Branch
+### Automation Success Varies by Branch
 
-In the 2026-04-06 session: core/1.42 got 18/26 auto-PRs, cloud/1.42 got only 1/25. The cloud branch has more divergence. **Always plan for manual fallback** — don't assume automation will handle most PRs.
+Cloud branches diverge from main more than core branches, so automation creates far fewer clean backport PRs there. **Always plan for manual fallback** — don't assume automation will handle most PRs.
 
 ### Cherry-Picked Tests Can Reference Files Added By Earlier Unbackported PRs
 
@@ -119,7 +121,7 @@ A common conflict: PR A on main modifies a test file that was _added_ on main by
 **Detection:** Conflict says `deleted in HEAD and modified in <PR>`. Verify with:
 
 ```bash
-git log --diff-filter=A --oneline origin/main -- path/to/test.ts
+git log --diff-filter=A --oneline origin/main -- "$TEST_FILE"
 ```
 
 If the introducing commit is **not** on the target branch, the test file isn't a real prerequisite for the runtime fix.
@@ -139,7 +141,7 @@ When a PR's _mechanism_ relies on changes upstream that aren't on the older bran
 - Public exports from `src/lib/litegraph/`
 - Types published from `src/types/index.ts`
 
-**Fix:** Add a backport-only compatibility shim that preserves the old contract while keeping the new fix. Document it explicitly in the commit body under a `## Backport-only compatibility fix` heading. Consult oracle for review before pushing — a bad shim is worse than no fix.
+**Fix:** Add a backport-only compatibility shim that preserves the old contract while keeping the new fix. Document it explicitly in the commit body under a `## Backport-only compatibility fix` heading. Get an independent review before pushing — a bad shim is worse than no fix.
 
 ## Conflict Triage
 
@@ -157,7 +159,6 @@ When a PR's _mechanism_ relies on changes upstream that aren't on the older bran
 | **Locale/JSON files**        | i18n key additions                   | Accept theirs, validate JSON after                              |
 
 ```python
-# Accept theirs for content conflicts
 import re
 pattern = r'<<<<<<< HEAD\n(.*?)=======\n(.*?)>>>>>>> [^\n]+\n?'
 content = re.sub(pattern, r'\2', content, flags=re.DOTALL)
@@ -168,7 +169,7 @@ content = re.sub(pattern, r'\2', content, flags=re.DOTALL)
 - **Package.json/lockfile changes** → skip on stable (transitive dep regression risk)
 - **Core type definition changes** → requires human judgment
 - **Business logic conflicts** (not just imports/exports) → requires domain knowledge
-- **Admin-merged conflict resolutions** → get human review of the resolution before continuing the wave
+- **Non-trivial conflict resolutions** → get human review of the resolution before continuing the wave
 
 ## Auto-Skip Categories
 
@@ -185,37 +186,23 @@ Skip these without discussion:
 
 For 50+ candidate PRs, classify by changed paths first to skip the unproductive ones without spending time on triage. Run `git show --stat $SHA` (or `gh pr view --json files`) and bucket:
 
-| Path prefix                                    | Bucket                 | Reason                                           |
-| ---------------------------------------------- | ---------------------- | ------------------------------------------------ |
-| `apps/website/`                                | SKIP                   | Marketing/platform site, not core ComfyUI bundle |
-| `browser_tests/` only (no `src/`)              | SKIP                   | Test-only                                        |
-| `.github/workflows/` only                      | SKIP                   | CI/release infra                                 |
-| `packages/design-system/` only                 | SKIP                   | Design tokens, not core                          |
-| `packages/{cloud,registry,ingest}-types/` only | SKIP                   | Generated types                                  |
-| `.claude/`, `.agents/`, `docs/`                | SKIP                   | Agent / documentation                            |
-| `*.stories.ts` only                            | SKIP                   | Storybook only                                   |
-| `src/` (core editor)                           | KEEP — analyze further | Runtime/editor code that requires full triage    |
+| Path prefix                              | Bucket                 | Reason                                        |
+| ---------------------------------------- | ---------------------- | --------------------------------------------- |
+| `browser_tests/` only (no `src/`)        | SKIP                   | Test-only                                     |
+| `.github/workflows/` only                | SKIP                   | CI/release infra                              |
+| `packages/design-system/` only           | SKIP                   | Design tokens, not core                       |
+| `packages/{ingest,registry}-types/` only | SKIP                   | Generated types                               |
+| `.claude/`, `.agents/`, `docs/`          | SKIP                   | Agent / documentation                         |
+| `*.stories.ts` only                      | SKIP                   | Storybook only                                |
+| `src/` (core editor)                     | KEEP — analyze further | Runtime/editor code that requires full triage |
 
 A PR touches multiple paths? Keep it if **any** changed file is under `src/` (or other core paths) and run normal analysis. Auto-skip is conservative — only skip when _all_ paths match the SKIP buckets.
 
-This filter alone removes ~30-50% of candidates in a typical session, leaving only the PRs that need real triage.
-
 ## Wave Verification
 
-After merging each wave of PRs to a target branch, verify branch integrity before proceeding:
+After each wave merges to a target branch, check the branch's push CI before continuing (`gh run list --branch TARGET_BRANCH --event push`). `release-branch-ci-alert.yaml` also posts lint, format and typecheck failures on `core/**` and `cloud/**` to Slack.
 
-```bash
-# Fetch latest state of target branch
-git fetch origin TARGET_BRANCH
-
-# Quick smoke check: does the branch build?
-git worktree add /tmp/verify-TARGET origin/TARGET_BRANCH
-cd /tmp/verify-TARGET
-source .agents/resume && pnpm install && pnpm typecheck && pnpm test:unit
-git worktree remove /tmp/verify-TARGET --force
-```
-
-If typecheck or tests fail, stop and investigate before continuing. A broken branch after wave N means all subsequent waves will compound the problem.
+If CI fails, stop and investigate before continuing. A broken branch after wave N means all subsequent waves will compound the problem.
 
 ### Fix PRs Are Normal
 
@@ -227,11 +214,7 @@ Expect to create 1 fix PR per branch after verification. Common issues:
 4. **Unused imports** — conflict resolution kept imports that the branch doesn't use. Fix: remove unused imports
 5. **Wrong types from conflict resolution** — e.g., `{ top: number; right: number }` vs `{ top: number; left: number }`. Fix: match the return type of the actual function
 
-Create a fix PR on a branch from the target, verify typecheck passes, then merge with `--squash --admin`.
-
-### Never Admin-Merge Without CI
-
-In a previous bulk session, all 69 backport PRs were merged with `gh pr merge --squash --admin`, bypassing required CI checks. This shipped 3 test failures to a release branch. **Lesson: `--admin` skips all branch protection, including required status checks.** Only use `--admin` after confirming CI has passed (e.g., `gh pr checks $PR` shows all green), or rely on auto-merge (`--auto --squash`) which waits for CI by design.
+Create a fix PR on a branch from the target. It merges through the same approval and CI gate as any backport.
 
 ## Continuous Backporting Recommendation
 
@@ -294,19 +277,18 @@ gh api repos/Comfy-Org/ComfyUI_frontend/issues/$PR/labels \
 ```bash
 git worktree add /tmp/backport-$BRANCH origin/$BRANCH
 cd /tmp/backport-$BRANCH
+pnpm install --frozen-lockfile
 
-# For each PR:
 git fetch origin $BRANCH
 git checkout -b backport-$PR-to-$BRANCH origin/$BRANCH
 git cherry-pick -m 1 $MERGE_SHA
-# Resolve conflicts (see Conflict Triage)
-git push origin backport-$PR-to-$BRANCH --no-verify
+git push origin backport-$PR-to-$BRANCH
 gh pr create --base $BRANCH --head backport-$PR-to-$BRANCH \
   --title "[backport $BRANCH] $TITLE (#$PR)" \
   --body "Backport of #$PR. [conflict notes]"
-gh pr merge $NEW_PR --squash --admin
-sleep 25
 ```
+
+Resolve conflicts between the cherry-pick and the push (see Conflict Triage).
 
 ### Efficient Batch: Test-Then-Resolve Pattern
 

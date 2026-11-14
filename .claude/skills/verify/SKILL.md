@@ -12,19 +12,19 @@ Two other surfaces exist and are **not** covered here: `apps/billing-web` (its o
 ## Launch
 
 ```bash
-nvm use 26 && pnpm dev:cloud
+nvm use && pnpm install && pnpm dev:cloud
 ```
 
-- Node **26** is required (`.nvmrc` = `26`, `package.json` engines `>=26.8.2 <27`). `nvm install 26` if missing.
-- `dev:cloud` → `DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/`. Vite infers `DISTRIBUTION='cloud'` from the `.comfy.org` host (`vite.config.mts:131-138`), which is what makes `isCloud === true` and the `?ff=` override path reachable.
-- Ready when stdout has `VITE v8.x ready in` and `➜  Local:   http://localhost:5173/`. Serving takes ~1s; a first run may spend ~30s on `pnpm install` and dependency re-optimization first.
+- Use the Node version in `.nvmrc` (and `engines` in `package.json`). `nvm install` if missing.
+- `dev:cloud` → `DEV_SERVER_COMFYUI_URL=https://testcloud.comfy.org/`. Vite infers `DISTRIBUTION='cloud'` from the `.comfy.org` host (`IS_CLOUD_URL` in `vite.config.mts`), which is what makes `isCloud === true` and the `?ff=` override path reachable.
+- Ready when stdout has `VITE v… ready in` and `➜  Local:   http://localhost:5173/`. Serving takes ~1s; a first run may spend ~30s on Vite's dependency re-optimization first. `dev:cloud` does not install dependencies, so run `pnpm install` after every checkout or pull.
 - **Never use `dev:cloud:prod`.** It proxies to `https://cloud.comfy.org`, which is real production with real customers and real money. `dev:cloud:staging` (stagingcloud) is the only other safe target.
 
 Teardown: see Cleanup.
 
 ### What this combination buys you
 
-The local frontend is whatever `main` currently holds; the backend is real. That is the only way to exercise code that has not shipped to an environment yet. As of 2026-09-21 `testcloud.comfy.org` serves **1.54.13** (`origin/cloud/1.54`), which does **not** contain the billing SDK migration. The migration is reachable _only_ through this local setup.
+The local frontend is whatever `main` currently holds; the backend is real. That is the only way to exercise code that has not shipped to an environment yet. The frontend `testcloud.comfy.org` deploys comes from a `cloud/*` release branch and can lag `main`; run Doctor check 1 against the deployed bundle to see whether it contains the code under test.
 
 ## Doctor
 
@@ -53,7 +53,7 @@ Must be `true`. `false` means the dev server was started without a `.comfy.org` 
 curl -s http://localhost:5173/api/features | python3 -m json.tool | grep -E 'unified_cloud_auth|billing_sdk|embedded_checked'
 ```
 
-Read the values, do not assume them. On testcloud as of 2026-09-21: `unified_cloud_auth: false`, both `billing_sdk_*: false`, `embedded_checked_enabled: false`.
+Read the values, do not assume them.
 
 **4. Does the tab render frames?** Browser automation often drives a hidden tab. The Claude-in-Chrome tab reports `document.visibilityState === 'hidden'` and runs `requestAnimationFrame` at 0 frames per second. In the page console:
 
@@ -70,7 +70,7 @@ await new Promise((resolve) => {
 })
 ```
 
-At 0 frames, Vue transitions never finish, so DOM queries can report elements a real user never sees, such as a dialog stuck mid-leave. For toasts, assert on the store instead: `document.querySelector('#vue-app').__vue_app__.config.globalProperties.$pinia._s.get('toast').toasts` is the list the Toaster renders. A 2026-09-21 run filed a false "verify toast stays after the top-up settles" finding from DOM queries in a hidden tab.
+At 0 frames, Vue transitions never finish, so DOM queries can report elements a real user never sees, such as a dialog stuck mid-leave. For toasts, assert on the store instead: `document.querySelector('#vue-app').__vue_app__.config.globalProperties.$pinia._s.get('toast').toasts` is the list the Toaster renders.
 
 ## Drive
 
@@ -85,7 +85,7 @@ if (!isCloud) return undefined
 if (!isComfyEmployee()) return undefined // emailVerified AND @comfy.org
 ```
 
-**When a gate fails the override is silently ignored, and `sessionStorage` still shows it as captured.** Verified signed-out on 2026-09-21: storage held `{"unified_cloud_auth":true,"billing_sdk_topup_enabled":true}` while `getSessionOverride()` returned `undefined` and every resolved flag stayed `false`. Inspecting storage does not tell you the override took. Resolve the flag instead:
+**When a gate fails the override is silently ignored, and `sessionStorage` still shows it as captured.** Signed out, storage can hold `{"unified_cloud_auth":true,"billing_sdk_topup_enabled":true}` while `getSessionOverride()` returns `undefined` and every resolved flag stays `false`. Inspecting storage does not tell you the override took. Resolve the flag instead:
 
 ```js
 const { flags } = (
@@ -102,7 +102,7 @@ localStorage.setItem('ff:billing_sdk_topup_enabled', 'true')
 
 Never set `ff:unified_cloud_auth`. It already resolves `true` for a signed-in user, and forcing it put the app into a reload loop.
 
-Precedence (`useFeatureFlags.ts:64-74`): session override → dev override → `/api/features` remote config → websocket server feature.
+Precedence (`src/composables/useFeatureFlags.ts`): session override → dev override → `/api/features` remote config → websocket server feature.
 
 **`?ff=` is captured per tab and keyed on the query string. Open a fresh tab when changing scenario**, or the previous override is still live.
 
@@ -138,11 +138,9 @@ Both rails POST the same body to the same endpoint, so the body cannot separate 
 
 The SDK adds the header only when a request carries an idempotency key, and its readers never do. So a read is attributed by `fetch` plus the `/api/billing/*` path alone.
 
-In DevTools: Network, filter `/api/billing/`. In Playwright: `request.resourceType()` and `request.headerValue('idempotency-key')`. This is the discriminator `topUpSdkRail.spec.ts:26-31` uses.
+In DevTools: Network, filter `/api/billing/`. In Playwright: `request.resourceType()` and `request.headerValue('idempotency-key')`. This is the discriminator `browser_tests/tests/dialogs/topUpSdkRail.spec.ts` uses.
 
 ### Observing SDK-rail requests on the dev server
-
-These traps were verified on 2026-09-21.
 
 - **`performance.getEntriesByType('resource')` starts useless.** Vite serves every ES module as its own request; the 250-entry resource buffer is full of module loads before the first billing call and the billing entries are evicted. After load run `performance.clearResourceTimings(); performance.setResourceTimingBufferSize(4000)`, then trigger the reads (the **Refresh credits** control next to _Total credits_ re-issues `balance`/`status`; the panel alone serves cached store values).
 - **A `window.fetch` wrapper installed after boot never sees the SDK.** The SDK captures its fetch reference at module init, so a post-boot patch catches every legacy `xhr` call and zero SDK calls, which reads as "the rail never turned on". Patching `XMLHttpRequest.prototype` does work for legacy. Use resource timing (`initiatorType` `fetch` vs `xmlhttprequest`) as the discriminator; it cannot show headers, so `Idempotency-Key` needs Playwright.
@@ -150,7 +148,7 @@ These traps were verified on 2026-09-21.
 
 ### Reading the backend directly, scoped like the app does
 
-Scope rides in the credential, not a header (`packages/account-core/src/core/billing/transport.ts:12`); `X-Workspace-Id` is ignored. A plain Firebase ID token reads the **personal** scope. To read a workspace the way the SDK does, mint the workspace token first:
+Scope rides in the credential, not a header (`packages/account-core/src/core/billing/transport.ts`); `X-Workspace-Id` is ignored. A plain Firebase ID token reads the **personal** scope. To read a workspace the way the SDK does, mint the workspace token first:
 
 ```js
 const id = await import('/src/platform/auth/firebaseIdentity.ts')
@@ -173,7 +171,7 @@ await (
 ).json()
 ```
 
-Never print the tokens. Balance units convert to UI credits at a fixed factor per workspace, applied to both buckets. It was ×2.11 for the team workspace used on 2026-09-21. Compare ratios, not raw numbers.
+Never print the tokens. Balance units convert to UI credits at a fixed factor per workspace, applied to both buckets. Compare ratios, not raw numbers.
 
 ### Payment clicks and the permission classifier
 
@@ -197,7 +195,7 @@ When something looks safe because it is called a test mode, confirm it by observ
 ## Cleanup
 
 - Stop the dev server by the PID you started, or the background task id you launched it with. **Never `pkill -f vite`.** This machine may be running other worktrees' servers on other ports.
-- Clear per-tab flag state by closing the tab, or navigate once to a bare `?ff=` which clears every override in the session (`sessionFeatureFlagOverride.ts:118-121`). Clear `ff:` keys from `localStorage` separately; they persist.
+- Clear per-tab flag state by closing the tab, or navigate once to a bare `?ff=` which clears every override in the session (`src/utils/sessionFeatureFlagOverride.ts`). Clear `ff:` keys from `localStorage` separately; they persist.
 - `pnpm dev:cloud` runs `pnpm install` first and may re-sync `node_modules` to the lockfile. Confirm `git status --porcelain` is empty afterwards.
 - **Cleanup never deletes `temp/verify-evidence/`.** Evidence outlives the run.
 
