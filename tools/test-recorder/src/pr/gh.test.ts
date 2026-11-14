@@ -111,7 +111,7 @@ describe('createPr', () => {
 
     expect(result.success).toBe(false)
     const explained = consoleLines.join('\n')
-    expect(explained).toContain('A DIFFERENT file has a type error')
+    expect(explained).toContain('A DIFFERENT file has a problem in its code')
     expect(explained).toContain('browser_tests/tests/stray.spec.ts')
     expect(explained).toContain('rm browser_tests/tests/stray.spec.ts')
   })

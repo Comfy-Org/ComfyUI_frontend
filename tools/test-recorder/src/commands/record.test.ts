@@ -443,7 +443,7 @@ const overwritePrompt = expect.objectContaining({
 })
 
 const refactorOrPrPrompt = expect.objectContaining({
-  message: expect.stringMatching(/refactor|Pull Request/)
+  message: expect.stringMatching(/tidy up|Pull Request/)
 })
 
 function overwriteQuestions() {
@@ -751,7 +751,7 @@ describe('runRecord overwrite guard', () => {
       )
       expect(confirm).not.toHaveBeenCalledWith(
         expect.objectContaining({
-          message: expect.stringContaining('refactor')
+          message: expect.stringContaining('tidy up')
         })
       )
       expect(runAgentRefactor).not.toHaveBeenCalled()
