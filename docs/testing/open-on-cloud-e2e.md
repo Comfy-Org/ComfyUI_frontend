@@ -2,6 +2,14 @@
 
 The suite uses a real local ComfyUI backend and a deployed Cloud test or PR environment. Every compatibility response comes from the configured Cloud origin. The fixture permits the app's required external services and retains the shared network guard. It installs no response replacements, auth stubs, or workflow scenario switches.
 
+> [!IMPORTANT]
+> Every suite on this page is **local-SUT**: the system under test is a local
+> frontend talking to a deployed Cloud origin, so all of them need
+> `localhost:5173` and `localhost:8188`. The one spec in `tests/liveCloud/` that
+> tests a _deployed_ frontend is the staging release gate — see
+> [Staging smoke gate](./staging-smoke-gate.md). Do not run the bare
+> `cloud-live` project as a deployment gate.
+
 > [!NOTE]
 > The specs below land with the Open on Cloud feature PRs: `openOnCloud.spec.ts` in #23071, `openOnCloudLogin.spec.ts` in #23074 and `desktopWorkflowRelay.spec.ts` in #23075. Until those merge, the suites are unavailable on `main`.
 
