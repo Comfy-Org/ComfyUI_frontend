@@ -109,41 +109,88 @@ describe('WidgetLegacy canvas sizing', () => {
 })
 
 describe('WidgetLegacy canvas width', () => {
-  it('uses the untransformed layout width when the canvas is zoomed', async () => {
+  function renderNumberWidget(layoutWidth: number) {
     const graph = new LGraph()
     const node = new LGraphNode('Legacy')
     const widget = node.addWidget('number', 'frame_load_cap', 0, () => {})
     graph.add(node)
-    widget.draw = () => {}
+    const draw = vi.fn<NonNullable<IBaseWidget['draw']>>()
+    widget.draw = draw
     useCanvasStore().canvas = fromPartial({ graph })
-    await nextTick()
 
-    const layoutWidth = 200
-    const zoomedRectWidth = layoutWidth * 0.5
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(
       layoutWidth
     )
-    vi.spyOn(
-      HTMLCanvasElement.prototype,
-      'getBoundingClientRect'
-    ).mockReturnValue(DOMRect.fromRect({ width: zoomedRectWidth, height: 20 }))
     const canvases: HTMLCanvasElement[] = []
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(
       function (this: HTMLCanvasElement) {
         canvases.push(this)
-        return null
+        return createMockCanvasRenderingContext2D()
       }
     )
 
-    render(WidgetLegacy, {
-      props: {
-        nodeId: node.id,
-        widget: { name: 'frame_load_cap', type: 'number', value: undefined }
-      }
-    })
+    return {
+      widget,
+      draw,
+      canvases,
+      mount: () =>
+        render(WidgetLegacy, {
+          props: {
+            nodeId: node.id,
+            widget: { name: 'frame_load_cap', type: 'number', value: undefined }
+          }
+        })
+    }
+  }
 
-    expect(widget.width).toBe(layoutWidth)
+  it('uses the untransformed layout width when the canvas is zoomed', async () => {
+    const layoutWidth = 200
+    const zoomedRectWidth = layoutWidth * 0.5
+    const { widget, draw, canvases, mount } = renderNumberWidget(layoutWidth)
+    vi.spyOn(
+      HTMLCanvasElement.prototype,
+      'getBoundingClientRect'
+    ).mockReturnValue(DOMRect.fromRect({ width: zoomedRectWidth, height: 20 }))
+    const widthsDuringDraw: (number | undefined)[] = []
+    draw.mockImplementation(() => {
+      widthsDuringDraw.push(widget.width)
+    })
+    await nextTick()
+
+    mount()
+
+    expect(widthsDuringDraw.at(-1)).toBe(layoutWidth)
+    expect(draw.mock.calls.at(-1)?.[2]).toBe(layoutWidth)
     expect(canvases.at(-1)?.width).toBe(layoutWidth * 2)
+  })
+
+  it('leaves the graph canvas layout untouched outside Vue nodes mode', async () => {
+    const { widget, mount } = renderNumberWidget(639)
+    widget.y = 42
+    widget.last_y = 42
+    widget.width = undefined
+    await nextTick()
+
+    mount()
+
+    expect(widget.width).toBeUndefined()
+    expect(widget.y).toBe(42)
+    expect(widget.last_y).toBe(42)
+  })
+
+  it('keeps its own layout on the widget in Vue nodes mode', async () => {
+    LiteGraph.vueNodesMode = true
+    onTestFinished(() => {
+      LiteGraph.vueNodesMode = false
+    })
+    const { widget, mount } = renderNumberWidget(200)
+    widget.y = 42
+    await nextTick()
+
+    mount()
+
+    expect(widget.width).toBe(200)
+    expect(widget.y).toBe(0)
   })
 })
 
