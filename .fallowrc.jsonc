@@ -119,6 +119,8 @@
     },
     // Public extension API surface, deliberately exported for the 40+ custom-node
     // ecosystem (ADR-LAYOUT / ADR-ECS). No internal importer by design.
+    { "file": "src/extensions/core/**/*.ts", "exports": ["*"] },
+    { "file": "src/scripts/**/*.ts", "exports": ["*"] },
     { "file": "src/types/index.ts", "exports": ["*"] },
     { "file": "src/lib/litegraph/src/litegraph.ts", "exports": ["*"] },
     { "file": "src/scripts/ui/menu/index.ts", "exports": ["*"] },
@@ -152,10 +154,6 @@
       ]
     },
     {
-      "file": "src/scripts/ui/imagePreview.ts",
-      "exports": ["createImageHost"]
-    },
-    {
       "file": "src/extensions/core/widgetInputs.ts",
       "exports": ["convertToInput"]
     },
@@ -186,6 +184,13 @@
     {
       "file": "tools/oxlint-plugins/serverFacts.ts",
       "exports": ["default"]
+    }
+  ],
+
+  "usedClassMembers": [
+    {
+      "extends": "ComfyDialog",
+      "members": ["registerButton", "createImgSettings", "createImgPreview"]
     }
   ],
 
