@@ -7,6 +7,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
@@ -70,6 +71,7 @@ export function useImageMenuOptions() {
   const toast = useToast()
   const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
   const nodeOutputStore = useNodeOutputStore()
+  const settingStore = useSettingStore()
 
   const showsSingleImage = (node: LGraphNode) =>
     isImageNode(node) &&
@@ -220,7 +222,12 @@ export function useImageMenuOptions() {
   const getPreviewResolutionOption = (
     node: LGraphNode
   ): MenuOption | undefined => {
-    if (!LiteGraph.vueNodesMode || !showsSingleImage(node)) return
+    if (
+      !LiteGraph.vueNodesMode ||
+      !settingStore.get('Comfy.Node.DownscaleImagePreviews') ||
+      !showsSingleImage(node)
+    )
+      return
     return node.flags.fullResolutionPreview
       ? {
           label: t('contextMenu.Show Downscaled Preview'),

@@ -81,6 +81,18 @@ test.describe(
         )
         await expect.poll(() => shownImage(image)).toEqual(displayCopy)
       })
+
+      await test.step('Turning off downscaling globally renders the original without the toggle', async () => {
+        await comfyPage.settings.setSetting(
+          'Comfy.Node.DownscaleImagePreviews',
+          false
+        )
+        await expect.poll(() => shownImage(image)).toEqual(original)
+        await comfyPage.contextMenu.openForVueNode(node)
+        await expect(
+          comfyPage.contextMenu.menuItem('Show Full Resolution')
+        ).toBeHidden()
+      })
     })
   }
 )

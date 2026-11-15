@@ -13,6 +13,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { downloadFile } from '@/base/common/downloadUtil'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
@@ -95,6 +96,7 @@ describe('ImagePreview', () => {
     vi.mocked(useImagePreviewStore().getDisplayImage).mockImplementation(
       async (source) => ({ source })
     )
+    useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] = true
     setZoom(0.5)
   })
 
@@ -222,6 +224,23 @@ describe('ImagePreview', () => {
       expect(image).toHaveAttribute('src', 'blob:display-copy')
     )
     expect(image).toHaveAttribute('data-full-src', defaultUrls[0])
+  })
+
+  it('shows originals of every gallery image when downscaling is turned off', async () => {
+    useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] = false
+    setZoom(2)
+    const { getDisplayImage } = useImagePreviewStore()
+    vi.mocked(getDisplayImage).mockResolvedValue({
+      source: defaultUrls[0],
+      blob: new Blob(['display pixels'])
+    })
+    renderImagePreview()
+    await switchToGallery(userEvent.setup())
+
+    const image = screen.getByTestId('main-image')
+    await vi.waitFor(() => expect(image).toHaveAttribute('src', defaultUrls[0]))
+    expect(image).not.toHaveAttribute('data-full-src')
+    expect(getDisplayImage).not.toHaveBeenCalled()
   })
 
   it('clears the previous copy while the next gallery image is pending', async () => {

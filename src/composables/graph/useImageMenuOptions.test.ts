@@ -1,10 +1,19 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   createMockCanvasRenderingContext2D,
@@ -324,6 +333,11 @@ describe('useImageMenuOptions', () => {
       })
     }
 
+    beforeEach(() => {
+      useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] =
+        true
+    })
+
     it.for([
       {
         name: 'offers full resolution for a single image',
@@ -352,9 +366,19 @@ describe('useImageMenuOptions', () => {
         images: 1,
         flags: {},
         label: undefined
+      },
+      {
+        name: 'is absent when downscaling is turned off globally',
+        vueNodes: true,
+        images: 1,
+        flags: {},
+        downscale: false,
+        label: undefined
       }
-    ])('$name', ({ vueNodes, images, flags, label }) => {
+    ])('$name', ({ vueNodes, images, flags, downscale = true, label }) => {
       useVueNodes(vueNodes)
+      useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] =
+        downscale
       outputImages(images)
       const { getPreviewResolutionOption } = mountComposable()
 

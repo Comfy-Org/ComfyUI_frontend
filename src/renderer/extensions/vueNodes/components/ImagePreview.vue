@@ -286,6 +286,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { openHdrViewer } from '@/services/hdrViewerService'
@@ -321,6 +322,7 @@ const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const { getDisplayImage } = useImagePreviewStore()
+const settingStore = useSettingStore()
 const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 const toast = useToast()
 
@@ -367,8 +369,11 @@ const isHdr = computed(
   () => items.length > 0 && isHdrResult(items[currentIndex.value])
 )
 const hasMultipleImages = computed(() => items.length > 1)
+const downscaleEnabled = computed(() =>
+  settingStore.get('Comfy.Node.DownscaleImagePreviews')
+)
 const showFullResolution = computed(
-  () => fullResolution && !hasMultipleImages.value
+  () => !downscaleEnabled.value || (fullResolution && !hasMultipleImages.value)
 )
 
 const currentImageUrl = computed(
@@ -413,7 +418,8 @@ const gridCols = computed(() => {
 const { camera } = useTransformState()
 const isZoomedIn = computed(() => camera.z >= PRELOAD_MIN_SCALE)
 const preloadUrls = computed(() => {
-  if (!hasMultipleImages.value || !isZoomedIn.value) return []
+  if (!downscaleEnabled.value || !hasMultipleImages.value || !isZoomedIn.value)
+    return []
   const count = items.length
   const candidates =
     viewMode.value === 'grid'
