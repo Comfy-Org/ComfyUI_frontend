@@ -11,15 +11,15 @@ const LONG_TOKEN_FILL = /(\.fill\(\s*)(['"])([A-Za-z0-9+/_=-]{32,})(\2)/g
 
 const API_KEY = new RegExp(
   [
-    String.raw`\bsk-(?:ant-|proj-)?[A-Za-z0-9_-]{40,}`,
-    String.raw`\bghp_[A-Za-z0-9]{20,}`,
-    String.raw`\bgho_[A-Za-z0-9]{20,}`,
-    String.raw`\bgithub_pat_[A-Za-z0-9_]{20,}`,
-    String.raw`\bglpat-[A-Za-z0-9_-]{20,}`,
-    String.raw`\bAKIA[0-9A-Z]{16,}`,
-    String.raw`\bxox[bpars]-[A-Za-z0-9-]{10,}`,
-    String.raw`\bAIza[0-9A-Za-z_-]{35,}`,
-    String.raw`\bshpat_[A-Za-z0-9]{20,}`
+    String.raw`(?<![A-Za-z0-9])sk-(?:ant-|proj-)?[A-Za-z0-9_-]{40,}`,
+    String.raw`(?<![A-Za-z0-9])gh[posur]_[A-Za-z0-9_]{20,}`,
+    String.raw`(?<![A-Za-z0-9])github_pat_[A-Za-z0-9_]{20,}`,
+    String.raw`(?<![A-Za-z0-9])glpat-[A-Za-z0-9_-]{20,}`,
+    String.raw`(?<![A-Za-z0-9])AKIA[0-9A-Z]{16,}`,
+    String.raw`(?<![A-Za-z0-9])xox[bpars]-[A-Za-z0-9-]{10,}`,
+    String.raw`(?<![A-Za-z0-9])xapp-[A-Za-z0-9-]{10,}`,
+    String.raw`(?<![A-Za-z0-9])AIza[0-9A-Za-z_-]{35,}`,
+    String.raw`(?<![A-Za-z0-9])shpat_[A-Za-z0-9]{20,}`
   ].join('|'),
   'g'
 )

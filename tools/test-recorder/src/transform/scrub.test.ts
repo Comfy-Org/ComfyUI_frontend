@@ -107,6 +107,32 @@ describe('api-key formats', () => {
       'Shopify shpat_',
       () => `const token = 'shpat_${filler('Ab1', 32)}'`,
       () => `shpat_${filler('Ab1', 32)}`
+    ],
+    [
+      'GitHub installation ghs_',
+      () => `const token = 'ghs_${filler('Ab1', 36)}'`,
+      () => `ghs_${filler('Ab1', 36)}`
+    ],
+    [
+      'GitHub user-to-server ghu_',
+      () => `const token = 'ghu_${filler('Ab1', 36)}'`,
+      () => `ghu_${filler('Ab1', 36)}`
+    ],
+    [
+      'GitHub refresh ghr_',
+      () => `const token = 'ghr_${filler('Ab1', 36)}'`,
+      () => `ghr_${filler('Ab1', 36)}`
+    ],
+    [
+      'Slack app-level xapp-',
+      () => `const token = 'xapp-1-AbCdEf-${filler('Ab1', 20)}'`,
+      () => `xapp-1-AbCdEf-${filler('Ab1', 20)}`
+    ],
+    [
+      'GitHub PAT after an underscore',
+      () =>
+        `await page.getByTestId('token').type('value_ghp_${filler('Ab1', 36)}')`,
+      () => `value_ghp_${filler('Ab1', 36)}`
     ]
   ] as const)('redacts the %sformat', ([, makeCode, makeSecret]) => {
     const secret = makeSecret()
