@@ -232,7 +232,7 @@ if (args[0] === 'api') {
     cpSync(source, names.length > 1 ? join(destination, name) : destination, { recursive: true })
     downloaded = true
   }
-  if (!downloaded) process.exit(1)
+  if (!downloaded || process.env.DOWNLOAD_EXIT_CODE === '1') process.exit(1)
 }
 `,
     { mode: 0o755 }
@@ -241,9 +241,13 @@ if (args[0] === 'api') {
   return { directory, reports, output }
 }
 
-it.for([null, '{'])(
+it.for([
+  { cloudReport: null, downloadExitCode: '0' },
+  { cloudReport: '{', downloadExitCode: '0' },
+  { cloudReport: '{', downloadExitCode: '1' }
+])(
   'keeps Chromium timings when the cloud report is unusable: %j',
-  (cloudReport) => {
+  ({ cloudReport, downloadExitCode }) => {
     const { directory, reports, output } = timingLoaderFixture(cloudReport)
     const result = spawnSync(
       process.execPath,
@@ -258,6 +262,7 @@ it.for([null, '{'])(
           ...process.env,
           PATH: `${directory}:${process.env.PATH}`,
           REPORTS: reports,
+          DOWNLOAD_EXIT_CODE: downloadExitCode,
           GITHUB_REPOSITORY: 'test/repository',
           PLAYWRIGHT_SHARD_TIMINGS_DIR: output
         }
