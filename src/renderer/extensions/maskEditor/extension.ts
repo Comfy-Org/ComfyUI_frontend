@@ -168,7 +168,7 @@ export const maskEditorExtension: ComfyExtension = {
           markCoreMediaMenuCallback(() => {
             useMaskEditor().openMaskEditor(this)
           }, 'preview'),
-          null
+          'maskEditor'
         )
       })
       return extra
