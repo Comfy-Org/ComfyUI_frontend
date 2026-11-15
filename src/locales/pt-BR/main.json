@@ -742,7 +742,7 @@
       "auth/account-exists-with-different-credential": "Não foi possível fazer login com este método. Tente outra opção de login ou redefina sua senha para continuar.",
       "auth/cancelled-popup-request": "Outra janela de login já estava aberta, então esta foi cancelada. Tente novamente.",
       "auth/email-already-in-use": "Não foi possível criar uma conta com este e-mail. Tente entrar ou redefinir sua senha.",
-      "auth/invalid-credential": "Credenciais de login inválidas. Verifique seu e-mail e senha.",
+      "auth/invalid-credential": "Credenciais de login inválidas. Verifique seu e-mail e sua senha. Se você já iniciou sessão com o Google ou o GitHub, use essa opção.",
       "auth/invalid-email": "Por favor, insira um endereço de e-mail válido.",
       "auth/network-request-failed": "Erro de rede. Verifique sua conexão e tente novamente.",
       "auth/operation-not-allowed": "Este método de login não é suportado no momento.",
@@ -803,6 +803,7 @@
       "userAvatar": "Avatar do usuário"
     },
     "loginButton": {
+      "signInToUsePartnerNodes": "Inicie sessão para usar nós de parceiros",
       "tooltipHelp": "Faça login para poder usar os \"Nós de API\"",
       "tooltipLearnMore": "Saiba mais..."
     },
@@ -1588,9 +1589,7 @@
     "LOAD_3D": "CARREGAR 3D",
     "LORA_MODEL": "lora MODEL",
     "LOSS_MAP": "MAPA DE PERDA",
-    "LUMA_CONCEPTS": "CONCEITOS LUMA",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "REFERÊNCIA LUMA",
     "MASK": "MÁSCARA",
     "MESH": "MALHA",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -2766,6 +2765,7 @@
     "versionMismatchWarning": "Aviso de compatibilidade de versão",
     "videoFailedToLoad": "Falha ao carregar vídeo",
     "videoFilenameExtensionRequired": "O nome do arquivo de vídeo deve terminar com uma extensão, como .mp4. Renomeie o arquivo e tente novamente.",
+    "videoFormatNotSupported": "Este vídeo não pode ser reproduzido no navegador.",
     "videoPreview": "Pré-visualização do vídeo - Use as setas para navegar entre os vídeos",
     "viewGrid": "Visualização em grade",
     "viewImageOfTotal": "Visualizar imagem {index} de {total}",
@@ -4146,6 +4146,7 @@
       "errorUnavailable": "Este recurso não está disponível no momento. Por favor, entre em contato com o suporte se o problema persistir.",
       "genericError": "A solicitação OAuth falhou. Por favor, reinicie a partir do aplicativo cliente.",
       "loading": "Carregando solicitação de autorização…",
+      "loginRequired": "Inicie sessão para continuar.",
       "missingRequest": "Esta solicitação de autorização está ausente. Por favor, reinicie a partir do aplicativo cliente.",
       "noWorkspaces": "Nenhum workspace elegível está disponível para esta solicitação.",
       "notYou": "Não é você?",
@@ -4154,6 +4155,7 @@
       "resourceFallback": "este aplicativo",
       "sessionError": "Falha ao estabelecer sessão. Por favor, tente novamente.",
       "sessionErrorToastSummary": "Não foi possível continuar o login OAuth",
+      "signInAgain": "Iniciar sessão novamente",
       "signedInAs": "Conectado como",
       "subtitle": "Faça login em {resource} para continuar",
       "switchAccount": "Trocar de conta",
@@ -4161,6 +4163,7 @@
       "unverifiedBadge": "Nome não verificado",
       "unverifiedNotice": "Este nome foi fornecido por quem registrou este aplicativo. Depois que você continuar, seu navegador será enviado para {host} — verifique se você o reconhece.",
       "unverifiedNoticeNoHost": "Este nome foi fornecido por quem registrou este aplicativo e não foi verificado pela Comfy.",
+      "verifiedNotice": "Nome não verificado · Destino verificado: {platform} · você retornará a {host}",
       "workspaceLabel": "Workspace"
     },
     "scopes": {
@@ -4381,13 +4384,16 @@
     "balanceUnavailable": "Não foi possível carregar seu saldo.",
     "billingSettings": "Configurações de cobrança",
     "credits": "Créditos",
+    "paymentProcessing": "Processando pagamento…",
+    "planCredits": "Créditos do plano",
     "planStatus": {
       "ended": "Plano encerrado",
       "noPlan": "Sem plano",
       "paused": "Pausado",
       "paymentDue": "Pagamento pendente"
     },
-    "switchWorkspace": "Alternar espaço de trabalho"
+    "switchWorkspace": "Alternar espaço de trabalho",
+    "topUpCredits": "Adicionar créditos"
   },
   "progressToast": {
     "allDownloadsCompleted": "Todos os downloads concluídos",
@@ -6660,16 +6666,22 @@
   "workspaceSwitcher": {
     "cannotCreateWorkspace": "Você não pode criar um workspace nesta conta no momento.",
     "createWorkspace": "Criar novo espaço de trabalho",
+    "createWorkspaceAction": "Criar espaço de trabalho",
     "failedToSwitch": "Falha ao trocar de espaço de trabalho",
+    "loadFailed": "Não foi possível carregar seus espaços de trabalho.",
     "managedByOrganization": "Sua organização gerencia seus espaços de trabalho, portanto você não pode criar um.",
     "maxWorkspacesReached": "Você só pode ter {max} espaço de trabalho. Exclua-o para criar um novo. | Você só pode ter {max} espaços de trabalho. Exclua um para criar um novo.",
+    "noResults": "Nenhum espaço de trabalho corresponde a “{query}”.",
+    "ownedLimit": "Você pode possuir até {max}.",
     "personal": "Pessoal",
     "roleMember": "Membro",
     "roleOwner": "Proprietário",
     "scopeCaption": "Os espaços de trabalho afetam apenas quais créditos você usa.",
     "scopeTooltip": "As execuções que usam nós parceiros consomem créditos deste espaço de trabalho. Ao contrário da Nuvem, todos os espaços de trabalho salvam na sua pasta de saída habitual.",
+    "searchPlaceholder": "Pesquisar espaço de trabalho...",
     "subscribe": "Assinar",
-    "switchWorkspace": "Trocar espaço de trabalho"
+    "switchWorkspace": "Trocar espaço de trabalho",
+    "tryAgain": "Tentar novamente"
   },
   "zoomControls": {
     "hideMinimap": "Ocultar Minimapa",

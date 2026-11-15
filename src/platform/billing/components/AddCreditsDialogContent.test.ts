@@ -619,6 +619,19 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
     }
   )
 
+  it('opens no hosted checkout once local_billing_web turns on under an open dialog, and reopens Add credits for the current flag', async () => {
+    setLocalBillingWebEnabled(false)
+    const { user } = renderDialog({ atCheckout: false })
+    const action = continueButton()
+
+    setLocalBillingWebEnabled(true)
+    await user.click(action)
+
+    await waitFor(() => expect(hoisted.reopenTopUp).toHaveBeenCalledOnce())
+    expect(hoisted.createHostedCheckout).not.toHaveBeenCalled()
+    expect(hoisted.issueHandoff).not.toHaveBeenCalled()
+  })
+
   it('reopens a fresh Add credits dialog that runs the flag-off checkout', async () => {
     hoisted.handoffTabs = [handoffTab()]
     hoisted.reopenTopUp.mockImplementation(async () => showTopUpDialog())

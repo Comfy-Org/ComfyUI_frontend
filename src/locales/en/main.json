@@ -2159,9 +2159,7 @@
     "LOAD3D_MODEL_INFO": "LOAD3D_MODEL_INFO",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
-    "LUMA_CONCEPTS": "LUMA_CONCEPTS",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -3762,6 +3760,7 @@
         }
       },
       "loadError": "We couldn't load your plan.",
+      "localLoadError": "We couldn't load your billing details. Check your connection, then try again.",
       "plan": {
         "actions": {
           "choosePlan": "Choose a plan",
@@ -3785,6 +3784,7 @@
           "freeRunsLeft": "You have {remaining} of {total} free runs left. Subscribe to keep running workflows after that.",
           "freeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows.",
           "line": "Subscribe to run workflows on Cloud.",
+          "localLine": "Subscribe for monthly credits. You can also add credits any time.",
           "title": "This workspace has no active plan"
         },
         "paused": "Paused. The renewal payment didn't go through.",
@@ -6691,6 +6691,7 @@
     "superseded": "Your account or workspace changed while billing was opening. Try again.",
     "signInAgain": "Sign in again to open billing.",
     "opening": "Opening checkout…",
-    "openingDetail": "This takes a few seconds."
+    "openingDetail": "This takes a few seconds.",
+    "openingTabTitle": "Opening checkout · Comfy"
   }
 }

@@ -157,10 +157,6 @@ async function createHandoffCheckout(
   amountCents: number,
   signal: AbortSignal
 ): ReturnType<AddCreditsPorts['createCheckout']> {
-  if (!opensLocalBillingHandoff()) {
-    void reopenForCurrentFlag()
-    return { status: 'error', refusal: { kind: 'checkout_failed' } }
-  }
   const generation = workspaceIdentity.workspaceTransitionGeneration
   const issued = await issueLocalBillingHandoff(
     { intent: 'top-up', amountCents },
@@ -197,6 +193,10 @@ const ports: AddCreditsPorts = {
       outcome: 'pending',
       payment_intent_source: source
     })
+    if (opensLocalBillingHandoff() !== opensHandoff) {
+      void reopenForCurrentFlag()
+      return { status: 'error', refusal: { kind: 'checkout_failed' } }
+    }
     if (opensHandoff) return createHandoffCheckout(amountCents, signal)
     const returnUrl = topupCheckoutReturnUrl()
     if (!returnUrl) {

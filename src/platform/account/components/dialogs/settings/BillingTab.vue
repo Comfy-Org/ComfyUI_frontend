@@ -68,7 +68,7 @@
         data-testid="billing-load-error"
       >
         <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.billingTab.loadError') }}
+          {{ $t(loadErrorKey) }}
         </p>
         <Button variant="secondary" size="md" class="shrink-0" @click="retry">
           {{ $t('workspacePanel.billingTab.tryAgain') }}
@@ -219,6 +219,7 @@ import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useRefreshBillingOnReturn } from '@/platform/billing/composables/useRefreshBillingOnReturn'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
@@ -270,6 +271,9 @@ const planCreditNote = useTopUpPlanCreditCopy()
 const creditsCardCopy = useCreditsCardCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
+const loadErrorKey = isCloud
+  ? 'workspacePanel.billingTab.loadError'
+  : 'workspacePanel.billingTab.localLoadError'
 const { isLoadingSupport, handleMessageSupport } = useMessageSupport()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const partnerNodesPricingHref = computed(() =>
@@ -389,4 +393,6 @@ onMounted(() => {
   }
   void capabilities.initialize()
 })
+
+useRefreshBillingOnReturn()
 </script>
