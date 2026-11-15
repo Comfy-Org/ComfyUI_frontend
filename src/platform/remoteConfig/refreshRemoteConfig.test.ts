@@ -1,5 +1,8 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+
+import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
 
 import { api } from '@/scripts/api'
 
@@ -11,6 +14,33 @@ import {
 import { useRemoteConfigStore } from './remoteConfigStore'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/account-core/webSessionFlag'))
+
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'localhost' as const,
+  get isCloud() {
+    return distribution.isCloud
+  },
+  isDesktop: false,
+  isNightly: false
+}))
+
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {}
+  const promise = new Promise<T>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
+function rejectOnAbort(signal: AbortSignal | null | undefined) {
+  return new Promise<Response>((_, reject) => {
+    signal?.addEventListener('abort', () => {
+      reject(new DOMException('Aborted', 'AbortError'))
+    })
+  })
+}
 
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }
@@ -44,6 +74,7 @@ describe('refreshRemoteConfig', () => {
   }
 
   beforeEach(() => {
+    distribution.isCloud = false
     vi.mocked(api.apiURL).mockImplementation(
       (route: string) => `/ComfyUI/api${route}`
     )
@@ -316,6 +347,31 @@ describe('refreshRemoteConfig', () => {
       expect(store.loadState).toBe('anonymous')
     })
 
+    it.for([
+      { invalidated: false, expected: true },
+      { invalidated: true, expected: undefined }
+    ])(
+      'applies the credentialed web-session answer unless invalidated first ($invalidated)',
+      async ({ invalidated, expected }) => {
+        distribution.isCloud = true
+        const answer = deferred<boolean>()
+        vi.mocked(resolveUnifiedWebSession).mockReturnValue(answer.promise)
+        vi.mocked(global.fetch).mockResolvedValue(
+          mockSuccessResponse({ web_session_probe: true })
+        )
+
+        const refresh = refreshRemoteConfig({ useAuth: false })
+        await vi.waitFor(() =>
+          expect(resolveUnifiedWebSession).toHaveBeenCalledOnce()
+        )
+        if (invalidated) invalidateRemoteConfig()
+        answer.resolve(true)
+        await refresh
+
+        expect(useRemoteConfigStore().config.unified_web_session).toBe(expected)
+      }
+    )
+
     it('does not erase authenticated config or its grant on an anonymous 401', async () => {
       const existingConfig = {
         subscription_required: false,
@@ -347,6 +403,27 @@ describe('refreshRemoteConfig', () => {
       expect(init?.signal).toBeInstanceOf(AbortSignal)
     })
 
+    it('abandons a /features read that is still unanswered after five seconds', async () => {
+      vi.useFakeTimers()
+      const existingConfig = { subscription_required: true }
+      const store = useRemoteConfigStore()
+      store.acceptConfig(existingConfig, false)
+      vi.mocked(global.fetch).mockImplementation((_input, init) =>
+        rejectOnAbort(init?.signal)
+      )
+
+      const refresh = refreshRemoteConfig({ useAuth: false })
+      await vi.advanceTimersByTimeAsync(4_999)
+      const signal = vi.mocked(global.fetch).mock.calls[0][1]?.signal
+      expect(signal?.aborted).toBe(false)
+      await vi.advanceTimersByTimeAsync(1)
+      await refresh
+
+      expect(signal?.aborted).toBe(true)
+      expect(store.loadState).toBe('error')
+      expect(store.config).toEqual(existingConfig)
+    })
+
     it('falls back to empty config when the request aborts', async () => {
       vi.mocked(global.fetch).mockRejectedValue(
         new DOMException('Aborted', 'AbortError')
@@ -356,6 +433,94 @@ describe('refreshRemoteConfig', () => {
 
       expect(useRemoteConfigStore().config).toEqual({})
       expect(window.__CONFIG__).toEqual({})
+    })
+  })
+
+  describe('cancellation', () => {
+    it('cancels the request when the caller signal is already aborted', async () => {
+      vi.mocked(global.fetch).mockImplementation(async (_input, init) =>
+        init?.signal?.aborted
+          ? Promise.reject(new DOMException('Aborted', 'AbortError'))
+          : mockSuccessResponse()
+      )
+      const controller = new AbortController()
+      controller.abort()
+
+      await refreshRemoteConfig({ useAuth: false, signal: controller.signal })
+
+      expect(vi.mocked(global.fetch).mock.calls[0][1]?.signal?.aborted).toBe(
+        true
+      )
+      expect(useRemoteConfigStore().loadState).toBe('unloaded')
+    })
+
+    it.for(['the request is in flight', 'the response body is read'])(
+      'keeps the current config when the caller cancels while %s',
+      async (stage) => {
+        const existingConfig = { subscription_required: true }
+        const store = useRemoteConfigStore()
+        store.acceptConfig(existingConfig, false)
+        const response = deferred<Response>()
+        const body = deferred<Record<string, unknown>>()
+        vi.mocked(global.fetch).mockReturnValue(response.promise)
+        const controller = new AbortController()
+
+        const refresh = refreshRemoteConfig({
+          useAuth: false,
+          signal: controller.signal
+        })
+        await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledOnce())
+        if (stage === 'the request is in flight') {
+          controller.abort()
+          response.resolve(mockErrorResponse(503, 'Service Unavailable'))
+        } else {
+          const json = vi.fn(() => body.promise)
+          response.resolve(fromPartial<Response>({ ok: true, json }))
+          await vi.waitFor(() => expect(json).toHaveBeenCalledOnce())
+          controller.abort()
+          body.resolve({ stale: true })
+        }
+        await refresh
+
+        expect(store.config).toEqual(existingConfig)
+        expect(store.loadState).toBe('anonymous')
+      }
+    )
+
+    it('cancels an in-flight read on invalidation without reporting a failure', async () => {
+      vi.mocked(global.fetch).mockImplementation((_input, init) =>
+        rejectOnAbort(init?.signal)
+      )
+
+      const refresh = refreshRemoteConfig({ useAuth: false })
+      await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledOnce())
+      invalidateRemoteConfig()
+
+      expect(vi.mocked(global.fetch).mock.calls[0][1]?.signal?.aborted).toBe(
+        true
+      )
+      await refresh
+      const store = useRemoteConfigStore()
+      expect(store.loadState).toBe('unloaded')
+      expect(store.errorStatus).toBeNull()
+    })
+
+    it('drops a body that finishes reading after invalidation', async () => {
+      const body = deferred<Record<string, unknown>>()
+      const json = vi.fn(() => body.promise)
+      vi.mocked(global.fetch).mockResolvedValue(
+        fromPartial<Response>({ ok: true, json })
+      )
+
+      const refresh = refreshRemoteConfig({ useAuth: false })
+      await vi.waitFor(() => expect(json).toHaveBeenCalledOnce())
+      invalidateRemoteConfig()
+      body.resolve({ subscription_required: true })
+      await refresh
+
+      const store = useRemoteConfigStore()
+      expect(store.config).not.toHaveProperty('subscription_required')
+      expect(store.loadState).toBe('unloaded')
     })
   })
 
