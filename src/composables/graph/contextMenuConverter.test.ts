@@ -178,7 +178,7 @@ describe('node menu assembly', () => {
 
 describe('LiteGraph menu conversion', () => {
   it.for([false, true])(
-    'suppresses native built-ins after relabeling, multiple selection: %s',
+    'retains native subgraph conversion while suppressing replaced actions after relabeling, multiple selection: %s',
     (multiple) => {
       const graph = new LGraph()
       const canvas = new LGraphCanvas(createTestCanvasElement(), graph, {
@@ -194,11 +194,17 @@ describe('LiteGraph menu conversion', () => {
       const items = canvas
         .getNodeMenuOptions(node)
         .map((item) =>
-          item ? { ...item, content: 'Localized core action' } : null
+          item
+            ? Object.assign(item, { content: 'Localized core action' })
+            : null
         )
       const result = convertContextMenuToOptions(items, node)
 
-      expect(result.filter((option) => option.type !== 'divider')).toEqual([])
+      expect(
+        result
+          .filter((option) => option.type !== 'divider')
+          .map((option) => option.id)
+      ).toEqual(['convertSubgraph'])
     }
   )
 

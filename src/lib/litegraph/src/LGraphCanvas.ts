@@ -8718,7 +8718,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           content: 'Convert to Subgraph',
           callback: markNodeMenuCallback(
             () => this._graph.convertToSubgraph(this.selectedItems),
-            null
+            'convertSubgraph'
           )
         },
         {
