@@ -85,7 +85,10 @@ export function useQueueCommands(): ComfyCommand[] {
       label: 'Clear Pending Tasks',
       category: 'essentials',
       function: async () => {
-        await useQueueStore().clear(['queue'])
+        if (!(await useQueueStore().clear(['queue']))) {
+          toast.error(t('queue.failedToClearJobs'))
+          return
+        }
         toast.info(t('g.confirmed'), {
           description: t('toastMessages.pendingTasksDeleted'),
           duration: 3000

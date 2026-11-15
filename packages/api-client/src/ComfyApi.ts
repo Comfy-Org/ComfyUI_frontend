@@ -1592,8 +1592,8 @@ export class ComfyApi extends EventTarget {
    * Clears the specified list
    * @param {string} type The type of list to clear, queue or history
    */
-  async clearItems(type: string) {
-    await this._postItem(type, { clear: true })
+  async clearItems(type: string): Promise<boolean> {
+    return this._postItem(type, { clear: true })
   }
 
   /**

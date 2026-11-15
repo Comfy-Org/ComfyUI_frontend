@@ -52,7 +52,6 @@ import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
 
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useQueueActions } from '@/platform/queue/actions/useQueueActions'
 import { useInterruptibleJob } from '@/platform/queue/composables/useInterruptibleJob'
 import { useQueueFeatureFlags } from '@/platform/queue/composables/useQueueFeatureFlags'
 import { useQueueStore } from '@/platform/queue/stores/queueStore'
@@ -66,7 +65,6 @@ const { t, n } = useI18n()
 const commandStore = useCommandStore()
 const queueStore = useQueueStore()
 const sidebarTabStore = useSidebarTabStore()
-const { clearPendingJobs } = useQueueActions()
 const { interruptibleJobId, canInterrupt } = useInterruptibleJob()
 const { activeJobsCount } = storeToRefs(queueStore)
 const { activeSidebarTabId } = storeToRefs(sidebarTabStore)
@@ -94,7 +92,7 @@ const queueContextMenuItems = computed<MenuItem[]>(() => [
     class: '*:text-destructive',
     disabled: queueStore.pendingTasks.length === 0,
     command: () => {
-      void clearPendingJobs()
+      void commandStore.execute('Comfy.ClearPendingTasks')
     }
   }
 ])

@@ -1527,6 +1527,7 @@
     "negative": "Negative"
   },
   "queue": {
+    "failedToClearJobs": "Could not clear jobs. Please try again.",
     "initializingAlmostReady": "Initializing - Almost ready",
     "inQueue": "In queue...",
     "jobAddedToQueue": "Job queued",

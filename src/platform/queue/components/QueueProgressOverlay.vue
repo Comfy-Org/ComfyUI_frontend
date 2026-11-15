@@ -65,7 +65,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { api } from '@/scripts/api'
-import { useQueueActions } from '@/platform/queue/actions/useQueueActions'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -84,7 +84,7 @@ const emit = defineEmits<{
 
 const { t, n } = useI18n()
 const queueStore = useQueueStore()
-const { clearPendingJobs } = useQueueActions()
+const commandStore = useCommandStore()
 const executionStore = useExecutionStore()
 const assetsStore = useAssetsStore()
 const sidebarTabStore = useSidebarTabStore()
@@ -262,7 +262,7 @@ const inspectJobAsset = wrapWithErrorHandlingAsync(
 
 const cancelQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
   trackFeatureUsed()
-  await clearPendingJobs()
+  await commandStore.execute('Comfy.ClearPendingTasks')
 })
 
 const interruptAll = wrapWithErrorHandlingAsync(async () => {

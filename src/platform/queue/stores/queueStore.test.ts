@@ -714,8 +714,73 @@ describe('useQueueStore', () => {
       await store.update()
     })
 
+    it.for([
+      {
+        name: 'HTTP failure',
+        fetch: async () => new Response(null, { status: 503 }),
+        cleared: false,
+        ids: ['pend-1', 'run-1', 'new-job']
+      },
+      {
+        name: 'network failure',
+        fetch: async () => Promise.reject(new TypeError('Failed to fetch')),
+        cleared: false,
+        ids: ['pend-1', 'run-1', 'new-job']
+      },
+      {
+        name: 'success',
+        fetch: async () => new Response(null, { status: 200 }),
+        cleared: true,
+        ids: ['run-1', 'new-job']
+      }
+    ])(
+      'preserves unrelated initialization and cleans captured IDs only on $name',
+      async ({ fetch, cleared, ids }) => {
+        const client = new ComfyApi({
+          isCloud: false,
+          featureFlagOverride: () => undefined,
+          onFreeMemory: () => {}
+        })
+        const executionStore = useExecutionStore()
+        executionStore.initializingJobIds = new Set(['pend-1', 'run-1'])
+        vi.spyOn(client, 'fetchApi').mockImplementation(async () => {
+          store.pendingTasks = [
+            new TaskItemImpl(createPendingJob(4, 'new-job'))
+          ]
+          executionStore.initializingJobIds.add('new-job')
+          return fetch()
+        })
+        vi.mocked(api.clearItems).mockImplementation(
+          client.clearItems.bind(client)
+        )
+        vi.mocked(api.getQueue).mockRejectedValue(
+          new Error('refresh unavailable')
+        )
+
+        expect(await store.clear(['queue'])).toBe(cleared)
+        expect(executionStore.initializingJobIds).toEqual(new Set(ids))
+      }
+    )
+
+    it.for([
+      { queueCleared: true, historyCleared: false, ids: [] },
+      { queueCleared: false, historyCleared: true, ids: ['pend-1'] }
+    ])(
+      'cleans initialization only for the successful list: %j',
+      async ({ queueCleared, historyCleared, ids }) => {
+        const executionStore = useExecutionStore()
+        executionStore.initializingJobIds = new Set(['pend-1'])
+        vi.mocked(api.clearItems).mockImplementation(async (type) =>
+          type === 'queue' ? queueCleared : historyCleared
+        )
+
+        expect(await store.clear()).toBe(false)
+        expect(executionStore.initializingJobIds).toEqual(new Set(ids))
+      }
+    )
+
     it('should clear both queue and history by default', async () => {
-      vi.mocked(api.clearItems).mockResolvedValue(undefined)
+      vi.mocked(api.clearItems).mockResolvedValue(true)
       vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
       vi.mocked(api.getHistory).mockResolvedValue([])
 
@@ -730,7 +795,7 @@ describe('useQueueStore', () => {
     })
 
     it('should clear only queue when specified', async () => {
-      vi.mocked(api.clearItems).mockResolvedValue(undefined)
+      vi.mocked(api.clearItems).mockResolvedValue(true)
       vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
       vi.mocked(api.getHistory).mockResolvedValue([
         createHistoryJob(3, 'hist-1')
@@ -744,7 +809,7 @@ describe('useQueueStore', () => {
     })
 
     it('should clear only history when specified', async () => {
-      vi.mocked(api.clearItems).mockResolvedValue(undefined)
+      vi.mocked(api.clearItems).mockResolvedValue(true)
       vi.mocked(api.getQueue).mockResolvedValue({
         Running: [createRunningJob(1, 'run-1')],
         Pending: [createPendingJob(2, 'pend-1')]

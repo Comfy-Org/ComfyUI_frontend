@@ -39,12 +39,14 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useQueueStore } from '@/platform/queue/stores/queueStore'
 
 const dialogStore = useDialogStore()
 const queueStore = useQueueStore()
+const toast = useToast()
 const { t } = useI18n()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
@@ -52,7 +54,10 @@ const isClearing = ref(false)
 
 const clearHistory = wrapWithErrorHandlingAsync(
   async () => {
-    await queueStore.clear(['history'])
+    if (!(await queueStore.clear(['history']))) {
+      toast.error(t('queue.failedToClearJobs'))
+      return
+    }
     dialogStore.closeDialog()
   },
   undefined,

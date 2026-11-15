@@ -103,7 +103,7 @@ import Tab from '@comfyorg/design-system/tab/Tab'
 import TabList from '@comfyorg/design-system/tab/TabList'
 import Button from '@comfyorg/design-system/button/Button'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
-import { useQueueActions } from '@/platform/queue/actions/useQueueActions'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { is3DResult } from '@comfyorg/api-client/results/resultItem'
@@ -113,7 +113,7 @@ const Load3dViewerContent = defineAsyncComponent(
 )
 
 const { t, n } = useI18n()
-const { clearPendingJobs } = useQueueActions()
+const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const queueStore = useQueueStore()
 const { showQueueClearHistoryDialog } = useQueueClearHistoryDialog()
@@ -173,7 +173,7 @@ const activeQueueSummary = computed(() => {
 
 const clearQueuedWorkflows = wrapWithErrorHandlingAsync(async () => {
   trackFeatureUsed()
-  await clearPendingJobs()
+  await commandStore.execute('Comfy.ClearPendingTasks')
 })
 
 const {

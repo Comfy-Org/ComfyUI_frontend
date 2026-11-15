@@ -863,6 +863,20 @@ describe('useCoreCommands', () => {
     })
   })
 
+  it.for([false, true])(
+    'reports the pending-clear outcome without a false success: %s',
+    async (cleared) => {
+      vi.mocked(api.clearItems).mockResolvedValue(cleared)
+      const commandStore = useCommandStore()
+      commandStore.registerCommands(useCoreCommands())
+
+      await commandStore.execute('Comfy.ClearPendingTasks')
+
+      expect(useToast().info).toHaveBeenCalledTimes(cleared ? 1 : 0)
+      expect(useToast().error).toHaveBeenCalledTimes(cleared ? 0 : 1)
+    }
+  )
+
   describe('Queue commands subscription gate', () => {
     const findCmd = (id: string) =>
       useCoreCommands().find((cmd) => cmd.id === id)!

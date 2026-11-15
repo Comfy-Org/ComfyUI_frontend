@@ -6,7 +6,6 @@ import { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
 
 import { i18n } from '@/i18n'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import { useQueueActions } from '@/platform/queue/actions/useQueueActions'
 import { useQueueStore } from '@/platform/queue/stores/queueStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -86,17 +85,12 @@ describe('QueueControls', () => {
     expect(execute).toHaveBeenCalledWith('Comfy.Queue.ToggleOverlay')
   })
 
-  it('clears only captured pending initialization IDs even when the command updates the queue', async () => {
+  it('clears pending jobs through the registered command', async () => {
     const queueStore = useQueueStore()
-    const executionStore = useExecutionStore()
     queueStore.pendingTasks = [pendingTask('pending-job')]
-    executionStore.initializingJobIds = new Set(['pending-job', 'running-job'])
     const execute = vi
       .spyOn(useCommandStore(), 'execute')
-      .mockImplementation(async () => {
-        queueStore.pendingTasks = [pendingTask('new-job')]
-        executionStore.initializingJobIds.add('new-job')
-      })
+      .mockResolvedValue(undefined)
     const user = userEvent.setup()
     renderControls()
 
@@ -107,28 +101,6 @@ describe('QueueControls', () => {
       )
     )
 
-    await waitFor(() =>
-      expect(executionStore.initializingJobIds).toEqual(
-        new Set(['running-job', 'new-job'])
-      )
-    )
     expect(execute).toHaveBeenCalledWith('Comfy.ClearPendingTasks')
-  })
-})
-
-describe('pending queue clearing', () => {
-  it('retains initialization state if the command rejects', async () => {
-    useQueueStore().pendingTasks = [pendingTask('pending-job')]
-    const executionStore = useExecutionStore()
-    executionStore.initializingJobIds = new Set(['pending-job'])
-    vi.spyOn(useCommandStore(), 'execute').mockRejectedValue(
-      new Error('offline')
-    )
-
-    await expect(useQueueActions().clearPendingJobs()).rejects.toThrow(
-      'offline'
-    )
-
-    expect(executionStore.initializingJobIds).toEqual(new Set(['pending-job']))
   })
 })

@@ -6,6 +6,7 @@ import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobModelDownloadStore } from '@/platform/queue/stores/jobModelDownloadStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 export const useQueueStore = defineStore('queue', () => {
   const runningTasks = shallowRef<TaskItemImpl[]>([])
   const pendingTasks = shallowRef<TaskItemImpl[]>([])
@@ -123,11 +124,26 @@ export const useQueueStore = defineStore('queue', () => {
   const clear = async (
     targets: ('queue' | 'history')[] = ['queue', 'history']
   ) => {
-    if (targets.length === 0) {
-      return
+    const pendingJobIds = pendingTasks.value.map((task) => task.jobId)
+    const results = await Promise.all(
+      targets.map(async (type) => ({
+        type,
+        cleared: await api.clearItems(type)
+      }))
+    )
+    if (results.some(({ type, cleared }) => type === 'queue' && cleared)) {
+      useExecutionStore().clearInitializationByJobIds(pendingJobIds)
     }
-    await Promise.all(targets.map((type) => api.clearItems(type)))
-    await update()
+    const failed = results.filter(({ cleared }) => !cleared)
+    if (failed.length) {
+      reportError('Failed to clear job lists', {
+        errorType: 'error_clearing_job_lists',
+        surface: 'platform',
+        context: { targets: failed.map(({ type }) => type) }
+      })
+    }
+    if (results.some(({ cleared }) => cleared)) await update()
+    return failed.length === 0
   }
   const deleteTask = async (task: TaskItemImpl) => {
     await api.deleteItem(task.apiTaskType, task.jobId)
