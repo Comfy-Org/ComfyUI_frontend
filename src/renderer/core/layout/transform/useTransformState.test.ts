@@ -47,8 +47,7 @@ describe('useTransformState', () => {
     it('should generate correct initial transform style', () => {
       const { transformStyle } = transformState
       expect(transformStyle.value).toEqual({
-        translate: '0px 0px',
-        scale: '1',
+        transform: 'scale(1) translate(0px, 0px)',
         transformOrigin: '0 0'
       })
     })
@@ -80,8 +79,7 @@ describe('useTransformState', () => {
       syncWithCanvas(mockCanvas as LGraphCanvas)
 
       expect(transformStyle.value).toEqual({
-        translate: '75px 37.5px',
-        scale: '0.5',
+        transform: 'scale(0.5) translate(150px, 75px)',
         transformOrigin: '0 0'
       })
     })
@@ -96,8 +94,7 @@ describe('useTransformState', () => {
       syncWithCanvas(mockCanvas as LGraphCanvas)
 
       expect(transformStyle.value).toEqual({
-        translate: '-46px 82px',
-        scale: '2',
+        transform: 'scale(2) translate(-23px, 41px)',
         transformOrigin: '0 0'
       })
     })
