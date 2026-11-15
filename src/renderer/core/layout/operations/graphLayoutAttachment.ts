@@ -532,6 +532,93 @@ export function moveRerouteLayout(reroute: Reroute, position: Point): void {
   })
 }
 
+type OperationMeta = ReturnType<typeof canvasOperationMeta>
+
+function detachIoNodeAttachments(
+  owner: GraphLayoutOwner,
+  meta: OperationMeta
+): LayoutOperation[] {
+  return [owner.inputNode, owner.outputNode].flatMap(
+    (ioNode): LayoutOperation[] => {
+      const attachment = ioNode && takeNodeLayoutAttachment(ioNode)
+      if (!attachment) return []
+      return [
+        {
+          ...meta,
+          graphId: attachment.graphId,
+          nodeId: attachment.id,
+          type: 'deleteNode'
+        }
+      ]
+    }
+  )
+}
+
+function detachNodeAttachments(
+  owner: GraphLayoutOwner,
+  meta: OperationMeta
+): LayoutOperation[] {
+  return owner._nodes.flatMap((node): LayoutOperation[] => {
+    const attachment = nodeAttachments.get(node)
+    if (!attachment) return []
+    layoutStore.readNodeRect(
+      attachment.graphId,
+      attachment.id,
+      nodeGeometryProjection(node).buffer
+    )
+    nodeAttachments.delete(node)
+    if (!deleteNodeAttachmentOwner(attachment.graphId, node)) return []
+    return [
+      {
+        ...meta,
+        graphId: attachment.graphId,
+        nodeId: attachment.id,
+        type: 'deleteNode'
+      }
+    ]
+  })
+}
+
+function detachGroupAttachments(
+  owner: GraphLayoutOwner,
+  meta: OperationMeta
+): LayoutOperation[] {
+  return owner._groups.flatMap((group): LayoutOperation[] => {
+    const attachment = groupAttachments.get(group)
+    if (!attachment) return []
+    group.syncBoundsFromStore()
+    groupAttachments.delete(group)
+    return [
+      {
+        ...meta,
+        graphId: attachment.graphId,
+        groupId: attachment.id,
+        type: 'deleteGroup'
+      }
+    ]
+  })
+}
+
+function detachRerouteAttachments(
+  owner: GraphLayoutOwner,
+  meta: OperationMeta
+): LayoutOperation[] {
+  return [...owner.reroutes.values()].flatMap((reroute): LayoutOperation[] => {
+    const attachment = rerouteAttachments.get(reroute)
+    if (!attachment) return []
+    reroute.syncPosition()
+    rerouteAttachments.delete(reroute)
+    return [
+      {
+        ...meta,
+        graphId: attachment.graphId,
+        rerouteId: attachment.id,
+        type: 'deleteReroute'
+      }
+    ]
+  })
+}
+
 /**
  * Invalidates every attachment a graph owns, including those inside its
  * subgraph definitions. Layout entries are removed in one store transaction
@@ -548,63 +635,13 @@ export function detachGraphLayouts(
   function collect(owner: GraphLayoutOwner): void {
     if (visited.has(owner)) return
     visited.add(owner)
-    for (const ioNode of [owner.inputNode, owner.outputNode]) {
-      const attachment = ioNode && takeNodeLayoutAttachment(ioNode)
-      if (!attachment) continue
-      operations.push({
-        ...meta,
-        graphId: attachment.graphId,
-        nodeId: attachment.id,
-        type: 'deleteNode'
-      })
-    }
-    for (const node of owner._nodes) {
-      const attachment = nodeAttachments.get(node)
-      if (!attachment) continue
-      layoutStore.readNodeRect(
-        attachment.graphId,
-        attachment.id,
-        nodeGeometryProjection(node).buffer
-      )
-      nodeAttachments.delete(node)
-      const owned = deleteNodeAttachmentOwner(attachment.graphId, node)
-      if (removeRootKeyedLayouts && owned) {
-        operations.push({
-          ...meta,
-          graphId: attachment.graphId,
-          nodeId: attachment.id,
-          type: 'deleteNode'
-        })
-      }
-    }
-    for (const group of owner._groups) {
-      const attachment = groupAttachments.get(group)
-      if (!attachment) continue
-      group.syncBoundsFromStore()
-      groupAttachments.delete(group)
-      if (removeRootKeyedLayouts) {
-        operations.push({
-          ...meta,
-          graphId: attachment.graphId,
-          groupId: attachment.id,
-          type: 'deleteGroup'
-        })
-      }
-    }
-    for (const reroute of owner.reroutes.values()) {
-      const attachment = rerouteAttachments.get(reroute)
-      if (!attachment) continue
-      reroute.syncPosition()
-      rerouteAttachments.delete(reroute)
-      if (removeRootKeyedLayouts) {
-        operations.push({
-          ...meta,
-          graphId: attachment.graphId,
-          rerouteId: attachment.id,
-          type: 'deleteReroute'
-        })
-      }
-    }
+    operations.push(...detachIoNodeAttachments(owner, meta))
+    const rootKeyed = [
+      ...detachNodeAttachments(owner, meta),
+      ...detachGroupAttachments(owner, meta),
+      ...detachRerouteAttachments(owner, meta)
+    ]
+    if (removeRootKeyedLayouts) operations.push(...rootKeyed)
     for (const subgraph of owner._subgraphs.values()) collect(subgraph)
   }
 
