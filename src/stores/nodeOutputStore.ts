@@ -200,7 +200,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       }
       const viewParams = new URLSearchParams(
         Object.entries(
-          omit(result, ['nodeId', 'mediaType', 'url', 'previewUrl'])
+          omit(result, [
+            'nodeId',
+            'mediaType',
+            'url',
+            'previewUrl',
+            'thumbnailUrl'
+          ])
         ).map(([key, value]) => [key, String(value)])
       )
       const media = resolveMediaSources(result, {
@@ -211,7 +217,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       return {
         ...result,
         url: media.originalUrl,
-        previewUrl: media.previewUrl
+        previewUrl: media.previewUrl,
+        thumbnailUrl: media.thumbnailUrl
       }
     })
   }

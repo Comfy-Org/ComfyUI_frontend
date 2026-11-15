@@ -1072,6 +1072,31 @@ describe('nodeOutputStore image url cache busting', () => {
   )
 
   it.for([
+    { url: undefined, preview: 'webp;75', signature: null },
+    {
+      url: '/api/view?filename=render.png&type=output&signature=opaque',
+      preview: null,
+      signature: 'opaque'
+    }
+  ])(
+    'retains thumbnail source policy after normalizing output URL $url',
+    ({ url, preview, signature }) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 7 })
+      const image = { filename: 'render.png', url }
+      store.nodeOutputs['7'] = { images: [image] }
+
+      const [item] = store.getNodeOutputItems(node)
+      const media = resolveMediaSources(item)
+      const thumbnail = new URL(media.thumbnailUrl, window.location.origin)
+
+      expect(thumbnail.searchParams.get('preview')).toBe(preview)
+      expect(thumbnail.searchParams.get('signature')).toBe(signature)
+      expect(media.originalUrl).not.toContain('preview=')
+    }
+  )
+
+  it.for([
     { comfyClass: 'PreviewImage', filename: 'render.png' },
     { comfyClass: 'LoadImageOutput', filename: 'render.png [output]' }
   ])(

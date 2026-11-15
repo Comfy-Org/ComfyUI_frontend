@@ -14,6 +14,7 @@ type MediaFile = Pick<AugmentedResultItem, 'filename'> &
       | 'frame_rate'
       | 'url'
       | 'previewUrl'
+      | 'thumbnailUrl'
       | 'preview_id'
     >
   >
@@ -78,6 +79,7 @@ export function resolveMediaSources(
     displayUrl: requiresPreview ? previewUrl : originalUrl,
     previewUrl,
     thumbnailUrl:
+      item.thumbnailUrl ??
       item.previewUrl ??
       (requiresPreview ? undefined : item.url) ??
       thumbnailUrl(previewUrl),
