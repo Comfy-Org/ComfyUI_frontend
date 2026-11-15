@@ -2,7 +2,7 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] gap-y-(--node-widget-gap) pr-3 text-xs text-node-foreground"
+    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] pr-3 text-xs text-node-foreground [&>:first-child>:first-child]:mt-0 [&>:last-child>:last-child]:mb-0"
     :style="{
       'grid-template-rows': gridTemplateRows,
       flex: gridTemplateRows.includes('auto') ? 1 : undefined
@@ -24,7 +24,8 @@
           :class="
             cn(
               'group col-span-full grid grid-cols-subgrid items-stretch',
-              row.showsControl && 'lg-node-widget'
+              row.showsControl &&
+                'lg-node-widget my-[calc(var(--node-widget-gap)/2)]'
             )
           "
         >
