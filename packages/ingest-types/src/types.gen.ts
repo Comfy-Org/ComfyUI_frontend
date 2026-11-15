@@ -11713,6 +11713,17 @@ export type ListAssetsData = {
      *
      */
     after?: string
+    /**
+     * Send false when the caller does not read `total`, for example a
+     * list that pages by `has_more` and `next_cursor`. No count runs,
+     * `capped_total` is ignored, and `total` is a lower bound instead of
+     * a count: the assets through this page (on an offset page, the
+     * skipped `offset` rows included), plus one when `has_more` is true,
+     * and 0 for an empty page. When true or omitted, `total` is counted
+     * as `capped_total` says.
+     *
+     */
+    include_total?: boolean
   }
   url: '/api/assets'
 }

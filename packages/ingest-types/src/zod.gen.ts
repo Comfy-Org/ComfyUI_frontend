@@ -6597,7 +6597,8 @@ export const zListAssetsQuery = z.object({
   include_public: z.boolean().optional().default(true),
   workspace_library: z.boolean().optional().default(false),
   hash: z.string().optional(),
-  after: z.string().optional()
+  after: z.string().optional(),
+  include_total: z.boolean().optional().default(true)
 })
 
 /**
