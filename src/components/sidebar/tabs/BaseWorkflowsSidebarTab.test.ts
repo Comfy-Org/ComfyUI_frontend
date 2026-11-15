@@ -21,9 +21,7 @@ beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.WorkflowTabsPosition'] =
     'Sidebar'
   vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
-  vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(
-    undefined
-  )
+  vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(true)
 })
 
 const {
@@ -162,6 +160,24 @@ describe('BaseWorkflowsSidebarTab', () => {
         stubs: { teleport: true }
       }
     })
+
+  it.for([
+    {
+      name: 'the window regains focus',
+      signal: () => window.dispatchEvent(new Event('focus'))
+    },
+    {
+      name: 'the page becomes visible again',
+      signal: () => document.dispatchEvent(new Event('visibilitychange'))
+    }
+  ])('re-reads bookmarks saved in other tabs when $name', ({ signal }) => {
+    renderComponent()
+    expect(useWorkflowBookmarkStore().loadBookmarks).toHaveBeenCalledTimes(1)
+
+    signal()
+
+    expect(useWorkflowBookmarkStore().loadBookmarks).toHaveBeenCalledTimes(2)
+  })
 
   it('returns an empty filtered workflow set when searchQuery is empty', async () => {
     Object.assign(useWorkflowStore(), {

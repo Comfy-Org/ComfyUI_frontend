@@ -19,9 +19,7 @@ beforeEach(() => {
   useAppMode().isAppMode = computed(() => true)
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
-  vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(
-    undefined
-  )
+  vi.mocked(useWorkflowBookmarkStore().loadBookmarks).mockResolvedValue(true)
 })
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))

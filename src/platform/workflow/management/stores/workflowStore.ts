@@ -1,9 +1,11 @@
+import { isPlainObject } from 'es-toolkit'
 import { union } from 'es-toolkit/compat'
 import { createEventHook, until, useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 import type {
   LGraph,
@@ -528,7 +530,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
       // Capture all needed values upfront
       const oldPath = workflow.path
       const oldKey = workflow.key
-      const wasBookmarked = bookmarkStore.isBookmarked(oldPath)
       const draftStore = useWorkflowDraftStoreV2()
 
       await workflow.rename(newPath)
@@ -548,11 +549,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       // Move thumbnail from old key to new key (using workflow keys, not full paths)
       const newKey = workflow.key
       moveWorkflowThumbnail(oldKey, newKey)
-      // Update bookmarks
-      if (wasBookmarked) {
-        await bookmarkStore.setBookmarked(oldPath, false)
-        await bookmarkStore.setBookmarked(newPath, true)
-      }
+      // Checked against the server: this tab may not have loaded bookmarks.
+      await bookmarkStore.moveBookmark(oldPath, newPath)
     } finally {
       isBusy.value = false
     }
@@ -563,9 +561,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     try {
       await workflow.delete()
       useWorkflowDraftStoreV2().removeDraft(workflow.path)
-      if (bookmarkStore.isBookmarked(workflow.path)) {
-        await bookmarkStore.setBookmarked(workflow.path, false)
-      }
+      await bookmarkStore.setBookmarked(workflow.path, false)
       // Clear thumbnail when workflow is deleted
       clearThumbnail(workflow.key)
       detachWorkflow(workflow)
@@ -813,43 +809,170 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 }) satisfies () => WorkflowStore
 
-export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
-  const bookmarks = ref<Set<string>>(new Set())
+const BOOKMARK_INDEX_FILE = 'workflows/.index.json'
 
-  const isBookmarked = (path: string) => bookmarks.value.has(path)
+type BookmarkIndexRead =
+  | { ok: true; index: Record<string, unknown>; favorites: string[] }
+  | { ok: false }
 
-  const loadBookmarks = async () => {
-    const resp = await api.getUserData('workflows/.index.json')
-    if (resp.status === 200) {
-      const info = await resp.json()
-      bookmarks.value = new Set(info?.favorites ?? [])
+function bookmarkReadFailed(cause: unknown): BookmarkIndexRead {
+  reportError(cause, {
+    errorType: 'failure_loading_workflow_bookmarks',
+    surface: 'platform'
+  })
+  return { ok: false }
+}
+
+/** Reads the bookmark index; a missing file is an empty index. */
+async function readBookmarkIndex(): Promise<BookmarkIndexRead> {
+  let index: unknown
+  try {
+    const resp = await api.getUserData(BOOKMARK_INDEX_FILE)
+    if (resp.status === 404) return { ok: true, index: {}, favorites: [] }
+    if (resp.status !== 200) {
+      return bookmarkReadFailed(
+        new Error(`Bookmark index read failed: ${resp.status}`)
+      )
     }
+    index = await resp.json()
+  } catch (cause) {
+    return bookmarkReadFailed(cause)
   }
+  if (!isPlainObject(index)) {
+    return bookmarkReadFailed(new TypeError('Bookmark index is not an object'))
+  }
+  const { favorites } = index
+  return {
+    ok: true,
+    index,
+    favorites: Array.isArray(favorites)
+      ? favorites.filter((path): path is string => typeof path === 'string')
+      : []
+  }
+}
 
-  const saveBookmarks = async () => {
-    await api.storeUserData('workflows/.index.json', {
-      favorites: Array.from(bookmarks.value)
+async function writeBookmarkIndex(
+  index: Record<string, unknown>,
+  favorites: string[]
+): Promise<boolean> {
+  try {
+    // storeUserData reports a refused write itself.
+    const resp = await api.storeUserData(
+      BOOKMARK_INDEX_FILE,
+      { ...index, favorites },
+      { overwrite: true, stringify: true, throwOnError: false }
+    )
+    return resp.status === 200
+  } catch (cause) {
+    reportError(cause, {
+      errorType: 'failure_saving_workflow_bookmarks',
+      surface: 'platform'
     })
+    return false
+  }
+}
+
+/**
+ * Bookmarks live in one userdata file that every tab and device rewrites
+ * whole, and the server keeps the last write. So every change re-reads the
+ * file and applies only its own edit, one change at a time, instead of
+ * writing this tab's copy, which may be stale or never loaded.
+ */
+export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
+  /** Favorites as the server last reported or accepted them. */
+  const bookmarks = ref<ReadonlySet<string>>(new Set())
+  /** Changes waiting for the server, shown so the icon responds at once. */
+  const pending = ref(new Map<string, { value: boolean; change: number }>())
+  let changeCount = 0
+  let queue: Promise<unknown> = Promise.resolve()
+  let queuedLoad: Promise<boolean> | undefined
+
+  const isBookmarked = (path: string) =>
+    pending.value.get(path)?.value ?? bookmarks.value.has(path)
+
+  function enqueue<T>(task: () => Promise<T>): Promise<T> {
+    const run = queue.then(task)
+    queue = run.catch(() => undefined)
+    return run
   }
 
-  const setBookmarked = async (path: string, value: boolean) => {
-    if (bookmarks.value.has(path) === value) return
-    if (value) {
-      bookmarks.value.add(path)
-    } else {
-      bookmarks.value.delete(path)
+  function loadBookmarks(): Promise<boolean> {
+    queuedLoad ??= enqueue(async () => {
+      queuedLoad = undefined
+      const read = await readBookmarkIndex()
+      if (read.ok) bookmarks.value = new Set(read.favorites)
+      return read.ok
+    })
+    return queuedLoad
+  }
+
+  /**
+   * Applies `edit` to the server's current favorites and saves the result.
+   * `shown` is what to display until then; a refused change reverts to the
+   * favorites last read from the server.
+   */
+  async function change(
+    shown: ReadonlyMap<string, boolean>,
+    edit: (favorites: Set<string>) => void
+  ): Promise<boolean> {
+    const id = ++changeCount
+    for (const [path, value] of shown) {
+      pending.value.set(path, { value, change: id })
     }
-    await saveBookmarks()
+    const saved = await enqueue(async () => {
+      const read = await readBookmarkIndex()
+      if (!read.ok) return false
+      const next = new Set(read.favorites)
+      edit(next)
+      const unchanged =
+        next.size === read.favorites.length &&
+        read.favorites.every((path) => next.has(path))
+      const ok =
+        unchanged || (await writeBookmarkIndex(read.index, Array.from(next)))
+      bookmarks.value = ok ? next : new Set(read.favorites)
+      return ok
+    })
+    for (const path of shown.keys()) {
+      if (pending.value.get(path)?.change === id) pending.value.delete(path)
+    }
+    return saved
   }
 
+  const setBookmarked = (path: string, value: boolean) =>
+    change(new Map([[path, value]]), (favorites) => {
+      if (value) favorites.add(path)
+      else favorites.delete(path)
+    })
+
+  /** Moves a bookmark to a renamed workflow's path, if it has one. */
+  const moveBookmark = (oldPath: string, newPath: string) =>
+    change(
+      isBookmarked(oldPath)
+        ? new Map([
+            [oldPath, false],
+            [newPath, true]
+          ])
+        : new Map(),
+      (favorites) => {
+        if (favorites.delete(oldPath)) favorites.add(newPath)
+      }
+    )
+
+  /** The user-facing toggle: tells the user when the change did not save. */
   const toggleBookmarked = async (path: string) => {
-    await setBookmarked(path, !bookmarks.value.has(path))
+    const saved = await setBookmarked(path, !isBookmarked(path))
+    if (!saved) {
+      useToast().error(t('g.error'), {
+        description: t('sideToolbar.workflowTab.bookmarkSaveFailed')
+      })
+    }
+    return saved
   }
 
   return {
     isBookmarked,
     loadBookmarks,
-    saveBookmarks,
+    moveBookmark,
     setBookmarked,
     toggleBookmarked
   }

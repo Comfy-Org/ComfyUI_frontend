@@ -95,7 +95,7 @@ describe('useWorkflowActionsMenu', () => {
     mockSubgraphStore = useSubgraphStore()
     mockAppModeStore = useAppModeStore()
     vi.mocked(mockCommandStore.execute).mockResolvedValue(undefined)
-    vi.mocked(mockBookmarkStore.toggleBookmarked).mockResolvedValue(undefined)
+    vi.mocked(mockBookmarkStore.toggleBookmarked).mockResolvedValue(true)
     vi.mocked(mockBookmarkStore.isBookmarked).mockReturnValue(false)
     vi.mocked(mockSubgraphStore.isSubgraphBlueprint).mockReturnValue(false)
     vi.mocked(
