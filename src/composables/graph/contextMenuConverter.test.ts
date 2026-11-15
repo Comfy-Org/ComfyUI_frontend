@@ -177,26 +177,28 @@ describe('node menu assembly', () => {
 })
 
 describe('LiteGraph menu conversion', () => {
-  it.for([
-    LGraphCanvas.onShowMenuNodeProperties,
-    LGraphCanvas.onShowPropertyEditor,
-    LGraphCanvas.onMenuNodeMode,
-    LGraphCanvas.onMenuResizeNode,
-    LGraphCanvas.onMenuNodeCollapse,
-    LGraphCanvas.onMenuNodeColors,
-    LGraphCanvas.onMenuNodeShapes,
-    LGraphCanvas.onMenuNodeClone,
-    LGraphCanvas.onMenuNodeRemove,
-    LGraphCanvas.onNodeAlign,
-    LGraphCanvas.createDistributeMenu
-  ])(
-    'suppresses superseded built-ins by callback, regardless of label',
-    (callback) => {
-      expect(
-        convertContextMenuToOptions([
-          { content: 'Localized core action', callback }
-        ])
-      ).toEqual([])
+  it.for([false, true])(
+    'suppresses native built-ins after relabeling, multiple selection: %s',
+    (multiple) => {
+      const graph = new LGraph()
+      const canvas = new LGraphCanvas(createTestCanvasElement(), graph, {
+        skip_render: true,
+        skip_events: true
+      })
+      const node = new LGraphNode('Core node')
+      graph.add(node)
+      const nodes = multiple ? [node, new LGraphNode('Second node')] : [node]
+      if (multiple) graph.add(nodes[1])
+      canvas.selectItems(nodes)
+
+      const items = canvas
+        .getNodeMenuOptions(node)
+        .map((item) =>
+          item ? { ...item, content: 'Localized core action' } : null
+        )
+      const result = convertContextMenuToOptions(items, node)
+
+      expect(result.filter((option) => option.type !== 'divider')).toEqual([])
     }
   )
 
@@ -217,20 +219,6 @@ describe('LiteGraph menu conversion', () => {
     ])
     options[0].action?.()
     expect(extensionAction).toHaveBeenCalledOnce()
-  })
-
-  it('adapts base-menu callbacks without leaving native duplicates', () => {
-    const canvas = new LGraphCanvas(createTestCanvasElement(), new LGraph(), {
-      skip_render: true,
-      skip_events: true
-    })
-    const node = new LGraphNode('Core node')
-    const result = convertContextMenuToOptions(
-      canvas.getNodeMenuOptions(node),
-      node
-    )
-
-    expect(result.filter((option) => option.type !== 'divider')).toEqual([])
   })
 
   it('forwards node context, disabled state and separators', () => {
