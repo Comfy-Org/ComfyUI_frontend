@@ -43,6 +43,7 @@
         "**/.storybook/{main.ts,preview.ts,style.css}",
         "packages/comfyui-api-types/openapi-ts.config.ts",
         "packages/ingest-types/openapi-ts.config.ts",
+        "src/devtools/menuPrototypePage.ts",
         "scripts/**/*.{js,ts}"
       ],
       "entryPointRole": "support"
