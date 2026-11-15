@@ -20,6 +20,7 @@
         <div
           :data-testid="row.testId"
           :data-widget-name="row.widget.simplified.name"
+          :style="{ minHeight: row.minHeight }"
           :class="
             cn(
               'group col-span-full grid grid-cols-subgrid items-stretch',
@@ -107,6 +108,7 @@ import { useResizeObserver } from '@vueuse/core'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
@@ -151,6 +153,7 @@ const renderedRows = computed(() =>
         (!!widget.suppressedByConnection && !!widget.slotMetadata)
     if (!shouldRender) return []
 
+    const sizing = showsControl ? widget.sizing : undefined
     return [
       {
         widget,
@@ -164,9 +167,9 @@ const renderedRows = computed(() =>
         ),
         standalone: !showsControl && !!widget.suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,
+        minHeight: sizing ? `${minRowHeight(sizing)}px` : undefined,
         rowSize:
-          showsControl &&
-          (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
+          showsControl && shouldExpand(widget.simplified.type, sizing)
             ? 'auto'
             : 'min-content'
       }

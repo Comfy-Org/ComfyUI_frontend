@@ -34,7 +34,6 @@ interface ConvertedRestoredValue {
 }
 
 export interface WidgetRenderState {
-  hasLayoutSize?: boolean
   isDOMWidget?: boolean
   tooltip?: string
 }
