@@ -85,10 +85,6 @@ export function ensureStorageStateDir(storageStateFile: string): void {
   mkdirSync(dirname(storageStateFile), { recursive: true, mode: 0o700 })
 }
 
-// Retention for credential-bearing session files: keep the newest few and
-// drop anything older than a month, so per-backend files cannot accumulate
-// forever. Best-effort — a file we cannot stat or unlink (a lock, EACCES)
-// is skipped, same as removeLegacyCustomStorageState.
 const STORAGE_STATE_KEEP = 8
 const STORAGE_STATE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
 

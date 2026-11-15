@@ -81,6 +81,7 @@ describe('runRecording', () => {
       storageStateFile
     )
     expect(ensureStorageStateDir).toHaveBeenCalledWith(storageStateFile)
+    expect(pruneStaleStorageStates).toHaveBeenCalledWith(storageStateFile)
     expect(generateRecordingTemplate).toHaveBeenCalledWith(
       expect.objectContaining({ storageStateFile }),
       '/project/browser_tests'

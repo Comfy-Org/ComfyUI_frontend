@@ -378,6 +378,15 @@ describe('recording template', () => {
       return path
     }
 
+    function seedPack(count: number, firstAgeDays: number): void {
+      for (let i = 0; i < count; i++) {
+        seed(
+          `storage-state.custom-${String(i).padStart(2, '0')}.json`,
+          firstAgeDays + i
+        )
+      }
+    }
+
     it('keeps the active file even when it is the oldest', () => {
       const active = seed('storage-state.cloud.json', 90)
       seed('storage-state.custom-abc.json', 1)
@@ -397,21 +406,36 @@ describe('recording template', () => {
       expect(existsSync(fresh)).toBe(true)
     })
 
-    it('keeps only the newest files when the cap is exceeded', () => {
-      const fresh = seed('storage-state.cloud.json', 1)
-      for (let i = 0; i < 9; i++) {
-        seed(`storage-state.custom-${i}.json`, 2 + i)
-      }
+    it('keeps the 8 newest non-active files plus the active one over the cap', () => {
+      const active = seed('storage-state.cloud.json', 1)
+      seedPack(9, 2)
 
-      pruneStaleStorageStates(fresh)
+      pruneStaleStorageStates(active)
 
       const kept = readdirSync(stateDir).filter((name) =>
         name.startsWith('storage-state.')
       )
-      // the cap counts the non-active files; the active one always stays
       expect(kept).toHaveLength(9)
       expect(kept).toContain('storage-state.cloud.json')
-      expect(kept).not.toContain('storage-state.custom-8.json')
+      expect(kept).not.toContain('storage-state.custom-08.json')
+    })
+
+    it('skips a candidate it cannot remove and keeps pruning the rest', () => {
+      const stale = seed('storage-state.custom-abc.json', 40)
+      const locked = join(stateDir, 'storage-state.custom-locked.json')
+      mkdirSync(locked)
+      utimesSync(
+        locked,
+        new Date(Date.now() - 40 * 86400000),
+        new Date(Date.now() - 40 * 86400000)
+      )
+      const active = seed('storage-state.cloud.json', 1)
+
+      expect(() => pruneStaleStorageStates(active)).not.toThrow()
+
+      expect(existsSync(stale)).toBe(false)
+      expect(existsSync(locked)).toBe(true)
+      expect(existsSync(active)).toBe(true)
     })
 
     it('leaves files that do not match the storage-state pattern alone', () => {
