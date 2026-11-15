@@ -60,9 +60,6 @@ describe('credential-shaped values', () => {
 })
 
 describe('api-key formats', () => {
-  // fixtures assemble tokens at runtime: literals shaped like real provider
-  // keys trip GitHub push protection, and the pattern only needs the prefix
-  // plus enough filler characters to satisfy its length requirement
   const filler = (chars: string, n: number) => chars.repeat(n).slice(0, n)
 
   it.for([

@@ -9,21 +9,17 @@ const SENSITIVE_FIELD =
 const JWT = /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g
 const LONG_TOKEN_FILL = /(\.fill\(\s*)(['"])([A-Za-z0-9+/_=-]{32,})(\2)/g
 
-// Common API-key formats (OpenAI, Anthropic, GitHub, GitLab, AWS, Slack,
-// Google, Shopify), redacted wherever they appear on a line. The bare sk-
-// branch needs 40+ trailing characters so everyday hyphenated identifiers
-// (sk-learn-… and friends) are not caught.
 const API_KEY = new RegExp(
   [
-    String.raw`\bsk-(?:ant-|proj-)?[A-Za-z0-9_-]{40,}`, // OpenAI / Anthropic
-    String.raw`\bghp_[A-Za-z0-9]{20,}`, // GitHub classic PAT
-    String.raw`\bgho_[A-Za-z0-9]{20,}`, // GitHub app token
-    String.raw`\bgithub_pat_[A-Za-z0-9_]{20,}`, // GitHub fine-grained PAT
-    String.raw`\bglpat-[A-Za-z0-9_-]{20,}`, // GitLab PAT
-    String.raw`\bAKIA[0-9A-Z]{16,}`, // AWS access key id
-    String.raw`\bxox[bpars]-[A-Za-z0-9-]{10,}`, // Slack token
-    String.raw`\bAIza[0-9A-Za-z_-]{35,}`, // Google API key
-    String.raw`\bshpat_[A-Za-z0-9]{20,}` // Shopify token
+    String.raw`\bsk-(?:ant-|proj-)?[A-Za-z0-9_-]{40,}`,
+    String.raw`\bghp_[A-Za-z0-9]{20,}`,
+    String.raw`\bgho_[A-Za-z0-9]{20,}`,
+    String.raw`\bgithub_pat_[A-Za-z0-9_]{20,}`,
+    String.raw`\bglpat-[A-Za-z0-9_-]{20,}`,
+    String.raw`\bAKIA[0-9A-Z]{16,}`,
+    String.raw`\bxox[bpars]-[A-Za-z0-9-]{10,}`,
+    String.raw`\bAIza[0-9A-Za-z_-]{35,}`,
+    String.raw`\bshpat_[A-Za-z0-9]{20,}`
   ].join('|'),
   'g'
 )
