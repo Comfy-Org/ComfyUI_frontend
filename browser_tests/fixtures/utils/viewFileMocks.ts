@@ -4,14 +4,14 @@ type RouteFulfillOptions = NonNullable<Parameters<Route['fulfill']>[0]>
 
 type ViewFile = Pick<RouteFulfillOptions, 'body' | 'contentType' | 'path'>
 
-const transparentPng = Buffer.from(
+export const transparentPng = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lwPIRwAAAABJRU5ErkJggg==',
   'base64'
 )
 
 export async function mockViewFiles(
   page: Page,
-  filesByName: Readonly<Record<string, ViewFile>>
+  filesByName: Readonly<Partial<Record<string, ViewFile>>>
 ) {
   await page.route('**/api/view**', async (route) => {
     if (route.request().method().toUpperCase() !== 'GET') {

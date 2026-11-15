@@ -15,35 +15,27 @@ export type QuerySuggestion = {
 export interface SearchPacksResult {
   nodePacks: RegistryNodePack[]
   querySuggestions: QuerySuggestion[]
+  /** Whether the raw query has pages past this one; omitted when unknown. */
+  hasMore?: boolean
+  /** Whether the raw query matched nothing, even if fallback hits were returned. */
+  rawResultsEmpty?: boolean
 }
 
-export interface SortableField<T = string> {
-  id: T
-  label: string
-  direction: 'asc' | 'desc'
-}
+export type SearchPacksOutcome =
+  | { ok: true; result: SearchPacksResult }
+  | { ok: false; cause: unknown }
 
 export interface NodePackSearchProvider {
   /**
-   * Search for node packs
+   * Search for node packs; a failed search resolves to `ok: false`.
    */
   searchPacks(
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult>
+  ): Promise<SearchPacksOutcome>
 
   /**
    * Clear the search cache
    */
   clearSearchCache(): void
-
-  /**
-   * Get the sort value for a pack based on the sort field
-   */
-  getSortValue(pack: RegistryNodePack, sortField: string): string | number
-
-  /**
-   * Get the list of sortable fields supported by this provider
-   */
-  getSortableFields(): SortableField[]
 }

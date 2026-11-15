@@ -1,7 +1,10 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import { isTextResult, resultItemSupportsPreview } from '@/utils/resultItem'
 import { parseNodeOutput, parseTaskOutput } from '@/stores/resultItemParsing'
 
 function makeOutput(
@@ -21,7 +24,7 @@ describe(parseNodeOutput, () => {
     expect(result).toEqual([])
   })
 
-  it('flattens images into ResultItemImpl instances', () => {
+  it('flattens images into result items', () => {
     const output = makeOutput({
       images: [
         { filename: 'a.png', subfolder: '', type: 'output' },
@@ -94,8 +97,8 @@ describe(parseNodeOutput, () => {
     expect(result).toHaveLength(1)
     expect(result[0].filename).toBe('result.txt')
     expect(result[0].mediaType).toBe('files')
-    expect(result[0].isText).toBe(true)
-    expect(result[0].supportsPreview).toBe(true)
+    expect(isTextResult(result[0])).toBe(true)
+    expect(resultItemSupportsPreview(result[0])).toBe(true)
   })
 
   it('ignores empty arrays', () => {
@@ -128,6 +131,28 @@ describe(parseNodeOutput, () => {
     expect(result[0].mediaType).toBe('images')
   })
 
+  it('parses inline text outputs', () => {
+    const result = parseNodeOutput(
+      '1',
+      makeOutput({ text: ['hello', 'world'] })
+    )
+
+    expect(result).toStrictEqual([
+      expect.objectContaining({ content: 'hello', mediaType: 'text' }),
+      expect.objectContaining({ content: 'world', mediaType: 'text' })
+    ])
+  })
+
+  it('excludes text outputs with malformed filenames', () => {
+    const result = parseNodeOutput('1', {
+      text: [{ filename: 42, content: 'invalid' }, { content: 'valid' }]
+    })
+
+    expect(result).toStrictEqual([
+      expect.objectContaining({ content: 'valid', filename: '' })
+    ])
+  })
+
   it('excludes non-ResultItem array items', () => {
     const output = fromPartial<NodeExecutionOutput>({
       images: [{ filename: 'img.png', subfolder: '', type: 'output' }],
@@ -153,16 +178,16 @@ describe(parseNodeOutput, () => {
     expect(result).toHaveLength(2)
     expect(result[0].filename).toBe('valid.png')
     expect(result[1].filename).toBe('no-subfolder.png')
-    expect(result[1].subfolder).toBe('')
   })
 
   it('excludes items missing filename', () => {
-    const output = fromPartial<NodeExecutionOutput>({
+    const output = {
       images: [
         { filename: 'valid.png', subfolder: '', type: 'output' },
-        { subfolder: '', type: 'output' }
+        { subfolder: '', type: 'output' },
+        { content: 'not text' }
       ]
-    })
+    }
 
     const result = parseNodeOutput('1', output)
 

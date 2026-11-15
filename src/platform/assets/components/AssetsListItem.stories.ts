@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import { iconForJobState } from '@/utils/queueDisplay'
 
@@ -12,7 +12,7 @@ const meta: Meta<typeof AssetsListItem> = {
   },
   decorators: [
     () => ({
-      template: '<div class="p-8 bg-base-background"><story /></div>'
+      template: '<div class="p-8 bg-background"><story /></div>'
     })
   ]
 }
@@ -62,8 +62,8 @@ export const RunningJobWithActions: Story = {
 export const FailedJob: Story = {
   args: {
     iconName: iconForJobState('failed'),
-    iconClass: 'text-destructive-background',
-    iconWrapperClass: 'bg-modal-card-placeholder-background',
+    iconClass: 'text-destructive',
+    iconWrapperClass: 'bg-muted',
     primaryText: 'Failed',
     secondaryText: '8:59:30pm'
   }
@@ -115,20 +115,20 @@ function renderRunningJobWithActions(args: AssetsListItemProps) {
     template: `
       <AssetsListItem v-bind="args">
         <template #primary>
-          <div class="flex items-center gap-1 text-text-primary">
+          <div class="flex items-center gap-1 text-foreground">
             <span>Total:</span>
             <span class="font-medium">30%</span>
           </div>
         </template>
         <template #secondary>
-          <div class="flex items-center gap-1 text-text-secondary">
+          <div class="flex items-center gap-1 text-muted-foreground">
             <span>CLIP Text Encode:</span>
             <span>70%</span>
           </div>
         </template>
         <template #actions>
           <Button variant="destructive" size="icon" aria-label="Cancel">
-            <i class="icon-[lucide--x] size-4" />
+            <i class="icon-[lucide--x]" />
           </Button>
         </template>
       </AssetsListItem>

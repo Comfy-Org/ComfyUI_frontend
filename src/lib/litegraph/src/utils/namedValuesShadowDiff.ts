@@ -1,6 +1,6 @@
 import { isEqual } from 'es-toolkit'
 
-import type { IBaseWidget } from '../types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 export interface NamedValuesShadowDiffResult {
   mismatchWidgetCount: number
@@ -22,7 +22,7 @@ export function computeLegacyWidgetShadow(
 
   let i = 0
   for (const [widgetIndex, widget] of widgets.entries()) {
-    if (!widget || widget.serialize === false) continue
+    if (widget.serialize === false) continue
     if (i >= widgetsValues.length) break
     shadow.push({ widgetIndex, name: widget.name, value: widgetsValues[i++] })
   }

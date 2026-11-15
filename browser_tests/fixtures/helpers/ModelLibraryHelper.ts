@@ -1,9 +1,7 @@
 import type { Page, Route } from '@playwright/test'
 
-import type {
-  ModelFile,
-  ModelFolderInfo
-} from '@/platform/assets/schemas/assetSchema'
+import type { ModelFolderInfo } from '@comfyorg/api-client/types'
+import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 
 const modelFoldersRoutePattern = /\/api\/experiment\/models$/
 const modelFilesRoutePattern = /\/api\/experiment\/models\/([^?]+)/
@@ -32,7 +30,7 @@ export class ModelLibraryHelper {
   private metadataRouteHandler: ((route: Route) => Promise<void>) | null = null
   private folders: ModelFolderInfo[] = []
   private filesByFolder: Record<string, ModelFile[]> = {}
-  private metadataByModel: Record<string, MockModelMetadata> = {}
+  private metadataByModel: Partial<Record<string, MockModelMetadata>> = {}
 
   constructor(private readonly page: Page) {}
 

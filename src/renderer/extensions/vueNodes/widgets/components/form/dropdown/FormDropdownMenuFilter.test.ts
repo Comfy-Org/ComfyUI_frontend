@@ -8,17 +8,20 @@ import { createI18n } from 'vue-i18n'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { FilterOption } from '@/platform/assets/types/filterTypes'
 
-vi.mock('@/platform/assets/composables/useModelUpload', async () => {
-  const { ref } = await import('vue')
-  const isUploadButtonEnabled = ref(false)
-  const showUploadDialog = vi.fn()
-  return {
-    useModelUpload: () => ({
-      isUploadButtonEnabled,
-      showUploadDialog
-    })
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useModelUpload'),
+  async () => {
+    const { ref } = await import('vue')
+    const isUploadButtonEnabled = ref(false)
+    const showUploadDialog = vi.fn()
+    return {
+      useModelUpload: () => ({
+        isUploadButtonEnabled,
+        showUploadDialog
+      })
+    }
   }
-})
+)
 
 import FormDropdownMenuFilter from './FormDropdownMenuFilter.vue'
 
@@ -36,11 +39,6 @@ const i18n = createI18n({
   locale: 'en',
   messages: { en: { g: { import: 'Import', upload: 'Upload' } } }
 })
-
-const ButtonStub = {
-  inheritAttrs: false,
-  template: '<button v-bind="$attrs"><slot /></button>'
-}
 
 const options: FilterOption[] = [
   { value: 'all', name: 'All' },
@@ -65,8 +63,7 @@ function renderMenu(
   })
   const utils = render(Harness, {
     global: {
-      plugins: [i18n],
-      stubs: { Button: ButtonStub }
+      plugins: [i18n]
     }
   })
   return { ...utils, value, onShowPicker }

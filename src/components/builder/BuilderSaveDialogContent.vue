@@ -1,19 +1,25 @@
 <template>
-  <BuilderDialog @close="emit('close')">
+  <AppDialogPanel
+    body-class="flex flex-1 flex-col gap-4"
+    class="w-xl max-w-full min-w-116"
+    @close="emit('close')"
+  >
     <template #title>
       {{ $t('builderToolbar.saveAs') }}
     </template>
 
     <div class="flex flex-col gap-2">
-      <label :for="inputId" class="text-sm text-muted-foreground">
-        {{ $t('builderToolbar.filename') }}
-      </label>
+      <DialogDescription as-child>
+        <label :for="inputId">
+          {{ $t('builderToolbar.filename') }}
+        </label>
+      </DialogDescription>
       <input
         :id="inputId"
         v-model="filename"
         autofocus
         type="text"
-        class="focus-visible:ring-ring flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary-background pl-4 text-sm text-base-foreground"
+        class="flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary pl-4 text-sm focus-visible:ring-ring"
         @keydown.enter="
           filename.trim() && emit('save', filename.trim(), openAsApp)
         "
@@ -43,15 +49,16 @@
         {{ $t('g.save') }}
       </Button>
     </template>
-  </BuilderDialog>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
 import { ref, useId } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogDescription from '@comfyorg/design-system/dialog/DialogDescription'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 
-import BuilderDialog from './BuilderDialog.vue'
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'
 
 const { defaultFilename, defaultOpenAsApp = true } = defineProps<{

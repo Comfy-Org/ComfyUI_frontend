@@ -1,11 +1,15 @@
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useCommandStore } from '@/stores/commandStore'
+import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
+import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
 
-import type { MenuOption } from './useMoreOptionsMenu'
+import type { MenuOption } from './menuOption'
 
 type ImageMenuAvailability = Record<CoreMediaMenuActionKind, boolean>
 
@@ -18,12 +22,22 @@ function canPasteImage(node?: LGraphNode): boolean {
   return typeof node?.pasteFiles === 'function'
 }
 
-async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
-  if (!navigator.clipboard?.read) {
-    console.warn('Clipboard API not available')
-    return
+async function fullResolutionImage(
+  img: HTMLImageElement
+): Promise<HTMLImageElement | undefined> {
+  const src = fullResolutionSrc(img)
+  if (src === img.src) return img
+  const full = new Image()
+  full.src = src
+  try {
+    await full.decode()
+    return full
+  } catch {
+    return undefined
   }
+}
 
+async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
   try {
     const clipboardItems = await navigator.clipboard.read()
     for (const item of clipboardItems) {
@@ -49,6 +63,8 @@ async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
  */
 export function useImageMenuOptions() {
   const { t } = useI18n()
+  const toast = useToast()
+  const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 
   const openMaskEditor = () => {
     const commandStore = useCommandStore()
@@ -56,28 +72,37 @@ export function useImageMenuOptions() {
   }
 
   const openImage = (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
+    const images = node.imgs
+    if (!images?.length) return
+    const img = images.at(node.imageIndex ?? 0)
     if (!img) return
-    const url = new URL(img.src)
-    url.searchParams.delete('preview')
+    const url = getImageFileUrl(img)
     void openFileInNewTab(url.toString())
   }
 
   const copyImage = async (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
+    const images = node.imgs
+    if (!images?.length) return
+    const img = images.at(node.imageIndex ?? 0)
     if (!img) return
 
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    ctx.drawImage(img, 0, 0)
+    const source = await fullResolutionImage(img)
+    if (!source) {
+      toast.warning(
+        t('toastMessages.errorCopyImage', { error: t('g.unknownError') })
+      )
+      return
+    }
 
     try {
+      canvas.width = source.naturalWidth
+      canvas.height = source.naturalHeight
+      ctx.drawImage(source, 0, 0)
+
       const blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob(resolve, 'image/png')
       })
@@ -87,28 +112,26 @@ export function useImageMenuOptions() {
         return
       }
 
-      // Check if clipboard API is available
-      if (!navigator.clipboard?.write) {
-        console.warn('Clipboard API not available')
-        return
-      }
-
       await navigator.clipboard.write([
         new ClipboardItem({ 'image/png': blob })
       ])
     } catch (error) {
-      console.error('Failed to copy image to clipboard:', error)
+      toast.warning(
+        t('toastMessages.errorCopyImage', {
+          error: getErrorMessage(error) ?? t('g.unknownError')
+        })
+      )
     }
   }
 
   const saveImage = (node: LGraphNode) => {
-    if (!node?.imgs?.length) return
-    const img = node.imgs[node.imageIndex ?? 0]
+    const images = node.imgs
+    if (!images?.length) return
+    const img = images.at(node.imageIndex ?? 0)
     if (!img) return
 
     try {
-      const url = new URL(img.src)
-      url.searchParams.delete('preview')
+      const url = getImageFileUrl(img)
       downloadFile(url.toString())
     } catch (error) {
       console.error('Failed to save image:', error)
@@ -119,11 +142,13 @@ export function useImageMenuOptions() {
     node: LGraphNode,
     availability: ImageMenuAvailability = DEFAULT_IMAGE_MENU_AVAILABILITY
   ): MenuOption[] => {
-    const hasImages = !!node?.imgs?.length
+    const hasImages = !!node.imgs?.length
     const canPaste = canPasteImage(node)
+    const canExportOutputs = availability.preview && hasMultipleOutputs(node)
     if (
       (!hasImages || !availability.preview) &&
-      (!canPaste || !availability.input)
+      (!canPaste || !availability.input) &&
+      !canExportOutputs
     )
       return []
 
@@ -162,6 +187,14 @@ export function useImageMenuOptions() {
         label: t('contextMenu.Save Image'),
         icon: 'icon-[lucide--download]',
         action: () => saveImage(node)
+      })
+    }
+
+    if (canExportOutputs) {
+      options.push({
+        label: t('contextMenu.Download Images'),
+        icon: 'icon-[lucide--folder-down]',
+        action: () => showOutputsExportDialog(node)
       })
     }
 

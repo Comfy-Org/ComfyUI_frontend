@@ -11,6 +11,7 @@ from .errors import (
 from .inputs import (
     LongComboDropdown,
     NodeWithBooleanInput,
+    NodeWithColorInput,
     NodeWithDefaultInput,
     NodeWithForceInput,
     NodeWithOptionalComboInput,
@@ -33,6 +34,7 @@ from .models import (
     NODE_CLASS_MAPPINGS as models_class_mappings,
     NODE_DISPLAY_NAME_MAPPINGS as models_display_name_mappings,
 )
+from .native_lora import NODE_CLASS_MAPPINGS as native_lora_class_mappings
 from .remote import (
     MultiSelectNode,
     NodeWithOutputCombo,
@@ -50,6 +52,7 @@ NODE_CLASS_MAPPINGS = {
     **inputs_class_mappings,
     **remote_class_mappings,
     **models_class_mappings,
+    **native_lora_class_mappings,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -69,6 +72,7 @@ __all__ = [
     "LongComboDropdown",
     "MultiSelectNode",
     "NodeWithBooleanInput",
+    "NodeWithColorInput",
     "NodeWithDefaultInput",
     "NodeWithForceInput",
     "NodeWithOptionalComboInput",

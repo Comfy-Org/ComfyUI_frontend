@@ -5,6 +5,7 @@ import {
   TEAM_WORKSPACE_NAME
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 
 test.describe('Local workspace switcher', { tag: '@auth' }, () => {
   test.describe.configure({ timeout: 60_000 })
@@ -22,7 +23,7 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     page.on('request', (request) => {
       if (!request.url().includes('/api/billing/')) return
       billingRequestUrls.push(request.url())
-      billingAuthorizationHeaders.push(request.headers().authorization ?? '')
+      billingAuthorizationHeaders.push(request.headers().authorization)
       if (new URL(request.url()).origin === localOrigin) {
         localBillingRequestUrls.push(request.url())
       }
@@ -58,14 +59,17 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     const panel = page.getByTestId('workspace-switcher-panel')
     await expect(panel.getByText(PERSONAL_WORKSPACE_NAME)).toBeVisible()
     await expect(panel.getByText(TEAM_WORKSPACE_NAME)).toBeVisible()
-    await expect(panel.getByText('Owner')).toHaveCount(2)
-    await expect(panel.getByText('Member')).toHaveCount(1)
+    await expect(panel.getByText(/^(Owner|Member)$/)).toHaveCount(0)
     const scopeCaption = panel.getByText(
       'Workspaces only affect which credits you use.'
     )
     await expect(scopeCaption).toBeVisible()
-    await scopeCaption.locator('..').locator('.pi-info-circle').hover()
-    await expect(page.getByRole('tooltip')).toHaveText(
+    await panel
+      .getByRole('button', {
+        name: 'Workspaces only affect which credits you use.'
+      })
+      .hover()
+    await expect(new Tooltip(page).open).toHaveText(
       'Runs that use partner nodes spend credits from this workspace. Unlike on Cloud, every workspace saves to your usual output folder.'
     )
 

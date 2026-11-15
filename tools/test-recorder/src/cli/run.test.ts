@@ -16,7 +16,14 @@ describe('runCommand', () => {
   it('runs a command and returns its output', () => {
     const result = runCommand('node', ['-e', 'process.stdout.write("hi")'])
     expect(result.status).toBe(0)
-    expect(result.stdout.toString()).toBe('hi')
+    expect(result.stdout?.toString()).toBe('hi')
+  })
+
+  it('returns no output when a command cannot start', () => {
+    const result = runCommand('__missing_comfy_test_command__', [])
+    expect(result.error).toBeDefined()
+    expect([null, undefined]).toContain(result.stdout)
+    expect([null, undefined]).toContain(result.stderr)
   })
 
   it('lets an explicit shell option override the platform default', () => {

@@ -3,11 +3,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import type {
-  IBaseWidget,
-  TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
 describe('LGraphNode widget ordering', () => {
@@ -94,8 +91,7 @@ describe('LGraphNode widget ordering', () => {
         flags: {},
         order: 0,
         mode: 0,
-        // Compacted: one entry per serializable widget, matching serialize()
-        widgets_values: [30, 12345]
+        widgets_values: [30, 12345] // Only serializable widgets
       }
 
       node.configure(info)
@@ -105,79 +101,26 @@ describe('LGraphNode widget ordering', () => {
       expect(node.widgets![2].value).toBe(12345) // seed
     })
 
-    it('should round-trip its own serialize() output through configure() when a non-serializing widget is not last', () => {
+    it('round trips compact positional values around non-serializable widgets', () => {
       node.serialize_widgets = true
-      node.addWidget('number', 'steps', 20, null, {})
-      node.addWidget('button', 'action', 'Click', null, {})
-      node.widgets![1].serialize = false
+      node.addWidget('number', 'steps', 30, null, {})
+      node.addWidget('button', 'action', 'Click', null, {}).serialize = false
       node.addWidget('number', 'seed', 12345, null, {})
 
       const serialized = node.serialize()
+      const restored = new LGraphNode('Restored')
+      restored.addWidget('number', 'steps', 0, null, {})
+      restored.addWidget('button', 'action', 'Click', null, {}).serialize =
+        false
+      restored.addWidget('number', 'seed', 0, null, {})
+      restored.configure(serialized)
 
-      expect(serialized.widgets_values).toEqual([20, 12345])
-
-      const roundTripNode = new LGraphNode('TestNode')
-      roundTripNode.addWidget('number', 'steps', 0, null, {})
-      roundTripNode.addWidget('button', 'action', 'Click', null, {})
-      roundTripNode.widgets![1].serialize = false
-      roundTripNode.addWidget('number', 'seed', 0, null, {})
-
-      roundTripNode.configure(serialized)
-
-      expect(roundTripNode.widgets![0].value).toBe(20) // steps
-      expect(roundTripNode.widgets![1].value).toBe('Click') // button unchanged
-      expect(roundTripNode.widgets![2].value).toBe(12345) // seed
-    })
-
-    it('should shift values when loading a legacy null-padded array, which this change stops emitting but does not repair', () => {
-      node.addWidget('number', 'steps', 0, null, {})
-      node.addWidget('button', 'action', 'Click', null, {})
-      node.widgets![1].serialize = false
-      node.addWidget('number', 'seed', 0, null, {})
-
-      // What the pre-fix serialize() produced: a hole at the skipped index,
-      // which JSON renders as null on disk.
-      const sparseWidgetsValues: TWidgetValue[] = [30]
-      sparseWidgetsValues[2] = 12345
-      const nullPaddedWidgetsValues: TWidgetValue[] = [30, null, 12345]
-      expect(JSON.stringify(sparseWidgetsValues)).toBe(
-        JSON.stringify(nullPaddedWidgetsValues)
-      )
-
-      const legacyInfo: ISerialisedNode = {
-        id: 1,
-        type: 'TestNode',
-        pos: [0, 0],
-        size: [200, 100],
-        flags: {},
-        order: 0,
-        mode: 0,
-        widgets_values: nullPaddedWidgetsValues
-      }
-
-      node.configure(legacyInfo)
-
-      expect(node.widgets![0].value).toBe(30) // steps
-      expect(node.widgets![1].value).toBe('Click') // button unchanged
-      expect(node.widgets![2].value).toBeNull() // seed reads the padding, not 12345
-    })
-
-    it('should skip nullish widget entries instead of throwing, matching configure()', () => {
-      node.serialize_widgets = true
-      node.addWidget('number', 'steps', 20, null, {})
-      node.addWidget('number', 'seed', 12345, null, {})
-      delete node.widgets![0]
-
-      const serialized = node.serialize()
-      expect(serialized.widgets_values).toEqual([12345])
-
-      const roundTripNode = new LGraphNode('TestNode')
-      roundTripNode.addWidget('number', 'steps', 0, null, {})
-      roundTripNode.addWidget('number', 'seed', 0, null, {})
-      delete roundTripNode.widgets![0]
-
-      expect(() => roundTripNode.configure(serialized)).not.toThrow()
-      expect(roundTripNode.widgets![1].value).toBe(12345)
+      expect(serialized.widgets_values).toEqual([30, 12345])
+      expect(restored.widgets!.map((widget) => widget.value)).toEqual([
+        30,
+        'Click',
+        12345
+      ])
     })
 
     it('does not retain positional restoration after configure', () => {
@@ -313,6 +256,31 @@ describe('LGraphNode widget ordering', () => {
       node2.configure(node.serialize())
 
       expect(node2.widgets!.map((w) => w.value)).toStrictEqual([5, 20])
+    })
+
+    it('restores an object widget value, snapshotted by value rather than by reference', () => {
+      const saved = {
+        trim: { start_time: 1.5, duration: 4 },
+        crop: { x: 10, y: 20, width: 100, height: 50 }
+      }
+      node.addWidget('videoedit', 'video_edit', saved, null, {})
+      node.serialize_widgets = true
+
+      const serialised = node.serialize()
+      expect(serialised.widgets_values_named!.video_edit).toStrictEqual(saved)
+
+      const live = node.widgets![0].value as typeof saved
+      live.trim.start_time = 99
+      live.crop.width = 999
+
+      const restored = new LGraphNode('TestNode2')
+      restored.addWidget('videoedit', 'video_edit', {}, null, {})
+      restored.configure(serialised)
+
+      expect(restored.widgets![0].value).toStrictEqual({
+        trim: { start_time: 1.5, duration: 4 },
+        crop: { x: 10, y: 20, width: 100, height: 50 }
+      })
     })
 
     it('should support specifying order for legacy workflows', () => {

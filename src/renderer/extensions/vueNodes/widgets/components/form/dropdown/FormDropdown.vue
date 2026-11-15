@@ -5,12 +5,14 @@ import {
   unrefElement,
   useEventListener
 } from '@vueuse/core'
-import Popover from 'primevue/popover'
+import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
 
 import type {
@@ -18,6 +20,8 @@ import type {
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
+import { isPaged, pagedItems, WrappedList } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
@@ -29,9 +33,8 @@ import {
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
-  items: FormDropdownItem[]
-  /** Items used for display in the input field. Falls back to items if not provided. */
-  displayItems?: FormDropdownItem[]
+  inputId?: string
+  items: MaybePaged<FormDropdownItem>
   placeholder?: string
   /**
    * If true, allows multiple selections. If a number is provided,
@@ -48,7 +51,6 @@ interface Props {
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
-  loadingMore?: boolean
   isSelected?: (
     selected: Set<string>,
     item: FormDropdownItem,
@@ -57,9 +59,9 @@ interface Props {
   isUploading?: boolean
   searcher?: (
     query: string,
-    items: FormDropdownItem[],
+    items: readonly FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<FormDropdownItem[]>
+  ) => Promise<readonly FormDropdownItem[]>
 }
 
 const { t } = useI18n()
@@ -76,15 +78,10 @@ const {
   ownershipOptions,
   showBaseModelFilter,
   baseModelOptions,
-  loadingMore = false,
   isSelected = (selected, item, _index) => selected.has(item.id),
   searcher = defaultSearcher,
   items
 } = defineProps<Props>()
-
-const emit = defineEmits<{
-  (e: 'approach-end'): void
-}>()
 
 const placeholderText = computed(
   () => placeholder ?? t('widgets.uploadSelect.placeholder')
@@ -110,8 +107,7 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
-const toastStore = useToastStore()
-const popoverRef = ref<InstanceType<typeof Popover>>()
+const toast = useToast()
 const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
@@ -132,7 +128,7 @@ const filteredItems = computedAsync(
   async (onCancel) => {
     if (!isOpen.value) {
       displayedSearchQuery.value = ''
-      return items
+      return pagedItems(items).slice()
     }
 
     const query = debouncedSearchQuery.value
@@ -143,13 +139,13 @@ const filteredItems = computedAsync(
       cleanupFn?.()
     })
 
-    const result = await searcher(query, items, (cb) => {
+    const result = await searcher(query, pagedItems(items).slice(), (cb) => {
       cleanupFn = cb
     })
     if (!cancelled) displayedSearchQuery.value = query
     return result
   },
-  items,
+  pagedItems(items).slice(),
   {
     evaluating: isFiltering
   }
@@ -168,7 +164,7 @@ const selectedSorter = computed<SortOption['sorter']>(() => {
 })
 const sortedItems = computed(() => {
   if (!isOpen.value) {
-    return items
+    return pagedItems(items).slice()
   }
 
   return selectedSorter.value({ items: filteredItems.value }) || []
@@ -195,12 +191,9 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
 }
 
-const toggleDropdown = (event: Event) => {
+const toggleDropdown = () => {
   if (disabled) return
-  if (popoverRef.value && triggerAnchorRef.value) {
-    popoverRef.value.toggle?.(event, triggerAnchorRef.value)
-    isOpen.value = !isOpen.value
-  }
+  isOpen.value = !isOpen.value
 }
 
 function focusTrigger() {
@@ -208,21 +201,11 @@ function focusTrigger() {
 }
 
 const closeDropdown = ({ restoreFocus = false } = {}) => {
-  if (popoverRef.value) {
-    popoverRef.value.hide?.()
-    isOpen.value = false
-  }
+  isOpen.value = false
 
   if (restoreFocus) focusTrigger()
 }
 
-/**
- * Dismiss on `pointerdown` rather than PrimeVue's default `click` (mouseup) so
- * the dropdown closes the instant an outside press lands, and a focused inner
- * scrollbar cannot swallow the first outside click. Presses on the trigger and
- * on the menu's body-teleported sub-popovers (Sort / Ownership / Base-model)
- * are excluded so they keep working instead of closing the parent.
- */
 useEventListener(
   window,
   'pointerdown',
@@ -246,12 +229,9 @@ function isInsideDropdownPanel(target: EventTarget): boolean {
   )
 }
 
-/**
- * The popover is teleported to `document.body`, so canvas gestures (pan, zoom,
- * box select — any input device) move the node while the popover stays put.
- * Dismiss as soon as such a gesture begins.
- */
 useDismissOnCanvasGesture(isOpen, () => closeDropdown())
+
+usePopoverViewportDismiss(isOpen, triggerAnchorRef)
 
 function handleFileChange(event: Event) {
   if (disabled) return
@@ -281,7 +261,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
       sel.clear()
       sel.add(item.id)
     } else {
-      toastStore.addAlert(t('widgets.uploadSelect.maxSelectionReached'))
+      toast.warning(t('widgets.uploadSelect.maxSelectionReached'))
       return
     }
   }
@@ -296,17 +276,21 @@ async function getTopSearchResult() {
   const query = searchQuery.value
   if (query.trim() === '') return
 
-  const sourceItems = items
+  const sourceItems = pagedItems(items)
   const matches =
     isShowingCurrentSearchResults.value && displayedSearchQuery.value === query
       ? filteredItems.value
-      : await searcher(query, sourceItems, () => {})
+      : await searcher(query, sourceItems.slice(), () => {})
 
-  if (query !== searchQuery.value || sourceItems !== items || !isOpen.value) {
+  if (
+    query !== searchQuery.value ||
+    sourceItems !== pagedItems(items) ||
+    !isOpen.value
+  ) {
     return
   }
 
-  return selectedSorter.value({ items: matches })?.[0]
+  return selectedSorter.value({ items: matches })[0]
 }
 
 async function selectTopSearchResult() {
@@ -328,69 +312,68 @@ function showPicker() {
   triggerRef.value!.showPicker()
   closeDropdown()
 }
+const dropdownItems = computed(() =>
+  isPaged(items)
+    ? new WrappedList(items, () => sortedItems.value)
+    : sortedItems.value
+)
 </script>
 
 <template>
   <div ref="triggerAnchorRef">
-    <FormDropdownInput
-      ref="triggerRef"
-      :files
-      :is-open
-      :placeholder="placeholderText"
-      :items
-      :display-items
-      :max-selectable
-      :selected
-      :uploadable
-      :disabled
-      :accept
-      :is-uploading
-      @select-click="toggleDropdown"
-      @file-change="handleFileChange"
-    />
-    <Popover
-      ref="popoverRef"
-      :dismissable="false"
-      :close-on-escape="true"
-      unstyled
-      :pt="{
-        root: {
-          class: 'absolute z-50'
-        },
-        content: {
-          class: ['bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg']
-        }
-      }"
-      @hide="isOpen = false"
-    >
-      <FormDropdownMenu
-        ref="menuRef"
-        v-model:filter-selected="filterSelected"
-        v-model:layout-mode="layoutMode"
-        v-model:sort-selected="sortSelected"
-        v-model:search-query="searchQuery"
-        v-model:ownership-selected="ownershipSelected"
-        v-model:base-model-selected="baseModelSelected"
-        :uploadable
-        :filter-options
-        :sort-options
-        :show-ownership-filter
-        :ownership-options
-        :show-base-model-filter
-        :base-model-options
-        :disabled
-        :items="sortedItems"
-        :candidate-index
-        :candidate-label
-        :is-selected="internalIsSelected"
+    <PopoverRoot v-model:open="isOpen">
+      <FormDropdownInput
+        ref="triggerRef"
+        :input-id
+        :files
+        :is-open
+        :placeholder="placeholderText"
+        :selected-items="pagedItems(items).filter(internalIsSelected)"
         :max-selectable
-        :loading-more="loadingMore"
-        @close="closeDropdown"
-        @search-enter="handleSearchEnter"
-        @item-click="handleSelection"
-        @show-picker="showPicker"
-        @approach-end="emit('approach-end')"
-      />
-    </Popover>
+        :uploadable
+        :disabled
+        :accept
+        :is-uploading
+        @select-click="toggleDropdown"
+        @file-change="handleFileChange"
+      >
+        <template #anchor="{ element }">
+          <PopoverAnchor as="template" :reference="element" />
+        </template>
+      </FormDropdownInput>
+      <PopoverContent
+        align="end"
+        class="pointer-events-auto w-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+        @interact-outside.prevent
+        @close-auto-focus.prevent="focusTrigger"
+      >
+        <FormDropdownMenu
+          ref="menuRef"
+          v-model:filter-selected="filterSelected"
+          v-model:layout-mode="layoutMode"
+          v-model:sort-selected="sortSelected"
+          v-model:search-query="searchQuery"
+          v-model:ownership-selected="ownershipSelected"
+          v-model:base-model-selected="baseModelSelected"
+          :uploadable
+          :filter-options
+          :sort-options
+          :show-ownership-filter
+          :ownership-options
+          :show-base-model-filter
+          :base-model-options
+          :disabled
+          :items="dropdownItems"
+          :candidate-index
+          :candidate-label
+          :is-selected="internalIsSelected"
+          :max-selectable
+          @close="closeDropdown"
+          @search-enter="handleSearchEnter"
+          @item-click="handleSelection"
+          @show-picker="showPicker"
+        />
+      </PopoverContent>
+    </PopoverRoot>
   </div>
 </template>

@@ -3,15 +3,14 @@ import { computed, nextTick, toRaw, watch } from 'vue'
 
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  IWidget
+  INodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphNode,
   inputAsSerialisable,
   outputAsSerialisable
 } from '@/lib/litegraph/src/litegraph'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 
 const boundingRect: ReadOnlyRect = [0, 0, 10, 10]
@@ -27,11 +26,7 @@ describe('NodeSlot', () => {
         boundingRect
       }
       const node = new LGraphNode('test')
-      const serialized = outputAsSerialisable(
-        slot as INodeOutputSlot & { widget?: IWidget },
-        node,
-        0
-      )
+      const serialized = outputAsSerialisable(slot, node, 0)
       expect(serialized).not.toHaveProperty('_data')
     })
 

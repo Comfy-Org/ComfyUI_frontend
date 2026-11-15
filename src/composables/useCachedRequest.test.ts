@@ -3,10 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 
 describe('useCachedRequest', () => {
-  let mockRequestFn: (
-    params: unknown,
-    signal?: AbortSignal
-  ) => Promise<unknown | null>
+  let mockRequestFn: (params: unknown, signal?: AbortSignal) => Promise<unknown>
   let abortSpy: () => void
 
   beforeEach(() => {
@@ -192,6 +189,19 @@ describe('useCachedRequest', () => {
 
     // The request function should be called again
     expect(mockRequestFn).toHaveBeenCalledTimes(2)
+  })
+
+  it('evicts only the entry for the given params', async () => {
+    const cachedRequest = useCachedRequest(mockRequestFn)
+    await cachedRequest.call({ id: 1 })
+    await cachedRequest.call({ id: 2 })
+
+    cachedRequest.evict({ id: 1 })
+    await cachedRequest.call({ id: 1 })
+    await cachedRequest.call({ id: 2 })
+
+    expect(mockRequestFn).toHaveBeenCalledTimes(3)
+    expect(mockRequestFn).toHaveBeenLastCalledWith({ id: 1 }, expect.anything())
   })
 
   it('should handle null results correctly', async () => {

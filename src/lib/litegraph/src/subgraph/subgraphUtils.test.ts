@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -20,7 +18,6 @@ import {
 
 describe('subgraphUtils', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     resetSubgraphFixtureState()
   })
 
@@ -34,9 +31,6 @@ describe('subgraphUtils', () => {
       })
       const host = createTestSubgraphNode(subgraph)
       host.inputs.pop()
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       reorderSubgraphInputs(host, [1, 0])
 
@@ -44,11 +38,10 @@ describe('subgraphUtils', () => {
         'first',
         'second'
       ])
-      expect(consoleError).toHaveBeenCalledWith(
+      expect(console.error).toHaveBeenCalledWith(
         'reorderSubgraphInputs: host and subgraph inputs differ',
         { hostInputs: 1, subgraphInputs: 2 }
       )
-      consoleError.mockRestore()
     })
 
     it('preserves both input orders when endpoint updates are rejected', () => {
@@ -70,9 +63,6 @@ describe('subgraphUtils', () => {
         error: { code: 'occupied-target', message: 'Target is occupied' }
       })
       const invalidatePromotedViews = vi.spyOn(host, 'invalidatePromotedViews')
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       reorderSubgraphInputs(host, [1, 0])
 
@@ -83,7 +73,6 @@ describe('subgraphUtils', () => {
       ])
       expect(link.target_slot).toBe(0)
       expect(invalidatePromotedViews).not.toHaveBeenCalled()
-      consoleError.mockRestore()
     })
   })
   describe('getDirectSubgraphIds', () => {

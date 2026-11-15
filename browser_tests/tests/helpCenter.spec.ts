@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import {
+  HelpCenterHelper,
   createMockRelease,
   helpCenterFixture as test,
   waitForPopup
@@ -123,52 +124,60 @@ test.describe('Help Center', () => {
   })
 
   test.describe("What's New releases", () => {
-    test('renders only the three most recent releases', async ({
-      comfyPage,
-      helpCenter
-    }) => {
-      const versions = ['0.4.10', '0.4.9', '0.4.8', '0.4.7', '0.4.6']
-      const now = Date.now()
-      const releases = versions.map((version, idx) =>
-        createMockRelease({
-          id: idx + 1,
-          version,
-          published_at: new Date(now - idx * 60_000).toISOString()
-        })
-      )
+    test.use({ mockReleases: false })
 
-      await helpCenter.mockReleases(releases)
-      await comfyPage.setup({ mockReleases: false })
-      await helpCenter.open()
+    test.describe('recent releases', () => {
+      test.beforeEach(async ({ page }) => {
+        const versions = ['0.4.10', '0.4.9', '0.4.8', '0.4.7', '0.4.6']
+        const now = Date.now()
+        const releases = versions.map((version, idx) =>
+          createMockRelease({
+            id: idx + 1,
+            version,
+            published_at: new Date(now - idx * 60_000).toISOString()
+          })
+        )
 
-      await expect(helpCenter.whatsNewSection).toBeVisible()
-      await expect(helpCenter.releaseItems).toHaveCount(3)
-      await expect(helpCenter.releaseItem('0.4.10')).toBeVisible()
-      await expect(helpCenter.releaseItem('0.4.9')).toBeVisible()
-      await expect(helpCenter.releaseItem('0.4.8')).toBeVisible()
-      await expect(helpCenter.releaseItem('0.4.7')).toHaveCount(0)
+        await new HelpCenterHelper(page).mockReleases(releases)
+      })
+
+      test('renders only the three most recent releases', async ({
+        helpCenter
+      }) => {
+        await helpCenter.open()
+
+        await expect(helpCenter.whatsNewSection).toBeVisible()
+        await expect(helpCenter.releaseItems).toHaveCount(3)
+        await expect(helpCenter.releaseItem('0.4.10')).toBeVisible()
+        await expect(helpCenter.releaseItem('0.4.9')).toBeVisible()
+        await expect(helpCenter.releaseItem('0.4.8')).toBeVisible()
+        await expect(helpCenter.releaseItem('0.4.7')).toHaveCount(0)
+      })
     })
 
-    test('clicking a release opens the changelog with a version anchor', async ({
-      comfyPage,
-      helpCenter
-    }) => {
-      const release = createMockRelease({ version: '0.3.50' })
+    test.describe('release changelog', () => {
+      test.beforeEach(async ({ page }) => {
+        await new HelpCenterHelper(page).mockReleases([
+          createMockRelease({ version: '0.3.50' })
+        ])
+      })
 
-      await helpCenter.mockReleases([release])
-      await helpCenter.stubDocsPage()
-      await comfyPage.setup({ mockReleases: false })
-      await helpCenter.open()
+      test('clicking a release opens the changelog with a version anchor', async ({
+        helpCenter
+      }) => {
+        await helpCenter.stubDocsPage()
+        await helpCenter.open()
 
-      const url = await waitForPopup(helpCenter.page, () =>
-        helpCenter.releaseItem('0.3.50').click()
-      )
+        const url = await waitForPopup(helpCenter.page, () =>
+          helpCenter.releaseItem('0.3.50').click()
+        )
 
-      expect(url.hostname).toBe('docs.comfy.org')
-      expect(url.pathname).toBe('/changelog')
-      expect(url.hash).toBe('#v0-3-50')
+        expect(url.hostname).toBe('docs.comfy.org')
+        expect(url.pathname).toBe('/changelog')
+        expect(url.hash).toBe('#v0-3-50')
 
-      await expect(helpCenter.popup).toBeHidden()
+        await expect(helpCenter.popup).toBeHidden()
+      })
     })
   })
 })

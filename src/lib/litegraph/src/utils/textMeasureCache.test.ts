@@ -61,4 +61,64 @@ describe('textMeasureCache', () => {
     expect(w1).not.toBe(w2)
     expect(ctx.measureText).toHaveBeenCalledTimes(2)
   })
+
+  it('uses current font metrics throughout loading without a draw', async () => {
+    const fontState: { status: FontFaceSet['status'] } = { status: 'loaded' }
+    const fonts = Object.assign(new EventTarget(), fontState)
+    vi.stubGlobal(
+      'document',
+      fromPartial<Document>({
+        fonts: fromPartial<FontFaceSet>(fonts)
+      })
+    )
+    vi.resetModules()
+    const { cachedMeasureText } = await import('./textMeasureCache')
+    const ctx = createMockCtx()
+
+    expect(cachedMeasureText(ctx, 'hello')).toBe(35)
+    fonts.status = 'loading'
+    fonts.dispatchEvent(new Event('loading'))
+    expect(cachedMeasureText(ctx, 'hello')).toBe(35)
+    expect(cachedMeasureText(ctx, 'ready')).toBe(35)
+    vi.mocked(ctx.measureText).mockReturnValue(
+      fromPartial<TextMetrics>({ width: 51 })
+    )
+
+    expect(cachedMeasureText(ctx, 'hello')).toBe(51)
+    fonts.status = 'loaded'
+    expect([
+      cachedMeasureText(ctx, 'hello'),
+      cachedMeasureText(ctx, 'ready')
+    ]).toEqual([51, 51])
+  })
+
+  it('measures requested fonts without changing subsequent drawing', () => {
+    const ctx = createMockCtx('12px sans-serif')
+    vi.mocked(ctx.measureText).mockImplementation(() =>
+      fromPartial<TextMetrics>({
+        width: ctx.font === '24px monospace' ? 83 : 31
+      })
+    )
+
+    expect([
+      cachedMeasureText(ctx, 'hello', '24px monospace'),
+      ctx.font,
+      cachedMeasureText(ctx, 'hello'),
+      cachedMeasureText(ctx, 'hello', '24px monospace'),
+      ctx.font
+    ]).toEqual([83, '12px sans-serif', 31, 83, '12px sans-serif'])
+  })
+
+  it('restores the drawing font when measurement fails', () => {
+    const ctx = createMockCtx('12px sans-serif')
+    vi.mocked(ctx.measureText).mockImplementationOnce(() => {
+      throw new Error('unavailable')
+    })
+
+    expect(() => cachedMeasureText(ctx, 'hello', '24px monospace')).toThrow(
+      'unavailable'
+    )
+    expect(ctx.font).toBe('12px sans-serif')
+    expect(cachedMeasureText(ctx, 'hello', '24px monospace')).toBe(35)
+  })
 })

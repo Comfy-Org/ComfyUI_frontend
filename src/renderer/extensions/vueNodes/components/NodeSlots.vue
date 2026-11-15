@@ -1,11 +1,17 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-2 text-sm text-destructive">
     {{ st('nodeErrors.slots', 'Node Slots Error') }}
   </div>
   <div
     v-else
     ref="slots"
-    :class="cn('flex min-w-0 justify-between', unifiedWrapperClass)"
+    :class="
+      cn(
+        'flex min-w-0 justify-between',
+        unified &&
+          'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
+      )
+    "
   >
     <div
       v-if="filteredInputs.length"
@@ -48,15 +54,19 @@ import { st } from '@/i18n'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
-import type { GraphScope } from '@/types/graphScopeId'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import type { NodeState } from '@/types/nodeState'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { locatorIdFromState } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -124,7 +134,12 @@ const layoutKey = computed(() =>
 )
 
 watch(
-  [layoutKey, slots, () => canvasStore.rootGraphId],
+  [
+    layoutKey,
+    slots,
+    () => canvasStore.rootGraphId,
+    () => layoutStore.slotOffsetVersion
+  ],
   () => {
     const rootGraphId = canvasStore.rootGraphId
     if (syncLayout && slots.value && rootGraphId) {
@@ -141,12 +156,6 @@ function inputHasError(input: INodeSlot): boolean {
   return executionErrorStore.slotHasError(locatorId, input.name)
 }
 
-const unifiedWrapperClass = computed((): string =>
-  cn(
-    unified &&
-      'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
-  )
-)
 const unifiedDotsClass = computed((): string =>
   cn(
     unified &&

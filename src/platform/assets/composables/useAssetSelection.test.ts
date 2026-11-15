@@ -10,34 +10,30 @@ const mockShiftKey = ref(false)
 const mockCtrlKey = ref(false)
 const mockMetaKey = ref(false)
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as object),
-    useKeyModifier: (key: string) => {
-      if (key === 'Shift') return mockShiftKey
-      if (key === 'Control') return mockCtrlKey
-      if (key === 'Meta') return mockMetaKey
-      return ref(false)
-    }
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+
+vi.mock(import('@vueuse/core'), () => ({
+  useKeyModifier: (key: string) => {
+    if (key === 'Shift') return mockShiftKey
+    if (key === 'Control') return mockCtrlKey
+    if (key === 'Meta') return mockMetaKey
+    return ref(false)
   }
-})
+}))
 
 import { useAssetSelection } from './useAssetSelection'
 import { useAssetSelectionStore } from './useAssetSelectionStore'
 
 function createMockAssets(count: number): AssetItem[] {
-  return Array.from(
-    { length: count },
-    (_, i): AssetItem =>
-      fromPartial({
-        id: `asset-${i}`,
-        name: `Asset ${i}`,
-        size: 1000,
-        created_at: new Date().toISOString(),
-        tags: ['output'],
-        preview_url: `http://example.com/asset-${i}.png`
-      })
+  return Array.from({ length: count }, (_, i): AssetItem =>
+    fromPartial({
+      id: `asset-${i}`,
+      name: `Asset ${i}`,
+      size: 1000,
+      created_at: new Date().toISOString(),
+      tags: ['output'],
+      preview_url: `http://example.com/asset-${i}.png`
+    })
   )
 }
 

@@ -11,6 +11,15 @@ export const WORKSPACE_SWITCHER_REMOTE_CONFIG: RemoteConfig = {
   unified_cloud_auth: true
 }
 
+export const TEAM_WORKSPACE: WorkspaceWithRole = {
+  id: 'ws-team',
+  name: TEAM_WORKSPACE_NAME,
+  type: 'team',
+  created_at: '2026-01-03T00:00:00Z',
+  joined_at: '2026-01-03T00:00:00Z',
+  role: 'owner'
+}
+
 export const WORKSPACE_SWITCHER_WORKSPACES: WorkspaceWithRole[] = [
   {
     id: 'ws-personal',
@@ -28,14 +37,7 @@ export const WORKSPACE_SWITCHER_WORKSPACES: WorkspaceWithRole[] = [
     joined_at: '2026-01-02T00:00:00Z',
     role: 'member'
   },
-  {
-    id: 'ws-team',
-    name: TEAM_WORKSPACE_NAME,
-    type: 'team',
-    created_at: '2026-01-03T00:00:00Z',
-    joined_at: '2026-01-03T00:00:00Z',
-    role: 'owner'
-  }
+  TEAM_WORKSPACE
 ]
 
 /**
@@ -46,17 +48,14 @@ export const WORKSPACE_SWITCHER_WORKSPACES: WorkspaceWithRole[] = [
 export function createManyWorkspacesResponse(): WorkspaceWithRole[] {
   return [
     ...WORKSPACE_SWITCHER_WORKSPACES,
-    ...Array.from(
-      { length: 19 },
-      (_, i): WorkspaceWithRole => ({
-        id: `ws-many-${i}`,
-        name: `Team ${i}`,
-        type: 'team',
-        created_at: '2026-01-04T00:00:00Z',
-        joined_at: '2026-01-04T00:00:00Z',
-        role: 'member'
-      })
-    ),
+    ...Array.from({ length: 19 }, (_, i): WorkspaceWithRole => ({
+      id: `ws-many-${i}`,
+      name: `Team ${i}`,
+      type: 'team',
+      created_at: '2026-01-04T00:00:00Z',
+      joined_at: '2026-01-04T00:00:00Z',
+      role: 'member'
+    })),
     {
       id: 'ws-off-screen',
       name: OFF_SCREEN_WORKSPACE_NAME,

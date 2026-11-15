@@ -2,10 +2,14 @@ import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   NodeError,
-  NodeProgressState,
-  PromptResponse
-} from '@/schemas/apiSchema'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+  PromptFailureResponse
+} from '@comfyorg/api-client/types'
+import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
+import type {
+  PromptOutputsSkippedFrame,
+  PromptOutputsSkippedNodeError
+} from '@comfyorg/ingest-types'
+import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
@@ -14,6 +18,7 @@ const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 type RunOptions = {
   nodeErrors?: Record<string, NodeError>
   onPromptRequest?: (requestBody: unknown) => void | Promise<void>
+  beforePromptResponse?: (jobId: string) => void | Promise<void>
 }
 
 /**
@@ -77,7 +82,7 @@ export class ExecutionHelper {
    */
   async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
-    const { nodeErrors = {}, onPromptRequest } = options
+    const { nodeErrors = {}, onPromptRequest, beforePromptResponse } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -88,6 +93,7 @@ export class ExecutionHelper {
       PROMPT_ROUTE_PATTERN,
       async (route) => {
         await onPromptRequest?.(route.request().postDataJSON())
+        await beforePromptResponse?.(jobId)
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -110,7 +116,7 @@ export class ExecutionHelper {
   async mockValidationFailure(
     nodeErrors: Record<string, NodeError>
   ): Promise<void> {
-    const response: PromptResponse = {
+    const response: PromptFailureResponse = {
       node_errors: nodeErrors,
       error: {
         type: 'prompt_outputs_failed_validation',
@@ -188,7 +194,7 @@ export class ExecutionHelper {
   executed(
     jobId: string,
     nodeId: string,
-    output: Record<string, unknown>
+    output: Record<string, unknown> | null | undefined
   ): void {
     this.requireWs().send(
       JSON.stringify({
@@ -228,6 +234,41 @@ export class ExecutionHelper {
           traceback: []
         }
       })
+    )
+  }
+
+  /** Send `execution_error` WS event carrying cloud validation node errors. */
+  validationError(
+    jobId: string,
+    nodeId: string,
+    nodeErrors: Record<string, NodeError>
+  ): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'execution_error',
+        data: {
+          prompt_id: jobId,
+          timestamp: Date.now(),
+          node_id: nodeId,
+          node_type: 'Unknown',
+          exception_message: JSON.stringify({ node_errors: nodeErrors }),
+          exception_type: 'prompt_outputs_failed_validation',
+          traceback: []
+        }
+      })
+    )
+  }
+
+  /** Send `prompt_outputs_skipped` WS event for outputs Cloud skipped. */
+  outputsSkipped(
+    jobId: string,
+    nodeErrors: Record<string, PromptOutputsSkippedNodeError>
+  ): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'prompt_outputs_skipped',
+        data: { prompt_id: jobId, node_errors: nodeErrors }
+      } satisfies PromptOutputsSkippedFrame)
     )
   }
 
@@ -293,19 +334,12 @@ export class ExecutionHelper {
    */
   async completeWithHistory(
     jobId: string,
-    nodeId: string,
-    filename: string
+    previewOutput: NonNullable<RawJobListItem['preview_output']>
   ): Promise<void> {
     this.completedJobs.push(
       createMockJob({
         id: jobId,
-        preview_output: {
-          filename,
-          subfolder: '',
-          type: 'output',
-          nodeId,
-          mediaType: 'images'
-        }
+        preview_output: previewOutput
       })
     )
 

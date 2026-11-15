@@ -1,0 +1,76 @@
+{
+  "id": "82dfb71c-531a-44ad-b820-f60462846006",
+  "revision": 0,
+  "last_node_id": 3,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "VAEDecode",
+      "title": "Node A",
+      "pos": [200, 240],
+      "size": [240, 100],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        { "name": "samples", "type": "LATENT", "link": null },
+        { "name": "vae", "type": "VAE", "link": null }
+      ],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": null }],
+      "properties": {},
+      "widgets_values": []
+    },
+    {
+      "id": 2,
+      "type": "VAEDecode",
+      "title": "Node B",
+      "pos": [600, 240],
+      "size": [240, 100],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        { "name": "samples", "type": "LATENT", "link": null },
+        { "name": "vae", "type": "VAE", "link": null }
+      ],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": null }],
+      "properties": {},
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "VAEDecode",
+      "title": "Node C",
+      "pos": [600, 450],
+      "size": [240, 100],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        { "name": "samples", "type": "LATENT", "link": null },
+        { "name": "vae", "type": "VAE", "link": null }
+      ],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE", "links": null }],
+      "properties": {},
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Pair",
+      "bounding": [560, 90, 330, 530],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": { "scale": 1, "offset": [0, 0] },
+    "workflowRendererVersion": "Vue-corrected"
+  },
+  "version": 0.4
+}

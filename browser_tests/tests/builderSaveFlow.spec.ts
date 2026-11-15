@@ -35,12 +35,8 @@ async function dismissSuccessDialog(
 }
 
 test.describe('Builder save flow', { tag: ['@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-    await comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      true
-    )
+  test.use({
+    initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
   test('Save as dialog appears for unsaved workflow', async ({ comfyPage }) => {

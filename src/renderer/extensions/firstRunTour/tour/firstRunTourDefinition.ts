@@ -13,10 +13,10 @@ import type {
 } from '@/platform/onboarding/onboardingTours'
 import { app } from '@/scripts/app'
 
-import { resolveTourRoles } from '../roles/resolveTourRoles'
-import type { ResolvedRoles } from '../roles/resolveTourRoles'
-import { sequenceBuilder } from '../roles/tourSequence'
-import type { TourStep } from '../roles/tourSequence'
+import { resolveTourRoles } from '@/renderer/extensions/firstRunTour/roles/resolveTourRoles'
+import type { ResolvedRoles } from '@/renderer/extensions/firstRunTour/roles/resolveTourRoles'
+import { sequenceBuilder } from '@/renderer/extensions/firstRunTour/roles/tourSequence'
+import type { TourStep } from '@/renderer/extensions/firstRunTour/roles/tourSequence'
 import { frameNode } from './cameraFraming'
 import { canvasNodeTarget } from './canvasCoachTarget'
 
@@ -130,8 +130,9 @@ export async function firstRunTourSteps(
   runState: Readonly<Ref<RunState>>
 ): Promise<TourResolution> {
   releaseFirstRunTargets()
-  const graph = app.rootGraph
-  const roles = graph ? resolveTourRoles(graph, templateId) : null
+  const graph = app.rootGraphOrUndefined
+  if (!graph) return { steps: [], reason: 'no_roles' }
+  const roles = resolveTourRoles(graph, templateId)
   if (!roles) return { steps: [], reason: 'no_roles' }
 
   const sequence = sequenceBuilder(roles)

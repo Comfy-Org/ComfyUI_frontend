@@ -1,17 +1,18 @@
-import { toGroupId } from '@/types/groupId'
-import { createTestingPinia } from '@pinia/testing'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { attachGroupLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined }
 }))
 
@@ -70,10 +71,6 @@ function snapshotGeometry(nodes: MockNode[]) {
 }
 
 describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('normalizes legacy Vue-scaled graph once', () => {
     const nodes = twoNodeLayout()
     const graph = createMockGraph(nodes, {
@@ -84,7 +81,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     const result = ensureCorrectLayoutScale(undefined, graph)
 
     expect(result).toBe(true)
-    expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
+    expect(graph.extra.workflowRendererVersion).toBe('Vue-corrected')
 
     // Distance should shrink by 1/RENDER_SCALE_FACTOR
     const afterDistance = distanceBetweenNodes(nodes)
@@ -131,7 +128,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     const result = ensureCorrectLayoutScale('Vue', graph)
 
     expect(result).toBe(true)
-    expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
+    expect(graph.extra.workflowRendererVersion).toBe('Vue-corrected')
     const afterDistance = distanceBetweenNodes(nodes)
     expect(afterDistance / beforeDistance).toBeCloseTo(
       1 / RENDER_SCALE_FACTOR,
@@ -189,7 +186,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     graph.outputNode = null
 
     expect(() => ensureCorrectLayoutScale(undefined, graph)).not.toThrow()
-    expect(graph.extra?.workflowRendererVersion).toBe('Vue-corrected')
+    expect(graph.extra.workflowRendererVersion).toBe('Vue-corrected')
   })
 
   it('normalizes reroutes', () => {
@@ -203,7 +200,6 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
       pos: [200, 200] as Point,
       linkIds: new Set([1])
     })
-    if (!graph.reroutes) throw new Error('reroutes is undefined')
     graph.reroutes.set(toRerouteId(1), reroute)
 
     ensureCorrectLayoutScale(undefined, graph)
@@ -234,7 +230,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     group.pos = [150, 150]
     group.size = [300, 200]
     attachGroupLayout(graph, group)
-    graph.groups!.push(group)
+    graph.groups.push(group)
 
     const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
     ensureCorrectLayoutScale(undefined, graph)
@@ -271,7 +267,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     group._bounding.set([150, 150, 300, 200])
     const groupPos = group.pos
     const groupSize = group.size
-    graph.groups!.push(group)
+    graph.groups.push(group)
 
     ensureCorrectLayoutScale(undefined, graph)
 

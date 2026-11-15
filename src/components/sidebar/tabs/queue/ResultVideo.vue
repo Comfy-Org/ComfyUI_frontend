@@ -1,30 +1,56 @@
 <template>
-  <video controls class="max-h-[90vh] max-w-[90vw]">
-    <source :src="url" :type="htmlVideoType" />
+  <video
+    ref="video"
+    controls
+    :autoplay="autoplay"
+    class="max-h-[90vh] max-w-[90vw]"
+  >
+    <source
+      data-testid="result-video-source"
+      :src="url"
+      :type="htmlVideoType"
+    />
     {{ $t('g.videoFailedToLoad') }}
   </video>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onActivated, useTemplateRef } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionStore } from '@/stores/extensionStore'
-import type { ResultItemImpl } from '@/stores/queueStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import {
+  resultItemUrl,
+  resultItemVhsAdvancedPreviewUrl
+} from '@/utils/resultItemUrl'
+import { resultItemHtmlVideoType } from '@/utils/resultItem'
 
 /* MediaLightbox retains this component via KeepAlive include, which matches on
    the registered component name. */
 defineOptions({ name: 'ResultVideo' })
 
 const props = defineProps<{
-  result: ResultItemImpl
+  result: AugmentedResultItem
+  autoplay?: boolean
 }>()
+
+const videoElement = useTemplateRef<HTMLVideoElement>('video')
+
+onActivated(() => {
+  if (props.autoplay) void videoElement.value?.play().catch(() => {})
+})
 
 const settingStore = useSettingStore()
 const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
 
+const playsResolvedUrl = computed(
+  () => !!props.result.url && props.result.filenameIsDisplayName === true
+)
+
 const vhsAdvancedPreviews = computed(() => {
   return (
+    !playsResolvedUrl.value &&
     isExtensionInstalled('VideoHelperSuite.Core') &&
     isExtensionEnabled('VideoHelperSuite.Core') &&
     settingStore.get('VHS.AdvancedPreviews') &&
@@ -34,10 +60,12 @@ const vhsAdvancedPreviews = computed(() => {
 
 const url = computed(() =>
   vhsAdvancedPreviews.value
-    ? props.result.vhsAdvancedPreviewUrl
-    : props.result.url
+    ? resultItemVhsAdvancedPreviewUrl(props.result)
+    : resultItemUrl(props.result)
 )
 const htmlVideoType = computed(() =>
-  vhsAdvancedPreviews.value ? 'video/webm' : props.result.htmlVideoType
+  vhsAdvancedPreviews.value
+    ? 'video/webm'
+    : resultItemHtmlVideoType(props.result)
 )
 </script>

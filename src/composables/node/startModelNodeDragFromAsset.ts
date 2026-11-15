@@ -2,7 +2,7 @@ import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 import type { ResolveModelNodeError } from '@/platform/assets/utils/resolveModelNodeFromAsset'
-import type { NodeAddSource } from '@/platform/telemetry/types'
+import type { NodeAddSource } from '@comfyorg/telemetry/types'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 
 /**
@@ -14,7 +14,9 @@ export function startModelLoaderDrag(
   filename: string,
   source: NodeAddSource = 'sidebar_drag'
 ) {
-  const widgetValues = provider.key ? { [provider.key]: filename } : undefined
+  const widgetValues = provider.key
+    ? [{ selector: provider.key, value: filename }]
+    : undefined
   useNodeDragToCanvas().startDrag(provider.nodeDef, { widgetValues, source })
 }
 

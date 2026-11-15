@@ -7,19 +7,26 @@ import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErr
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 
 const mocks = vi.hoisted(() => ({
+  hasError: vi.fn(() => true),
   overlayMessage: 'KSampler is missing a required input: model',
   overlayTitle: 'Required input missing',
-  viewErrorsInGraph: vi.fn()
+  viewErrorsInGraph: vi.fn(),
+  overlayGroupKeys: ['execution:missing_connection']
 }))
 
-vi.mock('@/components/error/useErrorOverlayState', () => ({
-  useErrorOverlayState: () => ({
-    overlayMessage: mocks.overlayMessage,
-    overlayTitle: mocks.overlayTitle
+vi.mock<unknown>(
+  import('@/platform/workflowErrors/overlay/useErrorOverlayState'),
+  () => ({
+    useErrorOverlayState: () => ({
+      hasError: mocks.hasError(),
+      overlayMessage: mocks.overlayMessage,
+      overlayTitle: mocks.overlayTitle,
+      overlayGroupKeys: mocks.overlayGroupKeys
+    })
   })
-}))
+)
 
-vi.mock('@/composables/useViewErrorsInGraph', () => ({
+vi.mock(import('@/composables/useViewErrorsInGraph'), () => ({
   useViewErrorsInGraph: () => ({
     viewErrorsInGraph: mocks.viewErrorsInGraph
   })
@@ -30,6 +37,7 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      g: { error: 'Error', warning: 'Warning' },
       linearMode: {
         error: {
           goto: 'Show errors in graph'
@@ -49,32 +57,40 @@ function renderWarning() {
 }
 
 describe('LinearRunErrorWarning', () => {
-  it('shows the current error overlay title and message without a close action', () => {
-    renderWarning()
+  it.for([
+    { hasError: true, label: 'Error' },
+    { hasError: false, label: 'Warning' }
+  ])(
+    'announces $label with the issue description and no close action',
+    ({ hasError, label }) => {
+      mocks.hasError.mockReturnValue(hasError)
+      renderWarning()
 
-    const warning = screen.getByRole('status')
-    expect(warning).toHaveTextContent('Required input missing')
-    expect(warning).toHaveTextContent(
-      'KSampler is missing a required input: model'
-    )
-    expect(screen.getByText('Required input missing')).toHaveAttribute(
-      'title',
-      'Required input missing'
-    )
-    const description = screen.getByTestId(
-      'linear-validation-warning-description'
-    )
-    expect(description).toHaveAttribute(
-      'id',
-      LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
-    )
-    expect(description).toHaveTextContent('Required input missing')
-    expect(description).toHaveTextContent(
-      'KSampler is missing a required input: model'
-    )
-    expect(description).not.toHaveTextContent('Show errors in graph')
-    expect(screen.queryByLabelText('Close')).not.toBeInTheDocument()
-  })
+      const warning = screen.getByRole('status')
+      expect(warning).toHaveTextContent('Required input missing')
+      expect(warning).toHaveTextContent(
+        'KSampler is missing a required input: model'
+      )
+      expect(screen.getByText('Required input missing')).toHaveAttribute(
+        'title',
+        'Required input missing'
+      )
+      const description = screen.getByTestId(
+        'linear-validation-warning-description'
+      )
+      expect(description).toHaveAttribute(
+        'id',
+        LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID
+      )
+      expect(description).toHaveTextContent('Required input missing')
+      expect(description).toContainElement(screen.getByText(label))
+      expect(description).toHaveTextContent(
+        'KSampler is missing a required input: model'
+      )
+      expect(description).not.toHaveTextContent('Show errors in graph')
+      expect(screen.queryByLabelText('Close')).not.toBeInTheDocument()
+    }
+  )
 
   it('opens graph errors when the action is clicked', async () => {
     const { user } = renderWarning()
@@ -83,6 +99,8 @@ describe('LinearRunErrorWarning', () => {
       screen.getByRole('button', { name: 'Show errors in graph' })
     )
 
-    expect(mocks.viewErrorsInGraph).toHaveBeenCalledOnce()
+    expect(mocks.viewErrorsInGraph).toHaveBeenCalledExactlyOnceWith(
+      mocks.overlayGroupKeys
+    )
   })
 })

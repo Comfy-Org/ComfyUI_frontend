@@ -1,21 +1,19 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const foreignBehavior = Symbol('foreignBehavior')
 
 class ForeignWidget implements IBaseWidget {
   [symbol: symbol]: boolean
-  #drawResult = 'drawn'
-  #name = 'foreign'
-  #value = 10
-  #symbolReads = 0
+  private drawResult = 'drawn'
+  private storedName = 'foreign'
+  private storedValue = 10
+  private symbolReads = 0
   type = 'foreign_test'
   options = {}
   y = 0
@@ -28,31 +26,31 @@ class ForeignWidget implements IBaseWidget {
 
   get name() {
     this.nameReads++
-    return this.#name
+    return this.storedName
   }
 
   set name(name: string) {
     this.nameWrites++
-    this.#name = name
+    this.storedName = name
   }
 
   get value() {
     this.valueReads++
-    return this.#value
+    return this.storedValue
   }
 
   set value(value: number) {
     this.valueWrites++
-    this.#value = value
+    this.storedValue = value
   }
 
   get [foreignBehavior]() {
-    this.#symbolReads++
-    return this.#symbolReads > 0
+    this.symbolReads++
+    return this.symbolReads > 0
   }
 
   draw() {
-    return this.#drawResult
+    return this.drawResult
   }
 
   mouse() {
@@ -91,7 +89,6 @@ function storedValue(widget: IBaseWidget) {
 /** Node packs rebuild `node.widgets` by writing to the array directly. */
 describe('widgets view', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.vueNodesMode = false
   })
 
@@ -143,15 +140,6 @@ describe('widgets view', () => {
     expect(storedOrder(node)).toEqual(['b', 'a'])
   })
 
-  it('commits order when a widget entry is deleted, leaving a hole', () => {
-    const { node } = createNodeWithWidgets({ a: 10, b: 20 })
-
-    delete node.widgets![0]
-
-    expect(node.widgets![0]).toBeUndefined()
-    expect(storedOrder(node)).toEqual(['b'])
-  })
-
   it('normalizes a plain widget pushed into the live array', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -165,9 +153,9 @@ describe('widgets view', () => {
     }
 
     node.widgets ||= []
-    node.widgets!.push(widget)
+    node.widgets.push(widget)
 
-    expect(node.widgets![0]).toBe(widget)
+    expect(node.widgets[0]).toBe(widget)
     expect(widget).toBeInstanceOf(LegacyWidget)
     expect(storedOrder(node)).toEqual(['custom'])
     expect(storedValue(widget)).toBe(10)

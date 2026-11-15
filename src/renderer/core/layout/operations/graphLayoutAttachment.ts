@@ -1,17 +1,22 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type {
+  LGraph,
+  LGraphGroup,
+  LGraphNode,
+  Reroute
+} from '@comfyorg/graph-model/entityRegistry'
+
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
-  Point as LegacyPoint,
-  Size as LegacySize
-} from '@/lib/litegraph/src/interfaces'
+  PointTuple as LegacyPoint,
+  SizeTuple as LegacySize,
+  Point2D as Point,
+  Size2D as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { LayoutOperation, Point, Size } from '@/renderer/core/layout/types'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import type { LayoutOperation } from '@/renderer/core/layout/types'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 type GraphLayoutOwner = Pick<
@@ -25,10 +30,9 @@ interface LayoutAttachment<TId> {
   id: TId
 }
 
-const nodeAttachments = new WeakMap<
-  LGraphNode,
-  LayoutAttachment<LGraphNode['id']>
->()
+type NodeLayoutAttachment = LayoutAttachment<LGraphNode['id']>
+
+const nodeAttachments = new WeakMap<LGraphNode, NodeLayoutAttachment>()
 const nodeAttachmentOwners = new Map<
   UUID,
   Map<LGraphNode['id'], WeakRef<LGraphNode>>
@@ -224,6 +228,13 @@ function commitNodeSize(node: LGraphNode): void {
   )
     return
 
+  // A direct resize is authoritative over the previous DOM measurement. Drop
+  // that measurement before deriving the rendered size so the node can shrink;
+  // ResizeObserver reports the content's new size after layout settles.
+  ;(layoutStore as Partial<typeof layoutStore>).clearContentSize?.(
+    attachment.graphId,
+    attachment.id
+  )
   resizeNodeLayout(node, {
     width: projection.size[0],
     height: projection.size[1]
@@ -295,7 +306,7 @@ function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
 function transferableNodeAttachment(
   node: LGraphNode,
   replacement: LGraphNode
-): LayoutAttachment<LGraphNode['id']> | undefined {
+): NodeLayoutAttachment | undefined {
   const attachment = nodeAttachments.get(node)
   if (
     !attachment ||
@@ -343,7 +354,9 @@ export function transferLayoutAttachment(
   return true
 }
 
-export function detachNodeLayout(node: LGraphNode): void {
+function takeNodeLayoutAttachment(
+  node: LGraphNode
+): NodeLayoutAttachment | undefined {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
   const { graphId, id: nodeId } = attachment
@@ -352,11 +365,18 @@ export function detachNodeLayout(node: LGraphNode): void {
   layoutStore.readNodeRect(graphId, nodeId, projection.buffer)
   projection.layoutRef = undefined
   nodeAttachments.delete(node)
-  if (!deleteNodeAttachmentOwner(graphId, node)) return
+  return deleteNodeAttachmentOwner(graphId, node)
+    ? { graphId, id: nodeId }
+    : undefined
+}
+
+export function detachNodeLayout(node: LGraphNode): void {
+  const attachment = takeNodeLayoutAttachment(node)
+  if (!attachment) return
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
-    graphId,
-    nodeId,
+    graphId: attachment.graphId,
+    nodeId: attachment.id,
     type: 'deleteNode'
   })
 }

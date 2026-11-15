@@ -1,62 +1,40 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+
+vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import type { GlobalSubgraphData } from '@/scripts/api'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
+import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
+import { useDialogService } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
 const mockDistributionTypes = vi.hoisted(() => ({
   isCloud: false,
   isDesktop: false
 }))
-vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-// Mock telemetry to break circular dependency (telemetry → workflowStore → app → telemetry)
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@comfyorg/telemetry'))
 
-// Add mock for api at the top of the file
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    listUserDataFullInfo: vi.fn(),
-    getGlobalSubgraphs: vi.fn(),
-    apiURL: vi.fn(),
-    addEventListener: vi.fn()
-  }
-}))
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: vi.fn(() => ({
-    prompt: () => 'testname',
-    confirm: () => true
-  }))
-}))
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: vi.fn(() => ({
-    getCanvas: () => comfyApp.canvas
-  }))
-}))
-vi.mock('@/stores/subgraphNavigationStore', () => ({
-  useSubgraphNavigationStore: () => ({
-    beginWorkflowNavigation: () => 1
-  })
-}))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/services/dialogService'))
 
-// Mock comfyApp globally for the store setup
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     canvas: {
       _deserializeItems: vi.fn((i) => i),
@@ -95,14 +73,24 @@ describe('useSubgraphStore', () => {
     return await store.fetchSubgraphs()
   }
 
+  function userBlueprintNames() {
+    return useNodeDefStore()
+      .nodeDefs.filter((d) => d.category === 'Subgraph Blueprints/User')
+      .map((d) => d.name)
+  }
+
   beforeEach(() => {
+    vi.mocked(useDialogService().prompt).mockResolvedValue('testname')
+    vi.mocked(useDialogService().confirm).mockResolvedValue(true)
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
+    vi.mocked(useCanvasStore().getCanvas).mockImplementation(
+      () => comfyApp.canvas
+    )
     store = useSubgraphStore()
   })
 
-  it('should allow publishing of a subgraph', async () => {
-    //mock canvas to provide a minimal subgraphNode
+  function selectSubgraphNodeToPublish() {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
     const graph = subgraphNode.graph!
@@ -130,18 +118,110 @@ describe('useSubgraphStore', () => {
           size: 2
         })
     } as Response)
-    await mockFetch({ 'testname.json': mockGraph })
-    //Dialogue service already mocked
+  }
+
+  it.for([
+    { confirmed: true, storeCalls: 1 },
+    { confirmed: false, storeCalls: 0 }
+  ])(
+    'requires confirmation before replacing an unloaded blueprint (confirmed: $confirmed)',
+    async ({ confirmed, storeCalls }) => {
+      selectSubgraphNodeToPublish()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(confirmed)
+      vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+        { path: 'testname.json', modified: 1, size: 1 }
+      ])
+      vi.mocked(api.getUserData).mockImplementation(async () =>
+        Response.json(mockGraph)
+      )
+      await store.publishSubgraph()
+      expect(useDialogService().confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'overwriteBlueprint',
+          itemList: ['testname']
+        })
+      )
+      expect(api.storeUserData).toHaveBeenCalledTimes(storeCalls)
+    }
+  )
+  it('publishes a new filename without overwrite confirmation', async () => {
+    selectSubgraphNodeToPublish()
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValue([
+      { path: 'another-blueprint.json', modified: 1, size: 1 }
+    ])
+    vi.mocked(api.getUserData).mockImplementation(async () =>
+      Response.json(mockGraph)
+    )
+
     await store.publishSubgraph()
-    expect(api.storeUserData).toHaveBeenCalled()
+
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
+    expect(api.storeUserData).toHaveBeenCalledTimes(1)
   })
+
+  it('does not publish when existing filenames cannot be checked', async () => {
+    selectSubgraphNodeToPublish()
+    const listingError = new Error('Blueprint listing unavailable')
+    vi.mocked(api.listUserDataFullInfo).mockRejectedValue(listingError)
+
+    await store.publishSubgraph()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(listingError, {
+      errorType: 'error_checking_blueprint_overwrite',
+      surface: 'graph'
+    })
+    expect(api.storeUserData).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Blueprint listing unavailable'
+      })
+    ])
+  })
+
   it('should display published nodes in the node library', async () => {
     await mockFetch({ 'test.json': mockGraph })
-    expect(
-      useNodeDefStore().nodeDefs.filter(
-        (d) => d.category === 'Subgraph Blueprints/User'
+    expect(userBlueprintNames()).toEqual(['SubgraphBlueprint.test'])
+  })
+  it.for([false, true])(
+    'loads blueprint boundary inputs when object info is trusted: %s',
+    async (isTrusted) => {
+      mockDistributionTypes.isCloud = isTrusted
+
+      await mockFetch({
+        'dynamic-boundaries.json': {
+          ...mockGraph,
+          nodes: [
+            {
+              type: '123',
+              inputs: [
+                { name: 'autogrow', type: 'COMFY_AUTOGROW_V3', link: null },
+                { name: 'match', type: 'COMFY_MATCHTYPE_V3', link: null },
+                { name: 'group', type: 'COMFY_DYNAMICGROUP_V3', link: null },
+                { name: 'image', type: 'IMAGE', link: null }
+              ],
+              outputs: [
+                { name: 'matched', type: 'COMFY_MATCHTYPE_V3', links: null },
+                { name: 'image', type: 'IMAGE', links: null }
+              ]
+            }
+          ]
+        }
+      })
+
+      const blueprintDef = useNodeDefStore().nodeDefs.find(
+        (def) => def.name === 'SubgraphBlueprint.dynamic-boundaries'
       )
-    ).toHaveLength(1)
+      expect(blueprintDef).toBeDefined()
+      expect(blueprintDef?.inputTypes).toEqual(['IMAGE'])
+      expect(blueprintDef?.outputTypes).toEqual(['IMAGE'])
+    }
+  )
+  it('should remove deleted blueprints from the node library', async () => {
+    await mockFetch({ 'test.json': mockGraph })
+    await store.deleteBlueprint('SubgraphBlueprint.test')
+    expect(api.deleteUserData).toHaveBeenCalledWith('subgraphs/test.json')
+    expect(userBlueprintNames()).toEqual([])
   })
   it('should allow subgraphs to be edited', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -161,11 +241,11 @@ describe('useSubgraphStore', () => {
     await mockFetch({ 'test.json': mockGraph })
     const first = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     first.nodes[0].id = -1
-    first.definitions!.subgraphs![0].id = 'corrupted'
+    first.definitions!.subgraphs[0].id = 'corrupted'
 
     const second = store.getBlueprint(BLUEPRINT_TYPE_PREFIX + 'test')
     expect(second.nodes[0].id).not.toBe(-1)
-    expect(second.definitions!.subgraphs![0].id).toBe('123')
+    expect(second.definitions!.subgraphs[0].id).toBe('123')
   })
   it('should identify user blueprints as non-global', async () => {
     await mockFetch({ 'test.json': mockGraph })
@@ -267,7 +347,6 @@ describe('useSubgraphStore', () => {
   })
 
   it('should handle global blueprint with empty data gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
       {},
       {
@@ -278,16 +357,55 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
-    expect(store.subgraphBlueprints).toHaveLength(0)
-    consoleSpy.mockRestore()
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
   })
 
+  it.for([
+    {
+      source: 'user',
+      failedListing: 'listUserDataFullInfo',
+      survivingBlueprint: 'SubgraphBlueprint.installed_test'
+    },
+    {
+      source: 'installed',
+      failedListing: 'getGlobalSubgraphs',
+      survivingBlueprint: 'SubgraphBlueprint.user_test'
+    }
+  ] as const)(
+    'loads the other blueprint source and reports a failed $source listing',
+    async ({ failedListing, survivingBlueprint }) => {
+      vi.mocked(api[failedListing]).mockRejectedValueOnce(
+        new Error('Listing failed')
+      )
+
+      await mockFetch(
+        { 'user_test.json': mockGraph },
+        {
+          installed_test: {
+            name: 'Installed Test',
+            info: { node_pack: 'test_pack' },
+            data: JSON.stringify(mockGraph)
+          }
+        }
+      )
+
+      expect([...useNodeDefStore().blueprintNodeDefsByName.keys()]).toEqual([
+        survivingBlueprint
+      ])
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          description: 'Listing failed',
+          kind: 'error'
+        })
+      ])
+    }
+  )
+
   it('should handle global blueprint with rejected data promise gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
       {},
       {
@@ -300,16 +418,17 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(consoleSpy).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to load subgraph blueprint',
       expect.any(Error)
     )
-    expect(store.subgraphBlueprints).toHaveLength(0)
-    consoleSpy.mockRestore()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ description: 'Network error', kind: 'error' })
+    ])
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(0)
   })
 
   it('should load valid global blueprints even when others fail', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     await mockFetch(
       {},
       {
@@ -325,9 +444,8 @@ describe('useSubgraphStore', () => {
         }
       }
     )
-    expect(consoleSpy).toHaveBeenCalled()
-    expect(store.subgraphBlueprints).toHaveLength(1)
-    consoleSpy.mockRestore()
+    expect(console.error).toHaveBeenCalled()
+    expect(useNodeDefStore().blueprintNodeDefsByName.size).toBe(1)
   })
 
   describe('search_aliases support', () => {
@@ -565,7 +683,7 @@ describe('useSubgraphStore', () => {
         definitions: {
           subgraphs: [
             {
-              ...mockGraph.definitions?.subgraphs?.[0],
+              ...mockGraph.definitions.subgraphs[0],
               essentials_category: 'Image Tools'
             }
           ]

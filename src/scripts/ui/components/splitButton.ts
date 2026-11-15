@@ -1,5 +1,5 @@
-import { $el } from '../../ui'
-import { prop } from '../../utils'
+import { $el } from '@/scripts/ui/utils'
+import { prop } from '@/scripts/utils'
 import { ComfyButton } from './button'
 import { ComfyPopup } from './popup'
 

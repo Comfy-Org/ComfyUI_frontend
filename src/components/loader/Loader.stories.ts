@@ -47,7 +47,7 @@ export const CustomColor: Story = {
       return { args }
     },
     template:
-      '<div class="flex gap-4 items-center"><Loader size="lg" class="text-white" /><Loader size="md" class="text-muted-foreground" /><Loader size="sm" class="text-base-foreground" /></div>'
+      '<div class="flex gap-4 items-center"><Loader size="lg" class="text-white" /><Loader size="md" class="text-muted-foreground" /><Loader size="sm" class="text-foreground" /></div>'
   }),
   parameters: {
     backgrounds: { default: 'dark' }

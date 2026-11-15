@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
-import type { EffectScope, Ref } from 'vue'
+import type { EffectScope } from 'vue'
 
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { useCropBoxEditor } from './useCropBoxEditor'
 import type { CropDragMode } from './useCropBoxEditor'
@@ -23,6 +23,7 @@ describe('useCropBoxEditor', () => {
     }: { disabled?: boolean; lockedRatio?: number | null } = {}
   ) {
     const bounds = ref<Bounds>(initial)
+    const onEditEnd = vi.fn()
     const rootEl = document.createElement('div')
     vi.spyOn(rootEl, 'getBoundingClientRect').mockReturnValue({
       left: 0,
@@ -39,11 +40,12 @@ describe('useCropBoxEditor', () => {
     scope = effectScope()
     const editor = scope.run(() =>
       useCropBoxEditor(bounds, {
-        rootEl: ref(rootEl) as Ref<HTMLElement | null>,
+        rootEl: ref(rootEl),
         sourceWidth: ref(1000),
         sourceHeight: ref(1000),
         isDisabled: () => disabled,
-        lockedRatio: ref(lockedRatio)
+        lockedRatio: ref(lockedRatio),
+        onEditEnd
       })
     )!
 
@@ -57,7 +59,7 @@ describe('useCropBoxEditor', () => {
     ) {
       target.addEventListener(
         'pointerdown',
-        (event) => editor.startDrag(mode, event as PointerEvent),
+        (event) => editor.startDrag(mode, event),
         { once: true }
       )
       target.dispatchEvent(
@@ -78,7 +80,7 @@ describe('useCropBoxEditor', () => {
       target.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }))
     }
 
-    return { bounds, drag }
+    return { bounds, drag, onEditEnd }
   }
 
   it('moves the box in source pixels and clamps to the frame', () => {
@@ -192,5 +194,19 @@ describe('useCropBoxEditor', () => {
     drag('move', { x: 0, y: 0 }, { x: 10, y: 10 })
 
     expect(bounds.value).toEqual({ x: 100, y: 100, width: 200, height: 200 })
+  })
+
+  it('reports the end of each drag once', () => {
+    const { drag, onEditEnd } = createEditor({
+      x: 100,
+      y: 100,
+      width: 200,
+      height: 200
+    })
+
+    drag('move', { x: 0, y: 0 }, { x: 5, y: 5 })
+    drag('se', { x: 0, y: 0 }, { x: 5, y: 5 })
+
+    expect(onEditEnd).toHaveBeenCalledTimes(2)
   })
 })

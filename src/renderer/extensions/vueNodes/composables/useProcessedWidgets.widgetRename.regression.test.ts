@@ -1,21 +1,15 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 const GRAPH_ID = 'graph-widget-rename'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({ rootGraphId: GRAPH_ID })
-}))
-
 const noopUi = {
-  getTooltipConfig: () => ({}),
+  getTooltipText: () => '',
   handleNodeRightClick: () => {}
 }
 
@@ -52,9 +46,7 @@ function renderedWidgetNames(graph: LGraph, node: LGraphNode): string[] {
 }
 
 describe('widget rename after registration (#15600)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
+  beforeEach(() => {})
 
   it('control: a widget that is never renamed renders', () => {
     const { graph, node } = setup('Original')

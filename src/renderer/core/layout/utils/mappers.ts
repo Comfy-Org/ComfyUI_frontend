@@ -1,17 +1,11 @@
+import type { RectTuple as StoredRect } from '@comfyorg/shared-frontend-utils/geometry'
 import * as Y from 'yjs'
 
-import { toGroupId } from '@/types/groupId'
-import type { GroupId } from '@/types/groupId'
-import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
-import { parseNodeId, toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-
-/**
- * Stored geometry: one `[x, y, width, height]` tuple. Position, size and bounds
- * are views of it rather than fields of their own, so they cannot disagree, and
- * a whole-tuple replace is the write a CRDT register wants.
- */
-export type StoredRect = [x: number, y: number, width: number, height: number]
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import type { GroupLayout, NodeLayout } from '@comfyorg/graph-model/layout'
+import { parseNodeId, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 type StoredNode = {
   id: NodeId
@@ -25,7 +19,7 @@ export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
 const DEFAULT_NODE_RECT: StoredRect = [0, 0, 100, 50]
 
 export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
-  const ynode = new Y.Map<StoredNode[keyof StoredNode]>() as NodeLayoutMap
+  const ynode = new Y.Map<StoredNode[keyof StoredNode]>()
   ynode.set('id', layout.id)
   ynode.set('rect', [
     layout.position.x,
@@ -64,7 +58,7 @@ export type GroupLayoutMap = Y.Map<StoredGroup[keyof StoredGroup]>
 const DEFAULT_GROUP_RECT: StoredRect = [0, 0, 140, 80]
 
 export function layoutToYGroup(layout: GroupLayout): GroupLayoutMap {
-  const ygroup = new Y.Map<StoredGroup[keyof StoredGroup]>() as GroupLayoutMap
+  const ygroup = new Y.Map<StoredGroup[keyof StoredGroup]>()
   ygroup.set('id', layout.id)
   ygroup.set('rect', [
     layout.position.x,

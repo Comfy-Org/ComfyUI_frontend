@@ -24,9 +24,7 @@ test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
     // `isConnected` overrides the Style setting when the toolbar overflows;
     // small (48px) items keep content under the default viewport so Style
     // actually drives rendering.
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Sidebar.Size', 'small')
-    })
+    test.use({ initialSettings: { 'Comfy.Sidebar.Size': 'small' } })
 
     test('"connected" applies connected-sidebar class', async ({
       comfyPage
@@ -95,33 +93,32 @@ test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
   })
 
   test.describe('Comfy.TreeExplorer.ItemPadding', () => {
-    // The setting writes a CSS var consumed by .p-tree-node-content,
-    // which only renders in the legacy PrimeVue Tree.
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
-      await comfyPage.menu.nodeLibraryTab.open()
+    test.describe('legacy node library', () => {
+      test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': false } })
+
+      test('applies the padding to tree rows', async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 4)
+        await comfyPage.menu.nodeLibraryTab.open()
+        const row = comfyPage.menu.nodeLibraryTab.nodeLibraryTree
+          .getByRole('treeitem')
+          .first()
+        await expect(row).toHaveCSS('padding-top', '4px')
+        await expect(row).toHaveCSS('padding-bottom', '4px')
+      })
     })
 
-    test('low padding (0px) is applied to tree node content', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 0)
-      await expect(
-        comfyPage.menu.nodeLibraryTab.nodeLibraryTree
-          .locator('.p-tree-node-content')
-          .first()
-      ).toHaveCSS('padding', '0px')
-    })
+    test.describe('new node library', () => {
+      test.use({ initialSettings: { 'Comfy.NodeLibrary.NewDesign': true } })
 
-    test('high padding (8px) is applied to tree node content', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 8)
-      await expect(
-        comfyPage.menu.nodeLibraryTab.nodeLibraryTree
-          .locator('.p-tree-node-content')
+      test('applies the padding to tree rows', async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.TreeExplorer.ItemPadding', 4)
+        await comfyPage.menu.nodeLibraryTabV2.open()
+        const row = comfyPage.menu.nodeLibraryTabV2.sidebarContent
+          .getByRole('treeitem')
           .first()
-      ).toHaveCSS('padding', '8px')
+        await expect(row).toHaveCSS('padding-top', '4px')
+        await expect(row).toHaveCSS('padding-bottom', '4px')
+      })
     })
   })
 })

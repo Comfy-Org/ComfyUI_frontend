@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import type { PreviewExposureChainContext } from './previewExposureChain'
@@ -44,15 +44,7 @@ function makeContext(
 }
 
 describe(resolvePreviewExposureChain, () => {
-  let warnSpy: ReturnType<typeof vi.spyOn>
-
-  beforeEach(() => {
-    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
-  })
-
-  afterEach(() => {
-    warnSpy.mockRestore()
-  })
+  beforeEach(() => {})
 
   it('returns undefined when the named exposure is not on the starting host', () => {
     const ctx = makeContext(new Map(), [])
@@ -282,7 +274,7 @@ describe(resolvePreviewExposureChain, () => {
       ctx
     )
 
-    expect(warnSpy).toHaveBeenCalledWith(
+    expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('cycle detected')
     )
     expect(result?.steps).toHaveLength(1)

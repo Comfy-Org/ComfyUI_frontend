@@ -1,13 +1,11 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 
 import {
   LGraph,
@@ -15,8 +13,6 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 const TEST_NODE_TYPE = 'test/CloneZIndex' as const
 
@@ -66,9 +62,7 @@ function createCanvas(graph: LGraph): LGraphCanvas {
     textBaseline: 'alphabetic' as CanvasTextBaseline
   } satisfies Partial<CanvasRenderingContext2D>
 
-  el.getContext = vi
-    .fn()
-    .mockReturnValue(ctx as unknown as CanvasRenderingContext2D)
+  el.getContext = vi.fn().mockReturnValue(ctx)
   el.getBoundingClientRect = vi.fn().mockReturnValue({
     left: 0,
     top: 0,

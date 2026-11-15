@@ -1,6 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import { createCloudAssetsFixture } from '@e2e/fixtures/assetApiFixture'
 import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
@@ -17,16 +17,6 @@ test.describe(
   'Template distribution filtering count',
   { tag: '@cloud' },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Templates.SelectedModels', [])
-      await comfyPage.settings.setSetting(
-        'Comfy.Templates.SelectedUseCases',
-        []
-      )
-      await comfyPage.settings.setSetting('Comfy.Templates.SelectedRunsOn', [])
-      await comfyPage.settings.setSetting('Comfy.Templates.SortBy', 'default')
-    })
-
     test('displayed count matches visible cards when distribution filter excludes templates', async ({
       comfyPage,
       templateApi

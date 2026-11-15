@@ -23,8 +23,9 @@ const test = createCloudAssetsFixture(CLOUD_ASSETS)
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 test.describe('Browse Model Assets - Use button', { tag: '@cloud' }, () => {
+  test.use({ initialSettings: { 'Comfy.Assets.UseAssetAPI': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
     await comfyPage.nodeOps.clearGraph()
   })
 
@@ -51,16 +52,14 @@ test.describe('Browse Model Assets - Use button', { tag: '@cloud' }, () => {
     // Dialog closes and the ghost is armed; the node is not placed until the
     // user clicks the canvas.
     await expect(modal).toBeHidden()
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount(), { timeout: 1000 })
-      .toBe(0)
+    await comfyPage.expectNodeCount(0, { timeout: 1000 })
 
     const canvasBox = (await comfyPage.canvas.boundingBox())!
     await comfyPage.canvas.click({
       position: { x: canvasBox.width / 2, y: canvasBox.height / 2 }
     })
 
-    await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+    await comfyPage.expectNodeCount(1)
     await expect
       .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
       .toBe(1)
@@ -89,7 +88,6 @@ cloudAppFixture.describe(
           private_models_enabled: true
         } satisfies RemoteConfig
         const settings = {
-          'Comfy.Assets.UseAssetAPI': true,
           'Comfy.TutorialCompleted': true
         }
         const assetsResponse = {

@@ -1,25 +1,28 @@
-import { ref } from 'vue'
+import { ref, toValue } from 'vue'
 
 import MultiSelectWidget from '@/components/graph/widgets/MultiSelectWidget.vue'
+import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
+import { syncPromotedComboHostOptions } from '@/core/graph/widgets/syncPromotedComboHostOptions'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget, IComboWidget } from '@comfyorg/graph-model/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import { isCloud } from '@/platform/distribution/types'
+import { useDeploymentLibraryModelsStore } from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import type {
   ComboInputSpec,
   InputSpec
-} from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
+} from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { isComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { transformInputSpecV2ToV1 } from '@comfyorg/object-info-parser/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
-import { addValueControlWidgets } from '@/scripts/widgets'
+import type { BaseDOMWidget } from '@/types/domWidget'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
+import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -33,7 +36,9 @@ const getDefaultValue = (inputSpec: ComboInputSpec) => {
 }
 
 // Map node types to expected media types
-const NODE_MEDIA_TYPE_MAP: Record<string, 'image' | 'video' | 'audio'> = {
+const NODE_MEDIA_TYPE_MAP: Partial<
+  Record<string, 'image' | 'video' | 'audio'>
+> = {
   LoadImage: 'image',
   LoadVideo: 'video',
   LoadAudio: 'audio'
@@ -48,7 +53,8 @@ const NODE_PLACEHOLDER_MAP: Record<string, string> = {
 
 const bindDynamicValuesOption = (
   widget: IBaseWidget,
-  getValues: () => unknown
+  getValues: (assignedValues: unknown[]) => unknown,
+  onAssign?: () => void
 ) => {
   const options = widget.options
   let fallbackValues = Array.isArray(options.values)
@@ -59,14 +65,111 @@ const bindDynamicValuesOption = (
     configurable: true,
     enumerable: true,
     get: () => {
-      const values = getValues()
+      const values = getValues(fallbackValues)
       if (values === undefined || values === null) return fallbackValues
       return values
     },
     set: (values: unknown[]) => {
       fallbackValues = Array.isArray(values) ? values : fallbackValues
+      onAssign?.()
     }
   })
+}
+
+const rootGraphsToSync = new Set<LGraph>()
+
+function syncPromotedHostsOnce(rootGraph: LGraph) {
+  if (!rootGraphsToSync.size) {
+    queueMicrotask(() => {
+      const graphs = [...rootGraphsToSync]
+      rootGraphsToSync.clear()
+      for (const graph of graphs) syncPromotedComboHostOptions(graph)
+    })
+  }
+  rootGraphsToSync.add(rootGraph)
+}
+
+interface LibraryWatch {
+  folder: string
+  stop?: () => void
+}
+
+const libraryWatchesByNode = new WeakMap<LGraphNode, Set<LibraryWatch>>()
+
+function startLibraryWatch(node: LGraphNode, libraryWatch: LibraryWatch) {
+  libraryWatch.stop ??= useDeploymentLibraryModelsStore().watchFolder(
+    libraryWatch.folder,
+    () => {
+      if (node.graph) syncPromotedHostsOnce(node.graph.rootGraph)
+      else stopLibraryWatch(libraryWatch)
+    }
+  )
+}
+
+function stopLibraryWatch(libraryWatch: LibraryWatch) {
+  libraryWatch.stop?.()
+  libraryWatch.stop = undefined
+}
+
+function libraryWatchesOf(node: LGraphNode): Set<LibraryWatch> {
+  const existing = libraryWatchesByNode.get(node)
+  if (existing) return existing
+  const libraryWatches = new Set<LibraryWatch>()
+  libraryWatchesByNode.set(node, libraryWatches)
+  const { onAdded, onRemoved } = node
+  node.onAdded = function (graph) {
+    onAdded?.call(this, graph)
+    for (const libraryWatch of libraryWatches) {
+      startLibraryWatch(node, libraryWatch)
+    }
+  }
+  node.onRemoved = function () {
+    onRemoved?.call(this)
+    for (const libraryWatch of libraryWatches) stopLibraryWatch(libraryWatch)
+  }
+  return libraryWatches
+}
+
+function addLibraryModelOptions(
+  node: LGraphNode,
+  widget: IComboWidget,
+  folder: string
+) {
+  const library = useDeploymentLibraryModelsStore()
+  const libraryWatch: LibraryWatch = { folder }
+  const libraryWatches = libraryWatchesOf(node)
+  libraryWatches.add(libraryWatch)
+  startLibraryWatch(node, libraryWatch)
+  const { onRemove } = widget
+  widget.onRemove = function () {
+    onRemove?.call(this)
+    libraryWatches.delete(libraryWatch)
+    stopLibraryWatch(libraryWatch)
+  }
+  registerComboWidgetInventory(widget, {
+    getStatus: () => library.statusOf(folder),
+    waitForSettled: () => library.waitForSettled(folder)
+  })
+  let joined:
+    | { release: unknown[]; names: readonly string[]; values: unknown[] }
+    | undefined
+  bindDynamicValuesOption(
+    widget,
+    (release) => {
+      const names = library.namesIn(folder)
+      if (!names.length) return release
+      if (joined?.release !== release || joined.names !== names) {
+        const listed = new Set(release)
+        joined = {
+          release,
+          names,
+          values: [...release, ...names.filter((name) => !listed.has(name))]
+        }
+      }
+      return joined.values
+    },
+    () => library.refresh(folder)
+  )
 }
 
 const addMultiSelectWidget = (
@@ -86,7 +189,7 @@ const addMultiSelectWidget = (
       }
     }
   })
-  addWidget(node, widget as BaseDOMWidget<object | string>)
+  addWidget(node, widget as BaseDOMWidget)
   // TODO: Add remote support to multi-select widget
   // https://github.com/Comfy-Org/ComfyUI_frontend/issues/3003
   if (inputSpec.control_after_generate) {
@@ -129,7 +232,7 @@ function getCloudInputAssets(nodeType: string | undefined): AssetItem[] {
   const mediaType = NODE_MEDIA_TYPE_MAP[nodeType ?? '']
   if (!mediaType) return []
 
-  return useAssetsStore().inputAssets.filter(
+  return toValue(useAssetsStore().inputAssets.items).filter(
     (asset) =>
       getCloudInputAssetValue(asset) &&
       getMediaTypeFromFilename(asset.name) === mediaType
@@ -201,14 +304,13 @@ const createInputMappingWidget = (
     }
   )
 
-  if (assetsStore.inputAssets.length === 0 && !assetsStore.inputLoading) {
-    void assetsStore.updateInputs().then(() => {
-      // edge for users using nodes with 0 prior inputs
-      // force canvas refresh the first time they add an asset
-      // so they see filenames instead of hashes.
+  async function loadAll() {
+    while (toValue(assetsStore.inputAssets.hasMore)) {
+      if (!(await assetsStore.inputAssets.loadMore())) break
       node.setDirtyCanvas(true, false)
-    })
+    }
   }
+  void loadAll()
 
   bindDynamicValuesOption(widget, () =>
     getCloudInputAssetValues(node.comfyClass)
@@ -241,7 +343,9 @@ const addComboWidget = (
   const defaultValue = getDefaultValue(inputSpec)
 
   if (isCloud) {
-    if (assetService.shouldUseAssetBrowser(node.comfyClass, inputSpec.name)) {
+    if (
+      assetService.shouldUseWidgetAssetPicker(node.comfyClass, inputSpec.name)
+    ) {
       // Default from cloud assets, not from server combo options.
       // Server options list local files that may not exist in the user's
       // cloud asset library, leading to missing-model errors on undo/reload.
@@ -260,6 +364,13 @@ const addComboWidget = (
       )
     }
   }
+
+  const libraryFolder = isCloud
+    ? useDeploymentLibraryModelsStore().folderFor(
+        node.comfyClass ?? '',
+        inputSpec.name
+      )
+    : undefined
 
   // Standard combo widget
   const widget = node.addWidget(
@@ -285,7 +396,13 @@ const addComboWidget = (
     })
     if (inputSpec.remote.refresh_button) remoteWidget.addRefreshButton()
 
+    registerComboWidgetInventory(widget, {
+      getStatus: remoteWidget.getInventoryStatus,
+      waitForSettled: remoteWidget.waitForInventory
+    })
     bindDynamicValuesOption(widget, () => remoteWidget.getValue())
+  } else if (libraryFolder && isComboWidget(widget)) {
+    addLibraryModelOptions(node, widget, libraryFolder)
   }
 
   if (inputSpec.control_after_generate) {

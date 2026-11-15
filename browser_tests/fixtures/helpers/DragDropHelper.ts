@@ -1,7 +1,7 @@
-import { readFileSync } from 'fs'
+import { readFileSync, statSync } from 'fs'
 import { basename } from 'path'
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import type { Position } from '@e2e/fixtures/types'
 import { getMimeType } from '@e2e/fixtures/utils/mimeTypeUtil'
@@ -11,10 +11,33 @@ import { nextFrame } from '@e2e/fixtures/utils/timing'
 export class DragDropHelper {
   constructor(private readonly page: Page) {}
 
+  async dropFilesOn(target: Locator, filePaths: string[]): Promise<void> {
+    const files = filePaths.map((filePath) => ({
+      bytes: Array.from(readFileSync(filePath)),
+      name: basename(filePath),
+      type: getMimeType(basename(filePath)),
+      lastModified: statSync(filePath).mtimeMs
+    }))
+    const transfer = await this.page.evaluateHandle((files) => {
+      const transfer = new DataTransfer()
+      for (const { bytes, name, type, lastModified } of files)
+        transfer.items.add(
+          new File([new Uint8Array(bytes)], name, { type, lastModified })
+        )
+      return transfer
+    }, files)
+    try {
+      await target.dispatchEvent('drop', { dataTransfer: transfer })
+    } finally {
+      await transfer.dispose()
+    }
+  }
+
   async dragAndDropExternalResource(
     options: {
       fileName?: string
       filePath?: string
+      generatedFile?: { name: string; type: string; byteLength: number }
       url?: string
       dropPosition?: Position
       waitForUpload?: boolean
@@ -25,22 +48,30 @@ export class DragDropHelper {
       dropPosition = { x: 100, y: 100 },
       fileName,
       filePath,
+      generatedFile,
       url,
       waitForUpload = false,
       preserveNativePropagation = false
     } = options
 
-    if (!fileName && !filePath && !url)
-      throw new Error('Must provide fileName, filePath, or url')
+    if (!fileName && !filePath && !url && !generatedFile)
+      throw new Error('Must provide fileName, filePath, generatedFile, or url')
 
     const evaluateParams: {
       dropPosition: Position
       fileName?: string
       fileType?: string
       buffer?: Uint8Array | number[]
+      byteLength?: number
       url?: string
       preserveNativePropagation: boolean
     } = { dropPosition, preserveNativePropagation }
+
+    if (generatedFile) {
+      evaluateParams.fileName = generatedFile.name
+      evaluateParams.fileType = generatedFile.type
+      evaluateParams.byteLength = generatedFile.byteLength
+    }
 
     if (fileName || filePath) {
       const resolvedPath = filePath ?? assetPath(fileName!)
@@ -73,14 +104,14 @@ export class DragDropHelper {
     await this.page.evaluate(async (params) => {
       const dataTransfer = new DataTransfer()
 
-      if (params.buffer && params.fileName && params.fileType) {
-        const file = new File(
-          [new Uint8Array(params.buffer)],
-          params.fileName,
-          {
-            type: params.fileType
-          }
-        )
+      const bytes =
+        params.byteLength === undefined
+          ? params.buffer && new Uint8Array(params.buffer)
+          : new Uint8Array(params.byteLength)
+      if (bytes && params.fileName && params.fileType) {
+        const file = new File([bytes], params.fileName, {
+          type: params.fileType
+        })
         dataTransfer.items.add(file)
       }
 
@@ -170,6 +201,16 @@ export class DragDropHelper {
     options: { dropPosition?: Position; waitForUpload?: boolean } = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ filePath, ...options })
+  }
+
+  async dragAndDropGeneratedFile(
+    generatedFile: { name: string; type: string; byteLength: number },
+    options: {
+      dropPosition?: Position
+      preserveNativePropagation?: boolean
+    } = {}
+  ): Promise<void> {
+    return this.dragAndDropExternalResource({ generatedFile, ...options })
   }
 
   async dragAndDropURL(

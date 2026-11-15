@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useReleaseService } from '@/platform/updates/common/releaseService'
 
 // Hoist the mock to avoid hoisting issues
@@ -8,7 +9,7 @@ const mockAxiosInstance = vi.hoisted(() => ({
   get: vi.fn()
 }))
 
-vi.mock('axios', () => ({
+vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
     isAxiosError: vi.fn()
@@ -30,8 +31,13 @@ describe('useReleaseService', () => {
   ]
 
   beforeEach(() => {
+    remoteConfig.value = { comfy_api_base_url: 'https://api.example.com' }
     vi.mocked(axios.isAxiosError).mockReturnValue(true)
     service = useReleaseService()
+
+    return () => {
+      remoteConfig.value = {}
+    }
   })
 
   it('should initialize with default state', () => {
@@ -49,6 +55,7 @@ describe('useReleaseService', () => {
       })
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/releases', {
+        baseURL: 'https://api.example.com',
         params: {
           project: 'comfyui',
           current_version: '1.0.0'
@@ -72,6 +79,7 @@ describe('useReleaseService', () => {
       })
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/releases', {
+        baseURL: 'https://api.example.com',
         params: {
           project: 'comfyui',
           current_version: '1.0.0',
@@ -84,6 +92,20 @@ describe('useReleaseService', () => {
       expect(result).toEqual(mockReleases)
     })
 
+    it('sends the request to the base URL configured after service creation', async () => {
+      remoteConfig.value = { comfy_api_base_url: 'https://changed.example.com' }
+      mockAxiosInstance.get.mockResolvedValue({ data: mockReleases })
+
+      await service.getReleases({ project: 'comfyui' })
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith('/releases', {
+        baseURL: 'https://changed.example.com',
+        params: { project: 'comfyui' },
+        signal: undefined,
+        headers: undefined
+      })
+    })
+
     it('should pass abort signal when provided', async () => {
       const abortController = new AbortController()
       mockAxiosInstance.get.mockResolvedValue({ data: mockReleases })
@@ -94,6 +116,7 @@ describe('useReleaseService', () => {
       )
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/releases', {
+        baseURL: 'https://api.example.com',
         params: { project: 'comfyui' },
         signal: abortController.signal,
         headers: undefined
@@ -109,6 +132,7 @@ describe('useReleaseService', () => {
       )
 
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/releases', {
+        baseURL: 'https://api.example.com',
         params: { project: 'comfyui' },
         signal: undefined,
         headers: { 'Comfy-Env': 'local-desktop' }

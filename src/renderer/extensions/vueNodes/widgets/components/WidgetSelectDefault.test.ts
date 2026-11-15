@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -15,21 +15,23 @@ const i18n = createI18n({
     en: {
       g: {
         noResultsFound: 'No results found',
-        search: 'Search'
+        search: 'Search',
+        previous: 'Previous',
+        next: 'Next'
       }
     }
   }
-})
-
-const WidgetLayoutFieldStub = defineComponent({
-  name: 'WidgetLayoutField',
-  template: '<div class="relative"><slot /></div>'
 })
 
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 describe('WidgetSelectDefault', () => {
+  beforeEach(() => {
+    vi.useRealTimers()
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(1000)
+  })
+
   const createWidget = (
     values: unknown,
     options: Record<string, unknown> = {}
@@ -37,13 +39,14 @@ describe('WidgetSelectDefault', () => {
     name: 'test_combo',
     type: 'combo',
     value: undefined,
-    options: { values, ...options } as SimplifiedWidget['options']
+    options: { values, ...options }
   })
 
   function renderComponent(
     widget: SimplifiedWidget<string | undefined>,
     modelValue?: WidgetValue,
-    slots?: Record<string, string>
+    slots?: Record<string, string>,
+    filenameSummary = false
   ) {
     const onUpdate = vi.fn()
     const user = userEvent.setup()
@@ -51,14 +54,12 @@ describe('WidgetSelectDefault', () => {
       props: {
         widget,
         modelValue,
+        filenameSummary,
         'onUpdate:modelValue': onUpdate
       },
       slots,
       global: {
-        plugins: [i18n],
-        stubs: {
-          WidgetLayoutField: WidgetLayoutFieldStub
-        }
+        plugins: [i18n]
       }
     })
 
@@ -72,7 +73,143 @@ describe('WidgetSelectDefault', () => {
   }
 
   const optionLabels = () =>
-    screen.queryAllByRole('option').map((option) => option.textContent?.trim())
+    screen.queryAllByRole('option').map((option) => option.textContent.trim())
+
+  it('opens from the gap in a unified row without changing its value', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(WidgetSelectDefault, {
+      props: {
+        widget: createWidget(['euler', 'heun']),
+        modelValue: 'euler'
+      },
+      global: {
+        plugins: [i18n]
+      }
+    })
+
+    await user.click(screen.getByTestId('widget-row-hit-area'))
+
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
+    expect(await screen.findByRole('listbox')).toBeVisible()
+    expect(emitted()['update:modelValue']).toBeUndefined()
+  })
+
+  it.for([
+    {
+      raw: 'studio/models/portrait.safetensors',
+      summary: 'portrait.safetensors',
+      filenameSummary: true
+    },
+    {
+      raw: 'C:\\models\\portrait.safetensors',
+      summary: 'portrait.safetensors',
+      filenameSummary: true
+    }
+  ])('displays $raw as $summary', ({ raw, summary, filenameSummary }) => {
+    renderComponent(createWidget([raw]), raw, undefined, filenameSummary)
+    expect(screen.getByRole('combobox').textContent.trim()).toBe(summary)
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('title')
+  })
+
+  it.for([
+    { current: 42, action: 'Next', expected: 89 },
+    { current: 42, action: 'Previous', expected: 11 },
+    { current: 11, action: 'Next', expected: 42 },
+    { current: 89, action: 'Previous', expected: 42 }
+  ])(
+    'steps $action from $current to raw value $expected',
+    async ({ current, action, expected }) => {
+      const { user, onUpdate } = renderComponent(
+        createWidget([11, 42, 89]),
+        current,
+        undefined,
+        false
+      )
+      await user.click(
+        screen.getByRole('button', { name: `test_combo: ${action}` })
+      )
+      expect(onUpdate).toHaveBeenCalledWith(expected)
+    }
+  )
+
+  it.for([
+    { values: [11, 42, 89], current: 11, expected: [true, false] },
+    { values: [11, 42, 89], current: 89, expected: [false, true] },
+    { values: [11], current: 11, expected: [true, true] },
+    { values: [], current: undefined, expected: [true, true] }
+  ])(
+    'disables unavailable directions for $values with current=$current',
+    ({ values, current, expected }) => {
+      renderComponent(createWidget(values), current)
+
+      expect(
+        [
+          screen.getByRole('button', { name: 'test_combo: Previous' }),
+          screen.getByRole('button', { name: 'test_combo: Next' })
+        ].map((button) => button.hasAttribute('disabled'))
+      ).toEqual(expected)
+    }
+  )
+
+  it.for([
+    { initial: [11, 42], action: 'Next', expected: 89 },
+    { initial: [42, 89], action: 'Previous', expected: 11 }
+  ])(
+    'discovers new dynamic options with $action without opening the popup',
+    async ({ initial, action, expected }) => {
+      let values = initial
+      const { user, onUpdate } = renderComponent(
+        createWidget(() => values),
+        42,
+        undefined,
+        false
+      )
+      const arrow = screen.getByRole('button', {
+        name: `test_combo: ${action}`
+      })
+
+      await user.click(arrow)
+      expect(onUpdate).not.toHaveBeenCalled()
+
+      values = [11, 42, 89]
+      await user.click(arrow)
+
+      expect(onUpdate).toHaveBeenCalledWith(expected)
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
+    }
+  )
+
+  it('keeps custom labels intact when filename summaries are requested', () => {
+    renderComponent(
+      createWidget(['studio/model.safetensors'], {
+        getOptionLabel: () => 'Studio / approved'
+      }),
+      'studio/model.safetensors',
+      undefined,
+      true
+    )
+    expect(screen.getByRole('combobox')).toHaveTextContent('Studio / approved')
+  })
+
+  it('distinguishes duplicate filenames by full path and emits the selected raw path', async () => {
+    const first = 'studio/models/portrait.safetensors'
+    const second = 'archive/models/portrait.safetensors'
+    const { user, onUpdate } = renderComponent(
+      createWidget([first, second]),
+      first,
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    await user.click(screen.getByRole('option', { name: second }))
+    expect(onUpdate).toHaveBeenCalledWith(second)
+  })
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {
@@ -122,9 +259,6 @@ describe('WidgetSelectDefault', () => {
       const values = vi.fn(() => {
         throw error
       })
-      const consoleError = vi
-        .spyOn(console, 'error')
-        .mockImplementation(() => {})
 
       try {
         const { user } = renderComponent(createWidget(values))
@@ -133,12 +267,12 @@ describe('WidgetSelectDefault', () => {
 
         expect(optionLabels()).toEqual([])
         expect(screen.getByRole('status')).toHaveTextContent('No results found')
-        expect(consoleError).toHaveBeenCalledWith(
+        expect(console.error).toHaveBeenCalledWith(
           '[WidgetSelectDefault] Failed to resolve options',
           error
         )
       } finally {
-        consoleError.mockRestore()
+        vi.mocked(console.error).mockRestore()
       }
     })
 
@@ -311,7 +445,7 @@ describe('WidgetSelectDefault', () => {
 
         // user-event does not model the raw viewport pointerdown that triggers
         // this Reka focus-outside interaction.
-        // eslint-disable-next-line testing-library/prefer-user-event
+        // oxlint-disable-next-line testing-library/prefer-user-event
         await fireEvent.pointerDown(viewport)
         outsideButton.focus()
         await fireEvent.focusIn(outsideButton)
@@ -361,7 +495,7 @@ describe('WidgetSelectDefault', () => {
 
       const trigger = screen.getByTestId('widget-select-default-trigger')
       expect(trigger).not.toHaveAttribute('aria-invalid')
-      expect(trigger.textContent?.trim()).toBe('')
+      expect(trigger.textContent.trim()).toBe('')
     })
 
     it('selects the first option when the value is undefined', () => {
@@ -379,7 +513,7 @@ describe('WidgetSelectDefault', () => {
 
       const options = screen.getAllByRole('option')
       expect(options).toHaveLength(2)
-      expect(options.map((option) => option.textContent?.trim())).toEqual(
+      expect(options.map((option) => option.textContent.trim())).toEqual(
         expect.arrayContaining(['a', 'b'])
       )
       for (const option of options) {
@@ -418,6 +552,17 @@ describe('WidgetSelectDefault', () => {
       const trigger = screen.getByTestId('widget-select-default-trigger')
       expect(trigger).not.toHaveAttribute('aria-invalid')
       expect(trigger).toHaveTextContent('5')
+    })
+
+    it('does not mark a placeholder combo widget invalid before its real options load', () => {
+      // A combo widget whose options have not loaded yet has
+      // `options: {}` (no `values` key at all). A value that will be a
+      // legitimate option once they arrive should not flash the invalid
+      // ring in the meantime.
+      renderComponent(createWidget(undefined), 'sdxl.safetensors')
+
+      const trigger = screen.getByTestId('widget-select-default-trigger')
+      expect(trigger).not.toHaveAttribute('aria-invalid')
     })
 
     it('disables the trigger when widget options are disabled', () => {
