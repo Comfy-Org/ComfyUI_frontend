@@ -51,6 +51,7 @@ vi.mock(import('../featureFlags'), () => ({
 }))
 vi.mock(import('../ui/logger'), () => ({ box: vi.fn(), info: vi.fn() }))
 
+import { info } from '../ui/logger'
 import { runRecording } from './runner'
 
 describe('runRecording', () => {
@@ -82,5 +83,44 @@ describe('runRecording', () => {
       expect.objectContaining({ storageStateFile }),
       '/project/browser_tests'
     )
+  })
+
+  it('prints the cloud sign-in notes pre-launch for cloud targets', async () => {
+    const distribution = {
+      id: 'comfy-cloud',
+      label: 'Comfy Cloud',
+      hint: '',
+      script: 'dev',
+      needsLocalBackend: false
+    } as const
+
+    await runRecording({
+      testName: 'cloud notes',
+      projectRoot: '/project',
+      distribution
+    })
+
+    expect(vi.mocked(info)).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.stringContaining('Cloud sign-in notes')])
+    )
+  })
+
+  it('keeps the sign-in notes out of the local pre-launch output', async () => {
+    vi.mocked(recordingTarget).mockReturnValueOnce('local')
+    const distribution = {
+      id: 'comfy-cloud',
+      label: 'Comfy Cloud',
+      hint: '',
+      script: 'dev',
+      needsLocalBackend: false
+    } as const
+
+    await runRecording({
+      testName: 'local notes',
+      projectRoot: '/project',
+      distribution
+    })
+
+    expect(vi.mocked(info)).not.toHaveBeenCalled()
   })
 })
