@@ -21,6 +21,7 @@ import {
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
+  useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -845,12 +846,33 @@ export const useWorkflowService = () => {
       return loaded
     }, workflow.path)
 
+  const warnBookmarksNotUpdated = (
+    title: string,
+    retry: () => Promise<boolean>
+  ) => {
+    const id = toast.warning(title, {
+      action: {
+        label: t('g.retry'),
+        onClick: async () => {
+          toast.dismiss(id)
+          if (!(await retry())) warnBookmarksNotUpdated(title, retry)
+        }
+      }
+    })
+  }
+
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     const oldPath = workflow.path
     const graphId = workflow.activeState?.id
-    await workflowStore.renameWorkflow(workflow, newPath)
+    const bookmarkMoved = await workflowStore.renameWorkflow(workflow, newPath)
     if (graphId) {
       useExecutionErrorStore().moveRunErrors(graphId, oldPath, workflow.path)
+    }
+    if (!bookmarkMoved) {
+      warnBookmarksNotUpdated(
+        t('sideToolbar.workflowTab.renamedButBookmarksNotUpdated'),
+        () => useWorkflowBookmarkStore().moveBookmark(oldPath, newPath)
+      )
     }
   }
 
@@ -889,8 +911,14 @@ export const useWorkflowService = () => {
       if (workflowStore.isOpen(workflow)) return false
     }
     if (!stillTarget()) return false
-    await workflowStore.deleteWorkflow(workflow)
-    if (!silent) {
+    const { path } = workflow
+    const unbookmarked = await workflowStore.deleteWorkflow(workflow)
+    if (!unbookmarked) {
+      warnBookmarksNotUpdated(
+        t('sideToolbar.workflowTab.deletedButBookmarksNotUpdated'),
+        () => useWorkflowBookmarkStore().setBookmarked(path, false)
+      )
+    } else if (!silent) {
       toast.info(t('sideToolbar.workflowTab.deleted'), { duration: 1000 })
     }
     return true

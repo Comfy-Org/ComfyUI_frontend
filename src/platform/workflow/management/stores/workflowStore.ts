@@ -527,7 +527,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
     isBusy.value = true
     try {
-      // Capture all needed values upfront
       const oldPath = workflow.path
       const oldKey = workflow.key
       const draftStore = useWorkflowDraftStoreV2()
@@ -535,8 +534,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
       await workflow.rename(newPath)
       void workflowRenamed.trigger(workflow)
 
-      // Synchronously swap old path for new path in lookup and open paths
-      // to avoid a tab flicker caused by an async gap between detach/attach.
       delete workflowLookup.value[oldPath]
       workflowLookup.value[workflow.path] = workflow
       const openIndex = openWorkflowPaths.value.indexOf(oldPath)
@@ -546,11 +543,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
       draftStore.moveDraft(oldPath, newPath, workflow.key)
 
-      // Move thumbnail from old key to new key (using workflow keys, not full paths)
       const newKey = workflow.key
       moveWorkflowThumbnail(oldKey, newKey)
-      // Checked against the server: this tab may not have loaded bookmarks.
-      await bookmarkStore.moveBookmark(oldPath, newPath)
+      return await bookmarkStore.moveBookmark(oldPath, newPath)
     } finally {
       isBusy.value = false
     }
@@ -561,10 +556,13 @@ export const useWorkflowStore = defineStore('workflow', () => {
     try {
       await workflow.delete()
       useWorkflowDraftStoreV2().removeDraft(workflow.path)
-      await bookmarkStore.setBookmarked(workflow.path, false)
-      // Clear thumbnail when workflow is deleted
+      const unbookmarked = await bookmarkStore.setBookmarked(
+        workflow.path,
+        false
+      )
       clearThumbnail(workflow.key)
       detachWorkflow(workflow)
+      return unbookmarked
     } finally {
       isBusy.value = false
     }
@@ -823,7 +821,6 @@ function bookmarkReadFailed(cause: unknown): BookmarkIndexRead {
   return { ok: false }
 }
 
-/** Reads the bookmark index; a missing file is an empty index. */
 async function readBookmarkIndex(): Promise<BookmarkIndexRead> {
   let index: unknown
   try {
@@ -856,7 +853,6 @@ async function writeBookmarkIndex(
   favorites: string[]
 ): Promise<boolean> {
   try {
-    // storeUserData reports a refused write itself.
     const resp = await api.storeUserData(
       BOOKMARK_INDEX_FILE,
       { ...index, favorites },
@@ -872,23 +868,15 @@ async function writeBookmarkIndex(
   }
 }
 
-/**
- * Bookmarks live in one userdata file that every tab and device rewrites
- * whole, and the server keeps the last write. So every change re-reads the
- * file and applies only its own edit, one change at a time, instead of
- * writing this tab's copy, which may be stale or never loaded.
- */
 export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
-  /** Favorites as the server last reported or accepted them. */
-  const bookmarks = ref<ReadonlySet<string>>(new Set())
-  /** Changes waiting for the server, shown so the icon responds at once. */
+  const confirmedBookmarks = ref<ReadonlySet<string>>(new Set())
   const pending = ref(new Map<string, { value: boolean; change: number }>())
   let changeCount = 0
   let queue: Promise<unknown> = Promise.resolve()
   let queuedLoad: Promise<boolean> | undefined
 
   const isBookmarked = (path: string) =>
-    pending.value.get(path)?.value ?? bookmarks.value.has(path)
+    pending.value.get(path)?.value ?? confirmedBookmarks.value.has(path)
 
   function enqueue<T>(task: () => Promise<T>): Promise<T> {
     const run = queue.then(task)
@@ -900,23 +888,18 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
     queuedLoad ??= enqueue(async () => {
       queuedLoad = undefined
       const read = await readBookmarkIndex()
-      if (read.ok) bookmarks.value = new Set(read.favorites)
+      if (read.ok) confirmedBookmarks.value = new Set(read.favorites)
       return read.ok
     })
     return queuedLoad
   }
 
-  /**
-   * Applies `edit` to the server's current favorites and saves the result.
-   * `shown` is what to display until then; a refused change reverts to the
-   * favorites last read from the server.
-   */
-  async function change(
-    shown: ReadonlyMap<string, boolean>,
+  async function saveBookmarkChange(
+    optimisticValues: ReadonlyMap<string, boolean>,
     edit: (favorites: Set<string>) => void
   ): Promise<boolean> {
     const id = ++changeCount
-    for (const [path, value] of shown) {
+    for (const [path, value] of optimisticValues) {
       pending.value.set(path, { value, change: id })
     }
     const saved = await enqueue(async () => {
@@ -929,24 +912,23 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
         read.favorites.every((path) => next.has(path))
       const ok =
         unchanged || (await writeBookmarkIndex(read.index, Array.from(next)))
-      bookmarks.value = ok ? next : new Set(read.favorites)
+      confirmedBookmarks.value = ok ? next : new Set(read.favorites)
       return ok
     })
-    for (const path of shown.keys()) {
+    for (const path of optimisticValues.keys()) {
       if (pending.value.get(path)?.change === id) pending.value.delete(path)
     }
     return saved
   }
 
   const setBookmarked = (path: string, value: boolean) =>
-    change(new Map([[path, value]]), (favorites) => {
+    saveBookmarkChange(new Map([[path, value]]), (favorites) => {
       if (value) favorites.add(path)
       else favorites.delete(path)
     })
 
-  /** Moves a bookmark to a renamed workflow's path, if it has one. */
   const moveBookmark = (oldPath: string, newPath: string) =>
-    change(
+    saveBookmarkChange(
       isBookmarked(oldPath)
         ? new Map([
             [oldPath, false],
@@ -958,7 +940,6 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
       }
     )
 
-  /** The user-facing toggle: tells the user when the change did not save. */
   const toggleBookmarked = async (path: string) => {
     const saved = await setBookmarked(path, !isBookmarked(path))
     if (!saved) {

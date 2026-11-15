@@ -77,17 +77,15 @@ vi.mock(import('@/base/assert'), () => ({
 
 const BOOKMARK_INDEX = 'workflows/.index.json'
 
-/**
- * Serves the bookmark index the way the cloud backend does: GET returns the
- * stored file (404 before the first save) and POST replaces it whole, with no
- * merge or version check. Other userdata files are not served.
- */
-function serveBookmarkIndex(favorites?: string[]) {
-  let stored = favorites && JSON.stringify({ favorites })
+function serveBookmarkIndex(
+  favorites?: string[],
+  otherFields: Record<string, unknown> = {}
+) {
+  let stored = favorites && JSON.stringify({ ...otherFields, favorites })
   let readFailure: number | undefined
   let writeFailure: number | Error | undefined
   let holdingWrites = false
-  const heldWrites: Array<{ body: string; deliver: () => void }> = []
+  const heldWrites: Array<() => void> = []
   let onWrite: (() => void) | undefined
 
   vi.mocked(api.getUserData).mockImplementation(async (file) => {
@@ -111,30 +109,29 @@ function serveBookmarkIndex(favorites?: string[]) {
       return new Response(null, { status: 200 })
     }
     return new Promise<Response>((resolve) => {
-      heldWrites.push({
-        body,
-        deliver: () => {
-          stored = body
-          resolve(new Response(null, { status: 200 }))
-        }
+      heldWrites.push(() => {
+        stored = body
+        resolve(new Response(null, { status: 200 }))
       })
       onWrite?.()
     })
   })
 
-  const nextHeldWrite = () =>
+  const writeHeld = () =>
     heldWrites.length > 0
       ? Promise.resolve()
       : new Promise<void>((resolve) => {
           onWrite = resolve
         })
 
+  const index = (): Record<string, unknown> | undefined =>
+    stored === undefined ? undefined : JSON.parse(stored)
+
   return {
-    favorites: (): string[] | undefined =>
-      stored === undefined ? undefined : JSON.parse(stored).favorites,
-    /** Another tab or device saves its own copy of the index. */
+    index,
+    favorites: () => index()?.favorites,
     saveElsewhere: (next: string[]) => {
-      stored = JSON.stringify({ favorites: next })
+      stored = JSON.stringify({ ...otherFields, favorites: next })
     },
     failNextRead: (status: number) => {
       readFailure = status
@@ -145,14 +142,15 @@ function serveBookmarkIndex(favorites?: string[]) {
     holdWrites: () => {
       holdingWrites = true
     },
-    /**
-     * Lets held writes reach the server newest first, the way two in-flight
-     * requests can land on different replicas, until `operations` settle.
-     */
+    writeHeld,
+    async deliverOldestWrite() {
+      await writeHeld()
+      heldWrites.shift()?.()
+    },
     async deliverNewestFirst(operations: Promise<unknown>[]) {
       const settled = Promise.all(operations).then(() => 'settled' as const)
-      while ((await Promise.race([settled, nextHeldWrite()])) !== 'settled') {
-        heldWrites.pop()?.deliver()
+      while ((await Promise.race([settled, writeHeld()])) !== 'settled') {
+        heldWrites.pop()?.()
       }
     }
   }
@@ -864,12 +862,10 @@ describe('useWorkflowStore', () => {
       serveBookmarkIndex()
       const workflow = store.createTemporary('dir/test.json')
 
-      // Set up initial bookmark
       expect(workflow.path).toBe('workflows/dir/test.json')
       await bookmarkStore.setBookmarked(workflow.path, true)
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(true)
 
-      // Mock super.rename
       vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
         async function (this: unknown, ...args: unknown[]) {
           const newPath = args[0] as string
@@ -878,11 +874,9 @@ describe('useWorkflowStore', () => {
         }
       )
 
-      // Perform rename
       const newPath = 'workflows/dir/renamed.json'
       await store.renameWorkflow(workflow, newPath)
 
-      // Check that bookmark was transferred
       expect(bookmarkStore.isBookmarked(newPath)).toBe(true)
       expect(bookmarkStore.isBookmarked('workflows/dir/test.json')).toBe(false)
     })
@@ -890,15 +884,13 @@ describe('useWorkflowStore', () => {
     it('moves a bookmark this tab never loaded to the new path', async () => {
       const server = serveBookmarkIndex(['workflows/dir/test.json'])
       const workflow = store.createTemporary('dir/test.json')
-      vi.spyOn(Object.getPrototypeOf(workflow), 'rename').mockImplementation(
-        async function (this: unknown, ...args: unknown[]) {
-          ;(this as typeof workflow).path = args[0] as string
-          return this as typeof workflow
-        }
+
+      const moved = await store.renameWorkflow(
+        workflow,
+        'workflows/dir/renamed.json'
       )
 
-      await store.renameWorkflow(workflow, 'workflows/dir/renamed.json')
-
+      expect(moved).toBe(true)
       expect(server.favorites()).toEqual(['workflows/dir/renamed.json'])
       expect(bookmarkStore.isBookmarked('workflows/dir/renamed.json')).toBe(
         true
@@ -1007,17 +999,13 @@ describe('useWorkflowStore', () => {
       serveBookmarkIndex()
       const workflow = store.createTemporary('test.json')
 
-      // Mock delete method
       vi.spyOn(workflow, 'delete').mockResolvedValue()
 
-      // Bookmark the workflow
       await bookmarkStore.setBookmarked(workflow.path, true)
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(true)
 
-      // Delete the workflow
       await store.deleteWorkflow(workflow)
 
-      // Verify bookmark was removed
       expect(bookmarkStore.isBookmarked(workflow.path)).toBe(false)
     })
 
@@ -1027,10 +1015,10 @@ describe('useWorkflowStore', () => {
         'workflows/x.json'
       ])
       const workflow = store.createTemporary('test.json')
-      vi.spyOn(workflow, 'delete').mockResolvedValue()
 
-      await store.deleteWorkflow(workflow)
+      const unbookmarked = await store.deleteWorkflow(workflow)
 
+      expect(unbookmarked).toBe(true)
       expect(server.favorites()).toEqual(['workflows/x.json'])
     })
 
@@ -2066,15 +2054,33 @@ describe('useWorkflowBookmarkStore', () => {
   ])(
     'keeps bookmarks saved elsewhere when this tab adds one and $name',
     async ({ arrange }) => {
-      const server = serveBookmarkIndex([x, y])
+      const server = serveBookmarkIndex([x, y], { sortOrder: 'name' })
       const store = useWorkflowBookmarkStore()
       await arrange(store, server)
 
       await store.setBookmarked(p, true)
 
-      expect(server.favorites()).toEqual([x, y, p])
+      expect(server.index()).toEqual({
+        sortOrder: 'name',
+        favorites: [x, y, p]
+      })
     }
   )
+
+  it('refuses a change when it cannot read the saved bookmarks first', async () => {
+    const server = serveBookmarkIndex([x, y])
+    const store = useWorkflowBookmarkStore()
+    server.failNextRead(503)
+
+    const saved = await store.toggleBookmarked(p)
+
+    expect(saved).toBe(false)
+    expect(store.isBookmarked(p)).toBe(false)
+    expect(server.favorites()).toEqual([x, y])
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({ kind: 'error' })
+    ])
+  })
 
   it('keeps a bookmark another tab added when this tab removes one', async () => {
     const server = serveBookmarkIndex([x])
@@ -2103,7 +2109,6 @@ describe('useWorkflowBookmarkStore', () => {
 
       expect(saved).toBe(false)
       expect(store.isBookmarked(p)).toBe(false)
-      expect(server.favorites()).toEqual([x])
       expect(useToast().toasts).toEqual([
         expect.objectContaining({ kind: 'error' })
       ])
@@ -2116,10 +2121,30 @@ describe('useWorkflowBookmarkStore', () => {
     server.holdWrites()
 
     const saving = store.setBookmarked(p, true)
+    await server.writeHeld()
 
     expect(store.isBookmarked(p)).toBe(true)
-    await server.deliverNewestFirst([saving])
+    await server.deliverOldestWrite()
+    expect(await saving).toBe(true)
     expect(store.isBookmarked(p)).toBe(true)
+  })
+
+  it('shows and saves the last of two rapid toggles of one bookmark', async () => {
+    const server = serveBookmarkIndex([x])
+    const store = useWorkflowBookmarkStore()
+    await store.loadBookmarks()
+    server.holdWrites()
+
+    const add = store.toggleBookmarked(p)
+    const remove = store.toggleBookmarked(p)
+    await server.deliverOldestWrite()
+    await add
+
+    expect(store.isBookmarked(p)).toBe(false)
+    await server.deliverOldestWrite()
+    await remove
+    expect(server.favorites()).toEqual([x])
+    expect(store.isBookmarked(p)).toBe(false)
   })
 
   it('saves rapid bookmark clicks in order when requests can overtake each other', async () => {

@@ -104,6 +104,9 @@
           />
           <TreeExplorer
             v-model:expanded-keys="dummyExpandedKeys"
+            :aria-label="
+              t('sideToolbar.workflowTab.workflowTreeType.bookmarks')
+            "
             :root="
               renderTreeNode(
                 bookmarkedWorkflowsTree,
@@ -375,7 +378,6 @@ onMounted(async () => {
   searchBoxRef.value?.focus()
   await workflowBookmarkStore.loadBookmarks()
 })
-// Pick up bookmarks changed in another tab or on another device.
 useEventListener(window, 'focus', () => {
   void workflowBookmarkStore.loadBookmarks()
 })
