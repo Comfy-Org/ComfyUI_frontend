@@ -407,18 +407,58 @@ describe('BillingTab', () => {
     expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
   })
 
-  it('replaces the plan with one error that retries both reads', async () => {
-    const { initialize, refresh } = arrange({ error: 'boom' })
+  it.for([
+    {
+      surface: 'local ComfyUI',
+      isCloud: false,
+      message:
+        "We couldn't load your billing details. Check your connection, then try again."
+    },
+    { surface: 'Cloud', isCloud: true, message: "We couldn't load your plan." }
+  ])(
+    'replaces the plan on $surface with one error that retries both reads',
+    async ({ isCloud, message }) => {
+      distribution.isCloud = isCloud
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      const { initialize, refresh } = arrange({ error: 'boom' })
 
-    const alert = screen.getByRole('alert')
-    expect(alert).toHaveTextContent("We couldn't load your plan.")
-    expect(alert).toHaveClass('rounded-xl', 'border-border', 'px-5', 'py-4')
-    expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
+      const alert = screen.getByRole('alert')
+      expect(within(alert).getByText(message)).toBeInTheDocument()
+      expect(alert).toHaveClass('rounded-xl', 'border-border', 'px-5', 'py-4')
+      expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+      await userEvent.click(
+        within(alert).getByRole('button', { name: 'Try again' })
+      )
 
-    expect(initialize).toHaveBeenCalled()
-    expect(refresh).toHaveBeenCalled()
+      expect(initialize).toHaveBeenCalled()
+      expect(refresh).toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    {
+      surface: 'local ComfyUI',
+      isCloud: false,
+      line: 'Subscribe for monthly credits. You can also add credits any time.'
+    },
+    {
+      surface: 'Cloud',
+      isCloud: true,
+      line: 'Subscribe to run workflows on Cloud.'
+    }
+  ])('words the no-plan line for $surface', ({ isCloud, line }) => {
+    distribution.isCloud = isCloud
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    arrange({ subscription: null, subscriptionStatus: null })
+
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      line
+    )
   })
 
   it('shows the error when capabilities settle without a snapshot', () => {
@@ -437,7 +477,7 @@ describe('BillingTab', () => {
     await nextTick()
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      "We couldn't load your plan."
+      "We couldn't load your billing details. Check your connection, then try again."
     )
     expect(
       screen.queryByTestId('billing-plan-skeleton')
