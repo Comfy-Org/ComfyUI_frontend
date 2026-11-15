@@ -157,11 +157,11 @@ const rows = computed(() =>
     }
   })
 )
-const hint = computed(() => {
-  if (!isInput.value) return undefined
-  if (!context.selected) return t('subgraphInputValues.enterInstanceHint')
-  return sources.value.size ? undefined : t('subgraphInputValues.noInputs')
-})
+const hint = computed(() =>
+  isInput.value && !context.selected
+    ? t('subgraphInputValues.enterInstanceHint')
+    : undefined
+)
 
 const { focusNodeInstance } = useFocusNode()
 async function locate(node: NodeState) {
