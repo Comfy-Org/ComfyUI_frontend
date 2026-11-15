@@ -106,15 +106,28 @@ jobs:
           generate_release_notes: true
 
   publish_types:
+    name: Publish @comfyorg/comfyui-frontend-types
     needs: build
+    runs-on: ubuntu-latest
     permissions:
-      contents: read
-      id-token: write
-    uses: ./.github/workflows/release-npm-types.yaml
-    with:
-      version: ${{ needs.build.outputs.version }}
-      ref: ${{ github.event.pull_request.merge_commit_sha }}
-    secrets: inherit
+      actions: write
+    steps:
+      - name: Dispatch the trusted types publish workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+          RUN_ID=$(gh api --method POST \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/release-npm-types.yaml/dispatches" \
+            -f ref=main \
+            -F return_run_details=true \
+            -f "inputs[version]=$VERSION" \
+            -f "inputs[dist_tag]=latest" \
+            -f "inputs[ref]=$MERGE_SHA" \
+            --jq '.workflow_run_id')
+          gh run watch "$RUN_ID" --repo "$GITHUB_REPOSITORY" --exit-status --interval 15
 
   # GITHUB_TOKEN releases emit no events, so the reconciler's own trigger never fires.
   enforce_latest:
