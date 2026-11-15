@@ -308,9 +308,14 @@ const PRELOAD_MIN_SCALE = 1
 interface ImagePreviewProps {
   readonly items: readonly AugmentedResultItem[]
   readonly nodeId?: NodeId
+  readonly fullResolution?: boolean
 }
 
-const { items, nodeId } = defineProps<ImagePreviewProps>()
+const {
+  items,
+  nodeId,
+  fullResolution = false
+} = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
@@ -359,13 +364,23 @@ const gridUrls = computed(() =>
   items.map((item) => getGridThumbnailUrl(resultItemPreviewUrl(item)))
 )
 const isHdr = computed(() => isHdrResult(items[currentIndex.value]))
+const hasMultipleImages = computed(() => items.length > 1)
+const showFullResolution = computed(
+  () => fullResolution && !hasMultipleImages.value
+)
 
 const currentImageUrl = computed(
   () => displayUrls.value[currentIndex.value] ?? ''
 )
 const displayImage = computedAsync(async () => {
   const source = currentImageUrl.value
-  if (viewMode.value !== 'gallery' || !source || isHdr.value) return undefined
+  if (
+    viewMode.value !== 'gallery' ||
+    !source ||
+    isHdr.value ||
+    showFullResolution.value
+  )
+    return undefined
   return getDisplayImage(source, DISPLAY_MAX_EDGE)
 })
 const currentDisplayImage = computed(() =>
@@ -375,14 +390,15 @@ const currentDisplayImage = computed(() =>
 )
 const displayImageUrl = useObjectUrl(() => currentDisplayImage.value?.blob)
 const mainImageSrc = computed(() =>
-  isHdr.value
+  isHdr.value || showFullResolution.value
     ? currentImageUrl.value
     : currentDisplayImage.value?.blob
       ? displayImageUrl.value
       : currentDisplayImage.value?.source
 )
-const isDownscaled = computed(() => !!currentDisplayImage.value?.blob)
-const hasMultipleImages = computed(() => items.length > 1)
+const isDownscaled = computed(
+  () => !showFullResolution.value && !!currentDisplayImage.value?.blob
+)
 const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined
   return !!node && hasMultipleOutputs(node)
