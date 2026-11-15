@@ -52,21 +52,23 @@ describe('resolveMediaSources', () => {
     }
   )
 
-  it.for(['blob:original', 'https://cdn.test/view?signature=opaque', ''])(
-    'preserves the supplied source %s without rewriting it',
-    (url) => {
-      const media = resolveMediaSources(resultItem({ url }), {
-        previewFormat: '&preview=webp;75',
-        rand: '&rand=new'
-      })
-      expect([
-        media.originalUrl,
-        media.displayUrl,
-        media.previewUrl,
-        media.thumbnailUrl
-      ]).toEqual([url, url, url, url])
-    }
-  )
+  it.for([
+    'blob:original',
+    'https://cdn.test/view?signature=opaque',
+    '/api/view?filename=out.png&type=output&signature=opaque',
+    ''
+  ])('preserves the supplied source %s without rewriting it', (url) => {
+    const media = resolveMediaSources(resultItem({ url }), {
+      previewFormat: '&preview=webp;75',
+      rand: '&rand=new'
+    })
+    expect([
+      media.originalUrl,
+      media.displayUrl,
+      media.previewUrl,
+      media.thumbnailUrl
+    ]).toEqual([url, url, url, url])
+  })
 
   it('distinguishes an unpreviewable original from a missing file', () => {
     const media = resolveMediaSources(

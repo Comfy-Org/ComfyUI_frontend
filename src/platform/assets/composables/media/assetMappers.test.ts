@@ -1,10 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { resolveAssetMediaSources } from '@/platform/assets/utils/assetUrlUtil'
 import { api } from '@/scripts/api'
+import type { TaskItemImpl } from '@/stores/queueStore'
 
-import { mapInputFileToAssetItem, unflattenOutputAssets } from './assetMappers'
+import {
+  mapInputFileToAssetItem,
+  mapTaskOutputToAssetItem,
+  unflattenOutputAssets
+} from './assetMappers'
 
 vi.mock(import('@/scripts/api'))
 
@@ -52,6 +59,23 @@ describe('mapInputFileToAssetItem', () => {
 
     expect(asset.preview_url).toBe('/api/view?filename=clip.mp4&type=output')
     expect(asset.tags).toEqual(['output'])
+  })
+})
+
+describe('mapTaskOutputToAssetItem', () => {
+  it('retains an opaque original without using it as a browser preview', () => {
+    const asset = mapTaskOutputToAssetItem(
+      fromPartial<TaskItemImpl>({ jobId: 'job-1' }),
+      {
+        filename: 'sky.exr',
+        type: 'output',
+        subfolder: '',
+        nodeId: '1',
+        mediaType: 'images',
+        url: '/api/assets/file-1/content'
+      }
+    )
+    expect(resolveAssetMediaSources(asset).previewUrl).toBe('')
   })
 })
 

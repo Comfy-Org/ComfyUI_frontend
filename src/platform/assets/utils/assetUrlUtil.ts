@@ -23,12 +23,16 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { resolveMediaSources } from '@/utils/mediaResource'
 
 export function resolveAssetMediaSources(asset: AssetItem) {
-  const suppliedPreview = [asset.thumbnail_url, asset.preview_url].find(
-    (url) => url && !isHdrImageUrl(url)
-  )
+  const suppliedPreview = [
+    asset.thumbnail_url,
+    asset.preview_url === asset.original_url ? undefined : asset.preview_url
+  ].find((url) => url && !isHdrImageUrl(url))
   const media = resolveMediaSources({
     filename: asset.name,
-    url: getAssetViewUrl(asset),
+    url:
+      isCloud && asset.hash
+        ? getAssetInlineMediaUrl(asset)
+        : getAssetViewUrl(asset),
     previewUrl:
       resolveMediaSrc(suppliedPreview) ||
       (asset.preview_id ? hdrPreviewAssetUrl(asset.preview_id) : undefined),

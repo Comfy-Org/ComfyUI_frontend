@@ -77,7 +77,10 @@ export function resolveMediaSources(
     originalUrl,
     displayUrl: requiresPreview ? previewUrl : originalUrl,
     previewUrl,
-    thumbnailUrl: thumbnailUrl(previewUrl),
+    thumbnailUrl:
+      item.previewUrl ??
+      (requiresPreview ? undefined : item.url) ??
+      thumbnailUrl(previewUrl),
     canEditPixels: !requiresPreview
   }
 }

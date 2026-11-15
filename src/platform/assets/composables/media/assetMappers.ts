@@ -61,6 +61,7 @@ export function mapTaskOutputToAssetItem(
     created_at: executionTime,
     updated_at: executionTime,
     tags: ['output'],
+    original_url: resultItemUrl(output),
     thumbnail_url: resolveMediaSources(output).previewUrl,
     preview_url: resultItemUrl(output),
     user_metadata: metadata

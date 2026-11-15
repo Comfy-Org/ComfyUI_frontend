@@ -107,6 +107,7 @@ function mapOutputsToAssetItems({
       created_at: createdAtValue,
       updated_at: createdAtValue,
       tags: ['output'],
+      original_url: resultItemUrl(output),
       thumbnail_url: resolveMediaSources(output).previewUrl,
       preview_url: resultItemUrl(output),
       user_metadata: {

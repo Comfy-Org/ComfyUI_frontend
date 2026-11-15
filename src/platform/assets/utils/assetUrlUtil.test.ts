@@ -41,6 +41,16 @@ function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
 }
 
 describe('resolveAssetMediaSources', () => {
+  it('uses the storage hash for a cloud preview without changing its media kind', () => {
+    mockIsCloud.value = true
+    const media = resolveAssetMediaSources(
+      createAsset({ name: 'photo.png', hash: 'opaque-storage-hash' })
+    )
+    const preview = new URL(media.previewUrl)
+    expect(preview.searchParams.get('filename')).toBe('opaque-storage-hash')
+    expect(media.kind).toBe('image')
+  })
+
   it.for([
     {
       thumbnail_url: 'https://cdn.test/thumb.png',

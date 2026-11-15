@@ -11,6 +11,7 @@ const zAsset = z.object({
   hash: z.string().optional(),
   id: z.string(),
   last_access_time: z.iso.datetime({ local: true }).optional(),
+  original_url: z.string().optional(),
   preview_url: z.string().optional(),
   size: zIngestAsset.shape.size.unwrap().transform(Number).optional(),
   tags: zIngestAsset.shape.tags.default([]),
