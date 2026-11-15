@@ -8,6 +8,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
 import * as jobOutputCache from '@/platform/queue/services/jobOutputCache'
 import { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 vi.mock<unknown>(
   import('@/platform/extensions/services/extensionService'),
@@ -33,9 +34,7 @@ const mockWorkflow: ComfyWorkflowJSON = {
   version: 0.4
 }
 
-// Mock job detail response (matches actual /jobs/{id} API response structure)
-// workflow is nested at: workflow.extra_data.extra_pnginfo.workflow
-const mockJobDetail = {
+const mockJobDetail: JobDetail = {
   id: 'test-job-id',
   status: 'completed' as const,
   create_time: Date.now(),
@@ -92,7 +91,7 @@ describe('loadJobWorkflow', () => {
     const task = new TaskItemImpl(job)
 
     vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
-      mockJobDetail as JobDetail
+      mockJobDetail
     )
 
     await loadJobWorkflow(task, mockApp)
@@ -100,6 +99,29 @@ describe('loadJobWorkflow', () => {
     expect(jobOutputCache.getJobDetail).toHaveBeenCalledWith('test-job-id')
     expect(mockApp.loadGraphData).toHaveBeenCalledWith(mockWorkflow)
   })
+
+  it.for([false, true])(
+    'restores outputs and notifies extensions only after a successful load: %s',
+    async (loaded) => {
+      const invokeExtensions = vi.fn()
+      provideExtensionService(() => ({ invokeExtensions }))
+      vi.mocked(mockApp.loadGraphData).mockResolvedValue(loaded)
+      vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(mockJobDetail)
+      const outputStore = useNodeOutputStore()
+      const restoreOutputs = vi.spyOn(
+        outputStore,
+        'setNodeOutputsByExecutionId'
+      )
+
+      await loadJobWorkflow(
+        new TaskItemImpl(createHistoryJob('test-job-id')),
+        mockApp
+      )
+
+      expect(restoreOutputs).toHaveBeenCalledTimes(loaded ? 1 : 0)
+      expect(invokeExtensions).toHaveBeenCalledTimes(loaded ? 1 : 0)
+    }
+  )
 
   it('should not load workflow when fetch returns undefined', async () => {
     const job = createHistoryJob('test-job-id')
@@ -118,7 +140,7 @@ describe('loadJobWorkflow', () => {
     const runningTask = new TaskItemImpl(job)
 
     vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
-      mockJobDetail as JobDetail
+      mockJobDetail
     )
 
     await loadJobWorkflow(runningTask, mockApp)

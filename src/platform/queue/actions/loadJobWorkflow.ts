@@ -15,7 +15,8 @@ export async function loadJobWorkflow(task: TaskItemImpl, app: ComfyApp) {
   if (!workflowData) {
     return
   }
-  await app.loadGraphData(toRaw(workflowData))
+  const loaded = await app.loadGraphData(toRaw(workflowData))
+  if (loaded === false) return
   const outputsToLoad = jobDetail?.outputs ?? task.outputs
   const nodeOutputsStore = useNodeOutputStore()
   const rawOutputs = toRaw(outputsToLoad)
