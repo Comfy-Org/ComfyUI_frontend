@@ -9,7 +9,6 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
-import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -350,46 +349,34 @@ describe('promoteRecommendedWidgets', () => {
     expect(subgraphNode.serialize().properties?.proxyWidgets).toBeUndefined()
   })
 
-  it('skips deferred updatePreviews when a preview widget already exists', () => {
+  it('exposes a drawn video preview under the canvas preview name', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
-    const interiorNode = new LGraphNode('TestNode')
-    subgraph.add(interiorNode)
-
-    const previewWidget = interiorNode.addWidget(
+    const videoNode = new LGraphNode('SaveVideo')
+    subgraph.add(videoNode)
+    const videoPreview = videoNode.addWidget(
       'custom',
-      'videopreview',
+      'video-preview',
       'value',
       () => {}
     )
-    previewWidget.type = 'preview'
-    previewWidget.serialize = false
+    videoPreview.type = 'video'
+    videoPreview.serialize = false
 
     promoteRecommendedWidgets(subgraphNode)
 
-    expect(useLitegraphService().updatePreviews).not.toHaveBeenCalled()
-  })
-
-  it('eagerly exposes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
-    const subgraph = createTestSubgraph()
-    const subgraphNode = createTestSubgraphNode(subgraph)
-    const glslNode = new LGraphNode('GLSLShader', 'GLSLShader')
-    subgraph.add(glslNode)
-
-    promoteRecommendedWidgets(subgraphNode)
-
-    const hostLocator = String(subgraphNode.id)
     expect(
       usePreviewExposureStore().getExposures(
         subgraphNode.rootGraph.id,
-        hostLocator
+        String(subgraphNode.id)
       )
-    ).toContainEqual({
-      name: CANVAS_IMAGE_PREVIEW_WIDGET,
-      sourceNodeId: String(glslNode.id),
-      sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
-    })
-    expect(useLitegraphService().updatePreviews).not.toHaveBeenCalled()
+    ).toEqual([
+      {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
+        sourceNodeId: String(videoNode.id),
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    ])
   })
 })
 

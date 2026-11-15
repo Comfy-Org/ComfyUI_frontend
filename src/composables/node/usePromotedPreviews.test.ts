@@ -13,7 +13,7 @@ import {
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
+import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { usePromotedPreviews } from './usePromotedPreviews'
 
 function createSetup() {

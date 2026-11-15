@@ -227,7 +227,7 @@ import {
   pasteVideoNodes
 } from '@/composables/usePaste'
 
-export { ANIM_PREVIEW_WIDGET } from '@/composables/node/useNodeAnimatedImage'
+export { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
