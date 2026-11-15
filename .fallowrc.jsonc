@@ -40,6 +40,7 @@
       "name": "comfyui-support-entry-points",
       "enablers": ["fallow"],
       "entryPoints": [
+        ".dependency-cruiser.ts",
         "**/.storybook/{main.ts,preview.ts,style.css}",
         "packages/comfyui-api-types/openapi-ts.config.ts",
         "packages/ingest-types/openapi-ts.config.ts",
