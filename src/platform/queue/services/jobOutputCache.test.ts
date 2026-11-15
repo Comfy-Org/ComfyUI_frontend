@@ -150,18 +150,41 @@ describe('jobOutputCache', () => {
     })
 
     it.for([undefined, { outputs: undefined }])(
-      'retains preview outputs when detail has no outputs: %j',
+      'retries missing outputs on the next selection: %j',
       async (detail) => {
         const preview = createResultItem('preview')
         const job = createMockJob(uniqueId('missing-outputs'), 3)
         const task = new TaskItemImpl(job, {}, [preview])
-        vi.mocked(api.getJobDetail).mockResolvedValue(
-          detail ? { ...job, ...detail } : undefined
-        )
+        const outputs = [createResultItem('full-1'), createResultItem('full-2')]
+        vi.mocked(api.getJobDetail)
+          .mockResolvedValueOnce(detail ? { ...job, ...detail } : undefined)
+          .mockResolvedValueOnce({
+            ...job,
+            outputs: { 'node-1': { images: outputs } }
+          })
 
         expect(await getOutputsForTask(task)).toEqual([preview])
+        expect(await getOutputsForTask(task)).toEqual(outputs)
       }
     )
+
+    it('retries missing outputs even when the failed selection was superseded', async () => {
+      const job = createMockJob(uniqueId('superseded-missing'), 2)
+      const task = new TaskItemImpl(job, {}, [createResultItem('preview')])
+      const outputs = [createResultItem('full-1'), createResultItem('full-2')]
+      vi.mocked(api.getJobDetail)
+        .mockResolvedValueOnce(job)
+        .mockResolvedValueOnce({
+          ...job,
+          outputs: { 'node-1': { images: outputs } }
+        })
+
+      const firstSelection = getOutputsForTask(task)
+      await getOutputsForTask(createTask(createResultItem('other-preview')))
+
+      expect(await firstSelection).toBeNull()
+      expect(await getOutputsForTask(task)).toEqual(outputs)
+    })
 
     it('shares a pending detail request with other output and detail readers', async () => {
       const job = createMockJob(uniqueId('shared-outputs'), 2)

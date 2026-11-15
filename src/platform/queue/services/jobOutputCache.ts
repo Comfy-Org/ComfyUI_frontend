@@ -77,14 +77,18 @@ export async function getOutputsForTask(
 
   try {
     const detail = await getJobDetail(task.jobId)
-    const loadedTask = detail?.outputs
-      ? new TaskItemImpl(task.job, detail.outputs)
-      : task
+    if (!detail?.outputs) {
+      jobDetailCache.delete(requestId)
+      return latestTaskRequestId === requestId
+        ? [...task.previewableOutputs]
+        : null
+    }
 
     if (latestTaskRequestId !== requestId) {
       return null
     }
 
+    const loadedTask = new TaskItemImpl(task.job, detail.outputs)
     taskCache.set(requestId, loadedTask)
     return [...loadedTask.previewableOutputs]
   } catch (error) {
