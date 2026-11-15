@@ -40,8 +40,7 @@ describe('TransformPane', () => {
 
       const transformPane = screen.getByTestId('transform-pane')
       expect(transformPane).toHaveStyle({
-        translate: '200px 100px',
-        scale: '2',
+        transform: 'scale(2) translate(100px, 50px)',
         transformOrigin: '0 0'
       })
     })
@@ -82,30 +81,26 @@ describe('TransformPane', () => {
       canvas.ds.scale = 2
       await nextTick()
       expect(transformPane).toHaveStyle({
-        translate: '0px 0px',
-        scale: '1'
+        transform: 'scale(1) translate(0px, 0px)'
       })
 
       canvas.draw()
       await nextTick()
       expect(transformPane).toHaveStyle({
-        translate: '74px -38px',
-        scale: '2'
+        transform: 'scale(2) translate(37px, -19px)'
       })
 
       canvas.setCanvas(createTestCanvasElement({ ctx }), true)
       canvas.ds.offset = [-23, 41]
       await nextTick()
       expect(transformPane).toHaveStyle({
-        translate: '74px -38px',
-        scale: '2'
+        transform: 'scale(2) translate(37px, -19px)'
       })
 
       canvas.draw()
       await nextTick()
       expect(transformPane).toHaveStyle({
-        translate: '-46px 82px',
-        scale: '2'
+        transform: 'scale(2) translate(-23px, 41px)'
       })
     })
   })
