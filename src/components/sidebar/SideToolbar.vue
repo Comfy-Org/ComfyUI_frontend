@@ -304,10 +304,6 @@ onMounted(() => {
 </script>
 
 <style>
-/* Sidebar dimension defaults are global; the size variants are set on the
- * toolbar itself, because a `:root:has(...)` rule makes the browser search the
- * whole document on every DOM insertion.
- */
 :root {
   --sidebar-padding: 4px;
   --sidebar-icon-size: 1rem;
