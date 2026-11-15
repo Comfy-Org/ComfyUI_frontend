@@ -594,7 +594,12 @@ function useBillingCapabilitiesInternal() {
   }
 
   async function refresh(): Promise<void> {
+    const requestIdAtCall = latestRequestId
     await initialize()
+    if (disposed) return
+    const noReadStartedSinceCall = latestRequestId === requestIdAtCall
+    if (noReadStartedSinceCall) await initialize()
+    else await activeRequest?.promise
   }
 
   watch(
