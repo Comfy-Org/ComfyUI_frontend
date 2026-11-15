@@ -1,13 +1,15 @@
 import { createHash } from 'node:crypto'
 import {
   existsSync,
+  readdirSync,
+  statSync,
   writeFileSync,
   mkdirSync,
   unlinkSync,
   rmSync
 } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, dirname } from 'node:path'
+import { join, dirname, basename } from 'node:path'
 import { formatInitialFeatureFlags } from '../featureFlags'
 import type { Distribution } from '../devserver/distributions'
 
@@ -81,6 +83,55 @@ export function removeLegacyCustomStorageState(storageStateFile: string): void {
 export function ensureStorageStateDir(storageStateFile: string): void {
   // 0700 — the file holds live session cookies.
   mkdirSync(dirname(storageStateFile), { recursive: true, mode: 0o700 })
+}
+
+// Retention for credential-bearing session files: keep the newest few and
+// drop anything older than a month, so per-backend files cannot accumulate
+// forever. Best-effort — a file we cannot stat or unlink (a lock, EACCES)
+// is skipped, same as removeLegacyCustomStorageState.
+const STORAGE_STATE_KEEP = 8
+const STORAGE_STATE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
+
+export function pruneStaleStorageStates(activeStorageStateFile: string): void {
+  const dir = dirname(activeStorageStateFile)
+  let entries: string[]
+  try {
+    entries = readdirSync(dir)
+  } catch {
+    return
+  }
+  const candidates = entries
+    .filter(
+      (name) =>
+        /^storage-state\..+\.json$/.test(name) &&
+        name !== basename(activeStorageStateFile)
+    )
+    .map((name) => {
+      const path = join(dir, name)
+      try {
+        return { path, mtime: statSync(path).mtimeMs }
+      } catch {
+        return null
+      }
+    })
+    .filter((entry): entry is { path: string; mtime: number } => entry !== null)
+    .sort((a, b) => b.mtime - a.mtime)
+  const now = Date.now()
+  const doomed = new Map(
+    [
+      ...candidates.filter(
+        (entry) => now - entry.mtime > STORAGE_STATE_MAX_AGE_MS
+      ),
+      ...candidates.slice(STORAGE_STATE_KEEP)
+    ].map((entry) => [entry.path, entry])
+  )
+  for (const { path } of doomed.values()) {
+    try {
+      rmSync(path, { force: true })
+    } catch {
+      // Same best-effort rule as removeLegacyCustomStorageState.
+    }
+  }
 }
 
 export const RECORDING_SPEC_BASENAME = '_recording-session'

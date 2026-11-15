@@ -6,6 +6,7 @@ const {
   cleanupRecordingTemplate,
   ensureStorageStateDir,
   generateRecordingTemplate,
+  pruneStaleStorageStates,
   recordingTarget,
   removeLegacyCustomStorageState,
   runCommand,
@@ -16,6 +17,7 @@ const {
   cleanupRecordingTemplate: vi.fn(),
   ensureStorageStateDir: vi.fn(),
   generateRecordingTemplate: vi.fn(),
+  pruneStaleStorageStates: vi.fn(),
   recordingTarget: vi.fn((): 'cloud' => 'cloud'),
   removeLegacyCustomStorageState: vi.fn(),
   runCommand: vi.fn((): SpawnSyncReturns<Buffer> => ({
@@ -36,6 +38,7 @@ vi.mock(import('./template'), () => ({
   cleanupRecordingTemplate,
   ensureStorageStateDir,
   generateRecordingTemplate,
+  pruneStaleStorageStates,
   recordedCodePath: vi.fn(() => '/missing-recorded-code'),
   recordingTarget,
   removeLegacyCustomStorageState,

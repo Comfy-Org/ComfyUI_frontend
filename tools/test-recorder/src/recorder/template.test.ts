@@ -2,8 +2,10 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
+  utimesSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -15,6 +17,7 @@ import {
   cleanupRecordedCode,
   cleanupRecordingTemplate,
   generateRecordingTemplate,
+  pruneStaleStorageStates,
   recordedCodePath,
   recordingTarget,
   removeLegacyCustomStorageState,
@@ -357,6 +360,76 @@ describe('recording template', () => {
         )
       ).not.toThrow()
       expect(existsSync(legacyStateFile)).toBe(true)
+    })
+  })
+
+  describe('pruneStaleStorageStates', () => {
+    let stateDir: string
+
+    beforeEach(() => {
+      stateDir = mkdtempSync(join(tmpdir(), 'storage-state-'))
+    })
+
+    function seed(name: string, ageDays: number): string {
+      const path = join(stateDir, name)
+      writeFileSync(path, '{}')
+      const past = new Date(Date.now() - ageDays * 24 * 60 * 60 * 1000)
+      utimesSync(path, past, past)
+      return path
+    }
+
+    it('keeps the active file even when it is the oldest', () => {
+      const active = seed('storage-state.cloud.json', 90)
+      seed('storage-state.custom-abc.json', 1)
+
+      pruneStaleStorageStates(active)
+
+      expect(existsSync(active)).toBe(true)
+    })
+
+    it('drops files older than the retention window', () => {
+      const stale = seed('storage-state.custom-abc.json', 31)
+      const fresh = seed('storage-state.cloud.json', 5)
+
+      pruneStaleStorageStates(fresh)
+
+      expect(existsSync(stale)).toBe(false)
+      expect(existsSync(fresh)).toBe(true)
+    })
+
+    it('keeps only the newest files when the cap is exceeded', () => {
+      const fresh = seed('storage-state.cloud.json', 1)
+      for (let i = 0; i < 9; i++) {
+        seed(`storage-state.custom-${i}.json`, 2 + i)
+      }
+
+      pruneStaleStorageStates(fresh)
+
+      const kept = readdirSync(stateDir).filter((name) =>
+        name.startsWith('storage-state.')
+      )
+      // the cap counts the non-active files; the active one always stays
+      expect(kept).toHaveLength(9)
+      expect(kept).toContain('storage-state.cloud.json')
+      expect(kept).not.toContain('storage-state.custom-8.json')
+    })
+
+    it('leaves files that do not match the storage-state pattern alone', () => {
+      const other = join(stateDir, 'other.json')
+      writeFileSync(other, '{}')
+      const fresh = seed('storage-state.cloud.json', 1)
+
+      pruneStaleStorageStates(fresh)
+
+      expect(existsSync(other)).toBe(true)
+    })
+
+    it('does not throw when the directory does not exist', () => {
+      expect(() =>
+        pruneStaleStorageStates(
+          join(stateDir, 'absent', 'storage-state.cloud.json')
+        )
+      ).not.toThrow()
     })
   })
 })
