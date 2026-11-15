@@ -121,9 +121,7 @@ jobs:
             dist-desktop.zip
           tag_name: v${{ steps.version.outputs.version }}
           target_commitish: ${{ inputs.branch }}
-          make_latest: >-
-            ${{ inputs.branch == 'main' &&
-                steps.version.outputs.is_prerelease == 'false' }}
+          make_latest: false
           draft: ${{ steps.version.outputs.is_prerelease == 'true' }}
           prerelease: >-
             ${{ steps.version.outputs.is_prerelease == 'true' }}
@@ -139,3 +137,13 @@ jobs:
             echo
             echo "Re-run \`release-weekly-comfyui.yaml\` to publish it to PyPI and open the ComfyUI pin PR."
           } >> "$GITHUB_STEP_SUMMARY"
+
+  enforce_latest:
+    name: Enforce Latest Release
+    needs: recover
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-enforce-latest.yaml
+    secrets:
+      PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
