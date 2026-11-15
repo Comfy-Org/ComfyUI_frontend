@@ -97,7 +97,8 @@ describe('TransformPane', () => {
       canvas.ds.offset = [-23, 41]
       await nextTick()
       expect(transformPane).toHaveStyle({
-        transform: 'scale3d(2, 2, 2) translate3d(37px, -19px, 0)'
+        translate: '74px -38px',
+        scale: '2'
       })
 
       canvas.draw()
