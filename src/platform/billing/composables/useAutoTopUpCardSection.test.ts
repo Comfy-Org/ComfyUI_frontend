@@ -52,6 +52,7 @@ const BILLING_HREF =
   /^https:\/\/platform\.test\/profile\/billing\?correlation_id=.+$/
 
 const configured: AutoReloadSettings = {
+  auto_top_up_conflict: false,
   card_expiry: null,
   configured: true,
   cycle_resets_at: '2026-11-28T00:00:00Z',

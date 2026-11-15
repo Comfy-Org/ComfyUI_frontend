@@ -969,6 +969,7 @@ export const zAutoReloadPreview = z.object({
  *
  */
 export const zAutoReloadSettings = z.object({
+  auto_top_up_conflict: z.boolean(),
   card_expiring_soon: z.boolean().nullish(),
   card_expiry: zAutoReloadCardExpiry.nullable(),
   configured: z.boolean(),
@@ -1258,6 +1259,8 @@ export const zBillingCapabilities = z.object({
   can_reactivate: z.boolean(),
   can_revert_scheduled_change: z.boolean(),
   can_run_workflows: z.boolean(),
+  can_set_budgets: z.boolean(),
+  can_set_hard_caps: z.boolean(),
   can_subscribe_self_serve: z.boolean(),
   can_top_up: z.boolean(),
   can_upgrade: z.boolean(),
@@ -1441,6 +1444,31 @@ export const zBillingCapabilityDenials = z.object({
       'project_cap_exceeded',
       'user_cap_exceeded',
       'free_tier_exhausted'
+    ])
+    .optional(),
+  can_set_budgets: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'creator_only_provisioning',
+      'no_subscription',
+      'free_plan',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized'
+    ])
+    .optional(),
+  can_set_hard_caps: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'creator_only_provisioning',
+      'no_subscription',
+      'free_plan',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized',
+      'plan_not_enterprise'
     ])
     .optional(),
   can_subscribe_self_serve: z
@@ -1640,6 +1668,13 @@ export const zBillingOpCancelResponse = z.object({
 })
 
 /**
+ * How a billing operation ended, for a billing handoff tab whose scoped session has ended.
+ */
+export const zBillingOpOutcomeResponse = z.object({
+  status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed'])
+})
+
+/**
  * Payment lifecycle status
  */
 export const zBillingStatus = z.enum([
@@ -1812,6 +1847,7 @@ export const zBudgetCreateRequest = z.object({
 })
 
 export const zBudgetList = z.object({
+  auto_top_up_conflict: z.boolean(),
   budgets: z.array(zBudget)
 })
 
@@ -1841,6 +1877,7 @@ export const zBudgetUpdateRequest = z.object({
 })
 
 export const zBudgetWriteResult = z.object({
+  auto_top_up_conflict: z.boolean(),
   budget: zBudget
 })
 
@@ -2145,6 +2182,7 @@ export const zCccPageRow = z.object({
   has_live: z.boolean(),
   held_until_start: z.boolean(),
   is_deleted: z.boolean(),
+  on_desktop: z.boolean(),
   on_hub: z.boolean(),
   presentation: zCccPagePresentation,
   revision_uid: z.uuid(),
@@ -7077,6 +7115,15 @@ export const zCancelBillingOpPath = z.object({
  */
 export const zCancelBillingOpResponse = zBillingOpCancelResponse
 
+export const zGetBillingOpOutcomePath = z.object({
+  id: z.string()
+})
+
+/**
+ * Billing operation outcome
+ */
+export const zGetBillingOpOutcomeResponse = zBillingOpOutcomeResponse
+
 /**
  * Saved payment methods
  */
@@ -8020,7 +8067,7 @@ export const zGetCccActivityQuery = z.object({
 export const zGetCccActivityResponse = zCccActivityPage
 
 /**
- * Editing instructions from this deployed catalog API build
+ * Editing instructions from this deployed catalog API build; private no-store
  */
 export const zGetCatalogAgentInstructionsResponse = z.string()
 
@@ -8075,11 +8122,6 @@ export const zGetCccCreatorPath = z.object({
  * Public creator profile
  */
 export const zGetCccCreatorResponse = zCccCreatorProfile
-
-/**
- * Build-coupled catalog instructions, permissions and endpoint contracts
- */
-export const zGetCatalogDocsResponse = z.string()
 
 export const zBatchCccItemsBody = z.object({
   expected_draft_rev: z.coerce
@@ -8443,7 +8485,7 @@ export const zListCccWebsiteModelDirectoryQuery = z.object({
 export const zListCccWebsiteModelDirectoryResponse = zCccWebsiteModelDirectory
 
 /**
- * Catalog OpenAPI with contract fingerprint and environment
+ * Catalog OpenAPI with contract fingerprint and environment; private no-store
  */
 export const zGetCatalogOpenApiResponse = zCccjson
 
