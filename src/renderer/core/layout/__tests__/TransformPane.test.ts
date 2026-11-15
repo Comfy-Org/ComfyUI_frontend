@@ -39,9 +39,10 @@ describe('TransformPane', () => {
       await nextTick()
 
       const transformPane = screen.getByTestId('transform-pane')
-      expect(transformPane.getAttribute('style')).toContain(
-        'transform: scale3d(2, 2, 2) translate3d(100px, 50px, 0)'
-      )
+      expect(transformPane).toHaveStyle({
+        translate: '200px 100px',
+        scale: '2'
+      })
     })
 
     it('should render slot content', () => {
@@ -80,26 +81,30 @@ describe('TransformPane', () => {
       canvas.ds.scale = 2
       await nextTick()
       expect(transformPane).toHaveStyle({
-        transform: 'scale3d(1, 1, 1) translate3d(0px, 0px, 0)'
+        translate: '0px 0px',
+        scale: '1'
       })
 
       canvas.draw()
       await nextTick()
       expect(transformPane).toHaveStyle({
-        transform: 'scale3d(2, 2, 2) translate3d(37px, -19px, 0)'
+        translate: '74px -38px',
+        scale: '2'
       })
 
       canvas.setCanvas(createTestCanvasElement({ ctx }), true)
       canvas.ds.offset = [-23, 41]
       await nextTick()
       expect(transformPane).toHaveStyle({
-        transform: 'scale3d(2, 2, 2) translate3d(37px, -19px, 0)'
+        translate: '74px -38px',
+        scale: '2'
       })
 
       canvas.draw()
       await nextTick()
       expect(transformPane).toHaveStyle({
-        transform: 'scale3d(2, 2, 2) translate3d(-23px, 41px, 0)'
+        translate: '-46px 82px',
+        scale: '2'
       })
     })
   })
