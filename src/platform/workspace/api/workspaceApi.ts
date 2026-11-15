@@ -29,7 +29,8 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import {
   DEPLOYMENT_LISTING_TIMEOUT_MS,
-  DEPLOYMENT_START_TIMEOUT_MS
+  DEPLOYMENT_START_TIMEOUT_MS,
+  EDITOR_GPU_SAVE_TIMEOUT_MS
 } from './deploymentListingTimeouts'
 import type {
   WorkspaceId,
@@ -43,6 +44,11 @@ import {
   handleAxiosError
 } from '@/platform/remote/ingest/ingestApi'
 import { ingestApiUrl as ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
+import type {
+  EditorGpuChange,
+  GpuAnswer
+} from '@/platform/workspace/gpuSession'
+import { readSavedGpu } from '@/platform/workspace/gpuSession'
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
 
@@ -227,6 +233,25 @@ export const workspaceApi = {
       )
     } catch (err) {
       handleAxiosError(err, 'setDefaultDeployment')
+    }
+  },
+  async setEditorGpu(
+    workspaceId: WorkspaceId,
+    deploymentId: string,
+    change: EditorGpuChange
+  ): Promise<GpuAnswer | null> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.put<unknown>(
+        ingestApiUrl(
+          `/workspaces/${workspaceId}/deployments/${encodeURIComponent(deploymentId)}/editor-gpu`
+        ),
+        change,
+        { ...auth, timeout: EDITOR_GPU_SAVE_TIMEOUT_MS }
+      )
+      return readSavedGpu(response.data)
+    } catch (err) {
+      handleAxiosError(err, 'setEditorGpu')
     }
   },
   async clearDefaultDeployment(workspaceId: WorkspaceId): Promise<void> {
