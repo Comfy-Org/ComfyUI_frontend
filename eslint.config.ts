@@ -213,9 +213,10 @@ const layerClassRestriction = {
     'Use a named layer for cross-component ordering; keep local stacking inside an isolated owner.'
 }
 
+const arbitraryVariantWithHas = '\\[(?:[^\\[\\]]|\\[[^\\[\\]]*\\])*:has\\('
+
 const nestedHasClassRestriction = {
-  pattern:
-    '(?:^|:)(?:not-)?group-(?:not-)?has-|(?:^|:)not-in-(?:not-)?has-|(?:^|:)(?:not-)?has-.+:\\*{1,2}:|(?:^|:)(?:not-)?group-\\[.*:has\\(|(?:^|:)not-in-\\[.*:has\\(',
+  pattern: `(?:^|:)(?:not-)?group-(?:not-)?has-|(?:^|:)not-in-(?:not-)?has-|(?:^|:)(?:not-)?has-.+:\\*{1,2}:|(?:^|:)(?:not-)?group-(?:not-)?${arbitraryVariantWithHas}|(?:^|:)not-in-(?:not-)?${arbitraryVariantWithHas}`,
   message:
     'This compiles to :has() inside :is() or :not() ahead of a descendant combinator, which makes Chrome restyle the whole document on any DOM insertion. Use an arbitrary variant such as [.group:has(:focus-visible)_&]: instead.'
 }

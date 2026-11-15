@@ -22,9 +22,11 @@ describe('nested :has() utilities', () => {
     'md:group-has-[.subbutton:hover]:flex',
     'group-[:has(.subbutton)]:flex',
     'group-[&[data-state=open]:has(button)]:flex',
+    'group-not-[&:has(button)]:flex',
     'not-in-has-checked:flex',
     'not-in-[.group:has(.subbutton)]:flex',
     'not-in-[[data-state=open]:has(button)]:flex',
+    'not-in-not-[&:has(button)]:flex',
     'has-[>button]:*:pl-2',
     'has-checked:**:pl-2'
   ])('rejects %s', { timeout: 15000 }, async (className) => {
@@ -36,7 +38,7 @@ describe('nested :has() utilities', () => {
   it('allows :has() forms that match without a nested descendant', async () => {
     expect(
       await restrictedClassMessages(
-        'has-checked:flex not-has-checked:flex in-has-checked:flex peer-has-checked:flex [.group:has(:focus-visible)_&]:opacity-100 [&:has(>button)>input]:pl-2'
+        'has-checked:flex not-has-checked:flex in-has-checked:flex peer-has-checked:flex [.group:has(:focus-visible)_&]:opacity-100 [&:has(>button)>input]:pl-2 group-[&.open]:[&:has(>button)]:flex not-in-[.open]:[&:has(>button)]:flex'
       )
     ).toEqual([])
   })
