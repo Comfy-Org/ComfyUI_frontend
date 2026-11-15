@@ -363,7 +363,9 @@ const imageKeys = computed(() =>
 const gridUrls = computed(() =>
   items.map((item) => getGridThumbnailUrl(resultItemPreviewUrl(item)))
 )
-const isHdr = computed(() => isHdrResult(items[currentIndex.value]))
+const isHdr = computed(
+  () => items.length > 0 && isHdrResult(items[currentIndex.value])
+)
 const hasMultipleImages = computed(() => items.length > 1)
 const showFullResolution = computed(
   () => fullResolution && !hasMultipleImages.value
@@ -451,10 +453,14 @@ watch(
   { immediate: true }
 )
 
-watch(showFullResolution, () => {
-  imageError.value = false
-  startDelayedLoader()
-})
+watch(
+  [showFullResolution, mainImageSrc],
+  ([fullRes, src], [previousFullRes, previousSrc]) => {
+    if (fullRes === previousFullRes) return
+    imageError.value = false
+    if (src !== previousSrc) startDelayedLoader()
+  }
+)
 
 let isUnmounted = false
 onBeforeUnmount(() => {

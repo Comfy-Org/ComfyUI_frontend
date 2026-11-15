@@ -190,6 +190,24 @@ describe('ImagePreview', () => {
     )
   })
 
+  it('shows no loader when full resolution keeps the image already shown', async () => {
+    const items = [outputItem('small.png')]
+    const { rerender } = renderImagePreview({ items })
+    const image = await screen.findByTestId('main-image')
+    await vi.waitFor(() =>
+      expect(image).toHaveAttribute('src', viewUrl('small.png'))
+    )
+    await fireEvent.load(image)
+
+    await rerender({ items, fullResolution: true })
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(screen.getByTestId('main-image')).toBe(image)
+    expect(
+      screen.queryByRole('status', { name: 'Loading' })
+    ).not.toBeInTheDocument()
+  })
+
   it('keeps downscaling a gallery of several images when full resolution is requested', async () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
     vi.mocked(useImagePreviewStore().getDisplayImage).mockResolvedValue({
