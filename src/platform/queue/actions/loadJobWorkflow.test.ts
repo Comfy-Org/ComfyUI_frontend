@@ -90,9 +90,7 @@ describe('loadJobWorkflow', () => {
     const job = createHistoryJob('test-job-id')
     const task = new TaskItemImpl(job)
 
-    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
-      mockJobDetail
-    )
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(mockJobDetail)
 
     await loadJobWorkflow(task, mockApp)
 
@@ -139,9 +137,7 @@ describe('loadJobWorkflow', () => {
     const job = createRunningJob('test-job-id')
     const runningTask = new TaskItemImpl(job)
 
-    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(
-      mockJobDetail
-    )
+    vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(mockJobDetail)
 
     await loadJobWorkflow(runningTask, mockApp)
 
