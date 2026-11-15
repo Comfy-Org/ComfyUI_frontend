@@ -157,6 +157,7 @@
           </div>
 
           <div
+            ref="nodeBody"
             :class="
               cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
             "
@@ -264,7 +265,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -457,14 +458,26 @@ const handleContextMenu = (event: MouseEvent) => {
 const baseResizeHandleClasses =
   'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
+const px = (value: string) => Number.parseFloat(value) || 0
+
 function marginBoxHeight(row: HTMLElement) {
   const { marginTop, marginBottom } = getComputedStyle(row)
-  return (
-    row.offsetHeight +
-    (Number.parseFloat(marginTop) || 0) +
-    (Number.parseFloat(marginBottom) || 0)
-  )
+  return row.offsetHeight + px(marginTop) + px(marginBottom)
 }
+
+function trailingSlack(container: HTMLElement) {
+  const last = container.lastElementChild
+  if (!(last instanceof HTMLElement)) return 0
+  const contentBottom =
+    last.offsetTop + last.offsetHeight + px(getComputedStyle(last).marginBottom)
+  const paddedBottom =
+    container.offsetTop +
+    container.offsetHeight -
+    px(getComputedStyle(container).paddingBottom)
+  return Math.max(0, paddedBottom - contentBottom)
+}
+
+const nodeBody = useTemplateRef<HTMLElement>('nodeBody')
 
 function assignOwnedWidgetHeights(element: HTMLElement, nodeHeight: number) {
   const growable = processedWidgets.value.flatMap((widget) => {
@@ -481,7 +494,8 @@ function assignOwnedWidgetHeights(element: HTMLElement, nodeHeight: number) {
     (sum, { row }) => sum + marginBoxHeight(row),
     0
   )
-  const fixedHeight = element.offsetHeight - growableHeight
+  const slack = nodeBody.value ? trailingSlack(nodeBody.value) : 0
+  const fixedHeight = element.offsetHeight - growableHeight - slack
   const heights = distributeOwnedHeights(
     nodeHeight - fixedHeight,
     growable.map(({ widget }) => widget)
