@@ -166,6 +166,30 @@ describe('ImagePreview', () => {
     expect(image).not.toHaveAttribute('data-full-src')
   })
 
+  it('recovers with the downscaled copy after the full-resolution image fails', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockResolvedValue({
+      source: viewUrl('large.png'),
+      blob: new Blob(['display pixels'])
+    })
+    const { rerender } = renderImagePreview({
+      items: [outputItem('large.png')],
+      fullResolution: true
+    })
+    await fireEvent.error(await screen.findByTestId('main-image'))
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+
+    await rerender({ items: [outputItem('large.png')], fullResolution: false })
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
+        'blob:display-copy'
+      )
+    )
+  })
+
   it('keeps downscaling a gallery of several images when full resolution is requested', async () => {
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
     vi.mocked(useImagePreviewStore().getDisplayImage).mockResolvedValue({

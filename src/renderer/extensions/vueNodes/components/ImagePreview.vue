@@ -451,6 +451,11 @@ watch(
   { immediate: true }
 )
 
+watch(showFullResolution, () => {
+  imageError.value = false
+  startDelayedLoader()
+})
+
 let isUnmounted = false
 onBeforeUnmount(() => {
   isUnmounted = true
