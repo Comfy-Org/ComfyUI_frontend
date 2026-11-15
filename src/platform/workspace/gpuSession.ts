@@ -1,4 +1,4 @@
-interface GpuMachine {
+export interface GpuMachine {
   hostname?: string
   boot_id?: string
   gpu_uuid?: string
@@ -8,7 +8,7 @@ interface GpuMachine {
   comfyui_pid?: number
 }
 
-interface GpuSessionRun {
+export interface GpuSessionRun {
   job_id: string
   status?: string
   machine?: GpuMachine
@@ -26,7 +26,7 @@ interface GpuSessionMessage {
   editor_gpu?: boolean
 }
 
-const IDLE_CHOICES = [3, 10, 30, 0] as const
+export const IDLE_CHOICES = [3, 10, 30, 0] as const
 
 export type IdleMinutes = (typeof IDLE_CHOICES)[number]
 

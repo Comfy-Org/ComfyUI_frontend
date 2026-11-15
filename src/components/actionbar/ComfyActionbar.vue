@@ -38,6 +38,7 @@
           "
         />
         <DeploymentSwitcher />
+        <GpuSessionChip />
         <div v-coachmark="FIRST_RUN_COACH_IDS.runButton" class="inline-flex">
           <Suspense @resolve="comfyRunButtonResolved">
             <ComfyRunButton />
@@ -126,6 +127,7 @@ import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcher from '@/platform/workspace/components/DeploymentSwitcher.vue'
+import GpuSessionChip from '@/platform/workspace/components/GpuSessionChip.vue'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
