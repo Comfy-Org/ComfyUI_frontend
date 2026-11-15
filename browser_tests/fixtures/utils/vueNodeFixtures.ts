@@ -106,21 +106,23 @@ export class VueNodeFixture {
   }
 
   getSlot(nameOrLocator: string | Locator) {
-    const slotLocators = this.root
-      .getByTestId('node-widget')
-      .or(this.root.locator('.lg-slot'))
+    const widgetRows = this.root.getByTestId('node-widget')
+    const slots = this.root.locator('.lg-slot')
     const filteredLocator =
       typeof nameOrLocator === 'string'
-        ? slotLocators
-            .filter({
-              has: this.root.page().getByText(nameOrLocator, { exact: true })
-            })
-            .or(
-              this.root
-                .locator('.lg-slot')
-                .and(this.root.getByLabel(nameOrLocator, { exact: true }))
+        ? widgetRows
+            .and(
+              this.root.locator(
+                `[data-widget-name=${JSON.stringify(nameOrLocator)}]`
+              )
             )
-        : slotLocators.filter({ has: nameOrLocator })
+            .or(
+              slots.filter({
+                has: this.root.page().getByText(nameOrLocator, { exact: true })
+              })
+            )
+            .or(slots.and(this.root.getByLabel(nameOrLocator, { exact: true })))
+        : widgetRows.or(slots).filter({ has: nameOrLocator })
     return filteredLocator.getByTestId('slot-dot').locator('..')
   }
 
