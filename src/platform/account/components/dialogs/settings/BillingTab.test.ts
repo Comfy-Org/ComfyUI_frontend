@@ -2340,3 +2340,14 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
     }
   )
 })
+
+describe('BillingTab refresh on return', () => {
+  it('re-reads capabilities when the user returns to the tab on local', () => {
+    const { refresh } = arrange()
+
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+})
