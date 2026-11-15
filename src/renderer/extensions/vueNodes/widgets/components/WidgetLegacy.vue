@@ -86,8 +86,7 @@ function getWidgetHeight(
   if (widget.computedHeight !== undefined) {
     return Math.max(0, widget.computedHeight)
   }
-  const result = getWidgetSizing(widget, node, width)
-  const sizing = result?.kind === 'failed' ? undefined : result
+  const sizing = getWidgetSizing(widget, node, width)
   return Math.max(
     0,
     sizing ? (sizing.kind === 'fixed' ? sizing.height : sizing.minHeight) : 20

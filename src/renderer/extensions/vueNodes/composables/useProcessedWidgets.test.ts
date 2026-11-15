@@ -1,7 +1,6 @@
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -514,7 +513,7 @@ describe('promoted subgraph widgets', () => {
   })
 
   it.for(['computeSize', 'computeLayoutSize'] as const)(
-    'returns a failed sizing outcome for %s and recovers without re-registration',
+    'drops the sizing when %s throws, reports it once, and recovers without re-registration',
     (callback) => {
       const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
       const sourceWidget = subgraph
@@ -529,11 +528,10 @@ describe('promoted subgraph widgets', () => {
       }
       const processed = processHostWidget(graph, hostNode)
 
-      expect(getWidgetSizing(hostNode.widgets[0], hostNode)).toEqual({
-        kind: 'failed',
-        cause
-      })
-      expect(processed.sizing).toBeUndefined()
+      expect([processed.sizing, processed.sizing]).toEqual([
+        undefined,
+        undefined
+      ])
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         cause,
         expect.objectContaining({
