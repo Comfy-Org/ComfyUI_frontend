@@ -118,7 +118,7 @@
       "path": "src/platform/billing/components/subscriptionPanelWorkspace.logic.ts"
     },
     {
-      "path": "src/platform/billing/composables/activateBillingScope.testUtils.ts"
+      "path": "src/platform/billing/__tests__/activateBillingScope.ts"
     },
     {
       "path": "src/platform/billing/composables/useAutoTopUpBannerKind.ts"
@@ -208,7 +208,13 @@
       "path": "src/platform/billing/utils/**"
     },
     {
-      "path": "src/storybook/**"
+      "path": "src/storybook/mocks/useBillingCapabilities.ts"
+    },
+    {
+      "path": "src/storybook/mocks/useBillingContext.ts"
+    },
+    {
+      "path": "src/storybook/mocks/useBillingUI.ts"
     },
     {
       "path": "packages/account-core/src/core/billing/**"
@@ -326,6 +332,7 @@
     }
   ],
   "adrs": [
+    "docs/adr/BILLING-0049-billing-and-workspace-ownership.md",
     "docs/adr/BILLING-WEB-0038-checkout-only-hosts-own-plan-selection.md",
     "docs/adr/AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md",
     "docs/adr/AUTH-BILLING-0032-billing-stays-outside-the-account-package-in-v1.md",
