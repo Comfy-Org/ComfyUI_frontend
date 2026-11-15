@@ -1,5 +1,7 @@
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -510,6 +512,48 @@ describe('promoted subgraph widgets', () => {
       minHeight: 83
     })
   })
+
+  it.for(['computeSize', 'computeLayoutSize'] as const)(
+    'returns a failed sizing outcome for %s and recovers without re-registration',
+    (callback) => {
+      const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
+      const sourceWidget = subgraph
+        .getNodeById(INTERIOR_ID)
+        ?.widgets?.find((widget) => widget.name === 'string_a')
+      assert.exists(sourceWidget)
+      const value = sourceWidget.value
+      sourceWidget.computeSize = undefined
+      const cause = new Error('Extension sizing failed')
+      sourceWidget[callback] = () => {
+        throw cause
+      }
+      const processed = processHostWidget(graph, hostNode)
+
+      expect(getWidgetSizing(hostNode.widgets[0], hostNode)).toEqual({
+        kind: 'failed',
+        cause
+      })
+      expect(processed.sizing).toBeUndefined()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        cause,
+        expect.objectContaining({
+          errorType: 'error_measuring_widget',
+          surface: 'graph',
+          tags: { outcome: 'degraded' }
+        })
+      )
+
+      sourceWidget.computeSize = undefined
+      sourceWidget.computeLayoutSize = () => ({ minWidth: 0, minHeight: 67 })
+
+      expect(processed.sizing).toEqual({
+        kind: 'growable',
+        minWidth: 0,
+        minHeight: 67
+      })
+      expect(sourceWidget.value).toEqual(value)
+    }
+  )
 
   it.for([
     ['shows on the node canvas', { advanced: true }, false, true],

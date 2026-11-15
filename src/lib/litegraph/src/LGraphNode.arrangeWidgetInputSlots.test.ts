@@ -29,6 +29,21 @@ describe('LGraphNode widget input slot arrangement', () => {
     expect(widget.computedHeight).toBe(55 + LiteGraph.NODE_WIDGET_GAP)
   })
 
+  it('keeps arranging rows when an extension sizing callback fails', () => {
+    const node = createWidgetInputNode()
+    const widget = node.widgets?.[0]
+    assert.exists(widget)
+    widget.computeSize = () => {
+      throw new Error('Extension sizing failed')
+    }
+
+    node.arrange()
+
+    expect(widget.computedHeight).toBe(
+      LiteGraph.NODE_WIDGET_HEIGHT + LiteGraph.NODE_WIDGET_GAP
+    )
+  })
+
   it('keeps the same pos array when the widget row has not moved', () => {
     const node = createWidgetInputNode()
     node.arrange()

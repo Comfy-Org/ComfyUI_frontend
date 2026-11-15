@@ -2244,7 +2244,8 @@ export class LGraphNode
       for (const widget of widgets) {
         if (!this.isWidgetRowVisible(widget)) continue
 
-        const sizing = getWidgetSizing(widget, this, size[0])
+        const result = getWidgetSizing(widget, this, size[0])
+        const sizing = result?.kind === 'failed' ? undefined : result
         const widget_height = sizing
           ? sizing.kind === 'fixed'
             ? sizing.height

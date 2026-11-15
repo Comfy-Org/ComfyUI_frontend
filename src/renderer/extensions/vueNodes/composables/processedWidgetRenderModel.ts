@@ -440,7 +440,8 @@ function processWidget(
   return {
     handleContextMenu,
     get sizing() {
-      return live ? getWidgetSizing(live.widget, live.node) : undefined
+      const result = live ? getWidgetSizing(live.widget, live.node) : undefined
+      return result?.kind === 'failed' ? undefined : result
     },
     hasError: hasWidgetError(
       { name: widgetState.name, errorTarget },
