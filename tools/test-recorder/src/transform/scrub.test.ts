@@ -133,6 +133,20 @@ describe('api-key formats', () => {
       () =>
         `await page.getByTestId('token').type('value_ghp_${filler('Ab1', 36)}')`,
       () => `value_ghp_${filler('Ab1', 36)}`
+    ],
+    [
+      'GitHub JWT-style installation ghs_',
+      () =>
+        `const token = 'ghs_123_eyJ${filler('Ab1', 24)}.${filler('Ey1', 24)}.${filler('Ab1', 20)}'`,
+      () =>
+        `ghs_123_eyJ${filler('Ab1', 24)}.${filler('Ey1', 24)}.${filler('Ab1', 20)}`
+    ],
+    [
+      'JWT after an underscore',
+      () =>
+        `await page.getByTestId('token').fill('value_eyJ${filler('Ab1', 16)}.${filler('Ey1', 16)}.${filler('Ab1', 16)}')`,
+      () =>
+        `value_eyJ${filler('Ab1', 16)}.${filler('Ey1', 16)}.${filler('Ab1', 16)}`
     ]
   ] as const)('redacts the %sformat', ([, makeCode, makeSecret]) => {
     const secret = makeSecret()

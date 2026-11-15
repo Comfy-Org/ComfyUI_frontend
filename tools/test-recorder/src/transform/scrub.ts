@@ -6,13 +6,14 @@ export interface ScrubResult {
 const TYPING_CALL = /\.(?:fill|pressSequentially|type)\(/
 const SENSITIVE_FIELD =
   /password|passcode|passwd|one[\s-]?time\s?(?:code|password)|verification code|\b2fa\b|\botp\b|type=["']password["']/i
-const JWT = /\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g
+const JWT =
+  /(?<![A-Za-z0-9])eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g
 const LONG_TOKEN_FILL = /(\.fill\(\s*)(['"])([A-Za-z0-9+/_=-]{32,})(\2)/g
 
 const API_KEY = new RegExp(
   [
     String.raw`(?<![A-Za-z0-9])sk-(?:ant-|proj-)?[A-Za-z0-9_-]{40,}`,
-    String.raw`(?<![A-Za-z0-9])gh[posur]_[A-Za-z0-9_]{20,}`,
+    String.raw`(?<![A-Za-z0-9])gh[posur]_[A-Za-z0-9_]{10,}(?:\.[A-Za-z0-9_-]{8,}){0,2}`,
     String.raw`(?<![A-Za-z0-9])github_pat_[A-Za-z0-9_]{20,}`,
     String.raw`(?<![A-Za-z0-9])glpat-[A-Za-z0-9_-]{20,}`,
     String.raw`(?<![A-Za-z0-9])AKIA[0-9A-Z]{16,}`,
