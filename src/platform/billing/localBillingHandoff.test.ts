@@ -1,5 +1,6 @@
 import { useTelemetry } from '@comfyorg/telemetry'
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
@@ -12,7 +13,10 @@ import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { issueLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import {
+  issueLocalBillingHandoff,
+  reserveBillingHandoffTab
+} from '@/platform/billing/localBillingHandoff'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -594,5 +598,21 @@ describe('issueLocalBillingHandoff', () => {
         message: undefined
       })
     })
+  })
+})
+
+describe('reserveBillingHandoffTab', () => {
+  it('gives the reserved tab its own title, apart from the heading', () => {
+    const page = document.implementation.createHTMLDocument('')
+    vi.spyOn(window, 'open').mockReturnValue(
+      fromPartial<Window>({ opener: null, document: page })
+    )
+
+    reserveBillingHandoffTab()
+
+    expect(page.title).toBe('billingHandoff.openingTabTitle')
+    expect(page.body.textContent).toBe(
+      'billingHandoff.openingbillingHandoff.openingDetail'
+    )
   })
 })
