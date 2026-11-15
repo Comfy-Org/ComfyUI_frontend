@@ -49,13 +49,14 @@ describe('recording template', () => {
     expect(code).toContain("from '@e2e/fixtures/ComfyPage'")
   })
 
-  it('starts the toolbar in standby: inspecting mode, no pending statement', () => {
-    for (const target of ['local', 'cloud'] as const) {
+  it.for(['local', 'cloud'] as const)(
+    'starts the %s toolbar in standby: inspecting mode, no pending statement',
+    (target) => {
       const { code } = generate({ testName: 'demo', target })
       expect(code).toContain("mode: 'inspecting'")
       expect(code).toContain('pauseOnNextStatement: false')
     }
-  })
+  )
 
   it('loads the chosen workflow before pausing', () => {
     const { code } = generate({ testName: 'demo', workflow: 'default' })

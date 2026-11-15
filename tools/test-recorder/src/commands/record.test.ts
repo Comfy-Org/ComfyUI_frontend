@@ -187,7 +187,9 @@ describe('runRecord', () => {
 
     expect(multiselect).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('press SPACE to select each one')
+        message: expect.stringMatching(
+          /press SPACE to select each one, ENTER when done/
+        )
       })
     )
   })
