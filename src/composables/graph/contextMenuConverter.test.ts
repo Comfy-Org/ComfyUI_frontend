@@ -191,13 +191,10 @@ describe('LiteGraph menu conversion', () => {
       if (multiple) graph.add(nodes[1])
       canvas.selectItems(nodes)
 
-      const items = canvas
-        .getNodeMenuOptions(node)
-        .map((item) =>
-          item
-            ? Object.assign(item, { content: 'Localized core action' })
-            : null
-        )
+      const items = canvas.getNodeMenuOptions(node).map((item) => {
+        if (item) item.content = 'Localized core action'
+        return item
+      })
       const result = convertContextMenuToOptions(items, node)
 
       expect(
