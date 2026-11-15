@@ -240,7 +240,7 @@ describe('NewChatScreen', () => {
     })
 
     it('waits the full moment again for the next opening', async () => {
-      vi.useFakeTimers()
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       const { rerender } = mount({ openingWorkflowName: 'portrait' })
       await vi.advanceTimersByTimeAsync(100)
       await rerender({ openingWorkflowName: undefined })
