@@ -159,11 +159,6 @@
       "count": 1
     }
   },
-  "src/composables/graph/contextMenuConverter.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/composables/node/useNodeDragToCanvas.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 3

@@ -58,9 +58,6 @@ async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
   }
 }
 
-/**
- * Composable for image-related menu operations
- */
 export function useImageMenuOptions() {
   const { t } = useI18n()
   const toast = useToast()
@@ -157,16 +154,19 @@ export function useImageMenuOptions() {
     if (hasImages && availability.preview) {
       options.push(
         {
+          id: 'openImage',
           label: t('contextMenu.Open Image'),
           icon: 'icon-[lucide--external-link]',
           action: () => openImage(node)
         },
         {
+          id: 'maskEditor',
           label: t('contextMenu.Open in Mask Editor'),
           icon: 'icon-[comfy--mask]',
           action: () => openMaskEditor()
         },
         {
+          id: 'copyImage',
           label: t('contextMenu.Copy Image'),
           icon: 'icon-[lucide--copy]',
           action: () => copyImage(node)
@@ -176,6 +176,7 @@ export function useImageMenuOptions() {
 
     if (canPaste && availability.input) {
       options.push({
+        id: 'pasteImage',
         label: t('contextMenu.Paste Image'),
         icon: 'icon-[lucide--clipboard-paste]',
         action: () => pasteClipboardImageToNode(node)
@@ -184,6 +185,7 @@ export function useImageMenuOptions() {
 
     if (hasImages && availability.preview) {
       options.push({
+        id: 'saveImage',
         label: t('contextMenu.Save Image'),
         icon: 'icon-[lucide--download]',
         action: () => saveImage(node)
@@ -192,6 +194,7 @@ export function useImageMenuOptions() {
 
     if (canExportOutputs) {
       options.push({
+        id: 'downloadImages',
         label: t('contextMenu.Download Images'),
         icon: 'icon-[lucide--folder-down]',
         action: () => showOutputsExportDialog(node)

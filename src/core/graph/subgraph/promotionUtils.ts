@@ -4,6 +4,7 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
@@ -524,20 +525,20 @@ export function addWidgetPromotionOptions(
       content: t('subgraphStore.promoteWidget', {
         name: widget.label ?? widget.name
       }),
-      callback: () => {
+      callback: markNodeMenuCallback(() => {
         promoteWidget(node, widget, promotableParents)
         widget.callback?.(widget.value)
-      }
+      }, `widget:${node.graph?.id}:${node.id}:${widget.name}:promote`)
     })
   else {
     options.unshift({
       content: t('subgraphStore.unpromoteWidget', {
         name: widget.label ?? widget.name
       }),
-      callback: () => {
+      callback: markNodeMenuCallback(() => {
         demoteWidget(node, widget, parents)
         widget.callback?.(widget.value)
-      }
+      }, `widget:${node.graph?.id}:${node.id}:${widget.name}:promote`)
     })
   }
 }
