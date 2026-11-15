@@ -16,7 +16,10 @@
         'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
-          : 'min-h-(--node-height) min-w-(--min-node-width)',
+          : cn(
+              'min-w-(--min-node-width)',
+              !hasOwnedWidgetHeights && 'min-h-(--node-height)'
+            ),
         cursorClass,
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
@@ -157,7 +160,6 @@
           </div>
 
           <div
-            ref="nodeBody"
             :class="
               cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
             "
@@ -265,7 +267,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onErrorCaptured, ref, useTemplateRef } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -465,19 +467,14 @@ function marginBoxHeight(row: HTMLElement) {
   return row.offsetHeight + px(marginTop) + px(marginBottom)
 }
 
-function trailingSlack(container: HTMLElement) {
-  const last = container.lastElementChild
-  if (!(last instanceof HTMLElement)) return 0
-  const contentBottom =
-    last.offsetTop + last.offsetHeight + px(getComputedStyle(last).marginBottom)
-  const paddedBottom =
-    container.offsetTop +
-    container.offsetHeight -
-    px(getComputedStyle(container).paddingBottom)
-  return Math.max(0, paddedBottom - contentBottom)
-}
-
-const nodeBody = useTemplateRef<HTMLElement>('nodeBody')
+const hasOwnedWidgetHeights = computed(() =>
+  processedWidgets.value.some(
+    (widget) =>
+      widget.visible &&
+      widget.height !== undefined &&
+      isGrowableWidgetRow(widget)
+  )
+)
 
 function assignOwnedWidgetHeights(element: HTMLElement, nodeHeight: number) {
   const growable = processedWidgets.value.flatMap((widget) => {
@@ -488,14 +485,13 @@ function assignOwnedWidgetHeights(element: HTMLElement, nodeHeight: number) {
     )
     return row ? [{ widget, widgetId: widget.widgetId, row }] : []
   })
-  if (growable.length === 0) return
+  if (growable.length === 0) return nodeHeight
 
   const growableHeight = growable.reduce(
     (sum, { row }) => sum + marginBoxHeight(row),
     0
   )
-  const slack = nodeBody.value ? trailingSlack(nodeBody.value) : 0
-  const fixedHeight = element.offsetHeight - growableHeight - slack
+  const fixedHeight = element.offsetHeight - growableHeight
   const heights = distributeOwnedHeights(
     nodeHeight - fixedHeight,
     growable.map(({ widget }) => widget)
@@ -503,6 +499,7 @@ function assignOwnedWidgetHeights(element: HTMLElement, nodeHeight: number) {
   growable.forEach(({ widgetId }, index) =>
     widgetValueStore.setWidgetHeight(widgetId, heights[index])
   )
+  return fixedHeight + heights.reduce((sum, height) => sum + height, 0)
 }
 
 const { startResize } = useNodeResize((result, element) => {
@@ -510,13 +507,12 @@ const { startResize } = useNodeResize((result, element) => {
   const node = resolveLGraphNode()
   if (!node) return
 
-  assignOwnedWidgetHeights(element, result.size.height)
+  const nodeHeight = assignOwnedWidgetHeights(element, result.size.height)
   resizeNodeLayout(
     node,
     {
       width: Math.max(result.size.width, MIN_NODE_WIDTH),
-      height:
-        removeNodeTitleHeight(result.size.height) - imagePreviewGrowth.value
+      height: removeNodeTitleHeight(nodeHeight) - imagePreviewGrowth.value
     },
     {
       position: result.position,

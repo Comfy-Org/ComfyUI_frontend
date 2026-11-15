@@ -24,6 +24,7 @@ import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -445,11 +446,11 @@ describe('LGraphNode', () => {
   })
 
   it.for([
-    ['the body is filled', 0, [320, 20]],
-    ['the body has trailing slack', 150, [395, 95]]
+    ['fits', 500, [320, 20], 500],
+    ['is below their declared minimum', 100, [300, 0], 460]
   ] as const)(
-    'hands the body height left after fixed rows to growable widgets when %s, floored at their declared minimum',
-    ([, slack, expectedHeights]) => {
+    'hands the height left after fixed rows to growable widgets and stores the height they reach when the requested height %s',
+    async ([, requestedHeight, expectedHeights, reachedHeight]) => {
       const fakeRootGraph: Record<string, unknown> = {
         id: 'graph-test',
         getNodeById: () => mockData.mockLgraphNode,
@@ -494,7 +495,7 @@ describe('LGraphNode', () => {
         value: '',
         options: {}
       })
-      renderLGraphNode({
+      const { container } = renderLGraphNode({
         nodeData: { ...mockNodeData, graphId: 'graph-test' }
       })
       const element = document.createElement('div')
@@ -506,20 +507,22 @@ describe('LGraphNode', () => {
       Object.defineProperty(promptRow, 'offsetHeight', { value: 50 })
       Object.defineProperty(notesRow, 'offsetHeight', { value: 50 })
       element.append(promptRow, notesRow)
-      const body = screen.getByTestId(`node-body-${mockNodeData.id}`)
-      const lastBodyChild = document.createElement('div')
-      Object.defineProperty(body, 'offsetTop', { value: 0 })
-      Object.defineProperty(body, 'offsetHeight', { value: 200 + slack })
-      Object.defineProperty(lastBodyChild, 'offsetTop', { value: 50 })
-      Object.defineProperty(lastBodyChild, 'offsetHeight', { value: 150 })
-      body.append(lastBodyChild)
+      expect(getNodeRoot(container)).toHaveClass('min-h-(--node-height)')
 
-      mockData.resizeCallback?.({ size: { width: 300, height: 500 } }, element)
+      mockData.resizeCallback?.(
+        { size: { width: 300, height: requestedHeight } },
+        element
+      )
+      await nextTick()
 
       expect([
         store.getWidgetRenderState(promptId)?.height,
         store.getWidgetRenderState(notesId)?.height
       ]).toEqual(expectedHeights)
+      expect(vi.mocked(resizeNodeLayout).mock.calls.at(-1)?.[1].height).toBe(
+        removeNodeTitleHeight(reachedHeight)
+      )
+      expect(getNodeRoot(container)).not.toHaveClass('min-h-(--node-height)')
     }
   )
 
