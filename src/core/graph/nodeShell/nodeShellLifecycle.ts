@@ -105,10 +105,18 @@ export function attachNodeToStores(
   refuseAmbiguousNodeWidgets(node, (report) =>
     reportWidgetRefusal(node, report)
   )
-  if (!node.widgets) return
-  for (const widget of node.widgets) {
+  for (const widget of node.widgets ?? []) {
     if (isNodeBindable(widget)) widget.setNodeId(node.id)
   }
+  if (Object.hasOwn(node.properties, 'widget_folder_locks')) {
+    useWidgetValueStore().restoreNodeFolderLocks(
+      graph.rootGraph.id,
+      node.id,
+      node.properties.widget_folder_locks
+    )
+    delete node.properties.widget_folder_locks
+  }
+  if (!node.widgets) return
   useWidgetValueStore().setNodeWidgetOrder(
     graph.rootGraph.id,
     node.id,
@@ -145,6 +153,11 @@ export function detachNodeFromStores(
   mode: WidgetDetachMode = 'keep-values'
 ): void {
   const rootGraphId = graph.rootGraph.id
+  const folderLocks = useWidgetValueStore().serializeNodeFolderLocks(
+    rootGraphId,
+    node.id
+  )
+  if (folderLocks) node.properties.widget_folder_locks = folderLocks
   unregisterNodeState(node)
   useWidgetValueStore().releaseNodeWidgets(rootGraphId, node.id, {
     discardValues: mode === 'discard-values'

@@ -12,7 +12,10 @@ export function clearNodeOwnedStoreState(node: LGraphNode): void {
 
   const rootGraphId = graph.isRootGraph ? graph.id : graph.rootGraph.id
   const nodeId = parseNodeId(node.id) ?? node.id
-  useWidgetValueStore().clearNode(rootGraphId, nodeId)
+  const widgetStore = useWidgetValueStore()
+  const folderLocks = widgetStore.serializeNodeFolderLocks(rootGraphId, nodeId)
+  if (folderLocks) node.properties.widget_folder_locks = folderLocks
+  widgetStore.clearNode(rootGraphId, nodeId)
   usePreviewExposureStore().clearHost(
     rootGraphId,
     createNodeLocatorId(
