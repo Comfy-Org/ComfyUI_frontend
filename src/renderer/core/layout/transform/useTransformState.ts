@@ -62,15 +62,13 @@ function useTransformStateIndividual() {
     z: 1
   })
 
-  // Computed transform properties for CSS
+  // Computed transform style for CSS
   const transformStyle = computed(() => ({
     // Match LiteGraph DragAndScale.toCanvasContext():
     // ctx.scale(scale); ctx.translate(offset)
-    // The individual CSS transforms are applied in translate-then-scale order.
-    // Scale the translation as well to preserve the original screen-space mapping:
-    // screen = (canvas + offset) * scale
-    translate: `${camera.x * camera.z}px ${camera.y * camera.z}px`,
-    scale: String(camera.z),
+    // CSS transform functions are applied right-to-left, so scale() followed
+    // by translate() preserves the mapping: screen = (canvas + offset) * scale.
+    transform: `scale(${camera.z}) translate(${camera.x}px, ${camera.y}px)`,
     transformOrigin: '0 0'
   }))
 
