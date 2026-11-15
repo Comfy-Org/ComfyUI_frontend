@@ -8,6 +8,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
 import * as jobOutputCache from '@/platform/queue/services/jobOutputCache'
 import { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
+import * as appInstance from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 vi.mock<unknown>(
@@ -80,6 +81,7 @@ describe('loadJobWorkflow', () => {
     mockApp = fromPartial<ComfyApp>({
       loadGraphData: vi.fn(),
       nodeOutputs: {},
+      nodePreviewImages: {},
       api: {
         fetchApi: mockFetchApi
       }
@@ -98,26 +100,35 @@ describe('loadJobWorkflow', () => {
     expect(mockApp.loadGraphData).toHaveBeenCalledWith(mockWorkflow)
   })
 
-  it.for([false, true])(
-    'restores outputs and notifies extensions only after a successful load: %s',
-    async (loaded) => {
+  const restoredOutputs = {
+    '1': { images: [{ filename: 'test.png', subfolder: '', type: 'output' }] }
+  }
+
+  it.for([
+    { loaded: false, outputs: {}, notifications: [] },
+    {
+      loaded: true,
+      outputs: restoredOutputs,
+      notifications: [['onNodeOutputsUpdated', restoredOutputs]]
+    }
+  ])(
+    'restores saved outputs and notifies extensions after load: $loaded',
+    async ({ loaded, outputs, notifications }) => {
       const invokeExtensions = vi.fn()
       provideExtensionService(() => ({ invokeExtensions }))
       vi.mocked(mockApp.loadGraphData).mockResolvedValue(loaded)
       vi.spyOn(jobOutputCache, 'getJobDetail').mockResolvedValue(mockJobDetail)
+      vi.spyOn(appInstance, 'useApp').mockReturnValue(mockApp)
       const outputStore = useNodeOutputStore()
-      const restoreOutputs = vi.spyOn(
-        outputStore,
-        'setNodeOutputsByExecutionId'
-      )
 
       await loadJobWorkflow(
         new TaskItemImpl(createHistoryJob('test-job-id')),
         mockApp
       )
 
-      expect(restoreOutputs).toHaveBeenCalledTimes(loaded ? 1 : 0)
-      expect(invokeExtensions).toHaveBeenCalledTimes(loaded ? 1 : 0)
+      expect(outputStore.nodeOutputs).toEqual(outputs)
+      expect(mockApp.nodeOutputs).toEqual(outputs)
+      expect(invokeExtensions.mock.calls).toEqual(notifications)
     }
   )
 
