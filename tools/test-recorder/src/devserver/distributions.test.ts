@@ -40,15 +40,18 @@ describe('normalizeBackendUrl', () => {
   )
 
   it.for([
-    'https://user:pass@agent.comfy.org',
-    'https://agent.comfy.org/?tenant=acme',
-    'https://agent.comfy.org/#login'
-  ])('rejects %s', (input) => {
+    [
+      'https://user:pass@agent.comfy.org',
+      'embedded credentials are not supported'
+    ],
+    ['https://agent.comfy.org/?tenant=acme', 'query string'],
+    ['https://agent.comfy.org/#login', 'fragment']
+  ] as const)('rejects %s naming the reason', ([input, reason]) => {
     const result = normalizeBackendUrl(input)
 
     expect(result.ok).toBe(false)
     if (!result.ok) {
-      expect(result.reason).toMatch(/credentials|query string/)
+      expect(result.reason).toContain(reason)
     }
   })
 })
