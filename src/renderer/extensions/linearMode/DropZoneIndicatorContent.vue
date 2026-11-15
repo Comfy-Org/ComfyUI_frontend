@@ -56,10 +56,7 @@ const {
     </div>
     <template v-else>
       <span v-if="label" v-text="label" />
-      <i
-        v-if="iconClass"
-        :class="cn('size-4 text-muted-foreground', iconClass)"
-      />
+      <i v-if="iconClass" :class="cn('text-muted-foreground', iconClass)" />
     </template>
   </div>
 </template>

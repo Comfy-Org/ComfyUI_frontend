@@ -183,6 +183,7 @@ const POST_REPLIES = new Map<string, ScenarioReply>([
       body: {
         token: 'e2e-workspace-jwt',
         expires_at: inAnHour(),
+        user_id: 'uid-1',
         permissions: ['workspace:read', 'billing:write'],
         role: 'owner',
         workspace: {

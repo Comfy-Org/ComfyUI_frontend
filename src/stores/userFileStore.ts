@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { getPathDetails } from '@/utils/formatUtil'
@@ -109,9 +109,7 @@ export class UserFile {
     this.isLoading = true
     const resp = await api.getUserData(this.path)
     if (resp.status !== 200) {
-      throw new Error(
-        `Failed to load file '${this.path}': ${resp.status} ${resp.statusText}`
-      )
+      throw new Error(`Failed to load file: ${resp.status} ${resp.statusText}`)
     }
     this.content = await resp.text()
     this.originalContent = this.content

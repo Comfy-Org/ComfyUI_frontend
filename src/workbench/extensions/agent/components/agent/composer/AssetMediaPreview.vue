@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 const { name, mediaUrl, kind, posterUrl, active } = defineProps<{
   name: string
@@ -10,6 +12,8 @@ const { name, mediaUrl, kind, posterUrl, active } = defineProps<{
 }>()
 const player = useTemplateRef<HTMLMediaElement>('player')
 const failed = ref(false)
+const themeStore = useThemeStore()
+const colorScheme = computed(() => themeStore.colorScheme)
 onBeforeUnmount(() => player.value?.pause())
 watch(
   () => active,
@@ -31,7 +35,7 @@ defineExpose({ focus: () => player.value?.focus() })
 </script>
 
 <template>
-  <div>
+  <div :style="{ colorScheme }">
     <video
       v-if="kind === 'video'"
       ref="player"

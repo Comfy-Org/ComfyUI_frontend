@@ -13,14 +13,12 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { app } from '@/scripts/app'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/scripts/app'))
 
-import '@/extensions/core/groupOptions'
-
-const ext = vi.mocked(app.registerExtension).mock.calls[0]?.[0]
+const { groupOptionsExtension: ext } =
+  await import('@/extensions/core/groupOptions')
 
 const graphChange = vi.fn()
 

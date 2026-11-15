@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import Card from '@comfyorg/design-system/card/Card'
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
-import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import AgentPaywallPlanNote from '@/workbench/extensions/agent/components/agent/message/AgentPaywallPlanNote.vue'
+import {
+  DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  toAgentPaywallRemediation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
@@ -27,62 +31,72 @@ const bodyKeys: Record<AgentPaywallPresentation['kind'], string> = {
   local: 'agent.paywall.body.local',
   unavailable: 'agent.paywall.body.subscriptionRequired'
 }
-const bodyKey = computed(() => bodyKeys[presentation.kind])
+const hasNoPlan = computed(
+  () => presentation.kind === 'subscribed' && !!presentation.planCreditLine
+)
+const bodyKey = computed(() =>
+  hasNoPlan.value ? bodyKeys.local : bodyKeys[presentation.kind]
+)
 const showUpgrade = computed(
   () => presentation.kind === 'subscribed' && presentation.showUpgrade
 )
+const remediation = computed(() => toAgentPaywallRemediation(presentation))
 const showSubscribe = computed(
-  () => presentation.kind === 'subscriptionRequired'
+  () => remediation.value === 'subscribe' || hasNoPlan.value
 )
-const showAddCredits = computed(
-  () => presentation.kind === 'subscribed' || presentation.kind === 'local'
-)
+const showAddCredits = computed(() => remediation.value === 'addCredits')
 </script>
 
 <template>
-  <Message severity="error">
-    <template #icon>
-      <span class="mt-0.5 icon-[lucide--gauge] block size-4" />
-    </template>
-    <div class="flex flex-col gap-2">
-      <div>
+  <Card
+    surface="secondary"
+    role="alert"
+    class="flex w-full flex-col justify-center gap-2 overflow-hidden p-4 shadow-sm"
+  >
+    <div class="flex w-full items-start gap-2">
+      <i
+        aria-hidden="true"
+        class="mt-0.5 icon-[lucide--gauge] size-5 text-destructive"
+      />
+      <div class="min-w-0 flex-1 text-sm/5">
         <p class="m-0">
           {{ $t('agent.paywall.title') }}
         </p>
         <p class="m-0 text-muted-foreground">
           {{ message || $t(bodyKey) }}
         </p>
-      </div>
-
-      <div
-        v-if="showAddCredits || showSubscribe || showUpgrade"
-        class="flex justify-end gap-2"
-      >
-        <Button
-          v-if="showUpgrade"
-          variant="secondary"
-          size="sm"
-          @click="emit('paywallAction', 'upgrade')"
-        >
-          {{ $t('agent.paywall.upgradePlan') }}
-        </Button>
-        <Button
-          v-if="showSubscribe"
-          variant="inverted"
-          size="sm"
-          @click="emit('paywallAction', 'subscribe')"
-        >
-          {{ $t('agent.paywall.subscribe') }}
-        </Button>
-        <Button
-          v-if="showAddCredits"
-          variant="inverted"
-          size="sm"
-          @click="emit('paywallAction', 'addCredits')"
-        >
-          {{ $t('agent.paywall.addCredits') }}
-        </Button>
+        <AgentPaywallPlanNote :presentation />
       </div>
     </div>
-  </Message>
+
+    <div
+      v-if="showAddCredits || showSubscribe || showUpgrade"
+      class="flex w-full justify-end gap-2"
+    >
+      <Button
+        v-if="showUpgrade"
+        variant="secondary"
+        size="sm"
+        @click="emit('paywallAction', 'upgrade')"
+      >
+        {{ $t('agent.paywall.upgradePlan') }}
+      </Button>
+      <Button
+        v-if="showSubscribe"
+        :variant="hasNoPlan ? 'secondary' : 'inverted'"
+        size="sm"
+        @click="emit('paywallAction', 'subscribe')"
+      >
+        {{ $t('agent.paywall.subscribe') }}
+      </Button>
+      <Button
+        v-if="showAddCredits"
+        variant="inverted"
+        size="sm"
+        @click="emit('paywallAction', 'addCredits')"
+      >
+        {{ $t('agent.paywall.addCredits') }}
+      </Button>
+    </div>
+  </Card>
 </template>

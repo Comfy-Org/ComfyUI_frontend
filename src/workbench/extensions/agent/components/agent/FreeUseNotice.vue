@@ -2,14 +2,14 @@
 import { useLocalStorage } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentFreeUsePlacement
-} from '@/platform/telemetry/types'
-import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
+} from '@comfyorg/telemetry/types'
+import { AGENT_COST_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
@@ -56,7 +56,7 @@ function onDismiss(): void {
           variant="link"
           size="link"
           as="a"
-          :href="AGENT_DOCS_URL"
+          :href="AGENT_COST_DOCS_URL"
           target="_blank"
           rel="noopener noreferrer"
           class="py-0 underline"
@@ -73,7 +73,7 @@ function onDismiss(): void {
         class="shrink-0"
         @click="onDismiss"
       >
-        <span class="icon-[lucide--x] size-5" />
+        <i aria-hidden="true" class="icon-[lucide--x] size-5" />
       </Button>
     </div>
   </Message>

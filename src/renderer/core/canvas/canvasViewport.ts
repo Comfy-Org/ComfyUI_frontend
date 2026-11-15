@@ -1,3 +1,4 @@
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 interface CanvasViewport {
   readonly cssWidth: number
   readonly cssHeight: number
@@ -10,11 +11,7 @@ interface CanvasViewportConsumer {
   dpr: number
   ds: { setViewportSize(width: number, height: number): void }
 }
-
-interface Size {
-  readonly width: number
-  readonly height: number
-}
+type Size = Readonly<Size2D>
 
 const appliedViewportByCanvas = new WeakMap<HTMLCanvasElement, CanvasViewport>()
 const autoSizedStyleByCanvas = new WeakMap<

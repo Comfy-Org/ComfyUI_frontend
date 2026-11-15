@@ -243,7 +243,7 @@ function act() {
         <dd class="m-0 flex items-center gap-1.5 text-foreground tabular-nums">
           <i
             v-if="row.kind === 'added'"
-            class="icon-[lucide--coins] size-4 shrink-0"
+            class="icon-[lucide--coins]"
             aria-hidden="true"
             data-testid="checkout-ending-credits-icon"
           />
@@ -270,10 +270,11 @@ function act() {
         type="button"
         :class="
           cn(
-            'h-10 w-full cursor-pointer rounded-lg px-4 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
-            primary === 'close'
-              ? 'bg-secondary text-foreground hover:bg-accent'
-              : 'bg-foreground text-background hover:opacity-90'
+            buttonVariants({
+              variant: primary === 'close' ? 'secondary' : 'inverted',
+              size: 'lg'
+            }),
+            'w-full font-semibold'
           )
         "
         @click="act"

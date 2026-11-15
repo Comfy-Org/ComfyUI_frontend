@@ -5,14 +5,14 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import MenuItemContent from '@/components/ui/menu/MenuItemContent.vue'
-import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
-import { selectedMenuButtonClass } from '@/components/ui/menu/menuStyles'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuItemContent from '@comfyorg/design-system/menu/MenuItemContent'
+import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
+import { selectedMenuButtonClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import type { AgentRunModeValue } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
@@ -113,9 +113,10 @@ const options: {
         :class="cn('gap-1', open && 'bg-accent')"
       >
         <span>{{ triggerLabel }}</span>
-        <span
+        <i
+          aria-hidden="true"
           data-testid="run-mode-chevron"
-          class="icon-[lucide--chevron-down] size-4"
+          class="icon-[lucide--chevron-down]"
         />
       </Button>
     </template>

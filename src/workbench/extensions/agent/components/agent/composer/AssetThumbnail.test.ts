@@ -42,3 +42,37 @@ describe('asset poster loading', () => {
     }
   )
 })
+
+describe('EXR without a stored preview', () => {
+  it('shows its name on a plain tile in the tray', () => {
+    render(AssetThumbnail, {
+      props: { name: 'plate.EXR', mediaKind: 'image', variant: 'tray' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByText('plate.EXR')).toBeVisible()
+    expect(screen.queryByRole('img')).not.toBeInTheDocument()
+  })
+
+  it('shows the stored preview when there is one', () => {
+    const previewUrl = '/stored-preview.png'
+    render(AssetThumbnail, {
+      props: {
+        name: 'plate.exr',
+        mediaKind: 'image',
+        previewUrl,
+        variant: 'tray'
+      },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByAltText('plate.exr')).toHaveAttribute('src', previewUrl)
+    expect(screen.queryByText('plate.exr')).not.toBeInTheDocument()
+  })
+
+  it('does not show a name tile for a refused HDR file', () => {
+    render(AssetThumbnail, {
+      props: { name: 'env.hdr', mediaKind: 'other', variant: 'tray' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.queryByText('env.hdr')).not.toBeInTheDocument()
+  })
+})

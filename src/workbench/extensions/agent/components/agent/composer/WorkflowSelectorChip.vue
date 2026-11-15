@@ -1,16 +1,22 @@
 <script setup lang="ts">
+import {
+  DropdownMenuItemIndicator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRoot,
+  DropdownMenuTrigger
+} from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
-import { DropdownMenuItemIndicator, DropdownMenuRadioGroup } from 'reka-ui'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
+import MenuContent from '@comfyorg/design-system/menu/MenuContent'
+import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 
 const {
@@ -33,6 +39,7 @@ const {
 
 const { t } = useI18n()
 const tabActivity = useWorkflowTabActivityStore()
+const conversation = useAgentConversationStore()
 
 const current = computed(() => (detached ? null : activeTab))
 const workflowTooltipText = computed(() =>
@@ -106,37 +113,33 @@ function onSearchKeydown(event: KeyboardEvent): void {
     ref="selectorRoot"
     class="flex w-full items-center justify-between gap-1.5"
   >
-    <Menu
-      :open
-      side="top"
-      :side-offset="8"
-      :reference="composerReference"
-      width="trigger"
-      class="agent-scope"
-      @update:open="onOpenChange"
-    >
-      <template #trigger>
+    <DropdownMenuRoot :open @update:open="onOpenChange">
+      <DropdownMenuTrigger as-child>
         <Button
           :tooltip="workflowTooltipText"
           type="button"
           :variant="current ? 'textonly' : 'outline'"
-          size="md"
+          size="unset"
           :disabled
           :aria-label="t('agent.switchWorkflow')"
           :class="
-            cn('group min-w-0 justify-start text-left', current && 'flex-1')
+            cn(
+              'group h-7 min-w-0 justify-start gap-2 px-2.5 text-left text-xs/4 font-normal',
+              current && 'flex-1'
+            )
           "
         >
-          <span
-            v-if="tabActivity.editingTabPath === current?.path"
+          <i
+            v-if="conversation.activeTurnTabPath === current?.path"
             role="img"
             :aria-label="t('g.agentWorking')"
-            class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
+            class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
           />
-          <span
+          <i
             v-else
+            aria-hidden="true"
             data-testid="workflow-selector-icon"
-            class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-foreground"
+            class="icon-[comfy--workflow] text-muted-foreground group-hover:text-foreground"
           />
           <span class="min-w-0 truncate">{{
             current?.name ?? t('agent.selectWorkflowForAgent')
@@ -144,100 +147,109 @@ function onSearchKeydown(event: KeyboardEvent): void {
           <span
             v-if="current?.isPersisted === false || current?.modified"
             data-testid="unsaved-dot"
-            class="flex size-4 shrink-0 items-center justify-center"
+            class="flex size-3.5 shrink-0 items-center justify-center"
           >
             <Badge variant="dot" class="bg-foreground" />
           </span>
         </Button>
-      </template>
-      <SearchInput
-        ref="searchInput"
-        v-model="query"
-        :disabled="selectingTabPath !== null"
-        :placeholder="t('agent.searchWorkflows')"
-        :accessible-label="t('agent.searchWorkflows')"
-        :clear-label="t('g.clear')"
-        class="mb-1"
-        @keydown="onSearchKeydown"
-      />
-      <DropdownMenuRadioGroup
-        :model-value="current?.path ?? ''"
-        class="max-h-52 overflow-y-auto"
-        @update:model-value="typeof $event === 'string' && onSelectTab($event)"
+      </DropdownMenuTrigger>
+      <MenuContent
+        side="top"
+        align="start"
+        :side-offset="8"
+        :reference="composerReference"
+        width="trigger"
+        class="agent-scope"
       >
-        <div
-          v-for="section in tabSections"
-          :key="section.key"
-          role="group"
-          :aria-label="section.label"
+        <SearchInput
+          ref="searchInput"
+          v-model="query"
+          :disabled="selectingTabPath !== null"
+          :placeholder="t('agent.searchWorkflows')"
+          :accessible-label="t('agent.searchWorkflows')"
+          :clear-label="t('g.clear')"
+          class="mb-1"
+          @keydown="onSearchKeydown"
+        />
+        <DropdownMenuRadioGroup
+          :model-value="current?.path ?? ''"
+          class="max-h-52 overflow-y-auto"
+          @update:model-value="
+            typeof $event === 'string' && onSelectTab($event)
+          "
         >
           <div
-            v-if="section.label"
-            aria-hidden="true"
-            class="px-3 py-1.5 text-xs font-semibold text-muted-foreground"
+            v-for="section in tabSections"
+            :key="section.key"
+            role="group"
+            :aria-label="section.label"
           >
-            {{ section.label }}
-          </div>
-          <MenuRadioItem
-            v-for="tab in section.tabs"
-            :key="tab.path"
-            :value="tab.path"
-            :disabled="disabled || selectingTabPath !== null"
-            :aria-busy="selectingTabPath === tab.path || undefined"
-            @select.prevent
-          >
-            <span
-              v-if="selectingTabPath === tab.path"
-              role="status"
-              class="flex size-4 shrink-0 items-center justify-center"
+            <div
+              v-if="section.label"
+              aria-hidden="true"
+              class="px-1.5 py-1 text-[11px]/4 text-muted-foreground"
+            >
+              {{ section.label }}
+            </div>
+            <MenuRadioItem
+              v-for="tab in section.tabs"
+              :key="tab.path"
+              :value="tab.path"
+              :disabled="disabled || selectingTabPath !== null"
+              :aria-busy="selectingTabPath === tab.path || undefined"
+              @select.prevent
             >
               <span
-                class="icon-[lucide--loader-circle] size-4 text-muted-foreground motion-safe:animate-spin"
-                aria-hidden="true"
-              />
-              <span class="sr-only">{{ t('agent.savingWorkflow') }}</span>
-            </span>
-            <span
-              v-else-if="tabActivity.editingTabPath === tab.path"
-              role="img"
-              :aria-label="t('g.agentWorking')"
-              class="icon-[lucide--loader-circle] size-4 shrink-0 text-muted-foreground motion-safe:animate-spin"
-            />
-            <span
-              v-else
-              class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground"
-            />
-            <span class="min-w-0 truncate">{{ tab.name }}</span>
-            <span
-              v-if="tabActivity.unseenModifiedPaths.has(tab.path)"
-              role="img"
-              :aria-label="t('g.agentModified')"
-              class="flex size-4 shrink-0 items-center justify-center"
-            >
-              <Badge variant="dot" class="bg-primary" />
-            </span>
-            <span
-              v-else-if="tab.isPersisted === false || tab.modified"
-              data-testid="unsaved-dot"
-              class="flex size-4 shrink-0 items-center justify-center"
-            >
-              <Badge variant="dot" class="bg-foreground" />
-            </span>
-            <span
-              class="ml-auto flex size-4 shrink-0 items-center justify-center"
-            >
-              <DropdownMenuItemIndicator
-                class="flex size-4 items-center justify-center"
+                v-if="selectingTabPath === tab.path"
+                role="status"
+                class="flex size-4 shrink-0 items-center justify-center"
               >
-                <span
+                <i
+                  class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
                   aria-hidden="true"
-                  class="icon-[lucide--check] size-3.5"
                 />
-              </DropdownMenuItemIndicator>
-            </span>
-          </MenuRadioItem>
-        </div>
-      </DropdownMenuRadioGroup>
-    </Menu>
+                <span class="sr-only">{{ t('agent.savingWorkflow') }}</span>
+              </span>
+              <i
+                v-else-if="conversation.activeTurnTabPath === tab.path"
+                role="img"
+                :aria-label="t('g.agentWorking')"
+                class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
+              />
+              <i
+                v-else
+                aria-hidden="true"
+                class="icon-[comfy--workflow] text-muted-foreground"
+              />
+              <span class="min-w-0 truncate">{{ tab.name }}</span>
+              <span
+                v-if="tabActivity.unseenModifiedPaths.has(tab.path)"
+                role="img"
+                :aria-label="t('g.agentModified')"
+                class="flex size-4 shrink-0 items-center justify-center"
+              >
+                <Badge variant="dot" class="bg-primary" />
+              </span>
+              <span
+                v-else-if="tab.isPersisted === false || tab.modified"
+                data-testid="unsaved-dot"
+                class="flex size-4 shrink-0 items-center justify-center"
+              >
+                <Badge variant="dot" class="bg-foreground" />
+              </span>
+              <span
+                class="ml-auto flex size-4 shrink-0 items-center justify-center"
+              >
+                <DropdownMenuItemIndicator
+                  class="flex size-4 items-center justify-center"
+                >
+                  <i aria-hidden="true" class="icon-[lucide--check] size-3.5" />
+                </DropdownMenuItemIndicator>
+              </span>
+            </MenuRadioItem>
+          </div>
+        </DropdownMenuRadioGroup>
+      </MenuContent>
+    </DropdownMenuRoot>
   </div>
 </template>

@@ -24,10 +24,7 @@ const i18n = createI18n({
   }
 })
 
-function renderButton(props: {
-  mode: ControlOptions
-  variant?: 'badge' | 'button'
-}) {
+function renderButton(props: { mode: ControlOptions }) {
   return render(ValueControlButton, {
     global: { plugins: [i18n] },
     props

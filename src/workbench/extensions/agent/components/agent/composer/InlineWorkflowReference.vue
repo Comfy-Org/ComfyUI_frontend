@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
-import Button from '@/components/ui/button/Button.vue'
+import TagRemoveButton from '@comfyorg/design-system/chip/TagRemoveButton'
+import Button from '@comfyorg/design-system/button/Button'
 
 import { inlineReferenceChipClass } from './inlineReferenceChipStyles'
 
@@ -39,7 +39,7 @@ function open(): void {
       class="min-w-0"
       @click="open"
     >
-      <span aria-hidden="true" class="icon-[comfy--workflow] size-3 shrink-0" />
+      <i aria-hidden="true" class="icon-[comfy--workflow] size-3" />
       <span class="max-w-56 min-w-0 truncate">{{ name }}</span>
     </Button>
     <TagRemoveButton

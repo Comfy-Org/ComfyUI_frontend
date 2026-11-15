@@ -8,7 +8,7 @@
     >
       <div class="flex w-full items-center justify-center gap-2">
         <i
-          class="icon-[lucide--info] size-4 text-muted-foreground"
+          class="icon-[lucide--info] text-muted-foreground"
           aria-hidden="true"
         />
         {{ t('actionbar.partnerRunGate.signInCaption') }}
@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
+import { usePartnerNodesRunGate } from '@/platform/billing/composables/usePartnerNodesRunGate'
 
 const { t } = useI18n()
 const { gate } = usePartnerNodesRunGate()

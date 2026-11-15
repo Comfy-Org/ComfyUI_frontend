@@ -1,10 +1,14 @@
+import type { AutoTopUpCardBillingEvent } from './autoTopUpCardEvent'
+import type { AutoTopUpOfferBillingEvent } from './autoTopUpOfferEvent'
 import type { CancelBillingEvent } from './cancelEvent'
 import type { CapabilityReadBillingEvent } from './capabilityReadEvent'
 import type { CheckoutChallengeBillingEvent } from './checkoutChallengeEvent'
 import type { CheckoutRedirectBillingEvent } from './checkoutRedirectEvent'
 import type { DowngradeToPersonalBillingEvent } from './downgradeToPersonalEvent'
 import type { EntryBillingEvent } from './entryEvent'
+import type { LocalHandoffBillingEvent } from './localHandoffEvent'
 import type { BillingOperationBillingEvent } from './operationEvent'
+import type { PlatformHandoffBillingEvent } from './platformHandoffEvent'
 import type { PortalBillingEvent } from './portalEvent'
 import type { ResubscribeBillingEvent } from './resubscribeEvent'
 import type { SubscriptionCheckoutBillingEvent } from './subscriptionCheckoutEvent'
@@ -35,6 +39,10 @@ export type BillingTelemetryEvent = {
   | EntryBillingEvent
   | CancelBillingEvent
   | PortalBillingEvent
+  | AutoTopUpCardBillingEvent
+  | AutoTopUpOfferBillingEvent
+  | PlatformHandoffBillingEvent
+  | LocalHandoffBillingEvent
   | CheckoutChallengeBillingEvent
   | CheckoutRedirectBillingEvent
 )

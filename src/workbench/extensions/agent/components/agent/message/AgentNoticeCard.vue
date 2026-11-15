@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Message from '@/components/ui/message/Message.vue'
+import Message from '@comfyorg/design-system/message/Message'
 
 import type {
   AskUnavailablePart,
@@ -27,7 +27,10 @@ const notice = computed<NoticePart>(() =>
     :aria-live="notice.level === 'error' ? 'assertive' : 'polite'"
   >
     <template #icon>
-      <span class="mt-0.5 icon-[lucide--triangle-alert] block size-4" />
+      <i
+        aria-hidden="true"
+        class="mt-0.5 icon-[lucide--triangle-alert] block"
+      />
     </template>
     <span class="flex flex-col gap-0.5">
       <span>{{ notice.text }}</span>

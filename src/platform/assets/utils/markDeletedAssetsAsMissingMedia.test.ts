@@ -4,13 +4,15 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   createPromotedMediaRuntime,
   seedMediaNodeDefs
-} from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+} from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
+import { scanNodeMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 
 import { markDeletedAssetsAsMissingMedia } from './markDeletedAssetsAsMissingMedia'
 
-vi.mock(import('@/platform/missingMedia/missingMediaScan'), { spy: true })
+vi.mock(import('@/platform/workflowErrors/missingMedia/missingMediaScan'), {
+  spy: true
+})
 const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
 
 function makeGraph(nodes: unknown[]): LGraph {

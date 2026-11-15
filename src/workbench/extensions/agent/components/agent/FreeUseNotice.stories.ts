@@ -3,7 +3,7 @@ import { fn } from 'storybook/test'
 
 import '@/workbench/extensions/agent/agentPanel.css'
 
-import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
+import { AGENT_FREE_USE_PLACEMENTS } from '@comfyorg/telemetry/types'
 
 import FreeUseNotice from './FreeUseNotice.vue'
 import { FREE_USE_NOTICE_DISMISSED_KEY } from './freeUseNoticeDismissal'
@@ -49,6 +49,11 @@ export const InsideInput: Story = {
   ]
 }
 
+// The notice is a translucent blue over whatever sits behind it, so the copy
+// and the link both have to stay legible when base-background flips. Theme is
+// a toolbar global, but only story exports are snapshotted, so light needs an
+// export to get visual coverage at all — as in RunNoticeBanner and
+// AgentConsentCard beside it.
 export const DefaultLight: Story = {
   globals: { theme: 'light' }
 }

@@ -10,10 +10,10 @@ import ErrorDialogContent from '@/components/dialog/content/ErrorDialogContent.v
 import PromptDialogContent from '@/components/dialog/content/PromptDialogContent.vue'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
-import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
-import type { PromptError } from '@/platform/remote/comfyui/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { PromptExecutionError } from '@/scripts/api'
+import type { RunErrorMessageSource } from '@/platform/workflowErrors/errorCatalog/types'
+import type { PromptError } from '@comfyorg/api-client/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   ConfirmOptions,
@@ -290,6 +290,7 @@ export const useDialogService = (): CoreDialogService => {
     itemList = [],
     hint,
     denyLabel,
+    confirmLabel,
     key = GLOBAL_PROMPT_KEY
   }: ConfirmOptions): Promise<boolean | null> {
     const show = (resolve: (value: boolean | null) => void) => {
@@ -303,7 +304,8 @@ export const useDialogService = (): CoreDialogService => {
           itemList,
           onConfirm: resolve,
           hint,
-          denyLabel
+          denyLabel,
+          confirmLabel
         },
         dialogComponentProps: {
           size: 'md',

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import Badge from '@/components/ui/badge/Badge.vue'
-import { menuItemClass } from '@/components/ui/menu/menuStyles'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import { menuItemClass } from '@comfyorg/design-system/lib/menu/menuStyles'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { useAgentMentionPicker } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
 import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import AssetThumbnail from './AssetThumbnail.vue'
@@ -53,7 +53,7 @@ const disabledReason = computed(() =>
 )
 const asset = computed(() => (match.kind === 'asset' ? match.asset : undefined))
 const icon = computed(() => {
-  if (match.kind === 'back') return 'icon-[lucide--chevron-left] size-4'
+  if (match.kind === 'back') return 'icon-[lucide--chevron-left]'
   if (match.kind !== 'section') return undefined
   return match.id === 'nodes'
     ? 'icon-[comfy--node] size-4'
@@ -91,7 +91,7 @@ const nodeId = computed(() =>
         @mouseenter="emit('highlight')"
         @click="emit('pick')"
       >
-        <span v-if="icon" :class="cn(icon, 'shrink-0')" />
+        <i v-if="icon" aria-hidden="true" :class="icon" />
         <AssetThumbnail
           v-if="asset"
           :name="asset.name"
@@ -121,9 +121,10 @@ const nodeId = computed(() =>
           class="ml-auto font-mono"
           >{{ ' #' + nodeId }}</Badge
         >
-        <span
+        <i
           v-if="match.kind === 'section'"
-          class="icon-[lucide--chevron-right] size-4 shrink-0"
+          aria-hidden="true"
+          class="icon-[lucide--chevron-right]"
         />
       </div>
     </TooltipTrigger>

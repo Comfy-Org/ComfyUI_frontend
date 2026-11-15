@@ -6,10 +6,11 @@ import {
 
 import { app } from '@/scripts/app'
 import { ComfyWidgets } from '@/scripts/widgets'
+import type { ComfyExtension } from '@/types/comfy'
 
 // Node that add notes to your project
 
-app.registerExtension({
+export const noteNodeExtension: ComfyExtension = {
   name: 'Comfy.NoteNode',
   registerCustomNodes() {
     class NoteNode extends LGraphNode {
@@ -78,4 +79,4 @@ app.registerExtension({
     LiteGraph.registerNodeType('MarkdownNote', MarkdownNoteNode)
     MarkdownNoteNode.category = 'utilities'
   }
-})
+}

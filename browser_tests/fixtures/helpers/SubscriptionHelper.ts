@@ -1,11 +1,7 @@
 import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
-import {
-  PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
-  PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-} from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatusResponse } from '@comfyorg/billing-core'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   createBalance,
@@ -126,40 +122,6 @@ export class SubscriptionHelper {
     }
     this.routeHandlers.push({ pattern: statusPattern, handler: statusHandler })
     await this.page.route(statusPattern, statusHandler)
-
-    const balancePattern = '**/customers/balance'
-    const balanceHandler = async (route: Route) => {
-      await route.fulfill({ json: this.balanceResponse })
-    }
-    this.routeHandlers.push({
-      pattern: balancePattern,
-      handler: balanceHandler
-    })
-    await this.page.route(balancePattern, balanceHandler)
-
-    const checkoutPattern = '**/customers/cloud-subscription-checkout**'
-    const checkoutHandler = async (route: Route) => {
-      await route.fulfill({
-        json: { checkout_url: 'https://checkout.stripe.com/mock' }
-      })
-    }
-    this.routeHandlers.push({
-      pattern: checkoutPattern,
-      handler: checkoutHandler
-    })
-    await this.page.route(checkoutPattern, checkoutHandler)
-
-    const billingPortalPattern = '**/customers/billing'
-    const billingPortalHandler = async (route: Route) => {
-      await route.fulfill({
-        json: { billing_portal_url: 'https://billing.example/portal' }
-      })
-    }
-    this.routeHandlers.push({
-      pattern: billingPortalPattern,
-      handler: billingPortalHandler
-    })
-    await this.page.route(billingPortalPattern, billingPortalHandler)
   }
 
   configure(...operators: SubscriptionOperator[]): void {
@@ -179,44 +141,6 @@ export class SubscriptionHelper {
 
   setBalance(overrides: Partial<BalanceResponse>): void {
     this.balanceResponse = { ...this.balanceResponse, ...overrides }
-  }
-
-  /**
-   * Seed localStorage with a pending checkout attempt so that
-   * `recoverPendingSubscriptionCheckout` triggers a status re-fetch on
-   * the next `visibilitychange` event. Must be called after navigation.
-   */
-  async seedPendingCheckout(
-    tier: string = 'standard',
-    cycle: string = 'monthly'
-  ): Promise<void> {
-    const storageKey = PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY
-    await this.page.evaluate(
-      ([key, t, c]) => {
-        localStorage.setItem(
-          key,
-          JSON.stringify({
-            attempt_id: `test-${Date.now()}`,
-            started_at_ms: Date.now(),
-            tier: t,
-            cycle: c,
-            checkout_type: 'new'
-          })
-        )
-      },
-      [storageKey, tier, cycle] as const
-    )
-  }
-
-  /**
-   * Notify the app that a pending checkout attempt needs to be recovered.
-   */
-  async triggerSubscriptionRefetch(): Promise<void> {
-    const eventName = PENDING_SUBSCRIPTION_CHECKOUT_EVENT
-    await this.page.evaluate(
-      (name) => window.dispatchEvent(new Event(name)),
-      eventName
-    )
   }
 
   /**

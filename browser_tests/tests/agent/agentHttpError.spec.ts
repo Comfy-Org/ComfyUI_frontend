@@ -10,13 +10,16 @@ test.beforeEach(async ({ comfyPage }) => {
     globalThis.fetch = async (input, init) =>
       init?.method === 'POST' &&
       /\/agent\/threads\/[^/]+\/messages$/.test(String(input))
-        ? new Response('', { status: 503 })
+        ? new Response('gateway did not return an Agent error body', {
+            status: 503,
+            statusText: 'No error message'
+          })
         : originalFetch(input, init)
   })
 })
 
 test(
-  'shows the HTTP status when a failed send has no error message',
+  'names the failed operation when an upstream status text has no error message',
   { tag: '@cloud' },
   async ({ agentPanel }) => {
     await agentPanel.open()
@@ -26,7 +29,7 @@ test(
 
     await expect(
       agentPanel.root.getByText(
-        `${enMessages.agent.sendFailed}: Agent request failed (HTTP 503)`,
+        `${enMessages.agent.sendFailed}: Agent request failed (HTTP 503, post_thread_message)`,
         { exact: true }
       )
     ).toBeVisible()

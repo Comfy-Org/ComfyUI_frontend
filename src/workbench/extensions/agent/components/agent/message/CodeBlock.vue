@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
-import Button from '@/components/ui/button/Button.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 
 const { code, lang = 'text' } = defineProps<{
@@ -53,7 +53,7 @@ watchDebounced(
       <span
         class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
       >
-        <span class="icon-[lucide--file-code] size-3.5" />
+        <i aria-hidden="true" class="icon-[lucide--file-code] size-3.5" />
         <span class="text-foreground">{{ lang }}</span>
       </span>
       <Button
@@ -62,7 +62,8 @@ watchDebounced(
         size="sm"
         @click="copyToClipboard(code)"
       >
-        <span
+        <i
+          aria-hidden="true"
           :class="
             cn(
               'size-3.5',

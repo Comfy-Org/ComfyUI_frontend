@@ -1,4 +1,5 @@
-import type { Rect, Transform } from '#/node'
+import type { CompactRect as Rect } from '@comfyorg/shared-frontend-utils/geometry'
+import type { Transform } from '#/node'
 
 export type Bitmap = HTMLCanvasElement | ImageBitmap | OffscreenCanvas
 

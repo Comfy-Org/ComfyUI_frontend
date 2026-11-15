@@ -1,9 +1,9 @@
 import axios, { AxiosError } from 'axios'
 import { expect, it, vi } from 'vitest'
 
-import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
+import type { WebSessionSend } from '@comfyorg/api-client/webSessionFetch'
 
-import { createWebSessionAdapter } from './webSessionAdapter'
+import { createWebSessionAdapter } from '@/platform/remote/ingest/webSessionAdapter'
 
 it('reports a web-session timeout as a timeout instead of a cancellation', async () => {
   const timeoutError = new DOMException('Timed out', 'TimeoutError')

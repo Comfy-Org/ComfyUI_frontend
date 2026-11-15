@@ -51,6 +51,12 @@ export interface DraftPayloadV2 {
   data: string
   /** Last workflow content write timestamp. */
   updatedAt: number
+  lineage?: DraftLineage
+}
+
+export interface DraftLineage {
+  workflowId: string
+  lineageSeq: number
 }
 
 /**

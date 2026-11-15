@@ -3,13 +3,15 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import type * as Y from 'yjs'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { recordDevEvent } from './devPanelLog'
 import { DocChangeCollector } from './docChangeCollector'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
+import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
+import { isLiveAgentUpdate } from './layoutFollowerBridge'
 import { LiveGraphApplier, readDocWidgetValue } from './liveGraphApplier'
 import type {
   ApplyMode,
@@ -154,7 +156,9 @@ export class AgentCrdtProjection {
    * Applies one delivered frame's changes to the live graph. Without a graph
    * the changes stay collected for `applyCollected` once one appears.
    */
-  applyFrame(update: DocUpdate): FrameOutcome {
+  applyFrame(
+    update: DocUpdate & Partial<Pick<ClassifiedDocUpdate, 'catchUp'>>
+  ): FrameOutcome {
     const target = this.targets.get(update.workflowId)
     if (!target) return { applied: false, nodes: EMPTY_DELTA }
     if (!this.getGraph()) {
@@ -169,7 +173,8 @@ export class AgentCrdtProjection {
       changes,
       {
         actor: update.actor ?? 'agent-remote',
-        opIds: update.opIds?.filter((id) => id.length > 0) ?? []
+        opIds: update.opIds?.filter((id) => id.length > 0) ?? [],
+        liveAgentTurn: isLiveAgentUpdate(update)
       },
       this.takeApplyMode(update.workflowId)
     )

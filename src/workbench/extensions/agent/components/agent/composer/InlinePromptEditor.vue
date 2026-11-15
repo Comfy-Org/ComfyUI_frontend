@@ -21,7 +21,10 @@ import { useI18n } from 'vue-i18n'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
-import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
+import type {
+  ComposerInsertionPoint,
+  ComposerPrompt
+} from '@/workbench/extensions/agent/types/composerPrompt'
 import {
   composerReferenceKey,
   composerReferenceName
@@ -36,6 +39,7 @@ import type { PromptEditor } from '@/workbench/extensions/agent/types/promptEdit
 import type { WorkflowReferenceMetadata } from '@/workbench/extensions/agent/types/workflowReference'
 import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import InlineAssetReference from './InlineAssetReference.vue'
+import InlineErrorReference from './InlineErrorReference.vue'
 import InlineNodeReference from './InlineNodeReference.vue'
 import InlineWorkflowReference from './InlineWorkflowReference.vue'
 import { inlineReferenceNodeViewClass } from './inlineReferenceChipStyles'
@@ -45,6 +49,7 @@ import {
   pastedSkillCommand,
   promptDocument,
   promptDocumentPosition,
+  promptInsertionPosition,
   promptInsertionPoint,
   promptNodeReference,
   promptDraft,
@@ -55,25 +60,30 @@ defineOptions({ inheritAttrs: false })
 const {
   label,
   expanded = false,
+  referenceMenuId,
   activeDescendant,
   historyEpoch = 0,
   editableWorkflowId,
   skillScope = '',
-  searchHint
+  searchHint,
+  caretRequest = null
 } = defineProps<{
   label: string
   expanded?: boolean
+  referenceMenuId?: string
   activeDescendant?: string
   historyEpoch?: number
   editableWorkflowId?: string
   skillScope?: string
   searchHint?: string
+  caretRequest?: ComposerInsertionPoint | null
 }>()
 const model = defineModel<ComposerPrompt>({
   default: () => ({ text: '', references: [] })
 })
 const emit = defineEmits<{
   input: []
+  caretRequestHandled: []
   resolveSkillMetadata: [prompt: ComposerPrompt]
   selectionChange: []
   keydown: [event: KeyboardEvent]
@@ -144,6 +154,7 @@ function referenceClipboardText(node: Node): string {
   const name = composerReferenceName(reference)
   if (reference.kind === 'skill') return `/${name}`
   if (reference.kind === 'workflow') return `@[Workflow: ${name}]`
+  if (reference.kind === 'error') return ''
   return reference.kind === 'node'
     ? nodeReferenceText(name)
     : assetReferenceText(name)
@@ -327,6 +338,28 @@ function assetReferenceView(
   )
 }
 
+function errorReferenceView(
+  node: Node,
+  editor: EditorView,
+  getPos: () => number | undefined
+) {
+  const dom = document.createElement('span')
+  const reference = promptNodeReference(node, 0)
+  if (reference?.kind !== 'error') return { dom }
+  dom.className = inlineReferenceNodeViewClass
+  const vnode = h(InlineErrorReference, {
+    context: reference.context,
+    removeLabel: t('agent.errorContext.remove'),
+    countLabel: t(
+      'agent.errorContext.problemCount',
+      { count: reference.context.count },
+      reference.context.count
+    ),
+    onRemove: () => removeReference(editor, getPos, node)
+  })
+  return componentNodeView(dom, vnode)
+}
+
 function nodeReferenceView(
   node: Node,
   editor: EditorView,
@@ -372,6 +405,24 @@ function workflowReferenceView(
   )
 }
 
+function requestedCaret(doc: Node): number | undefined {
+  if (!caretRequest) return
+  return promptInsertionPosition(doc, caretRequest)
+}
+
+function focusRequestedCaret(): void {
+  if (!view) return
+  const caret = requestedCaret(view.state.doc)
+  if (caret === undefined) return
+  view.dispatch(
+    view.state.tr
+      .setSelection(TextSelection.create(view.state.doc, caret))
+      .scrollIntoView()
+  )
+  view.focus()
+  emit('caretRequestHandled')
+}
+
 onMounted(() => {
   if (!host.value) return
   view = new EditorView(host.value, {
@@ -380,8 +431,10 @@ onMounted(() => {
       role: 'textbox',
       'aria-label': label,
       'aria-multiline': 'true',
-      'aria-expanded': String(expanded),
-      'aria-controls': 'agent-reference-menu',
+      ...(referenceMenuId ? { 'aria-haspopup': 'menu' } : {}),
+      ...(expanded && referenceMenuId
+        ? { 'aria-controls': referenceMenuId }
+        : {}),
       ...(activeDescendant
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
@@ -532,9 +585,11 @@ onMounted(() => {
       },
       node: nodeReferenceView,
       asset: assetReferenceView,
+      error: errorReferenceView,
       workflow: workflowReferenceView
     }
   })
+  focusRequestedCaret()
 })
 
 watch(
@@ -545,12 +600,18 @@ watch(
     if (epoch !== previousEpoch) {
       insertions.clear()
       const state = createState()
-      const position = Math.min(view.state.selection.head, doc.content.size)
+      const caret = requestedCaret(state.doc)
+      const position =
+        caret ?? Math.min(view.state.selection.head, doc.content.size)
       view.updateState(
         state.apply(
           state.tr.setSelection(TextSelection.create(state.doc, position))
         )
       )
+      if (caret !== undefined) {
+        view.focus()
+        emit('caretRequestHandled')
+      }
       emit('selectionChange')
       return
     }
@@ -575,7 +636,7 @@ watch(
 )
 
 watch(
-  () => [label, expanded, activeDescendant, searchHint],
+  () => [label, expanded, referenceMenuId, activeDescendant, searchHint],
   () => view?.setProps({})
 )
 watch(

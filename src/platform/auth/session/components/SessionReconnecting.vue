@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
 
 const { reconnecting } = storeToRefs(useCloudWebSessionStore())

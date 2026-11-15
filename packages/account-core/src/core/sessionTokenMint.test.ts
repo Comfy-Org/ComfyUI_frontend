@@ -31,6 +31,7 @@ function tokenBody(token: string, expiresAt: number) {
   return {
     token,
     expires_at: new Date(expiresAt).toISOString(),
+    user_id: 'uid-1',
     workspace: { id: 'ws-personal', name: 'Personal', type: 'personal' },
     role: 'owner',
     permissions: []

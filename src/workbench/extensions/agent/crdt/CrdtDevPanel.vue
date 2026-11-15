@@ -14,28 +14,28 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import type { BadgeVariants } from '@/components/ui/badge/badge.variants'
-import Button from '@/components/ui/button/Button.vue'
-import Field from '@/components/ui/field/Field.vue'
-import FieldDescription from '@/components/ui/field/FieldDescription.vue'
-import FieldLabel from '@/components/ui/field/FieldLabel.vue'
-import Label from '@/components/ui/label/Label.vue'
-import Message from '@/components/ui/message/Message.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
-import Switch from '@/components/ui/switch/Switch.vue'
-import Table from '@/components/ui/table/Table.vue'
-import TableBody from '@/components/ui/table/TableBody.vue'
-import TableCell from '@/components/ui/table/TableCell.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
-import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
-import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
-import type { SelectOption } from '@/components/ui/select/types'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import type { BadgeVariants } from '@comfyorg/design-system/lib/badge/badge.variants'
+import Button from '@comfyorg/design-system/button/Button'
+import Field from '@comfyorg/design-system/field/Field'
+import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
+import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
+import Label from '@comfyorg/design-system/label/Label'
+import Message from '@comfyorg/design-system/message/Message'
+import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
+import Switch from '@comfyorg/design-system/switch/Switch'
+import Table from '@comfyorg/design-system/table/Table'
+import TableBody from '@comfyorg/design-system/table/TableBody'
+import TableCell from '@comfyorg/design-system/table/TableCell'
+import TableRow from '@comfyorg/design-system/table/TableRow'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
+import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
+import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
+import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
-import { reportError } from '@/platform/telemetry/reportError'
+import { resolveDeployEnv } from '@comfyorg/telemetry/rumContext'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -752,7 +752,7 @@ function fmtTime(at: number): string {
       data-testid="crdt-dev-panel-restore"
       @click="restore"
     >
-      <span class="icon-[lucide--eye] size-3" />
+      <i aria-hidden="true" class="icon-[lucide--eye] size-3" />
       {{ t(`${i18nKey}.restore`) }}
     </Button>
 
@@ -802,7 +802,7 @@ function fmtTime(at: number): string {
           data-testid="crdt-dev-panel-dismiss"
           @click="dismiss"
         >
-          <span class="icon-[lucide--eye-off] size-4" />
+          <i aria-hidden="true" class="icon-[lucide--eye-off]" />
         </Button>
         <Button
           ref="closeButton"
@@ -813,7 +813,7 @@ function fmtTime(at: number): string {
           data-testid="crdt-dev-panel-close"
           @click="setOpen(false)"
         >
-          <span class="icon-[lucide--x] size-4" />
+          <i aria-hidden="true" class="icon-[lucide--x]" />
         </Button>
       </header>
 
@@ -1027,8 +1027,9 @@ function fmtTime(at: number): string {
           </p>
 
           <Button
-            variant="primary"
-            class="w-full"
+            variant="outline"
+            size="sm"
+            class="w-full border-primary"
             data-testid="crdt-dev-panel-run"
             @click="run"
           >
@@ -1168,13 +1169,14 @@ function fmtTime(at: number): string {
           {{ t(`${i18nKey}.includeHint`) }}
         </FieldDescription>
         <div class="flex gap-1">
-          <Button variant="outline" class="flex-1" @click="copyLog">
+          <Button variant="outline" size="sm" class="flex-1" @click="copyLog">
             {{ copyLogLabel }}
           </Button>
           <Button
-            variant="primary"
-            :loading="reportCopyState.status === 'busy'"
-            class="flex-2"
+            variant="outline"
+            size="sm"
+            :disabled="reportCopyState.status === 'busy'"
+            class="flex-2 border-primary"
             data-testid="crdt-dev-panel-copy-report"
             @click="copyReport"
           >

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
 
 import { prepareTemplateInputs } from './templateInputService'
@@ -45,7 +45,7 @@ function prepare(
   signal = new AbortController().signal,
   restoreNamed = false
 ) {
-  return prepareTemplateInputs(graph, inputs, signal, restoreNamed)
+  return prepareTemplateInputs(graph, inputs, signal, { restoreNamed })
 }
 
 beforeEach(() => {
@@ -359,8 +359,7 @@ describe('template input preparation', () => {
         workflow(),
         inputs,
         new AbortController().signal,
-        false,
-        onStart
+        { restoreNamed: false, onStart }
       )
       expect(onStart).not.toHaveBeenCalled()
       expect(fetch).not.toHaveBeenCalled()
@@ -377,8 +376,7 @@ describe('template input preparation', () => {
       workflow(),
       [input()],
       new AbortController().signal,
-      false,
-      onStart
+      { restoreNamed: false, onStart }
     )
     expect(result.errors).toEqual([])
     expect(onStart).toHaveBeenCalledOnce()

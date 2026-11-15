@@ -17,6 +17,7 @@ import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -103,8 +104,10 @@ const ACTIVE_STANDARD = {
   renewal_date: '2099-02-20T00:00:00Z',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
-  scheduled_change: null
+  scheduled_change: null,
+  next_charge: null
 } satisfies BillingStatusResponse
 
 const SAVED_CARD = {
@@ -275,6 +278,8 @@ async function expectResumedSubscribeSettles(
 }
 
 test.describe('Resumed subscription settle', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('reports a subscribe that settles after a reload on the SDK rail', async ({
     page,
     toast

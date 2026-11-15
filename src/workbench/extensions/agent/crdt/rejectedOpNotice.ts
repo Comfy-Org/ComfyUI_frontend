@@ -4,12 +4,21 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
+import { createToastId } from '@/types/toastId'
 
 import type { DocOpFailure } from './docFrameClient'
+import { createReportBudget } from './opSender'
 import type { OpsResultView } from './opSender'
+import { reportLostEdit } from './reportLostEdit'
 
 const NOTICE_LIFE_MS = 10_000
+const NOTICE_ID = createToastId()
+
+/** Acknowledged ops the document does not show as written. */
+export interface LostEdits {
+  overwritten: readonly Op[]
+  unconfirmed: readonly Op[]
+}
 
 function rejectedOp(ops: readonly Op[], failed: DocOpFailure): Op | undefined {
   return ops.find((op) => op.op_id === failed.op_id) ?? ops[failed.index]
@@ -80,6 +89,22 @@ function rejectedTarget(op: Op | undefined): string | undefined {
   }
 }
 
+function rejectedOpContext(op: Op | undefined): {
+  nodeId?: string | number
+  classType?: string
+} {
+  switch (op?.op) {
+    case 'set_widget':
+    case 'set_node_field':
+    case 'delete_node':
+      return { nodeId: op.node_id }
+    case 'add_node':
+      return { nodeId: op.node_id, classType: op.class_type }
+    default:
+      return {}
+  }
+}
+
 function withReason(
   notice: string,
   target: string | undefined,
@@ -124,71 +149,106 @@ function noticeKey(widgetWrite: boolean, partial: boolean): string {
 export function createRejectedOpNotifier() {
   const throttledToasts = new Map<
     string,
-    ThrottledFunction<(detail: string) => void>
+    ThrottledFunction<(description: string) => void>
   >()
-  const reportedCodes = new Set<string>()
 
-  function reportOnce(
-    code: string,
-    widgetWrite: boolean,
+  function showToast(kind: string, description: string): void {
+    const toast = throttledToasts.get(kind)
+    if (toast) return toast(description)
+    const throttled = throttle(
+      (detail: string) =>
+        useToast().error(i18n.global.t('g.error'), {
+          id: NOTICE_ID,
+          description: detail,
+          duration: NOTICE_LIFE_MS
+        }),
+      NOTICE_LIFE_MS,
+      { edges: ['leading'] }
+    )
+    throttledToasts.set(kind, throttled)
+    throttled(description)
+  }
+
+  function reportRejectedEdit(
+    ops: readonly Op[],
     result: OpsResultView,
-    failed: DocOpFailure | undefined
+    failed: DocOpFailure | undefined,
+    code: string,
+    widgetWrite: boolean
   ): void {
-    if (reportedCodes.has(code)) return
-    reportedCodes.add(code)
-    reportError(
-      new Error(`the agent doc host rejected a human edit (${code})`),
+    const accepted = new Set([...result.applied, ...result.skipped])
+    reportLostEdit(
+      'host_rejected',
+      ops.filter((op) => !accepted.has(op.op_id)),
       {
-        surface: 'agent',
+        code,
+        workflowId: result.workflowId,
+        message: failed?.message,
+        failedIndex: failed?.index,
         errorType: widgetWrite
           ? 'error_applying_agent_widget_edit'
           : 'error_applying_agent_graph_edit',
-        context: { workflowId: result.workflowId, opId: failed?.op_id, code },
-        level: 'warning'
+        ...rejectedOpContext(failed && rejectedOp(ops, failed))
       }
     )
   }
 
-  function showThrottled(kind: string, description: string): void {
-    const existing = throttledToasts.get(kind)
-    if (existing) return existing(description)
-    const created = throttle(
-      (detail: string) => {
-        useToast().error(i18n.global.t('g.error'), {
-          description: detail,
-          duration: NOTICE_LIFE_MS
-        })
-      },
-      NOTICE_LIFE_MS,
-      { edges: ['leading'] }
-    )
-    throttledToasts.set(kind, created)
-    created(description)
+  function notifyRejected(ops: readonly Op[], result: OpsResultView): void {
+    const { failed } = result
+    const widgetWrite = isRejectedWidgetWrite(ops, failed)
+    const code = failed?.code ?? result.code ?? 'unspecified'
+    reportRejectedEdit(ops, result, failed, code, widgetWrite)
+    const partial = result.applied.length > 0 && failed !== undefined
+    const kind = noticeKey(widgetWrite, partial)
+    const notice = i18n.global.t(kind)
+    const target = failed && rejectedTarget(rejectedOp(ops, failed))
+    showToast(kind, withReason(notice, target, code))
+  }
+
+  const mayReportLostEdit = createReportBudget()
+
+  function notifyLostEdits(
+    result: OpsResultView,
+    { overwritten, unconfirmed }: LostEdits
+  ): void {
+    if (overwritten.length > 0)
+      reportLostEdit(
+        'host_rejected',
+        overwritten,
+        {
+          code: 'lww_dropped',
+          workflowId: result.workflowId,
+          errorType: 'error_applying_agent_graph_edit'
+        },
+        { shouldReport: mayReportLostEdit() }
+      )
+    if (unconfirmed.length > 0)
+      reportLostEdit(
+        'unconfirmed',
+        unconfirmed,
+        { code: 'replayed_without_outcome', workflowId: result.workflowId },
+        { shouldReport: mayReportLostEdit() }
+      )
+    if (!result.ok) return
+    const kind =
+      overwritten.length > 0
+        ? 'agent.editRejected.overwritten'
+        : 'agent.editRejected.unconfirmed'
+    showToast(kind, i18n.global.t(kind))
   }
 
   return {
     notify(ops: readonly Op[], result: OpsResultView) {
       if (result.ok) return
-      const { failed } = result
-      const widgetWrite = isRejectedWidgetWrite(ops, failed)
-      const code = failed?.code ?? result.code ?? 'unspecified'
-      reportOnce(code, widgetWrite, result, failed)
-      const partial = result.applied.length > 0 && failed !== undefined
-      const kind = noticeKey(widgetWrite, partial)
-      const notice = i18n.global.t(kind)
-      const target = failed && rejectedTarget(rejectedOp(ops, failed))
-      showThrottled(kind, withReason(notice, target, code))
+      notifyRejected(ops, result)
     },
+    notifyLostEdits,
     notifyWidgetWriteRefused(nodeId: string | number, widgetName: string) {
       const notice = i18n.global.t('agent.editRejected.widgetWrite')
-      showThrottled(
+      showToast(
         'agent.editRejected.widgetWrite',
         withReason(notice, nodeFieldTarget(nodeId, widgetName), 'unspecified')
       )
-    },
-    cancel() {
-      for (const throttled of throttledToasts.values()) throttled.cancel()
-      throttledToasts.clear()
     }
   }
 }

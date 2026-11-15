@@ -25,10 +25,6 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
     initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
   })
 
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-  })
-
   test('Drag first input to last position', async ({ comfyPage }) => {
     const { appMode } = comfyPage
     await setupBuilder(comfyPage, undefined, WIDGETS)

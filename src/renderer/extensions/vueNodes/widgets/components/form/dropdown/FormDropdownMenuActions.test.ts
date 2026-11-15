@@ -130,18 +130,19 @@ async function openPopover(user: TestUser, triggerName: string) {
 
 describe('FormDropdownMenuActions', () => {
   it.for(
-    ['Sort by', 'Ownership', 'Base model'].flatMap((triggerName) =>
-      ['resize', 'scroll'].map((type) => ({ triggerName, type }))
-    )
+    ['Sort by', 'Ownership', 'Base model'].flatMap((triggerName) => [
+      { triggerName, type: 'resize', target: window },
+      { triggerName, type: 'scroll', target: document }
+    ])
   )(
     'dismisses $triggerName on viewport $type',
-    async ({ triggerName, type }) => {
+    async ({ triggerName, type, target }) => {
       const { user } = renderMenu({
         showOwnershipFilter: true,
         showBaseModelFilter: true
       })
       await openPopover(user, triggerName)
-      await fireEvent(type === 'scroll' ? document : window, new Event(type))
+      await fireEvent(target, new Event(type))
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     }
   )

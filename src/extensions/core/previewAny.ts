@@ -1,3 +1,4 @@
+import type { ComfyExtension } from '@/types/comfy'
 /*
 Preview Any - original implement from
 https://github.com/rgthree/rgthree-comfy/blob/main/py/display_any.py
@@ -8,12 +9,11 @@ import {
   addTextPreviewWidgets,
   updateTextPreviewWidgets
 } from '@/extensions/core/textPreviewWidgets'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
-import { useExtensionService } from '@/services/extensionService'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-useExtensionService().registerExtension({
+export const previewAnyExtension: ComfyExtension = {
   name: 'Comfy.PreviewAny',
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
@@ -39,4 +39,4 @@ useExtensionService().registerExtension({
       if (node?.type === 'PreviewAny') updateTextPreviewWidgets(node, output)
     }
   }
-})
+}

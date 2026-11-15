@@ -208,6 +208,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       const response = {
         token: `workspace-jwt-${account.id}`,
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: {
           id: TEAM_WORKSPACE.id,
           name: TEAM_WORKSPACE.name,

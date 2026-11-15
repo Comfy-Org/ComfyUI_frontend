@@ -6,18 +6,21 @@ import {
   authenticatedRemoteConfigState,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import {
   FREE_USE_PLACEMENT_FLAG,
+  LOCAL_FREE_USE_PLACEMENT,
   useFreeUsePlacement as useFreeUsePlacementImpl
 } from './freeUsePlacement'
 
+const distribution = { isCloud: true }
+
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/utils/devFeatureFlagOverride'))
 vi.mock(import('@/utils/sessionFeatureFlagOverride'))
 
@@ -26,7 +29,7 @@ let placementScope: EffectScope
 function useFreeUsePlacement() {
   let placement: ReturnType<typeof useFreeUsePlacementImpl> | undefined
   placementScope.run(() => {
-    placement = useFreeUsePlacementImpl()
+    placement = useFreeUsePlacementImpl(distribution.isCloud)
   })
   return placement!
 }
@@ -34,6 +37,7 @@ function useFreeUsePlacement() {
 describe('useFreeUsePlacement', () => {
   beforeEach(() => {
     placementScope = effectScope()
+    distribution.isCloud = true
     authenticatedRemoteConfigState.value = 'unloaded'
     remoteConfig.value = {}
   })
@@ -58,6 +62,31 @@ describe('useFreeUsePlacement', () => {
     expect(useTelemetry()?.trackAgentFreeUseNotice).toHaveBeenCalledWith({
       action: 'shown',
       placement: 'above-input'
+    })
+  })
+
+  it('reports Local notice telemetry without Cloud experiment exposure', () => {
+    distribution.isCloud = false
+    const telemetry = useTelemetry()!
+    const { variant, reportNotice } = useFreeUsePlacement()
+
+    expect(variant.value).toBe(LOCAL_FREE_USE_PLACEMENT)
+    expect(telemetry.trackAgentFreeUseExposure).not.toHaveBeenCalled()
+
+    reportNotice({ action: 'shown', placement: LOCAL_FREE_USE_PLACEMENT })
+    reportNotice({
+      action: 'learn_more_clicked',
+      placement: LOCAL_FREE_USE_PLACEMENT
+    })
+    expect(telemetry.trackAgentFreeUseNotice).toHaveBeenNthCalledWith(1, {
+      action: 'shown',
+      placement: LOCAL_FREE_USE_PLACEMENT,
+      deployment: 'local'
+    })
+    expect(telemetry.trackAgentFreeUseNotice).toHaveBeenNthCalledWith(2, {
+      action: 'learn_more_clicked',
+      placement: LOCAL_FREE_USE_PLACEMENT,
+      deployment: 'local'
     })
   })
 

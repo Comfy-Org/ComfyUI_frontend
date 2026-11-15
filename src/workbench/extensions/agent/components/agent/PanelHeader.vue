@@ -2,10 +2,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { isMaximized = false } = defineProps<{
   isMaximized?: boolean
@@ -47,7 +46,7 @@ const sizeToggleLabel = computed(() =>
         class="size-6 shrink-0"
         @click="emit('startTour')"
       >
-        <span class="icon-[lucide--info] size-4" />
+        <i aria-hidden="true" class="icon-[lucide--info]" />
       </Button>
     </div>
     <Badge variant="compact">{{ t('agent.beta') }}</Badge>
@@ -61,7 +60,7 @@ const sizeToggleLabel = computed(() =>
         :aria-label="t('agent.newChat')"
         @click="emit('newChat')"
       >
-        <span class="icon-[lucide--plus] size-4" />
+        <i aria-hidden="true" class="icon-[lucide--plus]" />
       </Button>
       <Button
         :tooltip="sizeToggleLabel"
@@ -71,7 +70,7 @@ const sizeToggleLabel = computed(() =>
         :aria-label="sizeToggleLabel"
         @click="emit('toggleSize')"
       >
-        <span :class="cn(sizeToggleIcon, 'size-4')" />
+        <i aria-hidden="true" :class="sizeToggleIcon" />
       </Button>
       <Button
         :tooltip="t('agent.close')"
@@ -81,7 +80,7 @@ const sizeToggleLabel = computed(() =>
         :aria-label="t('agent.close')"
         @click="emit('close')"
       >
-        <span class="icon-[lucide--x] size-4" />
+        <i aria-hidden="true" class="icon-[lucide--x]" />
       </Button>
     </div>
   </header>

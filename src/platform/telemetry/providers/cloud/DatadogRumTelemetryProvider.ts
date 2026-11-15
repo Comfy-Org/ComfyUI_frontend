@@ -16,10 +16,15 @@ import type {
 import { datadogRum } from '@datadog/browser-rum'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { BUILT_IN_THEME_PRESETS } from '@comfyorg/theme-core/builtInThemePresets'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import type {
+  AgentSendGatedMetadata,
   AuthMetadata,
+  BootstrapCompleteMetadata,
   ExecutionOutcomeMetadata,
+  FetchStatusRetryMetadata,
   FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
   TelemetryProvider,
@@ -27,8 +32,8 @@ import type {
   UnifiedAuthRetryMetadata,
   WorkspaceScopeMismatchMetadata,
   WorkspaceTelemetryContext
-} from '@/platform/telemetry/types'
-import { TelemetryEvents } from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
   private isWatchingLogout = false
@@ -54,6 +59,10 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
 
   trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
     datadogRum.addAction(TelemetryEvents.FETCH_TIMEOUT, metadata)
+  }
+
+  trackFetchStatusRetry(metadata: FetchStatusRetryMetadata): void {
+    datadogRum.addAction(TelemetryEvents.FETCH_STATUS_RETRY, metadata)
   }
 
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
@@ -82,8 +91,24 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     datadogRum.addAction(event.name, event.properties)
   }
 
+  trackAgentSendGated(metadata: AgentSendGatedMetadata): void {
+    datadogRum.addAction(TelemetryEvents.AGENT_SEND_GATED, metadata)
+  }
+
   trackImageLoadFailed(metadata: ImageLoadFailureMetadata): void {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
+  }
+
+  trackBootstrapComplete({ outcome }: BootstrapCompleteMetadata): void {
+    if (outcome !== 'completed') return
+
+    const { activeTheme, colorScheme } = useThemeStore()
+    datadogRum.addAction(TelemetryEvents.THEME_LOADED, {
+      theme: Object.hasOwn(BUILT_IN_THEME_PRESETS, activeTheme.id)
+        ? activeTheme.id
+        : 'custom',
+      color_scheme: colorScheme
+    })
   }
 
   trackFeatureFlagEvaluation(key: string, value: unknown): void {

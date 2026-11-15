@@ -5,7 +5,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import type { SystemStats } from '@/platform/remote/comfyui/types'
+import type { SystemStats } from '@comfyorg/api-client/types'
 
 import SystemStatsPanel from './SystemStatsPanel.vue'
 

@@ -3,13 +3,13 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@/components/ui/button/Button.vue'
-import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
@@ -76,7 +76,7 @@ async function downloadAssets(): Promise<void> {
       :aria-pressed="vote === 'up'"
       @click="setVote('up')"
     >
-      <span class="icon-[lucide--thumbs-up] size-3" />
+      <i aria-hidden="true" class="icon-[lucide--thumbs-up] size-3" />
     </Button>
     <Button
       :tooltip="t('agent.notHelpful')"
@@ -87,7 +87,7 @@ async function downloadAssets(): Promise<void> {
       :aria-pressed="vote === 'down'"
       @click="setVote('down')"
     >
-      <span class="icon-[lucide--thumbs-down] size-3" />
+      <i aria-hidden="true" class="icon-[lucide--thumbs-down] size-3" />
     </Button>
     <Button
       v-if="assets.length"
@@ -99,7 +99,7 @@ async function downloadAssets(): Promise<void> {
       :disabled="downloading"
       @click="downloadAssets"
     >
-      <span class="icon-[lucide--download] size-3" />
+      <i aria-hidden="true" class="icon-[lucide--download] size-3" />
     </Button>
     <ButtonGroup class="overflow-visible">
       <Tooltip disable-closing-trigger>
@@ -111,7 +111,8 @@ async function downloadAssets(): Promise<void> {
             :aria-label="copied ? t('agent.copied') : t('agent.copy')"
             @click="copyPlainText()"
           >
-            <span
+            <i
+              aria-hidden="true"
               :class="
                 cn(
                   'size-3',
@@ -137,7 +138,7 @@ async function downloadAssets(): Promise<void> {
             size="icon-sm"
             :aria-label="t('agent.copyMarkdown')"
           >
-            <span class="icon-[lucide--chevron-down] size-3" />
+            <i aria-hidden="true" class="icon-[lucide--chevron-down] size-3" />
           </Button>
         </template>
       </Menu>

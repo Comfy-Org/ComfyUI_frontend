@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 
 const emit = defineEmits<{ dismiss: []; shown: [] }>()
 
@@ -12,7 +12,8 @@ onMounted(() => emit('shown'))
 <template>
   <Message severity="warning" role="status" aria-live="polite">
     <template #icon>
-      <span
+      <i
+        aria-hidden="true"
         class="icon-[heroicons--information-circle-20-solid] block size-5 text-warning"
       />
     </template>
@@ -28,7 +29,7 @@ onMounted(() => emit('shown'))
         class="shrink-0"
         @click="emit('dismiss')"
       >
-        <span class="icon-[lucide--x] size-5" />
+        <i aria-hidden="true" class="icon-[lucide--x] size-5" />
       </Button>
     </div>
   </Message>

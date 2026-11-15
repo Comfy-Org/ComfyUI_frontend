@@ -4,9 +4,9 @@ import type {
   BillingStatusResponse as IngestBillingStatusResponse
 } from '@comfyorg/ingest-types'
 
+import type { Plan } from '@comfyorg/billing-core'
 import type {
   Member,
-  Plan,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -15,8 +15,8 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 
 export const CLOUD_REMOTE_CONFIG: RemoteConfig = {}
 
-export const LEGACY_PERSONAL_BILLING_STATUS = {
-  billing_rail: 'legacy_stripe',
+export const PERSONAL_BILLING_STATUS = {
+  billing_rail: 'stripe',
   billing_status: 'inactive',
   has_funds: true,
   is_active: false,
@@ -24,8 +24,10 @@ export const LEGACY_PERSONAL_BILLING_STATUS = {
   occupied_seats: 1,
   subscription_status: 'ended',
   subscription_tier: 'FREE',
+  ended_at: null,
   team_credit_stop: null,
-  scheduled_change: null
+  scheduled_change: null,
+  next_charge: null
 } satisfies IngestBillingStatusResponse
 
 export const EMPTY_BILLING_BALANCE = {
@@ -109,8 +111,10 @@ export const TEAM_BILLING_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 30,
   occupied_seats: DEFAULT_TEAM_MEMBERS.length
 } satisfies IngestBillingStatusResponse
@@ -124,8 +128,10 @@ export const ENDED_STANDARD_BILLING_STATUS = {
   subscription_duration: 'MONTHLY',
   subscription_status: 'ended',
   subscription_tier: 'STANDARD',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies IngestBillingStatusResponse & { billing_rail: 'stripe' }
