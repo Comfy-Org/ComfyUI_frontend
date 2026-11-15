@@ -2,7 +2,6 @@
   <Badge
     v-if="nodeDef.api_node && providerName"
     variant="outline"
-    class="text-foreground"
     :style="borderStyle"
   >
     <template #icon>

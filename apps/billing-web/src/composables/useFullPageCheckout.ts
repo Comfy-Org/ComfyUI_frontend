@@ -74,7 +74,7 @@ import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import type { BillingEntryState } from '@/entry/billingEntry'
-import { useBillingWebSession } from '@/session/billingWebSession'
+import { useBilledScope } from '@/session/billingWebAuth'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 import {
   checkoutAttemptOf,
@@ -225,7 +225,7 @@ function arrivalPage({ entry, error }: BillingEntryState): CheckoutPage {
  */
 export function useFullPageCheckout() {
   const { entry, error: unreadableLink } = useBillingEntry()
-  const { session } = useBillingWebSession()
+  const session = useBilledScope()
   const billedWorkspace = useBilledWorkspace()
   const { capabilities, commands, lifecycle, plans, status } = useBillingClient<
     'capabilities' | 'commands' | 'lifecycle' | 'plans' | 'status'

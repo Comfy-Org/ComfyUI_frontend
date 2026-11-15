@@ -22,7 +22,7 @@ export const billingApi = vi.mockObject<typeof realBillingApi>(
       signal?.throwIfAborted()
       return {
         auto_top_up_enabled: false,
-        billing_web_checkout_ui: 'embedded',
+        billing_web_checkout_ui: 'full_page',
         capabilities: {
           can_cancel: false,
           can_change_seats: false,

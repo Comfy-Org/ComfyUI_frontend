@@ -264,6 +264,10 @@
       ]
     },
     {
+      "name": "Signed-out login button shows the Partner Nodes sign-in prompt behind the new billing UX flag",
+      "checks": ["src/components/topbar/LoginButton.test.ts"]
+    },
+    {
       "name": "Auth header and token resolution prefer workspace, unified, Firebase, then API-key credentials",
       "checks": ["src/stores/__tests__/authTokenPriority.test.ts"]
     },

@@ -60,6 +60,10 @@ export function useTemplateModelDownloads(
         ? tracker.stateFor(model)
         : toTemplateModelDownloadState(store.stateFor(model))
     },
+    canResume: (model) => {
+      const tracker = dialogTracker()
+      return tracker ? tracker.canResume(model) : store.canResume(model)
+    },
     request: (model) => {
       if (disposed) return
       const tracker = dialogTracker()

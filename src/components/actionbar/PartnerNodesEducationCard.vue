@@ -27,7 +27,7 @@
               :base-muted="audibleSide !== 'partner'"
               :overlay-muted="audibleSide !== 'open'"
               :label="t('partnerNodesEducation.sliderLabel')"
-              class="relative z-2 -mb-5 flex-1 rounded-t-xl"
+              class="z-2 -mb-5 flex-1 rounded-t-xl"
             >
               <Button
                 v-for="control in audioControls"

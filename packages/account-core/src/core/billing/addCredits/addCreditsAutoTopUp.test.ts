@@ -57,9 +57,9 @@ describe('validateAutoTopUp', () => {
       errors: { threshold: 'notWhole' }
     },
     {
-      name: 'a threshold too large to hold exactly',
-      input: { threshold: '9'.repeat(400) },
-      errors: { threshold: 'notWhole' }
+      name: 'whole-number fields too large to hold exactly',
+      input: { threshold: '9007199254740993', target: '9007199254752543' },
+      errors: { threshold: 'notWhole', target: 'notWhole' }
     },
     {
       name: 'a zero threshold',
@@ -105,6 +105,11 @@ describe('validateAutoTopUp', () => {
       name: 'a limit with a decimal comma',
       input: { limitOn: true, limit: '50,01' },
       errors: { limit: 'invalid' }
+    },
+    {
+      name: 'a grouped monthly limit with cents',
+      input: { limitOn: true, limit: '12,500.50' },
+      errors: {}
     },
     {
       name: 'a threshold with a misplaced comma',

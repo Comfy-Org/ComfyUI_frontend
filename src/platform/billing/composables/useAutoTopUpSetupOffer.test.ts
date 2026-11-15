@@ -1,6 +1,6 @@
 import type { AutoTopUpSetup } from '@comfyorg/ingest-types'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -10,6 +10,7 @@ import {
   canManageAutoTopUpFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import { useAutoTopUpSetupOffer } from './useAutoTopUpSetupOffer'
 
@@ -78,6 +79,19 @@ describe('useAutoTopUpSetupOffer', () => {
       expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
     }
   )
+
+  it('offers nothing when local billing switches to a handoff while the settings are read', async () => {
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    const { setupUrl } = await serve()
+    const read = vi.mocked(billingApi.getBillingAutoReload)
+    const settings = await read()
+    read.mockImplementationOnce(async () => {
+      setLocalBillingWebEnabled(true)
+      return settings
+    })
+
+    await expect(setupUrl()).resolves.toBeNull()
+  })
 
   it('offers nothing once auto top-up is already on', async () => {
     const { setupUrl } = await serve({ status: 'on' })

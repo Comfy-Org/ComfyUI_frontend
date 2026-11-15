@@ -158,6 +158,8 @@ function refusalBody(
   translate: AddCreditsTranslate
 ): string {
   const support = SUPPORT_TOKEN
+  if (refusal.kind === 'checkout_failed' && refusal.serverMessage)
+    return refusal.serverMessage
   if (refusal.kind !== 'rate_limited') return translate(bodyKey, { support })
   const wait = addCreditsWait(refusal.retryAfterSeconds)
   return wait.unit === 'later'

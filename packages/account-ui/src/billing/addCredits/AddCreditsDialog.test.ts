@@ -57,6 +57,7 @@ class FakePorts implements AddCreditsPorts {
   watchStopped = false
   autoTopUpSetupUrl: AddCreditsPorts['autoTopUpSetupUrl']
   activatesAutoTopUp = true
+  singleUseCheckout = false
 
   quoteRejects = false
   checkoutRejects = false
@@ -191,8 +192,8 @@ describe('AddCreditsDialog amount step', () => {
   it.for([
     { input: '3', error: 'Minimum is $5.' },
     {
-      input: '10001',
-      error: 'The largest top-up is $10,000. Add more with another top-up.'
+      input: '2501',
+      error: 'The largest top-up is $2,500. Add more with another top-up.'
     },
     { input: '12.50', error: 'Whole dollars only.' }
   ])(
@@ -415,6 +416,61 @@ describe('AddCreditsDialog checkout hand-off', () => {
   })
 })
 
+describe('AddCreditsDialog with a single-use checkout', () => {
+  it('never offers the checkout as a link when the pop-up is blocked, and opens a fresh one from the blocked step', async () => {
+    const { ports, user } = renderDialog()
+    ports.singleUseCheckout = true
+    ports.popupsBlocked = true
+
+    await user.click(continueButton())
+
+    expect(
+      screen.getByRole('heading', { name: "Checkout didn't open" })
+    ).toBeVisible()
+    expect(ports.checkouts).toEqual([])
+    const open = screen.getByTestId('add-credits-open-checkout')
+    expect(open).not.toHaveAttribute('href')
+
+    ports.popupsBlocked = false
+    await user.click(open)
+
+    expect(ports.checkouts).toEqual([5000])
+    expect(ports.tabs[0].url).toBe(CHECKOUT_URL)
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Checkout opened in a new tab'
+      })
+    ).toBeVisible()
+  })
+
+  it('disables the blocked step Open checkout while top-up is not allowed', async () => {
+    const { ports, user, rerender } = renderDialog()
+    ports.singleUseCheckout = true
+    ports.popupsBlocked = true
+    await user.click(continueButton())
+
+    await rerender({ canTopUp: false })
+
+    expect(screen.getByTestId('add-credits-open-checkout')).toBeDisabled()
+  })
+
+  it('shows the server message when the checkout is refused', async () => {
+    const { ports, user } = renderDialog()
+    ports.singleUseCheckout = true
+    ports.refuse({
+      kind: 'checkout_failed',
+      serverMessage: 'Only the workspace owner can add credits.'
+    })
+
+    await user.click(continueButton())
+
+    expect(notice()).toHaveTextContent("Couldn't open checkout")
+    expect(notice()).toHaveTextContent(
+      'Only the workspace owner can add credits.'
+    )
+  })
+})
+
 describe('AddCreditsDialog refusals', () => {
   it.for<{ refusal: AddCreditsRefusal; wait: string }>([
     {
@@ -588,6 +644,19 @@ describe('AddCreditsDialog auto top-up suggestion', () => {
 
     await vi.waitFor(() => expect(emitted().close).toHaveLength(1))
     expect(screen.queryByText(OFFER)).not.toBeInTheDocument()
+  })
+
+  it('withdraws a shown suggestion and closes once its setup link is hidden', async () => {
+    const { emitted, rerender } = await landPayment(() =>
+      Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    )
+    await screen.findByText(OFFER)
+
+    await rerender({ autoTopUpSetupHidden: true })
+
+    expect(screen.queryByRole('link', { name: 'Set up' })).toBeNull()
+    expect(emitted().close).toHaveLength(1)
+    expect(emitted().declineAutoTopUp).toBeUndefined()
   })
 })
 
@@ -858,7 +927,7 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
   )
 
   it("shows Auto top-up didn't turn on with Set up when the server reports a failure", async () => {
-    const { user, ports } = renderOffered()
+    const { user, ports, emitted } = renderOffered()
     ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
     await user.click(checkbox())
     await user.click(continueButton())
@@ -873,11 +942,29 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
         'Your credits were added. Set up auto top-up in Billing to try again.'
       )
     ).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Done' })).toBeVisible()
     expect(screen.getByRole('link', { name: 'Set up' })).toHaveAttribute(
       'href',
       AUTO_TOP_UP_SETUP_URL
     )
+    await user.click(screen.getByRole('button', { name: 'Done' }))
+    expect(emitted().close).toHaveLength(1)
+  })
+
+  it("keeps Auto top-up didn't turn on but drops Set up once its setup link is hidden", async () => {
+    const { user, ports, rerender, emitted } = renderOffered()
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(checkbox())
+    await user.click(continueButton())
+    ports.landed?.({ status: 'failed' })
+    await screen.findByRole('link', { name: 'Set up' })
+
+    await rerender({ autoTopUpSetupHidden: true })
+
+    expect(
+      screen.getByRole('heading', { name: "Auto top-up didn't turn on" })
+    ).toBeVisible()
+    expect(screen.queryByRole('link', { name: 'Set up' })).toBeNull()
+    expect(emitted().close).toBeUndefined()
   })
 
   it('a checked purchase that lands without an outcome closes without claiming a failure', async () => {

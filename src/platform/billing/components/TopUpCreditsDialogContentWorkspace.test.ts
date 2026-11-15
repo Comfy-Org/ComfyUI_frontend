@@ -41,15 +41,16 @@ import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import {
-  autoTopUpCardState,
+  autoTopUpCard,
   loadedAutoTopUp
 } from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
 import {
   autoTopUpEnabledFact,
   canManageAutoTopUpFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -904,7 +905,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(createCheckout).toHaveBeenCalledWith(
         5000,
         window.location.href,
-        expect.any(AbortSignal)
+        expect.any(AbortSignal),
+        undefined
       )
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
       expect(
@@ -1047,7 +1049,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(createCheckout).toHaveBeenCalledWith(
           5000,
           'https://testbilling.comfy.org/return/topup',
-          expect.any(AbortSignal)
+          expect.any(AbortSignal),
+          undefined
         )
         expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
         expect(window.location.href).toBe(appUrl)
@@ -2667,7 +2670,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       capabilities.autoTopUpSetup = computed(() => ({
         state: 'ready' as const
       }))
-      autoTopUpCardState.value = loadedAutoTopUp('off')
+      vi.mocked(useBillingAutoTopUpCard).mockReturnValue(
+        autoTopUpCard(loadedAutoTopUp('off'))
+      )
     })
 
     it('sits above Add credits on the amount step', () => {

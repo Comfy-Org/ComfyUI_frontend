@@ -183,12 +183,16 @@
               "
             >
               <NodeContent v-if="nodeMedia" :node-data :media="nodeMedia" />
-              <NodeContent
+              <template
                 v-for="preview in promotedPreviews"
                 :key="`${preview.sourceNodeId}-${preview.sourceWidgetName}`"
-                :node-data
-                :media="preview"
-              />
+              >
+                <LivePreview
+                  v-if="preview.type === 'preview'"
+                  :image-url="preview.url"
+                />
+                <NodeContent v-else :node-data :media="preview" />
+              </template>
             </div>
             <LivePreview
               v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
@@ -306,11 +310,12 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { isVideoResult } from '@/utils/resultItem'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isVideoOutput } from '@/utils/litegraphUtil'
@@ -481,7 +486,7 @@ const handleResizePointerDown = (
 // Check if node has custom content (like image/video outputs)
 const hasCustomContent = computed(() => {
   if (promotedPreviews.value.length > 0) return true
-  return !!nodeMedia.value && nodeMedia.value.urls.length > 0
+  return !!nodeMedia.value && nodeMedia.value.items.length > 0
 })
 
 // Computed classes and conditions for better reusability
@@ -566,10 +571,10 @@ const handleHeaderTitleUpdate = (newTitle: string) => {
   handleNodeTitleUpdate(nodeData.id, newTitle)
 }
 
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 
 const handleOpenErrors = () => {
-  rightSidePanelStore.openPanel('errors')
+  propertiesPanelStore.openPanel('errors')
 }
 
 const handleToggleAdvanced = () => {
@@ -578,8 +583,8 @@ const handleToggleAdvanced = () => {
 
   // A subgraph node has no advanced section of its own; the side panel hosts it.
   if (node instanceof SubgraphNode) {
-    if (rightSidePanelStore.isOpen) rightSidePanelStore.closePanel()
-    else rightSidePanelStore.focusSection('advanced-inputs')
+    if (propertiesPanelStore.isOpen) propertiesPanelStore.closePanel()
+    else propertiesPanelStore.focusSection('advanced-inputs')
     return
   }
   node.showAdvanced = !node.showAdvanced
@@ -700,26 +705,18 @@ const hasVideoPreviewWidget = computed(() =>
 )
 
 const nodeMedia = computed(() => {
-  const locatorId = nodeLocatorId.value
-  const newOutputs = locatorId ? nodeOutputs.nodeOutputs[locatorId] : undefined
   const node = lgraphNode.value
-
-  if (
-    !node ||
-    !newOutputs?.images?.length ||
-    node.hideOutputImages ||
-    hideExecutedOutput.value
-  )
+  if (!node || node.hideOutputImages || hideExecutedOutput.value)
     return undefined
-
   if (node instanceof SubgraphNode) return undefined
-  if (shouldHideLinkedCoreMediaInputPreview(node, newOutputs)) return undefined
 
-  const urls = nodeOutputs.getNodeImageUrls(node)
-  if (!urls?.length) return undefined
+  const outputs = nodeOutputs.getNodeOutputs(node)
+  if (!outputs?.images?.length) return undefined
+
+  if (shouldHideLinkedCoreMediaInputPreview(node, outputs)) return undefined
 
   const type =
-    isVideoOutput(newOutputs) ||
+    isVideoOutput(outputs) ||
     node.previewMediaType === 'video' ||
     (!node.previewMediaType && hasVideoInput.value)
       ? 'video'
@@ -727,7 +724,14 @@ const nodeMedia = computed(() => {
 
   if (type === 'video' && hasVideoPreviewWidget.value) return undefined
 
-  return { type, urls } as const
+  const items = nodeOutputs
+    .getNodeOutputItems(node, outputs)
+    .filter((item) =>
+      type === 'video' ? isVideoResult(item) : item.mediaType === 'images'
+    )
+  if (!items.length) return undefined
+
+  return { type, items } as const
 })
 
 // Drag and drop support

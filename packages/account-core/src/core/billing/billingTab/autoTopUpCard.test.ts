@@ -1,11 +1,12 @@
-import type { AutoReloadSettings } from '@comfyorg/ingest-types'
+import type { AutoReloadSettings, AutoTopUpSetup } from '@comfyorg/ingest-types'
 import { describe, expect, it } from 'vitest'
 
 import {
   autoTopUpOffView,
   canSetUpAutoTopUp,
   deriveAutoTopUpCard,
-  deriveAutoTopUpSection
+  deriveAutoTopUpSection,
+  isAutoTopUpNotAvailable
 } from './autoTopUpCard'
 import type {
   AutoTopUpSectionFacts,
@@ -170,8 +171,36 @@ describe('canSetUpAutoTopUp', () => {
       name: 'a setup frozen for past due',
       facts: { setup: { state: 'frozen', reason: 'payment_past_due' } },
       can: false
+    },
+    {
+      name: 'a setup frozen for paused billing',
+      facts: { setup: { state: 'frozen', reason: 'billing_paused' } },
+      can: false
     }
   ])('$name: $can', ({ facts, can }) => {
     expect(canSetUpAutoTopUp({ ...manager, ...facts })).toBe(can)
+  })
+})
+
+describe('isAutoTopUpNotAvailable', () => {
+  it.for<{ setup: AutoTopUpSetup | null; hidden: boolean }>([
+    { setup: null, hidden: false },
+    { setup: { state: 'ready' }, hidden: false },
+    {
+      setup: { state: 'frozen', reason: 'default_payment_method_missing' },
+      hidden: false
+    },
+    {
+      setup: { state: 'frozen', reason: 'billing_payment_pending' },
+      hidden: false
+    },
+    { setup: { state: 'frozen', reason: 'billing_paused' }, hidden: true },
+    { setup: { state: 'frozen', reason: 'payment_past_due' }, hidden: true },
+    {
+      setup: { state: 'unavailable', reason: 'billing_rail_not_supported' },
+      hidden: true
+    }
+  ])('reads setup $setup as hidden: $hidden', ({ setup, hidden }) => {
+    expect(isAutoTopUpNotAvailable(setup)).toBe(hidden)
   })
 })

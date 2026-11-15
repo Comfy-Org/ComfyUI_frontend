@@ -2242,6 +2242,68 @@ describe('ComfyApp', () => {
       expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
     })
 
+    function prepareSkippedOutputsRun() {
+      prepareEmptyPromptQueue()
+      const workflow = useWorkflowStore().activeWorkflow
+      if (!workflow) throw new Error('Expected an active workflow')
+      const graphId = '11111111-1111-4111-8111-111111111111'
+      workflow.changeTracker.activeState = {
+        ...createWorkflowGraphData(),
+        id: graphId
+      }
+      Object.assign(useWorkflowStore(), { openWorkflows: [workflow] })
+      const executionStore = useExecutionStore()
+      const errorStore = useExecutionErrorStore()
+      errorStore.setActiveGraph(graphId, workflow.path)
+      executionStore.bindExecutionEvents()
+      onTestFinished(() => executionStore.unbindExecutionEvents())
+      const skippedErrors = {
+        '9': nodeError(
+          [validationError('required_input_missing', 'images')],
+          'SaveImage'
+        )
+      }
+      const socket: EventTarget = api
+      function dispatchSkippedOutputs(jobId: string) {
+        executionStore.registerJobWorkflowIdMapping(jobId, graphId)
+        socket.dispatchEvent(
+          new CustomEvent('prompt_outputs_skipped', {
+            detail: { prompt_id: jobId, node_errors: skippedErrors }
+          })
+        )
+      }
+      return { errorStore, skippedErrors, dispatchSkippedOutputs }
+    }
+
+    it('keeps skipped-output errors that arrive before the submission response', async () => {
+      const { errorStore, skippedErrors, dispatchSkippedOutputs } =
+        prepareSkippedOutputsRun()
+      vi.spyOn(api, 'queuePrompt').mockImplementation(async () => {
+        dispatchSkippedOutputs('job-1')
+        return { prompt_id: 'job-1', node_errors: {} }
+      })
+
+      await app.queuePrompt(0)
+
+      expect(errorStore.lastNodeErrors).toEqual(skippedErrors)
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
+    })
+
+    it("drops an older job's skipped-output errors when a newer submission comes back clean", async () => {
+      const { errorStore, dispatchSkippedOutputs } = prepareSkippedOutputsRun()
+      vi.spyOn(api, 'queuePrompt')
+        .mockResolvedValueOnce({ prompt_id: 'job-a', node_errors: {} })
+        .mockImplementationOnce(async () => {
+          dispatchSkippedOutputs('job-a')
+          return { prompt_id: 'job-b', node_errors: {} }
+        })
+      await app.queuePrompt(0)
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+
+      expect(errorStore.lastNodeErrors).toBeNull()
+    })
+
     it('stores workflow telemetry metadata for every accepted batch submission', async () => {
       prepareEmptyPromptQueue()
       const registry = new TelemetryRegistry()
