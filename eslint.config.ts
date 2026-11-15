@@ -213,6 +213,12 @@ const layerClassRestriction = {
     'Use a named layer for cross-component ordering; keep local stacking inside an isolated owner.'
 }
 
+const nestedHasClassRestriction = {
+  pattern: '(?:^|:)(?:not-)?(?:group|peer)-has-|(?:^|:)has-.+:\\*{1,2}:',
+  message:
+    'This compiles to :has() nested in :is(), which makes Chrome restyle the whole document on any DOM insertion. Use an arbitrary variant such as [.group:has(:focus-visible)_&]: instead.'
+}
+
 const tailwindConfigs = defineConfig([
   betterTailwindcss.configs.recommended,
   {
@@ -255,7 +261,7 @@ const tailwindConfigs = defineConfig([
     rules: {
       'better-tailwindcss/no-restricted-classes': [
         'error',
-        { restrict: [layerClassRestriction] }
+        { restrict: [layerClassRestriction, nestedHasClassRestriction] }
       ]
     }
   },
@@ -271,6 +277,7 @@ const tailwindConfigs = defineConfig([
         {
           restrict: [
             layerClassRestriction,
+            nestedHasClassRestriction,
             {
               pattern: specializedThemeClassPattern,
               message:
