@@ -131,6 +131,7 @@
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
     "resizeFromTopLeft": "Resize from top-left corner",
+    "resizeRegionHeight": "Resize height. Double-click to grow with the node again",
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",

@@ -4,6 +4,7 @@ import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { usePreviewExposureStore } from './previewExposureStore'
+import { useWidgetHeightStore } from './widgetHeightStore'
 import { useWidgetValueStore } from './widgetValueStore'
 
 export function clearNodeOwnedStoreState(node: LGraphNode): void {
@@ -13,6 +14,7 @@ export function clearNodeOwnedStoreState(node: LGraphNode): void {
   const rootGraphId = graph.isRootGraph ? graph.id : graph.rootGraph.id
   const nodeId = parseNodeId(node.id) ?? node.id
   useWidgetValueStore().clearNode(rootGraphId, nodeId)
+  useWidgetHeightStore().clearNode(rootGraphId, nodeId)
   usePreviewExposureStore().clearHost(
     rootGraphId,
     createNodeLocatorId(

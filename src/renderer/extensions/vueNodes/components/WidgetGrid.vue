@@ -3,10 +3,7 @@
     ref="grid"
     data-testid="node-widgets"
     class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] pr-3 text-xs text-node-foreground [&>:first-child>:first-child]:mt-0 [&>:last-child>:last-child]:mb-0"
-    :style="{
-      'grid-template-rows': gridTemplateRows,
-      flex: gridTemplateRows.includes('auto') ? 1 : undefined
-    }"
+    :style="gridStyle"
   >
     <div
       v-for="section in sections"
@@ -23,7 +20,7 @@
           :style="{ minHeight: row.minHeight }"
           :class="
             cn(
-              'group col-span-full grid grid-cols-subgrid items-stretch',
+              'group relative col-span-full grid grid-cols-subgrid items-stretch',
               row.showsControl &&
                 'lg-node-widget my-[calc(var(--node-widget-gap)/2)]'
             )
@@ -51,20 +48,11 @@
             v-if="row.showsControl"
             :widget-id="row.widget.widgetId"
             :name="row.widget.simplified.name"
-            :enable="
-              canSelectInputs && !row.widget.simplified.options?.disabled
-            "
+            :enable="row.selectable"
           >
             <Tooltip :disabled="!row.widget.tooltipText">
               <TooltipTrigger as-child>
-                <div
-                  :class="
-                    cn(
-                      'grid min-w-0 grid-cols-1',
-                      row.rowSize === 'min-content' && 'self-center'
-                    )
-                  "
-                >
+                <div :class="row.controlClass">
                   <component
                     :is="row.widget.vueComponent"
                     :model-value="row.widget.simplified.value"
@@ -88,6 +76,11 @@
               }}</TooltipContent>
             </Tooltip>
           </AppInput>
+          <GrowableRegionHandle
+            v-if="row.growable"
+            :name="row.widget.simplified.name"
+            :max-height="row.maxHeight"
+          />
         </div>
       </template>
     </div>
@@ -97,6 +90,7 @@
 <script setup lang="ts">
 import {
   computed,
+  inject,
   nextTick,
   onMounted,
   shallowRef,
@@ -114,17 +108,44 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import {
+  growableRegionsKey,
+  userHeightTrack
+} from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import GrowableRegionHandle from './GrowableRegionHandle.vue'
 import InputSlot from './InputSlot.vue'
 
 const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>
   type === 'converted-widget' || type.startsWith('converted-widget:')
+
+const growableRegions = inject(growableRegionsKey, undefined)
+
+function rowSizing(
+  name: string,
+  growable: boolean,
+  sizing: WidgetGridItem['sizing']
+) {
+  if (!growable)
+    return {
+      growable,
+      rowSize: 'min-content',
+      controlClass: 'grid min-w-0 grid-cols-1 self-center'
+    }
+  const userHeight = growableRegions?.heightOf(name)
+  return {
+    growable,
+    controlClass: 'grid min-w-0 grid-cols-1',
+    maxHeight: sizing?.kind === 'growable' ? sizing.maxHeight : undefined,
+    rowSize: userHeight === undefined ? 'auto' : userHeightTrack(userHeight)
+  }
+}
 
 const {
   processedWidgets,
@@ -168,11 +189,13 @@ const renderedRows = computed(() =>
         ),
         standalone: !showsControl && !!widget.suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,
+        selectable: canSelectInputs && !widget.simplified.options?.disabled,
         minHeight: sizing ? `${minRowHeight(sizing)}px` : undefined,
-        rowSize:
-          showsControl && shouldExpand(widget.simplified.type, sizing)
-            ? 'auto'
-            : 'min-content'
+        ...rowSizing(
+          widget.simplified.name,
+          showsControl && shouldExpand(widget.simplified.type, sizing),
+          sizing
+        )
       }
     ]
   })
@@ -250,9 +273,10 @@ async function restoreRowFocus(name: string) {
   }
 }
 
-const gridTemplateRows = computed(() =>
-  renderedRows.value.map((row) => row.rowSize).join(' ')
-)
+const gridStyle = computed(() => {
+  const rows = renderedRows.value.map((row) => row.rowSize).join(' ')
+  return { gridTemplateRows: rows, flex: rows.includes('auto') ? 1 : undefined }
+})
 
 const layoutKey = computed(() =>
   renderedRows.value

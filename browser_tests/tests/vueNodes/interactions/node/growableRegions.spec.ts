@@ -1,0 +1,337 @@
+import { mergeTests } from '@playwright/test'
+
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
+import { VideoPreview } from '@e2e/fixtures/components/VideoPreview'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import {
+  boxAspectRatio,
+  heightOf,
+  requireBoundingBox
+} from '@e2e/fixtures/utils/locatorBox'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const wstest = mergeTests(test, webSocketFixture)
+
+test.describe(
+  'Vue node growable regions',
+  { tag: ['@vue-nodes', '@canvas', '@node'] },
+  () => {
+    test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
+
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('vueNodes/growable-regions')
+    })
+
+    test('dragging a widget edge resizes only that widget and moves the node bottom with it', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle(
+        'CLIP Text Encode (SDXL)'
+      )
+      const textG = node.widgetRow('text_g')
+      const textL = node.widgetRow('text_l')
+      const getTextGHeight = () => heightOf(textG)
+      const getTextLHeight = () => heightOf(textL)
+      const getHeight = () => heightOf(node.root)
+      const initialTextG = await getTextGHeight()
+      const initialTextL = await getTextLHeight()
+      const initialHeight = await getHeight()
+
+      await node.dragHandle(node.growableRegionHandle(textG), 0, 80)
+
+      await expect.poll(getTextGHeight).toBeCloseTo(initialTextG + 80, 0)
+      await expect.poll(getTextLHeight).toBeCloseTo(initialTextL, 0)
+      await expect.poll(getHeight).toBeCloseTo(initialHeight + 80, 0)
+    })
+
+    test('a widget and preview height the user dragged survive saving and reopening the workflow', async ({
+      comfyPage
+    }) => {
+      const clip = await comfyPage.vueNodes.getFixtureByTitle(
+        'CLIP Text Encode (SDXL)'
+      )
+      const loadImage = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+      await loadImage.waitForImageLoaded('example.png')
+      const initialTextG = await heightOf(clip.widgetRow('text_g'))
+      const initialPreview = await heightOf(loadImage.imagePreview)
+      await clip.dragHandle(
+        clip.growableRegionHandle(clip.widgetRow('text_g')),
+        0,
+        80
+      )
+      await loadImage.dragHandle(loadImage.growableRegionHandle(), 0, 60)
+      await expect
+        .poll(() => heightOf(clip.widgetRow('text_g')))
+        .toBeCloseTo(initialTextG + 80, 0)
+
+      const workflow = await comfyPage.workflow.getExportedWorkflow()
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.workflow.loadGraphData(workflow)
+
+      const reopenedClip = await comfyPage.vueNodes.getFixtureByTitle(
+        'CLIP Text Encode (SDXL)'
+      )
+      const reopenedImage =
+        await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+      await reopenedImage.waitForImageLoaded('example.png')
+      await expect
+        .poll(() => heightOf(reopenedClip.widgetRow('text_g')))
+        .toBeCloseTo(initialTextG + 80, 0)
+      await expect
+        .poll(() => heightOf(reopenedImage.imagePreview))
+        .toBeCloseTo(initialPreview + 60, 0)
+    })
+
+    test('a node resize grows only the widgets the user has not sized', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle(
+        'CLIP Text Encode (SDXL)'
+      )
+      const textG = node.widgetRow('text_g')
+      const textL = node.widgetRow('text_l')
+      const getTextGHeight = () => heightOf(textG)
+      const getTextLHeight = () => heightOf(textL)
+      const initialTextG = await getTextGHeight()
+      const initialTextL = await getTextLHeight()
+
+      await node.dragHandle(node.growableRegionHandle(textG), 0, 60)
+      await expect.poll(getTextGHeight).toBeCloseTo(initialTextG + 60, 0)
+
+      await node.resizeFromCorner('SE', 0, 100)
+
+      await expect.poll(getTextLHeight).toBeCloseTo(initialTextL + 100, 0)
+      await expect.poll(getTextGHeight).toBeCloseTo(initialTextG + 60, 0)
+    })
+
+    test('double-clicking a widget edge hands the widget back to sharing the node height', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle(
+        'CLIP Text Encode (SDXL)'
+      )
+      const textG = node.widgetRow('text_g')
+      const textL = node.widgetRow('text_l')
+      const getHeightDifference = async () =>
+        ((await textG.boundingBox())?.height ?? 0) -
+        ((await textL.boundingBox())?.height ?? 0)
+
+      await node.dragHandle(node.growableRegionHandle(textG), 0, 60)
+      await expect.poll(getHeightDifference).toBeCloseTo(60, 0)
+
+      await node.growableRegionHandle(textG).dblclick()
+      await node.resizeFromCorner('SE', 0, 100)
+
+      await expect.poll(getHeightDifference).toBeCloseTo(0, 0)
+    })
+
+    test('double-clicking a resize corner shrinks the node to its content, keeping user-sized widgets', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle(
+        'CLIP Text Encode (SDXL)'
+      )
+      const textG = node.widgetRow('text_g')
+      const getTextGHeight = () => heightOf(textG)
+      const getHeight = () => heightOf(node.root)
+      const initialTextG = await getTextGHeight()
+      const initialHeight = await getHeight()
+
+      await node.dragHandle(node.growableRegionHandle(textG), 0, 60)
+      await node.resizeFromCorner('SE', 0, 150)
+      await expect.poll(getHeight).toBeGreaterThan(initialHeight + 200)
+
+      await node.getResizeHandle('SE').dblclick()
+
+      await expect.poll(getHeight).toBeCloseTo(initialHeight + 60, 0)
+      await expect.poll(getTextGHeight).toBeCloseTo(initialTextG + 60, 0)
+    })
+
+    test('dragging the image preview edge grows the preview and the node by the same amount', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+      await node.waitForImageLoaded('example.png')
+      const getPreviewHeight = () => heightOf(node.imagePreview)
+      const getHeight = () => heightOf(node.root)
+      const initialPreview = await getPreviewHeight()
+      const initialHeight = await getHeight()
+
+      await node.dragHandle(node.growableRegionHandle(), 0, 100)
+
+      await expect.poll(getPreviewHeight).toBeCloseTo(initialPreview + 100, 0)
+      await expect.poll(getHeight).toBeCloseTo(initialHeight + 100, 0)
+    })
+
+    test('double-clicking the image preview edge fits the preview to the image aspect ratio', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+      await node.waitForImageLoaded('example.png')
+      const image = node.imagePreview.getByTestId('main-image')
+      const naturalAspectRatio = await image.evaluate(
+        (img: HTMLImageElement) => img.naturalWidth / img.naturalHeight
+      )
+      const getAspectRatio = async () => {
+        const box = await image.boundingBox()
+        return box ? box.width / box.height : -1
+      }
+
+      await node.resizeFromCorner('SE', 0, 300)
+      await expect.poll(getAspectRatio).toBeLessThan(naturalAspectRatio - 0.1)
+
+      await node.growableRegionHandle().dblclick()
+
+      await expect.poll(getAspectRatio).toBeCloseTo(naturalAspectRatio, 2)
+    })
+
+    test('dragging the text preview edge grows the preview and the node by the same amount', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview as Text')
+      const preview = node.root.getByTestId('node-widget').filter({
+        has: comfyPage.page.getByTestId('growable-region-handle')
+      })
+      const getPreviewHeight = () => heightOf(preview)
+      const getHeight = () => heightOf(node.root)
+      const initialPreview = await getPreviewHeight()
+      const initialHeight = await getHeight()
+
+      await node.dragHandle(node.growableRegionHandle(preview), 0, 80)
+
+      await expect.poll(getPreviewHeight).toBeCloseTo(initialPreview + 80, 0)
+      await expect.poll(getHeight).toBeCloseTo(initialHeight + 80, 0)
+    })
+  }
+)
+
+test.describe(
+  'Vue node media preview aspect fit',
+  { tag: ['@vue-nodes', '@canvas', '@node'] },
+  () => {
+    test.use({ initialSettings: { 'Comfy.Minimap.Visible': false } })
+
+    async function addLoadVideo(comfyPage: ComfyPage, filename: string) {
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.searchBoxV2.addNode('Load Video')
+      const preview = new VideoPreview(
+        comfyPage.vueNodes.getNodeByTitle('Load Video')
+      )
+      await preview.uploadAndLoad(assetPath(`video/${filename}`))
+      return {
+        node: await comfyPage.vueNodes.getFixtureByTitle('Load Video'),
+        video: preview.video
+      }
+    }
+
+    wstest(
+      'double-clicking the edge of a wide video output preview widens the node until the video fits',
+      async ({ comfyPage, getWebSocket }) => {
+        const filename = 'video-preview-wide.webm'
+        await comfyPage.page.route(
+          (url) =>
+            url.pathname.endsWith('/api/view') &&
+            url.searchParams.get('filename') === filename,
+          (route) => route.fulfill({ path: assetPath(`video/${filename}`) })
+        )
+        const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+        execution.executed('', '1', {
+          images: [{ filename, subfolder: '', type: 'output' }],
+          animated: [true]
+        })
+        const video = new VideoPreview(node.root).video
+        await expect
+          .poll(() =>
+            video.evaluate((element: HTMLVideoElement) => element.videoWidth)
+          )
+          .toBeGreaterThan(0)
+        const before = await requireBoundingBox(node.root)
+        await expect.poll(() => boxAspectRatio(video)).toBeLessThan(2)
+
+        await node.growableRegionHandle().dblclick()
+
+        await expect.poll(() => boxAspectRatio(video)).toBeCloseTo(4, 1)
+        const after = await requireBoundingBox(node.root)
+        expect(after.width).toBeGreaterThan(before.width + 100)
+        expect(after.height).toBeCloseTo(before.height, 0)
+      }
+    )
+
+    test('double-clicking the edge of a portrait video preview grows the node taller until the video fits', async ({
+      comfyPage,
+      comfyFiles
+    }) => {
+      const filename = 'video-preview-portrait.webm'
+      const { node, video } = await addLoadVideo(comfyPage, filename)
+      comfyFiles.deleteAfterTest({ filename, type: 'input' })
+      const before = await requireBoundingBox(node.root)
+      await expect.poll(() => boxAspectRatio(video)).toBeGreaterThan(1)
+
+      await node.growableRegionHandle().dblclick()
+
+      await expect.poll(() => boxAspectRatio(video)).toBeCloseTo(90 / 160, 1)
+      const after = await requireBoundingBox(node.root)
+      expect(after.width).toBeCloseTo(before.width, 0)
+      expect(after.height).toBeGreaterThan(before.height + 100)
+    })
+
+    test('each preview promoted to a subgraph node resizes on its own', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-with-multiple-promoted-previews'
+      )
+      await comfyPage.command.executeCommand('Comfy.QueuePrompt')
+      const host = new VueNodeFixture(comfyPage.vueNodes.getNodeLocator('7'))
+      const [first, second] = [0, 1].map((index) =>
+        host.imagePreview.nth(index)
+      )
+      await expect(host.imagePreview.locator('img')).toHaveCount(2, {
+        timeout: 30_000
+      })
+      const firstHeight = await heightOf(first)
+      const secondHeight = await heightOf(second)
+
+      await host.dragHandle(host.growableRegionHandle().first(), 0, 80)
+
+      await expect.poll(() => heightOf(first)).toBeGreaterThan(firstHeight + 40)
+      expect(await heightOf(second)).toBeCloseTo(secondHeight, 0)
+    })
+
+    wstest(
+      'double-clicking the edge of an image grid releases it to fill the node instead of fitting it',
+      async ({ comfyPage, getWebSocket }) => {
+        const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+        const file = { filename: 'example.png', type: 'input' }
+        execution.executed('', '1', { images: [file, file, file, file] })
+        await expect(node.imageGrid.locator('img')).toHaveCount(4)
+        const getGridHeight = () => heightOf(node.imageGrid)
+
+        await node.dragHandle(node.growableRegionHandle(), 0, 80)
+        const sized = await requireBoundingBox(node.root)
+        await node.growableRegionHandle().dblclick()
+
+        const released = await requireBoundingBox(node.root)
+        expect(released.width).toBeCloseTo(sized.width, 0)
+        expect(released.height).toBeCloseTo(sized.height, 0)
+        const releasedGridHeight = await getGridHeight()
+        await node.resizeFromCorner('SE', 0, 100)
+        await expect
+          .poll(getGridHeight)
+          .toBeCloseTo(releasedGridHeight + 100, 0)
+      }
+    )
+  }
+)

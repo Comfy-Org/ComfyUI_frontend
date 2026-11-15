@@ -10,6 +10,7 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 
@@ -102,6 +103,11 @@ export function attachNodeToStores(
     )
   }
 
+  useWidgetHeightStore().adoptNodeHeights(
+    graph.rootGraph.id,
+    node.id,
+    node.properties
+  )
   refuseAmbiguousNodeWidgets(node, (report) =>
     reportWidgetRefusal(node, report)
   )

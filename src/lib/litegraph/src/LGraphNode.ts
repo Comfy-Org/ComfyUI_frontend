@@ -49,6 +49,7 @@ import type {
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
+import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
@@ -1346,6 +1347,8 @@ export class LGraphNode
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
+    if (this.graph)
+      useWidgetHeightStore().adoptNodeHeights(graphId, this.id, this.properties)
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
         graphId,
@@ -1454,6 +1457,10 @@ export class LGraphNode
       o.title = state.title
 
     o.properties = LiteGraph.cloneObject(state.properties)
+    const widgetHeights = this.graph
+      ? useWidgetHeightStore().getNodeHeights(this.graph.rootGraph.id, this.id)
+      : undefined
+    if (widgetHeights) o.properties.widgetHeights = widgetHeights
 
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets)
