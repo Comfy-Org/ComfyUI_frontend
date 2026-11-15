@@ -100,7 +100,7 @@ describe('runRecording', () => {
       distribution
     })
 
-    expect(vi.mocked(info)).toHaveBeenCalledWith(
+    expect(info).toHaveBeenCalledWith(
       expect.arrayContaining([expect.stringContaining('Cloud sign-in notes')])
     )
   })
@@ -121,6 +121,6 @@ describe('runRecording', () => {
       distribution
     })
 
-    expect(vi.mocked(info)).not.toHaveBeenCalled()
+    expect(info).not.toHaveBeenCalled()
   })
 })
