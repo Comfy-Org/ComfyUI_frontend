@@ -669,7 +669,8 @@ const processedWidgetModel = computed(() => ({
 }))
 const hasExpandingWidget = computed(() =>
   processedWidgets.value.some(
-    (widget) => widget.visible && shouldExpand(widget.simplified.type)
+    (widget) =>
+      widget.visible && shouldExpand(widget.simplified.type, widget.sizing)
   )
 )
 

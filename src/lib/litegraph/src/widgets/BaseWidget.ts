@@ -404,10 +404,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     return widgetId(graphId, nodeId, this.name)
   }
 
-  /**
-   * Associates this widget with a node ID and registers it in the WidgetValueStore.
-   * Once set, value reads/writes will be delegated to the store.
-   */
   setNodeId(nodeId: NodeId): void {
     this.installTypeVisibilityShim()
     const graphId = this.node.graph?.rootGraph.id
@@ -426,7 +422,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
         value: this.value,
         y: this.y
       },
-      deriveWidgetRenderState(this, this.node),
+      deriveWidgetRenderState(this),
       this._visibility
     )
     if (!registered) return

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -483,6 +483,34 @@ describe('promoted subgraph widgets', () => {
     )
   })
 
+  it('derives promoted sizing from the current concrete source without re-registering the host', () => {
+    const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
+    const sourceNode = subgraph.getNodeById(INTERIOR_ID)
+    const sourceWidget = sourceNode?.widgets?.find(
+      (widget) => widget.name === 'string_a'
+    )
+    assert.exists(sourceNode)
+    assert.exists(sourceWidget)
+    sourceWidget.computeLayoutSize = (node) => ({
+      minHeight: node.size[0] / 3,
+      minWidth: 0
+    })
+    sourceNode.size = [183, 100]
+    const processed = processHostWidget(graph, hostNode)
+
+    expect(processed.sizing).toMatchObject({
+      kind: 'growable',
+      minHeight: 61
+    })
+
+    sourceNode.size = [249, 100]
+
+    expect(processed.sizing).toMatchObject({
+      kind: 'growable',
+      minHeight: 83
+    })
+  })
+
   it.for([
     ['shows on the node canvas', { advanced: true }, false, true],
     ['shows when selected in App Mode', { advanced: true }, true, true],
@@ -685,7 +713,6 @@ describe('computeProcessedWidgets', () => {
         options: { advanced: true }
       },
       {
-        layoutSize: { minHeight: 60, minWidth: 0 },
         isDOMWidget: true,
         tooltip: 'Choose checkpoint'
       }
@@ -698,13 +725,13 @@ describe('computeProcessedWidgets', () => {
     })
 
     expect(result[0]).toMatchObject({
-      layoutSize: { minHeight: 60 },
       simplified: {
         name: 'display_slot',
         borderStyle: 'ring ring-primary'
       }
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)
+    expect(result[0].sizing).toBeUndefined()
   })
 
   it('treats explicit isDOMWidget false as authoritative', () => {

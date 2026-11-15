@@ -186,7 +186,6 @@ describe('useWidgetValueStore', () => {
     it('clears omitted render state when a widget id is recycled', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 5), {
-        layoutSize: { minHeight: 50, minWidth: 0 },
         tooltip: 'old'
       })
 
@@ -738,7 +737,7 @@ describe('useWidgetValueStore', () => {
       const store = useWidgetValueStore()
       const sibling = widgetId(graphA, toNodeId('node-2'), 'seed')
       store.registerWidget(seedA, state('number', 1), {
-        layoutSize: { minHeight: 50, minWidth: 0 }
+        tooltip: 'seed'
       })
       store.registerWidget(sibling, state('number', 2))
 

@@ -152,6 +152,7 @@ const renderedRows = computed(() =>
         (!!widget.suppressedByConnection && !!widget.slotMetadata)
     if (!shouldRender) return []
 
+    const sizing = showsControl ? widget.sizing : undefined
     return [
       {
         widget,
@@ -165,13 +166,11 @@ const renderedRows = computed(() =>
         ),
         standalone: !showsControl && !!widget.suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,
-        minHeight:
-          showsControl && widget.layoutSize
-            ? `${widget.layoutSize.minHeight}px`
-            : undefined,
+        minHeight: sizing
+          ? `${sizing.kind === 'fixed' ? sizing.height : sizing.minHeight}px`
+          : undefined,
         rowSize:
-          showsControl &&
-          (shouldExpand(widget.simplified.type) || widget.layoutSize)
+          showsControl && shouldExpand(widget.simplified.type, sizing)
             ? 'auto'
             : 'min-content'
       }

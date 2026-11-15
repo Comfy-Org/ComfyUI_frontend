@@ -177,21 +177,36 @@ describe('WidgetGrid', () => {
     layoutStore.resetForTests()
   })
 
-  it('floors a row at the height its widget declares and lets only that row grow', () => {
+  it('derives row sizing from live requirements without rebuilding the widget list', async () => {
+    const minHeight = ref(60)
     renderGrid([
-      widget('seed', 'number', 0),
       {
-        ...widget('text', 'customtext', 1),
-        layoutSize: { minHeight: 60, minWidth: 0 }
+        ...widget('seed', 'textarea', 0),
+        sizing: { kind: 'fixed', height: 23 }
+      },
+      {
+        ...widget('text', 'unknown', 1),
+        get sizing() {
+          return {
+            kind: 'growable' as const,
+            minHeight: minHeight.value,
+            minWidth: 0
+          }
+        }
       }
     ])
 
     const [fixedRow, declaredRow] = screen.getAllByTestId('node-widget')
-    expect(fixedRow.style.minHeight).toBe('')
+    expect(fixedRow.style.minHeight).toBe('23px')
     expect(declaredRow.style.minHeight).toBe('60px')
     expect(screen.getByTestId('node-widgets').style.gridTemplateRows).toBe(
       'min-content auto'
     )
+
+    minHeight.value = 87
+    await nextTick()
+
+    expect(declaredRow.style.minHeight).toBe('87px')
   })
 
   it('resyncs slot offsets when a connected row swaps its control for a label', async () => {

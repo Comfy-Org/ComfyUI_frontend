@@ -4,6 +4,7 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
@@ -82,12 +83,13 @@ function getWidgetHeight(
   node: LGraphNode,
   width: number
 ): number {
+  if (widget.computedHeight !== undefined) {
+    return Math.max(0, widget.computedHeight)
+  }
+  const sizing = getWidgetSizing(widget, node, width)
   return Math.max(
     0,
-    widget.computedHeight ??
-      widget.computeLayoutSize?.(node).minHeight ??
-      widget.computeSize?.(width)[1] ??
-      20
+    sizing ? (sizing.kind === 'fixed' ? sizing.height : sizing.minHeight) : 20
   )
 }
 

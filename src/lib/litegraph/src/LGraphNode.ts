@@ -190,7 +190,8 @@ import {
   diffNamedValuesShadow
 } from './utils/namedValuesShadowDiff'
 import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
-import { layoutNodeBody, widgetRowSpecs } from './utils/nodeBodyLayout'
+import { layoutNodeBody } from './utils/nodeBodyLayout'
+import { getWidgetSizing, widgetRowSpecs } from './utils/widgetLayout'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
@@ -2192,7 +2193,6 @@ export class LGraphNode
     )
     const size = out ?? [0, 0]
     rows = Math.max(rows, 1)
-    // although it should be graphcanvas.inner_text_font size
     const font_size = LiteGraph.NODE_TEXT_SIZE
 
     const padLeft = LiteGraph.NODE_TITLE_HEIGHT
@@ -2223,7 +2223,6 @@ export class LGraphNode
     }
 
     const minWidth = LiteGraph.NODE_WIDTH * (widgets?.length ? 1.5 : 1)
-    // Text + slot width + centre padding
     const centrePadding = input_width && output_width ? 5 : 0
     const slotsWidth =
       input_width +
@@ -2231,7 +2230,6 @@ export class LGraphNode
       2 * LiteGraph.NODE_SLOT_HEIGHT +
       centrePadding
 
-    // Total distance from edge of node to the inner edge of the widget 'previous' arrow button
     const widgetMargin =
       BaseWidget.margin + BaseWidget.arrowMargin + BaseWidget.arrowWidth
     const widgetPadding = BaseWidget.minValueWidth + 2 * widgetMargin
@@ -2241,31 +2239,27 @@ export class LGraphNode
     size[1] =
       (this.constructor.slot_start_y || 0) + rows * LiteGraph.NODE_SLOT_HEIGHT
 
-    // Get widget height & expand size if necessary
     let widgets_height = 0
     if (widgets?.length) {
       for (const widget of widgets) {
         if (!this.isWidgetRowVisible(widget)) continue
 
-        let widget_height = 0
-        if (widget.computeSize) {
-          widget_height += widget.computeSize(size[0])[1]
-        } else if (widget.computeLayoutSize) {
-          // Expand widget width if necessary
-          const { minHeight, minWidth } = widget.computeLayoutSize(this)
+        const sizing = getWidgetSizing(widget, this, size[0])
+        const widget_height = sizing
+          ? sizing.kind === 'fixed'
+            ? sizing.height
+            : sizing.minHeight
+          : LiteGraph.NODE_WIDGET_HEIGHT
+        if (sizing?.kind === 'growable') {
+          const { minWidth } = sizing
           const widgetWidth = minWidth + widgetPadding
           if (widgetWidth > size[0]) size[0] = widgetWidth
-
-          widget_height += minHeight
-        } else {
-          widget_height += LiteGraph.NODE_WIDGET_HEIGHT
         }
         widgets_height += widget_height + LiteGraph.NODE_WIDGET_GAP
       }
       widgets_height += 8
     }
 
-    // compute height using widgets height
     if (this.widgets_up) size[1] = Math.max(size[1], widgets_height)
     else if (this.widgets_start_y != null)
       size[1] = Math.max(size[1], widgets_height + this.widgets_start_y)
@@ -2283,7 +2277,6 @@ export class LGraphNode
       size[1] = this.constructor.min_height
     }
 
-    // margin
     size[1] += 6
 
     return size
@@ -4552,13 +4545,6 @@ export class LGraphNode
     }
   }
 
-  /**
-   * Arranges the node's widgets vertically.
-   * Sets following properties on each widget:
-   * -  {@link IBaseWidget.computedHeight}
-   * -  {@link IBaseWidget.y}
-   * @param widgetStartY The y-coordinate of the first widget
-   */
   private _arrangeWidgets(widgetStartY: number): void {
     if (!this.widgets || !this.widgets.length) return
 
@@ -4571,7 +4557,8 @@ export class LGraphNode
       widgetRowSpecs(
         visibleWidgets,
         this,
-        LiteGraph.NODE_WIDGET_HEIGHT + LiteGraph.NODE_WIDGET_GAP
+        LiteGraph.NODE_WIDGET_HEIGHT,
+        LiteGraph.NODE_WIDGET_GAP
       )
     )
     this.freeWidgetSpace = layout.freeSpace

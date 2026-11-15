@@ -8,7 +8,10 @@ const fixed = (name: string, height = 24): RowSpec => ({
   sizing: { kind: 'fixed', height }
 })
 const growable = (name: string, minHeight: number, maxHeight?: number) =>
-  ({ name, sizing: { kind: 'growable', minHeight, maxHeight } }) as const
+  ({
+    name,
+    sizing: { kind: 'growable', minHeight, maxHeight, minWidth: 0 }
+  }) as const
 const box = (bodyHeight: number, startY = 0, rowGap = 0): NodeBodyBox => ({
   bodyHeight,
   startY,

@@ -178,13 +178,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
           const widget = inputNode.getWidgetFromSlot(input)
           if (widget)
-            this._setWidget(
-              subgraphInput,
-              existingInput,
-              widget,
-              inputNode,
-              input.widget
-            )
+            this._setWidget(subgraphInput, existingInput, widget, input.widget)
           return
         }
         const input = this.addInput(name, type, {
@@ -341,7 +335,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           subgraphInput,
           input,
           e.detail.widget,
-          e.detail.node,
           e.detail.input.widget
         )
       },
@@ -643,28 +636,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
       const widget = inputNode.getWidgetFromSlot(targetInput)
       if (widget) {
-        this._setWidget(
-          subgraphInput,
-          input,
-          widget,
-          inputNode,
-          targetInput.widget
-        )
+        this._setWidget(subgraphInput, input, widget, targetInput.widget)
         break
       }
 
-      // Nested promotion: the source is itself a promoted subgraph input with
-      // no concrete widget. Resolve the deepest interior widget so this input
-      // still receives widget state and a widgetId.
       const nested = this._resolveNestedPromotedSource(inputNode, targetInput)
       if (nested) {
-        this._setWidget(
-          subgraphInput,
-          input,
-          nested.widget,
-          nested.node,
-          targetInput.widget
-        )
+        this._setWidget(subgraphInput, input, nested.widget, targetInput.widget)
         break
       }
     }
@@ -691,7 +669,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
     interiorWidget: Readonly<IBaseWidget>,
-    interiorNode: LGraphNode,
     inputWidget: IWidgetLocator | undefined
   ) {
     this.invalidatePromotedViews()
@@ -703,11 +680,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
     if (this.id === UNASSIGNED_NODE_ID) {
-      // Registering now would key the store under a construction-time id
-      // shared by every not-yet-added SubgraphNode (e.g. a clipboard clone
-      // that gets discarded), letting a later unrelated instance inherit
-      // this value. onAdded() performs the deferred registration once a
-      // real id is assigned.
       input.widgetId = undefined
       return
     }
@@ -728,7 +700,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         serialize: interiorWidget.serialize,
         disabled: interiorWidget.disabled
       },
-      deriveWidgetRenderState(interiorWidget, interiorNode),
+      deriveWidgetRenderState(interiorWidget),
       visibility
     )
     if (!registered) {

@@ -1,14 +1,9 @@
-import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import type { WidgetSizing } from '@comfyorg/graph-model/widgets'
 import { distributeSpace } from './spaceDistribution'
-
-type RowSizing =
-  | { kind: 'fixed'; height: number }
-  | { kind: 'growable'; minHeight: number; maxHeight?: number }
 
 export interface RowSpec {
   name: string
-  sizing: RowSizing
+  sizing: WidgetSizing
 }
 
 export interface NodeBodyBox {
@@ -61,31 +56,4 @@ export function layoutNodeBody(
   })
 
   return { rows: placed, contentHeight: y, freeSpace }
-}
-
-/** Reads each legacy widget's sizing contract into a row spec. */
-export function widgetRowSpecs(
-  widgets: readonly IBaseWidget[],
-  node: LGraphNode,
-  defaultFixedHeight: number
-): RowSpec[] {
-  return widgets.map((widget) => ({
-    name: widget.name,
-    sizing: widgetRowSizing(widget, node, defaultFixedHeight)
-  }))
-}
-
-function widgetRowSizing(
-  widget: IBaseWidget,
-  node: LGraphNode,
-  defaultFixedHeight: number
-): RowSizing {
-  if (widget.computeSize) {
-    return { kind: 'fixed', height: widget.computeSize()[1] + 4 }
-  }
-  if (widget.computeLayoutSize) {
-    const { minHeight, maxHeight } = widget.computeLayoutSize(node)
-    return { kind: 'growable', minHeight, maxHeight }
-  }
-  return { kind: 'fixed', height: defaultFixedHeight }
 }

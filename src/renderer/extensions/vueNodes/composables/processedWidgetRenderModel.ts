@@ -49,6 +49,7 @@ import {
   subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
+import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
 
 type TooltipValueType = 'asset' | 'combo' | 'number' | 'text'
 function isTooltipValueType(val: unknown): val is TooltipValueType {
@@ -438,7 +439,9 @@ function processWidget(
 
   return {
     handleContextMenu,
-    layoutSize: renderState?.layoutSize,
+    get sizing() {
+      return live ? getWidgetSizing(live.widget, live.node) : undefined
+    },
     hasError: hasWidgetError(
       { name: widgetState.name, errorTarget },
       ctx.nodeExecId,
@@ -495,8 +498,6 @@ export function computeProcessedWidgets({
     widgetIds,
     widgetValueStore
   )
-  // Drop ids whose live widget is gone (e.g. removed directly on node.widgets);
-  // when the host node isn't resolvable yet, fall back to the stored order.
   const ids = hostNode
     ? orderedIds.filter((id) => liveWidgets.has(id))
     : orderedIds

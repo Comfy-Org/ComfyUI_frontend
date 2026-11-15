@@ -535,6 +535,10 @@ export interface WidgetLayoutSize {
   maxWidth?: number
 }
 
+export type WidgetSizing =
+  | { kind: 'fixed'; height: number }
+  | ({ kind: 'growable' } & WidgetLayoutSize)
+
 /**
  * The base type for all widgets.  Should not be implemented directly.
  * @template TValue The type of value this widget holds.
