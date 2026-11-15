@@ -7,7 +7,7 @@ import {
   getOutputsForTask
 } from '@/platform/queue/services/jobOutputCache'
 import type { TaskItemImpl } from '@comfyorg/api-client/jobs/taskItem'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 import type { AugmentedResultItem } from '@comfyorg/api-client/results/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 

@@ -1,8 +1,6 @@
 import { api } from '@/scripts/api'
 import { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
-export { isHdrImageFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
-
 export function getImageFilenameFromUrl(url: string): string | undefined {
   if (!url) return undefined
   try {
