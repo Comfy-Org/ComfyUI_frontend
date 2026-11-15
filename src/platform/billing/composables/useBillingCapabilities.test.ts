@@ -1480,6 +1480,111 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
+  it.for([
+    ['resolves', () => Promise.resolve(capabilitiesResponse(false))],
+    ['fails', () => Promise.reject(new Error('unavailable'))]
+  ] as const)(
+    'reads once more when refresh() is called during a read that %s',
+    async ([, settleEarlierRead]) => {
+      let releaseEarlierRead!: () => void
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockImplementationOnce(() =>
+          new Promise<void>((resolve) => {
+            releaseEarlierRead = resolve
+          }).then(settleEarlierRead)
+        )
+        .mockResolvedValue(capabilitiesResponse(true))
+
+      void billingCapabilities.initialize()
+      const refreshed = billingCapabilities.refresh()
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+
+      releaseEarlierRead()
+      await refreshed
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    }
+  )
+
+  it('settles several refresh() calls made during one read after one later read', async () => {
+    const reads = capabilityReadsThroughInterceptor()
+    vi.mocked(billingApi.getBillingCapabilities).mockImplementation(reads.read)
+    let settledRefreshes = 0
+    const countSettled = () => {
+      settledRefreshes++
+    }
+
+    void billingCapabilities.initialize()
+    void billingCapabilities.refresh().then(countSettled)
+    void billingCapabilities.refresh().then(countSettled)
+    void billingCapabilities.refresh().then(countSettled)
+    await reads.release(capabilitiesResponse(false))
+    expect(settledRefreshes).toBe(0)
+
+    await reads.release(capabilitiesResponse(true))
+
+    expect(settledRefreshes).toBe(3)
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+  })
+
+  it('reads once more when refresh() joins a read that a mutation also invalidated', async () => {
+    let resolveEarlierRead!: (value: BillingCapabilitiesResponse) => void
+    vi.mocked(billingApi.getBillingCapabilities)
+      .mockImplementationOnce(
+        () =>
+          new Promise<BillingCapabilitiesResponse>((resolve) => {
+            resolveEarlierRead = resolve
+          })
+      )
+      .mockResolvedValue(
+        capabilitiesResponse(true, 'workspace-1', true, { revision: 9 })
+      )
+
+    void billingCapabilities.initialize()
+    await emitMutationRevision('5')
+    const refreshed = billingCapabilities.refresh()
+    resolveEarlierRead(
+      capabilitiesResponse(false, 'workspace-1', true, { revision: 7 })
+    )
+    await refreshed
+
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+  })
+
+  it('reads once when refresh() is called with no read in flight', async () => {
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValue(
+      capabilitiesResponse(true)
+    )
+    await billingCapabilities.initialize()
+
+    await billingCapabilities.refresh()
+
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not read again for a refresh() whose scope is disposed during the earlier read', async () => {
+    let resolveEarlierRead!: (value: BillingCapabilitiesResponse) => void
+    vi.mocked(billingApi.getBillingCapabilities)
+      .mockImplementationOnce(
+        () =>
+          new Promise<BillingCapabilitiesResponse>((resolve) => {
+            resolveEarlierRead = resolve
+          })
+      )
+      .mockResolvedValue(capabilitiesResponse(true))
+
+    void billingCapabilities.initialize()
+    const refreshed = billingCapabilities.refresh()
+    scope.stop()
+    resolveEarlierRead(capabilitiesResponse(false))
+    await refreshed
+
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+  })
+
   it('retries an unreadable endpoint until the read succeeds', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     vi.mocked(billingApi.getBillingCapabilities)
