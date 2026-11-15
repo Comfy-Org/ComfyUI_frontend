@@ -69,13 +69,8 @@ function useTransformStateIndividual() {
 
   // Computed transform string for CSS
   const transformStyle = computed(() => ({
-    // Match LiteGraph DragAndScale.toCanvasContext():
-    // ctx.scale(scale); ctx.translate(offset)
-    // CSS applies right-to-left, so "scale() translate()" -> translate first, then scale
-    // Effective mapping: screen = (canvas + offset) * scale
-    // Using the 3D versions of scale and translate can provide a smoother experience
-    // when dealing with a large number of nodes.
-    transform: `scale3d(${camera.z}, ${camera.z}, ${camera.z}) translate3d(${camera.x}px, ${camera.y}px, 0)`,
+    translate: `${camera.x * camera.z}px ${camera.y * camera.z}px`,
+    scale: String(camera.z),
     transformOrigin: '0 0'
   }))
 

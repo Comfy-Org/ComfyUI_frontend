@@ -7,7 +7,8 @@ function reactiveDefaults() {
   return {
     camera: readonly(reactive({ x: 0, y: 0, z: 1 })),
     transformStyle: computed(() => ({
-      transform: 'scale3d(1, 1, 1) translate3d(0px, 0px, 0)',
+      translate: '0px 0px',
+      scale: '1',
       transformOrigin: '0 0'
     }))
   }
