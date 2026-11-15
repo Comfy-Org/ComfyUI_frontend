@@ -128,6 +128,36 @@ describe('NodeSearchBox', () => {
     })
   })
 
+  it('shows a node def registered after the query was typed', async () => {
+    vi.useFakeTimers()
+    renderComponent()
+
+    await fireEvent.update(screen.getByRole('combobox'), 'dragon')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.queryByRole('option', { name: 'Blueprint' })).toBeNull()
+
+    const nodeDefStore = useNodeDefStore()
+    nodeDefStore.nodeDefsByName = {
+      ...nodeDefStore.nodeDefsByName,
+      Blueprint: new ComfyNodeDefImpl({
+        name: 'Blueprint',
+        display_name: 'Blueprint',
+        category: 'Subgraph Blueprints/User',
+        python_module: 'blueprint',
+        description: '',
+        input: {},
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false,
+        search_aliases: ['dragon']
+      })
+    }
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(screen.getByRole('option', { name: 'Blueprint' })).toBeVisible()
+  })
+
   it.for([50, 100])(
     'cancels pending search telemetry when unmounted after %i ms',
     async (elapsed) => {
