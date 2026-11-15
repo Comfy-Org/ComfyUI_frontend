@@ -2,6 +2,7 @@ import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrows
 
 export interface OpeningPage {
   readonly lang: string
+  readonly tabTitle: string
   readonly title: string
   readonly detail: string
 }
@@ -14,11 +15,12 @@ h1 { margin: 8px 0 0; font-size: 16px; font-weight: 600; }
 p { margin: 0; font-size: 12px; color: #8a8a8a; }
 [role="progressbar"] { width: 20px; height: 20px; border: 2px solid #fff; border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { [role="progressbar"] { animation: none; } }
 `
 
 function paintOpeningPage(page: Document, opening: OpeningPage): void {
   page.documentElement.lang = opening.lang
-  page.title = opening.title
+  page.title = opening.tabTitle
   const style = page.createElement('style')
   style.textContent = OPENING_PAGE_STYLE
   const spinner = page.createElement('div')

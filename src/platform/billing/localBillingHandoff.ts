@@ -4,31 +4,42 @@ import {
   zBillingHandoffCreateResponse,
   zErrorResponse
 } from '@comfyorg/ingest-types/zod'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { watch } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { i18n, t } from '@/i18n'
-import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
+import {
+  desktopHostUser,
+  issueDesktopHostBillingHandoff
+} from '@/platform/auth/desktopHost/desktopHostSession'
 import { refreshBilling } from '@/platform/billing/billingRefresh'
 import type { BillingTab } from '@/platform/billing/billingTab'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { localSurface } from '@/platform/billing/localBillingWebEnabled'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useAuthStore } from '@/stores/authStore'
 
 const ISSUE_TIMEOUT_MS = 15_000
 
-/** The billing flow the user started, which billing-web opens after the exchange. */
+/** The billing flow billing-web opens after the exchange, or Platform's billing page, which takes none. */
 export type BillingHandoffRequest =
   | { readonly intent: 'top-up'; readonly amountCents: number }
   | { readonly intent: 'subscription' }
+  | { readonly receiver: 'platform' }
 
 type HandoffIssue =
   | { readonly kind: 'issued'; readonly entryUrl: string }
   | { readonly kind: 'sign_in_again' }
-  | { readonly kind: 'refused'; readonly message: string | undefined }
+  | {
+      readonly kind: 'refused'
+      readonly message: string | undefined
+      readonly code: string | undefined
+    }
 
 export type BillingHandoffResult =
   | { readonly status: 'ok'; readonly url: string }
@@ -40,9 +51,17 @@ interface HandoffScope {
   readonly cloudBaseUrl: string
 }
 
-async function serverMessage(response: Response): Promise<string | undefined> {
+const UNEXPLAINED_REFUSAL: HandoffIssue = {
+  kind: 'refused',
+  message: undefined,
+  code: undefined
+}
+
+async function refusal(response: Response): Promise<HandoffIssue> {
   const body = zErrorResponse.safeParse(await response.json().catch(() => null))
-  return body.success ? body.data.message : undefined
+  return body.success
+    ? { kind: 'refused', message: body.data.message, code: body.data.code }
+    : UNEXPLAINED_REFUSAL
 }
 
 function issueBody(
@@ -51,9 +70,10 @@ function issueBody(
 ): BillingHandoffCreateRequest {
   return {
     workspace_id: workspaceId,
-    receiver: 'billing_web',
     surface: 'local_web',
-    intent: request.intent,
+    ...('receiver' in request
+      ? { receiver: request.receiver }
+      : { receiver: 'billing_web', intent: request.intent }),
     ...('amountCents' in request ? { amount_cents: request.amountCents } : {}),
     client_version: __COMFYUI_FRONTEND_VERSION__.slice(0, 64)
   }
@@ -81,16 +101,15 @@ async function issueBillingHandoff(
       ])
     })
     if (response.status === 401) return { kind: 'sign_in_again' }
-    if (!response.ok)
-      return { kind: 'refused', message: await serverMessage(response) }
+    if (!response.ok) return refusal(response)
     const issued = zBillingHandoffCreateResponse.safeParse(
       await response.json()
     )
     return issued.success
       ? { kind: 'issued', entryUrl: issued.data.entry_url }
-      : { kind: 'refused', message: undefined }
+      : UNEXPLAINED_REFUSAL
   } catch {
-    return { kind: 'refused', message: undefined }
+    return UNEXPLAINED_REFUSAL
   }
 }
 
@@ -113,16 +132,29 @@ function scopeKey(scope: HandoffScope | undefined): string {
     : ''
 }
 
-function watchScopeChange(): { changed: () => boolean; stop: () => void } {
-  let changed = false
+interface ScopeWatch {
+  readonly changed: () => boolean
+  readonly replaced: () => boolean
+  readonly stop: () => void
+}
+
+function watchScopeChange(): ScopeWatch {
+  const started = scopeKey(currentScope())
+  let signedOut = false
+  let replaced = false
   const stop = watch(
     () => scopeKey(currentScope()),
-    () => {
-      changed = true
+    (key) => {
+      if (key === '') signedOut = true
+      else if (key !== started || signedOut) replaced = true
     },
     { flush: 'sync' }
   )
-  return { changed: () => changed, stop }
+  return {
+    changed: () => signedOut || replaced,
+    replaced: () => replaced,
+    stop
+  }
 }
 
 let inFlight = false
@@ -138,11 +170,67 @@ function armReturnRefresh(): void {
   )
 }
 
+async function issueThroughDesktop(
+  workspaceId: string,
+  request: BillingHandoffRequest
+): Promise<HandoffIssue> {
+  const answer =
+    'receiver' in request
+      ? await issueDesktopHostBillingHandoff(workspaceId, request.receiver)
+      : await issueDesktopHostBillingHandoff(
+          workspaceId,
+          'billing_web',
+          request.intent,
+          'amountCents' in request ? request.amountCents : undefined
+        )
+  switch (answer.status) {
+    case 'issued':
+      return { kind: 'issued', entryUrl: answer.entryUrl }
+    case 'sign_in_again':
+      return SIGN_IN_AGAIN
+    case 'refused':
+      return { kind: 'refused', message: answer.message, code: answer.code }
+    case 'disabled':
+      return UNEXPLAINED_REFUSAL
+  }
+}
+
+function refusedOnAbort(signal: AbortSignal): {
+  refusal: Promise<HandoffIssue>
+  stop: () => void
+} {
+  let refuse = () => {}
+  const refusal = new Promise<HandoffIssue>((resolve) => {
+    refuse = () => resolve(UNEXPLAINED_REFUSAL)
+  })
+  signal.addEventListener('abort', refuse, { once: true })
+  return { refusal, stop: () => signal.removeEventListener('abort', refuse) }
+}
+
+async function issueThroughDesktopUnlessAbandoned(
+  workspaceId: string,
+  request: BillingHandoffRequest,
+  signal: AbortSignal
+): Promise<HandoffIssue> {
+  if (signal.aborted) return UNEXPLAINED_REFUSAL
+  const abandoned = refusedOnAbort(signal)
+  return Promise.race([
+    issueThroughDesktop(workspaceId, request),
+    abandoned.refusal
+  ]).finally(abandoned.stop)
+}
+
 async function issueForScope(
   scope: HandoffScope,
   request: BillingHandoffRequest,
   signal: AbortSignal
 ): Promise<HandoffIssue> {
+  if (localSurface() === 'desktop')
+    return issueThroughDesktopUnlessAbandoned(
+      scope.workspaceId,
+      request,
+      signal
+    )
   const token = await useAuthStore().getIdToken()
   if (!token) return SIGN_IN_AGAIN
   return issueBillingHandoff(
@@ -170,16 +258,40 @@ function settle(
   return { status: 'error', message: t('billingHandoff.signInAgain') }
 }
 
+function supersededDuring(issue: HandoffIssue, scopeWatch: ScopeWatch) {
+  if (scopeWatch.replaced()) return true
+  const endedBySignOut =
+    issue.kind === 'sign_in_again' && currentScope() === undefined
+  return scopeWatch.changed() && !endedBySignOut
+}
+
+function trackIssue(issue: HandoffIssue, scopeChanged: boolean): void {
+  const result = scopeChanged
+    ? 'superseded'
+    : issue.kind === 'issued'
+      ? 'opened'
+      : issue.kind
+  useTelemetry()?.trackBillingEvent({
+    operation: 'local_handoff',
+    stage: 'launched',
+    outcome: result === 'opened' ? 'pending' : 'failed',
+    surface: localSurface(),
+    result,
+    ...(issue.kind === 'refused' && issue.code && { error_code: issue.code })
+  })
+}
+
 /** The tab a handoff opens in, reserved during the click and showing that checkout is opening. */
 export function reserveBillingHandoffTab(): BillingTab | null {
   return reserveBillingTab({
     lang: i18n.global.locale.value,
+    tabTitle: t('billingHandoff.openingTabTitle'),
     title: t('billingHandoff.opening'),
     detail: t('billingHandoff.openingDetail')
   })
 }
 
-/** Issues a one-time billing-web handoff for the signed-in local web account; the URL works once and is never shown. */
+/** Issues a one-time billing handoff for the signed-in local account, through Desktop's bridge on Desktop; the URL works once and is never shown. */
 export async function issueLocalBillingHandoff(
   request: BillingHandoffRequest,
   signal: AbortSignal
@@ -192,9 +304,29 @@ export async function issueLocalBillingHandoff(
     const issue = scope
       ? await issueForScope(scope, request, signal)
       : SIGN_IN_AGAIN
-    return signal.aborted ? DISCARDED : settle(issue, scopeWatch.changed())
+    if (signal.aborted) return DISCARDED
+    const scopeChanged = supersededDuring(issue, scopeWatch)
+    trackIssue(issue, scopeChanged)
+    return settle(issue, scopeChanged)
   } finally {
     scopeWatch.stop()
     inFlight = false
   }
+}
+
+/** Opens Platform billing through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
+export async function openPlatformBillingHandoff(): Promise<void> {
+  if (inFlight) return
+  const tab = reserveBillingHandoffTab()
+  if (!tab) {
+    useToast().error(t('subscription.billingTabBlocked'))
+    return
+  }
+  const issued = await issueLocalBillingHandoff(
+    { receiver: 'platform' },
+    new AbortController().signal
+  )
+  if (issued.status === 'ok') return tab.navigate(issued.url)
+  tab.close()
+  useToast().error(issued.message ?? t('subscription.billingPortalUnavailable'))
 }

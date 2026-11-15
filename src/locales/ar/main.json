@@ -742,7 +742,7 @@
       "auth/account-exists-with-different-credential": "تعذر تسجيل دخولك بهذه الطريقة. جرّب خيار تسجيل دخول آخر، أو أعد تعيين كلمة المرور للمتابعة.",
       "auth/cancelled-popup-request": "كانت نافذة تسجيل دخول أخرى مفتوحة بالفعل، لذا تم إلغاء هذه النافذة. يُرجى المحاولة مرة أخرى.",
       "auth/email-already-in-use": "تعذر إنشاء حساب باستخدام هذا البريد الإلكتروني. جرّب تسجيل الدخول أو إعادة تعيين كلمة المرور بدلاً من ذلك.",
-      "auth/invalid-credential": "بيانات تسجيل الدخول غير صالحة. يرجى التحقق من بريدك الإلكتروني وكلمة المرور.",
+      "auth/invalid-credential": "بيانات اعتماد تسجيل الدخول غير صالحة. يُرجى التحقق من بريدك الإلكتروني وكلمة المرور. إذا سبق لك تسجيل الدخول باستخدام Google أو GitHub، فاستخدم ذلك بدلًا من ذلك.",
       "auth/invalid-email": "يرجى إدخال عنوان بريد إلكتروني صالح.",
       "auth/network-request-failed": "خطأ في الشبكة. يرجى التحقق من اتصالك والمحاولة مرة أخرى.",
       "auth/operation-not-allowed": "طريقة تسجيل الدخول هذه غير مدعومة حالياً.",
@@ -803,6 +803,7 @@
       "userAvatar": "صورة المستخدم"
     },
     "loginButton": {
+      "signInToUsePartnerNodes": "سجّل الدخول لاستخدام عُقد الشركاء",
       "tooltipHelp": "سجل الدخول لاستخدام \"عُقَد API\"",
       "tooltipLearnMore": "المزيد..."
     },
@@ -1588,9 +1589,7 @@
     "LOAD_3D": "تحميل ثلاثي الأبعاد",
     "LORA_MODEL": "نموذج لورا",
     "LOSS_MAP": "خريطة الخسارة",
-    "LUMA_CONCEPTS": "مفاهيم Luma",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "مرجع Luma",
     "MASK": "قناع",
     "MESH": "شبكة",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -2766,6 +2765,7 @@
     "versionMismatchWarning": "تحذير توافق الإصدارات",
     "videoFailedToLoad": "فشل تحميل الفيديو",
     "videoFilenameExtensionRequired": "يجب أن ينتهي اسم ملف الفيديو بامتداد مثل .mp4. أعد تسمية الملف وحاول مرة أخرى.",
+    "videoFormatNotSupported": "لا يمكن تشغيل هذا الفيديو في المتصفح.",
     "videoPreview": "معاينة الفيديو - استخدم مفاتيح الأسهم للتنقل بين الفيديوهات",
     "viewGrid": "عرض الشبكة",
     "viewImageOfTotal": "عرض الصورة {index} من {total}",
@@ -4146,6 +4146,7 @@
       "errorUnavailable": "هذه الميزة غير متوفرة حاليًا. يرجى التواصل مع الدعم إذا استمرت المشكلة.",
       "genericError": "فشل طلب OAuth. يرجى إعادة البدء من تطبيق العميل.",
       "loading": "جارٍ تحميل طلب التفويض…",
+      "loginRequired": "سجّل الدخول للمتابعة.",
       "missingRequest": "هذا الطلب التفويضي غير موجود. يرجى إعادة البدء من تطبيق العميل.",
       "noWorkspaces": "لا توجد مساحات عمل مؤهلة لهذا الطلب.",
       "notYou": "لست أنت؟",
@@ -4154,6 +4155,7 @@
       "resourceFallback": "هذا التطبيق",
       "sessionError": "فشل في إنشاء الجلسة. يرجى المحاولة مرة أخرى.",
       "sessionErrorToastSummary": "تعذر متابعة تسجيل الدخول عبر OAuth",
+      "signInAgain": "سجّل الدخول مجددًا",
       "signedInAs": "تم تسجيل الدخول باسم",
       "subtitle": "سجّل الدخول إلى {resource} للمتابعة",
       "switchAccount": "تبديل الحساب",
@@ -4161,6 +4163,7 @@
       "unverifiedBadge": "لم يتم التحقق من الاسم",
       "unverifiedNotice": "قدّم هذا الاسم الشخص الذي سجّل هذا التطبيق. بعد المتابعة، سيُوجَّه متصفحك إلى {host} — تأكد من أنك تتعرف عليه.",
       "unverifiedNoticeNoHost": "قدّم هذا الاسم الشخص الذي سجّل هذا التطبيق، ولم تتحقق Comfy منه.",
+      "verifiedNotice": "الاسم غير مُتحقَّق منه · الوجهة المُتحقَّق منها: {platform} · ستعود إلى {host}",
       "workspaceLabel": "مساحة العمل"
     },
     "scopes": {
@@ -4381,13 +4384,16 @@
     "balanceUnavailable": "تعذّر تحميل رصيدك.",
     "billingSettings": "إعدادات الفوترة",
     "credits": "الأرصدة",
+    "paymentProcessing": "جارٍ معالجة الدفع…",
+    "planCredits": "اعتمادات الخطة",
     "planStatus": {
       "ended": "انتهت الخطة",
       "noPlan": "لا توجد خطة",
       "paused": "متوقفة مؤقتًا",
       "paymentDue": "الدفع مستحق"
     },
-    "switchWorkspace": "تبديل مساحة العمل"
+    "switchWorkspace": "تبديل مساحة العمل",
+    "topUpCredits": "شحن الاعتمادات"
   },
   "progressToast": {
     "allDownloadsCompleted": "اكتملت جميع التنزيلات",
@@ -6660,16 +6666,22 @@
   "workspaceSwitcher": {
     "cannotCreateWorkspace": "لا يمكنك إنشاء مساحة عمل على هذا الحساب حاليًا.",
     "createWorkspace": "إنشاء مساحة عمل جديدة",
+    "createWorkspaceAction": "إنشاء مساحة عمل",
     "failedToSwitch": "فشل في تبديل مساحة العمل",
+    "loadFailed": "تعذّر تحميل مساحات العمل الخاصة بك.",
     "managedByOrganization": "تدير مؤسستك مساحات العمل الخاصة بك، لذا لا يمكنك إنشاء واحدة.",
     "maxWorkspacesReached": "يمكنك امتلاك {max} مساحة عمل فقط. احذفها لإنشاء مساحة جديدة. | يمكنك امتلاك {max} مساحات عمل فقط. احذف واحدة لإنشاء مساحة جديدة.",
+    "noResults": "لا توجد مساحات عمل تطابق “{query}”.",
+    "ownedLimit": "يمكنك امتلاك ما يصل إلى {max}.",
     "personal": "شخصي",
     "roleMember": "عضو",
     "roleOwner": "المالك",
     "scopeCaption": "تؤثر مساحات العمل فقط في الأرصدة التي تستخدمها.",
     "scopeTooltip": "عمليات التشغيل التي تستخدم عقد الشركاء تنفق أرصدة من مساحة العمل هذه. بخلاف السحابة، تحفظ كل مساحة عمل في مجلد الإخراج المعتاد لديك.",
+    "searchPlaceholder": "البحث في مساحات العمل...",
     "subscribe": "اشترك",
-    "switchWorkspace": "تبديل مساحة العمل"
+    "switchWorkspace": "تبديل مساحة العمل",
+    "tryAgain": "حاول مجددًا"
   },
   "zoomControls": {
     "hideMinimap": "إخفاء الخريطة المصغرة",

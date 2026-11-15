@@ -8548,6 +8548,9 @@
       "model": {
         "name": "مدل"
       },
+      "model_auto_duration": {
+        "name": "مدت‌زمان خودکار"
+      },
       "model_duration": {
         "name": "مدت‌زمان"
       },
@@ -8568,7 +8571,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "با استفاده از HeyGen Video 1.0، از یک پرامپت متنی ویدیویی با گفت‌وگو و صدای همگام‌سازی‌شده تولید کنید. در صورت تمایل، حداکثر ۱۲ تصویر مرجع، ویدیو و کلیپ صوتی متصل کنید و در پرامپت به آن‌ها با {'@'}Image1، {'@'}Video1، {'@'}Audio1 اشاره کنید.",
+    "description": "با استفاده از HeyGen Video 1.0، از یک متن راهنما ویدئویی با گفت‌وگو و صدای همگام تولید کنید. به‌صورت اختیاری، تا ۱۵ تصویر مرجع، ویدئو و کلیپ صوتی را متصل کنید و در متن راهنما با {'@'}Image1، {'@'}Video1، {'@'}Audio1 به آن‌ها اشاره کنید.",
     "display_name": "تبدیل مرجع به ویدیو با HeyGen Video 1.0",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8582,9 @@
       },
       "model_aspect_ratio": {
         "name": "نسبت ابعاد"
+      },
+      "model_auto_duration": {
+        "name": "مدت‌زمان خودکار"
       },
       "model_duration": {
         "name": "مدت‌زمان"
@@ -13723,34 +13729,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "مفاهیم دوربین برای استفاده با گره‌های Luma Text to Video و Luma Image to Video.",
-    "display_name": "مفاهیم Luma",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "مفاهیم دوربین اختیاری برای افزودن به موارد انتخاب‌شده در اینجا."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "ویرایش یک تصویر موجود با استفاده از متن راهنما و مدل Luma UNI-1.",
     "display_name": "ویرایش تصویر Luma UNI-1",
@@ -13787,82 +13765,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "تغییر تصاویر به صورت همزمان بر اساس پرامپت و نسبت تصویر.",
-    "display_name": "Luma Image to Image",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_weight": {
-        "name": "image_weight",
-        "tooltip": "وزن تصویر؛ هرچه به ۱.۰ نزدیک‌تر باشد، تصویر کمتر تغییر می‌کند."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "پرامپت برای تولید تصویر"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "بذر برای تعیین اجرای مجدد گره؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "تولید تصاویر به صورت همزمان بر اساس پرامپت و نسبت تصویر.",
-    "display_name": "Luma Text to Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "character_image": {
-        "name": "character_image",
-        "tooltip": "تصاویر مرجع شخصیت؛ می‌تواند یک دسته از چند تصویر باشد، تا ۴ تصویر می‌تواند در نظر گرفته شود."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image_luma_ref": {
-        "name": "image_luma_ref",
-        "tooltip": "اتصال گره مرجع Luma برای تأثیرگذاری بر تولید با تصاویر ورودی؛ تا ۴ تصویر می‌تواند در نظر گرفته شود."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "پرامپت برای تولید تصویر"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "بذر برای تعیین اجرای مجدد گره؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
-      },
-      "style_image": {
-        "name": "style_image",
-        "tooltip": "تصویر مرجع سبک؛ فقط ۱ تصویر استفاده خواهد شد."
-      },
-      "style_image_weight": {
-        "name": "style_image_weight",
-        "tooltip": "وزن تصویر سبک. اگر style_image ارائه نشود، نادیده گرفته می‌شود."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "تولید تصویر از متن با استفاده از مدل Luma UNI-1.",
     "display_name": "تصویر Luma UNI-1",
@@ -13890,52 +13792,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "ویدیوها را به صورت همزمان بر اساس پرامپت، تصاویر ورودی و اندازه خروجی تولید می‌کند.",
-    "display_name": "تبدیل تصویر به ویدیو لاما",
-    "inputs": {
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "duration": {
-        "name": "مدت زمان"
-      },
-      "first_image": {
-        "name": "اولین تصویر",
-        "tooltip": "اولین فریم ویدیوی تولید شده."
-      },
-      "last_image": {
-        "name": "آخرین تصویر",
-        "tooltip": "آخرین فریم ویدیوی تولید شده."
-      },
-      "loop": {
-        "name": "حلقه"
-      },
-      "luma_concepts": {
-        "name": "مفاهیم لاما",
-        "tooltip": "مفاهیم دوربین اختیاری برای تعیین حرکت دوربین از طریق node مفاهیم لاما."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "پرامپت برای تولید ویدیو"
-      },
-      "resolution": {
-        "name": "وضوح"
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
       }
     },
     "outputs": {
@@ -14165,7 +14021,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "نسبت تصویر یک ویدیوی موجود را تغییر دهید و با استفاده از Luma Ray ۳.۲ نواحی جدید بوم را پر کنید. ویدیوی منبع تا ۳۰ ثانیه. هزینه بر اساس هر ثانیه خروجی محاسبه می‌شود.",
+    "description": "نسبت ابعاد یک ویدئوی موجود را تغییر دهید و با استفاده از Luma Ray 3.2 نواحی تازه آشکارشدهٔ بوم را پر کنید. ویدئوی منبع حداکثر تا ۱۰ ثانیه. هزینه به‌ازای هر ثانیه خروجی محاسبه می‌شود.",
     "display_name": "تغییر قاب ویدیو با Luma Ray ۳.۲",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14043,7 @@
       },
       "video": {
         "name": "ویدیو",
-        "tooltip": "ویدیوی منبع برای تغییر قاب. تا ۳۰ ثانیه."
+        "tooltip": "ویدئوی منبع برای تغییر کادر. حداکثر تا ۱۰ ثانیه."
       }
     },
     "outputs": {
@@ -14196,70 +14052,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "یک تصویر و وزن را برای استفاده در node تولید تصویر لاما نگه می‌دارد.",
-    "display_name": "مرجع لاما",
-    "inputs": {
-      "image": {
-        "name": "تصویر",
-        "tooltip": "تصویری که به عنوان مرجع استفاده می‌شود."
-      },
-      "luma_ref": {
-        "name": "مرجع لاما"
-      },
-      "weight": {
-        "name": "وزن",
-        "tooltip": "وزن مرجع تصویر."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "مرجع لاما",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "ویدیوها را به صورت همزمان بر اساس پرامپت و اندازه خروجی تولید می‌کند.",
-    "display_name": "تبدیل متن به ویدیو لاما",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "نسبت تصویر"
-      },
-      "control_after_generate": {
-        "name": "کنترل پس از تولید"
-      },
-      "duration": {
-        "name": "مدت زمان"
-      },
-      "loop": {
-        "name": "حلقه"
-      },
-      "luma_concepts": {
-        "name": "مفاهیم لاما",
-        "tooltip": "مفاهیم دوربین اختیاری برای تعیین حرکت دوربین از طریق node مفاهیم لاما."
-      },
-      "model": {
-        "name": "مدل"
-      },
-      "prompt": {
-        "name": "پرامپت",
-        "tooltip": "پرامپت برای تولید ویدیو"
-      },
-      "resolution": {
-        "name": "وضوح"
-      },
-      "seed": {
-        "name": "بذر",
-        "tooltip": "بذر برای تعیین اینکه آیا node باید دوباره اجرا شود؛ نتایج واقعی صرف‌نظر از بذر غیرقطعی هستند."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -24987,6 +24779,9 @@
       "format_bit_depth": {
         "name": "عمق بیت"
       },
+      "format_channels": {
+        "name": "کانال‌ها"
+      },
       "format_input_color_space": {
         "name": "فضای رنگ ورودی"
       },
@@ -25977,6 +25772,33 @@
       },
       "1": {
         "name": "راست",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "یک تصویر را به تصاویر قرمز، سبز و آبی و یک mask آلفا تفکیک می‌کند.",
+    "display_name": "تفکیک کانال‌های تصویر",
+    "inputs": {
+      "image": {
+        "name": "تصویر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "قرمز",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سبز",
+        "tooltip": null
+      },
+      "2": {
+        "name": "آبی",
+        "tooltip": null
+      },
+      "3": {
+        "name": "آلفا",
         "tooltip": null
       }
     }

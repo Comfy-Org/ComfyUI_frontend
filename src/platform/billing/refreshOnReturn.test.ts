@@ -92,6 +92,19 @@ describe('registerRefreshOnReturn', () => {
     expect(refresh).toHaveBeenCalledTimes(2)
   })
 
+  it('drops a queued trailing refresh once the returned callback runs', async () => {
+    const { refresh, settle } = held()
+    const stop = registerRefreshOnReturn(refresh)
+
+    come()
+    leave()
+    come()
+    stop()
+    await settle(0)
+
+    expect(refresh).toHaveBeenCalledTimes(1)
+  })
+
   it('stops listening once the returned callback runs', () => {
     const refresh = vi.fn(async () => {})
     const stop = registerRefreshOnReturn(refresh)
