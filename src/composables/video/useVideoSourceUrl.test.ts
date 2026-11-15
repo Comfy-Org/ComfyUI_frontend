@@ -259,8 +259,11 @@ describe('useVideoSourceUrl', () => {
     expect(status.value).toBe('loading')
   })
 
-  it('falls back to the upstream file widget before any execution', () => {
-    vi.mocked(outputStore.getNodeImageUrls).mockReturnValue(undefined)
+  it.for([
+    { name: 'before any execution', outputs: undefined },
+    { name: 'when the output has no browser preview', outputs: [''] }
+  ])('falls back to the upstream file widget $name', ({ outputs }) => {
+    vi.mocked(outputStore.getNodeImageUrls).mockReturnValue(outputs)
     vi.mocked(widgetStore.getWidget).mockReturnValue(
       fromPartial<NonNullable<ReturnType<typeof widgetStore.getWidget>>>({
         value: 'clip.mp4'

@@ -89,7 +89,7 @@ export function useVideoSourceResolver() {
     if (!source) return undefined
 
     const rawOutputUrl = nodeOutputStore.getNodeImageUrls(source)?.[0]
-    const outputUrl = rawOutputUrl && stripRandParam(rawOutputUrl)
+    const outputUrl = rawOutputUrl ? stripRandParam(rawOutputUrl) : undefined
     const fileUrl = resolveFileWidgetVideoUrl(sourceFileWidgetValue(source))
 
     return source === node ? (fileUrl ?? outputUrl) : (outputUrl ?? fileUrl)

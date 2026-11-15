@@ -45,9 +45,8 @@ export function resolveAssetMediaSources(asset: AssetItem) {
     inlineUrl: resolveMediaSrc(getAssetInlineMediaUrl(asset)),
     previewIsVideo:
       kind === 'video' &&
-      !asset.thumbnail_url &&
-      !asset.preview_id &&
-      previewKind !== 'image'
+      (previewKind === 'video' ||
+        (!asset.thumbnail_url && !asset.preview_id && previewKind !== 'image'))
   }
 }
 

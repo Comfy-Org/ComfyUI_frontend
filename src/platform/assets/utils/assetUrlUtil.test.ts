@@ -85,15 +85,27 @@ describe('resolveAssetMediaSources', () => {
 
   it.for([
     { preview_url: 'https://cdn.test/poster.png', previewIsVideo: false },
-    { preview_url: 'https://cdn.test/clip.webm', previewIsVideo: true }
+    { preview_url: 'https://cdn.test/clip.webm', previewIsVideo: true },
+    {
+      thumbnail_url: 'https://cdn.test/clip.webm',
+      preview_url: 'https://cdn.test/clip.webm',
+      previewIsVideo: true
+    },
+    {
+      thumbnail_url: 'https://cdn.test/poster.png',
+      preview_url: 'https://cdn.test/clip.webm',
+      previewIsVideo: false
+    }
   ])(
     'keeps video files distinct from their $preview_url previews',
-    ({ preview_url, previewIsVideo }) => {
+    ({ previewIsVideo, ...previews }) => {
       mockIsCloud.value = true
       const media = resolveAssetMediaSources(
-        createAsset({ hash: 'file-hash', preview_url })
+        createAsset({ hash: 'file-hash', ...previews })
       )
-      expect(media.previewUrl).toBe(preview_url)
+      expect(media.previewUrl).toBe(
+        previews.thumbnail_url ?? previews.preview_url
+      )
       expect(media.previewIsVideo).toBe(previewIsVideo)
       expect(media.inlineUrl).toBe(
         'http://localhost:8188/api/view?filename=file-hash&type=output'
