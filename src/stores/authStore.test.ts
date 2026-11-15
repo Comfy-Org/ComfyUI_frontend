@@ -824,6 +824,23 @@ describe('useAuthStore', () => {
       await expect(store.getFreshIdToken()).resolves.toBe(token)
     })
 
+    it('reports a mint that failed and fell back to the cached token', async () => {
+      const offline = new FirebaseError(
+        firebaseAuth.AuthErrorCodes.NETWORK_REQUEST_FAILED,
+        'offline'
+      )
+      mockUser.getIdToken.mockImplementation(
+        cachedUnless(() => Promise.reject(offline))
+      )
+
+      await store.getFreshIdToken()
+
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(offline, {
+        surface: 'auth',
+        errorType: 'auth_id_token_refresh_failed'
+      })
+    })
+
     it('leaves getIdToken on the cached token', async () => {
       mockUser.getIdToken.mockImplementation(
         cachedUnless(async () => 'minted-token')

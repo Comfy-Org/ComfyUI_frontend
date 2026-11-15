@@ -337,7 +337,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   const getFreshFirebaseIdToken = async (): Promise<string | undefined> => {
     const user = currentUser.value
-    const minted = await user?.getIdToken(true).catch(() => undefined)
+    const minted = await user?.getIdToken(true).catch((error: unknown) => {
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'auth_id_token_refresh_failed'
+      })
+      return undefined
+    })
     if (currentUser.value?.uid !== user?.uid) return
     return minted ?? getFirebaseIdToken()
   }
