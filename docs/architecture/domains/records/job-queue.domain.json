@@ -61,9 +61,6 @@
       "path": "src/utils/resultItem.ts"
     },
     {
-      "path": "src/utils/resultItemUrl.ts"
-    },
-    {
       "path": "packages/api-client/src/fetchJobs.ts"
     },
     {

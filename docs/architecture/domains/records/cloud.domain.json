@@ -93,7 +93,7 @@
         "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
         "src/extensions/core/cloudFeedbackTopbarButton.test.ts",
         "src/platform/cloud/notification/composables/useDesktopCloudNotification.test.ts",
-        "src/platform/distribution/cloudPreviewUtil.test.ts"
+        "src/utils/mediaResource.cloud.test.ts"
       ]
     },
     {

@@ -83,7 +83,7 @@ export function resolveMediaSources(
 }
 
 function thumbnailUrl(url: string): string {
-  if (!url || !url.startsWith('/') || url.startsWith('//')) return url
+  if (!url.startsWith('/') || url.startsWith('//')) return url
   const parsed = new URL(url, window.location.origin)
   if (!parsed.pathname.endsWith('/view')) return url
   const filename = parsed.searchParams.get('filename') ?? undefined
