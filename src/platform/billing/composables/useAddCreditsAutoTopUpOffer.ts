@@ -11,7 +11,10 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import {
+  openPlatformBilling,
+  usePlatformHandoff
+} from '@/platform/billing/composables/usePlatformHandoff'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
 type DefaultCardRead =
@@ -45,7 +48,7 @@ export function useAddCreditsAutoTopUpOffer() {
   const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
     useBillingCapabilities()
   const { state, ensureRead } = useBillingAutoTopUpCard()
-  const { href, available } = usePlatformHandoff('/profile/billing', {
+  const { href, track } = usePlatformHandoff('/profile/billing', {
     target: 'auto_top_up',
     action: 'manage'
   })
@@ -82,7 +85,5 @@ export function useAddCreditsAutoTopUpOffer() {
       : served
   })
 
-  const billingUrl = computed(() => (available.value ? href.value : undefined))
-
-  return { offer, billingUrl, platformAvailable: available }
+  return { offer, billingUrl: href, open: () => openPlatformBilling(track) }
 }
