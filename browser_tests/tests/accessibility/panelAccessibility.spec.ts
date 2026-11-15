@@ -50,6 +50,7 @@ test.describe('Panel accessibility', { tag: '@a11y' }, () => {
 
   test('logs bottom panel', async ({ comfyPage, accessibility }) => {
     await comfyPage.bottomPanel.toggleLogs()
+    await expect(comfyPage.bottomPanel.logs.xtermScreen).toBeVisible()
 
     await accessibility.expectOnlyKnownViolations([
       'aria-required-children',
