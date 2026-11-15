@@ -10,6 +10,7 @@ import {
 import type { PaymentEvent } from '@/handoff/paymentTrace'
 
 const NOW = Date.parse('2026-11-09T12:00:00Z')
+const AFTER_EXPIRY = NOW + 31 * 60_000
 
 const live: HandoffState = {
   kind: 'session',
@@ -99,7 +100,10 @@ const completed = (reference: string): HandoffState => ({
 const checking = (reference: string): HandoffState => ({
   kind: 'ended',
   ending: 'payment_pending',
-  reference
+  reference,
+  workspace: 'Studio',
+  token: 'comfy-scoped-session-1',
+  since: AFTER_EXPIRY
 })
 
 describe('createHandoffBillingSession', () => {
@@ -323,7 +327,7 @@ describe('createHandoffBillingSession', () => {
     async ({ arrange, ended }) => {
       const { session, storage, clock } = setup()
       arrange(storage)
-      clock.now = NOW + 31 * 60_000
+      clock.now = AFTER_EXPIRY
 
       await expect(session.ensureFresh()).resolves.toEqual({
         status: 'error',
@@ -339,7 +343,7 @@ describe('createHandoffBillingSession', () => {
   it('ends as unconfirmed when storage can no longer be read, never as an unused link', async () => {
     const { session, storage, clock } = setup()
     storage.block()
-    clock.now = NOW + 31 * 60_000
+    clock.now = AFTER_EXPIRY
 
     await session.ensureFresh()
 
@@ -399,6 +403,18 @@ describe('endHandoffAtExpiry', () => {
       kind: 'ended',
       ending: 'link_unavailable'
     })
+  })
+
+  it('ends nothing and keeps no bearer in a tab that never held a handoff', () => {
+    vi.useFakeTimers()
+    handoffTab.value = undefined
+    const storage = memoryStorage()
+    onTestFinished(endHandoffAtExpiry(storage, () => NOW))
+
+    vi.advanceTimersByTime(60 * 60_000)
+
+    expect(handoffTab.value).toBeUndefined()
+    expect(storage.getItem(HANDOFF_KEY)).toBeNull()
   })
 })
 
