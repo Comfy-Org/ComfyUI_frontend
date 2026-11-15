@@ -92,6 +92,12 @@ const title = computed(() =>
 
 const settingStore = useSettingStore()
 const { getWidgetTooltip } = useNodeTooltips('')
+const sources = computed(() =>
+  context.selected
+    ? context.sourcesFor(context.selected)
+    : new Map<string, InputValueSource>()
+)
+
 type EditableSource = Extract<InputValueSource, { kind: 'editable' }>
 
 function editorFor(source: EditableSource) {
@@ -133,7 +139,7 @@ function sourceTitleOf(source: EditableSource | undefined) {
 
 const rows = computed(() =>
   slots.value.map((port) => {
-    const source = isInput.value ? context.sources.get(port.name) : undefined
+    const source = isInput.value ? sources.value.get(port.name) : undefined
     const editable = source?.kind === 'editable' ? source : undefined
     const isAddPort = port === ioNode.emptySlot
     return {
@@ -154,7 +160,7 @@ const rows = computed(() =>
 const hint = computed(() => {
   if (!isInput.value) return undefined
   if (!context.selected) return t('subgraphInputValues.enterInstanceHint')
-  return context.sources.size ? undefined : t('subgraphInputValues.noInputs')
+  return sources.value.size ? undefined : t('subgraphInputValues.noInputs')
 })
 
 const { focusNodeInstance } = useFocusNode()

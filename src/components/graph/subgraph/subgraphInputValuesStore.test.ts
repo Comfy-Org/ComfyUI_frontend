@@ -1,13 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
@@ -107,5 +108,42 @@ describe('subgraph input values instance selection', () => {
     canvas.openSubgraph(nested, inner)
 
     expect(store.selected).toMatchObject({ graphId: outer.id, id: inner.id })
+  })
+})
+
+describe('subgraph input value sources', () => {
+  it('resolves each host to its own editable widget', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'number', type: 'INT' }]
+    })
+    const { a, b } = addTwoHosts(subgraph)
+    const interior = new LGraphNode('Value')
+    const input = interior.addInput('value', 'INT')
+    input.widget = { name: 'value' }
+    interior.addWidget('number', 'value', 1, () => {})
+    subgraph.add(interior)
+    subgraph.inputs[0].connect(input, interior)
+    useCanvasStore().currentGraph = subgraph
+    const nodes = useNodeDataStore()
+    const hostA = nodes.getNode(subgraph.rootGraph.id, a.id)
+    const hostB = nodes.getNode(subgraph.rootGraph.id, b.id)
+    assert.exists(hostA)
+    assert.exists(hostB)
+    const widgetA = a.inputs[0].widgetId
+    const widgetB = b.inputs[0].widgetId
+    assert.exists(widgetA)
+    assert.exists(widgetB)
+    const store = useSubgraphInputValuesStore()
+
+    expect(store.sourcesFor(hostA).get('number')).toMatchObject({
+      kind: 'editable',
+      node: { id: a.id },
+      widgetId: widgetA
+    })
+    expect(store.sourcesFor(hostB).get('number')).toMatchObject({
+      kind: 'editable',
+      node: { id: b.id },
+      widgetId: widgetB
+    })
   })
 })

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resolveInputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -39,12 +40,14 @@ export const useSubgraphInputValuesStore = defineStore(
       return instances.length === 1 ? instances[0] : undefined
     })
 
-    const sources = computed(() => {
-      const host = selected.value
-      const root = graph.value?.rootGraph
+    function sourcesFor(host: NodeState): Map<string, InputValueSource> {
       const result = new Map<string, InputValueSource>()
-      if (!host || !root) return result
-      const scope = graphScopeOf({ id: host.graphId, rootGraph: root })
+      const rootGraphId = canvasStore.rootGraphId
+      if (!rootGraphId) return result
+      const scope = graphScopeOf({
+        id: host.graphId,
+        rootGraph: { id: rootGraphId }
+      })
       for (const [index, { name, widgetId }] of host.inputs.entries()) {
         if (widgetId)
           result.set(
@@ -53,7 +56,7 @@ export const useSubgraphInputValuesStore = defineStore(
           )
       }
       return result
-    })
-    return { graph, selected, sources }
+    }
+    return { graph, selected, sourcesFor }
   }
 )
