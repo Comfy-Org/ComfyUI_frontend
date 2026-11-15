@@ -652,6 +652,63 @@ describe('issueLocalBillingHandoff for a Firebase sign-in', () => {
     expect(fetchRequests(HANDOFFS)[0].headers.get('Authorization')).toBe(sent)
   })
 
+  it('frees the next handoff once the caller abandons one still minting its ID token, and issues nothing for the late token', async () => {
+    let deliverLate: (token: string) => void = () => {}
+    const mint = vi
+      .fn<() => Promise<string>>()
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          deliverLate = resolve
+        })
+      )
+      .mockResolvedValue('minted-token')
+    signIn(mint)
+    respondToFetch(HANDOFFS, issued)
+    const abandoned = new AbortController()
+
+    const dropped = issueLocalBillingHandoff(TOP_UP, abandoned.signal)
+    abandoned.abort()
+    await expect(dropped).resolves.toEqual({
+      status: 'error',
+      message: undefined
+    })
+    deliverLate('late-token')
+
+    await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+      status: 'ok',
+      url: ENTRY_URL
+    })
+    expect(
+      fetchRequests(HANDOFFS).map((request) =>
+        request.headers.get('Authorization')
+      )
+    ).toEqual(['Bearer minted-token'])
+  })
+
+  it('gives up on an ID token that never arrives, so later clicks are not stuck', async () => {
+    const overdue = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(overdue.signal)
+    const mint = vi
+      .fn<() => Promise<string>>()
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockResolvedValue('minted-token')
+    signIn(mint)
+    respondToFetch(HANDOFFS, issued)
+
+    const stuck = issueLocalBillingHandoff(TOP_UP, live)
+    overdue.abort()
+
+    await expect(stuck).resolves.toEqual({
+      status: 'error',
+      message: undefined
+    })
+    expect(AbortSignal.timeout).toHaveBeenCalledWith(15_000)
+    await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+      status: 'ok',
+      url: ENTRY_URL
+    })
+  })
+
   it('is not superseded by the ID token rotation it causes, nor is the next handoff', async () => {
     signIn(async () => 'minted-token')
     respondToFetch(HANDOFFS, issued)
