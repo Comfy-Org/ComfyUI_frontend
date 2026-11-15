@@ -14,6 +14,42 @@ import { isResultItemType } from '@/utils/typeGuardUtil'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetType } from './assetTypeUtil'
+import {
+  getImageFilenameFromUrl,
+  hdrPreviewAssetUrl,
+  isHdrImageUrl
+} from '@/utils/hdrFormatUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { resolveMediaSources } from '@/utils/mediaResource'
+
+export function resolveAssetMediaSources(asset: AssetItem) {
+  const suppliedPreview = [asset.thumbnail_url, asset.preview_url].find(
+    (url) => url && !isHdrImageUrl(url)
+  )
+  const media = resolveMediaSources({
+    filename: asset.name,
+    url: getAssetViewUrl(asset),
+    previewUrl:
+      resolveMediaSrc(suppliedPreview) ||
+      (asset.preview_id ? hdrPreviewAssetUrl(asset.preview_id) : undefined),
+    preview_id: asset.preview_id ?? undefined
+  })
+  const kind = getMediaTypeFromFilename(asset.name)
+  const previewKind = getMediaTypeFromFilename(
+    getImageFilenameFromUrl(media.previewUrl) ?? ''
+  )
+  return {
+    ...media,
+    originalUrl: getAssetFileUrl(asset),
+    kind,
+    inlineUrl: resolveMediaSrc(getAssetInlineMediaUrl(asset)),
+    previewIsVideo:
+      kind === 'video' &&
+      !asset.thumbnail_url &&
+      !asset.preview_id &&
+      previewKind !== 'image'
+  }
+}
 
 /**
  * Get the download/view URL for an asset

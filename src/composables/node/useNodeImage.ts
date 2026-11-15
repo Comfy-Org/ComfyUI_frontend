@@ -6,8 +6,8 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import type { ImageLoadFailureMetadata } from '@comfyorg/telemetry/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { getHdrPreviewUrl } from '@/utils/hdrFormatUtil'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
+import type { MediaSources } from '@/utils/mediaResource'
 
 const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {
@@ -30,7 +30,7 @@ export function videoFailureMessageKey(errorCodes: (number | undefined)[]) {
 type MediaElement = HTMLImageElement | HTMLVideoElement
 
 interface NodePreviewOptions<T extends MediaElement> {
-  loadElement: (url: string) => Promise<T | null>
+  loadElement: (url: string, originalUrl: string) => Promise<T | null>
   onLoaded?: (elements: T[]) => void
   onFailedLoading?: () => void
   /** Which canvas surface this is, so the failure can be attributed. */
@@ -65,29 +65,23 @@ const useNodePreview = <T extends MediaElement>(
   const nodeOutputStore = useNodeOutputStore()
 
   const loadElementWithTimeout = async (
-    url: string,
+    source: Pick<MediaSources, 'originalUrl' | 'previewUrl'>,
     retryCount = 0
   ): Promise<T | null> => {
-    // A stalled load and a rejected one both arrive here as `null`, so the
-    // timeout resolves a sentinel instead: a 401 and an 8s hang are different
-    // problems and must not collapse into the same event. The sentinel is
-    // compared rather than a flag set from the timeout's callback — that flag
-    // would record "the timeout eventually fired", which is true even when the
-    // load lost the race by milliseconds.
+    const url = source.previewUrl
+    if (!url) return null
     const raced = await Promise.race([
-      loadElement(url),
+      loadElement(url, source.originalUrl),
       createTimeout(MEDIA_LOAD_TIMEOUT).then(() => MEDIA_LOAD_TIMED_OUT)
     ])
     const timedOut = raced === MEDIA_LOAD_TIMED_OUT
     const result: T | null = timedOut ? null : (raced as T | null)
 
     if (result === null && retryCount < MAX_RETRIES) {
-      return loadElementWithTimeout(url, retryCount + 1)
+      return loadElementWithTimeout(source, retryCount + 1)
     }
 
     if (result === null) {
-      // Reported once per URL, after retries are spent — a report per attempt
-      // would inflate the count by exactly `MAX_RETRIES + 1`.
       void describeImageLoadFailure(url).then((diagnostics) => {
         useTelemetry()?.trackImageLoadFailed({
           ...diagnostics,
@@ -101,8 +95,9 @@ const useNodePreview = <T extends MediaElement>(
     return result
   }
 
-  const loadElements = async (urls: string[]) =>
-    Promise.all(urls.map((url) => loadElementWithTimeout(url)))
+  const loadElements = async (
+    sources: Pick<MediaSources, 'originalUrl' | 'previewUrl'>[]
+  ) => Promise.all(sources.map((source) => loadElementWithTimeout(source)))
 
   /**
    * Displays media element(s) on the node.
@@ -110,13 +105,13 @@ const useNodePreview = <T extends MediaElement>(
   function showPreview(options: ShowPreviewOptions = {}) {
     if (node.isLoading) return
 
-    const outputUrls = nodeOutputStore.getNodeImageUrls(node)
-    if (!outputUrls?.length) return
+    const sources = nodeOutputStore.getNodeImageSources(node)
+    if (!sources.length) return
 
     if (options.block) node.isLoading = true
     const { images, preview } = node
 
-    loadElements(outputUrls)
+    loadElements(sources)
       .then((elements) => {
         if (node.images !== images || node.preview !== preview) return
         const validElements = elements.filter(
@@ -148,14 +143,16 @@ const useNodePreview = <T extends MediaElement>(
 export const useNodeImage = (node: LGraphNode, callback?: () => void) => {
   node.previewMediaType = 'image'
 
-  const loadElement = (url: string): Promise<HTMLImageElement | null> =>
+  const loadElement = (
+    url: string,
+    originalUrl: string
+  ): Promise<HTMLImageElement | null> =>
     new Promise((resolve) => {
       const img = new Image()
       img.onload = () => resolve(img)
       img.onerror = () => resolve(null)
-      const previewUrl = getHdrPreviewUrl(url)
-      if (previewUrl) img.dataset.fileUrl = url
-      img.src = previewUrl ?? url
+      if (originalUrl !== url) img.dataset.fileUrl = originalUrl
+      img.src = url
     })
 
   const onLoaded = (elements: HTMLImageElement[]) => {

@@ -13,10 +13,6 @@ beforeEach(() => {
   vi.mocked(api.getServerFeature).mockReturnValue(false)
 })
 
-vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
-  appendCloudResParam: vi.fn()
-}))
-
 describe('mapInputFileToAssetItem', () => {
   it('preserves a clean filename', () => {
     const asset = mapInputFileToAssetItem('photo.png', 0, 'input')

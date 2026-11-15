@@ -7,7 +7,7 @@ import type {
 } from '@comfyorg/api-client/ComfyApi'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { resultItemUrlWithTimestamp } from '@/utils/resultItemUrl'
+import { resultItemUrlWithTimestamp } from '@/utils/mediaResource'
 import { isImageResult } from '@/utils/resultItem'
 import { jobStateFromTask } from '@/utils/queueUtil'
 

@@ -6,7 +6,7 @@ import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import VideoPreview from '@comfyorg/design-system/media/VideoPreview'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import { resultItemUrl } from '@/utils/mediaResource'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const Preview3d = defineAsyncComponent(

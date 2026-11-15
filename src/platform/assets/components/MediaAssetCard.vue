@@ -24,14 +24,14 @@
     <div
       class="relative aspect-square overflow-hidden"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
+      @dblclick.stop="fileKind === 'image' && handleZoomClick()"
     >
       <!-- Loading State -->
       <div v-if="loading" class="size-full animate-pulse rounded-lg bg-muted" />
 
       <!-- Content based on asset type -->
       <component
-        :is="getTopComponent(previewKind)"
+        :is="getTopComponent(fileKind)"
         v-else-if="asset && adaptedAsset"
         :asset="adaptedAsset"
         :context="{ type: assetType }"
@@ -159,22 +159,17 @@ import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
 import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 import Button from '@comfyorg/design-system/button/Button'
 import { useAssetsStore } from '@/stores/assetsStore'
+import type { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import {
   formatDuration,
   formatSize,
   getFilenameDetails,
-  getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
-import {
-  getAssetInlineMediaUrl,
-  getAssetUrl,
-  resolveMediaSrc
-} from '@/platform/assets/utils/assetUrlUtil'
+import { resolveAssetMediaSources } from '@/platform/assets/utils/assetUrlUtil'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -245,21 +240,12 @@ const assetType = computed(() => {
   return getAssetType(asset?.tags)
 })
 
-// Determine file type from extension
+const media = computed(() => asset && resolveAssetMediaSources(asset))
 const fileKind = computed((): MediaKind => {
-  return getMediaTypeFromFilename(asset?.name || '')
+  return media.value?.kind ?? 'other'
 })
 
-const isHdr = computed(() => isHdrImageFilename(asset?.name))
-
-const previewKind = computed((): PreviewKind => {
-  if (asset?.preview_url && isHdr.value) return 'image'
-  return getMediaTypeFromFilename(asset?.name || '')
-})
-
-const canInspect = computed(
-  () => isPreviewableMediaType(fileKind.value) || isHdr.value
-)
+const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
 
 // Get filename without extension
 const fileName = computed(() => {
@@ -268,19 +254,18 @@ const fileName = computed(() => {
 
 // Adapt AssetItem to legacy AssetMeta format for existing components
 const adaptedAsset = computed(() => {
-  if (!asset) return undefined
+  if (!asset || !media.value) return undefined
   return {
     id: asset.id,
     name: asset.name,
     display_name: asset.display_name,
     kind: fileKind.value,
     src:
-      fileKind.value === '3D'
-        ? getAssetUrl(asset)
-        : resolveMediaSrc(asset.thumbnail_url || asset.preview_url) ||
-          (fileKind.value === 'video' || fileKind.value === 'audio'
-            ? getAssetInlineMediaUrl(asset)
-            : ''),
+      fileKind.value === 'audio' || fileKind.value === 'video'
+        ? media.value.inlineUrl
+        : fileKind.value === '3D'
+          ? media.value.originalUrl
+          : media.value.thumbnailUrl,
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
     size: asset.size,

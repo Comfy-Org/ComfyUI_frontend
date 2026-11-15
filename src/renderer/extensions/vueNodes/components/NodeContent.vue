@@ -10,13 +10,17 @@
     <slot>
       <VideoPreview
         v-if="hasMedia && media?.type === 'video'"
-        :image-urls="media.items.map((item) => resultItemPreviewUrl(item))"
+        :image-urls="
+          media.items.map((item) => resolveMediaSources(item).previewUrl)
+        "
         :node-id="nodeId"
         class="mt-2 flex-auto"
       />
       <AudioPreview
         v-else-if="hasMedia && media?.type === 'audio'"
-        :audio-urls="media.items.map((item) => resultItemPreviewUrl(item))"
+        :audio-urls="
+          media.items.map((item) => resolveMediaSources(item).previewUrl)
+        "
         class="mt-2 flex-auto"
       />
       <ImagePreview
@@ -37,7 +41,7 @@ import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
+import { resolveMediaSources } from '@/utils/mediaResource'
 
 import AudioPreview from '@comfyorg/design-system/media/AudioPreview'
 import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'

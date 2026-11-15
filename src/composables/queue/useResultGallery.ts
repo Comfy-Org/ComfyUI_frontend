@@ -6,7 +6,7 @@ import { findActiveIndex, getOutputsForTask } from '@/services/jobOutputCache'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import { resultItemUrl } from '@/utils/mediaResource'
 
 /**
  * Manages result gallery state and activation for queue items.

@@ -1,6 +1,6 @@
 import type { JobModelDownload } from '@/stores/jobModelDownloadStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import { resultItemUrl } from '@/utils/mediaResource'
 import { isImageResult } from '@/utils/resultItem'
 import type { JobState } from '@/types/queue'
 import { formatDuration, formatSize } from '@/utils/formatUtil'

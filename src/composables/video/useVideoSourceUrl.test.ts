@@ -17,10 +17,6 @@ vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
-  appendCloudResParam: vi.fn()
-}))
-
 function fakeNode(overrides: Record<string, unknown> = {}): LGraphNode {
   return {
     id: 'node',

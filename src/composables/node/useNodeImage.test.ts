@@ -31,8 +31,8 @@ describe('useNodeVideo', () => {
   async function setup() {
     vi.clearAllMocks()
 
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      'http://video/1.mp4'
+    vi.mocked(useNodeOutputStore().getNodeImageSources).mockReturnValue([
+      { originalUrl: 'http://video/1.mp4', previewUrl: 'http://video/1.mp4' }
     ])
     const node = createDOMWidgetNode({
       size: [400, 400],
@@ -108,8 +108,11 @@ describe('canvas node media failure telemetry', () => {
   const flush = () => vi.advanceTimersByTimeAsync(1)
 
   it('reports one failure per url after retries are spent, not one per attempt', async () => {
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      '/api/view?filename=gone.png&type=output'
+    vi.mocked(useNodeOutputStore().getNodeImageSources).mockReturnValue([
+      {
+        originalUrl: '/api/view?filename=gone.png&type=output',
+        previewUrl: '/api/view?filename=gone.png&type=output'
+      }
     ])
     const created = stubImages()
     const node = createDOMWidgetNode({
@@ -138,8 +141,11 @@ describe('canvas node media failure telemetry', () => {
   })
 
   it('distinguishes a stalled load from a rejected one', async () => {
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      '/api/view?filename=slow.png&type=output'
+    vi.mocked(useNodeOutputStore().getNodeImageSources).mockReturnValue([
+      {
+        originalUrl: '/api/view?filename=slow.png&type=output',
+        previewUrl: '/api/view?filename=slow.png&type=output'
+      }
     ])
     stubImages()
     const node = createDOMWidgetNode({
@@ -156,9 +162,12 @@ describe('canvas node media failure telemetry', () => {
     )
   })
 
-  it('stays silent when the image loads', async () => {
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-      '/api/view?filename=ok.png&type=output'
+  it('loads a preview while retaining its original file without reporting a failure', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageSources).mockReturnValue([
+      {
+        originalUrl: '/api/view?filename=ok.exr&type=output',
+        previewUrl: '/api/assets/p1/content?disposition=inline'
+      }
     ])
     const created = stubImages()
     const node = createDOMWidgetNode({
@@ -172,6 +181,12 @@ describe('canvas node media failure telemetry', () => {
     created[0].onload?.(new Event('load'))
     await flush()
 
+    expect(node.imgs?.[0]?.src).toContain(
+      '/api/assets/p1/content?disposition=inline'
+    )
+    expect(node.imgs?.[0]?.dataset.fileUrl).toBe(
+      '/api/view?filename=ok.exr&type=output'
+    )
     expect(useTelemetry()?.trackImageLoadFailed).not.toHaveBeenCalled()
   })
 })

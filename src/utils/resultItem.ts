@@ -1,7 +1,6 @@
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 export interface AugmentedResultItem extends ResultItem {
   filename: string
@@ -42,9 +41,6 @@ export function isVideoResult(item: AugmentedResultItem): boolean {
     isVideoBySuffix(item) ||
     (isVideoByType && !isImageBySuffix(item) && !isAudioBySuffix(item))
   )
-}
-export function isHdrResult(item: AugmentedResultItem): boolean {
-  return isHdrImageFilename(item.filename)
 }
 
 export function isImageResult(item: AugmentedResultItem): boolean {

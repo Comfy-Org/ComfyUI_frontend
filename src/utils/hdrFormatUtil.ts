@@ -27,14 +27,6 @@ export function isHdrImageUrl(url: string | undefined): boolean {
   return isHdrImageFilename(getImageFilenameFromUrl(url))
 }
 
-export function getHdrPreviewUrl(url: string | undefined): string | undefined {
-  const previewId =
-    url &&
-    isHdrImageUrl(url) &&
-    new URL(url, window.location.origin).searchParams.get('preview_id')
-  return previewId ? hdrPreviewAssetUrl(previewId) : undefined
-}
-
 export function fullResolutionSrc(img: HTMLImageElement): string {
   return img.dataset.fullSrc ?? img.src
 }

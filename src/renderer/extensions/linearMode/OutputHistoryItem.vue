@@ -6,7 +6,7 @@ import {
   mediaTypes
 } from '@/renderer/extensions/linearMode/mediaTypes'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import { resultItemUrl } from '@/utils/mediaResource'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'

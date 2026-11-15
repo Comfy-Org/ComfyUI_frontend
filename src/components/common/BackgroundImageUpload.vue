@@ -47,7 +47,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import { appendCloudResParam } from '@/utils/mediaResource'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'

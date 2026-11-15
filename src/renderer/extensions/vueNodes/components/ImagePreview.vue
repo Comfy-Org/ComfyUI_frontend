@@ -34,7 +34,9 @@
             decoding="async"
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
-            @error="failedHdrPreviews[index] = isHdrResult(items[index])"
+            @error="
+              failedHdrPreviews[index] = !mediaSources[index].canEditPixels
+            "
           />
         </div>
         <div
@@ -291,11 +293,9 @@ import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagn
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { isHdrResult } from '@/utils/resultItem'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
+import { resolveMediaSources, resultItemUrl } from '@/utils/mediaResource'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -347,8 +347,11 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   { immediate: false }
 )
 
+const mediaSources = computed(() =>
+  items.map((item) => resolveMediaSources(item))
+)
 const displayUrls = computed(() =>
-  items.map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+  mediaSources.value.map((media) => media.displayUrl)
 )
 const imageKeys = computed(() =>
   items.map(
@@ -356,9 +359,11 @@ const imageKeys = computed(() =>
   )
 )
 const gridUrls = computed(() =>
-  items.map((item) => getGridThumbnailUrl(resultItemPreviewUrl(item)))
+  mediaSources.value.map((media) => media.thumbnailUrl)
 )
-const isHdr = computed(() => isHdrResult(items[currentIndex.value]))
+const isHdr = computed(
+  () => !mediaSources.value[currentIndex.value]?.canEditPixels
+)
 
 const currentImageUrl = computed(
   () => displayUrls.value[currentIndex.value] ?? ''
@@ -399,14 +404,14 @@ const preloadUrls = computed(() => {
   const count = items.length
   const candidates =
     viewMode.value === 'grid'
-      ? items
+      ? mediaSources.value
       : [
-          items[(currentIndex.value + 1) % count],
-          items[(currentIndex.value - 1 + count) % count]
+          mediaSources.value[(currentIndex.value + 1) % count],
+          mediaSources.value[(currentIndex.value - 1 + count) % count]
         ]
   return candidates
-    .filter((item) => !isHdrResult(item))
-    .map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+    .filter((media) => media.canEditPixels)
+    .map((media) => media.displayUrl)
 })
 watch(
   preloadUrls,

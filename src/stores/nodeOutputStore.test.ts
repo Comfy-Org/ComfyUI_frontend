@@ -14,7 +14,7 @@ import {
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import * as graphTraversalUtil from '@/utils/graphTraversalUtil'
 import * as litegraphUtil from '@/utils/litegraphUtil'
-import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
+import { resolveMediaSources } from '@/utils/mediaResource'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isAnimatedOutput: vi.fn(),
@@ -179,7 +179,7 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(store.getNodeImageUrlsByExecutionId(executionId, node)).toEqual([])
   })
 
-  it('carries preview_id on the view URL', () => {
+  it('resolves stored previews without losing the original file identity', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 1 })
 
@@ -190,8 +190,12 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
 
     const [url] = store.getNodeImageUrls(node) ?? []
     const viewUrl = new URL(url, window.location.origin)
-    expect(viewUrl.pathname).toBe('/api/view')
-    expect(viewUrl.searchParams.get('preview_id')).toBe('preview-1')
+    expect(viewUrl.pathname).toBe('/api/assets/preview-1/content')
+    const [source] = store.getNodeImageSources(node)
+    expect(source.previewUrl).toBe(url)
+    const fileUrl = new URL(source.originalUrl, window.location.origin)
+    expect(fileUrl.pathname).toBe('/api/view')
+    expect(fileUrl.searchParams.get('filename')).toBe('render.exr')
   })
 
   it('owns preview arrays after setting them', () => {
@@ -1040,8 +1044,84 @@ describe('nodeOutputStore image url cache busting', () => {
       expect(store.getNodeOutputItems(node)).toEqual([
         expect.objectContaining({ url, previewUrl: 'blob:preview-image' })
       ])
+      expect(store.getNodeImageUrls(node)).toEqual(['blob:preview-image'])
+      expect(
+        store.getNodeImageUrlsByExecutionId(
+          createNodeExecutionId([node.id]),
+          node
+        )
+      ).toEqual(['blob:preview-image'])
     }
   )
+
+  it.for(['blob:original-image', 'https://example.com/original.png'])(
+    'uses the supplied image URL %s when no preview is supplied',
+    (url) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 7 })
+      const image = { filename: 'original.png', url }
+      store.nodeOutputs['7'] = { images: [image] }
+
+      expect(store.getNodeOutputItems(node)).toEqual([
+        expect.objectContaining({ url, previewUrl: url })
+      ])
+      expect(store.getNodeImageUrls(node)).toEqual([url])
+      store.setNodePreviewsByNodeId(node.id, ['blob:live-preview'])
+      expect(store.getNodeImageUrls(node)).toEqual(['blob:live-preview'])
+    }
+  )
+
+  it.for([
+    { comfyClass: 'PreviewImage', filename: 'render.png' },
+    { comfyClass: 'LoadImageOutput', filename: 'render.png [output]' }
+  ])(
+    'resolves annotated filenames for $comfyClass',
+    ({ comfyClass, filename }) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 7, comfyClass })
+      store.nodeOutputs['7'] = {
+        images: [{ filename: 'render.png [output]' }]
+      }
+
+      const [item] = store.getNodeOutputItems(node)
+      const [url] = store.getNodeImageUrls(node) ?? []
+
+      expect(item).toMatchObject({ filename, type: 'output' })
+      expect(
+        new URL(url, window.location.origin).searchParams.get('filename')
+      ).toBe(filename)
+    }
+  )
+
+  it('preserves extension view parameters without frontend item metadata', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+    const image = {
+      filename: 'original.png [temp]',
+      subfolder: 'nested folder',
+      channel: 'alpha',
+      frame: 3
+    }
+    store.nodeOutputs['7'] = { images: [image] }
+    vi.mocked(app.getPreviewFormatParam).mockReturnValue('&preview=webp;75')
+
+    const [item] = store.getNodeOutputItems(node)
+    const preview = new URL(item.previewUrl, window.location.origin)
+    const original = new URL(item.url, window.location.origin)
+
+    expect(Object.fromEntries(preview.searchParams)).toEqual({
+      filename: 'original.png',
+      subfolder: 'nested folder',
+      type: 'temp',
+      channel: 'alpha',
+      frame: '3',
+      preview: 'webp;75',
+      rand: '0'
+    })
+    expect(original.searchParams.get('channel')).toBe('alpha')
+    expect(original.searchParams.has('preview')).toBe(false)
+    expect(store.getNodeImageUrls(node)).toEqual([item.previewUrl])
+  })
 
   it.for([
     { bucket: 'video', filename: 'movie.webm', url: 'blob:movie' },
@@ -1076,13 +1156,15 @@ describe('nodeOutputStore image url cache busting', () => {
     const afterReload = store.getNodeImageUrls(node)
     const afterItems = store.getNodeOutputItems(node)
 
+    expect(first).toEqual(firstItems.map((item) => item.previewUrl))
+    expect(afterReload).toEqual(afterItems.map((item) => item.previewUrl))
     expect(again).toEqual(first)
     expect(afterReload).not.toEqual(first)
     expect(againItems).toEqual(firstItems)
     expect(
       firstItems.map((item) =>
         new URL(
-          resultItemPreviewUrl(item),
+          resolveMediaSources(item).previewUrl,
           window.location.origin
         ).searchParams.get('rand')
       )
@@ -1090,15 +1172,15 @@ describe('nodeOutputStore image url cache busting', () => {
     expect(
       afterItems.map((item) =>
         new URL(
-          resultItemPreviewUrl(item),
+          resolveMediaSources(item).previewUrl,
           window.location.origin
         ).searchParams.get('rand')
       )
     ).toEqual(['1'])
     expect(
-      afterItems.map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+      afterItems.map((item) => resolveMediaSources(item).displayUrl)
     ).not.toEqual(
-      firstItems.map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+      firstItems.map((item) => resolveMediaSources(item).displayUrl)
     )
   })
 })
@@ -1212,14 +1294,13 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 
     store.setNodeOutputs(node, 'other.exr [output]')
 
-    const previewUrl = new URL(
-      store.getNodeImageUrls(node)?.[0] ?? '',
-      window.location.origin
-    )
+    const [source] = store.getNodeImageSources(node)
+    const originalUrl = new URL(source.originalUrl, window.location.origin)
     expect(store.nodeOutputs['5']?.images).toHaveLength(1)
     expect(store.nodeOutputs['5']?.images?.[0]?.preview_id).toBeUndefined()
-    expect(previewUrl.searchParams.get('filename')).toBe('other.exr')
-    expect(previewUrl.searchParams.get('type')).toBe('output')
+    expect(source.previewUrl).toBe('')
+    expect(originalUrl.searchParams.get('filename')).toBe('other.exr')
+    expect(originalUrl.searchParams.get('type')).toBe('output')
   })
 
   it('should skip empty array of filenames after createOutputs', () => {

@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { appendCloudResParam } from './cloudPreviewUtil'
+import { appendCloudResParam } from './mediaResource'
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
-vi.mock(import('./types'), () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }

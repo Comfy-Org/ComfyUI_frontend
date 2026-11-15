@@ -27,10 +27,10 @@ import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import {
-  resultItemPreviewUrl,
+  resolveMediaSources,
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
-} from '@/utils/resultItemUrl'
+} from '@/utils/mediaResource'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
@@ -561,7 +561,7 @@ describe('cloud auth requests with unified_web_session off', () => {
 
       expect([
         resultItemUrl(MEDIA_ITEM),
-        resultItemPreviewUrl(MEDIA_ITEM),
+        resolveMediaSources(MEDIA_ITEM).previewUrl,
         resultItemVhsAdvancedPreviewUrl(MEDIA_ITEM),
         api.apiURL('/vhs/viewaudio?filename=a.wav'),
         api.apiURL('/assets/asset-1/content?disposition=inline')
