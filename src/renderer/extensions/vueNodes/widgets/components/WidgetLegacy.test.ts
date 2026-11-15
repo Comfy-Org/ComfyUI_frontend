@@ -308,4 +308,75 @@ describe('WidgetLegacy pointer events', () => {
 
     expect(mouse.mock.calls.map(([, pos]) => pos)).toEqual(expectedPositions)
   })
+
+  it('applies the panel layout during pointer events and restores the graph layout after', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Legacy')
+    node.pos = [100, 200]
+    const layouts: Pick<IBaseWidget, 'y' | 'last_y' | 'width'>[] = []
+    const widget = fromPartial<IBaseWidget>({
+      name: 'toggle',
+      type: 'custom',
+      value: undefined,
+      y: 0,
+      options: {},
+      draw: () => {}
+    })
+    widget.mouse = () => {
+      layouts.push({ y: widget.y, last_y: widget.last_y, width: widget.width })
+      return true
+    }
+    node.addCustomWidget(widget)
+    graph.add(node)
+    const canvasElement = document.createElement('canvas')
+    canvasElement.getContext = vi
+      .fn()
+      .mockReturnValue(createMockCanvasRenderingContext2D())
+    useCanvasStore().canvas = new LGraphCanvas(canvasElement, graph, {
+      skip_render: true,
+      skip_events: true
+    })
+    await nextTick()
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(639)
+
+    render(WidgetLegacy, {
+      props: {
+        nodeId: node.id,
+        widget: { name: 'toggle', type: 'custom', value: undefined }
+      }
+    })
+    const graphLayout = { y: 42, last_y: 42, width: undefined }
+    Object.assign(widget, graphLayout)
+    const target = screen.getByTestId('legacy-widget-canvas')
+    const expectGraphLayout = () =>
+      expect({
+        y: widget.y,
+        last_y: widget.last_y,
+        width: widget.width
+      }).toEqual(graphLayout)
+
+    await userEvent.pointer({
+      keys: '[MouseLeft>]',
+      target,
+      coords: { clientX: 28, clientY: 11, offsetX: 28, offsetY: 11 }
+    })
+    expectGraphLayout()
+    await userEvent.pointer({
+      target,
+      coords: { clientX: 90, clientY: 11, offsetX: 90, offsetY: 11 }
+    })
+    expectGraphLayout()
+    await userEvent.pointer({
+      keys: '[/MouseLeft]',
+      target,
+      coords: { clientX: 90, clientY: 11, offsetX: 90, offsetY: 11 }
+    })
+    expectGraphLayout()
+
+    expect(layouts.length).toBeGreaterThanOrEqual(2)
+    for (const layout of layouts) {
+      expect(layout).toEqual({ y: 0, last_y: 0, width: 639 })
+    }
+  })
 })

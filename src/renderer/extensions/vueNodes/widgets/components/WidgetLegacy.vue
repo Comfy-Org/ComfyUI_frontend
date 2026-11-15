@@ -42,6 +42,7 @@ function findLegacyWidget():
 }
 
 function bindWidget() {
+  pointer?.reset()
   if (widgetInstance) widgetInstance.triggerDraw = () => {}
 
   const resolved = findLegacyWidget()
@@ -92,14 +93,6 @@ function getWidgetHeight(
   )
 }
 
-/**
- * Runs `fn` with the widget laid out for this component's own canvas.
- *
- * The widget instance is shared with the litegraph canvas. Outside Vue nodes
- * mode the graph canvas owns its layout, so the previous values are put back
- * afterwards. Otherwise a legacy widget shown in the properties panel keeps
- * the panel's width and is drawn at that width on its node.
- */
 function withLocalLayout<T>(
   widget: IBaseWidget,
   width: number,
