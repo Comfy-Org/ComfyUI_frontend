@@ -215,7 +215,7 @@ const layerClassRestriction = {
 
 const nestedHasClassRestriction = {
   pattern:
-    '(?:^|:)(?:not-)?group-(?:not-)?has-|(?:^|:)not-in-(?:not-)?has-|(?:^|:)(?:not-)?has-.+:\\*{1,2}:|(?:^|:)(?:not-)?group-\\[[^\\]]*:has\\(|(?:^|:)not-in-\\[[^\\]]*:has\\(',
+    '(?:^|:)(?:not-)?group-(?:not-)?has-|(?:^|:)not-in-(?:not-)?has-|(?:^|:)(?:not-)?has-.+:\\*{1,2}:|(?:^|:)(?:not-)?group-\\[.*:has\\(|(?:^|:)not-in-\\[.*:has\\(',
   message:
     'This compiles to :has() inside :is() or :not() ahead of a descendant combinator, which makes Chrome restyle the whole document on any DOM insertion. Use an arbitrary variant such as [.group:has(:focus-visible)_&]: instead.'
 }

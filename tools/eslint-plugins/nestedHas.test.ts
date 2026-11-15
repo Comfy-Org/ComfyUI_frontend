@@ -21,8 +21,10 @@ describe('nested :has() utilities', () => {
     'group-not-has-checked:flex',
     'md:group-has-[.subbutton:hover]:flex',
     'group-[:has(.subbutton)]:flex',
+    'group-[&[data-state=open]:has(button)]:flex',
     'not-in-has-checked:flex',
     'not-in-[.group:has(.subbutton)]:flex',
+    'not-in-[[data-state=open]:has(button)]:flex',
     'has-[>button]:*:pl-2',
     'has-checked:**:pl-2'
   ])('rejects %s', { timeout: 15000 }, async (className) => {
