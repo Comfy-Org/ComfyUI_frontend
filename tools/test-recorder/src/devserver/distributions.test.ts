@@ -38,6 +38,19 @@ describe('normalizeBackendUrl', () => {
       expect(normalizeBackendUrl(input).ok).toBe(false)
     }
   )
+
+  it.for([
+    'https://user:pass@agent.comfy.org',
+    'https://agent.comfy.org/?tenant=acme',
+    'https://agent.comfy.org/#login'
+  ])('rejects %s', (input) => {
+    const result = normalizeBackendUrl(input)
+
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.reason).toMatch(/credentials|query string/)
+    }
+  })
 })
 
 describe('customDistribution', () => {
