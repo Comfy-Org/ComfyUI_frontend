@@ -10,9 +10,9 @@ export function useRefreshBillingOnReturn(): void {
   if (isCloud) return
   const billing = useBillingContext()
   onScopeDispose(
-    registerRefreshOnReturn(async () => {
+    registerRefreshOnReturn(async (returned) => {
       if (!billing.isInitialized.value) return
-      await refreshBillingAccount()
+      await refreshBillingAccount(returned)
     })
   )
 }
