@@ -47,7 +47,8 @@ describe('useTransformState', () => {
     it('should generate correct initial transform style', () => {
       const { transformStyle } = transformState
       expect(transformStyle.value).toEqual({
-        transform: 'scale3d(1, 1, 1) translate3d(0px, 0px, 0)',
+        translate: '0px 0px',
+        scale: '1',
         transformOrigin: '0 0'
       })
     })
@@ -69,7 +70,7 @@ describe('useTransformState', () => {
       expect(camera.z).toBe(2)
     })
 
-    it('should update transform style after sync', () => {
+    it('should preserve the original screen-space mapping in transform styles', () => {
       const { syncWithCanvas, transformStyle } = transformState
       const mockCanvas = createMockCanvasContext()
 
@@ -79,7 +80,24 @@ describe('useTransformState', () => {
       syncWithCanvas(mockCanvas as LGraphCanvas)
 
       expect(transformStyle.value).toEqual({
-        transform: 'scale3d(0.5, 0.5, 0.5) translate3d(150px, 75px, 0)',
+        translate: '75px 37.5px',
+        scale: '0.5',
+        transformOrigin: '0 0'
+      })
+    })
+
+    it('should scale negative pan offsets without changing their direction', () => {
+      const { syncWithCanvas, transformStyle } = transformState
+      const mockCanvas = createMockCanvasContext()
+
+      mockCanvas.ds.offset = [-23, 41]
+      mockCanvas.ds.scale = 2
+
+      syncWithCanvas(mockCanvas as LGraphCanvas)
+
+      expect(transformStyle.value).toEqual({
+        translate: '-46px 82px',
+        scale: '2',
         transformOrigin: '0 0'
       })
     })
