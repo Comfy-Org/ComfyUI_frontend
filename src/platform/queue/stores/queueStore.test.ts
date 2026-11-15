@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 
 import type { JobListItem } from '@comfyorg/api-client/jobs/jobTypes'
 import type { TaskOutput } from '@comfyorg/api-client/executionTypes'
@@ -945,6 +946,39 @@ describe('useQueueStore', () => {
 
       expect(store.historyTasks).toHaveLength(1)
       expect(store.historyTasks[0].jobId).toBe('hist-1')
+    })
+
+    it('preserves history on HTTP failure and accepts a later empty snapshot', async () => {
+      const client = new ComfyApi({
+        isCloud: false,
+        featureFlagOverride: () => undefined,
+        onFreeMemory: () => {}
+      })
+      vi.spyOn(client, 'fetchApi')
+        .mockResolvedValueOnce(new Response(null, { status: 503 }))
+        .mockResolvedValueOnce(
+          Response.json({
+            jobs: [],
+            pagination: { total: 0, offset: 0, limit: 64, has_more: false }
+          })
+        )
+      vi.mocked(api.getHistory).mockImplementation(
+        client.getHistory.bind(client)
+      )
+      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      store.historyTasks = [new TaskItemImpl(createHistoryJob(3, 'saved-job'))]
+
+      await store.update()
+
+      expect(store.historyTasks.map((task) => task.jobId)).toEqual([
+        'saved-job'
+      ])
+      expect(store.hasFetchedHistorySnapshot).toBe(false)
+
+      await store.update()
+
+      expect(store.historyTasks).toEqual([])
+      expect(store.hasFetchedHistorySnapshot).toBe(true)
     })
 
     it('still updates queue when only the history fetch fails', async () => {

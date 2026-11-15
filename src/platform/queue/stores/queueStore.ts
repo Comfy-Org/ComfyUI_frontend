@@ -55,7 +55,7 @@ export const useQueueStore = defineStore('queue', () => {
     try {
       const [queueResult, historyResult] = await Promise.allSettled([
         api.getQueue({ throwOnError: true }),
-        api.getHistory(maxHistoryItems.value)
+        api.getHistory(maxHistoryItems.value, { throwOnError: true })
       ])
       if (queueResult.status === 'fulfilled') {
         const queue = queueResult.value
