@@ -59,6 +59,76 @@ describe('credential-shaped values', () => {
   })
 })
 
+describe('api-key formats', () => {
+  // fixtures assemble tokens at runtime: literals shaped like real provider
+  // keys trip GitHub push protection, and the pattern only needs the prefix
+  // plus enough filler characters to satisfy its length requirement
+  const filler = (chars: string, n: number) => chars.repeat(n).slice(0, n)
+
+  it.for([
+    [
+      'OpenAI sk-proj-',
+      () => `const key = "sk-proj-${filler('Ab1', 48)}"`,
+      () => `sk-proj-${filler('Ab1', 48)}`
+    ],
+    [
+      'Anthropic sk-ant-',
+      () => `const key = "sk-ant-api03-${filler('Ab1', 48)}"`,
+      () => `sk-ant-api03-${filler('Ab1', 48)}`
+    ],
+    [
+      'GitHub ghp_',
+      () => `const token = 'ghp_${filler('Ab1', 36)}'`,
+      () => `ghp_${filler('Ab1', 36)}`
+    ],
+    [
+      'GitHub fine-grained',
+      () => `const token = 'github_pat_${filler('Ab1', 40)}'`,
+      () => `github_pat_${filler('Ab1', 40)}`
+    ],
+    [
+      'GitLab glpat-',
+      () => `const token = 'glpat-${filler('Ab1', 20)}'`,
+      () => `glpat-${filler('Ab1', 20)}`
+    ],
+    [
+      'AWS AKIA',
+      () => `await page.getByLabel('AWS key').fill('AKIA${filler('AB1', 16)}')`,
+      () => `AKIA${filler('AB1', 16)}`
+    ],
+    [
+      'Slack xoxb-',
+      () => `const token = 'xoxb-123456789012-${filler('Ab1', 16)}'`,
+      () => `xoxb-123456789012-${filler('Ab1', 16)}`
+    ],
+    [
+      'Google AIza',
+      () => `const token = 'AIza${filler('Ab1', 35)}'`,
+      () => `AIza${filler('Ab1', 35)}`
+    ],
+    [
+      'Shopify shpat_',
+      () => `const token = 'shpat_${filler('Ab1', 32)}'`,
+      () => `shpat_${filler('Ab1', 32)}`
+    ]
+  ] as const)('redacts the %sformat', ([, makeCode, makeSecret]) => {
+    const secret = makeSecret()
+    const result = scrubSecrets(makeCode())
+
+    expect(result.code).not.toContain(secret)
+    expect(result.code).toContain('[REDACTED]')
+    expect(result.findings).toEqual([
+      'Redacted a credential-shaped token (line 1)'
+    ])
+  })
+
+  it('leaves hyphenated identifiers that only start with sk- alone', () => {
+    const code = "const model = 'sk-learn-gradient-boosting-config'"
+
+    expect(scrubSecrets(code)).toEqual({ code, findings: [] })
+  })
+})
+
 describe('result metadata', () => {
   it('reports input line numbers', () => {
     const code = [
