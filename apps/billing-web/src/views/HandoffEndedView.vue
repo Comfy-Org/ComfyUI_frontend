@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onScopeDispose } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
@@ -9,7 +9,12 @@ import { supportLinkWithCode } from '@/checkout/payVerdict'
 import EndingCodeCard from '@/components/fullPage/EndingCodeCard.vue'
 import EndingFrame from '@/components/fullPage/EndingFrame.vue'
 import type { HandoffEnding } from '@/handoff/handoffTab'
-import { handoffTab } from '@/handoff/handoffTab'
+import {
+  followPaymentOutcome,
+  handoffTab,
+  sessionTabStorage
+} from '@/handoff/handoffTab'
+import { readPaymentOutcome } from '@/session/billingWebClient'
 
 interface EndingView {
   readonly copy: string
@@ -55,11 +60,19 @@ const VIEW: Readonly<Record<HandoffEnding, EndingView>> = {
     copy: 'checkout.fullPage.ending.unconfirmed',
     icon: CLOCK,
     closeLine: CLOSE_TAB,
+    code: true,
     support: true
   }
 }
 
 const { t } = useI18n()
+
+onScopeDispose(
+  followPaymentOutcome({
+    storage: sessionTabStorage,
+    readOutcome: readPaymentOutcome
+  })
+)
 
 const ended = computed(() =>
   handoffTab.value?.kind === 'ended' ? handoffTab.value : undefined

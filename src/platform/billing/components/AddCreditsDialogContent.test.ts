@@ -58,6 +58,7 @@ const hoisted = vi.hoisted(() => ({
   balanceIncreased: undefined as BalanceIncreased,
   issueHandoff: vi.fn<typeof issueLocalBillingHandoff>(),
   handoffTabs: [] as (BillingTab | null)[],
+  openPlatformBilling: vi.fn<() => Promise<void>>(async () => undefined),
   reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined)
 }))
 
@@ -105,7 +106,7 @@ vi.mock(
   () => ({
     useAutoTopUpSetupOffer: () => ({
       setupUrl: hoisted.setupUrl,
-      track: vi.fn(),
+      open: vi.fn(),
       trackDeclined: vi.fn()
     })
   })
@@ -150,6 +151,7 @@ vi.mock(
 )
 vi.mock(import('@/platform/billing/localBillingHandoff'), () => ({
   issueLocalBillingHandoff: hoisted.issueHandoff,
+  openPlatformBillingHandoff: hoisted.openPlatformBilling,
   reserveBillingHandoffTab: () => hoisted.handoffTabs.shift() ?? null
 }))
 
@@ -325,7 +327,7 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
     expect(screen.queryByTestId('add-credits-auto-top-up-on')).toBeNull()
   })
 
-  it('drops the shown Set up link once local billing opens through a handoff', async () => {
+  it('turns the shown Set up link into a button that opens Platform billing through a handoff once local billing uses one', async () => {
     onTestFinished(() => setLocalBillingWebEnabled(false))
     hoisted.setupUrl.mockResolvedValue(
       'https://platform.test/profile/billing?auto_top_up=setup'
@@ -340,6 +342,8 @@ describe('AddCreditsDialogContent auto top-up with the purchase', () => {
 
     expect(failed).toBeVisible()
     expect(screen.queryByRole('link', { name: 'Set up' })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Set up' }))
+    expect(hoisted.openPlatformBilling).toHaveBeenCalledOnce()
   })
 
   it('stops reading a pending activation once the dialog unmounts', async () => {

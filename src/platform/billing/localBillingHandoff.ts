@@ -7,6 +7,7 @@ import {
 import { useTelemetry } from '@comfyorg/telemetry'
 import { watch } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { i18n, t } from '@/i18n'
@@ -24,10 +25,11 @@ import { useAuthStore } from '@/stores/authStore'
 
 const ISSUE_TIMEOUT_MS = 15_000
 
-/** The billing flow the user started, which billing-web opens after the exchange. */
+/** The billing flow billing-web opens after the exchange, or Platform's billing page, which takes none. */
 export type BillingHandoffRequest =
   | { readonly intent: 'top-up'; readonly amountCents: number }
   | { readonly intent: 'subscription' }
+  | { readonly receiver: 'platform' }
 
 type HandoffIssue =
   | { readonly kind: 'issued'; readonly entryUrl: string }
@@ -67,9 +69,10 @@ function issueBody(
 ): BillingHandoffCreateRequest {
   return {
     workspace_id: workspaceId,
-    receiver: 'billing_web',
     surface: 'local_web',
-    intent: request.intent,
+    ...('receiver' in request
+      ? { receiver: request.receiver }
+      : { receiver: 'billing_web', intent: request.intent }),
     ...('amountCents' in request ? { amount_cents: request.amountCents } : {}),
     client_version: __COMFYUI_FRONTEND_VERSION__.slice(0, 64)
   }
@@ -165,12 +168,15 @@ async function issueThroughDesktop(
   workspaceId: string,
   request: BillingHandoffRequest
 ): Promise<HandoffIssue> {
-  const answer = await issueDesktopHostBillingHandoff(
-    workspaceId,
-    'billing_web',
-    request.intent,
-    'amountCents' in request ? request.amountCents : undefined
-  )
+  const answer =
+    'receiver' in request
+      ? await issueDesktopHostBillingHandoff(workspaceId, request.receiver)
+      : await issueDesktopHostBillingHandoff(
+          workspaceId,
+          'billing_web',
+          request.intent,
+          'amountCents' in request ? request.amountCents : undefined
+        )
   switch (answer.status) {
     case 'issued':
       return { kind: 'issued', entryUrl: answer.entryUrl }
@@ -279,7 +285,7 @@ export function reserveBillingHandoffTab(): BillingTab | null {
   })
 }
 
-/** Issues a one-time billing-web handoff for the signed-in local account, through Desktop's bridge on Desktop; the URL works once and is never shown. */
+/** Issues a one-time billing handoff for the signed-in local account, through Desktop's bridge on Desktop; the URL works once and is never shown. */
 export async function issueLocalBillingHandoff(
   request: BillingHandoffRequest,
   signal: AbortSignal
@@ -300,4 +306,21 @@ export async function issueLocalBillingHandoff(
     scopeWatch.stop()
     inFlight = false
   }
+}
+
+/** Opens Platform billing through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
+export async function openPlatformBillingHandoff(): Promise<void> {
+  if (inFlight) return
+  const tab = reserveBillingHandoffTab()
+  if (!tab) {
+    useToast().error(t('subscription.billingTabBlocked'))
+    return
+  }
+  const issued = await issueLocalBillingHandoff(
+    { receiver: 'platform' },
+    new AbortController().signal
+  )
+  if (issued.status === 'ok') return tab.navigate(issued.url)
+  tab.close()
+  useToast().error(issued.message ?? t('subscription.billingPortalUnavailable'))
 }
