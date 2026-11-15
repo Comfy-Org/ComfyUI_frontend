@@ -1,5 +1,6 @@
 import type { SpawnSyncReturns } from 'node:child_process'
 import { describe, expect, it, vi } from 'vitest'
+import type { RecordingTarget } from './template'
 
 const {
   cleanupRecordedCode,
@@ -16,7 +17,7 @@ const {
   cleanupRecordingTemplate: vi.fn(),
   ensureStorageStateDir: vi.fn(),
   generateRecordingTemplate: vi.fn(),
-  recordingTarget: vi.fn((): 'cloud' => 'cloud'),
+  recordingTarget: vi.fn((): RecordingTarget => 'cloud'),
   removeLegacyCustomStorageState: vi.fn(),
   runCommand: vi.fn((): SpawnSyncReturns<Buffer> => ({
     pid: 1,
