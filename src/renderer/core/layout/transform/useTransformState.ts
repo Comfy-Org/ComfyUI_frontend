@@ -13,6 +13,7 @@ import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
  *
  * - LiteGraph: Uses canvas coordinates with its own transform matrix
  * - Vue/DOM: Uses screen coordinates with CSS transforms
+ * - Transform sync: camera.x/y/z mirrors canvas.ds.offset/scale
  *
  * ## Solution: Transform Container Pattern
  *
@@ -20,12 +21,6 @@ import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
  * 1. Mirror LiteGraph's transform matrix to a single CSS container
  * 2. Place all Vue nodes as children with simple absolute positioning
  * 3. Achieve O(1) transform updates regardless of node count
- *
- * ## Coordinate Systems
- *
- * - **Canvas coordinates**: LiteGraph's internal coordinate system
- * - **Screen coordinates**: Browser's viewport coordinate system
- * - **Transform sync**: camera.x/y/z mirrors canvas.ds.offset/scale
  *
  * ## Performance Benefits
  *
@@ -67,15 +62,15 @@ function useTransformStateIndividual() {
     z: 1
   })
 
-  // Computed transform string for CSS
+  // Computed transform properties for CSS
   const transformStyle = computed(() => ({
     // Match LiteGraph DragAndScale.toCanvasContext():
     // ctx.scale(scale); ctx.translate(offset)
-    // CSS applies right-to-left, so "scale() translate()" -> translate first, then scale
-    // Effective mapping: screen = (canvas + offset) * scale
-    // Using the 3D versions of scale and translate can provide a smoother experience
-    // when dealing with a large number of nodes.
-    transform: `scale3d(${camera.z}, ${camera.z}, ${camera.z}) translate3d(${camera.x}px, ${camera.y}px, 0)`,
+    // The individual CSS transforms are applied in translate-then-scale order.
+    // Scale the translation as well to preserve the original screen-space mapping:
+    // screen = (canvas + offset) * scale
+    translate: `${camera.x * camera.z}px ${camera.y * camera.z}px`,
+    scale: String(camera.z),
     transformOrigin: '0 0'
   }))
 
