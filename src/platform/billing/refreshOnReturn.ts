@@ -1,6 +1,6 @@
 /**
- * Runs `refresh` on each return to this tab or window; a return during a
- * refresh in flight gets one trailing refresh. Returns how to disarm it.
+ * Runs `refresh` on each return to this tab, plus one if a return lands
+ * mid-refresh. The returned function disarms it and drops that queued one.
  */
 export function registerRefreshOnReturn(
   refresh: () => Promise<unknown>

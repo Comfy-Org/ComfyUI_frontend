@@ -1,10 +1,12 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useRefreshBillingOnReturn } from '@/platform/billing/composables/useRefreshBillingOnReturn'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -30,7 +32,8 @@ function heldRead() {
     settles[index]()
     await vi.advanceTimersByTimeAsync(0)
   }
-  return { read, settle }
+  const settleAll = () => settles.forEach((resolve) => resolve())
+  return { read, settle, settleAll }
 }
 
 function openBillingTab({ isCloud = false, isInitialized = true } = {}) {
@@ -49,7 +52,16 @@ function openBillingTab({ isCloud = false, isInitialized = true } = {}) {
   )
   const scope = effectScope()
   scope.run(useRefreshBillingOnReturn)
-  onTestFinished(() => scope.stop())
+  const finishReads = async () => {
+    account.settleAll()
+    capabilities.settleAll()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  }
+  onTestFinished(async () => {
+    scope.stop()
+    await finishReads()
+    await finishReads()
+  })
   return {
     readAccount: account.read,
     readCapabilities: capabilities.read,
@@ -66,6 +78,17 @@ describe('useRefreshBillingOnReturn', () => {
     leave()
     comeBack()
     document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(readAccount).toHaveBeenCalledExactlyOnceWith('account')
+    expect(readCapabilities).toHaveBeenCalledOnce()
+  })
+
+  it('reads once on a return when a hosted tab opener armed the same refresh', () => {
+    const { readAccount, readCapabilities } = openBillingTab()
+    onTestFinished(registerRefreshOnReturn(refreshBillingAccount))
+
+    leave()
+    comeBack()
 
     expect(readAccount).toHaveBeenCalledExactlyOnceWith('account')
     expect(readCapabilities).toHaveBeenCalledOnce()
