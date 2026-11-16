@@ -12,6 +12,13 @@ to [0076](../../adr/EXTENSIONS-NODE-API-0076-frontend-execution.md).
 
 ## Guides
 
+- [Handles and documents](./handles-and-documents.md)
+- [Reading and editing the graph](./reading-and-editing.md)
+- [Widgets](./widgets.md)
+- [Node definitions and hooks](./definitions-and-hooks.md)
+- [Events and the queue](./events-and-queue.md)
+- [Frontend execution: resolve and supply](./execution.md)
+- [Settings, storage, commands, backend and UI](./utilities.md)
 - [Converting a V2 pack](./v2-to-v4.md)
 
 ## Getting started
@@ -98,5 +105,5 @@ in these guides against the published types.
   and is safe to call twice.
 - A callback the pack gives that throws is reported, and neither the editor
   nor another pack stops.
-- A value the API returns is a frozen copy or a handle, never an editor
-  object.
+- A value the API returns is a frozen copy, a handle, or a browser value such
+  as the `Response` of `backend.fetch`; never an editor object.

@@ -1,0 +1,86 @@
+# Events and the queue
+
+Every listener returns a function that removes it.
+
+## Editor events
+
+```ts
+import { comfy } from '/comfy/api/v4.js'
+
+comfy.onNodeChanged(
+  (event) => {
+    if (event.property === 'mode')
+      console.info(event.node.id, 'is now', event.to)
+  },
+  { scope: 'root-and-subgraphs' }
+)
+comfy.onNodeMoved((event) => console.info(event.node.id, event.position))
+comfy.onNodeDragEnd(() => console.info('drag ended'))
+comfy.onSelectionChanged((nodes) => console.info(nodes.length, 'selected'))
+comfy.onViewportChanged(() => {
+  if (!comfy.isInteracting()) console.info('view moved')
+})
+```
+
+`onNodeChanged` reports title, mode, color and body color changes, however
+they were made. `to` is what the node's matching read returns after the
+change. Its scope is `'visible'`, the graph on screen, unless the options say
+`'root-and-subgraphs'`.
+
+## Execution progress
+
+```ts
+import { comfy } from '/comfy/api/v4.js'
+
+comfy.onExecutingNodeChanged((node) => {
+  console.info(node ? `running ${node.getTitle()}` : 'idle')
+})
+const nested = comfy.executionNode('12:5')
+console.info(nested?.type, comfy.executingNode()?.id)
+```
+
+## Documents and importers
+
+```ts
+import { comfy } from '/comfy/api/v4.js'
+
+comfy.onWorkflowLoaded((document) => console.info('loaded', document?.name))
+
+comfy.workflow.registerImporter({
+  id: 'MyPack.yamlWorkflow',
+  extensions: ['.mpw'],
+  maxBytes: 1_000_000,
+  parse(bytes) {
+    const text = new TextDecoder().decode(bytes)
+    return text.startsWith('{') ? { workflow: text } : undefined
+  }
+})
+```
+
+`workflow.open(data)` opens a workflow as a new document and resolves whether
+the editor loaded it.
+
+## The queue
+
+```ts
+import { comfy } from '/comfy/api/v4.js'
+
+comfy.queue.onBeforeRun(() => {
+  console.info('building a prompt')
+  return () => console.info('sent or refused')
+})
+comfy.queue.onAfterRun((event) => console.info('queued', event.promptIds))
+comfy.queue.onRejected(() => console.info('the backend refused a prompt'))
+comfy.queue.onPendingChanged((pending) => console.info(pending, 'pending'))
+
+const outputs = comfy.graph.nodesOfType('SaveImage')
+if (outputs.length > 0) {
+  const queued = await comfy.queue.run({ nodes: outputs })
+  if (!queued) console.info('not queued')
+}
+```
+
+`run` resolves `true` once its prompts are submitted, and `false` if a node it
+names is gone or the run was folded into one in progress, refused, given node
+errors or stopped before sending. A run whose every prompt is refused fires
+only `onRejected`.
