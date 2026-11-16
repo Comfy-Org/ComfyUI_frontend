@@ -5,6 +5,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   utimesSync,
   writeFileSync
 } from 'node:fs'
@@ -426,8 +427,8 @@ describe('recording template', () => {
       mkdirSync(locked)
       utimesSync(
         locked,
-        new Date(Date.now() - 40 * 86400000),
-        new Date(Date.now() - 40 * 86400000)
+        new Date(Date.now() - 39 * 86400000),
+        new Date(Date.now() - 39 * 86400000)
       )
       const active = seed('storage-state.cloud.json', 1)
 
@@ -435,6 +436,24 @@ describe('recording template', () => {
 
       expect(existsSync(stale)).toBe(false)
       expect(existsSync(locked)).toBe(true)
+      expect(existsSync(active)).toBe(true)
+    })
+
+    it('skips a candidate whose metadata cannot be read and keeps pruning the rest', (ctx) => {
+      const vanished = join(stateDir, 'storage-state.custom-vanished.json')
+      const stale = seed('storage-state.custom-abc.json', 40)
+      try {
+        symlinkSync(join(stateDir, 'removed-by-someone-else.json'), vanished)
+      } catch {
+        ctx.skip()
+        return
+      }
+      const active = seed('storage-state.cloud.json', 1)
+
+      expect(() => pruneStaleStorageStates(active)).not.toThrow()
+
+      expect(existsSync(vanished)).toBe(false)
+      expect(existsSync(stale)).toBe(false)
       expect(existsSync(active)).toBe(true)
     })
 

@@ -88,13 +88,17 @@ export function ensureStorageStateDir(storageStateFile: string): void {
 const STORAGE_STATE_KEEP = 8
 const STORAGE_STATE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000
 
-export function pruneStaleStorageStates(activeStorageStateFile: string): void {
+/** Retention pass over credential-bearing session files; returns how many candidates could not be removed. */
+export function pruneStaleStorageStates(
+  activeStorageStateFile: string
+): number {
   const dir = dirname(activeStorageStateFile)
   let entries: string[]
+  let skipped = 0
   try {
     entries = readdirSync(dir)
   } catch {
-    return
+    return 0
   }
   const candidates = entries
     .filter(
@@ -125,9 +129,10 @@ export function pruneStaleStorageStates(activeStorageStateFile: string): void {
     try {
       rmSync(path, { force: true })
     } catch {
-      // Same best-effort rule as removeLegacyCustomStorageState.
+      skipped += 1
     }
   }
+  return skipped
 }
 
 export const RECORDING_SPEC_BASENAME = '_recording-session'
