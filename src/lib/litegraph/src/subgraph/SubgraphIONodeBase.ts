@@ -18,7 +18,7 @@ import type {
 } from '@comfyorg/graph-model/interfaces'
 import type {
   PointTuple as Point,
-  Size2D as Size
+  ReadOnlyRect
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { SlotDirection } from '@comfyorg/graph-model/slotId'
 import type {
@@ -31,7 +31,15 @@ import type {
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  attachIoNodeLayout,
+  nodeGeometryBuffer,
+  nodePositionView,
+  nodeSizeView,
+  refreshNodeGeometry,
+  setNodePosition,
+  setNodeSize
+} from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { CanvasItem } from '@comfyorg/graph-model/globalEnums'
@@ -43,6 +51,14 @@ import type {
 import type { EmptySubgraphInput } from './EmptySubgraphInput'
 import type { EmptySubgraphOutput } from './EmptySubgraphOutput'
 
+/** Geometry of an IO node drawn outside the canvas, in canvas units relative to its bounding rect. */
+export interface SubgraphIORenderedLayout {
+  readonly width: number
+  readonly height: number
+  /** The hit area of each slot's port, in {@link SubgraphIONodeBase.allSlots} order. */
+  readonly ports: readonly ReadOnlyRect[]
+}
+
 export abstract class SubgraphIONodeBase<
   TSlot extends SubgraphInput | SubgraphOutput
 >
@@ -52,21 +68,35 @@ export abstract class SubgraphIONodeBase<
   static minWidth = 100
   static roundedRadius = 14 // Matches NODE_SLOT_HEIGHT * 0.7 for slot alignment
 
-  private readonly _boundingRect: Rectangle = new Rectangle()
-
   abstract readonly id: NodeId
   abstract readonly slotDirection: SlotDirection
 
-  get measured(): Size | undefined {
-    return layoutStore.contentSizeOf(this.subgraph.id, this.id)
+  /** Set by the renderer that draws this node in place of the canvas. */
+  renderedLayout: SubgraphIORenderedLayout | undefined
+
+  private fitted: Point | undefined
+
+  private get layoutRect(): Rectangle {
+    refreshNodeGeometry(this)
+    const [x, y, width, height] = nodeGeometryBuffer(this)
+    const [fittedWidth, fittedHeight] = this.fitted
+      ? this.fitSize(...this.fitted)
+      : [width, height]
+    return new Rectangle(x, y, fittedWidth, fittedHeight)
   }
 
   get boundingRect(): Rectangle {
-    const { measured } = this
-    if (!measured) return this._boundingRect
-    const [x, y, width] = this._boundingRect
-    const offsetX = this.slotDirection === 'output' ? width - measured.width : 0
-    return new Rectangle(x + offsetX, y, measured.width, measured.height)
+    const { renderedLayout, layoutRect } = this
+    if (!renderedLayout) return layoutRect
+    const [x, y, width] = layoutRect
+    const offsetX =
+      this.slotDirection === 'output' ? width - renderedLayout.width : 0
+    return new Rectangle(
+      x + offsetX,
+      y,
+      renderedLayout.width,
+      renderedLayout.height
+    )
   }
 
   get selected(): boolean {
@@ -92,19 +122,19 @@ export abstract class SubgraphIONodeBase<
   abstract readonly emptySlot: EmptySubgraphInput | EmptySubgraphOutput
 
   get pos() {
-    return this._boundingRect.pos
+    return nodePositionView(this)
   }
 
   set pos(value) {
-    this._boundingRect.pos = value
+    setNodePosition(this, value)
   }
 
   get size() {
-    return this._boundingRect.size
+    return nodeSizeView(this)
   }
 
   set size(value) {
-    this._boundingRect.size = value
+    setNodeSize(this, value)
   }
 
   protected get sideLineWidth(): number {
@@ -144,6 +174,7 @@ export abstract class SubgraphIONodeBase<
     slot: TSlot
   ): void
 
+  // fallow-ignore-next-line unused-class-member
   onPointerDown(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,
@@ -181,21 +212,18 @@ export abstract class SubgraphIONodeBase<
   containsPoint(point: Point): boolean {
     return (
       this.boundingRect.containsPoint(point) ||
-      (!!this.measured &&
-        this.allSlots.some((slot) => slot.boundingRect.containsPoint(point)))
+      this.allSlots.some((slot) => slot.boundingRect.containsPoint(point))
     )
   }
 
   get slotAnchorX(): number {
     const [x, , width] = this.boundingRect
-    const inset = this.measured
-      ? -LiteGraph.NODE_SLOT_HEIGHT / 2
-      : SubgraphIONodeBase.roundedRadius
+    const inset = SubgraphIONodeBase.roundedRadius
     return this.slotDirection === 'output' ? x + width - inset : x + inset
   }
 
   onPointerMove(e: CanvasPointerEvent): CanvasItem {
-    const containsPoint = this.boundingRect.containsXy(e.canvasX, e.canvasY)
+    const containsPoint = this.containsPoint([e.canvasX, e.canvasY])
     let underPointer = containsPoint
       ? CanvasItem.SubgraphIoNode
       : CanvasItem.Nothing
@@ -372,31 +400,35 @@ export abstract class SubgraphIONodeBase<
 
   arrange(): void {
     const { minWidth, roundedRadius } = SubgraphIONodeBase
-    const [, y] = this.boundingRect
-    const { measured } = this
-    const x = this.slotAnchorX
+    const [x, y] = this.boundingRect
+    const { renderedLayout } = this
+    const anchorSide = this.slotDirection === 'output' ? 1 : -1
 
     let maxWidth = minWidth
+    let anchorX = this.slotAnchorX
     let currentY = y + roundedRadius
 
     for (const [index, slot] of this.allSlots.entries()) {
       const [slotWidth, slotHeight] = slot.measure()
-      const center = layoutStore.getSlotOffset(
-        this.subgraph.id,
-        this.id,
-        index,
-        this.slotDirection,
-        'expanded'
-      )
-      if (center) currentY = y + center.y - slotHeight / 2
-      slot.arrange([x, currentY, slotWidth, slotHeight])
+      const port = renderedLayout?.ports[index]
+      if (port) {
+        const [portX, portY, portWidth, portHeight] = port
+        anchorX = x + portX + (portWidth + anchorSide * slotHeight) / 2
+        currentY = y + portY + (portHeight - slotHeight) / 2
+      }
+      slot.arrange([anchorX, currentY, slotWidth, slotHeight])
+      if (port) includePort(slot.boundingRect, x, y, port)
 
       currentY += slotHeight
       if (slotWidth > maxWidth) maxWidth = slotWidth
     }
 
-    if (!measured)
-      this.size = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
+    if (!renderedLayout)
+      this.fitted = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
+  }
+
+  protected fitSize(width: number, height: number): Point {
+    return [width, height]
   }
 
   draw(
@@ -409,7 +441,7 @@ export abstract class SubgraphIONodeBase<
       | SubgraphOutput,
     editorAlpha?: number
   ): void {
-    if (this.measured) return
+    if (this.renderedLayout) return
     const { lineWidth, strokeStyle, fillStyle, font, textBaseline } = ctx
     this.drawProtected(ctx, colorContext, fromSlot, editorAlpha)
     Object.assign(ctx, {
@@ -454,17 +486,33 @@ export abstract class SubgraphIONodeBase<
   }
 
   configure(data: ExportedSubgraphIONode): void {
-    this._boundingRect.set(data.bounding)
+    nodeGeometryBuffer(this).set(data.bounding)
+    attachIoNodeLayout(this)
     this.pinned = data.pinned ?? false
   }
 
   asSerialisable(): ExportedSubgraphIONode {
     return {
       id: serializeNodeId(this.id),
-      bounding: this._boundingRect.export(),
+      bounding: this.layoutRect.export(),
       pinned: this.pinned ? true : undefined
     }
   }
+}
+
+function includePort(
+  rect: Rectangle,
+  originX: number,
+  originY: number,
+  [x, y, width, height]: ReadOnlyRect
+): void {
+  const left = originX + x
+  const top = originY + y
+  rect.resizeTopLeft(Math.min(rect.left, left), Math.min(rect.top, top))
+  rect.resizeBottomRight(
+    Math.max(rect.right, left + width),
+    Math.max(rect.bottom, top + height)
+  )
 }
 
 type RegisteredSubgraphIONode = SubgraphIONodeBase<

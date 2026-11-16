@@ -34,10 +34,9 @@ disabled at the boundary, because they act on the displayed graph and cannot
 target a host or Primitive in another graph. Users locate the source to reach
 its actions.
 
-IO measurements are transient, kept per IO node, and never overwrite saved
-geometry. Resizing the input node writes its saved rectangle directly instead of
-issuing a LayoutOperation. This is an explicit exception to
-[ADR-CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md).
+IO measurements are transient and never overwrite saved geometry. IO node
+identity, geometry, and host queries follow
+[ADR-SUBGRAPH-IO-0057](SUBGRAPH-IO-0057-io-pseudo-nodes-are-queried-through-their-host.md).
 
 ## Alternatives considered
 
@@ -47,9 +46,6 @@ issuing a LayoutOperation. This is an explicit exception to
   their own heights, and forcing a row height changes their behavior.
 - **Editing interior defaults.** Defaults are shared by every host, so editing
   them breaks host isolation and promoted-widget ownership.
-- **Registering IO nodes as layout entities.** IO node IDs repeat in every
-  definition, so root-scoped layout keys would collide. This needs
-  definition-scoped layout keys and IO-aware versions of every layout consumer.
 
 ## Consequences
 
@@ -57,7 +53,8 @@ Both renderers use the existing Vue widgets at the boundary. Workflows gain no
 fields and need no migration. Editing a Primitive source affects all of its
 consumers, so the row names the source and offers a locate action.
 
-Reconnecting a disconnected input reuses its WidgetId, but the widget entity object is new, so
+Disconnecting a fanout fires every expected removal callback. Reconnecting a
+disconnected input reuses its WidgetId, but the widget entity object is new, so
 extensions that keep widget entities must resolve them again.
 
 ## References

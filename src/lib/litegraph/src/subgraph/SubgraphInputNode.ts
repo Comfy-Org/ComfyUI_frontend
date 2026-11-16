@@ -24,6 +24,7 @@ import type {
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { findFreeSlotOfType } from '@/lib/litegraph/src/utils/collections'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
@@ -50,14 +51,9 @@ export class SubgraphInputNode
     return [...this.slots, this.emptySlot]
   }
 
-  override arrange(): void {
+  protected override fitSize(width: number, height: number): Point {
     const [requestedWidth, requestedHeight] = this.size
-    super.arrange()
-    const [fittedWidth, fittedHeight] = this.size
-    this.size = [
-      Math.max(requestedWidth, fittedWidth),
-      Math.max(requestedHeight, fittedHeight)
-    ]
+    return [Math.max(requestedWidth, width), Math.max(requestedHeight, height)]
   }
 
   protected override dragNewLink(

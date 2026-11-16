@@ -8,30 +8,23 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 function reportPanel(
   node: SubgraphInputNode | SubgraphOutputNode,
   width: number,
   height: number,
-  slotCenters: number[] = []
+  portCenters: [number, number][] = []
 ) {
-  layoutStore.reportContentSize(node.subgraph.id, node.id, { width, height })
-  layoutStore.updateNodeSlotOffsets(
-    node.subgraph.id,
-    node.id,
-    slotCenters.map((y, index) => ({
-      index,
-      type: node.slotDirection,
-      position: { x: 0, y }
-    })),
-    'expanded'
-  )
+  node.renderedLayout = {
+    width,
+    height,
+    ports: portCenters.map(([x, y]) => [x - 12, y - 12, 24, 24])
+  }
 }
 
 describe('subgraph IO renderer measurements', () => {
-  it('targets the visible IO surface ahead of an interior node behind it', () => {
+  it('targets the IO node ahead of an interior node behind it', () => {
     stubCanvasGetContext()
     const graph = createTestSubgraph()
     graph.inputNode.pos = [100, 200]
@@ -44,19 +37,15 @@ describe('subgraph IO renderer measurements', () => {
     interior.pos = [100, 200]
     const event = Object.assign(new PointerEvent('pointerdown'), {
       canvasX: 150,
-      canvasY: 250,
+      canvasY: 220,
       deltaX: 0,
       deltaY: 0,
       safeOffsetX: 150,
-      safeOffsetY: 250
+      safeOffsetY: 220
     })
 
-    expect(resolvePointerTarget(canvas, graph, event, interior)).toEqual({
-      kind: 'node',
-      node: interior
-    })
-    reportPanel(graph.inputNode, 320, 400)
     graph.inputNode.arrange()
+
     expect(resolvePointerTarget(canvas, graph, event, interior)).toEqual({
       kind: 'subgraphIO',
       ioNode: graph.inputNode
@@ -71,7 +60,11 @@ describe('subgraph IO renderer measurements', () => {
     node.pos = [100, 200]
     node.size = [128, 100]
     const savedBounds = node.asSerialisable().bounding
-    reportPanel(node, 320, 400, [40, 72, 140])
+    reportPanel(node, 320, 400, [
+      [320, 40],
+      [320, 72],
+      [320, 140]
+    ])
 
     node.arrange()
 
@@ -90,7 +83,10 @@ describe('subgraph IO renderer measurements', () => {
     const node = graph.outputNode
     node.pos = [100, 200]
     node.size = [128, 100]
-    reportPanel(node, 180, 90, [30, 66])
+    reportPanel(node, 180, 90, [
+      [0, 30],
+      [0, 66]
+    ])
 
     node.arrange()
 

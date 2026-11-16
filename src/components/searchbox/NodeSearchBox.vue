@@ -173,7 +173,14 @@ const search = (query: string) => {
 }
 
 const debouncedSearch = debounce(search, 100)
-watch(currentQuery, debouncedSearch)
+watch(
+  [
+    currentQuery,
+    () => nodeDefStore.nodeSearchService,
+    () => nodeDefStore.topNodeDefs
+  ],
+  ([query]) => debouncedSearch(query)
+)
 onUnmounted(() => {
   debouncedSearch.cancel()
   debouncedTrackSearch.cancel()

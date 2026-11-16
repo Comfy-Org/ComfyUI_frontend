@@ -98,6 +98,12 @@ const title = computed(() =>
 
 const settingStore = useSettingStore()
 const { getWidgetTooltip } = useNodeTooltips('')
+const sources = computed(() =>
+  context.selected
+    ? context.sourcesFor(context.selected)
+    : new Map<string, InputValueSource>()
+)
+
 type EditableSource = Extract<InputValueSource, { kind: 'editable' }>
 
 function editorFor(source: EditableSource) {
@@ -139,7 +145,7 @@ function sourceTitleOf(source: EditableSource | undefined) {
 
 const rows = computed(() =>
   slots.value.map((port) => {
-    const source = isInput.value ? context.sources.get(port.name) : undefined
+    const source = isInput.value ? sources.value.get(port.name) : undefined
     const editable = source?.kind === 'editable' ? source : undefined
     const isAddPort = port === ioNode.emptySlot
     return {
@@ -158,11 +164,11 @@ const rows = computed(() =>
     }
   })
 )
-const hint = computed(() => {
-  if (!isInput.value) return undefined
-  if (!context.selected) return t('subgraphInputValues.enterInstanceHint')
-  return context.sources.size ? undefined : t('subgraphInputValues.noInputs')
-})
+const hint = computed(() =>
+  isInput.value && !context.selected
+    ? t('subgraphInputValues.enterInstanceHint')
+    : undefined
+)
 
 const { focusNodeInstance } = useFocusNode()
 async function locate(node: NodeState) {
@@ -253,7 +259,6 @@ function forwardUnlessOnButton(event: PointerEvent) {
 <template>
   <div
     ref="panel"
-    data-subgraph-io
     :data-testid="side.testId"
     :inert="canvasStore.isPickingNodes"
     role="group"
@@ -276,7 +281,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
   >
     <div
       data-testid="subgraph-input-body"
-      class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) pt-1 pb-3"
+      class="flex min-h-0 flex-1 flex-col gap-(--node-widget-gap) py-2"
       @contextmenu.prevent
       @focusout="captureEdits"
     >
@@ -354,7 +359,6 @@ function forwardUnlessOnButton(event: PointerEvent) {
           </div>
         </div>
         <div
-          data-port-anchor
           :data-testid="row.portTestId"
           :aria-label="row.portLabel"
           :class="
@@ -364,7 +368,11 @@ function forwardUnlessOnButton(event: PointerEvent) {
             )
           "
         >
-          <SlotConnectionDot class="shrink-0" :slot-data="row.port" />
+          <SlotConnectionDot
+            data-port-anchor
+            class="shrink-0"
+            :slot-data="row.port"
+          />
         </div>
       </div>
       <p v-if="hint" class="mx-3 my-0 text-muted-foreground">
