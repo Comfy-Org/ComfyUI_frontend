@@ -75,11 +75,11 @@ export const Queued: Story = {
 }
 
 export const Running: Story = {
-  args: { label: 'Running', progress: 64 }
+  args: { label: 'Running 64%', progress: 64 }
 }
 
 export const RunningWithQueue: Story = {
-  args: { label: 'Running', badge: 'Queued 2', progress: 64 }
+  args: { label: 'Running 64%', badge: '2 queued', progress: 64 }
 }
 
 export const ParallelCollapsed: Story = {
@@ -137,8 +137,8 @@ const recentResults: RecentResult[] = [
 /** Cloud plan full: running jobs fill the cap, the next one waits on it. */
 export const ParallelHeldByLimit: Story = {
   args: {
-    label: 'Running 3',
-    badge: 'Queued 2',
+    label: '3 running',
+    badge: '2 queued',
     panelOpen: true,
     rows: [
       ...running,
@@ -162,8 +162,8 @@ export const ParallelHeldByLimit: Story = {
 /** One job failed; the others keep their progress and keep running. */
 export const ParallelOneFailed: Story = {
   args: {
-    label: 'Running 2',
-    badge: 'Queued 1',
+    label: '2 running',
+    badge: '1 queued',
     panelOpen: true,
     rows: [
       ...running,
@@ -180,8 +180,8 @@ export const ParallelOneFailed: Story = {
 
 export const ParallelFannedOut: Story = {
   args: {
-    label: 'Running 2',
-    badge: 'Queued 2',
+    label: '2 running',
+    badge: '2 queued',
     panelOpen: true,
     rows: [...running, ...queued],
     queuedCount: 2,

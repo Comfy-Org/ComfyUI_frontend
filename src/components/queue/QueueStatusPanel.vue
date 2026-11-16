@@ -11,11 +11,11 @@
   >
     <div class="flex h-8 items-center justify-between gap-2 pr-0.5 pl-3">
       <span
-        class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
+        class="min-w-0 truncate text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
       >
         {{ t('queueStatus.activeGenerations') }}
       </span>
-      <div v-if="hasBulkActions" class="flex items-center gap-0.5">
+      <div v-if="hasBulkActions" class="flex shrink-0 items-center gap-0.5">
         <Button
           v-if="queuedCount > 0"
           variant="muted-textonly"
@@ -84,5 +84,5 @@ const activeRowCount = computed(
 )
 /** Clear queue and Cancel all only make sense with more than one job. */
 const hasBulkActions = computed(() => activeRowCount.value > 1)
-const headerButtonClass = 'h-7 px-2 font-medium'
+const headerButtonClass = 'h-7 px-1.5 font-medium'
 </script>
