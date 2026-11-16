@@ -1,5 +1,8 @@
+import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { ComfyFiles } from '@e2e/fixtures/ComfyPage'
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
 
 interface UploadResponse {
@@ -22,6 +25,21 @@ const fulfillJson = (body: UploadResponse) => ({
   contentType: 'application/json',
   body: JSON.stringify(body)
 })
+
+async function deleteUploadsAfterTest(page: Page, comfyFiles: ComfyFiles) {
+  await page.route('**/upload/image', async (route) => {
+    const response = await route.fetch()
+    const uploaded = zUploadImageResponse
+      .required()
+      .parse(await response.json())
+    comfyFiles.deleteAfterTest({
+      filename: uploaded.name,
+      subfolder: uploaded.subfolder,
+      type: uploaded.type
+    })
+    await route.fulfill({ response })
+  })
+}
 
 test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -72,9 +90,12 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
   })
 
   test('Reopening the editor after save restores the drawn mask', async ({
+    comfyPage,
+    comfyFiles,
     maskEditor
   }) => {
     const dialog = await maskEditor.openDialog()
+    await deleteUploadsAfterTest(comfyPage.page, comfyFiles)
     await maskEditor.drawStrokeAndExpectPixels(dialog)
     const savedMask = await maskEditor.getCanvasSnapshot(MASK_CANVAS_INDEX)
 
@@ -88,9 +109,12 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
   })
 
   test('Saving immediately refreshes the node preview', async ({
+    comfyPage,
+    comfyFiles,
     maskEditor
   }) => {
     const dialog = await maskEditor.openDialog()
+    await deleteUploadsAfterTest(comfyPage.page, comfyFiles)
     const originalPreview = await maskEditor.previewImage.getAttribute('src')
     await maskEditor.drawStrokeAndExpectPixels(dialog)
 
@@ -112,9 +136,11 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
 
   test('Saving preserves image colors under the mask', async ({
     comfyPage,
+    comfyFiles,
     maskEditor
   }) => {
     const dialog = await maskEditor.openDialog()
+    await deleteUploadsAfterTest(comfyPage.page, comfyFiles)
     await maskEditor.drawStrokeAndExpectPixels(dialog)
 
     await dialog.getByRole('button', { name: 'Save' }).click()
