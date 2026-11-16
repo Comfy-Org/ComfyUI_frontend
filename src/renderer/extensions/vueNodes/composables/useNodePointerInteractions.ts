@@ -36,6 +36,45 @@ interface Press {
 
 const pressCancellers = new Map<number, () => void>()
 
+/**
+ * Touch pointers currently down anywhere in the document. A second finger
+ * usually lands on the canvas rather than on the pressed node, so the node
+ * never sees it; a document-level listener is the only place that can tell a
+ * pinch has started and cancel the first finger's press (#23455).
+ */
+const activeTouchPointers = new Set<number>()
+let multiTouchGuardInstalled = false
+
+function installMultiTouchGuard() {
+  if (multiTouchGuardInstalled || typeof document === 'undefined') return
+  multiTouchGuardInstalled = true
+
+  const releaseTouch = (event: PointerEvent) => {
+    if (event.pointerType === 'touch')
+      activeTouchPointers.delete(event.pointerId)
+  }
+
+  document.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (event.pointerType !== 'touch') return
+      // A primary touch starts a fresh gesture; drop pointers whose release was lost.
+      if (event.isPrimary) activeTouchPointers.clear()
+      activeTouchPointers.add(event.pointerId)
+      if (activeTouchPointers.size < 2) return
+      for (const pointerId of activeTouchPointers)
+        pressCancellers.get(pointerId)?.()
+    },
+    { capture: true }
+  )
+  document.addEventListener('pointerup', releaseTouch, { capture: true })
+  document.addEventListener('pointercancel', releaseTouch, { capture: true })
+}
+
+function isMultiTouch(event: PointerEvent) {
+  return event.pointerType === 'touch' && activeTouchPointers.size > 1
+}
+
 export function useNodePointerInteractions(
   nodeStateRef: MaybeRefOrGetter<NodeState>
 ) {
@@ -44,6 +83,7 @@ export function useNodePointerInteractions(
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
   const { bringNodeToFront } = useNodeZIndex()
+  installMultiTouchGuard()
 
   let gesture: GestureState = idleGesture
   let press: Press | null = null
@@ -161,6 +201,8 @@ export function useNodePointerInteractions(
     }
 
     if (event.button !== 0) return
+    // A finger joining a pinch neither presses nor drags a node.
+    if (isMultiTouch(event)) return
     if (press && press.event.pointerId !== event.pointerId) return
     pressCancellers.get(event.pointerId)?.()
 

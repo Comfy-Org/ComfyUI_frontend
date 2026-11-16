@@ -503,6 +503,125 @@ describe('useNodePointerInteractions', () => {
     }
   )
 
+  describe('pinch-zoom on touch devices (#23455)', () => {
+    function touch(pointerId: number, isPrimary: boolean): PointerEventOptions {
+      return { pointerId, pointerType: 'touch', isPrimary }
+    }
+
+    function attach(node: ReturnType<typeof mountNode>) {
+      document.body.append(node.element)
+      onTestFinished(() => node.element.remove())
+      return node
+    }
+
+    function touchCanvas(
+      type: PointerEventType,
+      x: number,
+      y: number,
+      options: PointerEventOptions
+    ) {
+      document.body.dispatchEvent(pointerEvent(type, x, y, options))
+    }
+
+    it('a second finger on the canvas cancels the first finger drag', async () => {
+      const { first } = await setup()
+      const { handleDrag, endDrag, cancelDrag } = useNodeDrag()
+      const node = attach(mountNode(createNodeState({ id: first.id })))
+      node.press(10, 10, touch(11, true))
+      node.move(40, 10, touch(11, true))
+      expect(handleDrag).toHaveBeenCalledOnce()
+
+      touchCanvas('pointerdown', 400, 300, touch(12, false))
+      node.move(60, 10, touch(11, true))
+      node.release(60, 10, touch(11, true))
+      touchCanvas('pointerup', 400, 300, touch(12, false))
+
+      expect(cancelDrag).toHaveBeenCalledOnce()
+      expect(handleDrag).toHaveBeenCalledOnce()
+      expect(endDrag).not.toHaveBeenCalled()
+      expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+    })
+
+    it('a second finger cancels a press that has not started dragging yet', async () => {
+      const { canvas, first, second } = await setup()
+      const { startDrag } = useNodeDrag()
+      const node = attach(mountNode(createNodeState({ id: first.id })))
+      canvas.select(second)
+      node.press(10, 10, touch(21, true))
+
+      touchCanvas('pointerdown', 400, 300, touch(22, false))
+      node.move(10 + DRIFT + 20, 10, touch(21, true))
+      node.release(10 + DRIFT + 20, 10, touch(21, true))
+      touchCanvas('pointerup', 400, 300, touch(22, false))
+
+      expect(startDrag).not.toHaveBeenCalled()
+      expect(selectedTitles(canvas)).toEqual(['Second'])
+    })
+
+    it('a second finger landing on another node neither presses nor drags it', async () => {
+      const { first, second } = await setup()
+      const { startDrag, cancelDrag } = useNodeDrag()
+      const dragged = attach(mountNode(createNodeState({ id: first.id })))
+      const other = attach(mountNode(createNodeState({ id: second.id })))
+      dragged.press(10, 10, touch(31, true))
+      dragged.move(40, 10, touch(31, true))
+
+      other.press(310, 10, touch(32, false))
+      other.move(360, 10, touch(32, false))
+      other.release(360, 10, touch(32, false))
+      dragged.release(40, 10, touch(31, true))
+
+      expect(cancelDrag).toHaveBeenCalledOnce()
+      expect(startDrag).toHaveBeenCalledOnce()
+      expect(vi.mocked(startDrag).mock.lastCall?.[1]).toBe(first.id)
+    })
+
+    it('a single finger drags again once the pinch is over', async () => {
+      const { first } = await setup()
+      const { startDrag } = useNodeDrag()
+      const node = attach(mountNode(createNodeState({ id: first.id })))
+      node.press(10, 10, touch(41, true))
+      touchCanvas('pointerdown', 400, 300, touch(42, false))
+      node.release(10, 10, touch(41, true))
+      touchCanvas('pointerup', 400, 300, touch(42, false))
+
+      node.press(10, 10, touch(43, true))
+      node.move(10 + DRIFT + 1, 10, touch(43, true))
+
+      expect(startDrag).toHaveBeenCalledOnce()
+    })
+
+    it('a fresh primary touch recovers from a release that never arrived', async () => {
+      const { first } = await setup()
+      const { startDrag } = useNodeDrag()
+      const node = attach(mountNode(createNodeState({ id: first.id })))
+      touchCanvas('pointerdown', 400, 300, touch(51, true))
+      touchCanvas('pointerdown', 450, 300, touch(52, false))
+
+      node.press(10, 10, touch(53, true))
+      node.move(10 + DRIFT + 1, 10, touch(53, true))
+
+      expect(startDrag).toHaveBeenCalledOnce()
+    })
+
+    it('mouse and pen pointers keep the existing multi-pointer behaviour', async () => {
+      const { first } = await setup()
+      const { cancelDrag } = useNodeDrag()
+      const node = attach(mountNode(createNodeState({ id: first.id })))
+      node.press(10, 10, { pointerId: 61, pointerType: 'pen' })
+      node.move(40, 10, { pointerId: 61, pointerType: 'pen' })
+
+      touchCanvas('pointerdown', 400, 300, {
+        pointerId: 62,
+        pointerType: 'mouse',
+        isPrimary: false
+      })
+
+      expect(cancelDrag).not.toHaveBeenCalled()
+      expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+    })
+  })
+
   it('cancel while dragging cancels the drag without ending it', async () => {
     const { canvas, first } = await setup()
     const { endDrag, cancelDrag } = useNodeDrag()
