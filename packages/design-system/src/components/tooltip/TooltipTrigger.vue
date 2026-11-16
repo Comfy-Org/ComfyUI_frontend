@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import type { TooltipTriggerProps } from 'reka-ui'
 import {
   TooltipTrigger,
@@ -8,6 +9,7 @@ import {
 } from 'reka-ui'
 import { inject, onBeforeUnmount, ref, watch } from 'vue'
 
+import { appTooltipProviderDefaults } from './tooltipConfig'
 import { tooltipOpenOnClickKey } from './tooltipContext'
 
 const props = defineProps<TooltipTriggerProps>()
@@ -17,45 +19,97 @@ const providerContext = injectTooltipProviderContext()
 const openOnClick = inject(tooltipOpenOnClickKey, () => false)
 
 const hovered = ref(false)
-let buttonsHeld = false
+let interactionBlocked = false
+let touchOrigin: { x: number; y: number } | undefined
+const { start: startLongPress, stop: stopLongPress } = useTimeoutFn(
+  () => {
+    if (!touchOrigin || rootContext.disabled.value) return
+    interactionBlocked = false
+    rootContext.onOpen()
+  },
+  appTooltipProviderDefaults.delayDuration,
+  { immediate: false }
+)
 
 watch(rootContext.disabled, (disabled) => {
-  if (disabled) rootContext.onClose()
-})
-
-watch(rootContext.open, (open) => {
-  if (open && buttonsHeld) rootContext.onClose()
+  if (disabled) cancelInteraction()
 })
 
 watch(
-  () => hovered.value || rootContext.open.value,
-  (active, _, onCleanup) => {
-    if (!active) return
-    const close = () => rootContext.onClose()
-    window.addEventListener('wheel', close, { capture: true, passive: true })
-    onCleanup(() =>
-      window.removeEventListener('wheel', close, { capture: true })
-    )
-  }
+  rootContext.open,
+  (open) => {
+    if (open && interactionBlocked) rootContext.onClose()
+  },
+  { flush: 'sync' }
+)
+
+useEventListener(
+  () => (hovered.value || rootContext.open.value ? window : undefined),
+  ['pointerup', 'pointercancel', 'wheel', 'keydown'],
+  (event) => {
+    if (event instanceof KeyboardEvent) {
+      if (event.key === 'Tab') interactionBlocked = false
+      return
+    }
+    if (event.type === 'wheel' || touchOrigin) cancelInteraction()
+  },
+  { capture: true, passive: true }
 )
 
 onBeforeUnmount(() => {
   if (rootContext.open.value) providerContext.onClose()
 })
 
-function trackButtons(event: PointerEvent) {
-  buttonsHeld = event.buttons !== 0
+function cancelInteraction() {
+  interactionBlocked = true
+  touchOrigin = undefined
+  stopLongPress()
+  rootContext.onClose()
 }
 
 function openOnMouseEnter(event: PointerEvent) {
   hovered.value = true
-  trackButtons(event)
-  if (buttonsHeld || rootContext.disabled.value) return
+  interactionBlocked = event.pointerType === 'touch' || event.buttons !== 0
+  if (interactionBlocked || rootContext.disabled.value) return
+  providerContext.isOpenDelayed.value = true
   rootContext.onTriggerEnter()
 }
 
+function onPointerDown(event: PointerEvent) {
+  cancelInteraction()
+  if (event.pointerType !== 'touch' || rootContext.disabled.value) return
+  touchOrigin = { x: event.clientX, y: event.clientY }
+  startLongPress()
+}
+
+function onPointerMove(event: PointerEvent) {
+  if (touchOrigin) {
+    if (
+      Math.hypot(event.clientX - touchOrigin.x, event.clientY - touchOrigin.y) >
+      10
+    ) {
+      cancelInteraction()
+    }
+  } else if (event.buttons !== 0 || interactionBlocked) {
+    cancelInteraction()
+  }
+}
+
+function onPointerLeave() {
+  hovered.value = false
+  cancelInteraction()
+  interactionBlocked = false
+}
+
+function onKeyDown(event: KeyboardEvent) {
+  cancelInteraction()
+  if (event.key === 'Tab') interactionBlocked = false
+}
+
 function openOnClickIfEnabled() {
-  if (openOnClick() && !rootContext.disabled.value) rootContext.onOpen()
+  if (!openOnClick() || rootContext.disabled.value) return
+  interactionBlocked = false
+  rootContext.onOpen()
 }
 </script>
 
@@ -63,9 +117,12 @@ function openOnClickIfEnabled() {
   <TooltipTrigger
     v-bind="forwarded"
     @pointerenter="openOnMouseEnter"
-    @pointerleave="hovered = false"
-    @pointermove="trackButtons"
-    @pointerup="trackButtons"
+    @pointerleave="onPointerLeave"
+    @pointerdown.capture="onPointerDown"
+    @pointermove.capture="onPointerMove"
+    @keydown.capture="onKeyDown"
+    @input.capture="cancelInteraction"
+    @blur="interactionBlocked = false"
     @click="openOnClickIfEnabled"
   >
     <slot />

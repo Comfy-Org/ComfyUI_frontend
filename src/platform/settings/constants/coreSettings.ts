@@ -563,7 +563,7 @@ export const CORE_SETTINGS: SettingParams[] = [
       max: 3000,
       step: 50
     },
-    defaultValue: 500,
+    defaultValue: 1500,
     versionAdded: '1.9.0'
   },
   {

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { cloneDeep } from 'es-toolkit'
 import userEvent from '@testing-library/user-event'
 import { nextTick } from 'vue'
@@ -40,6 +40,7 @@ interface MockNode {
 interface MockCanvas {
   mouse: [number, number]
   graph_mouse: [number, number]
+  graph: { getNodeOnPos: () => MockNode | null }
   node_over: MockNode | null
   getWidgetAtCursor: () => MockWidget | null
 }
@@ -52,6 +53,7 @@ const mockIsDOMWidget = vi.hoisted(() =>
 const mockCanvas = vi.hoisted((): MockCanvas => ({
   mouse: [100, 80],
   graph_mouse: [10, 10],
+  graph: { getNodeOnPos: vi.fn(() => mockCanvas.node_over) },
   node_over: null,
   getWidgetAtCursor: vi.fn<() => MockWidget | null>()
 }))
@@ -186,6 +188,47 @@ describe('NodeTooltip', () => {
     await renderAndHoverCanvas()
 
     expect(screen.getByText('Localized description')).toBeInTheDocument()
+  })
+
+  it.for(['pointerdown', 'wheel'] as const)(
+    'cancels a pending canvas hint on %s',
+    async (event) => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      vi.mocked(useSettingStore().get).mockReturnValue(2500)
+      vi.mocked(mockIsOverNodeInput).mockReturnValue(0)
+      render(NodeTooltip)
+      const canvas = document.createElement('canvas')
+      document.body.appendChild(canvas)
+
+      await user.hover(canvas)
+      await fireEvent(canvas, new Event(event, { bubbles: true }))
+      await vi.advanceTimersByTimeAsync(3000)
+
+      expect(screen.queryByText(jsonTooltip)).not.toBeInTheDocument()
+    }
+  )
+
+  it('requires a long press for canvas hints on touch and hides them on release', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    vi.mocked(useSettingStore().get).mockReturnValue(2500)
+    vi.mocked(mockIsOverNodeInput).mockReturnValue(0)
+    vi.mocked(mockCanvas.graph.getNodeOnPos).mockReturnValue(createSam3Node())
+    mockCanvas.node_over = null
+    render(NodeTooltip)
+    const canvas = document.createElement('canvas')
+    document.body.appendChild(canvas)
+
+    await user.pointer({ keys: '[TouchA]', target: canvas })
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(screen.queryByText(jsonTooltip)).not.toBeInTheDocument()
+
+    await user.pointer({ keys: '[TouchA>]', target: canvas })
+    await vi.advanceTimersByTimeAsync(1499)
+    expect(screen.queryByText(jsonTooltip)).not.toBeInTheDocument()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(screen.getByText(jsonTooltip)).toBeVisible()
+    await user.pointer({ keys: '[/TouchA]', target: canvas })
+    expect(screen.queryByText(jsonTooltip)).not.toBeInTheDocument()
   })
 
   it('shows input slot JSON tooltips without i18n placeholder errors', async () => {

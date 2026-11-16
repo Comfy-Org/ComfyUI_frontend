@@ -11,7 +11,7 @@
         class="selection-toolbox pointer-events-auto floating-panel"
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
-        <TooltipProvider :delay-duration="1000">
+        <TooltipProvider>
           <div class="flex h-8 gap-1">
             <template v-if="hasLinkSelection">
               <ToolboxButton
