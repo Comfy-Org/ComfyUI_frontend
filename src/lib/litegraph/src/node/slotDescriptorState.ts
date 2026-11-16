@@ -40,7 +40,10 @@ export function createSlotAdapter<T extends object>(slot: T): T {
       ),
     has: (_target, key) => Reflect.has(view, key),
     ownKeys: () => Reflect.ownKeys(view),
-    deleteProperty: (_target, key) => Reflect.deleteProperty(view, key)
+    deleteProperty: (target, key) =>
+      descriptorKeys.has(key)
+        ? Reflect.set(target, key, undefined)
+        : Reflect.deleteProperty(view, key)
   })
 }
 
