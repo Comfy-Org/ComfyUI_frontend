@@ -98,7 +98,8 @@ describe('link visibility mutations', () => {
     const event = fromPartial<CanvasPointerEvent>({})
     const linkIds = [toLinkId(31), toLinkId(32)]
     const store = useLinkPresentationStore()
-    for (const linkId of linkIds) store.patch(scope, linkId, { label: 'old' })
+    store.patch(scope, linkIds[0], { label: 'old' })
+    store.patch(scope, linkIds[1], { label: 'old' })
 
     promptRenameLinkBadge(host, scope, linkIds, event)
 

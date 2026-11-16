@@ -117,18 +117,16 @@ export function toggleLinkBadgeStack(
   lastStackToggleByHost.set(host, { stackKey, timeStamp })
 }
 
-/** Undoes the toggle of a stack when the press at `timeStamp` double-clicks the press that made it. */
-export function revertLinkBadgeStackToggle(
+/** The hit area of the stack that the press at `timeStamp` expanded or collapsed. */
+export function queryLinkBadgeStackToggledAt(
   host: object,
-  stackKey: string,
-  timeStamp: number,
-  doubleClickTime: number
-): void {
+  timeStamp: number | undefined
+): Readonly<BadgeHitArea> | undefined {
   const last = lastStackToggleByHost.get(host)
-  lastStackToggleByHost.delete(host)
-  if (last?.stackKey !== stackKey) return
-  const gap = timeStamp - last.timeStamp
-  if (gap > 0 && gap < doubleClickTime) toggleLinkBadgeStack(host, stackKey)
+  if (timeStamp === undefined || last?.timeStamp !== timeStamp) return
+  return endpointsByHost
+    .get(host)
+    ?.find(({ hitArea }) => hitArea.stackKey === last.stackKey)?.hitArea
 }
 
 /** Keeps a stack expanded under the key its links get when they all take `label`. */

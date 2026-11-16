@@ -111,7 +111,6 @@ import {
   drawHiddenLinkBadges,
   queryLinkBadgeHitAtPoint,
   relabelExpandedLinkBadgeStack,
-  revertLinkBadgeStackToggle,
   toggleLinkBadgeStack
 } from './canvas/linkBadges'
 import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
@@ -2900,19 +2899,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       case 'linkBadgeStack': {
-        const { stackKey, links } = target
+        const { stackKey, links, toggledByDoubleClickedPress } = target
         pointer.onClick = () => {
           toggleLinkBadgeStack(this, stackKey, e.timeStamp)
           this.dirty_bgcanvas = true
         }
         pointer.onDoubleClick = () => {
-          revertLinkBadgeStackToggle(
-            this,
-            stackKey,
-            e.timeStamp,
-            CanvasPointer.doubleClickTime
-          )
-          this.dirty_bgcanvas = true
+          if (toggledByDoubleClickedPress) {
+            toggleLinkBadgeStack(this, stackKey)
+            this.dirty_bgcanvas = true
+          }
           promptRenameLinkBadge(
             this,
             graphScopeOf(graph),
