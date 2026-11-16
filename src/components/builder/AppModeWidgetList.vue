@@ -261,7 +261,7 @@ defineExpose({ handleDragDrop })
           :widget-ids
           :class="
             cn(
-              'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
+              'gap-y-3 rounded-lg py-1 [&_textarea]:basis-auto [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
               nodeData.hasErrors && 'ring-2 ring-destructive ring-inset'
             )
           "

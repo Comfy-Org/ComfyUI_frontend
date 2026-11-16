@@ -12,8 +12,8 @@ export function useAppModeWidgetResizing(
 
   function clearPendingHandler() {
     if (!pendingHandler) return
-    window.removeEventListener('pointerup', pendingHandler)
-    window.removeEventListener('pointercancel', pendingHandler)
+    window.removeEventListener('pointerup', pendingHandler, true)
+    window.removeEventListener('pointercancel', pendingHandler, true)
     pendingHandler = null
   }
 
@@ -31,16 +31,16 @@ export function useAppModeWidgetResizing(
 
     const startHeight = resizable.offsetHeight
     const handler = () => {
-      window.removeEventListener('pointerup', handler)
-      window.removeEventListener('pointercancel', handler)
+      window.removeEventListener('pointerup', handler, true)
+      window.removeEventListener('pointercancel', handler, true)
       pendingHandler = null
       const height = resizable.offsetHeight
       if (height === startHeight) return
       onResize(widget, { height })
     }
     pendingHandler = handler
-    window.addEventListener('pointerup', handler)
-    window.addEventListener('pointercancel', handler)
+    window.addEventListener('pointerup', handler, true)
+    window.addEventListener('pointercancel', handler, true)
   }
 
   return { onPointerDown }
