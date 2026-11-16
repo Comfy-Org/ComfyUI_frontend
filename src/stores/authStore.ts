@@ -335,6 +335,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const getFreshFirebaseIdToken = async (): Promise<string | undefined> => {
+    const user = currentUser.value
+    const minted = await user?.getIdToken(true).catch((error: unknown) => {
+      reportError(error, {
+        surface: 'auth',
+        errorType: 'auth_id_token_refresh_failed'
+      })
+      return undefined
+    })
+    if (currentUser.value?.uid !== user?.uid) return
+    return minted ?? getFirebaseIdToken()
+  }
+
   /**
    * Awaits any in-flight unified-auth login mint for the current identity.
    * The wait can outlast an account switch, so callers must treat a `true`
@@ -555,6 +568,11 @@ export const useAuthStore = defineStore('auth', () => {
   const getIdToken = preferDesktopHost(
     () => desktopHostTabToken(),
     getFirebaseIdToken
+  )
+  /** An ID token minted now; the cached one when minting fails. */
+  const getFreshIdToken = preferDesktopHost(
+    () => desktopHostTabToken(),
+    getFreshFirebaseIdToken
   )
   /** Account auth header for API requests; null when no credential is available. */
   const getAuthHeader = preferDesktopHost(
@@ -884,6 +902,7 @@ export const useAuthStore = defineStore('auth', () => {
     logout,
     createCustomer,
     getIdToken,
+    getFreshIdToken,
     loginWithGoogle,
     loginWithGithub,
     sendPasswordReset,

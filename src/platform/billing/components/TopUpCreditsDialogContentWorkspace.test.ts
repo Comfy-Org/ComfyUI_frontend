@@ -41,15 +41,16 @@ import type { CreateTopupResponse } from '@comfyorg/billing-core'
 import { billingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import type { BillingOperation } from '@/platform/billing/composables/billingOperationTestUtils'
 import {
-  autoTopUpCardState,
+  autoTopUpCard,
   loadedAutoTopUp
 } from '@/platform/billing/composables/__mocks__/useBillingAutoTopUpCard'
 import {
   autoTopUpEnabledFact,
   canManageAutoTopUpFact
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 import TopUpCreditsDialogContentWorkspace from '@/platform/billing/components/TopUpCreditsDialogContentWorkspace.vue'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
@@ -904,7 +905,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(createCheckout).toHaveBeenCalledWith(
         5000,
         window.location.href,
-        expect.any(AbortSignal)
+        expect.any(AbortSignal),
+        undefined
       )
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
       expect(
@@ -1047,7 +1049,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(createCheckout).toHaveBeenCalledWith(
           5000,
           'https://testbilling.comfy.org/return/topup',
-          expect.any(AbortSignal)
+          expect.any(AbortSignal),
+          undefined
         )
         expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
         expect(window.location.href).toBe(appUrl)
@@ -1515,7 +1518,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         )
       }
 
-      it('re-sends Pay for the same amount when the customer returns from the portal', async () => {
+      it('offers Pay again without charging when the customer returns from the portal', async () => {
         refuseForNoPaymentMethod()
         const listCards = vi.spyOn(billingApi, 'listSavedPaymentMethods')
         const getPortal = portalOpensAt(portalUrl)
@@ -1530,29 +1533,62 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
           window.location.href,
           'payment_method_update'
         )
-        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
 
         vi.mocked(mockBillingContext().topup).mockResolvedValue(
           topupResponse('completed')
         )
         window.dispatchEvent(new Event('focus'))
 
+        const pay = await screen.findByRole('button', { name: 'Pay $50.00' })
+        expect(mockBillingContext().topup).toHaveBeenCalledOnce()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+
+        await userEvent.click(pay)
+
         await waitFor(() =>
           expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
             key: 'top-up-credits'
           })
         )
+        expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
         expect(mockBillingContext().topup).toHaveBeenLastCalledWith(5000)
-        expect(useToast().success).toHaveBeenCalledWith(
-          'Credits added successfully!',
-          { duration: 5000 }
-        )
         expect(listCards).not.toHaveBeenCalled()
       })
 
-      it('keeps the refusal when the retried Pay still has no default card', async () => {
+      it('never charges on later returns to a dialog left open behind another tab', async () => {
         refuseForNoPaymentMethod()
-        const listCards = vi.spyOn(billingApi, 'listSavedPaymentMethods')
+        portalOpensAt(portalUrl)
+        const createCheckout = vi.spyOn(billingApi, 'createTopupCheckout')
+        const { tab } = stubCheckoutTab()
+        await payAndGetRefused()
+        await clickSetDefaultCard()
+        await waitFor(() => expect(tab.location.href).toBe(portalUrl))
+        const visibility = vi.spyOn(document, 'visibilityState', 'get')
+
+        const returns = [
+          () => {
+            window.dispatchEvent(new Event('blur'))
+            window.dispatchEvent(new Event('focus'))
+          },
+          () => {
+            visibility.mockReturnValue('hidden')
+            document.dispatchEvent(new Event('visibilitychange'))
+            visibility.mockReturnValue('visible')
+            document.dispatchEvent(new Event('visibilitychange'))
+          }
+        ]
+        for (const returnToTab of [...returns, ...returns]) {
+          returnToTab()
+          await screen.findByRole('button', { name: 'Pay $50.00' })
+        }
+
+        expect(mockBillingContext().topup).toHaveBeenCalledOnce()
+        expect(createCheckout).not.toHaveBeenCalled()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+      })
+
+      it('shows the refusal again when Pay after the portal still finds no default card', async () => {
+        refuseForNoPaymentMethod()
         portalOpensAt(portalUrl)
         const { tab } = stubCheckoutTab()
         await payAndGetRefused()
@@ -1560,30 +1596,17 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         await waitFor(() => expect(tab.location.href).toBe(portalUrl))
 
         window.dispatchEvent(new Event('focus'))
-        await waitFor(() =>
-          expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Pay $50.00' })
         )
+
         await waitFor(() =>
           expect(
             screen.getByRole('button', { name: 'Set a default card' })
           ).toBeEnabled()
         )
-        expect(useToast().error).not.toHaveBeenCalled()
-        expect(listCards).not.toHaveBeenCalled()
-        window.dispatchEvent(new Event('focus'))
         expect(mockBillingContext().topup).toHaveBeenCalledTimes(2)
-
-        vi.mocked(mockBillingContext().topup).mockResolvedValue(
-          topupResponse('completed')
-        )
-        window.dispatchEvent(new Event('blur'))
-        window.dispatchEvent(new Event('focus'))
-        await waitFor(() =>
-          expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-            key: 'top-up-credits'
-          })
-        )
-        expect(mockBillingContext().topup).toHaveBeenCalledTimes(3)
+        expect(useToast().error).not.toHaveBeenCalled()
       })
 
       it('does not retry Pay after this tab switches workspace', async () => {
@@ -1739,9 +1762,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(useToast().error).not.toHaveBeenCalled()
       })
 
-      it('re-sends Pay once a customer who followed the blocked portal link comes back', async () => {
+      it('offers Pay without charging once a customer who followed the blocked portal link comes back', async () => {
         refuseForNoPaymentMethod()
-        const listCards = vi.spyOn(billingApi, 'listSavedPaymentMethods')
         portalOpensAt(portalUrl)
         blockNewTabs()
         stopBrowserFollowingLinks()
@@ -1751,18 +1773,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         await userEvent.click(
           await screen.findByRole('link', { name: 'Open payment page' })
         )
-        vi.mocked(mockBillingContext().topup).mockResolvedValue(
-          topupResponse('completed')
-        )
         window.dispatchEvent(new Event('focus'))
 
-        await waitFor(() =>
-          expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-            key: 'top-up-credits'
-          })
-        )
-        expect(mockBillingContext().topup).toHaveBeenLastCalledWith(5000)
-        expect(listCards).not.toHaveBeenCalled()
+        await screen.findByRole('button', { name: 'Pay $50.00' })
+        expect(mockBillingContext().topup).toHaveBeenCalledOnce()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       })
 
       it.for([
@@ -2655,7 +2670,9 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       capabilities.autoTopUpSetup = computed(() => ({
         state: 'ready' as const
       }))
-      autoTopUpCardState.value = loadedAutoTopUp('off')
+      vi.mocked(useBillingAutoTopUpCard).mockReturnValue(
+        autoTopUpCard(loadedAutoTopUp('off'))
+      )
     })
 
     it('sits above Add credits on the amount step', () => {

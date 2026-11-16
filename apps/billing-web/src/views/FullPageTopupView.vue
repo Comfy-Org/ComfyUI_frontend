@@ -11,11 +11,11 @@ import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.v
 import CheckoutSummaryColumn from '@/components/fullPage/CheckoutSummaryColumn.vue'
 import { useFullPageTopup } from '@/composables/useFullPageTopup'
 import { useBillingWebStripeKey } from '@/config/stripeKey'
-import { useBillingWebSession } from '@/session/billingWebSession'
+import { useBilledScope } from '@/session/billingWebAuth'
 import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 const { t, locale } = useI18n()
-const { session } = useBillingWebSession()
+const session = useBilledScope()
 const stripeKey = useBillingWebStripeKey()
 const {
   page,

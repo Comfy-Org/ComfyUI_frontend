@@ -91,6 +91,7 @@ import { useDeploymentCompatibility } from '@/platform/workspace/composables/use
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -118,6 +119,7 @@ import {
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
+import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI, isLocalDesktopHost } from '@/utils/envUtil'
@@ -180,6 +182,20 @@ const templateInputGraphSync = startTemplateInputDownloadGraphSync({
   }
 })
 const stopTemplateInputDownloadTracking = startTemplateInputDownloadTracking()
+const stopModelDownloadTracking = startModelDownloadTracking()
+
+function startModelDownloadTracking() {
+  try {
+    return useMissingModelDownloadStore().startTracking()
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'workflow_model_download_tracking_failed',
+      level: 'warning'
+    })
+    return () => undefined
+  }
+}
 
 function startTemplateInputDownloadTracking() {
   try {
@@ -204,6 +220,7 @@ function startTemplateInputDownloadTracking() {
 }
 
 onBeforeUnmount(() => {
+  stopModelDownloadTracking()
   stopTemplateInputDownloadTracking()
   templateInputGraphSync.dispose()
   templateInputDownloadStore.clear()
@@ -446,7 +463,8 @@ const onGraphReady = () => {
       telemetry.trackShellLayout(
         getShellLayoutSnapshot({
           view_mode: mode.value,
-          is_app_mode: isAppMode.value
+          is_app_mode: isAppMode.value,
+          right_side_panel_open: usePropertiesPanelStore().isOpen
         })
       )
     }

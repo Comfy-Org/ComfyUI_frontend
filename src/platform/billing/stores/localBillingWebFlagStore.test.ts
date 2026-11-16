@@ -1,5 +1,13 @@
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import type {
@@ -11,11 +19,12 @@ import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useLocalBillingWebFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
+import { useLocalBillingWebFlagStore as defineFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
+import { signInFirebaseUser } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'))
 
@@ -75,6 +84,14 @@ function pendingResponse() {
 
 const settle = () => vi.advanceTimersByTimeAsync(0)
 
+const createdStores: ReturnType<typeof defineFlagStore>[] = []
+
+function useLocalBillingWebFlagStore() {
+  const store = defineFlagStore()
+  createdStores.push(store)
+  return store
+}
+
 async function signInAndRead(state = signedIn('user-1', 'ws-1')) {
   const host = fakeBridge(state)
   await startDesktopHostSession(host.bridge)
@@ -89,7 +106,10 @@ describe('useLocalBillingWebFlagStore', () => {
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue()
   })
 
-  afterEach(() => stopDesktopHostSession())
+  afterEach(() => {
+    stopDesktopHostSession()
+    createdStores.splice(0).forEach((store) => store.$dispose())
+  })
 
   it('reads the flag on sign-in with the account credential', async () => {
     serveFlags({ local_billing_web: true })
@@ -101,6 +121,23 @@ describe('useLocalBillingWebFlagStore', () => {
     expect(request.url).toBe(`${getComfyCloudBaseUrl()}/api/features`)
     expect(request.headers.get('Authorization')).toBe('Bearer token-ws-1')
   })
+
+  it.for([
+    { override: 'false', served: true, expected: false },
+    { override: 'true', served: false, expected: true }
+  ])(
+    'follows a development override of $override over the served $served',
+    async ({ override, served, expected }) => {
+      localStorage.setItem('ff:local_billing_web', override)
+      onTestFinished(() => localStorage.removeItem('ff:local_billing_web'))
+      serveFlags({ local_billing_web: served })
+
+      const { store } = await signInAndRead()
+
+      expect(store.enabled).toBe(expected)
+      expect(fetchRequests(FEATURES)).toHaveLength(0)
+    }
+  )
 
   it('exposes only local_billing_web from a Cloud document with other keys', async () => {
     const localConfig = { ...remoteConfig.value }
@@ -205,6 +242,43 @@ describe('useLocalBillingWebFlagStore', () => {
     expect(store.enabled).toBe(true)
   })
 
+  it.for([
+    {
+      failure: 'a network error',
+      respond: () => Promise.reject(new TypeError('offline'))
+    },
+    {
+      failure: 'a non-2xx status',
+      respond: () => Response.json({ local_billing_web: true }, { status: 500 })
+    }
+  ])(
+    'turns off when a ten-minute re-read ends in $failure',
+    async ({ respond }) => {
+      serveFlags({ local_billing_web: true })
+      const { store } = await signInAndRead()
+      expect(store.enabled).toBe(true)
+      respondToFetch(FEATURES, respond)
+
+      await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+      expect(store.enabled).toBe(false)
+    }
+  )
+
+  it('drops a read a disposed store started once a new store is created', async () => {
+    const { promise: answer, resolve } = pendingResponse()
+    respondToFetch(FEATURES, () => answer, { times: 1 })
+    const { store: previous } = await signInAndRead()
+    previous.$dispose()
+    stopDesktopHostSession()
+
+    const current = useLocalBillingWebFlagStore()
+    resolve(Response.json({ local_billing_web: true }))
+    await settle()
+
+    expect(current.enabled).toBe(false)
+  })
+
   it('clears the value before re-reading on a workspace switch', async () => {
     serveFlags({ local_billing_web: true })
     const { store, push } = await signInAndRead()
@@ -279,6 +353,33 @@ describe('useLocalBillingWebFlagStore', () => {
     await settle()
 
     expect(store.enabled).toBe(true)
+  })
+
+  it('reads the flag with the cached ID token of a Firebase sign-in, minting none', async () => {
+    const mint = vi.fn(async () => 'minted-token')
+    signInFirebaseUser(mint)
+    serveFlags({ local_billing_web: false })
+
+    useLocalBillingWebFlagStore()
+    await settle()
+
+    expect(fetchRequests(FEATURES)[0].headers.get('Authorization')).toBe(
+      'Bearer cached-token'
+    )
+    expect(mint).not.toHaveBeenCalled()
+  })
+
+  it('stays on, without another read, while the Firebase ID token rotates', async () => {
+    signInFirebaseUser(async () => 'minted-token')
+    serveFlags({ local_billing_web: true })
+    const store = useLocalBillingWebFlagStore()
+    await settle()
+
+    await useAuthStore().getFreshIdToken()
+    await settle()
+
+    expect(store.enabled).toBe(true)
+    expect(fetchRequests(FEATURES)).toHaveLength(1)
   })
 
   it('never falls back to a stored API key for a signed-in account without a token', async () => {

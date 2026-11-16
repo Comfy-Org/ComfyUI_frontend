@@ -656,6 +656,7 @@ function capabilitiesResponse({
 }: BillingScope): BillingCapabilitiesResponse {
   return {
     auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'full_page',
     resolved_for: { user_id: userId, workspace_id: workspaceId },
     capabilities: {
       can_subscribe_self_serve: true,
@@ -679,6 +680,8 @@ function capabilitiesResponse({
       can_manage_subscription: false,
       can_open_plans: false,
       can_run_workflows: false,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: false,
       can_downgrade_to_personal: false
     },

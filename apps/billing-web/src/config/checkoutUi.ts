@@ -4,6 +4,7 @@
  * rather than risk showing the customer the other checkout.
  */
 import { CLOUD_BASE_URL } from '@/config/env'
+import { handoffTab } from '@/handoff/handoffTab'
 import { billingWebSessionClient } from '@/session/billingWebSession'
 
 export type CheckoutUiVariant = 'embedded' | 'full_page'
@@ -32,6 +33,26 @@ export function provideWebSessionCloudRead(
   source: () => WebSessionCloudRead | undefined
 ): void {
   webSessionCloudRead = source
+}
+
+let handoffCheckoutUiRead: () => Promise<CheckoutUiVariant | undefined> = () =>
+  Promise.resolve(undefined)
+
+/** Set by the auth module: a handoff tab's read of the variant from billing capabilities. */
+export function provideHandoffCheckoutUiRead(
+  read: () => Promise<CheckoutUiVariant | undefined>
+): void {
+  handoffCheckoutUiRead = read
+}
+
+let handoffVariant: Promise<CheckoutUiVariant> | undefined
+
+function awaitHandoffCheckoutUi(): Promise<CheckoutUiVariant> {
+  handoffVariant ??= handoffCheckoutUiRead().then(
+    (variant) => variant ?? FAIL_CLOSED,
+    () => FAIL_CLOSED
+  )
+  return handoffVariant
 }
 
 /** `settled` is terminal, so a mounted checkout can never become the other one. */
@@ -152,6 +173,7 @@ async function awaitFlag<T>(
   parse: (value: unknown) => T | undefined,
   failClosed: T
 ): Promise<T> {
+  if (handoffTab.value !== undefined) return failClosed
   const override = readDevOverride(key, parse)
   if (override !== undefined) return override
   const features = await awaitCloudFeatures()
@@ -160,6 +182,7 @@ async function awaitFlag<T>(
 
 /** Never rejects. An anonymous visitor is answered without memoizing, so a later signed-in mount still asks. */
 export function awaitCheckoutUiVariant(): Promise<CheckoutUiVariant> {
+  if (handoffTab.value !== undefined) return awaitHandoffCheckoutUi()
   return awaitFlag(FLAG_KEY, parseCheckoutUiVariant, FAIL_CLOSED)
 }
 

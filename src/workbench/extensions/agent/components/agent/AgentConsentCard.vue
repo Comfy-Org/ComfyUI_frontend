@@ -88,7 +88,7 @@ const LAYOUTS = {
       FALLBACK_SHELL,
       'aspect-video max-h-full w-[min(100cqw,calc(100cqh*16/9))]'
     ),
-    heading: 'my-0 text-2xl/7.5 text-[22px]/7',
+    heading: 'my-0 text-[22px]/7',
     copy: cn(COPY_SHELL, 'text-[13px]/4.5'),
     contentWrap: 'flex min-w-0 flex-col',
     section: cn(SECTION_SHELL, 'gap-2 px-4.5 pt-3'),

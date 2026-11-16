@@ -76,7 +76,7 @@
                 <ToolboxButton
                   :label="$t('commands.Comfy_Graph_EditSubgraphWidgets.label')"
                   icon="icon-[lucide--settings-2]"
-                  @click="rightSidePanelStore.openPanel('subgraph')"
+                  @click="propertiesPanelStore.openPanel('subgraph')"
                 />
                 <ToolboxButton
                   :label="$t('commands.Comfy_PublishSubgraph.label')"
@@ -166,7 +166,7 @@ import { useExtensionService } from '@/platform/extensions/services/extensionSer
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 import VerticalDivider from '@comfyorg/design-system/common/VerticalDivider'
@@ -176,7 +176,7 @@ const canvasStore = useCanvasStore()
 const extensionService = useExtensionService()
 const canvasInteractions = useCanvasInteractions()
 const linkSelectionStore = useLinkSelectionStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const { frameNodes } = useFrameNodes()
 const { isRefreshable, refreshSelected } = useRefreshableSelection()
 

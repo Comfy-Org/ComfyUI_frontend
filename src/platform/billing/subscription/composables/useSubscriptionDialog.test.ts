@@ -248,7 +248,7 @@ describe('useSubscriptionDialog', () => {
 
       await showPricingTable({ reason: 'subscribe_to_run' })
       const [refresh] = vi.mocked(registerRefreshOnReturn).mock.calls[0]
-      await refresh()
+      await refresh(new Event('focus'))
       stopListening()
 
       expect(refreshedScopes).toEqual(['account'])

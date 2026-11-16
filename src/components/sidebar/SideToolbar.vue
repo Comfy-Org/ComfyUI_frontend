@@ -59,6 +59,12 @@
         />
         <SidebarShortcutsToggleButton v-if="!hideWorkspaceToggles" :is-small />
         <SidebarSettingsButton :is-small />
+        <CurrentUserButton
+          v-if="showProfileButton"
+          :show-arrow="false"
+          :side="sidebarLocation === 'left' ? 'right' : 'left'"
+          class="flex w-full shrink-0 justify-center pb-1"
+        />
       </div>
     </div>
     <HelpCenterPopups :is-small />
@@ -87,6 +93,9 @@ import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -124,6 +133,11 @@ const { t } = useI18n()
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
 const userStore = useUserStore()
+const { isLoggedIn } = useCurrentUser()
+const { flags } = useFeatureFlags()
+const showProfileButton = computed(
+  () => flags.billingNewUxEnabled && isLoggedIn.value
+)
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const sideToolbarRef = ref<HTMLElement>()
@@ -258,6 +272,7 @@ onMounted(() => {
   )
 
   checkOverflow()
+  watch(showProfileButton, checkOverflow)
 
   onBeforeUnmount(() => {
     overflowObserver.stop()
