@@ -9,7 +9,7 @@ export const folderComboTest = comfyPageFixture.extend<{
   modelCombo: WidgetSelectDefaultFixture
 }>({
   page: async ({ page }, use) => {
-    const unroute = await routeObjectInfoFromSetupApi(page, (objectInfo) =>
+    await routeObjectInfoFromSetupApi(page, (objectInfo) =>
       setComboInputOptions(objectInfo, 'CheckpointLoaderSimple', 'ckpt_name', [
         'v1-5-pruned-emaonly-fp16.safetensors',
         'studio/models/portrait.safetensors',
@@ -17,11 +17,7 @@ export const folderComboTest = comfyPageFixture.extend<{
         'archive/portrait.safetensors'
       ])
     )
-    try {
-      await use(page)
-    } finally {
-      await unroute()
-    }
+    await use(page)
   },
   modelCombo: async ({ comfyPage }, use) => {
     await comfyPage.workflow.loadWorkflow('default')
