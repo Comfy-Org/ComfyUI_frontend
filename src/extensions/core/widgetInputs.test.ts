@@ -478,6 +478,36 @@ describe('PrimitiveNode', () => {
 
     expect(output[String(target.id)].inputs.text).toBe('A PHOTO OF CAT')
   })
+
+  it('sends its value through a bypassed node only to inputs without a widget', async () => {
+    const { graph, primitive, target } = stringTargetFixture()
+    target.inputs[0].widget = {
+      name: 'text',
+      [GET_CONFIG]: () => ['STRING', {}]
+    }
+    const widget = target.addWidget('text', 'text', 'own', () => {})
+    widget.serializeValue = () => String(widget.value).toUpperCase()
+    const forceInputTarget = new LGraphNode('ForceInputTarget')
+    forceInputTarget.comfyClass = 'ForceInputTarget'
+    graph.add(forceInputTarget)
+    forceInputTarget.addInput('text', 'STRING')
+    const bypassed = new LGraphNode('Bypassed')
+    graph.add(bypassed)
+    bypassed.addInput('text', 'STRING')
+    bypassed.addOutput('text', 'STRING')
+    bypassed.mode = LGraphEventMode.BYPASS
+    primitive.connect(0, bypassed, 0)
+    bypassed.connect(0, target, 0)
+    bypassed.connect(0, forceInputTarget, 0)
+    primitive.widgets![0].value = 'a photo of cat'
+
+    const { output } = await graphToPrompt(graph)
+
+    expect([
+      output[String(target.id)].inputs.text,
+      output[String(forceInputTarget.id)].inputs.text
+    ]).toEqual(['OWN', 'a photo of cat'])
+  })
 })
 
 describe('getWidgetConfig', () => {

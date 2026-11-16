@@ -42,6 +42,8 @@ type ResolvedInput = {
   origin_slot: number
   /** Boxed widget value (e.g. for widgets). If this box is `undefined`, then an input link is connected, and widget values from the subgraph node are ignored. */
   widgetInfo?: { value: unknown }
+  /** `true` when {@link widgetInfo} is a virtual node's value, which only inputs without a widget accept. */
+  virtualValue?: true
 }
 
 /**
@@ -257,12 +259,17 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         `No output node DTO found for id [${outputNodeExecutionId}]`
       )
 
+    const resolved = outputNodeDto.resolveOutput(
+      link.origin_slot,
+      type ?? input.type,
+      visited
+    )
+    if (this.node.inputs[link.target_slot]?.widget)
+      return resolved?.virtualValue ? undefined : resolved
+
     return (
-      outputNodeDto.resolveOutput(
-        link.origin_slot,
-        type ?? input.type,
-        visited
-      ) ?? this._resolveWidgetlessVirtualValue(link, outputNode, outputNodeDto)
+      resolved ??
+      this._resolveWidgetlessVirtualValue(link, outputNode, outputNodeDto)
     )
   }
 
@@ -271,7 +278,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     outputNode: LGraphNode,
     outputNodeDto: ExecutableLGraphNode
   ): ResolvedInput | undefined {
-    if (this.node.inputs[link.target_slot]?.widget) return
     if (
       outputNodeDto.mode === LGraphEventMode.NEVER ||
       outputNodeDto.mode === LGraphEventMode.BYPASS
@@ -284,7 +290,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       node: outputNodeDto,
       origin_id: outputNodeDto.id,
       origin_slot: -1,
-      widgetInfo: { value }
+      widgetInfo: { value },
+      virtualValue: true
     }
   }
 
