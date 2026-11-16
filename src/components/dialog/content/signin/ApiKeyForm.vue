@@ -32,7 +32,7 @@
           />
           <FieldDescription>
             {{ t('auth.apiKey.helpText') }}
-            <a :href="`${comfyPlatformBaseUrl}/login`" target="_blank">
+            <a :href="platformLoginUrl" target="_blank">
               {{ t('auth.apiKey.generateKey') }}
             </a>
             <span class="mx-1">•</span>
@@ -75,11 +75,7 @@ import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
 import FieldError from '@comfyorg/design-system/field/FieldError'
 import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import Input from '@comfyorg/design-system/input/Input'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import {
-  configValueOrDefault,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -87,13 +83,7 @@ import { useAuthStore } from '@/stores/authStore'
 const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
 const loading = computed(() => authStore.loading)
-const comfyPlatformBaseUrl = computed(() =>
-  configValueOrDefault(
-    remoteConfig.value,
-    'comfy_platform_base_url',
-    getComfyPlatformBaseUrl()
-  )
-)
+const platformLoginUrl = computed(() => platformLink('/login'))
 
 const { t } = useI18n()
 

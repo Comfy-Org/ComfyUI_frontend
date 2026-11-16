@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveReturnTarget } from './returnTargets'
+import { isReturnTarget, resolveReturnTarget } from './returnTargets'
 
 describe('resolveReturnTarget', () => {
   it.for([
@@ -45,11 +45,18 @@ describe('resolveReturnTarget', () => {
   })
 
   it.for([
+    ['comfyui_local', 'production'],
+    ['comfyui_local', 'staging'],
+    ['comfyui_local', 'test'],
     ['workshop_credits', 'production'],
     ['attacker_site', 'production'],
     ['https://attacker.example', 'production']
   ] as const)('leaves %s in %s unresolved', ([target, environment]) => {
     expect(resolveReturnTarget(target, environment)).toBeUndefined()
+  })
+
+  it('registers comfyui_local so a link may name it', () => {
+    expect(isReturnTarget('comfyui_local')).toBe(true)
   })
 
   it('hands back a URL the caller may append to without editing the registry', () => {

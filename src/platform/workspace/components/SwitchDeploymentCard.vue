@@ -85,7 +85,7 @@
           size="lg"
           class="w-full no-underline @xl:w-auto"
           as="a"
-          :href="createDeploymentUrl"
+          :href="customDeploymentCreateUrl()"
           target="_blank"
           rel="noopener noreferrer"
           @click="emit('done')"
@@ -160,7 +160,6 @@ const [DefineOption, ReuseOption] = createReusableTemplate<{
 }>()
 
 const selectId = useId()
-const createDeploymentUrl = customDeploymentCreateUrl()
 
 function runs(choice: DeploymentChoice): boolean {
   return choice.mark?.kind === 'runs'

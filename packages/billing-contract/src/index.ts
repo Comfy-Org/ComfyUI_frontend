@@ -25,6 +25,7 @@ export type {
   BillingEntryUrlErrorCode,
   BillingEntryUrlResult
 } from './entryUrl'
+export { ENTRY_PARAM_RETURN_TO, ENTRY_PARAM_SOURCE } from './entryFields'
 export { buildBillingEntryUrl } from './entryUrl'
 export { isContractIdentifier } from './identifiers'
 export type { ReturnTarget } from './returnTargets'

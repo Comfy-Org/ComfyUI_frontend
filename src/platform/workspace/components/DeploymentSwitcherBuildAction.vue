@@ -6,7 +6,7 @@
   >
     <MenuItem as-child :class="switcherItemClass">
       <a
-        :href="buildsUrl"
+        :href="platformLink('/profile/builds')"
         target="_blank"
         rel="noopener noreferrer"
         class="text-foreground no-underline"
@@ -37,10 +37,9 @@
 <script setup lang="ts">
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { switcherItemClass } from './deploymentSwitcherStyles'
 
 const { hasDeployments } = defineProps<{ hasDeployments: boolean }>()
 const emit = defineEmits<{ createCustomDeployment: [] }>()
-const buildsUrl = `${getComfyPlatformBaseUrl()}/profile/builds`
 </script>

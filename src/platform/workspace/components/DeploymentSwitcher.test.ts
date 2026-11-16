@@ -473,7 +473,7 @@ describe('DeploymentSwitcher', () => {
 
     await user.click(screen.getByTestId(`deployment-row-${D1}`))
     expect(openPage).toHaveBeenCalledWith(
-      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}?return_to=comfyui_workspace`,
       '_blank',
       'noopener,noreferrer'
     )
@@ -588,7 +588,7 @@ describe('DeploymentSwitcher', () => {
     const builds = screen.getByRole('menuitem', { name: 'Manage deployments' })
     expect(builds).toHaveAttribute(
       'href',
-      expect.stringMatching(/\/profile\/builds$/)
+      expect.stringMatching(/\/profile\/builds\?return_to=comfyui_workspace$/)
     )
     expect(builds).toHaveAttribute('target', '_blank')
     expect(screen.queryByTestId('deployment-switcher-create')).toBeNull()
@@ -2038,7 +2038,7 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
       })
     )
     expect(openPage).toHaveBeenCalledWith(
-      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}?return_to=comfyui_workspace`,
       '_blank',
       'noopener,noreferrer'
     )

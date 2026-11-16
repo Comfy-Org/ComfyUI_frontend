@@ -145,13 +145,16 @@ export const useSubscriptionDialog = () => {
     }
   }
 
-  async function showPlansLinkDialog(copy: PlansLinkCopy): Promise<void> {
+  async function showPlansLinkDialog(
+    copy: PlansLinkCopy,
+    source: PaymentIntentSource | undefined
+  ): Promise<void> {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: (
         await import('@/platform/billing/components/PlatformPlansLinkDialog.vue')
       ).default,
-      props: { ...copy, onClose: hide }
+      props: { ...copy, source, onClose: hide }
     })
   }
 
@@ -159,25 +162,29 @@ export const useSubscriptionDialog = () => {
     options: SubscriptionDialogOptions | undefined,
     trackEntry: () => void
   ): Promise<void> {
+    const source = paymentIntentSourceOf(options)
     if (options?.runRefused) {
-      await showPlansLinkDialog(runRefusedCopy())
+      await showPlansLinkDialog(runRefusedCopy(), source)
       trackEntry()
       return
     }
     if (options?.sameTab) {
-      trackPaywallShown(paymentIntentSourceOf(options))
-      navigateToPlatformPlans()
+      trackPaywallShown(source)
+      navigateToPlatformPlans(source)
       return
     }
-    if (openPlatformPlans()) {
-      trackPaywallShown(paymentIntentSourceOf(options))
+    if (openPlatformPlans(source)) {
+      trackPaywallShown(source)
       return
     }
-    await showPlansLinkDialog({
-      title: t('subscription.plansLink.blockedTitle'),
-      body: t('subscription.plansLink.blockedBody'),
-      linkLabel: t('subscription.plansLink.openPlansPage')
-    })
+    await showPlansLinkDialog(
+      {
+        title: t('subscription.plansLink.blockedTitle'),
+        body: t('subscription.plansLink.blockedBody'),
+        linkLabel: t('subscription.plansLink.openPlansPage')
+      },
+      source
+    )
     trackEntry()
   }
 
@@ -215,7 +222,7 @@ export const useSubscriptionDialog = () => {
           await handOffToPlatformPlans(options, trackEntry)
           return true
         }
-        if (openPlatformPlans()) {
+        if (openPlatformPlans(paymentIntentSource)) {
           trackPaywallShown(paymentIntentSource)
           return true
         }

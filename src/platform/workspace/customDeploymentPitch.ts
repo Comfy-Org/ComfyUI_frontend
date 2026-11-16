@@ -1,6 +1,6 @@
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 /** One line of what a workflow lacks: how many of a kind, then their names. */
 export interface MissingItemsRow {
@@ -21,7 +21,7 @@ export interface CustomDeploymentPitch {
 
 /** Platform's Deploy page at its Builds, where a custom deployment starts. */
 export function customDeploymentCreateUrl(): string {
-  return `${getComfyPlatformBaseUrl()}/profile/builds`
+  return platformLink('/profile/builds')
 }
 
 /** The pitch Run on's Create a custom deployment item shows. */

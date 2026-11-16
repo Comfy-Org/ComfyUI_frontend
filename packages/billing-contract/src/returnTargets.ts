@@ -9,9 +9,8 @@
  * from a sibling's hostname, because an unresolvable target fails closed while
  * a guessed one sends a customer somewhere nobody serves.
  *
- * Localhost and desktop return targets are out of scope: a developer running a
- * product locally returns to the deployed destination of whichever environment
- * their backend belongs to.
+ * `comfyui_local` names local ComfyUI and Desktop. It has no destination in any
+ * environment, so it stays unresolved until its return page exists.
  */
 import type { BillingEnvironment } from './contract'
 import { parseUrl } from './url'
@@ -19,6 +18,7 @@ import { parseUrl } from './url'
 export const RETURN_TARGETS = [
   'comfyui_workspace',
   'comfyui_credits',
+  'comfyui_local',
   'platform_account',
   'platform_billing'
 ] as const
@@ -44,6 +44,7 @@ const RETURN_TARGET_DESTINATIONS: Readonly<
     staging: 'https://stagingcloud.comfy.org/?settings=plan-credits',
     test: 'https://testcloud.comfy.org/?settings=plan-credits'
   },
+  comfyui_local: {},
   // Platform lives in its own repository and names no account route here, so
   // its origin root is the destination until that app names one.
   platform_account: {

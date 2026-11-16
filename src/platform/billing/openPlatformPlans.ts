@@ -1,4 +1,5 @@
 import { useTelemetry } from '@comfyorg/telemetry'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { effectScope } from 'vue'
 
 import { refreshBilling } from '@/platform/billing/billingRefresh'
@@ -32,11 +33,14 @@ function refreshOnReturn(): void {
   stopReturnRefresh = registerRefreshOnReturn(refreshAfterPlans)
 }
 
-/** The platform Plans page for the active workspace, for a link the user follows, and what to run when they follow it. */
-export function platformPlansLink(): { href: string; onFollow: () => void } {
+/** The platform Plans page for the active workspace, for a link the user follows, and what to run when they follow it; `source` is the paywall they saw. */
+export function platformPlansLink(source?: PaymentIntentSource): {
+  href: string
+  onFollow: () => void
+} {
   const correlationId = createJourneyId()
   return {
-    href: platformLink('/profile/billing/plans', correlationId),
+    href: platformLink('/profile/billing/plans', correlationId, source),
     onFollow: () => {
       trackHandoff(correlationId)
       refreshOnReturn()
@@ -45,17 +49,19 @@ export function platformPlansLink(): { href: string; onFollow: () => void } {
 }
 
 /** Opens the platform Plans page for the active workspace in a new tab, as Manage does, and re-reads billing on return; `false` when the browser blocked it. */
-export function openPlatformPlans(): boolean {
-  const { href, onFollow } = platformPlansLink()
+export function openPlatformPlans(source?: PaymentIntentSource): boolean {
+  const { href, onFollow } = platformPlansLink(source)
   if (!openBillingUrl(href)) return false
   onFollow()
   return true
 }
 
 /** Leaves the app for the platform Plans page of the active workspace in this tab, and re-reads billing if a back navigation restores this page. */
-export function navigateToPlatformPlans(): void {
+export function navigateToPlatformPlans(source?: PaymentIntentSource): void {
   const correlationId = createJourneyId()
   trackHandoff(correlationId)
   refreshOnReturn()
-  window.location.assign(platformLink('/profile/billing/plans', correlationId))
+  window.location.assign(
+    platformLink('/profile/billing/plans', correlationId, source)
+  )
 }

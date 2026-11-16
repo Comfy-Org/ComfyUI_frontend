@@ -105,7 +105,6 @@ import { useI18n } from 'vue-i18n'
 
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import DeploymentSwitcherBuildAction from '@/platform/workspace/components/DeploymentSwitcherBuildAction.vue'
 import DeploymentSwitcherDefaultMenu from '@/platform/workspace/components/DeploymentSwitcherDefaultMenu.vue'
@@ -118,6 +117,7 @@ import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocu
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const STOPPED_PICK_ACTIONS = new Set<DeploymentRowAction>([
   'start',
@@ -154,8 +154,6 @@ const { sections, pickedValue, pickedRow } = useDeploymentRows()
 const startStore = useDeploymentStartStore()
 const sectionLabelId = useId()
 useKeepRowFocus(sections)
-
-const platformUrl = getComfyPlatformBaseUrl()
 
 const listedSections = computed(() =>
   sections.value.map((section, index) => ({
@@ -214,7 +212,7 @@ function chooseRow(event: Event, row: DeploymentRow) {
 
 function openDeploymentPage(deploymentId: string) {
   window.open(
-    `${platformUrl}/profile/deployments/${encodeURIComponent(deploymentId)}`,
+    platformLink(`/profile/deployments/${encodeURIComponent(deploymentId)}`),
     '_blank',
     'noopener,noreferrer'
   )
