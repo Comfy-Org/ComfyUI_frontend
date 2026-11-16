@@ -271,8 +271,8 @@ test.describe(
       comfyFiles
     }) => {
       const filename = 'video-preview-portrait.webm'
-      const { node, video } = await addLoadVideo(comfyPage, filename)
       comfyFiles.deleteAfterTest({ filename, type: 'input' })
+      const { node, video } = await addLoadVideo(comfyPage, filename)
       const before = await requireBoundingBox(node.root)
       await expect.poll(() => boxAspectRatio(video)).toBeGreaterThan(1)
 
