@@ -700,6 +700,33 @@ describe('AgentPanelRoot first-use experience', () => {
     )
   })
 
+  it('prefills a pending Cloud handoff on mount without replacing the draft or sending it', async () => {
+    useAgentComposerStore().setText('Keep my draft')
+    useAgentPanelStore().pendingCloudHandoff = 'Prepare this workflow on Cloud.'
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toHaveTextContent(
+      'Keep my draft Prepare this workflow on Cloud.'
+    )
+    expect(screen.queryByTestId('user-message-bubble')).not.toBeInTheDocument()
+    expect(useAgentPanelStore().pendingCloudHandoff).toBeNull()
+  })
+
+  it('prefills a Cloud handoff in an already mounted composer without sending it', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    useAgentPanelStore().pendingCloudHandoff = 'Prepare this workflow on Cloud.'
+
+    await waitFor(() =>
+      expect(screen.getByRole('textbox')).toHaveTextContent(
+        'Prepare this workflow on Cloud.'
+      )
+    )
+    expect(screen.queryByTestId('user-message-bubble')).not.toBeInTheDocument()
+  })
+
   it('opens directly to the composer without another dialog', async () => {
     const history = useAgentChatHistoryStore()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
