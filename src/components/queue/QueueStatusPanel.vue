@@ -47,6 +47,17 @@
       @cancel="emit('cancel', row.job)"
       @details="emit('history')"
     />
+
+    <Button
+      variant="secondary"
+      size="unset"
+      class="mt-1 h-9 w-full gap-2 rounded-lg text-[13px] font-medium"
+      data-testid="queue-status-panel-history"
+      @click="emit('history')"
+    >
+      <i class="icon-[lucide--history] size-3.5" aria-hidden />
+      {{ t('queueStatus.goToHistoryShort') }}
+    </Button>
   </div>
 </template>
 

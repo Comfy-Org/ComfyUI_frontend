@@ -75,4 +75,22 @@ describe('QueueStatusPill', () => {
     expect(screen.getByTestId('queue-status-thumb')).toBeTruthy()
     expect(screen.queryByTestId('queue-status-stop')).toBeNull()
   })
+
+  it('peeks the other runs as a stack while folded', () => {
+    renderPill({ stack: 2 })
+    const peeks = screen.getAllByTestId('queue-status-peek')
+    expect(peeks).toHaveLength(2)
+    expect(peeks.every((peek) => !peek.className.includes('opacity-0'))).toBe(
+      true
+    )
+  })
+
+  it('tucks the stack away when there is nothing behind the chip', () => {
+    renderPill({ stack: 0 })
+    expect(
+      screen
+        .getAllByTestId('queue-status-peek')
+        .every((peek) => peek.className.includes('opacity-0'))
+    ).toBe(true)
+  })
 })

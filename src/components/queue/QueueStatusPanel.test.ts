@@ -120,4 +120,11 @@ describe('QueueStatusPanel', () => {
     await user.click(screen.getByTestId('queue-status-row-details'))
     expect(emitted('history')).toHaveLength(1)
   })
+
+  it('opens the history from the card while runs are active', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderPanel()
+    await user.click(screen.getByTestId('queue-status-panel-history'))
+    expect(emitted('history')).toHaveLength(1)
+  })
 })

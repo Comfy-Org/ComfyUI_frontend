@@ -16,6 +16,8 @@
           alignStart ? 'items-start' : 'items-end'
         )
       "
+      @pointerenter="openFan"
+      @pointerleave="scheduleCloseFan"
     >
       <QueueStatusPill
         :label="pillLabel"
@@ -24,6 +26,7 @@
         :expanded="panelOpen"
         :terminal-kind="pillTerminalKind"
         :thumb-src="pillThumb"
+        :stack="peekDepth"
         @activate="onPillActivate"
         @stop="handleCancelAll"
       />
@@ -121,8 +124,24 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { jobItems } = useJobList()
 const rightSidePanelStore = useRightSidePanelStore()
 
-/** The user's own open/close choice; null follows the default. */
-const userOpen = ref<boolean | null>(null)
+/** The user pinned the list open with a click. */
+const pinned = ref(false)
+/** The pointer is over the chip or its list. */
+const hovered = ref(false)
+const HOVER_CLOSE_GRACE_MS = 320
+let hoverCloseTimer: number | undefined
+function openFan() {
+  if (hoverCloseTimer !== undefined) window.clearTimeout(hoverCloseTimer)
+  hoverCloseTimer = undefined
+  hovered.value = true
+}
+function scheduleCloseFan() {
+  if (hoverCloseTimer !== undefined) window.clearTimeout(hoverCloseTimer)
+  hoverCloseTimer = window.setTimeout(() => {
+    hoverCloseTimer = undefined
+    hovered.value = false
+  }, HOVER_CLOSE_GRACE_MS)
+}
 const idleOpen = ref(false)
 let completedTimer: number | undefined
 
@@ -265,7 +284,8 @@ watch(activeCount, (count, prev) => {
     lastActiveIds.clear()
     dismissedFailedIds.clear()
     cancelIntent.value = false
-    userOpen.value = null
+    pinned.value = false
+    hovered.value = false
     completedFlash.value = true
     if (completedTimer !== undefined) window.clearTimeout(completedTimer)
     completedTimer = window.setTimeout(() => {
@@ -355,9 +375,15 @@ function jobSubtitle(job: JobView): string {
     ? t('queueStatus.queuedNextUp')
     : t('queueStatus.queuedPosition', { position: job.queuePosition })
 }
-/** One run stays a compact pill; several open the card until the user folds it. */
+/** Hovering the chip fans the list out; a click pins it open until clicked again. */
 const panelOpen = computed(
-  () => !isTerminal.value && (userOpen.value ?? activeCount.value > 1)
+  () => !isTerminal.value && (pinned.value || hovered.value)
+)
+/** Folded, the other runs peek out under the chip as a short stack. */
+const peekDepth = computed(() =>
+  panelOpen.value || isTerminal.value
+    ? 0
+    : Math.min(Math.max(activeCount.value - 1, 0), 2)
 )
 /** Any open list (the card or Recent results) hides the error notice under it. */
 watch(
@@ -382,7 +408,9 @@ const pillThumb = computed(() =>
 )
 function onPillActivate() {
   if (!isTerminal.value) {
-    userOpen.value = !panelOpen.value
+    // Hover already fans the list out, so the first click pins it open.
+    pinned.value = !pinned.value
+    if (!pinned.value) hovered.value = false
     return
   }
   if (terminalKind.value === 'completed') void onCompletedChipClick()
@@ -534,6 +562,7 @@ async function handleViewResult(job: JobListItem) {
 
 onUnmounted(() => {
   if (completedTimer !== undefined) window.clearTimeout(completedTimer)
+  if (hoverCloseTimer !== undefined) window.clearTimeout(hoverCloseTimer)
 })
 </script>
 
