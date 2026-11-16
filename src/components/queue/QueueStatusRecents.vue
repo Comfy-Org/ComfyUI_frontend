@@ -1,7 +1,7 @@
 <template>
-  <div class="flex w-full flex-col gap-0.5">
+  <div class="flex w-full flex-col gap-1">
     <span
-      class="px-2 pt-1 pb-1.5 text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
+      class="px-2 pt-1 pb-0.5 text-[11px]/4 font-medium tracking-wider text-muted-foreground uppercase"
     >
       {{ t('queueStatus.recentResults') }}
     </span>
@@ -10,7 +10,7 @@
       <div
         v-for="result in results"
         :key="result.id"
-        class="group relative flex items-center gap-2.5 rounded-lg p-1.5 transition-colors hover:bg-secondary"
+        class="group relative flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-secondary"
         data-testid="queue-status-recent-job"
       >
         <button
@@ -20,7 +20,7 @@
           @click="emit('view', result.job)"
         />
         <span
-          class="pointer-events-none relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary"
+          class="pointer-events-none relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary"
         >
           <img
             v-if="result.thumbSrc"
@@ -41,24 +41,31 @@
             aria-hidden
           />
         </span>
-        <span class="pointer-events-none flex min-w-0 flex-1 flex-col">
-          <span class="truncate text-[13px]/5 text-foreground">
+        <span class="pointer-events-none flex min-w-0 flex-1 flex-col gap-0.5">
+          <span class="truncate text-[13px]/4 font-medium text-foreground">
             {{ result.name }}
           </span>
           <span class="truncate text-xs/4 text-muted-foreground">
             {{ result.meta }}
           </span>
         </span>
-        <Button
-          variant="muted-textonly"
-          size="icon"
-          class="size-7 shrink-0 rounded-md opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-background"
-          :aria-label="t('queueStatus.openWorkflow', { name: result.name })"
-          data-testid="queue-status-recent-workflow"
-          @click="emit('openWorkflow', result.job)"
-        >
-          <i class="icon-[lucide--workflow] size-3.5" aria-hidden />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              variant="muted-textonly"
+              size="icon"
+              class="size-7 shrink-0 rounded-md opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-background"
+              :aria-label="t('queueStatus.openWorkflow', { name: result.name })"
+              data-testid="queue-status-recent-workflow"
+              @click="emit('openWorkflow', result.job)"
+            >
+              <i class="icon-[lucide--workflow] size-3.5" aria-hidden />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            {{ t('queueStatus.openWorkflowTooltip') }}
+          </TooltipContent>
+        </Tooltip>
       </div>
     </template>
     <p v-else class="px-2 py-3 text-center text-xs text-muted-foreground">
@@ -67,8 +74,8 @@
 
     <Button
       variant="secondary"
-      size="sm"
-      class="mt-1 w-full gap-1.5"
+      size="unset"
+      class="mt-1 h-9 w-full gap-2 rounded-lg text-[13px] font-medium"
       data-testid="queue-status-go-history"
       @click="emit('history')"
     >
@@ -80,6 +87,9 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useI18n } from 'vue-i18n'
 
 import type { JobListItem } from '@/composables/queue/useJobList'

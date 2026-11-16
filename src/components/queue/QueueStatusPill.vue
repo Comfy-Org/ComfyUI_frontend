@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex h-9 overflow-hidden rounded-lg border border-solid border-foreground/9 bg-background shadow-md"
+    class="relative flex h-9 overflow-hidden rounded-lg bg-background shadow-md"
   >
     <Button
       variant="base"

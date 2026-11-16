@@ -6,7 +6,7 @@
         size="unset"
         data-testid="queue-status-idle"
         :aria-expanded="open"
-        class="group pointer-events-auto gap-1 rounded-lg border border-solid border-foreground/9 px-2 py-1 text-sm/5 font-normal data-[state=open]:bg-accent"
+        class="group pointer-events-auto h-9 gap-1.5 rounded-lg pr-2.5 pl-3 text-sm/5 font-normal shadow-md data-[state=open]:bg-secondary"
       >
         {{ label }}
         <i

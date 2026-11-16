@@ -9,7 +9,7 @@
     "
     data-testid="queue-status-panel"
   >
-    <div class="flex h-8 items-center justify-between gap-2 pr-0.5 pl-2">
+    <div class="flex h-8 items-center justify-between gap-2 pr-0.5 pl-3">
       <span
         class="text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
       >

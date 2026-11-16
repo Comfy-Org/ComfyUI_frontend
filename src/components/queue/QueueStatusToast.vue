@@ -359,7 +359,12 @@ function jobSubtitle(job: JobView): string {
 const panelOpen = computed(
   () => !isTerminal.value && (userOpen.value ?? activeCount.value > 1)
 )
-watch(panelOpen, (open) => emit('panelOpen', open), { immediate: true })
+/** Any open list (the card or Recent results) hides the error notice under it. */
+watch(
+  () => panelOpen.value || idleOpen.value,
+  (open) => emit('panelOpen', open),
+  { immediate: true }
+)
 const panelHiddenClass = computed(() =>
   cn('scale-[0.98] opacity-0', above ? 'translate-y-2' : '-translate-y-2')
 )

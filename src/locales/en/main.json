@@ -6030,6 +6030,7 @@
     "recentResults": "Recent results",
     "outputsCount": "{count} output | {count} outputs",
     "openWorkflow": "Open the workflow of {name}",
+    "openWorkflowTooltip": "Open workflow",
     "viewResult": "View {name}",
     "resultsCount": "Results ({count})",
     "running": "Running",
