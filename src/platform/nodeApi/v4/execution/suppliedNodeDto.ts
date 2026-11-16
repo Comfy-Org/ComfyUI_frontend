@@ -26,8 +26,9 @@ export class SuppliedNodeDTO extends ExecutableNodeDTO {
     visited = new Set<string>(),
     type?: ISlotType
   ): ReturnType<ExecutableNodeDTO['resolveInput']> {
+    const linked = super.resolveInput(slot, visited, type)
     const supply = this.supplies.get(slot)
-    if (!supply) return super.resolveInput(slot, visited, type)
+    if (!supply) return linked
     const supplier = this.nodesByExecutionId.get(
       [...this.subgraphNodePath, supply.supplier.id].join(':')
     )
