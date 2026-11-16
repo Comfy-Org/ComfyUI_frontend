@@ -60,7 +60,7 @@ function createSlotView(
   }
 
   function record(value: unknown): SlotRecord | undefined {
-    if (!isSlot(value)) return undefined
+    if (!isSlotDescriptorLike(value)) return undefined
     const slot = value instanceof Slot ? value : new Slot(value, node)
     assignedViews?.set(value, slot)
     return slot._state
@@ -184,6 +184,10 @@ function isArrayIndex(property: string | symbol): property is string {
     index < 2 ** 32 - 1 &&
     String(index) === property
   )
+}
+
+function isSlotDescriptorLike(value: unknown): value is SlotDescriptor {
+  return value !== null && typeof value === 'object'
 }
 
 function isSlot(value: unknown): value is SlotDescriptor {
