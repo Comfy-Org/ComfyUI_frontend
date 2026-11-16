@@ -65,6 +65,29 @@ describe('built-in text output presentation', () => {
     }
   )
 
+  it('writes only the preview whose text changed', async () => {
+    const changed = createPreview()
+    const unchanged = createPreview()
+    const outputs = useNodeOutputStore()
+    const unchangedExecutionId = createNodeExecutionId([unchanged.node.id])
+    outputs.setNodeOutputsByExecutionId(unchangedExecutionId, { text: 'same' })
+    await nextTick()
+    unchanged.preview.callback = vi.fn()
+
+    outputs.setNodeOutputsByExecutionId(
+      createNodeExecutionId([changed.node.id]),
+      {
+        text: 'new'
+      }
+    )
+    outputs.setNodeOutputsByExecutionId(unchangedExecutionId, { text: 'same' })
+    await nextTick()
+
+    expect(changed.preview.value).toBe('new')
+    expect(unchanged.preview.value).toBe('same')
+    expect(unchanged.preview.callback).not.toHaveBeenCalled()
+  })
+
   it('retains unrelated node outputs when execution provides no output', () => {
     const node = new LGraphNode('Image output')
     app.rootGraph.add(node)

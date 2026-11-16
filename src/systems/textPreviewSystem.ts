@@ -29,7 +29,8 @@ export function useTextPreviewSystem(): void {
       })
     },
     (previews) => {
-      for (const { widget, value } of previews) widget.value = value
+      for (const { widget, value } of previews)
+        if (widget.value !== value) widget.value = value
     },
     { immediate: true }
   )
