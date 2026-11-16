@@ -230,7 +230,9 @@ describe('cloud backport tag workflow', () => {
     expect(checkout?.with?.ref).toBe(
       '${{ github.event.repository.default_branch }}'
     )
-    expect(tagStep?.env?.GH_TOKEN).toBe('${{ secrets.PR_GH_TOKEN }}')
+    expect(tagStep?.env?.GH_TOKEN).toBe(
+      '${{ steps.release_token.outputs.token || secrets.PR_GH_TOKEN }}'
+    )
   })
 
   it('fails closed when the release token is absent', () => {

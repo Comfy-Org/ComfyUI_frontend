@@ -58,6 +58,8 @@ export function capabilitiesWith(
       can_reactivate: false,
       can_revert_scheduled_change: false,
       can_run_workflows: true,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_subscribe_self_serve: true,
       can_top_up: true,
       can_upgrade: true,
