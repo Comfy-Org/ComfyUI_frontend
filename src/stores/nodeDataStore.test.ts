@@ -11,6 +11,7 @@ import {
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 import type { UUID } from '@/utils/uuid'
 
@@ -166,6 +167,7 @@ describe('useNodeDataStore', () => {
 
     expect(graph.nodes).toEqual([original])
     expect(challenger._graphScope).toBeUndefined()
+    expect(challenger._state.graphId).toBe(zeroUuid)
     expect(challenger.graph).toBeNull()
     expect(toRaw(store.getSlotRecord(record.id))).toBe(toRaw(record))
     expect(console.warn).not.toHaveBeenCalled()
