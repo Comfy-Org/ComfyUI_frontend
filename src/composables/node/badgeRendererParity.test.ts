@@ -51,9 +51,9 @@ function vueBadges(node: LGraphNode) {
     flags: node.flags,
     graphId: node.graph.id,
     id: node.id,
-    inputs: node.inputs,
+    inputs: node._state.inputs,
     mode: node.mode,
-    outputs: node.outputs,
+    outputs: node._state.outputs,
     properties: node.properties,
     title: node.title,
     type: node.type

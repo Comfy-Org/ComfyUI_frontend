@@ -18,7 +18,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISubgraphInput,
-  SlotDescriptor
+  SlotRecord
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -50,7 +50,7 @@ const ROTATION_OFFSET = -Math.PI
 /** Shared base class for {@link LGraphNode} input and output slots. */
 export abstract class NodeSlot extends SlotBase implements INodeSlot {
   pos?: Point
-  declare readonly _state: SlotDescriptor
+  declare readonly _state: SlotRecord
   declare alwaysVisible?: boolean
   declare widgetId?: INodeInputSlot['widgetId']
   declare slot_index?: number
@@ -90,7 +90,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
       | OptionalProps<INodeSlot, 'boundingRect'>
       | OptionalProps<ISubgraphInput, 'link' | 'boundingRect'>,
     node: LGraphNode,
-    descriptor?: SlotDescriptor
+    descriptor?: SlotRecord
   ) {
     const { boundingRect, name, type, ...rest } = slot
     if ('_listenerController' in rest) delete rest._listenerController

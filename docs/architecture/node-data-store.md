@@ -46,8 +46,8 @@ NodeState {
   shape?: RenderShape
   resizable?: boolean
   showAdvanced?: boolean
-  inputs: InputSlotDescriptor[]
-  outputs: OutputSlotDescriptor[]
+  inputs: InputSlotRecord[]
+  outputs: OutputSlotRecord[]
 }
 ```
 
@@ -67,7 +67,7 @@ mirror (the hard constraint of this phase):
 `VueNodeData.selected` and `.executing` are dead fields today (no
 production consumer reads them); they are deleted, not migrated.
 
-## Decision 3: Plain slot descriptors; independent identity deferred
+## Decision 3: Plain slot records with independent runtime identity
 
 `NodeState.inputs` and `NodeState.outputs` own ordered plain descriptors.
 Compatibility adapters forward metadata to those descriptors. The public
@@ -82,10 +82,16 @@ the drawing adapters; widget resources and derived connectivity stay outside
 descriptors.
 
 Descriptor identity preserves retained adapters through reordering, removal,
-and transfer between arrays. Membership does not reparent an adapter. There is
-no independent slot key yet. See
+and transfer between arrays. Membership does not reparent an adapter. Each
+record also has an immutable runtime identity independent of its position.
+Store lookup follows registered memberships, including aliases across roots,
+and stops exposing a record when its last registered membership leaves.
+Workflow serialization remains unchanged and reconstruction mints fresh keys.
+See
 [the descriptor ownership decision](../adr/ECS-SLOTS-0057-plain-descriptors-before-independent-slot-identity.md)
-for the deferred identity decision and reflection constraints.
+for reflection constraints and
+[the runtime identity decision](../adr/ECS-SLOTS-0058-independent-runtime-slot-identity.md)
+for collision policy and the remaining ID-keyed membership migration.
 
 What this phase does remove is the last `inputs[].link` dependency: the
 three remaining readers (`nodeDataUtils.linkedWidgetedInputs` used by

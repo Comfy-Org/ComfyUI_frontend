@@ -143,7 +143,7 @@ function graphWithRegisteredNode(id: number): LGraph {
   graph.id = GRAPH_ID
   const incumbent = new DummyNode()
   incumbent.id = toNodeId(id)
-  if (!registerNodeState(graph, incumbent)) {
+  if (!registerNodeState(graph, incumbent).ok) {
     throw new Error(`failed to register incumbent node ${id}`)
   }
   return graph
@@ -243,7 +243,7 @@ describe('LGraph.configure remint link remap', () => {
     const subgraph = new Subgraph(rootGraph, createTestSubgraphData())
     const incumbent = new DummyNode()
     incumbent.id = toNodeId(1)
-    if (!registerNodeState(subgraph, incumbent)) {
+    if (!registerNodeState(subgraph, incumbent).ok) {
       throw new Error('failed to register incumbent subgraph node 1')
     }
     const payload = createTestSubgraphData({
