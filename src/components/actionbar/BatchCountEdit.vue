@@ -2,7 +2,7 @@
   <Tooltip>
     <TooltipTrigger as-child>
       <div class="batch-count h-full" :aria-label="t('menu.batchCount')">
-        <div class="flex h-full w-14 overflow-hidden rounded-l-lg bg-secondary">
+        <div class="flex h-full w-14 overflow-hidden rounded-lg bg-secondary">
           <input
             ref="batchCountInputRef"
             v-model="batchCountInput"
@@ -15,7 +15,7 @@
             @blur="onInputBlur"
             @keydown.enter.prevent="onInputEnter"
           />
-          <div class="flex h-full w-6 flex-col">
+          <div class="flex h-full w-6 flex-col border-l border-border/50">
             <Button
               variant="secondary"
               size="unset"

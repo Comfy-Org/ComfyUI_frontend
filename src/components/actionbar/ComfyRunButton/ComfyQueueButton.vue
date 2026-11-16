@@ -1,49 +1,51 @@
 <template>
-  <ButtonGroup class="queue-button-group h-8 rounded-lg bg-secondary">
+  <div class="queue-run-controls flex h-8 items-center gap-1.5">
     <BatchCountEdit />
-    <Button
-      :tooltip="queueButtonTooltip"
-      tooltip-side="bottom"
-      :variant="queueButtonVariant"
-      size="unset"
-      :class="
-        cn(
-          'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
-          paymentRecoveryLock ? 'font-medium' : 'font-light'
-        )
-      "
-      data-testid="queue-button"
-      @click="queuePrompt"
-    >
-      <i :class="iconClass" data-testid="queue-button-icon" />
-      {{ queueButtonLabel }}
-    </Button>
+    <ButtonGroup class="queue-button-group h-full rounded-lg">
+      <Button
+        :tooltip="queueButtonTooltip"
+        tooltip-side="bottom"
+        :variant="queueButtonVariant"
+        size="unset"
+        :class="
+          cn(
+            'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
+            paymentRecoveryLock ? 'font-medium' : 'font-light'
+          )
+        "
+        data-testid="queue-button"
+        @click="queuePrompt"
+      >
+        <i :class="iconClass" data-testid="queue-button-icon" />
+        {{ queueButtonLabel }}
+      </Button>
 
-    <Menu side="bottom" :side-offset="4" class="min-w-44">
-      <template #trigger>
-        <Button
-          :variant="queueMenuTriggerVariant"
-          size="unset"
-          :disabled="Boolean(paymentRecoveryLock)"
-          :class="
-            cn(
-              queueMenuTriggerClass,
-              queueMenuTriggerVariantClass[queueMenuTriggerVariant]
-            )
-          "
-          :aria-label="t('menu.runOptions')"
-          data-testid="queue-mode-menu-trigger"
-        >
-          <TinyChevronIcon />
-        </Button>
-      </template>
-      <MenuRadioGroup
-        :model-value="selectedQueueMode"
-        :options="queueModeMenuItems"
-        @select.prevent
-      />
-    </Menu>
-  </ButtonGroup>
+      <Menu side="bottom" :side-offset="4" class="min-w-44">
+        <template #trigger>
+          <Button
+            :variant="queueMenuTriggerVariant"
+            size="unset"
+            :disabled="Boolean(paymentRecoveryLock)"
+            :class="
+              cn(
+                queueMenuTriggerClass,
+                queueMenuTriggerVariantClass[queueMenuTriggerVariant]
+              )
+            "
+            :aria-label="t('menu.runOptions')"
+            data-testid="queue-mode-menu-trigger"
+          >
+            <TinyChevronIcon />
+          </Button>
+        </template>
+        <MenuRadioGroup
+          :model-value="selectedQueueMode"
+          :options="queueModeMenuItems"
+          @select.prevent
+        />
+      </Menu>
+    </ButtonGroup>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -172,7 +174,7 @@ const queueButtonLabel = computed(() =>
 )
 
 const queueButtonVariant = computed<
-  'destructive' | 'primary' | 'secondary' | 'subscribe'
+  'destructive' | 'inverted' | 'secondary' | 'subscribe'
 >(() =>
   paymentRecoveryLock === 'owner'
     ? 'subscribe'
@@ -180,7 +182,7 @@ const queueButtonVariant = computed<
       ? 'secondary'
       : isStopInstantAction.value
         ? 'destructive'
-        : 'primary'
+        : 'inverted'
 )
 const queueMenuTriggerVariant = computed(() =>
   queueButtonVariant.value === 'subscribe'
@@ -189,11 +191,11 @@ const queueMenuTriggerVariant = computed(() =>
 )
 const queueMenuTriggerVariantClass = {
   destructive: 'border-black/20 data-[state=open]:bg-destructive/90',
-  primary: 'data-[state=open]:bg-primary/90',
+  inverted: 'border-background/25 data-[state=open]:bg-foreground/80',
   secondary: 'text-muted-foreground'
 } satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =
-  'h-full w-6 rounded-l-none rounded-r-lg border-0 border-l border-solid border-current/25 p-0'
+  'h-full w-7 rounded-l-none rounded-r-lg border-0 border-l border-solid border-current/25 p-0'
 
 const iconClass = computed(() => {
   if (paymentRecoveryLock) {

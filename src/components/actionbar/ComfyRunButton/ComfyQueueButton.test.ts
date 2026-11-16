@@ -263,10 +263,10 @@ describe('ComfyQueueButton', () => {
     const queueButton = screen.getByTestId('queue-button')
 
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'primary')
+    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
     expect(screen.getByTestId('queue-mode-menu-trigger')).toHaveAttribute(
       'data-variant',
-      'primary'
+      'inverted'
     )
   })
 
@@ -303,7 +303,7 @@ describe('ComfyQueueButton', () => {
     expect(queueSettingsStore.mode).toBe('instant-idle')
     const queueButton = screen.getByTestId('queue-button')
     expect(queueButton).toHaveTextContent('Run (Instant)')
-    expect(queueButton).toHaveAttribute('data-variant', 'primary')
+    expect(queueButton).toHaveAttribute('data-variant', 'inverted')
 
     expect(commandStore.execute).not.toHaveBeenCalled()
   })
