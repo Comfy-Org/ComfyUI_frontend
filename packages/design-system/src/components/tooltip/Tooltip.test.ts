@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import { DialogPortal } from 'reka-ui'
+import { DialogPortal, ToolbarButton, ToolbarRoot } from 'reka-ui'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
@@ -71,6 +71,42 @@ describe('Tooltip', () => {
     await fireEvent.wheel(trigger)
     await user.tab()
 
+    expect(trigger).toHaveAccessibleDescription('Helpful text')
+  })
+
+  it('describes arrow-key focus after a wheel-cancelled hover', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render({
+      components: {
+        ToolbarRoot,
+        ToolbarButton,
+        Tooltip,
+        TooltipContent,
+        TooltipProvider,
+        TooltipTrigger
+      },
+      template: `
+        <TooltipProvider :delay-duration="2500">
+          <ToolbarRoot>
+            <ToolbarButton>Previous</ToolbarButton>
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <ToolbarButton>Trigger</ToolbarButton>
+              </TooltipTrigger>
+              <TooltipContent>Helpful text</TooltipContent>
+            </Tooltip>
+          </ToolbarRoot>
+        </TooltipProvider>
+      `
+    })
+    const trigger = screen.getByRole('button', { name: 'Trigger' })
+
+    await user.tab()
+    await user.hover(trigger)
+    await fireEvent.wheel(trigger)
+    await user.keyboard('{ArrowRight}')
+
+    expect(trigger).toHaveFocus()
     expect(trigger).toHaveAccessibleDescription('Helpful text')
   })
 

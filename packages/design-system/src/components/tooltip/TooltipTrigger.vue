@@ -49,7 +49,7 @@ useEventListener(
   ['pointerup', 'pointercancel', 'wheel', 'keydown'],
   (event) => {
     if (event instanceof KeyboardEvent) {
-      if (event.key === 'Tab') interactionBlocked = false
+      interactionBlocked = false
       return
     }
     if (event.type === 'wheel' || touchOrigin) cancelInteraction()
