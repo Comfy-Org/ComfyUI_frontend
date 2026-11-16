@@ -46,6 +46,7 @@ export async function mockWorkspaceTokenMint(
       jsonRoute({
         token: 'mock-workspace-token',
         expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        user_id: 'uid-1',
         workspace: { id: ws.id, name: ws.name, type: ws.type },
         role: ws.role,
         permissions: []

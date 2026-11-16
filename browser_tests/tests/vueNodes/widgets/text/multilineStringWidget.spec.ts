@@ -5,10 +5,6 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Vue Multiline String Widget', { tag: '@vue-nodes' }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   const getFirstClipNode = (comfyPage: ComfyPage) =>
     comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode (Prompt)').first()
 

@@ -2,15 +2,16 @@ import { expect } from '@playwright/test'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   expectSlotsWithinBounds,
   measureNodeSlotOffsets
 } from '@e2e/fixtures/utils/slotBoundsUtil'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const RENAMED_INPUT_NAME = 'renamed_input'
 const RENAMED_SLOT_NAME = 'renamed_slot_name'
@@ -681,11 +682,13 @@ test(
       await comfyPage.page.mouse.down()
       await comfyPage.canvas.hover({ position: await seedIOSlot.getPosition() })
 
-      await expect(comfyPage.page).toHaveScreenshot('vue-io-highlight.png', {
-        clip
-      })
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [clip],
+        'vue-io-highlight.png',
+        { padding: 0 }
+      )
 
-      //cancel link operation
       await stepsSlot.hover()
       await comfyPage.page.mouse.up()
     })

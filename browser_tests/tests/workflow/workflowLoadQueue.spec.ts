@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
@@ -90,5 +90,35 @@ test.describe('Workflow load queue', { tag: '@vue-nodes' }, () => {
       ).toBeVisible()
       await expect(vueNodes.getNodeByTitle('older workflow')).toHaveCount(0)
     })
+  })
+
+  test('a nested load from a lifecycle hook is refused instead of hanging the queue', async ({
+    comfyPage
+  }) => {
+    const { page, vueNodes } = comfyPage
+
+    const result = await page.evaluate(async (nested) => {
+      let nestedOutcome = 'not attempted'
+      let attempted = false
+      window.app!.registerExtension({
+        name: 'e2e.nestedLoadAfterAwait',
+        beforeLoadGraph: async (app) => {
+          if (attempted) return
+          attempted = true
+          await Promise.resolve()
+          const outcome = await app.loadGraphData(nested)
+          nestedOutcome = outcome === false ? 'refused' : 'resolved'
+        }
+      })
+
+      await window.app!.loadGraphData(nested)
+      return { nestedOutcome }
+    }, noteWorkflow('nested workflow'))
+    await comfyPage.workflow.loadGraphData(noteWorkflow('next workflow'))
+
+    expect(result.nestedOutcome).toBe('refused')
+
+    await expect(vueNodes.nodes).toHaveCount(1)
+    await expect(vueNodes.getNodeByTitle('next workflow').first()).toBeVisible()
   })
 })

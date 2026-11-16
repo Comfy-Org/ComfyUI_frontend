@@ -2,7 +2,9 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "rootDir": "src",
-    "outDir": "dist"
+    "outDir": "dist",
+    "paths": {},
+    "types": ["vitest/globals", "node", "@testing-library/jest-dom/vitest"]
   },
   "include": ["src/**/*"]
 }

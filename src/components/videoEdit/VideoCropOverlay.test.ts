@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { Bounds } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 import VideoCropOverlay from './VideoCropOverlay.vue'
 

@@ -8,20 +8,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import '@/scripts/changeTracker'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
 
 const apiEvents: EventTarget = api
 
@@ -32,13 +35,13 @@ const defaultWorkflowExecutionIntent = {
 vi.mock(import('@/composables/useAppMode'))
 
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 // Remove any previous global types
 declare global {
@@ -979,6 +982,22 @@ describe('useExecutionStore - background workflow error routing', () => {
     )
   }
 
+  function fireOutputsSkipped(jobId: string, nodeId: string) {
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: jobId,
+          node_errors: {
+            [nodeId]: nodeError(
+              [validationError('required_input_missing', 'images')],
+              'SaveImage'
+            )
+          }
+        }
+      })
+    )
+  }
+
   const cloudValidationMessage = JSON.stringify({
     error: { type: 'prompt_outputs_failed_validation', message: 'invalid' },
     node_errors: {
@@ -1039,6 +1058,22 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastNodeErrors).toBeNull()
 
     errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
+  })
+
+  it("keeps validation node errors that arrive before their job's empty submission response", () => {
+    store.registerJobWorkflowIdMapping('job-a', graphAId)
+    fireExecutionError('job-a', {
+      exception_message: cloudValidationMessage,
+      exception_type: 'ValidationError'
+    })
+
+    errorStore.recordSubmissionNodeErrors(
+      {},
+      errorStore.runErrorKey(graphAId, workflowA.path),
+      'job-a'
+    )
+
     expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
   })
 
@@ -1148,6 +1183,100 @@ describe('useExecutionStore - background workflow error routing', () => {
     errorStore.setActiveGraph(graphBId, workflowB.path)
 
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-ambiguous')
+  })
+
+  it('marks the skipped outputs of the visible run as node errors', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('files the skipped outputs of a background run under its workflow', () => {
+    callStoreJob('job-b', workflowB)
+    fireOutputsSkipped('job-b', '9')
+
+    expect(errorStore.lastNodeErrors).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('applies skipped outputs that arrive before the job is stored', () => {
+    fireOutputsSkipped('job-a', '9')
+    expect(errorStore.lastNodeErrors).toBeNull()
+
+    callStoreJob('job-a', workflowA)
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('keeps skipped outputs of an unknown job off the visible run', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    fireOutputsSkipped('job-unknown', '5')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('keeps skipped-output errors through execution_start', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    fireExecutionStart('job-a')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('shows skipped outputs whose errors include a bare string', () => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    const inputError = validationError('required_input_missing', 'images')
+    callStoreJob('job-a', workflowA)
+
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: 'job-a',
+          node_errors: {
+            '9': {
+              class_type: 'SaveImage',
+              dependent_outputs: ['9'],
+              errors: [inputError, 'Image is not valid', 42]
+            }
+          }
+        }
+      })
+    )
+
+    expect(errorStore.lastNodeErrors?.['9']?.errors).toEqual([
+      inputError,
+      { type: 'error', message: 'Image is not valid', details: '' }
+    ])
+    expect(errorStore.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('ignores a skipped-outputs message with no error to show', () => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    errorStore.dismissErrorOverlay()
+
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: 'job-a',
+          node_errors: {
+            '5': {
+              class_type: 'SaveImage',
+              dependent_outputs: ['5'],
+              errors: [42]
+            }
+          }
+        }
+      })
+    )
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+    expect(errorStore.isErrorOverlayOpen).toBe(false)
   })
 
   it('does not route an unattributable failure to the visible workflow', () => {
@@ -2594,7 +2723,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         'executing',
         'progress',
         'progress_state',
-        'execution_error'
+        'execution_error',
+        'prompt_outputs_skipped'
       ]
 
       store.unbindExecutionEvents()
@@ -2606,6 +2736,336 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         )
       }
     })
+  })
+})
+
+describe('useExecutionStore - frames from a background workflow', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  function createOpenWorkflow(name: string) {
+    return fromPartial<LoadedComfyWorkflow>({
+      activeState: { id: `${name}-graph` },
+      initialState: { id: `${name}-graph` },
+      path: `workflows/${name}.json`,
+      instanceId: `${name}-instance`
+    })
+  }
+
+  const visibleWorkflow = createOpenWorkflow('visible')
+  const backgroundWorkflow = createOpenWorkflow('background')
+
+  function fire(event: string, detail: unknown) {
+    apiEvents.dispatchEvent(new CustomEvent(event, { detail }))
+  }
+
+  function fireProgressState(jobId: string, nodeId: string) {
+    fire('progress_state', {
+      prompt_id: jobId,
+      nodes: {
+        [nodeId]: {
+          value: 1,
+          max: 10,
+          state: 'running',
+          node_id: nodeId,
+          prompt_id: jobId,
+          display_node_id: nodeId
+        }
+      }
+    })
+    vi.advanceTimersToNextFrame()
+  }
+
+  function queueJob(jobId: string, workflow: LoadedComfyWorkflow) {
+    store.storeJob({
+      nodes: ['1'],
+      id: jobId,
+      promptOutput: { '1': createPromptNode('Node', 'Node') },
+      workflow,
+      mode: 'graph'
+    })
+  }
+
+  beforeEach(() => {
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+    useWorkflowStore().activeWorkflow = visibleWorkflow
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [visibleWorkflow, backgroundWorkflow]
+    })
+    queueJob('job-visible', visibleWorkflow)
+    queueJob('job-background', backgroundWorkflow)
+  })
+
+  it('tracks a background job as running without making it the active job', () => {
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+
+    expect(store.activeJobId).toBeNull()
+    expect(store.getWorkflowStatus(backgroundWorkflow)).toBe('running')
+    expect(store.getWorkflowStatus(visibleWorkflow)).toBeUndefined()
+  })
+
+  it('records background progress per job without painting the canvas', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fireProgressState('job-visible', '1')
+    fire('progress', { value: 2, max: 10, prompt_id: 'job-visible', node: '1' })
+    vi.advanceTimersToNextFrame()
+
+    fireProgressState('job-background', '1')
+    fire('progress', {
+      value: 9,
+      max: 10,
+      prompt_id: 'job-background',
+      node: '1'
+    })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStatesByJob['job-background']['1'].value).toBe(1)
+    expect(store.nodeProgressStates['1'].prompt_id).toBe('job-visible')
+    expect(store.executingNodeProgress).toBe(0.2)
+  })
+
+  it.for([
+    ['executed', { node: '1', display_node: '1', output: {} }],
+    ['execution_cached', { nodes: ['1'], timestamp: 0 }]
+  ] as const)(
+    'records a background %s frame on its own job, not the active one',
+    ([event, detail]) => {
+      fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+
+      fire(event, { ...detail, prompt_id: 'job-background' })
+
+      expect(store.activeJob?.nodes['1']).toBe(false)
+      expect(store.queuedJobs['job-background'].nodes['1']).toBe(true)
+    }
+  )
+
+  it('adopts the running job of a workflow when switching to its tab', async () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fireProgressState('job-visible', '1')
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fireProgressState('job-background', '1')
+
+    useWorkflowStore().activeWorkflow = backgroundWorkflow
+    await nextTick()
+
+    expect(store.activeJobId).toBe('job-background')
+    expect(store.nodeProgressStates['1'].prompt_id).toBe('job-background')
+
+    useWorkflowStore().activeWorkflow = visibleWorkflow
+    await nextTick()
+
+    expect(store.activeJobId).toBe('job-visible')
+    expect(store.nodeProgressStates['1'].prompt_id).toBe('job-visible')
+  })
+
+  it('clears the canvas but keeps tracking the running job when switching to a workflow with no job', async () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fireProgressState('job-visible', '1')
+
+    useWorkflowStore().activeWorkflow = backgroundWorkflow
+    await nextTick()
+    fire('progress', { value: 5, max: 10, prompt_id: 'job-visible', node: '1' })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStates).toEqual({})
+    expect(store.activeJobId).toBe('job-visible')
+    expect(store.isActiveWorkflowRunning).toBe(false)
+    expect(store.executingNodeProgress).toBe(0.5)
+  })
+
+  it('admits frames whose workflow is unknown while no job is active', () => {
+    fire('execution_start', { prompt_id: 'job-elsewhere', timestamp: 0 })
+    fireProgressState('job-elsewhere', '1')
+
+    expect(store.activeJobId).toBe('job-elsewhere')
+    expect(store.nodeProgressStates['1'].prompt_id).toBe('job-elsewhere')
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('does not report a background job whose owner is known', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+
+    expect(store.activeJobId).toBe('job-visible')
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('reports a job with no known owner that is rejected while another job is active', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+
+    fire('execution_start', { prompt_id: 'job-unowned', timestamp: 0 })
+
+    expect(store.activeJobId).toBe('job-visible')
+    expect(reportError).toHaveBeenCalledOnce()
+    const [, options] = vi.mocked(reportError).mock.calls[0]
+    expect(options.errorType).toBe('warning_rejecting_unowned_execution_start')
+    expect(options.context).toMatchObject({
+      jobId: 'job-unowned',
+      activeJobId: 'job-visible',
+      hasOwnWorkflowRecord: false,
+      activeWorkflowInstanceId: visibleWorkflow.instanceId
+    })
+  })
+
+  it.for([
+    ['execution_success', { timestamp: 0 }],
+    [
+      'execution_interrupted',
+      { node_id: '1', node_type: 't', executed: [], timestamp: 0 }
+    ],
+    [
+      'execution_error',
+      {
+        node_id: '1',
+        node_type: 't',
+        exception_message: 'boom',
+        exception_type: 'RuntimeError',
+        traceback: [],
+        timestamp: 0
+      }
+    ]
+  ] as const)(
+    'keeps painting the active job when a background job ends with %s',
+    ([event, detail]) => {
+      fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+      fireProgressState('job-visible', '1')
+      fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+
+      fire(event, { ...detail, prompt_id: 'job-background' })
+
+      expect(store.activeJobId).toBe('job-visible')
+      expect(store.nodeProgressStates['1'].prompt_id).toBe('job-visible')
+      expect(store.queuedJobs['job-background']).toBeUndefined()
+    }
+  )
+
+  it('drops a background progress frame still queued when its job ends', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fire('progress_state', {
+      prompt_id: 'job-background',
+      nodes: {
+        '1': {
+          value: 1,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-background',
+          display_node_id: '1'
+        }
+      }
+    })
+
+    fire('execution_success', { prompt_id: 'job-background', timestamp: 0 })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStatesByJob['job-background']).toBeUndefined()
+    expect(store.runningJobIds).toEqual([])
+  })
+
+  it('drops a progress frame still queued when its job is forgotten', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fire('progress_state', {
+      prompt_id: 'job-background',
+      nodes: {
+        '1': {
+          value: 1,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-background',
+          display_node_id: '1'
+        }
+      }
+    })
+
+    store.forgetFinishedJobs(['job-background'])
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStatesByJob['job-background']).toBeUndefined()
+    expect(store.activeJobId).toBe('job-visible')
+  })
+
+  it('applies each job snapshot queued in the same animation frame', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fire('progress_state', {
+      prompt_id: 'job-visible',
+      nodes: {
+        '1': {
+          value: 7,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-visible',
+          display_node_id: '1'
+        }
+      }
+    })
+    fire('progress_state', {
+      prompt_id: 'job-background',
+      nodes: {
+        '1': {
+          value: 9,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-background',
+          display_node_id: '1'
+        }
+      }
+    })
+
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStatesByJob['job-visible']['1'].value).toBe(7)
+    expect(store.nodeProgressStatesByJob['job-background']['1'].value).toBe(9)
+    expect(store.nodeProgressStates['1'].prompt_id).toBe('job-visible')
+  })
+
+  it('keeps a visible progress frame queued when a background job ends', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fire('progress_state', {
+      prompt_id: 'job-visible',
+      nodes: {
+        '1': {
+          value: 6,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-visible',
+          display_node_id: '1'
+        }
+      }
+    })
+    fire('progress', {
+      value: 6,
+      max: 10,
+      prompt_id: 'job-visible',
+      node: '1'
+    })
+
+    fire('execution_success', { prompt_id: 'job-background', timestamp: 0 })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStates['1'].prompt_id).toBe('job-visible')
+    expect(store.executingNodeProgress).toBe(0.6)
+  })
+
+  it('re-adopts the visible job once a late-owned job proves to belong elsewhere', async () => {
+    useWorkflowStore().activeWorkflow = backgroundWorkflow
+    await nextTick()
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-late', timestamp: 0 })
+    useWorkflowStore().activeWorkflow = visibleWorkflow
+    await nextTick()
+    expect(store.activeJobId).toBe('job-late')
+
+    queueJob('job-late', backgroundWorkflow)
+
+    expect(store.activeJobId).toBe('job-visible')
   })
 })
 

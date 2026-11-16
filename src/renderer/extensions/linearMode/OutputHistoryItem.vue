@@ -9,7 +9,7 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import VideoPlayOverlay from '@/platform/assets/components/VideoPlayOverlay.vue'
+import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
 
 const { output } = defineProps<{
   output: AugmentedResultItem

@@ -14,9 +14,11 @@ import {
   zAgentPendingAsk,
   zAgentPostMessageRequest
 } from '@comfyorg/ingest-types/zod'
+import { escapeRegExp } from 'es-toolkit'
 import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type {
   AgentWsEvent,
   zTurnInProgressError
@@ -30,6 +32,23 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const zAnswerRequest = z.object({ selected: z.array(z.string()) })
+const zWireInteger = z.coerce.number().int().safe()
+
+function pendingAskForWire(
+  ask: z.infer<typeof zAgentPendingAsk>
+): AgentPendingAsk {
+  if (ask.kind !== 'run_approval') return ask
+  return {
+    ...ask,
+    context: {
+      ...ask.context,
+      doc_seq:
+        ask.context.doc_seq === undefined
+          ? undefined
+          : zWireInteger.parse(ask.context.doc_seq)
+    }
+  }
+}
 
 const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'
@@ -51,7 +70,8 @@ const TURN_IN_PROGRESS: TurnInProgressBody = {
   turn_id: TURN_ID
 }
 
-const TURN_THINKING_TEXT = 'Wiring the audio output node.'
+export const TURN_THINKING_TEXT = 'Wiring the audio output node.'
+export const LATE_THINKING_TEXT = 'Back online, so I can finish the wiring.'
 export const POST_RECONNECT_TEXT = 'Reconnected, and the graph is ready.'
 export const PERSISTED_BEFORE_TOOL_TEXT = 'Prepared the graph. '
 export const PERSISTED_AFTER_TOOL_TEXT = 'Audio output connected.'
@@ -71,6 +91,11 @@ const TURN_TOOL_EVENT: AgentWsEvent = {
     message_id: TURN_ID,
     thread_id: THREAD_ID
   }
+}
+
+export const LATE_THINKING_EVENT: AgentWsEvent = {
+  type: 'agent_thinking',
+  data: { delta: LATE_THINKING_TEXT, message_id: TURN_ID, thread_id: THREAD_ID }
 }
 
 export const POST_RECONNECT_EVENT: AgentWsEvent = {
@@ -95,11 +120,22 @@ const FOREIGN_TURN_DONE_EVENT: AgentWsEvent = {
 const RUN_APPROVAL_ASK_ID = `${TURN_ID}:call-run-workflow`
 
 /**
+ * The workflow this ask names. Not exported: it is the same workflow the
+ * panel's picker and tab already name, so a spec that matched it as text
+ * would resolve to three elements. `approvalWorkflowLink` below is the
+ * locator a spec should assert on instead.
+ */
+const APPROVAL_WORKFLOW_NAME = 'Unsaved Workflow'
+
+/**
  * The option ids this ask offers. Declared separately because `AgentWsEvent`
  * types `data` loosely, so reading them back off the event would be an
  * `unknown` the route would have to cast.
  */
 const RUN_APPROVAL_OPTION_IDS = ['run', 'cancel'] as const
+
+/** The option id the panel's Run button answers with. */
+export const APPROVAL_RUN_OPTION_ID = RUN_APPROVAL_OPTION_IDS[0]
 
 /**
  * The frame the server sends when a turn parks waiting for the user to approve
@@ -114,8 +150,11 @@ export const RUN_APPROVAL_EVENT: AgentWsEvent = {
     thread_id: THREAD_ID,
     ask_id: RUN_APPROVAL_ASK_ID,
     kind: 'run_approval',
-    prompt: 'Run workflow “Unsaved Workflow”?',
-    context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
+    prompt: `Run workflow “${APPROVAL_WORKFLOW_NAME}”?`,
+    context: {
+      workflow_id: WORKFLOW_ID,
+      workflow_name: APPROVAL_WORKFLOW_NAME
+    },
     options: [
       {
         id: RUN_APPROVAL_OPTION_IDS[0],
@@ -178,8 +217,9 @@ class TurnLockServer {
   private foreignPrompt: string | undefined
   private rejected = 0
   private posts = 0
+  private transcriptReads = 0
   private readonly answered: string[][] = []
-  private pendingAsk: AgentPendingAsk | undefined
+  private pendingAsk: z.infer<typeof zAgentPendingAsk> | undefined
   private heldTranscript:
     | {
         threadId?: string
@@ -201,6 +241,14 @@ class TurnLockServer {
   /** Every post the server answered, accepted or rejected. */
   get postAttempts(): number {
     return this.posts
+  }
+
+  get transcriptReadCount(): number {
+    return this.transcriptReads
+  }
+
+  countTranscriptRead(): void {
+    this.transcriptReads++
   }
 
   countPost(): void {
@@ -324,6 +372,10 @@ class TurnLockServer {
                 tool_name: 'add_node',
                 status: 'success'
               }
+            ],
+            thinking: [
+              { text: TURN_THINKING_TEXT, tool_call_id: 'call-add-node' },
+              { text: LATE_THINKING_TEXT }
             ]
           }
         },
@@ -370,7 +422,10 @@ class TurnLockServer {
       role: 'assistant',
       status: 'streaming',
       workflow_id: WORKFLOW_ID,
-      pending_ask: this.pendingAsk
+      pending_ask:
+        this.pendingAsk === undefined
+          ? undefined
+          : pendingAskForWire(this.pendingAsk)
     })
     return rows
   }
@@ -438,6 +493,7 @@ async function routeTurnLock(
       const path = new URL(route.request().url()).pathname.split('/')
       const threadId = decodeURIComponent(path.at(-2) ?? '')
       await server.waitForTranscriptRelease(threadId)
+      server.countTranscriptRead()
       return route.fulfill(jsonRoute(server.transcript(threadId)))
     }
     server.countPost()
@@ -500,14 +556,16 @@ export class AgentTurnLockHarness {
   public readonly sendButton: Locator
   public readonly stopButton: Locator
   public readonly runApprovalButton: Locator
+  public readonly approvalCard: Locator
+  public readonly approvalWorkflowLink: Locator
   public readonly workSummary: Locator
   public readonly workingRow: Locator
   public readonly liveProgressRow: Locator
   public readonly userBubbles: Locator
   public readonly turnInProgressNotice: Locator
+  public readonly agentPanel: AgentPanel
   private readonly entryButton: Locator
   private readonly dock: Locator
-  private readonly agentPanel: AgentPanel
 
   constructor(
     private readonly page: Page,
@@ -532,14 +590,22 @@ export class AgentTurnLockHarness {
       name: enMessages.agent.runApproval.run,
       exact: true
     })
-    // WorkSummary.vue renders three labels off the elapsed total: `worked`
-    // alone, `workedForSeconds`, or `workedForMinutes`. Anchoring on the
-    // shared `worked` stem matches all three, so the negative assertions on
-    // this locator cannot go vacuous when a turn is shorter or longer than the
-    // fixture's tool duration, or when the copy is reworded.
+    this.approvalCard = this.panel.getByText(
+      enMessages.agent.runApproval.question,
+      { exact: true }
+    )
+    this.approvalWorkflowLink = this.panel.getByRole('button', {
+      name: APPROVAL_WORKFLOW_NAME,
+      exact: true
+    })
     this.workSummary = this.panel.getByRole('button', {
       name: new RegExp(
-        `^${enMessages.agent.worked.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`
+        `^(${[
+          enMessages.agent.worked,
+          enMessages.agent.workedNotConfirmedOnCanvas
+        ]
+          .map(escapeRegExp)
+          .join('|')})$`
       )
     })
     this.workingRow = this.panel.getByText(enMessages.agent.working, {
@@ -571,6 +637,13 @@ export class AgentTurnLockHarness {
 
   postAttempts(): number {
     return this.server.postAttempts
+  }
+
+  async waitForRecoveryExhausted(): Promise<void> {
+    const hydrationRead = 1
+    await expect
+      .poll(() => this.server.transcriptReadCount, { timeout: 90_000 })
+      .toBeGreaterThanOrEqual(TURN_RECOVERY_DELAYS_MS.length + hydrationRead)
   }
 
   /** Opens the panel on a blank workflow and points the composer at that tab. */
@@ -653,6 +726,21 @@ export class AgentTurnLockHarness {
   /** Makes an ask available through transcript hydration, independently of WS delivery. */
   primePendingAsk(event: AgentWsEvent): void {
     this.server.recordAsk(event)
+  }
+
+  /**
+   * Parks the live turn on a run-approval ask the way the service does while
+   * it waits for the user: the assistant row stays `streaming` (so posts keep
+   * returning 409) and starts carrying `pending_ask`. No frame is pushed --
+   * that models the `agent_ask` a dropped socket never delivered.
+   */
+  parkOnApproval(): void {
+    this.primePendingAsk(RUN_APPROVAL_EVENT)
+  }
+
+  /** The frame the server pushes once it accepts an answer to the approval. */
+  resolveApproval(ws: WebSocketRoute): void {
+    this.push(ws, RUN_APPROVAL_RESOLVED_EVENT)
   }
 
   /** True only when a test explicitly primed transcript-based recovery. */

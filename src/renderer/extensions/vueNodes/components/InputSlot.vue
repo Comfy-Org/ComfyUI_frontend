@@ -10,7 +10,7 @@
           cn(
             'lg-slot lg-slot--input group m-0 flex items-center rounded-r-lg',
             'cursor-crosshair',
-            dotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
+            effectiveDotOnly ? 'lg-slot--dot-only' : 'h-5 pr-2',
             {
               'lg-slot--connected': props.connected,
               'lg-slot--compatible': props.compatible,
@@ -66,10 +66,10 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import EditableText from '@/components/common/EditableText.vue'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -79,7 +79,7 @@ import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useN
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'
 
@@ -105,7 +105,7 @@ const hasNoLabel = computed(
     !props.slotData.localized_name &&
     props.slotData.name === ''
 )
-const dotOnly = computed(() => props.dotOnly || hasNoLabel.value)
+const effectiveDotOnly = computed(() => props.dotOnly || hasNoLabel.value)
 const accessibleName = computed(
   () =>
     props.slotData.label ||

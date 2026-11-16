@@ -7,6 +7,7 @@ import {
   DELETE_APPROVAL_PROMPT,
   RUN_ASK_ID,
   answerPath,
+  askExpired,
   askResolved,
   askTurnIds,
   askIdFor,
@@ -14,6 +15,7 @@ import {
   runApprovalAsk,
   toolCall
 } from '@e2e/fixtures/data/agent/agentAskFrames'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 // The consent contract this suite pins (fire-2, PM-1494 / PM-1450, slack-18):
 // a run_approval ask blocks the run on the user's explicit answer. The server
@@ -129,6 +131,36 @@ test.describe(
       expect(answers()).toHaveLength(1)
     })
 
+    test('an expired card closes without answering', async ({
+      startAskTurn
+    }) => {
+      const { panel, send, answers } = await startAskTurn(
+        'Run it.',
+        'ask_approval'
+      )
+      const cardLead = panel.getByText(enMessages.agent.runApproval.leadBound)
+      const runButton = panel.getByRole('button', {
+        name: enMessages.agent.runApproval.run,
+        exact: true
+      })
+
+      send(runApprovalAsk())
+      await expect(cardLead).toBeVisible()
+      await expect(runButton).toBeEnabled()
+
+      send(askExpired())
+      await expect(cardLead).toHaveCount(0)
+      await expect(runButton).toHaveCount(0)
+
+      const draft = 'The approval expired.'
+      send({
+        type: 'agent_message_draft',
+        data: { text: draft, ...askTurnIds }
+      })
+      await expect(panel.getByText(draft, { exact: true })).toBeVisible()
+      expect(answers()).toHaveLength(0)
+    })
+
     test('the panel never answers a run approval by itself, whatever the stored preference says', async ({
       startAskTurn
     }) => {
@@ -195,11 +227,12 @@ test.describe(
         ])
         await expect(deleteButton).toBeEnabled()
         await expect(keepButton).toBeEnabled()
-        await expect(
+        await expectElementScreenshot(
           panel.getByRole('group', {
             name: enMessages.agent.deleteApproval.card
-          })
-        ).toHaveScreenshot('agent-delete-approval-card.png')
+          }),
+          'agent-delete-approval-card.png'
+        )
       })
 
       await test.step('the click posts once, to that ask, and locks the card', async () => {

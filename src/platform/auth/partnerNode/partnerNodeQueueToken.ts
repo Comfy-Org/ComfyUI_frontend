@@ -1,5 +1,7 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
+  desktopHostPartnerNodeToken,
+  desktopHostSessionRevision,
   desktopHostUser,
   desktopHostWorkspaceToken
 } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -27,11 +29,7 @@ function mintTarget(workspaceId: string): PartnerNodeTokenTarget | undefined {
   return { ownerUid, workspaceId, credential: () => authStore.getIdToken() }
 }
 
-/**
- * The credential a Local prompt carries in `auth_token_comfy_org`: a
- * partner-node token for the workspace when the flag is on and the mint
- * succeeds, otherwise the workspace token unchanged.
- */
+/** The workspace's partner-node token for `auth_token_comfy_org`, or the workspace token when none is available or the Desktop session changed meanwhile. */
 export async function queueAuthToken(
   workspaceToken: string | undefined,
   workspaceId: string | null
@@ -39,7 +37,16 @@ export async function queueAuthToken(
   if (!workspaceToken || !workspaceId || isCloud) return workspaceToken
   if (!useFeatureFlags().flags.partnerNodeTokenEnabled) return workspaceToken
 
+  const startedUnder = desktopHostSessionRevision()
+  const sessionChanged = () => desktopHostSessionRevision() !== startedUnder
+
+  const fromDesktop = await desktopHostPartnerNodeToken(workspaceId)
+  if (fromDesktop) return fromDesktop
+  if (sessionChanged()) return workspaceToken
+
   const target = mintTarget(workspaceId)
   if (!target) return workspaceToken
-  return (await partnerNodeTokens.tokenFor(target)) ?? workspaceToken
+  const minted = await partnerNodeTokens.tokenFor(target)
+  if (sessionChanged()) return workspaceToken
+  return minted ?? workspaceToken
 }

@@ -13,12 +13,12 @@ import {
   queryLinkBadgeAtPoint
 } from '@/lib/litegraph/src/canvas/linkBadges'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 import {
   createMockCanvasRenderingContext2D,
@@ -166,8 +166,23 @@ describe('LGraphCanvas link visibility interactions', () => {
     }
   })
 
-  it('routes a visible curve right-click to the link menu', () => {
+  it('routes a right-click on a visible centre marker to the link menu', () => {
     const { canvas, link } = createFixture()
+    link._pos = [10, 20]
+    canvas.linkMarkerShape = LinkMarkerShape.Circle
+    canvas.renderedPaths.add(link)
+    vi.spyOn(layoutStore, 'queryRerouteAtPoint').mockReturnValue(null)
+    const showLinkMenu = vi.spyOn(canvas, 'showLinkMenu').mockReturnValue(false)
+
+    canvas.processContextMenu(undefined, event)
+
+    expect(showLinkMenu).toHaveBeenCalledWith(link, event, link)
+  })
+
+  it('leaves a right-click on a visible curve to the canvas menu', () => {
+    const { canvas, link } = createFixture()
+    link._pos = [300, 400]
+    canvas.linkMarkerShape = LinkMarkerShape.Circle
     canvas.renderedPaths.add(link)
     vi.spyOn(layoutStore, 'queryRerouteAtPoint').mockReturnValue(null)
     vi.spyOn(layoutStore, 'queryLinkSegmentAtPoint').mockReturnValue({
@@ -175,10 +190,14 @@ describe('LGraphCanvas link visibility interactions', () => {
       rerouteId: null
     })
     const showLinkMenu = vi.spyOn(canvas, 'showLinkMenu').mockReturnValue(false)
+    const menu = vi
+      .spyOn(LiteGraph, 'ContextMenu')
+      .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
 
     canvas.processContextMenu(undefined, event)
 
-    expect(showLinkMenu).toHaveBeenCalledWith(link, event, link)
+    expect(showLinkMenu).not.toHaveBeenCalled()
+    expect(menu).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -328,12 +347,10 @@ describe('LGraphCanvas link visibility interactions', () => {
     const reroute = graph.createReroute([-100, -100], link)
     if (!reroute) throw new Error('Missing shared reroute')
     visibleLink.parentId = reroute.id
+    reroute._pos = [10, 20]
+    canvas.linkMarkerShape = LinkMarkerShape.Circle
     canvas.renderedPaths.add(reroute)
     vi.spyOn(layoutStore, 'queryRerouteAtPoint').mockReturnValue(null)
-    vi.spyOn(layoutStore, 'queryLinkSegmentAtPoint').mockReturnValue({
-      linkId: link.id,
-      rerouteId: reroute.id
-    })
     const menu = vi
       .spyOn(LiteGraph, 'ContextMenu')
       .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))

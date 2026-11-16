@@ -70,7 +70,7 @@ test.describe(
         return route.fulfill(jsonRoute(response))
       })
       await comfyPage.nodeOps.clearGraph()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
 
     test('advertises extensions only, so the OS picker cannot offer a rejected type', async ({
@@ -233,7 +233,7 @@ test.describe(
       await agentPanel.dropFile(comfyPage.dragDrop, 'default.json')
 
       await expect(agentPanel.attachmentChip('default.json')).toBeVisible()
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
 
     test('still opens a .json dropped on the CANVAS as a workflow', async ({
@@ -247,7 +247,7 @@ test.describe(
         preserveNativePropagation: true
       })
 
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(7)
+      await comfyPage.expectNodeCount(7)
       expect(
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
       ).toHaveLength(1)

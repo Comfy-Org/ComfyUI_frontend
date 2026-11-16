@@ -2,10 +2,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 function createTestKeyboardEvent(
@@ -209,6 +209,43 @@ describe('keybindingService - Canvas Keybindings', () => {
 
     expect(useCommandStore().execute).not.toHaveBeenCalled()
     outsideDiv.remove()
+  })
+
+  describe('L toggles the links on the selected nodes', () => {
+    it('runs from the canvas', async () => {
+      const event = createTestKeyboardEvent('l', { target: canvasChild })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(useCommandStore().execute).toHaveBeenCalledWith(
+        'Comfy.Canvas.ToggleSelectedNodes.Links'
+      )
+    })
+
+    it('runs once while the key is held down', async () => {
+      const event = createTestKeyboardEvent('l', {
+        target: canvasChild,
+        repeat: true
+      })
+
+      await keybindingService.keybindHandler(event)
+
+      expect(useCommandStore().execute).not.toHaveBeenCalled()
+      expect(event.preventDefault).toHaveBeenCalled()
+    })
+
+    it.for(['input', 'textarea'] as const)(
+      'does not run while typing in a node widget %s',
+      async (tagName) => {
+        const widget = document.createElement(tagName)
+        canvasContainer.appendChild(widget)
+        const event = createTestKeyboardEvent('l', { target: widget })
+
+        await keybindingService.keybindHandler(event)
+
+        expect(useCommandStore().execute).not.toHaveBeenCalled()
+      }
+    )
   })
 
   describe('keybinding whose command is no longer registered', () => {

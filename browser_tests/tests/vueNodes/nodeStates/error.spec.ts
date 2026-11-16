@@ -5,7 +5,7 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   cleanupFakeModel,
   dismissErrorOverlay
@@ -14,10 +14,11 @@ import {
   ExecutionHelper,
   buildKSamplerError
 } from '@e2e/fixtures/helpers/ExecutionHelper'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { NodeError } from '@comfyorg/api-client/types'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -195,7 +196,7 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
         await expect(
           comfyPage.vueNodes.getNodeInnerWrapper(ksamplerId)
         ).toHaveClass(ERROR_CLASS)
-        await comfyPage.expectScreenshot(
+        await expectElementScreenshot(
           ksamplerNode,
           'vue-node-required-input-missing-slot-error.png'
         )
@@ -223,15 +224,11 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       })
 
       await test.step('edit steps widget so the new value is within range', async () => {
-        const stepsWidget = comfyPage.vueNodes.getWidgetByName(
-          'KSampler',
-          'steps'
-        )
-        const controls = comfyPage.vueNodes.getInputNumberControls(stepsWidget)
-        // ScrubableNumberInput commits on blur — explicit blur avoids a race
-        // with the keyup-Enter handler in case Enter is consumed elsewhere.
-        await controls.input.fill('25')
-        await controls.input.blur()
+        const stepsInput = comfyPage.vueNodes
+          .getNodeLocator(ksamplerId)
+          .getByRole('spinbutton', { name: 'steps', exact: true })
+        await stepsInput.fill('25')
+        await stepsInput.blur()
       })
 
       await expect(innerWrapper).not.toHaveClass(ERROR_CLASS)

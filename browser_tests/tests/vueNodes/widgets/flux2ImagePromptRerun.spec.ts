@@ -8,6 +8,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 /**
  * PM-1303 / PM-1310: Guard the Flux2ImageNode prompt and layout across
@@ -202,20 +203,20 @@ test.describe(
         const node = getNode(comfyPage)
         const promptBox = getPromptBox(comfyPage)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-before-runs.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-before-runs.png', {
           maxDiffPixels: 10
         })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-1.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-after-run-1.png', {
           maxDiffPixels: 10
         })
 
         await runGeneration(comfyPage, exec, ws, nodeId)
         await expect(promptBox).toBeVisible()
         await expect(promptBox).toHaveValue(PROMPT)
-        await expect(node).toHaveScreenshot('flux2-prompt-after-run-2.png', {
+        await expectElementScreenshot(node, 'flux2-prompt-after-run-2.png', {
           maxDiffPixels: 10
         })
       }
@@ -300,5 +301,27 @@ test.describe(
         await expect(getPromptBox(comfyPage)).toHaveValue(PROMPT)
       })
     })
+  }
+)
+
+test(
+  'classic progress text keeps inline links distinguishable',
+  { tag: '@widget' },
+  async ({ comfyPage, getWebSocket }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/flux2_image_node')
+    const ws = await getWebSocket()
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const { nodeId } = await readPromptWidget(comfyPage)
+    await startGeneration(exec, ws, nodeId)
+    ws.send(
+      progressTextFrame(
+        nodeId,
+        'Read [[documentation|https://example.com]] or https://example.org'
+      )
+    )
+    const links = comfyPage.page.getByRole('link')
+    await expect(links).toHaveText(['documentation', 'https://example.org'])
+    await expect(links.nth(0)).toHaveCSS('text-decoration-line', 'underline')
+    await expect(links.nth(1)).toHaveCSS('text-decoration-line', 'underline')
   }
 )

@@ -1,7 +1,8 @@
+import { matchesGlob } from 'node:path'
+
 import { assert, describe, expect, it } from 'vitest'
 
 import { buildBoundaries } from './boundaries'
-import { claimFiles, matchesModulePath } from './records'
 import type { DomainRecord } from './schema'
 
 function domain(
@@ -15,8 +16,6 @@ function domain(
     description: `${id} fixture`,
     modules,
     publicEntryPoints: [],
-    allowedDependencies: [],
-    allowedConsumers: [],
     characterizationScenarios: [{ name: 'contract', checks: ['x.test.ts'] }],
     adrs: [],
     compatibilityPromises: ['keeps its contract'],
@@ -26,14 +25,10 @@ function domain(
 }
 
 function fallowAllows(records: DomainRecord[], from: string, to: string) {
-  const claims = claimFiles(
-    records,
-    records.flatMap(({ publicEntryPoints }) => publicEntryPoints)
-  )
-  const { zones, rules } = buildBoundaries({ records, claims }).boundaries
+  const { zones, rules } = buildBoundaries(records).boundaries
   const zoneOf = (file: string) =>
     zones.find(({ patterns }) =>
-      patterns.some((pattern) => matchesModulePath(file, pattern))
+      patterns.some((pattern) => matchesGlob(file, pattern))
     )?.name
   const rule = rules.find(({ from: zone }) => zone === zoneOf(from))
   const target = zoneOf(to)
@@ -46,25 +41,19 @@ const images = (options: Partial<DomainRecord> = {}) =>
   domain(
     'images',
     [
-      { path: 'src/images/model/**', role: 'domain' },
-      { path: 'src/images/app/**', role: 'application' },
-      { path: 'src/images/ui/**', role: 'presentation' }
+      { path: 'src/images/model/**' },
+      { path: 'src/images/app/**' },
+      { path: 'src/images/ui/**' }
     ],
     { publicEntryPoints: ['src/images/app/index.ts'], ...options }
   )
 const editor = (options: Partial<DomainRecord> = {}) =>
   domain(
     'editor',
-    [
-      { path: 'src/editor/model/**', role: 'domain' },
-      { path: 'src/editor/app/**', role: 'application' }
-    ],
+    [{ path: 'src/editor/model/**' }, { path: 'src/editor/app/**' }],
     options
   )
-const approved = [
-  images({ allowedConsumers: ['editor'] }),
-  editor({ allowedDependencies: ['images'] })
-]
+const both = [images(), editor()]
 
 describe('buildBoundaries', () => {
   it.for([
@@ -72,6 +61,13 @@ describe('buildBoundaries', () => {
       name: 'unclassified code may not deep-import an enforced domain',
       records: [images()],
       from: 'src/legacy/a.ts',
+      to: 'src/images/app/store.ts',
+      allowed: false
+    },
+    {
+      name: 'unclassified package code may not deep-import an enforced domain',
+      records: [images()],
+      from: 'packages/widgets/src/a.ts',
       to: 'src/images/app/store.ts',
       allowed: false
     },
@@ -97,43 +93,29 @@ describe('buildBoundaries', () => {
       allowed: true
     },
     {
-      name: 'presentation may import application in its domain',
+      name: 'any file may import any other file in its domain',
       records: [images()],
-      from: 'src/images/ui/a.vue',
+      from: 'src/images/app/store.ts',
+      to: 'src/images/ui/a.vue',
+      allowed: true
+    },
+    {
+      name: 'another domain may import a public entry point',
+      records: both,
+      from: 'src/editor/app/a.ts',
+      to: 'src/images/app/index.ts',
+      allowed: true
+    },
+    {
+      name: 'another domain may deep-import an inventory domain',
+      records: [images({ deepImports: 'inventory' }), editor()],
+      from: 'src/editor/app/a.ts',
       to: 'src/images/app/store.ts',
       allowed: true
     },
     {
-      name: 'application may not import presentation in its domain',
-      records: [images()],
-      from: 'src/images/app/store.ts',
-      to: 'src/images/ui/a.vue',
-      allowed: false
-    },
-    {
-      name: 'a public entry point keeps its role direction',
-      records: [images()],
-      from: 'src/images/app/index.ts',
-      to: 'src/images/ui/a.vue',
-      allowed: false
-    },
-    {
-      name: 'a domain needs reciprocal permission to use another domain',
-      records: [images(), editor({ allowedDependencies: ['images'] })],
-      from: 'src/editor/app/a.ts',
-      to: 'src/images/app/index.ts',
-      allowed: false
-    },
-    {
-      name: 'an approved domain may import a public entry point',
-      records: approved,
-      from: 'src/editor/app/a.ts',
-      to: 'src/images/app/index.ts',
-      allowed: true
-    },
-    {
-      name: 'an approved domain may not deep-import an enforced domain',
-      records: approved,
+      name: 'another domain may not deep-import an enforced domain',
+      records: both,
       from: 'src/editor/app/a.ts',
       to: 'src/images/app/store.ts',
       allowed: false
@@ -142,9 +124,7 @@ describe('buildBoundaries', () => {
       name: 'a nested directory claims its files from the enclosing directory',
       records: [
         images(),
-        domain('viewer', [
-          { path: 'src/images/ui/viewer/**', role: 'presentation' }
-        ])
+        domain('viewer', [{ path: 'src/images/ui/viewer/**' }])
       ],
       from: 'src/images/ui/viewer/a.vue',
       to: 'src/images/app/store.ts',
@@ -153,13 +133,11 @@ describe('buildBoundaries', () => {
     {
       name: 'a file path claims its file from a directory nested inside its own domain',
       records: [
-        domain('viewer', [
-          { path: 'src/images/ui/viewer/**', role: 'presentation' }
-        ]),
+        domain('viewer', [{ path: 'src/images/ui/viewer/**' }]),
         images({
           modules: [
             ...images().modules,
-            { path: 'src/images/ui/viewer/legacy.ts', role: 'application' }
+            { path: 'src/images/ui/viewer/legacy.ts' }
           ]
         })
       ],
@@ -168,25 +146,13 @@ describe('buildBoundaries', () => {
       allowed: true
     },
     {
-      name: 'a public entry point under a nested path takes that path’s role',
+      name: 'an enforced domain named inventory stays closed to deep imports',
       records: [
-        images({
-          modules: [
-            ...images().modules,
-            { path: 'src/images/model/view/**', role: 'presentation' }
-          ],
-          publicEntryPoints: ['src/images/model/view/index.ts']
-        })
+        images({ deepImports: 'inventory' }),
+        domain('inventory', [{ path: 'src/stock/**' }])
       ],
-      from: 'src/images/model/view/index.ts',
-      to: 'src/images/ui/a.vue',
-      allowed: true
-    },
-    {
-      name: 'role direction applies across approved domains',
-      records: approved,
-      from: 'src/editor/model/a.ts',
-      to: 'src/images/app/index.ts',
+      from: 'src/legacy/a.ts',
+      to: 'src/stock/store.ts',
       allowed: false
     }
   ])('$name', ({ records, from, to, allowed }) => {

@@ -6,6 +6,36 @@
       "severity": "error",
       "from": {},
       "to": { "circular": true }
+    },
+    {
+      "name": "agent-feedback-through-platform-support",
+      "severity": "error",
+      "from": { "path": "^src/workbench/extensions/agent/" },
+      "to": { "path": "^src/platform/surveys/openTypeformDialog\\.ts$" }
+    },
+    {
+      "name": "workspace-does-not-own-billing-or-account-ui",
+      "severity": "error",
+      "from": { "path": "^src/platform/workspace/" },
+      "to": { "path": "^src/platform/(billing|account)/" }
+    },
+    {
+      "name": "billing-uses-workspace-ports",
+      "severity": "error",
+      "from": { "path": "^src/platform/billing/" },
+      "to": { "path": "^src/platform/workspace/(api|stores|composables)/" }
+    },
+    {
+      "name": "billing-does-not-own-account-ui",
+      "severity": "error",
+      "from": { "path": "^src/platform/billing/" },
+      "to": { "path": "^src/platform/account/" }
+    },
+    {
+      "name": "shared-ingest-is-domain-independent",
+      "severity": "error",
+      "from": { "path": "^src/platform/remote/ingest/" },
+      "to": { "path": "^src/platform/(workspace|billing|account)/" }
     }
   ],
   "options": {

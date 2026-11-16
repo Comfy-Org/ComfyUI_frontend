@@ -1,11 +1,12 @@
 import axios from 'axios'
 import { shallowReactive } from 'vue'
 
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
-import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
+import type { RemoteWidgetConfig } from '@comfyorg/object-info-parser'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -111,7 +112,7 @@ const fetchOnSession = async (
   try {
     const res = await api.fetchOnWebSession(withQuery(route, query_params), {
       method: 'GET',
-      signal: AbortSignal.any([controller.signal, timeoutController.signal])
+      signal: combineAbortSignals([controller.signal, timeoutController.signal])
     })
     if (!res) return undefined
     if (!res.ok) {

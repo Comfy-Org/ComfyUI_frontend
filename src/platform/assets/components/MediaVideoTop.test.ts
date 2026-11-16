@@ -255,7 +255,15 @@ describe('MediaVideoTop', () => {
         await user.keyboard('{/Meta}')
       }
 
-      return { onCardClick, metaClickAt }
+      async function doubleClickAt(clientY: number) {
+        await user.pointer({
+          keys: '[MouseLeft][MouseLeft]',
+          target: video,
+          coords: { clientY }
+        })
+      }
+
+      return { onCardClick, metaClickAt, doubleClickAt }
     }
 
     it.for([
@@ -276,6 +284,14 @@ describe('MediaVideoTop', () => {
         expect(onCardClick).toHaveBeenCalledTimes(expectedCardClicks)
       }
     )
+
+    it('keeps both clicks of a double-click on the control strip off the card', async () => {
+      const { onCardClick, doubleClickAt } = await renderPlayingHoveredVideo()
+
+      await doubleClickAt(290)
+
+      expect(onCardClick).not.toHaveBeenCalled()
+    })
 
     it('lets a modifier-click through when the container has zero height', async () => {
       const { onCardClick, metaClickAt } = await renderPlayingHoveredVideo()

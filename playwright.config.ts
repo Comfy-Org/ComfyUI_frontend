@@ -20,8 +20,8 @@ const maybeLocalOptions: PlaywrightTestConfig = process.env.PLAYWRIGHT_LOCAL
       retries: 0,
       workers: 1,
       use: {
-        trace: 'on',
-        video: 'on',
+        trace: 'off',
+        video: process.env.RECORD_VIDEO === 'true' ? 'on' : 'off',
         launchOptions: {
           slowMo: Number(process.env.SLOW_MO) || 0
         }
@@ -43,8 +43,6 @@ export default defineConfig({
   testDir: './browser_tests',
   testIgnore: [
     '**/liveCloud/**',
-    // Requires the CPU LoRA fixtures and the cloud build in its dedicated job.
-    '**/tests/vueNodes/widgets/nativeLoraStack.spec.ts',
     '**/crossOriginSession/**',
     '**/*.test.ts',
     // Untransformed recorder output — still bare codegen, not a runnable spec

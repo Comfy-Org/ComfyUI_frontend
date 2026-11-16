@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test(
   'Sidebar close button closes the panel and clears its sidebar icon',
@@ -11,7 +12,8 @@ test(
     await expect(tab.selectedTabButton).toBeVisible()
 
     await comfyPage.page.mouse.move(0, 0)
-    await expect(tab.panelHeader).toHaveScreenshot(
+    await expectElementScreenshot(
+      tab.panelHeader,
       'workflows-sidebar-header.png'
     )
 

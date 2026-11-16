@@ -1,15 +1,15 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
 import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import type { NodeLayout } from '@comfyorg/graph-model/layout'
 import type { ComfyApp } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 type ResizeEntryLike = Pick<
@@ -24,18 +24,22 @@ type ResizeEntryLike = Pick<
 const resizeObserverState = vi.hoisted(() => {
   const state = {
     callback: null as ResizeObserverCallback | null,
+    liveObservers: new Set<ResizeObserver>(),
     observe: vi.fn<(element: Element) => void>(),
-    unobserve: vi.fn<(element: Element) => void>(),
-    disconnect: vi.fn<() => void>()
+    unobserve: vi.fn<(element: Element) => void>()
   }
 
   const MockResizeObserver: typeof ResizeObserver = class MockResizeObserver implements ResizeObserver {
     observe = state.observe
     unobserve = state.unobserve
-    disconnect = state.disconnect
 
     constructor(callback: ResizeObserverCallback) {
       state.callback = callback
+      state.liveObservers.add(this)
+    }
+
+    disconnect() {
+      state.liveObservers.delete(this)
     }
   }
 
@@ -180,12 +184,87 @@ beforeEach(() => {
   useCanvasStore().canvas = fromPartial({ setDirty: testState.setDirty })
 })
 
+const TrackedNode = defineComponent({
+  props: { nodeId: { type: String, required: true } },
+  setup(props) {
+    useVueElementTracking(props.nodeId, 'node')
+    return () => h('div', { 'data-testid': `tracked-${props.nodeId}` })
+  }
+})
+
+function visibilityChangeCalls(method: typeof document.addEventListener) {
+  return vi
+    .mocked(method)
+    .mock.calls.filter(([type]) => type === 'visibilitychange').length
+}
+
+function trackedResources() {
+  return {
+    observers: resizeObserverState.liveObservers.size,
+    visibilityListeners:
+      visibilityChangeCalls(document.addEventListener) -
+      visibilityChangeCalls(document.removeEventListener)
+  }
+}
+
+describe('useVueNodeResizeTracking resource ownership', () => {
+  const none = { observers: 0, visibilityListeners: 0 }
+  const one = { observers: 1, visibilityListeners: 1 }
+
+  beforeEach(() => {
+    vi.spyOn(document, 'addEventListener')
+    vi.spyOn(document, 'removeEventListener')
+  })
+
+  it('allocates nothing when the module is imported', async () => {
+    vi.resetModules()
+    await import('./useVueNodeResizeTracking')
+
+    expect(trackedResources()).toEqual(none)
+  })
+
+  it('shares one observer and listener across tracked elements until the last is released', () => {
+    const first = render(TrackedNode, { props: { nodeId: 'first' } })
+    expect(trackedResources()).toEqual(one)
+
+    const second = render(TrackedNode, { props: { nodeId: 'second' } })
+    expect(trackedResources()).toEqual(one)
+
+    first.unmount()
+    expect(trackedResources()).toEqual(one)
+
+    second.unmount()
+    expect(trackedResources()).toEqual(none)
+  })
+
+  it('reacquires exactly one observer and listener after release', () => {
+    render(TrackedNode, { props: { nodeId: 'released' } }).unmount()
+    expect(trackedResources()).toEqual(none)
+
+    const view = render(TrackedNode, { props: { nodeId: 'reacquired' } })
+
+    expect(trackedResources()).toEqual(one)
+    expect(resizeObserverState.observe).toHaveBeenCalledWith(
+      screen.getByTestId('tracked-reacquired')
+    )
+    view.unmount()
+    expect(trackedResources()).toEqual(none)
+  })
+})
+
 describe('useVueNodeResizeTracking', () => {
+  let anchor: ReturnType<typeof render>
+
   beforeEach(() => {
     useCanvasStore().linearMode = false
     Object.assign(useCanvasStore(), { rootGraphId: ROOT_GRAPH_ID })
     testState.nodeLayouts.clear()
     testState.contentSizes.clear()
+    anchor = render(TrackedNode, { props: { nodeId: 'anchor' } })
+  })
+
+  afterEach(() => {
+    anchor.unmount()
   })
 
   it('skips repeated changed-size deliveries after reporting the change', () => {
@@ -237,13 +316,6 @@ describe('useVueNodeResizeTracking', () => {
     const rootNodeId = toNodeId('root-node')
     const subgraphNodeId = toNodeId('subgraph-node')
     const activeNodeId = ref(rootNodeId)
-    const TrackedNode = defineComponent({
-      props: { nodeId: { type: String, required: true } },
-      setup(props) {
-        useVueElementTracking(props.nodeId, 'node')
-        return () => h('div', { 'data-testid': 'tracked-node' })
-      }
-    })
     const GraphView = defineComponent({
       setup() {
         return () =>
@@ -254,14 +326,14 @@ describe('useVueNodeResizeTracking', () => {
       }
     })
     const view = render(GraphView)
-    const rootElement = screen.getByTestId('tracked-node')
+    const rootElement = screen.getByTestId(`tracked-${rootNodeId}`)
 
     vi.clearAllMocks()
     testState.contentSizes.clear()
     activeNodeId.value = subgraphNodeId
     await nextTick()
 
-    const subgraphElement = screen.getByTestId('tracked-node')
+    const subgraphElement = screen.getByTestId(`tracked-${subgraphNodeId}`)
     expect(subgraphElement).not.toBe(rootElement)
     expect(resizeObserverState.unobserve).toHaveBeenCalledWith(rootElement)
     expect(resizeObserverState.observe).toHaveBeenCalledWith(subgraphElement)

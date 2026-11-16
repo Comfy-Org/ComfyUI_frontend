@@ -142,15 +142,6 @@ export class AppModeHelper {
     await this.page.mouse.up()
   }
 
-  async enableLinearMode() {
-    await this.page.evaluate(() => {
-      window.app!.api.serverFeatureFlags.value = {
-        ...window.app!.api.serverFeatureFlags.value,
-        linear_toggle_enabled: true
-      }
-    })
-  }
-
   async enterBuilder() {
     await this.comfyPage.menu.topbar.dismissWorkflowPopover()
 

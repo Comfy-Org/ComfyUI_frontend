@@ -41,7 +41,7 @@ import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 
-import VideoPlayOverlay from './VideoPlayOverlay.vue'
+import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
 
 const { asset, showNativeControls = true } = defineProps<{
   asset: AssetMeta
@@ -105,10 +105,9 @@ async function togglePlayback() {
 }
 
 async function onVideoClick(event: MouseEvent) {
-  if (shouldShowControls.value) {
-    stopNativeControlsClick(event)
-    return
-  }
+  if (shouldShowControls.value) stopNativeControlsClick(event)
+  if (event.detail > 1) return event.preventDefault()
+  if (shouldShowControls.value) return
 
   if (event.shiftKey || event.metaKey || event.ctrlKey) return
 

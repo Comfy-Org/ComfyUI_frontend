@@ -67,10 +67,14 @@
                 @update:progress-target="updateProgressTarget"
               />
               <CurrentUserButton
-                v-if="isLoggedIn && !isIntegratedTabBar"
+                v-if="
+                  isLoggedIn &&
+                  !isIntegratedTabBar &&
+                  !flags.billingNewUxEnabled
+                "
                 class="shrink-0"
               />
-              <LoginButton v-else-if="!isIntegratedTabBar" />
+              <LoginButton v-else-if="!isLoggedIn && !isIntegratedTabBar" />
               <Button
                 v-if="managerState.shouldShowExtensionsButton.value"
                 :tooltip="t('menu.manageExtensions')"
@@ -80,11 +84,24 @@
                 :aria-label="t('menu.manageExtensions')"
                 @click="openCustomNodeManager"
               >
-                <i class="icon-[comfy--extensions-blocks] size-4" />
+                <i class="icon-[comfy--extensions-blocks]" />
                 <span
                   v-if="shouldShowRedDot"
                   class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
+              </Button>
+              <CloudButton v-if="isCloudButtonShown" />
+              <Button
+                v-else-if="isDeployButtonShown"
+                :tooltip="t('deployToComfyApi.buttonLabel')"
+                tooltip-side="bottom"
+                variant="secondary"
+                size="icon"
+                :aria-label="t('deployToComfyApi.buttonLabel')"
+                data-testid="run-bar-deploy"
+                @click="openDeployInstallationDialog"
+              >
+                <i class="icon-[lucide--rocket]" />
               </Button>
               <Button
                 v-if="isCloud"
@@ -96,9 +113,9 @@
                 @click="() => openShareDialog().catch(toastErrorHandler)"
                 @pointerenter="prefetchShareDialog"
               >
-                <i class="icon-[comfy--send] size-4" />
+                <i class="icon-[comfy--send]" />
               </Button>
-              <div v-if="!isRightSidePanelOpen" class="relative">
+              <div v-if="!isPropertiesPanelOpen" class="relative">
                 <Button
                   :tooltip="t('rightSidePanel.togglePanel')"
                   tooltip-side="bottom"
@@ -111,9 +128,9 @@
                   variant="secondary"
                   size="icon"
                   :aria-label="t('rightSidePanel.togglePanel')"
-                  @click="openRightSidePanel"
+                  @click="openPropertiesPanel"
                 >
-                  <i class="icon-[lucide--panel-right] size-4" />
+                  <i class="icon-[lucide--panel-right]" />
                 </Button>
                 <Badge
                   v-if="showErrorIndicatorOnPanelButton"
@@ -129,7 +146,10 @@
             <PartnerNodesRunCaption v-if="isActionbarDocked" />
           </div>
         </div>
-        <ErrorOverlay v-if="!isActionBarsHidden" />
+        <ErrorOverlay
+          v-if="!isActionBarsHidden"
+          @view-errors="viewErrorsInGraph"
+        />
         <QueueProgressOverlay
           v-if="isQueueProgressOverlayEnabled"
           v-model:expanded="isQueueOverlayExpanded"
@@ -167,7 +187,7 @@
 <script setup lang="ts">
 import { useLocalStorage, useMutationObserver } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
@@ -176,47 +196,78 @@ import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
-import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
+import ErrorOverlay from '@/platform/workflowErrors/overlay/ErrorOverlay.vue'
+import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import FreeTierQuota from '@/platform/billing/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import { waitForDeploymentListing } from '@/platform/workspace/composables/waitForDeploymentPick'
+import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { isCloud } from '@/platform/distribution/types'
+import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
+import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
   openShareDialog,
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
-import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
-import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
-import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerDialog'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useManagerSurveyDialog } from '@/platform/customNodes/manager/composables/dialogs/useManagerSurveyDialog'
+import { ManagerTab } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const canvasStore = useCanvasStore()
 const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
+const deploymentPickStore = useDeploymentPickStore()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
+const { flags } = useFeatureFlags()
+const isCloudButtonShown = computed(
+  () =>
+    !isCloud &&
+    !handsPopupsToSystemBrowser() &&
+    flags.openOnCloudEnabled &&
+    canHandOffToCloud()
+)
+const isDeployButtonShown = computed(() => flags.deployToCloud)
+function openDeployInstallationDialog() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_bar_deploy_clicked',
+    element_group: 'top_menu'
+  })
+  openDeployToComfyApiDialog({ deploysInstallation: true }).catch(
+    toastErrorHandler
+  )
+}
 const executionErrorStore = useExecutionErrorStore()
 const actionBarButtonStore = useActionBarButtonStore()
 const queueUIStore = useQueueUIStore()
@@ -233,18 +284,14 @@ const isActionbarEnabled = computed(
 const isActionbarFloating = computed(
   () => isActionbarEnabled.value && !isActionbarDocked.value
 )
-/**
- * Whether the actionbar container has any visible docked buttons
- * (excluding ComfyActionbar, which uses position:fixed when floating
- * and does not contribute to the container's visual layout).
- */
 const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
+  if (isCloudButtonShown.value || isDeployButtonShown.value) return true
   if (isCloud) return true
-  if (!isRightSidePanelOpen.value) return true
+  if (!isPropertiesPanelOpen.value) return true
   return false
 })
 const isActionbarContainerEmpty = computed(
@@ -284,6 +331,8 @@ const shouldShowRedDot = computed((): boolean => {
 })
 
 const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
+const { viewErrorsInGraph } = useViewErrorsInGraph()
+provide(AskAgentPortKey, useAskAgentAboutIssues())
 
 const isErrorsTabEnabled = computed(() =>
   settingStore.get('Comfy.RightSidePanel.ShowErrorsTab')
@@ -293,19 +342,18 @@ const showErrorIndicatorOnPanelButton = computed(
   () =>
     isErrorsTabEnabled.value &&
     hasAnyError.value &&
-    !isRightSidePanelOpen.value &&
+    !isPropertiesPanelOpen.value &&
     !isErrorOverlayOpen.value
 )
 
-// Right side panel toggle
-const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
+const { isOpen: isPropertiesPanelOpen } = storeToRefs(propertiesPanelStore)
 
-function openRightSidePanel() {
+function openPropertiesPanel() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'right_side_panel_opened',
     element_group: 'top_menu'
   })
-  rightSidePanelStore.togglePanel()
+  propertiesPanelStore.togglePanel()
 }
 
 const legacyCommandsContainerRef = ref<HTMLElement>()
@@ -347,9 +395,15 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(legacyContentCheckRafId)
 })
 
+async function pitchDeployingCustomNodes(): Promise<boolean> {
+  await waitForDeploymentListing(DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS)
+  if (!deploymentPickStore.isVisible) return false
+  return openDeployCustomNodesDialog()
+}
+
 const openCustomNodeManager = async () => {
   if (isCloud) {
-    managerSurveyDialog.show()
+    if (!(await pitchDeployingCustomNodes())) managerSurveyDialog.show()
     return
   }
   try {

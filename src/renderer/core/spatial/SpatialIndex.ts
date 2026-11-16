@@ -8,7 +8,8 @@ import {
   PERFORMANCE_CONFIG,
   QUADTREE_CONFIG
 } from '@/renderer/core/layout/constants'
-import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import type { NodeId } from '@/renderer/core/layout/types'
 
 import { QuadTree } from './QuadTree'
 

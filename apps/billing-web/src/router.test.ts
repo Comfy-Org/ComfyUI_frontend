@@ -11,6 +11,8 @@ import { recordBillingEntry, useBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter, TOPUP_RETURN_PATH } from '@/router'
 import type { BillingWebSessionPhase } from '@/router'
+import type { HandoffState } from '@/handoff/handoffTab'
+import { handoffTab } from '@/handoff/handoffTab'
 import { createFakeBillingClient } from '@/test/fakeBillingClient'
 
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
@@ -101,6 +103,10 @@ describe('plan selection, which the host app owns', () => {
     [
       `/v1/checkout?${ENTRY_QUERY}&workspace=ws-team`,
       'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+    ],
+    [
+      '/v1/pricing?product=platform&return_to=platform_account',
+      'https://testplatform.comfy.org/'
     ]
   ])(
     'sends %s to %s without rebinding the tab',
@@ -123,25 +129,6 @@ describe('plan selection, which the host app owns', () => {
     expect(leave).not.toHaveBeenCalled()
     expect(router.currentRoute.value.path).toBe('/v1/checkout')
   })
-
-  it.for(['/v1/pricing?product=platform&return_to=platform_account'])(
-    'explains %s, which has nowhere to go back to',
-    async (path) => {
-      const { router, onEntryWorkspace, leave } =
-        hostBoundRouter('authenticated')
-
-      await arriveAt(path, router)
-
-      expect(
-        await screen.findByText(
-          "That link doesn't name a place we can send you back to."
-        )
-      ).toBeInTheDocument()
-      expect(leave).not.toHaveBeenCalled()
-      expect(onEntryWorkspace).not.toHaveBeenCalled()
-      expect(useBillingEntry().entry.value).toBeUndefined()
-    }
-  )
 })
 
 describe('the billing route guard', () => {
@@ -245,10 +232,6 @@ describe("a checkout's return_to, which is optional", () => {
     {
       name: 'one outside the registry',
       path: '/v1/checkout?product=comfyui&return_to=https://evil.test&plan=creator_monthly'
-    },
-    {
-      name: 'one this family has no destination for',
-      path: '/v1/checkout?product=platform&return_to=platform_account&plan=creator_monthly'
     }
   ])(
     'checks out a link with $name and returns to Plan & Credits',
@@ -435,5 +418,128 @@ describe('hosted billing entry routing', () => {
       await screen.findByRole('heading', { name: 'Billing' })
     ).toBeInTheDocument()
     expect(useBillingEntry().error.value).toBeUndefined()
+  })
+})
+
+describe('a billing handoff tab', () => {
+  afterEach(() => {
+    handoffTab.value = undefined
+  })
+
+  const liveHandoff: HandoffState = {
+    kind: 'session',
+    session: {
+      token: 'comfy-scoped-session-1',
+      expiresAt: Date.now() + 30 * 60_000,
+      userId: 'user-1',
+      email: 'a@example.com',
+      workspace: { id: 'ws-1', name: 'Studio', type: 'team' },
+      role: 'owner'
+    }
+  }
+
+  it('opens billing once the handoff is exchanged', async () => {
+    handoffTab.value = liveHandoff
+
+    const router = await arriveAt('/handoff')
+
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
+  it('opens billing from the handoff route with a trailing slash', async () => {
+    handoffTab.value = liveHandoff
+
+    const router = await arriveAt('/handoff/')
+
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
+  it.for([
+    {
+      query: 'intent=top-up&amount_cents=2500',
+      fullPath:
+        '/v1/top-up?product=comfyui&return_to=comfyui_credits&amount_cents=2500'
+    },
+    {
+      query: 'intent=top-up',
+      fullPath:
+        '/v1/top-up?product=comfyui&return_to=comfyui_credits&amount_cents=5000'
+    },
+    {
+      query: 'intent=subscription',
+      fullPath: '/v1/subscription?product=comfyui&return_to=comfyui_credits'
+    },
+    { query: 'intent=pricing', fullPath: '/' },
+    { query: 'intent=constructor', fullPath: '/' }
+  ])('opens the flow /handoff?$query names', async ({ query, fullPath }) => {
+    handoffTab.value = liveHandoff
+
+    const router = await arriveAt(`/handoff?${query}`)
+
+    expect(router.currentRoute.value.fullPath).toBe(fullPath)
+    expect(useBillingEntry().error.value).toBeUndefined()
+  })
+
+  it.for([
+    'intent=top-up&amount_cents=abc',
+    'intent=top-up&amount_cents=2500&amount_cents=100',
+    'intent=top-up&amount_cents'
+  ])(
+    'leaves the unreadable handoff amount in /handoff?%s for the top-up page to explain',
+    async (query) => {
+      handoffTab.value = liveHandoff
+
+      const router = await arriveAt(`/handoff?${query}`)
+
+      expect(router.currentRoute.value.path).toBe('/v1/top-up')
+      expect(useBillingEntry().error.value).toBe('INVALID_AMOUNT')
+    }
+  )
+
+  it('keeps showing how the handoff ended whatever its intent', async () => {
+    handoffTab.value = { kind: 'ended', ending: 'link_unavailable' }
+
+    const router = await arriveAt(
+      '/handoff?intent=top-up',
+      routerAt('signed-out')
+    )
+
+    expect(router.currentRoute.value.path).toBe('/handoff')
+  })
+
+  it('never opens billing-web sign-in', async () => {
+    handoffTab.value = liveHandoff
+
+    const router = await arriveAt('/sign-in')
+
+    expect(router.currentRoute.value.path).toBe('/')
+  })
+
+  it('shows how the handoff ended instead of asking to sign in', async () => {
+    handoffTab.value = { kind: 'ended', ending: 'link_unavailable' }
+
+    const router = await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}`,
+      routerAt('signed-out')
+    )
+
+    expect(router.currentRoute.value.path).toBe('/handoff')
+    expect(
+      await screen.findByText('This checkout link no longer works')
+    ).toBeInTheDocument()
+  })
+
+  it('ignores a workspace the URL names', async () => {
+    handoffTab.value = liveHandoff
+    const onEntryWorkspace = vi.fn()
+    const router = createBillingRouter(
+      createMemoryHistory(),
+      () => 'authenticated',
+      onEntryWorkspace
+    )
+
+    await router.push(`/v1/subscription?${ENTRY_QUERY}&workspace=ws-other`)
+
+    expect(onEntryWorkspace).not.toHaveBeenCalled()
   })
 })

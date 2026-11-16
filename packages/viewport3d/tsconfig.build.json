@@ -24,6 +24,9 @@
     "types": [],
     "customConditions": ["@comfyorg/viewport3d"]
   },
+  "references": [
+    { "path": "../shared-frontend-utils/tsconfig.declarations.json" }
+  ],
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.ts"]
 }

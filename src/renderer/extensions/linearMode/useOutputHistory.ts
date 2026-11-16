@@ -11,9 +11,9 @@ import { api } from '@/scripts/api'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
-import { useAssetsStore } from '@/stores/assetsStore'
+import { useJobOutputHistory } from '@/platform/assets/composables/useJobOutputHistory'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -26,8 +26,7 @@ export function useOutputHistory(): {
   isWorkflowActive: ComputedRef<boolean>
   cancelActiveWorkflowJobs: () => Promise<void>
 } {
-  const assetsStore = useAssetsStore()
-  void assetsStore.outputAssets.loadMore()
+  const history = useJobOutputHistory()
   const linearStore = useLinearOutputStore()
   const workflowStore = useWorkflowStore()
   const executionStore = useExecutionStore()
@@ -47,14 +46,11 @@ export function useOutputHistory(): {
     return queueStore.runningTasks.some(matchesActiveWorkflow)
   }
 
-  // True when there are queued/running jobs for the active workflow but no
-  // in-progress output items yet.
   const mayBeActiveWorkflowPending = computed(() => {
     if (linearStore.activeWorkflowInProgressItems.length > 0) return false
     return hasActiveWorkflowJobs()
   })
 
-  // True when the active workflow has running/pending jobs or in-progress items.
   const isWorkflowActive = computed(
     () =>
       linearStore.activeWorkflowInProgressItems.length > 0 ||
@@ -71,7 +67,7 @@ export function useOutputHistory(): {
     )
   }
 
-  const outputs = new WrappedList(assetsStore.outputAssets, (items) => {
+  const outputs = new WrappedList(history, (items) => {
     const path = workflowStore.activeWorkflow?.path
     if (!path) return []
 
@@ -98,8 +94,6 @@ export function useOutputHistory(): {
     const user_metadata = getOutputAssetMetadata(item.user_metadata)
     if (!user_metadata) return []
 
-    // For recently completed jobs still pending resolve, derive order from
-    // the in-progress items which are in correct execution order.
     if (linearStore.pendingResolve.has(user_metadata.jobId)) {
       const ordered = linearStore.inProgressItems
         .filter((i) => i.jobId === user_metadata.jobId && i.output)
@@ -110,22 +104,16 @@ export function useOutputHistory(): {
       }
     }
 
-    // Use metadata when all outputs are present. The /jobs list endpoint
-    // only returns preview_output (single item), so outputCount may exceed
-    // allOutputs.length for multi-output jobs.
     if (
       user_metadata.allOutputs?.length &&
       (!user_metadata.outputCount ||
-        user_metadata.outputCount <= user_metadata.allOutputs.length) &&
-      item.preview_url
+        user_metadata.outputCount <= user_metadata.allOutputs.length)
     ) {
       const reversed = [...user_metadata.allOutputs].reverse()
       resolvedCache.set(item.id, reversed)
       return filterByOutputNodes(reversed)
     }
 
-    // Async fallback for multi-output jobs — fetch full /jobs/{id} detail.
-    // This can be hit if the user executes the job then switches tabs.
     const existing = asyncRefs.get(item.id)
     if (existing) return filterByOutputNodes(existing.value)
 
@@ -154,7 +142,6 @@ export function useOutputHistory(): {
     }
   }
 
-  // Resolve in-progress items when history outputs are loaded.
   watchEffect(() => {
     if (linearStore.pendingResolve.size === 0) return
     for (const jobId of linearStore.pendingResolve) {
@@ -174,11 +161,9 @@ export function useOutputHistory(): {
   async function cancelActiveWorkflowJobs() {
     if (!workflowStore.activeWorkflow?.path) return
 
-    // Interrupt the running job if it belongs to this workflow
     if (queueStore.runningTasks.some(matchesActiveWorkflow)) {
       void useCommandStore().execute('Comfy.Interrupt')
     } else {
-      // Delete first pending job for this workflow from the queue
       for (const task of queueStore.pendingTasks) {
         if (matchesActiveWorkflow(task)) {
           await api.deleteItem('queue', task.jobId)

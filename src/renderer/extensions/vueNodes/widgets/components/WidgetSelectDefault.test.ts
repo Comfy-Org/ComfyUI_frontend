@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, nextTick } from 'vue'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
@@ -15,15 +15,12 @@ const i18n = createI18n({
     en: {
       g: {
         noResultsFound: 'No results found',
-        search: 'Search'
+        search: 'Search',
+        previous: 'Previous',
+        next: 'Next'
       }
     }
   }
-})
-
-const WidgetLayoutFieldStub = defineComponent({
-  name: 'WidgetLayoutField',
-  template: '<div class="relative"><slot /></div>'
 })
 
 const flushPromises = () =>
@@ -48,7 +45,8 @@ describe('WidgetSelectDefault', () => {
   function renderComponent(
     widget: SimplifiedWidget<string | undefined>,
     modelValue?: WidgetValue,
-    slots?: Record<string, string>
+    slots?: Record<string, string>,
+    filenameSummary = false
   ) {
     const onUpdate = vi.fn()
     const user = userEvent.setup()
@@ -56,14 +54,12 @@ describe('WidgetSelectDefault', () => {
       props: {
         widget,
         modelValue,
+        filenameSummary,
         'onUpdate:modelValue': onUpdate
       },
       slots,
       global: {
-        plugins: [i18n],
-        stubs: {
-          WidgetLayoutField: WidgetLayoutFieldStub
-        }
+        plugins: [i18n]
       }
     })
 
@@ -78,6 +74,142 @@ describe('WidgetSelectDefault', () => {
 
   const optionLabels = () =>
     screen.queryAllByRole('option').map((option) => option.textContent.trim())
+
+  it('opens from the gap in a unified row without changing its value', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(WidgetSelectDefault, {
+      props: {
+        widget: createWidget(['euler', 'heun']),
+        modelValue: 'euler'
+      },
+      global: {
+        plugins: [i18n]
+      }
+    })
+
+    await user.click(screen.getByTestId('widget-row-hit-area'))
+
+    expect(screen.getByRole('combobox')).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    )
+    expect(await screen.findByRole('listbox')).toBeVisible()
+    expect(emitted()['update:modelValue']).toBeUndefined()
+  })
+
+  it.for([
+    {
+      raw: 'studio/models/portrait.safetensors',
+      summary: 'portrait.safetensors',
+      filenameSummary: true
+    },
+    {
+      raw: 'C:\\models\\portrait.safetensors',
+      summary: 'portrait.safetensors',
+      filenameSummary: true
+    }
+  ])('displays $raw as $summary', ({ raw, summary, filenameSummary }) => {
+    renderComponent(createWidget([raw]), raw, undefined, filenameSummary)
+    expect(screen.getByRole('combobox').textContent.trim()).toBe(summary)
+    expect(screen.getByRole('combobox')).not.toHaveAttribute('title')
+  })
+
+  it.for([
+    { current: 42, action: 'Next', expected: 89 },
+    { current: 42, action: 'Previous', expected: 11 },
+    { current: 11, action: 'Next', expected: 42 },
+    { current: 89, action: 'Previous', expected: 42 }
+  ])(
+    'steps $action from $current to raw value $expected',
+    async ({ current, action, expected }) => {
+      const { user, onUpdate } = renderComponent(
+        createWidget([11, 42, 89]),
+        current,
+        undefined,
+        false
+      )
+      await user.click(
+        screen.getByRole('button', { name: `test_combo: ${action}` })
+      )
+      expect(onUpdate).toHaveBeenCalledWith(expected)
+    }
+  )
+
+  it.for([
+    { values: [11, 42, 89], current: 11, expected: [true, false] },
+    { values: [11, 42, 89], current: 89, expected: [false, true] },
+    { values: [11], current: 11, expected: [true, true] },
+    { values: [], current: undefined, expected: [true, true] }
+  ])(
+    'disables unavailable directions for $values with current=$current',
+    ({ values, current, expected }) => {
+      renderComponent(createWidget(values), current)
+
+      expect(
+        [
+          screen.getByRole('button', { name: 'test_combo: Previous' }),
+          screen.getByRole('button', { name: 'test_combo: Next' })
+        ].map((button) => button.hasAttribute('disabled'))
+      ).toEqual(expected)
+    }
+  )
+
+  it.for([
+    { initial: [11, 42], action: 'Next', expected: 89 },
+    { initial: [42, 89], action: 'Previous', expected: 11 }
+  ])(
+    'discovers new dynamic options with $action without opening the popup',
+    async ({ initial, action, expected }) => {
+      let values = initial
+      const { user, onUpdate } = renderComponent(
+        createWidget(() => values),
+        42,
+        undefined,
+        false
+      )
+      const arrow = screen.getByRole('button', {
+        name: `test_combo: ${action}`
+      })
+
+      await user.click(arrow)
+      expect(onUpdate).not.toHaveBeenCalled()
+
+      values = [11, 42, 89]
+      await user.click(arrow)
+
+      expect(onUpdate).toHaveBeenCalledWith(expected)
+      expect(screen.getByRole('combobox')).toHaveAttribute(
+        'aria-expanded',
+        'false'
+      )
+    }
+  )
+
+  it('keeps custom labels intact when filename summaries are requested', () => {
+    renderComponent(
+      createWidget(['studio/model.safetensors'], {
+        getOptionLabel: () => 'Studio / approved'
+      }),
+      'studio/model.safetensors',
+      undefined,
+      true
+    )
+    expect(screen.getByRole('combobox')).toHaveTextContent('Studio / approved')
+  })
+
+  it('distinguishes duplicate filenames by full path and emits the selected raw path', async () => {
+    const first = 'studio/models/portrait.safetensors'
+    const second = 'archive/models/portrait.safetensors'
+    const { user, onUpdate } = renderComponent(
+      createWidget([first, second]),
+      first,
+      undefined,
+      true
+    )
+    await openDropdown(user)
+    await user.click(screen.getByRole('option', { name: second }))
+    expect(onUpdate).toHaveBeenCalledWith(second)
+  })
 
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {

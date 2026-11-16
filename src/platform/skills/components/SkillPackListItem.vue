@@ -23,7 +23,7 @@
     <div class="absolute top-4 right-4">
       <i
         v-if="loading"
-        class="icon-[lucide--loader-circle] size-4 animate-spin text-muted-foreground"
+        class="icon-[lucide--loader-circle] animate-spin text-muted-foreground"
       />
       <div
         v-else
@@ -31,7 +31,7 @@
           cn(
             'pointer-events-none flex items-center gap-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 touch:pointer-events-auto touch:opacity-100',
             keyboardNavigation &&
-              'group-has-focus-visible:pointer-events-auto group-has-focus-visible:opacity-100'
+              '[.group:has(:focus-visible)_&]:pointer-events-auto [.group:has(:focus-visible)_&]:opacity-100'
           )
         "
       >
@@ -42,7 +42,7 @@
           :disabled="disabled"
           @click="emit('edit')"
         >
-          <i class="icon-[lucide--square-pen] size-4" />
+          <i class="icon-[lucide--square-pen]" />
         </Button>
         <Button
           variant="muted-textonly"
@@ -51,7 +51,7 @@
           :disabled="disabled"
           @click="emit('delete')"
         >
-          <i class="icon-[lucide--trash-2] size-4" />
+          <i class="icon-[lucide--trash-2]" />
         </Button>
       </div>
     </div>
@@ -64,7 +64,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 import type { SkillPack } from '@/platform/skills/types'
 import { packByteSize } from '@/platform/skills/types'

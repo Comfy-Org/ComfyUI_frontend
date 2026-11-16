@@ -3,13 +3,15 @@ import { computed, ref, shallowReactive } from 'vue'
 import type { ComputedRef } from 'vue'
 import * as Y from 'yjs'
 
-import { toGroupId } from '@/types/groupId'
-import { toNodeId } from '@/types/nodeId'
-import type { GroupId } from '@/types/groupId'
-import { reportError } from '@/platform/telemetry/reportError'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import type { LinkId } from '@comfyorg/graph-model/linkId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-import { toRerouteId } from '@/types/rerouteId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import type { UUID } from '@/utils/uuid'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
@@ -20,28 +22,31 @@ import type {
   CreateRerouteOperation,
   DeleteNodeOperation,
   DeleteRerouteOperation,
-  GroupLayout,
   LayoutChange,
   LayoutOperation,
-  LinkId,
   LinkLayout,
   LinkSegmentLayout,
   MoveNodeOperation,
   MoveRerouteOperation,
-  NodeBoundsUpdate,
   NodeId,
-  NodeLayout,
-  Point,
-  RerouteId,
-  RerouteLayout,
   ResizeNodeOperation,
   SetGroupBoundsOperation,
-  SetNodeZIndexOperation,
-  Size,
+  SetNodeZIndexOperation
+} from '@/renderer/core/layout/types'
+import type {
+  GroupLayout,
+  NodeBoundsUpdate,
+  NodeLayout,
+  RerouteLayout,
   SlotOffset,
   SlotOffsetMode
-} from '@/renderer/core/layout/types'
-import type { SlotDirection, SlotIndex } from '@/types/slotId'
+} from '@comfyorg/graph-model/layout'
+import type {
+  Point2D as Point,
+  Size2D as Size,
+  RectTuple as StoredRect
+} from '@comfyorg/shared-frontend-utils/geometry'
+import type { SlotDirection, SlotIndex } from '@comfyorg/graph-model/slotId'
 import {
   isBoundsEqual,
   isPointEqual
@@ -60,8 +65,7 @@ import {
 } from '@/renderer/core/layout/utils/mappers'
 import type {
   GroupLayoutMap,
-  NodeLayoutMap,
-  StoredRect
+  NodeLayoutMap
 } from '@/renderer/core/layout/utils/mappers'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
 
@@ -1289,6 +1293,11 @@ class LayoutStoreImpl {
     })
   }
 
+  flushPendingChanges(): void {
+    this.flushQueuedGlobalChanges()
+    this.flushQueuedGeometryChanges()
+  }
+
   private flushQueuedGlobalChanges(): void {
     this.isGlobalDispatchQueued = false
     if (this.pendingGlobalChanges.length === 0) return
@@ -1309,19 +1318,23 @@ class LayoutStoreImpl {
 
     this.isGeometryDispatchQueued = true
     queueMicrotask(() => {
-      this.isGeometryDispatchQueued = false
-      const changes = this.pendingGeometryChanges
-      this.pendingGeometryChanges = []
-      for (const change of changes) {
-        for (const listener of this.geometryListeners) {
-          try {
-            listener(change)
-          } catch (error) {
-            this.reportListenerFailure(error, 'geometry', listener)
-          }
+      this.flushQueuedGeometryChanges()
+    })
+  }
+
+  private flushQueuedGeometryChanges(): void {
+    this.isGeometryDispatchQueued = false
+    const changes = this.pendingGeometryChanges
+    this.pendingGeometryChanges = []
+    for (const change of changes) {
+      for (const listener of this.geometryListeners) {
+        try {
+          listener(change)
+        } catch (error) {
+          this.reportListenerFailure(error, 'geometry', listener)
         }
       }
-    })
+    }
   }
 
   private reportListenerFailure(

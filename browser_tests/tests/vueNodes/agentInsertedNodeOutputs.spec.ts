@@ -40,6 +40,55 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     ).toBeVisible()
   })
 
+  test('BE-23369 keeps the live Save Image blank and reports an unresolvable executed output', async ({
+    comfyPage,
+    getWebSocket,
+    page
+  }) => {
+    const ws = await getWebSocket()
+    await comfyPage.workflow.loadWorkflow('vueNodes/agent-inserted-save-image')
+
+    const unresolvedReports: string[] = []
+    page.on('console', (message) => {
+      if (
+        message.text().includes('failure_resolving_node_output_execution_id')
+      ) {
+        unresolvedReports.push(message.text())
+      }
+    })
+
+    const exec = new ExecutionHelper(comfyPage, ws)
+    const jobId = await exec.run()
+    const staleExecutionId =
+      'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:404'
+    exec.executionStart(jobId)
+    exec.executing(jobId, staleExecutionId)
+    exec.executed(jobId, staleExecutionId, null)
+    exec.executed(jobId, staleExecutionId, {
+      images: 'not-an-array'
+    })
+    exec.executed(jobId, staleExecutionId, {
+      images: [{ filename: 'unresolved.png', subfolder: '', type: 'input' }]
+    })
+    exec.executing(jobId, null)
+    exec.executionSuccess(jobId)
+    exec.status(0)
+
+    const saveImageNode = comfyPage.vueNodes.getNodeByTitle('Save Image')
+    await expect(saveImageNode).toBeVisible()
+    await expect(
+      saveImageNode.getByRole('img', { name: 'View image 1 of 1' })
+    ).toHaveCount(0)
+    await expect.poll(() => unresolvedReports.length).toBe(3)
+    expect(unresolvedReports).toEqual(
+      Array(3).fill(
+        expect.stringContaining(
+          'failure_resolving_node_output_execution_id Error: No live node resolves the executed output'
+        )
+      )
+    )
+  })
+
   test('shows the executed image in a Save Image node inside an agent-inserted subgraph', async ({
     comfyPage,
     getWebSocket

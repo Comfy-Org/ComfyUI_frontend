@@ -1,18 +1,16 @@
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import type { Keybinding } from '@/platform/keybindings/types'
-import { useTelemetry } from '@/platform/telemetry'
+import type { Keybinding } from '@comfyorg/keybindings/types'
+import { useTelemetry } from '@comfyorg/telemetry'
 import type { NodeBadgeMode } from '@/types/nodeSource'
-import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import type { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 
-import {
-  getSettingInfo,
-  useSettingStore
-} from '@/platform/settings/settingStore'
-import type { SettingParams, Settings } from '@/platform/settings/types'
+import { getSettingInfo } from '@comfyorg/settings-core/settingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { SettingParams, Settings } from '@comfyorg/settings-core/types'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/scripts/api'))
 
@@ -48,6 +46,14 @@ describe('useSettingStore', () => {
 
       expect(store.settingValues).toEqual(mockSettings)
       expect(api.getSettings).toHaveBeenCalled()
+    })
+
+    it('loads settings without the shared status retry stacking on its own backoff', async () => {
+      vi.mocked(api.getSettings).mockResolvedValue({} as Settings)
+
+      await store.load()
+
+      expect(api.getSettings).toHaveBeenCalledWith({ skipStatusRetry: true })
     })
 
     describe('Canvas Navigation override migration', () => {
@@ -487,6 +493,56 @@ describe('useSettingStore', () => {
         'Comfy.Locale',
         'differentvalue'
       )
+    })
+
+    it('announces both sides of a refused revertible setting write', async () => {
+      const key = 'Comfy.Extension.DisabledPacks'
+      store.settingValues[key] = ['/extensions/saved/']
+      store.addSetting({
+        id: key,
+        name: key,
+        type: 'hidden',
+        defaultValue: []
+      })
+      const changes: unknown[] = []
+      store.onSettingChanged(({ value }) => changes.push(value))
+      vi.mocked(api.storeSetting).mockResolvedValue(
+        new Response(null, { status: 400, statusText: 'Bad Request' })
+      )
+
+      expect(
+        await store.setWithOutcome(key, ['/extensions/rejected/'])
+      ).toEqual({
+        status: 'refused',
+        statusCode: 400,
+        statusText: 'Bad Request'
+      })
+
+      expect(api.storeSetting).toHaveBeenCalledWith(key, [
+        '/extensions/rejected/'
+      ])
+      expect(store.get(key)).toEqual(['/extensions/saved/'])
+      expect(changes).toEqual([
+        ['/extensions/rejected/'],
+        ['/extensions/saved/']
+      ])
+    })
+
+    it('retains a revertible setting write after an indeterminate response', async () => {
+      const key = 'Comfy.Extension.DisabledPacks'
+      store.settingValues[key] = ['/extensions/saved/']
+      vi.mocked(api.storeSetting).mockResolvedValue(
+        new Response(null, { status: 500, statusText: 'Server Error' })
+      )
+
+      expect(await store.setWithOutcome(key, ['/extensions/pending/'])).toEqual(
+        {
+          status: 'indeterminate',
+          statusCode: 500,
+          statusText: 'Server Error'
+        }
+      )
+      expect(store.get(key)).toEqual(['/extensions/pending/'])
     })
 
     it('awaits an onChange handler before persisting the value', async () => {

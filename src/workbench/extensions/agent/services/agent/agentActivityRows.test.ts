@@ -89,6 +89,16 @@ describe('foldActivity', () => {
     expect(rows[0]).toMatchObject({ count: 3, ok: false, state: 'streaming' })
   })
 
+  it('clears a prior outcome when the latest settled retry is unresolved', () => {
+    const rows = foldActivity([
+      tool('remember', true, 100),
+      tool('remember', undefined, 101)
+    ])
+
+    expect(rows[0]).toMatchObject({ count: 2, state: 'done' })
+    expect(rows[0]).toHaveProperty('ok', undefined)
+  })
+
   it('shows a successful retry as successful', () => {
     const rows = foldActivity([
       { ...tool('load_skill', false), skill: 'comfy-director' },
@@ -97,4 +107,39 @@ describe('foldActivity', () => {
 
     expect(rows[0]).toMatchObject({ count: 2, ok: true })
   })
+
+  it.for([
+    { order: 'unconfirmed first', verdicts: [false, true] },
+    { order: 'unconfirmed last', verdicts: [true, false] }
+  ])(
+    'keeps a folded row unconfirmed when any write was unconfirmed ($order)',
+    ({ verdicts }) => {
+      const rows = foldActivity(
+        verdicts.map((canvasConfirmed) => ({
+          ...tool('add_node', true),
+          canvasConfirmed
+        }))
+      )
+
+      expect(rows[0]).toMatchObject({ count: 2, canvasConfirmed: false })
+    }
+  )
+
+  it.for([
+    { order: 'both confirmed', verdicts: [true, true] },
+    { order: 'confirmed then pending', verdicts: [true, undefined] },
+    { order: 'pending then confirmed', verdicts: [undefined, true] }
+  ])(
+    'records a folded row as confirmed when no verdict is unconfirmed ($order)',
+    ({ verdicts }) => {
+      const rows = foldActivity(
+        verdicts.map((canvasConfirmed) => ({
+          ...tool('add_node', true),
+          canvasConfirmed
+        }))
+      )
+
+      expect(rows[0]).toMatchObject({ count: 2, canvasConfirmed: true })
+    }
+  )
 })

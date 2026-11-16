@@ -234,6 +234,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           :is-loading="locked"
           :can-submit="canPay"
           :locked
+          :pay-once="purchase === 'credits'"
           page-layout
           @phase="emit('phase', $event)"
           @confirm="

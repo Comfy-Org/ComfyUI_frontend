@@ -4,7 +4,7 @@ import { api } from '@/scripts/api'
 import type {
   PromptQueuedEventPayload,
   PromptQueueingEventPayload
-} from '@/scripts/api'
+} from '@comfyorg/api-client/ComfyApi'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { resultItemUrlWithTimestamp } from '@/utils/resultItemUrl'

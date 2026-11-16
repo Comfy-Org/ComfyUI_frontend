@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 
@@ -11,9 +11,12 @@ const mocks = vi.hoisted(() => ({
   gateBlocks: false
 }))
 
-vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), () => ({
-  partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
-}))
+vi.mock(
+  import('@/platform/billing/composables/usePartnerNodesRunGate'),
+  () => ({
+    partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
+  })
+)
 
 vi.mock(import('@/scripts/api'))
 
