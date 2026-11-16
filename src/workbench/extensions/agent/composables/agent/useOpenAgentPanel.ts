@@ -38,7 +38,7 @@ export function useOpenAgentPanel(source: AgentPanelOpenedMetadata['source']) {
           if (prompt) panel.pendingCloudHandoff = prompt
           opened = true
         },
-        { canShow: canOpen }
+        { canShow: canOpen, handoffPrompt: prompt }
       )
       return opened
     } finally {
