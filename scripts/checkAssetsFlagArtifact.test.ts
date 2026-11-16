@@ -35,19 +35,23 @@ describe('assertWidgetAssetPickerGate', () => {
     }
   )
 
-  it('accepts a Cloud gate folded to a static true', () => {
+  it('accepts a Cloud gate that excludes selected deployments', () => {
     expect(() =>
       assertWidgetAssetPickerGate(
-        ['function isWidgetAssetPickerEnabled() {\n  return true;\n}'],
+        [
+          'function isWidgetAssetPickerEnabled() {\n  return !useDeploymentPickStore().bootDeployment;\n}'
+        ],
         'cloud'
       )
     ).not.toThrow()
   })
 
-  it('accepts a minified Cloud gate spelling true as !0', () => {
+  it('accepts a compact Cloud deployment gate', () => {
     expect(() =>
       assertWidgetAssetPickerGate(
-        ['function isWidgetAssetPickerEnabled(){return!0}'],
+        [
+          'function isWidgetAssetPickerEnabled(){return!useDeploymentPickStore().bootDeployment}'
+        ],
         'cloud'
       )
     ).not.toThrow()
@@ -55,12 +59,17 @@ describe('assertWidgetAssetPickerGate', () => {
 
   it.for([
     'function isWidgetAssetPickerEnabled() {\n  track();\n  return true;\n}',
-    'function isWidgetAssetPickerEnabled() {\n  return isCloud;\n}'
-  ])('rejects a Cloud gate that is not a static constant: %s', (gate) => {
-    expect(() => assertWidgetAssetPickerGate([gate], 'cloud')).toThrow(
-      'Built widget asset-picker gate is invalid for cloud'
-    )
-  })
+    'function isWidgetAssetPickerEnabled() {\n  return isCloud;\n}',
+    'function isWidgetAssetPickerEnabled(){return!0}',
+    'function isWidgetAssetPickerEnabled(){return useDeploymentPickStore().bootDeployment}'
+  ])(
+    'rejects a Cloud gate that ignores the selected deployment: %s',
+    (gate) => {
+      expect(() => assertWidgetAssetPickerGate([gate], 'cloud')).toThrow(
+        'Built widget asset-picker gate is invalid for cloud'
+      )
+    }
+  )
 
   it.for([
     'function isWidgetAssetPickerEnabled() {\n  if (!api.getServerFeature("assets", false)) return false;\n  return true;\n}',

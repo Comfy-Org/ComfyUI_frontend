@@ -1,0 +1,60 @@
+{
+  "name": "@comfyorg/layer-editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": {
+      "@comfyorg/layer-editor": "./src/*.ts",
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "exports": {
+    "./*": {
+      "@comfyorg/layer-editor": "./src/*.ts",
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    },
+    "./kinds": {
+      "@comfyorg/layer-editor": "./src/kinds/index.ts",
+      "types": "./dist/kinds/index.d.ts",
+      "default": "./src/kinds/index.ts"
+    },
+    "./tools": {
+      "@comfyorg/layer-editor": "./src/tools/index.ts",
+      "types": "./dist/tools/index.d.ts",
+      "default": "./src/tools/index.ts"
+    },
+    "./vue": {
+      "@comfyorg/layer-editor": "./src/vue/useLayerEditorSession.ts",
+      "types": "./dist/vue/useLayerEditorSession.d.ts",
+      "default": "./src/vue/useLayerEditorSession.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "ag-psd": "catalog:",
+    "es-toolkit": "catalog:"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.44"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
+  }
+}

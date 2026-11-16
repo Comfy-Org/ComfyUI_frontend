@@ -1,4 +1,4 @@
-import type { IPainterWidget } from '../types/widgets'
+import type { IPainterWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 

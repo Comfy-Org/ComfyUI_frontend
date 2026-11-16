@@ -5,18 +5,18 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   ErrorResponse,
-  Plan,
   PreviewSubscribeResponse
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { PendingSubscriptionCheckout } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
+import type { PendingSubscriptionCheckout } from '@/platform/billing/utils/pendingSubscriptionCheckout'
 
 import {
   cloudAppExpect,
   cloudAppFixture as test,
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -55,22 +55,16 @@ const PENDING_CREATOR_CHECKOUT = {
   }
 } satisfies Omit<PendingSubscriptionCheckout, 'attemptedAt'>
 
-const CREATOR_ANNUAL_PLAN = {
+const CREATOR_ANNUAL_PLAN = createPlan({
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
-  price_cents: 33_600,
-  credits_cents: 7_400,
-  max_seats: 5,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 33_600,
-    total_credits_cents: 7_400
-  }
-} satisfies Plan
+  priceCents: 33_600,
+  monthlyCredits: 7_400,
+  maxSeats: 5
+})
 
-const LEGACY_ACTIVE_STANDARD_STATUS = {
+const ACTIVE_STANDARD_STATUS = {
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
@@ -79,12 +73,13 @@ const LEGACY_ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
-  occupied_seats: 1,
-  billing_rail: 'legacy_stripe'
-} satisfies BillingStatusResponse & { billing_rail: 'legacy_stripe' }
+  occupied_seats: 1
+} satisfies BillingStatusResponse
 
 const NEW_CREATOR_SUBSCRIPTION = {
   allowed: true,
@@ -93,8 +88,8 @@ const NEW_CREATOR_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 33_600,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 7_400,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: CREATOR_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: CREATOR_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -223,7 +218,7 @@ test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
     await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
     await setupCloudApp(page)
     await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
+      route.fulfill(jsonRoute(ACTIVE_STANDARD_STATUS))
     )
     await page.route('**/api/billing/plans', (route) =>
       route.fulfill(

@@ -1,15 +1,10 @@
-import type { TooltipOptions } from 'primevue'
-
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IWidgetOptions
-} from '@/lib/litegraph/src/types/widgets'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type {
   WidgetGridItem,
   WidgetSlotMetadata
@@ -19,7 +14,7 @@ import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/Widg
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
@@ -29,11 +24,14 @@ import {
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeId } from '@/types/nodeId'
-import type { NodeState } from '@/types/nodeState'
-import type { LinkTopology } from '@/types/linkTopology'
+} from '@comfyorg/graph-model/nodeIdentification'
+import type {
+  NodeExecutionId,
+  NodeLocatorId
+} from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
@@ -43,12 +41,11 @@ import type {
   SimplifiedWidget,
   WidgetValue
 } from '@/types/simplifiedWidget'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import {
   executionIdFromState,
   executionIdToNodeLocatorId,
-  getNodeByLocatorId,
-  locatorIdFromState,
+  getNodeByState,
   subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
@@ -72,18 +69,15 @@ interface WidgetErrorTarget {
 
 export interface ProcessedWidget extends WidgetGridItem {
   handleContextMenu: (e: PointerEvent) => void
-  hasLayoutSize: boolean
   hasError: boolean
-  widgetId: WidgetId
-  tooltipConfig: TooltipOptions
+  hasLayoutSize: boolean
+  tooltipText: string
   updateHandler: (value: WidgetValue) => void
+  widgetId: WidgetId
 }
 
 export interface WidgetUiCallbacks {
-  getTooltipConfig: (
-    widget: WidgetTooltipSource,
-    fullVal?: string
-  ) => TooltipOptions
+  getTooltipText: (widget: WidgetTooltipSource, fullValue?: string) => string
   handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
 }
 
@@ -166,8 +160,7 @@ function getHostNode(
   nodeData: NodeState
 ): LGraphNode | null {
   if (!rootGraph) return null
-  const locatorId = locatorIdFromState(nodeData, rootGraph.id)
-  return locatorId ? getNodeByLocatorId(rootGraph, locatorId) : null
+  return getNodeByState(rootGraph, nodeData)
 }
 
 function isWidgetVisible(
@@ -183,7 +176,7 @@ function isWidgetVisible(
 
 function hasWidgetError(
   widget: { name: string; errorTarget?: WidgetErrorTarget },
-  nodeExecId: NodeExecutionId,
+  nodeExecId: NodeExecutionId | null,
   nodeErrors:
     | { errors: { extra_info?: { input_name?: string } }[] }
     | undefined,
@@ -195,8 +188,9 @@ function hasWidgetError(
     !!nodeErrors?.errors.some(
       (e) => e.extra_info?.input_name === widget.name
     ) ||
-    missingModelStore.isWidgetMissingModel(nodeExecId, widget.name) ||
-    missingMediaStore.isWidgetMissingMedia(nodeExecId, widget.name)
+    (nodeExecId !== null &&
+      (missingModelStore.isWidgetMissingModel(nodeExecId, widget.name) ||
+        missingMediaStore.isWidgetMissingMedia(nodeExecId, widget.name)))
   const target = widget.errorTarget
   if (!target) return hasHostError
 
@@ -226,7 +220,7 @@ function createWidgetUpdateHandler({
   id: WidgetId
   live?: { node: LGraphNode; widget: IBaseWidget }
   errorTarget?: WidgetErrorTarget
-  nodeExecId: NodeExecutionId
+  nodeExecId: NodeExecutionId | null
   widgetName: string
   widgetOptions: IWidgetOptions
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>
@@ -251,13 +245,15 @@ function createWidgetUpdateHandler({
         options
       )
     }
-    executionErrorStore.clearWidgetRelatedErrors(
-      nodeExecId,
-      widgetName,
-      widgetName,
-      newValue,
-      options
-    )
+    if (nodeExecId) {
+      executionErrorStore.clearWidgetRelatedErrors(
+        nodeExecId,
+        widgetName,
+        widgetName,
+        newValue,
+        options
+      )
+    }
   }
 }
 
@@ -335,7 +331,7 @@ function widgetNodeLocatorId(
     )
     if (sourceLocator) return sourceLocator
   }
-  if (!bareWidgetId) return undefined
+  if (!bareWidgetId || bareWidgetId.includes(':')) return undefined
   return createNodeLocatorId(
     subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
     bareWidgetId
@@ -351,7 +347,7 @@ interface WidgetProcessingContext {
   hostNode: LGraphNode | null
   liveWidgets: Map<WidgetId, IBaseWidget>
   slotMetadata: Map<string, WidgetSlotMetadata>
-  nodeExecId: NodeExecutionId
+  nodeExecId: NodeExecutionId | null
   nodeErrors: Parameters<typeof hasWidgetError>[2]
   widgetValueStore: ReturnType<typeof useWidgetValueStore>
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>
@@ -411,9 +407,7 @@ function processWidget(
     name: widgetState.name,
     type,
     value,
-    borderStyle: advanced
-      ? 'ring ring-component-node-widget-advanced'
-      : undefined,
+    borderStyle: advanced ? 'ring ring-primary' : undefined,
     callback: updateHandler,
     controlWidget,
     label: widgetState.label,
@@ -425,19 +419,22 @@ function processWidget(
       : undefined
   }
 
-  const valueTooltip =
+  const fullValue =
     isTooltipValueType(type) && String(value).length > 10
       ? String(value)
       : undefined
-  const tooltipConfig = ctx.ui.getTooltipConfig(
+  const tooltipText = ctx.ui.getTooltipText(
     { name: widgetState.name, tooltip: renderState?.tooltip },
-    valueTooltip
+    fullValue
   )
   const handleContextMenu = (e: PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
     ctx.ui.handleNodeRightClick(e, ctx.nodeData.id)
-    showNodeOptions(e, widgetState.name)
+    showNodeOptions(e, {
+      nodeId: ctx.nodeData.id,
+      widgetName: widgetState.name
+    })
   }
 
   return {
@@ -462,7 +459,7 @@ function processWidget(
     visible,
     suppressedByConnection: visibility?.suppression.byConnection ?? false,
     updateHandler,
-    tooltipConfig,
+    tooltipText,
     slotMetadata: slotInfo
   }
 }
@@ -488,7 +485,6 @@ export function computeProcessedWidgets({
     isGraphReady && rootGraph
       ? executionIdFromState(rootGraph, nodeData)
       : createNodeExecutionId([nodeData.id])
-  if (!nodeExecId) return []
 
   const hostNode = getHostNode(rootGraph, nodeData)
   const liveWidgets = hostNode
@@ -520,7 +516,9 @@ export function computeProcessedWidgets({
     liveWidgets,
     slotMetadata,
     nodeExecId,
-    nodeErrors: executionErrorStore.lastNodeErrors?.[nodeExecId],
+    nodeErrors: nodeExecId
+      ? executionErrorStore.lastNodeErrors?.[nodeExecId]
+      : undefined,
     widgetValueStore,
     executionErrorStore,
     missingModelStore,

@@ -130,9 +130,8 @@ describe('GLTF binary metadata parser', () => {
     expect(metadata).toBeDefined()
     expect(metadata.prompt).toBeDefined()
 
-    const prompt = metadata.prompt as Record<string, any>
-    expect(prompt.node1.class_type).toBe('TestNode')
-    expect(prompt.node1.inputs.seed).toBe(123456)
+    expect(metadata.prompt?.node1.class_type).toBe('TestNode')
+    expect(metadata.prompt?.node1.inputs.seed).toBe(123456)
   })
 
   it('should handle string JSON content', async () => {

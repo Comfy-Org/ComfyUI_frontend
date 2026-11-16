@@ -5,7 +5,7 @@ import path from 'path'
 import type {
   TemplateInfo,
   WorkflowTemplates
-} from '@/platform/workflow/templates/types/template'
+} from '@comfyorg/api-client/templateTypes'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 export class ComfyTemplates {
@@ -23,7 +23,7 @@ export class ComfyTemplates {
       .toBeGreaterThanOrEqual(count)
   }
 
-  async loadTemplate(id: string) {
+  async selectTemplate(id: string) {
     const templateCard = this.content.getByTestId(
       TestIds.templates.workflowCard(id)
     )

@@ -1,11 +1,19 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  routeObjectInfoFromSetupApi,
+  setComboInputOptions
+} from '@e2e/fixtures/utils/objectInfo'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.beforeEach(async ({ page }) => {
+  await routeObjectInfoFromSetupApi(page, (objectInfo) => {
+    setComboInputOptions(objectInfo, 'LoadImage', 'image', ['example.png'])
+  })
   await page.route(
     'https://comfyanonymous.github.io/ComfyUI_examples/hidream/hidream_dev_example.png',
     (route) =>
@@ -55,7 +63,18 @@ test.describe(
           const request = await uploadRequestPromise
           expect(request.url()).toContain('/upload/')
         } else {
-          await expect(comfyPage.canvas).toHaveScreenshot(`${fileName}.png`)
+          const workflowName = fileName.replace(/\.\w+$/, '')
+          await expect
+            .poll(() => comfyPage.workflow.getActiveWorkflowPath())
+            .toMatch(new RegExp(`(^|/)${workflowName}\\.json$`))
+          await expect
+            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+            .toBeGreaterThan(0)
+          await expectRegionScreenshot(
+            comfyPage.page,
+            await comfyPage.nodeOps.getAllNodeRefs(),
+            `${fileName}.png`
+          )
         }
       })
     })
@@ -73,13 +92,9 @@ test.describe(
 
         await comfyPage.dragDrop.dragAndDropURL(url)
 
-        // The drop triggers an async fetch → parse → loadGraphData chain.
-        // Poll until the graph settles with the loaded workflow's nodes.
-        await expect
-          .poll(() => comfyPage.nodeOps.getGraphNodesCount(), {
-            timeout: 15000
-          })
-          .toBeGreaterThan(initialNodeCount)
+        await comfyPage.expectNodeCountMinimum(initialNodeCount + 1, {
+          timeout: 15000
+        })
         expect(await comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
       })
     })
@@ -89,7 +104,7 @@ test.describe(
         comfyPage
       }) => {
         await comfyPage.nodeOps.clearGraph()
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        await comfyPage.expectNodeCount(0)
 
         await comfyPage.page.evaluate(() => {
           window.app!.canvas.graph_mouse[0] = -9999
@@ -102,7 +117,7 @@ test.describe(
           waitForUpload: true
         })
 
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(1)
+        await comfyPage.expectNodeCount(1)
 
         const { nodePos, expectedPos } = await comfyPage.page.evaluate(
           (drop) => {
@@ -159,7 +174,7 @@ test.describe(
               els
                 .filter((el) => el.getAttribute('data-node-id') !== id)
                 .map((el) => Number((el as HTMLElement).style.zIndex)),
-            addedNodeId!
+            addedNodeId
           )
 
           expect(newNodeZ).toBeGreaterThan(Math.max(0, ...existingZIndexes))

@@ -1,3 +1,4 @@
+import type { RectEdges } from '@comfyorg/shared-frontend-utils/geometry'
 import type { Locator, Page } from '@playwright/test'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
@@ -27,9 +28,7 @@ export async function expectDomTextGeometry(texts: Locator[]) {
   }
 }
 
-function expectTextSeparated(
-  draws: Array<{ left: number; right: number; top: number; bottom: number }>
-) {
+function expectTextSeparated(draws: Array<RectEdges>) {
   expect(
     draws.some((draw, index) =>
       draws
@@ -49,20 +48,23 @@ function expectTextSeparated(
 export async function captureCanvasTextGeometry(
   page: Page,
   expected: string[],
-  forceOverlap = false
+  forceOverlap = false,
+  nodeId?: string
 ) {
   const captures = await page.evaluate(
-    async ({ labels, forceOverlap }) => {
+    async ({ labels, forceOverlap, nodeId }) => {
       const context = window.app!.canvas.canvas.getContext('2d')!
       const original = context.fillText
       let firstOrigin: DOMPoint | undefined
-      const draws: Array<{
-        text: string
-        left: number
-        right: number
-        top: number
-        bottom: number
-      }> = []
+      const draws: Array<
+        RectEdges & {
+          text: string
+          boundary?: { left: number; right: number }
+        }
+      > = []
+      const node = nodeId
+        ? window.app!.graph.nodes.find(({ id }) => String(id) === nodeId)
+        : undefined
       context.fillText = function (text, x, y, maxWidth) {
         const transform = this.getTransform()
         if (text === labels[1]) firstOrigin = transform.transformPoint({ x, y })
@@ -96,7 +98,13 @@ export async function captureCanvasTextGeometry(
             left: Math.min(...corners.map(({ x }) => x)),
             right: Math.max(...corners.map(({ x }) => x)),
             top: Math.min(...corners.map(({ y }) => y)),
-            bottom: Math.max(...corners.map(({ y }) => y))
+            bottom: Math.max(...corners.map(({ y }) => y)),
+            boundary: node
+              ? {
+                  left: transform.transformPoint({ x: 0, y }).x,
+                  right: transform.transformPoint({ x: node.size[0], y }).x
+                }
+              : undefined
           })
         }
         if (maxWidth === undefined) original.call(this, text, x, y)
@@ -116,7 +124,7 @@ export async function captureCanvasTextGeometry(
       }
       return draws
     },
-    { labels: expected, forceOverlap }
+    { labels: expected, forceOverlap, nodeId }
   )
 
   const draws = expected.flatMap((label) => {
@@ -130,4 +138,9 @@ export async function captureCanvasTextGeometry(
     ).toBe(true)
   }
   expectTextSeparated(draws)
+  for (const { left, right, boundary } of draws) {
+    if (!boundary) continue
+    expect(left).toBeGreaterThanOrEqual(boundary.left)
+    expect(right).toBeLessThanOrEqual(boundary.right)
+  }
 }

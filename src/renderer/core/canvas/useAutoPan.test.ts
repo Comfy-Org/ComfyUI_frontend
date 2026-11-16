@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
+import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 import {
   AutoPanController,
   calculateEdgePanSpeed
@@ -106,6 +107,7 @@ describe('AutoPanController', () => {
     controller.start()
 
     vi.advanceTimersByTime(16)
+    runCanvasFramePhase(mockCanvas, 'update')
 
     expect(onPanMock).not.toHaveBeenCalled()
   })
@@ -115,6 +117,7 @@ describe('AutoPanController', () => {
     controller.start()
 
     vi.advanceTimersByTime(16)
+    runCanvasFramePhase(mockCanvas, 'update')
 
     expect(onPanMock).toHaveBeenCalled()
     const [dx, dy] = onPanMock.mock.calls[0]
@@ -127,6 +130,7 @@ describe('AutoPanController', () => {
     controller.start()
 
     vi.advanceTimersByTime(16)
+    runCanvasFramePhase(mockCanvas, 'update')
 
     expect(onPanMock).toHaveBeenCalled()
     const [dx, dy] = onPanMock.mock.calls[0]
@@ -139,6 +143,7 @@ describe('AutoPanController', () => {
     controller.start()
 
     vi.advanceTimersByTime(16)
+    runCanvasFramePhase(mockCanvas, 'update')
 
     expect(onPanMock).toHaveBeenCalled()
     const [dx, dy] = onPanMock.mock.calls[0]
@@ -151,16 +156,39 @@ describe('AutoPanController', () => {
     controller.start()
 
     vi.advanceTimersByTime(16)
+    runCanvasFramePhase(mockCanvas, 'update')
 
     expect(mockDs.offset[0]).toBeGreaterThan(0)
     expect(mockDs.offset[1]).toBe(0)
   })
+
+  it.for([
+    [10, 0, 9],
+    [40, 0, 36],
+    [500, 0, 45],
+    [100, 100, 90],
+    [1000, 1000, 900],
+    [2000, 1000, 900]
+  ])(
+    'pans %s ms at a %s ms frame interval by %s pixels, bounding stalls',
+    ([elapsed, frameInterval, distance]) => {
+      controller.updatePointer(0, 300)
+      controller.start()
+
+      vi.advanceTimersByTime(elapsed)
+      runCanvasFramePhase(mockCanvas, 'update', frameInterval)
+
+      expect(mockDs.offset[0]).toBeCloseTo(distance)
+      expect(mockDs.offset[1]).toBe(0)
+    }
+  )
 
   it('accounts for zoom level in offset changes', () => {
     controller.updatePointer(0, 300)
     controller.start()
 
     vi.advanceTimersByTime(16)
+    runCanvasFramePhase(mockCanvas, 'update')
     const offsetAtScale1 = mockDs.offset[0]
 
     controller.stop()
@@ -169,6 +197,7 @@ describe('AutoPanController', () => {
 
     controller.start()
     vi.advanceTimersByTime(16)
+    runCanvasFramePhase(mockCanvas, 'update')
     const offsetAtScale2 = mockDs.offset[0]
 
     expect(offsetAtScale2).toBeCloseTo(offsetAtScale1 / 2)
@@ -179,12 +208,14 @@ describe('AutoPanController', () => {
     controller.start()
 
     vi.advanceTimersByTime(16)
+    runCanvasFramePhase(mockCanvas, 'update')
     const callCount = onPanMock.mock.calls.length
     expect(callCount).toBeGreaterThan(0)
 
     controller.stop()
 
     vi.advanceTimersByTime(16)
+    runCanvasFramePhase(mockCanvas, 'update')
     expect(onPanMock).toHaveBeenCalledTimes(callCount)
   })
 
@@ -200,6 +231,7 @@ describe('AutoPanController', () => {
     disabledController.start()
 
     vi.advanceTimersByTime(16)
+    runCanvasFramePhase(mockCanvas, 'update')
 
     expect(onPanMock).not.toHaveBeenCalled()
     disabledController.stop()

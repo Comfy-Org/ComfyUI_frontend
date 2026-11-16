@@ -14,10 +14,10 @@
       v-for="section in filteredSections"
       :id="`essentials-section-${section.key}`"
       :key="section.key"
-      class="border-b border-border-default last:border-b-0"
+      class="border-b last:border-b-0"
     >
       <div
-        class="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-0 bg-comfy-menu-bg px-4 text-sm font-bold tracking-wide text-muted-foreground"
+        class="sticky top-0 z-10 flex h-14 w-full items-center justify-between bg-background px-4 text-sm font-bold tracking-wide text-muted-foreground"
       >
         <span class="uppercase">{{ $t(`essentials.${section.key}`) }}</span>
       </div>
@@ -43,7 +43,7 @@
           :key="subgroup.key"
           class="scroll-mt-30 last:pb-4"
         >
-          <div class="text-foreground text-sm leading-[15px] font-normal">
+          <div class="text-sm leading-[15px] font-normal">
             {{ $t(`essentials.${subgroup.key}`) }}
           </div>
           <div

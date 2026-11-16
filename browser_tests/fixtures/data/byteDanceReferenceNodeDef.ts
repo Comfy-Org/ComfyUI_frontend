@@ -1,8 +1,14 @@
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 
 export const BYTEDANCE_REFERENCE_NODE_TYPE = 'ByteDance2ReferenceNode'
 
 export const REFERENCE_IMAGES_PREFIX = 'model.reference_images.'
+
+/** The workflow fixture that exercises this node's autogrow input group. */
+export const AUTOGROW_REFERENCE_WORKFLOW = 'subgraphs/autogrow-reference-images'
+
+/** Id of the reference node inside `AUTOGROW_REFERENCE_WORKFLOW`. */
+export const AUTOGROW_REFERENCE_NODE_ID = '26'
 
 function ordinalNames(prefix: string, count: number): string[] {
   return Array.from({ length: count }, (_, index) => `${prefix}_${index + 1}`)

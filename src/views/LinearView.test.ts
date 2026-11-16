@@ -11,27 +11,7 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import LinearView from './LinearView.vue'
 
-vi.mock<unknown>(import('firebase/auth'), () => {
-  class AuthProvider {
-    addScope() {}
-    setCustomParameters() {}
-  }
-
-  return {
-    AuthErrorCodes: {
-      POPUP_CLOSED_BY_USER: 'auth/popup-closed-by-user',
-      EXPIRED_POPUP_REQUEST: 'auth/cancelled-popup-request',
-      POPUP_BLOCKED: 'auth/popup-blocked',
-      CREDENTIAL_TOO_OLD_LOGIN_AGAIN: 'auth/requires-recent-login'
-    },
-    GoogleAuthProvider: AuthProvider,
-    GithubAuthProvider: AuthProvider,
-    browserLocalPersistence: {},
-    setPersistence: vi.fn(async () => {}),
-    onAuthStateChanged: vi.fn(() => () => {}),
-    onIdTokenChanged: vi.fn(() => () => {})
-  }
-})
+vi.mock(import('firebase/auth'))
 
 interface ViewState {
   sidebarLocation: 'left' | 'right'
@@ -58,10 +38,6 @@ vi.mock(
   }
 )
 
-vi.mock(import('@/composables/useStablePrimeVueSplitterSizer'), () => ({
-  useStablePrimeVueSplitterSizer: () => ({ onResizeEnd: vi.fn() })
-}))
-
 function setViewport(width: number) {
   const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
     .happyDOM
@@ -74,16 +50,16 @@ function setViewport(width: number) {
 const DESKTOP_WIDTH = 1280
 const MOBILE_WIDTH = 640
 
-const passthroughStub = { template: '<div><slot /></div>' }
-
 function leafStub(testId: string) {
   return { template: `<div data-testid="${testId}" />` }
 }
 
 const baseStubs = {
-  Splitter: passthroughStub,
-  SplitterPanel: passthroughStub,
-  DockedAgentPanel: leafStub('docked-agent-panel'),
+  DockedAgentPanel: {
+    props: { hasOpaqueNeighbor: Boolean },
+    template:
+      '<div data-testid="docked-agent-panel" :data-has-opaque-neighbor="String(hasOpaqueNeighbor)" />'
+  },
   MobileDisplay: leafStub('mobile-display'),
   AppBuilder: leafStub('app-builder'),
   AppModeToolbar: leafStub('app-mode-toolbar'),
@@ -226,12 +202,25 @@ describe('LinearView', () => {
     expect(screen.queryByTestId('side-toolbar')).not.toBeInTheDocument()
   })
 
-  it('docks the agent panel beside the workspace column, not inside it', () => {
+  it('tells the panel its neighbour is opaque, since app mode hides the canvas', () => {
     renderView()
 
+    expect(screen.getByTestId('docked-agent-panel')).toHaveAttribute(
+      'data-has-opaque-neighbor',
+      'true'
+    )
+  })
+
+  it('docks the agent panel beside the workspace column, below the full-width tab bar', () => {
+    renderView()
+
+    // The tab bar spans above both, so neither it nor the panel sits inside
+    // the workspace column any more.
     const column = within(screen.getByTestId('linear-workspace-column'))
-    expect(column.getByTestId('workflow-tabs')).toBeInTheDocument()
+    expect(column.queryByTestId('workflow-tabs')).toBeNull()
     expect(column.queryByTestId('docked-agent-panel')).toBeNull()
+
+    expect(screen.getByTestId('workflow-tabs')).toBeInTheDocument()
     expect(screen.getByTestId('docked-agent-panel')).toBeInTheDocument()
   })
 })

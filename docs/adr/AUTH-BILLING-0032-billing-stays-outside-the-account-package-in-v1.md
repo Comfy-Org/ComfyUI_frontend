@@ -21,7 +21,7 @@ reaches billing and workspaces through one axios client,
 lives in `src/platform/auth/unified/remintRetry.ts`.
 
 `createSessionBillingTransport` in
-`packages/account/src/core/billing/transport.ts` became a second
+`packages/account-core/src/core/billing/transport.ts` became a second
 production path hours before this ADR was written. #17665 landed on
 2026-09-15 and routes the cloud app's top-up through it behind
 `billing_sdk_topup_enabled`, reached from `useTopupOperation.ts` and
@@ -37,7 +37,7 @@ This split was not an oversight, but until now it was recorded only in
 two source-file header comments
 (`apps/website/src/config/workshop-balance.ts` and
 `workshop-credits.ts`), both of which state that "billing stays outside
-`@comfyorg/account` in V1". A meeting on 11 Sep 2026 agreed that the
+`@comfyorg/account-core` in V1". A meeting on 11 Sep 2026 agreed that the
 arrangement should be written up for the people who were not in the
 room; that write-up did not happen, and its absence is what this ADR
 corrects.
@@ -45,7 +45,7 @@ corrects.
 Three facts bound the decision.
 
 **The account package's payment commands did not exist.** The billing
-half of `@comfyorg/account` shipped its read paths first — credits,
+half of `@comfyorg/account-core` shipped its read paths first — credits,
 capabilities, status — and `index.ts` says the payment commands "land
 on top of these same contracts", which they do in FE-2214 (#17657),
 still open. A top-up flow built against the package in the week of
@@ -53,7 +53,7 @@ still open. A top-up flow built against the package in the week of
 
 **The transport did exist.** `createSessionBillingTransport` was
 already on `main`, `apps/website` already depended on
-`@comfyorg/account`, and `BillingRequest` is generic over method,
+`@comfyorg/account-core`, and `BillingRequest` is generic over method,
 route, and body — its own contract comment uses `/billing/topup` as the
 example route. The site could have carried its top-up POST over the
 shared transport without the command layer. It did not, because the V1
@@ -69,7 +69,7 @@ scope captured at attempt start; after the response,
 session moved. `HeaderAccount.vue` does the same around
 `listWorkspaces` (`ensureFresh` → `sameSessionScope` → call →
 `workspaceLoadIsOwned`). That is the freshness strategy
-`packages/account/src/core/session.ts` specifies for every host:
+`packages/account-core/src/core/session.ts` specifies for every host:
 valid-on-read, where "callers await `ensureFresh` at the moment they
 need a token; it never resolves with a stale one".
 
@@ -241,7 +241,7 @@ governs.
   it with the rest of the response.
 
 - **This boundary has no codified owner, which is its own gap.**
-  `CODEOWNERS` carries no entry for `packages/account/`,
+  `CODEOWNERS` carries no entry for `packages/account-core/`,
   `apps/website/`, or either billing surface, so "domain-owner review"
   has nothing to resolve against. Billing — the transport, the
   commands, and the hosted app — was authored under FE-2212 through

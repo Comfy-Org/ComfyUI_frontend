@@ -22,14 +22,18 @@
 }
 .primary .comfyui-button,
 .primary.comfyui-button {
-  background-color: var(--primary-bg) !important;
-  color: var(--primary-fg) !important;
+  background-color: var(--primary) !important;
+  color: var(--foreground) !important;
 }
 
 .primary .comfyui-button:not(:disabled):hover,
 .primary.comfyui-button:not(:disabled):hover {
-  background-color: var(--primary-hover-bg) !important;
-  color: var(--primary-hover-fg) !important;
+  background-color: color-mix(
+    in srgb,
+    var(--primary) 90%,
+    var(--background)
+  ) !important;
+  color: var(--foreground) !important;
 }
 
 /* Popup */
@@ -39,9 +43,9 @@
   right: var(--right);
   bottom: var(--bottom);
   left: var(--left);
-  z-index: 2000;
+  z-index: var(--z-index-overlay);
   max-height: calc(100vh - var(--limit) - 10px);
-  box-shadow: 3px 3px 5px 0 rgb(0 0 0 / 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .comfyui-popup:not(.open) {
@@ -67,7 +71,7 @@
 .comfyui-split-primary .comfyui-button {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
-  border-right: 1px solid var(--comfy-menu-bg);
+  border-right: 1px solid var(--background);
   width: 100%;
 }
 
@@ -80,8 +84,8 @@
 
 .comfyui-split-button-popup {
   white-space: nowrap;
-  background-color: var(--content-bg);
-  color: var(--content-fg);
+  background-color: var(--secondary);
+  color: var(--foreground);
   display: flex;
   flex-direction: column;
   overflow: auto;
@@ -93,12 +97,12 @@
 .comfyui-split-button-popup > .comfyui-button {
   border: none;
   background-color: transparent;
-  color: var(--fg-color);
+  color: var(--foreground);
   padding: 8px 12px 8px 8px;
 }
 
 .comfyui-split-button-popup > .comfyui-button:not(:disabled):hover {
-  background-color: var(--comfy-input-bg);
+  background-color: var(--accent);
 }
 
 /* Button group */

@@ -1,0 +1,94 @@
+{
+  "name": "@comfyorg/mask-editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*.vue": {
+      "@comfyorg/mask-editor": "./src/*.vue",
+      "types": "./dist/*.vue.d.ts",
+      "default": "./src/*.vue"
+    },
+    "#/*": {
+      "@comfyorg/mask-editor": "./src/*.ts",
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "exports": {
+    "./ui/EditorCanvas": {
+      "@comfyorg/mask-editor": "./src/ui/EditorCanvas.vue",
+      "types": "./dist/ui/EditorCanvas.vue.d.ts",
+      "default": "./src/ui/EditorCanvas.vue"
+    },
+    "./ui/EditorToolbar": {
+      "@comfyorg/mask-editor": "./src/ui/EditorToolbar.vue",
+      "types": "./dist/ui/EditorToolbar.vue.d.ts",
+      "default": "./src/ui/EditorToolbar.vue"
+    },
+    "./ui/style.css": "./src/ui/style.css",
+    "./StrokeProcessor": {
+      "@comfyorg/mask-editor": "./src/StrokeProcessor.ts",
+      "types": "./dist/StrokeProcessor.d.ts",
+      "default": "./src/StrokeProcessor.ts"
+    },
+    "./brushUtils": {
+      "@comfyorg/mask-editor": "./src/brushUtils.ts",
+      "types": "./dist/brushUtils.d.ts",
+      "default": "./src/brushUtils.ts"
+    },
+    "./imageOutput": {
+      "@comfyorg/mask-editor": "./src/imageOutput.ts",
+      "types": "./dist/imageOutput.d.ts",
+      "default": "./src/imageOutput.ts"
+    },
+    "./maskEditorStore": {
+      "@comfyorg/mask-editor": "./src/maskEditorStore.ts",
+      "types": "./dist/maskEditorStore.d.ts",
+      "default": "./src/maskEditorStore.ts"
+    },
+    "./types": {
+      "@comfyorg/mask-editor": "./src/types.ts",
+      "types": "./dist/types.d.ts",
+      "default": "./src/types.ts"
+    },
+    "./useCanvasTransform": {
+      "@comfyorg/mask-editor": "./src/useCanvasTransform.ts",
+      "types": "./dist/useCanvasTransform.d.ts",
+      "default": "./src/useCanvasTransform.ts"
+    }
+  },
+  "scripts": {
+    "build": "vue-tsc -p tsconfig.build.json",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@alloc/quick-lru": "catalog:",
+    "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/shared-frontend-utils": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
+    "@vueuse/core": "catalog:",
+    "es-toolkit": "catalog:",
+    "pinia": "catalog:",
+    "typegpu": "catalog:",
+    "vue": "catalog:",
+    "vue-i18n": "catalog:"
+  },
+  "devDependencies": {
+    "@pinia/testing": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@testing-library/vue": "catalog:",
+    "@total-typescript/shoehorn": "catalog:",
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@webgpu/types": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

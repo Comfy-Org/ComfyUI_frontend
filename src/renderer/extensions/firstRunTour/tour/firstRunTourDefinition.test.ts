@@ -9,10 +9,10 @@ import {
   targetMounted
 } from '@/platform/onboarding/coachmarkRegistry'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { TOUR_ROLE_PINS } from '../roles/tourRolePins'
-import type { RolePin } from '../roles/tourRolePins'
+import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
+import type { RolePin } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 import {
   firstRunTourSteps,
   releaseFirstRunTargets
@@ -44,12 +44,12 @@ vi.mock(import('./cameraFraming'), () => ({
   }
 }))
 
-async function buildSteps(templateId: keyof typeof TOUR_ROLE_PINS | string) {
+async function buildSteps(templateId: string) {
   const { steps } = await firstRunTourSteps(templateId, runState)
   return steps
 }
 
-function buildResolution(templateId: keyof typeof TOUR_ROLE_PINS | string) {
+function buildResolution(templateId: string) {
   return firstRunTourSteps(templateId, runState)
 }
 

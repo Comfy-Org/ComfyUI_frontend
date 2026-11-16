@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ClassValue } from '@comfyorg/tailwind-utils'
 
@@ -36,8 +36,8 @@ const icon = computed(() =>
     :class="
       cn(
         'flex items-center gap-1 rounded-sm px-2 py-1 break-all',
-        'bg-node-component-surface',
-        isDraggable && 'ring-accent-background hover:ring-1',
+        'bg-node',
+        isDraggable && 'ring-accent hover:ring-1',
         className
       )
     "
@@ -45,7 +45,7 @@ const icon = computed(() =>
   >
     <div class="pointer-events-none flex-1">
       <div
-        class="line-clamp-1 text-xs text-text-secondary"
+        class="line-clamp-1 text-xs text-muted-foreground"
         data-testid="subgraph-widget-node-name"
       >
         {{ nodeTitle }}
@@ -63,10 +63,11 @@ const icon = computed(() =>
     >
       <i :class="icon" :data-testid="isPhysical ? 'icon-link' : 'icon-eye'" />
     </Button>
-    <div
+    <i
       v-if="isDraggable"
+      aria-hidden="true"
       data-testid="subgraph-widget-drag-handle"
-      class="pointer-events-none icon-[lucide--grip-vertical] size-4"
+      class="pointer-events-none icon-[lucide--grip-vertical]"
     />
   </div>
 </template>

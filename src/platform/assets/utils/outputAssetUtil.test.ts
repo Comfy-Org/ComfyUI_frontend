@@ -6,7 +6,7 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { getTotalAssetOutputCount } from './outputAssetCountUtil'
 import { resolveOutputAssetItems } from './outputAssetUtil'
@@ -322,8 +322,8 @@ describe('resolveOutputAssetItems', () => {
       excludeOutputKey: getOutputKey(outputB) ?? undefined
     })
 
-    // outputB excluded, remaining reversed: [C, A]
     expect(results.map((asset) => asset.name)).toEqual(['c.png', 'a.png'])
+    expect(metadata.allOutputs).toEqual([outputA, outputB, outputC])
   })
 
   it('returns empty array when all outputs are excluded', async () => {

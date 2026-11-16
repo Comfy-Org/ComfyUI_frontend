@@ -1,99 +1,65 @@
 <template>
-  <div class="queue-run-controls flex h-8 items-center gap-1.5">
+  <ButtonGroup class="queue-button-group h-8 rounded-lg bg-secondary">
     <BatchCountEdit />
-    <ButtonGroup class="queue-button-group h-full rounded-lg">
-      <Button
-        v-tooltip.bottom="{
-          value: queueButtonTooltip,
-          showDelay: 600
-        }"
-        :variant="queueButtonVariant"
-        size="unset"
-        :class="queueActionButtonClass"
-        data-testid="queue-button"
-        :data-variant="queueButtonVariant"
-        @click="queuePrompt"
-      >
-        <i :class="cn(iconClass, 'size-4')" data-testid="queue-button-icon" />
-        {{ queueButtonLabel }}
-      </Button>
+    <Button
+      :tooltip="queueButtonTooltip"
+      tooltip-side="bottom"
+      :variant="queueButtonVariant"
+      size="unset"
+      :class="
+        cn(
+          'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
+          paymentRecoveryLock ? 'font-medium' : 'font-light'
+        )
+      "
+      data-testid="queue-button"
+      @click="queuePrompt"
+    >
+      <i :class="iconClass" data-testid="queue-button-icon" />
+      {{ queueButtonLabel }}
+    </Button>
 
-      <DropdownMenuRoot>
-        <DropdownMenuTrigger as-child>
-          <Button
-            variant="inverted"
-            size="unset"
-            :disabled="Boolean(paymentRecoveryLock)"
-            :class="queueMenuTriggerClass"
-            :aria-label="t('menu.runOptions')"
-            data-testid="queue-mode-menu-trigger"
-          >
-            <i class="icon-[lucide--chevron-down] size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuPortal>
-          <DropdownMenuContent
-            :side-offset="4"
-            class="z-1000 w-40 rounded-lg border border-border-subtle bg-base-background p-1 shadow-interface"
-          >
-            <DropdownMenuRadioGroup :model-value="selectedQueueMode">
-              <DropdownMenuRadioItem
-                v-for="item in queueModeMenuItems"
-                :key="item.key"
-                :value="item.key"
-                as-child
-                @select="item.command"
-              >
-                <Button
-                  v-tooltip.bottom="
-                    item.description ? buildModeInfoTooltip(item) : undefined
-                  "
-                  variant="textonly"
-                  size="sm"
-                  :class="
-                    cn(
-                      queueMenuItemButtonClass,
-                      item.key === selectedQueueMode &&
-                        'bg-secondary-background'
-                    )
-                  "
-                >
-                  <i :class="cn(item.icon, 'size-4 shrink-0')" />
-                  <span class="mr-auto">{{ item.label }}</span>
-                  <i
-                    v-if="item.description"
-                    class="icon-[lucide--info] size-4 shrink-0 text-muted-foreground"
-                    aria-hidden
-                  />
-                </Button>
-              </DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuContent>
-        </DropdownMenuPortal>
-      </DropdownMenuRoot>
-    </ButtonGroup>
-  </div>
+    <Menu side="bottom" :side-offset="4" class="min-w-44">
+      <template #trigger>
+        <Button
+          :variant="queueMenuTriggerVariant"
+          size="unset"
+          :disabled="Boolean(paymentRecoveryLock)"
+          :class="
+            cn(
+              queueMenuTriggerClass,
+              queueMenuTriggerVariantClass[queueMenuTriggerVariant]
+            )
+          "
+          :aria-label="t('menu.runOptions')"
+          data-testid="queue-mode-menu-trigger"
+        >
+          <TinyChevronIcon />
+        </Button>
+      </template>
+      <MenuRadioGroup
+        :model-value="selectedQueueMode"
+        :options="queueModeMenuItems"
+        @select.prevent
+      />
+    </Menu>
+  </ButtonGroup>
 </template>
 
 <script setup lang="ts">
-import {
-  DropdownMenuContent,
-  DropdownMenuPortal,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuRoot,
-  DropdownMenuTrigger
-} from 'reka-ui'
 import { storeToRefs } from 'pinia'
 import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import BatchCountEdit from '@/components/actionbar/BatchCountEdit.vue'
-import Button from '@/components/ui/button/Button.vue'
-import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import TinyChevronIcon from '@comfyorg/design-system/icon/TinyChevronIcon'
+import Button from '@comfyorg/design-system/button/Button'
+import ButtonGroup from '@comfyorg/design-system/button-group/ButtonGroup'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   isInstantMode,
@@ -127,11 +93,9 @@ watch(
 )
 
 interface QueueModeMenuItem {
-  key: QueueModeMenuKey
+  value: QueueModeMenuKey
   label: string
-  icon: string
   tooltip: string
-  description?: string
   command: () => void
 }
 
@@ -143,20 +107,17 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
   () => {
     const items: Record<string, QueueModeMenuItem> = {
       disabled: {
-        key: 'disabled',
+        value: 'disabled',
         label: t('menu.run'),
-        icon: 'icon-[lucide--play]',
         tooltip: t('menu.disabledTooltip'),
         command: () => {
           queueMode.value = 'disabled'
         }
       },
       change: {
-        key: 'change',
-        label: t('menu.runOnChange'),
-        icon: 'icon-[lucide--step-forward]',
+        value: 'change',
+        label: `${t('menu.run')} (${t('menu.onChange')})`,
         tooltip: t('menu.onChangeTooltip'),
-        description: t('menu.onChangeDescription'),
         command: () => {
           useTelemetry()?.trackUiButtonClicked({
             button_id: 'queue_mode_option_run_on_change_selected',
@@ -169,9 +130,8 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
 
     if (!isCloud) {
       items['instant-idle'] = {
-        key: 'instant-idle',
+        value: 'instant-idle',
         label: `${t('menu.run')} (${t('menu.instant')})`,
-        icon: 'icon-[lucide--fast-forward]',
         tooltip: t('menu.instantTooltip'),
         command: () => {
           useTelemetry()?.trackUiButtonClicked({
@@ -197,29 +157,6 @@ const queueModeMenuItems = computed(() =>
   Object.values(queueModeMenuItemLookup.value)
 )
 
-// i18n labels can come from custom nodes, so they are escaped for the HTML.
-const escapeHtml = (value: string) =>
-  value.replace(
-    /[&<>"']/g,
-    (char) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[
-        char
-      ] ?? char
-  )
-
-const buildModeInfoTooltip = (item: QueueModeMenuItem) => ({
-  escape: false,
-  showDelay: 150,
-  hideDelay: 0,
-  value: `<div class="text-sm font-semibold text-base-foreground">${escapeHtml(item.label)}</div><div class="mt-1 text-xs leading-snug text-muted-foreground">${escapeHtml(item.description ?? '')}</div>`,
-  pt: {
-    text: {
-      class:
-        'max-w-[280px] rounded-lg border border-border-subtle bg-base-background px-3 py-2 text-left shadow-interface'
-    }
-  }
-})
-
 const isStopInstantAction = computed(() =>
   isInstantRunningMode(queueMode.value)
 )
@@ -235,7 +172,7 @@ const queueButtonLabel = computed(() =>
 )
 
 const queueButtonVariant = computed<
-  'destructive' | 'inverted' | 'secondary' | 'subscribe'
+  'destructive' | 'primary' | 'secondary' | 'subscribe'
 >(() =>
   paymentRecoveryLock === 'owner'
     ? 'subscribe'
@@ -243,14 +180,20 @@ const queueButtonVariant = computed<
       ? 'secondary'
       : isStopInstantAction.value
         ? 'destructive'
-        : 'inverted'
+        : 'primary'
 )
-const queueActionButtonClass =
-  'h-full min-w-[88px] rounded-none gap-1.5 px-4 text-sm font-semibold'
+const queueMenuTriggerVariant = computed(() =>
+  queueButtonVariant.value === 'subscribe'
+    ? 'secondary'
+    : queueButtonVariant.value
+)
+const queueMenuTriggerVariantClass = {
+  destructive: 'border-black/20 data-[state=open]:bg-destructive/90',
+  primary: 'data-[state=open]:bg-primary/90',
+  secondary: 'text-muted-foreground'
+} satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =
-  'h-full w-7 rounded-none border-solid border-y-0 border-r-0 border-l border-base-background/25 p-0 data-[state=open]:bg-base-foreground/80'
-const queueMenuItemButtonClass =
-  'w-full justify-start font-normal data-[highlighted]:bg-secondary-background-hover'
+  'h-full w-6 rounded-l-none rounded-r-lg border-0 border-l border-solid border-current/25 p-0'
 
 const iconClass = computed(() => {
   if (paymentRecoveryLock) {

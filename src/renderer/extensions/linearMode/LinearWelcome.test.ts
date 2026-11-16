@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import LinearWelcome from './LinearWelcome.vue'
 
 vi.mock<unknown>(
-  import('@/composables/useWorkflowTemplateSelectorDialog'),
+  import('@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'),
   () => ({
     useWorkflowTemplateSelectorDialog: () => ({ show: vi.fn() })
   })

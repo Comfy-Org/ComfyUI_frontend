@@ -32,10 +32,9 @@
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot as Popover, PopoverTrigger } from 'reka-ui'
 
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import type { JobListItem } from '@/composables/queue/useJobList'
 
 import QueueStatusRecents from './QueueStatusRecents.vue'

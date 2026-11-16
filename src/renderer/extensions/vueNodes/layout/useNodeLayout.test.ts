@@ -1,12 +1,18 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
+import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { UUID } from '@/utils/uuid'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvasElement,
+  stubCanvasGetContext
+} from '@/utils/__tests__/canvasTestUtils'
 
 import { useNodeLayout } from './useNodeLayout'
 
@@ -67,5 +73,33 @@ describe('useNodeLayout', () => {
     })
     await nextTick()
     expect(container.textContent).toBe('300')
+  })
+
+  it('presents the latest position only when the canvas draws it', async () => {
+    stubCanvasGetContext()
+    const canvas = new LGraphCanvas(
+      createTestCanvasElement({
+        ctx: createMockCanvasRenderingContext2D({ drawImage: vi.fn() })
+      }),
+      new LGraph(),
+      { skip_render: true, skip_events: true }
+    )
+    useCanvasStore().canvas = canvas
+    const { container } = render(NodeLayoutHost)
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: FIRST_WORKFLOW,
+      nodeId: NODE,
+      position: { x: 137, y: 59 },
+      timestamp: 2,
+      source: LayoutSource.Vue
+    })
+    await nextTick()
+    expect(container.textContent).toBe('100')
+
+    canvas.draw()
+    await nextTick()
+    expect(container.textContent).toBe('137')
   })
 })

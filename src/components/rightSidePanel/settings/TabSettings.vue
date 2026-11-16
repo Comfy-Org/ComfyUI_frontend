@@ -2,17 +2,17 @@
   <div v-if="isOnlyHasNodes" class="p-4">
     <NodeSettings :nodes="theNodes" />
   </div>
-  <div v-else class="border-t border-interface-stroke">
+  <div v-else class="border-t">
     <PropertiesAccordionItem
       v-if="hasNodes"
-      class="border-b border-interface-stroke"
+      class="border-b"
       :label="$t('rightSidePanel.nodes')"
     >
       <NodeSettings :nodes="theNodes" class="p-4" />
     </PropertiesAccordionItem>
     <PropertiesAccordionItem
       v-if="hasGroups"
-      class="border-b border-interface-stroke"
+      class="border-b"
       :label="$t('rightSidePanel.groups')"
     >
       <NodeSettings :nodes="theGroups" class="p-4" />
@@ -34,10 +34,10 @@ import type { Raw } from 'vue'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
 import NodeSettings from './NodeSettings.vue'
 
 const props = defineProps<{

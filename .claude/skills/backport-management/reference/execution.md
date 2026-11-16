@@ -131,7 +131,7 @@ for PR in ${CONFLICT_PRS[@]}; do
   #   - node.onXxx callback assignments (onDragDrop, onConnectionsChange, onRemoved, onConfigure, etc.)
   #   - Methods on LGraphNode, LGraphCanvas, LGraph, Subgraph
   #   - Public exports from src/lib/litegraph/
-  #   - Type changes in litegraph-augmentation.d.ts
+  #   - Types published from src/types/index.ts (litegraph-augmentation.d.ts on older branches)
   # If a public callback's signature/contract changed: add a backport-only
   # compatibility shim that preserves the OLD contract while keeping the
   # new fix. Document it in the commit body under
@@ -313,7 +313,7 @@ gh pr checks $PR --watch --fail-fast && gh pr merge $PR --squash --admin
 16. **Use `--no-verify` in worktrees** — husky hooks fail in `/tmp/` worktrees. Always push/commit with `--no-verify`.
 17. **Automation success varies by branch** — core/1.42 got 18/26 auto-PRs (69%), cloud/1.42 got 1/25 (4%). Cloud branches diverge more. Plan for manual fallback.
 18. **Test-then-resolve pattern** — for branches with low automation success, run a dry-run loop to classify clean vs conflict PRs before processing. This is much faster than resolving conflicts serially.
-19. **Public-API conflict resolutions need oracle review** — when a conflict touches `node.onXxx` callbacks, `LGraphNode`/`LGraphCanvas`/`LGraph`/`Subgraph` methods, or types in `litegraph-augmentation.d.ts`, consult oracle BEFORE pushing. Custom-node packages depend on these contracts. A literal cherry-pick of a refactor-style fix can silently break extensions still using the old contract — sometimes recreating the very bug the PR was fixing. Document any backport-only compatibility shim explicitly in the commit body.
+19. **Public-API conflict resolutions need oracle review** — when a conflict touches `node.onXxx` callbacks, `LGraphNode`/`LGraphCanvas`/`LGraph`/`Subgraph` methods, or types published from `src/types/index.ts` (`litegraph-augmentation.d.ts` on older branches), consult oracle BEFORE pushing. Custom-node packages depend on these contracts. A literal cherry-pick of a refactor-style fix can silently break extensions still using the old contract — sometimes recreating the very bug the PR was fixing. Document any backport-only compatibility shim explicitly in the commit body.
 20. **Cherry-picked tests can require unbackported test scaffolding** — when a PR modifies a test file that was _added_ on main by an earlier unbackported PR, the cherry-pick reports modify/delete on that file. Drop it from the backport (`git rm`) and document which PR introduced it. Don't smuggle in test infrastructure without its runtime prerequisites.
 21. **Per-PR validation catches issues earlier than wave verification** — for high-stakes branches, run `pnpm typecheck && pnpm exec eslint <changed files> && pnpm exec oxfmt --check` per PR before pushing. Wave verification still matters (it catches cross-PR interactions), but per-PR makes attribution trivial when something fails.
 

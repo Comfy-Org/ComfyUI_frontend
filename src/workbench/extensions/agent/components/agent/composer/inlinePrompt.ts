@@ -1,21 +1,76 @@
 import { Schema } from '@tiptap/pm/model'
 import type { Node } from '@tiptap/pm/model'
 
-import { isNodeLocatorId } from '@/types/nodeIdentification'
+import { zMediaKindSchema } from '@/platform/assets/schemas/mediaAssetSchema'
+import { isNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import {
+  MAX_DESCRIPTION_CODE_POINTS,
+  MAX_NAME_LENGTH,
+  PACK_NAME_PATTERN,
+  codePointLength
+} from '@/platform/skills/types'
 import type {
   ComposerInsertionPoint,
   ComposerPrompt,
   ComposerReference
-} from '../../../types/composerPrompt'
+} from '@/workbench/extensions/agent/types/composerPrompt'
 import {
   assetReferenceText,
   nodeReferenceText
-} from '../../../utils/agentMessageText'
+} from '@/workbench/extensions/agent/utils/agentMessageText'
+
+function isSkillName(name: string): boolean {
+  return name.length <= MAX_NAME_LENGTH && PACK_NAME_PATTERN.test(name)
+}
+
+/** Typing opens the skill menu only at the text start or after whitespace. */
+export function pastedSkillCommand(doc: Node, position: number, text: string) {
+  if (!/(?:^|\s)$/.test(doc.textBetween(0, position, '', ''))) return
+  const match = /^\/(\S+)(?=\s|$)/.exec(text)
+  if (!match || !isSkillName(match[1])) return
+  return { name: match[1], suffix: text.slice(match[0].length) }
+}
 
 export const inlinePromptSchema = new Schema({
   nodes: {
     doc: { content: 'inline*', whitespace: 'pre' },
     text: { group: 'inline' },
+    skill: {
+      group: 'inline',
+      inline: true,
+      atom: true,
+      attrs: {
+        name: {},
+        description: {},
+        scope: {},
+        resolvePastedName: { default: false }
+      },
+      toDOM: (node) => [
+        'span',
+        {
+          'data-comfy-skill': '1',
+          'data-skill-name': node.attrs.name,
+          'data-skill-description': node.attrs.description
+        },
+        `/${node.attrs.name}`
+      ],
+      parseDOM: [
+        {
+          tag: 'span[data-comfy-skill="1"]',
+          getAttrs(element) {
+            const name = element.getAttribute('data-skill-name')
+            const description = element.getAttribute('data-skill-description')
+            return name &&
+              isSkillName(name) &&
+              description !== null &&
+              codePointLength(description) <= MAX_DESCRIPTION_CODE_POINTS &&
+              element.textContent === `/${name}`
+              ? { name, description, scope: '' }
+              : false
+          }
+        }
+      ]
+    },
     workflow: {
       group: 'inline',
       inline: true,
@@ -68,6 +123,8 @@ export const inlinePromptSchema = new Schema({
         name: {},
         ref: {},
         previewUrl: { default: null },
+        mediaUrl: { default: null },
+        mediaKind: { default: null },
         uploading: { default: false }
       },
       toDOM: (node) => [
@@ -75,12 +132,30 @@ export const inlinePromptSchema = new Schema({
         { 'data-asset-id': node.attrs.id },
         assetReferenceText(node.attrs.name)
       ]
+    },
+    error: {
+      group: 'inline',
+      inline: true,
+      atom: true,
+      attrs: { id: {}, context: {} },
+      toDOM: (node) => [
+        'span',
+        { 'data-error-context': '1' },
+        String(node.attrs.context?.label ?? '')
+      ]
     }
   }
 })
 
 function promptReferenceNode(reference: ComposerReference): Node {
   switch (reference.kind) {
+    case 'skill':
+      return inlinePromptSchema.nodes.skill.create({
+        name: reference.name,
+        description: reference.description,
+        scope: reference.scope,
+        resolvePastedName: reference.resolvePastedName === true
+      })
     case 'workflow':
       return inlinePromptSchema.nodes.workflow.create({
         id: reference.id,
@@ -96,6 +171,11 @@ function promptReferenceNode(reference: ComposerReference): Node {
       })
     case 'asset':
       return inlinePromptSchema.nodes.asset.create({ ...reference.attachment })
+    case 'error':
+      return inlinePromptSchema.nodes.error.create({
+        id: reference.id,
+        context: reference.context
+      })
   }
 }
 
@@ -117,10 +197,68 @@ export function promptDocument(prompt: ComposerPrompt): Node {
   return inlinePromptSchema.nodes.doc.create(null, content)
 }
 
+function assetNodeReference(
+  node: Node,
+  id: string,
+  name: string,
+  textOffset: number
+): ComposerReference | undefined {
+  const { ref, previewUrl, mediaUrl, uploading } = node.attrs
+  const mediaKind = zMediaKindSchema.safeParse(node.attrs.mediaKind).data
+  if (typeof ref !== 'string') return
+  return {
+    kind: 'asset',
+    textOffset,
+    attachment: {
+      id,
+      name,
+      ref,
+      ...(typeof previewUrl === 'string' ? { previewUrl } : {}),
+      ...(typeof mediaUrl === 'string' ? { mediaUrl } : {}),
+      ...(mediaKind ? { mediaKind } : {}),
+      ...(uploading === true ? { uploading: true } : {})
+    }
+  }
+}
+
+function skillNodeReference(
+  node: Node,
+  textOffset: number
+): ComposerReference | undefined {
+  const { name, description, scope, resolvePastedName } = node.attrs
+  if (
+    typeof name !== 'string' ||
+    typeof description !== 'string' ||
+    typeof scope !== 'string'
+  )
+    return
+  return {
+    kind: 'skill',
+    name,
+    description,
+    scope,
+    textOffset,
+    ...(resolvePastedName === true ? { resolvePastedName: true as const } : {})
+  }
+}
+
+function errorNodeReference(
+  node: Node,
+  textOffset: number
+): ComposerReference | undefined {
+  const { id, context } = node.attrs
+  if (typeof id !== 'string' || context == null || typeof context !== 'object')
+    return
+  return { kind: 'error', id, context, textOffset }
+}
+
 export function promptNodeReference(
   node: Node,
   textOffset: number
 ): ComposerReference | undefined {
+  if (node.type === inlinePromptSchema.nodes.skill)
+    return skillNodeReference(node, textOffset)
+  if (node.type.name === 'error') return errorNodeReference(node, textOffset)
   const { id, name } = node.attrs
   if (typeof id !== 'string' || typeof name !== 'string') return
   if (node.type.name === 'workflow')
@@ -145,21 +283,8 @@ export function promptNodeReference(
       }
     }
   }
-  if (node.type.name === 'asset') {
-    const { ref, previewUrl, uploading } = node.attrs
-    if (typeof ref !== 'string') return
-    return {
-      kind: 'asset',
-      textOffset,
-      attachment: {
-        id,
-        name,
-        ref,
-        ...(typeof previewUrl === 'string' ? { previewUrl } : {}),
-        ...(uploading === true ? { uploading: true } : {})
-      }
-    }
-  }
+  if (node.type.name === 'asset')
+    return assetNodeReference(node, id, name, textOffset)
 }
 
 export function promptDraft(doc: Node): ComposerPrompt {
@@ -188,6 +313,32 @@ export function promptInsertionPoint(
     if (!node.isText && offset < position) referenceIndex++
   })
   return { textOffset: promptTextOffset(doc, position), referenceIndex }
+}
+
+export function promptInsertionPosition(
+  doc: Node,
+  point: ComposerInsertionPoint
+): number {
+  let text = 0
+  let references = 0
+  let position: number | undefined
+  doc.forEach((node, offset) => {
+    if (position !== undefined) return
+    const atReference = references === point.referenceIndex
+    if (node.isText) {
+      if (
+        atReference &&
+        point.textOffset >= text &&
+        point.textOffset <= text + node.nodeSize
+      )
+        position = offset + point.textOffset - text
+      text += node.nodeSize
+      return
+    }
+    if (atReference && point.textOffset === text) position = offset
+    references++
+  })
+  return position ?? doc.content.size
 }
 
 export function promptDocumentPosition(doc: Node, textOffset: number): number {

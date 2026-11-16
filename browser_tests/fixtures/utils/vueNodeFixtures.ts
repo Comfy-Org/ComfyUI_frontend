@@ -1,5 +1,6 @@
+import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -18,12 +19,9 @@ export class VueNodeFixture {
   public readonly imagePreview: Locator
   public readonly imageGrid: Locator
   public readonly content: Locator
-  public readonly priceBadge: {
-    required: Locator
-    requiredText: Locator
-    rest: Locator
-    restText: Locator
-  }
+  public readonly priceBadge: Locator
+  public readonly stateOutline: Locator
+  public readonly executionOutline: Locator
   public readonly resize: { bottomRight: Locator }
 
   constructor(private readonly locator: Locator) {
@@ -39,14 +37,11 @@ export class VueNodeFixture {
     this.imagePreview = locator.locator('.image-preview')
     this.imageGrid = locator.getByTestId(TestIds.node.imageGrid)
     this.content = locator.locator('.lg-node-content')
-    const required = locator.getByTestId('credit-badge-required')
-    const rest = locator.getByTestId('credit-badge-rest')
-    this.priceBadge = {
-      required,
-      requiredText: required.locator('span'),
-      rest,
-      restText: rest.locator('span')
-    }
+    this.priceBadge = locator.getByTestId('node-badge-group-credits')
+    this.stateOutline = locator.getByTestId('node-state-outline-overlay')
+    this.executionOutline = this.stateOutline.and(
+      locator.page().locator('.border-primary')
+    )
     const bottomRight = locator.getByRole('button', { name: 'bottom-right' })
     this.resize = { bottomRight }
   }
@@ -63,6 +58,29 @@ export class VueNodeFixture {
 
   async select() {
     await this.header.click()
+  }
+
+  async expectNoRootOutline(): Promise<void> {
+    await expect(this.root).toHaveCSS('outline-style', 'none')
+  }
+
+  async expectFocusOutline(visible: boolean): Promise<void> {
+    await expect(this.stateOutline).toHaveCSS(
+      'outline-style',
+      visible ? 'auto' : 'none'
+    )
+  }
+
+  async waitForImageLoaded(filename: string): Promise<void> {
+    const image = this.imagePreview.getByTestId('main-image')
+    await expect
+      .poll(() =>
+        image.evaluate((img: HTMLImageElement) => ({
+          filename: new URL(img.src).searchParams.get('filename'),
+          loaded: img.complete && img.naturalWidth > 0
+        }))
+      )
+      .toEqual({ filename, loaded: true })
   }
 
   async toggleCollapse(): Promise<void> {

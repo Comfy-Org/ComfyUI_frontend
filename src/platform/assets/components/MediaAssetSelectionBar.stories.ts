@@ -8,7 +8,7 @@ const meta: Meta<typeof MediaAssetSelectionBar> = {
   decorators: [
     () => ({
       template:
-        '<div class="bg-base-background" style="position:relative;display:flex;flex-direction:column;justify-content:flex-end;height:480px;width:360px;"><story /></div>'
+        '<div class="bg-background" style="position:relative;display:flex;flex-direction:column;justify-content:flex-end;height:480px;width:360px;"><story /></div>'
     })
   ]
 }

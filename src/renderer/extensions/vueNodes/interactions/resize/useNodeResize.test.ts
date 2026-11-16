@@ -2,7 +2,7 @@ import type { MockInstance } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -15,14 +15,7 @@ type ResizeCallback = (
   element: HTMLElement
 ) => void
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => ({
-    useTransformState: () => ({
-      camera: { x: 0, y: 0, z: 1 }
-    })
-  })
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 const snapState = vi.hoisted(() => ({
   shouldSnap: false,

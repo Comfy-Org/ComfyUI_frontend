@@ -4,7 +4,7 @@ import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import SettingItem from '@/platform/settings/components/SettingItem.vue'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 import { i18n } from '@/i18n'
 
 const flushPromises = () =>
@@ -45,8 +45,7 @@ describe('SettingItem', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          FormItem: FormItemUpdateStub,
-          Tag: true
+          FormItem: FormItemUpdateStub
         }
       },
       props: {
@@ -57,7 +56,7 @@ describe('SettingItem', () => {
 
   it('persists setting updates through the setting store', async () => {
     const settingParams: SettingParams = {
-      id: 'main.sub.setting.name',
+      id: 'Comfy.Locale',
       name: 'Visible Setting',
       type: 'text',
       defaultValue: 'default'
@@ -72,6 +71,6 @@ describe('SettingItem', () => {
 
     await flushPromises()
 
-    expect(mockSet).toHaveBeenCalledWith('main.sub.setting.name', 'newvalue')
+    expect(mockSet).toHaveBeenCalledWith('Comfy.Locale', 'newvalue')
   })
 })

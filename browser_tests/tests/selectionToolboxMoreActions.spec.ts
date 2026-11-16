@@ -101,9 +101,7 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await comfyPage.clipboard.paste()
       await comfyPage.nextFrame()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
     })
 
     test('duplicate via More Options menu', async ({ comfyPage }) => {
@@ -118,12 +116,10 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await menu.getByText('Duplicate', { exact: true }).click()
       await comfyPage.nextFrame()
 
-      await expect
-        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-        .toBe(initialCount + 1)
+      await comfyPage.expectNodeCount(initialCount + 1)
     })
 
-    test('refresh button is rendered in toolbox when node is selected', async ({
+    test('refresh button is hidden for a node without refreshable widgets', async ({
       comfyPage
     }) => {
       const nodeRef = (
@@ -132,12 +128,12 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await comfyPage.nodeOps.selectNodeWithPan(nodeRef)
 
       await expect(comfyPage.selectionToolbox).toBeVisible()
-
-      // The refresh button uses v-show so it's always in the DOM;
-      // actual visibility depends on backend-provided widget refresh
-      // capabilities which vary between local and CI environments.
-      const refreshButton = comfyPage.page.getByTestId('refresh-button')
-      await expect(refreshButton).toBeAttached()
+      await expect(
+        comfyPage.selectionToolbox.getByRole('button', {
+          name: 'Refresh Node',
+          exact: true
+        })
+      ).toBeHidden()
     })
   })
 
@@ -165,7 +161,10 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await expect(ksampler).not.toBeBypassed()
       await expect(emptyLatent).not.toBeBypassed()
 
-      const bypassButton = comfyPage.page.getByTestId('bypass-button')
+      const bypassButton = comfyPage.selectionToolbox.getByRole('button', {
+        name: 'Bypass/Unbypass Selected Nodes',
+        exact: true
+      })
       await expect(bypassButton).toBeVisible()
       await bypassButton.click()
       await comfyPage.nextFrame()
@@ -173,7 +172,6 @@ test.describe('Selection Toolbox - More Options', { tag: '@ui' }, () => {
       await expect(ksampler).toBeBypassed()
       await expect(emptyLatent).toBeBypassed()
 
-      // Toggle back
       await bypassButton.click()
       await comfyPage.nextFrame()
 

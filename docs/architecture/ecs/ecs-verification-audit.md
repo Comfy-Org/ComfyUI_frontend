@@ -214,9 +214,9 @@ Representative evidence:
 
 - `src/composables/graph/useNodeErrorFlagSync.test.ts`: node flag projection and
   lifecycle cleanup.
-- `src/platform/missingMedia/missingMediaScan.promotedWidget.test.ts` and
+- `src/platform/workflowErrors/missingMedia/missingMediaScan.promotedWidget.test.ts` and
   `missingMediaStore.test.ts`: promoted source/host resolution and store state.
-- `src/platform/missingModel/missingModelStore.test.ts` and
+- `src/platform/workflowErrors/missingModel/missingModelStore.test.ts` and
   `missingModelScan.test.ts`: locator-scoped missing-model state.
 - `browser_tests/tests/propertiesPanel/errorsTabMissingMedia.spec.ts`,
   `errorsTabMissingModels.spec.ts`, and `errorsTabMissingNodes.spec.ts`:

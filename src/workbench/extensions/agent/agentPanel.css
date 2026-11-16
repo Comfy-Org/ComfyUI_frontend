@@ -25,6 +25,15 @@
   }
 }
 
+@keyframes agent-row-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .agent-work-summary:where([data-state='open']) {
   animation: agent-collapsible-down 200ms ease-out;
 }
@@ -36,9 +45,9 @@
 .agent-shimmer-text {
   background: linear-gradient(
     90deg,
-    var(--color-muted-foreground) 35%,
-    var(--color-base-foreground) 50%,
-    var(--color-muted-foreground) 65%
+    var(--muted-foreground) 35%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 65%
   );
   background-size: 200% auto;
   background-clip: text;
@@ -50,7 +59,7 @@
   :where(#agent-panel-root, .agent-scope)
   .agent-shimmer-text {
   animation: none;
-  color: var(--color-muted-foreground);
+  color: var(--muted-foreground);
   -webkit-text-fill-color: currentcolor;
 }
 
@@ -61,9 +70,17 @@
 
   .agent-shimmer-text {
     animation: none;
-    color: var(--color-muted-foreground);
+    color: var(--muted-foreground);
     -webkit-text-fill-color: currentcolor;
   }
+
+  .agent-row-enter {
+    animation: none;
+  }
+}
+
+.agent-row-enter {
+  animation: agent-row-enter 150ms ease-out;
 }
 
 /* Tailwind Preflight is disabled host-wide (PrimeVue + litegraph coexistence), so raw form
@@ -79,7 +96,7 @@
   :where(#agent-panel-root, .agent-scope),
   :where(#agent-panel-root, .agent-scope) :where(*) {
     scrollbar-width: thin;
-    scrollbar-color: var(--color-border-default) transparent;
+    scrollbar-color: var(--border) transparent;
   }
 
   :where(#agent-panel-root, .agent-scope)
@@ -94,7 +111,5 @@
     appearance: none;
     border: 0 solid;
     background-color: transparent;
-    font: inherit;
-    color: inherit;
   }
 }

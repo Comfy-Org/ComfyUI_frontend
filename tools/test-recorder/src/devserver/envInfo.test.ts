@@ -1,12 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { fetchEnvInfo } from './envInfo'
 
 describe('fetchEnvInfo', () => {
-  beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn())
-  })
-
   it('returns cloud environment versions from system stats', async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(

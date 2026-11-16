@@ -7,14 +7,14 @@ export function useViewErrorsInGraph() {
   const executionErrorStore = useExecutionErrorStore()
   const rightSidePanelStore = useRightSidePanelStore()
 
-  function viewErrorsInGraph() {
+  function viewErrorsInGraph(groupKeys: readonly string[]) {
     canvasStore.linearMode = false
     if (canvasStore.canvas) {
       canvasStore.canvas.deselectAll()
-      canvasStore.updateSelectedItems()
     }
 
     rightSidePanelStore.openPanel('errors')
+    rightSidePanelStore.requestErrorDetails(groupKeys)
     executionErrorStore.dismissErrorOverlay()
   }
 

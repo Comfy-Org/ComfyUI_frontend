@@ -1,70 +1,42 @@
 ---
 name: pattern-compliance
-description: Checks code against repository conventions from AGENTS.md and established patterns
+description: Checks code against repository conventions in AGENTS.md and docs/guidance that lint does not enforce
 severity-default: medium
 tools: [Read, Grep]
 ---
 
-Check code against repository conventions and framework patterns.
+Check changed code against the repository's conventions.
 
-Steps:
+1. Read the root `AGENTS.md`, every `AGENTS.md` above each changed file, and the `docs/guidance/*.md` files whose globs match it.
+2. Flag violations in changed code. Lint already rejects `any`, `@ts-ignore`, mixed type imports, `dark:` classes, raw template text, `v-html`, `console.log`, `throw new Error` in `src/`, and PrimeVue imports; do not repeat those.
 
-1. Read AGENTS.md (and any directory-specific guidance files) for project-specific conventions
-2. Read each changed file
-3. Check against the conventions found in AGENTS.md and these standard patterns:
+Pay particular attention to these rules, which no lint rule enforces:
 
 ### TypeScript
 
-- No `any` types or `as any` assertions
-- No new `@ts-ignore` or `@ts-nocheck`. Allow `@ts-expect-error` only in a test
-  that intentionally verifies a compiler error.
-- Treat all new `eslint-disable` and `oxlint-disable` directives as findings. Do
-  not accept a directive because its comment describes an inconvenience. Verify
-  the diagnostic, trace the value to its authoritative type or schema, search
-  for an existing typed pattern, and identify the external constraint before
-  accepting a narrow exception.
-- Flag double assertions and assertions that replace runtime narrowing at an
-  external boundary
-- Separate type imports (`import type { ... }`)
-- Use `import type { ... }` for type-only imports
-- Explicit return types on exported functions
-- Use `es-toolkit` for utility functions, NOT lodash. Flag any new `import ... from 'lodash'` or `import ... from 'lodash/*'`
-- Never use `z.any()` in Zod schemas — use `z.unknown()` and narrow
-- Never hand-declare or duplicate server/API response types locally — flag any local interface/type that reimplements a type already generated from an OpenAPI spec (e.g. `@comfyorg/ingest-types`, `@comfyorg/registry-types` in `packages/`) instead of importing it. This caused real bugs in PR #14771 (see `docs/guidance/typescript.md`)
+- Every new `eslint-disable` or `oxlint-disable` directive is a finding. A comment describing an inconvenience does not justify it. Accept a narrow exception only when the PR description names the external constraint, after the diagnostic was checked and no typed pattern exists.
+- Double assertions, and assertions that replace runtime narrowing at an external boundary.
+- `lodash` imports instead of `es-toolkit`.
+- `z.any()` in Zod schemas instead of `z.unknown()` plus narrowing.
+- A server or API response type written by hand instead of imported from `@comfyorg/ingest-types` or `@comfyorg/registry-types`. `comfy/no-duplicate-ingest-type` only catches files that also import the generated type (see `docs/guidance/typescript.md`).
 
-### Vue (if applicable)
+### Vue
 
-- Composition API with `<script setup lang="ts">`
-- Reactive props destructuring (not `withDefaults` pattern)
-- New components must use `<script setup lang="ts">` with reactive props destructuring (Vue 3.5 style): `const { color = 'blue' } = defineProps<Props>()`
-- Separate type imports from value imports
-- All user-facing strings must use `vue-i18n` (`$t()` in templates, `t()` in script). Flag hardcoded English strings in templates that should be translated. The locale file is `src/locales/en/main.json`
+- `withDefaults` or runtime props instead of reactive props destructuring.
+- User-facing strings in script code not passed through `vue-i18n` `t()`; new keys belong in `src/locales/en/main.json`.
 
-### Tailwind (if applicable)
+### Tailwind
 
-- No `dark:` variants (use semantic theme tokens)
-- Use `cn()` utility for conditional classes
-- No `!important` in utility classes
-- Tailwind 4: CSS variable references use parentheses syntax: `h-(--my-var)` NOT `h-[--my-var]`
-- Use design tokens: `bg-secondary-background`, `text-muted-foreground`, `border-border-default`
-- No `<style>` blocks in Vue SFCs — use inline Tailwind only
-
-### Testing
-
-- Read `docs/guidance/testing-principles.md` and flag any violation of it:
-  change detectors, mock-heavy tests, implementation-named tests, Testing
-  Library rule disables, timing sleeps, malformed fixtures cast to a domain
-  type, copied test bodies that should be a table
+- Class arrays (`:class="[]"`) instead of `cn()` from `@comfyorg/tailwind-utils`.
+- `!important` or the `!` prefix.
+- `<style>` blocks in SFCs.
+- Arbitrary values where a semantic token or fraction utility exists.
 
 ### General
 
-- No commented-out code
-- No `console.log` in production code (unless intentional logging)
-- No hardcoded URLs, credentials, or environment-specific values
-- Package manager is `pnpm`. Never use `npm`, `npx`, or `yarn`. Use `pnpm dlx` for one-off package execution
-- Sanitize HTML with `DOMPurify.sanitize()`, never raw `innerHTML` or `v-html` without it
+- Hardcoded URLs, credentials, or environment-specific values.
 
 Rules:
 
-- Only flag ACTUAL violations, not hypothetical ones
-- AGENTS.md conventions take priority over default patterns if they conflict
+- Only flag actual violations in changed code.
+- When this list and `AGENTS.md` disagree, `AGENTS.md` wins.

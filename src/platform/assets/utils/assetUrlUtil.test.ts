@@ -1,26 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetFileUrl,
+  getAssetInlineMediaUrl,
   getAssetSubfolder,
-  getAssetUrl
+  getAssetUrl,
+  getAssetViewUrl
 } from '@/platform/assets/utils/assetUrlUtil'
+import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
-const mockApiURL = vi.hoisted(() =>
-  vi.fn((path: string) => `http://localhost:8188/api${path}`)
-)
-const mockFlags = vi.hoisted(() => ({ assetsEnabled: false }))
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { apiURL: mockApiURL }
+vi.mock(import('@/composables/useFeatureFlags'))
+
+const mockIsCloud = vi.hoisted(() => ({ value: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
 }))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
-}))
-
+beforeEach(() => {
+  mockIsCloud.value = false
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188/api${path}`
+  )
+})
 function createAsset(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'asset-1',
@@ -81,10 +90,95 @@ describe('getAssetUrl', () => {
   })
 })
 
+describe('getAssetViewUrl', () => {
+  it("builds the asset's own file URL from loader_path, not its preview URL", () => {
+    const asset = createAsset({
+      name: 'sky.exr',
+      tags: ['hdr', 'output'],
+      loader_path: 'renders/sky.exr',
+      preview_url: '/api/assets/sky-preview/content'
+    })
+
+    expect(getAssetViewUrl(asset)).toBe(
+      'http://localhost:8188/api/view?filename=sky.exr&type=output&subfolder=renders'
+    )
+  })
+
+  it('omits the subfolder for a file at the root of its input folder', () => {
+    const asset = createAsset({
+      name: 'sky.hdr',
+      tags: ['input'],
+      loader_path: 'sky.hdr'
+    })
+
+    expect(getAssetViewUrl(asset)).toBe(
+      'http://localhost:8188/api/view?filename=sky.hdr&type=input'
+    )
+  })
+
+  it.for([
+    { guard: 'a root tag', tags: [], loader_path: 'renders/sky.exr' },
+    { guard: 'a loader_path', tags: ['output'], loader_path: undefined }
+  ])('falls back to getAssetUrl without $guard', ({ tags, loader_path }) => {
+    const asset = createAsset({
+      name: 'sky.exr',
+      tags,
+      loader_path,
+      preview_url: '/api/view?filename=sky.exr&type=output&subfolder=renders'
+    })
+
+    expect(getAssetViewUrl(asset)).toBe(
+      'http://localhost:8188/api/view?filename=sky.exr&type=output&subfolder=renders'
+    )
+  })
+})
+
+describe('getAssetInlineMediaUrl', () => {
+  beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+  })
+
+  it('loads a hashed asset through /view on cloud', () => {
+    mockIsCloud.value = true
+    const asset = createAsset({ hash: 'abc123.webm' })
+
+    const url = new URL(getAssetInlineMediaUrl(asset))
+
+    expect(url.pathname).toBe('/api/view')
+    expect(url.searchParams.get('filename')).toBe('abc123.webm')
+    expect(url.searchParams.get('type')).toBe('output')
+  })
+
+  it('takes the type from the asset like getAssetUrl does', () => {
+    mockIsCloud.value = true
+    const asset = createAsset({ hash: 'abc123.webm', tags: ['input'] })
+
+    expect(
+      new URL(getAssetInlineMediaUrl(asset)).searchParams.get('type')
+    ).toBe('input')
+  })
+
+  it('falls back to the inline content url without a hash', () => {
+    mockIsCloud.value = true
+
+    expect(getAssetInlineMediaUrl(createAsset())).toBe(
+      'http://localhost:8188/api/assets/asset-1/content?disposition=inline'
+    )
+  })
+
+  it('keeps the inline content url off cloud even with a hash', () => {
+    const asset = createAsset({ hash: 'blake3:deadbeef' })
+
+    expect(getAssetInlineMediaUrl(asset)).toBe(
+      'http://localhost:8188/api/assets/asset-1/content?disposition=inline'
+    )
+  })
+})
+
 describe('getAssetFileUrl', () => {
   describe('with the assets API enabled', () => {
     beforeEach(() => {
-      mockFlags.assetsEnabled = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     })
 
     it('addresses the file by asset id without any path inference', () => {
@@ -132,13 +226,17 @@ describe('getAssetFileUrl', () => {
         'http://localhost:8188/api/assets/asset-model/content'
       )
     })
+
+    it('requests an inline disposition when asked, for in-page playback', () => {
+      const asset = createAsset({ id: 'asset-1' })
+
+      expect(getAssetFileUrl(asset, { disposition: 'inline' })).toBe(
+        'http://localhost:8188/api/assets/asset-1/content?disposition=inline'
+      )
+    })
   })
 
   describe('with history-backed assets', () => {
-    beforeEach(() => {
-      mockFlags.assetsEnabled = false
-    })
-
     it('uses preview_url, which already points at the file', () => {
       const asset = createAsset({
         preview_url: '/api/view?filename=clip.webm&type=output&subfolder=vid'

@@ -1,4 +1,4 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import { t } from '@/i18n'
 
@@ -21,7 +21,10 @@ function legacyCopy(text: string): boolean {
 export function useCopyToClipboard() {
   const toast = useToast()
 
-  async function copyToClipboard(text: string) {
+  async function copyToClipboard(
+    text: string,
+    { toastOnSuccess = true }: { toastOnSuccess?: boolean } = {}
+  ): Promise<boolean> {
     let success = false
 
     try {
@@ -39,20 +42,19 @@ export function useCopyToClipboard() {
       }
     }
 
-    toast.add(
-      success
-        ? {
-            severity: 'success',
-            summary: t('g.success'),
-            detail: t('clipboard.successMessage'),
-            life: 3000
-          }
-        : {
-            severity: 'error',
-            summary: t('g.error'),
-            detail: t('clipboard.errorMessage')
-          }
-    )
+    if (success && !toastOnSuccess) return true
+
+    if (success) {
+      toast.success(t('g.success'), {
+        description: t('clipboard.successMessage'),
+        duration: 3000
+      })
+    } else {
+      toast.error(t('g.error'), {
+        description: t('clipboard.errorMessage')
+      })
+    }
+    return success
   }
 
   return {

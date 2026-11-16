@@ -9,7 +9,7 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import type { JobsScenario } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const historyJobs: RawJobListItem[] = [
   createRouteMockJob({
@@ -116,10 +116,10 @@ function clearQueueButton(comfyPage: ComfyPage) {
 }
 
 async function openSidebarClearHistoryDialog(comfyPage: ComfyPage) {
-  await jobHistorySidebar(comfyPage)
-    .getByLabel(/More options/i)
-    .click()
-  await comfyPage.page.getByTestId(TestIds.queue.clearHistoryAction).click()
+  const sidebar = jobHistorySidebar(comfyPage)
+  await sidebar.getByText('Job History', { exact: true }).hover()
+  await sidebar.getByLabel(/More options/i).click()
+  await comfyPage.queuePanel.clearHistoryAction.click()
 }
 
 test.describe('Job history sidebar', { tag: '@ui' }, () => {
@@ -131,9 +131,7 @@ test.describe('Job history sidebar', { tag: '@ui' }, () => {
     }) => {
       await comfyPage.page.getByTestId(TestIds.queue.overlayToggle).click()
       await comfyPage.queuePanel.moreOptionsButton.click()
-      await comfyPage.page
-        .getByTestId(TestIds.queue.dockedJobHistoryAction)
-        .click()
+      await comfyPage.queuePanel.dockedHistoryAction.click()
 
       await expect(jobHistorySidebar(comfyPage)).toBeVisible()
       await expect(jobRow(comfyPage)('history-completed')).toBeVisible()
@@ -161,7 +159,7 @@ test.describe('Job history sidebar', { tag: '@ui' }, () => {
       await openJobHistorySidebar(comfyPage)
 
       await comfyPage.page
-        .getByRole('button', { name: 'Completed', exact: true })
+        .getByRole('tab', { name: 'Completed', exact: true })
         .click()
 
       const row = jobRow(comfyPage)
@@ -170,7 +168,7 @@ test.describe('Job history sidebar', { tag: '@ui' }, () => {
       await expect(row('queue-running')).toBeHidden()
 
       await comfyPage.page
-        .getByRole('button', { name: 'Failed', exact: true })
+        .getByRole('tab', { name: 'Failed', exact: true })
         .click()
 
       await expect(row('history-failed')).toBeVisible()
@@ -182,7 +180,7 @@ test.describe('Job history sidebar', { tag: '@ui' }, () => {
       await openJobHistorySidebar(comfyPage)
 
       const row = jobRow(comfyPage)
-      const searchInput = comfyPage.page.getByPlaceholder('Search...')
+      const searchInput = comfyPage.page.getByPlaceholder('Search Jobs...')
 
       await searchInput.fill('history-failed')
       await expect(row('history-failed')).toBeVisible()

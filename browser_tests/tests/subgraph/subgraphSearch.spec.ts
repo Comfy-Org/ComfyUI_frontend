@@ -22,7 +22,7 @@ async function exitSubgraphAndPublish(
     name: blueprintName
   })
 
-  await expect(comfyPage.visibleToasts).toHaveCount(1)
+  await expect(comfyPage.toast.visibleToasts).toHaveCount(1)
   await comfyPage.toast.closeToasts(1)
 }
 

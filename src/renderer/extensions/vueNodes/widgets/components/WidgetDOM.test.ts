@@ -17,7 +17,7 @@ vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import WidgetDOM from './WidgetDOM.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -63,7 +63,7 @@ describe('WidgetDOM', () => {
 
     const { container } = mountWithWidget(hosted)
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-testid="hosted-dom"]')).toBe(hosted)
   })
 
@@ -84,10 +84,10 @@ describe('WidgetDOM', () => {
       }
     })
 
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const root = container.firstElementChild as HTMLElement
     expect(root).toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     expect(root.children).toHaveLength(0)
   })
 
@@ -115,13 +115,13 @@ describe('WidgetDOM', () => {
       }
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-testid="hosted-dom"]')).toBeNull()
   })
 
   it('renders a visible root element for pointer-event capture', () => {
     const { container } = mountWithWidget(document.createElement('span'))
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const root = container.firstElementChild as HTMLElement
     expect(root).toBeVisible()
   })

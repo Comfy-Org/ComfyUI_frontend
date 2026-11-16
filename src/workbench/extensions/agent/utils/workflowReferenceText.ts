@@ -1,7 +1,7 @@
 import type {
   WorkflowReference,
   WorkflowReferenceMetadata
-} from '../types/workflowReference'
+} from '@/workbench/extensions/agent/types/workflowReference'
 import { workflowReferenceParts } from './workflowReferenceParts'
 
 function workflowReferenceUrl(id: string): string {

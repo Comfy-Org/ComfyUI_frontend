@@ -98,7 +98,7 @@ async function requirementsStillUnsatisfiable(
   failurePattern: string
 ): Promise<boolean> {
   const [url, sha] = deployRef.split(/@(?=[^@]*$)/)
-  const slug = url?.split('github.com/')[1]
+  const slug = url.split('github.com/')[1]
   if (!slug || !sha) throw new Error(`invalid git deployRef: ${deployRef}`)
   let body: string
   try {

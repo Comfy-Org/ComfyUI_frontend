@@ -1,0 +1,113 @@
+import { describe, expect, it } from 'vitest'
+
+import {
+  getStopDiscountedMonthlyUsd,
+  mapApiTeamCreditStops,
+  toCatalogTierKey
+} from './catalog'
+
+describe('toCatalogTierKey', () => {
+  it.for([
+    ['STANDARD', 'standard'],
+    ['CREATOR', 'creator'],
+    ['PRO', 'pro'],
+    ['TEAM', undefined],
+    ['FOUNDERS_EDITION', undefined],
+    ['constructor', undefined]
+  ] as const)('maps %s to %s', ([tier, expected]) => {
+    expect(toCatalogTierKey(tier)).toBe(expected)
+  })
+})
+
+describe('mapApiTeamCreditStops', () => {
+  it('derives usd, credits, discount and carries the backend id and charges', () => {
+    const mapped = mapApiTeamCreditStops([
+      {
+        id: 'team_700',
+        credits: 147_700,
+        monthly: { price_cents: 66_500, period_charge_cents: 66_500 },
+        yearly: {
+          list_price_cents: 70_000,
+          price_cents: 63_000,
+          period_charge_cents: 756_001
+        }
+      }
+    ])
+
+    expect(mapped).toEqual([
+      {
+        id: 'team_700',
+        usd: 700,
+        credits: 147_700,
+        discountPercentYearly: 10,
+        priceUsd: { monthly: 665, yearly: 630 },
+        periodChargeUsd: { monthly: 665, yearly: 7560.01 }
+      }
+    ])
+  })
+
+  it('returns a 0% discount when the list price is zero', () => {
+    const mapped = mapApiTeamCreditStops([
+      {
+        id: 'team_free',
+        credits: 0,
+        monthly: { price_cents: 0, period_charge_cents: 0 },
+        yearly: { list_price_cents: 0, price_cents: 0, period_charge_cents: 0 }
+      }
+    ])
+
+    expect(mapped[0].discountPercentYearly).toBe(0)
+  })
+})
+
+describe('getStopDiscountedMonthlyUsd', () => {
+  it('applies the full yearly discount for the yearly cycle', () => {
+    expect(
+      getStopDiscountedMonthlyUsd(
+        { usd: 700, discountPercentYearly: 10 },
+        'yearly'
+      )
+    ).toBe(630)
+  })
+
+  it('halves the discount for the monthly cycle', () => {
+    expect(
+      getStopDiscountedMonthlyUsd(
+        { usd: 700, discountPercentYearly: 10 },
+        'monthly'
+      )
+    ).toBe(665)
+  })
+
+  it.for([
+    ['monthly', 390],
+    ['yearly', 378]
+  ] as const)(
+    'returns the served %s price when the rounded discount would misprice it',
+    ([cycle, expected]) => {
+      const [stop] = mapApiTeamCreditStops([
+        {
+          id: 'team_400',
+          credits: 84_400,
+          monthly: { price_cents: 39_000, period_charge_cents: 39_000 },
+          yearly: {
+            list_price_cents: 40_000,
+            price_cents: 37_800,
+            period_charge_cents: 453_600
+          }
+        }
+      ])
+
+      expect(getStopDiscountedMonthlyUsd(stop, cycle)).toBe(expected)
+    }
+  )
+
+  it('reads the stop discount so backend-driven stops are honored', () => {
+    expect(
+      getStopDiscountedMonthlyUsd(
+        { usd: 1000, discountPercentYearly: 25 },
+        'yearly'
+      )
+    ).toBe(750)
+  })
+})

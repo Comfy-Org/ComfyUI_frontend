@@ -4,11 +4,14 @@ import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
-import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
-import type { NodeWidgetsListList } from '../shared'
+import {
+  computedSectionDataList,
+  searchWidgetsAndNodes
+} from '@/components/rightSidePanel/shared'
+import type { NodeWidgetsListList } from '@/components/rightSidePanel/shared'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
@@ -147,7 +150,7 @@ const advancedLabel = computed(() => {
           ? ''
           : t('rightSidePanel.inputsNoneTooltip')
       "
-      class="border-b border-interface-stroke"
+      class="border-b"
       @update:collapse="setSectionCollapsed(node.id, $event)"
     />
   </TransitionGroup>
@@ -160,7 +163,7 @@ const advancedLabel = computed(() => {
       :label="advancedLabel"
       :widgets
       :show-locate-button="isMultipleNodesSelected"
-      class="border-b border-interface-stroke"
+      class="border-b"
     />
   </template>
 </template>

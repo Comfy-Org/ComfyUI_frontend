@@ -1,4 +1,5 @@
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
 
 type Enclosure = {
   start: number
@@ -58,7 +59,7 @@ export function addWeightToParentheses(text: string): string {
   return hasTrailingWeight ? text : `(${innerText}:1.0)`
 }
 
-app.registerExtension({
+export const editAttentionExtension: ComfyExtension = {
   name: 'Comfy.EditAttention',
   init() {
     const editAttentionDelta = app.ui.settings.addSetting({
@@ -75,11 +76,10 @@ app.registerExtension({
     })
 
     function editAttention(event: KeyboardEvent) {
-      // @ts-expect-error Runtime narrowing not impl.
-      const inputField: HTMLTextAreaElement = event.composedPath()[0]
-      const delta = parseFloat(editAttentionDelta.value)
+      const inputField = event.composedPath()[0]
+      const delta = parseFloat(String(editAttentionDelta.value))
 
-      if (inputField.tagName !== 'TEXTAREA') return
+      if (!(inputField instanceof HTMLTextAreaElement)) return
       if (!(event.key === 'ArrowUp' || event.key === 'ArrowDown')) return
       if (!event.ctrlKey && !event.metaKey) return
 
@@ -158,4 +158,4 @@ app.registerExtension({
     }
     window.addEventListener('keydown', editAttention)
   }
-})
+}

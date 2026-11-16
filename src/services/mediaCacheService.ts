@@ -21,13 +21,13 @@ class MediaCacheService {
   private readonly maxAge: number
   private cleanupInterval: number | null = null
   private urlRefCount = new Map<string, number>()
+  private readonly destroyOnUnload = () => this.destroy()
 
   constructor(options: MediaCacheOptions = {}) {
     this.maxSize = options.maxSize ?? 100
-    this.maxAge = options.maxAge ?? 30 * 60 * 1000 // 30 minutes
-
-    // Start cleanup interval
+    this.maxAge = options.maxAge ?? 30 * 60 * 1000
     this.startCleanupInterval()
+    window.addEventListener('beforeunload', this.destroyOnUnload)
   }
 
   private startCleanupInterval() {
@@ -193,6 +193,7 @@ class MediaCacheService {
   }
 
   destroy() {
+    window.removeEventListener('beforeunload', this.destroyOnUnload)
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval)
       this.cleanupInterval = null
@@ -201,8 +202,15 @@ class MediaCacheService {
   }
 }
 
-// Global instance
 let mediaCacheInstance: MediaCacheService | null = null
+
+/** Destroys the shared media cache, releasing its unload listener and cleanup interval. */
+export function disposeMediaCache() {
+  mediaCacheInstance?.destroy()
+  mediaCacheInstance = null
+}
+
+import.meta.hot?.dispose(disposeMediaCache)
 
 export function useMediaCache(options?: MediaCacheOptions) {
   if (!mediaCacheInstance) {
@@ -222,13 +230,4 @@ export function useMediaCache(options?: MediaCacheOptions) {
     releaseUrl,
     cache: mediaCacheInstance.cache
   }
-}
-
-// Cleanup on page unload
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    if (mediaCacheInstance) {
-      mediaCacheInstance.destroy()
-    }
-  })
 }

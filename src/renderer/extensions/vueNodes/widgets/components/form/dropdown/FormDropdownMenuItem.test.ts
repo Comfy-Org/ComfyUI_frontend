@@ -54,8 +54,7 @@ function renderItem(
   return render(FormDropdownMenuItem, {
     global: {
       plugins: [i18n],
-      provide: { [AssetKindKey as symbol]: kind },
-      directives: { tooltip: () => {} }
+      provide: { [AssetKindKey as symbol]: kind }
     },
     props: {
       index: 0,

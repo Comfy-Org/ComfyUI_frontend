@@ -1,0 +1,246 @@
+import type {
+  PeriodCreditGrant,
+  SubscriptionPaymentRecovery,
+  SubscriptionState
+} from '@comfyorg/ingest-types'
+import type { ComputedRef, Ref } from 'vue'
+
+import type { TeamPlanSelection } from '@/platform/billing/subscription/constants/teamPlanCreditStops'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
+import type {
+  BillingStatus,
+  BillingSubscriptionStatus,
+  CreateTopupResponse,
+  Plan,
+  PreviewSubscribeOptions,
+  PreviewSubscribeResponse,
+  RenewalInvoice,
+  ScheduledPlanChange,
+  SubscribeOptions,
+  SubscribeResponse,
+  SubscriptionDuration,
+  SubscriptionTier,
+  TeamCreditStops,
+  TeamCreditStopSummary
+} from '@comfyorg/billing-core'
+
+/** `unknown` until the active workspace has loaded; no billing call may be made yet. */
+export type BillingType = 'workspace' | 'unknown'
+
+export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+export type SubscriptionCheckoutSelection =
+  | {
+      planMode: 'personal'
+      tierKey: CheckoutTierKey
+      billingCycle: BillingCycle
+    }
+  | {
+      planMode: 'team'
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+      isChange?: boolean
+    }
+
+export interface SubscriptionDialogOptions {
+  reason?: PaymentIntentSource
+  paymentIntentSource?: PaymentIntentSource
+  /**
+   * Forces the unified pricing dialog to open on a specific plan tab,
+   * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
+   * always lands on the team tab even from a personal workspace).
+   */
+  planMode?: 'personal' | 'team'
+  /** Starts checkout in workspace billing dialogs; legacy billing stays table-only. */
+  initialCheckout?: SubscriptionCheckoutSelection
+  /** The refused account holds credits, so the dialog says why they did not help. */
+  creditsLocked?: boolean
+  /** Server `error.type` of the refused run, reported with the paywall opening. */
+  refusalType?: string
+  /** Reopens the in-app table to restore a failed checkout instead of handing off to the platform Plans page. */
+  resumingCheckout?: boolean
+  /** A run was refused without a click, so a dialog explains why and links to the Plans page. */
+  runRefused?: boolean
+  /** Opened on page load, so the Plans page replaces this tab. */
+  sameTab?: boolean
+}
+
+// A type alias, not an interface: `showDialog`'s props are index-signature
+// typed, and only object literal types get an implicit index signature.
+export type TopUpCreditsDialogOptions = {
+  isInsufficientCredits?: boolean
+  source?: PaymentIntentSource
+}
+
+export interface DowngradeToPersonalResult {
+  preview: PreviewSubscribeResponse
+  response: SettledSubscribeResponse
+}
+
+export interface SubscriptionInfo {
+  isActive: boolean
+  tier: SubscriptionTier | null
+  duration: SubscriptionDuration | null
+  planSlug: string | null
+  scheduledChange: ScheduledPlanChange | null
+  /** ISO 8601; format at the display site. */
+  renewalDate: string | null
+  /** ISO 8601; format at the display site. */
+  endDate: string | null
+  /** Served `ended_at`; absent when the server omits the field. */
+  endedAt?: string | null
+  isCancelled: boolean
+  hasFunds: boolean
+  /** Agent funds across shared credits and the Agent-scoped balance. */
+  agentHasFunds: boolean
+  /**
+   * `scoped_has_funds.agent`: the Agent's own dedicated balance, regardless of
+   * shared credits. `false` once spent or never granted, `true` when billing is
+   * disabled, absent when the server does not report it.
+   */
+  agentScopedHasFunds?: boolean
+  /** True only when the billing status names the rail that supplied the grant. */
+  agentScopedHasFundsAuthoritative?: boolean
+}
+
+/**
+ * Balance amounts from `GET /api/billing/balance`.
+ * Despite the `Micros` suffixes every field is in CENTS: the backend reports
+ * Metronome's USD-cents credit balance verbatim, so format with
+ * `formatCreditsFromCents` (credits) or `formatMetronomeCurrency` (dollars)
+ * rather than dividing by 1,000,000.
+ */
+export interface BalanceInfo {
+  amountMicros: number
+  currency: string
+  effectiveBalanceMicros?: number
+  effectiveBalanceAuthoritative?: boolean
+  prepaidBalanceMicros?: number
+  cloudCreditBalanceMicros?: number
+  /** Served display-only plan remainder in cents; absent when omitted. */
+  cloudCreditDisplayBalanceCents?: number
+  /** Server-suggested top-up that covers a negative balance; null otherwise. */
+  suggestedTopupAmountCents?: number | null
+  /** Served `min_topup_cents`. Absent when the balance response omits it. */
+  minTopupCents?: number
+  /** Served `min_topup_credits`. Absent when the balance response omits it. */
+  minTopupCredits?: number
+  /** Served `max_topup_cents`. Absent when the balance response omits it. */
+  maxTopupCents?: number
+  /** Served `max_topup_credits`. Absent when the balance response omits it. */
+  maxTopupCredits?: number
+  /** Served `low_balance`. Absent when the balance response omits it. */
+  lowBalance?: boolean
+}
+
+/** Whether the billing portal opened, and why not when it did not. */
+export type BillingPortalOutcome =
+  | { ok: true }
+  | {
+      ok: false
+      reason: 'routing_unavailable' | 'blocked' | 'missing_url' | 'failed'
+    }
+
+export interface BillingStatusReadOptions {
+  /** Read after any read already in flight, instead of joining it. */
+  fresh?: boolean
+}
+
+export interface BillingActions {
+  initialize: () => Promise<void>
+  fetchStatus: (options?: BillingStatusReadOptions) => Promise<void>
+  fetchBalance: () => Promise<void>
+  subscribe: (
+    planSlug: string,
+    options?: SubscribeOptions
+  ) => Promise<SubscribeResponse | void>
+  previewSubscribe: (
+    planSlug: string,
+    options?: PreviewSubscribeOptions
+  ) => Promise<PreviewSubscribeResponse | null>
+  manageSubscription: () => Promise<BillingPortalOutcome>
+  cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<void>
+  /**
+   * Reactivates a cancelled-but-still-active subscription. The adapter
+   * refreshes status and balance internally on success.
+   *
+   * `source` identifies the click-time UI surface; the adapter ignores it
+   * (its resubscribe call is itself terminal).
+   */
+  resubscribe: (options?: {
+    source?: 'pricing_dialog' | 'settings_billing_panel'
+  }) => Promise<void>
+  /**
+   * Purchases additional credits. Standardized on **whole-dollar cents**
+   * (multiples of 100).
+   * Pass-through by design: the caller owns the completed/pending follow-up
+   * (balance refresh or billing-op polling), so this does not refresh.
+   */
+  topup: (amountCents: number) => Promise<CreateTopupResponse | void>
+  fetchPlans: () => Promise<void>
+}
+
+export interface BillingState {
+  isInitialized: Ref<boolean>
+  subscription: ComputedRef<SubscriptionInfo | null>
+  balance: ComputedRef<BalanceInfo | null>
+  plans: ComputedRef<Plan[]>
+  currentPlanSlug: ComputedRef<string | null>
+  /** Team per-credit pricing ladder; null for personal/legacy. */
+  teamCreditStops: ComputedRef<TeamCreditStops | null>
+  /** The served unpaid initial-signup invoice holding plan changes; null when none is served. */
+  subscriptionPaymentRecovery: ComputedRef<SubscriptionPaymentRecovery | null>
+  /** The team's currently-subscribed credit stop; null for personal/legacy. */
+  currentTeamCreditStop: ComputedRef<TeamCreditStopSummary | null>
+  /** Effective member limit for the current workspace; zero is unlimited. */
+  maxSeats: ComputedRef<number | null>
+  /** Seats occupied in the current workspace. */
+  occupiedSeats: ComputedRef<number | null>
+  isLoading: Ref<boolean>
+  error: Ref<string | null>
+  canAccessSubscriptionFeatures: ComputedRef<boolean>
+  /** Reflects the active workspace's tier, not the user's personal tier. */
+  isFreeTier: ComputedRef<boolean>
+  /** Coarse funding state (`billing_status`). */
+  billingStatus: ComputedRef<BillingStatus | null>
+  /** Subscription lifecycle state. */
+  subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
+  subscriptionState: ComputedRef<SubscriptionState | null>
+  tier: ComputedRef<SubscriptionTier | null>
+  renewalDate: ComputedRef<string | null>
+  /** Open renewal invoice to pay; owners while payment_failed or paused. */
+  renewalInvoice: ComputedRef<RenewalInvoice | null>
+  /** Served configured plan allowance; null when the server omits it. */
+  periodCreditGrant: ComputedRef<PeriodCreditGrant | null>
+  /** Served next credit refill; null when the server omits it. */
+  nextCreditRefillAt: ComputedRef<string | null>
+}
+
+export interface BillingContext extends BillingState, BillingActions {
+  type: ComputedRef<BillingType>
+  reconcileSubscriptionSuccess: () => Promise<void>
+  /**
+   * Waits up to ten seconds for the workspace type to load. False when the
+   * wait timed out (reported once) or the active workspace changed meanwhile,
+   * so the caller drops the action.
+   */
+  whenRoutingKnown: () => Promise<boolean>
+  /**
+   * True when the active team workspace is still on a pre-credit-slider
+   * (legacy) per-member tier plan, which keeps the old team pricing table.
+   */
+  isLegacyTeamPlan: ComputedRef<boolean>
+  /**
+   * True when the subscription is a team plan of either generation. Unlike
+   * `isLegacyTeamPlan` this does not require an active subscription: the spend
+   * gate folds billing_status into is_active, so a paused or payment-failed team
+   * plan reports is_active=false and must still read as a team plan.
+   */
+  isTeamPlan: ComputedRef<boolean>
+  getMaxSeats: (tierKey: TierKey) => number
+  canRunWorkflows: ComputedRef<boolean>
+  showsSubscribeToRunPrompt: ComputedRef<boolean>
+}

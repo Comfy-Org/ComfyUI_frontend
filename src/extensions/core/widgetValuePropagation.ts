@@ -1,11 +1,11 @@
-import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 type SourceNode = Pick<LGraphNode, 'id' | 'graph' | 'widgets'>
@@ -36,7 +36,7 @@ export function applyFirstWidgetValueToGraph(
     value = transformValue(value)
   }
 
-  const graphMouse: Point = app.canvas?.graph_mouse ?? [0, 0]
+  const graphMouse: Point = app.canvas.graph_mouse
 
   const endpoints: TargetEndpoint[] = [
     ...linked.map(({ targetNodeId, targetSlot }) => ({

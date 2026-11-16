@@ -4,16 +4,22 @@
     data-testid="transform-pane"
     class="ph-no-capture pointer-events-none absolute inset-0 size-full will-change-auto"
   >
-    <!-- Vue nodes will be rendered here -->
-    <slot />
+    <TooltipProvider
+      :delay-duration="settingStore.get('LiteGraph.Node.TooltipDelay')"
+      :skip-delay-duration="0"
+    >
+      <slot />
+    </TooltipProvider>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useRafFn } from '@vueuse/core'
 import { computed, useTemplateRef, watch } from 'vue'
 
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
@@ -22,6 +28,8 @@ interface TransformPaneProps {
 }
 
 const props = defineProps<TransformPaneProps>()
+
+const settingStore = useSettingStore()
 
 const { transformStyle, syncWithCanvas } = useTransformState()
 
@@ -55,12 +63,14 @@ watch([isInteracting, transformPaneRef], ([interacting, el]) => {
   }
 })
 
-useRafFn(
-  () => {
-    if (!props.canvas) {
-      return
-    }
-    syncWithCanvas(props.canvas)
+watch(
+  () => props.canvas,
+  (canvas, _, onCleanup) => {
+    if (!canvas) return
+    syncWithCanvas(canvas)
+    onCleanup(
+      onCanvasFrame(canvas.canvas, 'present', () => syncWithCanvas(canvas))
+    )
   },
   { immediate: true }
 )

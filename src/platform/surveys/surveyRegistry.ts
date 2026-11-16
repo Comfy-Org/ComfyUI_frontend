@@ -22,6 +22,12 @@ export const FEATURE_SURVEYS: Record<string, FeatureSurveyConfig> = {
     typeformId: 'iFp4p4mV',
     triggerThreshold: 3,
     presentation: 'inline-cta'
+  },
+  'example-workflows': {
+    featureId: 'example-workflows',
+    typeformId: 'OnKJQYLE',
+    triggerThreshold: 3,
+    delayMs: 5000
   }
 }
 
