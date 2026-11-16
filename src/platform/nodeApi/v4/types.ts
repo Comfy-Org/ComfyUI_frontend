@@ -1166,7 +1166,7 @@ export interface InputRef {
   readonly input: number
 }
 
-/** A frozen view of a node while a prompt is built. Each field is read when first asked for. */
+/** A frozen view of a node while a prompt is built. Its properties, groups, inputs and outputs are read when first asked for. */
 export interface ResolvedNodeView {
   readonly id: string
   readonly type: string
@@ -1222,7 +1222,7 @@ export type Supplier = (view: SupplyView) => readonly SuppliedEdge[]
 
 export interface SupplyView {
   readonly self: ResolvedNodeView
-  /** Every input of the node's graph that no link feeds, of nodes sent to the backend, in the graph's order. */
+  /** Every input of the node's graph that no link feeds, of nodes other than frontend and subgraph nodes, in the graph's order. */
   unconnectedInputs(): readonly UnconnectedInput[]
 }
 

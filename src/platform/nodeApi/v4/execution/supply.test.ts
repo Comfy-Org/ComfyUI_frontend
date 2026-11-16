@@ -13,6 +13,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { graphToPrompt } from '@/utils/executionUtil'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
@@ -94,6 +95,14 @@ describe('a supplier', () => {
       const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
 
       expect(await inputsOf(consumer)).toEqual({ x: [String(supplier.id), 0] })
+    })
+
+    it('fails the build with the circular reference error of the host on a cycle through forwarded inputs', async () => {
+      supplyWith(everythingTo({ forwardInput: 0 }))
+      addEverywhere()
+      addEverywhere()
+
+      await expect(promptOf()).rejects.toThrow(RecursionError)
     })
 
     it('feeds an unlinked input from whatever feeds one of its inputs', async () => {
