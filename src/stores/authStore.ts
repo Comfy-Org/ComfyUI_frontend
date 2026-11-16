@@ -244,6 +244,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   })
 
+  const dropDormantApiKey = (): void => {
+    const apiKeyStore = useApiKeyAuthStore()
+    if (apiKeyStore.getApiKey() !== null) void apiKeyStore.clearStoredApiKey()
+  }
+
+  watch(
+    currentUser,
+    (user, previousUser) => {
+      if (isCloud && previousUser && !user) dropDormantApiKey()
+    },
+    { flush: 'sync' }
+  )
+
   watch(
     () => desktopHostUser.value?.id ?? null,
     (nextUserId, previousUserId) =>
