@@ -360,11 +360,16 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid !== uid
   }
 
+  const storedApiKeyAsOnlyLogin = (): AuthHeader | null =>
+    isInitialized.value && currentUser.value === null
+      ? useApiKeyAuthStore().getAuthHeader()
+      : null
+
   const getUnifiedAuthHeader = async (): Promise<AuthHeader | null> => {
     if (await awaitUnifiedMint()) return null
     const token = useWorkspaceAuthStore().getUnifiedToken()
     if (token) return { Authorization: `Bearer ${token}` }
-    return await getUserAuthHeader()
+    return (await getFirebaseAuthHeader()) ?? storedApiKeyAsOnlyLogin()
   }
 
   const getAccountAuthHeader = async (): Promise<AuthHeader | null> => {
@@ -459,9 +464,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (await awaitUnifiedMint()) return null
         const token = useWorkspaceAuthStore().getUnifiedToken()
         if (token) return { Authorization: `Bearer ${token}` }
-        return currentUser.value === null
-          ? useApiKeyAuthStore().getAuthHeader()
-          : null
+        return storedApiKeyAsOnlyLogin()
       }
 
       if (currentUser.value === null) {
