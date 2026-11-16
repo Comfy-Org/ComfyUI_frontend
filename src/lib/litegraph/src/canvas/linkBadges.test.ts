@@ -539,14 +539,14 @@ describe('hidden link badge stacks', () => {
     {
       name: 'links sharing a name into one stack',
       labels: ['render_size', 'render_size', 'render_size'],
-      rows: [{ y: 100, links: [1, 2, 3], stackKey: 'output:4:0=render_size' }]
+      rows: [{ y: 100, links: [1, 2, 3], stackKey: 'output:4:0="render_size"' }]
     },
     {
       name: 'each name into its own stack, ordered by its first link',
       labels: ['B', 'A', 'B', 'A'],
       rows: [
-        { y: 100, links: [1, 3], stackKey: 'output:4:0=B' },
-        { y: 125, links: [2, 4], stackKey: 'output:4:0=A' }
+        { y: 100, links: [1, 3], stackKey: 'output:4:0="B"' },
+        { y: 125, links: [2, 4], stackKey: 'output:4:0="A"' }
       ]
     },
     {
@@ -554,7 +554,7 @@ describe('hidden link badge stacks', () => {
       labels: ['A', undefined, 'A', undefined, 'B'],
       rows: [
         { y: 100, links: [2, 4], stackKey: 'output:4:0' },
-        { y: 125, links: [1, 3], stackKey: 'output:4:0=A' },
+        { y: 125, links: [1, 3], stackKey: 'output:4:0="A"' },
         { y: 150, links: [5], stackKey: undefined }
       ]
     },
@@ -563,14 +563,14 @@ describe('hidden link badge stacks', () => {
       labels: ['MODEL', 'MODEL', undefined, undefined],
       rows: [
         { y: 100, links: [3, 4], stackKey: 'output:4:0' },
-        { y: 125, links: [1, 2], stackKey: 'output:4:0=MODEL' }
+        { y: 125, links: [1, 2], stackKey: 'output:4:0="MODEL"' }
       ]
     },
     {
       name: 'names that match after trimming, without folding case',
       labels: ['size', ' size ', 'Size'],
       rows: [
-        { y: 100, links: [1, 2], stackKey: 'output:4:0=size' },
+        { y: 100, links: [1, 2], stackKey: 'output:4:0="size"' },
         { y: 125, links: [3], stackKey: undefined }
       ]
     },
@@ -583,11 +583,11 @@ describe('hidden link badge stacks', () => {
     const host = {}
     layoutFanOut(host, labels)
 
-    for (const { y, links, stackKey } of rows) {
+    const hitRows = rows.map(({ y }) => {
       const hit = queryLinkBadgeHitAtPoint(host, 120, y)
-      expect(hit?.linkIds, `links at y ${y}`).toEqual(links.map(toLinkId))
-      expect(hit?.stackKey, `stack at y ${y}`).toBe(stackKey)
-    }
+      return { y, links: hit?.linkIds, stackKey: hit?.stackKey }
+    })
+    expect(hitRows).toEqual(rows)
     const lastRowY = rows[rows.length - 1].y
     expect(queryLinkBadgeHitAtPoint(host, 120, lastRowY + 25)).toBeUndefined()
   })
@@ -621,13 +621,13 @@ describe('hidden link badge stacks', () => {
 
   it('expands a named stack to its head and one label per link', () => {
     const host = {}
-    toggleLinkBadgeStack(host, 'output:4:0=A')
+    toggleLinkBadgeStack(host, 'output:4:0="A"')
     const { ctx } = layoutFanOut(host, ['A', 'A', undefined])
 
     expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(3))
     expect(queryLinkBadgeHitAtPoint(host, 120, 122)).toMatchObject({
       linkIds: [toLinkId(1), toLinkId(2)],
-      stackKey: 'output:4:0=A'
+      stackKey: 'output:4:0="A"'
     })
     expect(queryLinkBadgeAtPoint(host, 120, 144)).toBe(toLinkId(1))
     expect(queryLinkBadgeAtPoint(host, 120, 166)).toBe(toLinkId(2))

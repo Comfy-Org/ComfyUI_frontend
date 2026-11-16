@@ -197,7 +197,7 @@ function stackKeyOf(
   const { nodeId, slot } = socketOf(link, side)
   const label = presentation.label?.trim()
   const socketKey = `${side}:${nodeId}:${slot}`
-  const groupKey = label ? `${socketKey}=${label}` : socketKey
+  const groupKey = label ? `${socketKey}=${JSON.stringify(label)}` : socketKey
   return graphId ? `${graphId}/${groupKey}` : groupKey
 }
 
