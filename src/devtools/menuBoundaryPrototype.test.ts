@@ -66,6 +66,36 @@ describe('explicit menu boundary prototype', () => {
     expect(builds).toBe(0)
   })
 
+  it('preserves declarative submenu children and runs their actions only on selection', () => {
+    const effects: string[] = []
+    const projected = toClosureOnlyVueItems([
+      {
+        content: 'Node type',
+        has_submenu: true,
+        submenu: {
+          options: [
+            {
+              content: 'Create node',
+              callback: () => {
+                effects.push('created')
+              }
+            }
+          ]
+        }
+      }
+    ])
+    assert(projected.kind === 'vue')
+    expect(projected.items).toMatchObject([
+      { label: 'Node type', items: [{ label: 'Create node' }] }
+    ])
+    expect(effects).toEqual([])
+    const child = projected.items[0]?.items?.[0]
+    assert.isDefined(child)
+    assert.isDefined(child.command)
+    child.command({ originalEvent: new Event('select'), item: child })
+    expect(effects).toEqual(['created'])
+  })
+
   it('requires the native route for imperative submenus without executing them during assembly', () => {
     let effects = 0
     expect(
