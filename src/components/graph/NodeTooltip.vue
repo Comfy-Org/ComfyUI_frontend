@@ -71,6 +71,7 @@ async function showTooltip(tooltip: string | null | undefined) {
 
 function onIdle() {
   const { canvas } = comfyApp
+  if (canvas?.linkConnector.isConnecting) return
   const node = touchOrigin
     ? canvas?.graph?.getNodeOnPos(canvas.graph_mouse[0], canvas.graph_mouse[1])
     : canvas?.node_over

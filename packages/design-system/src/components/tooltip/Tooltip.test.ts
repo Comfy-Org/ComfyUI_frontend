@@ -74,12 +74,24 @@ describe('Tooltip', () => {
     expect(trigger).toHaveAccessibleDescription('Helpful text')
   })
 
-  it('waits for a deliberate hover on every trigger by default', async () => {
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    render({
-      components: { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger },
-      template: `
-        <TooltipProvider>
+  it.for([
+    { skipDelayDuration: 0, earlyHint: null },
+    { skipDelayDuration: 1000, earlyHint: 'Second hint' }
+  ])(
+    'respects a skip-delay window of $skipDelayDuration ms',
+    async ({ skipDelayDuration, earlyHint }) => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      render({
+        components: {
+          Tooltip,
+          TooltipContent,
+          TooltipProvider,
+          TooltipTrigger
+        },
+        setup: () => ({ skipDelayDuration }),
+        template: `
+        <TooltipProvider :skip-delay-duration>
           <Tooltip>
             <TooltipTrigger>First</TooltipTrigger>
             <TooltipContent>First hint</TooltipContent>
@@ -90,20 +102,22 @@ describe('Tooltip', () => {
           </Tooltip>
         </TooltipProvider>
       `
-    })
+      })
 
-    await user.hover(screen.getByRole('button', { name: 'First' }))
-    await vi.advanceTimersByTimeAsync(1499)
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    await vi.advanceTimersByTimeAsync(1)
-    expect(screen.getByRole('tooltip')).toHaveTextContent('First hint')
+      await user.hover(screen.getByRole('button', { name: 'First' }))
+      await vi.advanceTimersByTimeAsync(1499)
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+      await vi.advanceTimersByTimeAsync(1)
+      expect(screen.getByRole('tooltip')).toHaveTextContent('First hint')
 
-    await user.hover(screen.getByRole('button', { name: 'Second' }))
-    await vi.advanceTimersByTimeAsync(1499)
-    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
-    await vi.advanceTimersByTimeAsync(1)
-    expect(screen.getByRole('tooltip')).toHaveTextContent('Second hint')
-  })
+      await user.hover(screen.getByRole('button', { name: 'Second' }))
+      expect(screen.queryByRole('tooltip')?.textContent ?? null).toBe(earlyHint)
+      await vi.advanceTimersByTimeAsync(1499)
+      expect(screen.queryByRole('tooltip')?.textContent ?? null).toBe(earlyHint)
+      await vi.advanceTimersByTimeAsync(1)
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Second hint')
+    }
+  )
 
   it('opens on hover when the trigger content stops pointer moves', async () => {
     const user = userEvent.setup()
@@ -222,6 +236,7 @@ describe('Tooltip', () => {
   })
 
   it('requires a fresh hover after dragging across a tooltip', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(TooltipHarness, { props: { delayDuration: 2500 } })
     const trigger = screen.getByRole('button', { name: 'Trigger' })
@@ -246,6 +261,7 @@ describe('Tooltip', () => {
   })
 
   it('opens only after a stationary touch long press and closes on release', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(TooltipHarness)
     const trigger = screen.getByRole('button', { name: 'Trigger' })

@@ -41,6 +41,7 @@ interface MockCanvas {
   mouse: [number, number]
   graph_mouse: [number, number]
   graph: { getNodeOnPos: () => MockNode | null }
+  linkConnector: { isConnecting: boolean }
   node_over: MockNode | null
   getWidgetAtCursor: () => MockWidget | null
 }
@@ -54,6 +55,7 @@ const mockCanvas = vi.hoisted((): MockCanvas => ({
   mouse: [100, 80],
   graph_mouse: [10, 10],
   graph: { getNodeOnPos: vi.fn(() => mockCanvas.node_over) },
+  linkConnector: { isConnecting: false },
   node_over: null,
   getWidgetAtCursor: vi.fn<() => MockWidget | null>()
 }))
@@ -160,6 +162,7 @@ describe('NodeTooltip', () => {
 
     mockCanvas.mouse = [100, 80]
     mockCanvas.graph_mouse = [10, 10]
+    mockCanvas.linkConnector.isConnecting = false
     mockCanvas.node_over = createSam3Node()
     vi.mocked(mockCanvas.getWidgetAtCursor).mockReturnValue(null)
     vi.mocked(mockIsOverNodeInput).mockReturnValue(-1)
@@ -209,6 +212,7 @@ describe('NodeTooltip', () => {
   )
 
   it('requires a long press for canvas hints on touch and hides them on release', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     vi.mocked(useSettingStore().get).mockReturnValue(2500)
     vi.mocked(mockIsOverNodeInput).mockReturnValue(0)
@@ -228,6 +232,20 @@ describe('NodeTooltip', () => {
     await vi.advanceTimersByTimeAsync(1)
     expect(screen.getByText(jsonTooltip)).toBeVisible()
     await user.pointer({ keys: '[/TouchA]', target: canvas })
+    expect(screen.queryByText(jsonTooltip)).not.toBeInTheDocument()
+  })
+
+  it('suppresses a stationary touch hint while connecting a slot', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    vi.mocked(mockIsOverNodeOutput).mockReturnValue(0)
+    mockCanvas.linkConnector.isConnecting = true
+    render(NodeTooltip)
+    const canvas = document.createElement('canvas')
+    document.body.appendChild(canvas)
+
+    await user.pointer({ keys: '[TouchA>]', target: canvas })
+    await vi.advanceTimersByTimeAsync(1600)
+
     expect(screen.queryByText(jsonTooltip)).not.toBeInTheDocument()
   })
 

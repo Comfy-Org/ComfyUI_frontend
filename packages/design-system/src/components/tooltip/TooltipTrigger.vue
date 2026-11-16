@@ -10,13 +10,14 @@ import {
 import { inject, onBeforeUnmount, ref, watch } from 'vue'
 
 import { appTooltipProviderDefaults } from './tooltipConfig'
-import { tooltipOpenOnClickKey } from './tooltipContext'
+import { tooltipOpenOnClickKey, tooltipSkipDelayKey } from './tooltipContext'
 
 const props = defineProps<TooltipTriggerProps>()
 const forwarded = useForwardProps(props)
 const rootContext = injectTooltipRootContext()
 const providerContext = injectTooltipProviderContext()
 const openOnClick = inject(tooltipOpenOnClickKey, () => false)
+const skipDelayDuration = inject(tooltipSkipDelayKey, () => 0)
 
 const hovered = ref(false)
 let interactionBlocked = false
@@ -71,12 +72,12 @@ function openOnMouseEnter(event: PointerEvent) {
   hovered.value = true
   interactionBlocked = event.pointerType === 'touch' || event.buttons !== 0
   if (interactionBlocked || rootContext.disabled.value) return
-  providerContext.isOpenDelayed.value = true
+  if (skipDelayDuration() === 0) providerContext.isOpenDelayed.value = true
   rootContext.onTriggerEnter()
 }
 
 function onPointerDown(event: PointerEvent) {
-  cancelInteraction()
+  if (!rootContext.disableClosingTrigger.value) cancelInteraction()
   if (event.pointerType !== 'touch' || rootContext.disabled.value) return
   touchOrigin = { x: event.clientX, y: event.clientY }
   startLongPress()
@@ -102,6 +103,7 @@ function onPointerLeave() {
 }
 
 function onKeyDown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && rootContext.open.value) return
   cancelInteraction()
   if (event.key === 'Tab') interactionBlocked = false
 }
@@ -121,7 +123,7 @@ function openOnClickIfEnabled() {
     @pointerdown.capture="onPointerDown"
     @pointermove.capture="onPointerMove"
     @keydown.capture="onKeyDown"
-    @input.capture="cancelInteraction"
+    @input="cancelInteraction"
     @blur="interactionBlocked = false"
     @click="openOnClickIfEnabled"
   >
