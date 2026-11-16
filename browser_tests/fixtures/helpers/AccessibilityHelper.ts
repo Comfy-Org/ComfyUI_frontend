@@ -2,6 +2,8 @@ import AxeBuilder from '@axe-core/playwright'
 import type { Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { compareViolationCounts } from '@e2e/fixtures/utils/accessibilityViolationCounts'
+
 type AxeViolation = Awaited<
   ReturnType<AxeBuilder['analyze']>
 >['violations'][number]
@@ -66,13 +68,21 @@ export class AccessibilityHelper {
       contentType: 'application/json'
     })
 
-    const known = new Map(Object.entries(knownViolations))
-    const newViolations = results.violations
-      .map((violation) => ({
-        ...describeViolation(violation),
-        knownElements: known.get(violation.id) ?? 0
-      }))
-      .filter(({ elements, knownElements }) => elements.length > knownElements)
+    const { exceeded, reduced } = compareViolationCounts(
+      knownViolations,
+      Object.fromEntries(
+        results.violations.map(({ id, nodes }) => [id, nodes.length])
+      )
+    )
+    const knownElementsByExceededRule = new Map(
+      exceeded.map(({ rule, knownElements }) => [rule, knownElements])
+    )
+    const newViolations = results.violations.flatMap((violation) => {
+      const knownElements = knownElementsByExceededRule.get(violation.id)
+      return knownElements === undefined
+        ? []
+        : [{ ...describeViolation(violation), knownElements }]
+    })
     expect
       .soft(
         newViolations,
@@ -80,20 +90,8 @@ export class AccessibilityHelper {
       )
       .toEqual([])
 
-    const found = new Map(
-      results.violations.map(({ id, nodes }) => [id, nodes.length])
-    )
-    const fixedViolations = [...known]
-      .map(([rule, knownElements]) => ({
-        rule,
-        knownElements,
-        foundElements: found.get(rule) ?? 0
-      }))
-      .filter(
-        ({ knownElements, foundElements }) => foundElements < knownElements
-      )
     expect(
-      fixedViolations,
+      reduced,
       'Known accessibility violations that now fail on fewer elements. Lower their counts in this scan to the found counts, and remove a rule at zero.'
     ).toEqual([])
   }
