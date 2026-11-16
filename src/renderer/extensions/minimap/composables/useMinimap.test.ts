@@ -851,15 +851,18 @@ describe('useMinimap', () => {
       await minimap.init()
       await nextTick()
 
-      const viewportStyles = minimap.viewportStyles.value
+      const { box, horizontalEdge, verticalEdge } =
+        minimap.viewportTransforms.value
 
-      expect(viewportStyles).toBeDefined()
-      expect(viewportStyles.transform).toMatch(
-        /translate\(-?\d+(\.\d+)?px, -?\d+(\.\d+)?px\)/
+      expect(box).toMatch(
+        /^translate\(-?\d+(\.\d+)?px, -?\d+(\.\d+)?px\) scale\(\d+(\.\d+)?, \d+(\.\d+)?\)$/
       )
-      expect(viewportStyles.width).toMatch(/\d+(\.\d+)?px/)
-      expect(viewportStyles.height).toMatch(/\d+(\.\d+)?px/)
-      expect(viewportStyles.border).toBe('2px solid var(--foreground)')
+      expect(horizontalEdge).toMatch(/^scaleY\(\d+(\.\d+)?\)$/)
+      expect(verticalEdge).toMatch(/^scaleX\(\d+(\.\d+)?\)$/)
+      expect(minimap.viewportStyles).toMatchObject({
+        width: '250px',
+        height: '200px'
+      })
     })
 
     it('should handle canvas dimension updates', async () => {
@@ -882,7 +885,7 @@ describe('useMinimap', () => {
 
       await nextTick()
 
-      expect(minimap.viewportStyles.value).toBeDefined()
+      expect(minimap.viewportTransforms.value.box).toContain('scale(')
     })
   })
 

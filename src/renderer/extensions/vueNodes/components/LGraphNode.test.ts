@@ -14,7 +14,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, shallowRef } from 'vue'
 import type { PropType } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -94,7 +94,7 @@ vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/layout/useNodeLayout'),
   () => ({
     useNodeLayout: () => ({
-      position: { x: 100, y: 50 },
+      position: shallowRef({ x: 100, y: 50 }),
       size: computed(() => ({ width: 200, height: 100 })),
       zIndex: 0,
       startDrag: vi.fn(),

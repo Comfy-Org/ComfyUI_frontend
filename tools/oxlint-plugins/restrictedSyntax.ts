@@ -35,6 +35,14 @@ const MEMBER_DECLARATION_TYPES = [
   'TSMethodSignature',
   'TSPropertySignature'
 ]
+const TRANSFORM_STYLE_PROPERTIES = new Set([
+  'transform',
+  'translate',
+  'scale',
+  'rotate'
+])
+const TRANSFORM_WRITE_MESSAGE =
+  'Do not write a transform straight to element.style on the graph canvas - Chrome recomposites the whole page on every change. Use useCompositedTransform from @/renderer/core/layout/transform/useCompositedTransform.'
 const TEST_APIS = new Set(['describe', 'it', 'suite', 'test'])
 const DISABLING_CONDITION = new Map([
   ['skipIf', true],
@@ -243,6 +251,56 @@ export const noUnsafeErrorAssertion = {
           return
         }
         context.report({ node, message: ERROR_ASSERTION_MESSAGE })
+      }
+    }
+  }
+}
+
+function isStyleObject(node: Node): boolean {
+  return (
+    node.type === 'MemberExpression' &&
+    staticPropertyName(node as MemberExpression) === 'style'
+  )
+}
+
+export const noDirectTransformWrite = {
+  create(context: RuleContext) {
+    function report(node: Node) {
+      context.report({ node, message: TRANSFORM_WRITE_MESSAGE })
+    }
+
+    return {
+      AssignmentExpression(node: AssignmentExpression) {
+        if (node.left.type !== 'MemberExpression') return
+        const member = node.left as MemberExpression
+        const property = staticPropertyName(member)
+        if (
+          property &&
+          TRANSFORM_STYLE_PROPERTIES.has(property) &&
+          isStyleObject(member.object)
+        ) {
+          report(node)
+        }
+      },
+      CallExpression(node: CallExpression) {
+        if (node.callee.type !== 'MemberExpression') return
+        const member = node.callee as MemberExpression
+        const method = staticPropertyName(member)
+        const firstArgument = node.arguments.at(0)
+        if (!firstArgument) return
+
+        if (method === 'setProperty' && isStyleObject(member.object)) {
+          const property = staticString(firstArgument)
+          if (property && TRANSFORM_STYLE_PROPERTIES.has(property)) report(node)
+          return
+        }
+        if (
+          method === 'assign' &&
+          identifierName(member.object) === 'Object' &&
+          isStyleObject(firstArgument)
+        ) {
+          report(node)
+        }
       }
     }
   }
