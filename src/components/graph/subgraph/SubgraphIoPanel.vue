@@ -196,6 +196,7 @@ const { style, startResize } = useSubgraphIoLayout(
 )
 
 function reorder(from: number, to: number) {
+  if (canvasStore.isReadOnly) return
   const order = [...ioNode.slots.keys()]
   order.splice(to, 0, ...order.splice(from, 1))
   const applied = isInput.value
