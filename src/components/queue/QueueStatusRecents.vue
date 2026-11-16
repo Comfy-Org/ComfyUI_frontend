@@ -20,7 +20,7 @@
           @click="emit('view', result.job)"
         />
         <span
-          class="pointer-events-none relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary"
+          class="pointer-events-none relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary transition-colors group-hover:bg-background"
         >
           <img
             v-if="result.thumbSrc"
