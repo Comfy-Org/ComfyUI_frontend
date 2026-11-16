@@ -349,9 +349,15 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
       await expect
         .poll(() => sessionOwners, { timeout: 15_000 })
         .toContain(ACCOUNT_B.id)
-      expect(credentialEvents.indexOf(`session:${ACCOUNT_B.id}`)).toBeLessThan(
-        credentialEvents.indexOf(`workspace:${ACCOUNT_B.id}`)
+      const firstAccountBCredential = credentialEvents.findIndex((event) =>
+        event.endsWith(`:${ACCOUNT_B.id}`)
       )
+      expect(
+        credentialEvents
+          .slice(firstAccountBCredential)
+          .filter((event) => !event.endsWith(`:${ACCOUNT_B.id}`)),
+        'no account A credential is issued once account B signs in'
+      ).toEqual([])
     })
 
     await test.step('Load an asset with account B credentials', async () => {
