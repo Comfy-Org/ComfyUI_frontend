@@ -140,9 +140,12 @@ async function mockGraphBootExtras(page: Page) {
   })
 }
 
-async function setupCloudApp(page: Page) {
+async function setupCloudApp(
+  page: Page,
+  features: RemoteConfig = BOOT_FEATURES
+) {
   await mockCloudBoot(page, {
-    features: BOOT_FEATURES,
+    features,
     settings: BOOT_SETTINGS
   })
   await mockGraphBootExtras(page)
@@ -166,6 +169,12 @@ async function seedPendingCheckout(
     },
     { key: PENDING_CHECKOUT_STORAGE_KEY, seeded: entry }
   )
+}
+
+function refuseNewTabs(page: Page) {
+  return page.addInitScript(() => {
+    window.open = () => null
+  })
 }
 
 function readPendingCheckout(page: Page) {
@@ -257,6 +266,42 @@ test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
     ).toBeVisible()
     expect(operationPollRequests.length).toBeGreaterThan(0)
     expect(subscribeRequests).toHaveLength(0)
+    await expect.poll(() => readPendingCheckout(page)).toBeNull()
+  })
+
+  test('links to the Plans page instead of reopening the old checkout once the new billing UX is on', async ({
+    page
+  }) => {
+    await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
+    await refuseNewTabs(page)
+    await setupCloudApp(page, {
+      ...BOOT_FEATURES,
+      billing_new_ux_enabled: true
+    })
+    await page.route('**/api/billing/status', (route) =>
+      route.fulfill(jsonRoute(ACTIVE_STANDARD_STATUS))
+    )
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(
+        jsonRoute({
+          plans: [CREATOR_ANNUAL_PLAN]
+        } satisfies BillingPlansResponse)
+      )
+    )
+    await page.route(`**/api/billing/ops/${RECOVERY_OPERATION_ID}`, (route) =>
+      route.fulfill(jsonRoute(FAILED_RECOVERY_OPERATION))
+    )
+
+    await page.goto(APP_URL)
+
+    const plansDialog = page.getByTestId('platform-plans-link-dialog')
+    await cloudAppExpect(
+      plansDialog.getByText("Plans page didn't open")
+    ).toBeVisible()
+    await expect(
+      plansDialog.getByRole('link', { name: 'Open Plans page' })
+    ).toHaveAttribute('href', /\/profile\/billing\/plans/)
+    await expect(confirmPaymentHeading(page)).toBeHidden()
     await expect.poll(() => readPendingCheckout(page)).toBeNull()
   })
 
