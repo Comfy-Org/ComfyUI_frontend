@@ -62,13 +62,15 @@ when the user has sized a widget in Vue.
 ## Extension impact
 
 - A node that has a saved height gets `properties.widgetHeights` when it is
-  serialized: an object mapping each widget or preview name to a height in
-  pixels. On configure and on attach, the frontend reads the property and then
-  deletes it from the live node, so extensions see it only in serialized
-  output. Do not write this property; a value that is not a positive number is
-  ignored.
-- Every image, animation, and video preview is exposed and promoted under the
-  name `$$canvas-image-preview`, whichever widget draws it. At load, saved
-  `previewExposures` and legacy `proxyWidgets` entries naming `video-preview`
-  or `$$comfy_animation_preview` are mapped to it. Extensions that look up a
-  promoted preview by name should use `$$canvas-image-preview`.
+  serialized: an object mapping a widget name, or a promoted preview's host
+  exposure name, to a height in pixels. On configure and on attach, the
+  frontend reads the property and then deletes it from the live node, so
+  extensions see it only in serialized output. Do not write this property; a
+  value that is not a positive number is ignored.
+- Every image, animation, and video preview has the source name
+  `$$canvas-image-preview`, whichever widget draws it. At load, saved
+  `previewExposures` and legacy `proxyWidgets` entries whose source names
+  `video-preview` or `$$comfy_animation_preview` are mapped to it. A host's
+  exposure names are unique per host, so a second preview promoted to the
+  same host is exposed as `$$canvas-image-preview_1`. Find a promoted preview
+  by its `sourceNodeId` and `sourcePreviewName`, not by its exposure name.

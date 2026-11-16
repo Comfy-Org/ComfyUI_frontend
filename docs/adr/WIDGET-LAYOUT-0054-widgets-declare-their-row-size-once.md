@@ -70,13 +70,17 @@ does not establish or eliminate a measurement feedback loop.
 
 ## Extension impact
 
-- A widget that defines `computeSize` gets a fixed Vue row at that height,
-  even when it also defines `computeLayoutSize` or its type is one that used
-  to expand. Before, `WidgetLegacy` preferred `computeLayoutSize().minHeight`,
-  and the widget type alone decided whether the row grew.
+- A widget that defines `computeSize` gets a Vue row that does not grow,
+  with that height as its minimum, even when it also defines
+  `computeLayoutSize` or its type is one that used to expand. The row can
+  still be taller when its content or `computedHeight` is. Before,
+  `WidgetLegacy` preferred `computeLayoutSize().minHeight`, and the widget
+  type alone decided whether the row grew.
 - A widget that defines only `computeLayoutSize` gets a growable row, floored
-  at its `minHeight` and capped at its `maxHeight`. Define only this callback
-  for a row that should fill spare node height.
+  at its `minHeight`. Canvas layout caps the row at `maxHeight`. In Vue nodes,
+  `maxHeight` caps only a row the user drags; a row without a saved height
+  shares spare node height with no cap. Define only this callback for a row
+  that should fill spare node height.
 - A widget that defines neither keeps the type-based growth and the 20px
   `WidgetLegacy` default. `computedHeight` still takes precedence there.
 - Sizing callbacks run during reactive layout, so they must not mutate the
