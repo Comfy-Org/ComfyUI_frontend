@@ -10,38 +10,44 @@ import type { UUID } from '@/utils/uuid'
 
 /** User-sized heights of Vue node widgets and previews, keyed by {@link WidgetId} and saved in a node's `widgetHeights` property. */
 export const useWidgetHeightStore = defineStore('widgetHeight', () => {
-  const heights = ref(new Map<WidgetId, number>())
+  const nodeHeights = ref(new Map<string, Map<string, number>>())
 
-  function nodeEntries(graphId: UUID, nodeId: NodeId) {
-    const prefix = widgetId(graphId, nodeId, '')
-    return [...heights.value].flatMap(([id, height]) =>
-      id.startsWith(prefix)
-        ? [[decodeURIComponent(id.slice(prefix.length)), height] as const]
-        : []
-    )
+  function nodeKey(graphId: UUID, nodeId: NodeId) {
+    return widgetId(graphId, nodeId, '')
+  }
+
+  function splitWidgetId(id: WidgetId) {
+    const nameStart = id.lastIndexOf(':') + 1
+    return {
+      node: id.slice(0, nameStart),
+      name: decodeURIComponent(id.slice(nameStart))
+    }
   }
 
   function getHeight(id: WidgetId): number | undefined {
-    return heights.value.get(id)
+    const { node, name } = splitWidgetId(id)
+    return nodeHeights.value.get(node)?.get(name)
   }
 
   function setHeight(id: WidgetId, height: number | undefined): void {
-    if (height === undefined) heights.value.delete(id)
-    else heights.value.set(id, Math.round(height))
+    const { node, name } = splitWidgetId(id)
+    const heights = nodeHeights.value.get(node) ?? new Map<string, number>()
+    if (height === undefined) heights.delete(name)
+    else heights.set(name, Math.round(height))
+    if (heights.size) nodeHeights.value.set(node, heights)
+    else nodeHeights.value.delete(node)
   }
 
   function getNodeHeights(
     graphId: UUID,
     nodeId: NodeId
   ): Record<string, number> | undefined {
-    const entries = nodeEntries(graphId, nodeId)
-    if (!entries.length) return undefined
-    return Object.fromEntries(entries)
+    const heights = nodeHeights.value.get(nodeKey(graphId, nodeId))
+    return heights?.size ? Object.fromEntries(heights) : undefined
   }
 
   function clearNode(graphId: UUID, nodeId: NodeId): void {
-    for (const [name] of nodeEntries(graphId, nodeId))
-      heights.value.delete(widgetId(graphId, nodeId, name))
+    nodeHeights.value.delete(nodeKey(graphId, nodeId))
   }
 
   function adoptNodeHeights(
@@ -53,14 +59,18 @@ export const useWidgetHeightStore = defineStore('widgetHeight', () => {
     delete properties.widgetHeights
     clearNode(graphId, nodeId)
     if (!isPlainObject(saved)) return
-    for (const [name, height] of Object.entries(saved))
-      if (typeof height === 'number' && height > 0)
-        setHeight(widgetId(graphId, nodeId, name), height)
+    const heights = Object.entries(saved).flatMap(([name, height]) =>
+      typeof height === 'number' && height > 0
+        ? [[name, Math.round(height)] as const]
+        : []
+    )
+    if (heights.length)
+      nodeHeights.value.set(nodeKey(graphId, nodeId), new Map(heights))
   }
 
   function clearGraph(graphId: UUID): void {
-    for (const id of heights.value.keys())
-      if (id.startsWith(`${graphId}:`)) heights.value.delete(id)
+    for (const node of nodeHeights.value.keys())
+      if (node.startsWith(`${graphId}:`)) nodeHeights.value.delete(node)
   }
 
   return {
