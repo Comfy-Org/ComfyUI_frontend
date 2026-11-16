@@ -29,13 +29,14 @@ vi.mock(import('@comfyorg/telemetry'))
 const unreadyDeployment = vi.hoisted(() => ({
   reason: null as 'stopped' | 'starting' | 'failed' | 'notReady' | null
 }))
-vi.mock<unknown>(
+vi.mock(
   import('@/platform/workspace/composables/useUnreadyDeploymentRun'),
   async () => {
     const { computed } = await import('vue')
     return {
       useUnreadyDeploymentRun: () => ({
-        unreadyReason: computed(() => unreadyDeployment.reason)
+        unreadyReason: computed(() => unreadyDeployment.reason),
+        openSwitcherInsteadOfRun: async () => unreadyDeployment.reason !== null
       })
     }
   }
@@ -244,7 +245,7 @@ describe('ComfyQueueButton', () => {
       tooltip: "This deployment isn't ready. Click to switch."
     }
   ] as const)(
-    'marks Run as disabled, says the deployment is $reason, and still takes the click',
+    'says the deployment is $reason and still takes the click',
     async ({ reason, tooltip }) => {
       unreadyDeployment.reason = reason
       onTestFinished(() => {
@@ -253,7 +254,7 @@ describe('ComfyQueueButton', () => {
       const { user } = renderQueueButton()
       const queueButton = screen.getByTestId('queue-button')
 
-      expect(queueButton).toHaveAttribute('aria-disabled', 'true')
+      expect(queueButton).toBeEnabled()
       await user.hover(queueButton)
       expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
 
@@ -265,11 +266,17 @@ describe('ComfyQueueButton', () => {
     }
   )
 
-  it('does not mark Run as disabled while the deployment is ready', () => {
-    renderQueueButton()
+  it('keeps the payment message on a locked Run when the deployment is also stopped', async () => {
+    unreadyDeployment.reason = 'stopped'
+    onTestFinished(() => {
+      unreadyDeployment.reason = null
+    })
+    const { user } = renderQueueButton({ paymentRecoveryLock: 'owner' })
 
-    expect(screen.getByTestId('queue-button')).not.toHaveAttribute(
-      'aria-disabled'
+    await user.hover(screen.getByTestId('queue-button'))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      'Update payment to restore this subscription'
     )
   })
 

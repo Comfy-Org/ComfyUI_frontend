@@ -875,6 +875,10 @@ describe('useCoreCommands', () => {
     ) {
       mockDistributionState.isCloud = true
       Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+      vi.spyOn(workspaceApi, 'getReleaseUnsupportedPacks').mockResolvedValue({
+        release_id: 'r-1',
+        packs: []
+      })
       vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue({
         builds_visible: true,
         picked_deployment_id: 'dep-1',

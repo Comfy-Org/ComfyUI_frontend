@@ -6,12 +6,11 @@
       tooltip-side="bottom"
       :variant="queueButtonVariant"
       size="unset"
-      :aria-disabled="unreadyReason !== null || undefined"
       :class="
         cn(
           'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
           !paymentRecoveryLock && 'font-light',
-          unreadyReason && 'opacity-50'
+          blockedBy && 'opacity-50'
         )
       "
       data-testid="queue-button"
@@ -172,6 +171,10 @@ const isStopInstantAction = computed(() =>
   isInstantRunningMode(queueMode.value)
 )
 
+const blockedBy = computed(() =>
+  paymentRecoveryLock || isStopInstantAction.value ? null : unreadyReason.value
+)
+
 const queueButtonLabel = computed(() =>
   paymentRecoveryLock === 'owner'
     ? t('subscription.paymentRecovery.ownerRunLabel')
@@ -241,8 +244,8 @@ const queueButtonTooltip = computed(() => {
   if (isStopInstantAction.value) {
     return t('menu.stopRunInstantTooltip')
   }
-  if (unreadyReason.value) {
-    return t(UNREADY_TOOLTIP_KEYS[unreadyReason.value])
+  if (blockedBy.value) {
+    return t(UNREADY_TOOLTIP_KEYS[blockedBy.value])
   }
   if (hasMissingError.value) {
     return t('menu.runWorkflowMissingResources')

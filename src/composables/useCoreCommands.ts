@@ -548,8 +548,8 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await openSwitcherInsteadOfRun()) return
         trackRunButton(metadata)
-        if (openSwitcherInsteadOfRun()) return
         if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
@@ -569,8 +569,8 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await openSwitcherInsteadOfRun()) return
         trackRunButton(metadata)
-        if (openSwitcherInsteadOfRun()) return
         if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
@@ -589,8 +589,8 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await openSwitcherInsteadOfRun()) return
         trackRunButton(metadata)
-        if (openSwitcherInsteadOfRun()) return
         if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount

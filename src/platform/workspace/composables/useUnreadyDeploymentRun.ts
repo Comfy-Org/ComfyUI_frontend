@@ -1,5 +1,7 @@
 import { computed } from 'vue'
 
+import { useAppMode } from '@/composables/useAppMode'
+
 import { deploymentStatusTone } from '@/platform/workspace/composables/useDeploymentLabels'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -19,21 +21,40 @@ function reasonFor(status: string): UnreadyDeploymentReason | null {
   return status === 'stopped' ? 'stopped' : 'notReady'
 }
 
-/** Whether Run would reach a deployment that is not ready while a Run on menu is there to open instead. */
+const SETTLES_BY_ITSELF = new Set<UnreadyDeploymentReason>([
+  'starting',
+  'notReady'
+])
+
+/** Whether Run would reach a deployment that is not ready while the Run on menu is on screen to open instead. */
 export function useUnreadyDeploymentRun() {
   const isSwitcherOffered = useDeploymentSwitcherOffered()
+  const { isAppMode } = useAppMode()
+
+  const isSwitcherOnScreen = computed(
+    () =>
+      isSwitcherOffered.value &&
+      !isAppMode.value &&
+      useDeploymentPickStore().switcherMounts > 0
+  )
 
   const unreadyReason = computed(() => {
-    if (!isSwitcherOffered.value) return null
-    const { switcherMounts, pickedDeployment } = useDeploymentPickStore()
-    if (switcherMounts === 0 || pickedDeployment === null) return null
-    return reasonFor(pickedDeployment.status)
+    if (!isSwitcherOnScreen.value) return null
+    const picked = useDeploymentPickStore().pickedDeployment
+    return picked === null ? null : reasonFor(picked.status)
   })
 
-  /** Opens the Run on menu in place of a Run the deployment would refuse; false when Run may go ahead. */
-  function openSwitcherInsteadOfRun(): boolean {
+  /**
+   * Opens the Run on menu in place of a Run the deployment would refuse; false when Run may go ahead.
+   * A status that settles by itself is read again first.
+   */
+  async function openSwitcherInsteadOfRun(): Promise<boolean> {
+    const reasonAtClick = unreadyReason.value
+    if (reasonAtClick === null) return false
+    const store = useDeploymentPickStore()
+    if (SETTLES_BY_ITSELF.has(reasonAtClick)) await store.load()
     if (unreadyReason.value === null) return false
-    useDeploymentPickStore().requestSwitcherOpen()
+    store.requestSwitcherOpen()
     return true
   }
 

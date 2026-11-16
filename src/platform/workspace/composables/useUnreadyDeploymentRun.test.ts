@@ -1,23 +1,19 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   WorkspaceDeployment,
   WorkspaceDeploymentList
 } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useUnreadyDeploymentRun } from './useUnreadyDeploymentRun'
 
-const mockWorkspaceApi = vi.hoisted(() => ({
-  listDeployments: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: mockWorkspaceApi
-}))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
@@ -53,8 +49,12 @@ function listingWith(
   }
 }
 
+function answerListingWith(listing: WorkspaceDeploymentList) {
+  return vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue(listing)
+}
+
 async function loadListing(listing: WorkspaceDeploymentList) {
-  mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+  answerListingWith(listing)
   await useDeploymentPickStore().load()
 }
 
@@ -64,6 +64,10 @@ describe('useUnreadyDeploymentRun', () => {
     Object.assign(useCurrentUser(), { isApiKeyLogin: computed(() => false) })
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     useDeploymentPickStore().switcherMounts = 1
+    vi.spyOn(workspaceApi, 'getReleaseUnsupportedPacks').mockResolvedValue({
+      release_id: 'r-1',
+      packs: []
+    })
   })
 
   it.for<{ status: WorkspaceDeployment['status']; reason: string }>([
@@ -82,7 +86,7 @@ describe('useUnreadyDeploymentRun', () => {
       const asksBefore = useDeploymentPickStore().switcherOpenAsks
 
       expect(unreadyReason.value).toBe(reason)
-      expect(openSwitcherInsteadOfRun()).toBe(true)
+      expect(await openSwitcherInsteadOfRun()).toBe(true)
       expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore + 1)
     }
   )
@@ -101,7 +105,16 @@ describe('useUnreadyDeploymentRun', () => {
       arrange: async () => {}
     },
     {
-      when: 'no Run on menu is mounted to open, as in App mode',
+      when: 'App mode hides the Run on menu',
+      arrange: async () => {
+        await loadListing(listingWith('stopped'))
+        useWorkflowStore().activeWorkflow = fromPartial<
+          NonNullable<ReturnType<typeof useWorkflowStore>['activeWorkflow']>
+        >({ activeMode: 'app' })
+      }
+    },
+    {
+      when: 'no Run on menu is mounted to open',
       arrange: async () => {
         await loadListing(listingWith('stopped'))
         useDeploymentPickStore().switcherMounts = 0
@@ -130,7 +143,31 @@ describe('useUnreadyDeploymentRun', () => {
     const asksBefore = useDeploymentPickStore().switcherOpenAsks
 
     expect(unreadyReason.value).toBeNull()
-    expect(openSwitcherInsteadOfRun()).toBe(false)
+    expect(await openSwitcherInsteadOfRun()).toBe(false)
     expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+  })
+
+  it('reads the listing again before refusing a starting deployment, and lets Run go ahead once it is ready', async () => {
+    await loadListing(listingWith('starting'))
+    const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+    const listDeployments = answerListingWith(listingWith('ready'))
+    listDeployments.mockClear()
+    const asksBefore = useDeploymentPickStore().switcherOpenAsks
+
+    expect(await openSwitcherInsteadOfRun()).toBe(false)
+
+    expect(listDeployments).toHaveBeenCalledOnce()
+    expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+  })
+
+  it('refuses a stopped deployment without reading the listing again', async () => {
+    await loadListing(listingWith('stopped'))
+    const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+    const listDeployments = answerListingWith(listingWith('stopped'))
+    listDeployments.mockClear()
+
+    expect(await openSwitcherInsteadOfRun()).toBe(true)
+
+    expect(listDeployments).not.toHaveBeenCalled()
   })
 })
