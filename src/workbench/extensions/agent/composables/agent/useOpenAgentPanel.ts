@@ -24,12 +24,16 @@ export function useOpenAgentPanel(source: AgentPanelOpenedMetadata['source']) {
     panel.suppressRestoredOpen()
     let opened = false
     try {
-      await useAgentConsent().withConsent('button_click', () => {
-        if (!isActive || !enabled.value) return
-        panel.view = { screen: 'chat' }
-        panel.open(source)
-        opened = true
-      })
+      await useAgentConsent().withConsent(
+        'button_click',
+        () => {
+          if (!isActive || !enabled.value) return
+          panel.view = { screen: 'chat' }
+          panel.open(source)
+          opened = true
+        },
+        { canShow: () => isActive && enabled.value }
+      )
       return opened
     } finally {
       isOpening.value = false
