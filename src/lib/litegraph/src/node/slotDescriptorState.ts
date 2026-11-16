@@ -24,6 +24,26 @@ const metadataKeys = [
   'slot_index'
 ] as const satisfies readonly (keyof SlotDescriptor)[]
 
+const descriptorKeys: ReadonlySet<PropertyKey> = new Set(metadataKeys)
+
+export function createSlotAdapter<T extends object>(slot: T): T {
+  const view = shallowReactive(slot)
+  return new Proxy(slot, {
+    get: (target, key, receiver) =>
+      Reflect.get(descriptorKeys.has(key) ? target : view, key, receiver),
+    set: (target, key, value, receiver) =>
+      Reflect.set(
+        descriptorKeys.has(key) ? target : view,
+        key,
+        value,
+        receiver
+      ),
+    has: (_target, key) => Reflect.has(view, key),
+    ownKeys: () => Reflect.ownKeys(view),
+    deleteProperty: (_target, key) => Reflect.deleteProperty(view, key)
+  })
+}
+
 export function bindSlotDescriptor(
   slot: SlotDescriptor & { readonly boundingRect: Float64Array },
   existing?: SlotDescriptor

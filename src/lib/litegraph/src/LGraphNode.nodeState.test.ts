@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, toRaw } from 'vue'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -101,8 +101,10 @@ describe('LGraphNode node-data adoption', () => {
     const output = node.addOutput('result', 'STRING')
     const [state] = statesIn(subgraph)
 
-    expect(state.inputs[0]).toBe(input)
-    expect(state.outputs[0]).toBe(output)
+    expect(Object.getPrototypeOf(toRaw(state.inputs[0]))).toBe(Object.prototype)
+    expect(Object.getPrototypeOf(toRaw(state.outputs[0]))).toBe(
+      Object.prototype
+    )
     expect(node.inputs[0]).toBe(input)
     expect(node.outputs[0]).toBe(output)
     expect(input).toBeInstanceOf(NodeInputSlot)

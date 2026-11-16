@@ -3,7 +3,6 @@ import type {
   SubgraphInput,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import { shallowReactive } from 'vue'
 
 import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 
@@ -28,7 +27,7 @@ import { getCentre } from '@/lib/litegraph/src/measure'
 import { LinkDirection, RenderShape } from '@comfyorg/graph-model/globalEnums'
 
 import { SlotBase } from './SlotBase'
-import { bindSlotDescriptor } from './slotDescriptorState'
+import { bindSlotDescriptor, createSlotAdapter } from './slotDescriptorState'
 
 let isNodeInputSlot: (slot: NodeSlot) => boolean
 
@@ -104,7 +103,7 @@ export abstract class NodeSlot extends SlotBase implements INodeSlot {
     Object.assign(this, rest)
     this._node = node
 
-    const view = shallowReactive(this)
+    const view = createSlotAdapter(this)
     Object.defineProperty(this, '_state', {
       value: bindSlotDescriptor(view, descriptor)
     })
