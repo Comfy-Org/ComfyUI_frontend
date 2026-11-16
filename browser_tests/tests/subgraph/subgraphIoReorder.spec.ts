@@ -6,6 +6,7 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 
 const DEFINITION_ORDER = [
   'text',
@@ -73,19 +74,6 @@ async function dragHandle(
   await comfyPage.page.mouse.up()
 }
 
-async function openSubgraphEditor(comfyPage: ComfyPage, nodeId: string) {
-  await (await comfyPage.nodeOps.getNodeRefById(nodeId)).click('title')
-  const panel = comfyPage.menu.propertiesPanel.root
-  if (!(await panel.isVisible()))
-    await comfyPage.actionbar.propertiesButton.click()
-  await expect(panel).toBeVisible()
-  const shown = comfyPage.page.getByTestId(TestIds.subgraphEditor.shownSection)
-  if (!(await shown.isVisible()))
-    await comfyPage.page.getByTestId(TestIds.subgraphEditor.toggle).click()
-  await expect(shown).toBeVisible()
-  return shown.getByTestId(TestIds.subgraphEditor.widgetLabel)
-}
-
 function promotedLabels(labels: Locator) {
   return labels.evaluateAll((elements) =>
     elements
@@ -132,64 +120,74 @@ test.describe('Subgraph IO reorder', { tag: '@subgraph' }, () => {
     })
   })
 
-  test('the properties panel and the input panel follow each other', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'subgraphs/subgraph-two-hosts-three-promoted-widgets'
-    )
-    const { inputPanel, inputPorts, editor } = comfyPage.subgraph
-    const handle = (name: string) =>
-      inputPanel.getByRole('button', { name: `Reorder ${name}`, exact: true })
-    const promoted = (ports: (string | null)[]) =>
-      ports.filter((name) => name?.startsWith('text'))
+  test(
+    'the properties panel and the input panel follow each other',
+    {
+      tag: '@vue-nodes'
+    },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'subgraphs/subgraph-two-hosts-three-promoted-widgets'
+      )
+      const { inputPanel, inputPorts, editor } = comfyPage.subgraph
+      const handle = (name: string) =>
+        inputPanel.getByRole('button', { name: `Reorder ${name}`, exact: true })
+      const promoted = (ports: (string | null)[]) =>
+        ports.filter((name) => name?.startsWith('text'))
+      const labels = editor.promotionItems.getByTestId(
+        TestIds.subgraphEditor.widgetLabel
+      )
+      const openEditor = () =>
+        editor.ensureOpen(comfyPage.vueNodes.getNodeLocator('12'))
 
-    await test.step('Reorder in the properties panel', async () => {
-      const labels = await openSubgraphEditor(comfyPage, '12')
-      await expect
-        .poll(() => promotedLabels(labels))
-        .toEqual(['text', 'text_1', 'text_2'])
+      await test.step('Reorder in the properties panel', async () => {
+        await openEditor()
+        await expect
+          .poll(() => promotedLabels(labels))
+          .toEqual(['text', 'text_1', 'text_2'])
 
-      await editor.dragItem(2, 0)
+        await editor.dragItem(2, 0)
 
-      await expect
-        .poll(() => promotedLabels(labels))
-        .toEqual(['text_2', 'text', 'text_1'])
-      expect(await promotedValues(comfyPage)).toEqual([
-        ['text_2=third', 'text=first', 'text_1=second'],
-        ['text_2=gamma', 'text=alpha', 'text_1=beta']
-      ])
-    })
+        await expect
+          .poll(() => promotedLabels(labels))
+          .toEqual(['text_2', 'text', 'text_1'])
+        expect(await promotedValues(comfyPage)).toEqual([
+          ['text_2=third', 'text=first', 'text_1=second'],
+          ['text_2=gamma', 'text=alpha', 'text_1=beta']
+        ])
+      })
 
-    await test.step('The input panel shows the same order', async () => {
-      await comfyPage.menu.propertiesPanel.close()
-      await comfyPage.subgraph.enterSubgraphWithFallback('11')
-      await expect
-        .poll(async () => promoted(await portLabels(inputPorts)))
-        .toEqual(['text_2', 'text', 'text_1'])
-    })
+      await test.step('The input panel shows the same order', async () => {
+        await comfyPage.menu.propertiesPanel.close()
+        await fitToViewInstant(comfyPage)
+        await comfyPage.vueNodes.enterSubgraph('12')
+        await expect
+          .poll(async () => promoted(await portLabels(inputPorts)))
+          .toEqual(['text_2', 'text', 'text_1'])
+      })
 
-    await test.step('Reorder in the input panel', async () => {
-      await dragHandle(comfyPage, handle('text_2'), handle('text'))
-      await expect
-        .poll(async () => promoted(await portLabels(inputPorts)))
-        .toEqual(['text', 'text_2', 'text_1'])
-    })
+      await test.step('Reorder in the input panel', async () => {
+        await dragHandle(comfyPage, handle('text_2'), handle('text'))
+        await expect
+          .poll(async () => promoted(await portLabels(inputPorts)))
+          .toEqual(['text', 'text_2', 'text_1'])
+      })
 
-    await test.step('The properties panel and both hosts follow', async () => {
-      await comfyPage.subgraph.exitViaBreadcrumb()
-      const labels = await openSubgraphEditor(comfyPage, '12')
-      await expect
-        .poll(() => promotedLabels(labels))
-        .toEqual(['text', 'text_2', 'text_1'])
-      expect(await promotedValues(comfyPage)).toEqual([
-        ['text=first', 'text_2=third', 'text_1=second'],
-        ['text=alpha', 'text_2=gamma', 'text_1=beta']
-      ])
-      const { definition, hosts } = await inputOrders(comfyPage)
-      expect(hosts).toEqual([definition, definition])
-    })
-  })
+      await test.step('The properties panel and both hosts follow', async () => {
+        await comfyPage.subgraph.exitViaBreadcrumb()
+        await openEditor()
+        await expect
+          .poll(() => promotedLabels(labels))
+          .toEqual(['text', 'text_2', 'text_1'])
+        expect(await promotedValues(comfyPage)).toEqual([
+          ['text=first', 'text_2=third', 'text_1=second'],
+          ['text=alpha', 'text_2=gamma', 'text_1=beta']
+        ])
+        const { definition, hosts } = await inputOrders(comfyPage)
+        expect(hosts).toEqual([definition, definition])
+      })
+    }
+  )
 
   test('dragging an output handle reorders every instance and keeps its links', async ({
     comfyPage
