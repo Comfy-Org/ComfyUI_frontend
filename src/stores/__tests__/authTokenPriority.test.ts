@@ -2,6 +2,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import type { ApiKeyAuthHeader } from '@comfyorg/api-client/authTypes'
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
@@ -500,6 +501,29 @@ describe('auth token priority chain', () => {
 
       await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
       expect(useApiKeyAuthStore().getAuthHeader).not.toHaveBeenCalled()
+    })
+
+    it('leaves no login behind when a signed-in user with an earlier stored API key signs out', async () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      let storedKeyHeader: ApiKeyAuthHeader | null = {
+        'X-API-KEY': 'earlier-key'
+      }
+      vi.mocked(apiKeyStore.getApiKey).mockReturnValue('earlier-key')
+      vi.mocked(apiKeyStore.getAuthHeader).mockImplementation(
+        () => storedKeyHeader
+      )
+      vi.mocked(apiKeyStore.clearStoredApiKey).mockImplementation(async () => {
+        storedKeyHeader = null
+      })
+      vi.mocked(firebaseAuth.signOut).mockImplementation(async () =>
+        authStateCallback(null)
+      )
+      useWorkspaceAuthStore().unifiedToken = null
+
+      await store.logout()
+
+      await expect(store.getAuthHeader()).resolves.toBeNull()
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
     })
 
     it('getAuthHeader falls back to the Firebase token when the unified mint fails', async () => {
