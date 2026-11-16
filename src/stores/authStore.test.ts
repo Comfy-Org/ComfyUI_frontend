@@ -2005,13 +2005,13 @@ describe('a stored API key while Firebase restores the saved sign-in', () => {
     await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
   })
 
-  it('sends the stored key once Firebase confirms that nobody is signed in', async () => {
+  it('sends no credential once Firebase confirms that nobody is signed in', async () => {
     const store = storeHoldingAnEarlierKey()
 
     firebaseReports(null)
 
-    await expect(store.getAuthHeader()).resolves.toEqual(EARLIER_KEY)
-    await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(EARLIER_KEY)
+    await expect(store.getAuthHeader()).resolves.toBeNull()
+    await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
   })
 
   it('keeps the stored key when the first Firebase answer is that nobody is signed in', () => {

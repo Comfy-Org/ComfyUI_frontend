@@ -457,7 +457,7 @@ describe('auth token priority chain', () => {
       expect(header).toBeNull()
     })
 
-    it('getAuthHeader sends the stored API key when an API key is the only login', async () => {
+    it('getAuthHeader does not take a stored API key as the login when nobody is signed in', async () => {
       authStateCallback(null)
       useWorkspaceAuthStore().unifiedToken = null
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
@@ -466,19 +466,17 @@ describe('auth token priority chain', () => {
 
       const header = await store.getAuthHeader()
 
-      expect(header).toEqual({ 'X-API-KEY': 'test-key' })
+      expect(header).toBeNull()
     })
 
-    it('getWorkspaceAuthHeader sends the stored API key when an API key is the only login', async () => {
+    it('getWorkspaceAuthHeader does not take a stored API key as the login when nobody is signed in', async () => {
       authStateCallback(null)
       useWorkspaceAuthStore().unifiedToken = null
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'test-key'
       })
 
-      await expect(store.getWorkspaceAuthHeaderOrThrow()).resolves.toEqual({
-        'X-API-KEY': 'test-key'
-      })
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
     })
 
     it('getWorkspaceAuthHeader keeps the unified Cloud JWT for a signed-in user', async () => {
