@@ -255,6 +255,8 @@ describe('ComfyQueueButton', () => {
       const queueButton = screen.getByTestId('queue-button')
 
       expect(queueButton).toBeEnabled()
+      expect(queueButton).toHaveClass('opacity-50')
+      expect(screen.getByTestId('queue-mode-menu-trigger')).toBeDisabled()
       await user.hover(queueButton)
       expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
 

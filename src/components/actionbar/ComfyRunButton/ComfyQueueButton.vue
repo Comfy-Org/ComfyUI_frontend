@@ -25,7 +25,7 @@
         <Button
           :variant="queueMenuTriggerVariant"
           size="unset"
-          :disabled="Boolean(paymentRecoveryLock)"
+          :disabled="Boolean(paymentRecoveryLock ?? blockedBy)"
           :class="
             cn(
               queueMenuTriggerClass,
