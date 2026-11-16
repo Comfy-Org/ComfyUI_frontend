@@ -538,8 +538,6 @@ function marqueeSelectsLinks(
   )
 }
 
-function toggleStackOnceOnDoubleClick(): void {}
-
 interface SnappingLink {
   link: LLink
   snap: number
@@ -2893,19 +2891,28 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       case 'linkBadge': {
         const { link } = target
         pointer.onDoubleClick = () =>
-          promptRenameLinkBadge(this, graphScopeOf(graph), link.id, e)
+          promptRenameLinkBadge(this, graphScopeOf(graph), [link.id], e)
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
       }
 
       case 'linkBadgeStack': {
-        const { stackKey } = target
-        pointer.onClick = () => {
+        const { stackKey, links } = target
+        const toggleStack = () => {
           toggleLinkBadgeStack(this, stackKey)
           this.dirty_bgcanvas = true
         }
-        pointer.onDoubleClick = toggleStackOnceOnDoubleClick
+        pointer.onClick = toggleStack
+        pointer.onDoubleClick = () => {
+          toggleStack()
+          promptRenameLinkBadge(
+            this,
+            graphScopeOf(graph),
+            links.map(({ id }) => id),
+            e
+          )
+        }
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
@@ -7019,7 +7026,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if (link) showLink(this, graphScope, link.id)
           break
         case 'Rename':
-          if (link) promptRenameLinkBadge(this, graphScope, link.id, e)
+          if (link) promptRenameLinkBadge(this, graphScope, [link.id], e)
           break
         default:
       }
@@ -8905,14 +8912,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         getCanvasContextMenuTarget(this, event.canvasX, event.canvasY)
       if (stackedLinks) {
         const graphScope = graphScopeOf(this.graph)
+        const stackedLinkIds = stackedLinks.map(({ id }) => id)
         new LiteGraph.ContextMenu<string>(getLinkStackMenuOptions(), {
           event,
-          callback: () =>
-            showLinks(
-              this,
-              graphScope,
-              stackedLinks.map(({ id }) => id)
-            )
+          callback: (item) => {
+            if (typeof item !== 'string' && item?.value === 'Rename')
+              promptRenameLinkBadge(this, graphScope, stackedLinkIds, event)
+            else showLinks(this, graphScope, stackedLinkIds)
+          }
         })
         return
       }
