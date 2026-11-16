@@ -107,7 +107,7 @@ export function useSubgraphIoReorder(
     event.preventDefault()
     event.stopPropagation()
     const target = index + step
-    if (target < 0 || target >= count) return false
+    if (drag.value || target < 0 || target >= count) return false
     onReorder(index, target)
     return true
   }

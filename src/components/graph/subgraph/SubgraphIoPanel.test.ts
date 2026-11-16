@@ -214,4 +214,22 @@ describe('subgraph input node ports', () => {
       expect(firstHandle).toHaveFocus()
     }
   )
+
+  it('ignores Alt+ArrowDown while a handle drag is in progress', async () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(20)
+    const { host } = await renderInputNode()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const [firstHandle] = screen.getAllByRole('button', { name: /^Reorder / })
+    vi.advanceTimersByTime(1)
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: firstHandle, coords: { y: 0 } },
+      { target: firstHandle, coords: { y: 30 } }
+    ])
+    firstHandle.focus()
+    await user.keyboard('{Alt>}{ArrowDown}{/Alt}')
+    await user.pointer({ keys: '[/MouseLeft]', target: firstHandle })
+
+    expect(host.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
+  })
 })
