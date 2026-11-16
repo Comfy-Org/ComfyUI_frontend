@@ -19,6 +19,7 @@ import { api } from '@/scripts/api'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { takePendingSignInAccept } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentConsent } from './useAgentConsent'
@@ -1220,6 +1221,35 @@ describe('useAgentConsent', () => {
       vi.mocked(useAuthDialogs().showSignInDialog).mockReset()
       telemetry.trackAgentConsentResolved.mockReset()
       reportError.mockReset()
+    })
+
+    it('restores the Cloud handoff and the existing draft after sign-in reloads the page', async ({
+      onTestFinished
+    }) => {
+      signedOut()
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
+      useAgentPanelStore().enabled = true
+      const composer = useAgentComposerStore()
+      composer.setText('Keep my draft')
+      const scope = effectScope()
+      onTestFinished(() => scope.stop())
+      const opener = scope.run(() => useOpenAgentPanel('cloud_button'))
+      assert.exists(opener)
+
+      const opening = opener.open('Run on Cloud')
+      await startConsent()
+      await expect(opening).resolves.toBe(false)
+      const recovered = takePendingSignInAccept()
+      assert.exists(recovered)
+
+      signedIn()
+      composer.setText('')
+      scopeResolves()
+      vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
+      await useAgentConsent().resumeAcceptAfterReload(recovered)
+
+      expect(composer.draft).toBe('Keep my draft\n\nRun on Cloud')
+      expect(composer.submission).toBeNull()
     })
 
     it('keeps the held draft while the sign-in dialog is open', async () => {

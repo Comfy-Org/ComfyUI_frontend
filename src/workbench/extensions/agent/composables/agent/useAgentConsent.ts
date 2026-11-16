@@ -45,6 +45,7 @@ const AgentConsentCard = defineAsyncComponent(
 )
 
 export interface ConsentOfferHooks {
+  handoffPrompt?: string
   onShown?: () => void
   /** Asked right before the card mounts, after every await that precedes it. */
   canShow?: () => boolean
@@ -271,9 +272,14 @@ export function useAgentConsent() {
     }
   }
 
-  function heldDraftText(): string {
+  function signInDraft({ handoffPrompt, canShow }: ConsentOfferHooks): string {
     const held = composerStore.submission
-    return held?.phase === 'pending' ? held.snapshot.prompt.text.trim() : ''
+    const heldText =
+      held?.phase === 'pending' ? held.snapshot.prompt.text.trim() : ''
+    if (!handoffPrompt || canShow?.() === false) return heldText
+    return [composerStore.draft || heldText, handoffPrompt]
+      .filter(Boolean)
+      .join('\n\n')
   }
 
   async function acceptAfterSignIn(
@@ -284,7 +290,7 @@ export function useAgentConsent() {
       return null
     introductionStore.isContinuingSignIn = true
     try {
-      writePendingSignInAccept(heldDraftText())
+      writePendingSignInAccept(signInDraft(hooks))
       let signedIn: boolean
       try {
         signedIn = await showSignInDialog()
