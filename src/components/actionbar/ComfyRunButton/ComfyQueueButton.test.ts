@@ -36,7 +36,7 @@ vi.mock(
     return {
       useUnreadyDeploymentRun: () => ({
         unreadyReason: computed(() => unreadyDeployment.reason),
-        openSwitcherInsteadOfRun: async () => unreadyDeployment.reason !== null
+        openSwitcherInsteadOfRun: () => unreadyDeployment.reason !== null
       })
     }
   }

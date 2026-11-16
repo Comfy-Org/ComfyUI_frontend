@@ -21,11 +21,6 @@ function reasonFor(status: string): UnreadyDeploymentReason | null {
   return status === 'stopped' ? 'stopped' : 'notReady'
 }
 
-const SETTLES_BY_ITSELF = new Set<UnreadyDeploymentReason>([
-  'starting',
-  'notReady'
-])
-
 /** Whether Run would reach a deployment that is not ready while the Run on menu is on screen to open instead. */
 export function useUnreadyDeploymentRun() {
   const isSwitcherOffered = useDeploymentSwitcherOffered()
@@ -44,17 +39,10 @@ export function useUnreadyDeploymentRun() {
     return picked === null ? null : reasonFor(picked.status)
   })
 
-  /**
-   * Opens the Run on menu in place of a Run the deployment would refuse; false when Run may go ahead.
-   * A status that settles by itself is read again first.
-   */
-  async function openSwitcherInsteadOfRun(): Promise<boolean> {
-    const reasonAtClick = unreadyReason.value
-    if (reasonAtClick === null) return false
-    const store = useDeploymentPickStore()
-    if (SETTLES_BY_ITSELF.has(reasonAtClick)) await store.load()
+  /** Opens the Run on menu in place of a Run the deployment would refuse; false when Run may go ahead. */
+  function openSwitcherInsteadOfRun(): boolean {
     if (unreadyReason.value === null) return false
-    store.requestSwitcherOpen()
+    useDeploymentPickStore().requestSwitcherOpen()
     return true
   }
 

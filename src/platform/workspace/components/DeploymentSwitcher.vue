@@ -178,7 +178,9 @@ const startPoll = useIntervalFn(
   { immediate: false }
 )
 watch(
-  () => isOpen.value && isAnyStarting.value,
+  () =>
+    (isOpen.value && isAnyStarting.value) ||
+    pickedRow.value?.tone === 'pending',
   (polling) => (polling ? startPoll.resume() : startPoll.pause())
 )
 

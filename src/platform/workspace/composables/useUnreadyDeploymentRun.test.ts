@@ -49,12 +49,8 @@ function listingWith(
   }
 }
 
-function answerListingWith(listing: WorkspaceDeploymentList) {
-  return vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue(listing)
-}
-
 async function loadListing(listing: WorkspaceDeploymentList) {
-  answerListingWith(listing)
+  vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue(listing)
   await useDeploymentPickStore().load()
 }
 
@@ -86,7 +82,7 @@ describe('useUnreadyDeploymentRun', () => {
       const asksBefore = useDeploymentPickStore().switcherOpenAsks
 
       expect(unreadyReason.value).toBe(reason)
-      expect(await openSwitcherInsteadOfRun()).toBe(true)
+      expect(openSwitcherInsteadOfRun()).toBe(true)
       expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore + 1)
     }
   )
@@ -143,31 +139,7 @@ describe('useUnreadyDeploymentRun', () => {
     const asksBefore = useDeploymentPickStore().switcherOpenAsks
 
     expect(unreadyReason.value).toBeNull()
-    expect(await openSwitcherInsteadOfRun()).toBe(false)
+    expect(openSwitcherInsteadOfRun()).toBe(false)
     expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
-  })
-
-  it('reads the listing again before refusing a starting deployment, and lets Run go ahead once it is ready', async () => {
-    await loadListing(listingWith('starting'))
-    const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
-    const listDeployments = answerListingWith(listingWith('ready'))
-    listDeployments.mockClear()
-    const asksBefore = useDeploymentPickStore().switcherOpenAsks
-
-    expect(await openSwitcherInsteadOfRun()).toBe(false)
-
-    expect(listDeployments).toHaveBeenCalledOnce()
-    expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
-  })
-
-  it('refuses a stopped deployment without reading the listing again', async () => {
-    await loadListing(listingWith('stopped'))
-    const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
-    const listDeployments = answerListingWith(listingWith('stopped'))
-    listDeployments.mockClear()
-
-    expect(await openSwitcherInsteadOfRun()).toBe(true)
-
-    expect(listDeployments).not.toHaveBeenCalled()
   })
 })

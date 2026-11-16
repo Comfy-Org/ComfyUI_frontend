@@ -914,6 +914,17 @@ describe('useCoreCommands', () => {
       }
     )
 
+    it('Comfy.QueuePrompt queues while node picking hides the Run on menu', async () => {
+      await pickDeploymentWithStatus('stopped')
+      useCanvasStore().isPickingNodes = true
+      const asksBefore = useDeploymentPickStore().switcherOpenAsks
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, expect.anything())
+      expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+    })
+
     it('Comfy.QueuePrompt queues when the picked deployment is ready', async () => {
       await pickDeploymentWithStatus('ready')
       const asksBefore = useDeploymentPickStore().switcherOpenAsks
