@@ -87,9 +87,11 @@ if (source && target) {
 }
 ```
 
-A slot that a backend node type declares cannot be renamed, retyped, removed
-or moved: a load would rebuild it from the type. Those edits throw. Labels,
-colors, positions and every edit of a slot the pack added are kept. A subgraph
+A load, undo or redo rebuilds the slots a node's type makes: their type,
+shape, translated name, widget and place come back from the type, a removed one
+comes back, and a renamed backend input comes back under its own name beside
+the renamed one. Labels, colors, positions, directions and every edit
+of a slot the pack added are kept. A subgraph
 node's slots follow its subgraph, so only `inputs.reorder` works on them.
 
 ## Groups, badges and the view
