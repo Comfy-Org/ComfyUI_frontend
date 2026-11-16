@@ -113,6 +113,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
+  const pendingCloudHandoff = ref<string | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -442,6 +443,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     open,
     targetTracking,
     followsVisibleWorkflow,
+    pendingCloudHandoff,
     initializeTargetTracking,
     retainWorkflowTarget,
     startFollowingVisibleWorkflow,
