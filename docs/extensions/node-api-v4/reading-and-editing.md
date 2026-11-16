@@ -92,7 +92,10 @@ shape, translated name, widget and place come back from the type, a removed one
 comes back, and a renamed backend input comes back under its own name beside
 the renamed one. Labels, colors, positions, directions and every edit
 of a slot the pack added are kept. A subgraph
-node's slots follow its subgraph, so only `inputs.reorder` works on them.
+node's slots follow its subgraph, so only `inputs.reorder` works on them, and
+only while the subgraph is placed once. A reorder of inputs leaves floating
+links (links detached onto a reroute) at their slot index, as the host does
+(core issue #23466).
 
 ## Groups, badges and the view
 
