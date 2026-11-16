@@ -222,8 +222,7 @@ test.describe(
           1
         )
         await expect(linkVisibility.promptInput).toHaveValue('')
-        await linkVisibility.promptInput.fill('enc')
-        await linkVisibility.promptInput.press('Enter')
+        await comfyPage.nodeOps.fillLegacyWidgetDialog('enc')
         await expect(linkVisibility.promptInput).toBeHidden()
         await expect
           .poll(
@@ -253,8 +252,7 @@ test.describe(
           0
         )
         await expect(linkVisibility.promptInput).toHaveValue('')
-        await linkVisibility.promptInput.fill('enc')
-        await linkVisibility.promptInput.press('Enter')
+        await comfyPage.nodeOps.fillLegacyWidgetDialog('enc')
         await expect(linkVisibility.promptInput).toBeHidden()
         await expect
           .poll(async () =>
@@ -315,8 +313,7 @@ test.describe(
           0
         )
         await expect(linkVisibility.promptInput).toHaveValue('')
-        await linkVisibility.promptInput.fill('enc')
-        await linkVisibility.promptInput.press('Enter')
+        await comfyPage.nodeOps.fillLegacyWidgetDialog('enc')
         await expect(linkVisibility.promptInput).toBeHidden()
         await expect.poll(exportedLinkPresentations).toEqual([
           { hidden: true, label: 'enc' },

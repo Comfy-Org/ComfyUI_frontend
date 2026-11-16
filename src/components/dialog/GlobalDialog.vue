@@ -98,6 +98,10 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { provide } from 'vue'
+
+import { LocalAgentPanelPortKey } from '@/platform/openOnCloud/localAgentPanelPort'
+import { useOpenAgentPanel } from '@/workbench/extensions/agent/composables/agent/useOpenAgentPanel'
 
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
@@ -114,6 +118,8 @@ import {
 } from '@/components/dialog/dialogDismissGuards'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
+
+provide(LocalAgentPanelPortKey, useOpenAgentPanel('cloud_button'))
 
 const dialogStore = useDialogStore()
 
