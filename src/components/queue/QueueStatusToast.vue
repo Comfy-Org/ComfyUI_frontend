@@ -16,8 +16,6 @@
           alignStart ? 'items-start' : 'items-end'
         )
       "
-      @pointerenter="openStack"
-      @pointerleave="scheduleCloseStack"
     >
       <QueueStatusPill
         :label="pillLabel"
@@ -25,8 +23,9 @@
         :progress="pillProgress"
         :expanded="panelOpen"
         :terminal-kind="pillTerminalKind"
-        :stack="peekDepth"
+        :thumb-src="pillThumb"
         @activate="onPillActivate"
+        @stop="handleCancelAll"
       />
 
       <Transition
@@ -39,13 +38,11 @@
           v-if="panelOpen"
           :rows="panelRows"
           :queued-count="queuedCount"
-          :results="recentResults"
           :above="above"
           :align-start="alignStart"
           @cancel="handleCancel"
           @clear-queue="handleClearQueue"
           @cancel-all="handleCancelAll"
-          @view="handleViewResult"
           @history="handleGoToHistory"
         />
       </Transition>
@@ -105,14 +102,13 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 /** How long the terminal "Completed"/"Cancelled" chip lingers before idle returns. */
 const COMPLETED_FLASH_MS = 3000
 const RECENT_JOB_LIMIT = 4
-/** First completion of the session auto-opens the recents popover, once. */
-let popoverAutoOpened = false
-const JOB_POPOVER_AUTO_OPEN_MS = 4000
 
 const { above = false, alignStart = false } = defineProps<{
   above?: boolean
   alignStart?: boolean
 }>()
+
+const emit = defineEmits<{ panelOpen: [open: boolean] }>()
 
 const { t, n, locale } = useI18n()
 const queueStore = useQueueStore()
@@ -121,10 +117,9 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { jobItems } = useJobList()
 const rightSidePanelStore = useRightSidePanelStore()
 
-/** The user folded the deck; jobs stay visible until they do. */
-const collapsed = ref(false)
+/** The user's own open/close choice; null follows the default. */
+const userOpen = ref<boolean | null>(null)
 const idleOpen = ref(false)
-let autoOpenTimer: number | undefined
 let completedTimer: number | undefined
 
 const ACTIVE_STATES: ReadonlySet<JobListItem['state']> = new Set([
@@ -164,17 +159,22 @@ function jobProgress(job: JobListItem): number {
  * A row names the workflow it runs. The job list's own title is a status
  * ("Running", "Total: 40%"), which reads the same on every parallel row.
  */
-function jobTitle(job: JobListItem): string {
+function workflowName(job: JobListItem): string | undefined {
   const jobId = job.taskRef?.jobId
-  if (!jobId) return job.title
+  if (!jobId) return undefined
   const workflow = executionStore.queuedJobs[jobId]?.workflow
   if (workflow?.filename) return workflow.filename
   const path = executionStore.jobIdToSessionWorkflowPath.get(jobId)
-  const name = path
-    ?.split('/')
-    .pop()
-    ?.replace(/\.json$/i, '')
-  return name || t('g.untitled')
+  return (
+    path
+      ?.split('/')
+      .pop()
+      ?.replace(/\.json$/i, '') || undefined
+  )
+}
+function jobTitle(job: JobListItem): string {
+  if (!job.taskRef?.jobId) return job.title
+  return workflowName(job) ?? t('g.untitled')
 }
 
 /** Failed jobs of the running batch, until the batch drains or is dismissed. */
@@ -238,9 +238,10 @@ const outcomeOf = (ids: string[]): typeof terminalKind.value => {
   const outcomes = jobItems.value
     .filter((job) => ids.includes(job.id))
     .map((job) => job.taskRef?.displayStatus)
+  // Stopping the batch is the last thing the user did, so it wins.
+  if (cancelIntent.value) return 'cancelled'
   if (outcomes.some((status) => status === 'Failed')) return 'failed'
-  if (cancelIntent.value || outcomes.some((status) => status === 'Cancelled'))
-    return 'cancelled'
+  if (outcomes.some((status) => status === 'Cancelled')) return 'cancelled'
   return 'completed'
 }
 
@@ -250,12 +251,12 @@ watch(activeCount, (count, prev) => {
     lastActiveIds.clear()
     dismissedFailedIds.clear()
     cancelIntent.value = false
+    userOpen.value = null
     completedFlash.value = true
     if (completedTimer !== undefined) window.clearTimeout(completedTimer)
     completedTimer = window.setTimeout(() => {
       completedTimer = undefined
       completedFlash.value = false
-      if (terminalKind.value === 'completed') void maybeAutoOpenRecents()
     }, COMPLETED_FLASH_MS)
   } else if (count > 0) {
     completedFlash.value = false
@@ -267,44 +268,10 @@ watch(activeCount, (count, prev) => {
   }
 })
 
-async function maybeAutoOpenRecents() {
-  if (popoverAutoOpened) return
-  popoverAutoOpened = true
-  await nextTick()
-  idleOpen.value = true
-  if (autoOpenTimer !== undefined) window.clearTimeout(autoOpenTimer)
-  autoOpenTimer = window.setTimeout(() => {
-    autoOpenTimer = undefined
-    idleOpen.value = false
-  }, JOB_POPOVER_AUTO_OPEN_MS)
-}
-
 const showToast = computed(() => activeCount.value > 0 || completedFlash.value)
 const isTerminal = computed(
   () => completedFlash.value && activeCount.value === 0
 )
-
-const hovered = ref(false)
-const HOVER_CLOSE_GRACE_MS = 320
-let hoverCloseTimer: number | undefined
-
-function openStack() {
-  if (hoverCloseTimer !== undefined) {
-    window.clearTimeout(hoverCloseTimer)
-    hoverCloseTimer = undefined
-  }
-  hovered.value = true
-}
-function scheduleCloseStack() {
-  if (hoverCloseTimer !== undefined) window.clearTimeout(hoverCloseTimer)
-  hoverCloseTimer = window.setTimeout(() => {
-    hoverCloseTimer = undefined
-    hovered.value = false
-  }, HOVER_CLOSE_GRACE_MS)
-}
-
-const stackCount = computed(() => Math.min(activeCount.value - 1, 2))
-const fanned = computed(() => !isTerminal.value && hovered.value)
 
 const headlineProgress = computed(() => runningJobs.value[0]?.progress ?? 0)
 
@@ -316,8 +283,9 @@ const pillLabel = computed(() => {
       : t('queueStatus.completed')
   }
   if (runningCount.value > 1)
-    return t('queueStatus.runningCount', { count: runningCount.value })
-  if (runningCount.value === 1) return t('queueStatus.running')
+    return t('queueStatus.runningCountShort', { count: runningCount.value })
+  if (runningCount.value === 1)
+    return t('queueStatus.runningPercent', { percent: headlineProgress.value })
   return t('g.queued')
 })
 
@@ -373,10 +341,11 @@ function jobSubtitle(job: JobView): string {
     ? t('queueStatus.queuedNextUp')
     : t('queueStatus.queuedPosition', { position: job.queuePosition })
 }
-const peekDepth = computed(() => (panelOpen.value ? 0 : stackCount.value))
+/** One run stays a compact pill; several open the card until the user folds it. */
 const panelOpen = computed(
-  () => !isTerminal.value && (!collapsed.value || fanned.value)
+  () => !isTerminal.value && (userOpen.value ?? activeCount.value > 1)
 )
+watch(panelOpen, (open) => emit('panelOpen', open), { immediate: true })
 const panelHiddenClass = computed(() =>
   cn('scale-[0.98] opacity-0', above ? 'translate-y-2' : '-translate-y-2')
 )
@@ -387,9 +356,14 @@ const pillProgress = computed(() =>
 const pillTerminalKind = computed(() =>
   isTerminal.value ? terminalKind.value : null
 )
+const pillThumb = computed(() =>
+  isTerminal.value && terminalKind.value === 'completed'
+    ? recentResults.value[0]?.thumbSrc
+    : undefined
+)
 function onPillActivate() {
   if (!isTerminal.value) {
-    collapsed.value = !collapsed.value
+    userOpen.value = !panelOpen.value
     return
   }
   if (terminalKind.value === 'completed') void onCompletedChipClick()
@@ -513,7 +487,9 @@ const recentResults = computed<RecentResult[]>(() =>
     return {
       id: job.id,
       job,
-      name: thumb?.display_name?.trim() || thumb?.filename || job.title,
+      name:
+        workflowName(job) ??
+        (thumb?.display_name?.trim() || thumb?.filename || job.title),
       meta: completedMeta(job),
       thumbSrc: thumb ? resultItemPreviewUrl(thumb) : undefined,
       isVideo: thumb ? isVideoResult(thumb) : false
@@ -527,9 +503,7 @@ async function handleViewResult(job: JobListItem) {
 }
 
 onUnmounted(() => {
-  if (autoOpenTimer !== undefined) window.clearTimeout(autoOpenTimer)
   if (completedTimer !== undefined) window.clearTimeout(completedTimer)
-  if (hoverCloseTimer !== undefined) window.clearTimeout(hoverCloseTimer)
 })
 </script>
 

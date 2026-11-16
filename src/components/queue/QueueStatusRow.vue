@@ -2,8 +2,8 @@
   <div
     :class="
       cn(
-        'job-toast-row relative w-full overflow-hidden rounded-lg border border-foreground/9 bg-background py-1 pr-1.5 pl-3 shadow-md transition-colors hover:bg-secondary',
-        job.status === 'failed' && 'border-destructive/40'
+        'job-toast-row relative w-full overflow-hidden rounded-lg bg-secondary/60 py-1.5 pr-1.5 pl-3 transition-colors hover:bg-secondary',
+        job.status === 'failed' && 'bg-destructive/10 hover:bg-destructive/15'
       )
     "
     :style="{ '--row-delay': `${delayMs}ms` }"
@@ -35,7 +35,7 @@
       </span>
 
       <div class="flex min-w-0 flex-1 flex-col">
-        <span class="truncate text-xs/4 text-foreground">
+        <span class="truncate text-[13px]/4 text-foreground">
           {{ job.title }}
         </span>
         <span

@@ -13,7 +13,6 @@ type QueueStatusArgs = {
   badge?: string
   progress?: number
   terminalKind?: TerminalKind | null
-  stack?: number
   panelOpen?: boolean
   rows?: { job: JobView; subtitle: string }[]
   queuedCount?: number
@@ -35,13 +34,11 @@ const meta: Meta<QueueStatusArgs> = {
             :progress="args.progress"
             :expanded="args.panelOpen"
             :terminal-kind="args.terminalKind"
-            :stack="args.stack"
           />
           <QueueStatusPanel
             v-if="args.panelOpen"
             :rows="args.rows ?? []"
             :queued-count="args.queuedCount ?? 0"
-            :results="args.results ?? []"
           />
         </div>
       </div>
@@ -86,7 +83,7 @@ export const RunningWithQueue: Story = {
 }
 
 export const ParallelCollapsed: Story = {
-  args: { label: 'Running 2', badge: 'Queued 2', stack: 2 }
+  args: { label: '2 running', badge: '2 queued' }
 }
 
 export const Completed: Story = {

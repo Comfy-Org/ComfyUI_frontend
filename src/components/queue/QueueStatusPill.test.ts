@@ -1,13 +1,30 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import QueueStatusPill from '@/components/queue/QueueStatusPill.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      queueStatus: {
+        stopAll: 'Stop every run',
+        toggleList: 'Show or hide the run list'
+      }
+    }
+  }
+})
 
 function renderPill(
   props: Partial<InstanceType<typeof QueueStatusPill>['$props']> = {}
 ) {
-  return render(QueueStatusPill, { props: { label: 'Running', ...props } })
+  return render(QueueStatusPill, {
+    props: { label: 'Running', ...props },
+    global: { plugins: [i18n] }
+  })
 }
 
 describe('QueueStatusPill', () => {
@@ -40,5 +57,22 @@ describe('QueueStatusPill', () => {
     const { emitted } = renderPill()
     await user.click(screen.getByTestId('queue-status-toast'))
     expect(emitted('activate')).toHaveLength(1)
+  })
+
+  it('stops every run from the square', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderPill()
+    await user.click(screen.getByTestId('queue-status-stop'))
+    expect(emitted('stop')).toHaveLength(1)
+  })
+
+  it('shows the result on a Completed chip', () => {
+    renderPill({
+      label: 'Completed',
+      terminalKind: 'completed',
+      thumbSrc: 'data:image/png;base64,AA=='
+    })
+    expect(screen.getByTestId('queue-status-thumb')).toBeTruthy()
+    expect(screen.queryByTestId('queue-status-stop')).toBeNull()
   })
 })

@@ -153,11 +153,15 @@
             <QueueStatusToast
               :above="toastAbove"
               :align-start="toastAlignStart"
+              @panel-open="queuePanelOpen = $event"
             />
           </div>
         </Teleport>
+        <!-- One notice at a time: while the run card is open, a failed run
+             speaks through its red row, so the big notice waits below. -->
         <ErrorOverlay
           v-if="!isActionBarsHidden"
+          v-show="!queuePanelOpen"
           @view-errors="viewErrorsInGraph"
         />
         <QueueProgressOverlay
@@ -327,6 +331,7 @@ const showStatusToast = computed(
   () => isActionbarEnabled.value && isStatusToastEnabled.value
 )
 const showLegacyQueueUi = computed(() => !showStatusToast.value)
+const queuePanelOpen = ref(false)
 const isQueueProgressOverlayEnabled = computed(
   () => !isQueuePanelV2Enabled.value && !isActionBarsHidden.value
 )

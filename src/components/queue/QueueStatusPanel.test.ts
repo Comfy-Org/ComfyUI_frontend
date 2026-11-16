@@ -20,7 +20,8 @@ const i18n = createI18n({
         recentResults: 'Recent results',
         resultsCount: 'Results ({count})',
         goToHistoryShort: 'Go to history',
-        nothingRunning: 'Nothing running yet'
+        nothingRunning: 'Nothing running yet',
+        activeGenerations: 'Active generations'
       }
     }
   }
@@ -56,7 +57,6 @@ function renderPanel(
     props: {
       rows: [{ job: job('a', 'running'), subtitle: '64%' }],
       queuedCount: 0,
-      results: [],
       ...props
     },
     global: { plugins: [i18n] }
@@ -102,13 +102,6 @@ describe('QueueStatusPanel', () => {
     expect(emitted('cancelAll')).toHaveLength(1)
   })
 
-  it('shows the recent results entry with its count while jobs run', () => {
-    renderPanel({ results: [result, { ...result, id: 'h2' }] })
-    expect(
-      screen.getByTestId('queue-status-recents-trigger').textContent
-    ).toContain('Results (2)')
-  })
-
   it('does not count a failed row toward Cancel all', () => {
     renderPanel({
       rows: [
@@ -128,8 +121,4 @@ describe('QueueStatusPanel', () => {
     expect(emitted('history')).toHaveLength(1)
   })
 
-  it('omits the recent results entry when nothing finished yet', () => {
-    renderPanel()
-    expect(screen.queryByTestId('queue-status-recents-trigger')).toBeNull()
-  })
 })
