@@ -1,4 +1,10 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import ts from 'typescript'
@@ -119,6 +125,21 @@ export const workflow: ComfyWorkflowJSON = {
 }
 `
 
+const guideDirectory = resolve('docs/extensions/node-api-v4')
+const nodeApiModuleFile = 'comfy-api-v4.d.ts'
+const guideExamples = readdirSync(guideDirectory)
+  .filter((file) => file.endsWith('.md'))
+  .flatMap((file) =>
+    [
+      ...readFileSync(join(guideDirectory, file), 'utf8').matchAll(
+        /^```ts(?: (\S+))?\n([\s\S]*?)^```$/gm
+      )
+    ].map((example, index) => ({
+      name: example.at(1) ?? `${file.replace(/\.md$/, '')}-${index}.ts`,
+      source: example[2]
+    }))
+  )
+
 function format(diagnostics: readonly ts.Diagnostic[]) {
   return ts.formatDiagnostics(diagnostics, {
     getCanonicalFileName: (fileName) => fileName,
@@ -133,23 +154,34 @@ try {
   const graphConsumerFile = join(root, 'graph-consumer.ts')
   writeFileSync(consumerFile, consumer)
   writeFileSync(graphConsumerFile, graphConsumer)
-  const program = ts.createProgram([consumerFile, graphConsumerFile], {
-    strict: true,
-    noEmit: true,
-    skipLibCheck: false,
-    module: ts.ModuleKind.ESNext,
-    moduleResolution: ts.ModuleResolutionKind.Bundler,
-    target: ts.ScriptTarget.ESNext,
-    lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
-    types: [],
-    paths: {
-      '@comfyorg/comfyui-frontend-types': [bundle],
-      '@comfyorg/graph-model/*': [resolve('packages/graph-model/dist-types/*')],
-      '@comfyorg/shared-frontend-utils/geometry': [
-        resolve('packages/shared-frontend-utils/dist-types/geometry.d.ts')
-      ]
-    }
+  const exampleFiles = guideExamples.map(({ name, source }) => {
+    const exampleFile = join(root, name)
+    writeFileSync(exampleFile, source)
+    return exampleFile
   })
+  const program = ts.createProgram(
+    [consumerFile, graphConsumerFile, ...exampleFiles],
+    {
+      strict: true,
+      noEmit: true,
+      skipLibCheck: false,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      target: ts.ScriptTarget.ESNext,
+      lib: ['lib.esnext.d.ts', 'lib.dom.d.ts'],
+      types: [],
+      paths: {
+        '@comfyorg/comfyui-frontend-types': [bundle],
+        '/comfy/api/v4.js': [join(root, nodeApiModuleFile)],
+        '@comfyorg/graph-model/*': [
+          resolve('packages/graph-model/dist-types/*')
+        ],
+        '@comfyorg/shared-frontend-utils/geometry': [
+          resolve('packages/shared-frontend-utils/dist-types/geometry.d.ts')
+        ]
+      }
+    }
+  )
   const checker = program.getTypeChecker()
   const source = program.getSourceFile(consumerFile)!
   const unresolved = source.statements
