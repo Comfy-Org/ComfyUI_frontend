@@ -316,8 +316,23 @@ export async function issueLocalBillingHandoff(
   }
 }
 
-/** Opens Platform billing through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
-export async function openPlatformBillingHandoff(): Promise<void> {
+/** A Platform page a handoff opens instead of its billing page; Platform reads it from the entry URL's query. */
+export type PlatformHandoffView = 'plans'
+
+function withPlatformView(
+  entryUrl: string,
+  view: PlatformHandoffView | undefined
+): string {
+  if (view === undefined) return entryUrl
+  const url = new URL(entryUrl)
+  url.searchParams.set('view', view)
+  return url.href
+}
+
+/** Opens Platform billing, or the page `view` names, through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
+export async function openPlatformBillingHandoff(
+  view?: PlatformHandoffView
+): Promise<void> {
   if (inFlight) return
   const tab = reserveBillingHandoffTab()
   if (!tab) {
@@ -328,7 +343,8 @@ export async function openPlatformBillingHandoff(): Promise<void> {
     { receiver: 'platform' },
     new AbortController().signal
   )
-  if (issued.status === 'ok') return tab.navigate(issued.url)
+  if (issued.status === 'ok')
+    return tab.navigate(withPlatformView(issued.url, view))
   tab.close()
   useToast().error(issued.message ?? t('subscription.billingPortalUnavailable'))
 }
