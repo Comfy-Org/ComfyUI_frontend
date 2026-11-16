@@ -174,6 +174,7 @@ export abstract class SubgraphIONodeBase<
     slot: TSlot
   ): void
 
+  // fallow-ignore-next-line unused-class-member
   onPointerDown(
     e: CanvasPointerEvent,
     pointer: CanvasPointer,
