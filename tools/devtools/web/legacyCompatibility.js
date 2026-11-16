@@ -68,6 +68,9 @@ app.registerExtension({
       case 'DevToolsPreviewBridge':
         installPreviewBridgeSetter(node)
         break
+      case 'DevToolsPlagueKindSimulacrum':
+        addPretendMediaTabs(node)
+        break
       case 'DevToolsFancyTimer':
         node.onSerialize = function (o) {
           o.properties = this.properties
@@ -178,4 +181,52 @@ function installPreviewBridgeSetter(node) {
       })
     }
   })
+}
+
+function addPretendMediaTabs(node) {
+  const image = node.widgets.find((widget) => widget.name === 'image_slot')
+  const video = node.widgets.find((widget) => widget.name === 'video_slot')
+  const bar = document.createElement('div')
+  bar.setAttribute('role', 'group')
+  bar.setAttribute('aria-label', 'Pretend media slots (test only)')
+  bar.style.cssText = 'display:flex;gap:8px;padding:8px 0;flex:none'
+
+  function selectSlot(slot) {
+    node.flags.pk_media_slot = slot
+    image.hidden = slot === 'V1'
+    video.hidden = slot === 'I1'
+    for (const button of bar.children) {
+      button.setAttribute('aria-pressed', String(button.dataset.slot === slot))
+    }
+    node.setDirtyCanvas(true, true)
+  }
+
+  for (const [slot, label] of [
+    ['I1', 'I1: imaginary cat'],
+    ['V1', 'V1: stunt potato'],
+    ['ALL', 'ALL: chaos mode']
+  ]) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = label
+    button.dataset.slot = slot
+    button.style.cssText =
+      'padding:6px;border:1px solid currentColor;border-radius:6px'
+    button.addEventListener('click', () => selectSlot(slot))
+    bar.append(button)
+  }
+
+  const tabs = node.addDOMWidget('$$pk_media_tabs', 'string', bar, {
+    serialize: false
+  })
+  node.widgets.splice(node.widgets.indexOf(tabs), 1)
+  node.widgets.unshift(tabs)
+
+  const preview = document.createElement('div')
+  preview.textContent = 'Forbidden potato preview: canvas only, test only.'
+  node.addDOMWidget('$$pk_media_preview', 'string', preview, {
+    serialize: false,
+    surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
+  })
+  selectSlot('I1')
 }

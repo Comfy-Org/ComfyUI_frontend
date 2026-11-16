@@ -441,6 +441,27 @@ class PreviewBridge:
         return ()
 
 
+class PlagueKindSimulacrum:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {
+            "image_slot": (["imaginary-cat.png"],),
+            "video_slot": (["stunt-potato.webm"],),
+            "caption": ("STRING", {
+                "multiline": True,
+                "default": "Test-only impersonator. No media was harmed (or loaded).",
+            }),
+        }}
+
+    RETURN_TYPES = ()
+    FUNCTION = "pretend"
+    CATEGORY = "DevTools/Definitely Fake"
+    DESCRIPTION = "Test-only PlagueKind-style DOM tabs. Zero plagues, zero media processing."
+
+    def pretend(self, image_slot, video_slot, caption):
+        return ()
+
+
 class NodeWithPriceBadge(IO.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -586,6 +607,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsRefModLoader": RefModLoader,
     "DevToolsPreviewBridge": PreviewBridge,
     "DevToolsFancyTimer": FancyTimer,
+    "DevToolsPlagueKindSimulacrum": PlagueKindSimulacrum,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
@@ -619,6 +641,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsRefModLoader": "RefMod Loader Compatibility",
     "DevToolsPreviewBridge": "Preview Bridge Compatibility",
     "DevToolsFancyTimer": "Fancy Timer Compatibility",
+    "DevToolsPlagueKindSimulacrum": "PlagueKind-ish (TEST ONLY, zero plagues)",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",

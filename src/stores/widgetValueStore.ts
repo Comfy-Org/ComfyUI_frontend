@@ -35,6 +35,7 @@ interface ConvertedRestoredValue {
 
 export interface WidgetRenderState {
   isDOMWidget?: boolean
+  useDOMElement?: boolean
   tooltip?: string
 }
 

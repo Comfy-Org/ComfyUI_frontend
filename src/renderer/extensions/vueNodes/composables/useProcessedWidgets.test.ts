@@ -15,6 +15,8 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
+import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
+import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -698,6 +700,54 @@ describe('computeProcessedWidgets', () => {
     const [result] = processWidgets({ widgetIds: [id], rootGraph: graph })
 
     expect(result.vueComponent).toBe(WidgetLegacy)
+  })
+
+  it.for([
+    { type: 'string', options: {}, expected: WidgetDOM },
+    {
+      type: 'string',
+      options: { vueNodeRenderer: 'native' },
+      expected: getComponent('string')
+    },
+    {
+      type: 'HTML',
+      options: { vueNodeRenderer: 'native' },
+      expected: WidgetDOM
+    }
+  ] as const)(
+    'renders DOM type $type with options $options using its declared renderer',
+    ({ type, options, expected }) => {
+      const { graph, node } = createGraphWithNode([])
+      node.addDOMWidget(
+        'custom_ui',
+        type,
+        document.createElement('div'),
+        options
+      )
+      const id = widgetId(GRAPH_ID, node.id, 'custom_ui')
+
+      const [result] = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+      expect(result.vueComponent).toBe(expected)
+    }
+  )
+
+  it('keeps component-backed widgets on their native renderer', () => {
+    const { graph, node } = createGraphWithNode([])
+    const widget = new ComponentWidgetImpl({
+      node,
+      name: 'viewport',
+      type: 'load3D',
+      component: { template: '<div />' },
+      inputSpec: { name: 'viewport', type: 'LOAD_3D' },
+      options: {}
+    })
+    addWidget(node, widget)
+    const id = widgetId(GRAPH_ID, node.id, 'viewport')
+
+    const [result] = processWidgets({ widgetIds: [id], rootGraph: graph })
+
+    expect(result.vueComponent).toBe(getComponent('load3D'))
   })
 
   it('uses widget state nodeId for simplified widget locator', () => {

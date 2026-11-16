@@ -452,8 +452,9 @@ function processWidget(
     ),
     widgetId: id,
     renderKey: `${id}:${type}`,
-    vueComponent:
-      !renderState?.isDOMWidget && typeof liveWidget?.draw === 'function'
+    vueComponent: renderState?.useDOMElement
+      ? WidgetDOM
+      : !renderState?.isDOMWidget && typeof liveWidget?.draw === 'function'
         ? WidgetLegacy
         : getComponent(type) ||
           (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
