@@ -89,15 +89,18 @@ export function registerNodeState(
     }
   )
 
+  const previousGraphId = node._state.graphId
   node._state.graphId = graph.id
   const registered = store.registerNode(graphScope, node._state)
-  if (!registered)
+  if (!registered) {
+    node._state.graphId = previousGraphId
     return {
       ok: false,
       reason: store.canRegisterSlots(node._state)
         ? 'node-id-collision'
         : 'slot-id-collision'
     }
+  }
   node._state = registered
   node._graphScope = graphScope
   return { ok: true }
