@@ -27,15 +27,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * Subscription outcomes the other SDK-rail specs leave uncovered: leaving a
- * team plan for a personal one, a subscribe parked on a hosted payment page,
- * and the end date a cancelled plan shows once the page is reloaded.
- *
- * As in `planChangeSdkRail.spec.ts`, the transport is what tells the rails
- * apart: the SDK runs on `fetch` and keys every write, the legacy workspace
- * client runs on axios' XHR adapter and keys none.
- */
 const RAIL_FEATURES = {
   billing_control_enabled: true,
   unified_cloud_auth: true

@@ -22,7 +22,7 @@ The current focus is the **billing SDK rail migration** (Milestone 1): every bil
 
 ## The scenario matrix
 
-The billing SDK flags are gone (FRONT-3496). Every billing read and write runs on the SDK rail whenever `unified_cloud_auth` resolves true, which it does for every signed-in Cloud user, so the old S1–S3 scenarios are now the default state. The legacy rail (the old S0) is reachable only with `unified_cloud_auth` off. Do not force it: the dev `ff:unified_cloud_auth` key put the local app into a reload loop on 2026-09-21 (`workflows` 403, subscription status `NOT_AUTHENTICATED`). Resolve `flags.billingSdkRailEnabled` in the page before trusting a run.
+The billing SDK flags are gone (FRONT-3496). Every billing read and write runs on the SDK rail whenever `unified_cloud_auth` resolves true, which it does for every signed-in Cloud user, so there is one billing scenario: the signed-in default. The legacy rail is reachable only with `unified_cloud_auth` off, and turning that off is an auth rollback too. Do not force it: the dev `ff:unified_cloud_auth` key put the local app into a reload loop on 2026-09-21 (`workflows` 403, subscription status `NOT_AUTHENTICATED`). Resolve `flags.billingSdkRailEnabled` in the page before trusting a run.
 
 Leave `embedded_checked_enabled` and `hosted_billing_destination` alone. They are separate rollouts with their own gates.
 

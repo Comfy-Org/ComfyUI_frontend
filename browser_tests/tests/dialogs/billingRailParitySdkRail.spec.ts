@@ -29,15 +29,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * The SDK rail held against the legacy flow it replaces: each row either
- * runs an SDK-rail session end to end, or runs the same scenario with
- * unified auth off and on and asserts the customer sees the same thing.
- *
- * The transport tells the rails apart: the SDK runs on `fetch` and keys every
- * write, the legacy workspace client runs on axios' XHR adapter and keys none.
- */
-
 const OPERATION_ID = 'op-e2e-parity'
 const PORTAL_URL = 'https://billing.example/portal'
 
