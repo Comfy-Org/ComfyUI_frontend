@@ -20,7 +20,10 @@ await comfy.settings.set(
 )
 ```
 
-A declaration lasts for the page, and an id already declared throws.
+A declaration lasts for the page, and an id already declared throws. `set`
+returns the settings store's promise: it rejects when the server cannot be
+reached and resolves when the server answers, even with a refusal, and in both
+cases the value stays applied until the next reload (core issue #23467).
 
 ## Per-user storage
 
