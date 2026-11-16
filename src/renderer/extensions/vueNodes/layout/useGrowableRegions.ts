@@ -55,11 +55,46 @@ function soleMediaAspectRatio(region: HTMLElement) {
   return width && height ? { element, aspectRatio: width / height } : undefined
 }
 
+const TEXT_FIT_MIN_LINES = 3
+
+function textFitHeight(textarea: HTMLTextAreaElement) {
+  const probe = document.createElement('textarea')
+  probe.className = textarea.className
+  probe.value = textarea.value.trimEnd()
+  Object.assign(probe.style, {
+    position: 'absolute',
+    visibility: 'hidden',
+    flex: 'none',
+    minHeight: '0px',
+    height: '0px',
+    width: `${textarea.offsetWidth}px`
+  })
+  textarea.after(probe)
+  const style = getComputedStyle(probe)
+  const px = (value: string) => Number.parseFloat(value) || 0
+  const borders = px(style.borderTopWidth) + px(style.borderBottomWidth)
+  const padding = px(style.paddingTop) + px(style.paddingBottom)
+  const lineHeight =
+    Number.parseFloat(style.lineHeight) || px(style.fontSize) * 1.2
+  const height = Math.max(
+    probe.scrollHeight + borders,
+    TEXT_FIT_MIN_LINES * lineHeight + padding + borders
+  )
+  probe.remove()
+  return height
+}
+
 function closestNodeElement(event: Event) {
   const handle = event.currentTarget
   if (!(handle instanceof HTMLElement)) return undefined
   const nodeElement = handle.closest<HTMLElement>('[data-node-id]')
   return nodeElement ? { handle, nodeElement } : undefined
+}
+
+interface RegionTarget {
+  nodeElement: HTMLElement
+  region: HTMLElement
+  key: string
 }
 
 function regionAt(event: Event, key: string) {
@@ -91,16 +126,20 @@ export function useGrowableRegions({
     if (id) heightStore.setHeight(id, height)
   }
 
+  function fitNodeHeight(nodeElement: HTMLElement) {
+    resizeNode(
+      withCollapsedHeights(
+        nodeElement,
+        NODE_FLOOR,
+        () => nodeElement.offsetHeight
+      )
+    )
+  }
+
   function fitNode(event: MouseEvent) {
     const target = closestNodeElement(event)
     if (!target) return
-    resizeNode(
-      withCollapsedHeights(
-        target.nodeElement,
-        NODE_FLOOR,
-        () => target.nodeElement.offsetHeight
-      )
-    )
+    fitNodeHeight(target.nodeElement)
     onCommit()
   }
 
@@ -133,7 +172,7 @@ export function useGrowableRegions({
   }
 
   function fitMedia(
-    { nodeElement, region, key }: NonNullable<ReturnType<typeof regionAt>>,
+    { nodeElement, region, key }: RegionTarget,
     { element, aspectRatio }: { element: HTMLElement; aspectRatio: number }
   ) {
     const minMediaHeight = withCollapsedHeights(
@@ -153,14 +192,45 @@ export function useGrowableRegions({
     )
   }
 
-  function reset(event: MouseEvent, name: string) {
-    const target = regionAt(event, name)
-    if (!target) return
+  function fitText(
+    { nodeElement, region, key }: RegionTarget,
+    textarea: HTMLTextAreaElement
+  ) {
+    const minHeight = withCollapsedHeights(
+      nodeElement,
+      REGION_FLOOR,
+      () => region.offsetHeight
+    )
+    const height = Math.max(
+      minHeight,
+      region.offsetHeight + textFitHeight(textarea) - textarea.offsetHeight
+    )
+    setHeight(key, height)
+    resizeNode(nodeElement.offsetHeight + height - region.offsetHeight)
+  }
+
+  function resetRegion(target: RegionTarget) {
     const media = soleMediaAspectRatio(target.region)
+    const textarea = target.region.querySelector('textarea')
     if (media) fitMedia(target, media)
-    else setHeight(target.key, undefined)
+    else if (textarea) fitText(target, textarea)
+    else if (regionId(target.key)) setHeight(target.key, undefined)
+    else fitNodeHeight(target.nodeElement)
     onCommit()
   }
 
-  return { heightOf, fitNode, handle: { start, reset } }
+  function reset(event: MouseEvent, name: string) {
+    const target = regionAt(event, name)
+    if (target) resetRegion(target)
+  }
+
+  function resetWidget(event: MouseEvent, name: string) {
+    const nodeElement = closestNodeElement(event)?.nodeElement
+    const region = nodeElement?.querySelector<HTMLElement>(
+      `[data-widget-name="${CSS.escape(name)}"]`
+    )
+    if (nodeElement && region) resetRegion({ nodeElement, region, key: name })
+  }
+
+  return { heightOf, fitNode, resetWidget, handle: { start, reset } }
 }

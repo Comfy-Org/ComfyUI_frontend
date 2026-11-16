@@ -29,7 +29,12 @@ Persist only heights the user set. Nodes adopt saved heights from their
 the store's entries back to that property. Rows without a saved height remain
 flex items that share the remaining space with media previews, each up to
 its declared maximum. Clearing a height, by
-double-clicking its handle, returns the row to that default.
+double-clicking its handle, returns the row to that default; a textarea
+instead fits its text at the current width, but no fewer than three lines.
+
+A node whose only widget grows has no row height to keep separate from the
+node's, so that widget's height is never saved: it always fills the node, and
+double-clicking a bottom corner of the node fits that widget.
 
 Saved heights are Vue renderer intent. The canvas renderer ignores them and
 keeps allocating rows from declared sizing alone. A height changes the node's

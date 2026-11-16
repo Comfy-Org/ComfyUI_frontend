@@ -183,25 +183,30 @@ test.describe(
         .toBeCloseTo(initialPreview + 200 - (80 - initialRow), 0)
     })
 
-    test('double-clicking a widget edge hands the widget back to sharing the node height', async ({
+    test('double-clicking a textarea edge fits it to its text, but no fewer than three lines', async ({
       comfyPage
     }) => {
       const node = await comfyPage.vueNodes.getFixtureByTitle(
         'CLIP Text Encode (SDXL)'
       )
-      const textG = node.widgetRow('text_g')
-      const textL = node.widgetRow('text_l')
-      const getHeightDifference = async () =>
-        ((await textG.boundingBox())?.height ?? 0) -
-        ((await textL.boundingBox())?.height ?? 0)
+      await node
+        .widgetRow('text_g')
+        .getByRole('textbox')
+        .fill('one\ntwo\nthree\nfour\nfive\nsix\n\n')
+      await node.resizeFromCorner('SE', 0, 300)
+      await expect
+        .poll(() => node.textareaLineFitError('text_g', 6))
+        .toBeGreaterThan(20)
 
-      await node.dragHandle(node.growableRegionHandle(textG), 0, 60)
-      await expect.poll(getHeightDifference).toBeCloseTo(60, 0)
+      await node.growableRegionHandle(node.widgetRow('text_g')).dblclick()
+      await node.growableRegionHandle(node.widgetRow('text_l')).dblclick()
 
-      await node.growableRegionHandle(textG).dblclick()
-      await node.resizeFromCorner('SE', 0, 100)
-
-      await expect.poll(getHeightDifference).toBeCloseTo(0, 0)
+      await expect
+        .poll(() => node.textareaLineFitError('text_g', 6))
+        .toBeLessThanOrEqual(1)
+      await expect
+        .poll(() => node.textareaLineFitError('text_l', 3))
+        .toBeLessThanOrEqual(1)
     })
 
     test('double-clicking a resize corner shrinks the node to its content, keeping user-sized widgets', async ({
@@ -224,6 +229,34 @@ test.describe(
 
       await expect.poll(getHeight).toBeCloseTo(initialHeight + 60, 0)
       await expect.poll(getTextGHeight).toBeCloseTo(initialTextG + 60, 0)
+    })
+
+    test('a node whose only widget grows keeps that widget filling the node, and its bottom corners fit the widget', async ({
+      comfyPage
+    }) => {
+      await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+      await comfyPage.searchBoxV2.addNode('CLIP Text Encode (Prompt)')
+      const node = await comfyPage.vueNodes.getFixtureByTitle(
+        'CLIP Text Encode (Prompt)'
+      )
+      const text = node.widgetRow('text')
+      const getDeadSpace = async () =>
+        (await heightOf(node.root)) - (await heightOf(text))
+      const initialDeadSpace = await getDeadSpace()
+      const initialText = await heightOf(text)
+
+      await node.dragHandle(node.growableRegionHandle(text), 0, 40)
+      await expect.poll(() => heightOf(text)).toBeCloseTo(initialText + 40, 0)
+      await node.resizeFromCorner('SE', 0, 50)
+      await expect.poll(() => heightOf(text)).toBeCloseTo(initialText + 90, 0)
+      await expect.poll(getDeadSpace).toBeCloseTo(initialDeadSpace, 0)
+
+      await node.getResizeHandle('SE').dblclick()
+
+      await expect
+        .poll(() => node.textareaLineFitError('text', 3))
+        .toBeLessThanOrEqual(1)
+      await expect.poll(getDeadSpace).toBeCloseTo(initialDeadSpace, 0)
     })
 
     test('dragging the image preview edge grows the preview and the node by the same amount', async ({

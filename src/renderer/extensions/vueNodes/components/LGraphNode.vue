@@ -243,7 +243,7 @@
             )
           "
           @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
-          @dblclick.stop="handleResizeDoubleClick"
+          @dblclick.stop="handleResizeDoubleClick($event, handle.corner)"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -440,7 +440,7 @@ const growable = useGrowableRegions({
   regionId: (name) => {
     const graphId = canvasStore.rootGraphId
     const bareNodeId = stripGraphPrefix(nodeData.id)
-    return graphId && bareNodeId
+    return graphId && bareNodeId && name !== soleGrowableWidget.value
       ? widgetId(graphId, bareNodeId, name)
       : undefined
   },
@@ -522,8 +522,11 @@ provide(growableRegionsKey, {
   handle: computed(() => (canResizeNode.value ? growable.handle : undefined))
 })
 
-function handleResizeDoubleClick(event: MouseEvent) {
-  if (canResizeNode.value) growable.fitNode(event)
+function handleResizeDoubleClick(event: MouseEvent, corner: CompassCorners) {
+  if (!canResizeNode.value) return
+  const widget = soleGrowableWidget.value
+  if (widget && corner.startsWith('S')) growable.resetWidget(event, widget)
+  else growable.fitNode(event)
 }
 
 const { startResize } = useNodeResize((result) => {
@@ -748,6 +751,16 @@ const hasExpandingWidget = computed(() =>
       widget.visible && shouldExpand(widget.simplified.type, widget.sizing)
   )
 )
+
+const soleGrowableWidget = computed(() => {
+  if (nodeMedia.value?.items.length || promotedPreviews.value.length) return
+  const visible = processedWidgets.value.filter(({ visible }) => visible)
+  const [widget] = visible
+  return visible.length === 1 &&
+    shouldExpand(widget.simplified.type, widget.sizing)
+    ? widget.simplified.name
+    : undefined
+})
 
 const widgetTakesSpareHeight = computed(() =>
   processedWidgets.value.some(

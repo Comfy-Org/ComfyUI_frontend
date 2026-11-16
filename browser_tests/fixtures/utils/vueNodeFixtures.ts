@@ -138,6 +138,23 @@ export class VueNodeFixture {
     })
   }
 
+  /** Pixels between the height of widget `name`'s textarea and exactly `lines` lines of its text. */
+  textareaLineFitError(name: string, lines: number): Promise<number> {
+    return this.widgetRow(name)
+      .getByRole('textbox')
+      .evaluate((textarea, lines) => {
+        const style = getComputedStyle(textarea)
+        const padding =
+          Number.parseFloat(style.paddingTop) +
+          Number.parseFloat(style.paddingBottom)
+        return Math.abs(
+          textarea.clientHeight -
+            padding -
+            lines * Number.parseFloat(style.lineHeight)
+        )
+      }, lines)
+  }
+
   /** Locator for the bottom-edge resize handle inside `region`, or this node's only one. */
   growableRegionHandle(region: Locator = this.root): Locator {
     return region.getByTestId('growable-region-handle')
