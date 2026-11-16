@@ -95,8 +95,9 @@ const CASES: Case[] = [
     group: 'Running',
     title: '3. One run',
     check: [
-      'The pill says "Running" with its own line under it.',
-      'The line moves as the run goes; at 100% the pill says "Completed".'
+      'The chip says "Running 30%" with its own line under it.',
+      'Hover the chip: the card opens with the run and Go to history.',
+      'The line moves as the run goes; at 100% the chip says "Completed".'
     ],
     jobs: [{ title: 'Flux portrait', status: 'running', progress: 30 }]
   },
@@ -105,8 +106,9 @@ const CASES: Case[] = [
     group: 'Running',
     title: '4. Several at once',
     check: [
-      'Closed: the pill says "Running 2" and two cards peek under it.',
-      'Click the pill: one row per run, each with its own time and %.',
+      'Closed: the chip says "2 running · 2 queued" and cards peek under it.',
+      'Hover the chip: the stack fans out into one row per run.',
+      'Click the chip to keep the card open; click again to fold it.',
       'Queued rows come after running ones: "next up", then "#2".'
     ],
     jobs: [
@@ -163,7 +165,7 @@ const CASES: Case[] = [
     check: [
       'The square on a row stops only that run.',
       'Clear queue removes only the waiting rows.',
-      'Cancel all turns red on hover and ends on "Cancelled".'
+      'Cancel all (or the square on the chip) ends on "Cancelled".'
     ],
     jobs: [
       { title: 'Flux portrait', status: 'running', progress: 30, speed: 1 },
@@ -200,9 +202,22 @@ function playground() {
       const jobs = ref<SimJob[]>([])
       const limit = ref(2)
       const open = ref(false)
+      const hovered = ref(false)
+      let hoverTimer: number | undefined
+      function openFan() {
+        window.clearTimeout(hoverTimer)
+        hovered.value = true
+      }
+      function closeFan() {
+        window.clearTimeout(hoverTimer)
+        hoverTimer = window.setTimeout(() => (hovered.value = false), 320)
+      }
       const idleOpen = ref(false)
       const withResults = ref(false)
       const terminal = ref<TerminalKind | null>(null)
+      const panelOpen = computed(
+        () => !terminal.value && (open.value || hovered.value)
+      )
       const paused = ref(false)
       const now = ref(Date.now())
       const log = ref<string[]>([])
@@ -324,11 +339,13 @@ function playground() {
         if (terminal.value) return TERMINAL_LABEL[terminal.value]
         const count = runningJobs.value.length
         if (count === 0) return 'Queued'
-        return count === 1 ? 'Running' : `Running ${count}`
+        return count === 1
+          ? `Running ${Math.round(runningJobs.value[0].progress)}%`
+          : `${count} running`
       })
       const badge = computed(() =>
         queuedCount.value > 0 && !terminal.value
-          ? `Queued ${queuedCount.value}`
+          ? `${queuedCount.value} queued`
           : undefined
       )
       const progress = computed(() =>
@@ -337,7 +354,9 @@ function playground() {
           : undefined
       )
       const stack = computed(() =>
-        open.value ? 0 : Math.min(2, Math.max(0, active.value.length - 1))
+        panelOpen.value
+          ? 0
+          : Math.min(2, Math.max(0, active.value.length - 1))
       )
       const showIdle = computed(
         () => jobs.value.length === 0 && !terminal.value
@@ -411,6 +430,11 @@ function playground() {
           return
         }
         open.value = !open.value
+        if (!open.value) hovered.value = false
+      }
+
+      function goToHistory() {
+        note('Opened the job history')
       }
 
       load(CASES[0])
@@ -426,6 +450,10 @@ function playground() {
         progress,
         stack,
         open,
+        panelOpen,
+        openFan,
+        closeFan,
+        goToHistory,
         idleOpen,
         showIdle,
         results,
@@ -487,24 +515,32 @@ function playground() {
               v-model:open="idleOpen"
               label="0 active"
               :results="results"
+              @history="goToHistory"
             />
-            <div v-else class="relative flex flex-col items-end gap-1">
+            <div
+              v-else
+              class="relative flex flex-col items-end gap-1"
+              @pointerenter="openFan"
+              @pointerleave="closeFan"
+            >
               <QueueStatusPill
                 :label="pillLabel"
                 :badge="badge"
                 :progress="progress"
-                :expanded="open"
+                :expanded="panelOpen"
+                :stack="stack"
                 :terminal-kind="terminal"
                 @activate="togglePill"
                 @stop="cancelAll"
               />
               <QueueStatusPanel
-                v-if="open && !terminal"
+                v-if="panelOpen"
                 :rows="rows"
                 :queued-count="queuedCount"
                 @cancel="cancel"
                 @clear-queue="clearQueue"
                 @cancel-all="cancelAll"
+                @history="goToHistory"
               />
             </div>
           </section>
