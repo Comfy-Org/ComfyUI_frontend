@@ -4257,10 +4257,10 @@
     "deployWithAgent": "Deploy with your agent",
     "deploySetupDialog": {
       "title": "Run your workflows on Comfy Cloud",
-      "body": "Deploy your local setup to Comfy Cloud, then use it in ComfyUI or call it as an autoscaling API.",
+      "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
       "pointNodes": "Bring your custom nodes and models",
       "pointGpu": "Run on powerful cloud GPUs",
-      "pointPricing": "Pay only for the GPU seconds your jobs use and your build's storage"
+      "pointPricing": "Pay only while your GPU workers are up, plus storage"
     },
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
