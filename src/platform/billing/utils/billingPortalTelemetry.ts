@@ -5,7 +5,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 
 import type { TelemetryDispatcher } from '@comfyorg/telemetry/types'
-import { describeBillingFailure } from '@/platform/telemetry/utils/billingFailureCategory'
+import { describeBillingFailure } from '@/platform/billing/utils/billingFailureCategory'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 
 const PORTAL_TAB_BLOCKED: BillingTelemetryFailure = {

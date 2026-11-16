@@ -19,8 +19,8 @@ import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/billing/subscription/composables/useBillingPlans'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
+import { categorizeBillingApiError } from '@/platform/billing/utils/billingFailureCategory'
+import { createBillingPortalReporter } from '@/platform/billing/utils/billingPortalTelemetry'
 import type {
   BillingBalanceResponse,
   BillingStatusResponse,
