@@ -12,6 +12,7 @@ import {
   isFiniteNumber,
   isName,
   isObject,
+  isStoreKey,
   isText,
   packObject
 } from './packArguments'
@@ -61,14 +62,18 @@ export function createCommandsHandle(): CommandsHandle {
 
 async function runCommand(id: string): Promise<boolean> {
   const store = useCommandStore()
-  if (!store.isRegistered(id)) return false
+  if (!isStoreKey(id) || !store.isRegistered(id)) return false
   await store.execute(id)
   return true
 }
 
 function commandDefinition(command: unknown) {
   const fields = packObject('commands.register', 'a command', command)
-  const id = fields.required('id', isName, 'a non-empty string')
+  const id = fields.required(
+    'id',
+    isStoreKey,
+    'a non-empty string no object inherits'
+  )
   const label = fields.required('label', isText, 'a string')
   const run = fields.required('run', isCallback, 'a function')
   const combo = fields.optional('keybinding', isObject, 'a key combo')

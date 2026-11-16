@@ -106,6 +106,18 @@ describe('declaring a setting', () => {
     expect(settingsApi().get('MyPack.size')).toBe(7)
   })
 
+  it.for(['constructor', 'toString', '__proto__'])(
+    'refuses the id %s, which every object inherits',
+    (id) => {
+      expect(() => settingsApi().declare({ ...sizeSetting, id })).toThrow(
+        new TypeError(
+          `settings.declare needs id as a non-empty string no object inherits, not '${id}'.`
+        )
+      )
+      expect(Object.hasOwn(useSettingStore().settingsById, id)).toBe(false)
+    }
+  )
+
   it('refuses an id another setting has, and keeps the first', () => {
     const settings = settingsApi()
     settings.declare(sizeSetting)
@@ -129,7 +141,7 @@ describe('declaring a setting', () => {
     {
       name: 'an empty id',
       setting: { ...sizeSetting, id: ' ' },
-      needs: 'id as a non-empty string'
+      needs: 'id as a non-empty string no object inherits'
     },
     {
       name: 'a numeric name',

@@ -41,7 +41,8 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    or cannot be reached, is a value and not a throw, as
    `docs/guidance/error-handling.md` asks: `false`, `undefined`, or
    `{ ok: false }` where `undefined` already means something.
-   The one exception is `backend.fetch` (decision 16).
+   The exceptions are `backend.fetch` (decision 16) and `settings.set`
+   (decision 7).
 
 3. Every callback a pack supplies runs through `shared/listeners.ts`: a
    listener set from `createListeners`, or `callListener` for one callback.
@@ -77,8 +78,11 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    `attrs` passes only the bounds given.
 7. `get(id)` (22 / 104) reads the store's value or default, for any id, core's
    included. `set(id, value)` (7 / 11) takes a value JSON can hold, applies it
-   at once through the store and returns the store's promise, which settles
-   as the request to save it does.
+   at once through the store and returns the store's promise: it rejects
+   when the server cannot be reached and resolves when the server answers,
+   even with a refusal, with the value applied but not saved. The store's
+   `set` does not report a refusal; `setWithOutcome` does, for core's
+   revertible settings only ([#23467](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23467)).
 8. `onChange(id, listener)` (6 / 7) hears the store's `onSettingChanged`, the
    event the host itself watches. All listeners share one subscription,
    started with the first and stopped when the last leaves (finding B-12);

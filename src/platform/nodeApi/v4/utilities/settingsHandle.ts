@@ -22,6 +22,7 @@ import {
   isList,
   isName,
   isObject,
+  isStoreKey,
   isText,
   listOf,
   packObject
@@ -112,7 +113,11 @@ function isOptionValue(value: unknown): value is string | number {
 
 function settingParams(setting: unknown): SettingParams {
   const fields = packObject('settings.declare', 'a setting definition', setting)
-  const id = fields.required('id', isName, 'a non-empty string')
+  const id = fields.required(
+    'id',
+    isStoreKey,
+    'a non-empty string no object inherits'
+  )
   const name = fields.required('name', isText, 'a string')
   const type = fields.required(
     'type',
