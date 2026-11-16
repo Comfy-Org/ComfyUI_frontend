@@ -215,8 +215,10 @@ const layerClassRestriction = {
 
 const arbitraryVariantWithHas = '\\[(?:[^\\[\\]]|\\[[^\\[\\]]*\\])*:has\\('
 
+const compoundVariantPrefixes = '(?:(?:not|in|peer|group)-)*'
+
 const nestedHasClassRestriction = {
-  pattern: `(?:^|:)(?:not-)?group-(?:not-)?has-|(?:^|:)not-in-(?:not-)?has-|(?:^|:)(?:not-)?has-.+:\\*{1,2}:|(?:^|:)(?:not-)?group-(?:not-)?${arbitraryVariantWithHas}|(?:^|:)not-in-(?:not-)?${arbitraryVariantWithHas}`,
+  pattern: `(?:^|:)${compoundVariantPrefixes}(?:group-|not-in-)${compoundVariantPrefixes}(?:has-|${arbitraryVariantWithHas})|(?:^|:)(?:not-)?has-.+:\\*{1,2}:`,
   message:
     'This compiles to :has() inside :is() or :not() ahead of a descendant combinator, which makes Chrome restyle the whole document on any DOM insertion. Use an arbitrary variant such as [.group:has(:focus-visible)_&]: instead.'
 }
@@ -254,7 +256,11 @@ const tailwindConfigs = defineConfig([
         'error',
         { collapse: false }
       ],
-      'better-tailwindcss/no-deprecated-classes': 'error'
+      'better-tailwindcss/no-deprecated-classes': 'error',
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        { restrict: [nestedHasClassRestriction] }
+      ]
     }
   },
   {
