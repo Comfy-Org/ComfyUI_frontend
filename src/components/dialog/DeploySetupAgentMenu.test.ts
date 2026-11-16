@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
@@ -170,6 +170,39 @@ describe('DeploySetupAgentMenu', () => {
     expect(panel.isOpen).toBe(false)
     expect(panel.pendingCloudHandoff).toBeNull()
     expect(downloadBlob).not.toHaveBeenCalled()
+  })
+
+  it('cancels pending local agent consent when the deployment dialog closes', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      path: 'workflows/portraits/upscale.json',
+      isPersisted: true,
+      isModified: false,
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    let finishConsentRead!: () => void
+    const consentRead = new Promise<void>((resolve) => {
+      finishConsentRead = resolve
+    })
+    const canShowConsent = vi.fn<(canShow: boolean | undefined) => void>()
+    withConsent.mockImplementationOnce(async (_trigger, onAccept, hooks) => {
+      await consentRead
+      canShowConsent(hooks?.canShow?.())
+      onAccept()
+    })
+    render(GlobalDialog, { global: { plugins: [testI18n] } })
+    await openDeploySetupDialog()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    await pickRow(user, 'Use local agent')
+
+    useDialogStore().closeDialog({ key: 'global-run-on-comfy-cloud' })
+    await nextTick()
+    finishConsentRead()
+
+    await waitFor(() => expect(canShowConsent).toHaveBeenCalledWith(false))
+    expect(panel.isOpen).toBe(false)
+    expect(panel.pendingCloudHandoff).toBeNull()
   })
 
   it('offers external agents when no local agent is provided', async () => {

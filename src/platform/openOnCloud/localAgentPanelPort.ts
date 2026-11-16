@@ -4,7 +4,7 @@ import type { InjectionKey, Ref } from 'vue'
 export interface LocalAgentPanelPort {
   enabled: Readonly<Ref<boolean>>
   isOpening: Readonly<Ref<boolean>>
-  open(prompt: string): Promise<boolean>
+  open(prompt: string, isStillWanted: () => boolean): Promise<boolean>
 }
 
 export const LocalAgentPanelPortKey: InjectionKey<LocalAgentPanelPort> = Symbol(

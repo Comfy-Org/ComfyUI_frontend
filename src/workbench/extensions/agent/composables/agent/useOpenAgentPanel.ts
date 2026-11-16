@@ -14,8 +14,12 @@ export function useOpenAgentPanel(source: AgentPanelOpenedMetadata['source']) {
     isActive = false
   })
 
-  async function open(prompt?: string): Promise<boolean> {
-    if (!isActive || !enabled.value || isOpening.value) return false
+  async function open(
+    prompt?: string,
+    isStillWanted: () => boolean = () => true
+  ): Promise<boolean> {
+    const canOpen = () => isActive && enabled.value && isStillWanted()
+    if (isOpening.value || !canOpen()) return false
     if (panel.isVisible) {
       panel.view = { screen: 'chat' }
       if (prompt) panel.pendingCloudHandoff = prompt
@@ -28,13 +32,13 @@ export function useOpenAgentPanel(source: AgentPanelOpenedMetadata['source']) {
       await useAgentConsent().withConsent(
         'button_click',
         () => {
-          if (!isActive || !enabled.value) return
+          if (!canOpen()) return
           panel.view = { screen: 'chat' }
           panel.open(source)
           if (prompt) panel.pendingCloudHandoff = prompt
           opened = true
         },
-        { canShow: () => isActive && enabled.value }
+        { canShow: canOpen }
       )
       return opened
     } finally {

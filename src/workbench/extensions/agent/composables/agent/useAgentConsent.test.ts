@@ -60,7 +60,8 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 const telemetry = vi.hoisted(() => ({
   trackAgentConsentShown: vi.fn(),
   trackAgentConsentResolved: vi.fn(),
-  trackAgentConsentOfferExited: vi.fn()
+  trackAgentConsentOfferExited: vi.fn(),
+  trackAgentPanelOpened: vi.fn()
 }))
 vi.mock<unknown>(import('@comfyorg/telemetry'), () => ({
   useTelemetry: () => telemetry
@@ -691,6 +692,41 @@ describe('useAgentConsent', () => {
 
     expect(onOpen).toHaveBeenCalledOnce()
     expect(useDialogStore().dialogStack).toHaveLength(0)
+  })
+
+  it('settles a local handoff that overlaps a topbar consent request', async ({
+    onTestFinished
+  }) => {
+    const load = deferred<Response>()
+    fetchWithUnifiedRemint.mockReturnValueOnce(load.promise)
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    const opener = scope.run(() => useOpenAgentPanel('cloud_button'))
+    assert.exists(opener)
+    const onTopbarAccept = vi.fn(() => panel.open())
+
+    const topbarRequest = useAgentConsent().withConsent(
+      'button_click',
+      onTopbarAccept
+    )
+    await vi.waitFor(() => expect(fetchWithUnifiedRemint).toHaveBeenCalled())
+    const handoffRequest = opener.open('Run on Cloud')
+    load.resolve(settingResponse(false))
+    const dialog = await waitForConsentDialog()
+
+    await vi.waitFor(() => expect(opener.isOpening.value).toBe(false))
+    await expect(handoffRequest).resolves.toBe(false)
+    expect(useDialogStore().dialogStack).toEqual([dialog])
+    expect(panel.pendingCloudHandoff).toBeNull()
+
+    fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
+    await startConsent()
+    await topbarRequest
+    expect(onTopbarAccept).toHaveBeenCalledOnce()
+    await expect(opener.open('Run on Cloud')).resolves.toBe(true)
+    expect(panel.pendingCloudHandoff).toBe('Run on Cloud')
   })
 
   it('does not show consent when the panel becomes unavailable during the consent read', async ({

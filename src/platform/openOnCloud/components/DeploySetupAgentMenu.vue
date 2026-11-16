@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { onScopeDispose } from 'vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
@@ -68,10 +69,15 @@ const {
 
 const { prepareBrief, copyBrief, openBriefIn } = useRunOnCloudHandoff()
 const { isCopying, copied, copyWith } = useBriefCopy()
+let isActive = true
+onScopeDispose(() => {
+  isActive = false
+})
 
 async function useLocalAgent() {
   const prompt = prepareBrief()
-  if (prompt && (await openLocalAgent(prompt))) emit('done')
+  if (prompt && (await openLocalAgent(prompt, () => isActive)) && isActive)
+    emit('done')
 }
 
 function clearCopiedOnOpen(open: boolean) {
