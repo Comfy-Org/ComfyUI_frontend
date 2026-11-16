@@ -155,8 +155,26 @@ function jobProgress(job: JobListItem): number {
   const jobId = job.taskRef?.jobId
   return executedNodesPercent(
     jobId ? executionStore.queuedJobs[jobId]?.nodes : undefined,
-    job.progressTotalPercent ?? 0
+    job.progressTotalPercent ?? 0,
+    jobId ? executionStore.nodeProgressStatesByJob[jobId] : undefined
   )
+}
+
+/**
+ * A row names the workflow it runs. The job list's own title is a status
+ * ("Running", "Total: 40%"), which reads the same on every parallel row.
+ */
+function jobTitle(job: JobListItem): string {
+  const jobId = job.taskRef?.jobId
+  if (!jobId) return job.title
+  const workflow = executionStore.queuedJobs[jobId]?.workflow
+  if (workflow?.filename) return workflow.filename
+  const path = executionStore.jobIdToSessionWorkflowPath.get(jobId)
+  const name = path
+    ?.split('/')
+    .pop()
+    ?.replace(/\.json$/i, '')
+  return name || t('g.untitled')
 }
 
 /** Failed jobs of the running batch, until the batch drains or is dismissed. */
@@ -176,14 +194,14 @@ const jobs = computed<JobView[]>(() => {
   return [
     ...running.map((job) => ({
       id: job.id,
-      title: job.title,
+      title: jobTitle(job),
       status: 'running' as const,
       progress: jobProgress(job),
       queuePosition: 0
     })),
     ...queued.map((job, index) => ({
       id: job.id,
-      title: job.title,
+      title: jobTitle(job),
       status: 'queued' as const,
       progress: 0,
       queuePosition: index + 1
@@ -194,7 +212,7 @@ const jobs = computed<JobView[]>(() => {
 const failedRows = computed<JobView[]>(() =>
   failedInBatch.value.map((job) => ({
     id: job.id,
-    title: job.title,
+    title: jobTitle(job),
     status: 'failed' as const,
     progress: 0,
     queuePosition: 0

@@ -1,14 +1,23 @@
 /**
- * Percent of a job's nodes that have executed or come from cache. Each
- * parallel job reads its own node map, so jobs never share one number.
+ * Percent of one job's nodes that are done. A node counts as done once it
+ * executed, came from cache, or its progress state says finished. Each
+ * parallel job reads its own maps, so jobs never share one number.
  */
 export function executedNodesPercent(
   nodes: Record<string, boolean> | undefined,
-  fallback = 0
+  fallback = 0,
+  progressStates?: Record<string, { state: string }>
 ): number {
-  const values = nodes ? Object.values(nodes) : []
-  if (values.length === 0) return Math.round(fallback)
-  return Math.round((values.filter(Boolean).length / values.length) * 100)
+  const ids = new Set([
+    ...Object.keys(nodes ?? {}),
+    ...Object.keys(progressStates ?? {})
+  ])
+  if (ids.size === 0) return Math.round(fallback)
+  let done = 0
+  for (const id of ids) {
+    if (nodes?.[id] || progressStates?.[id]?.state === 'finished') done += 1
+  }
+  return Math.round((done / ids.size) * 100)
 }
 
 /** Elapsed time as `m:ss`, the way a running job row shows it. */

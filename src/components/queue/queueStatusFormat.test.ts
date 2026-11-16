@@ -9,6 +9,24 @@ describe('executedNodesPercent', () => {
     )
   })
 
+  it('counts nodes whose progress state says finished, per job', () => {
+    expect(
+      executedNodesPercent({ a: false, b: false, c: false, d: false }, 0, {
+        a: { state: 'finished' },
+        b: { state: 'running' }
+      })
+    ).toBe(25)
+  })
+
+  it('reads progress states when the job has no node map', () => {
+    expect(
+      executedNodesPercent(undefined, 0, {
+        a: { state: 'finished' },
+        b: { state: 'pending' }
+      })
+    ).toBe(50)
+  })
+
   it('falls back when the job has no node map yet', () => {
     expect(executedNodesPercent(undefined, 12.4)).toBe(12)
     expect(executedNodesPercent({}, 0)).toBe(0)
