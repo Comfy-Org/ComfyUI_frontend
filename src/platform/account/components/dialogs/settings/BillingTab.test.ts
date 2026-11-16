@@ -2191,7 +2191,7 @@ describe('BillingTab', () => {
       })
     })
 
-    it('turns the Platform billing links into buttons that open through a handoff, and drops the Plans link, once billing opens through a local handoff', async () => {
+    it('turns the Platform billing and Plans links into buttons that open through a handoff once billing opens through a local handoff', async () => {
       onTestFinished(() => setLocalBillingWebEnabled(false))
       arrange()
       const credits = screen.getByTestId('billing-credits-section')
@@ -2214,7 +2214,6 @@ describe('BillingTab', () => {
         within(credits).getByTestId('billing-auto-top-up-status')
       ).toHaveTextContent('Off')
       expect(within(plan).queryByRole('link', { name: 'Manage' })).toBeNull()
-      expect(within(plan).queryByRole('button', { name: 'Manage' })).toBeNull()
       const handoff = screen.getByTestId('billing-handoff')
       expect(within(credits).queryByRole('link')).toBeNull()
       expect(within(handoff).queryByRole('link')).toBeNull()
@@ -2231,8 +2230,16 @@ describe('BillingTab', () => {
       await userEvent.click(
         within(handoff).getByRole('button', { name: 'Open billing' })
       )
+      await userEvent.click(
+        within(plan).getByRole('button', { name: 'Manage' })
+      )
 
-      expect(openPlatformBillingHandoff).toHaveBeenCalledTimes(3)
+      expect(vi.mocked(openPlatformBillingHandoff).mock.calls).toEqual([
+        [undefined],
+        [undefined],
+        [undefined],
+        ['plans']
+      ])
     })
 
     it('reads the auto top-up settings once for the card and the banner', async () => {
