@@ -1,5 +1,5 @@
 import type { INodeFlags } from './interfaces'
-import type { INodeInputSlot, INodeOutputSlot } from './slots'
+import type { InputSlotDescriptor, OutputSlotDescriptor } from './slots'
 import type { LGraphEventMode, RenderShape, TitleMode } from './globalEnums'
 import type { ISerialisedNode } from './serialisation'
 import type { NodeId } from './nodeId'
@@ -13,10 +13,10 @@ export interface NodeState {
 
   graphId: UUID
   readonly id: NodeId
-  inputs: INodeInputSlot[]
+  inputs: InputSlotDescriptor[]
   lastSerialization?: ISerialisedNode
   mode: LGraphEventMode
-  outputs: INodeOutputSlot[]
+  outputs: OutputSlotDescriptor[]
   properties: Record<string, NodeProperty | undefined>
   title: string
   type: string
