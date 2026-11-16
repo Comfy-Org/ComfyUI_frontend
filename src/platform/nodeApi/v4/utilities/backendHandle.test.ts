@@ -22,7 +22,16 @@ function send(event: string, detail: unknown) {
   ])
 }
 
-const notSameOrigin = ['view', '', '//evil.example/x', '/\\evil.example/x', 5]
+const notSameOrigin = [
+  'view',
+  '',
+  '//evil.example/x',
+  '/\\evil.example/x',
+  '/\t/evil.example/x',
+  '/\n/evil.example/x',
+  '/\r/evil.example/x',
+  5
+]
 
 describe('backend URLs', () => {
   it('gives the URL of an API route under the host base path', () => {
@@ -49,7 +58,7 @@ describe('backend URLs', () => {
       for (const route of notSameOrigin) {
         expect(() => Reflect.apply(backend[member], backend, [route])).toThrow(
           new TypeError(
-            `backend.${member} needs a route that starts with one /, not ${typeof route === 'string' ? `'${route}'` : route}.`
+            `backend.${member} needs a route that starts with one / and holds no tab or line break, not ${typeof route === 'string' ? `'${route}'` : route}.`
           )
         )
       }

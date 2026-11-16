@@ -165,7 +165,7 @@ describe('registering a command', () => {
     {
       name: 'an empty id',
       definition: command({ id: '' }),
-      needs: 'id as a non-empty string'
+      needs: 'id as a non-empty string no object inherits'
     },
     {
       name: 'a label that is not text',
@@ -230,6 +230,20 @@ describe('running a command', () => {
   it('resolves false for an id no command has', async () => {
     expect(await commandsApi().run('MyPack.missing')).toBe(false)
   })
+
+  it.for(['constructor', 'toString', '__proto__'])(
+    'resolves false for %s, which every object inherits, and refuses to register it',
+    async (id) => {
+      const commands = commandsApi()
+
+      expect(await commands.run(id)).toBe(false)
+      expect(() => commands.register(command({ id }))).toThrow(
+        new TypeError(
+          `commands.register needs id as a non-empty string no object inherits, not '${id}'.`
+        )
+      )
+    }
+  )
 
   it('shows the user a command that fails, as for any command', async () => {
     const commands = commandsApi()

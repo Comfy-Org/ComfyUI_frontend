@@ -1360,7 +1360,10 @@ export interface SettingsHandle {
   declare(setting: SettingDef): void
   /** The value, else the default; `undefined` for an undeclared id holding nothing. */
   get(id: string): SettingValue | undefined
-  /** Applies `value` at once. The promise settles as the host's request to save it does. */
+  /**
+   * Applies `value` at once. Rejects if the server cannot be reached; resolves once it answers,
+   * even if it refused to save the value.
+   */
   set(id: string, value: SettingValue): Promise<void>
   /** Calls `listener` after a declared setting's value changes, and when it is declared. */
   onChange(

@@ -59,8 +59,12 @@ export function createBackendHandle(): BackendHandle {
 }
 
 function sameOriginRoute(member: string, route: unknown): string {
-  if (typeof route !== 'string' || !/^\/(?![/\\])/.test(route)) {
-    throw invalidArgument(member, 'a route that starts with one /', route)
+  if (typeof route !== 'string' || !/^\/(?![/\\])[^\t\n\r]*$/.test(route)) {
+    throw invalidArgument(
+      member,
+      'a route that starts with one / and holds no tab or line break',
+      route
+    )
   }
   return route
 }
