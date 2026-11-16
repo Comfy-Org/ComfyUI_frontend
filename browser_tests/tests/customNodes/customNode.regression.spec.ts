@@ -471,7 +471,7 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
     'attribution self-check requires core PrimitiveInt and PreviewAny'
   ).toEqual([])
   await comfyPage.workflow.loadGraphData(
-    readWorkflow(assetPath('customNodes/core_primitive_preview_run.json'))
+    readWorkflow(assetPath('customNodes/core_smoke.json'))
   )
   // Once the run's event tap starts filling, inject ONE terminal error under
   // a prompt id this page never queued. The positive prompt-id filter must

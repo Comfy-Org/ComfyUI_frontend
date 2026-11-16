@@ -122,7 +122,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Loading a workflow with all nodes bypassed shows no errors', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('missing/missing_models_bypassed')
+      await comfyPage.workflow.loadWorkflow('missing/missing_models', {
+        1: { mode: 4 }
+      })
 
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
@@ -326,7 +328,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Loading a workflow with all nodes bypassed shows no errors', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('missing/missing_media_bypassed')
+      await comfyPage.workflow.loadWorkflow('missing/missing_media_single', {
+        10: { mode: 4 }
+      })
 
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
@@ -842,7 +846,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       // execution. The pipeline now post-filters candidates whose
       // ancestor path is not fully active.
       await comfyPage.workflow.loadWorkflow(
-        'missing/missing_models_in_bypassed_subgraph'
+        'missing/missing_models_in_subgraph',
+        {
+          2: { mode: 4 }
+        }
       )
 
       const errorOverlay = comfyPage.page.getByTestId(
@@ -864,7 +871,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       // that re-scan reintroduced the error the initial pipeline had
       // correctly suppressed.
       await comfyPage.workflow.loadWorkflow(
-        'missing/missing_models_in_bypassed_subgraph'
+        'missing/missing_models_in_subgraph',
+        {
+          2: { mode: 4 }
+        }
       )
 
       const errorsTab = comfyPage.page.getByTestId(

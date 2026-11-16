@@ -354,7 +354,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
-        'subgraphs/subgraph-with-multiple-promoted-widgets'
+        'subgraphs/subgraph-three-promoted-widgets'
       )
 
       const initialWidgets = await getPromotedWidgets(comfyPage, '11')
@@ -477,7 +477,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow(
-        'subgraphs/subgraph-with-multiple-promoted-widgets'
+        'subgraphs/subgraph-three-promoted-widgets'
       )
 
       const beforeSnapshot = await getPromotedWidgets(comfyPage, '11')

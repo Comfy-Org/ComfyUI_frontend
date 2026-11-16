@@ -1,16 +1,19 @@
 import { readFileSync } from 'fs'
 
 import { expect } from '@playwright/test'
+import { z } from 'zod'
 import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
 
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type {
   ComfyApiWorkflow,
+  ComfyNode,
   ComfyWorkflowJSON
 } from '@comfyorg/graph-model/workflowSchema'
 import {
   zComfyWorkflow,
-  zComfyWorkflow1
+  zComfyWorkflow1,
+  zNodeId
 } from '@comfyorg/graph-model/workflowSchema'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -18,6 +21,39 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 type FolderStructure = {
   [key: string]: FolderStructure | string
+}
+
+type NodeOverrides = Record<string, Partial<ComfyNode>>
+
+const zWorkflowNodes = z
+  .object({ nodes: z.array(z.object({ id: zNodeId }).passthrough()) })
+  .passthrough()
+
+function workflowWithNodeOverrides(
+  workflowName: string,
+  nodeOverrides: NodeOverrides
+) {
+  const workflow = zWorkflowNodes.parse(
+    JSON.parse(readFileSync(assetPath(`${workflowName}.json`), 'utf-8'))
+  )
+  const unknownIds = Object.keys(nodeOverrides).filter(
+    (id) => !workflow.nodes.some((node) => String(node.id) === id)
+  )
+  if (unknownIds.length > 0)
+    throw new Error(`${workflowName} has no node ${unknownIds.join(', ')}`)
+  return {
+    name: `${workflowName.split('/').at(-1)}.json`,
+    mimeType: 'application/json',
+    buffer: Buffer.from(
+      JSON.stringify({
+        ...workflow,
+        nodes: workflow.nodes.map((node) => ({
+          ...node,
+          ...nodeOverrides[String(node.id)]
+        }))
+      })
+    )
+  }
 }
 
 export class WorkflowHelper {
@@ -159,9 +195,15 @@ export class WorkflowHelper {
     await this.loadGraphData(workflow)
   }
 
-  async loadWorkflow(workflowName: string) {
+  /**
+   * Opens an asset as an uploaded workflow file. `nodeOverrides` replaces
+   * top-level fields of the nodes with those IDs before the upload.
+   */
+  async loadWorkflow(workflowName: string, nodeOverrides: NodeOverrides = {}) {
     await this.comfyPage.workflowUploadInput.setInputFiles(
-      assetPath(`${workflowName}.json`)
+      Object.keys(nodeOverrides).length > 0
+        ? workflowWithNodeOverrides(workflowName, nodeOverrides)
+        : assetPath(`${workflowName}.json`)
     )
     await expect(this.comfyPage.workflowUploadInput).toHaveValue('')
     await this.comfyPage.nextFrame()
