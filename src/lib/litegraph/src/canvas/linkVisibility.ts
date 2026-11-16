@@ -148,12 +148,16 @@ export function promptRenameLinkBadge(
   host: LinkRenameHost,
   scope: GraphScope,
   linkIds: readonly LinkId[],
-  event: CanvasPointerEvent
+  event: CanvasPointerEvent,
+  onRename?: (value: string) => void
 ): void {
   host.prompt(
     t('contextMenu.Rename'),
     useLinkPresentationStore().getPresentation(scope, linkIds[0])?.label ?? '',
-    (value) => renameLinks(host, scope, linkIds, value),
+    (value) => {
+      renameLinks(host, scope, linkIds, value)
+      onRename?.(value)
+    },
     event
   )
 }

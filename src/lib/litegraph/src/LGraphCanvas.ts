@@ -110,6 +110,8 @@ import {
   collapseLinkBadgeStacks,
   drawHiddenLinkBadges,
   queryLinkBadgeHitAtPoint,
+  relabelExpandedLinkBadgeStack,
+  revertLinkBadgeStackToggle,
   toggleLinkBadgeStack
 } from './canvas/linkBadges'
 import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
@@ -2899,18 +2901,24 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       case 'linkBadgeStack': {
         const { stackKey, links } = target
-        const toggleStack = () => {
-          toggleLinkBadgeStack(this, stackKey)
+        pointer.onClick = () => {
+          toggleLinkBadgeStack(this, stackKey, e.timeStamp)
           this.dirty_bgcanvas = true
         }
-        pointer.onClick = toggleStack
         pointer.onDoubleClick = () => {
-          toggleStack()
+          revertLinkBadgeStackToggle(
+            this,
+            stackKey,
+            e.timeStamp,
+            CanvasPointer.doubleClickTime
+          )
+          this.dirty_bgcanvas = true
           promptRenameLinkBadge(
             this,
             graphScopeOf(graph),
             links.map(({ id }) => id),
-            e
+            e,
+            (name) => relabelExpandedLinkBadgeStack(this, stackKey, name)
           )
         }
         pointer.onDragStart = () => (this.dragging_canvas = true)
@@ -8908,17 +8916,25 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
 
-      const { reroute, linkSegment, link, stackedLinks, group } =
+      const { reroute, linkSegment, link, stackedLinks, stackKey, group } =
         getCanvasContextMenuTarget(this, event.canvasX, event.canvasY)
-      if (stackedLinks) {
+      if (stackedLinks && stackKey) {
         const graphScope = graphScopeOf(this.graph)
         const stackedLinkIds = stackedLinks.map(({ id }) => id)
         new LiteGraph.ContextMenu<string>(getLinkStackMenuOptions(), {
           event,
           callback: (item) => {
-            if (typeof item !== 'string' && item?.value === 'Rename')
-              promptRenameLinkBadge(this, graphScope, stackedLinkIds, event)
-            else showLinks(this, graphScope, stackedLinkIds)
+            const action = typeof item === 'string' ? item : item?.value
+            if (action === 'Rename')
+              promptRenameLinkBadge(
+                this,
+                graphScope,
+                stackedLinkIds,
+                event,
+                (name) => relabelExpandedLinkBadgeStack(this, stackKey, name)
+              )
+            if (action === 'Show Links')
+              showLinks(this, graphScope, stackedLinkIds)
           }
         })
         return

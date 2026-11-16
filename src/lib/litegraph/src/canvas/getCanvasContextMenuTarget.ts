@@ -26,6 +26,7 @@ interface CanvasContextMenuTarget {
   linkSegment?: LinkSegment
   link?: LLink
   stackedLinks?: LLink[]
+  stackKey?: string
   group?: LGraphGroup
 }
 
@@ -76,7 +77,8 @@ export function getCanvasContextMenuTarget(
   if (reroute) return { reroute, group }
 
   const stack = queryHiddenLinkStackAtPoint(canvas, graph, x, y)
-  if (stack) return { stackedLinks: stack.links, group }
+  if (stack)
+    return { stackedLinks: stack.links, stackKey: stack.stackKey, group }
 
   const badgeLink = queryHiddenLinkBadgeAtPoint(canvas, graph, x, y)
   if (badgeLink) return { link: badgeLink, group }

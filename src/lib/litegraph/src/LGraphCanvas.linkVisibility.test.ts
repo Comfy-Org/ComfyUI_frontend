@@ -687,8 +687,9 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
     })
 
-    it('keeps an expanded stack expanded while its head is double clicked', () => {
-      const { canvas, links, relayout, prompt } = createStackFixture()
+    it('keeps an expanded stack expanded through a double click and its rename', () => {
+      const { canvas, links, relayout, prompt, submitPrompt } =
+        createStackFixture()
       clickAt(canvas, 420, 300)
       relayout()
 
@@ -697,6 +698,48 @@ describe('LGraphCanvas link visibility interactions', () => {
 
       expect(prompt).toHaveBeenCalledOnce()
       expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+
+      submitPrompt('render_size')
+
+      expect(stackedLinkIdsAt(canvas, 420, 300)).toEqual(
+        links.map(({ id }) => id)
+      )
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+    })
+
+    it('keeps an expanded stack expanded when its menu Rename clears the name', () => {
+      const { canvas, links, relayout, submitPrompt } = createStackFixture([
+        'batch',
+        'batch'
+      ])
+      const menu = vi
+        .spyOn(LiteGraph, 'ContextMenu')
+        .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
+      clickAt(canvas, 420, 300)
+      relayout()
+
+      canvas.processContextMenu(
+        undefined,
+        fromPartial<CanvasPointerEvent>({ canvasX: 420, canvasY: 300 })
+      )
+      void menu.mock.calls[0][1]?.callback?.({
+        content: 'Rename',
+        value: 'Rename'
+      })
+      submitPrompt('')
+
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+    })
+
+    it('leaves a stack collapsed when the first click of a double click missed it', () => {
+      const { canvas, relayout, prompt } = createStackFixture()
+
+      pressAt(canvas, 420, 280, 100)
+      pressAt(canvas, 420, 295, 200)
+      relayout()
+
+      expect(prompt).toHaveBeenCalledOnce()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
     })
 
     it('merges a renamed stack into the stack that already has that name', () => {
@@ -770,6 +813,31 @@ describe('LGraphCanvas link visibility interactions', () => {
       submitPrompt('render_size')
 
       expect(links.map(labelOf)).toEqual(['render_size', 'render_size'])
+    })
+
+    it('shows every link in a stack from the Show Links item of its context menu', () => {
+      const { graph, canvas, links } = createStackFixture()
+      const menu = vi
+        .spyOn(LiteGraph, 'ContextMenu')
+        .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
+      const hiddenLinks = () =>
+        links.filter(
+          ({ id }) =>
+            useLinkPresentationStore().getPresentation(graphScopeOf(graph), id)
+              ?.hidden
+        )
+
+      canvas.processContextMenu(
+        undefined,
+        fromPartial<CanvasPointerEvent>({ canvasX: 420, canvasY: 300 })
+      )
+      const callback = menu.mock.calls[0][1]?.callback
+
+      void callback?.(undefined)
+      expect(hiddenLinks()).toEqual(links)
+
+      void callback?.({ content: 'Show Links', value: 'Show Links' })
+      expect(hiddenLinks()).toEqual([])
     })
 
     it('collapses an expanded stack when empty canvas is clicked', () => {
