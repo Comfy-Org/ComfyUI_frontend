@@ -800,7 +800,7 @@ describe('TopMenuSection', () => {
         }
       }
     ])(
-      'renders the Cloud button on $host when Open on Cloud is enabled',
+      'hides the Cloud button on $host when Open on Cloud is enabled',
       ({ enter, leave }) => {
         enter()
         onTestFinished(leave)
@@ -809,7 +809,7 @@ describe('TopMenuSection', () => {
 
         createWrapper({ stubs: { FreeTierQuota: true } })
 
-        expect(screen.getByTestId('cloud-button')).toBeInTheDocument()
+        expect(screen.queryByTestId('cloud-button')).not.toBeInTheDocument()
       }
     )
 
