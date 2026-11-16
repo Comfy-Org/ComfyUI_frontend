@@ -5,12 +5,12 @@
     :tooltip
     tooltip-side="bottom"
     :aria-label="tooltip"
-    :aria-busy="isChecking || isOpeningAgent || undefined"
+    :aria-busy="isChecking || undefined"
     data-testid="cloud-button"
     @pointerenter="prefetch"
     @keydown.enter="prefetch"
     @keydown.space="prefetch"
-    @click="openCloud"
+    @click="openModal"
   >
     <ProgressRing v-if="isChecking" :percent="25" class="size-4 animate-spin" />
     <i v-else class="icon-[lucide--cloud]" aria-hidden="true" />
@@ -30,20 +30,13 @@ import {
   openRunOnCloudDialog
 } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
-import { useOpenAgentPanel } from '@/workbench/extensions/agent/composables/agent/useOpenAgentPanel'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const { t } = useI18n()
 const toast = useToast()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
-const agentPanelStore = useAgentPanelStore()
-const { isOpening: isOpeningAgent, open: openAgent } =
-  useOpenAgentPanel('cloud_button')
 
-const isChecking = computed(
-  () => !agentPanelStore.enabled && check.value.phase === 'checking'
-)
+const isChecking = computed(() => check.value.phase === 'checking')
 const opensWhenAnswered = ref(false)
 let isMounted = true
 onBeforeUnmount(() => {
@@ -57,19 +50,7 @@ const tooltip = computed(() =>
 )
 
 function prefetch() {
-  if (agentPanelStore.enabled) return
   if (check.value.phase === 'idle') void checkStore.check()
-}
-
-async function openCloud() {
-  if (isOpeningAgent.value) return
-  if (!agentPanelStore.enabled) {
-    openModal()
-    return
-  }
-  opensWhenAnswered.value = false
-  closeRunOnCloudDialog()
-  await openAgent()
 }
 
 function showModal() {
@@ -78,9 +59,7 @@ function showModal() {
     toast.error(t('openOnCloud.checkFailed'))
     return
   }
-  void openRunOnCloudDialog(
-    () => isMounted && !agentPanelStore.enabled && check.value === current
-  )
+  void openRunOnCloudDialog(() => isMounted && check.value === current)
 }
 
 function openModal() {

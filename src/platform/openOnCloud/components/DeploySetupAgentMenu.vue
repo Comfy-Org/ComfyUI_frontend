@@ -55,7 +55,7 @@ import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import { useLocalAgentPanelPort } from '@/platform/openOnCloud/localAgentPanelPort'
 import DesktopAgentMarks from '@/platform/openOnCloud/components/DesktopAgentMarks.vue'
 import AgentMark from '@/platform/workflow/deploy/components/AgentMark.vue'
-import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
+import { useRunOnCloudHandoff } from '@/platform/openOnCloud/useRunOnCloudHandoff'
 import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 
@@ -66,11 +66,12 @@ const {
   open: openLocalAgent
 } = useLocalAgentPanelPort()
 
-const { copyBrief, openBriefIn } = useAgentHandoff()
+const { prepareBrief, copyBrief, openBriefIn } = useRunOnCloudHandoff()
 const { isCopying, copied, copyWith } = useBriefCopy()
 
 async function useLocalAgent() {
-  if (await openLocalAgent()) emit('done')
+  const prompt = prepareBrief()
+  if (prompt && (await openLocalAgent(prompt))) emit('done')
 }
 
 function clearCopiedOnOpen(open: boolean) {

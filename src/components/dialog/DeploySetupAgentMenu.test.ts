@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
@@ -8,6 +9,7 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import type { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { openDeploySetupDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -52,6 +54,12 @@ const copyToClipboard = vi.fn<
 await import('@/platform/openOnCloud/components/DeploySetupCard.vue')
 
 function renderMenu() {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    path: 'workflows/portraits/upscale.json',
+    isPersisted: true,
+    isModified: false,
+    changeTracker: { prepareForSave: vi.fn() }
+  })
   render(DeploySetupAgentMenu, { global: { plugins: [testI18n] } })
   return userEvent.setup({ pointerEventsCheck: 0 })
 }
@@ -78,31 +86,50 @@ describe('DeploySetupAgentMenu', () => {
     }
   )
 
-  it('opens the eligible local agent chat and dismisses the deployment dialog without downloading', async () => {
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    panel.view = {
-      screen: 'history',
-      previousThreadId: null,
-      selection: { status: 'idle' }
+  it.for([false, true])(
+    'prefills the local agent and dismisses the dialog without downloading when already open: %s',
+    async (alreadyOpen) => {
+      useWorkflowStore().activeWorkflow = fromPartial({
+        path: 'workflows/portraits/upscale.json',
+        isPersisted: true,
+        isModified: false,
+        changeTracker: { prepareForSave: vi.fn() }
+      })
+      const panel = useAgentPanelStore()
+      panel.enabled = true
+      panel.isOpen = alreadyOpen
+      panel.view = {
+        screen: 'history',
+        previousThreadId: null,
+        selection: { status: 'idle' }
+      }
+      render(GlobalDialog, { global: { plugins: [testI18n] } })
+      await openDeploySetupDialog()
+      const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+      await pickRow(user, 'Use local agent')
+
+      await waitFor(() => expect(panel.isVisible).toBe(true))
+      expect(panel.view).toEqual({ screen: 'chat' })
+      expect(panel.pendingCloudHandoff).toContain(
+        'Workflow: "workflows/portraits/upscale.json"'
+      )
+      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+        false
+      )
+      expect(downloadBlob).not.toHaveBeenCalled()
+      expect(openAgentApp).not.toHaveBeenCalled()
+      expect(copyToClipboard).not.toHaveBeenCalled()
     }
-    render(GlobalDialog, { global: { plugins: [testI18n] } })
-    await openDeploySetupDialog()
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-
-    await pickRow(user, 'Use local agent')
-
-    await waitFor(() => expect(panel.isVisible).toBe(true))
-    expect(panel.view).toEqual({ screen: 'chat' })
-    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-      false
-    )
-    expect(downloadBlob).not.toHaveBeenCalled()
-    expect(openAgentApp).not.toHaveBeenCalled()
-    expect(copyToClipboard).not.toHaveBeenCalled()
-  })
+  )
 
   it('keeps the deployment dialog when local agent consent is declined', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      path: 'workflows/portraits/upscale.json',
+      isPersisted: true,
+      isModified: false,
+      changeTracker: { prepareForSave: vi.fn() }
+    })
     const panel = useAgentPanelStore()
     panel.enabled = true
     withConsent.mockResolvedValueOnce(undefined)
@@ -113,10 +140,35 @@ describe('DeploySetupAgentMenu', () => {
     await pickRow(user, 'Use local agent')
 
     expect(withConsent).toHaveBeenCalledOnce()
+    expect(panel.pendingCloudHandoff).toBeNull()
     expect(panel.isVisible).toBe(false)
     expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
       true
     )
+    expect(downloadBlob).not.toHaveBeenCalled()
+  })
+
+  it('does not hand off after the local agent becomes unavailable during consent', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      path: 'workflows/portraits/upscale.json',
+      isPersisted: true,
+      isModified: false,
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+      panel.enabled = false
+      onAccept()
+    })
+    render(GlobalDialog, { global: { plugins: [testI18n] } })
+    await openDeploySetupDialog()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await pickRow(user, 'Use local agent')
+
+    expect(panel.isOpen).toBe(false)
+    expect(panel.pendingCloudHandoff).toBeNull()
     expect(downloadBlob).not.toHaveBeenCalled()
   })
 
@@ -142,7 +194,7 @@ describe('DeploySetupAgentMenu', () => {
 
     expect(openAgentApp).toHaveBeenCalledExactlyOnceWith(
       app,
-      expect.stringContaining('## Your path: create from the install')
+      expect.stringContaining('Workflow: "workflows/portraits/upscale.json"')
     )
     expect(downloadBlob).not.toHaveBeenCalled()
   })
@@ -154,7 +206,7 @@ describe('DeploySetupAgentMenu', () => {
     await pickRow(user, 'Copy prompt')
     expect(button).toHaveTextContent(/^Copied/)
     expect(copyToClipboard).toHaveBeenCalledWith(
-      expect.stringContaining('## Your path: create from the install'),
+      expect.stringContaining('Workflow: "workflows/portraits/upscale.json"'),
       { toastOnSuccess: false }
     )
     expect(downloadBlob).not.toHaveBeenCalled()

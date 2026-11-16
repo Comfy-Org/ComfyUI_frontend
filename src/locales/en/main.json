@@ -4348,7 +4348,8 @@
       "openInClaude": "Open in Claude desktop",
       "openInCodex": "Open in Codex",
       "copyPrompt": "Copy prompt",
-      "useLocalAgent": "Use local agent"
+      "useLocalAgent": "Use local agent",
+      "saveFirst": "Save this workflow before sending it to an agent."
     },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",

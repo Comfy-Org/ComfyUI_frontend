@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
+import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/components/CloudButton.vue'
@@ -52,134 +52,48 @@ function deferredVerdict() {
 }
 
 describe('Cloud button compatibility checks', () => {
-  it.for([false, true])(
-    'opens the available agent chat when the panel is already open: %s',
-    async (alreadyOpen) => {
-      const panel = useAgentPanelStore()
-      panel.enabled = true
-      panel.isOpen = alreadyOpen
-      panel.view = {
-        screen: 'history',
-        previousThreadId: null,
-        selection: { status: 'idle' }
-      }
-      render(CloudButton, { global: { plugins: [testI18n] } })
-
-      await userEvent.setup().click(screen.getByTestId('cloud-button'))
-
-      expect(panel.isVisible).toBe(true)
-      expect(panel.view).toEqual({ screen: 'chat' })
-      expect(checkCloudCompatibility).not.toHaveBeenCalled()
-      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-        false
+  it.for([
+    {
+      enabled: false,
+      rows: ['Open in Claude desktop', 'Open in Codex', 'Copy prompt']
+    },
+    {
+      enabled: true,
+      rows: [
+        'Use local agent',
+        'Open in Claude desktop',
+        'Open in Codex',
+        'Copy prompt'
+      ]
+    }
+  ])(
+    'preserves agent choice for missing nodes when local agent enabled is $enabled',
+    async ({ enabled, rows }) => {
+      useAgentPanelStore().enabled = enabled
+      vi.mocked(checkCloudCompatibility).mockResolvedValue({
+        kind: 'missing',
+        gaps: { nodePacks: ['ImpactWildcard'], models: [] }
+      })
+      render(
+        {
+          components: { CloudButton, GlobalDialog },
+          template: '<CloudButton /><GlobalDialog />'
+        },
+        { global: { plugins: [testI18n] } }
       )
+      const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+      await user.click(screen.getByTestId('cloud-button'))
+      await user.click(await screen.findByTestId('deploy-setup-agent'))
+
+      expect(
+        (await screen.findAllByRole('menuitem')).map((row) =>
+          row.textContent.trim()
+        )
+      ).toEqual(rows)
+      expect(useAgentPanelStore().isVisible).toBe(false)
     }
   )
-
-  it('does not open the panel or external-agent fallback when consent is declined', async () => {
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    withConsent.mockResolvedValue(undefined)
-    render(CloudButton, { global: { plugins: [testI18n] } })
-
-    await userEvent.setup().click(screen.getByTestId('cloud-button'))
-
-    expect(withConsent).toHaveBeenCalledOnce()
-    expect(panel.isVisible).toBe(false)
-    expect(checkCloudCompatibility).not.toHaveBeenCalled()
-    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-      false
-    )
-  })
-
-  it('does not reopen an agent that becomes unavailable during consent', async () => {
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    withConsent.mockImplementation(async (_trigger, onAccept) => {
-      panel.enabled = false
-      onAccept()
-    })
-    render(CloudButton, { global: { plugins: [testI18n] } })
-
-    await userEvent.setup().click(screen.getByTestId('cloud-button'))
-
-    expect(panel.isOpen).toBe(false)
-  })
-
-  it('ignores a pending compatibility answer after the agent becomes available', async () => {
-    const response = deferredVerdict()
-    vi.mocked(checkCloudCompatibility).mockReturnValue(response.promise)
-    const panel = useAgentPanelStore()
-    render(CloudButton, { global: { plugins: [testI18n] } })
-    const user = userEvent.setup()
-    const button = screen.getByTestId('cloud-button')
-    await user.click(button)
-
-    panel.enabled = true
-    await user.click(button)
-    response.resolve({ kind: 'canOpen' })
-    await response.promise
-    await nextTick()
-
-    expect(panel.isVisible).toBe(true)
-    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-      false
-    )
-  })
-
-  it('offers external agents for missing nodes when the local agent is unavailable', async () => {
-    vi.mocked(checkCloudCompatibility).mockResolvedValue({
-      kind: 'missing',
-      gaps: { nodePacks: ['ImpactWildcard'], models: [] }
-    })
-    render(
-      {
-        components: { CloudButton, GlobalDialog },
-        template: '<CloudButton /><GlobalDialog />'
-      },
-      { global: { plugins: [testI18n] } }
-    )
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-
-    await user.click(screen.getByTestId('cloud-button'))
-    await user.click(await screen.findByTestId('deploy-setup-agent'))
-
-    expect(
-      await screen.findByRole('menuitem', { name: 'Open in Claude desktop' })
-    ).toBeVisible()
-    expect(
-      screen.getByRole('menuitem', { name: 'Open in Codex' })
-    ).toBeVisible()
-    expect(useAgentPanelStore().isVisible).toBe(false)
-  })
-
-  it('does not show a loading fallback dialog over the newly opened agent', async () => {
-    let finishLoading = () => {}
-    const loaded = new Promise<void>((resolve) => {
-      finishLoading = resolve
-    })
-    let opening: Promise<boolean> | undefined
-    vi.mocked(openRunOnCloudDialog).mockImplementationOnce((isStillWanted) => {
-      opening = loaded.then(() => openRunOnCloudDialog(isStillWanted))
-      return opening
-    })
-    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
-    const panel = useAgentPanelStore()
-    render(CloudButton, { global: { plugins: [testI18n] } })
-    const user = userEvent.setup()
-    const button = screen.getByTestId('cloud-button')
-    await user.click(button)
-
-    panel.enabled = true
-    await user.click(button)
-    finishLoading()
-
-    await expect(opening).resolves.toBe(false)
-    expect(panel.isVisible).toBe(true)
-    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-      false
-    )
-  })
 
   it('opens the completed hover result without requesting it again', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
