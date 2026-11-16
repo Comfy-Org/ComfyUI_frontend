@@ -16,6 +16,8 @@ export type PointerEventOptions = Modifiers & {
   button?: number
   buttons?: number
   pointerId?: number
+  pointerType?: string
+  isPrimary?: boolean
   timeStamp?: number
 }
 
