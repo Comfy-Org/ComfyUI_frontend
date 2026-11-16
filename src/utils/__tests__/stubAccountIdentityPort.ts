@@ -56,3 +56,28 @@ export function replayIdentityPort(
     observers.forEach((observer) => observer(user))
   return { observers, register, emit }
 }
+
+/**
+ * Signs a Firebase user in for the real `authStore`. As in the SDK, a plain
+ * token read answers `cached-token`; a forced one mints, then announces it.
+ */
+export function signInFirebaseUser(mint: () => Promise<string>): void {
+  const tokenObservers = new Set<IdentityObserver>()
+  const user = fromPartial<User>({
+    uid: 'firebase-user',
+    getIdToken: async (forceRefresh?: boolean) => {
+      if (!forceRefresh) return 'cached-token'
+      const minted = await mint()
+      tokenObservers.forEach((observer) => observer(user))
+      return minted
+    }
+  })
+  vi.mocked(onAuthStateChanged).mockImplementation((_auth, observer) => {
+    if (typeof observer === 'function') observer(user)
+    return () => {}
+  })
+  vi.mocked(onIdTokenChanged).mockImplementation((_auth, observer) => {
+    if (typeof observer === 'function') tokenObservers.add(observer)
+    return () => {}
+  })
+}
