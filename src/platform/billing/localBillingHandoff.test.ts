@@ -326,6 +326,28 @@ describe('issueLocalBillingHandoff', () => {
       expect(body).not.toHaveProperty('intent')
     })
 
+    it('closes the tab and shows the generic message when the issued URL cannot carry the view', async () => {
+      const { tab } = reservedTab()
+      respondToFetch(HANDOFFS, () =>
+        Response.json(
+          {
+            entry_url: 'https://',
+            expires_at: '2026-11-11T00:01:00Z',
+            request_id: 'req-1'
+          },
+          { status: 201 }
+        )
+      )
+
+      await openPlatformBillingHandoff('plans')
+
+      expect(tab.close).toHaveBeenCalledOnce()
+      expect(tab.location.href).toBe('')
+      expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
+        'subscription.billingPortalUnavailable'
+      )
+    })
+
     it.for([
       {
         name: 'the server message when Cloud explained the refusal',

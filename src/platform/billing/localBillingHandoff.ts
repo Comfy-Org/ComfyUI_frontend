@@ -22,6 +22,7 @@ import { localSurface } from '@/platform/billing/localBillingWebEnabled'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useAuthStore } from '@/stores/authStore'
+import { parseUrl } from '@/utils/urlSafety'
 
 const ISSUE_TIMEOUT_MS = 15_000
 
@@ -322,9 +323,10 @@ export type PlatformHandoffView = 'plans'
 function withPlatformView(
   entryUrl: string,
   view: PlatformHandoffView | undefined
-): string {
+): string | undefined {
   if (view === undefined) return entryUrl
-  const url = new URL(entryUrl)
+  const url = parseUrl(entryUrl)
+  if (!url) return undefined
   url.searchParams.set('view', view)
   return url.href
 }
@@ -343,8 +345,12 @@ export async function openPlatformBillingHandoff(
     { receiver: 'platform' },
     new AbortController().signal
   )
-  if (issued.status === 'ok')
-    return tab.navigate(withPlatformView(issued.url, view))
+  const target =
+    issued.status === 'ok' ? withPlatformView(issued.url, view) : undefined
+  if (target !== undefined) return tab.navigate(target)
   tab.close()
-  useToast().error(issued.message ?? t('subscription.billingPortalUnavailable'))
+  useToast().error(
+    (issued.status === 'error' && issued.message) ||
+      t('subscription.billingPortalUnavailable')
+  )
 }
