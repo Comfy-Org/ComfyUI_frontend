@@ -58,7 +58,7 @@
       </Popover>
       <span v-else aria-hidden />
 
-      <div v-if="activeRowCount > 1" class="flex items-center gap-1">
+      <div v-if="activeRowCount > 1" class="flex items-center gap-0.5">
         <Button
           v-if="queuedCount > 0"
           variant="muted-textonly"
@@ -75,9 +75,9 @@
           aria-hidden
         />
         <Button
-          variant="destructive-textonly"
+          variant="muted-textonly"
           size="sm"
-          :class="footerButtonClass"
+          :class="cn(footerButtonClass, 'hover:text-destructive')"
           data-testid="queue-status-cancel-all"
           @click="emit('cancelAll')"
         >
@@ -134,5 +134,5 @@ const showFooter = computed(
   () => activeRowCount.value > 1 || results.length > 0
 )
 const footerButtonClass =
-  'gap-1.5 font-medium data-[state=open]:text-foreground'
+  'gap-1 px-1.5 font-medium data-[state=open]:text-foreground'
 </script>
