@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -126,6 +127,50 @@ describe('NodeSearchBox', () => {
     expect(useTelemetry()?.trackNodeSearch).toHaveBeenCalledExactlyOnceWith({
       query: 'ksampler'
     })
+  })
+
+  it('shows a node def registered after the query was typed', async () => {
+    vi.useFakeTimers()
+    renderComponent()
+
+    await fireEvent.update(screen.getByRole('combobox'), 'dragon')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.queryByRole('option', { name: 'Blueprint' })).toBeNull()
+
+    const nodeDefStore = useNodeDefStore()
+    nodeDefStore.nodeDefsByName = {
+      ...nodeDefStore.nodeDefsByName,
+      Blueprint: new ComfyNodeDefImpl({
+        name: 'Blueprint',
+        display_name: 'Blueprint',
+        category: 'Subgraph Blueprints/User',
+        python_module: 'blueprint',
+        description: '',
+        input: {},
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false,
+        search_aliases: ['dragon']
+      })
+    }
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(screen.getByRole('option', { name: 'Blueprint' })).toBeVisible()
+  })
+
+  it('shows frequent nodes that load after the box opened', async () => {
+    vi.useFakeTimers()
+    renderComponent()
+    expect(screen.queryByRole('option', { name: 'KSampler' })).toBeNull()
+
+    const nodeFrequencyStore = useNodeFrequencyStore()
+    nodeFrequencyStore.isLoaded = false
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: { KSampler: 1 } })
+    await nodeFrequencyStore.loadNodeFrequencies()
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(screen.getByRole('option', { name: 'KSampler' })).toBeVisible()
   })
 
   it.for([50, 100])(

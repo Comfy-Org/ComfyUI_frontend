@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useSubgraphInputValuesStore } from '@/components/graph/subgraph/subgraphInputValuesStore'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -10,6 +9,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -19,6 +19,19 @@ import {
 } from './widgetInputSource'
 
 vi.mock(import('@/scripts/app'))
+vi.mock<unknown>(import('vue-router'), () => ({
+  NavigationFailureType: { cancelled: 8, duplicated: 16 },
+  isNavigationFailure: vi.fn(() => false),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    options: { history: { state: {} } }
+  })
+}))
+vi.mock(import('@vueuse/router'), async () => {
+  const { ref } = await import('vue')
+  return { useRouteHash: () => ref('') }
+})
 
 function addConnectedHost(subgraph: Subgraph) {
   const host = createTestSubgraphNode(subgraph)
@@ -80,7 +93,7 @@ describe('resolveWidgetInputSource', () => {
     )
     useCanvasStore().canvas = canvas
     await nextTick()
-    useSubgraphInputValuesStore()
+    useSubgraphNavigationStore()
 
     canvas.openSubgraph(subgraph, opened.host)
 

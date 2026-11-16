@@ -1,14 +1,13 @@
-import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, shallowRef, watch } from 'vue'
+import { computed } from 'vue'
 
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { resolveInputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
 import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
-import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import type { UUID } from '@/utils/uuid'
 
@@ -17,31 +16,10 @@ export const useSubgraphInputValuesStore = defineStore(
   () => {
     const canvasStore = useCanvasStore()
     const nodeDataStore = useNodeDataStore()
-    const enteredHosts = shallowRef<
-      ReadonlyMap<UUID, Pick<NodeState, 'graphId' | 'id'>>
-    >(new Map())
     const graph = computed(() => {
       const current = canvasStore.currentGraph
       return isSubgraph(current) ? current : undefined
     })
-
-    watch(
-      () => graph.value?.rootGraph.id,
-      () => (enteredHosts.value = new Map()),
-      { flush: 'sync' }
-    )
-
-    useEventListener(
-      () => canvasStore.canvas?.canvas,
-      'subgraph-opened',
-      (event: CustomEvent<LGraphCanvasEventMap['subgraph-opened']>) => {
-        const { fromNode, subgraph, closingGraph } = event.detail
-        enteredHosts.value = new Map(enteredHosts.value).set(subgraph.id, {
-          graphId: closingGraph.id,
-          id: fromNode.id
-        })
-      }
-    )
 
     const selected = computed(() => {
       const current = graph.value
@@ -51,7 +29,7 @@ export const useSubgraphInputValuesStore = defineStore(
         nodeDataStore
           .getGraphNodesFor(root.id, graphId)
           .filter((node) => node.type === current.id)
-      const entered = enteredHosts.value.get(current.id)
+      const entered = useSubgraphNavigationStore().enteredHost(current)
       if (entered) {
         const host = nodeDataStore.getNode(root.id, entered.id)
         return host?.graphId === entered.graphId && host.type === current.id
@@ -62,12 +40,14 @@ export const useSubgraphInputValuesStore = defineStore(
       return instances.length === 1 ? instances[0] : undefined
     })
 
-    const sources = computed(() => {
-      const host = selected.value
-      const root = graph.value?.rootGraph
+    function sourcesFor(host: NodeState): Map<string, InputValueSource> {
       const result = new Map<string, InputValueSource>()
-      if (!host || !root) return result
-      const scope = graphScopeOf({ id: host.graphId, rootGraph: root })
+      const rootGraphId = canvasStore.rootGraphId
+      if (!rootGraphId) return result
+      const scope = graphScopeOf({
+        id: host.graphId,
+        rootGraph: { id: rootGraphId }
+      })
       for (const [index, { name, widgetId }] of host.inputs.entries()) {
         if (widgetId)
           result.set(
@@ -76,7 +56,7 @@ export const useSubgraphInputValuesStore = defineStore(
           )
       }
       return result
-    })
-    return { graph, selected, sources }
+    }
+    return { graph, selected, sourcesFor }
   }
 )

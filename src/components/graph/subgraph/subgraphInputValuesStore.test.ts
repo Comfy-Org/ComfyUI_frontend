@@ -1,16 +1,33 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
+
+vi.mock(import('@/scripts/app'))
+vi.mock<unknown>(import('vue-router'), () => ({
+  NavigationFailureType: { cancelled: 8, duplicated: 16 },
+  isNavigationFailure: vi.fn(() => false),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    options: { history: { state: {} } }
+  })
+}))
+vi.mock(import('@vueuse/router'), async () => {
+  const { ref } = await import('vue')
+  return { useRouteHash: () => ref('') }
+})
 
 function addTwoHosts(subgraph: Subgraph) {
   const a = createTestSubgraphNode(subgraph, { id: 11 })
@@ -27,6 +44,7 @@ async function showOnCanvas(root: LGraph) {
     skip_events: true
   })
   useCanvasStore().canvas = canvas
+  useSubgraphNavigationStore()
   await nextTick()
   return { canvas, store: useSubgraphInputValuesStore() }
 }
@@ -71,5 +89,61 @@ describe('subgraph input values instance selection', () => {
 
     canvas.setGraph(outer)
     expect(store.selected?.id).toBe(b.id)
+  })
+
+  it('edits the nested instance entered through when the definition also has a root instance', async () => {
+    const outer = createTestSubgraph({ name: 'outer' })
+    const root = outer.rootGraph
+    const nested = createTestSubgraph({ name: 'nested', rootGraph: root })
+    root.subgraphs.set(outer.id, outer)
+    root.subgraphs.set(nested.id, nested)
+    const outerHost = createTestSubgraphNode(outer, { id: 3 })
+    root.add(outerHost)
+    root.add(createTestSubgraphNode(nested, { id: 7 }))
+    const inner = createTestSubgraphNode(nested, { id: 5, parentGraph: outer })
+    outer.add(inner)
+    const { canvas, store } = await showOnCanvas(root)
+
+    canvas.openSubgraph(outer, outerHost)
+    canvas.openSubgraph(nested, inner)
+
+    expect(store.selected).toMatchObject({ graphId: outer.id, id: inner.id })
+  })
+})
+
+describe('subgraph input value sources', () => {
+  it('resolves each host to its own editable widget', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'number', type: 'INT' }]
+    })
+    const { a, b } = addTwoHosts(subgraph)
+    const interior = new LGraphNode('Value')
+    const input = interior.addInput('value', 'INT')
+    input.widget = { name: 'value' }
+    interior.addWidget('number', 'value', 1, () => {})
+    subgraph.add(interior)
+    subgraph.inputs[0].connect(input, interior)
+    useCanvasStore().currentGraph = subgraph
+    const nodes = useNodeDataStore()
+    const hostA = nodes.getNode(subgraph.rootGraph.id, a.id)
+    const hostB = nodes.getNode(subgraph.rootGraph.id, b.id)
+    assert.exists(hostA)
+    assert.exists(hostB)
+    const widgetA = a.inputs[0].widgetId
+    const widgetB = b.inputs[0].widgetId
+    assert.exists(widgetA)
+    assert.exists(widgetB)
+    const store = useSubgraphInputValuesStore()
+
+    expect(store.sourcesFor(hostA).get('number')).toMatchObject({
+      kind: 'editable',
+      node: { id: a.id },
+      widgetId: widgetA
+    })
+    expect(store.sourcesFor(hostB).get('number')).toMatchObject({
+      kind: 'editable',
+      node: { id: b.id },
+      widgetId: widgetB
+    })
   })
 })

@@ -96,7 +96,7 @@
       "properties": {
         "Node name for S&R": "LoadImage"
       },
-      "widgets_values": [null, "image"]
+      "widgets_values": ["this-image-does-not-exist-deadbeef.png", "image"]
     },
     {
       "id": 6,
