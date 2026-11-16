@@ -8,6 +8,18 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 
+/** One resolve of the opened task's outputs, and the state it was requested for. */
+interface GalleryRefresh {
+  /** Task the refresh belongs to; a different one means the gallery was reopened. */
+  taskId: string
+  /** `openSequence` at request time; a newer open or queue update supersedes this. */
+  sequenceId: number
+  /** Items to keep if the task resolves no outputs (the list snapshot or the open). */
+  fallbackItems: AugmentedResultItem[]
+  /** Last-known active URL, used when the live list no longer has an item at its index. */
+  fallbackUrl?: string
+}
+
 /**
  * Manages result gallery state and activation for queue items.
  */
@@ -47,14 +59,6 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
       : [activeItem, ...items]
   }
 
-  function isLiveRefreshCurrent(refreshId: number, taskId: string): boolean {
-    return (
-      refreshId === openSequence &&
-      galleryTaskId.value === taskId &&
-      galleryActiveIndex.value !== -1
-    )
-  }
-
   function hasHdrPreview(task: TaskItemImpl): boolean {
     return (
       task.previewOutput !== undefined &&
@@ -71,6 +75,27 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     )
   }
 
+  /**
+   * Adopts a resolved output set, unless the gallery moved on while it was in
+   * flight. Shared by the live-refresh watcher and `onViewItem` so the staleness
+   * guard and the re-anchor by URL cannot drift apart.
+   */
+  function adoptResolvedOutputs(
+    outputs: readonly AugmentedResultItem[] | null,
+    refresh: GalleryRefresh
+  ): void {
+    if (outputs === null) return
+    if (refresh.sequenceId !== openSequence) return
+    if (galleryTaskId.value !== refresh.taskId) return
+    if (galleryActiveIndex.value === -1) return
+    const items = nonHdrOutputs(outputs, refresh.fallbackItems)
+    if (!items.length) return
+    const currentUrl =
+      urlAt(galleryItems.value, galleryActiveIndex.value) ?? refresh.fallbackUrl
+    galleryItems.value = items
+    galleryActiveIndex.value = findActiveIndex(items, currentUrl)
+  }
+
   watch(getFilteredTasks, (tasks) => {
     const taskId = galleryTaskId.value
     const index = galleryActiveIndex.value
@@ -80,23 +105,23 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     const activeItem = galleryItems.value.at(index)
     const activeUrl = activeItem ? resultItemUrl(activeItem) : undefined
     const rerun = retainActiveItem(resolveItems(targetTask, tasks), activeItem)
-    openSequence += 1
+    const sequenceId = ++openSequence
+    // A list snapshot that would lose items the gallery already shows is not
+    // adopted: only the output refresh may shrink it.
     if (rerun.length >= galleryItems.value.length) {
       galleryItems.value = rerun
       galleryActiveIndex.value = findActiveIndex(rerun, activeUrl)
     }
-    const refreshId = openSequence
     if (hasHdrPreview(targetTask)) return
-    void getOutputsForTask(targetTask).then((targetOutputs) => {
-      if (targetOutputs === null || !isLiveRefreshCurrent(refreshId, taskId))
-        return
-      const items = nonHdrOutputs(targetOutputs, rerun)
-      if (!items.length) return
-      const currentUrl =
-        urlAt(galleryItems.value, galleryActiveIndex.value) ?? activeUrl
-      galleryItems.value = items
-      galleryActiveIndex.value = findActiveIndex(items, currentUrl)
-    })
+    const refresh: GalleryRefresh = {
+      taskId,
+      sequenceId,
+      fallbackItems: rerun,
+      fallbackUrl: activeUrl
+    }
+    void getOutputsForTask(targetTask).then((targetOutputs) =>
+      adoptResolvedOutputs(targetOutputs, refresh)
+    )
   })
 
   async function onViewItem(item: JobListItem) {
@@ -126,16 +151,11 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     )
     if (!targetTask) return
     const targetOutputs = await getOutputsForTask(targetTask)
-    if (openId !== openSequence) return
-    if (galleryActiveIndex.value === -1) return
-    if (galleryTaskId.value !== openedTaskId) return
-    if (targetOutputs === null) return
-    const refreshed = targetOutputs.length ? targetOutputs : items
-    const activeUrl = urlAt(galleryItems.value, galleryActiveIndex.value)
-    const filtered = refreshed.filter((o) => !isHdrImageFilename(o.filename))
-    if (!filtered.length) return
-    galleryItems.value = filtered
-    galleryActiveIndex.value = findActiveIndex(filtered, activeUrl)
+    adoptResolvedOutputs(targetOutputs, {
+      taskId: targetTask.jobId,
+      sequenceId: openId,
+      fallbackItems: items
+    })
   }
 
   return {
