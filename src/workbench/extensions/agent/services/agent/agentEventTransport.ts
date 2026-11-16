@@ -33,6 +33,7 @@ export type AgentChatEvent = Extract<
       | 'agent_message_delta'
       | 'agent_message_draft'
       | 'agent_thinking_draft'
+      | 'agent_tool_call_draft'
       | 'agent_message_done'
       | 'agent_active_tab'
       | 'agent_ask'
@@ -69,6 +70,16 @@ type AgentMessageDraftEvent = Extract<
   AgentChatEvent,
   { type: 'agent_message_draft' }
 >
+type AgentToolCallDraftEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_tool_call_draft' }
+>
+
+const DRAFT_EVENT_TYPES: ReadonlySet<AgentChatEvent['type']> = new Set([
+  'agent_message_draft',
+  'agent_thinking_draft',
+  'agent_tool_call_draft'
+])
 
 export type CanvasConfirmation = 'none' | 'awaiting' | 'unavailable'
 
@@ -134,6 +145,7 @@ export function createAgentEventTransport(
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
   let thinkingDraft: ThinkingPart | null = null
+  const toolDrafts = new Map<string, ToolPart>()
   const tools = new Map<string, ToolPart>(
     message.parts
       .filter((part): part is ToolPart => part.type === 'tool')
@@ -505,6 +517,36 @@ export function createAgentEventTransport(
   function dropDrafts(): void {
     dropDraft()
     dropThinkingDraft()
+    dropToolDrafts()
+  }
+
+  /** Applies one `agent_tool_call_draft` frame: a row for a tool call the
+   * model has started writing, and an empty id withdraws every such row. */
+  function handleToolCallDraftEvent(
+    data: AgentToolCallDraftEvent['data']
+  ): void {
+    if (!data.tool_call_id || !data.tool_name) {
+      dropToolDrafts()
+      return
+    }
+    if (toolDrafts.has(data.tool_call_id) || tools.has(data.tool_call_id))
+      return
+    const part: ToolPart = {
+      type: 'tool',
+      callId: data.tool_call_id,
+      name: data.tool_name,
+      state: 'streaming'
+    }
+    toolDrafts.set(data.tool_call_id, part)
+    message.parts.push(part)
+  }
+
+  function dropToolDrafts(): void {
+    if (!toolDrafts.size) return
+    message.parts = message.parts.filter(
+      (part) => part.type !== 'tool' || toolDrafts.get(part.callId) !== part
+    )
+    toolDrafts.clear()
   }
 
   /** Applies one `agent_message_draft` frame: the whole reply so far replaces
@@ -548,6 +590,8 @@ export function createAgentEventTransport(
   }
 
   function applyChatEvent(event: AgentNonTerminalEvent): boolean {
+    // A draft tool row stands only until the round reports anything real.
+    if (!DRAFT_EVENT_TYPES.has(event.type)) dropToolDrafts()
     switch (event.type) {
       case 'agent_thinking':
         handleThinkingEvent(event.data)
@@ -569,6 +613,9 @@ export function createAgentEventTransport(
         return true
       case 'agent_thinking_draft':
         handleThinkingDraftEvent(event.data)
+        return true
+      case 'agent_tool_call_draft':
+        handleToolCallDraftEvent(event.data)
         return true
     }
   }
