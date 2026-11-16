@@ -8548,6 +8548,9 @@
       "model": {
         "name": "модель"
       },
+      "model_auto_duration": {
+        "name": "автоматическая длительность"
+      },
       "model_duration": {
         "name": "длительность"
       },
@@ -8568,7 +8571,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "Создаёт видео с синхронизированными диалогом и звуком по текстовому запросу с помощью HeyGen Video 1.0. При необходимости подключите до 12 референсных изображений, видео и аудиоклипов и упомяните их в запросе как {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "description": "Создайте видео с синхронизированными диалогом и звуком по текстовому промпту с помощью HeyGen Video 1.0. При необходимости подключите до 15 эталонных изображений, видео и аудиоклипов и упомяните их в промпте как {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
     "display_name": "HeyGen Video 1.0: референс в видео",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8582,9 @@
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "model_auto_duration": {
+        "name": "автоматическая длительность"
       },
       "model_duration": {
         "name": "длительность"
@@ -13723,34 +13729,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "Содержит одну или несколько концепций камеры для использования с узлами Luma Text to Video и Luma Image to Video.",
-    "display_name": "Luma Концепции",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Необязательные концепции камеры для добавления к выбранным здесь."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "Редактирование существующего изображения с помощью текстового запроса, используя модель Luma UNI-1.",
     "display_name": "Luma UNI-1 Image Edit",
@@ -13787,82 +13765,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "Синхронно изменяет изображения на основе запроса и соотношения сторон.",
-    "display_name": "Luma Image to Image",
-    "inputs": {
-      "control_after_generate": {
-        "name": "контроль после генерации"
-      },
-      "image": {
-        "name": "изображение"
-      },
-      "image_weight": {
-        "name": "вес изображения",
-        "tooltip": "Вес изображения; чем ближе к 1.0, тем меньше будет изменено изображение."
-      },
-      "model": {
-        "name": "модель"
-      },
-      "prompt": {
-        "name": "промпт",
-        "tooltip": "Промпт для генерации изображения"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "Синхронно генерирует изображения на основе запроса и соотношения сторон.",
-    "display_name": "Luma Текст в изображение",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "character_image": {
-        "name": "character_image",
-        "tooltip": "Референсные изображения персонажей; может быть пакет из нескольких, учитывается до 4 изображений."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image_luma_ref": {
-        "name": "image_luma_ref",
-        "tooltip": "Подключение к Luma Reference для влияния на генерацию с помощью входных изображений; может быть учтено до 4 изображений."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Запрос для генерации изображения"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты не являются детерминированными независимо от сида."
-      },
-      "style_image": {
-        "name": "style_image",
-        "tooltip": "Референсное изображение стиля; будет использовано только 1 изображение."
-      },
-      "style_image_weight": {
-        "name": "style_image_weight",
-        "tooltip": "Вес изображения стиля. Игнорируется, если style_image не предоставлено."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "Генерация изображений по текстовому описанию с помощью модели Luma UNI-1.",
     "display_name": "Luma UNI-1 Image",
@@ -13890,52 +13792,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed определяет, нужно ли повторно запускать узел; результаты всегда недетерминированы, независимо от seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "Генерирует видео синхронно на основе запроса, входных изображений и output_size.",
-    "display_name": "Luma Image to Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "контроль после генерации"
-      },
-      "duration": {
-        "name": "длительность"
-      },
-      "first_image": {
-        "name": "первое_изображение",
-        "tooltip": "Первый кадр сгенерированного видео."
-      },
-      "last_image": {
-        "name": "последнее_изображение",
-        "tooltip": "Последний кадр сгенерированного видео."
-      },
-      "loop": {
-        "name": "зацикливание"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Необязательные Camera Concepts для управления движением камеры через узел Luma Concepts."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Запрос для генерации видео"
-      },
-      "resolution": {
-        "name": "разрешение"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
       }
     },
     "outputs": {
@@ -14165,7 +14021,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "Измените соотношение сторон существующего видео, используя Luma Ray 3.2 для заполнения новых областей холста. Исходное видео до 30 секунд. Оплата за каждую секунду результата.",
+    "description": "Изменяет соотношение сторон существующего видео, используя Luma Ray 3.2 для заполнения новых открытых областей холста. Исходное видео — до 10 секунд. Оплата взимается за секунду результата.",
     "display_name": "Luma Ray 3.2 Видео Переформатирование",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14043,7 @@
       },
       "video": {
         "name": "видео",
-        "tooltip": "Исходное видео для изменения формата. До 30 секунд."
+        "tooltip": "Исходное видео для изменения соотношения сторон. До 10 секунд."
       }
     },
     "outputs": {
@@ -14196,70 +14052,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "Содержит изображение и вес для использования с узлом Luma Generate Image.",
-    "display_name": "Luma Reference",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "Изображение для использования в качестве эталона."
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "weight",
-        "tooltip": "Вес эталонного изображения."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "Синхронно генерирует видео на основе запроса и output_size.",
-    "display_name": "Luma Текст в Видео",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "loop": {
-        "name": "loop"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Необязательные Camera Concepts для управления движением камеры через узел Luma Concepts."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Запрос для генерации видео"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed для определения, нужно ли повторно запускать узел; фактические результаты всегда недетерминированы, независимо от seed."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -24987,6 +24779,9 @@
       "format_bit_depth": {
         "name": "глубина_цвета"
       },
+      "format_channels": {
+        "name": "каналы"
+      },
       "format_input_color_space": {
         "name": "цветовое_пространство_входа"
       },
@@ -25977,6 +25772,33 @@
       },
       "1": {
         "name": "правый",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "Разделяет изображение на красное, зелёное и синее изображения, а также альфа-маску.",
+    "display_name": "Разделить каналы изображения",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "красный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "зелёный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "синий",
+        "tooltip": null
+      },
+      "3": {
+        "name": "альфа",
         "tooltip": null
       }
     }

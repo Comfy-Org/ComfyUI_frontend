@@ -310,6 +310,28 @@ canvas diff is only a viewport shift, pin the pan and zoom instead of
 re-baselining. Never commit local baselines; see the README for the CI
 baseline workflow.
 
+## Accessibility scans
+
+Specs in `tests/accessibility/` run
+[axe](https://github.com/dequelabs/axe-core) WCAG A/AA and best-practice rules
+against the whole page. Tag them `@a11y`; they run in the regular projects.
+Merge `accessibilityFixture` from `@e2e/fixtures/accessibilityFixture` with
+`comfyPageFixture`, open the surface through its page object, assert the state
+it must reach, then call
+`accessibility.expectOnlyKnownViolations(['rule-id', …])`.
+
+- The list allows axe rule IDs on that surface. The assertion fails on any
+  other rule and on a listed rule that no longer fires, so a fix deletes its
+  entry. Never add a rule ID to make a new failure pass; fix the component.
+- For a narrower scan, pass a builder as the second argument, such as
+  `accessibility.makeAxeBuilder().include('[role="dialog"]')`. Prefer listing a
+  known rule ID to `exclude()`, which drops the element from every rule.
+- The `axe-results` attachment holds the full scan, including checks axe could
+  not decide.
+- axe cannot see nodes drawn on the LiteGraph canvas and does not check
+  keyboard operation, focus order, or screen-reader output. Cover those with
+  behavioral tests.
+
 ## Flake prevention
 
 ### Choose the smallest correct assertion

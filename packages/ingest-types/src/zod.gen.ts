@@ -969,6 +969,7 @@ export const zAutoReloadPreview = z.object({
  *
  */
 export const zAutoReloadSettings = z.object({
+  auto_top_up_conflict: z.boolean(),
   card_expiring_soon: z.boolean().nullish(),
   card_expiry: zAutoReloadCardExpiry.nullable(),
   configured: z.boolean(),
@@ -1258,6 +1259,8 @@ export const zBillingCapabilities = z.object({
   can_reactivate: z.boolean(),
   can_revert_scheduled_change: z.boolean(),
   can_run_workflows: z.boolean(),
+  can_set_budgets: z.boolean(),
+  can_set_hard_caps: z.boolean(),
   can_subscribe_self_serve: z.boolean(),
   can_top_up: z.boolean(),
   can_upgrade: z.boolean(),
@@ -1443,6 +1446,31 @@ export const zBillingCapabilityDenials = z.object({
       'free_tier_exhausted'
     ])
     .optional(),
+  can_set_budgets: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'creator_only_provisioning',
+      'no_subscription',
+      'free_plan',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized'
+    ])
+    .optional(),
+  can_set_hard_caps: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'creator_only_provisioning',
+      'no_subscription',
+      'free_plan',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized',
+      'plan_not_enterprise'
+    ])
+    .optional(),
   can_subscribe_self_serve: z
     .enum([
       'not_a_member',
@@ -1578,7 +1606,13 @@ export const zBillingEventsResponse = z.object({
  * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
  */
 export const zBillingHandoffCreateRequest = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .gte(BigInt(500))
+    .lte(BigInt(250000))
+    .optional(),
   client_version: z.string().max(64),
+  intent: z.enum(['top-up', 'subscription']).optional(),
   receiver: z.enum(['billing_web', 'platform']),
   surface: z.enum(['local_web', 'desktop']),
   workspace_id: z.string().min(1)
@@ -1634,6 +1668,13 @@ export const zBillingOpCancelResponse = z.object({
 })
 
 /**
+ * How a billing operation ended, for a billing handoff tab whose scoped session has ended.
+ */
+export const zBillingOpOutcomeResponse = z.object({
+  status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed'])
+})
+
+/**
  * Payment lifecycle status
  */
 export const zBillingStatus = z.enum([
@@ -1677,6 +1718,167 @@ export const zBillingCompanyDetailsUpdateRequest = z.object({
   address: zBillingAddress.optional(),
   company_name: z.string().optional(),
   tax_id: zBillingTaxId.optional()
+})
+
+export const zBudgetAlert = z.object({
+  percent: z.int(),
+  sent_at: z.iso.datetime(),
+  status: z.string()
+})
+
+export const zBudgetChange = z.object({
+  action: z.enum(['created', 'updated', 'archived', 'downgraded']),
+  actor_user_id: z.string(),
+  after: z.record(z.string(), z.unknown()).nullable(),
+  before: z.record(z.string(), z.unknown()).nullable(),
+  changed_at: z.iso.datetime()
+})
+
+export const zBudgetHistory = z.object({
+  changes: z.array(zBudgetChange)
+})
+
+/**
+ * `soft` alerts at its thresholds and never refuses spend. `hard` also refuses spend once the limit is reached; Enterprise plans only.
+ *
+ */
+export const zBudgetMode = z.enum(['hard', 'soft'])
+
+/**
+ * How long a budget applies. `current_period`: until the current billing period ends. `until`: through the period holding `ends_at`. `indefinitely`: every period, with no end.
+ *
+ */
+export const zBudgetRepeat = z.enum(['current_period', 'until', 'indefinitely'])
+
+/**
+ * What a budget limits.
+ */
+export const zBudgetScopeKind = z.enum([
+  'workspace',
+  'member',
+  'api_key',
+  'deployment'
+])
+
+/**
+ * A budget with its spend in the workspace's current billing period. Amounts come in credits and in micro-USD; a client shows credits as received and never converts.
+ *
+ */
+export const zBudget = z.object({
+  alert_percents: z.array(z.int()),
+  alerts: z.array(zBudgetAlert),
+  created_by: z.string(),
+  ends_at: z.iso.datetime().nullable(),
+  id: z.string(),
+  limit_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  limit_micro_usd: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  mode: zBudgetMode,
+  percent_used: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  repeat: zBudgetRepeat,
+  resets_at: z.iso.datetime().nullable(),
+  scope_id: z.string(),
+  scope_kind: zBudgetScopeKind,
+  spend_updated_at: z.iso.datetime().nullable(),
+  spent_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  spent_micro_usd: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  updated_by: z.string()
+})
+
+export const zBudgetCreateRequest = z.object({
+  alert_percents: z.array(z.int().gte(1).lte(100)).min(1).max(5).optional(),
+  ends_at: z.iso.datetime().optional(),
+  limit_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  limit_micro_usd: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  mode: zBudgetMode,
+  repeat: zBudgetRepeat.optional(),
+  scope_id: z.string(),
+  scope_kind: zBudgetScopeKind
+})
+
+export const zBudgetList = z.object({
+  auto_top_up_conflict: z.boolean(),
+  budgets: z.array(zBudget)
+})
+
+export const zBudgetUpdateRequest = z.object({
+  alert_percents: z.array(z.int().gte(1).lte(100)).min(1).max(5).optional(),
+  ends_at: z.iso.datetime().optional(),
+  limit_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  limit_micro_usd: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  mode: zBudgetMode.optional(),
+  repeat: zBudgetRepeat.optional()
+})
+
+export const zBudgetWriteResult = z.object({
+  auto_top_up_conflict: z.boolean(),
+  budget: zBudget
 })
 
 /**
@@ -1980,6 +2182,7 @@ export const zCccPageRow = z.object({
   has_live: z.boolean(),
   held_until_start: z.boolean(),
   is_deleted: z.boolean(),
+  on_desktop: z.boolean(),
   on_hub: z.boolean(),
   presentation: zCccPagePresentation,
   revision_uid: z.uuid(),
@@ -3828,7 +4031,7 @@ export const zOAuthConsentChallengeWorkspace = z.object({
 /**
  * The platform this authorization code will be delivered to, when the
  * request's validated redirect_uri is one of a known platform's own OAuth
- * callbacks (ChatGPT, Claude). Derived server-side ONLY from the
+ * callbacks (ChatGPT, Claude, Cursor). Derived server-side ONLY from the
  * redirect_uri this request was byte-matched against at GET time —
  * never from the registrant-supplied client_name — against a
  * version-controlled registry of exact callbacks and anchored callback
@@ -3836,14 +4039,16 @@ export const zOAuthConsentChallengeWorkspace = z.object({
  * clients; omitted for first-party clients and for any redirect that is
  * not a registered platform callback. It verifies the destination
  * platform, NOT that the registrant is that platform's own app (any
- * connector on the platform can hold such a callback), so consumers
- * should label it by `display_name` and still show the redirect host.
+ * connector on the platform can hold such a callback, and any local
+ * process can listen on Cursor's loopback callback or claim its
+ * `cursor://` scheme), so consumers should label it by `display_name`
+ * and still show the redirect host.
  * `client_display_name` is unchanged and remains registrant-supplied.
  *
  */
 export const zOAuthConsentVerifiedClient = z.object({
   display_name: z.string(),
-  platform: z.enum(['chatgpt', 'claude'])
+  platform: z.enum(['chatgpt', 'claude', 'cursor'])
 })
 
 /**
@@ -4172,6 +4377,47 @@ export const zPromptInfo = z.object({
       queue_remaining: z.int().optional()
     })
     .optional()
+})
+
+/**
+ * One validation error as ComfyUI reports it, with tracebacks and every other field removed. type, message and details are each present only when ComfyUI sent them as strings.
+ */
+export const zPromptOutputsSkippedValidationError = z.object({
+  details: z.string().optional(),
+  extra_info: z
+    .object({
+      input_name: z.union([z.string(), z.number(), z.boolean()]).optional(),
+      received_type: z.union([z.string(), z.number(), z.boolean()]).optional(),
+      received_value: z.union([z.string(), z.number(), z.boolean()]).optional()
+    })
+    .optional(),
+  message: z.string().optional(),
+  type: z.string().optional()
+})
+
+/**
+ * One rejected node in a prompt_outputs_skipped event.
+ */
+export const zPromptOutputsSkippedNodeError = z.object({
+  class_type: z.string(),
+  dependent_outputs: z.array(z.string()),
+  errors: z.array(z.union([z.string(), zPromptOutputsSkippedValidationError]))
+})
+
+/**
+ * The `data` of a prompt_outputs_skipped WebSocket event. Sent when ComfyUI accepts a Cloud job's prompt but rejects some nodes: ComfyUI skips the outputs that depend on them and runs the rest, and the job keeps running. The inference server sends it to the user's channel (services/inference/server/services/joborchestrator/prompt_validation.go). Every string taken from ComfyUI has its lists of allowed values or file names replaced ("is not a valid value", "[list omitted]") and is capped at 512 characters.
+ */
+export const zPromptOutputsSkippedData = z.object({
+  node_errors: z.record(z.string(), zPromptOutputsSkippedNodeError),
+  prompt_id: z.string()
+})
+
+/**
+ * Server-to-client prompt_outputs_skipped frame on /ws. ComfyUI skipped some of a Cloud job's outputs because nodes failed validation.
+ */
+export const zPromptOutputsSkippedFrame = z.object({
+  data: zPromptOutputsSkippedData,
+  type: z.enum(['prompt_outputs_skipped'])
 })
 
 /**
@@ -5167,7 +5413,9 @@ export const zBillingStatusResponse = z.object({
   subscription_state: zSubscriptionState.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
-  team_credit_stop: zTeamCreditStopSummary.nullable()
+  team_credit_stop: zTeamCreditStopSummary.nullable(),
+  usage_period_end: z.iso.datetime().optional(),
+  usage_period_start: z.iso.datetime().optional()
 })
 
 /**
@@ -6769,6 +7017,47 @@ export const zGetBillingAutoReloadPreviewResponse = zAutoReloadPreview
 export const zGetBillingBalanceResponse = zBillingBalanceResponse
 
 /**
+ * Success
+ */
+export const zListBillingBudgetsResponse = zBudgetList
+
+export const zCreateBillingBudgetBody = zBudgetCreateRequest
+
+/**
+ * The new budget
+ */
+export const zCreateBillingBudgetResponse = zBudgetWriteResult
+
+export const zDeleteBillingBudgetPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Archived
+ */
+export const zDeleteBillingBudgetResponse = z.void()
+
+export const zUpdateBillingBudgetBody = zBudgetUpdateRequest
+
+export const zUpdateBillingBudgetPath = z.object({
+  id: z.string()
+})
+
+/**
+ * The budget after the change
+ */
+export const zUpdateBillingBudgetResponse = zBudgetWriteResult
+
+export const zGetBillingBudgetHistoryPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Success
+ */
+export const zGetBillingBudgetHistoryResponse = zBudgetHistory
+
+/**
  * Effective billing capabilities
  */
 export const zGetBillingCapabilitiesResponse = zBillingCapabilitiesResponse
@@ -6825,6 +7114,15 @@ export const zCancelBillingOpPath = z.object({
  * Canceled; nothing was charged. Also returned for an operation already discarded or expired without authentication, so a repeat is safe.
  */
 export const zCancelBillingOpResponse = zBillingOpCancelResponse
+
+export const zGetBillingOpOutcomePath = z.object({
+  id: z.string()
+})
+
+/**
+ * Billing operation outcome
+ */
+export const zGetBillingOpOutcomeResponse = zBillingOpOutcomeResponse
 
 /**
  * Saved payment methods
@@ -7769,7 +8067,7 @@ export const zGetCccActivityQuery = z.object({
 export const zGetCccActivityResponse = zCccActivityPage
 
 /**
- * Editing instructions from this deployed catalog API build
+ * Editing instructions from this deployed catalog API build; private no-store
  */
 export const zGetCatalogAgentInstructionsResponse = z.string()
 
@@ -7824,11 +8122,6 @@ export const zGetCccCreatorPath = z.object({
  * Public creator profile
  */
 export const zGetCccCreatorResponse = zCccCreatorProfile
-
-/**
- * Build-coupled catalog instructions, permissions and endpoint contracts
- */
-export const zGetCatalogDocsResponse = z.string()
 
 export const zBatchCccItemsBody = z.object({
   expected_draft_rev: z.coerce
@@ -8192,7 +8485,7 @@ export const zListCccWebsiteModelDirectoryQuery = z.object({
 export const zListCccWebsiteModelDirectoryResponse = zCccWebsiteModelDirectory
 
 /**
- * Catalog OpenAPI with contract fingerprint and environment
+ * Catalog OpenAPI with contract fingerprint and environment; private no-store
  */
 export const zGetCatalogOpenApiResponse = zCccjson
 
