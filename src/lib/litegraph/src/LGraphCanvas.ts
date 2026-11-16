@@ -16,6 +16,7 @@ import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
+import { isCoreNodeType } from '@/lib/litegraph/src/canvas/coreNodeTypeAccess'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { LitegraphLinkAdapter } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
 import type { LinkRenderContext } from '@/renderer/core/canvas/litegraph/litegraphLinkAdapter'
@@ -517,6 +518,13 @@ function connectSearchBoxNodeTo(
       ? nodeTo.slots[slotIndex].type
       : nodeTo.inputs[slotIndex].type
   )
+}
+
+function compareByContent(a: { content?: string }, b: { content?: string }) {
+  return (a.content ?? '').localeCompare(b.content ?? '', undefined, {
+    numeric: true,
+    sensitivity: 'base'
+  })
 }
 
 interface DeselectAllOptions {
@@ -1576,14 +1584,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )
     const [coreTypes, customTypes] = partition(
       listedTypes,
-      (type) => !!type.nodeData?.isCoreNode
+      (type) => !!type.type && isCoreNodeType(type.type)
     )
     const coreEntries = buildEntries('', coreTypes)
     const customEntries = buildEntries('', customTypes)
-    const entries =
-      coreEntries.length && customEntries.length
-        ? [...coreEntries, null, ...customEntries]
-        : [...coreEntries, ...customEntries]
+    const separator = coreEntries.length && customEntries.length ? [null] : []
+    const entries = [...coreEntries, ...separator, ...customEntries]
 
     new LiteGraph.ContextMenu(entries, {
       event: e,
@@ -1666,11 +1672,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }))
 
-      const compareByContent = (a: AddNodeMenu, b: AddNodeMenu) =>
-        (a.content ?? '').localeCompare(b.content ?? '', undefined, {
-          numeric: true,
-          sensitivity: 'base'
-        })
       return [
         ...categoryEntries.sort(compareByContent),
         ...nodeEntries.sort(compareByContent)

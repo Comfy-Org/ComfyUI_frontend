@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { provideCoreNodeTypeCheck } from '@/lib/litegraph/src/canvas/coreNodeTypeAccess'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
@@ -17,10 +18,9 @@ class TestNode extends LGraphNode {
   }
 }
 
-function makeNodeClass(title: string, isCoreNode = false) {
+function makeNodeClass(title: string) {
   class N extends TestNode {
     static override title = title
-    static override nodeData = { isCoreNode }
 
     constructor() {
       super(title)
@@ -59,11 +59,13 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
   const registeredTypes: string[] = []
   let originalContextMenu: typeof LiteGraph.ContextMenu
   const capturedEntries: MenuEntry[][] = []
+  const coreTypes = new Set<string>()
 
   beforeEach(() => {
     graph = new LGraph()
     canvas = createCanvas(graph)
     LGraphCanvas.active_canvas = canvas
+    provideCoreNodeTypeCheck((type) => coreTypes.has(type))
 
     capturedEntries.length = 0
     originalContextMenu = LiteGraph.ContextMenu
@@ -82,11 +84,14 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
       delete LiteGraph.registered_node_types[type]
     }
     registeredTypes.length = 0
+    coreTypes.clear()
+    provideCoreNodeTypeCheck(() => false)
   })
 
   function register(type: string, title: string, isCoreNode?: boolean) {
-    LiteGraph.registerNodeType(type, makeNodeClass(title, isCoreNode))
+    LiteGraph.registerNodeType(type, makeNodeClass(title))
     registeredTypes.push(type)
+    if (isCoreNode) coreTypes.add(type)
   }
 
   function openTopLevelMenu() {

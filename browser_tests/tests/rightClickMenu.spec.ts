@@ -83,9 +83,8 @@ test.describe('Add Node Menu', { tag: ['@canvas', '@ui'] }, () => {
       addNodeMenu.getByRole('menuitem', { name, exact: true })
 
     await test.step('Hovering a category opens its submenu', async () => {
-      await comfyPage.canvas.click({
-        button: 'right',
-        position: DefaultGraphPositions.emptySpace
+      await comfyPage.canvasOps.mouseClickAt(DefaultGraphPositions.emptySpace, {
+        button: 'right'
       })
       await contextMenu.clickLitegraphMenuItem('Add Node')
       await category('model >').hover()
@@ -129,15 +128,16 @@ test.describe('Add Node Menu', { tag: ['@canvas', '@ui'] }, () => {
 
     await test.step('Submenus at the right edge open leftward', async () => {
       const { width, height } = (await comfyPage.canvas.boundingBox())!
-      await comfyPage.canvas.click({
-        position: { x: DefaultGraphPositions.emptySpace.x, y: height - 50 }
+      await comfyPage.canvasOps.mouseClickAt({
+        x: DefaultGraphPositions.emptySpace.x,
+        y: height - 50
       })
       await contextMenu.waitForHidden()
       await comfyPage.toast.closeToasts()
-      await comfyPage.canvas.click({
-        button: 'right',
-        position: { x: width - 10, y: DefaultGraphPositions.emptySpace.y }
-      })
+      await comfyPage.canvasOps.mouseClickAt(
+        { x: width - 10, y: DefaultGraphPositions.emptySpace.y },
+        { button: 'right' }
+      )
       await contextMenu.clickLitegraphMenuItem('Add Node')
       await category('model >').hover()
       await expect(modelMenu).toBeVisible()

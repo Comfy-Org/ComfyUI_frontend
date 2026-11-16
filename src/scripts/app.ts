@@ -25,7 +25,7 @@ import {
 } from '@/scripts/clipspace'
 import type { Clipspace } from '@/scripts/clipspace'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
-import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { provideCoreNodeTypeCheck } from '@/lib/litegraph/src/canvas/coreNodeTypeAccess'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { createMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
 import {
@@ -999,6 +999,10 @@ export class ComfyApp implements IComfyApp {
     )
 
     await this.registerNodes()
+    const nodeDefStore = useNodeDefStore()
+    provideCoreNodeTypeCheck(
+      (type) => nodeDefStore.nodeDefsByName[type]?.isCoreNode
+    )
 
     this.addDropHandler()
 
@@ -1086,12 +1090,6 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions', async () => {
       await this.registerNodesFromDefs(defs)
       await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
-      for (const [name, def] of Object.entries(SYSTEM_NODE_DEFS)) {
-        if (name in LiteGraph.registered_node_types)
-          LiteGraph.registered_node_types[name].nodeData = new ComfyNodeDefImpl(
-            def
-          )
-      }
     })
     if (this.vueAppReady) {
       const phase = bootstrapTracer.startPhase('bootstrap/vue-node-defs')

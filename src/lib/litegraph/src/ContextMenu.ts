@@ -390,6 +390,8 @@ export class ContextMenu<TValue = unknown> {
     if (this.parentMenu && !ignore_parent_menu) {
       this.parentMenu.lock = false
       this.parentMenu.current_submenu = undefined
+      this.parentMenu.submenuEntry?.setAttribute('aria-expanded', 'false')
+      this.parentMenu.submenuEntry = undefined
       if (e === undefined) {
         this.parentMenu.close()
       } else if (!ContextMenu.isCursorOverElement(e, this.parentMenu.root)) {
