@@ -15,10 +15,9 @@ import {
   desktopHostUser,
   issueDesktopHostBillingHandoff
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { refreshBilling } from '@/platform/billing/billingRefresh'
+import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
 import type { BillingTab } from '@/platform/billing/billingTab'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { localSurface } from '@/platform/billing/localBillingWebEnabled'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
@@ -159,12 +158,7 @@ let stopReturnRefresh: (() => void) | null = null
 
 function armReturnRefresh(): void {
   stopReturnRefresh?.()
-  stopReturnRefresh = registerRefreshOnReturn(() =>
-    Promise.allSettled([
-      refreshBilling('account'),
-      useBillingCapabilities().refresh()
-    ])
-  )
+  stopReturnRefresh = registerRefreshOnReturn(refreshBillingAccount)
 }
 
 async function issueThroughDesktop(
