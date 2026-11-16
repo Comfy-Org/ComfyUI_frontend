@@ -27,7 +27,6 @@ export enum ServerFeatureFlag {
   MODEL_UPLOAD_FOLDERS = 'model_upload_folders',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
-  UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   UNIFIED_WEB_SESSION = 'unified_web_session',
   SSO_ENABLED = 'sso_enabled',
   WEB_SESSION_LAPSE_RECOVERY_ENABLED = 'web_session_lapse_recovery_enabled',

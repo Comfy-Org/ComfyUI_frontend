@@ -19,6 +19,7 @@ import {
 } from '@/platform/auth/session/cloudIdentityBoot'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import { takeInteractiveSignIn } from '@/platform/auth/session/interactiveSignInMarker'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -414,40 +415,7 @@ interface FlowGolden {
   signOut: RecordedRequest[]
 }
 
-const UNIFIED_CLOUD_AUTH_OFF: FlowGolden = {
-  signIn: [SESSION_POST, CUSTOMER_PROVISIONING],
-  tokenRefresh: [SESSION_POST],
-  runToken: 'firebase-id-token',
-  apiCall: [
-    {
-      method: 'GET',
-      path: '/api/queue',
-      headers: { authorization: 'Bearer firebase-id-token', 'comfy-user': '' },
-      credentials: null
-    },
-    {
-      method: 'POST',
-      path: '/api/prompt',
-      headers: {
-        authorization: 'Bearer firebase-id-token',
-        'comfy-user': '',
-        'content-type': 'application/json'
-      },
-      credentials: null
-    }
-  ],
-  socket: [
-    {
-      method: 'WEBSOCKET',
-      path: '/ws?token=firebase-id-token',
-      headers: {},
-      credentials: null
-    }
-  ],
-  signOut: SIGN_OUT
-}
-
-const UNIFIED_CLOUD_AUTH_ON: FlowGolden = {
+const CLOUD_JWT_FLOW: FlowGolden = {
   signIn: [TOKEN_MINT, SESSION_POST, CUSTOMER_PROVISIONING],
   tokenRefresh: [TOKEN_MINT, SESSION_POST],
   runToken: 'cloud-jwt-2',
@@ -504,29 +472,14 @@ describe('cloud auth requests with unified_web_session off', () => {
   })
 
   it.for([
+    { name: 'unified_web_session absent', features: {} },
     {
-      name: 'unified_cloud_auth off, unified_web_session absent',
-      features: { unified_cloud_auth: false },
-      golden: UNIFIED_CLOUD_AUTH_OFF
-    },
-    {
-      name: 'unified_cloud_auth off, unified_web_session false',
-      features: { unified_cloud_auth: false, unified_web_session: false },
-      golden: UNIFIED_CLOUD_AUTH_OFF
-    },
-    {
-      name: 'unified_cloud_auth on, unified_web_session absent',
-      features: { unified_cloud_auth: true },
-      golden: UNIFIED_CLOUD_AUTH_ON
-    },
-    {
-      name: 'unified_cloud_auth on, unified_web_session false',
-      features: { unified_cloud_auth: true, unified_web_session: false },
-      golden: UNIFIED_CLOUD_AUTH_ON
+      name: 'unified_web_session false',
+      features: { unified_web_session: false }
     }
   ])(
     'pins sign-in, refresh, API, socket, media and sign-out traffic ($name)',
-    async ({ features, golden }) => {
+    async ({ features }) => {
       const recorder = installFetchRecorder(features)
 
       await refreshRemoteConfig({ useAuth: false })
@@ -534,18 +487,20 @@ describe('cloud auth requests with unified_web_session off', () => {
 
       hooks = wireSessionCookieExtension()
       await useAuthStore().login('user-a@example.com', 'password')
-      await vi.waitFor(() => expect(recorder.pending).toEqual(golden.signIn))
+      await vi.waitFor(() =>
+        expect(recorder.pending).toEqual(CLOUD_JWT_FLOW.signIn)
+      )
       recorder.take()
 
       identity.refreshIdToken()
       await vi.advanceTimersByTimeAsync(ONE_HOUR_MS - TOKEN_REFRESH_BUFFER_MS)
       await vi.waitFor(() =>
-        expect(recorder.pending).toEqual(golden.tokenRefresh)
+        expect(recorder.pending).toEqual(CLOUD_JWT_FLOW.tokenRefresh)
       )
       recorder.take()
 
       const runToken = await useAuthStore().getWorkspaceAuthToken()
-      expect(runToken).toBe(golden.runToken)
+      expect(runToken).toBe(CLOUD_JWT_FLOW.runToken)
       expect(recorder.take()).toEqual([])
 
       await api.fetchApi('/queue')
@@ -554,10 +509,10 @@ describe('cloud auth requests with unified_web_session off', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: {} })
       })
-      expect(recorder.take()).toEqual(golden.apiCall)
+      expect(recorder.take()).toEqual(CLOUD_JWT_FLOW.apiCall)
 
       await api.resetSocket()
-      expect(recorder.take()).toEqual(golden.socket)
+      expect(recorder.take()).toEqual(CLOUD_JWT_FLOW.socket)
 
       expect([
         resultItemUrl(MEDIA_ITEM),
@@ -570,16 +525,16 @@ describe('cloud auth requests with unified_web_session off', () => {
       expect(recorder.socketCloses).toBe(0)
       identity.signOut()
       await vi.advanceTimersByTimeAsync(1_000)
-      expect(recorder.take()).toEqual(golden.signOut)
+      expect(recorder.take()).toEqual(CLOUD_JWT_FLOW.signOut)
       expect(recorder.socketCloses).toBe(1)
 
       expect(recorder.all).toEqual([
         ...FEATURES_BOOTSTRAP,
-        ...golden.signIn,
-        ...golden.tokenRefresh,
-        ...golden.apiCall,
-        ...golden.socket,
-        ...golden.signOut
+        ...CLOUD_JWT_FLOW.signIn,
+        ...CLOUD_JWT_FLOW.tokenRefresh,
+        ...CLOUD_JWT_FLOW.apiCall,
+        ...CLOUD_JWT_FLOW.socket,
+        ...CLOUD_JWT_FLOW.signOut
       ])
 
       expect(
@@ -606,10 +561,6 @@ describe.for([
   { name: 'absent', features: {} },
   { name: 'false', features: { unified_web_session: false } }
 ])('billing SDK rails with unified_web_session $name', ({ features }) => {
-  const BILLING_SDK_RAILS = {
-    unified_cloud_auth: true
-  }
-
   const billingStatusRead = (token: string): RecordedRequest => ({
     method: 'GET',
     path: '/api/billing/status',
@@ -633,16 +584,13 @@ describe.for([
   })
 
   it('reads on the Firebase-minted Cloud JWT and re-mints a 401 through Firebase once', async () => {
-    const recorder = installFetchRecorder({
-      ...BILLING_SDK_RAILS,
-      ...features
-    })
+    const recorder = installFetchRecorder(features)
     await refreshRemoteConfig({ useAuth: false })
     expect(recorder.take()).toEqual(FEATURES_BOOTSTRAP)
     hooks = wireSessionCookieExtension()
     await useAuthStore().login('user-a@example.com', 'password')
     await vi.waitFor(() =>
-      expect(recorder.pending).toEqual(UNIFIED_CLOUD_AUTH_ON.signIn)
+      expect(recorder.pending).toEqual(CLOUD_JWT_FLOW.signIn)
     )
     recorder.take()
     recorder.rejectNextBillingRead()
@@ -673,10 +621,7 @@ describe.for([
   ])(
     'handles $name through the Firebase billing rail',
     async ({ body, expected }) => {
-      const recorder = installFetchRecorder(
-        { ...BILLING_SDK_RAILS, ...features },
-        body
-      )
+      const recorder = installFetchRecorder(features, body)
       await refreshRemoteConfig({ useAuth: false })
       hooks = wireSessionCookieExtension()
       await useAuthStore().login('user-a@example.com', 'password')
@@ -696,10 +641,7 @@ describe.for([
   )
 
   it('takes the capabilities the server resolved for its own id of the Firebase user', async () => {
-    const recorder = installFetchRecorder({
-      ...BILLING_SDK_RAILS,
-      ...features
-    })
+    const recorder = installFetchRecorder(features)
     await refreshRemoteConfig({ useAuth: false })
     hooks = wireSessionCookieExtension()
     await useAuthStore().login('user-a@example.com', 'password')
@@ -732,15 +674,10 @@ describe.for([
 })
 
 describe.for([
-  { name: 'unified_cloud_auth off', features: { unified_cloud_auth: false } },
-  { name: 'unified_cloud_auth on', features: { unified_cloud_auth: true } },
+  { name: 'unified_web_session absent', features: {} },
   {
-    name: 'unified_cloud_auth off, unified_web_session false',
-    features: { unified_cloud_auth: false, unified_web_session: false }
-  },
-  {
-    name: 'unified_cloud_auth on, unified_web_session false',
-    features: { unified_cloud_auth: true, unified_web_session: false }
+    name: 'unified_web_session false',
+    features: { unified_web_session: false }
   }
 ])(
   'cloud sign-in at boot with unified_web_session off ($name)',
@@ -782,13 +719,13 @@ describe('an interactive sign-in with unified_web_session off', () => {
   })
 
   it('never consumes the marker and sends no session request or session event', async () => {
-    const recorder = installFetchRecorder({ unified_cloud_auth: false })
+    const recorder = installFetchRecorder({})
     await refreshRemoteConfig({ useAuth: false })
 
     await useAuthStore().login('user-a@example.com', 'password')
 
     expect(useCloudWebSessionStore().start()).toBe(false)
-    expect(sessionStorage.length).toBe(1)
+    expect(takeInteractiveSignIn(FIREBASE_USER.uid)).toBe(true)
     expect(
       recorder.all.filter(({ path }) => path === '/api/auth/session')
     ).toEqual([])
@@ -811,57 +748,35 @@ describe('Firebase-only account actions with unified_web_session off', () => {
   })
 
   it.for([
-    {
-      name: 'an email login, unified_cloud_auth off',
-      features: { unified_cloud_auth: false },
-      user: EMAIL_USER,
-      isEmailProvider: true
-    },
-    {
-      name: 'an email login, unified_cloud_auth on',
-      features: { unified_cloud_auth: true },
-      user: EMAIL_USER,
-      isEmailProvider: true
-    },
-    {
-      name: 'no login',
-      features: { unified_cloud_auth: false },
-      user: null,
-      isEmailProvider: false
-    }
-  ])(
-    'never asks $name to sign in again',
-    async ({ features, user, isEmailProvider }) => {
-      installFetchRecorder(features)
-      await refreshRemoteConfig({ useAuth: false })
-      useAuthStore()
-      identity.resolve(user)
-      await bootCloudIdentity()
+    { name: 'an email login', user: EMAIL_USER, isEmailProvider: true },
+    { name: 'no login', user: null, isEmailProvider: false }
+  ])('never asks $name to sign in again', async ({ user, isEmailProvider }) => {
+    installFetchRecorder({})
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    identity.resolve(user)
+    await bootCloudIdentity()
 
-      const currentUser = useCurrentUser()
+    const currentUser = useCurrentUser()
 
-      expect(currentUser.isEmailProvider.value).toBe(isEmailProvider)
-      expect(currentUser.needsFirebaseSignIn.value).toBe(false)
-    }
-  )
+    expect(currentUser.isEmailProvider.value).toBe(isEmailProvider)
+    expect(currentUser.needsFirebaseSignIn.value).toBe(false)
+  })
 
-  it.for([{ unified_cloud_auth: false }, { unified_cloud_auth: true }])(
-    'sends no revoke-all for a Firebase login (unified_cloud_auth $unified_cloud_auth)',
-    async (features) => {
-      const recorder = installFetchRecorder(features)
-      await refreshRemoteConfig({ useAuth: false })
-      useAuthStore()
-      identity.resolve(EMAIL_USER)
-      await bootCloudIdentity()
+  it('sends no revoke-all for a Firebase login', async () => {
+    const recorder = installFetchRecorder({})
+    await refreshRemoteConfig({ useAuth: false })
+    useAuthStore()
+    identity.resolve(EMAIL_USER)
+    await bootCloudIdentity()
 
-      expect(await useCloudWebSessionStore().revokeAllSessions()).toEqual({
-        status: 'error',
-        code: 'NO_SESSION',
-        retryable: false
-      })
-      expect(
-        recorder.all.filter(({ path }) => path.startsWith('/api/auth/'))
-      ).toEqual([])
-    }
-  )
+    expect(await useCloudWebSessionStore().revokeAllSessions()).toEqual({
+      status: 'error',
+      code: 'NO_SESSION',
+      retryable: false
+    })
+    expect(
+      recorder.all.filter(({ path }) => path.startsWith('/api/auth/'))
+    ).toEqual([])
+  })
 })

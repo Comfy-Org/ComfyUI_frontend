@@ -146,8 +146,7 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
 
     const features = {
       ...CLOUD_REMOTE_CONFIG,
-      onboarding_survey_enabled: false,
-      unified_cloud_auth: false
+      onboarding_survey_enabled: false
     } satisfies RemoteConfig
 
     await page.route('**/api/features', (route) =>

@@ -13,7 +13,6 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { AUTO_TOP_UP_OFF } from '@e2e/fixtures/data/autoTopUpAtCheckout'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import { WORKSPACE_SWITCHER_REMOTE_CONFIG } from '@e2e/fixtures/data/workspaceSwitcher'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspaceSwitcherTest } from '@e2e/fixtures/workspaceSwitcherFixture'
 import { mockTopupQuote } from '@e2e/fixtures/utils/topupQuoteRoute'
@@ -125,7 +124,6 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
     await page.route('**/api/features', (route) =>
       route.fulfill(
         jsonRoute({
-          ...WORKSPACE_SWITCHER_REMOTE_CONFIG,
           local_web_sso: true,
           comfy_cloud_base_url: CLOUD_BASE_URL
         } satisfies RemoteConfig)
