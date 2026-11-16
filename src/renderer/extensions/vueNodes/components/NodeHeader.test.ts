@@ -14,12 +14,12 @@ import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { createSlotMembership } from '@/stores/slotStore'
 
 import NodeHeader from './NodeHeader.vue'
 
 const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
-  inputs: [],
-  outputs: [],
+  slots: createSlotMembership(),
   id: toNodeId('1'),
   graphId: 'test-graph',
   title: 'KSampler',

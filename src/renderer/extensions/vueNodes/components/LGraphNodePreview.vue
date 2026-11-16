@@ -48,6 +48,7 @@ import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/wi
 import { dynamicComboOptionKeys } from '@/core/graph/nodeDef/inputSpecInterpreter'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { createSlotMembership } from '@/stores/slotStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { toSlotRecordId } from '@comfyorg/graph-model/slotRecordId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -109,8 +110,7 @@ const nodeData = computed<NodeState>(() => ({
   flags: {
     collapsed: false
   },
-  inputs: previewInputs.value,
-  outputs: previewOutputs.value,
+  slots: createSlotMembership(previewInputs.value, previewOutputs.value),
   properties: {}
 }))
 

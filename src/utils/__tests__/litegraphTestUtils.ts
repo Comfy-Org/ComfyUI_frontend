@@ -33,21 +33,26 @@ import { toSlotRecordId } from '@comfyorg/graph-model/slotRecordId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { createSlotMembership } from '@/stores/slotStore'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { createUuidv4 } from '@/utils/uuid'
 
-/** Creates a node shell state with minimal required fields. */
-export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
+export function createNodeState(
+  overrides: Partial<NodeState> & {
+    inputs?: readonly InputSlotRecord[]
+    outputs?: readonly OutputSlotRecord[]
+  } = {}
+): NodeState {
+  const { inputs = [], outputs = [], ...state } = overrides
   return {
     flags: {},
     graphId: zeroUuid,
     id: toNodeId(1),
-    inputs: [],
+    slots: createSlotMembership(inputs, outputs),
     mode: LGraphEventMode.ALWAYS,
-    outputs: [],
     title: 'Test Node',
     type: 'TestNode',
-    ...overrides,
+    ...state,
     properties: overrides.properties ?? {}
   }
 }

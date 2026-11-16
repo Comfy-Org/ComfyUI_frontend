@@ -27,26 +27,26 @@ import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import {
   createMockNodeInputSlot,
-  createMockNodeOutputSlot
+  createMockNodeOutputSlot,
+  createNodeState
 } from '@/utils/__tests__/litegraphTestUtils'
 
 import NodeSlots from './NodeSlots.vue'
 
 const toVueNodeId = (id: string | number): VueNodeId => toNodeId(id)
 
-const makeNodeData = (overrides: Partial<NodeState> = {}): NodeState => ({
-  id: toNodeId('123'),
-  // Empty = root graph: derives a null subgraphId in the node's locator.
-  graphId: '',
-  title: 'Test Node',
-  type: 'TestType',
-  mode: 0,
-  inputs: [],
-  outputs: [],
-  flags: { collapsed: false },
-  ...overrides,
-  properties: overrides.properties ?? {}
-})
+const makeNodeData = (
+  overrides: Parameters<typeof createNodeState>[0] = {}
+): NodeState =>
+  createNodeState({
+    id: toNodeId('123'),
+    graphId: '',
+    title: 'Test Node',
+    type: 'TestType',
+    mode: 0,
+    flags: { collapsed: false },
+    ...overrides
+  })
 
 // Explicit stubs to capture props for assertions
 interface StubSlotData {
@@ -227,6 +227,38 @@ function expectSlotError(
 
 describe('NodeSlots.vue', () => {
   beforeEach(() => layoutStore.resetForTests())
+
+  it('preserves input and output indices across sparse membership', () => {
+    const node = new LGraphNode('Sparse slots')
+    node.addInput('removed-input', 'IMAGE')
+    node.addInput('image', 'IMAGE')
+    node.addOutput('removed-output', 'VIDEO')
+    node.addOutput('video', 'VIDEO')
+    Reflect.deleteProperty(node.inputs, '0')
+    Reflect.deleteProperty(node.outputs, '0')
+
+    const { container } = renderSlots(node._state)
+
+    expect(getRenderedSlotIndex(container, 'image')).toBe(1)
+    expect(getRenderedSlotIndex(container, 'video')).toBe(1)
+  })
+
+  it('updates detached slot rendering after reorder and metadata edits', async () => {
+    const node = new LGraphNode('Detached slots')
+    node.addInput('image', 'IMAGE')
+    node.addInput('video', 'VIDEO')
+    node.addOutput('result', 'IMAGE')
+    const { container } = renderSlots(node._state)
+
+    node.inputs.reverse()
+    node.inputs[0].name = 'renamed-video'
+    node.outputs[0].name = 'renamed-result'
+    await nextTick()
+
+    expect(getRenderedSlotIndex(container, 'renamed-video')).toBe(0)
+    expect(getRenderedSlotIndex(container, 'image')).toBe(1)
+    expect(getRenderedSlotIndex(container, 'renamed-result')).toBe(0)
+  })
 
   it('stores slot offsets when the rendered element mounts', async () => {
     const pinia = getActivePinia()!
@@ -431,7 +463,7 @@ describe('NodeSlots.vue', () => {
     const nodeData = makeNodeData({
       id: toVueNodeId(upstream.id),
       graphId: graph.id,
-      outputs: upstream._state.outputs
+      slots: upstream._state.slots
     })
     const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     await nextTick()
@@ -460,7 +492,7 @@ describe('NodeSlots.vue', () => {
     const nodeData = makeNodeData({
       id: toVueNodeId(node.id),
       graphId: graph.id,
-      inputs: node._state.inputs
+      slots: node._state.slots
     })
     const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     await nextTick()
@@ -508,7 +540,7 @@ describe('NodeSlots.vue', () => {
     const nodeData = makeNodeData({
       id: toVueNodeId(interiorNode.id),
       graphId: subgraph.id,
-      inputs: interiorNode._state.inputs
+      slots: interiorNode._state.slots
     })
     const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     seedRequiredInputMissingNodeError(
@@ -548,7 +580,7 @@ describe('NodeSlots.vue', () => {
     const nodeData = makeNodeData({
       id: toVueNodeId(innerNode.id),
       graphId: innerSubgraph.id,
-      inputs: innerNode._state.inputs
+      slots: innerNode._state.slots
     })
     const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     seedRequiredInputMissingNodeError(
@@ -642,7 +674,7 @@ describe('NodeSlots.vue', () => {
       const nodeData = makeNodeData({
         id: toVueNodeId(node.id),
         graphId: graph.id,
-        inputs: node._state.inputs
+        slots: node._state.slots
       })
       const { container } = renderUnified(nodeData, pinia)
 

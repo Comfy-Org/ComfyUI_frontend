@@ -46,8 +46,7 @@ NodeState {
   shape?: RenderShape
   resizable?: boolean
   showAdvanced?: boolean
-  inputs: InputSlotRecord[]
-  outputs: OutputSlotRecord[]
+  slots: SlotMembership
 }
 ```
 
@@ -67,31 +66,37 @@ mirror (the hard constraint of this phase):
 `VueNodeData.selected` and `.executing` are dead fields today (no
 production consumer reads them); they are deleted, not migrated.
 
-## Decision 3: Plain slot records with independent runtime identity
+## Decision 3: ID-keyed plain slot components
 
-`NodeState.inputs` and `NodeState.outputs` own ordered plain descriptors.
-Compatibility adapters forward metadata to those descriptors. The public
+`NodeState.slots` owns ordered input and output IDs and an ID-keyed plain
+record table. Compatibility adapters forward metadata to those records. The public
 `LGraphNode.inputs` and `.outputs` arrays project cached adapters rather than
-exposing the stored arrays. Whole-array assignment still replaces contents in
+exposing records or owning slot data. Whole-array assignment still replaces membership in
 place, preserving the public array reference.
 
-Descriptors and their arrays are shallow-reactive from detached construction.
+Records and ordered IDs are shallow-reactive from detached construction.
 Registration adopts the same state rather than copying slot metadata. Nested
 values remain raw. Bounding measurements share native typed-array buffers with
 the drawing adapters; widget resources and derived connectivity stay outside
-descriptors.
+records.
 
 Descriptor identity preserves retained adapters through reordering, removal,
 and transfer between arrays. Membership does not reparent an adapter. Each
 record also has an immutable runtime identity independent of its position.
-Store lookup follows registered memberships, including aliases across roots,
+The slot store indexes registered memberships, including aliases across roots,
 and stops exposing a record when its last registered membership leaves.
+Duplicate occurrences within a membership do not create additional owners.
+Explicit edits reconcile only the affected component. Detached components and
+retained adapters keep their records without a global strong registration.
 Workflow serialization remains unchanged and reconstruction mints fresh keys.
 See
 [the descriptor ownership decision](../adr/ECS-SLOTS-0057-plain-descriptors-before-independent-slot-identity.md)
 for reflection constraints and
 [the runtime identity decision](../adr/ECS-SLOTS-0058-independent-runtime-slot-identity.md)
-for collision policy and the remaining ID-keyed membership migration.
+for collision policy. The
+[membership decision](../adr/ECS-SLOTS-0059-id-keyed-slot-membership.md)
+replaces scan-based lookup with the registered index. Compatibility projections
+remain until the extension-facing array contract can be retired.
 
 What this phase does remove is the last `inputs[].link` dependency: the
 three remaining readers (`nodeDataUtils.linkedWidgetedInputs` used by

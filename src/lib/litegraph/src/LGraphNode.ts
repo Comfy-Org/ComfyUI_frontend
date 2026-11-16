@@ -67,6 +67,10 @@ import {
 } from '@comfyorg/graph-model/nodeId'
 import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import {
+  getInputSlotRecords,
+  getOutputSlotRecords
+} from '@comfyorg/graph-model/slotMembership'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import {
   deriveWidgetVisibility,
@@ -102,7 +106,7 @@ import {
   createInputSlotView,
   createOutputSlotView,
   resolveInputSlotView
-} from './node/slotDescriptorView'
+} from '@/core/graph/nodeShell/slotDescriptorView'
 import {
   clearWidgetRestorationSlots,
   getWidgetRestorationSlot,
@@ -1231,8 +1235,8 @@ export class LGraphNode
   constructor(title: string, type?: string) {
     initializeWidgetsView(this)
     this._state = createNodeShellState(title, type, this.title_mode)
-    this._inputs = createInputSlotView(this, this._state.inputs)
-    this._outputs = createOutputSlotView(this, this._state.outputs)
+    this._inputs = createInputSlotView(this, this._state.slots)
+    this._outputs = createOutputSlotView(this, this._state.slots)
     for (const property of [
       'inputs',
       'outputs',
@@ -1405,7 +1409,6 @@ export class LGraphNode
   }
 
   serializeFromStoreState(state: NodeState): ISerialisedNode {
-    // create serialization object
     const o: ISerialisedNode = {
       id: serializeNodeId(state.id),
       type: state.type,
@@ -1417,7 +1420,6 @@ export class LGraphNode
       showAdvanced: state.showAdvanced
     }
 
-    // special case for when there were errors
     if (this.constructor === LGraphNode && state.lastSerialization)
       return {
         ...LiteGraph.cloneObject(state.lastSerialization),
@@ -1425,10 +1427,10 @@ export class LGraphNode
         pos: o.pos
       }
 
-    o.inputs = state.inputs.map((input, i) =>
+    o.inputs = getInputSlotRecords(state.slots).map((input, i) =>
       inputAsSerialisable(input, this, i)
     )
-    o.outputs = state.outputs.map((output, i) =>
+    o.outputs = getOutputSlotRecords(state.slots).map((output, i) =>
       outputAsSerialisable(output, this, i)
     )
 

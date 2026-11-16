@@ -18,6 +18,7 @@ import type {
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { createSlotMembership } from '@/stores/slotStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const SUBGRAPH_ID = '00000000-0000-4000-8000-000000000002'
@@ -79,8 +80,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     type: 'TestNode',
     mode: 0,
     flags: {},
-    inputs: [],
-    outputs: [],
+    slots: createSlotMembership(),
     properties: {}
   })
 

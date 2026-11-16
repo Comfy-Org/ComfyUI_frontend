@@ -109,7 +109,7 @@
               class="absolute left-0 -translate-x-1/2"
             />
             <SlotConnectionDot
-              v-if="nodeData.outputs.length"
+              v-if="nodeData.slots.outputIds.length"
               multi
               class="absolute right-0 translate-x-1/2"
             />
@@ -268,6 +268,7 @@ import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import { getInputSlotRecords } from '@comfyorg/graph-model/slotMembership'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -403,7 +404,8 @@ const nodeOpacity = computed(() => {
   return globalOpacity
 })
 
-const hasInputs = computed(() => nonWidgetedInputs(nodeData.inputs).length > 0)
+const inputs = computed(() => getInputSlotRecords(nodeData.slots))
+const hasInputs = computed(() => nonWidgetedInputs(inputs.value).length > 0)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
 const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
@@ -693,7 +695,7 @@ const showAdvancedInputsButton = computed(() => {
 })
 
 const hasVideoInput = computed(() =>
-  nodeData.inputs.some((input) => input.type === 'VIDEO')
+  inputs.value.some((input) => input.type === 'VIDEO')
 )
 
 const VIDEO_PREVIEW_WIDGET_TYPES = new Set(['videoedit', 'videoconcat'])

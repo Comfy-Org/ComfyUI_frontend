@@ -6,6 +6,10 @@ import { computed, onScopeDispose, ref } from 'vue'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { toSlotRecordId } from '@comfyorg/graph-model/slotRecordId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import {
+  getInputSlotRecords,
+  getOutputSlotRecords
+} from '@comfyorg/graph-model/slotMembership'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
@@ -19,6 +23,7 @@ import {
   ModelNodeProvider,
   useModelToNodeStore
 } from '@/stores/modelToNodeStore'
+import { createSlotMembership } from '@/stores/slotStore'
 import { CONTROL_OPTIONS, isControlOption } from '@/types/simplifiedWidget'
 import type { ControlOptions, SimplifiedWidget } from '@/types/simplifiedWidget'
 import { createUuidv4 } from '@/utils/uuid'
@@ -149,41 +154,47 @@ const meta: Meta<StoryArgs> = {
           mode: 0,
           flags: {},
           properties: {},
-          inputs: [
-            {
-              id: toSlotRecordId(createUuidv4()),
-              name: 'model',
-              type: 'MODEL',
-              boundingRect: [0, 0, 0, 0]
-            },
-            {
-              id: toSlotRecordId(createUuidv4()),
-              name: 'positive',
-              type: 'CONDITIONING',
-              boundingRect: [0, 0, 0, 0]
-            },
-            {
-              id: toSlotRecordId(createUuidv4()),
-              name: 'negative',
-              type: 'CONDITIONING',
-              boundingRect: [0, 0, 0, 0]
-            },
-            {
-              id: toSlotRecordId(createUuidv4()),
-              name: 'latent_image',
-              type: 'LATENT',
-              boundingRect: [0, 0, 0, 0]
-            }
-          ],
-          outputs: [
-            {
-              id: toSlotRecordId(createUuidv4()),
-              name: 'LATENT',
-              type: 'LATENT',
-              boundingRect: [0, 0, 0, 0]
-            }
-          ]
+          slots: createSlotMembership(
+            [
+              {
+                id: toSlotRecordId(createUuidv4()),
+                name: 'model',
+                type: 'MODEL',
+                boundingRect: [0, 0, 0, 0]
+              },
+              {
+                id: toSlotRecordId(createUuidv4()),
+                name: 'positive',
+                type: 'CONDITIONING',
+                boundingRect: [0, 0, 0, 0]
+              },
+              {
+                id: toSlotRecordId(createUuidv4()),
+                name: 'negative',
+                type: 'CONDITIONING',
+                boundingRect: [0, 0, 0, 0]
+              },
+              {
+                id: toSlotRecordId(createUuidv4()),
+                name: 'latent_image',
+                type: 'LATENT',
+                boundingRect: [0, 0, 0, 0]
+              }
+            ],
+            [
+              {
+                id: toSlotRecordId(createUuidv4()),
+                name: 'LATENT',
+                type: 'LATENT',
+                boundingRect: [0, 0, 0, 0]
+              }
+            ]
+          )
         }))
+        const inputs = computed(() => getInputSlotRecords(nodeData.value.slots))
+        const outputs = computed(() =>
+          getOutputSlotRecords(nodeData.value.slots)
+        )
 
         const widgets = computed<WidgetGridItem[]>(() => {
           const definitions: (SimplifiedWidget & { arg: keyof StoryArgs })[] = [
@@ -271,7 +282,7 @@ const meta: Meta<StoryArgs> = {
           }))
         })
 
-        return { args, nodeData, widgets, updateArgs }
+        return { args, nodeData, inputs, outputs, widgets, updateArgs }
       },
       template: `
         <div
@@ -290,13 +301,13 @@ const meta: Meta<StoryArgs> = {
           <div v-if="!args.collapsed" class="flex flex-col gap-2">
             <div class="flex justify-between">
               <div class="flex min-w-0 flex-col">
-                <div v-for="slot in nodeData.inputs" :key="slot.name" class="flex h-5 items-center">
+                <div v-for="slot in inputs" :key="slot.name" class="flex h-5 items-center">
                   <SlotConnectionDot :slot-data="slot" class="w-3 -translate-x-1/2" />
                   <span class="truncate">{{ slot.name }}</span>
                 </div>
               </div>
               <div class="flex min-w-0 flex-col">
-                <div v-for="slot in nodeData.outputs" :key="slot.name" class="flex h-5 items-center">
+                <div v-for="slot in outputs" :key="slot.name" class="flex h-5 items-center">
                   <span class="truncate">{{ slot.name }}</span>
                   <SlotConnectionDot :slot-data="slot" class="w-3 translate-x-1/2" />
                 </div>

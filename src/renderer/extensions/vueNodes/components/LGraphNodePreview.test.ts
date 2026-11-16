@@ -74,6 +74,39 @@ beforeEach(() => {
 })
 
 describe('LGraphNodePreview', () => {
+  it('renders slot records without registering a graph node', () => {
+    vi.mocked(useWidgetStore().inputIsWidget).mockReturnValue(false)
+
+    render(LGraphNodePreview, {
+      props: {
+        nodeDef: fromPartial<ComfyNodeDefV2>({
+          name: 'Preview',
+          inputs: { image: { type: 'IMAGE' } },
+          outputs: [{ name: 'result', type: 'IMAGE' }]
+        })
+      },
+      global: {
+        plugins: [getActivePinia()!],
+        stubs: {
+          NodeHeader: true,
+          InputSlot: {
+            props: ['slotData', 'index'],
+            template:
+              '<div data-testid="preview-input">{{ slotData.name }}:{{ index }}</div>'
+          },
+          OutputSlot: {
+            props: ['slotData', 'index'],
+            template:
+              '<div data-testid="preview-output">{{ slotData.name }}:{{ index }}</div>'
+          }
+        }
+      }
+    })
+
+    expect(screen.getByTestId('preview-input')).toHaveTextContent('image:0')
+    expect(screen.getByTestId('preview-output')).toHaveTextContent('result:0')
+  })
+
   it('does not synchronize preview geometry with the canvas layout', () => {
     render(LGraphNodePreview, {
       props: { nodeDef },

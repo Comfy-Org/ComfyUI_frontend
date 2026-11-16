@@ -31,6 +31,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
 const GRAPH_ID = 'graph-test'
 
@@ -121,17 +122,12 @@ function processWidgets({
   rootGraph?: LGraph | null
 }) {
   return computeProcessedWidgets({
-    nodeData: {
+    nodeData: createNodeState({
       id: nodeId,
       graphId: subgraphId ?? GRAPH_ID,
       type: nodeType,
-      title: 'Test',
-      mode: 0,
-      flags: {},
-      inputs: [],
-      outputs: [],
-      properties: {}
-    },
+      title: 'Test'
+    }),
     widgetIds,
     graphId: GRAPH_ID,
     showAdvanced,

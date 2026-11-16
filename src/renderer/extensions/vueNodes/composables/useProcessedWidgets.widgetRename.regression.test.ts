@@ -5,6 +5,7 @@ import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composab
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
 const GRAPH_ID = 'graph-widget-rename'
 
@@ -25,17 +26,12 @@ function setup(initialName: string) {
 
 function renderedWidgetNames(graph: LGraph, node: LGraphNode): string[] {
   return computeProcessedWidgets({
-    nodeData: {
+    nodeData: createNodeState({
       id: node.id,
       graphId: GRAPH_ID,
       type: 'TestNode',
-      title: 'Test',
-      mode: 0,
-      flags: {},
-      properties: {},
-      inputs: [],
-      outputs: []
-    },
+      title: 'Test'
+    }),
     widgetIds: undefined,
     graphId: GRAPH_ID,
     showAdvanced: true,
@@ -148,17 +144,12 @@ describe('widget rename after registration (#15600)', () => {
     widget.name = 'Renamed'
 
     const rendered = computeProcessedWidgets({
-      nodeData: {
+      nodeData: createNodeState({
         id: node.id,
         graphId: GRAPH_ID,
         type: 'TestNode',
-        title: 'Test',
-        mode: 0,
-        flags: {},
-        properties: {},
-        inputs: [],
-        outputs: []
-      },
+        title: 'Test'
+      }),
       widgetIds: undefined,
       graphId: GRAPH_ID,
       showAdvanced: true,

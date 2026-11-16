@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRaw } from 'vue'
+import { getInputSlotRecords } from '@comfyorg/graph-model/slotMembership'
 
 import { setAssertReporter } from '@/base/assert'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
-import { createInputSlotView } from '@/lib/litegraph/src/node/slotDescriptorView'
+import { createInputSlotView } from './slotDescriptorView'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -50,7 +51,7 @@ describe('node shell state', () => {
   it('projects slots from an independently constructed shell without storing adapters', () => {
     const node = new LGraphNode('Node')
     const state = createNodeShellState('Node', 'some/type', undefined)
-    const inputs = createInputSlotView(node, state.inputs)
+    const inputs = createInputSlotView(node, state.slots)
 
     inputs.push({
       name: 'in',
@@ -60,8 +61,10 @@ describe('node shell state', () => {
     })
 
     expect(inputs[0]).toBeInstanceOf(NodeInputSlot)
-    expect(Object.getPrototypeOf(toRaw(state.inputs[0]))).toBe(Object.prototype)
-    state.inputs[0].label = 'Stored label'
+    expect(
+      Object.getPrototypeOf(toRaw(getInputSlotRecords(state.slots)[0]))
+    ).toBe(Object.prototype)
+    getInputSlotRecords(state.slots)[0].label = 'Stored label'
     expect(inputs[0].label).toBe('Stored label')
   })
 

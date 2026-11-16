@@ -36,6 +36,7 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { createSlotMembership } from '@/stores/slotStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 type ResizeCallback = (
@@ -216,8 +217,7 @@ const mockNodeData: NodeState = {
   type: 'TestNode',
   mode: 0,
   flags: {},
-  inputs: [],
-  outputs: [],
+  slots: createSlotMembership(),
   properties: {}
 }
 
