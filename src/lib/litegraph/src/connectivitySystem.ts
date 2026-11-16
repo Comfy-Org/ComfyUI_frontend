@@ -1,6 +1,16 @@
-import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
+import type {
+  LGraph,
+  LGraphNode,
+  Reroute
+} from '@comfyorg/graph-model/entityRegistry'
+import {
+  LGraphEventMode,
+  NodeSlotType
+} from '@comfyorg/graph-model/globalEnums'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -23,6 +33,148 @@ import { anchorRerouteChain } from './Reroute'
 import { isSubgraph } from './subgraph/subgraphTypeGuards'
 import { legacyArrayItem } from './utils/collections'
 import { commonType } from './utils/type'
+
+export function connect(
+  node: LGraphNode,
+  slot: number | string,
+  target_node: LGraphNode | number | null,
+  target_slot: number | string,
+  afterRerouteId?: RerouteId
+): LLink | null {
+  let targetIndex: number | null
+
+  const { graph, outputs } = node
+  if (!graph) {
+    console.error(
+      "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them."
+    )
+    return null
+  }
+
+  if (typeof slot === 'string') {
+    slot = node.findOutputSlot(slot)
+    if (slot == -1) {
+      if (LiteGraph.debug)
+        console.error(`Connect: Error, no slot of name ${slot}`)
+      return null
+    }
+  } else if (slot >= outputs.length) {
+    if (LiteGraph.debug) console.error('Connect: Error, slot number not found')
+    return null
+  }
+
+  if (typeof target_node === 'number') {
+    const nodeById = graph.getNodeById(toNodeId(target_node))
+    if (!nodeById) throw 'target node is null'
+
+    target_node = nodeById
+  }
+  if (!target_node) throw 'target node is null'
+
+  if (target_node == node) return null
+
+  if (typeof target_slot === 'string') {
+    targetIndex = target_node.findInputSlot(target_slot)
+    if (targetIndex == -1) {
+      if (LiteGraph.debug)
+        console.error(`Connect: Error, no slot of name ${targetIndex}`)
+      return null
+    }
+  } else if (target_slot === LiteGraph.EVENT) {
+    if (LiteGraph.do_add_triggers_slots) {
+      target_node.changeMode(LGraphEventMode.ON_TRIGGER)
+      targetIndex = target_node.findInputSlot('onTrigger')
+    } else {
+      return null
+    }
+  } else if (typeof target_slot === 'number') {
+    targetIndex = target_slot
+  } else {
+    targetIndex = 0
+  }
+
+  if (target_node.onBeforeConnectInput) {
+    const requestedIndex = target_node.onBeforeConnectInput(
+      targetIndex,
+      target_slot
+    )
+    targetIndex = typeof requestedIndex === 'number' ? requestedIndex : null
+  }
+
+  if (targetIndex === null || targetIndex >= target_node.inputs.length) {
+    if (LiteGraph.debug) console.error('Connect: Error, slot number not found')
+    return null
+  }
+
+  const input = target_node.inputs[targetIndex]
+  const output = legacyArrayItem(outputs, slot)
+
+  if (!output) return null
+
+  if (outputHasLinks(graph, node.id, slot)) {
+    if (
+      output.type === LiteGraph.EVENT &&
+      !LiteGraph.allow_multi_output_for_events
+    ) {
+      graph.beforeChange()
+      node.disconnectOutput(slot)
+    }
+  }
+
+  const link = node.connectSlots(output, target_node, input, afterRerouteId)
+  return link ?? null
+}
+
+export function connectFloatingReroute(
+  node: LGraphNode,
+  pos: Point,
+  slot: INodeInputSlot | INodeOutputSlot,
+  afterRerouteId?: RerouteId
+): Reroute | undefined {
+  const { graph, id } = node
+  if (!graph) throw new NullGraphError()
+
+  const inputIndex = node.inputs.indexOf(slot)
+  const outputIndex = node.outputs.indexOf(slot)
+  if (inputIndex === -1 && outputIndex === -1) {
+    console.error('Invalid slot')
+    return
+  }
+
+  const slotType = outputIndex === -1 ? 'input' : 'output'
+
+  const reroute = graph.setReroute({
+    pos,
+    parentId: afterRerouteId,
+    linkIds: [],
+    floating: { slotType }
+  })
+  if (!reroute) return
+
+  const parentReroute = graph.getReroute(afterRerouteId)
+  const fromLastFloatingReroute = parentReroute?.floating?.slotType === 'output'
+
+  if (afterRerouteId == null || !fromLastFloatingReroute) {
+    const link = new LLink(
+      toLinkId(-1),
+      slot.type,
+      outputIndex === -1 ? -1 : id,
+      outputIndex,
+      inputIndex === -1 ? -1 : id,
+      inputIndex
+    )
+    link.parentId = reroute.id
+    graph.addFloatingLink(link)
+    return reroute
+  }
+
+  const link = parentReroute.getFloatingLinks('output')?.[0]
+  if (!link) throw new Error('[connectFloatingReroute] Floating link not found')
+
+  link.parentId = reroute.id
+  parentReroute.floating = undefined
+  return reroute
+}
 
 export function connectSlots(
   graph: LGraph,
