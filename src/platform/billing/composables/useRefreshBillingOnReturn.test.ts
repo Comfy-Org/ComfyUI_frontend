@@ -1,12 +1,16 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
 
-import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
 import { onBillingRefresh } from '@/platform/billing/billingRefresh'
+import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useRefreshBillingOnReturn } from '@/platform/billing/composables/useRefreshBillingOnReturn'
-import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
+import { hostedBillingRoute } from '@/platform/billing/hostedBillingRoutes'
+import {
+  disarmHostedBillingReturnRefresh,
+  openHostedBillingTab
+} from '@/platform/billing/openHostedBillingTab'
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -16,6 +20,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/billing/billingTab'))
+vi.mock(import('@/platform/billing/hostedBillingRoutes'))
 
 const leave = () => window.dispatchEvent(new Event('blur'))
 const comeBack = () => window.dispatchEvent(new Event('focus'))
@@ -83,9 +89,18 @@ describe('useRefreshBillingOnReturn', () => {
     expect(readCapabilities).toHaveBeenCalledOnce()
   })
 
-  it('reads once on a return when a hosted tab opener armed the same refresh', () => {
+  it('reads once on a return when the hosted billing tab armed the same refresh', () => {
     const { readAccount, readCapabilities } = openBillingTab()
-    onTestFinished(registerRefreshOnReturn(refreshBillingAccount))
+    vi.mocked(hostedBillingRoute).mockReturnValue({
+      kind: 'billing_web',
+      url: new URL('https://billing.example/v1/pricing')
+    })
+    vi.mocked(reserveBillingTab).mockReturnValue({
+      navigate: vi.fn(),
+      close: vi.fn()
+    })
+    onTestFinished(disarmHostedBillingReturnRefresh)
+    expect(openHostedBillingTab('pricing')).toBe(true)
 
     leave()
     comeBack()
