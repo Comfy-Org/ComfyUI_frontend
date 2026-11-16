@@ -955,6 +955,29 @@ describe('DeploymentSwitcher', () => {
     )
   })
 
+  it('keeps reading the listing when it mounts on a pick that is already starting', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D1,
+      items: [
+        listing.items[0],
+        withStatus(listing.items[1], 'starting'),
+        listing.items[2]
+      ]
+    })
+    await useDeploymentPickStore().loadOnce()
+    renderSwitcher()
+    expect(await screen.findByTestId('deployment-switcher')).toBeVisible()
+    await vi.advanceTimersByTimeAsync(0)
+    const readsAtMount = mockWorkspaceApi.listDeployments.mock.calls.length
+
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_START_POLL_MS)
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(
+      readsAtMount + 1
+    )
+  })
+
   it('offers Switch on Comfy Cloud when the picked deployment is stopped, and switches there', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue({
       ...listing,

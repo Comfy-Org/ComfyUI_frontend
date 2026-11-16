@@ -181,7 +181,8 @@ watch(
   () =>
     (isOpen.value && isAnyStarting.value) ||
     pickedRow.value?.tone === 'pending',
-  (polling) => (polling ? startPoll.resume() : startPoll.pause())
+  (polling) => (polling ? startPoll.resume() : startPoll.pause()),
+  { immediate: true }
 )
 
 const currentTone = computed(() => pickedRow.value?.tone)
