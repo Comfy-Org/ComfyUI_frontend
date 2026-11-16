@@ -4,6 +4,7 @@ import {
   zBillingHandoffCreateResponse,
   zErrorResponse
 } from '@comfyorg/ingest-types/zod'
+import { parseUrl } from '@comfyorg/shared-frontend-utils/urlSafety'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { watch } from 'vue'
 
@@ -22,7 +23,6 @@ import { localSurface } from '@/platform/billing/localBillingWebEnabled'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useAuthStore } from '@/stores/authStore'
-import { parseUrl } from '@/utils/urlSafety'
 
 const ISSUE_TIMEOUT_MS = 15_000
 
