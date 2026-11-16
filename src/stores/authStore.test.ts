@@ -2013,4 +2013,15 @@ describe('a stored API key while Firebase restores the saved sign-in', () => {
     await expect(store.getAuthHeader()).resolves.toEqual(EARLIER_KEY)
     await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(EARLIER_KEY)
   })
+
+  it('keeps the stored key when the first Firebase answer is that nobody is signed in', () => {
+    storeHoldingAnEarlierKey()
+    vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+      'earlier-account-key'
+    )
+
+    firebaseReports(null)
+
+    expect(useApiKeyAuthStore().clearStoredApiKey).not.toHaveBeenCalled()
+  })
 })
