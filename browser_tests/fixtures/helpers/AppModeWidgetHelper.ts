@@ -50,11 +50,17 @@ export class AppModeWidgetHelper {
     const box = await this.getWidgetItem(key).locator('textarea').boundingBox()
     if (!box) throw new Error(`Textarea for ${key} has no layout`)
 
-    const x = box.x + box.width - 3
-    const y = box.y + box.height - 3
-    await this.page.mouse.move(x, y)
+    const bottomRightCorner = {
+      x: box.x + box.width - 3,
+      y: box.y + box.height - 3
+    }
+    await this.page.mouse.move(bottomRightCorner.x, bottomRightCorner.y)
     await this.page.mouse.down()
-    await this.page.mouse.move(x, y + deltaY, { steps: 10 })
+    await this.page.mouse.move(
+      bottomRightCorner.x,
+      bottomRightCorner.y + deltaY,
+      { steps: 10 }
+    )
     await this.page.mouse.up()
   }
 

@@ -51,8 +51,8 @@ const widgetValueStore = useWidgetValueStore()
 const linkStore = useLinkStore()
 const maskEditor = useMaskEditor()
 
-const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
-  appModeStore.updateInputConfig(widget, config)
+const { onPointerDown, onPointerUp } = useAppModeWidgetResizing(
+  (widget, config) => appModeStore.updateInputConfig(widget, config)
 )
 
 provide(HideLayoutFieldKey, true)
@@ -249,6 +249,8 @@ defineExpose({ handleDragDrop })
       "
       :inert="builderMode || undefined"
       @pointerdown.capture="(e) => onPointerDown(action.widget, e)"
+      @pointerup.capture="onPointerUp"
+      @pointercancel.capture="onPointerUp"
     >
       <DropZone
         :on-drag-over="nodeData.onDragOver"
