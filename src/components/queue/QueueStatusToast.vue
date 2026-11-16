@@ -70,9 +70,14 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useNow } from '@vueuse/core'
 import { computed, nextTick, onUnmounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import {
+  executedNodesPercent,
+  formatElapsed
+} from '@/components/queue/queueStatusFormat'
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import QueueStatusIdle from '@/components/queue/QueueStatusIdle.vue'
 import QueueStatusPanel from '@/components/queue/QueueStatusPanel.vue'
@@ -81,6 +86,7 @@ import { useJobList } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import type {
+  HeldReason,
   JobView,
   RecentResult,
   TerminalKind
@@ -130,7 +136,7 @@ const activeJobs = computed(() =>
   jobItems.value.filter((job) => ACTIVE_STATES.has(job.state)).reverse()
 )
 /** Every job of the current batch, so the drain is judged by how each ended. */
-const lastActiveIds = new Set<string>()
+const lastActiveIds = reactive(new Set<string>())
 watch(
   activeJobs,
   (current) => {
@@ -141,6 +147,29 @@ watch(
 const isRunningState = (state: JobListItem['state']) =>
   state === 'running' || state === 'initialization'
 
+/**
+ * Each running job reads its own executed-node count, so parallel runs never
+ * borrow the progress of whichever job sent the last message.
+ */
+function jobProgress(job: JobListItem): number {
+  const jobId = job.taskRef?.jobId
+  return executedNodesPercent(
+    jobId ? executionStore.queuedJobs[jobId]?.nodes : undefined,
+    job.progressTotalPercent ?? 0
+  )
+}
+
+/** Failed jobs of the running batch, until the batch drains or is dismissed. */
+const dismissedFailedIds = reactive(new Set<string>())
+const failedInBatch = computed(() =>
+  jobItems.value.filter(
+    (job) =>
+      lastActiveIds.has(job.id) &&
+      !dismissedFailedIds.has(job.id) &&
+      job.taskRef?.displayStatus === 'Failed'
+  )
+)
+
 const jobs = computed<JobView[]>(() => {
   const running = activeJobs.value.filter((job) => isRunningState(job.state))
   const queued = activeJobs.value.filter((job) => job.state === 'pending')
@@ -149,7 +178,7 @@ const jobs = computed<JobView[]>(() => {
       id: job.id,
       title: job.title,
       status: 'running' as const,
-      progress: Math.round(job.progressTotalPercent ?? 0),
+      progress: jobProgress(job),
       queuePosition: 0
     })),
     ...queued.map((job, index) => ({
@@ -161,6 +190,16 @@ const jobs = computed<JobView[]>(() => {
     }))
   ]
 })
+
+const failedRows = computed<JobView[]>(() =>
+  failedInBatch.value.map((job) => ({
+    id: job.id,
+    title: job.title,
+    status: 'failed' as const,
+    progress: 0,
+    queuePosition: 0
+  }))
+)
 
 const runningJobs = computed(() =>
   jobs.value.filter((job) => job.status === 'running')
@@ -191,6 +230,7 @@ watch(activeCount, (count, prev) => {
   if (count === 0 && (prev ?? 0) > 0) {
     terminalKind.value = outcomeOf([...lastActiveIds])
     lastActiveIds.clear()
+    dismissedFailedIds.clear()
     cancelIntent.value = false
     completedFlash.value = true
     if (completedTimer !== undefined) window.clearTimeout(completedTimer)
@@ -282,23 +322,34 @@ const idleLabel = computed(() => {
   )
 })
 
-const startedLabels = reactive<Record<string, string>>({})
+/** When each job was first seen running, for its elapsed time. */
+const startedAt = reactive<Record<string, number>>({})
+const now = useNow({ interval: 1000 })
 watch(
   () => runningJobs.value.map((job) => job.id),
   (ids) => {
     for (const id of ids) {
-      if (!startedLabels[id]) {
-        startedLabels[id] = new Date().toLocaleTimeString(locale.value)
-      }
+      startedAt[id] ??= Date.now()
     }
   },
   { immediate: true }
 )
+const HELD_LABEL_KEYS: Record<HeldReason, string> = {
+  plan: 'queueStatus.heldPlan',
+  partner: 'queueStatus.heldPartner',
+  provider: 'queueStatus.heldProvider'
+}
 function jobSubtitle(job: JobView): string {
   if (job.status === 'running') {
-    const started = startedLabels[job.id]
+    const started = startedAt[job.id]
     const percent = `${job.progress}%`
-    return started ? `${started} · ${percent}` : percent
+    return started !== undefined
+      ? `${formatElapsed(now.value.getTime() - started)} · ${percent}`
+      : percent
+  }
+  if (job.status === 'failed') return t('queueStatus.failedRow')
+  if (job.status === 'held') {
+    return t(HELD_LABEL_KEYS[job.heldBy ?? 'plan'])
   }
   return job.queuePosition === 1
     ? t('queueStatus.queuedNextUp')
@@ -327,7 +378,9 @@ function onPillActivate() {
   else onTerminalChipClickToHistory()
 }
 const panelRows = computed(() =>
-  jobs.value.map((job) => ({ job, subtitle: jobSubtitle(job) }))
+  [...runningJobs.value, ...failedRows.value, ...queuedJobs.value].map(
+    (job) => ({ job, subtitle: jobSubtitle(job) })
+  )
 )
 
 /** After a cancel, activeJobId can point at a job the backend never reports. */
@@ -373,7 +426,7 @@ const cancelJobIds = wrapWithErrorHandlingAsync(
 )
 
 function handleCancel(job: JobView) {
-  void cancelJobById(job.id, jobs.value.length <= 1)
+  void cancelJobById(job.id, activeCount.value <= 1)
 }
 function handleClearQueue() {
   void cancelJobIds(

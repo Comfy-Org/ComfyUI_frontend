@@ -161,7 +161,10 @@
         :disabled="!queueStatusToastTarget"
       >
         <div :class="queueStatusToastClass">
-          <QueueStatusToast :above="toastAbove" :align-start="toastAlignStart" />
+          <QueueStatusToast
+            :above="toastAbove"
+            :align-start="toastAlignStart"
+          />
         </div>
       </Teleport>
       <template v-if="showLegacyQueueUi">

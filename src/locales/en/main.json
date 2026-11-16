@@ -6033,7 +6033,12 @@
     "goToHistoryShort": "Go to history",
     "queuedNextUp": "Queued · next up",
     "queuedPosition": "Queued · #{position}",
-    "failed": "Failed"
+    "failed": "Failed",
+    "failedRow": "Failed · other runs keep going",
+    "details": "Details",
+    "heldPlan": "Waiting · your plan's run limit is full",
+    "heldPartner": "Waiting · partner node limit reached",
+    "heldProvider": "Waiting · the provider is busy"
   },
   "gettingStarted": {
     "title": "Let's make something",

@@ -1,18 +1,19 @@
 <template>
   <Popover v-model:open="open">
     <PopoverTrigger as-child>
-      <button
-        type="button"
+      <Button
+        variant="base"
+        size="unset"
         data-testid="queue-status-idle"
         :aria-expanded="open"
-        class="group pointer-events-auto flex cursor-pointer items-center gap-1 rounded-lg border border-solid border-base-foreground/9 bg-base-background/80 px-2 py-1 text-sm/5 text-base-foreground backdrop-blur-xl transition-colors hover:bg-secondary-background/80 data-[state=open]:bg-secondary-background/80"
+        class="group pointer-events-auto gap-1 rounded-lg border border-solid border-foreground/9 px-2 py-1 text-sm/5 font-normal data-[state=open]:bg-accent"
       >
         {{ label }}
         <i
           class="icon-[lucide--chevron-down] size-3.5 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180"
           aria-hidden
         />
-      </button>
+      </Button>
     </PopoverTrigger>
     <PopoverContent
       :align="align"
@@ -20,7 +21,7 @@
       :side-offset="8"
       :collision-padding="8"
       data-testid="queue-status-idle-panel"
-      class="z-1300 flex w-80 flex-col gap-2 rounded-lg border border-base-foreground/9 bg-base-background/80 p-2 shadow-interface backdrop-blur-xl"
+      class="flex w-80 flex-col gap-2 rounded-lg border-foreground/9 p-2"
     >
       <QueueStatusRecents
         :results="results"
@@ -32,6 +33,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { PopoverRoot as Popover, PopoverTrigger } from 'reka-ui'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'

@@ -16,19 +16,21 @@
       :subtitle="row.subtitle"
       :delay-ms="index * 35"
       @cancel="emit('cancel', row.job)"
+      @details="emit('history')"
     />
 
     <div
       v-if="showFooter"
-      class="job-toast-row flex w-full items-center justify-between gap-0.5 rounded-lg border border-base-foreground/10 bg-base-background/60 p-1 shadow-interface backdrop-blur-2xl"
+      class="job-toast-row flex w-full items-center justify-between gap-0.5 rounded-lg border border-foreground/10 bg-background p-1 shadow-md"
       :style="{ '--row-delay': `${rows.length * 35}ms` }"
       data-testid="queue-status-footer"
     >
       <Popover v-if="results.length" v-model:open="recentsOpen">
         <PopoverTrigger as-child>
-          <button
-            type="button"
-            :class="cn(footerButtonClass, 'group hover:bg-base-foreground/8')"
+          <Button
+            variant="muted-textonly"
+            size="sm"
+            :class="cn(footerButtonClass, 'group')"
             data-testid="queue-status-recents-trigger"
           >
             <i class="icon-[lucide--images] size-3" aria-hidden />
@@ -37,7 +39,7 @@
               class="icon-[lucide--chevron-down] size-3 transition-transform duration-200 group-data-[state=open]:rotate-180"
               aria-hidden
             />
-          </button>
+          </Button>
         </PopoverTrigger>
         <PopoverContent
           :align="alignStart ? 'start' : 'end'"
@@ -45,7 +47,7 @@
           :side-offset="8"
           :collision-padding="8"
           data-testid="queue-status-recents-panel"
-          class="z-1300 flex w-80 flex-col gap-2 rounded-lg border border-base-foreground/9 bg-base-background/80 p-2 shadow-interface backdrop-blur-xl"
+          class="flex w-80 flex-col gap-2 rounded-lg border-foreground/9 p-2"
         >
           <QueueStatusRecents
             :results="results"
@@ -56,41 +58,39 @@
       </Popover>
       <span v-else aria-hidden />
 
-      <div v-if="rows.length > 1" class="flex items-center gap-1">
-        <button
+      <div v-if="activeRowCount > 1" class="flex items-center gap-1">
+        <Button
           v-if="queuedCount > 0"
-          type="button"
-          :class="cn(footerButtonClass, 'hover:bg-base-foreground/8')"
+          variant="muted-textonly"
+          size="sm"
+          :class="footerButtonClass"
           data-testid="queue-status-clear-queue"
           @click="emit('clearQueue')"
         >
           {{ t('queueStatus.clearQueue') }}
-        </button>
+        </Button>
         <span
           v-if="queuedCount > 0"
-          class="mx-0.5 h-4 w-px bg-base-foreground/10"
+          class="mx-0.5 h-4 w-px bg-foreground/10"
           aria-hidden
         />
-        <button
-          type="button"
-          :class="
-            cn(
-              footerButtonClass,
-              'hover:bg-destructive-background/12 hover:text-destructive-background'
-            )
-          "
+        <Button
+          variant="destructive-textonly"
+          size="sm"
+          :class="footerButtonClass"
           data-testid="queue-status-cancel-all"
           @click="emit('cancelAll')"
         >
           <span class="size-3 rounded-xs bg-current" aria-hidden />
           {{ t('queueStatus.cancelAll') }}
-        </button>
+        </Button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverRoot as Popover, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
@@ -126,7 +126,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const recentsOpen = ref(false)
-const showFooter = computed(() => rows.length > 1 || results.length > 0)
+/** Failed rows stay visible but are not something "Cancel all" can stop. */
+const activeRowCount = computed(
+  () => rows.filter((row) => row.job.status !== 'failed').length
+)
+const showFooter = computed(
+  () => activeRowCount.value > 1 || results.length > 0
+)
 const footerButtonClass =
-  'flex cursor-pointer items-center gap-1.5 rounded-sm border-none bg-transparent px-1.5 py-1.5 text-xs font-medium whitespace-nowrap text-muted-foreground transition-colors hover:text-base-foreground data-[state=open]:text-base-foreground'
+  'gap-1.5 font-medium data-[state=open]:text-foreground'
 </script>

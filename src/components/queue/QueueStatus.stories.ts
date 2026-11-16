@@ -57,12 +57,13 @@ const job = (
   title: string,
   status: JobView['status'],
   progress = 0,
-  queuePosition = 0
-): JobView => ({ id, title, status, progress, queuePosition })
+  queuePosition = 0,
+  heldBy?: JobView['heldBy']
+): JobView => ({ id, title, status, progress, queuePosition, heldBy })
 
 const running = [
-  { job: job('a', 'Flux portrait', 'running', 64), subtitle: '14:02:11 · 64%' },
-  { job: job('b', 'Upscale batch', 'running', 12), subtitle: '14:02:40 · 12%' }
+  { job: job('a', 'Flux portrait', 'running', 64), subtitle: '1:24 · 64%' },
+  { job: job('b', 'Upscale batch', 'running', 12), subtitle: '0:18 · 12%' }
 ]
 const queued = [
   {
@@ -135,6 +136,50 @@ const recentResults: RecentResult[] = [
     isVideo: false
   }
 ]
+
+/** Cloud plan full: running jobs fill the cap, the next one waits on it. */
+export const ParallelHeldByLimit: Story = {
+  args: {
+    label: 'Running 3',
+    badge: 'Queued 2',
+    panelOpen: true,
+    rows: [
+      ...running,
+      {
+        job: job('e', 'Seedance shot 3', 'running', 40),
+        subtitle: '0:52 · 40%'
+      },
+      {
+        job: job('f', 'Seedance shot 4', 'held', 0, 1, 'plan'),
+        subtitle: "Waiting · your plan's run limit is full"
+      },
+      {
+        job: job('g', 'Seedance shot 5', 'held', 0, 2, 'provider'),
+        subtitle: 'Waiting · the provider is busy'
+      }
+    ],
+    queuedCount: 2
+  }
+}
+
+/** One job failed; the others keep their progress and keep running. */
+export const ParallelOneFailed: Story = {
+  args: {
+    label: 'Running 2',
+    badge: 'Queued 1',
+    panelOpen: true,
+    rows: [
+      ...running,
+      {
+        job: job('h', 'Kling clip', 'failed'),
+        subtitle: 'Failed · other runs keep going'
+      },
+      queued[0]
+    ],
+    queuedCount: 1,
+    results: recentResults
+  }
+}
 
 export const ParallelFannedOut: Story = {
   args: {

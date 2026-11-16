@@ -6,13 +6,14 @@
       :class="cn(PEEK_BASE, depth <= stack ? PEEK_DEPTH[depth] : PEEK_HIDDEN)"
       aria-hidden
     />
-    <button
-      type="button"
+    <Button
+      variant="base"
+      size="unset"
       :aria-expanded="terminalKind ? undefined : expanded"
       data-testid="queue-status-toast"
       :class="
         cn(
-          'relative z-2 flex h-9 cursor-pointer items-stretch overflow-hidden rounded-lg border border-base-foreground/9 bg-base-background/80 p-0 text-left shadow-interface backdrop-blur-xl transition-colors hover:bg-secondary-background/80',
+          'relative z-2 h-9 items-stretch justify-start overflow-hidden rounded-lg border border-solid border-foreground/9 p-0 text-left font-normal shadow-md',
           terminalKind ? 'items-center px-3' : 'min-w-[176px]'
         )
       "
@@ -29,7 +30,7 @@
         <span class="relative flex size-4 shrink-0 items-center justify-center">
           <span
             v-if="!terminalKind"
-            class="inline-block size-[15px] animate-spin rounded-full border-2 border-base-foreground/20 border-t-base-foreground/80"
+            class="inline-block size-[15px] animate-spin rounded-full border-2 border-foreground/20 border-t-foreground/80"
             data-testid="queue-status-spinner"
             aria-hidden
           />
@@ -41,7 +42,7 @@
         </span>
 
         <span
-          class="truncate text-sm/5 font-normal whitespace-nowrap text-base-foreground tabular-nums"
+          class="truncate text-sm/5 font-normal whitespace-nowrap text-foreground tabular-nums"
           aria-live="polite"
         >
           {{ label }}
@@ -49,24 +50,25 @@
 
         <span
           v-if="badge"
-          class="shrink-0 rounded-full bg-base-foreground/8 px-2 py-1 text-xs/4 font-medium text-muted-foreground"
+          class="shrink-0 rounded-full bg-foreground/8 px-2 py-1 text-xs/4 font-medium text-muted-foreground"
         >
           {{ badge }}
         </span>
 
         <div
           v-if="progress !== undefined"
-          class="pointer-events-none absolute bottom-0 left-0 h-0.5 bg-base-foreground/70 transition-[width] duration-200 ease-out"
+          class="pointer-events-none absolute bottom-0 left-0 h-0.5 bg-foreground/70 transition-[width] duration-200 ease-out"
           :style="{ width: `${progress}%` }"
           data-testid="queue-status-progress"
           aria-hidden
         />
       </div>
-    </button>
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { TerminalKind } from './queueStatusTypes'
@@ -93,7 +95,7 @@ const {
 const emit = defineEmits<{ activate: [] }>()
 
 const PEEK_BASE =
-  'pointer-events-none absolute inset-x-0 top-0 h-9 rounded-lg border border-base-foreground/12 bg-base-background/90 shadow-interface backdrop-blur-xl transition-[translate,scale,opacity] duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]'
+  'pointer-events-none absolute inset-x-0 top-0 h-9 rounded-lg border border-foreground/12 bg-background shadow-md transition-[translate,scale,opacity] duration-250 ease-[cubic-bezier(0.32,0.72,0,1)]'
 const PEEK_MAX = 2
 const PEEK_DEPTH: Record<number, string> = {
   1: 'z-1 translate-y-[10px] scale-[0.95]',
@@ -103,8 +105,8 @@ const PEEK_DEPTH: Record<number, string> = {
 const PEEK_HIDDEN = 'z-0 translate-y-0 scale-100 opacity-0'
 
 const TERMINAL_ICON: Record<TerminalKind, string> = {
-  completed: 'icon-[lucide--check] text-base-foreground',
+  completed: 'icon-[lucide--check] text-foreground',
   cancelled: 'icon-[lucide--circle-slash] text-muted-foreground',
-  failed: 'icon-[lucide--circle-alert] text-destructive-background'
+  failed: 'icon-[lucide--circle-alert] text-destructive'
 }
 </script>

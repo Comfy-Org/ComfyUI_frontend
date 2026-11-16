@@ -109,6 +109,25 @@ describe('QueueStatusPanel', () => {
     ).toContain('Results (2)')
   })
 
+  it('does not count a failed row toward Cancel all', () => {
+    renderPanel({
+      rows: [
+        { job: job('a', 'running'), subtitle: '64%' },
+        { job: job('b', 'failed'), subtitle: 'Failed' }
+      ]
+    })
+    expect(screen.queryByTestId('queue-status-cancel-all')).toBeNull()
+  })
+
+  it('opens history from a failed row', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderPanel({
+      rows: [{ job: job('b', 'failed'), subtitle: 'Failed' }]
+    })
+    await user.click(screen.getByTestId('queue-status-row-details'))
+    expect(emitted('history')).toHaveLength(1)
+  })
+
   it('omits the recent results entry when nothing finished yet', () => {
     renderPanel()
     expect(screen.queryByTestId('queue-status-recents-trigger')).toBeNull()
