@@ -563,6 +563,40 @@ describe('auth token priority chain', () => {
       await expect(store.getAuthHeader()).resolves.toBeNull()
     })
 
+    const holdEarlierStoredKey = () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      let storedKeyHeader: ApiKeyAuthHeader | null = {
+        'X-API-KEY': 'earlier-key'
+      }
+      vi.mocked(apiKeyStore.getApiKey).mockReturnValue('earlier-key')
+      vi.mocked(apiKeyStore.getAuthHeader).mockImplementation(
+        () => storedKeyHeader
+      )
+      vi.mocked(apiKeyStore.clearStoredApiKey).mockImplementation(async () => {
+        storedKeyHeader = null
+      })
+      useWorkspaceAuthStore().unifiedToken = null
+      return apiKeyStore
+    }
+
+    it('answers later requests with no credential after Firebase ends the sign-in on its own', async () => {
+      holdEarlierStoredKey()
+
+      authStateCallback(null)
+
+      await expect(store.getAuthHeader()).resolves.toBeNull()
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+    })
+
+    it('keeps the stored API key off Cloud when Firebase ends the sign-in', () => {
+      mockDistributionTypes.isCloud = false
+      const apiKeyStore = holdEarlierStoredKey()
+
+      authStateCallback(null)
+
+      expect(apiKeyStore.clearStoredApiKey).not.toHaveBeenCalled()
+    })
+
     it('getAuthHeader falls back to the Firebase token when the unified mint fails', async () => {
       useWorkspaceAuthStore().unifiedToken = null
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
