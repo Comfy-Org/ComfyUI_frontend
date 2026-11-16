@@ -125,9 +125,10 @@ export function revertLinkBadgeStackToggle(
   doubleClickTime: number
 ): void {
   const last = lastStackToggleByHost.get(host)
+  lastStackToggleByHost.delete(host)
   if (last?.stackKey !== stackKey) return
-  if (timeStamp - last.timeStamp < doubleClickTime)
-    toggleLinkBadgeStack(host, stackKey)
+  const gap = timeStamp - last.timeStamp
+  if (gap > 0 && gap < doubleClickTime) toggleLinkBadgeStack(host, stackKey)
 }
 
 /** Keeps a stack expanded under the key its links get when they all take `label`. */
@@ -148,6 +149,7 @@ export function relabelExpandedLinkBadgeStack(
 export function collapseLinkBadgeStacks(host: object): boolean {
   const expanded = expandedStacksByHost.get(host)
   expandedStacksByHost.delete(host)
+  lastStackToggleByHost.delete(host)
   const drawn = drawnStackKeysByHost.get(host)
   return [...(expanded ?? [])].some((stackKey) => drawn?.has(stackKey))
 }

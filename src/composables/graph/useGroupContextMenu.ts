@@ -31,12 +31,12 @@ export function useGroupContextMenu() {
       return
     }
 
-    const { reroute, link, group } = getCanvasContextMenuTarget(
+    const { reroute, link, stackedLinks, group } = getCanvasContextMenuTarget(
       this,
       event.canvasX,
       event.canvasY
     )
-    if (reroute || link || !group) {
+    if (reroute || link || stackedLinks || !group) {
       original.apply(this, args)
       return
     }

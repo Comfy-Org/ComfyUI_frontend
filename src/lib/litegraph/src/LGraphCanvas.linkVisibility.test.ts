@@ -742,6 +742,18 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
     })
 
+    it('leaves a stack collapsed when Escape collapsed it between two fast clicks', () => {
+      const { canvas, relayout, prompt } = createStackFixture()
+
+      pressAt(canvas, 420, 300, 100)
+      canvas.processKey(new KeyboardEvent('keydown', { key: 'Escape' }))
+      pressAt(canvas, 420, 300, 200)
+      relayout()
+
+      expect(prompt).toHaveBeenCalledOnce()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
+    })
+
     it('merges a renamed stack into the stack that already has that name', () => {
       const { canvas, links, prompt, submitPrompt } = createStackFixture([
         undefined,
