@@ -24,6 +24,14 @@
         <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
       </Button>
     </template>
+    <MenuItem
+      v-if="localAgentEnabled"
+      :disabled="isOpeningAgent"
+      @select="useLocalAgent"
+    >
+      <i class="icon-[lucide--sparkles]" aria-hidden="true" />
+      {{ $t('openOnCloud.agentMenu.useLocalAgent') }}
+    </MenuItem>
     <MenuItem @select="openBriefIn('claude')">
       <AgentMark agent="claude" />
       {{ $t('openOnCloud.agentMenu.openInClaude') }}
@@ -44,14 +52,26 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
+import { useLocalAgentPanelPort } from '@/platform/openOnCloud/localAgentPanelPort'
 import DesktopAgentMarks from '@/platform/openOnCloud/components/DesktopAgentMarks.vue'
 import AgentMark from '@/platform/workflow/deploy/components/AgentMark.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 
+const emit = defineEmits<{ done: [] }>()
+const {
+  enabled: localAgentEnabled,
+  isOpening: isOpeningAgent,
+  open: openLocalAgent
+} = useLocalAgentPanelPort()
+
 const { copyBrief, openBriefIn } = useAgentHandoff()
 const { isCopying, copied, copyWith } = useBriefCopy()
+
+async function useLocalAgent() {
+  if (await openLocalAgent()) emit('done')
+}
 
 function clearCopiedOnOpen(open: boolean) {
   if (open) copied.value = false

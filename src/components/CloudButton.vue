@@ -30,7 +30,7 @@ import {
   openRunOnCloudDialog
 } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
-import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import { useOpenAgentPanel } from '@/workbench/extensions/agent/composables/agent/useOpenAgentPanel'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const { t } = useI18n()
@@ -38,8 +38,8 @@ const toast = useToast()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
 const agentPanelStore = useAgentPanelStore()
-const { withConsent } = useAgentConsent()
-const isOpeningAgent = ref(false)
+const { isOpening: isOpeningAgent, open: openAgent } =
+  useOpenAgentPanel('cloud_button')
 
 const isChecking = computed(
   () => !agentPanelStore.enabled && check.value.phase === 'checking'
@@ -69,21 +69,7 @@ async function openCloud() {
   }
   opensWhenAnswered.value = false
   closeRunOnCloudDialog()
-  if (agentPanelStore.isVisible) {
-    agentPanelStore.view = { screen: 'chat' }
-    return
-  }
-  isOpeningAgent.value = true
-  agentPanelStore.suppressRestoredOpen()
-  try {
-    await withConsent('button_click', () => {
-      if (!isMounted || !agentPanelStore.enabled) return
-      agentPanelStore.view = { screen: 'chat' }
-      agentPanelStore.open('cloud_button')
-    })
-  } finally {
-    isOpeningAgent.value = false
-  }
+  await openAgent()
 }
 
 function showModal() {

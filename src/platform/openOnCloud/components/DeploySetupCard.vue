@@ -73,7 +73,7 @@
             aria-hidden="true"
           />
         </Button>
-        <DeploySetupAgentMenu />
+        <DeploySetupAgentMenu @done="emit('done')" />
       </footer>
     </section>
   </DeploymentDialogFrame>
