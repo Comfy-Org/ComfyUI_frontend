@@ -12,6 +12,7 @@ import { onCapabilityRevision } from '@/platform/remote/ingest/capabilityRevisio
 import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
 import { parseBillingTopUpDenial } from '@comfyorg/billing-core'
 import { billingApi } from '@/platform/billing/api/billingApi'
+import { localBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
@@ -594,7 +595,12 @@ function useBillingCapabilitiesInternal() {
   }
 
   async function refresh(): Promise<void> {
+    const requestIdAtCall = latestRequestId
     await initialize()
+    if (!localBillingWebEnabled.value || disposed) return
+    const noReadStartedSinceCall = latestRequestId === requestIdAtCall
+    if (noReadStartedSinceCall) await initialize()
+    else await activeRequest?.promise
   }
 
   watch(

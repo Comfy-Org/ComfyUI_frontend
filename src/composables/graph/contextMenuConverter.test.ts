@@ -34,6 +34,10 @@ describe('node menu assembly', () => {
         { id: 'pin', label: t('contextMenu.Unpin') },
         { id: 'copy', label: t('contextMenu.Copy') },
         { id: 'downloadImages', label: t('contextMenu.Download Images') },
+        {
+          id: 'previewResolution',
+          label: t('contextMenu.Show Full Resolution')
+        },
         { id: 'rename', label: t('contextMenu.Rename') },
         { id: 'openImage', label: t('contextMenu.Open Image') }
       ]
@@ -44,6 +48,7 @@ describe('node menu assembly', () => {
         result.map((option) => option.id ?? option.type ?? option.label)
       ).toEqual([
         'openImage',
+        'previewResolution',
         'downloadImages',
         'divider',
         'rename',

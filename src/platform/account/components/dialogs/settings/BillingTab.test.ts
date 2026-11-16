@@ -2225,8 +2225,12 @@ describe('BillingTab', () => {
       await userEvent.click(
         within(credits).getByRole('button', { name: /Turn on/ })
       )
-      for (const action of within(handoff).getAllByRole('button'))
-        await userEvent.click(action)
+      await userEvent.click(
+        within(handoff).getByRole('button', { name: 'platform.comfy.org' })
+      )
+      await userEvent.click(
+        within(handoff).getByRole('button', { name: 'Open billing' })
+      )
 
       expect(openPlatformBillingHandoff).toHaveBeenCalledTimes(3)
     })

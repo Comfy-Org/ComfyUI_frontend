@@ -172,6 +172,7 @@
     "zod-validation-error": "catalog:"
   },
   "devDependencies": {
+    "@axe-core/playwright": "catalog:",
     "@comfyorg/design-system-audits": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/test-utils": "workspace:*",

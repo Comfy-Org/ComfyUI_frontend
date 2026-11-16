@@ -100,7 +100,8 @@ export function useMoreOptionsMenu() {
   const canvasStore = useCanvasStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  const { getImageMenuOptions } = useImageMenuOptions()
+  const { getImageMenuOptions, getPreviewResolutionOption } =
+    useImageMenuOptions()
   const { hasMultipleOutputs } = useNodeOutputsExport()
   const {
     getNodeInfoOption,
@@ -234,6 +235,11 @@ export function useMoreOptionsMenu() {
         })
       )
     }
+    const previewResolutionOption =
+      isSingleNode.value && !hideLinkedInputPreview
+        ? getPreviewResolutionOption(selectedNodes.value[0])
+        : undefined
+    if (previewResolutionOption) options.push(previewResolutionOption)
     const widgetName = invocationContext.value?.widgetName
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (node && widget) {

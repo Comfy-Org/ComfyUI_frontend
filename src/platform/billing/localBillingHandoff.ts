@@ -15,10 +15,9 @@ import {
   desktopHostUser,
   issueDesktopHostBillingHandoff
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { refreshBilling } from '@/platform/billing/billingRefresh'
+import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
 import type { BillingTab } from '@/platform/billing/billingTab'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { localSurface } from '@/platform/billing/localBillingWebEnabled'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
@@ -95,10 +94,7 @@ async function issueBillingHandoff(
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(issueBody(workspaceId, request)),
-      signal: combineAbortSignals([
-        signal,
-        AbortSignal.timeout(ISSUE_TIMEOUT_MS)
-      ])
+      signal
     })
     if (response.status === 401) return { kind: 'sign_in_again' }
     if (!response.ok) return refusal(response)
@@ -162,12 +158,7 @@ let stopReturnRefresh: (() => void) | null = null
 
 function armReturnRefresh(): void {
   stopReturnRefresh?.()
-  stopReturnRefresh = registerRefreshOnReturn(() =>
-    Promise.allSettled([
-      refreshBilling('account'),
-      useBillingCapabilities().refresh()
-    ])
-  )
+  stopReturnRefresh = registerRefreshOnReturn(refreshBillingAccount)
 }
 
 async function issueThroughDesktop(
@@ -207,31 +198,22 @@ function refusedOnAbort(signal: AbortSignal): {
   return { refusal, stop: () => signal.removeEventListener('abort', refuse) }
 }
 
-async function issueThroughDesktopUnlessAbandoned(
-  workspaceId: string,
-  request: BillingHandoffRequest,
+async function unlessAbandoned(
+  issue: () => Promise<HandoffIssue>,
   signal: AbortSignal
 ): Promise<HandoffIssue> {
   if (signal.aborted) return UNEXPLAINED_REFUSAL
   const abandoned = refusedOnAbort(signal)
-  return Promise.race([
-    issueThroughDesktop(workspaceId, request),
-    abandoned.refusal
-  ]).finally(abandoned.stop)
+  return Promise.race([issue(), abandoned.refusal]).finally(abandoned.stop)
 }
 
-async function issueForScope(
+async function issueWithFreshToken(
   scope: HandoffScope,
   request: BillingHandoffRequest,
   signal: AbortSignal
 ): Promise<HandoffIssue> {
-  if (localSurface() === 'desktop')
-    return issueThroughDesktopUnlessAbandoned(
-      scope.workspaceId,
-      request,
-      signal
-    )
-  const token = await useAuthStore().getIdToken()
+  const token = await useAuthStore().getFreshIdToken()
+  if (signal.aborted) return UNEXPLAINED_REFUSAL
   if (!token) return SIGN_IN_AGAIN
   return issueBillingHandoff(
     token,
@@ -239,6 +221,26 @@ async function issueForScope(
     scope.cloudBaseUrl,
     request,
     signal
+  )
+}
+
+function issueForScope(
+  scope: HandoffScope,
+  request: BillingHandoffRequest,
+  signal: AbortSignal
+): Promise<HandoffIssue> {
+  if (localSurface() === 'desktop')
+    return unlessAbandoned(
+      () => issueThroughDesktop(scope.workspaceId, request),
+      signal
+    )
+  const abandonedOrOverdue = combineAbortSignals([
+    signal,
+    AbortSignal.timeout(ISSUE_TIMEOUT_MS)
+  ])
+  return unlessAbandoned(
+    () => issueWithFreshToken(scope, request, abandonedOrOverdue),
+    abandonedOrOverdue
   )
 }
 

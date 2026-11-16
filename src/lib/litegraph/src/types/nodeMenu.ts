@@ -5,6 +5,7 @@ export const NODE_MENU_SECTIONS = {
     'copyImage',
     'pasteImage',
     'saveImage',
+    'previewResolution',
     'downloadImages'
   ],
   selection: ['rename', 'copy', 'duplicate'],
