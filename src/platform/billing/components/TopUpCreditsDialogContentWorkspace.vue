@@ -714,7 +714,7 @@ function openTopupVerification() {
 }
 
 function showAmountStep() {
-  stopPayRetryOnCardReturn()
+  stopPayOfferOnCardReturn()
   checkoutRecovery.value = null
   step.value = 'amount'
 }
@@ -882,14 +882,14 @@ watch(
   () => workspaceStore.workspaceTransitionGeneration,
   () => {
     checkoutScope?.abort()
-    stopPayRetryOnCardReturn()
+    stopPayOfferOnCardReturn()
   },
   { flush: 'sync' }
 )
 onUnmounted(() => {
   unmounted = true
   checkoutScope?.abort()
-  stopPayRetryOnCardReturn()
+  stopPayOfferOnCardReturn()
 })
 
 function watchCheckoutCompletion() {
@@ -914,50 +914,21 @@ function watchCheckoutCompletion() {
   })
 }
 
-function stopPayRetryOnCardReturn() {
+function stopPayOfferOnCardReturn() {
   stopDefaultCardReturnRefresh?.()
   stopDefaultCardReturnRefresh = null
 }
 
-function armPayRetryAfterNextDeparture() {
-  stopPayRetryOnCardReturn()
-  const arm = () => {
-    stopPayRetryOnCardReturn()
-    armPayRetryOnCardReturn()
-  }
-  const onVisibility = () => {
-    if (document.visibilityState === 'hidden') arm()
-  }
-  window.addEventListener('blur', arm)
-  document.addEventListener('visibilitychange', onVisibility)
-  stopDefaultCardReturnRefresh = () => {
-    window.removeEventListener('blur', arm)
-    document.removeEventListener('visibilitychange', onVisibility)
-  }
-}
-
-function armPayRetryOnCardReturn() {
-  stopPayRetryOnCardReturn()
+function offerPayOnCardReturn() {
+  stopPayOfferOnCardReturn()
   const launchedGeneration = workspaceStore.workspaceTransitionGeneration
   stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
-    const stop = stopDefaultCardReturnRefresh
-    stopDefaultCardReturnRefresh = null
-    stop?.()
+    stopPayOfferOnCardReturn()
     if (step.value !== 'confirm') return
     if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
       return
     }
-    const attempt = purchaseAttempt
-    await handleBuy()
-    if (unmounted) return
-    if (workspaceStore.workspaceTransitionGeneration !== launchedGeneration) {
-      return
-    }
-    if (checkoutRecovery.value === 'refused') {
-      armPayRetryAfterNextDeparture()
-      return
-    }
-    if (purchaseAttempt === attempt) armPayRetryOnCardReturn()
+    checkoutRecovery.value = null
   })
 }
 
@@ -981,7 +952,7 @@ async function setDefaultCard() {
       return
     }
     portalTab.navigate(url)
-    armPayRetryOnCardReturn()
+    offerPayOnCardReturn()
   } catch {
     reportDefaultCardPortalFailure(portalTab)
   } finally {
@@ -991,7 +962,7 @@ async function setDefaultCard() {
 
 function followBlockedDefaultCardLink() {
   step.value = 'confirm'
-  armPayRetryOnCardReturn()
+  offerPayOnCardReturn()
 }
 
 function reportDefaultCardPortalFailure(portalTab: BillingTab | null) {
