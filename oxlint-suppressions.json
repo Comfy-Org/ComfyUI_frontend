@@ -486,11 +486,6 @@
       "count": 1
     }
   },
-  "src/platform/auth/session/useSessionCookie.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 5
-    }
-  },
   "src/platform/auth/unified/remintRetry.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
