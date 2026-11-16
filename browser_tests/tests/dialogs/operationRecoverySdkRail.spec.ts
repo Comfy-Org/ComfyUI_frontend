@@ -339,26 +339,28 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
     expect(await routes.hostedOpens()).toEqual([])
   })
 
-  test('still restores the tier and cycle from the host pointer when recovery fails', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    // The SDK's own pointer is scope-keyed and carries no selection; the host
-    // pointer is what reopens the checkout on the plan the customer chose.
-    await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
-    await setupRecovery(page, FAILED_OPERATION, { railOnFeatures: true })
-    await enableSdkRail(page)
+  test.describe('with billing_new_ux_enabled off', () => {
+    test.use({ billingNewUx: false })
 
-    await page.goto(APP_URL)
+    test('still restores the tier and cycle from the host pointer when recovery fails', async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
+      await setupRecovery(page, FAILED_OPERATION, { railOnFeatures: true })
+      await enableSdkRail(page)
 
-    await cloudAppExpect(confirmPaymentHeading(page)).toBeVisible()
-    const checkoutDialog = page.getByRole('dialog')
-    await expect(
-      checkoutDialog.getByRole('button', { name: 'Subscribe to Creator' })
-    ).toBeVisible()
-    await expect(
-      checkoutDialog.getByText('$336 Billed yearly').filter({ visible: true })
-    ).toBeVisible()
-    await expect.poll(() => readPendingCheckout(page)).toBeNull()
+      await page.goto(APP_URL)
+
+      await cloudAppExpect(confirmPaymentHeading(page)).toBeVisible()
+      const checkoutDialog = page.getByRole('dialog')
+      await expect(
+        checkoutDialog.getByRole('button', { name: 'Subscribe to Creator' })
+      ).toBeVisible()
+      await expect(
+        checkoutDialog.getByText('$336 Billed yearly').filter({ visible: true })
+      ).toBeVisible()
+      await expect.poll(() => readPendingCheckout(page)).toBeNull()
+    })
   })
 })

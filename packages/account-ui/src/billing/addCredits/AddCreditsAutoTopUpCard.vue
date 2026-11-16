@@ -80,17 +80,17 @@
         data-testid="add-credits-auto-top-up-consent"
       >
         <template v-for="(part, index) in consent" :key="index">
-          <a
+          <AddCreditsBillingLink
             v-if="part === BILLING_TOKEN"
-            :href="billingUrl"
-            target="_blank"
+            :to="billingUrl"
             rel="noopener noreferrer"
-            class="text-inherit underline"
+            inline
+            @click="emit('openBilling')"
             >{{ translate('autoTopUp.billing')
             }}<i
               class="ml-0.5 icon-[lucide--arrow-up-right] size-3"
               aria-hidden="true"
-          /></a>
+          /></AddCreditsBillingLink>
           <template v-else>{{ part }}</template>
         </template>
       </p>
@@ -116,7 +116,12 @@ import Switch from '@comfyorg/design-system/switch/Switch'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import AddCreditsAmountField from './AddCreditsAmountField.vue'
-import type { AddCreditsFormat, AddCreditsUi } from './addCreditsPresentation'
+import AddCreditsBillingLink from './AddCreditsBillingLink.vue'
+import type {
+  AddCreditsBillingLinkTarget,
+  AddCreditsFormat,
+  AddCreditsUi
+} from './addCreditsPresentation'
 import type { AutoTopUpEdit } from './useAddCreditsAutoTopUp'
 import {
   BILLING_TOKEN,
@@ -141,7 +146,7 @@ const {
   input: AutoTopUpFormInput
   values: AutoTopUpFormValues
   errors: AutoTopUpErrors
-  billingUrl: string
+  billingUrl: AddCreditsBillingLinkTarget
   locked: boolean
   translate: AddCreditsTranslate
   format: AddCreditsFormat
@@ -152,6 +157,7 @@ const checked = defineModel<boolean>('checked', { required: true })
 
 const emit = defineEmits<{
   edit: AutoTopUpEdit
+  openBilling: []
 }>()
 
 const checkboxId = useId()

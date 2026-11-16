@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { DialogPortal } from 'reka-ui'
@@ -129,34 +129,36 @@ describe('NodeSearchBox', () => {
     })
   })
 
-  it('shows a node def registered after the query was typed', async () => {
+  it('shows a node definition registered after the query was searched', async () => {
     vi.useFakeTimers()
     renderComponent()
 
     await fireEvent.update(screen.getByRole('combobox'), 'dragon')
     await vi.advanceTimersByTimeAsync(100)
-    expect(screen.queryByRole('option', { name: 'Blueprint' })).toBeNull()
+    expect(screen.queryByRole('option', { name: 'Dragon Blueprint' })).toBe(
+      null
+    )
 
-    const nodeDefStore = useNodeDefStore()
-    nodeDefStore.nodeDefsByName = {
-      ...nodeDefStore.nodeDefsByName,
-      Blueprint: new ComfyNodeDefImpl({
-        name: 'Blueprint',
-        display_name: 'Blueprint',
-        category: 'Subgraph Blueprints/User',
+    useNodeDefStore().registerBlueprintNodeDef(
+      new ComfyNodeDefImpl({
+        name: 'SubgraphBlueprint.dragon',
+        display_name: 'Dragon Blueprint',
+        category: 'Subgraph Blueprints',
         python_module: 'blueprint',
         description: '',
         input: {},
         output: [],
         output_is_list: [],
         output_name: [],
-        output_node: false,
-        search_aliases: ['dragon']
+        output_node: false
       })
-    }
-    await vi.advanceTimersByTimeAsync(100)
+    )
 
-    expect(screen.getByRole('option', { name: 'Blueprint' })).toBeVisible()
+    await nextTick()
+
+    expect(
+      screen.getByRole('option', { name: 'Dragon Blueprint' })
+    ).toBeVisible()
   })
 
   it('shows frequent nodes that load after the box opened', async () => {

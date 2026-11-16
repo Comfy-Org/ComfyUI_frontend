@@ -15,6 +15,7 @@ import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { t } from '@/i18n'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type {
@@ -210,7 +211,11 @@ function assignMappedInputs(
       widget.value = value as TWidgetValue
       assigned.push({ name, value: widget.value })
     } catch (error) {
-      console.error(`Failed to set widget ${name}`, error)
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'failure_assigning_replacement_widget_value',
+        tags: { node_type: replacement.new_node_id, widget_name: name }
+      })
     }
   }
   const inputMaps = [...(replacement.input_mapping ?? [])].sort(
@@ -406,7 +411,11 @@ function replaceWithMapping(
       if (widget.value !== value) widget.value = value
       widget.callback?.(value)
     } catch (error) {
-      console.error(`Failed to set widget ${name}`, error)
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'failure_invoking_replacement_widget_callback',
+        tags: { node_type: replacement.new_node_id, widget_name: name }
+      })
     }
   }
   for (const widget of newNode.widgets ?? []) {
@@ -431,7 +440,11 @@ function replaceWithMapping(
         input
       )
     } catch (error) {
-      console.error(`Failed to notify connected link ${link.id}`, error)
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'failure_notifying_replacement_input_connection',
+        tags: { node_type: replacement.new_node_id, input_name: input.name }
+      })
     }
   }
 
