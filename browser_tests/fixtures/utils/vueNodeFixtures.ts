@@ -112,7 +112,9 @@ export class VueNodeFixture {
     const filteredLocator =
       typeof nameOrLocator === 'string'
         ? slotLocators
-            .filter({ hasText: nameOrLocator })
+            .filter({
+              has: this.root.page().getByText(nameOrLocator, { exact: true })
+            })
             .or(
               this.root
                 .locator('.lg-slot')

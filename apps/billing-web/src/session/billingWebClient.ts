@@ -23,6 +23,7 @@ import type {
   BillingSession,
   BillingTransport,
   CredentialedWebSession,
+  OperationOutcomeRead,
   WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import {
@@ -38,6 +39,7 @@ import {
   createSessionBillingTransport,
   createTopupCommand,
   createWorkspaceInviteCommands,
+  readOperationOutcome,
   sessionBillingScopeSource,
   toBillingTelemetryEvent
 } from '@comfyorg/account-core/billing'
@@ -47,6 +49,7 @@ import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebStripeKey } from '@/config/stripeKey'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
 import { notePayment, sessionTabStorage } from '@/handoff/handoffTab'
+import type { CheckingPayment } from '@/handoff/paymentOutcome'
 import type { PaymentEvent } from '@/handoff/paymentTrace'
 import { TRACED_WRITES, paymentEventOf } from '@/handoff/paymentTrace'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
@@ -91,8 +94,23 @@ export function createBillingWebClient(
   return composeBillingWebClient(transport, sessionBillingScopeSource(session))
 }
 
+const SESSION_ENDING_REFUSALS = new Map<number, ReadonlySet<unknown>>([
+  [401, new Set(['INVALID_CREDENTIAL'])],
+  [
+    403,
+    new Set([
+      'HANDOFF_DISABLED',
+      'sso_required',
+      'account_outside_organization',
+      'personal_workspace_disabled',
+      'workspace_access_denied'
+    ])
+  ]
+])
+
 async function isScopedSessionRefusal(response: Response): Promise<boolean> {
-  if (response.status !== 401) return false
+  const endingCodes = SESSION_ENDING_REFUSALS.get(response.status)
+  if (endingCodes === undefined) return false
   const body: unknown = await response
     .clone()
     .json()
@@ -101,7 +119,7 @@ async function isScopedSessionRefusal(response: Response): Promise<boolean> {
     typeof body === 'object' &&
     body !== null &&
     'code' in body &&
-    body.code === 'INVALID_CREDENTIAL'
+    endingCodes.has(body.code)
   )
 }
 
@@ -153,6 +171,19 @@ export function createHandoffBillingClient(
     noteHandoffPayment(paymentEventOf(operation))
   )
   return client
+}
+
+/** Reads how the payment an ended handoff tab is still checking ended, with the bearer that tab kept. */
+export function readPaymentOutcome(
+  { reference, token }: CheckingPayment,
+  signal: AbortSignal
+): Promise<OperationOutcomeRead> {
+  return readOperationOutcome({
+    operationId: reference,
+    token,
+    resolveUrl,
+    signal
+  })
 }
 
 /**

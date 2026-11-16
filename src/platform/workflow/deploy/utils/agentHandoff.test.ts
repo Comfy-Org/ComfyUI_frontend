@@ -71,9 +71,10 @@ describe('buildAgentHandoffDocument', () => {
       'When ComfyUI is installed on the machine you are running on, build from that install; nothing is uploaded to start.'
     )
     expect(document).toContain(
-      'Otherwise, build from the workflow file. The browser downloaded the workflow as `portrait-upscale.json`'
+      'Otherwise, ask the user to export the workflow as `portrait-upscale.json` and provide its location.'
     )
     expect(document).toContain('When you cannot tell which, ask the user.')
+    expect(document).not.toContain('The browser downloaded')
   })
 
   it('sends desktop to create from the newest snapshot', () => {

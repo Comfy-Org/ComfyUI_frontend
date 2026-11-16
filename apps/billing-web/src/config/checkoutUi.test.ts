@@ -428,4 +428,15 @@ describe('in a billing handoff tab', () => {
 
     await expect(awaitCheckoutUiVariant()).resolves.toBe('embedded')
   })
+
+  it('reads unified billing settings as off without asking Cloud', async () => {
+    localStorage.setItem('ff:unified_billing_settings', JSON.stringify(true))
+    const { awaitUnifiedBillingSettings } = await handoffCheckoutUi(() =>
+      Promise.resolve('full_page')
+    )
+
+    await expect(awaitUnifiedBillingSettings()).resolves.toBe(false)
+    expect(h.ensureFresh).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
 })
