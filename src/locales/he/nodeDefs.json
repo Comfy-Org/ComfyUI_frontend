@@ -1949,7 +1949,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שעבורה draft_task_id מרנדר את התוצאה הסופית ב-1080p או 4k בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.5 Flash לסרטוני 480p ו-720p באורך של עד 30 שניות; ‏Seedance 2.0 לאיכות מרבית ו-4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "duration"
@@ -1994,7 +1994,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שעבורה draft_task_id מרנדר את התוצאה הסופית ב-1080p או 4k בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.5 Flash לסרטוני 480p ו-720p באורך של עד 30 שניות; ‏Seedance 2.0 לאיכות מרבית ו-4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2047,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שעבורה draft_task_id מרנדר את התוצאה הסופית ב-1080p או 4k בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.5 Flash לסרטוני 480p ו-720p באורך של עד 30 שניות; ‏Seedance 2.0 לאיכות מרבית ו-4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "הקטנה אוטומטית"
@@ -2104,7 +2104,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שעבורה draft_task_id מרנדר את התוצאה הסופית ב-1080p או 4k בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.5 Flash לסרטוני 480p ו-720p באורך של עד 30 שניות; ‏Seedance 2.0 לאיכות מרבית ו-4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "משך"
@@ -4568,7 +4568,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "בניית camera_info. המצב 'orbit' מכוון באמצעות yaw/pitch/distance סביב היעד; המצב 'look_at' מציב את המצלמה במיקום בעולם. הקואורדינטות הן מרחב העולם של הצופה (right-handed,Y-up).",
+    "description": "יוצר camera_info. המצב 'orbit' מכוון באמצעות סבסוב/הטיה/מרחק סביב היעד; המצב 'look_at' מציב את המצלמה במיקום בעולם. הקואורדינטות הן במרחב העולם של הצופה (ימני, ציר Y כלפי מעלה), או כאשר מחוברת רשת — במסגרת של אותה רשת, כך שאותן הגדרות ממסגרות כל רשת.",
     "display_name": "יצירת מידע מצלמה",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4581,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "שדה ראייה אנכי במעלות."
+      },
+      "mesh": {
+        "name": "רשת",
+        "tooltip": "מסגר רשת זו: המיקומים, היעד והמרחק נמדדים ממרכז התיבה התוחמת שלה, ביחידות של קוטר הכדור התוחם שלה, כך שאותן הגדרות ממסגרות כל רשת."
       },
       "mode": {
         "name": "מצב",
@@ -19341,7 +19345,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "יצירת תגובות טקסט דרך OpenRouter. מנתב למודלים פופולריים נבחרים מ-xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), ו-Perplexity Sonar.",
+    "description": "יצירת תגובות טקסט באמצעות OpenRouter. מנתב אל מבחר אצור של מודלים פופולריים מבית Anthropic ‏(Claude), OpenAI ‏(GPT), Google ‏(Gemini), xAI ‏(Grok), Meta ‏(Muse), DeepSeek, Qwen, Mistral, Z.AI ‏(GLM), Moonshot ‏(Kimi) ו-Perplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30309,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "עקביות לאורך זמן לפי Bonneel et al. 2015, עם איבר נאמנות נגד סחיפה: כל פריים שומר על הפרטים שלו תוך מעקב אחר הפריימים השכנים לאורך הזרימה האופטית של סרטון ההנחיה.",
+    "display_name": "הסרת הבהובים בווידאו",
+    "inputs": {
+      "direction": {
+        "name": "כיוון",
+        "tooltip": "דו-כיווני מחשב ממוצע של מעבר קדימה ומעבר אחורה, וכך מונע השתרכות מאחורי תנועה במחיר של זמן כפול."
+      },
+      "guide": {
+        "name": "מנחה",
+        "tooltip": "פריימים יציבים ממקור, שתנועתם נעקבת, בכל רזולוציה. ברירת המחדל היא התמונות, דבר שמסיר פחות הבהובים."
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "פריימים מהבהבים, למשל סרטון שהוגדל ברזולוציה או עובד פריים אחר פריים."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת העוצמה שבה כל פריים עוקב אחר הפריימים השכנים לו. ערך גבוה יותר מסיר יותר הבהובים ומרכך יותר פרטים עדינים."
+      },
+      "threshold": {
+        "name": "סף",
+        "tooltip": "שינויים גדולים מערך זה בין פריים לבין שכנו המתוקן לפי תנועה נחשבים אמיתיים ומוחלקים פחות. הערך 0 מחליק כל שינוי באותה מידה."
       }
     },
     "outputs": {

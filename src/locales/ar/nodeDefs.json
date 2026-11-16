@@ -1949,7 +1949,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير الإصدار النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد وأقلّه تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، ولمقاطع فيديو تصل مدتها إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id النتيجة النهائية بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.5 Flash لمقاطع فيديو بدقة 480p و720p تصل مدتها إلى 30 ثانية؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -1994,7 +1994,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير الإصدار النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد وأقلّه تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، ولمقاطع فيديو تصل مدتها إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id النتيجة النهائية بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.5 Flash لمقاطع فيديو بدقة 480p و720p تصل مدتها إلى 30 ثانية؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "التقليل التلقائي للحجم"
@@ -2047,7 +2047,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير الإصدار النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد وأقلّه تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، ولمقاطع فيديو تصل مدتها إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id النتيجة النهائية بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.5 Flash لمقاطع فيديو بدقة 480p و720p تصل مدتها إلى 30 ثانية؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2104,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير الإصدار النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد وأقلّه تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج، ولمقاطع فيديو تصل مدتها إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id النتيجة النهائية بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.5 Flash لمقاطع فيديو بدقة 480p و720p تصل مدتها إلى 30 ثانية؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini للتوليد الأسرع والأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -4568,7 +4568,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "أنشئ camera_info. يوجّه الوضع 'orbit' الكاميرا باستخدام الانحراف/الميل/المسافة حول الهدف؛ بينما يضع 'look_at' الكاميرا في موضع عالمي. الإحداثيات هي فضاء العالم الخاص بالمشاهد (يميني اليد، والمحور Y للأعلى).",
+    "description": "أنشئ camera_info. يوجّه النمط 'orbit' الكاميرا باستخدام الانحراف/الميل/المسافة حول الهدف؛ بينما يضعها 'look_at' عند موضع في العالم. الإحداثيات هي في فضاء العالم الخاص بالمشاهد (يميني الاتجاه، والمحور Y للأعلى)، أو ضمن إطار تلك الشبكة عند توصيل شبكة، لذا تؤطّر الإعدادات نفسها أي شبكة.",
     "display_name": "إنشاء معلومات الكاميرا",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4581,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "مجال الرؤية العمودي بالدرجات."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "أطّر هذه الشبكة: تُحسب المواضع والهدف والمسافة من مركز صندوقها المحيط، بوحدات قطر كرتها المحيطة، لذا تؤطّر الإعدادات نفسها أي شبكة."
       },
       "mode": {
         "name": "الوضع",
@@ -19341,7 +19345,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "توليد ردود نصية عبر OpenRouter. يوجه إلى مجموعة مختارة من النماذج الشهيرة من xAI، DeepSeek، Qwen، Mistral، Z.AI (GLM)، Moonshot (Kimi)، وPerplexity Sonar.",
+    "description": "أنشئ استجابات نصية عبر OpenRouter. يوجّه إلى مجموعة منتقاة من النماذج الشائعة من Anthropic (Claude)، وOpenAI (GPT)، وGoogle (Gemini)، وxAI (Grok)، وMeta (Muse)، وDeepSeek، وQwen، وMistral، وZ.AI (GLM)، وMoonshot (Kimi)، وPerplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30309,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "اتساق زمني وفقاً لـ Bonneel وآخرين، 2015، مع حدّ مطابقة لمقاومة الانجراف: يحتفظ كل إطار بتفاصيله الخاصة بينما يتبع الإطارات المجاورة له على طول التدفق البصري لفيديو الدليل.",
+    "display_name": "إزالة وميض الفيديو",
+    "inputs": {
+      "direction": {
+        "name": "direction",
+        "tooltip": "يأخذ bidirectional متوسط تمرير أمامي وتمرير خلفي، مما يتجنب التأخر عن الحركة مقابل ضعف الوقت."
+      },
+      "guide": {
+        "name": "guide",
+        "tooltip": "إطارات مصدر مستقرة لاتباع حركتها، بأي دقة. الافتراضي هو images، مما يزيل مقداراً أقل من الوميض."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "إطارات متذبذبة، مثل فيديو تم رفع دقته أو معالجته إطاراً بإطار."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "مدى قوة اتباع كل إطار لإطاراته المجاورة. تزيد القيم الأعلى من إزالة الوميض وتنعّم التفاصيل الدقيقة بدرجة أكبر."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "تُعدّ التغييرات الأكبر من هذا بين إطار وجاره المعوّض للحركة حقيقية، وتُنعّم بدرجة أقل. القيمة 0 تنعّم جميع التغييرات بالطريقة نفسها."
       }
     },
     "outputs": {
