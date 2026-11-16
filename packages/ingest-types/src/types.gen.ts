@@ -6820,7 +6820,15 @@ export type ListAssetsResponse = {
    */
   next_cursor?: string
   /**
-   * Total number of assets matching the filters
+   * Number of assets matching the filters, counted up to 10,000 unless
+   * the request sends `capped_total=false`. A capped 10,000 means "at
+   * least 10,000" and must not be read as the exact count or used to
+   * work out the last page. With `include_total=false` no count runs
+   * and `total` is a lower bound: the assets through this page (on an
+   * offset page, the skipped `offset` rows included), plus one when
+   * `has_more` is true, and 0 for an empty page. To page, follow
+   * `has_more` and `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -7516,7 +7524,13 @@ export type PaginationInfo = {
    */
   offset: number
   /**
-   * Total number of items matching filters (may be 0 when using cursor pagination)
+   * Number of items matching the filters (may be 0 when using cursor
+   * pagination). `GET /api/jobs` counts it up to 10,000 unless the
+   * request sends `capped_total=false`, so 10,000 there means "at
+   * least 10,000" and must not be read as the exact count or used to
+   * work out the last page. To page, follow `has_more` and
+   * `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -9718,6 +9732,16 @@ export type ValidationResult = {
 }
 
 /**
+ * The signed link `GET /api/view?redirect=false` answers with: the same link the 302 sends in `Location`, so it expires like that one.
+ */
+export type ViewFileUrlResponse = {
+  /**
+   * Signed Google Cloud Storage link to the file. It needs no other credential, so treat it as a secret until it expires.
+   */
+  url: string
+}
+
+/**
  * The live web session and the user it belongs to
  */
 export type WebSessionResponse = {
@@ -10281,7 +10305,15 @@ export type ListAssetsResponseWritable = {
    */
   next_cursor?: string
   /**
-   * Total number of assets matching the filters
+   * Number of assets matching the filters, counted up to 10,000 unless
+   * the request sends `capped_total=false`. A capped 10,000 means "at
+   * least 10,000" and must not be read as the exact count or used to
+   * work out the last page. With `include_total=false` no count runs
+   * and `total` is a lower bound: the assets through this page (on an
+   * offset page, the skipped `offset` rows included), plus one when
+   * `has_more` is true, and 0 for an empty page. To page, follow
+   * `has_more` and `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -11664,7 +11696,9 @@ export type ListAssetsData = {
      */
     limit?: number
     /**
-     * Number of assets to skip for pagination
+     * Number of assets to skip for pagination. A negative offset returns
+     * 400 `INVALID_OFFSET`.
+     *
      */
     offset?: number
     /**
@@ -11713,6 +11747,17 @@ export type ListAssetsData = {
      *
      */
     after?: string
+    /**
+     * When true or omitted, `total` counts at most 10,000 matching
+     * assets, so a total of 10,000 means "at least 10,000", not an exact
+     * count. A capped count stops after 10,000 matching assets instead
+     * of reading every one. Send false for the exact count, for example
+     * to work out the last page from the total: `has_more` and
+     * `next_cursor` do not depend on the total either way. Ignored when
+     * `include_total` is false.
+     *
+     */
+    capped_total?: boolean
     /**
      * Send false when the caller does not read `total`, for example a
      * list that pages by `has_more` and `next_cursor`. No count runs,
@@ -17230,6 +17275,20 @@ export type ListJobsData = {
      * Maximum items per page (1-1000)
      */
     limit?: number
+    /**
+     * When true or omitted, `pagination.total` counts at most 10,000
+     * matching jobs, so a total of 10,000 means "at least 10,000", not an
+     * exact count. A capped count stops after 10,000 matching jobs
+     * instead of reading every one. Send false for the exact count, for
+     * example to work out the last page from the total: `has_more` and
+     * `next_cursor` do not depend on the total either way. Under the
+     * default `sort_by=create_time` a request with `after` reports no
+     * total, so this changes nothing there; under
+     * `sort_by=execution_time` `after` is ignored and the total is
+     * counted, capped unless this is false.
+     *
+     */
+    capped_total?: boolean
   }
   url: '/api/jobs'
 }
@@ -21657,6 +21716,18 @@ export type ViewFileData = {
      */
     res?: number
     /**
+     * `false` answers `200` with the signed link as JSON
+     * (`ViewFileURLResponse`) instead of the `302` to it, after the same
+     * sign-in, workspace and visibility checks. For a page on another
+     * site that reads the file with `fetch`: a page cannot read a 302's
+     * `Location`, and the browser sends `Origin: null` to storage after
+     * following the redirect across sites, which storage refuses. Any
+     * other value, or none, answers the `302`. `channel`, and `res` on
+     * a raster image, answer with the image bytes either way.
+     *
+     */
+    redirect?: string
+    /**
      * The workspace a media request reads from, where a media tag cannot send `X-Comfy-Workspace-ID`; see the `MediaWorkspaceID` parameter.
      */
     workspace_id?: string
@@ -21691,9 +21762,9 @@ export type ViewFileError = ViewFileErrors[keyof ViewFileErrors]
 
 export type ViewFileResponses = {
   /**
-   * Resized JPEG thumbnail (returned when res parameter is used)
+   * Success - File content returned (used when channel or res parameter is present), or, with `redirect=false`, the signed link as JSON with `Cache-Control: no-store`.
    */
-  200: Blob | File
+  200: ViewFileUrlResponse
 }
 
 export type ViewFileResponse = ViewFileResponses[keyof ViewFileResponses]
