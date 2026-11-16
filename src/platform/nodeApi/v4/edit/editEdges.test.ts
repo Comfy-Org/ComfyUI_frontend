@@ -148,12 +148,12 @@ describe('edit edges', () => {
     expect(fromSecond.origin_slot).toBe(1)
   })
 
-  it('moves a floating link with its input through a three-way reorder', () => {
+  it('leaves a floating link into an input at its slot index through a three-way reorder, as the host does', () => {
     const intoFirst = floating([-1, -1], [0, 0])
 
     expect(handle.inputs.reorder(['second', 'third', 'first'])).toBe(true)
 
-    expect(intoFirst.target_slot).toBe(2)
+    expect(intoFirst.target_slot).toBe(0)
   })
 
   it('refuses an empty widget name', () => {

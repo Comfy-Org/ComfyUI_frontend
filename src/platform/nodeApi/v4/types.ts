@@ -153,8 +153,8 @@ export interface Edits {
     init?: NodeInit
   ): NodeHandle | undefined
   /**
-   * Changes the fields `patch` names on a slot. Throws first for an edit a load
-   * would not keep (see `SlotPatch`), a taken name, or a missing widget.
+   * Changes the fields `patch` names on a slot; not a subgraph node's. Throws first for a taken name or
+   * a missing widget. A load gives back some fields of a slot the node's type makes (see `SlotPatch`).
    */
   updateSlot(slot: InputSlotHandle, patch: InputSlotPatch): boolean
   updateSlot(slot: OutputSlotHandle, patch: SlotPatch): boolean

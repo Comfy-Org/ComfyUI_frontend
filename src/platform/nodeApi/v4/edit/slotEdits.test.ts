@@ -386,6 +386,25 @@ describe('slot edits', () => {
       })
     })
 
+    it.for(['input', 'output'] as const)(
+      'leaves the %s order, the saved links and the undo history alone when the order is unchanged',
+      (side) => {
+        source.connect(0, target, 0)
+        source.connect(2, target, 2)
+        source.connect(1, target, 1)
+        const node = side === 'output' ? sourceHandle : targetHandle
+        const names = side === 'output' ? ['a', 'b', 'c'] : ['x', 'y', 'z']
+        const saved = JSON.stringify(graph.serialize().links)
+        const version = graph._version
+
+        expect(comfy.edit.reorderSlots(node, side, names)).toBe(true)
+
+        expect(JSON.stringify(graph.serialize().links)).toBe(saved)
+        expect(steps).toEqual([])
+        expect(graph._version).toBe(version)
+      }
+    )
+
     it.for([
       ['a list that leaves a slot out', 'input', ['x', 'y']],
       ['a list with a slot twice', 'input', ['x', 'x', 'y']],
