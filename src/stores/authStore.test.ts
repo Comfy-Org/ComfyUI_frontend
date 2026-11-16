@@ -1877,3 +1877,60 @@ describe('store construction order', () => {
     expect(workspaceAuth.getUnifiedToken()).toBe('construction-token')
   })
 })
+
+describe('a stored API key while Firebase restores the saved sign-in', () => {
+  const EARLIER_KEY = { 'X-API-KEY': 'earlier-account-key' }
+  const firebaseObservers: IdentityObserver[] = []
+  const firebaseReports = (user: User | null) =>
+    firebaseObservers.forEach((observer) => observer(user))
+  const storeHoldingAnEarlierKey = () => {
+    const store = useAuthStore()
+    vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(EARLIER_KEY)
+    return store
+  }
+
+  beforeEach(() => {
+    firebaseObservers.length = 0
+    vi.mocked(useDialogService, { partial: true }).mockReturnValue({
+      showErrorDialog: vi.fn()
+    })
+    vi.mocked(firebaseAuth.initializeAuth).mockReturnValue(
+      fromPartial<Auth>({ currentUser: null })
+    )
+    vi.mocked(firebaseAuth.onIdTokenChanged).mockImplementation(() => vi.fn())
+    vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
+      (_, callback) => {
+        firebaseObservers.push(callback as IdentityObserver)
+        return vi.fn()
+      }
+    )
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+  })
+
+  it('sends no credential before Firebase has answered', async () => {
+    const store = storeHoldingAnEarlierKey()
+
+    await expect(store.getAuthHeader()).resolves.toBeNull()
+    await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+  })
+
+  it('sends the stored key once Firebase confirms that nobody is signed in', async () => {
+    const store = storeHoldingAnEarlierKey()
+
+    firebaseReports(null)
+
+    await expect(store.getAuthHeader()).resolves.toEqual(EARLIER_KEY)
+    await expect(store.getWorkspaceAuthHeader()).resolves.toEqual(EARLIER_KEY)
+  })
+
+  it('keeps the stored key when the first Firebase answer is that nobody is signed in', () => {
+    storeHoldingAnEarlierKey()
+    vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(
+      'earlier-account-key'
+    )
+
+    firebaseReports(null)
+
+    expect(useApiKeyAuthStore().clearStoredApiKey).not.toHaveBeenCalled()
+  })
+})

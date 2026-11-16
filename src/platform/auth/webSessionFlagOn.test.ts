@@ -3931,22 +3931,12 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
   }
 
   it.for([
-    {
-      sso: true,
-      login: 'session',
-      signIn: signInWithSessionOnly,
-      keyKept: false
-    },
-    {
-      sso: true,
-      login: 'firebase',
-      signIn: signInWithFirebase,
-      keyKept: false
-    },
-    { sso: false, login: 'firebase', signIn: signInWithFirebase, keyKept: true }
+    { sso: true, login: 'session', signIn: signInWithSessionOnly },
+    { sso: true, login: 'firebase', signIn: signInWithFirebase },
+    { sso: false, login: 'firebase', signIn: signInWithFirebase }
   ])(
-    'a stored API key outlives a $login sign-out only with SSO off (sso_enabled $sso)',
-    async ({ sso, signIn, keyKept }) => {
+    'a stored API key does not outlive a $login sign-out on Cloud (sso_enabled $sso)',
+    async ({ sso, signIn }) => {
       installServer({ userId: 'user-a' }, { sso_enabled: sso })
       await refreshRemoteConfig({ useAuth: false })
       localStorage.setItem('comfy_api_key', STORED_API_KEY)
@@ -3958,9 +3948,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
       await authStore.logout()
 
       expect(authStore.isAuthenticated).toBe(false)
-      expect(useApiKeyAuthStore().getApiKey()).toBe(
-        keyKept ? STORED_API_KEY : null
-      )
+      expect(useApiKeyAuthStore().getApiKey()).toBeNull()
     }
   )
 })
