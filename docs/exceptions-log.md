@@ -29,8 +29,11 @@ views of that state.
 **Current exception:** `NodeState` owns plain slot descriptors. Metadata on
 `NodeInputSlot` and `NodeOutputSlot` forwards to those descriptors, while
 `LGraphNode.inputs` and `LGraphNode.outputs` remain compatibility projections.
-Independent slot keys and removal of the compatibility views are still pending.
+Slot records have independent runtime identities, but ID-keyed membership and
+removal of the compatibility views are still pending.
 See [the descriptor ownership decision](adr/ECS-SLOTS-0057-plain-descriptors-before-independent-slot-identity.md).
+The [runtime identity decision](adr/ECS-SLOTS-0058-independent-runtime-slot-identity.md)
+records the key and collision contract.
 
 **Owner:** Christian Byrne
 

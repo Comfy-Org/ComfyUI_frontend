@@ -12,6 +12,8 @@ import type {
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { SlotRecordId } from '@comfyorg/graph-model/slotRecordId'
+import type { SlotRecord } from '@comfyorg/graph-model/slots'
 import type { UUID } from '@/utils/uuid'
 
 /**
@@ -25,6 +27,33 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   }
 
   const roots = reactive(new Map<RootGraphId, RootNodeBucket>())
+
+  function* registeredSlots(): Generator<SlotRecord> {
+    for (const bucket of roots.values()) {
+      for (const state of bucket.byId.values()) {
+        yield* [...state.inputs, ...state.outputs].filter(Boolean)
+      }
+    }
+  }
+
+  function getSlotRecord(id: SlotRecordId): SlotRecord | undefined {
+    for (const record of registeredSlots()) {
+      if (record.id === id) return record
+    }
+    return undefined
+  }
+
+  function canRegisterSlots(state: NodeState): boolean {
+    const records = new Map(
+      [...registeredSlots()].map((record) => [record.id, record])
+    )
+    for (const record of [...state.inputs, ...state.outputs].filter(Boolean)) {
+      const incumbent = records.get(record.id)
+      if (incumbent && toRaw(incumbent) !== toRaw(record)) return false
+      records.set(record.id, record)
+    }
+    return true
+  }
 
   function rootBucket(rootGraphId: RootGraphId): RootNodeBucket {
     const existing = roots.get(rootGraphId)
@@ -44,11 +73,6 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     }
   }
 
-  /**
-   * @returns The registered state. Re-registering the same raw state under the
-   * same owner returns the incumbent; `undefined` means a distinct state
-   * occupies the node ID.
-   */
   function registerNode(
     graphScope: GraphScope,
     state: NodeState
@@ -61,7 +85,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
       incumbent.graphId === graphScope.owningGraphId
     )
       return incumbent
-    if (incumbent) return undefined
+    if (incumbent || !canRegisterSlots(state)) return undefined
     const bucket = existingBucket ?? rootBucket(graphScope.rootGraphId)
     const registered: NodeState = reactive(
       Object.assign(state, { graphId: graphScope.owningGraphId })
@@ -132,8 +156,10 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   return {
     clearOwner,
     clearGraph,
+    canRegisterSlots,
     deleteNode,
     getGraphNodesFor,
+    getSlotRecord,
     ownsNode,
     registerNode
   }

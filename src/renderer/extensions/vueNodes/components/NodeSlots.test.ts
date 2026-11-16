@@ -431,7 +431,7 @@ describe('NodeSlots.vue', () => {
     const nodeData = makeNodeData({
       id: toVueNodeId(upstream.id),
       graphId: graph.id,
-      outputs: upstream.outputs
+      outputs: upstream._state.outputs
     })
     const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     await nextTick()
@@ -460,7 +460,7 @@ describe('NodeSlots.vue', () => {
     const nodeData = makeNodeData({
       id: toVueNodeId(node.id),
       graphId: graph.id,
-      inputs: node.inputs
+      inputs: node._state.inputs
     })
     const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     await nextTick()
@@ -508,7 +508,7 @@ describe('NodeSlots.vue', () => {
     const nodeData = makeNodeData({
       id: toVueNodeId(interiorNode.id),
       graphId: subgraph.id,
-      inputs: interiorNode.inputs
+      inputs: interiorNode._state.inputs
     })
     const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     seedRequiredInputMissingNodeError(
@@ -548,7 +548,7 @@ describe('NodeSlots.vue', () => {
     const nodeData = makeNodeData({
       id: toVueNodeId(innerNode.id),
       graphId: innerSubgraph.id,
-      inputs: innerNode.inputs
+      inputs: innerNode._state.inputs
     })
     const { container } = renderSlots(nodeData, defaultSlotStubs, pinia)
     seedRequiredInputMissingNodeError(
@@ -642,7 +642,7 @@ describe('NodeSlots.vue', () => {
       const nodeData = makeNodeData({
         id: toVueNodeId(node.id),
         graphId: graph.id,
-        inputs: node.inputs
+        inputs: node._state.inputs
       })
       const { container } = renderUnified(nodeData, pinia)
 

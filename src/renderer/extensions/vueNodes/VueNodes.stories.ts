@@ -4,6 +4,7 @@ import { fn } from 'storybook/test'
 import { computed, onScopeDispose, ref } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toSlotRecordId } from '@comfyorg/graph-model/slotRecordId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
@@ -20,6 +21,7 @@ import {
 } from '@/stores/modelToNodeStore'
 import { CONTROL_OPTIONS, isControlOption } from '@/types/simplifiedWidget'
 import type { ControlOptions, SimplifiedWidget } from '@/types/simplifiedWidget'
+import { createUuidv4 } from '@/utils/uuid'
 
 import NodeHeader from './components/NodeHeader.vue'
 import SlotConnectionDot from './components/SlotConnectionDot.vue'
@@ -149,36 +151,36 @@ const meta: Meta<StoryArgs> = {
           properties: {},
           inputs: [
             {
+              id: toSlotRecordId(createUuidv4()),
               name: 'model',
               type: 'MODEL',
-              boundingRect: [0, 0, 0, 0],
-              link: null
+              boundingRect: [0, 0, 0, 0]
             },
             {
+              id: toSlotRecordId(createUuidv4()),
               name: 'positive',
               type: 'CONDITIONING',
-              boundingRect: [0, 0, 0, 0],
-              link: null
+              boundingRect: [0, 0, 0, 0]
             },
             {
+              id: toSlotRecordId(createUuidv4()),
               name: 'negative',
               type: 'CONDITIONING',
-              boundingRect: [0, 0, 0, 0],
-              link: null
+              boundingRect: [0, 0, 0, 0]
             },
             {
+              id: toSlotRecordId(createUuidv4()),
               name: 'latent_image',
               type: 'LATENT',
-              boundingRect: [0, 0, 0, 0],
-              link: null
+              boundingRect: [0, 0, 0, 0]
             }
           ],
           outputs: [
             {
+              id: toSlotRecordId(createUuidv4()),
               name: 'LATENT',
               type: 'LATENT',
-              boundingRect: [0, 0, 0, 0],
-              links: []
+              boundingRect: [0, 0, 0, 0]
             }
           ]
         }))
