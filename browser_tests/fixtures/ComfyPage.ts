@@ -557,7 +557,7 @@ export class ComfyPage {
   }
 }
 
-export class ComfyFiles {
+class ComfyFiles {
   protected teardownCallbacks: (() => Promise<unknown>)[] = []
 
   constructor(protected readonly comfyPage: ComfyPage) {}
