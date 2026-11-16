@@ -129,6 +129,37 @@ describe('Cloud button compatibility checks', () => {
     expect(
       await screen.findByRole('dialog', { name: 'Run on Comfy Cloud' })
     ).toBeVisible()
+    expect(screen.getByTestId('run-on-cloud-primary')).toBeVisible()
+  })
+
+  it('offers the agent menu instead of direct import for compatible workflows on Desktop', async () => {
+    vi.stubGlobal('__comfyDesktop2', {})
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    useAgentPanelStore().enabled = true
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByTestId('cloud-button'))
+    await screen.findByRole('dialog', { name: 'Run on Comfy Cloud' })
+    expect(screen.queryByTestId('run-on-cloud-primary')).not.toBeInTheDocument()
+
+    await user.click(screen.getByTestId('deploy-setup-agent'))
+    expect(
+      (await screen.findAllByRole('menuitem')).map((row) =>
+        row.textContent.trim()
+      )
+    ).toEqual([
+      'Use local agent',
+      'Open in Claude desktop',
+      'Open in Codex',
+      'Copy prompt'
+    ])
   })
 
   it('waits for the pending hover request when clicked', async () => {

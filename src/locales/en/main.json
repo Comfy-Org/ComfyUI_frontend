@@ -4344,6 +4344,7 @@
     "runDialog": {
       "title": "Run on Comfy Cloud",
       "ready": "Comfy Cloud has every node and model this workflow uses. It opens in a new tab, ready to run.",
+      "desktopAgentHandoff": "Comfy Cloud has every node and model this workflow uses. Choose an agent to prepare it on Comfy Cloud and get a link that opens it.",
       "asksToSignIn": "Comfy Cloud will ask you to sign in.",
       "openOnCloud": "Open on Comfy Cloud"
     },

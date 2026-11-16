@@ -13,7 +13,7 @@ Fetch it from the server; there is no exported copy on disk.
 
 Workflow: ${JSON.stringify(source.workflowPath)}
 ComfyUI: ${JSON.stringify(source.serverUrl)}${source.user ? `\nComfyUI user: ${JSON.stringify(source.user)}` : ''}`
-  return `Run my ComfyUI workflow on Comfy Cloud and give me the link that opens it.
+  return `Prepare my ComfyUI workflow on Comfy Cloud and give me the link that opens this workflow ready to run.
 
 First make sure comfy-cli is 1.26.0 or newer:
   comfy --version
@@ -24,6 +24,8 @@ Still older, or the upgrade fails: tell me the version it prints, and stop.
 
 Then read the skill and follow it:
   comfy skills show comfy-run-on-cloud
+
+For this handoff, check compatibility and build and deploy if needed. Ask for approval before starting a paid deployment. Skip the skill's job execution and output download steps. Save the prepared workflow and return the link that opens that specific workflow in its Cloud environment. If you cannot get a direct workflow link, tell me what blocked it.
 
 ${workflowContext}
 

@@ -8,16 +8,27 @@
         {{ $t('openOnCloud.runDialog.title') }}
       </DialogTitle>
       <p class="my-0 text-sm/5 text-muted-foreground">
-        {{ $t('openOnCloud.runDialog.ready') }}
+        {{
+          $t(
+            usesSystemBrowser
+              ? 'openOnCloud.runDialog.desktopAgentHandoff'
+              : 'openOnCloud.runDialog.ready'
+          )
+        }}
       </p>
-      <p v-if="asksToSignIn" class="my-0 text-sm/5 text-muted-foreground">
+      <p
+        v-if="asksToSignIn && !usesSystemBrowser"
+        class="my-0 text-sm/5 text-muted-foreground"
+      >
         {{ $t('openOnCloud.runDialog.asksToSignIn') }}
       </p>
       <footer class="flex items-center justify-end gap-2.5 pt-3">
         <Button variant="secondary" size="lg" @click="emit('dismiss')">
           {{ $t('g.cancel') }}
         </Button>
+        <DeploySetupAgentMenu v-if="usesSystemBrowser" @done="emit('done')" />
         <Button
+          v-else
           variant="inverted"
           size="lg"
           data-testid="run-on-cloud-primary"
@@ -34,10 +45,14 @@
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
+import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 
 defineProps<{ asksToSignIn: boolean }>()
+
+const usesSystemBrowser = handsPopupsToSystemBrowser()
 
 const emit = defineEmits<{
   done: []
