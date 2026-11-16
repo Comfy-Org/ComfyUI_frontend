@@ -10,7 +10,7 @@
       <div
         v-for="result in results"
         :key="result.id"
-        class="group relative flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-secondary"
+        class="group relative flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-accent"
         data-testid="queue-status-recent-job"
       >
         <button
@@ -20,7 +20,7 @@
           @click="emit('view', result.job)"
         />
         <span
-          class="pointer-events-none relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary transition-colors group-hover:bg-background"
+          class="pointer-events-none relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-secondary"
         >
           <img
             v-if="result.thumbSrc"
@@ -49,23 +49,18 @@
             {{ result.meta }}
           </span>
         </span>
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <Button
-              variant="muted-textonly"
-              size="icon"
-              class="size-7 shrink-0 rounded-md opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-background"
-              :aria-label="t('queueStatus.openWorkflow', { name: result.name })"
-              data-testid="queue-status-recent-workflow"
-              @click="emit('openWorkflow', result.job)"
-            >
-              <i class="icon-[lucide--workflow] size-3.5" aria-hidden />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="left">
-            {{ t('queueStatus.openWorkflowTooltip') }}
-          </TooltipContent>
-        </Tooltip>
+        <TextTooltip :text="t('queueStatus.openWorkflowTooltip')" side="left">
+          <Button
+            variant="muted-textonly"
+            size="icon"
+            class="size-7 shrink-0 rounded-md opacity-0 transition-opacity group-hover:opacity-100 group-has-focus-visible:opacity-100 hover:bg-background"
+            :aria-label="t('queueStatus.openWorkflow', { name: result.name })"
+            data-testid="queue-status-recent-workflow"
+            @click="emit('openWorkflow', result.job)"
+          >
+            <i class="icon-[lucide--workflow] size-3.5" aria-hidden />
+          </Button>
+        </TextTooltip>
       </div>
     </template>
     <p v-else class="px-2 py-3 text-center text-xs text-muted-foreground">
@@ -87,9 +82,7 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { useI18n } from 'vue-i18n'
 
 import type { JobListItem } from '@/composables/queue/useJobList'

@@ -63,41 +63,49 @@
     </Button>
 
     <template v-if="!terminalKind">
-      <Button
-        variant="muted-textonly"
-        size="unset"
-        class="h-full w-8 rounded-none hover:bg-secondary hover:text-destructive"
-        :aria-label="t('queueStatus.stopAll')"
-        data-testid="queue-status-stop"
-        @click="emit('stop')"
+      <TextTooltip :text="t('queueStatus.cancelAll')" side="bottom">
+        <Button
+          variant="muted-textonly"
+          size="unset"
+          class="h-full w-8 rounded-none hover:bg-secondary"
+          :aria-label="t('queueStatus.stopAll')"
+          data-testid="queue-status-stop"
+          @click="emit('stop')"
+        >
+          <span class="size-2.5 rounded-xs bg-current" aria-hidden />
+        </Button>
+      </TextTooltip>
+      <TextTooltip
+        :text="expanded ? t('queueStatus.hideRuns') : t('queueStatus.showRuns')"
+        side="bottom"
       >
-        <span class="size-2.5 rounded-xs bg-current" aria-hidden />
-      </Button>
-      <Button
-        variant="muted-textonly"
-        size="unset"
-        class="h-full w-7 rounded-none hover:bg-secondary"
-        :aria-label="t('queueStatus.toggleList')"
-        :aria-expanded="expanded"
-        data-testid="queue-status-chevron"
-        @click="emit('activate')"
-      >
-        <i
-          :class="
-            cn(
-              'icon-[lucide--chevron-down] size-3.5 transition-transform duration-200',
-              expanded && 'rotate-180'
-            )
-          "
-          aria-hidden
-        />
-      </Button>
+        <Button
+          variant="muted-textonly"
+          size="unset"
+          class="h-full w-7 rounded-none hover:bg-secondary"
+          :aria-label="t('queueStatus.toggleList')"
+          :aria-expanded="expanded"
+          data-testid="queue-status-chevron"
+          @click="emit('activate')"
+        >
+          <i
+            :class="
+              cn(
+                'icon-[lucide--chevron-down] size-3.5 transition-transform duration-200',
+                expanded && 'rotate-180'
+              )
+            "
+            aria-hidden
+          />
+        </Button>
+      </TextTooltip>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 

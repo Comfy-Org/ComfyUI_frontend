@@ -29,7 +29,7 @@
         <Button
           variant="muted-textonly"
           size="sm"
-          :class="cn(headerButtonClass, 'hover:text-destructive')"
+          :class="headerButtonClass"
           data-testid="queue-status-cancel-all"
           @click="emit('cancelAll')"
         >

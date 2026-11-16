@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'job-toast-row relative w-full overflow-hidden rounded-lg bg-secondary/60 py-1.5 pr-1.5 pl-3 transition-colors hover:bg-secondary',
+        'job-toast-row relative w-full overflow-hidden rounded-lg bg-secondary py-1.5 pr-1.5 pl-3 transition-colors hover:bg-accent',
         job.status === 'failed' && 'bg-destructive/10 hover:bg-destructive/15'
       )
     "
@@ -62,17 +62,18 @@
       >
         {{ t('queueStatus.details') }}
       </Button>
-      <Button
-        v-else
-        variant="muted-textonly"
-        size="icon"
-        class="shrink-0 rounded-sm"
-        :aria-label="`${t('queueStatus.cancel')} ${job.title}`"
-        data-testid="queue-status-row-cancel"
-        @click="emit('cancel')"
-      >
-        <span class="size-3 rounded-xs bg-current" aria-hidden />
-      </Button>
+      <TextTooltip v-else :text="t('queueStatus.cancelRunTooltip')" side="left">
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          class="shrink-0 rounded-sm"
+          :aria-label="`${t('queueStatus.cancel')} ${job.title}`"
+          data-testid="queue-status-row-cancel"
+          @click="emit('cancel')"
+        >
+          <span class="size-3 rounded-xs bg-current" aria-hidden />
+        </Button>
+      </TextTooltip>
     </div>
 
     <div
@@ -87,6 +88,7 @@
 
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
+import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 
