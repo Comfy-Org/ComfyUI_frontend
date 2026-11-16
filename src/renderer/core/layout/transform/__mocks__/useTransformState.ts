@@ -8,7 +8,7 @@ function reactiveDefaults() {
     camera: readonly(reactive({ x: 0, y: 0, z: 1 })),
     transformStyle: computed(() => ({
       translate: '0px 0px',
-      scale: '1',
+      scale: '1 1 1',
       transformOrigin: '0 0'
     }))
   }

@@ -60,48 +60,24 @@ interface Camera extends Point {
 }
 
 function useTransformStateIndividual() {
-  // Reactive state mirroring LiteGraph's canvas transform
   const camera = reactive<Camera>({
     x: 0,
     y: 0,
     z: 1
   })
 
-  // Computed transform string for CSS
   const transformStyle = computed(() => ({
     translate: `${camera.x * camera.z}px ${camera.y * camera.z}px`,
-    scale: String(camera.z),
+    scale: `${camera.z} ${camera.z} ${camera.z}`,
     transformOrigin: '0 0'
   }))
 
-  /**
-   * Synchronizes Vue's reactive camera state with LiteGraph's canvas transform
-   *
-   * Called every frame via RAF to ensure Vue components stay aligned with canvas.
-   * This is the heart of the hybrid rendering system - it bridges the gap between
-   * LiteGraph's canvas transforms and Vue's reactive system.
-   *
-   * @param canvas - LiteGraph canvas instance with DragAndScale (ds) transform state
-   */
   function syncWithCanvas(canvas: LGraphCanvas) {
-    // Mirror LiteGraph's transform state to Vue's reactive state
-    // ds.offset = pan offset, ds.scale = zoom level
     camera.x = canvas.ds.offset[0]
     camera.y = canvas.ds.offset[1]
     camera.z = canvas.ds.scale || 1
   }
 
-  /**
-   * Converts screen coordinates to canvas coordinates
-   *
-   * Inverse of the pane's own `transformStyle`. Useful for hit testing and
-   * converting mouse events back to canvas space.
-   *
-   * Formula: canvas = screen / scale - offset
-   *
-   * @param point - Point in screen coordinate system
-   * @returns Point in canvas coordinate system
-   */
   const screenToCanvas = (point: Point): Point => {
     return {
       x: point.x / camera.z - camera.x,

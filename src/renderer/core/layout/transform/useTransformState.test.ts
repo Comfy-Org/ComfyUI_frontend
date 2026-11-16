@@ -48,7 +48,7 @@ describe('useTransformState', () => {
       const { transformStyle } = transformState
       expect(transformStyle.value).toEqual({
         translate: '0px 0px',
-        scale: '1',
+        scale: '1 1 1',
         transformOrigin: '0 0'
       })
     })
@@ -81,7 +81,7 @@ describe('useTransformState', () => {
 
       expect(transformStyle.value).toEqual({
         translate: '75px 37.5px',
-        scale: '0.5',
+        scale: '0.5 0.5 0.5',
         transformOrigin: '0 0'
       })
     })
