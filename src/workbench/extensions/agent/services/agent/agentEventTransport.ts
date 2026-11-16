@@ -75,11 +75,26 @@ type AgentToolCallDraftEvent = Extract<
   { type: 'agent_tool_call_draft' }
 >
 
+type AgentDraftEvent = Extract<
+  AgentChatEvent,
+  {
+    type:
+      | 'agent_message_draft'
+      | 'agent_thinking_draft'
+      | 'agent_tool_call_draft'
+  }
+>
+type AgentSettledPartEvent = Exclude<AgentNonTerminalEvent, AgentDraftEvent>
+
 const DRAFT_EVENT_TYPES: ReadonlySet<AgentChatEvent['type']> = new Set([
   'agent_message_draft',
   'agent_thinking_draft',
   'agent_tool_call_draft'
 ])
+
+function isDraftEvent(event: AgentNonTerminalEvent): event is AgentDraftEvent {
+  return DRAFT_EVENT_TYPES.has(event.type)
+}
 
 export type CanvasConfirmation = 'none' | 'awaiting' | 'unavailable'
 
@@ -589,9 +604,23 @@ export function createAgentEventTransport(
     return part
   }
 
-  function applyChatEvent(event: AgentNonTerminalEvent): boolean {
+  function applyDraftEvent(event: AgentDraftEvent): void {
+    switch (event.type) {
+      case 'agent_message_draft':
+        handleMessageDraftEvent(event.data)
+        return
+      case 'agent_thinking_draft':
+        handleThinkingDraftEvent(event.data)
+        return
+      case 'agent_tool_call_draft':
+        handleToolCallDraftEvent(event.data)
+        return
+    }
+  }
+
+  function applyChatEvent(event: AgentSettledPartEvent): boolean {
     // A draft tool row stands only until the round reports anything real.
-    if (!DRAFT_EVENT_TYPES.has(event.type)) dropToolDrafts()
+    dropToolDrafts()
     switch (event.type) {
       case 'agent_thinking':
         handleThinkingEvent(event.data)
@@ -607,15 +636,6 @@ export function createAgentEventTransport(
         return handleAskResolvedEvent(event.data)
       case 'agent_message_delta':
         handleMessageDeltaEvent(event.data)
-        return true
-      case 'agent_message_draft':
-        handleMessageDraftEvent(event.data)
-        return true
-      case 'agent_thinking_draft':
-        handleThinkingDraftEvent(event.data)
-        return true
-      case 'agent_tool_call_draft':
-        handleToolCallDraftEvent(event.data)
         return true
     }
   }
@@ -635,6 +655,11 @@ export function createAgentEventTransport(
     }
     if (event.type === 'agent_extension_changed') {
       handleExtensionChangedEvent(event.data)
+      emit(snapshotMessage(message))
+      return
+    }
+    if (isDraftEvent(event)) {
+      applyDraftEvent(event)
       emit(snapshotMessage(message))
       return
     }
