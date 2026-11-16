@@ -1982,9 +1982,7 @@ describe('comfy-api calls on the shared web session', () => {
 
 describe('billing SDK rails on a tab that arrived by session', () => {
   const BILLING_SDK_RAILS = {
-    unified_cloud_auth: true,
-    billing_sdk_topup_enabled: true,
-    billing_sdk_subscription_enabled: true
+    unified_cloud_auth: true
   }
 
   const bootSessionOnly = async (workspace = 'ws-personal') => {

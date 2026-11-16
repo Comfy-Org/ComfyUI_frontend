@@ -25,7 +25,7 @@ A user adds credits to the active workspace by choosing a preset or typing an am
 
 Preconditions:
 
-- Doctor passes; signed in as an email-verified `@comfy.org` user; `flags.billingSdkTopupRailEnabled` resolves as the scenario expects.
+- Doctor passes; signed in as an email-verified `@comfy.org` user; `flags.billingSdkRailEnabled` resolves true.
 - Stripe is in **test mode**. Confirm the TEST MODE banner on the provider page before completing the first payment. Card `4242 4242 4242 4242`, any future expiry, any CVC.
 - Baseline credits total recorded from S0.
 

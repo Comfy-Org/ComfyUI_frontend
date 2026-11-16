@@ -24,7 +24,7 @@ A user subscribes to a plan, changes plan mid-cycle, cancels, resumes before the
 
 Preconditions:
 
-- Doctor passes; signed in as an email-verified `@comfy.org` user; `flags.billingSdkSubscriptionRailEnabled` resolves as the scenario expects.
+- Doctor passes; signed in as an email-verified `@comfy.org` user; `flags.billingSdkRailEnabled` resolves true.
 - Stripe in test mode, card `4242 4242 4242 4242`. Confirm the TEST MODE banner before the first payment.
 - Both a personal and a team workspace available. S0 baseline plan name and renewal date recorded.
 

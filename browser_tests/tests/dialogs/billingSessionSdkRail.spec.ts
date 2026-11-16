@@ -36,9 +36,7 @@ import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
  */
 const RAILS_ON = {
   billing_control_enabled: true,
-  unified_cloud_auth: true,
-  billing_sdk_topup_enabled: true,
-  billing_sdk_subscription_enabled: true
+  unified_cloud_auth: true
 } satisfies RemoteConfig
 
 const PENDING_OPERATION_ID = 'op-e2e-idle-tab'

@@ -20,7 +20,6 @@ import {
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
@@ -33,15 +32,10 @@ import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
  * easy to lose on the other side without any value on screen changing.
  * Every row runs once per rail and asserts the same thing.
  */
-interface Rails {
-  subscription: boolean
-  topup: boolean
-}
-
 const RAIL_MATRIX = [
-  { name: 'legacy', rails: { subscription: false, topup: false } },
-  { name: 'SDK', rails: { subscription: true, topup: true } }
-] as const satisfies readonly { name: string; rails: Rails }[]
+  { name: 'legacy', sdkRail: false },
+  { name: 'SDK', sdkRail: true }
+] as const satisfies readonly { name: string; sdkRail: boolean }[]
 
 const OPERATION_ID = 'op-e2e-progress-toast'
 const HOSTED_PAYMENT_URL =
@@ -167,7 +161,7 @@ interface BillingServer {
 }
 
 interface ToastSetup {
-  rails: Rails
+  sdkRail: boolean
   status?: BillingStatusResponse
   operation?: BillingOpStatusResponse
   subscribeResponse?: SubscribeResponse
@@ -176,7 +170,7 @@ interface ToastSetup {
 async function setupToastParity(
   page: Page,
   {
-    rails,
+    sdkRail,
     status = ACTIVE_STANDARD,
     operation = PROCESSING_OPERATION,
     subscribeResponse = {
@@ -203,15 +197,9 @@ async function setupToastParity(
     ],
     features: {
       billing_control_enabled: true,
-      unified_cloud_auth: true,
-      billing_sdk_subscription_enabled: rails.subscription,
-      billing_sdk_topup_enabled: rails.topup
+      unified_cloud_auth: sdkRail
     } satisfies RemoteConfig,
     billingCapabilities: createWorkspaceBillingCapabilities(ws)
-  })
-  await new FeatureFlagHelper(page).seedServerFlags({
-    billing_sdk_subscription_enabled: rails.subscription,
-    billing_sdk_topup_enabled: rails.topup
   })
 
   await page.route('**/api/settings', (route) =>
@@ -269,13 +257,13 @@ const successHeading = (page: Page) =>
 test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
   test.beforeEach(({ page }) => keepPricingTableInApp(page))
 
-  for (const { name, rails } of RAIL_MATRIX) {
+  for (const { name, sdkRail } of RAIL_MATRIX) {
     test.describe(`on the ${name} rail`, () => {
       test('announces a processing subscribe and clears it once it settles', async ({
         page,
         toast
       }) => {
-        const server = await setupToastParity(page, { rails })
+        const server = await setupToastParity(page, { sdkRail })
 
         await confirmCreatorUpgrade(page)
         const processingToast = toast.toastLoadings.filter({
@@ -295,7 +283,7 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         toast
       }) => {
         await setupToastParity(page, {
-          rails,
+          sdkRail,
           operation: VERIFICATION_OPERATION,
           subscribeResponse: {
             billing_op_id: OPERATION_ID,
@@ -317,7 +305,7 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         toast
       }) => {
         await setupToastParity(page, {
-          rails,
+          sdkRail,
           operation: PARKED_OPERATION,
           status: {
             ...ACTIVE_STANDARD,
@@ -346,7 +334,7 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
           page
         }) => {
           await setupToastParity(page, {
-            rails,
+            sdkRail,
             operation,
             status: {
               ...ACTIVE_STANDARD,
@@ -377,7 +365,7 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         toast
       }) => {
         await setupToastParity(page, {
-          rails,
+          sdkRail,
           operation: VERIFICATION_OPERATION,
           status: {
             ...ACTIVE_STANDARD,
@@ -403,7 +391,7 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
         toast
       }) => {
         const server = await setupToastParity(page, {
-          rails,
+          sdkRail,
           status: {
             ...ACTIVE_STANDARD,
             pending_billing_op_id: OPERATION_ID,
@@ -426,7 +414,7 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
       })
 
       test('raises no progress toast for a cancel', async ({ page, toast }) => {
-        await setupToastParity(page, { rails, operation: SETTLED_OPERATION })
+        await setupToastParity(page, { sdkRail, operation: SETTLED_OPERATION })
         await page.goto(APP_URL)
         await waitForCloudApp(page)
 
