@@ -77,6 +77,34 @@ function createSlotView(
       : Reflect.deleteProperty(target, property)
   }
 
+  function isRefusedIndexDescriptor(
+    property: string | symbol,
+    attributes: PropertyDescriptor
+  ): boolean {
+    return (
+      isArrayIndex(property) &&
+      (attributes.configurable === false ||
+        (!Object.hasOwn(ids, property) && !attributes.configurable) ||
+        'get' in attributes ||
+        'set' in attributes)
+    )
+  }
+
+  function defineMember(
+    target: SlotDescriptor[],
+    property: string | symbol,
+    attributes: PropertyDescriptor,
+    entry?: SlotRecord
+  ): boolean {
+    return useSlotStore().editMembership(
+      slots,
+      () =>
+        Reflect.defineProperty(ids, property, attributes) &&
+        mirrorProperty(target, property),
+      entry
+    )
+  }
+
   return new Proxy<SlotDescriptor[]>([], {
     get(_target, property, receiver) {
       if (!Object.hasOwn(ids, property) && property in Array.prototype)
@@ -109,31 +137,18 @@ function createSlotView(
       )
     },
     defineProperty(target, property, attributes) {
-      if (
-        isArrayIndex(property) &&
-        (attributes.configurable === false ||
-          (!Object.hasOwn(ids, property) && !attributes.configurable) ||
-          'get' in attributes ||
-          'set' in attributes)
-      )
-        return false
-      const entry =
-        isArrayIndex(property) && 'value' in attributes
-          ? record(attributes.value)
-          : undefined
-      if (isArrayIndex(property) && 'value' in attributes && !entry)
-        return false
-      return useSlotStore().editMembership(
-        slots,
-        () => {
-          const defined = Reflect.defineProperty(
-            ids,
-            property,
-            entry ? { ...attributes, value: entry.id } : attributes
-          )
-          return defined && mirrorProperty(target, property)
-        },
-        entry
+      if (isRefusedIndexDescriptor(property, attributes)) return false
+      if (!isArrayIndex(property) || !('value' in attributes))
+        return defineMember(target, property, attributes)
+      const entry = record(attributes.value)
+      return (
+        !!entry &&
+        defineMember(
+          target,
+          property,
+          { ...attributes, value: entry.id },
+          entry
+        )
       )
     },
     has: (_target, property) => Reflect.has(ids, property),
