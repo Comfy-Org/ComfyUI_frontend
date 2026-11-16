@@ -39,7 +39,7 @@ sequenceDiagram
 ```mermaid
 graph TB
     subgraph Frontend
-        A[clientFeatureFlags.json] --> B[api.ts]
+        A[clientFeatureFlags.json] --> B[ComfyApi.ts]
         B --> C[WebSocket Handler]
         D[useFeatureFlags composable] --> B
         E[Vue Components] --> D
@@ -380,7 +380,7 @@ if feature_flags.supports_feature(sockets_metadata, sid, "your_new_feature"):
 
 ### Frontend
 
-1. **For client capabilities**, add to `src/config/clientFeatureFlags.json`:
+1. **For client capabilities**, add to `packages/api-client/src/clientFeatureFlags.json`:
 
 ```json
 {
