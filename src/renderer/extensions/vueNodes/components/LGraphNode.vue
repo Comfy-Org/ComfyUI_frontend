@@ -243,7 +243,7 @@
             )
           "
           @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
-          @dblclick.stop="handleResizeDoubleClick($event, handle.corner)"
+          @dblclick.stop="handleResizeDoubleClick"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -522,10 +522,10 @@ provide(growableRegionsKey, {
   handle: computed(() => (canResizeNode.value ? growable.handle : undefined))
 })
 
-function handleResizeDoubleClick(event: MouseEvent, corner: CompassCorners) {
+function handleResizeDoubleClick(event: MouseEvent) {
   if (!canResizeNode.value) return
   const widget = soleGrowableWidget.value
-  if (widget && corner.startsWith('S')) growable.resetWidget(event, widget)
+  if (widget) growable.resetWidget(event, widget)
   else growable.fitNode(event)
 }
 

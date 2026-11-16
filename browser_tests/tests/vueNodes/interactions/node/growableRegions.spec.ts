@@ -231,7 +231,7 @@ test.describe(
       await expect.poll(getTextGHeight).toBeCloseTo(initialTextG + 60, 0)
     })
 
-    test('a node whose only widget grows keeps that widget filling the node, and its bottom corners fit the widget', async ({
+    test('a node whose only widget grows keeps that widget filling the node, and every corner fits the widget', async ({
       comfyPage
     }) => {
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
@@ -251,12 +251,19 @@ test.describe(
       await expect.poll(() => heightOf(text)).toBeCloseTo(initialText + 90, 0)
       await expect.poll(getDeadSpace).toBeCloseTo(initialDeadSpace, 0)
 
-      await node.getResizeHandle('SE').dblclick()
+      for (const corner of ['SE', 'NE'] as const) {
+        await node.resizeFromCorner('SE', 0, 50)
+        await expect
+          .poll(() => node.textareaLineFitError('text', 3))
+          .toBeGreaterThan(20)
 
-      await expect
-        .poll(() => node.textareaLineFitError('text', 3))
-        .toBeLessThanOrEqual(1)
-      await expect.poll(getDeadSpace).toBeCloseTo(initialDeadSpace, 0)
+        await node.getResizeHandle(corner).dblclick()
+
+        await expect
+          .poll(() => node.textareaLineFitError('text', 3))
+          .toBeLessThanOrEqual(1)
+        await expect.poll(getDeadSpace).toBeCloseTo(initialDeadSpace, 0)
+      }
     })
 
     test('dragging the image preview edge grows the preview and the node by the same amount', async ({

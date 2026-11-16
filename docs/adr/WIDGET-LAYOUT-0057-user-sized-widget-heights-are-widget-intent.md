@@ -34,7 +34,7 @@ instead fits its text at the current width, but no fewer than three lines.
 
 A node whose only widget grows has no row height to keep separate from the
 node's, so that widget's height is never saved: it always fills the node, and
-double-clicking a bottom corner of the node fits that widget.
+double-clicking any corner of the node fits that widget.
 
 Saved heights are Vue renderer intent. The canvas renderer ignores them and
 keeps allocating rows from declared sizing alone. A height changes the node's
