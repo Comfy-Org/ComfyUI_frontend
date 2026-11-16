@@ -14,7 +14,6 @@ const test = mergeTests(desktopTemplateInputsFixture, templateApiFixture)
 const OFFICIAL_TEMPLATE = 'desktop-inputs'
 const CUSTOM_TEMPLATE = 'extension-inputs'
 const WORKFLOW = 'browser_tests/assets/nodes/single_ksampler.json'
-/** A LoadImage node bound to `MISSING_INPUT`, which no input folder holds. */
 const WORKFLOW_MISSING_INPUT =
   'browser_tests/assets/missing/missing_media_single.json'
 const MISSING_INPUT = 'nonexistent_test_image_12345.png'

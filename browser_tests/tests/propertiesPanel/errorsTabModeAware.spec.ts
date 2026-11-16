@@ -840,11 +840,6 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Loading a workflow with bypassed subgraph suppresses interior missing model error', async ({
       comfyPage
     }) => {
-      // Regression: the initial scan pipeline only checked each node's
-      // own mode, so interior nodes of a bypassed subgraph container
-      // surfaced errors even though the container was excluded from
-      // execution. The pipeline now post-filters candidates whose
-      // ancestor path is not fully active.
       await comfyPage.workflow.loadWorkflow(
         'missing/missing_models_in_subgraph',
         {
@@ -866,10 +861,6 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test('Entering a bypassed subgraph does not resurface interior missing model error', async ({
       comfyPage
     }) => {
-      // Regression: entering a bypassed subgraph re-scans its interior
-      // nodes; without an ancestor-aware guard in scanSingleNodeErrors,
-      // that re-scan reintroduced the error the initial pipeline had
-      // correctly suppressed.
       await comfyPage.workflow.loadWorkflow(
         'missing/missing_models_in_subgraph',
         {
