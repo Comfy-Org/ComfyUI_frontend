@@ -1,5 +1,9 @@
 <template>
-  <div ref="grid" data-testid="node-widgets" :class="gridClass">
+  <div
+    ref="grid"
+    data-testid="node-widgets"
+    class="lg-node-widgets contents text-xs text-node-foreground [&>:first-child>:first-child]:mt-0 [&>:last-child>:last-child]:mb-0"
+  >
     <div
       v-for="section in sections"
       :key="section.key"
@@ -14,10 +18,9 @@
           :style="row.style"
           :class="
             cn(
-              'group relative grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
+              'group relative mr-3 grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
               row.flexClass,
-              row.showsControl &&
-                'lg-node-widget my-[calc(var(--node-widget-gap)/2)]'
+              rowSpacingClass(row.showsControl)
             )
           "
         >
@@ -122,6 +125,12 @@ const isConvertedWidgetType = (type: string) =>
 
 const growableRegions = inject(growableRegionsKey, undefined)
 
+function rowSpacingClass(showsControl: boolean) {
+  return showsControl
+    ? 'lg-node-widget my-[calc(var(--node-widget-gap)/2-0.125rem)]'
+    : '-my-0.5'
+}
+
 function rowSizing(
   name: string,
   growable: boolean,
@@ -131,7 +140,6 @@ function rowSizing(
   if (!growable)
     return {
       growable,
-      fills: false,
       flexClass: 'flex-none',
       style: { minHeight },
       controlClass: 'grid min-w-0 grid-cols-1 self-center'
@@ -141,7 +149,6 @@ function rowSizing(
   const fills = userHeight === undefined
   return {
     growable,
-    fills,
     maxHeight,
     flexClass: fills ? 'grow shrink-0' : 'flex-none',
     style: fills
@@ -278,13 +285,6 @@ async function restoreRowFocus(name: string) {
     }
   }
 }
-
-const gridClass = computed(() =>
-  cn(
-    'lg-node-widgets flex flex-col pr-3 text-xs text-node-foreground [&>:first-child>:first-child]:mt-0 [&>:last-child>:last-child]:mb-0',
-    renderedRows.value.some((row) => row.fills) && 'flex-1'
-  )
-)
 
 const layoutKey = computed(() =>
   renderedRows.value

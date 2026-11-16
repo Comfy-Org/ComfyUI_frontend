@@ -181,7 +181,8 @@
                     ? 'grid shrink-0'
                     : region.fills
                       ? 'flex-1'
-                      : 'shrink-0'
+                      : 'shrink-0',
+                  region.growsIntoLeftover && 'grow'
                 )
               "
               :style="
@@ -549,7 +550,8 @@ const mediaRegions = computed(() => [
           name: CANVAS_IMAGE_PREVIEW_WIDGET,
           media: nodeMedia.value,
           height: mediaUserHeight.value,
-          fills: !imageSharesNodeWithWidgets.value
+          fills: !imageSharesNodeWithWidgets.value,
+          growsIntoLeftover: !widgetTakesSpareHeight.value
         }
       ]
     : []),
@@ -557,7 +559,8 @@ const mediaRegions = computed(() => [
     name: media.name,
     media,
     height: growable.heightOf(media.name),
-    fills: true
+    fills: true,
+    growsIntoLeftover: false
   }))
 ])
 
@@ -743,6 +746,16 @@ const hasExpandingWidget = computed(() =>
   processedWidgets.value.some(
     (widget) =>
       widget.visible && shouldExpand(widget.simplified.type, widget.sizing)
+  )
+)
+
+const widgetTakesSpareHeight = computed(() =>
+  processedWidgets.value.some(
+    ({ visible, simplified, sizing }) =>
+      visible &&
+      shouldExpand(simplified.type, sizing) &&
+      (sizing?.kind !== 'growable' || sizing.maxHeight === undefined) &&
+      growable.heightOf(simplified.name) === undefined
   )
 )
 

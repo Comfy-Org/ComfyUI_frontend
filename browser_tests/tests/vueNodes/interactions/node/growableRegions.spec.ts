@@ -148,6 +148,41 @@ test.describe(
       await expect.poll(getTextGHeight).toBeCloseTo(initialTextG, 0)
     })
 
+    test('a node resize gives the image preview the height a capped widget cannot take', async ({
+      comfyPage
+    }) => {
+      await comfyPage.page.evaluate(() => {
+        const loadImage = window.app!.graph.nodes.find(
+          ({ type }) => type === 'LoadImage'
+        )
+        const element = document.createElement('div')
+        element.setAttribute('aria-label', 'capped')
+        loadImage?.addDOMWidget('capped', 'capped', element, {
+          serialize: false,
+          getMinHeight: () => 40,
+          getMaxHeight: () => 80
+        })
+      })
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+      await node.waitForImageLoaded('example.png')
+      await expect(node.widgetRow('capped')).toBeVisible()
+      const getRowHeight = () => heightOf(node.widgetRow('capped'))
+      const getPreviewHeight = () => heightOf(node.imagePreview)
+      const getHeight = () => heightOf(node.root)
+      const initialRow = await getRowHeight()
+      const initialPreview = await getPreviewHeight()
+      const initialHeight = await getHeight()
+      expect(initialRow).toBeLessThan(60)
+
+      await node.resizeFromCorner('SE', 0, 200)
+
+      await expect.poll(getHeight).toBeCloseTo(initialHeight + 200, 0)
+      await expect.poll(getRowHeight).toBeCloseTo(80, 0)
+      await expect
+        .poll(getPreviewHeight)
+        .toBeCloseTo(initialPreview + 200 - (80 - initialRow), 0)
+    })
+
     test('double-clicking a widget edge hands the widget back to sharing the node height', async ({
       comfyPage
     }) => {

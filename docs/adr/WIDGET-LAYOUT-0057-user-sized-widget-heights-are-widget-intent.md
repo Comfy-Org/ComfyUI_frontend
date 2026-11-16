@@ -27,7 +27,8 @@ key.
 Persist only heights the user set. Nodes adopt saved heights from their
 `widgetHeights` property when configured or attached, and serialization writes
 the store's entries back to that property. Rows without a saved height remain
-flex items that share the remaining space up to their declared maximum. Clearing a height, by
+flex items that share the remaining space with media previews, each up to
+its declared maximum. Clearing a height, by
 double-clicking its handle, returns the row to that default.
 
 Saved heights are Vue renderer intent. The canvas renderer ignores them and
