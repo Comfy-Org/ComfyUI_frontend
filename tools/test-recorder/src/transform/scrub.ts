@@ -36,7 +36,7 @@ function scrubLine(
     return `${indentation}// [comfy-test] removed: typing into a sensitive field`
   }
 
-  let scrubbed = line.replace(JWT, '[REDACTED]').replace(API_KEY, '[REDACTED]')
+  let scrubbed = line.replace(API_KEY, '[REDACTED]').replace(JWT, '[REDACTED]')
   if (scrubbed !== line) {
     findings.push(`Redacted a credential-shaped token (line ${lineNumber})`)
   }

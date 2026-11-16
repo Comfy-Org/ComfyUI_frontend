@@ -132,7 +132,8 @@ describe('api-key formats', () => {
       'GitHub PAT after an underscore',
       () =>
         `await page.getByTestId('token').type('value_ghp_${filler('Ab1', 36)}')`,
-      () => `value_ghp_${filler('Ab1', 36)}`
+      () => `value_ghp_${filler('Ab1', 36)}`,
+      () => `ghp_${filler('Ab1', 36)}`
     ],
     [
       'GitHub JWT-style installation ghs_',
@@ -146,14 +147,15 @@ describe('api-key formats', () => {
       () =>
         `await page.getByTestId('token').fill('value_eyJ${filler('Ab1', 16)}.${filler('Ey1', 16)}.${filler('Ab1', 16)}')`,
       () =>
-        `value_eyJ${filler('Ab1', 16)}.${filler('Ey1', 16)}.${filler('Ab1', 16)}`
+        `value_eyJ${filler('Ab1', 16)}.${filler('Ey1', 16)}.${filler('Ab1', 16)}`,
+      () => `eyJ${filler('Ab1', 16)}.${filler('Ey1', 16)}.${filler('Ab1', 16)}`
     ]
-  ] as const)('redacts the %sformat', ([, makeCode, makeSecret]) => {
-    const secret = makeSecret()
-    const result = scrubSecrets(makeCode())
+  ] as const)('redacts the %sformat', ([, makeCode, makeSecret, makeMatch]) => {
+    const code = makeCode()
+    const result = scrubSecrets(code)
+    const match = (makeMatch ?? makeSecret)()
 
-    expect(result.code).not.toContain(secret)
-    expect(result.code).toContain('[REDACTED]')
+    expect(result.code).toBe(code.replace(match, '[REDACTED]'))
     expect(result.findings).toEqual([
       'Redacted a credential-shaped token (line 1)'
     ])
