@@ -1381,7 +1381,9 @@
     "sharedSource": "Shared source",
     "locateSource": "Locate source node",
     "unavailable": "Value unavailable",
-    "noInputs": "Promote inputs to edit their values here."
+    "noInputs": "Promote inputs to edit their values here.",
+    "reorderPort": "Reorder {name}",
+    "reorderHint": "Drag or press Alt + arrow keys to reorder"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
