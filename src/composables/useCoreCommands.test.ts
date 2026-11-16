@@ -16,6 +16,10 @@ import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { LGraph } from '@/lib/litegraph/src/LGraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
@@ -859,6 +863,61 @@ describe('useCoreCommands', () => {
       expect(app.refreshComboInNodes).toHaveBeenCalled()
       expect(useModelStore().refresh).toHaveBeenCalled()
       expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Queue commands deployment gate', () => {
+    const findCmd = (id: string) =>
+      useCoreCommands().find((cmd) => cmd.id === id)!
+
+    async function pickDeploymentWithStatus(
+      status: WorkspaceDeployment['status']
+    ) {
+      mockDistributionState.isCloud = true
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+      vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue({
+        builds_visible: true,
+        picked_deployment_id: 'dep-1',
+        items: [
+          {
+            deployment_id: 'dep-1',
+            release_id: 'r-1',
+            status,
+            can_start: status !== 'ready',
+            created_at: '2026-10-01T00:00:00Z'
+          }
+        ]
+      })
+      await useDeploymentPickStore().load()
+      useDeploymentPickStore().switcherMounts = 1
+    }
+
+    it.for([
+      'Comfy.QueuePrompt',
+      'Comfy.QueuePromptFront',
+      'Comfy.QueueSelectedOutputNodes'
+    ])(
+      '%s asks for the Run on menu instead of queueing when the picked deployment is stopped',
+      async (id) => {
+        await pickDeploymentWithStatus('stopped')
+        const asksBefore = useDeploymentPickStore().switcherOpenAsks
+
+        await findCmd(id).function()
+
+        expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore + 1)
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+        expect(useToast().error).not.toHaveBeenCalled()
+      }
+    )
+
+    it('Comfy.QueuePrompt queues when the picked deployment is ready', async () => {
+      await pickDeploymentWithStatus('ready')
+      const asksBefore = useDeploymentPickStore().switcherOpenAsks
+
+      await findCmd('Comfy.QueuePrompt').function()
+
+      expect(app.queuePrompt).toHaveBeenCalledWith(0, 1, expect.anything())
+      expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
     })
   })
 

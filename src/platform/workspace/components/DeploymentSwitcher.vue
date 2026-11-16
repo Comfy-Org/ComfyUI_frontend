@@ -56,7 +56,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useIntervalFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -116,6 +116,13 @@ let pendingRetry: Promise<void> | undefined
 let lastFocusRetryAt = -Infinity
 
 onMounted(() => {
+  store.switcherMounts++
+})
+onUnmounted(() => {
+  store.switcherMounts--
+})
+
+onMounted(() => {
   if (!isOffered.value) return
   pendingRetry = store.loadOnce().finally(() => {
     pendingRetry = undefined
@@ -124,7 +131,7 @@ onMounted(() => {
 
 useEventListener(window, 'focus', () => {
   if (pendingRetry || !isOffered.value) return
-  if (isVisible.value || listingRefused.value) return
+  if (listingRefused.value) return
   if (Date.now() - lastFocusRetryAt < DEPLOYMENT_LISTING_FOCUS_RETRY_MS) return
   lastFocusRetryAt = Date.now()
   pendingRetry = store.load().finally(() => {

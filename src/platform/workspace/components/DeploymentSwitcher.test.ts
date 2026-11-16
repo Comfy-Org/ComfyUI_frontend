@@ -907,6 +907,69 @@ describe('DeploymentSwitcher', () => {
     expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
   })
 
+  it('reads the listing again when the window regains focus on a listing already shown', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    renderSwitcher()
+    expect(await screen.findByTestId('deployment-switcher')).toBeVisible()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+
+    window.dispatchEvent(new Event('focus'))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
+  })
+
+  it('counts itself as a switcher that can open while it is mounted', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const { unmount } = render(DeploymentSwitcher, {
+      global: { plugins: [i18n] }
+    })
+    expect(await screen.findByTestId('deployment-switcher')).toBeVisible()
+    expect(useDeploymentPickStore().switcherMounts).toBe(1)
+
+    unmount()
+
+    expect(useDeploymentPickStore().switcherMounts).toBe(0)
+  })
+
+  it('offers Switch on Comfy Cloud when the picked deployment is stopped, and switches there', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D1
+    })
+    mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+    const user = renderSwitcher()
+    await openList(user)
+
+    const cloud = await screen.findByTestId('deployment-row-cloud')
+    expect(within(cloud).getByText('Switch')).toBeVisible()
+    expect(
+      within(screen.getByTestId(`deployment-row-${D2}`)).queryByText('Switch')
+    ).toBeNull()
+
+    await user.click(cloud)
+
+    await waitFor(() =>
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledWith('ws-1')
+    )
+  })
+
+  it('offers no Switch while the picked deployment is ready', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue({
+      ...listing,
+      picked_deployment_id: D2
+    })
+    const user = renderSwitcher()
+    await openList(user)
+
+    expect(
+      within(await screen.findByTestId('deployment-row-cloud')).queryByText(
+        'Switch'
+      )
+    ).toBeNull()
+  })
+
   it('renders nothing when the listing fails', async () => {
     mockWorkspaceApi.listDeployments.mockRejectedValue(
       new WorkspaceApiError('404 page not found', 404)
@@ -1537,6 +1600,32 @@ describe('DeploymentSwitcher', () => {
           `deployment-row-${D9}`
         ])
       )
+    })
+
+    it('offers Switch on a ready deployment that runs the workflow when Comfy Cloud lacks its nodes', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue({
+        ...listing,
+        picked_deployment_id: D1
+      })
+      mockWorkspaceApi.checkDeploymentCompatibility.mockResolvedValue({
+        deployments: [
+          { deployment_id: D2, missing_node_types: [], unknown: false },
+          { deployment_id: D1, missing_node_types: [], unknown: false },
+          { deployment_id: D9, missing_node_types: [], unknown: false }
+        ],
+        cloud: { missing_node_types: ['Power Lora Loader (rgthree)'] }
+      })
+      const user = renderSwitcher()
+      await openList(user)
+
+      await waitFor(() =>
+        expect(
+          within(screen.getByTestId(`deployment-row-${D2}`)).getByText('Switch')
+        ).toBeVisible()
+      )
+      expect(
+        within(screen.getByTestId('deployment-row-cloud')).queryByText('Switch')
+      ).toBeNull()
     })
 
     it('lists the current row under Running on, then the rows that run it, then the rest, and names missing nodes on hover and in the row description', async () => {

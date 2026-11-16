@@ -32,6 +32,7 @@ import { openModelLibraryBrowser } from '@/platform/assets/composables/openModel
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 import { isCloud } from '@/platform/distribution/types'
+import { useUnreadyDeploymentRun } from '@/platform/workspace/composables/useUnreadyDeploymentRun'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -98,6 +99,7 @@ export function useCoreCommands(): ComfyCommand[] {
     type: billingType
   } = useBillingContext()
   const { showSubscriptionDialog } = useSubscriptionPaywall()
+  const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
 
   async function blockRunWithoutSubscription(): Promise<boolean> {
     if (!isCloud) return false
@@ -547,6 +549,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
+        if (openSwitcherInsteadOfRun()) return
         if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
@@ -567,6 +570,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
+        if (openSwitcherInsteadOfRun()) return
         if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount
@@ -586,6 +590,7 @@ export function useCoreCommands(): ComfyCommand[] {
         trigger_source?: ExecutionTriggerSource
       }) => {
         trackRunButton(metadata)
+        if (openSwitcherInsteadOfRun()) return
         if (await blockRunWithoutSubscription()) return
 
         const batchCount = useQueueSettingsStore().batchCount

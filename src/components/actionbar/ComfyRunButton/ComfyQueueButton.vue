@@ -6,10 +6,12 @@
       tooltip-side="bottom"
       :variant="queueButtonVariant"
       size="unset"
+      :aria-disabled="unreadyReason !== null || undefined"
       :class="
         cn(
           'h-full gap-1.5 rounded-l-lg rounded-r-none px-4',
-          !paymentRecoveryLock && 'font-light'
+          !paymentRecoveryLock && 'font-light',
+          unreadyReason && 'opacity-50'
         )
       "
       data-testid="queue-button"
@@ -60,6 +62,8 @@ import MenuRadioGroup from '@comfyorg/design-system/menu/MenuRadioGroup'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import type { UnreadyDeploymentReason } from '@/platform/workspace/composables/useUnreadyDeploymentRun'
+import { useUnreadyDeploymentRun } from '@/platform/workspace/composables/useUnreadyDeploymentRun'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
   isInstantMode,
@@ -74,6 +78,13 @@ const { mode: queueMode, batchCount } = storeToRefs(useQueueSettingsStore())
 const { hasMissingError } = storeToRefs(useExecutionErrorStore())
 
 const { t } = useI18n()
+const { unreadyReason } = useUnreadyDeploymentRun()
+const UNREADY_TOOLTIP_KEYS: Record<UnreadyDeploymentReason, string> = {
+  stopped: 'deploymentSwitcher.runBlocked.stopped',
+  starting: 'deploymentSwitcher.runBlocked.starting',
+  failed: 'deploymentSwitcher.runBlocked.failed',
+  notReady: 'deploymentSwitcher.runBlocked.notReady'
+}
 type QueueModeMenuKey = 'disabled' | 'change' | 'instant-idle'
 type PaymentRecoveryLock = 'owner' | 'member'
 
@@ -229,6 +240,9 @@ const queueButtonTooltip = computed(() => {
   }
   if (isStopInstantAction.value) {
     return t('menu.stopRunInstantTooltip')
+  }
+  if (unreadyReason.value) {
+    return t(UNREADY_TOOLTIP_KEYS[unreadyReason.value])
   }
   if (hasMissingError.value) {
     return t('menu.runWorkflowMissingResources')
