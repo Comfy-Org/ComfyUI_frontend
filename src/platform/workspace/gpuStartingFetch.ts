@@ -31,7 +31,7 @@ async function readGpuAnswer(response: Response): Promise<GpuAnswer | null> {
   }
 }
 
-function isResendable(input: RequestInfo | URL): boolean {
+function isResendable(input: RequestInfo | URL): input is string | URL {
   return typeof input === 'string' || input instanceof URL
 }
 
@@ -57,44 +57,65 @@ function shouldHold(answer: GpuAnswer, input: RequestInfo | URL): boolean {
   return answer === 'starting' && isResendable(input)
 }
 
-/**
- * Holds until the GPU is ready, then sends again; answers the first response
- * when it never becomes ready. Under `api.fetchApi` the request's deadline
- * stops while held and restarts in full before anything is sent again, so the
- * resend and any status retry above this wrapper stay bounded by it.
- */
-async function resendWhenReady(
-  send: Fetch,
-  hold: GpuRequestHold,
-  response: Response,
+const GPU_HOLD_HEADER = 'Comfy-Gpu-Hold'
+
+function sameOriginUrl(input: string | URL): URL | null {
+  try {
+    const url = new URL(input, location.href)
+    return url.origin === location.origin ? url : null
+  } catch {
+    return null
+  }
+}
+
+function isRunSubmit(
   input: RequestInfo | URL,
   init: RequestInit | undefined
-): Promise<Response> {
+): boolean {
+  if (!isResendable(input)) return false
+  if (init?.method?.toUpperCase() !== 'POST') return false
+  return sameOriginUrl(input)?.pathname.endsWith('/api/prompt') ?? false
+}
+
+function withGpuHold(init: RequestInit | undefined): RequestInit {
+  const headers = new Headers(init?.headers)
+  headers.set(GPU_HOLD_HEADER, '1')
+  return { ...init, headers }
+}
+
+async function waitWhileHeld(
+  hold: GpuRequestHold,
+  init: RequestInit | undefined
+): Promise<boolean> {
   const deadline = attemptDeadlineOf(init?.signal)
   const cancelSignal = deadline
     ? deadline.callerSignal
     : (init?.signal ?? undefined)
   deadline?.stop()
-  const ready = await waitReadyUnlessCancelled(hold, cancelSignal).finally(() =>
+  return waitReadyUnlessCancelled(hold, cancelSignal).finally(() =>
     deadline?.restart()
   )
-  return ready ? send(input, init) : response
 }
 
 /**
  * Wraps `send` so a request answered 503 `gpu_starting` is sent again once the
- * GPU is ready. Under `api.fetchApi` the first attempt already has its answer,
- * so its response deadline stops while the request is held and restarts before
- * the request is sent again; the caller's signal still cancels the hold.
+ * GPU is ready; a same-origin Run submit carries `Comfy-Gpu-Hold: 1` and is
+ * always sent again without it, as a normal job when the GPU never comes on.
  */
 export function holdWhileGpuStarts(send: Fetch, hold: GpuStartingHold): Fetch {
   return async (input, init) => {
     const requestHold = hold.forRequest()
-    const response = await send(input, init)
+    const run = isRunSubmit(input, init)
+    const response = await send(input, run ? withGpuHold(init) : init)
     const answer = await readGpuAnswer(response)
     if (answer === null) return response
     requestHold.answered(answer)
+    if (run) {
+      if (answer === 'starting') await waitWhileHeld(requestHold, init)
+      return send(input, init)
+    }
     if (!shouldHold(answer, input)) return response
-    return resendWhenReady(send, requestHold, response, input, init)
+    const ready = await waitWhileHeld(requestHold, init)
+    return ready ? send(input, init) : response
   }
 }

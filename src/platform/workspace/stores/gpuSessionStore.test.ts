@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 import { nextTick } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -49,6 +50,12 @@ function gpuStarting(gpu: string) {
     status: 503,
     headers: { 'Content-Type': 'application/json' }
   })
+}
+
+function gpuHoldOfEachSend(send: MockInstance<typeof fetch>) {
+  return send.mock.calls.map(([, init]) =>
+    new Headers(init?.headers).get('Comfy-Gpu-Hold')
+  )
 }
 
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
@@ -258,6 +265,60 @@ describe('useGpuSessionStore', () => {
     await expect(answered).resolves.toHaveProperty('status', 200)
     expect(send).toHaveBeenCalledTimes(2)
   })
+
+  it('marks the Run submit with Comfy-Gpu-Hold only while the hold is installed', async () => {
+    const send = vi.mocked(fetch)
+    send.mockImplementation(async () => Response.json({ prompt_id: 'job-1' }))
+    const store = storeForPicked(OFF_AND_CHANGEABLE)
+    const submitRun = () => fetch('/api/prompt', { method: 'POST', body: '{}' })
+
+    await submitRun()
+    store.install()
+    await submitRun()
+    await fetch('/example_pack/preview', { method: 'POST', body: '{}' })
+    store.$dispose()
+    await submitRun()
+
+    expect(gpuHoldOfEachSend(send)).toEqual([null, '1', null, null])
+  })
+
+  it.for([
+    { name: 'once the GPU is ready', end: 'ready' },
+    { name: 'when the GPU is turned off', end: 'turnedOff' },
+    { name: 'when the session ends', end: 'ended' },
+    { name: 'when the store is disposed', end: 'disposed' }
+  ] as const)(
+    'sends a held Run again without the hold $name',
+    async ({ end }) => {
+      const send = vi.mocked(fetch)
+      send
+        .mockResolvedValueOnce(gpuStarting('starting'))
+        .mockResolvedValueOnce(Response.json({ prompt_id: 'job-1' }))
+      vi.mocked(workspaceApi.setEditorGpu).mockResolvedValue('starting')
+      const store = storeForPicked(OFF_AND_CHANGEABLE)
+      store.install()
+      await store.setOn(true)
+
+      const run = fetch('/api/prompt', { method: 'POST', body: '{}' })
+      await flushPromises()
+      expect(store.status).toBe('starting')
+      expect(send).toHaveBeenCalledOnce()
+
+      if (end === 'turnedOff') await store.setOn(false)
+      else if (end === 'disposed') store.$dispose()
+      else {
+        socketSays({
+          session_id: 's-1',
+          deployment_id: 'dep-1',
+          state: end,
+          runs: []
+        })
+      }
+
+      await expect(run).resolves.toHaveProperty('status', 200)
+      expect(gpuHoldOfEachSend(send)).toEqual(['1', null])
+    }
+  )
 
   it('lets a held request go with its answer when the store is disposed', async () => {
     const send = vi.mocked(fetch)
