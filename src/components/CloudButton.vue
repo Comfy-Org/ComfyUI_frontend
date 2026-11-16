@@ -5,12 +5,12 @@
     :tooltip
     tooltip-side="bottom"
     :aria-label="tooltip"
-    :aria-busy="isChecking || undefined"
+    :aria-busy="isChecking || isOpeningAgent || undefined"
     data-testid="cloud-button"
     @pointerenter="prefetch"
     @keydown.enter="prefetch"
     @keydown.space="prefetch"
-    @click="openModal"
+    @click="openCloud"
   >
     <ProgressRing v-if="isChecking" :percent="25" class="size-4 animate-spin" />
     <i v-else class="icon-[lucide--cloud]" aria-hidden="true" />
@@ -30,13 +30,20 @@ import {
   openRunOnCloudDialog
 } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const { t } = useI18n()
 const toast = useToast()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
+const agentPanelStore = useAgentPanelStore()
+const { withConsent } = useAgentConsent()
+const isOpeningAgent = ref(false)
 
-const isChecking = computed(() => check.value.phase === 'checking')
+const isChecking = computed(
+  () => !agentPanelStore.enabled && check.value.phase === 'checking'
+)
 const opensWhenAnswered = ref(false)
 let isMounted = true
 onBeforeUnmount(() => {
@@ -50,7 +57,33 @@ const tooltip = computed(() =>
 )
 
 function prefetch() {
+  if (agentPanelStore.enabled) return
   if (check.value.phase === 'idle') void checkStore.check()
+}
+
+async function openCloud() {
+  if (isOpeningAgent.value) return
+  if (!agentPanelStore.enabled) {
+    openModal()
+    return
+  }
+  opensWhenAnswered.value = false
+  closeRunOnCloudDialog()
+  if (agentPanelStore.isVisible) {
+    agentPanelStore.view = { screen: 'chat' }
+    return
+  }
+  isOpeningAgent.value = true
+  agentPanelStore.suppressRestoredOpen()
+  try {
+    await withConsent('button_click', () => {
+      if (!isMounted || !agentPanelStore.enabled) return
+      agentPanelStore.view = { screen: 'chat' }
+      agentPanelStore.open('cloud_button')
+    })
+  } finally {
+    isOpeningAgent.value = false
+  }
 }
 
 function showModal() {
@@ -59,7 +92,9 @@ function showModal() {
     toast.error(t('openOnCloud.checkFailed'))
     return
   }
-  void openRunOnCloudDialog(() => isMounted && check.value === current)
+  void openRunOnCloudDialog(
+    () => isMounted && !agentPanelStore.enabled && check.value === current
+  )
 }
 
 function openModal() {
