@@ -58,3 +58,17 @@ cleanup and graph clearing do this.
 
 Canvas and Vue renderings of the same workflow can differ in row heights
 when the user has sized a widget in Vue.
+
+## Extension impact
+
+- A node that has a saved height gets `properties.widgetHeights` when it is
+  serialized: an object mapping each widget or preview name to a height in
+  pixels. On configure and on attach, the frontend reads the property and then
+  deletes it from the live node, so extensions see it only in serialized
+  output. Do not write this property; a value that is not a positive number is
+  ignored.
+- Every image, animation, and video preview is exposed and promoted under the
+  name `$$canvas-image-preview`, whichever widget draws it. At load, saved
+  `previewExposures` and legacy `proxyWidgets` entries naming `video-preview`
+  or `$$comfy_animation_preview` are mapped to it. Extensions that look up a
+  promoted preview by name should use `$$canvas-image-preview`.

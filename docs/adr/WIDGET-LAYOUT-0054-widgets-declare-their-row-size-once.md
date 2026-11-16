@@ -67,3 +67,17 @@ reading live requirements alone does not make external state reactive.
 This decision consolidates requirements, not all rendered geometry. Vue DOM
 measurement and canvas compatibility geometry remain renderer-specific. It
 does not establish or eliminate a measurement feedback loop.
+
+## Extension impact
+
+- A widget that defines `computeSize` gets a fixed Vue row at that height,
+  even when it also defines `computeLayoutSize` or its type is one that used
+  to expand. Before, `WidgetLegacy` preferred `computeLayoutSize().minHeight`,
+  and the widget type alone decided whether the row grew.
+- A widget that defines only `computeLayoutSize` gets a growable row, floored
+  at its `minHeight` and capped at its `maxHeight`. Define only this callback
+  for a row that should fill spare node height.
+- A widget that defines neither keeps the type-based growth and the 20px
+  `WidgetLegacy` default. `computedHeight` still takes precedence there.
+- Sizing callbacks run during reactive layout, so they must not mutate the
+  node or the widget.
