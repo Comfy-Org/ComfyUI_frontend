@@ -21,7 +21,12 @@
 
     <div
       v-if="showFooter"
-      class="job-toast-row flex w-full items-center justify-between gap-0.5 rounded-lg border border-foreground/10 bg-background p-1 shadow-md"
+      :class="
+        cn(
+          'job-toast-row flex items-center justify-between gap-0.5 rounded-lg border border-foreground/10 bg-background p-1 shadow-md',
+          hasBulkActions ? 'w-full' : 'w-fit'
+        )
+      "
       :style="{ '--row-delay': `${rows.length * 35}ms` }"
       data-testid="queue-status-footer"
     >
@@ -56,9 +61,9 @@
           />
         </PopoverContent>
       </Popover>
-      <span v-else aria-hidden />
+      <span v-else-if="hasBulkActions" aria-hidden />
 
-      <div v-if="activeRowCount > 1" class="flex items-center gap-0.5">
+      <div v-if="hasBulkActions" class="flex items-center gap-0.5">
         <Button
           v-if="queuedCount > 0"
           variant="muted-textonly"
@@ -130,9 +135,10 @@ const recentsOpen = ref(false)
 const activeRowCount = computed(
   () => rows.filter((row) => row.job.status !== 'failed').length
 )
-const showFooter = computed(
-  () => activeRowCount.value > 1 || results.length > 0
-)
+/** Clear queue and Cancel all only make sense with more than one job. */
+const hasBulkActions = computed(() => activeRowCount.value > 1)
+/** With results alone the footer shrinks to a chip, not an empty-looking bar. */
+const showFooter = computed(() => hasBulkActions.value || results.length > 0)
 const footerButtonClass =
   'gap-1 px-1.5 font-medium data-[state=open]:text-foreground'
 </script>

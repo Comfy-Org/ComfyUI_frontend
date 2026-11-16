@@ -142,6 +142,20 @@
             <PartnerNodesRunCaption v-if="isActionbarDocked" />
           </div>
         </div>
+        <!-- Docked, the queue chip sits right under the run bar, above any
+             error or warning notice. Floating, it teleports to the bar. -->
+        <Teleport
+          v-if="showStatusToast"
+          :to="queueStatusToastTarget ?? 'body'"
+          :disabled="!queueStatusToastTarget"
+        >
+          <div :class="queueStatusToastClass">
+            <QueueStatusToast
+              :above="toastAbove"
+              :align-start="toastAlignStart"
+            />
+          </div>
+        </Teleport>
         <ErrorOverlay
           v-if="!isActionBarsHidden"
           @view-errors="viewErrorsInGraph"
@@ -155,18 +169,6 @@
     </div>
 
     <div class="flex flex-col items-end gap-1">
-      <Teleport
-        v-if="showStatusToast"
-        :to="queueStatusToastTarget ?? 'body'"
-        :disabled="!queueStatusToastTarget"
-      >
-        <div :class="queueStatusToastClass">
-          <QueueStatusToast
-            :above="toastAbove"
-            :align-start="toastAlignStart"
-          />
-        </div>
-      </Teleport>
       <template v-if="showLegacyQueueUi">
         <Teleport
           v-if="inlineProgressSummaryTarget"

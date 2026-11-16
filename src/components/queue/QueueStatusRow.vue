@@ -35,7 +35,7 @@
       </span>
 
       <div class="flex min-w-0 flex-1 flex-col">
-        <span class="truncate text-sm/5 text-foreground">
+        <span class="truncate text-xs/4 text-foreground">
           {{ job.title }}
         </span>
         <span
