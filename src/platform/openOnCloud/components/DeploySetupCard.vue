@@ -32,7 +32,7 @@
     <section class="flex flex-col gap-7 px-6 pt-5 pb-6 @xl:px-9 @xl:pb-8">
       <div class="flex flex-col gap-3">
         <DialogTitle class="my-0 text-xl @xl:text-2xl">
-          {{ $t('openOnCloud.deploySetup') }}
+          {{ $t('openOnCloud.deploySetupDialog.title') }}
         </DialogTitle>
         <p class="my-0 text-sm/5 text-muted-foreground">
           {{ $t('openOnCloud.deploySetupDialog.body') }}
@@ -73,7 +73,7 @@
             aria-hidden="true"
           />
         </Button>
-        <DeploySetupAgentMenu />
+        <DeploySetupAgentMenu @done="emit('done')" />
       </footer>
     </section>
   </DeploymentDialogFrame>
@@ -104,8 +104,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const platformUrl = getComfyPlatformBaseUrl()
 const points = [
+  t('openOnCloud.deploySetupDialog.pointNodes'),
   t('openOnCloud.deploySetupDialog.pointGpu'),
-  t('openOnCloud.deploySetupDialog.pointApi'),
-  t('openOnCloud.deploySetupDialog.pointNodes')
+  t('openOnCloud.deploySetupDialog.pointPricing')
 ]
 </script>

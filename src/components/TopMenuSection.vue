@@ -209,9 +209,8 @@ import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { isCloud } from '@/platform/distribution/types'
-import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
+import CloudButton from '@/components/CloudButton.vue'
 import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
@@ -237,11 +236,7 @@ const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const isCloudButtonShown = computed(
-  () =>
-    !isCloud &&
-    !handsPopupsToSystemBrowser() &&
-    flags.openOnCloudEnabled &&
-    canHandOffToCloud()
+  () => !isCloud && flags.openOnCloudEnabled && canHandOffToCloud()
 )
 const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
