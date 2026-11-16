@@ -1,0 +1,45 @@
+name: Dispatch SHH review to SwarmHost
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - ready_for_review
+      - review_requested
+      - assigned
+      - synchronize
+
+permissions: {}
+
+jobs:
+  dispatch:
+    if: >-
+      github.repository == 'Comfy-Org/ComfyUI_frontend' &&
+      vars.SWARMHOST_REVIEW_ENABLED == 'true'
+    concurrency:
+      group: shh-review-${{ github.repository }}-${{ github.event.number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Dispatch the currently eligible PR head
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SWARMHOST_TOKEN: ${{ secrets.SWARMHOST_TOKEN }}
+          SWARMHOST_REVIEW_ENABLED: ${{ vars.SWARMHOST_REVIEW_ENABLED }}
+          SWARMHOST_REVIEW_PLAYBOOK_ID: ${{ vars.SWARMHOST_REVIEW_PLAYBOOK_ID }}
+          SWARMHOST_REVIEW_PLAYBOOK_VERSION: ${{ vars.SWARMHOST_REVIEW_PLAYBOOK_VERSION }}
+          SWARMHOST_REVIEW_PROJECT_ID: ${{ vars.SWARMHOST_REVIEW_PROJECT_ID }}
+        run: node .github/scripts/dispatch-shh-review.ts
