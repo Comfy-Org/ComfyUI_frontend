@@ -199,9 +199,6 @@ describe('WidgetGrid', () => {
     const [fixedRow, declaredRow] = screen.getAllByTestId('node-widget')
     expect(fixedRow.style.minHeight).toBe('23px')
     expect(declaredRow.style.minHeight).toBe('60px')
-    expect(screen.getByTestId('node-widgets').style.gridTemplateRows).toBe(
-      'min-content auto'
-    )
 
     minHeight.value = 87
     await nextTick()

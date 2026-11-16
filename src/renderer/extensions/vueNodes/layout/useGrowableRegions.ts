@@ -25,15 +25,6 @@ export function userHeightTrack(height: number): string {
   return `minmax(min-content, min(var(${USER_HEIGHT_PROBE}, ${height}px), ${height}px))`
 }
 
-function marginBoxHeight(element: HTMLElement) {
-  const { marginTop, marginBottom } = getComputedStyle(element)
-  return (
-    element.offsetHeight +
-    (Number.parseFloat(marginTop) || 0) +
-    (Number.parseFloat(marginBottom) || 0)
-  )
-}
-
 function withCollapsedHeights<T>(
   nodeElement: HTMLElement,
   properties: readonly string[],
@@ -119,9 +110,11 @@ export function useGrowableRegions({
     if (!target) return
     const { handle, nodeElement, region, key } = target
 
-    const startHeight = marginBoxHeight(region)
-    const minHeight = withCollapsedHeights(nodeElement, REGION_FLOOR, () =>
-      marginBoxHeight(region)
+    const startHeight = region.offsetHeight
+    const minHeight = withCollapsedHeights(
+      nodeElement,
+      REGION_FLOOR,
+      () => region.offsetHeight
     )
     const startNodeHeight = nodeElement.offsetHeight
     const startY = event.clientY
@@ -153,7 +146,7 @@ export function useGrowableRegions({
       minMediaHeight
     )
     const regionGrowth = mediaHeight - element.offsetHeight
-    setHeight(key, marginBoxHeight(region) + regionGrowth)
+    setHeight(key, region.offsetHeight + regionGrowth)
     resizeNode(
       nodeElement.offsetHeight + regionGrowth,
       nodeElement.offsetWidth + mediaHeight * aspectRatio - element.offsetWidth

@@ -1,26 +1,21 @@
 <template>
-  <div
-    ref="grid"
-    data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(0,1fr)] pr-3 text-xs text-node-foreground [&>:first-child>:first-child]:mt-0 [&>:last-child>:last-child]:mb-0"
-    :style="gridStyle"
-  >
+  <div ref="grid" data-testid="node-widgets" :class="gridClass">
     <div
       v-for="section in sections"
       :key="section.key"
       :role="section.role"
       :aria-label="section.label"
-      class="col-span-full grid grid-cols-subgrid grid-rows-subgrid"
-      :style="{ gridRow: `span ${section.rows.length}` }"
+      class="contents"
     >
       <template v-for="row in section.rows" :key="row.widget.renderKey">
         <div
           :data-testid="row.testId"
           :data-widget-name="row.widget.simplified.name"
-          :style="{ minHeight: row.minHeight }"
+          :style="row.style"
           :class="
             cn(
-              'group relative col-span-full grid grid-cols-subgrid items-stretch',
+              'group relative grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
+              row.flexClass,
               row.showsControl &&
                 'lg-node-widget my-[calc(var(--node-widget-gap)/2)]'
             )
@@ -132,18 +127,30 @@ function rowSizing(
   growable: boolean,
   sizing: WidgetGridItem['sizing']
 ) {
+  const minHeight = sizing ? `${minRowHeight(sizing)}px` : undefined
   if (!growable)
     return {
       growable,
-      rowSize: 'min-content',
+      fills: false,
+      flexClass: 'flex-none',
+      style: { minHeight },
       controlClass: 'grid min-w-0 grid-cols-1 self-center'
     }
+  const maxHeight = sizing?.kind === 'growable' ? sizing.maxHeight : undefined
   const userHeight = growableRegions?.heightOf(name)
+  const fills = userHeight === undefined
   return {
     growable,
-    controlClass: 'grid min-w-0 grid-cols-1',
-    maxHeight: sizing?.kind === 'growable' ? sizing.maxHeight : undefined,
-    rowSize: userHeight === undefined ? 'auto' : userHeightTrack(userHeight)
+    fills,
+    maxHeight,
+    flexClass: fills ? 'grow shrink-0' : 'flex-none',
+    style: fills
+      ? {
+          minHeight,
+          maxHeight: maxHeight === undefined ? undefined : `${maxHeight}px`
+        }
+      : { minHeight, gridTemplateRows: userHeightTrack(userHeight) },
+    controlClass: 'grid min-w-0 grid-cols-1'
   }
 }
 
@@ -190,7 +197,6 @@ const renderedRows = computed(() =>
         standalone: !showsControl && !!widget.suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,
         selectable: canSelectInputs && !widget.simplified.options?.disabled,
-        minHeight: sizing ? `${minRowHeight(sizing)}px` : undefined,
         ...rowSizing(
           widget.simplified.name,
           showsControl && shouldExpand(widget.simplified.type, sizing),
@@ -273,10 +279,12 @@ async function restoreRowFocus(name: string) {
   }
 }
 
-const gridStyle = computed(() => {
-  const rows = renderedRows.value.map((row) => row.rowSize).join(' ')
-  return { gridTemplateRows: rows, flex: rows.includes('auto') ? 1 : undefined }
-})
+const gridClass = computed(() =>
+  cn(
+    'lg-node-widgets flex flex-col pr-3 text-xs text-node-foreground [&>:first-child>:first-child]:mt-0 [&>:last-child>:last-child]:mb-0',
+    renderedRows.value.some((row) => row.fills) && 'flex-1'
+  )
+)
 
 const layoutKey = computed(() =>
   renderedRows.value

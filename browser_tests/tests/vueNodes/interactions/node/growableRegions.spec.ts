@@ -110,6 +110,44 @@ test.describe(
       await expect.poll(getTextGHeight).toBeCloseTo(initialTextG + 60, 0)
     })
 
+    test('a node resize stops a widget at its maximum height and gives the rest to the other widgets', async ({
+      comfyPage
+    }) => {
+      await comfyPage.page.evaluate(() => {
+        window.app!.registerExtension({
+          name: 'test.growableRegions.maxHeight',
+          nodeCreated(node) {
+            const textG = node.widgets?.find(({ name }) => name === 'text_g')
+            if (textG) Object.assign(textG.options, { getMaxHeight: () => 120 })
+          }
+        })
+      })
+      await comfyPage.workflow.loadWorkflow('vueNodes/growable-regions')
+      const node = await comfyPage.vueNodes.getFixtureByTitle(
+        'CLIP Text Encode (SDXL)'
+      )
+      const getTextGHeight = () => heightOf(node.widgetRow('text_g'))
+      const getTextLHeight = () => heightOf(node.widgetRow('text_l'))
+      const getHeight = () => heightOf(node.root)
+      const initialTextG = await getTextGHeight()
+      const initialTextL = await getTextLHeight()
+      const initialHeight = await getHeight()
+      expect(initialTextG).toBeLessThan(100)
+
+      await node.resizeFromCorner('SE', 0, 200)
+
+      await expect.poll(getHeight).toBeCloseTo(initialHeight + 200, 0)
+      await expect.poll(getTextGHeight).toBeCloseTo(120, 0)
+      await expect
+        .poll(getTextLHeight)
+        .toBeCloseTo(initialTextL + 200 - (120 - initialTextG), 0)
+
+      await node.getResizeHandle('SE').dblclick()
+
+      await expect.poll(getHeight).toBeCloseTo(initialHeight, 0)
+      await expect.poll(getTextGHeight).toBeCloseTo(initialTextG, 0)
+    })
+
     test('double-clicking a widget edge hands the widget back to sharing the node height', async ({
       comfyPage
     }) => {
