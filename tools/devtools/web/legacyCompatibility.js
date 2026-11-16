@@ -191,6 +191,28 @@ function addPretendMediaTabs(node) {
   bar.setAttribute('aria-label', 'Pretend media slots (test only)')
   bar.style.cssText = 'display:flex;gap:8px;padding:8px 0;flex:none'
 
+  function replaceCardboardPreview(slot) {
+    const previous = node.widgets.find(
+      (widget) => widget.name === '$$pk_cardboard_preview'
+    )
+    if (previous) {
+      previous.onRemove?.()
+      node.widgets.splice(node.widgets.indexOf(previous), 1)
+    }
+    if (slot === 'ALL') return
+
+    const card = document.createElement('button')
+    card.type = 'button'
+    card.textContent = `Cardboard preview: ${slot}`
+    card.style.cssText = 'padding:8px;flex:none'
+    card.addEventListener('click', () => {
+      card.textContent = `Potato applauds: ${slot}`
+    })
+    node.addDOMWidget('$$pk_cardboard_preview', 'string', card, {
+      serialize: false
+    })
+  }
+
   function selectSlot(slot) {
     node.flags.pk_media_slot = slot
     image.hidden = slot === 'V1'
@@ -198,6 +220,7 @@ function addPretendMediaTabs(node) {
     for (const button of bar.children) {
       button.setAttribute('aria-pressed', String(button.dataset.slot === slot))
     }
+    replaceCardboardPreview(slot)
     node.setDirtyCanvas(true, true)
   }
 

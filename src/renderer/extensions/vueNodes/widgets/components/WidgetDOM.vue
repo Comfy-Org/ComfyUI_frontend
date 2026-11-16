@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import { onMounted, ref } from 'vue'
+import { onMounted, onUpdated, ref } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { DOMWidget } from '@/types/domWidget'
@@ -9,7 +9,6 @@ import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widget
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-// Button widgets don't have a v-model value, they trigger actions
 const props = defineProps<{
   widget: SimplifiedWidget<undefined>
   nodeId: NodeId
@@ -40,6 +39,7 @@ onMounted(() => {
   mountWidgetElement()
 })
 
+onUpdated(mountWidgetElement)
 whenever(() => !canvasStore.linearMode, mountWidgetElement)
 </script>
 <template>

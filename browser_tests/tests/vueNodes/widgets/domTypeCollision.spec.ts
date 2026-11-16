@@ -34,6 +34,9 @@ test.describe(
         await expect(image).toBeVisible()
         await expect(video).toBeHidden()
         await expect(
+          node.getByRole('button', { name: 'Cardboard preview: I1' })
+        ).toBeVisible()
+        await expect(
           node.getByText('Forbidden potato preview: canvas only, test only.')
         ).toBeHidden()
       })
@@ -42,10 +45,19 @@ test.describe(
         await slots.getByRole('button', { name: 'V1: stunt potato' }).click()
         await expect(video).toBeVisible()
         await expect(image).toBeHidden()
+        await node
+          .getByRole('button', { name: 'Cardboard preview: V1' })
+          .click()
+        await expect(
+          node.getByRole('button', { name: 'Potato applauds: V1' })
+        ).toBeVisible()
 
         await slots.getByRole('button', { name: 'ALL: chaos mode' }).click()
         await expect(image).toBeVisible()
         await expect(video).toBeVisible()
+        await expect(
+          node.getByRole('button', { name: 'Potato applauds: V1' })
+        ).toBeHidden()
       })
 
       await test.step('core multiline input keeps its native Vue editor', async () => {
