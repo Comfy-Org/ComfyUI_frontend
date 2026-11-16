@@ -19,6 +19,7 @@ import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
+import { showsCloudBillingNewUxOnLocal } from '@/platform/billing/localBillingWebEnabled'
 import { useLocalBillingWebFlagStore as defineFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -139,7 +140,7 @@ describe('useLocalBillingWebFlagStore', () => {
     }
   )
 
-  it('exposes only local_billing_web from a Cloud document with other keys', async () => {
+  it('exposes only its two flags from a Cloud document with other keys', async () => {
     const localConfig = { ...remoteConfig.value }
     serveFlags({
       local_billing_web: true,
@@ -152,6 +153,61 @@ describe('useLocalBillingWebFlagStore', () => {
 
     expect(store.enabled).toBe(true)
     expect(remoteConfig.value).toEqual(localConfig)
+  })
+
+  it('reads the new billing UX from the same request as the handoff flag', async () => {
+    serveFlags({ local_billing_web: true, billing_new_ux_enabled: true })
+
+    await signInAndRead()
+
+    expect(showsCloudBillingNewUxOnLocal()).toBe(true)
+    expect(fetchRequests(FEATURES)).toHaveLength(1)
+  })
+
+  it.for([
+    { served: 'absent', document: { local_billing_web: true } },
+    {
+      served: 'false',
+      document: { local_billing_web: true, billing_new_ux_enabled: false }
+    },
+    {
+      served: 'a string',
+      document: { local_billing_web: true, billing_new_ux_enabled: 'true' }
+    }
+  ])(
+    'keeps the handoff on and the new billing UX off when it is served $served',
+    async ({ document }) => {
+      serveFlags(document)
+
+      const { store } = await signInAndRead()
+
+      expect(store.enabled).toBe(true)
+      expect(showsCloudBillingNewUxOnLocal()).toBe(false)
+    }
+  )
+
+  it('turns the new billing UX off on sign-out', async () => {
+    serveFlags({ local_billing_web: true, billing_new_ux_enabled: true })
+    const { push } = await signInAndRead()
+
+    push({ status: 'signed_out' })
+    await settle()
+    serveFlags({ local_billing_web: true })
+    push(signedIn('user-2', 'ws-2'))
+    await settle()
+
+    expect(showsCloudBillingNewUxOnLocal()).toBe(false)
+  })
+
+  it('leaves the new billing UX off under a development override of the handoff flag', async () => {
+    localStorage.setItem('ff:local_billing_web', 'true')
+    onTestFinished(() => localStorage.removeItem('ff:local_billing_web'))
+    serveFlags({ local_billing_web: true, billing_new_ux_enabled: true })
+
+    const { store } = await signInAndRead()
+
+    expect(store.enabled).toBe(true)
+    expect(showsCloudBillingNewUxOnLocal()).toBe(false)
   })
 
   it.for([

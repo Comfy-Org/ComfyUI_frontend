@@ -3,7 +3,10 @@ import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
-import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
+import {
+  opensLocalBillingHandoff,
+  showsCloudBillingNewUxOnLocal
+} from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   isAuthenticatedConfigLoaded,
@@ -348,7 +351,9 @@ export function useFeatureFlags() {
     get billingNewUxEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_NEW_UX_ENABLED,
-        remoteConfig.value.billing_new_ux_enabled
+        showsCloudBillingNewUxOnLocal()
+          ? true
+          : remoteConfig.value.billing_new_ux_enabled
       )
     },
     get billingAutoTopUpAtCheckoutEnabled() {

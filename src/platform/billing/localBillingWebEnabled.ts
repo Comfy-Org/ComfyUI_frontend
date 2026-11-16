@@ -4,6 +4,7 @@ import { canDesktopHostIssueBillingHandoff } from '@/platform/auth/desktopHost/d
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 
 const enabled = ref(false)
+const cloudBillingNewUx = ref(false)
 
 export function localSurface(): 'desktop' | 'local_web' {
   return isDesktop || window.__comfyDesktop2 !== undefined
@@ -18,7 +19,16 @@ export function setLocalBillingWebEnabled(value: boolean): void {
   enabled.value = value
 }
 
+export function setLocalBillingNewUxEnabled(value: boolean): void {
+  cloudBillingNewUx.value = value
+}
+
 export function opensLocalBillingHandoff(): boolean {
   if (isCloud || !enabled.value) return false
   return localSurface() === 'local_web' || canDesktopHostIssueBillingHandoff()
+}
+
+/** Cloud's `billing_new_ux_enabled` for the signed-in local account, counted only while the handoff its Platform and checkout links need is open. */
+export function showsCloudBillingNewUxOnLocal(): boolean {
+  return opensLocalBillingHandoff() && cloudBillingNewUx.value
 }
