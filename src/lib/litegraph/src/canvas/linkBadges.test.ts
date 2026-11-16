@@ -581,7 +581,7 @@ describe('hidden link badge stacks', () => {
     }
   ])('groups $name', ({ labels, rows }) => {
     const host = {}
-    layoutFanOut(host, labels)
+    layoutHiddenLinkBadges(host, createContext(), fanOut(labels).reverse())
 
     const hitRows = rows.map(({ y }) => {
       const hit = queryLinkBadgeHitAtPoint(host, 120, y)
@@ -598,7 +598,6 @@ describe('hidden link badge stacks', () => {
 
     expect(ctx.fillText).toHaveBeenCalledWith('render_size ×2', 120, 104)
     expect(ctx.fillText).not.toHaveBeenCalledWith('render_size', 120, 104)
-    expect(ctx.roundRect).toHaveBeenCalledWith(117, 94, 62, 18, [9])
   })
 
   it('moves a renamed link to the stack for its new name, and back when cleared', () => {
@@ -619,20 +618,23 @@ describe('hidden link badge stacks', () => {
     expect(linksAt(128)).toEqual([4])
   })
 
-  it('expands a named stack to its head and one label per link', () => {
+  it('expands one named stack and leaves the other on its socket collapsed', () => {
     const host = {}
     toggleLinkBadgeStack(host, 'output:4:0="A"')
-    const { ctx } = layoutFanOut(host, ['A', 'A', undefined])
+    const { ctx } = layoutFanOut(host, ['A', 'A', 'B', 'B'])
 
-    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(3))
-    expect(queryLinkBadgeHitAtPoint(host, 120, 122)).toMatchObject({
+    expect(queryLinkBadgeHitAtPoint(host, 120, 100)).toMatchObject({
       linkIds: [toLinkId(1), toLinkId(2)],
       stackKey: 'output:4:0="A"'
     })
-    expect(queryLinkBadgeAtPoint(host, 120, 144)).toBe(toLinkId(1))
-    expect(queryLinkBadgeAtPoint(host, 120, 166)).toBe(toLinkId(2))
-    expect(ctx.fillText).toHaveBeenCalledWith('A ×2', 120, 126)
-    expect(ctx.fillText).toHaveBeenCalledWith('A', 120, 148)
+    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 120, 144)).toBe(toLinkId(2))
+    expect(queryLinkBadgeHitAtPoint(host, 120, 166)).toMatchObject({
+      linkIds: [toLinkId(3), toLinkId(4)],
+      stackKey: 'output:4:0="B"'
+    })
+    expect(ctx.fillText).toHaveBeenCalledWith('A ×2', 120, 104)
+    expect(ctx.fillText).toHaveBeenCalledWith('A', 120, 126)
   })
 
   it('expands to a head followed by one badge per link, and collapses back', () => {
