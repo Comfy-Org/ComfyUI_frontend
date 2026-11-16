@@ -47,6 +47,54 @@ test.describe('Preview as Text node', () => {
   })
 
   wstest(
+    'switches between Markdown and plain text in the classic renderer',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const source = '# Heading\n\nSome **bold** text'
+
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      const node = await comfyPage.nodeOps.addNode(
+        'PreviewAny',
+        {},
+        {
+          x: 300,
+          y: 200
+        }
+      )
+      execution.executed('', String(node.id), { text: [source] })
+
+      const plaintext = comfyPage.page.getByRole('textbox', {
+        name: 'preview_text'
+      })
+      const heading = comfyPage.page.getByRole('heading', {
+        name: 'Heading',
+        level: 1
+      })
+      await expect(plaintext).toHaveValue(source)
+
+      const modeToggle = await node.getWidgetByName('preview_mode')
+      const toggleTop = await modeToggle.getPosition()
+      const widgetHeight = await comfyPage.page.evaluate(
+        () => window.LiteGraph!.NODE_WIDGET_HEIGHT
+      )
+      const clickModeToggle = () =>
+        comfyPage.page.mouse.click(toggleTop.x, toggleTop.y + widgetHeight / 2)
+
+      await test.step('Markdown mode renders the source', async () => {
+        await clickModeToggle()
+        await expect(heading).toBeVisible()
+        await expect(plaintext).toBeHidden()
+      })
+
+      await test.step('plain text mode shows the source', async () => {
+        await clickModeToggle()
+        await expect(plaintext).toHaveValue(source)
+        await expect(heading).toBeHidden()
+      })
+    }
+  )
+
+  wstest(
     'restoring workflow restores state',
     { tag: '@vue-nodes' },
     async ({ comfyPage, getWebSocket }) => {
