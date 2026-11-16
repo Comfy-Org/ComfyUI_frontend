@@ -17,6 +17,7 @@ import type { EffectScope } from 'vue'
 import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabilitiesView'
 import { attachCapabilityRevisionInterceptor } from '@/platform/remote/ingest/capabilityRevision'
 import { billingApi } from '@/platform/billing/api/billingApi'
+import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -1594,6 +1595,27 @@ describe('useBillingCapabilities', () => {
       await refreshed
 
       expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    })
+
+    it('reads once more for a return to the tab during the read an earlier return started', async () => {
+      let releaseEarlierRead!: () => void
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockImplementationOnce(() =>
+          new Promise<void>((resolve) => {
+            releaseEarlierRead = resolve
+          }).then(() => capabilitiesResponse(false))
+        )
+        .mockResolvedValue(capabilitiesResponse(true))
+
+      void refreshBillingAccount(new Event('focus'))
+      const laterReturn = refreshBillingAccount(new Event('focus'))
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+
+      releaseEarlierRead()
+      await laterReturn
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
     })
   })
 
