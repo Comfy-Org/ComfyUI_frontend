@@ -86,6 +86,20 @@ describe('slot identity', () => {
     expect(node._state.outputs[0].type).toBe('FLOAT')
   })
 
+  it('keeps deleted metadata bound to the stored descriptor', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Node')
+    graph.add(node)
+    const output = node.addOutput('output', 'INT')
+
+    output.widget = { name: 'first' }
+    delete output.widget
+    expect(node.serialize().outputs![0].widget).toBeUndefined()
+
+    output.widget = { name: 'second' }
+    expect(node.serialize().outputs![0].widget).toEqual({ name: 'second' })
+  })
+
   it('preserves native indexOf behavior for arbitrary values', () => {
     const node = new LGraphNode('Node')
     node.addInput('slot', 'INT')
