@@ -526,6 +526,43 @@ describe('auth token priority chain', () => {
       await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
     })
 
+    it('offers no stored API key to a request made while the sign-out is still in progress', async () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      let storedKeyHeader: ApiKeyAuthHeader | null = {
+        'X-API-KEY': 'earlier-key'
+      }
+      vi.mocked(apiKeyStore.getApiKey).mockReturnValue('earlier-key')
+      vi.mocked(apiKeyStore.getAuthHeader).mockImplementation(
+        () => storedKeyHeader
+      )
+      vi.mocked(apiKeyStore.clearStoredApiKey).mockImplementation(async () => {
+        storedKeyHeader = null
+      })
+      const headerDuringSignOut = vi.fn()
+      vi.mocked(firebaseAuth.signOut).mockImplementation(async () => {
+        authStateCallback(null)
+        headerDuringSignOut(await store.getAuthHeader())
+      })
+      useWorkspaceAuthStore().unifiedToken = null
+
+      await store.logout()
+
+      expect(headerDuringSignOut).toHaveBeenCalledExactlyOnceWith(null)
+    })
+
+    it('getAuthHeader sends no stored API key when Firebase signs the user out during the token read', async () => {
+      useWorkspaceAuthStore().unifiedToken = null
+      vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
+        'X-API-KEY': 'earlier-account-key'
+      })
+      mockUser.getIdToken.mockImplementationOnce(async () => {
+        authStateCallback(null)
+        throw new Error('user disabled')
+      })
+
+      await expect(store.getAuthHeader()).resolves.toBeNull()
+    })
+
     it('getAuthHeader falls back to the Firebase token when the unified mint fails', async () => {
       useWorkspaceAuthStore().unifiedToken = null
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({

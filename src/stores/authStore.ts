@@ -369,7 +369,9 @@ export const useAuthStore = defineStore('auth', () => {
     if (await awaitUnifiedMint()) return null
     const token = useWorkspaceAuthStore().getUnifiedToken()
     if (token) return { Authorization: `Bearer ${token}` }
-    return (await getFirebaseAuthHeader()) ?? storedApiKeyAsOnlyLogin()
+    return currentUser.value === null
+      ? storedApiKeyAsOnlyLogin()
+      : await getFirebaseAuthHeader()
   }
 
   const getAccountAuthHeader = async (): Promise<AuthHeader | null> => {
@@ -863,12 +865,12 @@ export const useAuthStore = defineStore('auth', () => {
         isCloud ||
         signsOutDesktopHost ||
         (flags.ssoEnabled && flags.unifiedWebSessionEnabled)
-      await useCloudWebSessionStore().signOut()
-      if (currentUser.value) await firebaseIdentity.signOut()
       const apiKeyStore = useApiKeyAuthStore()
       if (storedApiKeyWouldTakeOver && apiKeyStore.getApiKey() !== null) {
         await apiKeyStore.clearStoredApiKey()
       }
+      await useCloudWebSessionStore().signOut()
+      if (currentUser.value) await firebaseIdentity.signOut()
     })
 
   const sendPasswordReset = async (email: string): Promise<void> =>
