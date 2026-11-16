@@ -71,6 +71,15 @@ export interface ISubgraphInput extends INodeInputSlot {
   _subgraphSlot: SubgraphInput
 }
 
+export type InputSlotDescriptor = Omit<
+  INodeInputSlot,
+  'link' | '_widget' | '_pendingDemotionToken'
+>
+
+export type OutputSlotDescriptor = Omit<INodeOutputSlot, 'links' | '_data'>
+
+export type SlotDescriptor = InputSlotDescriptor & OutputSlotDescriptor
+
 export type INodeSlotContextItem = [
   string,
   ISlotType,

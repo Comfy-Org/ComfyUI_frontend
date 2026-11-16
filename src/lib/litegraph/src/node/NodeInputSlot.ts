@@ -11,7 +11,8 @@ import type { OptionalProps } from '@comfyorg/graph-model/interfaces'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type {
   INodeInputSlot,
-  INodeOutputSlot
+  INodeOutputSlot,
+  SlotDescriptor
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import {
@@ -26,8 +27,6 @@ import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphTypeGuards
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
-  alwaysVisible?: boolean
-
   /** @deprecated Read-only compatibility view of the store-derived link id. */
   get link(): LinkId | null {
     warnDeprecated(
@@ -69,12 +68,11 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
 
   constructor(
     slot: OptionalProps<INodeInputSlot, 'boundingRect'>,
-    node: LGraphNode
+    node: LGraphNode,
+    descriptor?: SlotDescriptor
   ) {
-    // Serialized inputs carry a legacy link mirror; strip it so the base
-    // ctor's Object.assign does not trip the deprecated setter above.
     const { link: _legacyLink, ...rest } = slot
-    super(rest, node)
+    super(rest, node, descriptor)
   }
 
   override get isConnected(): boolean {
