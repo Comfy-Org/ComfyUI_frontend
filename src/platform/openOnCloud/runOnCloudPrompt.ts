@@ -13,8 +13,7 @@ Fetch it from the server; there is no exported copy on disk.
 
 Workflow: ${JSON.stringify(source.workflowPath)}
 ComfyUI: ${JSON.stringify(source.serverUrl)}${source.user ? `\nComfyUI user: ${JSON.stringify(source.user)}` : ''}`
-  return `Prepare my ComfyUI workflow on Comfy Cloud and give me the link that opens it, ready to run.
-Build and deploy as needed. Do not execute the workflow automatically.
+  return `Run my ComfyUI workflow on Comfy Cloud and give me the link that opens it.
 
 First make sure comfy-cli is 1.26.0 or newer:
   comfy --version

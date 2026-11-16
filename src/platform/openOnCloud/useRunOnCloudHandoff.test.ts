@@ -40,8 +40,7 @@ describe('run on Cloud handoff', () => {
       await expect(handoff.copyBrief()).resolves.toBe(true)
 
       expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledWith(
-        `Prepare my ComfyUI workflow on Comfy Cloud and give me the link that opens it, ready to run.
-Build and deploy as needed. Do not execute the workflow automatically.
+        `Run my ComfyUI workflow on Comfy Cloud and give me the link that opens it.
 
 First make sure comfy-cli is 1.26.0 or newer:
   comfy --version
