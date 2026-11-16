@@ -158,20 +158,18 @@ export function createSlotEdits(
         slotSide === 'input' ? live.node.inputs : live.node.outputs
       const moved = permutation(member, order, current)
       const { graph, node: host } = live
+      const unchanged = moved.every((was, now) => was === now)
       if (host.isSubgraphNode() && slotSide === 'input') {
-        return runner.apply(graph, () => {
-          const reordered = reorderSubgraphNodeInputs(host, moved)
-          if (reordered) moveFloatingLinks(graph, host, slotSide, moved)
-          return reordered
-        })
+        assertPlacedOnce(member, host)
+        if (unchanged) return true
+        return runner.apply(graph, () => reorderSubgraphNodeInputs(host, moved))
       }
       assertNotSubgraphNode(member, host)
+      if (unchanged) return true
       return runner.apply(graph, () => {
-        const reordered =
-          slotSide === 'input'
-            ? reorderInputs(host, moved)
-            : reorderOutputs(graph, host, moved)
-        if (reordered) moveFloatingLinks(graph, host, slotSide, moved)
+        if (slotSide === 'input') return reorderInputs(host, moved)
+        const reordered = reorderOutputs(graph, host, moved)
+        if (reordered) moveFloatingOutputLinks(graph, host, moved)
         return reordered
       })
     }
@@ -220,18 +218,32 @@ function permutation(
   return from.filter((index): index is number => index !== undefined)
 }
 
-function moveFloatingLinks(
+function moveFloatingOutputLinks(
   graph: LGraph,
   node: LGraphNode,
-  side: SlotSide,
   from: readonly number[]
 ): void {
   for (const link of graph.floatingLinks.values()) {
-    if (side === 'input' && link.target_id === node.id) {
-      link.target_slot = from.indexOf(link.target_slot)
-    } else if (side === 'output' && link.origin_id === node.id) {
+    if (link.origin_id === node.id) {
       link.origin_slot = from.indexOf(link.origin_slot)
     }
+  }
+}
+
+function assertPlacedOnce(member: string, node: SubgraphNode): void {
+  const { rootGraph } = node
+  const graphs = [rootGraph, ...rootGraph.subgraphs.values()]
+  const placedElsewhere = graphs.some((candidate) =>
+    candidate.nodes.some(
+      (other: LGraphNode) => other !== node && other.type === node.type
+    )
+  )
+  if (placedElsewhere) {
+    throw invalidArgument(
+      member,
+      'a subgraph node whose subgraph is placed once',
+      node.type
+    )
   }
 }
 

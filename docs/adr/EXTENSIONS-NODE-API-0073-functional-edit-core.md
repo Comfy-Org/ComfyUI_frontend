@@ -216,8 +216,10 @@ follow-up for a command interface.
     `updateEndpoints` call on the link store, which validates every re-pointed
     link before it moves any, and then the output list. Link ids do not change;
     the saved `links` array holds the same links, in an order that may differ.
-    Floating links (links detached onto a reroute) of the reordered slots move
-    with them. If the store refuses, nothing moves and
+    Floating links (links detached onto a reroute) of reordered outputs move
+    with them, as part of the API's own output reorder; floating links of
+    reordered inputs keep their slot index, as the host's `replaceNodeInputs`
+    leaves them (#23466). If the store refuses, nothing moves and
     the call answers `false`. Decision 24 says what a load gives back.
 19. `connect(output, input)` links two slots of one graph through
     `LGraphNode.connect`, so the host's type check and the nodes' connection
@@ -330,8 +332,8 @@ leaves the graph feeding execution the wrong data.
     corrupts what runs, so it stays refused even though the legacy API allowed
     it. `reorderSlots` on a subgraph node's inputs goes through the host's own
     `reorderSubgraphInputs`, which reorders the subgraph's inputs and the
-    node's together, and the API then moves the node's floating links with
-    them. Every
+    node's together; the node's floating links keep their slot index, as the
+    host leaves them (#23466). Every
     other slot edit on a subgraph node is refused; a pack edits the subgraph's
     inputs and outputs in the subgraph. No stored V2 conversion reaches it: a
     pack extends a type by name, and a subgraph node's type is its
@@ -531,13 +533,10 @@ ADR-EXTENSIONS-NODE-API-0070.
 - **Floating links on a reorder.** The host keeps a link detached from a
   reroute as a floating link with a slot index. `replaceNodeInputs`, the host's
   own reorder for inputs, does not move them (`removeInput` and `removeOutput`
-  do), so the API moves them itself after a reorder (decision 18); other
-  callers of `replaceNodeInputs` still leave them behind. Ticket draft: _Title:_ "Move
-  floating links when a node's inputs are replaced". _Reproduction:_ detach a
-  link onto a reroute so it floats from a node's second input, reorder that
-  node's inputs with `replaceNodeInputs`, and the floating link points at
-  another input. _Direction:_ update floating links in `replaceNodeInputs` as
-  `removeInput` does.
+  do). The API does not work around this: an input reorder leaves floating
+  links where the host leaves them, and the API is correct once
+  [#23466](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23466) is
+  fixed.
 - **No intent for re-pointed links or slot edits (a requirement for release).**
   `moveLinks` and the output reorder update link endpoints in the link store,
   and slot fields and slot structure change without an intent, so none of them

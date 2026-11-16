@@ -351,6 +351,24 @@ describe('edits and what a load keeps of them', () => {
       expect(sourceFeeding()).toEqual(fedBySources)
     })
 
+    it('refuses to reorder its inputs while its subgraph is placed again, leaving every instance fed as before', () => {
+      const other = LiteGraph.createNode(subgraphNode.type)
+      assert(other)
+      graph.add(other)
+      const feedingId = inputLink(graph, subgraphNode.id, 0)?.origin_id
+      assert(feedingId !== undefined)
+      const feeding = graph.getNodeById(feedingId)
+      assert(feeding)
+      feeding.connect(0, other, 0)
+
+      expect(() => subgraphHandle.inputs.reorder(['second', 'first'])).toThrow(
+        TypeError
+      )
+      expect(names(subgraphNode.subgraph.inputs)).toEqual(['first', 'second'])
+      expect(inputLink(graph, other.id, 0)?.origin_id).toBe(feeding.id)
+      expect(sourceFeeding()).toEqual(fedBySources)
+    })
+
     it('says no and changes nothing when the host cannot reorder its inputs', () => {
       vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
         ok: false,
@@ -362,7 +380,7 @@ describe('edits and what a load keeps of them', () => {
       expect(sourceFeeding()).toEqual(fedBySources)
     })
 
-    it('moves the floating links of its inputs with them', () => {
+    it('leaves the floating links of its inputs at their slot index, as the host does', () => {
       const intoSecond = graph.addFloatingLink(
         new LLink(
           toLinkId(-1),
@@ -377,7 +395,7 @@ describe('edits and what a load keeps of them', () => {
 
       expect(subgraphHandle.inputs.reorder(['second', 'first'])).toBe(true)
 
-      expect(intoSecond.target_slot).toBe(0)
+      expect(intoSecond.target_slot).toBe(1)
     })
 
     it('refuses to add, remove, change or reorder outputs of its slots', () => {

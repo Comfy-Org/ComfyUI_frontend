@@ -255,12 +255,12 @@ describe('edit contracts', () => {
       return added
     }
 
-    it('move with the inputs they reach', () => {
+    it('into an input stay at the slot index the host leaves them at', () => {
       const intoSecond = floating([-1, -1], [0, 1])
 
-      handle.inputs.reorder(['second', 'first'])
+      expect(handle.inputs.reorder(['second', 'first'])).toBe(true)
 
-      expect(intoSecond.target_slot).toBe(0)
+      expect(intoSecond.target_slot).toBe(1)
     })
 
     it('move with the outputs they leave', () => {
