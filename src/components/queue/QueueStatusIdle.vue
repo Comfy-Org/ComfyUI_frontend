@@ -21,11 +21,12 @@
       :side-offset="8"
       :collision-padding="8"
       data-testid="queue-status-idle-panel"
-      class="flex w-80 flex-col gap-2 rounded-lg border-foreground/9 p-2"
+      class="w-80 rounded-xl border-none p-2 shadow-lg"
     >
       <QueueStatusRecents
         :results="results"
         @view="emit('view', $event)"
+        @open-workflow="emit('openWorkflow', $event)"
         @history="emit('history')"
       />
     </PopoverContent>
@@ -52,6 +53,7 @@ const open = defineModel<boolean>('open', { required: true })
 
 const emit = defineEmits<{
   view: [job: JobListItem]
+  openWorkflow: [job: JobListItem]
   history: []
 }>()
 </script>

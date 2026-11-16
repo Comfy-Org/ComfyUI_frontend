@@ -120,5 +120,4 @@ describe('QueueStatusPanel', () => {
     await user.click(screen.getByTestId('queue-status-row-details'))
     expect(emitted('history')).toHaveLength(1)
   })
-
 })

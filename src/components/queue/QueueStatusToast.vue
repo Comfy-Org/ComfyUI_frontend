@@ -55,6 +55,7 @@
       :results="recentResults"
       :align="alignStart ? 'start' : 'end'"
       @view="handleViewResult"
+      @open-workflow="handleOpenWorkflow"
       @history="handleGoToHistory"
     />
 
@@ -90,6 +91,8 @@ import type {
 } from '@/components/queue/queueStatusTypes'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
@@ -113,6 +116,7 @@ const emit = defineEmits<{ panelOpen: [open: boolean] }>()
 const { t, n, locale } = useI18n()
 const queueStore = useQueueStore()
 const executionStore = useExecutionStore()
+const workflowStore = useWorkflowStore()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { jobItems } = useJobList()
 const rightSidePanelStore = useRightSidePanelStore()
@@ -165,6 +169,16 @@ function workflowName(job: JobListItem): string | undefined {
   const workflow = executionStore.queuedJobs[jobId]?.workflow
   if (workflow?.filename) return workflow.filename
   const path = executionStore.jobIdToSessionWorkflowPath.get(jobId)
+  if (!path) {
+    // After a reload only the graph id survives; match it to an open tab.
+    const graphId = job.taskRef?.workflowId
+    const open = graphId
+      ? workflowStore.openWorkflows.find(
+          (w) => (w.activeState?.id ?? w.initialState?.id) === graphId
+        )
+      : undefined
+    if (open) return open.filename
+  }
   return (
     path
       ?.split('/')
@@ -479,7 +493,10 @@ const completedMeta = (job: JobListItem): string => {
   const when = isToday(ts)
     ? time
     : `${formatShortMonthDay(ts, locale.value)}, ${time}`
-  return `${t('queueStatus.completed')} · ${when}`
+  const count = job.taskRef?.outputsCount ?? 0
+  const outputs =
+    count > 1 ? ` · ${t('queueStatus.outputsCount', { count }, count)}` : ''
+  return `${t('queueStatus.completed')} · ${when}${outputs}`
 }
 const recentResults = computed<RecentResult[]>(() =>
   recentJobs.value.map((job) => {
@@ -496,6 +513,14 @@ const recentResults = computed<RecentResult[]>(() =>
     }
   })
 )
+
+const openWorkflow = wrapWithErrorHandlingAsync(async (task: TaskItemImpl) => {
+  await task.loadWorkflow(app)
+})
+function handleOpenWorkflow(job: JobListItem) {
+  idleOpen.value = false
+  if (job.taskRef) void openWorkflow(job.taskRef)
+}
 
 async function handleViewResult(job: JobListItem) {
   idleOpen.value = false
