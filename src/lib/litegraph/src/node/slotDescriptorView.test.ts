@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it } from 'vitest'
 import { toRaw } from 'vue'
 import {
@@ -229,5 +230,45 @@ describe('slot identity', () => {
     })
     expect(Reflect.set(node.inputs, 'length', 0)).toBe(false)
     expect(node.inputs[0]).toBe(input)
+  })
+})
+
+describe('indexed slot descriptor assignment', () => {
+  it('keeps a string-array slot type', () => {
+    const node = new LGraphNode('Node')
+
+    expect(
+      Reflect.set(node.outputs, '0', { name: 'out', type: ['INT', 'FLOAT'] })
+    ).toBe(true)
+
+    expect(node.outputs[0].type).toEqual(['INT', 'FLOAT'])
+  })
+
+  it.for([
+    { invalid: 'a missing type', value: { name: 'out' } },
+    { invalid: 'a non-string name', value: { name: 7, type: 'INT' } },
+    {
+      invalid: 'a non-string array type member',
+      value: { name: 'out', type: ['INT', 1] }
+    }
+  ])('refuses a descriptor with $invalid', ({ value }) => {
+    const node = new LGraphNode('Node')
+
+    expect(Reflect.set(node.outputs, '0', value)).toBe(false)
+
+    expect(node.outputs).toHaveLength(0)
+  })
+
+  it('reserializes a nameless configured output with an empty name', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Node')
+    graph.add(node)
+    node.addOutput('out', 'FLOAT')
+
+    node.configure(fromPartial({ outputs: [{ type: 'INT' }] }))
+
+    expect(node.serialize().outputs).toEqual([
+      { name: '', type: 'INT', links: null }
+    ])
   })
 })

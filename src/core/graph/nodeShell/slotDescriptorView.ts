@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import type { ISlotType, OptionalProps } from '@comfyorg/graph-model/interfaces'
 import type { SlotMembership } from '@comfyorg/graph-model/slotMembership'
 import { toRaw } from 'vue'
 
@@ -15,16 +16,18 @@ import { useSlotStore } from '@/stores/slotStore'
 import type { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { slotAdapters } from '@/lib/litegraph/src/node/slotDescriptorState'
 
+type SlotInit = OptionalProps<SlotDescriptor, 'boundingRect'>
+
 const assignedInputViews = new WeakMap<
   INodeInputSlot[],
-  WeakMap<INodeInputSlot, INodeInputSlot>
+  WeakMap<object, INodeInputSlot>
 >()
 
 export function createInputSlotView(
   node: LGraphNode,
   slots: SlotMembership
 ): INodeInputSlot[] {
-  const assignedViews = new WeakMap<INodeInputSlot, INodeInputSlot>()
+  const assignedViews = new WeakMap<object, INodeInputSlot>()
   const view = createSlotView(
     node,
     slots,
@@ -48,11 +51,11 @@ function createSlotView(
   slots: SlotMembership,
   ids: SlotMembership['inputIds'],
   Slot: new (
-    slot: SlotDescriptor,
+    slot: SlotInit,
     node: LGraphNode,
     descriptor?: SlotRecord
   ) => NodeSlot,
-  assignedViews?: WeakMap<INodeInputSlot, INodeInputSlot>
+  assignedViews?: WeakMap<object, INodeInputSlot>
 ): SlotDescriptor[] {
   function adapter(value: SlotRecord | undefined): unknown {
     if (!isSlot(value)) return value
@@ -60,10 +63,16 @@ function createSlotView(
   }
 
   function record(value: unknown): SlotRecord | undefined {
-    if (!isSlotDescriptorLike(value)) return undefined
-    const slot = value instanceof Slot ? value : new Slot(value, node)
+    if (value === null || typeof value !== 'object') return undefined
+    const slot = value instanceof Slot ? value : createSlot(value)
+    if (!slot) return undefined
     assignedViews?.set(value, slot)
     return slot._state
+  }
+
+  function createSlot(value: object): NodeSlot | undefined {
+    const init = parseSlotInit(value)
+    return init && new Slot(init, node)
   }
 
   function mirrorProperty(
@@ -186,8 +195,20 @@ function isArrayIndex(property: string | symbol): property is string {
   )
 }
 
-function isSlotDescriptorLike(value: unknown): value is SlotDescriptor {
-  return value !== null && typeof value === 'object'
+function parseSlotInit(value: object): SlotInit | undefined {
+  const name = 'name' in value ? value.name : undefined
+  const type = 'type' in value ? value.type : undefined
+  if (name !== undefined && typeof name !== 'string') return undefined
+  if (!isSlotType(type)) return undefined
+  return { ...value, name: name ?? '', type }
+}
+
+function isSlotType(type: unknown): type is ISlotType {
+  return (
+    typeof type === 'number' ||
+    typeof type === 'string' ||
+    (Array.isArray(type) && type.every((item) => typeof item === 'string'))
+  )
 }
 
 function isSlot(value: unknown): value is SlotDescriptor {

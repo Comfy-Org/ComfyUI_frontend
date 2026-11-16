@@ -39,6 +39,14 @@ own neither records nor metadata. Numeric accessor properties and pinned numeric
 properties are refused because membership is plain identity data. Non-index
 extension properties and native length restrictions remain supported.
 
+An object written to an index becomes a slot record only after its name and type
+are checked. The type must be a number, a string or an array of strings. A
+supplied name must be a string. Other fields pass through unvalidated. Invalid
+input is refused. Unvalidated input without a name, such as a partial
+descriptor passed to `configure`, is repaired to an empty name. It therefore
+reserializes with `name: ''` where it previously omitted the key. Workflows
+that pass schema validation always carry a name and serialize unchanged.
+
 This refines the membership-derived scan in ADR-ECS-SLOTS-0058. Runtime IDs still
 stay out of workflow serialization. Import and reconstruction mint fresh IDs.
 
