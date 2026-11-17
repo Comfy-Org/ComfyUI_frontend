@@ -149,6 +149,39 @@ describe(handleDesktopWorkflowHandoff, () => {
     )
   })
 
+  it('forwards the transfer in production when only Cloud enables it', async () => {
+    vi.stubEnv('DEV', false)
+    const { relay, record } = await stagedRelay()
+    openAt(relay)
+    const cloudFeatures = new URL('/api/features', getComfyCloudBaseUrl()).href
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      Response.json(
+        String(url) === cloudFeatures ? { open_on_cloud_enabled: true } : {}
+      )
+    )
+    const replace = relayed()
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+
+    expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
+  })
+
+  it('leaves the transfer untouched when Cloud disables it in development', async () => {
+    vi.stubEnv('DEV', true)
+    const { relay } = await stagedRelay()
+    openAt(relay)
+    const cloudFeatures = new URL('/api/features', getComfyCloudBaseUrl()).href
+    vi.mocked(fetch).mockImplementation(async (url) =>
+      Response.json(
+        String(url) === cloudFeatures ? { open_on_cloud_enabled: false } : {}
+      )
+    )
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
+
+    expect(api.getUserData).not.toHaveBeenCalled()
+  })
+
   it('accepts the staged Cloud origin after reading the relay server features', async () => {
     const features = {
       comfy_cloud_base_url: 'https://custom-cloud.example.com',

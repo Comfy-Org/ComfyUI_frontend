@@ -35,6 +35,7 @@ import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import { handleDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowRelay'
+import { refreshLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
@@ -49,7 +50,10 @@ async function loadRemoteConfigBeforeFirebase(): Promise<void> {
     const { loadRemoteConfigUntilReady, refreshRemoteConfig } =
       await import('@/platform/remoteConfig/refreshRemoteConfig')
     if (isCloud) await loadRemoteConfigUntilReady()
-    else await refreshRemoteConfig({ useAuth: false })
+    else {
+      await refreshRemoteConfig({ useAuth: false })
+      void refreshLocalOpenOnCloudRollout()
+    }
   })
 }
 
