@@ -108,7 +108,7 @@ export function useComboOptions(
   const browseOptions = computed(() => {
     const query = searchQuery.value.trim().toLocaleLowerCase()
     if (!hasFolders.value || query)
-      return isFilterable.value && query
+      return query
         ? scoped.value.filter(
             (option) =>
               option.value.toLocaleLowerCase().includes(query) ||
