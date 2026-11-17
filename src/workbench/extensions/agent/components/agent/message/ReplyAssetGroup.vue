@@ -74,7 +74,6 @@ const gridColsClass = computed(() => {
   return 'grid-cols-4'
 })
 
-/* URLs whose preview failed to load: the file is missing, so the gallery skips them. */
 const unavailableUrls = ref(new Set<string>())
 
 function markUnavailable(asset: ReplyVisualAssetData): void {
