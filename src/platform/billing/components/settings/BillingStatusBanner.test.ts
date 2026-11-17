@@ -118,6 +118,28 @@ vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
     `https://platform.test${path}?correlation_id=${correlationId}`
 }))
 
+async function openResumeConfirm() {
+  await userEvent.click(
+    within(screen.getByRole('status')).getByRole('button', {
+      name: 'Resume plan'
+    })
+  )
+  const dialog = screen.getByRole('dialog')
+  expect(dialog).toHaveTextContent(
+    'Your plan will renew on August 1, 2026. You can cancel again anytime.'
+  )
+  expect(state.handleResubscribe).not.toHaveBeenCalled()
+  return dialog
+}
+
+async function resumeThroughConfirm() {
+  const dialog = await openResumeConfirm()
+  await userEvent.click(
+    within(dialog).getByRole('button', { name: 'Resume plan' })
+  )
+  expect(state.handleResubscribe).toHaveBeenCalledOnce()
+}
+
 function grantOpenPlans(granted: boolean) {
   useBillingCapabilities().canOpenPlans = computed(() =>
     receiveServerFact('can_open_plans', granted)
@@ -153,7 +175,15 @@ const i18n = createI18n({
         }
       },
       workspacePanel: {
-        billingTab: { plan: { actions: { choosePlan: 'Choose a plan' } } },
+        billingTab: {
+          plan: {
+            actions: { choosePlan: 'Choose a plan', resume: 'Resume plan' },
+            resumeConfirm: {
+              title: 'Resume your {plan} plan?',
+              body: 'Your plan will renew on {date}. You can cancel again anytime.'
+            }
+          }
+        },
         members: {
           endedTeamTitle: 'Your Team plan has ended',
           endedEnterpriseTitle: 'Your Enterprise plan has ended',
@@ -228,6 +258,7 @@ const i18n = createI18n({
           updatePayment: 'Update payment'
         }
       },
+      g: { close: 'Close' },
       subscription: {
         teamPlanName: 'Team',
         unknownTierName: 'Unknown',
@@ -915,8 +946,23 @@ describe('BillingStatusBanner', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Your Team plan ends on'
     )
-    await userEvent.click(screen.getByRole('button', { name: 'Resume plan' }))
-    expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
+    await resumeThroughConfirm()
+  })
+
+  it('resumes nothing when the Resume plan confirm is closed', async () => {
+    state.subscription = {
+      hasFunds: true,
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z',
+      scheduledChange: null
+    }
+    renderBanner()
+
+    const dialog = await openResumeConfirm()
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Close' }))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(state.handleResubscribe).not.toHaveBeenCalled()
   })
 
   it('keeps reactivation on the legacy rail where the capability does not apply', async () => {
@@ -931,8 +977,7 @@ describe('BillingStatusBanner', () => {
     }
     renderBanner()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Resume plan' }))
-    expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
+    await resumeThroughConfirm()
   })
 
   it('shows members the ending notice without a Resume plan action', () => {
@@ -1320,10 +1365,7 @@ describe('BillingStatusBanner', () => {
 
         expect(screen.getByRole('status')).toHaveTextContent(title)
         expect(screen.getByRole('status')).toHaveTextContent(body)
-        await userEvent.click(
-          screen.getByRole('button', { name: 'Resume plan' })
-        )
-        expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
+        await resumeThroughConfirm()
       }
     )
 
