@@ -149,18 +149,13 @@ interface ParityRoutes {
 }
 
 interface ParitySetup {
-  sdkRail: boolean
   status?: BillingStatusResponse
   paymentMethods?: SavedPaymentMethod[]
 }
 
 async function setupParity(
   page: Page,
-  {
-    sdkRail,
-    status = ACTIVE_STANDARD,
-    paymentMethods = [SAVED_CARD]
-  }: ParitySetup
+  { status = ACTIVE_STANDARD, paymentMethods = [SAVED_CARD] }: ParitySetup
 ): Promise<ParityRoutes> {
   const ws = workspace('personal', 'owner')
   const server: BillingServer = {
@@ -208,8 +203,7 @@ async function setupParity(
       })
     ],
     features: {
-      billing_control_enabled: true,
-      unified_cloud_auth: sdkRail
+      billing_control_enabled: true
     } satisfies RemoteConfig,
     billingCapabilities: createWorkspaceBillingCapabilities(ws)
   })
@@ -358,12 +352,9 @@ function creditsLabel(micros: number): string {
  * Opens the portal from Plan & Credits, changes the plan on the server as the
  * portal would, and comes back: the panel must re-read and show the change.
  */
-async function expectPortalReturnRefresh(
-  page: Page,
-  sdkRail: boolean,
-  expectedTransport: 'xhr' | 'fetch'
-) {
-  const routes = await setupParity(page, { sdkRail })
+async function expectPortalReturnRefresh(page: Page) {
+  const expectedTransport = 'fetch'
+  const routes = await setupParity(page, {})
   await bootApp(page)
   const panel = await openPlanAndCredits(page)
   await expect(panel.getByText(/Renews on/)).toBeVisible()
@@ -423,7 +414,7 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
     test('subscribes on the SDK transport and names the new plan', async ({
       page
     }) => {
-      const routes = await setupParity(page, { sdkRail: true })
+      const routes = await setupParity(page, {})
       await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
 
       await confirmCreatorUpgrade(page)
@@ -447,7 +438,7 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
     test('completes a top-up and then a subscribe in one session, and totals both', async ({
       page
     }) => {
-      const routes = await setupParity(page, { sdkRail: true })
+      const routes = await setupParity(page, {})
       const panel = await topUpThenUpgrade(page, routes)
 
       expect(routes.topupRequests.map(transport)).toEqual(['fetch'])
@@ -464,23 +455,17 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
   })
 
   test.describe('returning from the billing portal', () => {
-    test('re-reads the plan on the legacy transport and renders the change', async ({
-      page
-    }) => {
-      await expectPortalReturnRefresh(page, false, 'xhr')
-    })
-
     test('re-reads the plan on the SDK transport and renders the same change', async ({
       page
     }) => {
-      await expectPortalReturnRefresh(page, true, 'fetch')
+      await expectPortalReturnRefresh(page)
     })
   })
 
   test('resumes a cancelled plan on the SDK transport without charging again', async ({
     page
   }) => {
-    const routes = await setupParity(page, { sdkRail: true })
+    const routes = await setupParity(page, {})
     await bootApp(page)
 
     const cancelDialog = new CancelSubscriptionDialog(page)

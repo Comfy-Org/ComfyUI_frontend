@@ -190,6 +190,39 @@ describe('createCapabilitiesReader', () => {
 
   it.for([
     {
+      served: {
+        billing_notice_audience: 'team',
+        ending_notice_starts_at: '2026-11-12T00:00:00Z'
+      },
+      expected: {
+        billingNoticeAudience: 'team',
+        endingNoticeStartsAt: '2026-11-12T00:00:00Z'
+      }
+    },
+    {
+      served: {},
+      expected: {
+        billingNoticeAudience: undefined,
+        endingNoticeStartsAt: undefined
+      }
+    }
+  ] as const)(
+    'keeps the served billing notice facts $served instead of dropping them',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([httpOk(capabilitiesBody(served))])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value).toMatchObject(expected)
+    }
+  )
+
+  it.for([
+    {
       served: { state: 'frozen', reason: 'payment_past_due' },
       expected: { state: 'frozen', reason: 'payment_past_due' }
     },

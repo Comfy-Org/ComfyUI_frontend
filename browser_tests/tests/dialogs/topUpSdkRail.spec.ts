@@ -17,8 +17,7 @@ import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const BOOT_FEATURES = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_test_fe2475'

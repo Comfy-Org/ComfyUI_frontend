@@ -7,6 +7,7 @@ import type {
   ErrorResponse,
   PreviewSubscribeResponse
 } from '@comfyorg/ingest-types'
+import type { BillingOperationPointer } from '@comfyorg/account-core/billing'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { PendingSubscriptionCheckout } from '@/platform/billing/utils/pendingSubscriptionCheckout'
@@ -151,20 +152,31 @@ async function setupCloudApp(page: Page) {
   await bootCloud(page)
 }
 
-// sessionStorage must be seeded before any app code runs; attemptedAt is
-// stamped in the init script so the entry is always fresher than the 24h cap.
 async function seedPendingCheckout(
   page: Page,
   entry: Omit<PendingSubscriptionCheckout, 'attemptedAt'>
 ) {
+  const sdkPointer = {
+    operationId: entry.operationId,
+    kind: 'subscription',
+    presentation: 'hosted',
+    awaited: true
+  } satisfies Omit<BillingOperationPointer, 'attemptStartedAt'>
   await page.addInitScript(
-    ({ key, seeded }) => {
+    ({ key, seeded, sdkKey, sdkSeeded }) => {
+      const attemptedAt = Date.now() - 60_000
+      sessionStorage.setItem(key, JSON.stringify({ ...seeded, attemptedAt }))
       sessionStorage.setItem(
-        key,
-        JSON.stringify({ ...seeded, attemptedAt: Date.now() - 60_000 })
+        sdkKey,
+        JSON.stringify({ ...sdkSeeded, attemptStartedAt: attemptedAt })
       )
     },
-    { key: PENDING_CHECKOUT_STORAGE_KEY, seeded: entry }
+    {
+      key: PENDING_CHECKOUT_STORAGE_KEY,
+      seeded: entry,
+      sdkKey: `comfy:billing:operation:${entry.ownerUid}:${entry.workspaceId}`,
+      sdkSeeded: sdkPointer
+    }
   )
 }
 

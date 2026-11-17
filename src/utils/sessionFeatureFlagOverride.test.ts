@@ -95,9 +95,9 @@ describe('getSessionOverride', () => {
   })
 
   it('overrides any flag, with no opt-in registry to join', () => {
-    visit('/?ff=unified_cloud_auth&ff=some_flag_invented_tomorrow:42')
+    visit('/?ff=unified_web_session&ff=some_flag_invented_tomorrow:42')
 
-    expect(getSessionOverride('unified_cloud_auth')).toBe(true)
+    expect(getSessionOverride('unified_web_session')).toBe(true)
     expect(getSessionOverride('some_flag_invented_tomorrow')).toBe(42)
   })
 

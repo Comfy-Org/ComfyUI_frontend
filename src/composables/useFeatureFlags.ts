@@ -3,7 +3,10 @@ import { getActivePinia } from 'pinia'
 import { computed, reactive, readonly, watchEffect } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
-import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
+import {
+  opensLocalBillingHandoff,
+  showsCloudBillingNewUxOnLocal
+} from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
@@ -221,6 +224,15 @@ export function useFeatureFlags() {
         import.meta.env.DEV
       )
     },
+    get openOnCloudUseLocalAgentEnabled() {
+      return (
+        resolveFlag<unknown>(
+          ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
+          remoteConfig().open_on_cloud_use_local_agent_enabled,
+          false
+        ) === true
+      )
+    },
     get deployToCloud() {
       return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
     },
@@ -286,15 +298,6 @@ export function useFeatureFlags() {
         undefined
       )
     },
-    get unifiedCloudAuthEnabled() {
-      if (!isCloud) return false
-
-      return resolveFlag(
-        ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
-        remoteConfig().unified_cloud_auth,
-        false
-      )
-    },
     get unifiedWebSessionEnabled() {
       if (!isCloud) return false
 
@@ -346,7 +349,9 @@ export function useFeatureFlags() {
     get billingNewUxEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_NEW_UX_ENABLED,
-        remoteConfig().billing_new_ux_enabled
+        showsCloudBillingNewUxOnLocal()
+          ? true
+          : remoteConfig().billing_new_ux_enabled
       )
     },
     get billingAutoTopUpAtCheckoutEnabled() {
@@ -355,9 +360,9 @@ export function useFeatureFlags() {
         remoteConfig().billing_auto_top_up_at_checkout_enabled
       )
     },
-    /** Top-up, subscription and billing reads run on the billing SDK, which needs the unified session. */
+    /** Top-up, subscription and billing reads run on the billing SDK on Cloud. */
     get billingSdkRailEnabled() {
-      return this.unifiedCloudAuthEnabled
+      return isCloud
     },
     get unifiedBillingSettingsEnabled() {
       if (!isCloud) return opensLocalBillingHandoff()
@@ -444,6 +449,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED]: flags.openOnCloudEnabled,
+      [ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED]:
+        flags.openOnCloudUseLocalAgentEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
@@ -452,7 +459,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
-      [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
       [ServerFeatureFlag.UNIFIED_WEB_SESSION]: flags.unifiedWebSessionEnabled,
       [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
       [ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED]:

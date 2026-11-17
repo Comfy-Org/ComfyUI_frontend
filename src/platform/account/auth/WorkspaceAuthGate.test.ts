@@ -322,11 +322,7 @@ describe('WorkspaceAuthGate', () => {
       })
     })
 
-    it('mints unified auth after refreshing authenticated flags', async () => {
-      mockRefreshRemoteConfig.mockImplementation(async () => {
-        vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-      })
-
+    it('mints unified auth for the signed-in user', async () => {
       mountComponent()
       await flushPromises()
 
@@ -424,7 +420,6 @@ describe('WorkspaceAuthGate', () => {
           session: fromPartial<WebSession>({ user: { id: 'user-a' } })
         }
       })
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )
@@ -460,7 +455,6 @@ describe('WorkspaceAuthGate', () => {
     beforeEach(() => {
       Object.assign(useAuthStore(), { isInitialized: true })
       Object.assign(useAuthStore(), { currentUser: { uid: 'user-a' } })
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )
@@ -632,7 +626,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when unified auth initialization fails', async () => {
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
 
       mountComponent()
@@ -783,7 +776,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when workspace setup clears unified auth', async () => {
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )

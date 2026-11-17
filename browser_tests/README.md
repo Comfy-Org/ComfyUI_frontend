@@ -423,8 +423,15 @@ guide covers the Playwright and ComfyUI mechanics.
 2. **Read the fixture code.** APIs live in `fixtures/` — read them directly
    instead of guessing.
 3. **Use premade JSON workflow assets** instead of building graphs
-   programmatically. Assets live in `assets/`; create new ones by copying
-   `assets/default.json` and editing the JSON.
+   programmatically. Assets live in `assets/`. Reuse an existing asset first:
+   when a test needs a node field, such as a widget value, `mode`, or
+   `flags`, or a top-level field, such as `id` or `extra`, to differ, pass the
+   change to `loadWorkflow` instead of copying the asset:
+   `loadWorkflow('nodes/webcam_capture', { nodes: { 1: { widgets_values: [...] } } })`
+   or `loadWorkflow('subgraphs/basic-subgraph', { workflow: { id } })`. Set
+   `fileName` when the test switches between tabs opened from the same asset.
+   Create a new asset, by copying `assets/default.json`, only when its graph
+   itself is the scenario.
 
 ### Before changing an existing test
 

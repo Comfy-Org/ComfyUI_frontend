@@ -40,8 +40,7 @@ const PENDING_CHECKOUT_STORAGE_KEY = 'comfy:pending-subscription-checkout'
 const RECOVERY_OPERATION_ID = 'op-e2e-rail-recover'
 
 const BOOT_FEATURES = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const CREATOR_ANNUAL_PLAN = createPlan({
