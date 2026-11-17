@@ -24,6 +24,7 @@ const defaultFlags: FeatureFlags = {
   nodeReplacementsEnabled: false,
   deployToCloud: false,
   openOnCloudEnabled: false,
+  openOnCloudUseLocalAgentEnabled: false,
   nodeLibraryEssentialsEnabled: false,
   comfyHubUploadEnabled: false,
   comfyHubProfileGateEnabled: false,
