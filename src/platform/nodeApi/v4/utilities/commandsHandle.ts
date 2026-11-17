@@ -4,6 +4,7 @@ import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { callListener } from '@/platform/nodeApi/shared/listeners'
 import type { CommandsHandle } from '@/platform/nodeApi/v4/types'
 
 import {
@@ -74,13 +75,17 @@ function commandDefinition(command: unknown) {
     isStoreKey,
     'a non-empty string no object inherits'
   )
-  const label = fields.required('label', isText, 'a string')
+  const label = fields.required(
+    'label',
+    isLabel,
+    'a string or a function that returns one'
+  )
   const run = fields.required('run', isCallback, 'a function')
   const combo = fields.optional('keybinding', isObject, 'a key combo')
   const scope = fields.optional('scope', isCanvasScope, "'canvas'")
   return {
     id,
-    label,
+    label: isText(label) ? label : () => labelText(id, label),
     run,
     keybinding:
       combo &&
@@ -90,6 +95,15 @@ function commandDefinition(command: unknown) {
         targetElementId: scope && 'graph-canvas'
       })
   }
+}
+
+function isLabel(value: unknown): value is string | (() => unknown) {
+  return isText(value) || isCallback(value)
+}
+
+function labelText(id: string, label: () => unknown): string {
+  const text = callListener('commands.register', label)
+  return isText(text) ? text : id
 }
 
 function isCanvasScope(value: unknown): value is 'canvas' {

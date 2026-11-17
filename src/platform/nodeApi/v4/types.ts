@@ -1447,7 +1447,8 @@ export interface CommandsHandle {
 export interface CommandDef {
   /** Shared with core and every pack: `MyPack.doTheThing`. */
   readonly id: string
-  readonly label: string
+  /** A function is called each time the host shows the label; one that throws or gives no string shows the id. */
+  readonly label: string | (() => string)
   /** The host shows a failure to the user, as for any command. */
   readonly run: () => void | Promise<void>
   /** The default key. A key the user binds to the command wins. */
