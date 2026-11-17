@@ -90,6 +90,9 @@ function renderMenu(served: Partial<Served> = {}) {
       plugins: [getActivePinia()!, i18n],
       stubs: {
         WorkspaceSwitcherFlyout: WorkspaceSwitcherFlyoutStub,
+        ProfileMenuCreditsFlyout: {
+          template: '<div data-testid="credits-flyout" />'
+        },
         WorkspaceProfilePic: true
       }
     }
@@ -239,6 +242,27 @@ describe('ProfileMenuWorkspace', () => {
     expect(
       screen.queryByTestId('workspace-switcher-panel')
     ).not.toBeInTheDocument()
+  })
+
+  it('opens the credits flyout on hover', async () => {
+    const user = userEvent.setup()
+    renderMenu()
+
+    await user.hover(screen.getByTestId('credits-menu-item'))
+
+    expect(await screen.findByTestId('credits-flyout')).toBeInTheDocument()
+  })
+
+  it('keeps the credits flyout closed while the workspace switcher is open', async () => {
+    const user = userEvent.setup()
+    renderMenu()
+    await user.click(screen.getByTestId('workspace-switcher-trigger'))
+
+    await user.hover(screen.getByTestId('credits-menu-item'))
+    await new Promise((resolve) => setTimeout(resolve, 300))
+
+    expect(screen.getByTestId('workspace-switcher-panel')).toBeInTheDocument()
+    expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
   })
 
   it('opens the create-workspace dialog and closes the menu on create', async () => {
