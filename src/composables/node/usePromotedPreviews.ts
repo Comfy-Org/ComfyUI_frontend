@@ -12,7 +12,7 @@ import {
 } from '@/stores/previewExposureStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { nodePreviewOf } from '@/systems/nodePreviewSystem'
-import type { NodePreviewMedia } from '@/systems/nodePreviewSystem'
+import type { NodePreviewPart } from '@/systems/nodePreviewSystem'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   appendNodeExecutionId,
@@ -20,13 +20,11 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
-type PromotedLivePreview = { type: 'preview'; url: string }
-type PromotedContent = NodePreviewMedia | PromotedLivePreview
-
-type PromotedPreview = PromotedContent & {
+type PromotedPreview = {
   name: string
   sourceNodeId: NodeId
   sourceWidgetName: string
+  parts: NodePreviewPart[]
 }
 
 export function usePromotedPreviews(
@@ -35,32 +33,36 @@ export function usePromotedPreviews(
   const previewExposureStore = usePreviewExposureStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  function toPromotedContent(
+  function toPromotedParts(
     node: LGraphNode,
+    source: NodeExecutionId,
     liveUrls: string[] | undefined,
     outputs: NodeExecutionOutput | undefined
-  ): PromotedContent | undefined {
-    const { liveUrl, media } = nodePreviewOf(node, { outputs, liveUrls })
-    return liveUrl ? { type: 'preview', url: liveUrl } : media
+  ): NodePreviewPart[] {
+    const parts = nodePreviewOf(node, { source, outputs, liveUrls })
+    const live = parts.filter((part) => part.kind === 'live')
+    return live.length ? live : parts
   }
 
-  function readPromotedContent(
+  function readPromotedParts(
     leafHost: SubgraphNode,
     sourceNodeId: NodeId,
     executionId: NodeExecutionId,
     interiorNode: LGraphNode
-  ): PromotedContent | undefined {
+  ): NodePreviewPart[] {
     const locatorId = createNodeLocatorId(leafHost.subgraph.id, sourceNodeId)
     if (
       executionIdToNodeLocatorId(leafHost.rootGraph, executionId) !== locatorId
     )
-      return toPromotedContent(
+      return toPromotedParts(
         interiorNode,
+        executionId,
         nodeOutputStore.nodePreviewImages[locatorId],
         nodeOutputStore.nodeOutputs[locatorId]
       )
-    return toPromotedContent(
+    return toPromotedParts(
       interiorNode,
+      executionId,
       nodeOutputStore.getNodePreviewImagesByExecutionId(executionId),
       nodeOutputStore.getNodeOutputByExecutionId(executionId)
     )
@@ -133,20 +135,20 @@ export function usePromotedPreviews(
       )
       if (!leafExecutionId) return []
 
-      const content = readPromotedContent(
+      const parts = readPromotedParts(
         leafHost,
         leaf.sourceNodeId,
         leafExecutionId,
         interiorNode
       )
-      if (!content) return []
+      if (!parts.length) return []
 
       return [
         {
-          ...content,
           name: exposure.name,
           sourceNodeId: leaf.sourceNodeId,
-          sourceWidgetName: leaf.sourcePreviewName
+          sourceWidgetName: leaf.sourcePreviewName,
+          parts
         }
       ]
     })
