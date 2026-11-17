@@ -271,7 +271,7 @@ export const addWidget = (node: LGraphNode, widget: BaseDOMWidget) => {
   })
 
   node.onRemoved = useChainCallback(node.onRemoved, () => {
-    widget.onRemove?.()
+    if (node.widgets?.includes(widget)) widget.onRemove?.()
   })
 
   node.onResize = useChainCallback(node.onResize, () => {
