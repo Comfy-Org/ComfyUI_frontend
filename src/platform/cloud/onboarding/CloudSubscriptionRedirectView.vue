@@ -6,7 +6,10 @@ import { useRoute, useRouter } from 'vue-router'
 import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
@@ -36,6 +39,9 @@ const router = useRouter()
 const { reportError } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { showPricingTable } = useSubscriptionDialog()
+const { flags } = useFeatureFlags()
+const { permissions } = useBillingUI()
+const { initialize: initializeCapabilities } = useBillingCapabilities()
 
 const {
   canAccessSubscriptionFeatures,
@@ -121,6 +127,11 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   if (canAccessSubscriptionFeatures.value) {
     await manageSubscription()
     return
+  }
+
+  if (flags.billingNewUxEnabled) {
+    await initializeCapabilities()
+    if (!permissions.value.canManageSubscription) await router.replace('/')
   }
 
   if (isPaidPersonalTierKey(tierKeyParam)) {
