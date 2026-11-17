@@ -94,6 +94,7 @@ import type {
   BillingStatusBannerAudience,
   BillingStatusBannerKind
 } from '@comfyorg/account-core/billing'
+import type { BillingCapabilityDenials } from '@comfyorg/ingest-types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
@@ -130,6 +131,7 @@ const {
   hasResolvedCapabilities,
   canManageBilling,
   canOpenPlans,
+  openPlansDenial,
   planKind,
   runDeniedPaymentPastDue
 } = useBillingCapabilities()
@@ -223,8 +225,10 @@ const isHiddenOnSection = computed(() => {
   )
 })
 
-// Sales-managed plans (Enterprise, and unrecognized tiers, which fail closed
-// to sales) return through sales; only a strict ENTERPRISE tier is named.
+const PLANS_CREATOR_ONLY = 'not_original_owner' satisfies NonNullable<
+  BillingCapabilityDenials['can_open_plans']
+>
+
 function planEndedCopy(): {
   title: string
   ownerBody: string
@@ -247,7 +251,10 @@ function planEndedCopy(): {
       title: date
         ? t(`${bs}.planEnded.teamTitle`, { date })
         : t('workspacePanel.members.endedTeamTitle'),
-      ownerBody: t(`${bs}.planEnded.teamBody`),
+      ownerBody:
+        openPlansDenial.value === PLANS_CREATOR_ONLY
+          ? t(`${bs}.planEnded.teamNotCreatorBody`)
+          : t(`${bs}.planEnded.teamBody`),
       memberBody: t(`${bs}.planEnded.teamMemberBody`)
     }
   }
