@@ -630,9 +630,7 @@ export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
     node.updateComputedDisabled()
     const preview =
       node.widgets?.find(isPreviewPseudoWidget)?.name ??
-      (supportsVirtualCanvasImagePreview(node)
-        ? CANVAS_IMAGE_PREVIEW_WIDGET
-        : undefined)
+      (hasMediaPreview(node) ? CANVAS_IMAGE_PREVIEW_WIDGET : undefined)
     if (preview) promotePreviewViaExposure(subgraphNode, node, preview)
   }
 }

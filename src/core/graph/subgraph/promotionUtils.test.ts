@@ -10,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -395,6 +396,33 @@ describe('autoExposeKnownPreviewNodes', () => {
         String(subgraphNode.id)
       )
     ).toHaveLength(1)
+  })
+
+  it('auto-exposes the preview of an interior node that has video output but has not drawn a preview widget', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const saveVideo = new LGraphNode('SaveVideo', 'SaveVideo')
+    subgraph.add(saveVideo)
+    useNodeOutputStore().setNodeOutputs(saveVideo, 'clip.mp4', {
+      folder: 'output',
+      isAnimated: true
+    })
+
+    autoExposeKnownPreviewNodes(subgraphNode)
+
+    expect(
+      usePreviewExposureStore()
+        .getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
+        .map(({ sourceNodeId, sourcePreviewName }) => ({
+          sourceNodeId,
+          sourcePreviewName
+        }))
+    ).toEqual([
+      {
+        sourceNodeId: String(saveVideo.id),
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    ])
   })
 
   it('does not auto-expose when host has empty persisted previewExposures (user cleared)', () => {
