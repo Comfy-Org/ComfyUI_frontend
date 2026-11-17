@@ -44,8 +44,8 @@ describe('useWidgetHostNode', () => {
     const { canvasNode, locatedNode } = showRootGraphWithNodes()
 
     const node = scopedOwner(
-      createNodeLocatorId(null, locatedNode.id),
-      canvasNode.id
+      canvasNode.id,
+      createNodeLocatorId(null, locatedNode.id)
     )
 
     expect(node.value).toBe(locatedNode)
@@ -54,7 +54,7 @@ describe('useWidgetHostNode', () => {
   it('falls back to the root graph node with the given id', () => {
     const { canvasNode } = showRootGraphWithNodes()
 
-    const node = scopedOwner(undefined, canvasNode.id)
+    const node = scopedOwner(canvasNode.id)
 
     expect(node.value).toBe(canvasNode)
   })
@@ -62,7 +62,7 @@ describe('useWidgetHostNode', () => {
   it('falls back to the node id when the locator id finds no node', () => {
     const { canvasNode } = showRootGraphWithNodes()
 
-    const node = scopedOwner(createNodeLocatorId(null, 999), canvasNode.id)
+    const node = scopedOwner(canvasNode.id, createNodeLocatorId(null, 999))
 
     expect(node.value).toBe(canvasNode)
   })
@@ -70,7 +70,7 @@ describe('useWidgetHostNode', () => {
   it('finds nothing for an id no node in the root graph has', () => {
     showRootGraphWithNodes()
 
-    const node = scopedOwner(undefined, toNodeId(999))
+    const node = scopedOwner(toNodeId(999))
 
     expect(node.value).toBeUndefined()
   })
@@ -80,7 +80,7 @@ describe('useWidgetHostNode', () => {
     app.rootGraph.add(owner)
     showSubgraph()
 
-    const node = scopedOwner(undefined, owner.id)
+    const node = scopedOwner(owner.id)
 
     expect(node.value).toBe(owner)
   })
@@ -90,7 +90,7 @@ describe('useWidgetHostNode', () => {
     const interior = new LGraphNode('interior')
     subgraph.add(interior)
 
-    const node = scopedOwner(undefined, interior.id)
+    const node = scopedOwner(interior.id)
 
     expect(node.value).toBe(interior)
   })
@@ -98,7 +98,7 @@ describe('useWidgetHostNode', () => {
   it('follows a changing locator id', () => {
     const { canvasNode, locatedNode } = showRootGraphWithNodes()
     const changingLocatorId = ref<NodeLocatorId | undefined>()
-    const node = scopedOwner(changingLocatorId, canvasNode.id)
+    const node = scopedOwner(canvasNode.id, changingLocatorId)
     expect(node.value).toBe(canvasNode)
 
     changingLocatorId.value = createNodeLocatorId(null, locatedNode.id)

@@ -9,8 +9,8 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { getNodeByLocatorId, getNodeByState } from '@/utils/graphTraversalUtil'
 
 export function useWidgetHostNode(
-  nodeLocatorId: MaybeRefOrGetter<NodeLocatorId | undefined>,
-  nodeId: MaybeRefOrGetter<NodeId>
+  nodeId: MaybeRefOrGetter<NodeId>,
+  nodeLocatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
 ) {
   const canvasStore = useCanvasStore()
   const nodeDataStore = useNodeDataStore()

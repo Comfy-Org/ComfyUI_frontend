@@ -61,24 +61,7 @@ useEventListener(
   ],
   slots.trigger
 )
-const isInput = computed(() => ioNode.slotDirection === 'output')
-const side = computed(() =>
-  isInput.value
-    ? {
-        testId: 'subgraph-input-values',
-        direction: 'input',
-        panel: 'w-(--node-width)',
-        row: '',
-        edge: '-right-px rounded-r-(--node-radius) border-l-0'
-      }
-    : {
-        testId: 'subgraph-output-ports',
-        direction: 'output',
-        panel: 'w-fit max-w-(--node-width)',
-        row: 'flex-row-reverse',
-        edge: '-left-px rounded-l-(--node-radius) border-r-0'
-      }
-)
+const isInputNode = computed(() => ioNode === ioNode.subgraph.inputNode)
 const title = computed(() => {
   const host = navigationStore.currentHost
   return host
@@ -113,17 +96,18 @@ function sourceTitleOf(source: EditableInputValueSource | undefined) {
     : t('subgraphInputValues.locateSource')
 }
 
-const rows = computed(() =>
-  slots.value.map((port) => {
-    const source = isInput.value ? sources.value.get(port.name) : undefined
+const rows = computed(() => {
+  const direction = isInputNode.value ? 'input' : 'output'
+  return slots.value.map((port) => {
+    const source = isInputNode.value ? sources.value.get(port.name) : undefined
     const editable = source?.kind === 'editable' ? source : undefined
     const isAddPort = port === ioNode.emptySlot
     return {
       port,
       isAddPort,
       portTestId: isAddPort
-        ? `subgraph-add-${side.value.direction}`
-        : `subgraph-${side.value.direction}-port`,
+        ? `subgraph-add-${direction}`
+        : `subgraph-${direction}-port`,
       portLabel: isAddPort ? undefined : port.displayName,
       shared: editable?.shared,
       editable,
@@ -132,9 +116,9 @@ const rows = computed(() =>
       sourceTitle: sourceTitleOf(editable)
     }
   })
-)
+})
 const hint = computed(() =>
-  isInput.value && !navigationStore.currentHost
+  isInputNode.value && !navigationStore.currentHost
     ? t('subgraphInputValues.enterInstanceHint')
     : undefined
 )
@@ -150,10 +134,13 @@ function captureEdits() {
 }
 
 const { state: linkDrag } = useSlotLinkDragUIState()
-function isDimmed(port: TNode['allSlots'][number]) {
-  const from = linkDrag.active
+const linkDragSource = computed(() =>
+  linkDrag.active
     ? canvasStore.canvas?.linkConnector.renderLinks[0]?.fromSlot
     : undefined
+)
+function isDimmed(port: TNode['allSlots'][number]) {
+  const from = linkDragSource.value
   return !!from && !port.isValidTarget(from)
 }
 
@@ -188,14 +175,16 @@ function forwardUnlessOnButton(event: PointerEvent) {
 <template>
   <div
     ref="panel"
-    :data-testid="side.testId"
+    :data-testid="
+      isInputNode ? 'subgraph-input-values' : 'subgraph-output-ports'
+    "
     :inert="canvasStore.isPickingNodes"
     role="group"
     :aria-label="title"
     :class="
       cn(
         'group/node lg-node pointer-events-auto absolute top-0 left-0 isolate z-panel flex min-h-(--node-height) origin-top-left cursor-grab touch-none flex-col text-xs text-node-foreground contain-layout contain-style',
-        side.panel
+        isInputNode ? 'w-(--node-width)' : 'w-fit max-w-(--node-width)'
       )
     "
     :style
@@ -221,7 +210,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
         :class="
           cn(
             'relative flex min-w-0 items-center has-data-expands:min-h-0 has-data-expands:flex-1',
-            side.row
+            !isInputNode && 'flex-row-reverse'
           )
         "
       >
@@ -283,13 +272,15 @@ function forwardUnlessOnButton(event: PointerEvent) {
       :class="
         cn(
           'pointer-events-none absolute inset-y-0 -z-1 border-2 border-foreground',
-          side.edge
+          isInputNode
+            ? '-right-px rounded-r-(--node-radius) border-l-0'
+            : '-left-px rounded-l-(--node-radius) border-r-0'
         )
       "
       :style="{ width: `${SubgraphIONodeBase.roundedRadius}px` }"
     />
     <NodeResizeHandle
-      v-if="isInput"
+      v-if="isInputNode"
       :handle="RESIZE_HANDLES[0]"
       @resize="startResize"
     />

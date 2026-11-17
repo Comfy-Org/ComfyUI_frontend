@@ -88,7 +88,7 @@ const { exporting, downloadPsd } = useCompositorPsdDownload()
 const naturalSize = ref<CompactSize | null>(null)
 const outputUrl = ref<string | null>(null)
 
-const litegraphNode = useWidgetHostNode(undefined, () => nodeId)
+const litegraphNode = useWidgetHostNode(() => nodeId)
 
 function updateOutputUrl(): void {
   const node = litegraphNode.value

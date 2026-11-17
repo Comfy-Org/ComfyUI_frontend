@@ -10,8 +10,8 @@ import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
+import { getNodeOrSlotOwnerOnPos } from '@/lib/litegraph/src/canvas/hitTesting'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 
 import {
@@ -32,7 +32,6 @@ import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 import { EmptySubgraphInput } from '@/lib/litegraph/src/subgraph/EmptySubgraphInput'
 import { EmptySubgraphOutput } from '@/lib/litegraph/src/subgraph/EmptySubgraphOutput'
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
 
 import { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 
@@ -88,18 +87,6 @@ interface LinkConnectorExport {
   floatingLinks: LLink[]
   state: LinkConnectorState
   network: LinkNetwork
-}
-
-export function getNodeOrSlotOwnerOnPos(
-  graph: LGraph,
-  x: number,
-  y: number,
-  nodeList?: LGraphNode[]
-): LGraphNode | undefined {
-  const node = graph.getNodeOnPos(x, y, nodeList)
-  if (node || !litegraph().vueNodesMode) return node ?? undefined
-  const slot = getSlotLayoutAtPoint(graph, { x, y })
-  return graph.getNodeById(slot?.nodeId) ?? undefined
 }
 
 /**
