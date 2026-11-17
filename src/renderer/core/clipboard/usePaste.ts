@@ -8,7 +8,7 @@ import {
 } from '@/core/graph/clipboard/canvasClipboard'
 import { insertItems } from '@/core/graph/clipboard/graphTransfer'
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
@@ -98,6 +98,74 @@ function isWorkflow(
   )
 }
 
+function pasteMediaFile(
+  canvas: LGraphCanvas,
+  items: DataTransferItemList,
+  selectedNode: LGraphNode | undefined
+): Promise<LGraphNode | null> | undefined {
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      return pasteImageNode(
+        canvas,
+        items,
+        isImageNode(selectedNode) ? selectedNode : null
+      )
+    } else if (item.type.startsWith('video/')) {
+      return pasteVideoNode(
+        canvas,
+        items,
+        isVideoNode(selectedNode) ? selectedNode : null
+      )
+    } else if (item.type.startsWith('audio/')) {
+      return pasteAudioNode(
+        canvas,
+        items,
+        isAudioNode(selectedNode) ? selectedNode : null
+      )
+    }
+  }
+}
+
+async function pasteText(
+  canvas: LGraphCanvas,
+  data: string,
+  isMediaNodeSelected: boolean,
+  target: EventTarget | null
+): Promise<void> {
+  let workflow: unknown
+  try {
+    data = data.slice(data.indexOf('{'))
+    workflow = JSON.parse(data)
+  } catch {
+    try {
+      data = data.slice(data.indexOf('workflow\n'))
+      data = data.slice(data.indexOf('{'))
+      workflow = JSON.parse(data)
+    } catch {
+      workflow = null
+    }
+  }
+
+  if (isWorkflow(workflow)) {
+    await useApp().loadGraphData(workflow)
+  } else {
+    if (
+      (target instanceof HTMLTextAreaElement && target.type === 'textarea') ||
+      (target instanceof HTMLInputElement && target.type === 'text')
+    ) {
+      return
+    }
+
+    if (!isMediaNodeSelected) {
+      pasteFromCanvasClipboard(canvas)
+    } else {
+      useToast().info(t('toastMessages.nothingToPasteIntoNode'), {
+        duration: 3000
+      })
+    }
+  }
+}
+
 export const usePaste = () => {
   const workspaceStore = useWorkspaceStore()
   const canvasStore = useCanvasStore()
@@ -112,47 +180,24 @@ export const usePaste = () => {
     const { canvas } = canvasStore
     if (!canvas || isSelectOnly(canvas)) return
 
-    let data: DataTransfer | string | null = e.clipboardData
-    if (!data) {
+    if (!e.clipboardData) {
       console.error('No clipboard data on clipboard event')
       return
     }
-    data = cloneDataTransfer(data)
-
-    const { items } = data
-
-    const currentNode = canvas.current_node
-    const isNodeSelected = currentNode?.is_selected
-
-    const isImageNodeSelected = isNodeSelected && isImageNode(currentNode)
-    const isVideoNodeSelected = isNodeSelected && isVideoNode(currentNode)
-    const isAudioNodeSelected = isNodeSelected && isAudioNode(currentNode)
-
-    const audioNode: LGraphNode | null = isAudioNodeSelected
-      ? currentNode
-      : null
-    const imageNode: LGraphNode | null = isImageNodeSelected
-      ? currentNode
-      : null
-    const videoNode: LGraphNode | null = isVideoNodeSelected
-      ? currentNode
-      : null
-
-    for (const item of items) {
-      if (item.type.startsWith('image/')) {
-        await pasteImageNode(canvas, items, imageNode)
-        return
-      } else if (item.type.startsWith('video/')) {
-        await pasteVideoNode(canvas, items, videoNode)
-        return
-      } else if (item.type.startsWith('audio/')) {
-        await pasteAudioNode(canvas, items, audioNode)
-        return
-      }
+    const data = cloneDataTransfer(e.clipboardData)
+    const selectedNode = canvas.current_node?.is_selected
+      ? canvas.current_node
+      : undefined
+    const mediaPaste = pasteMediaFile(canvas, data.items, selectedNode)
+    if (mediaPaste) {
+      await mediaPaste
+      return
     }
 
     const isMediaNodeSelected =
-      isImageNodeSelected || isVideoNodeSelected || isAudioNodeSelected
+      isImageNode(selectedNode) ||
+      isVideoNode(selectedNode) ||
+      isAudioNode(selectedNode)
     const html = data.getData('text/html')
     if (
       (!isMediaNodeSelected || holdsLatestCanvasCopy(html)) &&
@@ -160,39 +205,11 @@ export const usePaste = () => {
     )
       return
 
-    data = data.getData('text/plain')
-    let workflow: unknown
-    try {
-      data = data.slice(data.indexOf('{'))
-      workflow = JSON.parse(data)
-    } catch {
-      try {
-        data = data.slice(data.indexOf('workflow\n'))
-        data = data.slice(data.indexOf('{'))
-        workflow = JSON.parse(data)
-      } catch {
-        workflow = null
-      }
-    }
-
-    if (isWorkflow(workflow)) {
-      await useApp().loadGraphData(workflow)
-    } else {
-      if (
-        (e.target instanceof HTMLTextAreaElement &&
-          e.target.type === 'textarea') ||
-        (e.target instanceof HTMLInputElement && e.target.type === 'text')
-      ) {
-        return
-      }
-
-      if (!isMediaNodeSelected) {
-        pasteFromCanvasClipboard(canvas)
-      } else {
-        useToast().info(t('toastMessages.nothingToPasteIntoNode'), {
-          duration: 3000
-        })
-      }
-    }
+    await pasteText(
+      canvas,
+      data.getData('text/plain'),
+      isMediaNodeSelected,
+      e.target
+    )
   })
 }
