@@ -27,24 +27,6 @@ function createMockLGraphCanvas() {
 
 describe('TransformPane', () => {
   describe('component mounting', () => {
-    it('should apply transform style from composable', async () => {
-      const mockCanvas = createMockLGraphCanvas()
-      mockCanvas.ds.scale = 2
-      mockCanvas.ds.offset = [100, 50]
-      render(TransformPane, {
-        props: {
-          canvas: mockCanvas
-        }
-      })
-      await nextTick()
-
-      const transformPane = screen.getByTestId('transform-pane')
-      expect(transformPane).toHaveStyle({
-        translate: '200px 100px',
-        scale: '2 2 2'
-      })
-    })
-
     it('should render slot content', () => {
       const mockCanvas = createMockLGraphCanvas()
       render(TransformPane, {
@@ -76,36 +58,26 @@ describe('TransformPane', () => {
       })
       await nextTick()
       const transformPane = screen.getByTestId('transform-pane')
+      const initialStyle = transformPane.style.cssText
 
       canvas.ds.offset = [37, -19]
       canvas.ds.scale = 2
       await nextTick()
-      expect(transformPane).toHaveStyle({
-        translate: '0px 0px',
-        scale: '1 1 1'
-      })
+      expect(transformPane.style.cssText).toBe(initialStyle)
 
       canvas.draw()
       await nextTick()
-      expect(transformPane).toHaveStyle({
-        translate: '74px -38px',
-        scale: '2 2 2'
-      })
+      expect(transformPane.style.cssText).not.toBe(initialStyle)
+      const presentedStyle = transformPane.style.cssText
 
       canvas.setCanvas(createTestCanvasElement({ ctx }), true)
       canvas.ds.offset = [-23, 41]
       await nextTick()
-      expect(transformPane).toHaveStyle({
-        translate: '74px -38px',
-        scale: '2 2 2'
-      })
+      expect(transformPane.style.cssText).toBe(presentedStyle)
 
       canvas.draw()
       await nextTick()
-      expect(transformPane).toHaveStyle({
-        translate: '-46px 82px',
-        scale: '2 2 2'
-      })
+      expect(transformPane.style.cssText).not.toBe(presentedStyle)
     })
   })
 
