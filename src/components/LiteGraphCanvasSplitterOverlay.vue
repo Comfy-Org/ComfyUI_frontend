@@ -91,47 +91,64 @@
                 <slot name="topmenu" :sidebar-panel-visible />
               </div>
 
-              <SplitterGroup
-                data-testid="graph-canvas-gutter"
+              <!-- DES-1355 prototype: with the properties panel open, the agent
+                   sits inside it, between the canvas and the panel, below the
+                   top menu, so the run toolbar keeps its place. -->
+              <div
                 :class="
                   cn(
-                    'pointer-events-none mb-(--comfy-canvas-gutter) ml-(--comfy-canvas-gutter) h-auto flex-1 border-none bg-transparent',
-                    !graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)'
+                    'pointer-events-none flex min-h-0 flex-1',
+                    sidebarLocation === 'right' && 'flex-row-reverse'
                   )
                 "
-                direction="vertical"
-                style="width: auto"
-                @layout="saveBottomPanelLayout"
               >
-                <SplitterPanel
-                  id="graph-canvas-panel"
-                  :order="1"
-                  :default-size="bottomPanelDefaultSizes[0]"
-                  class="graph-canvas-panel relative overflow-visible [anchor-name:--graph-canvas-panel]"
-                >
-                  <slot name="graph-canvas-panel" />
-                </SplitterPanel>
-                <SplitterResizeHandle
-                  :disabled="!bottomPanelRendered"
-                  :tabindex="bottomPanelRendered ? 0 : -1"
+                <SplitterGroup
+                  data-testid="graph-canvas-gutter"
                   :class="
                     cn(
-                      'pointer-events-auto translate-y-1 rounded-t-lg',
-                      !bottomPanelRendered && 'hidden'
+                      'pointer-events-none mb-(--comfy-canvas-gutter) ml-(--comfy-canvas-gutter) h-auto flex-1 border-none bg-transparent',
+                      !graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)'
                     )
                   "
-                  @dragging="!$event && flushLayouts()"
-                />
-                <SplitterPanel
-                  v-show="bottomPanelRendered"
-                  id="bottom-panel"
-                  :order="2"
-                  :default-size="bottomPanelDefaultSizes[1]"
-                  class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border bg-background focus-visible:outline-hidden"
+                  direction="vertical"
+                  style="width: auto"
+                  @layout="saveBottomPanelLayout"
                 >
-                  <slot name="bottom-panel" />
-                </SplitterPanel>
-              </SplitterGroup>
+                  <SplitterPanel
+                    id="graph-canvas-panel"
+                    :order="1"
+                    :default-size="bottomPanelDefaultSizes[0]"
+                    class="graph-canvas-panel relative overflow-visible [anchor-name:--graph-canvas-panel]"
+                  >
+                    <slot name="graph-canvas-panel" />
+                  </SplitterPanel>
+                  <SplitterResizeHandle
+                    :disabled="!bottomPanelRendered"
+                    :tabindex="bottomPanelRendered ? 0 : -1"
+                    :class="
+                      cn(
+                        'pointer-events-auto translate-y-1 rounded-t-lg',
+                        !bottomPanelRendered && 'hidden'
+                      )
+                    "
+                    @dragging="!$event && flushLayouts()"
+                  />
+                  <SplitterPanel
+                    v-show="bottomPanelRendered"
+                    id="bottom-panel"
+                    :order="2"
+                    :default-size="bottomPanelDefaultSizes[1]"
+                    class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border bg-background focus-visible:outline-hidden"
+                  >
+                    <slot name="bottom-panel" />
+                  </SplitterPanel>
+                </SplitterGroup>
+                <slot
+                  v-if="agentInside"
+                  name="agent-panel"
+                  :has-opaque-neighbor="false"
+                />
+              </div>
             </SplitterPanel>
 
             <SplitterResizeHandle
@@ -185,6 +202,7 @@
       </div>
 
       <slot
+        v-if="!agentInside"
         name="agent-panel"
         :has-opaque-neighbor="agentPanelHasOpaqueNeighbor"
       />
@@ -234,6 +252,7 @@ import {
 } from '@/utils/splitterPersistence'
 import { savedPanelPercent } from '@/utils/splitterWidthUtil'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { options as protoOptions } from '@/components/proto/des1355'
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
@@ -281,6 +300,15 @@ const agentPanelHasOpaqueNeighbor = computed(
  */
 const graphMeetsAgentPanel = computed(
   () => agentPanelOpen.value && !agentPanelHasOpaqueNeighbor.value
+)
+
+// DES-1355 prototype: the agent docks inside the properties panel while it's
+// open (tune: dock "inside"); otherwise it docks as today.
+const agentInside = computed(
+  () =>
+    protoOptions.value.dock === 'inside' &&
+    oppositeSidePanelVisible.value &&
+    !focusMode.value
 )
 
 const sidebarPanelVisible = computed(

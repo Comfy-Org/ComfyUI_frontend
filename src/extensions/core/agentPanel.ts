@@ -410,8 +410,10 @@ function setupFlagGate(
 ): void {
   const agentPanelStore = useAgentPanelStore()
   const devForcedOn =
-    import.meta.env.MODE === 'development' &&
-    import.meta.env.VITE_AGENT_STANDALONE === 'true'
+    (import.meta.env.MODE === 'development' &&
+      import.meta.env.VITE_AGENT_STANDALONE === 'true') ||
+    // DES-1355 prototype: the panel on without an agent service (tune menu).
+    localStorage.getItem('proto.agentOn') === '1'
 
   watch(
     () =>
