@@ -476,6 +476,102 @@ describe('connection, property and pointer hooks', () => {
     })
   })
 
+  describe('onDragOver', () => {
+    const drag = () => new DragEvent('dragover')
+
+    it('marks a node as the drop target when a hook accepts, given its handle and the browser event', () => {
+      const asked: [string, DragEvent][] = []
+      extend((builder) =>
+        builder.onDragOver((handle, event) => {
+          asked.push([handle.id, event])
+          return true
+        })
+      )
+      const node = probe()
+      const event = drag()
+
+      expect(node.onDragOver?.(event)).toBe(true)
+      expect(asked).toEqual([[String(node.id), event]])
+      expect(asked[0][1]).toBe(event)
+    })
+
+    it('does not mark it when no hook returns true, even one that throws', () => {
+      extend((builder) => {
+        builder.onDragOver(() => false)
+        builder.onDragOver(() => {})
+        builder.onDragOver(() => {
+          throw new Error('hook failed')
+        })
+      })
+      const node = probe()
+
+      expect(node.onDragOver?.(drag())).toBe(false)
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('marks it when any hook accepts, whatever the others answer', () => {
+      extend((builder) => builder.onDragOver(() => false))
+      extend((builder) => builder.onDragOver(() => true))
+      const node = probe()
+
+      expect(node.onDragOver?.(drag())).toBe(true)
+    })
+
+    it('asks no hook once the extension is disposed', () => {
+      const accept = vi.fn(() => true)
+      const stop = extend((builder) => builder.onDragOver(accept))
+      const node = probe()
+
+      stop()
+
+      expect(node.onDragOver?.(drag())).toBe(false)
+      expect(accept).not.toHaveBeenCalled()
+    })
+
+    it('keeps an acceptance the type itself makes, without asking the hooks', () => {
+      class Accepting extends LGraphNode {
+        override onDragOver() {
+          return true
+        }
+      }
+      host.nodeTypeHooks.beforeRegisterNodeDef(
+        Accepting,
+        hostNodeDef('Accepting')
+      )
+      LiteGraph.registerNodeType('Accepting', Accepting)
+      const refuse = vi.fn(() => false)
+      defs.extend('Accepting', (builder) => builder.onDragOver(refuse))
+      const node = LiteGraph.createNode('Accepting')
+      assert(node)
+      graph.add(node)
+
+      expect(node.onDragOver?.(drag())).toBe(true)
+      expect(refuse).not.toHaveBeenCalled()
+    })
+
+    it('asks the hooks when the type itself does not accept', () => {
+      const own: string[] = []
+      class Declining extends LGraphNode {
+        override onDragOver() {
+          own.push('onDragOver')
+          return false
+        }
+      }
+      host.nodeTypeHooks.beforeRegisterNodeDef(
+        Declining,
+        hostNodeDef('Declining')
+      )
+      LiteGraph.registerNodeType('Declining', Declining)
+      defs.extend('Declining', (builder) => builder.onDragOver(() => true))
+      const node = LiteGraph.createNode('Declining')
+      assert(node)
+      graph.add(node)
+
+      expect(node.onDragOver?.(drag())).toBe(true)
+      expect(own).toEqual(['onDragOver'])
+    })
+  })
+
   describe('a defined type', () => {
     it('runs the connection and property hooks its definition declares', () => {
       const onConnectionsChanged = vi.fn()

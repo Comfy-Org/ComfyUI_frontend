@@ -1,6 +1,6 @@
 import type { Deliver, MethodInstaller } from './dispatchContext'
 
-/** Delivers what the canvas renderer reports of the pointer over a node. */
+/** Delivers what the renderers report of the pointer over a node, and asks whether it takes a drag. */
 export function pointerInstallers(
   deliver: Deliver
 ): Record<string, MethodInstaller> {
@@ -30,6 +30,15 @@ export function pointerInstallers(
         deliver(type, 'onDoubleClick', this, (callback, handle) =>
           callback(handle)
         )
+      }
+    },
+    onDragOver(target, type) {
+      const previous = target.onDragOver
+      target.onDragOver = function (event) {
+        if (previous?.call(this, event)) return true
+        return deliver(type, 'onDragOver', this, (callback, handle) =>
+          callback(handle, event)
+        ).includes(true)
       }
     }
   }
