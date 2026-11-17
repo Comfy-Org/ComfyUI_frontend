@@ -110,6 +110,21 @@ const zSkillName = z
   .transform((skill) => Array.from(skill).slice(0, SKILL_NAME_MAX).join(''))
   .nullish()
 
+const DOWNLOAD_NAME_MAX = 255
+
+/**
+ * The model file a bash `comfy model download` fetches (PM-2280). A label
+ * only: a value the server contract forbids drops this field, never the
+ * frame, and an over-long one is clamped on a code point boundary.
+ */
+const zDownloadName = z
+  .string()
+  .min(1)
+  .refine((name) => !['\u0000', '\n', '\r', '\t'].some((c) => name.includes(c)))
+  .transform((name) => Array.from(name).slice(0, DOWNLOAD_NAME_MAX).join(''))
+  .optional()
+  .catch(undefined)
+
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
@@ -264,6 +279,7 @@ const zAgentThinkingData = z
 const zAgentToolCallData = zGeneratedAgentToolCallData
   .extend({
     skill: zSkillName,
+    download: zDownloadName,
     args: z.never().optional(),
     workflow_id: zGeneratedAgentToolCallData.shape.workflow_id.catch(undefined),
     op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),

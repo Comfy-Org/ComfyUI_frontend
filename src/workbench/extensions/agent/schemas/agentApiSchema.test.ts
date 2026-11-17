@@ -188,6 +188,64 @@ describe('agentApiSchema contract subtleties', () => {
     expect(controlCharacterParsed.data.job_workflow_id).toBe('wf-1')
   })
 
+  it('keeps the download file name on a bash tool-call frame', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'bash',
+        status: 'running',
+        download: 'flux1-dev.safetensors',
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data.download).toBe('flux1-dev.safetensors')
+  })
+
+  it.for([
+    { label: 'non-string', download: 42 },
+    { label: 'empty', download: '' },
+    { label: 'control character', download: 'a\nb.safetensors' }
+  ])(
+    'drops a $label download instead of the whole tool-call frame',
+    ({ download }) => {
+      const parsed = zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: 'call-1',
+          tool_name: 'bash',
+          status: 'running',
+          download,
+          message_id: 'm1',
+          thread_id: 't1'
+        }
+      })
+
+      assert(parsed.type === 'agent_tool_call')
+      expect(parsed.data.download).toBeUndefined()
+    }
+  )
+
+  it('clamps an over-long download without splitting a code point', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'bash',
+        status: 'running',
+        download: `${'a'.repeat(254)}😀tail`,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data.download).toBe(`${'a'.repeat(254)}😀`)
+  })
+
   it('clamps an over-long skill instead of dropping the tool-call frame', () => {
     const parsed = zAgentWsEvent.parse({
       type: 'agent_tool_call',
