@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-60 flex-col gap-1" :class="{ 'pt-1': showSearch }">
+  <div class="flex flex-col gap-1" :class="{ 'pt-1': showSearch }">
     <div v-if="showSearch" class="flex flex-col gap-2">
       <input
         v-model="searchQuery"
