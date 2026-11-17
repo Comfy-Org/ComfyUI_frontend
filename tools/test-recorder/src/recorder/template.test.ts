@@ -1,5 +1,6 @@
 import {
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
@@ -452,7 +453,7 @@ describe('recording template', () => {
 
       expect(() => pruneStaleStorageStates(active)).not.toThrow()
 
-      expect(existsSync(vanished)).toBe(false)
+      expect(lstatSync(vanished).isSymbolicLink()).toBe(true)
       expect(existsSync(stale)).toBe(false)
       expect(existsSync(active)).toBe(true)
     })
