@@ -7,6 +7,8 @@ const OWNED_LAYER_SELECTORS = `${REKA_LAYER_SELECTORS}, ${TOAST_SELECTORS}`
 
 type OutsideEvent = CustomEvent<{ originalEvent: Event }>
 
+const IME_PROCESS_KEY_CODE = 229
+
 function isInsideOverlay(target: EventTarget | null): boolean {
   return (
     target instanceof Element && target.closest(OWNED_LAYER_SELECTORS) !== null
@@ -24,4 +26,12 @@ export function onRekaPointerDownOutside(
   if (options.dismissOnPointerDownOutside === false) {
     event.preventDefault()
   }
+}
+
+export function onRekaEscapeKeyDown(
+  options: { closable?: boolean },
+  event: KeyboardEvent
+) {
+  const isImeKey = event.isComposing || event.keyCode === IME_PROCESS_KEY_CODE
+  if (options.closable === false || isImeKey) event.preventDefault()
 }

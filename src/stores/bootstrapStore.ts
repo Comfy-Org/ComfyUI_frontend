@@ -112,13 +112,15 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
 
     if (isCloud) {
       await bootstrapTracer.settle('auth-gate/initialized', waitForCloudAuth)
-      await bootCloudIdentity()
+      await bootstrapTracer.settle('auth-gate/identity', bootCloudIdentity)
 
       const authStore = useAuthStore()
       const apiKeyAuthStore = useApiKeyAuthStore()
-      await until(
-        () => authStore.isAuthenticated || apiKeyAuthStore.isAuthenticated
-      ).toBe(true)
+      await bootstrapTracer.settle('auth-gate/sign-in', () =>
+        until(
+          () => authStore.isAuthenticated || apiKeyAuthStore.isAuthenticated
+        ).toBe(true)
+      )
     }
 
     const userStore = useUserStore()

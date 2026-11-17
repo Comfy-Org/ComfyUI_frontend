@@ -4,6 +4,7 @@ import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 
+import AgentPaywallPlanNote from '@/workbench/extensions/agent/components/agent/message/AgentPaywallPlanNote.vue'
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,
   toAgentPaywallRemediation
@@ -30,12 +31,19 @@ const bodyKeys: Record<AgentPaywallPresentation['kind'], string> = {
   local: 'agent.paywall.body.local',
   unavailable: 'agent.paywall.body.subscriptionRequired'
 }
-const bodyKey = computed(() => bodyKeys[presentation.kind])
+const hasNoPlan = computed(
+  () => presentation.kind === 'subscribed' && !!presentation.planCreditLine
+)
+const bodyKey = computed(() =>
+  hasNoPlan.value ? bodyKeys.local : bodyKeys[presentation.kind]
+)
 const showUpgrade = computed(
   () => presentation.kind === 'subscribed' && presentation.showUpgrade
 )
 const remediation = computed(() => toAgentPaywallRemediation(presentation))
-const showSubscribe = computed(() => remediation.value === 'subscribe')
+const showSubscribe = computed(
+  () => remediation.value === 'subscribe' || hasNoPlan.value
+)
 const showAddCredits = computed(() => remediation.value === 'addCredits')
 </script>
 
@@ -57,6 +65,7 @@ const showAddCredits = computed(() => remediation.value === 'addCredits')
         <p class="m-0 text-muted-foreground">
           {{ message || $t(bodyKey) }}
         </p>
+        <AgentPaywallPlanNote :presentation />
       </div>
     </div>
 
@@ -74,7 +83,7 @@ const showAddCredits = computed(() => remediation.value === 'addCredits')
       </Button>
       <Button
         v-if="showSubscribe"
-        variant="inverted"
+        :variant="hasNoPlan ? 'secondary' : 'inverted'"
         size="sm"
         @click="emit('paywallAction', 'subscribe')"
       >

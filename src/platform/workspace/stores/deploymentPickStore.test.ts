@@ -106,6 +106,23 @@ describe('useDeploymentPickStore', () => {
     })
   })
 
+  it('reports a lookup the server refuses for the session as a denied warning', async () => {
+    const error = new WorkspaceApiError('invalid session cookie', 401)
+    mockWorkspaceApi.listDeployments.mockRejectedValue(error)
+    const store = useDeploymentPickStore()
+
+    const boot = store.loadOnce()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    await boot
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+      surface: 'workspace',
+      errorType: 'error_loading_deployment_listing',
+      level: 'warning',
+      tags: { status: 401, outcome: 'denied' }
+    })
+  })
+
   it('reports failed lookups once per page, however often they fail', async () => {
     const error = new WorkspaceApiError('Service unavailable', 503)
     mockWorkspaceApi.listDeployments.mockRejectedValue(error)
@@ -908,6 +925,147 @@ describe('useDeploymentPickStore', () => {
       await expect(store.pickFromLink('dep-gone')).resolves.toEqual({
         kind: 'refused',
         message: 'deployment not found'
+      })
+      expect(store.state.phase).toBe('ready')
+      expect(store.pickedDeploymentId).toBe('dep-2')
+      expect(reload).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('a link to Comfy Cloud itself', () => {
+    it("sends the switcher's Comfy Cloud request after the listing, then reloads", async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink(null)).resolves.toEqual({
+        kind: 'picked'
+      })
+
+      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        { signal: expect.any(AbortSignal) }
+      )
+      expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+      expect(readDeploymentHint('ws-1')).toBe('cloud')
+      expect(reload).toHaveBeenCalledOnce()
+    })
+
+    it.for([
+      {
+        name: 'no pick and no default',
+        answer: {
+          ...listing,
+          picked_deployment_id: undefined,
+          pick_source: undefined
+        }
+      },
+      {
+        name: 'its own pick of Comfy Cloud',
+        answer: { ...listing, picked_deployment_id: undefined }
+      },
+      {
+        name: 'a default that is gone',
+        answer: {
+          ...listing,
+          picked_deployment_id: undefined,
+          pick_source: 'workspace_default' as const,
+          gone_default_deployment_id: 'dep-gone'
+        }
+      }
+    ])(
+      'does nothing when the browser already runs on Comfy Cloud: $name',
+      async ({ answer }) => {
+        mockWorkspaceApi.listDeployments.mockResolvedValue(answer)
+        const store = useDeploymentPickStore()
+
+        await expect(store.pickFromLink(null)).resolves.toEqual({
+          kind: 'unchanged'
+        })
+        expect(mockWorkspaceApi.clearDeployment).not.toHaveBeenCalled()
+        expect(reload).not.toHaveBeenCalled()
+      }
+    )
+
+    it('does nothing when the account cannot pick a deployment', async () => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(
+        new WorkspaceApiError('not enabled for this account yet', 403)
+      )
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink(null)).resolves.toEqual({
+        kind: 'unchanged'
+      })
+      expect(mockWorkspaceApi.clearDeployment).not.toHaveBeenCalled()
+      expect(reload).not.toHaveBeenCalled()
+    })
+
+    it('still asks when the listing failed, since the pick is unknown', async () => {
+      mockWorkspaceApi.listDeployments.mockRejectedValue(
+        new WorkspaceApiError('Bad request', 400)
+      )
+      mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink(null)).resolves.toEqual({
+        kind: 'picked'
+      })
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledOnce()
+      expect(reload).toHaveBeenCalledOnce()
+    })
+
+    it('stops waiting for a stalled listing and never asks when it answers', async () => {
+      vi.useFakeTimers()
+      const listed = deferred<WorkspaceDeploymentList>()
+      mockWorkspaceApi.listDeployments.mockReturnValue(listed.promise)
+      const store = useDeploymentPickStore()
+      const settled = vi.fn()
+      const linked = store.pickFromLink(null).then(settled)
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+      expect(settled).toHaveBeenCalledWith({ kind: 'timedOut' })
+      listed.resolve(listing)
+      await linked
+      expect(mockWorkspaceApi.clearDeployment).not.toHaveBeenCalled()
+      expect(reload).not.toHaveBeenCalled()
+    })
+
+    it('times out and cancels a stalled request without reloading on late success', async () => {
+      vi.useFakeTimers()
+      const cleared = deferred<void>()
+      let signal: AbortSignal | undefined
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.clearDeployment.mockImplementation(
+        (_id: string, options?: { signal?: AbortSignal }) => {
+          signal = options?.signal
+          return cleared.promise
+        }
+      )
+      const store = useDeploymentPickStore()
+      const settled = vi.fn()
+      const linked = store.pickFromLink(null).then(settled)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(mockWorkspaceApi.clearDeployment).toHaveBeenCalledOnce()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+      expect(settled).toHaveBeenCalledWith({ kind: 'timedOut' })
+      expect(signal?.aborted).toBe(true)
+      expect(store.isSwitching).toBe(false)
+      cleared.resolve()
+      await linked
+      await vi.advanceTimersByTimeAsync(0)
+      expect(reload).not.toHaveBeenCalled()
+    })
+
+    it("hands back the server's refusal and keeps the listing's pick", async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      mockWorkspaceApi.clearDeployment.mockRejectedValue(
+        new WorkspaceApiError('workspace not found', 404)
+      )
+      const store = useDeploymentPickStore()
+
+      await expect(store.pickFromLink(null)).resolves.toEqual({
+        kind: 'refused',
+        message: 'workspace not found'
       })
       expect(store.state.phase).toBe('ready')
       expect(store.pickedDeploymentId).toBe('dep-2')

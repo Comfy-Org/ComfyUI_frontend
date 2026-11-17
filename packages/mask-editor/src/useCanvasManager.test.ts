@@ -26,11 +26,13 @@ describe('useCanvasManager', () => {
     } as ImageData
 
     const partialImgCtx: Partial<CanvasRenderingContext2D> = {
+      clearRect: vi.fn(),
       drawImage: vi.fn()
     }
     mockStore.imgCtx = partialImgCtx as CanvasRenderingContext2D
 
     const partialMaskCtx: Partial<CanvasRenderingContext2D> = {
+      clearRect: vi.fn(),
       drawImage: vi.fn(),
       getImageData: vi.fn(() => mockImageData),
       putImageData: vi.fn(),
@@ -76,6 +78,72 @@ describe('useCanvasManager', () => {
     Object.assign(mockStore, { maskColor: { r: 0, g: 0, b: 0 } })
     mockStore.maskBlendMode = MaskBlendMode.Black
     mockStore.maskOpacity = 0.8
+  })
+
+  describe('initializeImages', () => {
+    it.for([
+      { name: 'with paint', paintImage: new Image(1024, 768), paintCalls: 1 },
+      { name: 'without paint', paintImage: null, paintCalls: 0 }
+    ])(
+      'initializes decoded images $name',
+      async ({ paintImage, paintCalls }) => {
+        const baseImage = new Image(1024, 768)
+        const maskImage = new Image(1024, 768)
+
+        const result = await useCanvasManager().initializeImages(
+          baseImage,
+          maskImage,
+          paintImage
+        )
+
+        expect(result).toBe(baseImage)
+        expect(mockStore.image).toBe(baseImage)
+        expect(mockStore.imgCtx!.clearRect).toHaveBeenCalledWith(0, 0, 0, 0)
+        expect(mockStore.maskCtx!.clearRect).toHaveBeenCalledWith(0, 0, 0, 0)
+        expect(
+          [mockStore.imgCanvas, mockStore.maskCanvas, mockStore.rgbCanvas].map(
+            (canvas) => [canvas?.width, canvas?.height]
+          )
+        ).toEqual([
+          [1024, 768],
+          [1024, 768],
+          [1024, 768]
+        ])
+        expect(mockStore.imgCtx!.drawImage).toHaveBeenCalledWith(
+          baseImage,
+          0,
+          0,
+          1024,
+          768
+        )
+        expect(mockStore.maskCtx!.drawImage).toHaveBeenCalledWith(
+          maskImage,
+          0,
+          0,
+          1024,
+          768
+        )
+        expect(mockStore.rgbCtx!.drawImage).toHaveBeenCalledTimes(paintCalls)
+        expect(mockStore.maskCanvas!.style.opacity).toBe('0.8')
+      }
+    )
+
+    it.for(['imgCanvas', 'imgCtx', 'rgbCtx'] as const)(
+      'leaves the image unchanged when initialization lacks %s',
+      async (field) => {
+        const previousImage = new Image(7, 4)
+        mockStore.image = previousImage
+        mockStore[field] = null
+
+        await expect(
+          useCanvasManager().initializeImages(new Image(3, 2), new Image(3, 2))
+        ).rejects.toThrow('Canvas elements or contexts not available')
+
+        expect(mockStore.image).toBe(previousImage)
+        expect(mockStore.maskCanvas?.width).toBe(0)
+        expect(mockStore.maskCanvas?.height).toBe(0)
+      }
+    )
   })
 
   describe('invalidateCanvas', () => {

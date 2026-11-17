@@ -154,6 +154,21 @@ describe('WorkspaceAuthGate', () => {
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
 
+    it('reads billing capabilities for a host sign-in once its in-flight workspace setup finishes', async () => {
+      mockIsCloud.value = false
+      Object.assign(useAuthStore(), {
+        isInitialized: true,
+        userId: 'host-user'
+      })
+      Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
+
+      mountComponent()
+      await flushPromises()
+
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
+      expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
+    })
+
     it('does not read billing capabilities when the local workspace context fails', async () => {
       mockIsCloud.value = false
       Object.assign(useAuthStore(), { isInitialized: true })
@@ -310,11 +325,7 @@ describe('WorkspaceAuthGate', () => {
       })
     })
 
-    it('mints unified auth after refreshing authenticated flags', async () => {
-      mockRefreshRemoteConfig.mockImplementation(async () => {
-        vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-      })
-
+    it('mints unified auth for the signed-in user', async () => {
       mountComponent()
       await flushPromises()
 
@@ -412,7 +423,6 @@ describe('WorkspaceAuthGate', () => {
           session: fromPartial<WebSession>({ user: { id: 'user-a' } })
         }
       })
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )
@@ -448,7 +458,6 @@ describe('WorkspaceAuthGate', () => {
     beforeEach(() => {
       Object.assign(useAuthStore(), { isInitialized: true })
       Object.assign(useAuthStore(), { currentUser: { uid: 'user-a' } })
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )
@@ -621,7 +630,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when unified auth initialization fails', async () => {
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
 
       mountComponent()
@@ -772,7 +780,6 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when workspace setup clears unified auth', async () => {
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
         undefined
       )
@@ -787,6 +794,7 @@ describe('WorkspaceAuthGate', () => {
 
     it('shows a recoverable error without a ready workspace context', async () => {
       Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
+      vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValueOnce()
 
       mountComponent()
       await flushPromises()

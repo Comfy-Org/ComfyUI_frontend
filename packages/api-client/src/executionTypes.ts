@@ -1,3 +1,4 @@
+import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
@@ -5,6 +6,22 @@ import type { TaskStatus } from './taskSchema'
 import { resultItemType } from './resultItemTypeSchema'
 
 export type JobId = string
+
+/**
+ * Core's OpenAPI defines no websocket frame schemas. It documents that
+ * `workflow_metadata` is echoed onto every JSON frame carrying a `prompt_id`,
+ * so this field is the request contract read back rather than a separate one.
+ *
+ * What transfers from the spec is the map's VALUE type, not the map: core types
+ * `workflow_metadata` as an arbitrary string map, and the frame carries that
+ * map's contents merged into the frame object. So a `Pick` or `Partial` of the
+ * map would describe the wrong shape here even though it would compile.
+ *
+ * The generated package is bundled into the published declarations by
+ * `tsconfig.types.json`, so this reference is inlined rather than emitted as an
+ * import of a private package that an external consumer could not resolve.
+ */
+type StampedWorkflowId = { workflow_id?: PromptWorkflowMetadata[string] }
 
 export const zResultItem = z.object({
   filename: z.string().optional(),
@@ -39,7 +56,7 @@ export interface StatusWsMessage {
   status?: StatusWsMessageStatus | null
   sid?: string | null
 }
-export interface ProgressWsMessage {
+export interface ProgressWsMessage extends StampedWorkflowId {
   value: number
   max: number
   prompt_id: JobId
@@ -55,11 +72,11 @@ export interface NodeProgressState {
   parent_node_id?: NodeId
   real_node_id?: NodeId
 }
-export interface ProgressStateWsMessage {
+export interface ProgressStateWsMessage extends StampedWorkflowId {
   prompt_id: JobId
   nodes: Record<NodeId, NodeProgressState>
 }
-export interface ExecutingWsMessage {
+export interface ExecutingWsMessage extends StampedWorkflowId {
   node: NodeId | null
   display_node?: NodeId
   prompt_id: JobId
@@ -70,7 +87,7 @@ export interface ExecutedWsMessage extends ExecutingWsMessage {
   output: NodeExecutionOutput
   merge?: boolean
 }
-interface ExecutionWsMessageBase {
+interface ExecutionWsMessageBase extends StampedWorkflowId {
   prompt_id: JobId
   timestamp: number
 }

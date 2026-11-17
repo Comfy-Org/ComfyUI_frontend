@@ -8,10 +8,10 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
 import { useUserBusy } from './useUserBusy'
 
@@ -20,7 +20,7 @@ const IDLE_TIMEOUT_MS = 30_000
 
 async function fetchServerNodeTypes(): Promise<string[] | undefined> {
   try {
-    const fetched = await app.fetchNodeDefs()
+    const fetched = await useApp().fetchNodeDefs()
     return fetched.ok ? Object.keys(fetched.defs) : undefined
   } catch {
     return undefined
@@ -35,12 +35,13 @@ function isRegistered(type: string): boolean {
 }
 
 function canvasHasRebuildablePlaceholder(): boolean {
-  let found = false
-  forEachNode(app.rootGraph, (node) => {
-    if (found || node.last_serialization === undefined) return
-    if (isRegistered(node.type)) found = true
-  })
-  return found
+  return reduceAllNodes(
+    useApp().rootGraph,
+    (found, node) =>
+      found ||
+      (node.last_serialization !== undefined && isRegistered(node.type)),
+    false
+  )
 }
 
 async function rebuildWhenIdle(

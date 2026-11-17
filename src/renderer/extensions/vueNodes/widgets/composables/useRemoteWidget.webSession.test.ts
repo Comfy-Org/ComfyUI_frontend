@@ -109,7 +109,7 @@ const recordRequest = (path: string, init: RequestInit | undefined) => ({
 })
 
 const RESPONSES: Record<string, (workspaceId: string | null) => unknown> = {
-  '/api/features': () => ({ unified_web_session: true }),
+  '/api/features': () => ({}),
   '/api/auth/session': sessionBody,
   '/api/workspaces/current': workspaceBody
 }

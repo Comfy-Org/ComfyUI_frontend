@@ -6,6 +6,7 @@ import {
   BUILD_RECIPE_SECTION,
   CUT_AND_REPORT_SECTION
 } from '@/platform/workspace/customDeploymentBrief'
+import { parseUrl } from '@/utils/urlSafety'
 
 /** Node types a deployment lacks, under their pack, or null if none is known. */
 export interface MissingBuildPack {
@@ -50,8 +51,8 @@ function failingPackLine(pack: MissingBuildPack): string {
 }
 
 function downloadLink(url: string | undefined): string | undefined {
-  if (!url || !isModelUrlAllowlisted(url) || !URL.canParse(url)) return
-  return new URL(url).href
+  if (!url || !isModelUrlAllowlisted(url)) return
+  return parseUrl(url)?.href
 }
 
 function modelLine({ name, directory, url }: MissingBuildModel): string {

@@ -6,6 +6,7 @@ import {
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@comfyorg/settings-core/canvasNavigation'
+import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@comfyorg/settings-core/types'
 import { normalizeDisabledExtensionPaths } from '@/platform/settings/utils/extensionPath'
@@ -169,7 +170,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Workflow.NamedValuesRestore',
     name: 'Restore widget values by name',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     experimental: true
   },
   {
@@ -305,6 +306,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
+    id: AGENT_ONBOARDED_SCOPES_SETTING_ID,
+    name: 'Agent onboarding tour completed for these account scopes',
+    type: 'hidden',
+    defaultValue: []
+  },
+  {
     id: 'Comfy.DeploymentSwitcher.Seen',
     name: 'Running on button opened at least once',
     type: 'hidden',
@@ -393,6 +400,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Show width × height below the image preview',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.Node.DownscaleImagePreviews',
+    category: ['LiteGraph', 'Node Widget', 'DownscaleImagePreviews'],
+    name: 'Downscale large image previews',
+    tooltip:
+      'In Nodes 2.0, show large images on nodes as a copy at most 1024px on the longest side so many large previews stay responsive. Turn off to always show the original.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
   },
   {
     id: 'Comfy.Group.DoubleClickTitleToEdit',
@@ -955,7 +972,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     telemetry: { trackChanges: true, includeValues: true },
     migrateDeprecatedValue(val: unknown) {
       const value = val as string
-      // Legacy custom palettes were prefixed with 'custom_'
       return value.startsWith('custom_') ? value.replace('custom_', '') : value
     }
   },

@@ -12,7 +12,7 @@ import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
@@ -1097,7 +1097,8 @@ describe('naming the CPU server step', () => {
     )
     provideCurrentUser(() => ({
       userEmail: computed(() => null),
-      isApiKeyLogin: computed(() => true)
+      isApiKeyLogin: computed(() => true),
+      isLoggedIn: computed(() => true)
     }))
     await useTeamWorkspaceStore().initialize()
   })

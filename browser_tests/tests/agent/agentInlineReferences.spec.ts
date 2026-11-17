@@ -235,7 +235,7 @@ test(
       .getNodeLocator('12')
       .getByTestId('node-title')
       .click({ modifiers: ['Control'] })
-    await expect(vueNodes.selectedNodes).toHaveCount(0)
+    await expect(vueNodes.emphasizedNodes).toHaveCount(0)
 
     const topbar = new Topbar(page)
     await topbar.getWorkflowTab('Unsaved Workflow').click()
@@ -250,7 +250,7 @@ test(
       vueNodes.getNodeLocator('12').getByTestId('node-title')
     ).toHaveText('Portrait color balance')
 
-    await expect(vueNodes.selectedNodes).toHaveCount(0)
+    await expect(vueNodes.emphasizedNodes).toHaveCount(0)
     await panel.open()
     await expect(
       panel.root.getByRole('button', {

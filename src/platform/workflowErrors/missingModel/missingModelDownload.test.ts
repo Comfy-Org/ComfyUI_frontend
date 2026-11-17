@@ -492,11 +492,11 @@ describe('toBrowsableUrl', () => {
 describe('openGatedRepoPage', () => {
   it('opens gated repo pages without a download attribute', () => {
     const clickedAnchors: HTMLAnchorElement[] = []
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
-      function (this: HTMLAnchorElement) {
-        clickedAnchors.push(this)
-      }
-    )
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement
+    ) {
+      clickedAnchors.push(this)
+    })
 
     openGatedRepoPage('https://huggingface.co/bfl/FLUX.1')
 
@@ -698,11 +698,11 @@ describe('downloadModel', () => {
     }
   ])('opens browser downloads for allowlisted URL $url', ({ name, url }) => {
     const clickedAnchors: HTMLAnchorElement[] = []
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(
-      function (this: HTMLAnchorElement) {
-        clickedAnchors.push(this)
-      }
-    )
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement
+    ) {
+      clickedAnchors.push(this)
+    })
 
     downloadModel(
       {

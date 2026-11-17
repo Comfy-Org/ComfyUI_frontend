@@ -65,8 +65,17 @@ const secondTargetHead = 'd'.repeat(40)
 const coreConflict = 'core/1.56:conflicts:src/a.ts,src/b.ts'
 const cloudConflict = 'cloud/1.56:conflicts:src/a.ts'
 
+const sharedToken = 'shared-token'
+const jobToken = 'job-token'
+
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
+if [[ "$1" == api && "$2" != graphql &&
+  " \${FAKE_SPENT_TOKENS:-} " == *" \${GH_TOKEN:-} "* ]]; then
+  echo '{"message":"API rate limit exceeded for user ID 1."}'
+  echo 'gh: API rate limit exceeded for user ID 1.' >&2
+  exit 1
+fi
 record() {
   jq -cn --arg login "\${FAKE_LOGIN}" --arg title "$1" --arg body "$2" \\
     '{user: {login: $login}, title: (if $title == "" then null else $title end), body: $body}'
@@ -74,6 +83,10 @@ record() {
 case "$1 $2" in
   "api user")
     [[ -n "\${FAKE_LOGIN}" ]] || { echo 'gh: HTTP 403' >&2; exit 1; }
+    echo "\${FAKE_LOGIN}"
+    ;;
+  "api graphql")
+    [[ "$*" == *"viewer"* && -n "\${FAKE_LOGIN}" ]] || { echo 'gh: HTTP 403' >&2; exit 1; }
     echo "\${FAKE_LOGIN}"
     ;;
   "api --paginate")
@@ -124,10 +137,12 @@ interface Run {
   mergeCommit?: string
   targetHead?: string
   failed?: string
+  alreadyApplied?: string
   forceRerun?: boolean
   commentsRead?: 'ok' | 'error'
   login?: string
   prLocked?: boolean
+  spentRestTokens?: string[]
 }
 
 function reportConflict(
@@ -137,10 +152,12 @@ function reportConflict(
     mergeCommit = firstMergeCommit,
     targetHead = firstTargetHead,
     failed = coreConflict,
+    alreadyApplied = '',
     forceRerun = false,
     commentsRead = 'ok',
     login = botLogin,
-    prLocked = false
+    prLocked = false,
+    spentRestTokens = []
   }: Run = {}
 ) {
   const eventPath = join(sandbox, 'event.json')
@@ -161,12 +178,12 @@ function reportConflict(
   const script = commentRun
     .replaceAll('${{ github.event_name }}', event)
     .replaceAll('${{ inputs.pr_number }}', '21078')
-    .replaceAll('${{ steps.backport.outputs.failed }}', failed)
 
   const result = spawnSync('bash', ['-e', '-c', script], {
     encoding: 'utf8',
     env: {
       ...process.env,
+      ALREADY_APPLIED_TARGETS: alreadyApplied,
       BACKPORT_AGENT_PROMPT_TEMPLATE: commentEnv.BACKPORT_AGENT_PROMPT_TEMPLATE,
       COMMENT_BODY_TEMPLATE: commentEnv.COMMENT_BODY_TEMPLATE,
       FAKE_DIR: sandbox,
@@ -175,7 +192,11 @@ function reportConflict(
       FAKE_LOGIN: login,
       FAKE_PR_LOCKED: String(prLocked),
       FAKE_READ: commentsRead,
+      FAKE_SPENT_TOKENS: spentRestTokens.join(' '),
+      GH_TOKEN: sharedToken,
+      JOB_TOKEN: jobToken,
       FAKE_TARGET_HEAD: targetHead,
+      FAILED_TARGETS: failed,
       FORCE_RERUN: evaluateForceRerun(event, forceRerun),
       GITHUB_EVENT_PATH: eventPath,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
@@ -203,6 +224,50 @@ const postedReports = (sandbox: string) =>
     .filter((body) => body.includes('Backport to `'))
 
 describe('backport conflict comment', () => {
+  it('titles the tracking issue as not needed when a locked PR already has the changes on its target', () => {
+    const sandbox = createSandbox()
+
+    reportConflict(sandbox, {
+      failed: '',
+      alreadyApplied: 'core/1.56 ',
+      prLocked: true
+    })
+
+    expect(
+      readFileSync(join(sandbox, 'issues.jsonl'), 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => (JSON.parse(line) as { title: string }).title)
+    ).toEqual(['Backport of #21078 to core/1.56 not needed'])
+  })
+
+  it('reads existing reports with the job token, which has its own quota', () => {
+    expect(commentEnv.JOB_TOKEN).toBe('${{ github.token }}')
+  })
+
+  it('reads the target lists from the backport step outputs', () => {
+    expect(commentEnv).toMatchObject({
+      FAILED_TARGETS: '${{ steps.backport.outputs.failed }}',
+      ALREADY_APPLIED_TARGETS: '${{ steps.backport.outputs.already-applied }}'
+    })
+  })
+
+  it('tells the author when a target already has the changes, without a conflict report', () => {
+    const sandbox = createSandbox()
+
+    reportConflict(sandbox, { failed: '', alreadyApplied: 'core/1.56 ' })
+
+    const bodies = readRecords(sandbox, 'comments.jsonl').map(
+      ({ body }) => body
+    )
+    expect(postedReports(sandbox)).toHaveLength(0)
+    expect(bodies).toEqual([
+      expect.stringContaining(
+        `\`core/1.56\` already has the changes from \`${firstMergeCommit}\`, so no backport PR was opened.`
+      )
+    ])
+  })
+
   it('marks the conflict comment with its target, merge commit and target head', () => {
     const sandbox = createSandbox()
 
@@ -256,6 +321,23 @@ describe('backport conflict comment', () => {
     {
       scenario: 'a failed read of the existing comments',
       second: { commentsRead: 'error' },
+      expected: 2
+    },
+    {
+      scenario:
+        'a later labeled event while the shared token is out of REST quota',
+      second: { spentRestTokens: [sharedToken] },
+      expected: 1
+    },
+    {
+      scenario:
+        'a later labeled event while the job token is out of REST quota',
+      second: { spentRestTokens: [jobToken] },
+      expected: 1
+    },
+    {
+      scenario: 'a later labeled event while both tokens are out of REST quota',
+      second: { spentRestTokens: [sharedToken, jobToken] },
       expected: 2
     },
     {

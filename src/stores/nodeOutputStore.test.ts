@@ -14,6 +14,7 @@ import {
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import * as graphTraversalUtil from '@/utils/graphTraversalUtil'
 import * as litegraphUtil from '@/utils/litegraphUtil'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
   isAnimatedOutput: vi.fn(),
@@ -1016,6 +1017,92 @@ describe('nodeOutputStore merge mode interactions', () => {
   })
 })
 
+describe('nodeOutputStore image url cache busting', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+    let calls = 0
+    vi.mocked(app.getRandParam).mockImplementation(() => `&rand=${calls++}`)
+  })
+
+  it.for(['blob:original-image', 'https://example.com/original.png'])(
+    'preserves explicit original and preview URLs for %s',
+    (url) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 7 })
+      const image = {
+        filename: 'original.png',
+        url,
+        previewUrl: 'blob:preview-image'
+      }
+      store.nodeOutputs['7'] = { images: [image] }
+
+      expect(store.getNodeOutputItems(node)).toEqual([
+        expect.objectContaining({ url, previewUrl: 'blob:preview-image' })
+      ])
+    }
+  )
+
+  it.for([
+    { bucket: 'video', filename: 'movie.webm', url: 'blob:movie' },
+    {
+      bucket: 'audio',
+      filename: 'sound.flac',
+      url: 'https://example.com/sound.flac'
+    }
+  ])(
+    'uses an explicit $bucket URL without a separate preview',
+    ({ bucket, filename, url }) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 7 })
+      store.nodeOutputs['7'] = { [bucket]: [{ filename, url }] }
+
+      expect(store.getNodeOutputItems(node)).toEqual([
+        expect.objectContaining({ url, previewUrl: url })
+      ])
+    }
+  )
+
+  it('reuses one url for the same outputs and a fresh one for new outputs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 7 })
+
+    store.setNodeOutputs(node, 'same-name.png')
+    const first = store.getNodeImageUrls(node)
+    const firstItems = store.getNodeOutputItems(node)
+    const again = store.getNodeImageUrls(node)
+    const againItems = store.getNodeOutputItems(node)
+    store.setNodeOutputs(node, 'same-name.png')
+    const afterReload = store.getNodeImageUrls(node)
+    const afterItems = store.getNodeOutputItems(node)
+
+    expect(again).toEqual(first)
+    expect(afterReload).not.toEqual(first)
+    expect(againItems).toEqual(firstItems)
+    expect(
+      firstItems.map((item) =>
+        new URL(
+          resultItemPreviewUrl(item),
+          window.location.origin
+        ).searchParams.get('rand')
+      )
+    ).toEqual(['0'])
+    expect(
+      afterItems.map((item) =>
+        new URL(
+          resultItemPreviewUrl(item),
+          window.location.origin
+        ).searchParams.get('rand')
+      )
+    ).toEqual(['1'])
+    expect(
+      afterItems.map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+    ).not.toEqual(
+      firstItems.map((item) => resultItemPreviewUrl(item, { fullRes: true }))
+    )
+  })
+})
+
 describe('nodeOutputStore setNodeOutputs (widget path)', () => {
   beforeEach(() => {
     app.nodeOutputs = {}
@@ -1084,6 +1171,55 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
 
     expect(node.images).toBe(images)
     expect(node.images).not.toBe(store.nodeOutputs['5']?.images)
+  })
+
+  it.for([
+    {
+      value: 'sky.exr',
+      preview: { filename: 'sky.exr', subfolder: '', type: 'input' as const }
+    },
+    {
+      value: 'renders/sky.exr [output]',
+      preview: {
+        filename: 'sky.exr',
+        subfolder: 'renders',
+        type: 'output' as const
+      }
+    }
+  ])(
+    'keeps the resolved preview of $value when the widget path writes it again',
+    ({ value, preview }) => {
+      const store = useNodeOutputStore()
+      const node = createMockNode({ id: 5 })
+      const resolved = { ...preview, preview_id: 'preview-1' }
+      store.nodeOutputs['5'] = { images: [resolved] }
+
+      store.setNodeOutputs(node, value)
+
+      expect(store.nodeOutputs['5']?.images).toEqual([resolved])
+      expect(app.nodeOutputs['5']?.images).toEqual([resolved])
+    }
+  )
+
+  it('replaces a resolved preview when the widget path writes another value', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5 })
+    store.nodeOutputs['5'] = {
+      images: [
+        { filename: 'sky.exr', subfolder: '', type: 'output', preview_id: 'p' }
+      ]
+    }
+
+    store.setNodeOutputs(node, 'other.exr [output]')
+
+    const previewUrl = new URL(
+      store.getNodeImageUrls(node)?.[0] ?? '',
+      window.location.origin
+    )
+    expect(store.nodeOutputs['5']?.images).toHaveLength(1)
+    expect(store.nodeOutputs['5']?.images?.[0]?.preview_id).toBeUndefined()
+    expect(previewUrl.searchParams.get('filename')).toBe('other.exr')
+    expect(previewUrl.searchParams.get('type')).toBe('output')
   })
 
   it('should skip empty array of filenames after createOutputs', () => {

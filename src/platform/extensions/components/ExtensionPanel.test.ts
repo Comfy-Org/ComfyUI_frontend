@@ -392,7 +392,7 @@ describe('ExtensionPanel', () => {
     expect(pendingChangeFor('My Pack')).toContain('[-]')
   })
 
-  it('leaves safe mode before reloading extension changes', async () => {
+  it('reloads the current URL to apply extension changes', async () => {
     const user = userEvent.setup()
     loadExtensionPaths(['/extensions/a/'], [])
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
@@ -401,7 +401,7 @@ describe('ExtensionPanel', () => {
     window.history.replaceState(
       historyState,
       '',
-      '/workflows?other=kept&safe=1#selected'
+      '/workflows?other=kept#selected'
     )
 
     renderPanel()

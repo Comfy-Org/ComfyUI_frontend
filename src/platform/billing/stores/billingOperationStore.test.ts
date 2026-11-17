@@ -2172,6 +2172,37 @@ describe('billingOperationStore', () => {
       await expect(terminal).resolves.toMatchObject({ status: 'succeeded' })
     })
 
+    it("carries only the latest poll's authentication deadline", async () => {
+      vi.mocked(billingApi.getBillingOpStatus)
+        .mockResolvedValueOnce({
+          id: 'op-topup',
+          status: 'pending',
+          action_url: 'https://verify.example/token',
+          authentication_deadline: '2026-10-30T15:40:00Z',
+          started_at: new Date().toISOString()
+        })
+        .mockResolvedValue({
+          id: 'op-topup',
+          status: 'pending',
+          action_url: 'https://verify.example/token',
+          started_at: new Date().toISOString()
+        })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-topup', 'topup')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(store.getOperation('op-topup')?.authenticationDeadline).toBe(
+        '2026-10-30T15:40:00Z'
+      )
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(
+        store.getOperation('op-topup')?.authenticationDeadline
+      ).toBeUndefined()
+    })
+
     it('falls back to the parked cadence once the discovery window passes while a blocked phase offers no action', async () => {
       let polls = 0
       vi.mocked(billingApi.getBillingOpStatus).mockImplementation(async () => {

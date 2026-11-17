@@ -4,13 +4,14 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { workflowNodeTypes } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { missingNodeTypeName } from '@/platform/workspace/missingForDeployment'
 import type { CheckedWorkflow } from '@/platform/workspace/workflowDeploymentOffer'
-import { app, sanitizeNodeName } from '@/scripts/app'
+import { sanitizeNodeName } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 function graphNodeTypes(): string[] {
   if (!useFeatureFlags().flags.deploymentCompatibilityMarksEnabled) return []
-  if (!app.isGraphReady) return []
+  if (!useApp().isGraphReady) return []
   try {
-    return workflowNodeTypes(app.rootGraph)
+    return workflowNodeTypes(useApp().rootGraph)
   } catch (error) {
     reportError(error, {
       errorType: 'error_reading_workflow_node_types',

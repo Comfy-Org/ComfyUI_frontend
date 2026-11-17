@@ -71,14 +71,14 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
 
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
-const colorPaletteStore = useColorPaletteStore()
+const themeStore = useThemeStore()
 const workflowStore = useWorkflowStore()
-const isLightTheme = computed(() => colorPaletteStore.colorScheme === 'light')
+const isLightTheme = computed(() => themeStore.colorScheme === 'light')
 
 const showColorPicker = ref(false)
 
