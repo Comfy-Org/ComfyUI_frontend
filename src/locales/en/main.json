@@ -3393,6 +3393,10 @@
       "runRefusedNoPlan": "Running workflows on Cloud needs a plan.",
       "runRefusedEnded": "Your plan has ended. Resubscribe to keep running workflows on Cloud.",
       "runRefusedFreeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows on Cloud.",
+      "runRefusedManualBlock": "This workspace has been blocked. Contact support.",
+      "runRefusedWorkspaceCap": "This workspace has reached its spending limit.",
+      "runRefusedProjectCap": "This project has reached its spending limit.",
+      "runRefusedUserCap": "You've reached your spending limit in this workspace.",
       "choosePlan": "Choose a plan"
     },
     "paymentRecovery": {
