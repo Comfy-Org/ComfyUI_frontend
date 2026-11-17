@@ -152,7 +152,7 @@ const { isPlaying, audioElementKey } = playback
 
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
-const litegraphNode = useWidgetHostNode(undefined, () => props.nodeId)
+const litegraphNode = useWidgetHostNode(() => props.nodeId)
 
 function handleRecordingComplete(blob: Blob) {
   // Create a widget-owned blob URL (independent of useAudioRecorder's

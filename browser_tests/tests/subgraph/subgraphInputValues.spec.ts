@@ -341,6 +341,38 @@ test.describe(
     )
 
     test(
+      'edits a Primitive feeding two inputs from one control',
+      { tag: '@widget' },
+      async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-promoted-int-text-with-primitives'
+        )
+        const panel = comfyPage.subgraph.inputPanel
+
+        await test.step('Connect one PrimitiveInt to both host size inputs', async () => {
+          for (const inputIndex of [1, 2]) {
+            await comfyPage.vueNodes
+              .getOutputSlotConnectionDot('2', 0)
+              .dragTo(
+                comfyPage.vueNodes.getInputSlotConnectionDot('1', inputIndex)
+              )
+          }
+        })
+
+        await test.step('The panel renders the Primitive control once and marks the other input as shared', async () => {
+          await comfyPage.vueNodes.enterSubgraph('1')
+          await expect(panel.getByText(/← .* #2$/)).toHaveCount(2)
+          await expect(
+            panel.getByRole('spinbutton', { name: 'value', exact: true })
+          ).toHaveCount(1)
+          await expect(
+            panel.getByText('Shared source', { exact: true })
+          ).toBeVisible()
+        })
+      }
+    )
+
+    test(
       'grows the native textarea with the input node while preserving its value',
       { tag: '@widget' },
       async ({ comfyPage }) => {

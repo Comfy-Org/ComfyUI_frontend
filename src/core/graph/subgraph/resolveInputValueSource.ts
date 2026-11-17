@@ -5,6 +5,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { PRIMITIVE_NODE_TYPE } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -31,7 +32,7 @@ const passThroughTypes = new Set([
   'PrimitiveString',
   'PrimitiveStringMultiline',
   'PrimitiveBoolean',
-  'PrimitiveNode'
+  PRIMITIVE_NODE_TYPE
 ])
 
 function valueWidgetId(
@@ -39,7 +40,7 @@ function valueWidgetId(
   node: NodeState
 ): WidgetId | undefined {
   const widgets = useWidgetValueStore()
-  if (node.type === 'PrimitiveNode')
+  if (node.type === PRIMITIVE_NODE_TYPE)
     return widgets.getNodeWidgetIds(scope.rootGraphId, node.id)[0]
   const id = widgetId(scope.rootGraphId, node.id, 'value')
   return widgets.getWidget(id) && id
