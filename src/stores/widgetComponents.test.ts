@@ -1,10 +1,14 @@
 import { assert, describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { detachNodeFromStores } from '@/core/graph/nodeShell/nodeShellLifecycle'
+import { useWidgetValueStore } from './widgetValueStore'
 
 import { widgetComponentStores } from './widgetComponents'
 
@@ -54,6 +58,39 @@ describe.for(
 
     expect(store.get(id)).toBeUndefined()
     expect(node.serialize().properties).not.toHaveProperty(sample.wireKey)
+  })
+
+  it('ignores invalid saved widget names without losing valid siblings or poisoning other graphs', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('component owner')
+    node.configure({
+      ...node.serialize(),
+      properties: {
+        [sample.wireKey]: {
+          '': sample.wire,
+          '\ud800': sample.wire,
+          'model:日本語': sample.wire
+        }
+      }
+    })
+    graph.add(node)
+
+    expect(graph.nodes).toContain(node)
+    expect(node.serialize().properties?.[sample.wireKey]).toEqual({
+      'model:日本語': sample.wire
+    })
+
+    const other = new LGraph()
+    const sibling = new LGraphNode('other component owner')
+    other.add(sibling)
+    configure(sibling)
+    expect(sibling.serialize().properties?.[sample.wireKey]).toEqual({
+      model: sample.wire
+    })
+    graph.clear()
+    expect(useStore().get(widgetId(other.id, sibling.id, 'model'))).toEqual(
+      sample.component
+    )
   })
 
   it('does not restore cleared components from a missing-node serialization cache', () => {
@@ -220,7 +257,96 @@ describe.for(
     )
   })
 
-  it('clears only the destroyed graph, including components without live widgets', () => {
+  it('updates reactive consumers when a node gains, loses and restores components', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('owner')
+    graph.add(node)
+    const sibling = new LGraphNode('sibling')
+    graph.add(sibling)
+    configure(sibling)
+    const store = useStore()
+    const id = widgetId(graph.id, node.id, 'model')
+    const current = computed(() => store.get(id))
+    expect(current.value).toBeUndefined()
+
+    configure(node)
+    expect(current.value).toEqual(sample.component)
+
+    node.configure({ ...node.serialize(), properties: {} })
+    expect(current.value).toBeUndefined()
+
+    configure(node)
+    expect(current.value).toEqual(sample.component)
+
+    graph.clear()
+    expect(current.value).toBeUndefined()
+  })
+
+  it('preserves components for the same widget type but discards them when its id is recycled for another type', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('owner')
+    node.addWidget('text', 'model', 'value', () => {})
+    graph.add(node)
+    configure(node)
+    const id = widgetId(graph.id, node.id, 'model')
+    const widgets = useWidgetValueStore()
+
+    widgets.registerWidget(id, { type: 'text', value: 'next', options: {} })
+    expect(useStore().get(id)).toEqual(sample.component)
+
+    widgets.registerWidget(id, { type: 'number', value: 17, options: {} })
+
+    expect(node.serialize().properties).not.toHaveProperty(sample.wireKey)
+  })
+
+  it('discards node components even when no widget order is registered', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('owner')
+    const sibling = new LGraphNode('sibling')
+    graph.add(node)
+    graph.add(sibling)
+    configure(node)
+    configure(sibling)
+
+    useWidgetValueStore().releaseNodeWidgets(graph.id, node.id, {
+      discardValues: true
+    })
+
+    expect(node.serialize().properties).not.toHaveProperty(sample.wireKey)
+    expect(sibling.serialize().properties?.[sample.wireKey]).toEqual({
+      model: sample.wire
+    })
+  })
+
+  it('copies component metadata before the shell discards its stores', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('owner')
+    graph.add(node)
+    configure(node)
+
+    detachNodeFromStores(graph, node, 'discard-values')
+
+    expect(node.properties[sample.wireKey]).toEqual({ model: sample.wire })
+    expect(useStore().get(widgetId(graph.id, node.id, 'model'))).toBeUndefined()
+  })
+
+  it("does not serialize another node's components while a copy awaits identity resolution", () => {
+    const graph = new LGraph()
+    const original = new LGraphNode('owner')
+    graph.add(original)
+    configure(original)
+    const copy = new LGraphNode('copy')
+    copy.graph = graph
+    copy.id = original.id
+    copy.properties = { extensionData: 'keep' }
+
+    expect(copy.serialize().properties).toEqual({ extensionData: 'keep' })
+    expect(original.serialize().properties?.[sample.wireKey]).toEqual({
+      model: sample.wire
+    })
+  })
+
+  it('clears only the destroyed graph, including components without live widgets or nodes', () => {
     const graph = new LGraph()
     const otherGraph = new LGraph()
     const node = new LGraphNode('owner')
@@ -229,10 +355,16 @@ describe.for(
     otherGraph.add(otherNode)
     configure(node)
     configure(otherNode)
+    const orphanId = toNodeId(791)
+    const graphId = graph.id
+    useStore().adoptNode(graphId, orphanId, {
+      [sample.wireKey]: { model: sample.wire }
+    })
 
     graph.clear()
 
-    expect(useStore().get(widgetId(graph.id, node.id, 'model'))).toBeUndefined()
+    expect(useStore().get(widgetId(graphId, orphanId, 'model'))).toBeUndefined()
+    expect(useStore().get(widgetId(graphId, node.id, 'model'))).toBeUndefined()
     expect(
       useStore().get(widgetId(otherGraph.id, otherNode.id, 'model'))
     ).toEqual(sample.component)

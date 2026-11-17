@@ -50,6 +50,7 @@ import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetComponents } from '@/stores/widgetComponents'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
@@ -1336,10 +1337,7 @@ export class LGraphNode
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
     if (info.properties)
-      useWidgetValueStore().prepareNodeComponents(
-        this.properties,
-        info.properties
-      )
+      useWidgetComponents().prepareNode(this.properties, info.properties)
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
         graphId,
@@ -1408,11 +1406,7 @@ export class LGraphNode
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
     if (info.properties && this.graph?.getNodeById(this.id) === this)
-      useWidgetValueStore().adoptNodeComponents(
-        graphId,
-        this.id,
-        this.properties
-      )
+      useWidgetComponents().adoptNode(graphId, this.id, this.properties)
   }
 
   /**
@@ -1436,7 +1430,7 @@ export class LGraphNode
 
     o.properties = LiteGraph.cloneObject(state.properties)
     if (this.graph?.getNodeById(this.id) === this)
-      useWidgetValueStore().writeNodeComponents(
+      useWidgetComponents().writeNode(
         this.graph.rootGraph.id,
         state.id,
         o.properties
