@@ -106,6 +106,32 @@ describe('WidgetLegacy canvas sizing', () => {
       expect(canvases.at(-1)?.height).toBe(expectedCanvasHeight)
     }
   )
+
+  it('draws a growable widget at its row height instead of the canvas layout height', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Legacy')
+    const widget = node.addWidget('text', 'comparer', '', () => {})
+    graph.add(node)
+    widget.computeLayoutSize = () => ({ minWidth: 0, minHeight: 20 })
+    widget.computedHeight = 500
+    const drawnHeights: number[] = []
+    widget.draw = () => drawnHeights.push(widget.computedHeight ?? -1)
+    useCanvasStore().canvas = fromPartial({ graph })
+    await nextTick()
+
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(300)
+    stubCanvasGetContext()
+    render(WidgetLegacy, {
+      props: {
+        nodeId: node.id,
+        widget: { name: 'comparer', type: 'text', value: undefined }
+      }
+    })
+
+    const canvas = screen.getByTestId<HTMLCanvasElement>('legacy-widget-canvas')
+    expect(canvas.height).toBe(604)
+    expect(drawnHeights.at(-1)).toBe(300)
+  })
 })
 
 describe('WidgetLegacy canvas width', () => {
