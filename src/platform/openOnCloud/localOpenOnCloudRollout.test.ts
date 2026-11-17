@@ -30,7 +30,10 @@ function start() {
     (_path, defaultValue) => defaultValue
   )
   const previousConfig = remoteConfig.value
-  remoteConfig.value = { comfy_cloud_base_url: 'https://runtime.example.com' }
+  remoteConfig.value = {
+    comfy_cloud_base_url: 'https://runtime.example.com',
+    open_on_cloud_enabled: true
+  }
   onTestFinished(() => {
     remoteConfig.value = previousConfig
   })
@@ -41,7 +44,7 @@ function start() {
   }
 }
 
-it('renders the served flag for the current account and clears it on identity changes', async () => {
+it('clears access on identity changes even when local config enables the flag', async () => {
   const { userId, visible } = start()
   const denies = deferredResponse()
   vi.mocked(fetch)

@@ -9,6 +9,7 @@ import {
   vi
 } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
@@ -20,6 +21,7 @@ import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isDesktop: true,
@@ -63,9 +65,10 @@ describe(handleDesktopWorkflowHandoff, () => {
     openAt('http://127.0.0.1:8000/')
     api.user = 'desktop-user'
     vi.mocked(fetch).mockImplementation(async () => Response.json({}))
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
     const previousConfig = remoteConfig.value
     const previousWindowConfig = window.__CONFIG__
-    remoteConfig.value = { open_on_cloud_enabled: true }
+    remoteConfig.value = {}
     window.__CONFIG__ = {}
     onTestFinished(() => {
       remoteConfig.value = previousConfig
@@ -163,7 +166,7 @@ describe(handleDesktopWorkflowHandoff, () => {
   })
 
   it('does not stage a transfer when the toolbar is disabled', async () => {
-    remoteConfig.value = { open_on_cloud_enabled: false }
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = false
 
     await expect(
       stageDesktopWorkflowHandoff('portrait', defaultGraph)

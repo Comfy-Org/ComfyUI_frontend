@@ -207,13 +207,12 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get openOnCloudEnabled() {
-      const served = isCloud
-        ? remoteConfig.value.open_on_cloud_enabled
-        : (localOpenOnCloudRollout.value?.open_on_cloud_enabled ??
-          remoteConfig.value.open_on_cloud_enabled)
+      if (!isCloud) {
+        return localOpenOnCloudRollout.value?.open_on_cloud_enabled === true
+      }
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
-        served
+        remoteConfig.value.open_on_cloud_enabled
       )
     },
     get deployToCloud() {

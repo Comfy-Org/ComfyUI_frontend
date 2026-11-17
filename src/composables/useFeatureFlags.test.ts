@@ -624,14 +624,26 @@ describe('useFeatureFlags', () => {
       { dev: false, served: true, expected: true },
       { dev: true, served: false, expected: false }
     ])(
-      'follows a remote config $served over the dev=$dev default',
+      'on Cloud, follows a remote config $served over the dev=$dev default',
       ({ dev, served, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        onTestFinished(() => {
+          vi.mocked(distributionTypes).isCloud = false
+        })
         vi.stubEnv('DEV', dev)
         remoteConfig.value = { open_on_cloud_enabled: served }
 
         expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(expected)
       }
     )
+
+    it('ignores a local server flag when the signed-in Cloud grant is absent', () => {
+      vi.mocked(api.getServerFeature).mockImplementation((key, fallback) =>
+        key === ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED ? true : fallback
+      )
+
+      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
+    })
   })
 
   describe('assetsEnabled', () => {
