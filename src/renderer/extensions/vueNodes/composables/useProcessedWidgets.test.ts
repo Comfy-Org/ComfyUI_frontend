@@ -521,6 +521,7 @@ describe('promoted subgraph widgets', () => {
         ?.widgets?.find((widget) => widget.name === 'string_a')
       assert.exists(sourceWidget)
       const value = sourceWidget.value
+      sourceWidget.type = `throws-in-${callback}`
       sourceWidget.computeSize = undefined
       const cause = new Error('Extension sizing failed')
       sourceWidget[callback] = () => {

@@ -1,19 +1,14 @@
-import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { IBaseWidget, WidgetSizing } from '@comfyorg/graph-model/widgets'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 
-const reportedSizingFailures = new WeakMap<LGraph, Set<string>>()
+const reportedSizingFailures = new Set<string>()
 
-function isFirstSizingFailure(widget: IBaseWidget, node: LGraphNode) {
-  const graph = node.graph?.rootGraph
-  if (!graph) return true
-  const reported = reportedSizingFailures.get(graph) ?? new Set<string>()
-  reportedSizingFailures.set(graph, reported)
-  const key = `${node.type}:${widget.type}`
-  if (reported.has(key)) return false
-  reported.add(key)
+function isFirstSizingFailure(widget: IBaseWidget) {
+  if (reportedSizingFailures.has(widget.type)) return false
+  reportedSizingFailures.add(widget.type)
   return true
 }
 
@@ -41,7 +36,7 @@ export function getWidgetSizing(
   try {
     return measureWidget(concrete, owner, width)
   } catch (cause) {
-    if (isFirstSizingFailure(concrete, owner)) {
+    if (isFirstSizingFailure(concrete)) {
       reportError(cause, {
         errorType: 'error_measuring_widget',
         surface: 'graph',
