@@ -93,13 +93,42 @@ describe('declared widget types', () => {
     expect(Object.isFrozen(options)).toBe(true)
   })
 
-  it('starts from the type’s default when the declaration gives none it can hold', () => {
-    const { rendered } = defineRendering({ defaultValue: { r: 1 } })
+  it.for([[null], [() => 3], [Number.NaN]])(
+    'starts from the type’s default when the declaration gives none it can hold: %o',
+    ([declared]) => {
+      const { rendered } = defineRendering({ defaultValue: { r: 1 } })
 
-    buildInput('PACK_COLOR', { default: 3 })
+      buildInput('PACK_COLOR', { default: declared })
 
-    expect(rendered.value?.get()).toEqual({ r: 1 })
+      expect(rendered.value?.get()).toEqual({ r: 1 })
+    }
+  )
+
+  it('starts from a number or boolean the declaration gives', () => {
+    const { rendered } = defineRendering({ defaultValue: 0 })
+
+    buildInput('PACK_COLOR', { default: 0.5 })
+
+    expect(rendered.value?.get()).toBe(0.5)
   })
+
+  it.for([
+    [0, 0],
+    [false, false],
+    [null, '']
+  ] as const)(
+    'starts from a type default of %o, held as the host holds it',
+    ([given, held]) => {
+      const { rendered } = defineRendering({ defaultValue: given })
+
+      const { node, widget } = buildInput('PACK_COLOR')
+      node.serialize_widgets = true
+
+      expect(rendered.value?.get()).toBe(held)
+      expect(widget.value).toBe(held)
+      expect(node.serialize().widgets_values).toEqual([held])
+    }
+  )
 
   it('starts from empty text with no default anywhere, and no options', () => {
     const { rendered } = defineRendering()
@@ -204,7 +233,11 @@ describe('declared widget types', () => {
     ['no render', 'PACK_X', {}],
     ['a render that is not a function', 'PACK_X', { render: 'draw' }],
     ['an unknown field', 'PACK_X', { render: () => {}, minWidth: 3 }],
-    ['a number as default', 'PACK_X', { render: () => {}, defaultValue: 0 }],
+    [
+      'a default it cannot save',
+      'PACK_X',
+      { render: () => {}, defaultValue: [Infinity] }
+    ],
     ['a height that is not a size', 'PACK_X', { render: () => {}, height: -2 }],
     [
       'a flag that is not a boolean',

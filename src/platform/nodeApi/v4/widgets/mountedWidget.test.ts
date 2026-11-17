@@ -187,7 +187,54 @@ describe('mounted widgets', () => {
     expect(read).not.toBe(added.widgets?.[0]?.value)
   })
 
-  it.for([[1], [true], [null], [() => 1], [{ n: Number.NaN }]])(
+  it.for([
+    [0, 0],
+    [false, false],
+    [12.5, 12.5],
+    [null, '']
+  ] as const)(
+    'holds, saves and sends %o as the host holds it',
+    async ([given, held]) => {
+      const { node: added, widgets } = node()
+
+      const { handle, value } = mount(widgets, { defaultValue: given })
+
+      expect(handle.isSerialized()).toBe(true)
+      expect(value.get()).toBe(held)
+      expect(handle.getValue()).toBe(held)
+      expect(added.serialize().widgets_values).toEqual([held])
+      const { output } = await graphToPrompt(graph)
+      expect(Object.values(output)[0]?.inputs).toEqual({ panel: held })
+    }
+  )
+
+  it('sets a number, a boolean or null, holding null as empty text', () => {
+    const { widgets } = node()
+    const { value } = mount(widgets, { defaultValue: 'text' })
+
+    value.set(3)
+    expect(value.get()).toBe(3)
+    value.set(true)
+    expect(value.get()).toBe(true)
+    value.set(null)
+    expect(value.get()).toBe('')
+  })
+
+  it('holds a number setValue commits, and tells onChange what the widget then holds', () => {
+    const { widgets } = node()
+    const { handle, value } = mount(widgets, { defaultValue: 'text' })
+    const onChange = vi.fn()
+    value.onChange(onChange)
+
+    handle.setValue(5)
+    handle.setValue(null)
+
+    expect(onChange.mock.calls).toEqual([[5], ['']])
+    expect(value.get()).toBe('')
+    expect(handle.getValue()).toBe('')
+  })
+
+  it.for([[() => 1], [{ n: Number.NaN }], [undefined]])(
     'refuses a value a mounted widget cannot hold: %o',
     ([refused]) => {
       const { widgets } = node()
@@ -280,7 +327,6 @@ describe('mounted widgets', () => {
       'a default it cannot save',
       { name: 'p', render: () => {}, defaultValue: { at: Number.NaN } }
     ],
-    ['a number as default', { name: 'p', render: () => {}, defaultValue: 0 }],
     [
       'a flag that is not a boolean',
       { name: 'p', render: () => {}, serialize: 'yes' }

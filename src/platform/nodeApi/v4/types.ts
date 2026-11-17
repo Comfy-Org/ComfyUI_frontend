@@ -820,8 +820,8 @@ export interface WidgetOptions {
   readonly showItemNavigators?: boolean
 }
 
-/** What a mounted or canvas widget holds: a string, or a plain object or array. */
-export type MountedData = string | object
+/** What a mounted or canvas widget holds. `null` is held as `''`, as the host holds a missing value. */
+export type MountedData = WidgetValue
 
 /** A widget whose element the pack fills with its own tools. */
 export interface MountDef {
@@ -932,7 +932,7 @@ export interface WidgetTypeDef {
     name: string,
     context: WidgetTypeContext
   ): Unsubscribe | void
-  /** Used when the input's declaration gives no default text. */
+  /** Used when the input's declaration gives no default it can hold. */
   readonly defaultValue?: MountedData
   /** The height the widget takes on its node, in graph units. */
   readonly height?: number
