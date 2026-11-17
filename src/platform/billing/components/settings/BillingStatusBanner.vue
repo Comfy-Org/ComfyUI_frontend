@@ -1,5 +1,5 @@
 <template>
-  <div v-if="banner" class="@container">
+  <div v-if="banner" v-bind="$attrs" class="@container">
     <div
       role="status"
       class="flex flex-col gap-3 rounded-xl border border-border bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
@@ -77,8 +77,8 @@
         </Button>
       </div>
     </div>
-    <BillingPlanConfirmDialog v-model="resumeConfirm" :run="resume" />
   </div>
+  <BillingPlanConfirmDialog v-model="resumeConfirm" :run="handleResubscribe" />
 </template>
 
 <script setup lang="ts">
@@ -94,7 +94,6 @@ import {
   isMemberTopUpDenial
 } from '@comfyorg/account-core/billing'
 import type {
-  PlanCommandOutcome,
   PlanConfirmState,
   BillingStatusBannerAudience,
   BillingStatusBannerKind
@@ -123,6 +122,8 @@ type BannerAction =
   | 'choosePlan'
   | 'contactSales'
   | 'updatePayment'
+
+defineOptions({ inheritAttrs: false })
 
 const { section } = defineProps<{
   section?: 'planCredits' | 'members' | 'allowlist' | 'billing'
@@ -434,10 +435,6 @@ function openResumeConfirm() {
     type: 'opened',
     intent: { kind: 'resume', planName: planName.value, renewsAt: endDate }
   })
-}
-async function resume(): Promise<PlanCommandOutcome> {
-  await handleResubscribe()
-  return { ok: true }
 }
 function handleContactSales() {
   window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
