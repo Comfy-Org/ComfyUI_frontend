@@ -144,16 +144,16 @@ describe('tagPlatformUrl', () => {
     const url = new URL(
       tagPlatformUrl(
         'https://platform.comfy.org/billing/handoff?intent=billing#token=secret',
-        'billing-handoff'
+        'billing-tab'
       )
     )
 
     expect(url.hash).toBe('#token=secret')
     expect(url.search).not.toContain('secret')
-    expect(url.searchParams.get('utm_content')).toBe('billing-handoff')
+    expect(url.searchParams.get('utm_content')).toBe('billing-tab')
   })
 
   it('returns text that is not a URL unchanged', () => {
-    expect(tagPlatformUrl('not a url', 'billing-handoff')).toBe('not a url')
+    expect(tagPlatformUrl('not a url', 'billing-tab')).toBe('not a url')
   })
 })

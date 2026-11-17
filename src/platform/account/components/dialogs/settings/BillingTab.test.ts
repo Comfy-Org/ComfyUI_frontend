@@ -2247,10 +2247,10 @@ describe('BillingTab', () => {
       )
 
       expect(vi.mocked(openPlatformBillingHandoff).mock.calls).toEqual([
-        [undefined],
-        [undefined],
-        [undefined],
-        ['plans']
+        ['auto-top-up-card', undefined],
+        ['billing-handoff-card', undefined],
+        ['billing-handoff-card', undefined],
+        ['billing-tab', 'plans']
       ])
     })
 

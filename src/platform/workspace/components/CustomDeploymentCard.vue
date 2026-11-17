@@ -125,6 +125,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@comfyorg/design-system/media/Video'
@@ -157,5 +158,7 @@ defineOptions({ inheritAttrs: false })
 
 const { isCopying, copied, copy } = useBriefCopy()
 
-const createDeploymentUrl = customDeploymentCreateUrl('custom-deployment-card')
+const createDeploymentUrl = computed(() =>
+  customDeploymentCreateUrl('custom-deployment-card')
+)
 </script>

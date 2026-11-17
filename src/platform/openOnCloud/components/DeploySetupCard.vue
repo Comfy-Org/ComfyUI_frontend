@@ -80,6 +80,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -102,9 +103,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const platformUrl = platformLink(
-  '/profile/deploy?onboarding=custom_comfy_cloud',
-  { surface: 'deploy-setup-card' }
+const platformUrl = computed(() =>
+  platformLink('/profile/deploy?onboarding=custom_comfy_cloud', {
+    surface: 'deploy-setup-card'
+  })
 )
 const points = [
   t('openOnCloud.deploySetupDialog.pointNodes'),

@@ -160,7 +160,9 @@ const [DefineOption, ReuseOption] = createReusableTemplate<{
 }>()
 
 const selectId = useId()
-const createDeploymentUrl = customDeploymentCreateUrl('switch-deployment-card')
+const createDeploymentUrl = computed(() =>
+  customDeploymentCreateUrl('switch-deployment-card')
+)
 
 function runs(choice: DeploymentChoice): boolean {
   return choice.mark?.kind === 'runs'

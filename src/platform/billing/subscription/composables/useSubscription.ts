@@ -446,7 +446,8 @@ function useSubscriptionInternal() {
   const handleViewUsageHistory = () => {
     window.open(
       platformLink('/profile/usage', { surface: 'subscription-usage-history' }),
-      '_blank'
+      '_blank',
+      'noopener'
     )
   }
 

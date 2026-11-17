@@ -172,7 +172,10 @@ describe('usePlatformPlansLink', () => {
 
     expect(link.href.value).toBeUndefined()
     expect(link.button.value).toEqual({ as: 'button' })
-    expect(openPlatformBillingHandoff).toHaveBeenCalledExactlyOnceWith('plans')
+    expect(openPlatformBillingHandoff).toHaveBeenCalledExactlyOnceWith(
+      'billing-plan-row',
+      'plans'
+    )
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         operation: 'platform_handoff',

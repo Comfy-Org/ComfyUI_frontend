@@ -20,7 +20,6 @@ export type PlatformLinkSurface =
   | 'api-key-form'
   | 'auto-top-up-card'
   | 'auto-top-up-setup-offer'
-  | 'billing-handoff'
   | 'billing-handoff-card'
   | 'billing-plan-row'
   | 'billing-status-banner'

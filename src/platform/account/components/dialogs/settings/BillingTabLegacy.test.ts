@@ -661,6 +661,7 @@ describe('BillingTab', () => {
       await userEvent.click(screen.getByRole('button', { name }))
 
       expect(openPlatformBillingHandoff).toHaveBeenCalledExactlyOnceWith(
+        expect.any(String),
         'plans'
       )
     }

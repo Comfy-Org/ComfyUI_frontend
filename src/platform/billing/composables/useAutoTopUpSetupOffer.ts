@@ -42,7 +42,7 @@ export function useAutoTopUpSetupOffer() {
 
   return {
     setupUrl,
-    open: () => openPlatformBilling(track),
+    open: () => openPlatformBilling(track, 'auto-top-up-setup-offer'),
     trackDeclined: () => trackOffer('declined')
   }
 }

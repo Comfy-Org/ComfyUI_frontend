@@ -79,7 +79,7 @@ const HANDOFFS = /\/api\/auth\/handoffs$/
 const ENTRY_URL =
   'https://billing.comfy.org/handoff?intent=top-up&amount_cents=2500#token=abc'
 const TAGGED_ENTRY_URL =
-  'https://billing.comfy.org/handoff?intent=top-up&amount_cents=2500&utm_source=comfyui&utm_medium=app&utm_content=billing-handoff#token=abc'
+  'https://billing.comfy.org/handoff?intent=top-up&amount_cents=2500&utm_source=comfyui&utm_medium=app&utm_content=billing-tab#token=abc'
 const TOP_UP = { intent: 'top-up', amountCents: 2500 } as const
 const live = new AbortController().signal
 
@@ -299,7 +299,7 @@ describe('issueLocalBillingHandoff', () => {
       const { tab, open } = reservedTab()
       respondToFetch(HANDOFFS, issued)
 
-      const opening = openPlatformBillingHandoff()
+      const opening = openPlatformBillingHandoff('billing-tab')
       expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
       expect(tab.location.href).toBe('')
       await opening
@@ -317,7 +317,7 @@ describe('issueLocalBillingHandoff', () => {
       const { tab } = reservedTab()
       respondToFetch(HANDOFFS, issued)
 
-      await openPlatformBillingHandoff('plans')
+      await openPlatformBillingHandoff('billing-plan-row', 'plans')
 
       const opened = new URL(tab.location.href)
       expect(opened.searchParams.get('view')).toBe('plans')
@@ -341,7 +341,7 @@ describe('issueLocalBillingHandoff', () => {
         )
       )
 
-      await openPlatformBillingHandoff('plans')
+      await openPlatformBillingHandoff('billing-plan-row', 'plans')
 
       expect(tab.close).toHaveBeenCalledOnce()
       expect(tab.location.href).toBe('')
@@ -369,7 +369,7 @@ describe('issueLocalBillingHandoff', () => {
       const { tab } = reservedTab()
       respondToFetch(HANDOFFS, respond)
 
-      await openPlatformBillingHandoff()
+      await openPlatformBillingHandoff('billing-tab')
 
       expect(tab.close).toHaveBeenCalledOnce()
       expect(tab.location.href).toBe('')
@@ -381,8 +381,8 @@ describe('issueLocalBillingHandoff', () => {
       respondToFetch(HANDOFFS, issued)
 
       await Promise.all([
-        openPlatformBillingHandoff(),
-        openPlatformBillingHandoff()
+        openPlatformBillingHandoff('billing-tab'),
+        openPlatformBillingHandoff('billing-tab')
       ])
 
       expect(open).toHaveBeenCalledOnce()
@@ -395,7 +395,7 @@ describe('issueLocalBillingHandoff', () => {
     it('issues nothing when the browser blocks the tab', async () => {
       vi.spyOn(window, 'open').mockReturnValue(null)
 
-      await openPlatformBillingHandoff()
+      await openPlatformBillingHandoff('billing-tab')
 
       expect(fetchRequests(HANDOFFS)).toHaveLength(0)
       expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
@@ -478,7 +478,7 @@ describe('issueLocalBillingHandoff', () => {
         })
       )
 
-      const opening = openPlatformBillingHandoff()
+      const opening = openPlatformBillingHandoff('billing-tab')
       await vi.waitFor(() => expect(issue).toHaveBeenCalledOnce())
       expect(open).not.toHaveBeenCalled()
       answer({ status: 'issued', entryUrl: ENTRY_URL })
@@ -498,7 +498,7 @@ describe('issueLocalBillingHandoff', () => {
       const open = vi.spyOn(window, 'open').mockReturnValue(null)
       issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
 
-      await openPlatformBillingHandoff('plans')
+      await openPlatformBillingHandoff('billing-plan-row', 'plans')
 
       expect(issue).toHaveBeenCalledExactlyOnceWith(
         'ws-1',

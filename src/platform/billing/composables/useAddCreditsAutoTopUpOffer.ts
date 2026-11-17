@@ -86,5 +86,9 @@ export function useAddCreditsAutoTopUpOffer() {
       : served
   })
 
-  return { offer, billingUrl: href, open: () => openPlatformBilling(track) }
+  return {
+    offer,
+    billingUrl: href,
+    open: () => openPlatformBilling(track, 'add-credits-dialog')
+  }
 }

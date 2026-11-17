@@ -159,9 +159,11 @@ const { isCopying, copied, copyWith } = useBriefCopy()
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 const inputs = captureInputs()
-const platformUrl = platformLink('/profile/deploy?onboarding=comfy_api', {
-  surface: 'deploy-to-comfy-api-card'
-})
+const platformUrl = computed(() =>
+  platformLink('/profile/deploy?onboarding=comfy_api', {
+    surface: 'deploy-to-comfy-api-card'
+  })
+)
 
 const summary = computed(() =>
   [

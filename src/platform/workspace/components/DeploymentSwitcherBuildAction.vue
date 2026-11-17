@@ -35,6 +35,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
@@ -42,7 +44,7 @@ import { switcherItemClass } from './deploymentSwitcherStyles'
 
 const { hasDeployments } = defineProps<{ hasDeployments: boolean }>()
 const emit = defineEmits<{ createCustomDeployment: [] }>()
-const buildsUrl = platformLink('/profile/builds', {
-  surface: 'deployment-switcher'
-})
+const buildsUrl = computed(() =>
+  platformLink('/profile/builds', { surface: 'deployment-switcher' })
+)
 </script>
