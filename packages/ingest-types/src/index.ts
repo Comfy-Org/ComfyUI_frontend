@@ -1795,6 +1795,7 @@ export type {
   ViewFileErrors,
   ViewFileResponse,
   ViewFileResponses,
+  ViewFileUrlResponse,
   WebSessionResponse,
   WebSessionUser,
   WorkflowApiAssetsRequest,

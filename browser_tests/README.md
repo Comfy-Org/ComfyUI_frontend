@@ -1195,9 +1195,9 @@ test(
   a known rule ID.
 - **Reading a failure.** The assertion lists each rule that fails on more
   elements than its known count, with its help URL, the known count, and every
-  failing element; the count cannot say which of them is new. The `axe-results`
-  attachment on the test holds the full scan, including `incomplete` checks axe
-  could not decide.
+  failing element; the count cannot say which of them is new. The
+  `axe-violations` attachment on the test holds every violation axe reported,
+  known ones included.
 - **Adding a surface.** Add a test to the spec in `tests/accessibility/` that
   matches the surface, or integrate a scan into an existing feature test with
   the same fixture.

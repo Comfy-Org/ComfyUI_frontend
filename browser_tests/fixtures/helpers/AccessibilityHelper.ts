@@ -63,8 +63,8 @@ export class AccessibilityHelper {
   ): Promise<void> {
     await finishFiniteAnimations(this.page)
     const results = await axeBuilder.analyze()
-    await this.testInfo.attach('axe-results', {
-      body: JSON.stringify(results, null, 2),
+    await this.testInfo.attach('axe-violations', {
+      body: JSON.stringify(results.violations, null, 2),
       contentType: 'application/json'
     })
 
@@ -86,7 +86,7 @@ export class AccessibilityHelper {
     expect
       .soft(
         newViolations,
-        'Accessibility violations on more elements than this scan knows. Fix the new elements; the axe-results attachment has the full scan.'
+        'Accessibility violations on more elements than this scan knows. Fix the new elements; the axe-violations attachment has the details.'
       )
       .toEqual([])
 
