@@ -714,25 +714,25 @@ describe('useBillingSdkStore subscription commands', () => {
   it.for([
     {
       name: 'opens the payment page the subscribe still owes',
-      later: [],
+      atRetry: pendingSubscription({ actionUrl: 'https://pay.example/op-1' }),
       opened: [['https://pay.example/op-1', '_blank']],
       reported: [['op-1', 'new_tab']]
     },
     {
       name: 'opens nothing once the subscribe has settled',
-      later: [settledOperation('succeeded', 'subscription')],
+      atRetry: settledOperation('succeeded', 'subscription'),
       opened: [],
       reported: []
     }
   ])(
     'retrying a blocked payment page from its warning $name',
-    ({ later, opened, reported }) => {
+    ({ atRetry, opened, reported }) => {
       const openPage = vi.spyOn(window, 'open').mockReturnValueOnce(null)
       useBillingSdkStore()
       harness.publish(
         pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
       )
-      for (const state of later) harness.publish(state)
+      harness.publish(atRetry)
       const warning = useToast().toasts.find(
         (shown) =>
           shown.kind === 'warning' &&
