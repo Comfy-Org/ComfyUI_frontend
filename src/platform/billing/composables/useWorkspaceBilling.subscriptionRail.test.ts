@@ -238,7 +238,7 @@ describe('cancel subscription on the billing SDK rail', () => {
     })
 
     await expect(setupBilling().cancelSubscription()).rejects.toThrow(
-      "We couldn't update your subscription. Please try again."
+      'Subscription cancellation timed out'
     )
     expect(billingApi.cancelSubscription).not.toHaveBeenCalled()
   })
@@ -522,7 +522,7 @@ describe('subscribe on the billing SDK rail', () => {
 
     await expect(setupBilling().subscribe('pro-monthly')).rejects.toMatchObject(
       {
-        message: "We couldn't update your subscription. Please try again.",
+        message: 'Subscription verification timed out',
         code: 'timed_out'
       }
     )
