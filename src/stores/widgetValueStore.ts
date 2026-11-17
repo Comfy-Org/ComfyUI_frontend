@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
+import { useWidgetComponents } from './widgetComponents'
+
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { UUID } from '@/utils/uuid'
 import { parseNodeId } from '@comfyorg/graph-model/nodeId'
@@ -296,12 +298,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const { graphId, nodeId, name: storageName } = parseWidgetId(widgetId)
     const widgets = getGraphWidgets(graphId)
     const existing = widgets.get(widgetId)
-    // WidgetId is `graphId:nodeId:name`. A node replacement can reuse the same
-    // numeric nodeId, so a stale entry from the previous occupant may survive in
-    // the store under the same key. The type check distinguishes a live
-    // re-registration (same widget, keep its value) from a recycled key (new
-    // widget type at an old address, overwrite). Without it a text widget
-    // rendered as the prior int type until the next full reload (#13073, #13773).
     if (existing && existing.state.type === init.type) {
       Object.assign(existing.state, {
         ...init,
@@ -318,6 +314,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       return existing.state
     }
 
+    if (existing) useWidgetComponents().remove(widgetId)
     const state: WidgetState = {
       ...init,
       nodeId,
@@ -455,6 +452,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const { graphId } = parseWidgetId(widgetId)
     removeNodeWidgetOrder(widgetId)
+    useWidgetComponents().remove(widgetId)
     return graphWidgets.value.get(graphId)?.delete(widgetId) ?? false
   }
 
@@ -484,6 +482,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgets.delete(oldId)
     entity.state.name = name
     widgets.set(newId, entity)
+    useWidgetComponents().move(oldId, newId)
     if (index === -1) order.push(newId)
     else order.splice(index, 1, newId)
 
@@ -556,17 +555,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
   }
 
-  /**
-   * Releases the widget ids tracked for a node, from the store's own record
-   * rather than the node's live widget list — the two diverge once a node drops
-   * widgets without unregistering them. `discardValues` also drops the widget
-   * states; retaining them lets a node that comes back keep what the user set.
-   */
   function releaseNodeWidgets(
     graphId: UUID,
     localNodeId: NodeId,
     { discardValues }: { discardValues: boolean }
   ): void {
+    if (discardValues) useWidgetComponents().clearNode(graphId, localNodeId)
     const graphOrders = graphNodeWidgetOrders.value.get(graphId)
     if (!graphOrders) return
 
@@ -582,6 +576,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearNode(graphId: UUID, nodeId: NodeId): void {
+    useWidgetComponents().clearNode(graphId, nodeId)
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgets = graphWidgets.value.get(graphId)
     if (widgets) {
@@ -598,12 +593,17 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearGraph(graphId: UUID): void {
+    useWidgetComponents().clearGraph(graphId)
     graphWidgets.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
   }
 
+  const components = useWidgetComponents()
+
   return {
+    adoptNodeComponents: components.adoptNode,
+    writeNodeComponents: components.writeNode,
     registerWidget,
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,

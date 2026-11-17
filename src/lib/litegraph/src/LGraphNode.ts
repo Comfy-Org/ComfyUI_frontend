@@ -1402,6 +1402,12 @@ export class LGraphNode
       clearWidgetRestorationSlots(this)
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
+    if (this.graph?.getNodeById(this.id) === this)
+      useWidgetValueStore().adoptNodeComponents(
+        graphId,
+        this.id,
+        this.properties
+      )
   }
 
   /**
@@ -1412,7 +1418,6 @@ export class LGraphNode
   }
 
   serializeFromStoreState(state: NodeState): ISerialisedNode {
-    // create serialization object
     const o: ISerialisedNode = {
       id: serializeNodeId(state.id),
       type: state.type,
@@ -1424,7 +1429,6 @@ export class LGraphNode
       showAdvanced: state.showAdvanced
     }
 
-    // special case for when there were errors
     if (this.constructor === LGraphNode && state.lastSerialization)
       return {
         ...LiteGraph.cloneObject(state.lastSerialization),
@@ -1443,6 +1447,12 @@ export class LGraphNode
       o.title = state.title
 
     o.properties = LiteGraph.cloneObject(state.properties)
+    if (this.graph?.getNodeById(this.id) === this)
+      useWidgetValueStore().writeNodeComponents(
+        this.graph.rootGraph.id,
+        state.id,
+        o.properties
+      )
 
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets)
