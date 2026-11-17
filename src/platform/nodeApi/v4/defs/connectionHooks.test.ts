@@ -11,6 +11,7 @@ import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type {
   BeforeConnectEvent,
+  Comfy,
   ConnectionChangeEvent,
   DefRegistry,
   NodeDefBuilder,
@@ -23,12 +24,14 @@ const TYPE = 'Pack/Probe'
 describe('connection, property and pointer hooks', () => {
   let graph: LGraph
   let defs: DefRegistry
+  let comfy: Comfy
   let host: ComfyApiHost
 
   beforeEach(() => {
     graph = new LGraph()
     const api = createComfyApi({ getGraph: () => graph })
-    defs = api.comfy.defs
+    comfy = api.comfy
+    defs = comfy.defs
     host = api.host
     registerHostType(host.nodeTypeHooks, hostNodeDef(TYPE))
   })
@@ -282,6 +285,44 @@ describe('connection, property and pointer hooks', () => {
       node.setProperty('max', 50)
 
       expect(node.properties.max).toBe(5)
+    })
+
+    it('hears a property deleted through the API, with no value', () => {
+      const events = changes()
+      const node = probe()
+      node.properties.max = 5
+      const handle = comfy.graph.node(String(node.id))
+      assert(handle)
+
+      expect(handle.setProperty('max', undefined)).toBe(true)
+
+      expect(events).toHaveLength(1)
+      expect(events[0]).toMatchObject({ name: 'max', value: undefined })
+      expect(Object.hasOwn(node.properties, 'max')).toBe(false)
+    })
+
+    it('keeps the earlier value of a property a hook will not let the API delete', () => {
+      changes((event) => event.reject())
+      const node = probe()
+      node.properties.max = 5
+      const handle = comfy.graph.node(String(node.id))
+      assert(handle)
+
+      expect(handle.setProperty('max', undefined)).toBe(false)
+
+      expect(node.properties.max).toBe(5)
+    })
+
+    it('keeps the value a hook gives instead of a deletion', () => {
+      changes((event) => event.setValue(1))
+      const node = probe()
+      node.properties.max = 5
+      const handle = comfy.graph.node(String(node.id))
+      assert(handle)
+
+      expect(handle.setProperty('max', undefined)).toBe(false)
+
+      expect(node.properties.max).toBe(1)
     })
 
     it('keeps a value restored from a saved workflow that a hook rejects', () => {

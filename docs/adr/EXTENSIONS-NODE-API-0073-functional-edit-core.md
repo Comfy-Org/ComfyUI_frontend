@@ -102,11 +102,22 @@ follow-up for a command interface.
    - `properties` sets each named property through `node.setProperty`, so the
      node's `onPropertyChanged` and property widgets see it. Each value is
      stored as the workflow saves it (a JSON copy), so a pack cannot keep a
-     reference into the node; a value JSON cannot hold (a function,
-     `undefined`, a cycle, a BigInt) is refused, and `__proto__` is refused as a
-     name. A node may keep a property's old value (its `onPropertyChanged`
-     answers `false`, or a pack's hook rejects it); `updateNode` then answers
-     `false`, and the rest of the patch stays applied.
+     reference into the node; a value JSON cannot hold (a function, a cycle, a
+     BigInt) is refused, and `__proto__` is refused as a name. A node may keep
+     a property's old value (its `onPropertyChanged` answers `false`, or a
+     pack's hook rejects it); `updateNode` then answers `false`, and the rest
+     of the patch stays applied.
+   - `undefined` as a property's value deletes the property, as
+     `setProperty(name, undefined)` cleared it in V2 (5 stored calls in
+     cg-use-everywhere and kjnodes). The edit goes through
+     `node.setProperty(name, undefined)`, so `onPropertyChanged` and a
+     property widget see the change as they saw V2's, and then removes the
+     name from `node.properties`, which V2 left holding `undefined`; a
+     workflow saved either way has no such property. If the node or a pack's
+     hook keeps a value (a refusal, or `setValue`), the value stays and the
+     edit answers `false`. A deletion is one undo step, as any property edit
+     is; deleting a property the node does not have changes nothing and
+     answers `true`.
    - `position` and `size` need finite numbers, and a size cannot be negative
      (A-01). `size` goes through `node.setSize`, so `onResize` runs.
 7. `sizeConstraints` resizes the node into the limits once, when it is
@@ -377,7 +388,7 @@ document is no longer open.
 | `updateNode` `mode`                      | `LGraphNode.mode` setter: node state store and a `set_node_field` graph intent                                        | One step                                                               | `false`                                |
 | `updateNode` `collapsed`                 | `LGraphNode.collapse(true)`: flag and a `set_node_field` graph intent                                                 | One step                                                               | `false`                                |
 | `updateNode` `color`, `bgColor`, `shape` | `LGraphNode` setters: node state store                                                                                | One step                                                               | `false`                                |
-| `updateNode` `properties`                | `LGraphNode.setProperty` per name: `onPropertyChanged`, property widgets                                              | One step                                                               | `false`                                |
+| `updateNode` `properties`                | `LGraphNode.setProperty` per name: `onPropertyChanged`, property widgets; `undefined` then deletes the name           | One step                                                               | `false`                                |
 | `updateNode` `serializeWidgets`          | `LGraphNode.serialize_widgets`; `false` refused on a Note, MarkdownNote or PrimitiveNode (decision 25)                | One step; a load gives the type's own value                            | `false`                                |
 | `updateNode` `position`                  | `LGraphNode.pos` setter: a `moveNode` layout operation                                                                | One step                                                               | `false`                                |
 | `updateNode` `size`, `sizeConstraints`   | `LGraphNode.setSize`: a `resizeNode` layout operation, then `onResize`                                                | One step                                                               | `false`                                |

@@ -283,7 +283,10 @@ registered, so `extend` cannot depend on the order.
     first reads it. `setValue` stores a frozen copy of the pack's value in the
     node's properties, where `setProperty` has just stored the edited one;
     `undefined` and a value a workflow cannot save are refused with a
-    `TypeError`, as `setProperty` refuses them, and nothing is reported. The
+    `TypeError`, and nothing is reported: `setValue` replaces a value and
+    does not delete one. A deletion through the API's `setProperty(name,
+    undefined)` is heard with `value` `undefined`; a hook that rejects it or
+    gives a value keeps the property. The
     event is settled only while the hook that received it runs: afterwards
     `setValue` and `reject` throw a `TypeError`, as the builder does.
     `reject()` answers `false`, so `setProperty` puts the earlier value back;

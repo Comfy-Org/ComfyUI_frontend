@@ -78,6 +78,22 @@ describe('edits through the real change tracker', () => {
     expect(workflow.isModified).toBe(true)
   })
 
+  it('makes deleting a property one undo step that undo puts back and redo deletes again', async () => {
+    handleOf(source).setProperty('stamp', 3)
+    handleOf(source).setProperty('stamp', undefined)
+
+    expect(tracker.undoQueue).toHaveLength(2)
+    expect(app.rootGraph.getNodeById(source.id)?.properties).toEqual({})
+
+    await tracker.undo()
+    expect(app.rootGraph.getNodeById(source.id)?.properties).toEqual({
+      stamp: 3
+    })
+
+    await tracker.redo()
+    expect(app.rootGraph.getNodeById(source.id)?.properties).toEqual({})
+  })
+
   it('makes a batch of edits one undo step, even when the host asks for a capture inside it', async () => {
     comfy.edit.batch(() => {
       handleOf(source).setTitle('One')

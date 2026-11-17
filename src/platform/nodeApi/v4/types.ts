@@ -221,7 +221,7 @@ export interface NodePatch {
   /** The body color. `undefined` restores the default. */
   readonly bgColor?: string | undefined
   readonly shape?: NodeShape
-  /** Saved properties, by name. Each value is stored as the workflow saves it. */
+  /** Saved properties, by name. Each value is stored as the workflow saves it; `undefined` deletes one. */
   readonly properties?: Readonly<Record<string, unknown>>
   /** Not saved: a load gives the type's own. `false` throws on a Note, MarkdownNote or PrimitiveNode. */
   readonly serializeWidgets?: boolean
@@ -279,7 +279,7 @@ export interface NodeHandleEdits {
   setColor(color: string | undefined): boolean
   setBgColor(color: string | undefined): boolean
   setShape(shape: NodeShape): boolean
-  /** A name that is not a string throws a `TypeError`. */
+  /** `undefined` deletes the property. A name that is not a string throws a `TypeError`. */
   setProperty(name: string, value: unknown): boolean
   setSerializeWidgets(serialize: boolean): boolean
   isSerializingWidgets(): boolean | undefined
