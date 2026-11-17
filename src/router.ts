@@ -144,7 +144,6 @@ const RECOVERING_SESSION_PHASES = new Set([
 ])
 
 function installCloudAuthGuards(router: Router): void {
-  const { flags } = useFeatureFlags()
   const PUBLIC_ROUTE_NAMES = new Set([
     'cloud-login',
     'cloud-signup',
@@ -253,6 +252,7 @@ function installCloudAuthGuards(router: Router): void {
     to: RouteLocationNormalized,
     query: LocationQueryRaw
   ): NavigationGuardReturn {
+    const { flags } = useFeatureFlags()
     const ssoError = flags.ssoEnabled
       ? readSsoError(to.query.sso_error)
       : undefined
@@ -356,7 +356,7 @@ function installCloudAuthGuards(router: Router): void {
     }
 
     if (!isDesktop && to.path === '/') {
-      if (!flags.onboardingSurveyEnabled) {
+      if (!useFeatureFlags().flags.onboardingSurveyEnabled) {
         return
       }
       const { getSurveyCompletedStatus } =

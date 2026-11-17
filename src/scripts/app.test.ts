@@ -289,6 +289,13 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
+  const initialSingletonGraph = singletonApp.rootGraphOrUndefined
+  const initialSingletonCanvas = singletonApp.canvas
+
+  afterEach(() => {
+    Reflect.set(singletonApp, 'rootGraphInternal', initialSingletonGraph)
+    singletonApp.canvas = initialSingletonCanvas
+  })
 
   it('applies extension paste overrides when the clipspace editor saves', () => {
     const node = new LGraphNode('original')

@@ -31,6 +31,8 @@ import { activateBillingScope } from '@/platform/billing/__tests__/activateBilli
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
+import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTabLegacy.vue'
@@ -39,7 +41,8 @@ const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
-  }
+  },
+  isDesktop: false
 }))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/composables/usePausedBanner'), {
@@ -53,6 +56,7 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/localBillingHandoff'), { spy: true })
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionActions')
 )
@@ -616,7 +620,7 @@ describe('BillingTab', () => {
     )
   })
 
-  it.for([
+  const planActions = [
     { name: 'Manage', scenario: {} },
     {
       name: 'Subscribe',
@@ -633,7 +637,26 @@ describe('BillingTab', () => {
         subscriptionStatus: 'ended'
       }
     }
-  ] satisfies { name: string; scenario: Scenario }[])(
+  ] satisfies { name: string; scenario: Scenario }[]
+
+  it.for(planActions)(
+    'opens $name on the Plans page through a handoff when billing opens through one',
+    async ({ name, scenario }) => {
+      setLocalBillingWebEnabled(true)
+      onTestFinished(() => setLocalBillingWebEnabled(false))
+      vi.mocked(openPlatformBillingHandoff).mockResolvedValue()
+      arrange(scenario)
+
+      expect(screen.queryByRole('link', { name })).not.toBeInTheDocument()
+      await userEvent.click(screen.getByRole('button', { name }))
+
+      expect(openPlatformBillingHandoff).toHaveBeenCalledExactlyOnceWith(
+        'plans'
+      )
+    }
+  )
+
+  it.for(planActions)(
     'opens $name on the billing site Plans page in a new tab',
     async ({ name, scenario }) => {
       arrange(scenario)

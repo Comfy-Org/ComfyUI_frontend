@@ -666,7 +666,7 @@ the mocked bridge before the app starts.
 
 Organizational tags are used for manual `--grep` filtering (not project
 routing). Common ones in the suite: `@smoke`, `@slow`, `@screenshot`, `@canvas`,
-`@node`, `@widget`, `@subgraph`, `@ui`. Apply them so a test is
+`@node`, `@widget`, `@subgraph`, `@ui`, `@a11y`. Apply them so a test is
 findable by its area; add a project-routing tag whenever the test must run in
 that project.
 
@@ -1141,6 +1141,66 @@ the whole graph shifted), the baseline is not stale: pin the pan/zoom in the
 test before the shot rather than regenerating. Regenerate only when the
 product changed, and open the diff to confirm the change is the one you made
 rather than a viewport shift.
+
+## Accessibility Testing
+
+`tests/accessibility/` scans app surfaces with
+[axe](https://github.com/dequelabs/axe-core) through `@axe-core/playwright`,
+following Playwright's
+[accessibility testing guide](https://playwright.dev/docs/accessibility-testing).
+The specs carry the `@a11y` tag and run in the regular projects, so CI gates on
+them.
+
+Merge `accessibilityFixture` into the test and scan after the surface is ready:
+
+```typescript
+import { mergeTests } from '@playwright/test'
+
+import { accessibilityFixture } from '@e2e/fixtures/accessibilityFixture'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+
+const test = mergeTests(comfyPageFixture, accessibilityFixture)
+
+test(
+  'settings dialog',
+  { tag: '@a11y' },
+  async ({ comfyPage, accessibility }) => {
+    await comfyPage.settingDialog.open()
+
+    await accessibility.expectOnlyKnownViolations([])
+  }
+)
+```
+
+- **Wait before scanning.** axe reads the DOM as it is when the scan starts.
+  Open the surface through its page object and assert the state it must reach,
+  as for a screenshot.
+- **Rules.** The scan runs axe's WCAG 2.0, 2.1, and 2.2 A/AA rules and its
+  best-practice rules against the whole page, so it also reports what a
+  surface does to the page behind it, such as a second `main` landmark.
+- **Known violations.** `expectOnlyKnownViolations(['color-contrast'])` allows
+  the listed axe rule IDs on that surface and fails on any other rule. It also
+  fails when a listed rule no longer fires, so a fix must delete its entry and
+  a later regression cannot hide behind a stale one. Never add a rule ID to
+  make a new failure pass; fix the component. The list is per rule, not per
+  element, because axe's generated selectors are utility-class chains that
+  change with unrelated styling edits.
+- **Narrower scans.** Pass a builder as the second argument to scan one region
+  or tune rules: `accessibility.makeAxeBuilder().include('[role="dialog"]')`.
+  `exclude()` drops an element and all its descendants from every rule; prefer
+  a known rule ID.
+- **Reading a failure.** The assertion lists each new rule with its help URL
+  and the failing elements. The `axe-violations` attachment on the test holds
+  every violation axe reported, known ones included.
+- **Adding a surface.** Add a test to the spec in `tests/accessibility/` that
+  matches the surface, or integrate a scan into an existing feature test with
+  the same fixture.
+
+An automated scan finds only part of the problems. axe cannot see nodes drawn
+on the LiteGraph canvas, and it does not check keyboard operation, focus order,
+or screen-reader output. Cover those with behavioral tests and manual checks,
+for example with
+[Accessibility Insights for Web](https://accessibilityinsights.io/docs/web/overview/).
 
 ## Debugging in CI
 
