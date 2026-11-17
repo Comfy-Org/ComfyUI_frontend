@@ -1039,6 +1039,38 @@ describe('useWorkflowPersistenceV2', () => {
     ).toBeNull()
   })
 
+  it('recovers a mounted pending edit when logout is aborted', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('LogoutAborted.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    await nextTick()
+
+    mocks.state.currentGraph = {
+      nodes: [],
+      extra: { marker: 'recovered-after-abort' }
+    }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+
+    const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
+    const transition = storageIO.prepareWorkflowLogoutTransition()
+    await vi.runAllTimersAsync()
+    expect(localStorage.getItem(payloadKey)).toBeNull()
+
+    storageIO.abortWorkflowLogoutTransition(transition)
+
+    await vi.waitFor(() =>
+      expect(localStorage.getItem(payloadKey)).not.toBeNull()
+    )
+    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    expect(JSON.parse(payload.data)).toEqual({
+      nodes: [],
+      extra: { marker: 'recovered-after-abort' }
+    })
+  })
+
   it('flushes the final source-workspace edit before blocking transition writes', async () => {
     distributionMocks.isCloud = true
     const sourceWorkspaceId = 'workspace-a'
