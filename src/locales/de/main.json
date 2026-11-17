@@ -742,7 +742,7 @@
       "auth/account-exists-with-different-credential": "Mit dieser Methode konnten wir Sie nicht anmelden. Versuchen Sie eine andere Anmeldeoption oder setzen Sie Ihr Passwort zurück, um fortzufahren.",
       "auth/cancelled-popup-request": "Ein anderes Anmeldefenster war bereits geöffnet, daher wurde dieses abgebrochen. Bitte versuchen Sie es erneut.",
       "auth/email-already-in-use": "Mit dieser E-Mail-Adresse konnten wir kein Konto erstellen. Versuchen Sie stattdessen, sich anzumelden oder Ihr Passwort zurückzusetzen.",
-      "auth/invalid-credential": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail-Adresse und Ihr Passwort.",
+      "auth/invalid-credential": "Ungültige Anmeldedaten. Bitte überprüfen Sie Ihre E-Mail-Adresse und Ihr Passwort. Wenn Sie sich zuvor mit Google oder GitHub angemeldet haben, verwenden Sie stattdessen diese Methode.",
       "auth/invalid-email": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
       "auth/network-request-failed": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
       "auth/operation-not-allowed": "Diese Anmeldemethode wird derzeit nicht unterstützt.",
@@ -803,6 +803,7 @@
       "userAvatar": "Benutzeravatar"
     },
     "loginButton": {
+      "signInToUsePartnerNodes": "Melden Sie sich an, um Partner-Nodes zu verwenden",
       "tooltipHelp": "Melden Sie sich an, um „API Nodes“ verwenden zu können",
       "tooltipLearnMore": "Mehr erfahren..."
     },
@@ -1588,9 +1589,7 @@
     "LOAD_3D": "LOAD_3D",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
-    "LUMA_CONCEPTS": "LUMA_CONCEPTS",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -2766,6 +2765,7 @@
     "versionMismatchWarning": "Warnung zur Versionskompatibilität",
     "videoFailedToLoad": "Video konnte nicht geladen werden",
     "videoFilenameExtensionRequired": "Der Videodateiname muss mit einer Erweiterung wie .mp4 enden. Benennen Sie die Datei um und versuchen Sie es erneut.",
+    "videoFormatNotSupported": "Dieses Video kann im Browser nicht wiedergegeben werden.",
     "videoPreview": "Videovorschau – Verwenden Sie die Pfeiltasten, um zwischen Videos zu navigieren",
     "viewGrid": "Rasteransicht",
     "viewImageOfTotal": "Bild {index} von {total} anzeigen",
@@ -4146,6 +4146,7 @@
       "errorUnavailable": "Diese Funktion ist derzeit nicht verfügbar. Bitte kontaktieren Sie den Support, falls das Problem weiterhin besteht.",
       "genericError": "OAuth-Anfrage fehlgeschlagen. Bitte starten Sie die Client-App erneut.",
       "loading": "Autorisierungsanfrage wird geladen …",
+      "loginRequired": "Melden Sie sich an, um fortzufahren.",
       "missingRequest": "Diese Autorisierungsanfrage fehlt. Bitte starten Sie die Client-App erneut.",
       "noWorkspaces": "Für diese Anfrage sind keine geeigneten Workspaces verfügbar.",
       "notYou": "Nicht Sie?",
@@ -4154,6 +4155,7 @@
       "resourceFallback": "diese App",
       "sessionError": "Sitzung konnte nicht eingerichtet werden. Bitte versuchen Sie es erneut.",
       "sessionErrorToastSummary": "OAuth-Anmeldung konnte nicht fortgesetzt werden",
+      "signInAgain": "Erneut anmelden",
       "signedInAs": "Angemeldet als",
       "subtitle": "Melden Sie sich bei {resource} an, um fortzufahren",
       "switchAccount": "Konto wechseln",
@@ -4161,6 +4163,7 @@
       "unverifiedBadge": "Name nicht verifiziert",
       "unverifiedNotice": "Dieser Name wurde von der Person angegeben, die diese App registriert hat. Wenn Sie fortfahren, wird Ihr Browser zu {host} weitergeleitet – stellen Sie sicher, dass Sie die Adresse erkennen.",
       "unverifiedNoticeNoHost": "Dieser Name wurde von der Person angegeben, die diese App registriert hat, und wurde nicht von Comfy verifiziert.",
+      "verifiedNotice": "Name nicht verifiziert · Verifiziertes Ziel: {platform} · Sie kehren zu {host} zurück",
       "workspaceLabel": "Ihre Workspaces"
     },
     "scopes": {
@@ -4381,13 +4384,16 @@
     "balanceUnavailable": "Ihr Guthaben konnte nicht geladen werden.",
     "billingSettings": "Abrechnungseinstellungen",
     "credits": "Credits",
+    "paymentProcessing": "Zahlungsabwicklung…",
+    "planCredits": "Plan-Guthaben",
     "planStatus": {
       "ended": "Plan beendet",
       "noPlan": "Kein Plan",
       "paused": "Pausiert",
       "paymentDue": "Zahlung fällig"
     },
-    "switchWorkspace": "Workspace wechseln"
+    "switchWorkspace": "Workspace wechseln",
+    "topUpCredits": "Guthaben aufladen"
   },
   "progressToast": {
     "allDownloadsCompleted": "Alle Downloads abgeschlossen",
@@ -6660,16 +6666,22 @@
   "workspaceSwitcher": {
     "cannotCreateWorkspace": "Sie können derzeit für dieses Konto keinen Workspace erstellen.",
     "createWorkspace": "Arbeitsbereich erstellen",
+    "createWorkspaceAction": "Workspace erstellen",
     "failedToSwitch": "Arbeitsbereich konnte nicht gewechselt werden",
+    "loadFailed": "Ihre Workspaces konnten nicht geladen werden.",
     "managedByOrganization": "Ihre Organisation verwaltet Ihre Workspaces, daher können Sie keinen erstellen.",
     "maxWorkspacesReached": "Sie können nur {max} Workspace besitzen. Löschen Sie ihn, um einen neuen zu erstellen. | Sie können nur {max} Workspaces besitzen. Löschen Sie einen, um einen neuen zu erstellen.",
+    "noResults": "Keine Workspaces entsprechen „{query}“.",
+    "ownedLimit": "Sie können bis zu {max} besitzen.",
     "personal": "Persönlich",
     "roleMember": "Mitglied",
     "roleOwner": "Inhaber",
     "scopeCaption": "Arbeitsbereiche beeinflussen nur, welche Credits Sie verwenden.",
     "scopeTooltip": "Ausführungen mit Partner-Nodes verbrauchen Credits aus diesem Arbeitsbereich. Anders als in Cloud speichert jeder Arbeitsbereich in Ihrem üblichen Ausgabeordner.",
+    "searchPlaceholder": "Workspace suchen...",
     "subscribe": "Abonnieren",
-    "switchWorkspace": "Arbeitsbereich wechseln"
+    "switchWorkspace": "Arbeitsbereich wechseln",
+    "tryAgain": "Erneut versuchen"
   },
   "zoomControls": {
     "hideMinimap": "Minimap ausblenden",

@@ -530,6 +530,7 @@ function createAccountIdentity(
   let signIns = 0
   let liveSignIn = 0
   let cancelRetry: (() => void) | undefined
+  let cancelProofRetry: (() => void) | undefined
   let cancelBeat: (() => void) | undefined
   let releaseLeadership: (() => void) | undefined
   let stopWatching: (() => void)[] = []
@@ -538,6 +539,10 @@ function createAccountIdentity(
   function dispatch(event: WebSessionIdentityEvent): void {
     const next = transitionWebSessionIdentity(state, event)
     const changed = next.state !== state
+    if (changed) {
+      cancelProofRetry?.()
+      cancelProofRetry = undefined
+    }
     state = next.state
     next.effects.forEach(run)
     if (changed) listeners.forEach((listener) => listener(state))
@@ -677,7 +682,9 @@ function createAccountIdentity(
     if (started !== epoch) return
     if (proof === undefined) {
       if (!retried && state.phase === 'signed_in') {
-        schedule(() => {
+        cancelProofRetry?.()
+        cancelProofRetry = schedule(() => {
+          cancelProofRetry = undefined
           if (started === epoch && state.phase === 'signed_in') {
             startRestore(expectedUserId, true)
           }
@@ -803,6 +810,8 @@ function createAccountIdentity(
       epoch += 1
       cancelRetry?.()
       cancelRetry = undefined
+      cancelProofRetry?.()
+      cancelProofRetry = undefined
       stopHeartbeat()
       state = { phase: 'idle' }
       listeners.forEach((listener) => listener(state))

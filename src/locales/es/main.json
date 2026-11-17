@@ -742,7 +742,7 @@
       "auth/account-exists-with-different-credential": "No pudimos iniciar sesión con este método. Prueba otra opción de inicio de sesión o restablece tu contraseña para continuar.",
       "auth/cancelled-popup-request": "Ya había otra ventana de inicio de sesión abierta, por lo que esta se canceló. Inténtalo de nuevo.",
       "auth/email-already-in-use": "No pudimos crear una cuenta con este correo electrónico. Intenta iniciar sesión o restablecer tu contraseña.",
-      "auth/invalid-credential": "Credenciales de inicio de sesión inválidas. Por favor, verifica tu correo electrónico y contraseña.",
+      "auth/invalid-credential": "Credenciales de inicio de sesión no válidas. Revisa tu correo electrónico y contraseña. Si has iniciado sesión antes con Google o GitHub, usa esa opción.",
       "auth/invalid-email": "Por favor, ingresa una dirección de correo electrónico válida.",
       "auth/network-request-failed": "Error de red. Por favor, verifica tu conexión e inténtalo de nuevo.",
       "auth/operation-not-allowed": "Este método de inicio de sesión no está soportado actualmente.",
@@ -803,6 +803,7 @@
       "userAvatar": "Avatar de usuario"
     },
     "loginButton": {
+      "signInToUsePartnerNodes": "Inicia sesión para usar los nodos de socios",
       "tooltipHelp": "Inicia sesión para poder usar \"Nodos de API\"",
       "tooltipLearnMore": "Más información..."
     },
@@ -1588,9 +1589,7 @@
     "LOAD_3D": "CARGAR_3D",
     "LORA_MODEL": "MODELO_LORA",
     "LOSS_MAP": "MAPA_PÉRDIDAS",
-    "LUMA_CONCEPTS": "CONCEPTOS LUMA",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "REFERENCIA LUMA",
     "MASK": "MASK",
     "MESH": "MALLA",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -2766,6 +2765,7 @@
     "versionMismatchWarning": "Advertencia de compatibilidad de versión",
     "videoFailedToLoad": "Falló la carga del video",
     "videoFilenameExtensionRequired": "El nombre de archivo del vídeo debe terminar con una extensión como .mp4. Cambia el nombre del archivo e inténtalo de nuevo.",
+    "videoFormatNotSupported": "Este video no se puede reproducir en el navegador.",
     "videoPreview": "Vista previa de video - Usa las teclas de flecha para navegar entre videos",
     "viewGrid": "Vista de cuadrícula",
     "viewImageOfTotal": "Ver imagen {index} de {total}",
@@ -4146,6 +4146,7 @@
       "errorUnavailable": "Esta función no está disponible en este momento. Por favor, contacta con soporte si el problema persiste.",
       "genericError": "La solicitud OAuth ha fallado. Por favor, reinicia desde la aplicación cliente.",
       "loading": "Cargando solicitud de autorización…",
+      "loginRequired": "Inicia sesión para continuar.",
       "missingRequest": "Falta esta solicitud de autorización. Por favor, reinicia desde la aplicación cliente.",
       "noWorkspaces": "No hay espacios de trabajo elegibles disponibles para esta solicitud.",
       "notYou": "¿No eres tú?",
@@ -4154,6 +4155,7 @@
       "resourceFallback": "esta aplicación",
       "sessionError": "No se pudo establecer la sesión. Por favor, inténtalo de nuevo.",
       "sessionErrorToastSummary": "No se pudo continuar con el inicio de sesión OAuth",
+      "signInAgain": "Inicia sesión de nuevo",
       "signedInAs": "Sesión iniciada como",
       "subtitle": "Inicia sesión en {resource} para continuar",
       "switchAccount": "Cambiar de cuenta",
@@ -4161,6 +4163,7 @@
       "unverifiedBadge": "Nombre no verificado",
       "unverifiedNotice": "Este nombre fue proporcionado por quien registró esta aplicación. Después de continuar, tu navegador será enviado a {host}; asegúrate de reconocerlo.",
       "unverifiedNoticeNoHost": "Este nombre fue proporcionado por quien registró esta aplicación y no ha sido verificado por Comfy.",
+      "verifiedNotice": "Nombre no verificado · Destino verificado: {platform} · volverás a {host}",
       "workspaceLabel": "Espacio de trabajo"
     },
     "scopes": {
@@ -4381,13 +4384,16 @@
     "balanceUnavailable": "No se pudo cargar tu saldo.",
     "billingSettings": "Configuración de facturación",
     "credits": "Créditos",
+    "paymentProcessing": "Procesando el pago…",
+    "planCredits": "Créditos del plan",
     "planStatus": {
       "ended": "Plan finalizado",
       "noPlan": "Sin plan",
       "paused": "En pausa",
       "paymentDue": "Pago pendiente"
     },
-    "switchWorkspace": "Cambiar de espacio de trabajo"
+    "switchWorkspace": "Cambiar de espacio de trabajo",
+    "topUpCredits": "Recargar créditos"
   },
   "progressToast": {
     "allDownloadsCompleted": "Todas las descargas completadas",
@@ -6660,16 +6666,22 @@
   "workspaceSwitcher": {
     "cannotCreateWorkspace": "No puedes crear un espacio de trabajo en esta cuenta en este momento.",
     "createWorkspace": "Crear nuevo espacio de trabajo",
+    "createWorkspaceAction": "Crear espacio de trabajo",
     "failedToSwitch": "No se pudo cambiar el espacio de trabajo",
+    "loadFailed": "No se pudieron cargar tus espacios de trabajo.",
     "managedByOrganization": "Tu organización administra tus espacios de trabajo, por lo que no puedes crear uno.",
     "maxWorkspacesReached": "Solo puedes ser propietario de {max} espacio de trabajo. Elimínalo para crear uno nuevo. | Solo puedes ser propietario de {max} espacios de trabajo. Elimina uno para crear uno nuevo.",
+    "noResults": "Ningún espacio de trabajo coincide con “{query}”.",
+    "ownedLimit": "Puedes tener hasta {max}.",
     "personal": "Personal",
     "roleMember": "Miembro",
     "roleOwner": "Propietario",
     "scopeCaption": "Los espacios de trabajo solo afectan a los créditos que usas.",
     "scopeTooltip": "Las ejecuciones que usan nodos asociados consumen créditos de este espacio de trabajo. A diferencia de Cloud, todos los espacios de trabajo guardan en tu carpeta de salida habitual.",
+    "searchPlaceholder": "Buscar espacio de trabajo...",
     "subscribe": "Suscribirse",
-    "switchWorkspace": "Cambiar espacio de trabajo"
+    "switchWorkspace": "Cambiar espacio de trabajo",
+    "tryAgain": "Intentar de nuevo"
   },
   "zoomControls": {
     "hideMinimap": "Ocultar minimapa",

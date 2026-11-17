@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive, ref } from 'vue'
+import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -228,6 +228,27 @@ describe('DomWidget style', () => {
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
+  })
+})
+
+describe('DomWidget component widgets', () => {
+  afterEach(() => {
+    useDomWidgetStore().clear()
+  })
+
+  it('passes the owning node id to the component', () => {
+    const widgetState = createWidgetState(false)
+    Object.assign(widgetState.widget, {
+      component: defineComponent({
+        props: { nodeId: { type: [Number, String] } },
+        setup: (props) => () => h('output', `node ${props.nodeId}`)
+      }),
+      inputSpec: {}
+    })
+
+    render(DomWidget, { props: { widgetState } })
+
+    expect(screen.getByRole('status')).toHaveTextContent('node 1')
   })
 })
 

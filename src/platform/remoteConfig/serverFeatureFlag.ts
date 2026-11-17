@@ -36,8 +36,6 @@ export enum ServerFeatureFlag {
   MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
   BILLING_NEW_UX_ENABLED = 'billing_new_ux_enabled',
   BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED = 'billing_auto_top_up_at_checkout_enabled',
-  BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
-  BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   UNIFIED_BILLING_SETTINGS = 'unified_billing_settings',
   PRICING_TABLE_FALLBACK = 'pricing_table_fallback',

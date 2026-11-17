@@ -209,7 +209,7 @@ test.describe(
       )
     })
 
-    test('renaming an expanded label moves it out of the stack', async ({
+    test('renaming links to the same name stacks them under that name', async ({
       comfyPage,
       linkVisibility
     }) => {
@@ -222,8 +222,7 @@ test.describe(
           1
         )
         await expect(linkVisibility.promptInput).toHaveValue('')
-        await linkVisibility.promptInput.fill('Positive clip')
-        await linkVisibility.promptInput.press('Enter')
+        await comfyPage.nodeOps.fillLegacyWidgetDialog('enc')
         await expect(linkVisibility.promptInput).toBeHidden()
         await expect
           .poll(
@@ -231,7 +230,7 @@ test.describe(
               (await comfyPage.workflow.getExportedWorkflow()).extra
                 ?.linkPresentation?.[firstClipLinkId]
           )
-          .toEqual({ hidden: true, label: 'Positive clip' })
+          .toEqual({ hidden: true, label: 'enc' })
       })
 
       await test.step('The renamed label sits below the remaining link', async () => {
@@ -241,7 +240,57 @@ test.describe(
           clipSlot,
           1
         )
-        await expect(linkVisibility.promptInput).toHaveValue('Positive clip')
+        await expect(linkVisibility.promptInput).toHaveValue('enc')
+        await linkVisibility.promptInput.press('Escape')
+        await expect(linkVisibility.promptInput).toBeHidden()
+      })
+
+      await test.step('Give the remaining link the same name', async () => {
+        await linkVisibility.openRenamePromptAtOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          0
+        )
+        await expect(linkVisibility.promptInput).toHaveValue('')
+        await comfyPage.nodeOps.fillLegacyWidgetDialog('enc')
+        await expect(linkVisibility.promptInput).toBeHidden()
+        await expect
+          .poll(async () =>
+            Object.values(
+              (await comfyPage.workflow.getExportedWorkflow()).extra
+                ?.linkPresentation ?? {}
+            )
+          )
+          .toEqual([
+            { hidden: true, label: 'enc' },
+            { hidden: true, label: 'enc' }
+          ])
+      })
+
+      const region = await screenshotRegion(comfyPage.page, [
+        await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+        ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+      ])
+
+      await test.step('Both links draw as one counted stack', async () => {
+        await linkVisibility.parkPointer()
+        await region.expectScreenshot('link-stack-same-name-collapsed.png')
+      })
+
+      await test.step('The stack expands and one label reveals one link', async () => {
+        await linkVisibility.clickOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          0
+        )
+        await linkVisibility.hoverOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          1
+        )
+        await region.expectScreenshot(
+          'link-stack-same-name-expanded-hover-one.png'
+        )
       })
     })
   }
