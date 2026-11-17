@@ -279,7 +279,14 @@ describe('CloudSubscriptionRedirectView', () => {
   describe('with the new billing UI on', () => {
     beforeEach(() => {
       vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      serveCanOpenPlans(true)
     })
+
+    function serveCanOpenPlans(granted: boolean) {
+      useBillingCapabilities().canOpenPlans = computed(() =>
+        receiveServerFact('can_open_plans', granted)
+      )
+    }
 
     function serveCanManageSubscription(granted: boolean) {
       const billingUI = useBillingUI()
@@ -318,6 +325,7 @@ describe('CloudSubscriptionRedirectView', () => {
     })
 
     test('leaves the redirect screen for the app when the person cannot manage the subscription', async () => {
+      serveCanOpenPlans(false)
       serveCanManageSubscription(false)
 
       await mountView({ tier: 'standard' })
@@ -340,6 +348,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     test('moves a member of an active workspace to the app without the inactive notice', async () => {
       useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
+      serveCanOpenPlans(false)
       serveCanManageSubscription(false)
 
       await mountView({ tier: 'standard' })
@@ -348,6 +357,25 @@ describe('CloudSubscriptionRedirectView', () => {
       expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
       expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
     })
+
+    test.for([
+      { workspace: 'an inactive', active: false },
+      { workspace: 'an active', active: true }
+    ])(
+      'moves a person who manages $workspace workspace but cannot open Plans to the app',
+      async ({ active }) => {
+        useBillingContext().canAccessSubscriptionFeatures = computed(
+          () => active
+        )
+        serveCanOpenPlans(false)
+
+        await mountView({ tier: 'standard' })
+
+        expect(mockRouterReplace).toHaveBeenCalledWith('/')
+        expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+        expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
+      }
+    )
   })
 
   test('reads no capabilities and stays on the redirect screen with the new billing UI off', async () => {
