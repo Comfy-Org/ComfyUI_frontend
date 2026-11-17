@@ -22,10 +22,14 @@ function deferredResponse() {
   return { promise, resolve }
 }
 
-function start() {
+function start(getToken = async (userId: string | undefined) => userId) {
   const userId = ref<string>()
-  const getToken = async () => userId.value
-  onTestFinished(startLocalOpenOnCloudRollout(() => userId.value, getToken))
+  onTestFinished(
+    startLocalOpenOnCloudRollout(
+      () => userId.value,
+      () => getToken(userId.value)
+    )
+  )
   vi.mocked(api.getServerFeature).mockImplementation(
     (_path, defaultValue) => defaultValue
   )
@@ -101,4 +105,35 @@ it('ignores a grant returned after sign-out and renders a denied account as off'
   await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
   await vi.advanceTimersByTimeAsync(0)
   expect(visible()).toBe(false)
+})
+
+it('recovers for the same account after a missing token and a temporary Cloud error', async () => {
+  const getToken = vi
+    .fn(async (userId: string | undefined) => userId)
+    .mockResolvedValueOnce(undefined)
+  const { userId, visible } = start(getToken)
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(new Response(null, { status: 503 }))
+    .mockResolvedValueOnce(Response.json(allowed))
+
+  userId.value = 'employee-token'
+  expect(visible()).toBe(false)
+  await vi.advanceTimersByTimeAsync(1_500)
+
+  expect(visible()).toBe(true)
+  expect(getToken).toHaveBeenCalledTimes(3)
+  expect(fetch).toHaveBeenCalledTimes(2)
+})
+
+it('stops retrying when the account signs out during backoff', async () => {
+  const { userId, visible } = start()
+  vi.mocked(fetch).mockRejectedValueOnce(new TypeError('network offline'))
+
+  userId.value = 'employee-token'
+  await vi.advanceTimersByTimeAsync(0)
+  userId.value = undefined
+  await vi.advanceTimersByTimeAsync(2_000)
+
+  expect(visible()).toBe(false)
+  expect(fetch).toHaveBeenCalledOnce()
 })
