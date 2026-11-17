@@ -290,6 +290,25 @@ Not built yet, and not part of this feature until they are:
   the API cannot reach without a call added to that component. Shipping the
   events for one renderer would publish a member that silently does nothing
   on the other.
+- The combo previews, `comfy.widgets.registerComboPreview` (2 packs, 2
+  calls) and `assignComboPreview` (1 pack, 1 call), 21 sites with their
+  fields. V2 asked the host to show a model's adjacent preview when the
+  pointer is over a model in any combo's list, and to save a node's output
+  image as a model's preview. The host has no mechanism for either. On the
+  litegraph canvas the list is a `LiteGraph.ContextMenu` that
+  `ComboWidget.onClick` builds with no hook per item; on the Vue canvas
+  `WidgetSelectDefault.vue` renders the options with none either. The only
+  previews in a combo are the asset picker's (`WidgetSelectDropdown`), which
+  `assetService.shouldUseWidgetAssetPicker` turns on for Comfy Cloud only and
+  fills from the asset service, not from an extension. The host does serve
+  a model's adjacent preview, as a still image, from the backend route
+  `/experiment/models/preview/{folder}/{path_index}/{filename}`, which the
+  model library reads through `getModelPreviewUrl`; nothing writes one. The
+  V2 members were served by the secure-nodes host's own routes and a
+  frontend hook that ComfyUI does not have. Building the hover surface here
+  would add a host feature from inside the API, for one canvas or by
+  changing both canvases' combo components, so it needs a host change
+  first.
 
 ## Core limitation
 
