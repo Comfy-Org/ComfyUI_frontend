@@ -18,34 +18,7 @@
               )
             "
           >
-            <Skeleton
-              v-if="showWorkspaceSkeleton"
-              class="size-8 rounded-full"
-            />
-            <span
-              v-else-if="flags.billingNewUxEnabled"
-              aria-hidden="true"
-              data-testid="current-user-monogram"
-              :class="
-                cn(
-                  'flex aspect-square items-center justify-center rounded-full bg-foreground text-sm font-medium text-background uppercase',
-                  compact ? 'size-full' : 'size-8'
-                )
-              "
-              >{{ monogram }}</span
-            >
-            <WorkspaceProfilePic
-              v-else-if="showWorkspaceIcon"
-              :workspace-name="workspaceName"
-              :subscription-tier="activeSummary?.subscriptionTier"
-              :class="compact && 'size-full'"
-            />
-            <UserAvatar
-              v-else
-              :label="$t('auth.login.userAvatar')"
-              :photo-url="photoURL"
-              :class="compact && 'h-full w-auto'"
-            />
+            <CurrentUserAvatar :compact />
 
             <i v-if="showArrow" class="icon-[lucide--chevron-down] px-1" />
           </div>
@@ -84,20 +57,17 @@ import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { unrefElement } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import UserAvatar from '@comfyorg/design-system/common/UserAvatar'
-import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CurrentUserPopoverWorkspace from '@/platform/account/components/CurrentUserPopoverWorkspace.vue'
 import ProfileMenuWorkspace from '@/platform/account/components/ProfileMenuWorkspace.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import CurrentUserAvatar from './CurrentUserAvatar.vue'
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const {
@@ -110,29 +80,9 @@ const {
   side?: 'bottom' | 'left' | 'right'
 }>()
 
-const { isLoggedIn, userPhotoUrl, userDisplayName, userEmail } =
-  useCurrentUser()
-const monogram = computed(() =>
-  (userDisplayName.value || userEmail.value || '').trim().charAt(0)
-)
+const { isLoggedIn } = useCurrentUser()
 
-const photoURL = computed<string | undefined>(
-  () => userPhotoUrl.value ?? undefined
-)
-
-const {
-  workspaceName: teamWorkspaceName,
-  initState,
-  isInPersonalWorkspace
-} = storeToRefs(useTeamWorkspaceStore())
-const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
-
-const showWorkspaceSkeleton = computed(
-  () => isCloud && initState.value === 'loading'
-)
-const showWorkspaceIcon = computed(
-  () => initState.value === 'ready' && !isInPersonalWorkspace.value
-)
+const { initState } = storeToRefs(useTeamWorkspaceStore())
 const { flags } = useFeatureFlags()
 const workspaceMenu = computed(() =>
   flags.billingNewUxEnabled ? ProfileMenuWorkspace : CurrentUserPopoverWorkspace
@@ -146,11 +96,6 @@ const popoverSizeClass = computed(() => {
   return flags.billingNewUxEnabled
     ? 'w-72 rounded-xl'
     : 'w-fit max-w-96 min-w-80 rounded-lg'
-})
-
-const workspaceName = computed(() => {
-  if (!showWorkspaceIcon.value) return ''
-  return teamWorkspaceName.value
 })
 
 const open = ref(false)
