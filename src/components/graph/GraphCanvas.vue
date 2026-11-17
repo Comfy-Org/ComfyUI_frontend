@@ -156,6 +156,7 @@ import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingH
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
+import { useTextPreviewSystem } from '@/systems/textPreviewSystem'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -499,6 +500,7 @@ useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
 useNodeEmphasis()
+useTextPreviewSystem()
 
 useGlobalLitegraph()
 useContextMenuTranslation()

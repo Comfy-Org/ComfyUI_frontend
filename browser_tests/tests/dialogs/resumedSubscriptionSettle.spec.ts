@@ -13,7 +13,6 @@ import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -33,12 +32,11 @@ type Rail = 'sdk' | 'legacy'
 const RAIL_FEATURES: Record<Rail, RemoteConfig> = {
   sdk: {
     billing_control_enabled: true,
-    unified_cloud_auth: true,
-    billing_sdk_subscription_enabled: true
+    unified_cloud_auth: true
   },
   legacy: {
     billing_control_enabled: true,
-    unified_cloud_auth: true
+    unified_cloud_auth: false
   }
 }
 
@@ -158,11 +156,6 @@ async function setupResume(page: Page, rail: Rail): Promise<ResumeRoutes> {
   await page.route('**/api/settings', (route) =>
     route.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
-  if (rail === 'sdk') {
-    await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
-      billing_sdk_subscription_enabled: true
-    })
-  }
 
   await page.route('**/api/billing/payment-methods', (route) =>
     route.fulfill(jsonRoute([SAVED_CARD]))

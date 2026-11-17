@@ -693,6 +693,7 @@ export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
     | 'automatic_consent'
     | 'activation'
     | 'error_context'
+    | 'cloud_button'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'

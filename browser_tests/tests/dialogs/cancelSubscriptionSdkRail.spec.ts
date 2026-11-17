@@ -8,7 +8,6 @@ import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscri
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
   mockWorkspaceTokenMint,
@@ -150,28 +149,12 @@ function idempotencyKey(request: Request): string | undefined {
 }
 
 test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
-  test('keeps the legacy call while the SDK rail is off', async ({ page }) => {
-    test.setTimeout(60_000)
-    const cancelRoute = await mockCloudBoot(page)
-    await bootApp(page)
-
-    const dialog = new CancelSubscriptionDialog(page)
-    await dialog.open('2099-12-31T12:00:00Z')
-    await dialog.confirmCancel()
-    expect(cancelRoute.requests).toHaveLength(1)
-    expect(cancelRoute.requests[0].method()).toBe('POST')
-    expect(idempotencyKey(cancelRoute.requests[0])).toBeUndefined()
-  })
-
   test('issues through the SDK transport while the rail is on', async ({
     page
   }) => {
     test.setTimeout(60_000)
     const cancelRoute = await mockCloudBoot(page)
     await bootApp(page)
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      billing_sdk_subscription_enabled: true
-    })
 
     const dialog = new CancelSubscriptionDialog(page)
     await dialog.open('2099-12-31T12:00:00Z')
@@ -191,9 +174,6 @@ test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
     test.setTimeout(60_000)
     const cancelRoute = await mockCloudBoot(page)
     await bootApp(page)
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      billing_sdk_subscription_enabled: true
-    })
     cancelRoute.respondNotFound()
 
     const dialog = new CancelSubscriptionDialog(page)

@@ -92,7 +92,7 @@ ${UPLOAD_YES}`
 
 function localhostPath(inputs: BuildInputs): string {
   const buildName = workflowText`Name the Build ${inputs.workflowName}.`
-  const downloadedFile = workflowText`The browser downloaded the workflow as ${inputs.workflowFileName}, most likely to the download directory.`
+  const exportedFile = workflowText`Otherwise, ask the user to export the workflow as ${inputs.workflowFileName} and provide its location.`
   return `## Your path: create from the install, or from the workflow file
 
 This ComfyUI may run on the machine you are on, or on another one, such as a
@@ -100,7 +100,7 @@ rented GPU server. ${buildName}
 
 - When ComfyUI is installed on the machine you are running on, build from that
   install; nothing is uploaded to start.
-- Otherwise, build from the workflow file. ${downloadedFile} The
+- ${exportedFile} The
   recipe's import sends the whole workflow JSON to the Comfy builder.
   ${UPLOAD_YES}
 
