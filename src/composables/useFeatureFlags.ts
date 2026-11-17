@@ -4,6 +4,8 @@ import type { Ref } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
+import { hasLocalAgentEmployeeAccess } from '@/platform/openOnCloud/localAgentEmployeeAccess'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import {
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -137,7 +139,6 @@ export function useFeatureFlags() {
     get supportsManagerV4() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
     },
-    /** ComfyUI's `agent` server feature; callers validate `state`. */
     get agent() {
       return api.getServerFeature<{ state?: unknown } | null | undefined>(
         ServerFeatureFlag.AGENT
@@ -215,6 +216,19 @@ export function useFeatureFlags() {
         import.meta.env.DEV
       )
     },
+    get openOnCloudUseLocalAgentEnabled() {
+      return (
+        pendingServerFact(
+          'BE-26582',
+          hasLocalAgentEmployeeAccess() &&
+            resolveFlag<unknown>(
+              ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
+              remoteConfig.value.open_on_cloud_use_local_agent_enabled,
+              true
+            ) === true
+        ) === true
+      )
+    },
     get deployToCloud() {
       return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
     },
@@ -278,8 +292,6 @@ export function useFeatureFlags() {
       if (!isCloud) return false
 
       const key = ServerFeatureFlag.UNIFIED_WEB_SESSION
-      // Overrides skip the server's web_session_enabled pairing; whoever overrides
-      // this key must also be in the web_session_enabled set.
       const value =
         getSessionOverride<unknown>(key) ??
         getDevOverride<unknown>(key) ??
@@ -294,7 +306,6 @@ export function useFeatureFlags() {
         remoteConfig.value.sso_enabled
       )
     },
-    /** Browser sign-in for a local ComfyUI that Desktop does not host. */
     get localWebSsoEnabled() {
       if (isCloud) return false
 
@@ -322,7 +333,6 @@ export function useFeatureFlags() {
         remoteConfig.value.billing_sdk_topup_enabled
       )
     },
-    /** The SDK rail runs on the unified session, so it needs both flags. */
     get billingSdkTopupRailEnabled() {
       return this.billingSdkTopupEnabled && this.unifiedCloudAuthEnabled
     },
@@ -412,6 +422,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED]: flags.openOnCloudEnabled,
+      [ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED]:
+        flags.openOnCloudUseLocalAgentEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,

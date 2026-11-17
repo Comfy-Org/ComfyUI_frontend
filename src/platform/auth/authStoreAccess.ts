@@ -17,6 +17,10 @@ interface AuthStoreAccess {
 
 let providedUseAuthStore: (() => AuthStoreAccess) | undefined
 
+export function getCurrentAuthUser(): User | null {
+  return providedUseAuthStore?.().currentUser ?? null
+}
+
 /** Called by `authStore` when it loads. */
 export function provideAuthStore(useStore: () => AuthStoreAccess): void {
   providedUseAuthStore = useStore

@@ -25,7 +25,7 @@
       </Button>
     </template>
     <MenuItem
-      v-if="localAgentEnabled"
+      v-if="flags.openOnCloudUseLocalAgentEnabled && localAgentEnabled"
       :disabled="isOpeningAgent"
       @select="useLocalAgent"
     >
@@ -50,6 +50,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { onScopeDispose } from 'vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import MenuItem from '@/components/ui/menu/MenuItem.vue'
@@ -61,6 +62,7 @@ import { switcherMenuMotionClass } from '@/platform/workspace/components/deploym
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 
 const emit = defineEmits<{ done: [] }>()
+const { flags } = useFeatureFlags()
 const {
   enabled: localAgentEnabled,
   isOpening: isOpeningAgent,
@@ -75,8 +77,16 @@ onScopeDispose(() => {
 })
 
 async function useLocalAgent() {
+  if (!flags.openOnCloudUseLocalAgentEnabled) return
   const prompt = prepareBrief()
-  if (prompt && (await openLocalAgent(prompt, () => isActive)) && isActive)
+  if (
+    prompt &&
+    (await openLocalAgent(
+      prompt,
+      () => isActive && flags.openOnCloudUseLocalAgentEnabled
+    )) &&
+    isActive
+  )
     emit('done')
 }
 

@@ -14,6 +14,7 @@ import {
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
+import { hasLocalAgentEmployeeAccess } from '@/platform/openOnCloud/localAgentEmployeeAccess'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
@@ -41,6 +42,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/openOnCloud/localAgentEmployeeAccess'), () => ({
+  hasLocalAgentEmployeeAccess: vi.fn(() => false)
+}))
 
 const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
   useRemoteConfigCache()
@@ -630,6 +634,57 @@ describe('useFeatureFlags', () => {
         remoteConfig.value = { open_on_cloud_enabled: served }
 
         expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(expected)
+      }
+    )
+  })
+
+  describe('openOnCloudUseLocalAgentEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+      vi.mocked(hasLocalAgentEmployeeAccess).mockReturnValue(false)
+    })
+
+    it.for([false, true])('defaults off in dev=%s', (dev) => {
+      vi.stubEnv('DEV', dev)
+
+      expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
+        false
+      )
+    })
+
+    it('automatically enables for a signed-in employee without an override', () => {
+      vi.mocked(hasLocalAgentEmployeeAccess).mockReturnValue(true)
+
+      expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(true)
+    })
+
+    it('does not enable for other users even when remote config is true', () => {
+      remoteConfig.value = { open_on_cloud_use_local_agent_enabled: true }
+
+      expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
+        false
+      )
+    })
+
+    it.for([
+      { served: true, expected: true },
+      { served: false, expected: false },
+      { served: 'true', expected: false }
+    ])(
+      'uses only a boolean true from remote config: $served',
+      ({ served, expected }) => {
+        vi.mocked(hasLocalAgentEmployeeAccess).mockReturnValue(true)
+        remoteConfig.value = { open_on_cloud_use_local_agent_enabled: served }
+
+        expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
+          expected
+        )
       }
     )
   })
