@@ -264,7 +264,8 @@ follow-up for a command interface.
     each group of the graph, in draw order. A group handle names a group by its
     id in its graph and follows the same rules as a node handle: it survives
     undo and redo, which restore the id, and is retired when another document
-    loads or a restore finds the group gone. It reads the group's title, color
+    loads or a restore finds the group gone with its id free to be given
+    again (ADR-EXTENSIONS-NODE-API-0070 decision 10). It reads the group's title, color
     and bounds, and `nodes()` gives the nodes whose center, title bar
     included, is inside the group now. The centers are measured as `getBounds`
     measures a node, so the answer does not depend on the last frame drawn,

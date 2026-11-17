@@ -6,7 +6,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
-import { createDocumentHandles } from './documentHandles'
+import { createDocumentHandles, isReissuable } from './documentHandles'
 import type { GraphResolver } from './documentHandles'
 
 interface GraphProbe {
@@ -18,10 +18,14 @@ const graphProbe = (resolveGraph: GraphResolver): GraphProbe => ({
 })
 
 function handlesWithProbes(
-  exists: (graph: LGraph, key: string) => boolean = () => true
+  exists: (graph: LGraph, key: string) => boolean = () => true,
+  reissuable?: (graph: LGraph, key: string) => boolean
 ) {
   const handles = createDocumentHandles()
-  return { handles, probes: handles.createCache<GraphProbe>(exists) }
+  return {
+    handles,
+    probes: handles.createCache<GraphProbe>(exists, reissuable)
+  }
 }
 
 function rootWithPlacedSubgraph() {
@@ -148,8 +152,11 @@ describe('document handles', () => {
       expect(handles.owns(gone)).toBe(true)
     })
 
-    it('retires a handle whose graph is gone', () => {
-      const { handles, probes } = handlesWithProbes(() => true)
+    it('retires a handle whose graph is gone, even one whose key cannot be given again', () => {
+      const { handles, probes } = handlesWithProbes(
+        () => true,
+        () => false
+      )
       const { root, subgraph } = rootWithPlacedSubgraph()
       const inSubgraph = probes.handleFor(subgraph, 'k', graphProbe)
       const inRoot = probes.handleFor(root, 'k', graphProbe)
@@ -160,6 +167,44 @@ describe('document handles', () => {
 
       expect(inSubgraph.resolveGraph()).toBeUndefined()
       expect(inRoot.resolveGraph()).toBe(root)
+    })
+
+    it('keeps a handle whose entity is gone while its key cannot be given again, until a restore finds that it can', () => {
+      const present = new Set<string>()
+      const reissuable = new Set<string>()
+      const { handles, probes } = handlesWithProbes(
+        (_, key) => present.has(key),
+        (_, key) => reissuable.has(key)
+      )
+      const root = new LGraph()
+      const handle = probes.handleFor(root, 'k', graphProbe)
+
+      handles.afterHistoryRestore()
+      expect(handle.resolveGraph()).toBe(root)
+      expect(probes.handleFor(root, 'k', graphProbe)).toBe(handle)
+
+      reissuable.add('k')
+      handles.afterHistoryRestore()
+      present.add('k')
+
+      expect(handle.resolveGraph()).toBeUndefined()
+      expect(probes.handleFor(root, 'k', graphProbe)).not.toBe(handle)
+    })
+  })
+
+  describe('whether a counter could give an id again', () => {
+    it('says no for a counted id at or below the last one given', () => {
+      expect(isReissuable('3', 3)).toBe(false)
+      expect(isReissuable('0', 3)).toBe(false)
+    })
+
+    it('says yes for an id above the last one given, and for one no counter gives', () => {
+      expect(isReissuable('4', 3)).toBe(true)
+      expect(isReissuable('2.5', 3)).toBe(true)
+      expect(isReissuable('named', 3)).toBe(true)
+      expect(isReissuable(String(Number.MAX_SAFE_INTEGER + 2), Infinity)).toBe(
+        true
+      )
     })
   })
 

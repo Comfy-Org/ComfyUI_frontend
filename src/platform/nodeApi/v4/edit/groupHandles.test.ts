@@ -134,14 +134,49 @@ describe('group handles', () => {
     expect(handle.isDeleted).toBe(true)
   })
 
-  it('retires the handle of a group an undo removed', () => {
-    const group = addGroup('Gone', [0, 0, 100, 100])
+  it('retires the handle of a group an undo removed, so the group that takes its id next gets another', () => {
+    const beforeAdding = shown().serialize()
+    addGroup('Gone', [0, 0, 100, 100])
+    const [handle] = comfy.graph.groups() ?? []
+
+    shown().configure(beforeAdding)
+    host.afterHistoryRestore()
+    const next = addGroup('New', [0, 0, 100, 100])
+
+    expect(String(next.id)).toBe(handle.id)
+    expect(handle.isDeleted).toBe(true)
+    expect(comfy.graph.groups()?.[0]).not.toBe(handle)
+  })
+
+  it('keeps the handle of a group a restore removed while a later group holds the counter above its id, and reads it when it comes back', () => {
+    const group = addGroup('Back', [0, 0, 100, 100])
+    addGroup('Later', [200, 0, 100, 100])
+    const withGroup = shown().serialize()
+    const [handle] = comfy.graph.groups() ?? []
+    shown().remove(group)
+    const withoutGroup = shown().serialize()
+
+    shown().configure(withoutGroup)
+    host.afterHistoryRestore()
+    expect(handle.isDeleted).toBe(true)
+    shown().configure(withGroup)
+    host.afterHistoryRestore()
+
+    expect(handle.isDeleted).toBe(false)
+    expect(handle.getTitle()).toBe('Back')
+    expect(comfy.graph.groups()?.[0]).toBe(handle)
+  })
+
+  it('retires the handle of the newest group a restore removed, whose id the next group takes, since a saved state does not keep the group counter', () => {
+    const group = addGroup('Newest', [0, 0, 100, 100])
     const [handle] = comfy.graph.groups() ?? []
     shown().remove(group)
 
+    shown().configure(shown().serialize())
     host.afterHistoryRestore()
-    addGroup('New', [0, 0, 100, 100]).id = group.id
+    const next = addGroup('Next', [0, 0, 100, 100])
 
+    expect(String(next.id)).toBe(handle.id)
     expect(handle.isDeleted).toBe(true)
   })
 

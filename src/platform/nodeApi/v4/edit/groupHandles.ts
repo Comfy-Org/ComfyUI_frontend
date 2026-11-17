@@ -2,6 +2,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { containsCentre } from '@/lib/litegraph/src/measure'
 
+import { isReissuable } from '@/platform/nodeApi/shared/documentHandles'
 import type {
   DocumentHandles,
   GraphResolver
@@ -18,7 +19,8 @@ export function createGroupHandles(
   nodes: NodeHandles
 ): GroupsOf {
   const cache = handles.createCache<GroupHandle>(
-    (graph, id) => groupIn(graph, id) !== undefined
+    (graph, id) => groupIn(graph, id) !== undefined,
+    (graph, id) => isReissuable(id, graph.state.lastGroupId)
   )
   return (graph) =>
     Object.freeze(
