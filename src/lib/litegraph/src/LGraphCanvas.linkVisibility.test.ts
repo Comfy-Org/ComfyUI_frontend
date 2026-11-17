@@ -722,6 +722,17 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
     })
 
+    it('opens no rename prompt when the canvas turns read-only between the two clicks', () => {
+      const { canvas, relayout, prompt } = createStackFixture()
+
+      pressAt(canvas, 420, 300, 100)
+      relayout()
+      canvas.read_only = true
+      pressAt(canvas, 420, 300, 200)
+
+      expect(prompt).not.toHaveBeenCalled()
+    })
+
     it('leaves a stack collapsed when Escape is pressed during the second press', () => {
       const { canvas, relayout, prompt } = createStackFixture()
       const init = { isPrimary: true, pointerId: 1, clientX: 420, clientY: 300 }

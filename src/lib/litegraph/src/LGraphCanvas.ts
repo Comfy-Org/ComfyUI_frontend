@@ -570,11 +570,15 @@ function renameToggledLinkStackOnDoubleClick(
 ): void {
   const { pointer } = canvas
   const toggledAt = pointer.doubleClickedTimeStamp
-  if (!queryHiddenLinkStackToggledAt(canvas, graph, toggledAt)) return
+  const editableToggledStack = () =>
+    canvas.read_only || canvas.selectOnly
+      ? undefined
+      : queryHiddenLinkStackToggledAt(canvas, graph, toggledAt)
+  if (!editableToggledStack()) return
 
   const onDoubleClickOfPressedTarget = pointer.onDoubleClick
   pointer.onDoubleClick = (upEvent) => {
-    const stack = queryHiddenLinkStackToggledAt(canvas, graph, toggledAt)
+    const stack = editableToggledStack()
     if (!stack) return onDoubleClickOfPressedTarget?.call(pointer, upEvent)
     toggleLinkBadgeStack(canvas, stack.stackKey)
     canvas.dirty_bgcanvas = true
