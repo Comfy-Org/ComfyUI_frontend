@@ -190,6 +190,20 @@ describe('addWidget teardown', () => {
 
     expect(onRemove).toHaveBeenCalledOnce()
   })
+
+  test('still removes a widget taken out of the widget list without removeWidget when its node is removed', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test-node')
+    graph.add(node)
+    const widget = domWidget(node)
+    const onRemove = vi.spyOn(widget, 'onRemove')
+
+    node.widgets?.splice(node.widgets.indexOf(widget), 1)
+    graph.remove(node)
+
+    expect(onRemove).toHaveBeenCalledOnce()
+    expect(useDomWidgetStore().widgetStates.has(widget.id)).toBe(false)
+  })
 })
 
 describe('DOM widget value accessors with a non-function getValue/setValue', () => {
