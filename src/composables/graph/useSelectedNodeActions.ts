@@ -1,49 +1,51 @@
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { withGraphEdit } from '@/lib/litegraph/src/graphEdits'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
-/**
- * Composable for handling node information and utility operations
- */
 export function useSelectedNodeActions() {
   const { getSelectedNodes, toggleSelectedNodesMode } =
     useSelectedLiteGraphItems()
   const commandStore = useCommandStore()
-  const workflowStore = useWorkflowStore()
 
   const adjustNodeSize = () => {
+    const canvas = app.canvas
     const selectedNodes = getSelectedNodes()
 
-    selectedNodes.forEach((node) => {
-      const optimalSize = node.computeSize()
-      node.setSize([optimalSize[0], optimalSize[1]])
-    })
+    withGraphEdit(canvas.graph, () => {
+      selectedNodes.forEach((node) => {
+        const optimalSize = node.computeSize()
+        node.setSize([optimalSize[0], optimalSize[1]])
+      })
 
-    app.canvas.setDirty(true, true)
-    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+      canvas.setDirty(true, true)
+    })
   }
 
   const toggleNodeCollapse = () => {
+    const canvas = app.canvas
     const selectedNodes = getSelectedNodes()
-    selectedNodes.forEach((node) => {
-      node.collapse()
-    })
+    withGraphEdit(canvas.graph, () => {
+      selectedNodes.forEach((node) => {
+        node.collapse()
+      })
 
-    app.canvas.setDirty(true, true)
-    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+      canvas.setDirty(true, true)
+    })
   }
 
   const toggleNodePin = () => {
+    const canvas = app.canvas
     const selectedNodes = getSelectedNodes()
-    selectedNodes.forEach((node) => {
-      node.pin(!node.pinned)
-    })
+    withGraphEdit(canvas.graph, () => {
+      selectedNodes.forEach((node) => {
+        node.pin(!node.pinned)
+      })
 
-    app.canvas.setDirty(true, true)
-    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+      canvas.setDirty(true, true)
+    })
   }
 
   const toggleNodeBypass = () => {

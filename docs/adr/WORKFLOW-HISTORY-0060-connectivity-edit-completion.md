@@ -66,6 +66,11 @@ Programmatic connectivity can create undo history without synthetic gestures.
 Extension vetoes and callback ordering remain synchronous. Snapshot undo and
 workflow serialization retain their existing formats.
 
-Unmigrated selection, asynchronous widget, prompt, and editor-session callers
+Synchronous selection and node batches reuse this scope. Mutation notes remain
+inert outside a scope, so field setters do not become automatic history triggers.
+Arrangement compares applied geometry rather than assuming a requested move
+changed it, and retains its capture opt-out. Selection expansion is unchanged.
+
+Asynchronous widget, prompt, and editor-session callers
 still require explicit completion boundaries in later slices. Text editors
 retain editor-local undo until their session ends.

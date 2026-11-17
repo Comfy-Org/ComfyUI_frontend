@@ -15,6 +15,7 @@ import {
 } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { canvasClass } from './canvas/canvasClassAccess'
+import { noteGraphEdit } from './graphEdits'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
 import { createMutationView } from './infrastructure/createMutationView'
@@ -188,13 +189,14 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     )
   }
 
-  /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
+    const previous = this.color
     if (colorOption == null) {
       this.color = undefined
     } else {
       this.color = colorOption.groupcolor
     }
+    if (this.graph && this.color !== previous) noteGraphEdit(this.graph)
   }
 
   /** @inheritdoc {@link IColorable.getColorOption} */

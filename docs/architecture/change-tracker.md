@@ -11,14 +11,15 @@ history by comparing serialized graph snapshots.
 2. Deep-compares the result against the last known `activeState`
 3. If different, pushes `activeState` onto `undoQueue` and replaces it
 
-**It is not reactive.** Connectivity captures completed edits through its
-bound owner. Other graph edits require `captureCanvasState()` triggers.
+**It is not reactive.** Connectivity and synchronous selection actions capture
+completed edits through their bound owner. Unmigrated graph edits require
+`captureCanvasState()` triggers.
 
 **INVARIANT:** `captureCanvasState()` asserts that it is called on the active
 workflow's tracker. Calling it on an inactive tracker logs a warning and
 returns early, preventing cross-workflow data corruption.
 
-## Explicit connectivity completion
+## Explicit edit completion
 
 Connectivity captures its completed edit through a tracker bound to the root
 graph state, even without a canvas gesture. Same-root reentrant connections and
@@ -37,6 +38,18 @@ transaction still owns its grouped capture, and unmigrated operations retain
 gesture fallback. Text editors retain local undo during their sessions. See
 [the connectivity completion decision](../adr/WORKFLOW-HISTORY-0060-connectivity-edit-completion.md)
 for the ownership tradeoffs.
+
+Synchronous selection actions reuse the same completion scope. Paste, duplicate,
+delete, resize, collapse, pin, mode, arrangement, and color batches complete
+against the originating graph, after synchronous callbacks finish. Applied
+membership, field, and geometry changes mark the scope; empty, refused, and
+unchanged actions do not capture unrelated pending edits. Arrangement can opt
+out of capture. Mode toggles retain shallow selection while resize, collapse,
+and pin retain descendant expansion.
+
+Mutation notes do not open a scope. Programmatic field assignments outside an
+explicit action therefore retain their existing history behavior. Async work
+must not use a synchronous scope across suspension.
 
 ## Automatic Triggers
 
@@ -63,8 +76,8 @@ rendering. They **do not cover**:
 - **Vue-rendered widgets** — Vue handles events internally without triggering
   native DOM events that the tracker listens to (e.g., `mouseup` on a Vue
   dropdown doesn't bubble the same way as a native LiteGraph widget click)
-- **Programmatic graph mutations outside connectivity** — Applying a template,
-  pasting nodes, and aligning still require their own capture boundaries
+- **Unmigrated programmatic mutations** — Applying a template and editing
+  workflow metadata still require their own capture boundaries
 - **Async operations** — File uploads, API calls that change widget values
   after the initial user gesture
 
@@ -82,11 +95,9 @@ useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
 These locations call `captureCanvasState()` directly:
 
 - `WidgetSelectDropdown.vue` — After dropdown selection and file upload
-- `ColorPickerButton.vue` — After changing node colors
 - `NodeSearchBoxPopover.vue` — After adding a node from search
 - `builderViewOptions.ts` — After setting default view
-- `useSelectionOperations.ts` — After align, copy, paste, duplicate, group
-- `useSelectedNodeActions.ts` — After pin, bypass, collapse
+- `useSelectionOperations.ts` — After asynchronous rename
 - `useGroupMenuOptions.ts` — After group operations
 - `useSubgraphOperations.ts` — After subgraph enter/exit
 - `useCanvasRefresh.ts` — After canvas refresh

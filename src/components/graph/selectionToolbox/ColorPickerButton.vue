@@ -59,6 +59,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
+import { withGraphEdit } from '@/lib/litegraph/src/graphEdits'
 import type {
   ColorOption as CanvasColorOption,
   LiteGraphCanvasEvent,
@@ -69,7 +70,6 @@ import {
   LiteGraph,
   isColorable
 } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
 import { getItemsColorOption } from '@/utils/litegraphUtil'
@@ -77,7 +77,6 @@ import { getItemsColorOption } from '@/utils/litegraphUtil'
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const themeStore = useThemeStore()
-const workflowStore = useWorkflowStore()
 const isLightTheme = computed(() => themeStore.colorScheme === 'light')
 
 const showColorPicker = ref(false)
@@ -126,17 +125,20 @@ const applyColor = (colorOption: ColorOption | null) => {
       ? null
       : LGraphCanvas.node_colors[colorName]
 
-  for (const item of canvasStore.selectedItems) {
-    if (isColorable(item)) {
-      item.setColorOption(canvasColorOption)
+  const canvas = canvasStore.canvas
+  const items = canvasStore.selectedItems
+  withGraphEdit(canvas?.graph, () => {
+    for (const item of items) {
+      if (isColorable(item)) {
+        item.setColorOption(canvasColorOption)
+      }
     }
-  }
 
-  canvasStore.canvas?.setDirty(true, true)
+    canvas?.setDirty(true, true)
+  })
   selectedColorOption.value = colorOption
   currentColorOption.value = canvasColorOption
   showColorPicker.value = false
-  workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
 }
 
 const currentColorOption = ref<CanvasColorOption | null>(null)
