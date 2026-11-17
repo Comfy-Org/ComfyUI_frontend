@@ -71,6 +71,10 @@ interface BadgeEndpoint {
 const endpointsByHost = new WeakMap<object, BadgeEndpoint[]>()
 const expandedStacksByHost = new WeakMap<object, Set<string>>()
 const drawnStackKeysByHost = new WeakMap<object, Set<string>>()
+const pendingExpansionsByHost = new WeakMap<
+  object,
+  Map<string, ReturnType<typeof setTimeout>>
+>()
 
 export function clearLinkBadgeHitAreas(host: object): void {
   endpointsByHost.delete(host)
@@ -107,6 +111,50 @@ export function toggleLinkBadgeStack(host: object, stackKey: string): void {
   expandedStacksByHost.set(host, expanded)
 }
 
+export function cancelPendingLinkBadgeStackExpansion(
+  host: object,
+  stackKey?: string
+): void {
+  const pending = pendingExpansionsByHost.get(host)
+  if (!pending) return
+  for (const [key, timer] of pending) {
+    if (stackKey !== undefined && key !== stackKey) continue
+    clearTimeout(timer)
+    pending.delete(key)
+  }
+}
+
+export function requestLinkBadgeStackToggle(
+  host: object,
+  stackKey: string,
+  { delay, onChange }: { delay: number; onChange: () => void }
+): void {
+  cancelPendingLinkBadgeStackExpansion(host, stackKey)
+  if (expandedStacksByHost.get(host)?.has(stackKey)) {
+    toggleLinkBadgeStack(host, stackKey)
+    onChange()
+    return
+  }
+  const pending =
+    pendingExpansionsByHost.get(host) ??
+    new Map<string, ReturnType<typeof setTimeout>>()
+  pending.set(
+    stackKey,
+    setTimeout(() => {
+      pending.delete(stackKey)
+      if (
+        !endpointsByHost
+          .get(host)
+          ?.some(({ hitArea }) => hitArea.stackKey === stackKey)
+      )
+        return
+      toggleLinkBadgeStack(host, stackKey)
+      onChange()
+    }, delay)
+  )
+  pendingExpansionsByHost.set(host, pending)
+}
+
 export function collapseRenamedLinkBadgeStack(
   host: object,
   stackKey: string,
@@ -122,6 +170,8 @@ export function collapseRenamedLinkBadgeStack(
 
 /** Collapses every expanded stack on the host; returns whether one was on screen. */
 export function collapseLinkBadgeStacks(host: object): boolean {
+  cancelPendingLinkBadgeStackExpansion(host)
+  pendingExpansionsByHost.delete(host)
   const expanded = expandedStacksByHost.get(host)
   expandedStacksByHost.delete(host)
   const drawn = drawnStackKeysByHost.get(host)

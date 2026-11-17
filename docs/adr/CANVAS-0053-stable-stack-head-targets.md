@@ -8,15 +8,16 @@ Accepted
 
 ## Context
 
-A hidden-link stack expands or collapses immediately on a single click. Its
-collapsed head includes decorative layers. Removing those layers during
-expansion previously shrank its hit area, so a second click at the same point
-could target an individual member instead of the stack.
+A hidden-link stack expands on a single click and opens Rename on a double
+click. Its collapsed head includes decorative layers. Removing those layers
+during expansion previously shrank its hit area, so a second click at the
+same point could target an individual member instead of the stack.
 
 Restoring the expansion state from before a double-click required remembering
 which first click toggled which stack. That introduced stack-specific gesture
 history alongside the canvas pointer reducer, with additional invalidation and
-release-cleanup rules.
+release-cleanup rules. Immediate expansion also caused a visible flash before
+Rename opened.
 
 ## Decision
 
@@ -24,20 +25,26 @@ Keep each stack head's collapsed collision and hit extent in both expansion
 states. Decorative layers may disappear, but the head retains its target and
 members avoid that target during layout.
 
-Use ordinary canvas click and double-click dispatch. A click toggles expansion;
-a double-click opens Rename for the stack under the second press. Submitting
-Rename collapses that stack. Cancelling leaves the first click's toggle in
-effect. Rename does not restore the expansion state from before the gesture
-or retarget a second press outside the head.
+Use ordinary canvas click and double-click dispatch. Delay expansion through
+the double-click window, but collapse an expanded stack immediately. A second
+press on the same head cancels pending expansion, including while that press
+is held. Opening Rename cancels all pending expansion on that canvas, whether
+Rename starts through a double-click or a menu.
 
-Escape retains ordinary canvas behavior: it collapses stacks without implicitly
-cancelling the pending Rename callback. Editing-mode guards still apply when
-the callback runs.
+Submitting Rename collapses the renamed stack and any stack it merges into.
+Cancelling Rename does not change expansion. Rename does not restore the
+expansion state from before the gesture or retarget a second press outside
+the head.
+
+Escape, an empty-canvas click, canvas clear, graph replacement, and event
+unbinding cancel pending expansion. Escape still permits an already pending
+Rename callback to run. Editing-mode guards still apply when that callback
+runs. Ordinary redraws do not cancel pending expansion.
 
 ## Alternatives
 
-A delayed single-click action avoids toggling before Rename but adds input
-latency and ownership of pending work through cancellation and graph changes.
+Immediate expansion avoids input latency but flashes individual members before
+Rename opens. Delaying expansion accepts a short pause to avoid that flash.
 
 A separate expansion control would let label double-click Rename preserve
 expansion without gesture history. It changes the interaction target and needs

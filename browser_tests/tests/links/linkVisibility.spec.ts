@@ -174,6 +174,7 @@ test.describe(
     const firstClipLinkId = '3'
 
     test.beforeEach(async ({ comfyPage, linkVisibility }) => {
+      await comfyPage.page.clock.install()
       await comfyPage.workflow.loadWorkflow('default')
       await linkVisibility.hideLinksFromOutput(checkpointLoaderId, clipSlot)
     })
@@ -196,7 +197,11 @@ test.describe(
       comfyPage,
       linkVisibility
     }) => {
-      await linkVisibility.clickOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
+      await linkVisibility.expandOutputBadgeStack(
+        checkpointLoaderId,
+        clipSlot,
+        0
+      )
       await linkVisibility.hoverOutputBadgeRow(checkpointLoaderId, clipSlot, 1)
 
       await expectRegionScreenshot(
@@ -213,7 +218,11 @@ test.describe(
       comfyPage,
       linkVisibility
     }) => {
-      await linkVisibility.clickOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
+      await linkVisibility.expandOutputBadgeStack(
+        checkpointLoaderId,
+        clipSlot,
+        0
+      )
 
       await test.step('Rename the first expanded label', async () => {
         await linkVisibility.openRenamePromptAtOutputBadgeRow(
@@ -278,7 +287,7 @@ test.describe(
       })
 
       await test.step('The stack expands and one label reveals one link', async () => {
-        await linkVisibility.clickOutputBadgeRow(
+        await linkVisibility.expandOutputBadgeStack(
           checkpointLoaderId,
           clipSlot,
           0
