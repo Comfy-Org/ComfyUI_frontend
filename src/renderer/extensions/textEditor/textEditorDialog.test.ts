@@ -1,15 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import {
-  assert,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
@@ -19,7 +11,6 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
-import { usePromptTagCatalogStore } from '@/renderer/extensions/textEditor/promptTagCatalogStore'
 import type { ComfyExtension } from '@/types/comfy'
 
 const widgetAugmentations = {
@@ -168,37 +159,34 @@ describe('showTextEditor', () => {
     await waitFor(() => expect(editor).toHaveAttribute('readonly'))
   })
 
-  it('imports a catalog and navigates suggestions without moving focus before dismissing them', async () => {
+  it('navigates extension suggestions without moving focus before dismissing them', async () => {
     const user = userEvent.setup()
     const source = ref('')
+    useExtensionStore().registerExtension(widgetAugmentations)
     renderDialogHost()
     openEditor({
       readText: () => source.value,
-      onEdit: (value) => (source.value = value)
+      onEdit: (value) => (source.value = value),
+      augmentationTarget: {
+        nodeType: 'DevToolsNodeWithAugmentedTextarea',
+        widgetName: 'prompt'
+      }
     })
     const editor = await screen.findByRole('textbox')
 
     expect(screen.queryByRole('listbox')).toBeNull()
-    await user.upload(
-      screen.getByLabelText('Import prompt tags'),
-      new File(['cinematic_lighting,20\nsoft_lighting,10'], 'tags.csv', {
-        type: 'text/csv'
-      })
-    )
-    expect(
-      await screen.findByText('2 tags loaded for this session')
-    ).toBeVisible()
-    await user.type(editor, 'a portrait, light')
+    expect(screen.queryByLabelText('Import prompt tags')).toBeNull()
+    await user.type(editor, 'a portrait, studio')
 
     expect(
       await screen.findByRole('listbox', { name: 'Prompt suggestions' })
     ).toBeVisible()
     expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
-      'cinematic lighting'
+      'studio lighting'
     )
     await user.keyboard('{ArrowDown}')
     expect(screen.getByRole('option', { selected: true })).toHaveTextContent(
-      'soft lighting'
+      'studio portrait'
     )
     expect(editor).toHaveFocus()
     expect(editor).toHaveAttribute(
@@ -210,7 +198,7 @@ describe('showTextEditor', () => {
 
     expect(screen.queryByRole('listbox')).toBeNull()
     expect(screen.getByRole('dialog')).toBeVisible()
-    expect(editor).toHaveValue('a portrait, light')
+    expect(editor).toHaveValue('a portrait, studio')
     await user.keyboard('{Escape}')
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
@@ -250,12 +238,11 @@ describe('showTextEditor', () => {
     }
   )
 
-  it('removes extension suggestions when the extension unregisters without disabling the imported catalog', async () => {
+  it('removes extension suggestions when the extension unregisters', async () => {
     const user = userEvent.setup()
     const source = ref('')
     const extensions = useExtensionStore()
     extensions.registerExtension(widgetAugmentations)
-    usePromptTagCatalogStore().importCatalog('studio_backdrop')
     renderDialogHost()
     openEditor({
       readText: () => source.value,
@@ -270,49 +257,49 @@ describe('showTextEditor', () => {
     expect(
       await screen.findByRole('option', { name: 'studio lighting' })
     ).toBeVisible()
-    expect(
-      screen.getByRole('option', { name: 'studio backdrop' })
-    ).toBeVisible()
-
     extensions.unregisterExtension(widgetAugmentations.name)
     await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
     await user.type(editor, ' ')
 
-    expect(
-      await screen.findByRole('option', { name: 'studio backdrop' })
-    ).toBeVisible()
-    expect(screen.queryByRole('option', { name: 'studio lighting' })).toBeNull()
+    expect(screen.queryByRole('listbox')).toBeNull()
+    expect(editor).toHaveValue('studio ')
   })
 
-  it('isolates a failed extension provider while retaining catalog suggestions', async () => {
+  it('isolates a failed extension provider while retaining other extension suggestions', async () => {
     const user = userEvent.setup()
     const source = ref('')
     const failure = new Error('Provider unavailable')
+    useExtensionStore().registerExtension(widgetAugmentations)
     useExtensionStore().registerExtension({
       name: 'test.failingCompletion',
       widgetAugmentations: [
         {
           id: 'failing-tags',
           kind: 'text-completion',
-          target: { nodeType: 'TestNode', widgetName: 'prompt' },
+          target: {
+            nodeType: 'DevToolsNodeWithAugmentedTextarea',
+            widgetName: 'prompt'
+          },
           suggest() {
             throw failure
           }
         }
       ]
     })
-    usePromptTagCatalogStore().importCatalog('studio_backdrop')
     renderDialogHost()
     openEditor({
       readText: () => source.value,
       onEdit: (value) => (source.value = value),
-      augmentationTarget: { nodeType: 'TestNode', widgetName: 'prompt' }
+      augmentationTarget: {
+        nodeType: 'DevToolsNodeWithAugmentedTextarea',
+        widgetName: 'prompt'
+      }
     })
     const editor = await screen.findByRole('textbox')
     await user.type(editor, 'studio')
 
     expect(
-      await screen.findByRole('option', { name: 'studio backdrop' })
+      await screen.findByRole('option', { name: 'studio lighting' })
     ).toBeVisible()
     expect(editor).toHaveValue('studio')
     expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
@@ -457,87 +444,46 @@ describe('showTextEditor', () => {
     }
   )
 
-  it('discards an unfinished catalog import when another editor opens', async () => {
-    const user = userEvent.setup()
-    let finish: ((text: string) => void) | undefined
-    const pending = new Promise<string>((resolve) => (finish = resolve))
-    const file = new File(['blue_eyes'], 'old.txt', { type: 'text/plain' })
-    vi.spyOn(file, 'text').mockReturnValue(pending)
-    renderDialogHost()
-    const { close } = openEditor()
-    await screen.findByRole('textbox')
-    await user.upload(screen.getByLabelText('Import prompt tags'), file)
-    close()
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    openEditor()
-    const editor = await screen.findByRole('textbox')
-    await user.upload(
-      screen.getByLabelText('Import prompt tags'),
-      new File(['red_hair'], 'new.txt', { type: 'text/plain' })
-    )
-    expect(
-      await screen.findByText('1 tag loaded for this session')
-    ).toBeVisible()
-
-    assert.exists(finish)
-    finish('blue_eyes')
-    await pending
-    await nextTick()
-
-    expect(usePromptTagCatalogStore().tags).toEqual(['red hair'])
-    expect(editor).toHaveFocus()
-  })
-
-  it('reports an invalid import without losing the loaded catalog', async () => {
-    const user = userEvent.setup()
-    usePromptTagCatalogStore().importCatalog('blue_eyes')
-    renderDialogHost()
-    openEditor()
-    await screen.findByRole('textbox')
-
-    await user.upload(
-      screen.getByLabelText('Import prompt tags'),
-      new File(['blue_hair,not-a-count'], 'invalid.csv', { type: 'text/csv' })
-    )
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Your previous catalog is unchanged.'
-    )
-    expect(screen.getByText('1 tag loaded for this session')).toBeVisible()
-  })
-
   it('removes suggestions when the editor becomes read-only', async () => {
     const user = userEvent.setup()
     const source = ref('')
     const readOnly = ref(false)
-    usePromptTagCatalogStore().importCatalog('cinematic_lighting')
+    useExtensionStore().registerExtension(widgetAugmentations)
     renderDialogHost()
     openEditor({
       readText: () => source.value,
       onEdit: (value) => (source.value = value),
-      readOnly: () => readOnly.value
+      readOnly: () => readOnly.value,
+      augmentationTarget: {
+        nodeType: 'DevToolsNodeWithAugmentedTextarea',
+        widgetName: 'prompt'
+      }
     })
     const editor = await screen.findByRole('textbox')
-    await user.type(editor, 'cin')
+    await user.type(editor, 'studio')
     expect(await screen.findByRole('listbox')).toBeVisible()
 
     readOnly.value = true
 
     await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
-    expect(editor).toHaveValue('cin')
+    expect(editor).toHaveValue('studio')
   })
 
   it('suspends suggestions during composition and resumes after committed input', async () => {
     const user = userEvent.setup()
     const source = ref('')
-    usePromptTagCatalogStore().importCatalog('cinematic_lighting')
+    useExtensionStore().registerExtension(widgetAugmentations)
     renderDialogHost()
     openEditor({
       readText: () => source.value,
-      onEdit: (value) => (source.value = value)
+      onEdit: (value) => (source.value = value),
+      augmentationTarget: {
+        nodeType: 'DevToolsNodeWithAugmentedTextarea',
+        widgetName: 'prompt'
+      }
     })
     const editor = await screen.findByRole('textbox')
-    await user.type(editor, 'cin')
+    await user.type(editor, 'studio')
     expect(await screen.findByRole('listbox')).toBeVisible()
 
     editor.dispatchEvent(createEvent.compositionStart(editor))
@@ -546,11 +492,11 @@ describe('showTextEditor', () => {
     editor.dispatchEvent(
       createEvent.keyDown(editor, { key: 'Enter', isComposing: true })
     )
-    expect(editor).toHaveValue('cin')
+    expect(editor).toHaveValue('studio')
     editor.dispatchEvent(createEvent.compositionEnd(editor))
 
     expect(
-      await screen.findByRole('option', { name: 'cinematic lighting' })
+      await screen.findByRole('option', { name: 'studio lighting' })
     ).toBeVisible()
   })
 

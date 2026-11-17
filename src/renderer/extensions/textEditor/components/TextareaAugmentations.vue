@@ -43,7 +43,6 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useWidgetAugmentations } from '@/platform/extensions/useWidgetAugmentations'
 import type { WidgetAugmentationTarget } from '@/platform/extensions/widgetAugmentation'
 import TextareaAutocomplete from '@/renderer/extensions/textEditor/components/TextareaAutocomplete.vue'
-import { usePromptTagCatalogStore } from '@/renderer/extensions/textEditor/promptTagCatalogStore'
 import { useTextareaEdit } from '@/renderer/extensions/textEditor/useTextareaEdit'
 
 const {
@@ -63,7 +62,6 @@ const {
 const { registrations, contributions, evaluate } = useWidgetAugmentations(
   () => target
 )
-const catalog = usePromptTagCatalogStore()
 const edit = useTextareaEdit(element, () => enabled)
 const { t } = useI18n()
 const toast = useToast()
@@ -128,6 +126,6 @@ function suggest(query: string): string[] {
       }) ?? []
     )
   })
-  return [...new Set([...suggestions, ...catalog.suggest(query)])].slice(0, 8)
+  return [...new Set(suggestions)].slice(0, 8)
 }
 </script>

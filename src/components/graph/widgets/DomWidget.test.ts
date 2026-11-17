@@ -6,9 +6,9 @@ import { nextTick, reactive, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { usePromptTagCatalogStore } from '@/renderer/extensions/textEditor/promptTagCatalogStore'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -276,10 +276,24 @@ describe('native DOM widget interaction lifecycle', () => {
     useDomWidgetStore().clear()
   })
 
-  it('offers shared catalog suggestions for a native multiline widget and restores its attributes on removal', async () => {
+  it('offers targeted extension suggestions for a native multiline widget and restores its attributes on removal', async () => {
     const user = userEvent.setup()
-    usePromptTagCatalogStore().importCatalog('blue_eyes')
     const widgetState = createWidgetState(false)
+    widgetState.widget.node.type = 'TestNode'
+    useExtensionStore().registerExtension({
+      name: 'test.NativeWidgetCompletion',
+      widgetAugmentations: [
+        {
+          id: 'tags',
+          kind: 'text-completion',
+          target: {
+            nodeType: 'TestNode',
+            widgetName: 'test_widget'
+          },
+          suggest: () => ['blue eyes']
+        }
+      ]
+    })
     const textarea = document.createElement('textarea')
     textarea.setAttribute('aria-label', 'Prompt')
     textarea.setAttribute('aria-autocomplete', 'none')

@@ -11,7 +11,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { i18n } from '@/i18n'
-import { usePromptTagCatalogStore } from '@/renderer/extensions/textEditor/promptTagCatalogStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -410,10 +410,21 @@ describe('WidgetTextarea contextmenu', () => {
 })
 
 describe('WidgetTextarea autocomplete', () => {
-  it('uses the shared catalog and closes suggestions when the node becomes read-only', async () => {
+  it('uses targeted extension suggestions and closes them when the node becomes read-only', async () => {
     const user = userEvent.setup()
-    usePromptTagCatalogStore().importCatalog('blue_eyes,20\nblue_hair,10')
+    useExtensionStore().registerExtension({
+      name: 'test.VueWidgetCompletion',
+      widgetAugmentations: [
+        {
+          id: 'tags',
+          kind: 'text-completion',
+          target: { nodeType: 'TestNode', widgetName: 'test_textarea' },
+          suggest: () => ['blue eyes', 'blue hair']
+        }
+      ]
+    })
     const widget = createTextareaWidget('')
+    widget.nodeType = 'TestNode'
     const view = renderComponent(widget, '')
     const textarea = screen.getByRole('textbox')
 
