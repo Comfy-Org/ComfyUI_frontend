@@ -107,6 +107,7 @@ describe('reading the system monitor', () => {
       failure: new Response('<html>', { status: 500 })
     },
     { name: 'answers with null', failure: Response.json(null) },
+    { name: 'answers with text', failure: Response.json('stats') },
     { name: 'answers with a list', failure: Response.json([]) },
     {
       name: 'answers without a system',

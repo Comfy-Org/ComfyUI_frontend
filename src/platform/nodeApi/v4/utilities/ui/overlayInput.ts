@@ -34,12 +34,12 @@ const FOLLOWED = ['pointermove', 'pointerup', 'pointercancel'] as const
  */
 export function routeOverlayInput(
   element: HTMLElement,
+  view: HTMLElement,
   canvas: LGraphCanvas,
   member: string,
   callbacks: OverlayInputCallbacks,
   state: OverlayState
 ): () => void {
-  const view = canvas.canvas.parentElement
   const pointers = pointerRouter(element, canvas, member, callbacks, state)
   const key = (event: KeyboardEvent) => {
     const { onKeyDown } = callbacks
@@ -47,10 +47,10 @@ export function routeOverlayInput(
     event.stopPropagation()
     callListener(member, () => onKeyDown(keyEventOf(event)))
   }
-  view?.addEventListener('pointerdown', pointers.take, true)
+  view.addEventListener('pointerdown', pointers.take, true)
   element.addEventListener('keydown', key)
   return () => {
-    view?.removeEventListener('pointerdown', pointers.take, true)
+    view.removeEventListener('pointerdown', pointers.take, true)
     element.removeEventListener('keydown', key)
     pointers.release()
   }

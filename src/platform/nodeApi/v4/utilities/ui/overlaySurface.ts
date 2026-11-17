@@ -63,7 +63,14 @@ export function createOverlaySurface(
     if (attached?.canvas === canvas || !view) return
     detach()
     view.append(element)
-    const release = routeOverlayInput(element, canvas, member, callbacks, state)
+    const release = routeOverlayInput(
+      element,
+      view,
+      canvas,
+      member,
+      callbacks,
+      state
+    )
     attached = { canvas, release }
     requestDraw()
   }
@@ -103,7 +110,7 @@ function paint(
 }
 
 function viewportOf(canvas: LGraphCanvas): GraphOverlayViewport {
-  const member = 'viewport.graphToViewport'
+  const member = 'graphToViewport'
   return Object.freeze({
     scale: canvas.ds.scale,
     graphToViewport(point: unknown) {

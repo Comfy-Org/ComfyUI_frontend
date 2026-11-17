@@ -88,7 +88,7 @@ describe('mounting a graph overlay', () => {
     const element = overlayElement(view)
     expect(element.parentElement).toBe(view)
     expect(element.getAttribute('aria-label')).toBe('Notes')
-    expect(element.tabIndex).toBe(-1)
+    expect(element.getAttribute('tabindex')).toBe('-1')
     expect(element.style.pointerEvents).toBe('none')
     expect(element.hidden).toBe(false)
     expect(view.lastElementChild).toBe(element)
@@ -118,6 +118,17 @@ describe('mounting a graph overlay', () => {
     expect(context.setTransform).toHaveBeenLastCalledWith(2, 0, 0, 2, 0, 0)
   })
 
+  it('draws once mounted at the next frame, though the graph draws nothing then', () => {
+    const { canvas, ui } = appShowingGraph()
+    canvas.draw(true, true)
+    const draw = vi.fn()
+
+    mount(ui, overlay({ draw }))
+    canvas.draw(false, false)
+
+    expect(draw).toHaveBeenCalledOnce()
+  })
+
   it('draws again after each frame the graph draws, and not on a frame it skips', () => {
     const { canvas, ui } = appShowingGraph()
     const draw = vi.fn()
@@ -144,6 +155,25 @@ describe('mounting a graph overlay', () => {
 
     expect(hostDraw).toHaveBeenCalledOnce()
     expect(canvas.onDrawForeground).toBe(hostDraw)
+  })
+
+  it('draws once a frame after the host chained onto its draw and the overlay was mounted again', () => {
+    const { canvas, ui } = appShowingGraph()
+    const first = mount(ui, overlay({ id: 'MyPack.a' }))
+    const chained = canvas.onDrawForeground
+    const hostDraw = vi.fn()
+    canvas.onDrawForeground = (context, area) => {
+      chained?.call(canvas, context, area)
+      hostDraw()
+    }
+    const draw = vi.fn()
+
+    first.remove()
+    mount(ui, overlay({ id: 'MyPack.b', draw }))
+    canvas.draw(true, true)
+
+    expect(draw).toHaveBeenCalledOnce()
+    expect(hostDraw).toHaveBeenCalledOnce()
   })
 
   it('redraws once at the next frame however often it is asked', () => {
@@ -203,9 +233,7 @@ describe('mounting a graph overlay', () => {
     canvas.draw(true, true)
 
     expect(refusal).toEqual(
-      new TypeError(
-        'viewport.graphToViewport needs x as a finite number, not NaN.'
-      )
+      new TypeError('graphToViewport needs x as a finite number, not NaN.')
     )
   })
 
@@ -232,6 +260,24 @@ describe('mounting a graph overlay', () => {
     )
   })
 
+  it('reports a draw that throws at a frame it asked for, and the frame goes on', () => {
+    const { canvas, ui } = appShowingGraph()
+    const handle = mount(
+      ui,
+      overlay({
+        draw: () => {
+          throw new Error('pack draw failed')
+        }
+      })
+    )
+    canvas.draw(true, true)
+
+    handle.redraw()
+
+    expect(() => canvas.draw(false, false)).not.toThrow()
+    expect(reportError).toHaveBeenCalledTimes(2)
+  })
+
   it('waits for a graph view, then mounts and draws on it', () => {
     const { view, canvas } = graphView()
     const api = apiOnTestCanvas(canvas.graph)
@@ -248,13 +294,15 @@ describe('mounting a graph overlay', () => {
   })
 
   it('moves to the graph view the app shows next', () => {
-    const { view, ui, useCanvas } = appShowingGraph()
+    const { view, canvas, ui, useCanvas } = appShowingGraph()
+    const before = canvas.onDrawForeground
     mount(ui, overlay())
     const next = graphView()
 
     useCanvas(next.canvas)
     next.canvas.draw(true, true)
 
+    expect(canvas.onDrawForeground).toBe(before)
     expect(view.querySelector('[data-graph-overlay]')).toBeNull()
     expect(overlayElement(next.view).parentElement).toBe(next.view)
   })
@@ -310,7 +358,7 @@ describe('taking the pointer', () => {
 
     const down = press(canvas.canvas, 'pointerdown')
     press(canvas.canvas, 'pointermove', { pointerId: 2 })
-    press(document.body, 'pointermove', { clientX: SCREEN.x + 50 })
+    press(canvas.canvas, 'pointermove', { clientX: SCREEN.x + 50 })
     press(document.body, 'pointerup')
     press(canvas.canvas, 'pointermove')
 
@@ -330,14 +378,14 @@ describe('taking the pointer', () => {
     press(canvas.canvas, 'pointerdown', {
       pointerId: 7,
       pointerType: 'pen',
-      button: 0
+      button: 1
     })
 
     const event = onPointerDown.mock.lastCall?.[0]
     expect(event).toEqual({
       pointerId: 7,
       pointerType: 'pen',
-      button: 0,
+      button: 1,
       viewport: { x: 30, y: 40 },
       graph: { x: 10, y: 20 }
     })
@@ -372,6 +420,8 @@ describe('taking the pointer', () => {
     pressAndRelease(120, 110)
     pressAndRelease(121, 110)
     pressAndRelease(100, 111)
+    pressAndRelease(100, 100)
+    pressAndRelease(110, 99)
     handle.setHitRegions([])
     pressAndRelease(30, 40)
 
@@ -382,9 +432,26 @@ describe('taking the pointer', () => {
       ])
     ).toEqual([
       [34, 43],
-      [120, 110]
+      [120, 110],
+      [100, 100]
     ])
-    expect(graph).toHaveBeenCalledTimes(4)
+    expect(graph).toHaveBeenCalledTimes(5)
+  })
+
+  it('follows each of several pointers it took until that one is released', () => {
+    const { canvas, ui } = appShowingGraph()
+    const onPointerMove = vi.fn()
+    mount(ui, overlay({ interactive: true, onPointerMove }))
+
+    press(canvas.canvas, 'pointerdown', { pointerId: 1 })
+    press(canvas.canvas, 'pointerdown', { pointerId: 2 })
+    press(document.body, 'pointerup', { pointerId: 1 })
+    press(canvas.canvas, 'pointermove', { pointerId: 1 })
+    press(canvas.canvas, 'pointermove', { pointerId: 2 })
+
+    expect(onPointerMove.mock.calls.map(([event]) => event.pointerId)).toEqual([
+      2
+    ])
   })
 
   it('keeps a pointer it took when it stops being interactive or loses its regions', () => {
@@ -401,6 +468,7 @@ describe('taking the pointer', () => {
     handle.setHitRegions([])
     press(canvas.canvas, 'pointermove')
     press(canvas.canvas, 'pointercancel')
+    press(canvas.canvas, 'pointermove')
     press(canvas.canvas, 'pointerdown')
 
     expect(onPointerMove).toHaveBeenCalledOnce()
@@ -420,12 +488,26 @@ describe('taking the pointer', () => {
     assert(button && panel)
     const clicked = vi.fn()
     button.addEventListener('pointerdown', clicked)
+    canvas.draw(true, true)
 
     press(button, 'pointerdown')
     press(canvas.canvas, 'pointerdown')
 
     expect(clicked).toHaveBeenCalledOnce()
     expect(onPointerDown).toHaveBeenCalledOnce()
+  })
+
+  it('stops listening on the window once it holds no pointer', () => {
+    const { canvas, ui } = appShowingGraph()
+    mount(ui, overlay({ interactive: true }))
+    const stopped = vi.spyOn(window, 'removeEventListener')
+
+    press(canvas.canvas, 'pointerdown')
+    press(document.body, 'pointerup')
+
+    expect(stopped.mock.calls.map(([type]) => type)).toEqual(
+      expect.arrayContaining(['pointermove', 'pointerup', 'pointercancel'])
+    )
   })
 
   it('takes no press while hidden', () => {
@@ -487,17 +569,17 @@ describe('taking keys', () => {
     expect(document.activeElement).toBe(element)
     keyDown(element, {
       key: 'z',
-      ctrlKey: true,
+      ctrlKey: false,
       shiftKey: true,
-      metaKey: false,
+      metaKey: true,
       repeat: true
     })
 
     expect(onKeyDown).toHaveBeenCalledExactlyOnceWith({
       key: 'z',
       repeat: true,
-      ctrlKey: true,
-      metaKey: false,
+      ctrlKey: false,
+      metaKey: true,
       shiftKey: true
     })
     expect(Object.isFrozen(onKeyDown.mock.lastCall?.[0])).toBe(true)
@@ -511,6 +593,18 @@ describe('taking keys', () => {
     const app = heardByApp()
 
     handle.setInteractive(false)
+    keyDown(overlayElement(view), { key: 'Escape' })
+
+    expect(onKeyDown).not.toHaveBeenCalled()
+    expect(app).toHaveBeenCalledOnce()
+  })
+
+  it('leaves keys to the app while the overlay is hidden', () => {
+    const { view, ui } = appShowingGraph()
+    const onKeyDown = vi.fn()
+    mount(ui, overlay({ interactive: true, visible: false, onKeyDown }))
+    const app = heardByApp()
+
     keyDown(overlayElement(view), { key: 'Escape' })
 
     expect(onKeyDown).not.toHaveBeenCalled()
@@ -533,10 +627,13 @@ describe('removing an overlay', () => {
     const { view, canvas, ui } = appShowingGraph()
     const draw = vi.fn()
     const onPointerDown = vi.fn()
+    const onKeyDown = vi.fn()
     const handle = mount(
       ui,
-      overlay({ interactive: true, draw, onPointerDown })
+      overlay({ interactive: true, draw, onPointerDown, onKeyDown })
     )
+    const element = overlayElement(view)
+    const graph = heardByGraph(canvas)
     handle.redraw()
 
     handle.remove()
@@ -544,11 +641,41 @@ describe('removing an overlay', () => {
     handle.redraw()
     canvas.draw(true, true)
     press(canvas.canvas, 'pointerdown')
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
 
     expect(view.querySelector('[data-graph-overlay]')).toBeNull()
     expect(draw).not.toHaveBeenCalled()
     expect(onPointerDown).not.toHaveBeenCalled()
+    expect(onKeyDown).not.toHaveBeenCalled()
+    expect(graph).toHaveBeenCalledOnce()
     expect(() => mount(ui, overlay())).not.toThrow()
+  })
+
+  it('stops listening on the graph view for presses', () => {
+    const { view, ui } = appShowingGraph()
+    const handle = mount(ui, overlay({ interactive: true }))
+    const stopped = vi.spyOn(view, 'removeEventListener')
+
+    handle.remove()
+
+    expect(stopped).toHaveBeenCalledWith(
+      'pointerdown',
+      expect.any(Function),
+      true
+    )
+  })
+
+  it('leaves alone an overlay mounted later under its id when removed again', () => {
+    const { ui } = appShowingGraph()
+    const first = mount(ui, overlay())
+    first.remove()
+    mount(ui, overlay())
+
+    first.remove()
+
+    expect(() => ui.mountGraphOverlay(overlay())).toThrow(
+      'needs an id no mounted overlay has'
+    )
   })
 
   it('stops following a pointer it took', () => {
@@ -634,7 +761,7 @@ describe('refusing what an overlay cannot use', () => {
       const handle = mount(ui, overlay())
 
       expect(() => Reflect.apply(handle[method], handle, [value])).toThrow(
-        `ui.mountGraphOverlay(...).${method} needs a boolean, not `
+        `${method} needs a boolean, not `
       )
       expect(overlayElement(view).hidden).toBe(false)
     }
@@ -687,7 +814,7 @@ describe('refusing what an overlay cannot use', () => {
 
     expect(() =>
       Reflect.apply(handle.setHitRegions, handle, [regions])
-    ).toThrow(`ui.mountGraphOverlay(...).setHitRegions needs ${needs}, not `)
+    ).toThrow(`setHitRegions needs ${needs}, not `)
     press(canvas.canvas, 'pointerdown', { clientX: SCREEN.x + 200 })
     press(canvas.canvas, 'pointerdown', { pointerId: 2 })
 
