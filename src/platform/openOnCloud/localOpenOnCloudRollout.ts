@@ -1,16 +1,20 @@
-import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { readonly, ref } from 'vue'
+import { readonly, shallowRef, watch } from 'vue'
+import { z } from 'zod'
 
-import { getComfyCloudBaseUrl } from '@/config/comfyApi'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 
-const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
-  open_on_cloud_enabled: true
+const zOpenOnCloudRollout = z.object({
+  open_on_cloud_enabled: z.boolean(),
+  open_on_cloud_use_local_agent_enabled: z.boolean().optional()
 })
-const enabled = ref<boolean>()
 
-export const localOpenOnCloudRollout = readonly(enabled)
+type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
+
+const rollout = shallowRef<OpenOnCloudRollout>()
+
+export const localOpenOnCloudRollout = readonly(rollout)
 
 function reportRolloutReadFailure(cause: unknown): void {
   reportError(cause, {
@@ -21,34 +25,54 @@ function reportRolloutReadFailure(cause: unknown): void {
   })
 }
 
-export async function refreshLocalOpenOnCloudRollout(): Promise<void> {
-  if (remoteConfig.value.open_on_cloud_enabled !== undefined) return
-
+async function readRollout(
+  getToken: () => Promise<string | undefined>,
+  signal: AbortSignal
+): Promise<void> {
   try {
-    const response = await fetch(
-      new URL('/api/features', getComfyCloudBaseUrl()),
-      {
-        cache: 'no-store',
-        credentials: 'omit',
-        signal: AbortSignal.timeout(5_000)
-      }
-    )
+    const token = await getToken()
+    if (!token) return
+
+    const endpoint = new URL('/api/features', getBuildTimeComfyCloudBaseUrl())
+    if (endpoint.protocol !== 'https:') return
+    const response = await fetch(endpoint, {
+      cache: 'no-store',
+      credentials: 'omit',
+      headers: { Authorization: `Bearer ${token}` },
+      redirect: 'error',
+      signal: combineAbortSignals([signal, AbortSignal.timeout(5_000)])
+    })
     if (!response.ok) {
       reportRolloutReadFailure(
         new Error(`Cloud features HTTP ${response.status}`)
       )
       return
     }
-
-    const rollout = zOpenOnCloudRollout.safeParse(await response.json())
-    if (!rollout.success) {
-      reportRolloutReadFailure(new Error('Invalid Cloud rollout response'))
-      return
-    }
-
-    const value = rollout.data.open_on_cloud_enabled
-    if (value !== undefined) enabled.value = value
+    const served = zOpenOnCloudRollout.safeParse(await response.json())
+    if (signal.aborted) return
+    if (served.success) rollout.value = served.data
+    else reportRolloutReadFailure(new Error('Invalid Cloud rollout response'))
   } catch (error) {
-    reportRolloutReadFailure(error)
+    if (!signal.aborted) reportRolloutReadFailure(error)
+  }
+}
+
+export function startLocalOpenOnCloudRollout(
+  getUserId: () => string | undefined,
+  getToken: () => Promise<string | undefined>
+): () => void {
+  const stop = watch(
+    getUserId,
+    (userId, _, onCleanup) => {
+      const controller = new AbortController()
+      onCleanup(() => controller.abort())
+      rollout.value = undefined
+      if (userId) void readRollout(getToken, controller.signal)
+    },
+    { immediate: true, flush: 'sync' }
+  )
+  return () => {
+    stop()
+    rollout.value = undefined
   }
 }

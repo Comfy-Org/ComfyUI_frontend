@@ -13,7 +13,7 @@ import {
   cloudOrigin,
   isLocalOrigin
 } from '@/platform/openOnCloud/localHandoffProtocol'
-import { refreshLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
@@ -41,6 +41,9 @@ export async function stageDesktopWorkflowHandoff(
   filename: string,
   workflow: ComfyWorkflowJSON
 ): Promise<string | undefined> {
+  const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
+  if (!useFeatureFlags().flags.openOnCloudEnabled) return undefined
+
   const nonce = crypto.randomUUID()
   const expiresAt = Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
   const destination = await desktopWorkflowUrl(nonce, {
@@ -89,15 +92,6 @@ async function takeRelayDestination(
   return record.data.destination
 }
 
-async function isOpenOnCloudEnabled(): Promise<boolean> {
-  const { refreshRemoteConfig } =
-    await import('@/platform/remoteConfig/refreshRemoteConfig')
-  await refreshRemoteConfig({ useAuth: false })
-  await refreshLocalOpenOnCloudRollout()
-  const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
-  return useFeatureFlags().flags.openOnCloudEnabled
-}
-
 async function relayWorkflow(url: URL): Promise<boolean> {
   const nonce = relayNonce(url)
   if (!nonce) return false
@@ -111,7 +105,10 @@ async function relayWorkflow(url: URL): Promise<boolean> {
 async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const url = new URL(window.location.href)
   if (!url.searchParams.has(DESKTOP_RELAY_PARAM)) return false
-  if (!(await isOpenOnCloudEnabled().catch(() => false))) return false
+  const { refreshRemoteConfig } =
+    await import('@/platform/remoteConfig/refreshRemoteConfig')
+  await refreshRemoteConfig({ useAuth: false }).catch(() => undefined)
+  if (remoteConfig.value.open_on_cloud_enabled === false) return false
   const relayed = await relayWorkflow(url).catch(() => false)
   if (!relayed) {
     const splash = document.getElementById('splash-loader')

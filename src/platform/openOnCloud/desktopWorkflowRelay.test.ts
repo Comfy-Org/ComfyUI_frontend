@@ -9,14 +9,12 @@ import {
   vi
 } from 'vitest'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   handleDesktopWorkflowHandoff,
   stageDesktopWorkflowHandoff
 } from '@/platform/openOnCloud/desktopWorkflowRelay'
-import { refreshLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
@@ -64,12 +62,10 @@ describe(handleDesktopWorkflowHandoff, () => {
   beforeEach(() => {
     openAt('http://127.0.0.1:8000/')
     api.user = 'desktop-user'
-    vi.mocked(fetch).mockImplementation(async () =>
-      Response.json({ open_on_cloud_enabled: true })
-    )
+    vi.mocked(fetch).mockImplementation(async () => Response.json({}))
     const previousConfig = remoteConfig.value
     const previousWindowConfig = window.__CONFIG__
-    remoteConfig.value = {}
+    remoteConfig.value = { open_on_cloud_enabled: true }
     window.__CONFIG__ = {}
     onTestFinished(() => {
       remoteConfig.value = previousConfig
@@ -151,42 +147,29 @@ describe(handleDesktopWorkflowHandoff, () => {
     )
   })
 
-  it('forwards the transfer in production when only Cloud enables it', async () => {
-    vi.stubEnv('DEV', false)
+  it('forwards an already staged transfer from a signed-out browser', async () => {
     const { relay, record } = await stagedRelay()
+    remoteConfig.value = {}
     openAt(relay)
-    const cloudFeatures = new URL('/api/features', getComfyCloudBaseUrl()).href
-    vi.mocked(fetch).mockImplementation(async (url) =>
-      Response.json(
-        String(url) === cloudFeatures ? { open_on_cloud_enabled: true } : {}
-      )
-    )
     const replace = relayed()
 
     await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
 
     expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(
+      '/api/features',
+      expect.objectContaining({ cache: 'no-store' })
+    )
   })
 
-  it('keeps Cloud’s disable decision when the startup read fails', async () => {
-    vi.stubEnv('DEV', true)
-    const { relay } = await stagedRelay()
-    openAt(relay)
-    const cloudFeatures = new URL('/api/features', getComfyCloudBaseUrl()).href
-    vi.mocked(fetch).mockImplementation(async (url) =>
-      Response.json(
-        String(url) === cloudFeatures ? { open_on_cloud_enabled: false } : {}
-      )
-    )
+  it('does not stage a transfer when the toolbar is disabled', async () => {
+    remoteConfig.value = { open_on_cloud_enabled: false }
 
-    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
+    await expect(
+      stageDesktopWorkflowHandoff('portrait', defaultGraph)
+    ).resolves.toBeUndefined()
 
-    expect(api.getUserData).not.toHaveBeenCalled()
-
-    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }))
-    await refreshLocalOpenOnCloudRollout()
-
-    expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
+    expect(api.storeUserData).not.toHaveBeenCalled()
   })
 
   it('accepts the staged Cloud origin after reading the relay server features', async () => {
