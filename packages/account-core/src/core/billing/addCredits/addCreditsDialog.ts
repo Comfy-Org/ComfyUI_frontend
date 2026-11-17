@@ -4,6 +4,7 @@ import type {
   AddCreditsBounds
 } from './addCreditsAmount'
 import { checkAddCreditsAmount } from './addCreditsAmount'
+import type { AutoTopUpActivation } from './addCreditsAutoTopUp'
 import type { AddCreditsRefusal } from './addCreditsRefusal'
 
 /**
@@ -34,9 +35,22 @@ export type AddCreditsState =
       readonly step: 'checkout_blocked'
       readonly amount: AddCreditsAmount
       readonly amountCents: number
-      readonly checkoutUrl: string
+      /** `checkout_opened` while an earlier checkout from this dialog can still be paid. */
+      readonly origin: 'amount' | 'checkout_opened'
+      /** Absent when the checkout URL works once and is requested again from this step. */
+      readonly checkoutUrl?: string
     }
+  | { readonly step: 'auto_top_up_offer'; readonly setupUrl: string }
+  | {
+      readonly step: 'auto_top_up_on'
+      readonly settings: AutoTopUpActivation
+    }
+  | { readonly step: 'auto_top_up_failed'; readonly setupUrl?: string }
   | { readonly step: 'landed' }
+
+export type AutoTopUpActivationOutcome =
+  | { readonly status: 'on'; readonly settings: AutoTopUpActivation }
+  | { readonly status: 'failed' }
 
 export type AddCreditsEvent =
   | { readonly type: 'preset_picked'; readonly cents: number }
@@ -47,10 +61,16 @@ export type AddCreditsEvent =
       readonly tabReserved: boolean
     }
   | { readonly type: 'checkout_created'; readonly checkoutUrl: string }
+  | { readonly type: 'tab_blocked'; readonly amountCents: number }
   | { readonly type: 'checkout_refused'; readonly refusal: AddCreditsRefusal }
   | { readonly type: 'checkout_abandoned' }
   | { readonly type: 'blocked_link_followed' }
-  | { readonly type: 'payment_landed' }
+  | {
+      readonly type: 'payment_landed'
+      /** Platform's Turn on auto top-up link, when the served facts offer it. */
+      readonly autoTopUpSetupUrl?: string
+      readonly activation?: AutoTopUpActivationOutcome
+    }
 
 export function startAddCredits(amount: AddCreditsAmount): AddCreditsState {
   return { step: 'amount', amount }
@@ -83,6 +103,29 @@ function backToOrigin(
     : { step: 'amount', amount: state.amount, ...withRefusal }
 }
 
+const LANDABLE_STEPS: ReadonlySet<AddCreditsState['step']> = new Set([
+  'opening',
+  'checkout_opened',
+  'checkout_blocked'
+])
+
+function landedState({
+  activation,
+  autoTopUpSetupUrl
+}: EventOf<'payment_landed'>): AddCreditsState {
+  if (activation?.status === 'on') {
+    return { step: 'auto_top_up_on', settings: activation.settings }
+  }
+  if (activation?.status === 'failed') {
+    return autoTopUpSetupUrl === undefined
+      ? { step: 'auto_top_up_failed' }
+      : { step: 'auto_top_up_failed', setupUrl: autoTopUpSetupUrl }
+  }
+  return autoTopUpSetupUrl === undefined
+    ? { step: 'landed' }
+    : { step: 'auto_top_up_offer', setupUrl: autoTopUpSetupUrl }
+}
+
 const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
   {
     preset_picked: (state, event) =>
@@ -94,13 +137,28 @@ const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
         ? { step: 'amount', amount: { kind: 'custom', input: event.input } }
         : state,
     checkout_requested: (state, event) =>
-      state.step === 'amount' || state.step === 'checkout_opened'
+      state.step === 'amount' ||
+      state.step === 'checkout_opened' ||
+      state.step === 'checkout_blocked'
         ? {
             step: 'opening',
             amount: state.amount,
             amountCents: event.amountCents,
-            origin: state.step,
+            origin:
+              state.step === 'checkout_blocked' ? state.origin : state.step,
             tabReserved: event.tabReserved
+          }
+        : state,
+    tab_blocked: (state, event) =>
+      state.step === 'amount' ||
+      state.step === 'checkout_opened' ||
+      state.step === 'checkout_blocked'
+        ? {
+            step: 'checkout_blocked',
+            amount: state.amount,
+            amountCents: event.amountCents,
+            origin:
+              state.step === 'checkout_blocked' ? state.origin : state.step
           }
         : state,
     checkout_created: (state, event) => {
@@ -112,6 +170,7 @@ const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
             step: 'checkout_blocked',
             amount,
             amountCents,
+            origin: state.origin,
             checkoutUrl: event.checkoutUrl
           }
     },
@@ -127,10 +186,8 @@ const TRANSITIONS: { readonly [T in AddCreditsEvent['type']]: Transition<T> } =
             amountCents: state.amountCents
           }
         : state,
-    payment_landed: (state) =>
-      state.step === 'amount' || state.step === 'landed'
-        ? state
-        : { step: 'landed' }
+    payment_landed: (state, event) =>
+      LANDABLE_STEPS.has(state.step) ? landedState(event) : state
   }
 
 export function reduceAddCredits(
@@ -146,6 +203,8 @@ export function reduceAddCredits(
       return TRANSITIONS.checkout_requested(state, event)
     case 'checkout_created':
       return TRANSITIONS.checkout_created(state, event)
+    case 'tab_blocked':
+      return TRANSITIONS.tab_blocked(state, event)
     case 'checkout_refused':
       return TRANSITIONS.checkout_refused(state, event)
     case 'checkout_abandoned':

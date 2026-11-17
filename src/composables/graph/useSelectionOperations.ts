@@ -7,7 +7,7 @@ import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useDialogService } from '@/services/dialogService'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 
@@ -23,7 +23,7 @@ export function useSelectionOperations() {
 
   function copySelectionToStorage(): boolean {
     const stored = writeClipboardStorage(
-      JSON.stringify(app.canvas._serializeItems())
+      JSON.stringify(useApp().canvas._serializeItems())
     )
     if (!stored)
       toast.error(t('g.error'), {
@@ -33,7 +33,7 @@ export function useSelectionOperations() {
   }
 
   const copySelection = () => {
-    const canvas = app.canvas
+    const canvas = useApp().canvas
     if (canvas.selectedItems.size === 0) {
       toast.warning(t('g.nothingToCopy'), {
         description: t('g.selectItemsToCopy'),
@@ -50,14 +50,14 @@ export function useSelectionOperations() {
   }
 
   const pasteSelection = () => {
-    const canvas = app.canvas
+    const canvas = useApp().canvas
     canvas.pasteFromClipboard({ connectInputs: false })
 
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const duplicateSelection = () => {
-    const canvas = app.canvas
+    const canvas = useApp().canvas
     if (canvas.selectedItems.size === 0) {
       toast.warning(t('g.nothingToDuplicate'), {
         description: t('g.selectItemsToDuplicate'),
@@ -76,7 +76,7 @@ export function useSelectionOperations() {
   }
 
   const deleteSelection = () => {
-    const canvas = app.canvas
+    const canvas = useApp().canvas
     if (isSelectOnly(canvas)) return
     if (canvas.selectedItems.size === 0) {
       toast.warning(t('g.nothingToDelete'), {
@@ -114,7 +114,7 @@ export function useSelectionOperations() {
         if ('title' in item) {
           const titledItem = item as { title: string }
           titledItem.title = newTitle
-          app.canvas.setDirty(true, true)
+          useApp().canvas.setDirty(true, true)
           workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
         }
       }
@@ -135,7 +135,7 @@ export function useSelectionOperations() {
             titledItem.title = `${baseTitle} ${index + 1}`
           }
         })
-        app.canvas.setDirty(true, true)
+        useApp().canvas.setDirty(true, true)
         workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
       }
       return

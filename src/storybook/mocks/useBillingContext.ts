@@ -58,6 +58,7 @@ export function useBillingContext(): BillingContext {
     plans: computed(() => []),
     currentPlanSlug: computed(() => null),
     teamCreditStops: computed(() => null),
+    subscriptionPaymentRecovery: computed(() => null),
     currentTeamCreditStop: computed(() => null),
     maxSeats: computed(() => state.value.maxSeats),
     occupiedSeats: computed(() => state.value.occupiedSeats),

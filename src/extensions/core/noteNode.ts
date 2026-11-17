@@ -4,7 +4,7 @@ import {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { ComfyWidgets } from '@/scripts/widgets'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -31,7 +31,7 @@ export const noteNodeExtension: ComfyExtension = {
           this,
           'text',
           ['STRING', { default: this.properties.text, multiline: true }],
-          app
+          useApp()
         )
 
         this.serialize_widgets = true
@@ -68,7 +68,7 @@ export const noteNodeExtension: ComfyExtension = {
           this,
           'text',
           ['STRING', { default: this.properties.text }],
-          app
+          useApp()
         )
 
         this.serialize_widgets = true

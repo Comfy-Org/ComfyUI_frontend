@@ -1,11 +1,18 @@
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
-import { getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { isImageNode } from '@/utils/litegraphUtil'
 
 import type { MenuOption } from './menuOption'
 
@@ -18,6 +25,21 @@ const DEFAULT_IMAGE_MENU_AVAILABILITY: ImageMenuAvailability = {
 
 function canPasteImage(node?: LGraphNode): boolean {
   return typeof node?.pasteFiles === 'function'
+}
+
+async function fullResolutionImage(
+  img: HTMLImageElement
+): Promise<HTMLImageElement | undefined> {
+  const src = fullResolutionSrc(img)
+  if (src === img.src) return img
+  const full = new Image()
+  full.src = src
+  try {
+    await full.decode()
+    return full
+  } catch {
+    return undefined
+  }
 }
 
 async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
@@ -46,7 +68,21 @@ async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
  */
 export function useImageMenuOptions() {
   const { t } = useI18n()
+  const toast = useToast()
   const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
+  const nodeOutputStore = useNodeOutputStore()
+  const settingStore = useSettingStore()
+
+  const showsSingleImage = (node: LGraphNode) =>
+    isImageNode(node) &&
+    nodeOutputStore.getNodeOutputs(node)?.images?.length === 1
+
+  const toggleFullResolutionPreview = (node: LGraphNode) => {
+    node.flags.fullResolutionPreview = node.flags.fullResolutionPreview
+      ? undefined
+      : true
+    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+  }
 
   const openMaskEditor = () => {
     const commandStore = useCommandStore()
@@ -72,11 +108,19 @@ export function useImageMenuOptions() {
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    canvas.width = img.naturalWidth
-    canvas.height = img.naturalHeight
-    ctx.drawImage(img, 0, 0)
+    const source = await fullResolutionImage(img)
+    if (!source) {
+      toast.warning(
+        t('toastMessages.errorCopyImage', { error: t('g.unknownError') })
+      )
+      return
+    }
 
     try {
+      canvas.width = source.naturalWidth
+      canvas.height = source.naturalHeight
+      ctx.drawImage(source, 0, 0)
+
       const blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob(resolve, 'image/png')
       })
@@ -90,7 +134,11 @@ export function useImageMenuOptions() {
         new ClipboardItem({ 'image/png': blob })
       ])
     } catch (error) {
-      console.error('Failed to copy image to clipboard:', error)
+      toast.warning(
+        t('toastMessages.errorCopyImage', {
+          error: getErrorMessage(error) ?? t('g.unknownError')
+        })
+      )
     }
   }
 
@@ -171,7 +219,30 @@ export function useImageMenuOptions() {
     return options
   }
 
+  const getPreviewResolutionOption = (
+    node: LGraphNode
+  ): MenuOption | undefined => {
+    if (
+      !LiteGraph.vueNodesMode ||
+      !settingStore.get('Comfy.Node.DownscaleImagePreviews') ||
+      !showsSingleImage(node)
+    )
+      return
+    return node.flags.fullResolutionPreview
+      ? {
+          label: t('contextMenu.Show Downscaled Preview'),
+          icon: 'icon-[lucide--image-down]',
+          action: () => toggleFullResolutionPreview(node)
+        }
+      : {
+          label: t('contextMenu.Show Full Resolution'),
+          icon: 'icon-[lucide--image-upscale]',
+          action: () => toggleFullResolutionPreview(node)
+        }
+  }
+
   return {
-    getImageMenuOptions
+    getImageMenuOptions,
+    getPreviewResolutionOption
   }
 }

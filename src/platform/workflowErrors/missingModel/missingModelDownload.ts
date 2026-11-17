@@ -133,6 +133,14 @@ export function modelDownloadNeedsFolderPaths(): boolean {
   return modelDownloadRoute().host === 'electron'
 }
 
+/** Whether downloads go to the Desktop 2 host, which reports their progress. */
+export function hostReportsModelDownloadProgress(): boolean {
+  return (
+    modelDownloadRoute().host === 'desktop2' &&
+    !!window.__comfyDesktop2?.onDownloadProgress
+  )
+}
+
 export function dispatchModelDownload(
   model: ModelWithUrl,
   paths: Record<string, string[]>,

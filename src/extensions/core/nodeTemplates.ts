@@ -11,7 +11,7 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { ComfyDialog } from '@/scripts/ui'
 import { $el } from '@/scripts/ui/utils'
 
@@ -410,7 +410,7 @@ export const nodeTemplatesExtension: ComfyExtension = {
     items.push(null)
     items.push({
       content: `Save Selected as Template`,
-      disabled: !selectedCanvasNodes(app.canvas).length,
+      disabled: !selectedCanvasNodes(useApp().canvas).length,
       callback: async () => {
         const name = await useDialogService().prompt({
           title: t('nodeTemplates.saveAsTemplate'),
@@ -420,7 +420,7 @@ export const nodeTemplatesExtension: ComfyExtension = {
         if (!name?.trim()) return
 
         await clipboardAction(async () => {
-          const data = app.canvas.copyToClipboard()
+          const data = useApp().canvas.copyToClipboard()
 
           await manage.store((templates) => [...templates, { name, data }])
         })
@@ -443,10 +443,10 @@ export const nodeTemplatesExtension: ComfyExtension = {
               }
 
               if (!data.reroutes) {
-                deserialiseAndCreate(template.data, app.canvas)
+                deserialiseAndCreate(template.data, useApp().canvas)
               } else {
                 localStorage.setItem('litegrapheditor_clipboard', template.data)
-                app.canvas.pasteFromClipboard()
+                useApp().canvas.pasteFromClipboard()
               }
             })
           }

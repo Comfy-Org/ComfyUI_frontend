@@ -52,7 +52,7 @@ if (sizeStatus === 'ready' && hasSizeData) {
       '⚠️ Size data collection failed — check the CI workflow logs'
     )
   )
-} else if (sizeStatus !== 'ready') {
+} else if (sizeStatus !== 'ready' && sizeStatus !== 'skip') {
   lines.push(bundleStatusLine('⏳ Size data collection in progress…'))
 }
 

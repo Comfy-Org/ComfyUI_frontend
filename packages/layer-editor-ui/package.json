@@ -1,0 +1,38 @@
+{
+  "name": "@comfyorg/layer-editor-ui",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.vue"
+  },
+  "scripts": {
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "lint": "oxlint src --type-aware && eslint src",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@comfyorg/layer-editor": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@comfyorg/design-system": "workspace:*",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@testing-library/vue": "catalog:",
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@comfyorg/design-system": "workspace:*",
+    "@vueuse/core": "catalog:",
+    "reka-ui": "catalog:",
+    "vue": "catalog:",
+    "vue-i18n": "catalog:"
+  }
+}

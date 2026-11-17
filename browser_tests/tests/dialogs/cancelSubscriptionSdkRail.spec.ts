@@ -8,9 +8,10 @@ import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscri
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import {
+  mockWorkspaceList,
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
@@ -53,9 +54,7 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
   const requests: Request[] = []
   let notFound = false
 
-  await page.route('**/api/features', (r) =>
-    r.fulfill(jsonRoute({ unified_cloud_auth: true }))
-  )
+  await page.route('**/api/features', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )
@@ -68,8 +67,6 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
       })
     )
   )
-  // TutorialCompleted suppresses the new-user template browser, whose modal
-  // overlay would otherwise intercept clicks on the dialog.
   await page.route('**/api/settings', (r) =>
     r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
@@ -78,14 +75,10 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
+  await mockWebSessionServer(page)
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
   await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
-  await page.route('**/api/workspaces', (r) =>
-    r.fulfill(jsonRoute({ workspaces: [workspace('personal', 'owner')] }))
-  )
+  await mockWorkspaceList(page, [workspace('personal', 'owner')])
 
   await page.route('**/api/billing/status', (r) =>
     r.fulfill(jsonRoute(SUBSCRIPTION_STATUS))
@@ -113,7 +106,6 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
       jsonRoute({ billing_op_id: 'op-cancel-1', status: 'pending' })
     )
   })
-  // Both rails poll the same operation route; it settles on the first read.
   await page.route('**/api/billing/ops/**', (r) =>
     r.fulfill(
       jsonRoute({
@@ -150,28 +142,12 @@ function idempotencyKey(request: Request): string | undefined {
 }
 
 test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
-  test('keeps the legacy call while the SDK rail is off', async ({ page }) => {
-    test.setTimeout(60_000)
-    const cancelRoute = await mockCloudBoot(page)
-    await bootApp(page)
-
-    const dialog = new CancelSubscriptionDialog(page)
-    await dialog.open('2099-12-31T12:00:00Z')
-    await dialog.confirmCancel()
-    expect(cancelRoute.requests).toHaveLength(1)
-    expect(cancelRoute.requests[0].method()).toBe('POST')
-    expect(idempotencyKey(cancelRoute.requests[0])).toBeUndefined()
-  })
-
   test('issues through the SDK transport while the rail is on', async ({
     page
   }) => {
     test.setTimeout(60_000)
     const cancelRoute = await mockCloudBoot(page)
     await bootApp(page)
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      billing_sdk_subscription_enabled: true
-    })
 
     const dialog = new CancelSubscriptionDialog(page)
     await dialog.open('2099-12-31T12:00:00Z')
@@ -191,9 +167,6 @@ test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
     test.setTimeout(60_000)
     const cancelRoute = await mockCloudBoot(page)
     await bootApp(page)
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      billing_sdk_subscription_enabled: true
-    })
     cancelRoute.respondNotFound()
 
     const dialog = new CancelSubscriptionDialog(page)
