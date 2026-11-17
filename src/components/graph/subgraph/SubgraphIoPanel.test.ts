@@ -17,9 +17,9 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 import { testI18n } from '@/utils/__tests__/testI18n'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import SubgraphIoPanel from './SubgraphIoPanel.vue'
-import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
 
 vi.mock(import('@/scripts/app'))
 
@@ -77,16 +77,15 @@ async function renderInputNode() {
   store.currentGraph = graph
   const Probe = defineComponent({
     setup() {
-      const context = useSubgraphInputValuesStore()
-      return () =>
-        h(TooltipProvider, null, {
+      const canvasStore = useCanvasStore()
+      return () => {
+        const current = canvasStore.currentGraph
+        return h(TooltipProvider, null, {
           default: () =>
-            context.graph &&
-            h(SubgraphIoPanel, {
-              key: context.graph.id,
-              ioNode: context.graph.inputNode
-            })
+            isSubgraph(current) &&
+            h(SubgraphIoPanel, { key: current.id, ioNode: current.inputNode })
         })
+      }
     }
   })
   const pinia = getActivePinia()

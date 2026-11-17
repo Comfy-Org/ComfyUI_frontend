@@ -7,35 +7,33 @@ import { computedWithControl, useEventListener } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { omit } from 'es-toolkit'
-
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
-import type { InputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
+import { resolveInputValueSources } from '@/core/graph/subgraph/resolveInputValueSource'
+import type {
+  EditableInputValueSource,
+  InputValueSource
+} from '@/core/graph/subgraph/resolveInputValueSource'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import NodeResizeHandle from '@/renderer/extensions/vueNodes/components/NodeResizeHandle.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
-import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
-import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
-import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
-import { useApp } from '@/scripts/appInstance'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { getNodeByState } from '@/utils/graphTraversalUtil'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { cn } from '@comfyorg/tailwind-utils'
-import { useSubgraphInputValuesStore } from './subgraphInputValuesStore'
+import SubgraphInputValue from './SubgraphInputValue.vue'
 import { useSubgraphIoLayout } from './useSubgraphIoLayout'
 
 const { ioNode } = defineProps<{ ioNode: TNode }>()
 
 const { t } = useI18n()
-const context = useSubgraphInputValuesStore()
+const navigationStore = useSubgraphNavigationStore()
 const canvasStore = useCanvasStore()
 const {
   handleWheel,
@@ -81,45 +79,23 @@ const side = computed(() =>
         edge: '-left-px rounded-l-(--node-radius) border-r-0'
       }
 )
-const title = computed(() =>
-  context.selected
-    ? t('subgraphInputValues.instance', {
-        title: context.selected.title,
-        id: context.selected.id
-      })
+const title = computed(() => {
+  const host = navigationStore.currentHost
+  return host
+    ? t('subgraphInputValues.instance', { title: host.title, id: host.id })
     : ioNode.subgraph.name
-)
+})
 
-const settingStore = useSettingStore()
-const { getWidgetTooltip } = useNodeTooltips('')
-const sources = computed(() =>
-  context.selected
-    ? context.sourcesFor(context.selected)
+const sources = computed(() => {
+  const host = navigationStore.currentHost
+  return host && canvasStore.rootGraphId
+    ? resolveInputValueSources(canvasStore.rootGraphId, host)
     : new Map<string, InputValueSource>()
-)
-
-type EditableSource = Extract<InputValueSource, { kind: 'editable' }>
-
-function editorFor(source: EditableSource) {
-  const widget = computeProcessedWidgets({
-    nodeData: source.node,
-    widgetIds: [source.widgetId],
-    graphId: canvasStore.rootGraphId,
-    showAdvanced:
-      !!source.node.showAdvanced ||
-      settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets'),
-    isGraphReady: useApp().isGraphReady,
-    rootGraph: useApp().isGraphReady ? useApp().rootGraph : null,
-    ui: { getTooltipText: getWidgetTooltip }
-  }).at(0)
-  return (
-    widget && { owner: source.node, widget: omit(widget, ['slotMetadata']) }
-  )
-}
+})
 
 function upstreamOf(source: InputValueSource | undefined) {
   if (!source || source.kind === 'unavailable') return undefined
-  return source.node === context.selected ? undefined : source.node
+  return source.node === navigationStore.currentHost ? undefined : source.node
 }
 
 function statusOf(source: InputValueSource | undefined) {
@@ -131,7 +107,7 @@ function statusOf(source: InputValueSource | undefined) {
   )
 }
 
-function sourceTitleOf(source: EditableSource | undefined) {
+function sourceTitleOf(source: EditableInputValueSource | undefined) {
   return source?.shared
     ? `${t('subgraphInputValues.sharedSource')}. ${t('subgraphInputValues.sourceHint')}`
     : t('subgraphInputValues.locateSource')
@@ -150,7 +126,7 @@ const rows = computed(() =>
         : `subgraph-${side.value.direction}-port`,
       portLabel: isAddPort ? undefined : port.displayName,
       shared: editable?.shared,
-      editor: editable && editorFor(editable),
+      editable,
       upstream: upstreamOf(source),
       status: statusOf(source),
       sourceTitle: sourceTitleOf(editable)
@@ -158,7 +134,7 @@ const rows = computed(() =>
   })
 )
 const hint = computed(() =>
-  isInput.value && !context.selected
+  isInput.value && !navigationStore.currentHost
     ? t('subgraphInputValues.enterInstanceHint')
     : undefined
 )
@@ -274,25 +250,12 @@ function forwardUnlessOnButton(event: PointerEvent) {
           class="flex min-h-0 min-w-0 flex-1 flex-col self-stretch"
           :inert="canvasStore.isReadOnly"
         >
-          <WidgetGrid
-            v-if="row.editor"
-            :key="row.editor.widget.widgetId"
-            :processed-widgets="[row.editor.widget]"
-            :node-id="row.editor.owner.id"
-            :node-type="row.editor.owner.type"
-            :node-title="row.editor.owner.title"
-            :sync-layout="false"
+          <SubgraphInputValue
+            v-if="!row.isAddPort"
+            :source="row.editable"
+            :label="row.port.displayName"
+            :status="row.status"
           />
-          <div
-            v-else-if="!row.isAddPort"
-            class="mx-3 flex h-(--node-widget-height) min-w-0 items-center gap-2 rounded-(--node-widget-radius) bg-input/50 px-3"
-          >
-            <span class="truncate">{{ row.port.displayName }}</span>
-            <span
-              class="ml-auto truncate text-muted-foreground italic empty:hidden"
-              >{{ row.status }}</span
-            >
-          </div>
         </div>
         <div
           :data-testid="row.portTestId"

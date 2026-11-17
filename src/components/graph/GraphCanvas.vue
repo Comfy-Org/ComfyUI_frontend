@@ -145,7 +145,6 @@ import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import SubgraphIoPanel from '@/components/graph/subgraph/SubgraphIoPanel.vue'
-import { useSubgraphInputValuesStore } from '@/components/graph/subgraph/subgraphInputValuesStore'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
@@ -221,6 +220,7 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
@@ -254,7 +254,9 @@ const nodeProgressCanvasSync = createNodeProgressCanvasSync(
   workflowStore.nodeToNodeLocatorId
 )
 const { linearMode } = storeToRefs(canvasStore)
-const { graph: openSubgraph } = storeToRefs(useSubgraphInputValuesStore())
+const openSubgraph = computed(() =>
+  isSubgraph(canvasStore.currentGraph) ? canvasStore.currentGraph : undefined
+)
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()

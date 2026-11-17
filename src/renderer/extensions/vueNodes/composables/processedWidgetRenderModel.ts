@@ -76,11 +76,7 @@ export interface ProcessedWidget extends WidgetGridItem {
 }
 
 export interface WidgetUiCallbacks {
-  getTooltipText: (
-    widget: WidgetTooltipSource,
-    fullValue: string | undefined,
-    nodeType: string
-  ) => string
+  getTooltipText: (widget: WidgetTooltipSource, fullValue?: string) => string
   handleNodeRightClick?: (e: PointerEvent, nodeId: NodeId) => void
 }
 
@@ -442,8 +438,7 @@ function processWidget(
       : undefined
   const tooltipText = ctx.ui.getTooltipText(
     { name: widgetState.name, tooltip: renderState?.tooltip },
-    fullValue,
-    ctx.nodeData.type
+    fullValue
   )
 
   return {

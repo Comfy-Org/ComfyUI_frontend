@@ -10,6 +10,7 @@ import {
 } from 'vue-router'
 
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { PanZoom as DragAndScaleState } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
@@ -18,6 +19,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasScheduler } from '@/renderer/core/canvas/useCanvasScheduler'
+import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
@@ -157,19 +159,31 @@ export const useSubgraphNavigationStore = defineStore(
       )
     }
 
-    /** The SubgraphNode, and the graph holding it, that {@link subgraph} was entered through. */
-    function enteredHost(
-      subgraph: Subgraph
-    ): { graphId: string; id: NodeId } | undefined {
+    /** The SubgraphNode the open subgraph edits values for: the one it was entered through, or its only instance. */
+    const currentHost = computed((): NodeState | undefined => {
+      const current = canvasStore.currentGraph
+      if (!isSubgraph(current)) return undefined
+      const root = current.rootGraph
+      const nodes = useNodeDataStore()
       const stack = entries.value
       const index = stack.findIndex(
-        ({ subgraphId }) => subgraphId === subgraph.id
+        ({ subgraphId }) => subgraphId === current.id
       )
       const hostId = stack[index]?.hostId
-      if (hostId === undefined) return undefined
-      const graphId = stack[index - 1]?.subgraphId ?? subgraph.rootGraph.id
-      return { graphId, id: hostId }
-    }
+      if (hostId !== undefined) {
+        const graphId = stack[index - 1]?.subgraphId ?? root.id
+        const host = nodes.getNode(root.id, hostId)
+        return host?.graphId === graphId && host.type === current.id
+          ? host
+          : undefined
+      }
+      const instances = [root.id, ...root.subgraphs.keys()].flatMap((graphId) =>
+        nodes
+          .getGraphNodesFor(root.id, graphId)
+          .filter((node) => node.type === current.id)
+      )
+      return instances.length === 1 ? instances[0] : undefined
+    })
 
     useEventListener(
       () => canvasStore.canvas?.canvas,
@@ -662,7 +676,7 @@ export const useSubgraphNavigationStore = defineStore(
     return {
       activeSubgraph,
       navigationStack,
-      enteredHost,
+      currentHost,
       restoreState,
       exportState,
       saveViewport,
