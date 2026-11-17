@@ -1241,7 +1241,7 @@ describe('BillingTab', () => {
       it.for([
         {
           planKind: 'sales_managed',
-          note: "Buying credits doesn't restart your plan. Contact sales to renew it."
+          note: "Buying credits doesn't restart your Cloud plan. Contact sales to renew it."
         },
         {
           planKind: 'self_serve',
