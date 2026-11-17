@@ -182,6 +182,7 @@ export function usePricingTableUrlLoader() {
       if (!availableTeamCreditStops) {
         await subscriptionDialog.showPricingTable({
           reason: 'deep_link',
+          sameTab: true,
           planMode: 'team'
         })
         return
@@ -198,6 +199,7 @@ export function usePricingTableUrlLoader() {
     if (teamCheckoutRequest && !initialCheckout) {
       await subscriptionDialog.showPricingTable({
         reason: 'deep_link',
+        sameTab: true,
         planMode: 'team'
       })
       return
@@ -222,6 +224,7 @@ export function usePricingTableUrlLoader() {
 
     await subscriptionDialog.showPricingTable({
       reason: 'deep_link',
+      sameTab: true,
       planMode,
       initialCheckout
     })

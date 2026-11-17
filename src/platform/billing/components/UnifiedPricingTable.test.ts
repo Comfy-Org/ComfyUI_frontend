@@ -1,6 +1,8 @@
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
+import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -17,6 +19,7 @@ import type {
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import type { BillingSubscriptionStatus, Plan } from '@comfyorg/billing-core'
+import { useAuthStore } from '@/stores/authStore'
 import UnifiedPricingTable from '@/platform/billing/components/UnifiedPricingTable.vue'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
@@ -102,6 +105,8 @@ vi.mock(
 )
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
+
+vi.mock(import('firebase/auth'))
 
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
@@ -1341,6 +1346,20 @@ describe('UnifiedPricingTable unpaid signup invoice notice', () => {
     expect(
       screen.getByRole('link', { name: 'Contact support' })
     ).toHaveAttribute('href', 'https://comfy.org/contact/')
+  })
+
+  it('pre-fills the questions form with the signed-in email', () => {
+    useAuthStore().currentUser = fromPartial<User>({
+      uid: 'u1',
+      email: 'a+b@example.com'
+    })
+
+    renderComponent()
+
+    expect(screen.getByRole('link', { name: 'questions' })).toHaveAttribute(
+      'href',
+      'https://portal.usepylon.com/comfy-org/forms/question?email=a%2Bb%40example.com'
+    )
   })
 
   it('drops the will-be-available-shortly line from held plans', () => {

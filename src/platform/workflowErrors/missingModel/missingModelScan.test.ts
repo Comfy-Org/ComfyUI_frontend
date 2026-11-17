@@ -315,6 +315,25 @@ describe('scanNodeModelCandidates', () => {
     })
   })
 
+  it('suggests available options that match the missing model', () => {
+    const graph = makeGraph([])
+    const node = makeNode(1, 'UNETLoader', [
+      makeComboWidget('unet_name', 'flux1-dev-fp8.safetensors', [
+        'flux1-dev-bf16.safetensors',
+        'flux1-schnell-fp8.safetensors',
+        'Flux\\flux1-dev-fp8.safetensors'
+      ])
+    ])
+
+    const [candidate] = scanNodeModelCandidates(graph, node, noAssetSupport)
+
+    expect(candidate.isMissing).toBe(true)
+    expect(candidate.replacements).toEqual([
+      'Flux\\flux1-dev-fp8.safetensors',
+      'flux1-dev-bf16.safetensors'
+    ])
+  })
+
   it('returns empty array for node with no widgets', () => {
     const graph = makeGraph([])
     const node = makeNode(1, 'EmptyNode', [])
@@ -2141,10 +2160,14 @@ describe('remote combo inventory', () => {
 
     const verifying = verifyAssetSupportedCandidates(candidates)
     found.settle('ready', ['selected.safetensors'])
-    missing.settle('ready', ['selected.safetensors'])
+    missing.settle('ready', ['selected.safetensors', 'sub/other.safetensors'])
     await verifying
 
     expect(candidates.map((c) => c.isMissing)).toEqual([false, true])
+    expect(candidates.map((c) => c.replacements)).toEqual([
+      undefined,
+      ['sub/other.safetensors']
+    ])
     expect(candidates.some(hasPendingVerification)).toBe(false)
   })
 

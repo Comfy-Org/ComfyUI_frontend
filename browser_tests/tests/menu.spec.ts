@@ -260,15 +260,16 @@ test.describe('Menu', { tag: '@ui' }, () => {
         .toBe('Top')
     })
 
-    test(`Can migrate deprecated menu positions on initial load (${position})`, async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', position)
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-      await comfyPage.setup()
-      await expect
-        .poll(() => comfyPage.settings.getSetting('Comfy.UseNewMenu'))
-        .toBe('Top')
+    test.describe(`Initial menu position (${position})`, () => {
+      test.use({ initialSettings: { 'Comfy.UseNewMenu': position } })
+
+      test(`Can migrate deprecated menu positions on initial load (${position})`, async ({
+        comfyPage
+      }) => {
+        await expect
+          .poll(() => comfyPage.settings.getSetting('Comfy.UseNewMenu'))
+          .toBe('Top')
+      })
     })
   })
 })

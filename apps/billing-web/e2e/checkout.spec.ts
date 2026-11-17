@@ -150,6 +150,7 @@ test('a reactivating upgrade taller than the frame scrolls to its confirm', asyn
     transition_type: 'upgrade',
     requires_reactivation_confirmation: true,
     requires_reactivation_charge_confirmation: true,
+    cancel_at: new Date(Date.now() + 86_400_000).toISOString(),
     cost_today_cents: 90_000,
     amount_due_cents: 90_000,
     current_plan: {

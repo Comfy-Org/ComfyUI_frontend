@@ -452,8 +452,11 @@ export function getAssetFilename(asset: AssetItem): string {
  *
  * TODO(BE-933/934): collapse to `asset.file_path ?? asset.name`.
  */
-export function getAssetStoredFilename(asset: AssetItem): string {
-  return isCloud && asset.hash ? asset.hash : asset.name
+export function getAssetStoredFilename(
+  asset: AssetItem,
+  hash = asset.hash
+): string {
+  return isCloud && hash ? hash : asset.name
 }
 
 /**
@@ -544,10 +547,15 @@ export function getAssetUrlFilename(asset: AssetItem): string {
   return asset.hash ?? asset.name
 }
 
-/** `user_metadata.subfolder` when it is a string, whether or not the rest qualifies as output metadata. */
+/** `user_metadata.subfolder` when it is a string, else the directory of an unhashed asset's `loader_path`. */
 export function getOutputSubfolder(
-  userMetadata: Record<string, unknown> | undefined
+  asset: Pick<AssetItem, 'hash' | 'loader_path' | 'user_metadata'>
 ): string | undefined {
-  const subfolder = userMetadata?.subfolder
-  return typeof subfolder === 'string' ? subfolder : undefined
+  const subfolder = asset.user_metadata?.subfolder
+  if (typeof subfolder === 'string') return subfolder
+  if (asset.hash || !asset.loader_path) return undefined
+  const separatorIndex = asset.loader_path.lastIndexOf('/')
+  return separatorIndex > 0
+    ? asset.loader_path.slice(0, separatorIndex)
+    : undefined
 }

@@ -966,6 +966,36 @@ describe('FullPageTopupView paying once', () => {
     expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
   })
 
+  it('keeps the Payment not verified card on the same form while the lifecycle goes on reading the refused challenge as pending', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    fake.createInteractiveTopup.mockImplementation(() => new Promise(() => {}))
+    await screen.findByText('Add credits · Acme Team')
+    const refused: PendingBillingOperation = {
+      ...topupInFlight({ authenticationState: 'failed_retryable' }),
+      awaitedHere: true,
+      challenge: { clientSecret: 'cs', status: 'failed' }
+    }
+
+    await userEvent.click(payButton())
+    fake.publishOperation(refused)
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment not verified'
+    )
+    const mounts = form.mounts
+
+    fake.publishOperation({ ...refused, observedAt: refused.observedAt + 1 })
+    fake.publishOperation({ ...refused, observedAt: refused.observedAt + 2 })
+
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Payment not verified')
+    expect(form.mounts).toBe(mounts)
+    expect(fake.quoteTopup).toHaveBeenCalledOnce()
+  })
+
   it('keeps an unanswered purchase on its key when the pending operation recovery found is declined, since nothing ties that operation to this Pay', async () => {
     const fake = renderTopup({
       topupQuote: PAYS_ONCE,

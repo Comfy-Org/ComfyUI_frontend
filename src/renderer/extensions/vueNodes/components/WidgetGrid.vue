@@ -2,28 +2,29 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets grid grid-cols-[min-content_minmax(80px,min-content)_minmax(125px,1fr)] gap-y-1 pr-3 text-xs text-node-foreground"
-    :style="{
-      'grid-template-rows': gridTemplateRows,
-      flex: gridTemplateRows.includes('auto') ? 1 : undefined
-    }"
+    class="lg-node-widgets contents text-xs text-node-foreground"
   >
     <div
-      v-for="section in sections"
+      v-for="(section, sectionIndex) in sections"
       :key="section.key"
       :role="section.role"
       :aria-label="section.label"
-      class="col-span-full grid grid-cols-subgrid grid-rows-subgrid"
-      :style="{ gridRow: `span ${section.rows.length}` }"
+      class="contents"
     >
-      <template v-for="row in section.rows" :key="row.widget.renderKey">
+      <template
+        v-for="(row, rowIndex) in section.rows"
+        :key="row.widget.renderKey"
+      >
         <div
           :data-testid="row.testId"
           :data-widget-name="row.widget.simplified.name"
+          :style="row.style"
           :class="
             cn(
-              'group col-span-full grid grid-cols-subgrid items-stretch',
-              row.showsControl && 'lg-node-widget'
+              'group relative mr-3 grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
+              row.flexClass,
+              rowSpacingClass(row.showsControl),
+              rowEdgeClass(sectionIndex, rowIndex)
             )
           "
         >
@@ -49,13 +50,11 @@
             v-if="row.showsControl"
             :widget-id="row.widget.widgetId"
             :name="row.widget.simplified.name"
-            :enable="
-              canSelectInputs && !row.widget.simplified.options?.disabled
-            "
+            :enable="row.selectable"
           >
             <Tooltip :disabled="!row.widget.tooltipText">
               <TooltipTrigger as-child>
-                <div class="col-span-2 grid grid-cols-subgrid">
+                <div :class="row.controlClass">
                   <component
                     :is="row.widget.vueComponent"
                     :model-value="row.widget.simplified.value"
@@ -66,7 +65,7 @@
                     :invalid="row.widget.hasError"
                     :aria-invalid="row.widget.hasError || undefined"
                     :class="
-                      cn('col-span-2', row.widget.hasError && 'font-bold')
+                      cn('col-span-full', row.widget.hasError && 'font-bold')
                     "
                     @update:model-value="row.widget.updateHandler"
                     @contextmenu="row.widget.handleContextMenu"
@@ -79,6 +78,21 @@
               }}</TooltipContent>
             </Tooltip>
           </AppInput>
+          <GrowableRegionHandle
+            v-if="row.growable"
+            :name="row.widget.simplified.name"
+            :label="
+              $t(
+                'g.resizeWidgetHeight',
+                {
+                  name:
+                    row.widget.simplified.label || row.widget.simplified.name
+                },
+                { escapeParameter: false }
+              )
+            "
+            :max-height="row.maxHeight"
+          />
         </div>
       </template>
     </div>
@@ -86,26 +100,90 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  inject,
+  nextTick,
+  onMounted,
+  shallowRef,
+  useTemplateRef,
+  watch
+} from 'vue'
+
+import { useResizeObserver } from '@vueuse/core'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import {
+  growableRegionsKey,
+  userHeightTrack
+} from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import GrowableRegionHandle from './GrowableRegionHandle.vue'
 import InputSlot from './InputSlot.vue'
 
 const grid = useTemplateRef<HTMLElement>('grid')
 
 const isConvertedWidgetType = (type: string) =>
   type === 'converted-widget' || type.startsWith('converted-widget:')
+
+const growableRegions = inject(growableRegionsKey, undefined)
+
+function rowSpacingClass(showsControl: boolean) {
+  return showsControl
+    ? 'lg-node-widget my-[calc((var(--node-widget-gap)-var(--spacing))/2)]'
+    : '-my-0.5'
+}
+
+function rowEdgeClass(sectionIndex: number, rowIndex: number) {
+  const lastSection = sections.value.length - 1
+  return cn(
+    sectionIndex === 0 && rowIndex === 0 && 'mt-0',
+    sectionIndex === lastSection &&
+      rowIndex === sections.value[lastSection].rows.length - 1 &&
+      'mb-0'
+  )
+}
+
+function rowSizing(
+  name: string,
+  growable: boolean,
+  sizing: WidgetGridItem['sizing']
+) {
+  const minHeight = sizing ? `${minRowHeight(sizing)}px` : undefined
+  if (!growable)
+    return {
+      growable,
+      flexClass: 'flex-none',
+      style: { minHeight },
+      controlClass: 'grid min-w-0 grid-cols-1 self-center'
+    }
+  const maxHeight = sizing?.kind === 'growable' ? sizing.maxHeight : undefined
+  const userHeight = growableRegions?.heightOf(name)
+  const fills = userHeight === undefined
+  return {
+    growable,
+    maxHeight,
+    flexClass: fills ? 'grow shrink-0' : 'flex-none',
+    style: fills
+      ? {
+          minHeight,
+          maxHeight: maxHeight === undefined ? undefined : `${maxHeight}px`
+        }
+      : { minHeight, gridTemplateRows: userHeightTrack(userHeight) },
+    controlClass: 'grid min-w-0 grid-cols-1'
+  }
+}
 
 const {
   processedWidgets,
@@ -135,6 +213,7 @@ const renderedRows = computed(() =>
         (!!widget.suppressedByConnection && !!widget.slotMetadata)
     if (!shouldRender) return []
 
+    const sizing = showsControl ? widget.sizing : undefined
     return [
       {
         widget,
@@ -148,11 +227,12 @@ const renderedRows = computed(() =>
         ),
         standalone: !showsControl && !!widget.suppressedByConnection,
         testId: showsControl ? 'node-widget' : undefined,
-        rowSize:
-          showsControl &&
-          (shouldExpand(widget.simplified.type) || widget.hasLayoutSize)
-            ? 'auto'
-            : 'min-content'
+        selectable: canSelectInputs && !widget.simplified.options?.disabled,
+        ...rowSizing(
+          widget.simplified.name,
+          showsControl && shouldExpand(widget.simplified.type, sizing),
+          sizing
+        )
       }
     ]
   })
@@ -230,10 +310,6 @@ async function restoreRowFocus(name: string) {
   }
 }
 
-const gridTemplateRows = computed(() =>
-  renderedRows.value.map((row) => row.rowSize).join(' ')
-)
-
 const layoutKey = computed(() =>
   renderedRows.value
     .map(
@@ -243,13 +319,29 @@ const layoutKey = computed(() =>
     .join('|')
 )
 
+function syncOffsets() {
+  const rootGraphId = canvasStore.rootGraphId
+  if (syncLayout && grid.value && rootGraphId && nodeId) {
+    syncSlotOffsets(grid.value, rootGraphId, nodeId)
+  }
+}
+
+const rows = shallowRef<HTMLElement[]>([])
+useResizeObserver(rows, syncOffsets)
+
+function trackRows() {
+  rows.value =
+    syncLayout && nodeId && grid.value
+      ? [...grid.value.querySelectorAll<HTMLElement>('[data-widget-name]')]
+      : []
+}
+
+onMounted(trackRows)
 watch(
   layoutKey,
   () => {
-    const rootGraphId = canvasStore.rootGraphId
-    if (syncLayout && grid.value && rootGraphId && nodeId) {
-      syncSlotOffsets(grid.value, rootGraphId, nodeId)
-    }
+    trackRows()
+    syncOffsets()
   },
   { flush: 'post' }
 )

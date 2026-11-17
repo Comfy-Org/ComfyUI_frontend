@@ -1,9 +1,6 @@
 import { delay } from 'es-toolkit'
 
-import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
-
 import { getFirebaseConfigSource } from '@/config/firebase'
-import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 
@@ -129,30 +126,6 @@ function commitRemoteConfigSuccess(
   remoteConfigRevision.value++
 }
 
-/**
- * The anonymous document answers `unified_web_session` false for a cookie-only
- * caller; only a credentialed read that names its client is authoritative.
- */
-async function readCredentialedWebSessionFlag(
-  config: Record<string, unknown>,
-  generation: number
-): Promise<void> {
-  if (!isCloud || config.web_session_probe !== true) return
-  const enabled = await resolveUnifiedWebSession({
-    cloudBaseUrl: window.location.origin,
-    fetchImpl: (...args) => fetch(...args),
-    probe: async () => true
-  })
-  if (generation !== refreshGeneration) return
-  const merged: Record<string, unknown> = {
-    ...config,
-    unified_web_session: enabled
-  }
-  window.__CONFIG__ = merged
-  remoteConfig.value = merged
-  remoteConfigRevision.value++
-}
-
 function commitRemoteConfigFailure(response: Response, useAuth: boolean): void {
   console.warn('Failed to load remote config:', response.statusText)
   remoteConfigFailure.value = { reason: 'http', status: response.status }
@@ -247,7 +220,6 @@ export async function refreshRemoteConfig(
         return
       }
       commitRemoteConfigSuccess(config, useAuth)
-      if (!useAuth) await readCredentialedWebSessionFlag(config, generation)
       return
     }
     commitRemoteConfigFailure(response, useAuth)

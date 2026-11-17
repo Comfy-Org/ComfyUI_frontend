@@ -1,27 +1,26 @@
 <template>
   <div class="flex h-full flex-col">
-    <!-- Assets Grid -->
     <VirtualGrid
       class="flex-1"
-      :items="assetItems"
+      :items="pagedItems(assets)"
       :grid-style
-      :on-load-more
-      :can-load-more
+      :on-load-more="loadMore"
+      :can-load-more="isPaged(assets) && toValue(assets.hasMore)"
     >
-      <template #item="{ item }">
+      <template #item="{ item: asset }">
         <MediaAssetCard
-          :asset="item.asset"
-          :selected="isSelected(item.asset.id)"
-          :show-output-count="showOutputCount(item.asset)"
-          :output-count="getOutputCount(item.asset)"
+          :asset
+          :selected="isSelected(asset.id)"
+          :show-output-count="showOutputCount(asset)"
+          :output-count="getOutputCount(asset)"
           :show-native-video-controls="
             gridMode !== MEDIA_ASSET_GRID_MODE.gridSmall
           "
-          @select="emit('select-asset', item.asset)"
-          @toggle-selection="emit('toggle-asset-selection', item.asset)"
-          @context-menu="emit('context-menu', $event, item.asset)"
-          @zoom="emit('zoom', item.asset)"
-          @output-count-click="emit('output-count-click', item.asset)"
+          @select="emit('select-asset', asset)"
+          @toggle-selection="emit('toggle-asset-selection', asset)"
+          @context-menu="emit('context-menu', $event, asset)"
+          @zoom="emit('zoom', asset)"
+          @output-count-click="emit('output-count-click', asset)"
         />
       </template>
     </VirtualGrid>
@@ -29,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
 
 import VirtualGrid from '@comfyorg/design-system/common/VirtualGrid'
 import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
@@ -39,16 +38,16 @@ import {
 } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { MediaAssetGridMode } from '@/platform/assets/components/mediaAssetViewOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 
 const { assets, isSelected, showOutputCount, getOutputCount, gridMode } =
   defineProps<{
-    assets: AssetItem[]
+    assets: MaybePaged<AssetItem>
     isSelected: (assetId: string) => boolean
     showOutputCount: (asset: AssetItem) => boolean
     getOutputCount: (asset: AssetItem) => number
     gridMode: MediaAssetGridMode
-    onLoadMore?: () => unknown
-    canLoadMore?: boolean
   }>()
 
 const emit = defineEmits<{
@@ -59,14 +58,9 @@ const emit = defineEmits<{
   (e: 'output-count-click', asset: AssetItem): void
 }>()
 
-type AssetGridItem = { key: string; asset: AssetItem }
-
-const assetItems = computed<AssetGridItem[]>(() =>
-  assets.map((asset) => ({
-    key: `asset-${asset.id}`,
-    asset
-  }))
-)
+function loadMore() {
+  return isPaged(assets) ? assets.loadMore() : undefined
+}
 
 const gridStyle = computed(() => ({
   display: 'grid',

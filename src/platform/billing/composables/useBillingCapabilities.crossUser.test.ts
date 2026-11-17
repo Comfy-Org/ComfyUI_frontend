@@ -37,6 +37,7 @@ function capabilitiesFor(
 ): BillingCapabilitiesResponse {
   return {
     auto_top_up_enabled: false,
+    billing_web_checkout_ui: 'full_page',
     resolved_for: {
       user_id: canonicalUserId,
       workspace_id: TEAM_WORKSPACE_ID
@@ -64,6 +65,8 @@ function capabilitiesFor(
       can_manage_subscription: isOwner,
       can_open_plans: isOwner,
       can_run_workflows: isOwner,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: isOwner
     },
     rollout_defaults_applied: {

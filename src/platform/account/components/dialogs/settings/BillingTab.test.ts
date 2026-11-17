@@ -43,6 +43,8 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useMessageSupport } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
@@ -50,7 +52,8 @@ const distribution = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
-  }
+  },
+  isDesktop: false
 }))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@/platform/billing/composables/usePausedBanner'), {
@@ -65,6 +68,7 @@ vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/localBillingHandoff'))
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionActions')
 )
@@ -316,7 +320,7 @@ describe('BillingTab', () => {
       ({ canManageBilling, body, buttons }) => {
         arrange({ isPaused: true, canManageBilling })
 
-        const banner = screen.getByTestId('billing-paused-banner')
+        const banner = screen.getByTestId('billing-banner-paused')
         expect(banner).toHaveTextContent('Subscription paused')
         expect(banner).toHaveTextContent(body)
         expect(
@@ -324,7 +328,10 @@ describe('BillingTab', () => {
             .queryAllByRole('button')
             .map((button) => button.textContent.trim())
         ).toEqual(buttons)
-        expect(banner).toHaveClass('rounded-xl', 'p-3')
+        expect(within(banner).getByRole('status')).toHaveClass(
+          'rounded-xl',
+          'p-3'
+        )
       }
     )
 
@@ -332,7 +339,7 @@ describe('BillingTab', () => {
       arrange({ isPaused: true, canManageBilling: true })
 
       expect(
-        within(screen.getByTestId('billing-paused-banner')).getByRole(
+        within(screen.getByTestId('billing-banner-paused')).getByRole(
           'button',
           { name: 'Update payment' }
         )
@@ -343,7 +350,7 @@ describe('BillingTab', () => {
       const { manageSubscription } = arrange({ isPaused: true })
 
       await userEvent.click(
-        within(screen.getByTestId('billing-paused-banner')).getByRole(
+        within(screen.getByTestId('billing-banner-paused')).getByRole(
           'button',
           { name: 'Update payment' }
         )
@@ -356,7 +363,7 @@ describe('BillingTab', () => {
       arrange()
 
       expect(
-        screen.queryByTestId('billing-paused-banner')
+        screen.queryByTestId('billing-banner-paused')
       ).not.toBeInTheDocument()
     })
   })
@@ -370,7 +377,7 @@ describe('BillingTab', () => {
       ({ canManageBilling, shown }) => {
         arrange({ hasParkedBillingOperation: true, canManageBilling })
 
-        expect(screen.queryByTestId('billing-parked-banner') !== null).toBe(
+        expect(screen.queryByTestId('billing-banner-parked') !== null).toBe(
           shown
         )
       }
@@ -379,7 +386,7 @@ describe('BillingTab', () => {
     it('shows Contact support when a payment is parked', () => {
       arrange({ hasParkedBillingOperation: true })
 
-      const banner = screen.getByTestId('billing-parked-banner')
+      const banner = screen.getByTestId('billing-banner-parked')
       expect(banner).toHaveTextContent(
         'Something went wrong with a recent payment'
       )
@@ -393,7 +400,7 @@ describe('BillingTab', () => {
       arrange()
 
       expect(
-        screen.queryByTestId('billing-parked-banner')
+        screen.queryByTestId('billing-banner-parked')
       ).not.toBeInTheDocument()
     })
   })
@@ -404,13 +411,13 @@ describe('BillingTab', () => {
       subscription: { ...activeSubscription, hasFunds: false }
     })
 
-    const banner = screen.getByTestId('billing-local-credit-banner')
+    const banner = screen.getByTestId('billing-banner-credit')
     expect(banner).toHaveTextContent('Out of credits')
     expect(banner).toHaveTextContent(
       "You've used all your credits. Add more credits."
     )
     expect(
-      screen.queryByTestId('billing-paused-banner')
+      screen.queryByTestId('billing-banner-paused')
     ).not.toBeInTheDocument()
     expect(banner).not.toHaveTextContent('Subscription paused')
     expect(banner).not.toHaveTextContent('plan ends')
@@ -427,7 +434,7 @@ describe('BillingTab', () => {
     })
 
     expect(
-      screen.queryByTestId('billing-local-credit-banner')
+      screen.queryByTestId('billing-banner-credit')
     ).not.toBeInTheDocument()
   })
 
@@ -444,18 +451,58 @@ describe('BillingTab', () => {
     expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
   })
 
-  it('replaces the plan with one error that retries both reads', async () => {
-    const { initialize, refresh } = arrange({ error: 'boom' })
+  it.for([
+    {
+      surface: 'local ComfyUI',
+      isCloud: false,
+      message:
+        "We couldn't load your billing details. Check your connection, then try again."
+    },
+    { surface: 'Cloud', isCloud: true, message: "We couldn't load your plan." }
+  ])(
+    'replaces the plan on $surface with one error that retries both reads',
+    async ({ isCloud, message }) => {
+      distribution.isCloud = isCloud
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      const { initialize, refresh } = arrange({ error: 'boom' })
 
-    const alert = screen.getByRole('alert')
-    expect(alert).toHaveTextContent("We couldn't load your plan.")
-    expect(alert).toHaveClass('rounded-xl', 'border-border', 'px-5', 'py-4')
-    expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
+      const alert = screen.getByRole('alert')
+      expect(within(alert).getByText(message)).toBeInTheDocument()
+      expect(alert).toHaveClass('rounded-xl', 'border-border', 'px-5', 'py-4')
+      expect(screen.queryByTestId('billing-plan-row')).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+      await userEvent.click(
+        within(alert).getByRole('button', { name: 'Try again' })
+      )
 
-    expect(initialize).toHaveBeenCalled()
-    expect(refresh).toHaveBeenCalled()
+      expect(initialize).toHaveBeenCalled()
+      expect(refresh).toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    {
+      surface: 'local ComfyUI',
+      isCloud: false,
+      line: 'Subscribe for monthly credits. You can also add credits any time.'
+    },
+    {
+      surface: 'Cloud',
+      isCloud: true,
+      line: 'Subscribe to run workflows on Cloud.'
+    }
+  ])('words the no-plan line for $surface', ({ isCloud, line }) => {
+    distribution.isCloud = isCloud
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    arrange({ subscription: null, subscriptionStatus: null })
+
+    expect(screen.getByTestId('billing-plan-line').textContent.trim()).toBe(
+      line
+    )
   })
 
   it('shows the error when capabilities settle without a snapshot', () => {
@@ -474,7 +521,7 @@ describe('BillingTab', () => {
     await nextTick()
 
     expect(screen.getByRole('alert')).toHaveTextContent(
-      "We couldn't load your plan."
+      "We couldn't load your billing details. Check your connection, then try again."
     )
     expect(
       screen.queryByTestId('billing-plan-skeleton')
@@ -677,6 +724,21 @@ describe('BillingTab', () => {
     ).not.toBeInTheDocument()
   })
 
+  it("keeps a member's usage link hidden once billing opens through a local handoff, which only reaches Platform billing", async () => {
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    arrange({
+      canManageSubscription: false,
+      canManageBilling: false,
+      canOpenPlans: false
+    })
+    expect(screen.getByRole('link', { name: 'View usage' })).toBeVisible()
+
+    setLocalBillingWebEnabled(true)
+    await nextTick()
+
+    expect(screen.queryByTestId('billing-handoff')).toBeNull()
+  })
+
   it('gives a member usage instead of billing and no plan action', () => {
     arrange({
       canManageSubscription: false,
@@ -845,17 +907,38 @@ describe('BillingTab', () => {
       return arranged
     }
 
-    it('confirms that the current plan stays, with no amount', async () => {
-      await openStay()
+    it.for([
+      {
+        served: 'a renewal date',
+        effectiveAt: '2026-10-28T00:00:00Z',
+        body: "You'll stay on Pro, which renews on October 28, 2026. You can schedule a change again anytime."
+      },
+      {
+        served: 'no renewal date',
+        effectiveAt: '',
+        body: "You'll stay on Pro. You can schedule a change again anytime."
+      }
+    ])(
+      'confirms that the current plan stays, with no amount, when $served is served',
+      async ({ effectiveAt, body }) => {
+        await openStay({
+          subscription: {
+            ...scheduledChange,
+            scheduledChange: {
+              plan_slug: 'creator-yearly',
+              effective_at: effectiveAt,
+              team_credit_stop: null
+            }
+          }
+        })
 
-      const dialog = screen.getByRole('dialog', {
-        name: 'Cancel your change to Creator?'
-      })
-      expect(dialog).toHaveTextContent(
-        "You'll stay on Pro. You can schedule a change again anytime."
-      )
-      expect(dialog).not.toHaveTextContent('$')
-    })
+        const dialog = screen.getByRole('dialog', {
+          name: 'Cancel your change to Creator?'
+        })
+        expect(dialog).toHaveTextContent(body)
+        expect(dialog).not.toHaveTextContent('$')
+      }
+    )
 
     it('reverts the scheduled change and rereads status when confirmed', async () => {
       const { fetchStatus, refresh } = await openStay()
@@ -1389,9 +1472,7 @@ describe('BillingTab', () => {
         servedCheckouts(checkout(state))
         arrange()
 
-        const banner = await screen.findByTestId(
-          'billing-topup-checkout-banner'
-        )
+        const banner = await screen.findByTestId('billing-banner-topupCheckout')
         expect(banner).toHaveTextContent(text)
         expect(
           within(banner)
@@ -1412,9 +1493,7 @@ describe('BillingTab', () => {
         )
         arrange()
 
-        const banner = await screen.findByTestId(
-          'billing-topup-checkout-banner'
-        )
+        const banner = await screen.findByTestId('billing-banner-topupCheckout')
         expect(banner).toHaveTextContent(title)
         expect(banner).toHaveTextContent(
           'No credits were added. Try again or use a different payment method.'
@@ -1446,7 +1525,7 @@ describe('BillingTab', () => {
       servedCheckouts(checkout('failed'))
       arrange({ balance: zeroBalance })
 
-      const banner = await screen.findByTestId('billing-topup-checkout-banner')
+      const banner = await screen.findByTestId('billing-banner-topupCheckout')
       expect(
         [
           within(banner).getByRole('button', { name: 'Add credits' }),
@@ -1473,7 +1552,7 @@ describe('BillingTab', () => {
 
       await screen.findByTestId('billing-auto-top-up-status')
       expect(
-        within(screen.getByTestId('billing-local-credit-banner')).getByRole(
+        within(screen.getByTestId('billing-banner-credit')).getByRole(
           'button',
           { name: 'Add credits' }
         )
@@ -1500,7 +1579,7 @@ describe('BillingTab', () => {
 
         await screen.findByTestId('billing-auto-top-up-status')
         expect(
-          within(screen.getByTestId('billing-local-credit-banner')).getByRole(
+          within(screen.getByTestId('billing-banner-credit')).getByRole(
             'button',
             { name: 'Add credits' }
           )
@@ -1524,7 +1603,7 @@ describe('BillingTab', () => {
       servedCheckouts(checkout('payment_processing'))
       arrange({ balance: zeroBalance })
 
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
       await screen.findByTestId('billing-auto-top-up-status')
       expect(
         within(screen.getByTestId('billing-credits-card')).getByRole('button', {
@@ -1628,7 +1707,7 @@ describe('BillingTab', () => {
       servedCheckouts(checkout('failed'))
       arrange({ canTopUp: false })
 
-      const banner = await screen.findByTestId('billing-topup-checkout-banner')
+      const banner = await screen.findByTestId('billing-banner-topupCheckout')
       expect(
         within(banner).queryByRole('button', { name: 'Add credits' })
       ).not.toBeInTheDocument()
@@ -1662,13 +1741,13 @@ describe('BillingTab', () => {
       servedCheckouts(checkout('failed'), checkout('payment_processing'))
       arrange()
 
-      const banner = await screen.findByTestId('billing-topup-checkout-banner')
+      const banner = await screen.findByTestId('billing-banner-topupCheckout')
       await userEvent.click(
         within(banner).getByRole('button', { name: 'Dismiss' })
       )
 
       expect(
-        screen.getByTestId('billing-topup-checkout-banner')
+        screen.getByTestId('billing-banner-topupCheckout')
       ).toHaveTextContent('Payment processing')
     })
 
@@ -1694,7 +1773,7 @@ describe('BillingTab', () => {
 
       await vi.waitFor(() => expect(settleDetail).toHaveLength(1))
       settleDetail[0](checkout('credits_applying', { session_id: 'cs_1' }))
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
 
       await vi.advanceTimersByTimeAsync(5_000)
       await vi.waitFor(() => expect(settleDetail).toHaveLength(2))
@@ -1713,7 +1792,7 @@ describe('BillingTab', () => {
 
       await vi.waitFor(() =>
         expect(
-          screen.queryByTestId('billing-topup-checkout-banner')
+          screen.queryByTestId('billing-banner-topupCheckout')
         ).not.toBeInTheDocument()
       )
     })
@@ -1749,13 +1828,13 @@ describe('BillingTab', () => {
       expect(settleDetail).toHaveLength(1)
 
       settleDetail[0](checkout('payment_processing', { session_id: 'cs_1' }))
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
       await vi.waitFor(() => expect(settleDetail).toHaveLength(2))
       settleDetail[1](checkout('fulfilled', { session_id: 'cs_1' }))
 
       await vi.waitFor(() =>
         expect(
-          screen.queryByTestId('billing-topup-checkout-banner')
+          screen.queryByTestId('billing-banner-topupCheckout')
         ).not.toBeInTheDocument()
       )
     })
@@ -1763,14 +1842,14 @@ describe('BillingTab', () => {
     it('clears the credits banner on its own once the server reports fulfilled', async () => {
       servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
       arrange()
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
 
       servedCheckouts(checkout('fulfilled', { session_id: 'cs_1' }))
       await vi.advanceTimersByTimeAsync(5_000)
 
       await vi.waitFor(() =>
         expect(
-          screen.queryByTestId('billing-topup-checkout-banner')
+          screen.queryByTestId('billing-banner-topupCheckout')
         ).not.toBeInTheDocument()
       )
     })
@@ -1801,7 +1880,7 @@ describe('BillingTab', () => {
       arrange()
 
       expect(
-        await screen.findByTestId('billing-topup-checkout-banner')
+        await screen.findByTestId('billing-banner-topupCheckout')
       ).toHaveTextContent('Payment processing')
       expect(reportError).toHaveBeenCalledWith(
         unavailable,
@@ -1812,7 +1891,7 @@ describe('BillingTab', () => {
     it('keeps Payment received and keeps polling when a credits_applying read fails once', async () => {
       servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
       arrange()
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
 
       vi.mocked(billingApi.getTopupCheckout).mockRejectedValueOnce(
         new WorkspaceApiError('Bad gateway', 502)
@@ -1826,7 +1905,7 @@ describe('BillingTab', () => {
         expect(billingApi.getTopupCheckout).toHaveBeenCalledWith('cs_1')
       )
       expect(
-        screen.getByTestId('billing-topup-checkout-banner')
+        screen.getByTestId('billing-banner-topupCheckout')
       ).toHaveTextContent('Payment received')
     })
 
@@ -1869,7 +1948,7 @@ describe('BillingTab', () => {
       )
       await vi.advanceTimersByTimeAsync(0)
       expect(
-        screen.queryByTestId('billing-topup-checkout-banner')
+        screen.queryByTestId('billing-banner-topupCheckout')
       ).not.toBeInTheDocument()
 
       vi.mocked(billingApi.getTopupCheckout).mockResolvedValue(
@@ -1886,14 +1965,14 @@ describe('BillingTab', () => {
         next_cursor: null
       })
       expect(
-        await screen.findByTestId('billing-topup-checkout-banner')
+        await screen.findByTestId('billing-banner-topupCheckout')
       ).toHaveTextContent('Payment processing')
     })
 
     it("clears the previous workspace's checkout banner on a workspace switch", async () => {
       servedCheckouts(checkout('payment_processing'))
       arrange()
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
 
       vi.mocked(billingApi.listTopupCheckouts).mockResolvedValue({
         checkouts: [],
@@ -1903,7 +1982,7 @@ describe('BillingTab', () => {
 
       await vi.waitFor(() =>
         expect(
-          screen.queryByTestId('billing-topup-checkout-banner')
+          screen.queryByTestId('billing-banner-topupCheckout')
         ).not.toBeInTheDocument()
       )
     })
@@ -1920,7 +1999,7 @@ describe('BillingTab', () => {
         )
       )
       expect(
-        screen.queryByTestId('billing-topup-checkout-banner')
+        screen.queryByTestId('billing-banner-topupCheckout')
       ).not.toBeInTheDocument()
     })
 
@@ -1932,7 +2011,7 @@ describe('BillingTab', () => {
       arrange()
 
       expect(
-        await screen.findByTestId('billing-topup-checkout-banner')
+        await screen.findByTestId('billing-banner-topupCheckout')
       ).toHaveTextContent("Your $25 top-up didn't go through")
       vi.mocked(billingApi.getTopupCheckout).mockClear()
 
@@ -1968,7 +2047,7 @@ describe('BillingTab', () => {
       )
       arrange()
 
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
       expect(reportError).toHaveBeenCalledTimes(1)
       vi.mocked(reportError).mockClear()
       vi.mocked(billingApi.getTopupCheckout).mockClear()
@@ -1986,7 +2065,7 @@ describe('BillingTab', () => {
     it('reports a checkout list failure once until a later read succeeds', async () => {
       servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
       arrange()
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-banner-topupCheckout')
 
       const unavailable = new WorkspaceApiError('Unavailable', 503)
       vi.mocked(billingApi.listTopupCheckouts).mockRejectedValue(unavailable)
@@ -2015,7 +2094,7 @@ describe('BillingTab', () => {
 
       expect(billingApi.listTopupCheckouts).not.toHaveBeenCalled()
       expect(
-        screen.queryByTestId('billing-topup-checkout-banner')
+        screen.queryByTestId('billing-banner-topupCheckout')
       ).not.toBeInTheDocument()
     })
   })
@@ -2069,30 +2148,6 @@ describe('BillingTab', () => {
         canTopUp: false
       }
 
-      it('tells a member who manages auto top-up, without status, action or a settings read', () => {
-        arrange(member)
-
-        const block = screen.getByTestId('billing-auto-top-up-member-card')
-        expect(
-          within(block).getByRole('heading', { name: 'Auto top-up' })
-        ).toBeInTheDocument()
-        expect(block).toHaveTextContent(
-          'Credits can top up automatically when they run low. Contact a workspace owner to manage this.'
-        )
-        expect(within(block).queryByRole('button')).not.toBeInTheDocument()
-        expect(within(block).queryByRole('link')).not.toBeInTheDocument()
-        expect(
-          screen.queryByTestId('billing-auto-top-up-status')
-        ).not.toBeInTheDocument()
-        expect(
-          within(screen.getByTestId('billing-credits-section')).queryByRole(
-            'button',
-            { name: 'Add credits' }
-          )
-        ).not.toBeInTheDocument()
-        expect(billingApi.getBillingAutoReload).not.toHaveBeenCalled()
-      })
-
       it('shows a member the served auto top-up status, still without an action or a settings read', () => {
         arrange({
           ...member,
@@ -2136,6 +2191,57 @@ describe('BillingTab', () => {
       })
     })
 
+    it('turns the Platform billing and Plans links into buttons that open through a handoff once billing opens through a local handoff', async () => {
+      onTestFinished(() => setLocalBillingWebEnabled(false))
+      arrange()
+      const credits = screen.getByTestId('billing-credits-section')
+      const plan = screen.getByTestId('billing-plan-section')
+      expect(
+        await within(credits).findByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent('Off')
+      expect(
+        within(credits).getByRole('link', { name: /Turn on/ })
+      ).toBeInTheDocument()
+      expect(
+        within(plan).getByRole('link', { name: 'Manage' })
+      ).toBeInTheDocument()
+      expect(screen.getByTestId('billing-handoff')).toBeInTheDocument()
+
+      setLocalBillingWebEnabled(true)
+      await nextTick()
+
+      expect(
+        within(credits).getByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent('Off')
+      expect(within(plan).queryByRole('link', { name: 'Manage' })).toBeNull()
+      const handoff = screen.getByTestId('billing-handoff')
+      expect(within(credits).queryByRole('link')).toBeNull()
+      expect(within(handoff).queryByRole('link')).toBeNull()
+      expect(screen.getByTestId('billing-tab').innerHTML).not.toContain(
+        '/profile/'
+      )
+
+      await userEvent.click(
+        within(credits).getByRole('button', { name: /Turn on/ })
+      )
+      await userEvent.click(
+        within(handoff).getByRole('button', { name: 'platform.comfy.org' })
+      )
+      await userEvent.click(
+        within(handoff).getByRole('button', { name: 'Open billing' })
+      )
+      await userEvent.click(
+        within(plan).getByRole('button', { name: 'Manage' })
+      )
+
+      expect(vi.mocked(openPlatformBillingHandoff).mock.calls).toEqual([
+        [undefined],
+        [undefined],
+        [undefined],
+        ['plans']
+      ])
+    })
+
     it('reads the auto top-up settings once for the card and the banner', async () => {
       arrange({})
       await screen.findByTestId('billing-auto-top-up-status')
@@ -2147,12 +2253,12 @@ describe('BillingTab', () => {
 
 describe('BillingTab banner stack parity with selectBillingBanners', () => {
   const BANNER_KINDS: Record<string, BillingBannerKind> = {
-    'billing-paused-banner': 'paused',
-    'billing-plan-checkout-banner': 'planCheckout',
-    'billing-topup-checkout-banner': 'topupCheckout',
-    'billing-parked-banner': 'parked',
-    'billing-auto-top-up-banner': 'autoTopUp',
-    'billing-local-credit-banner': 'credit'
+    'billing-banner-paused': 'paused',
+    'billing-banner-planCheckout': 'planCheckout',
+    'billing-banner-topupCheckout': 'topupCheckout',
+    'billing-banner-parked': 'parked',
+    'billing-banner-autoTopUp': 'autoTopUp',
+    'billing-banner-credit': 'credit'
   }
 
   const text = { title: '', body: '' }
@@ -2262,7 +2368,7 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
         subscription: { ...activeSubscription, hasFunds: false }
       })
       if (topupProcessing) {
-        await screen.findByTestId('billing-topup-checkout-banner')
+        await screen.findByTestId('billing-banner-topupCheckout')
       }
 
       expect(shownStack()).toEqual(
@@ -2272,4 +2378,15 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
       )
     }
   )
+})
+
+describe('BillingTab refresh on return', () => {
+  it('re-reads capabilities when the user returns to the tab on local', () => {
+    const { refresh } = arrange()
+
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+
+    expect(refresh).toHaveBeenCalledOnce()
+  })
 })

@@ -125,11 +125,16 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
 
   if (isPaidPersonalTierKey(tierKeyParam)) {
     if (!isCheckoutTierKey(tierKeyParam)) {
-      showPricingTable({ reason: 'deep_link', planMode: 'personal' })
+      showPricingTable({
+        reason: 'deep_link',
+        sameTab: true,
+        planMode: 'personal'
+      })
       return
     }
     showPricingTable({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal',
       initialCheckout: {
         planMode: 'personal',
@@ -151,6 +156,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   )
   showPricingTable({
     reason: 'deep_link',
+    sameTab: true,
     planMode: 'team',
     initialCheckout
   })

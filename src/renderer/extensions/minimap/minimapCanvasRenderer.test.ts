@@ -1,4 +1,4 @@
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { beforeEach, describe, expect, it, test, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -87,14 +87,12 @@ describe('minimapCanvasRenderer', () => {
       getNodeById: vi.fn()
     })
 
-    Object.assign(useColorPaletteStore(), {
-      completedActivePalette: {
+    Object.assign(useThemeStore(), {
+      activeTheme: {
         id: 'test',
         name: 'Test Palette',
-        colors: {
-          litegraph_base: { NODE_SELECTED_TITLE_COLOR: '#fff' }
-        },
-        light_theme: false
+        canvas: { nodeSelectedTitleColor: '#fff' },
+        colorScheme: 'dark'
       }
     })
   })
@@ -303,14 +301,12 @@ describe('minimapCanvasRenderer', () => {
   })
 
   it('should handle light theme colors', () => {
-    Object.assign(useColorPaletteStore(), {
-      completedActivePalette: {
+    Object.assign(useThemeStore(), {
+      activeTheme: {
         id: 'test',
         name: 'Test Palette',
-        colors: {
-          litegraph_base: { NODE_SELECTED_TITLE_COLOR: '#000' }
-        },
-        light_theme: true
+        canvas: { nodeSelectedTitleColor: '#000' },
+        colorScheme: 'light'
       }
     })
 
