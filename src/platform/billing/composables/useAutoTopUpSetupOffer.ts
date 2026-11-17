@@ -3,7 +3,10 @@ import { canSetUpAutoTopUp } from '@comfyorg/account-core/billing'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import {
+  openPlatformBilling,
+  usePlatformHandoff
+} from '@/platform/billing/composables/usePlatformHandoff'
 import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 
 /** Platform Billing's Turn on auto top-up link while the served facts offer it, and the offer's telemetry. */
@@ -36,5 +39,9 @@ export function useAutoTopUpSetupOffer() {
     return href.value
   }
 
-  return { setupUrl, track, trackDeclined: () => trackOffer('declined') }
+  return {
+    setupUrl,
+    open: () => openPlatformBilling(track),
+    trackDeclined: () => trackOffer('declined')
+  }
 }

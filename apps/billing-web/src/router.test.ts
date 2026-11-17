@@ -469,6 +469,9 @@ describe('a billing handoff tab', () => {
       query: 'intent=subscription',
       fullPath: '/v1/subscription?product=comfyui&return_to=comfyui_credits'
     },
+    { query: 'intent=checkout', fullPath: '/' },
+    { query: 'intent=checkout&plan=', fullPath: '/' },
+    { query: 'intent=checkout&plan=a&plan=b', fullPath: '/' },
     { query: 'intent=pricing', fullPath: '/' },
     { query: 'intent=constructor', fullPath: '/' }
   ])('opens the flow /handoff?$query names', async ({ query, fullPath }) => {
@@ -493,6 +496,45 @@ describe('a billing handoff tab', () => {
 
       expect(router.currentRoute.value.path).toBe('/v1/top-up')
       expect(useBillingEntry().error.value).toBe('INVALID_AMOUNT')
+    }
+  )
+
+  it.for([
+    {
+      query: 'intent=checkout&plan=standard_monthly',
+      fullPath:
+        '/v1/checkout?product=comfyui&return_to=comfyui_credits&plan=standard_monthly',
+      error: undefined
+    },
+    {
+      query: 'intent=checkout&plan=team_monthly&team_credit_stop_id=stop-2',
+      fullPath:
+        '/v1/checkout?product=comfyui&return_to=comfyui_credits&plan=team_monthly&team_credit_stop_id=stop-2',
+      error: undefined
+    },
+    {
+      query: 'intent=checkout&plan=standard%20monthly',
+      fullPath:
+        '/v1/checkout?product=comfyui&return_to=comfyui_credits&plan=standard+monthly',
+      error: 'INVALID_PLAN'
+    },
+    {
+      query:
+        'intent=checkout&plan=standard_monthly&team_credit_stop_id=a&team_credit_stop_id=b',
+      fullPath:
+        '/v1/checkout?product=comfyui&return_to=comfyui_credits&plan=standard_monthly&team_credit_stop_id=',
+      error: 'INVALID_TEAM_CREDIT_STOP_ID'
+    }
+  ])(
+    'opens checkout for the plan /handoff?$query names',
+    async ({ query, fullPath, error }) => {
+      handoffTab.value = liveHandoff
+      const router = routerAt('authenticated')
+
+      await router.push(`/handoff?${query}`)
+
+      expect(router.currentRoute.value.fullPath).toBe(fullPath)
+      expect(useBillingEntry().error.value).toBe(error)
     }
   )
 

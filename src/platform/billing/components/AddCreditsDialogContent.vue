@@ -11,13 +11,15 @@
     :plan-line="planLine"
     :auto-top-up="autoTopUpChoice.offer.value"
     :billing-url="autoTopUpChoice.billingUrl.value"
+    :host-opens-billing="opensLocalBillingHandoff()"
     :opens-in="handsPopupsToSystemBrowser() ? 'browser' : 'tab'"
     :support-url="billingSupportUrl"
     :locale
     :translate
     :title-as="DialogTitle"
     @close="close"
-    @set-up-auto-top-up="autoTopUpOffer.track"
+    @open-billing="autoTopUpChoice.open"
+    @set-up-auto-top-up="autoTopUpOffer.open"
     @decline-auto-top-up="autoTopUpOffer.trackDeclined"
   >
     <template v-if="isInsufficientCredits" #description>
@@ -51,9 +53,9 @@ import { billingApi } from '@/platform/billing/api/billingApi'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import {
   issueLocalBillingHandoff,
-  opensLocalBillingHandoff,
   reserveBillingHandoffTab
 } from '@/platform/billing/localBillingHandoff'
+import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
@@ -156,10 +158,6 @@ async function createHandoffCheckout(
   amountCents: number,
   signal: AbortSignal
 ): ReturnType<AddCreditsPorts['createCheckout']> {
-  if (!opensLocalBillingHandoff()) {
-    void reopenForCurrentFlag()
-    return { status: 'error', refusal: { kind: 'checkout_failed' } }
-  }
   const generation = workspaceIdentity.workspaceTransitionGeneration
   const issued = await issueLocalBillingHandoff(
     { intent: 'top-up', amountCents },
@@ -196,6 +194,10 @@ const ports: AddCreditsPorts = {
       outcome: 'pending',
       payment_intent_source: source
     })
+    if (opensLocalBillingHandoff() !== opensHandoff) {
+      void reopenForCurrentFlag()
+      return { status: 'error', refusal: { kind: 'checkout_failed' } }
+    }
     if (opensHandoff) return createHandoffCheckout(amountCents, signal)
     const returnUrl = topupCheckoutReturnUrl()
     if (!returnUrl) {

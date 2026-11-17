@@ -24,27 +24,10 @@ import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
-
-/**
- * The SDK rails held against the legacy flow they replace: each row either
- * runs a mixed-rail session end to end, or runs the same scenario with the
- * rails off and on and asserts the customer sees the same thing.
- *
- * The transport tells the rails apart: the SDK runs on `fetch` and keys every
- * write, the legacy workspace client runs on axios' XHR adapter and keys none.
- */
-interface Rails {
-  subscription: boolean
-  topup: boolean
-}
-
-const RAILS_OFF: Rails = { subscription: false, topup: false }
-const SUBSCRIPTION_RAIL_ONLY: Rails = { subscription: true, topup: false }
 
 const OPERATION_ID = 'op-e2e-parity'
 const PORTAL_URL = 'https://billing.example/portal'
@@ -166,7 +149,7 @@ interface ParityRoutes {
 }
 
 interface ParitySetup {
-  rails: Rails
+  sdkRail: boolean
   status?: BillingStatusResponse
   paymentMethods?: SavedPaymentMethod[]
 }
@@ -174,7 +157,7 @@ interface ParitySetup {
 async function setupParity(
   page: Page,
   {
-    rails,
+    sdkRail,
     status = ACTIVE_STANDARD,
     paymentMethods = [SAVED_CARD]
   }: ParitySetup
@@ -226,15 +209,9 @@ async function setupParity(
     ],
     features: {
       billing_control_enabled: true,
-      unified_cloud_auth: true,
-      billing_sdk_subscription_enabled: rails.subscription,
-      billing_sdk_topup_enabled: rails.topup
+      unified_cloud_auth: sdkRail
     } satisfies RemoteConfig,
     billingCapabilities: createWorkspaceBillingCapabilities(ws)
-  })
-  await new FeatureFlagHelper(page).seedServerFlags({
-    billing_sdk_subscription_enabled: rails.subscription,
-    billing_sdk_topup_enabled: rails.topup
   })
 
   await page.route('**/api/settings', (route) =>
@@ -383,10 +360,10 @@ function creditsLabel(micros: number): string {
  */
 async function expectPortalReturnRefresh(
   page: Page,
-  rails: Rails,
+  sdkRail: boolean,
   expectedTransport: 'xhr' | 'fetch'
 ) {
-  const routes = await setupParity(page, { rails })
+  const routes = await setupParity(page, { sdkRail })
   await bootApp(page)
   const panel = await openPlanAndCredits(page)
   await expect(panel.getByText(/Renews on/)).toBeVisible()
@@ -442,37 +419,11 @@ async function topUpThenUpgrade(
 test.describe('Billing rail parity', { tag: '@cloud' }, () => {
   test.beforeEach(({ page }) => keepPricingTableInApp(page))
 
-  test.describe('with only the subscription rail on', () => {
-    test('mints checkout on the legacy transport and refreshes the balance', async ({
-      page
-    }) => {
-      const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
-      await bootApp(page)
-      const readsBeforePurchase = routes.balanceRequests.length
-
-      await buyFiftyDollars(page, routes)
-
-      expect(routes.topupRequests).toHaveLength(1)
-      const [checkout] = routes.topupRequests
-      expect(transport(checkout)).toBe('xhr')
-      expect(idempotencyKey(checkout)).toBeUndefined()
-      expect(checkout.postDataJSON()).toEqual({
-        amount_cents: 5_000,
-        return_url: expect.any(String),
-        idempotency_key: expect.stringMatching(/^[0-9a-f-]{36}$/i)
-      })
-      expect(routes.balanceRequests.length).toBeGreaterThan(readsBeforePurchase)
-      const panel = await openPlanAndCredits(page)
-      await expect(totalCredits(panel)).toContainText(
-        creditsLabel(OPENING_BALANCE_MICROS + TOPUP_MICROS)
-      )
-      expect(routes.subscribeRequests).toHaveLength(0)
-    })
-
+  test.describe('on the SDK rail', () => {
     test('subscribes on the SDK transport and names the new plan', async ({
       page
     }) => {
-      const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
+      const routes = await setupParity(page, { sdkRail: true })
       await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
 
       await confirmCreatorUpgrade(page)
@@ -496,10 +447,10 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
     test('completes a top-up and then a subscribe in one session, and totals both', async ({
       page
     }) => {
-      const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
+      const routes = await setupParity(page, { sdkRail: true })
       const panel = await topUpThenUpgrade(page, routes)
 
-      expect(routes.topupRequests.map(transport)).toEqual(['xhr'])
+      expect(routes.topupRequests.map(transport)).toEqual(['fetch'])
       expect(routes.subscribeRequests.map(transport)).toEqual(['fetch'])
       await expect(
         panel.getByRole('heading', { name: 'Creator Yearly' })
@@ -516,20 +467,20 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
     test('re-reads the plan on the legacy transport and renders the change', async ({
       page
     }) => {
-      await expectPortalReturnRefresh(page, RAILS_OFF, 'xhr')
+      await expectPortalReturnRefresh(page, false, 'xhr')
     })
 
     test('re-reads the plan on the SDK transport and renders the same change', async ({
       page
     }) => {
-      await expectPortalReturnRefresh(page, SUBSCRIPTION_RAIL_ONLY, 'fetch')
+      await expectPortalReturnRefresh(page, true, 'fetch')
     })
   })
 
   test('resumes a cancelled plan on the SDK transport without charging again', async ({
     page
   }) => {
-    const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
+    const routes = await setupParity(page, { sdkRail: true })
     await bootApp(page)
 
     const cancelDialog = new CancelSubscriptionDialog(page)

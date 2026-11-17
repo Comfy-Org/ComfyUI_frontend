@@ -35,6 +35,8 @@ export function createBillingCapabilities(
       can_manage_subscription: true,
       can_open_plans: true,
       can_run_workflows: false,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: false,
       can_reactivate: false,
       can_revert_scheduled_change: false,

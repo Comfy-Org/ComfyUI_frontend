@@ -16,7 +16,6 @@ import {
 } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -219,17 +218,6 @@ function transport(request: Request): string {
   return request.resourceType()
 }
 
-/**
- * The `?pricing=` deep link quotes the plan as the dialog opens, from the same
- * `onMounted` that assigns `window.app`, so the rail has to be chosen before
- * the page loads rather than after it.
- */
-async function enableSdkRail(page: Page) {
-  await new FeatureFlagHelper(page).seedServerFlags({
-    billing_sdk_subscription_enabled: true
-  })
-}
-
 async function openCreatorUpgrade(page: Page) {
   await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
   await cloudAppExpect(
@@ -246,28 +234,11 @@ const successHeading = (page: Page) =>
 test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
   test.beforeEach(({ page }) => keepPricingTableInApp(page))
 
-  test('keeps the legacy calls while the SDK rail is off', async ({ page }) => {
-    test.setTimeout(60_000)
-    const routes = await setupPlanChange(page)
-
-    await openCreatorUpgrade(page)
-    await confirmButton(page).click()
-
-    await expect(successHeading(page)).toBeVisible()
-    expect(routes.subscribeRequests).toHaveLength(1)
-    expect(idempotencyKey(routes.subscribeRequests[0])).toBeUndefined()
-    expect(routes.previewRequests.length).toBeGreaterThan(0)
-    expect(idempotencyKey(routes.previewRequests[0])).toBeUndefined()
-    expect(transport(routes.previewRequests[0])).toBe('xhr')
-    expect(transport(routes.subscribeRequests[0])).toBe('xhr')
-  })
-
   test('issues through the SDK transport while the rail is on', async ({
     page
   }) => {
     test.setTimeout(60_000)
     const routes = await setupPlanChange(page)
-    await enableSdkRail(page)
     await openCreatorUpgrade(page)
 
     await confirmButton(page).click()
@@ -294,7 +265,6 @@ test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
     const routes = await setupPlanChange(page)
-    await enableSdkRail(page)
     await openCreatorUpgrade(page)
     routes.respondNotFound()
 
