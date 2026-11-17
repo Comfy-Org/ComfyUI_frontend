@@ -2,7 +2,8 @@
 import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
 import { DialogContent, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-import { onMounted, ref, useTemplateRef } from 'vue'
+import { useWindowSize } from '@vueuse/core'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -32,15 +33,26 @@ const forwarded = useForwardPropsEmits(restProps, emits)
 
 const VIEWPORT_GUTTER_PX = 16
 const content = useTemplateRef('content')
+const openedHeight = ref<number>()
+const { height: viewportHeight } = useWindowSize()
+
+function centeredTop(height: number): number {
+  return Math.max(VIEWPORT_GUTTER_PX, (viewportHeight.value - height) / 2)
+}
+
 const openedTop = ref<number>()
+const pinnedTop = computed(() => {
+  if (openedTop.value === undefined || openedHeight.value === undefined) {
+    return undefined
+  }
+  return Math.min(openedTop.value, centeredTop(openedHeight.value))
+})
 
 onMounted(() => {
   const element: unknown = content.value?.$el
   if (!growsDown || !(element instanceof HTMLElement)) return
-  openedTop.value = Math.max(
-    VIEWPORT_GUTTER_PX,
-    (window.innerHeight - element.offsetHeight) / 2
-  )
+  openedHeight.value = element.offsetHeight
+  openedTop.value = centeredTop(element.offsetHeight)
 })
 
 function focusAutofocusTarget(event: Event) {
@@ -64,15 +76,15 @@ function focusAutofocusTarget(event: Event) {
         customClass,
         maximized &&
           'top-2 left-2 size-auto max-h-none max-w-none sm:max-w-none',
-        openedTop !== undefined && 'translate-y-0'
+        pinnedTop !== undefined && 'translate-y-0'
       )
     "
     :style="
-      openedTop === undefined
+      pinnedTop === undefined
         ? undefined
         : {
-            top: `${openedTop}px`,
-            maxHeight: `calc(100dvh - ${openedTop + VIEWPORT_GUTTER_PX}px)`
+            top: `${pinnedTop}px`,
+            maxHeight: `calc(100dvh - ${pinnedTop + VIEWPORT_GUTTER_PX}px)`
           }
     "
     @open-auto-focus="focusAutofocusTarget"
