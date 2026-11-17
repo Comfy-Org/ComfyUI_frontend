@@ -134,6 +134,7 @@ test.describe('Dialog accessibility', { tag: '@a11y' }, () => {
 
   test('node search', async ({ comfyPage, accessibility }) => {
     await comfyPage.searchBoxV2.open()
+    await expect(comfyPage.searchBoxV2.results.first()).toBeVisible()
 
     await accessibility.expectOnlyKnownViolations({
       'color-contrast': 2,
