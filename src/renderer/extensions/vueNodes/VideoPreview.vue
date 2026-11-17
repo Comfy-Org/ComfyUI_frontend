@@ -41,6 +41,7 @@
       <!-- Main Video -->
       <video
         v-if="!videoError"
+        ref="videoEl"
         data-testid="main-video"
         :src="currentVideoUrl"
         :class="
@@ -131,7 +132,10 @@ import { computed, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { videoFailureMessageKey } from '@/composables/node/useNodeImage'
+import {
+  MEDIA_LOAD_TIMEOUT,
+  videoFailureMessageKey
+} from '@/composables/node/useNodeImage'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useTelemetry } from '@comfyorg/telemetry'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -148,13 +152,7 @@ interface VideoPreviewProps {
 
 const props = defineProps<VideoPreviewProps>()
 
-/**
- * How long a load that has produced neither `loadeddata` nor `error` is left on
- * the Skeleton. Matches `MEDIA_LOAD_TIMEOUT` in the canvas preview
- * (`composables/node/useNodeImage.ts`), so a stall rate measured on one renderer
- * is comparable to the other's.
- */
-const MEDIA_LOAD_TIMEOUT = 8192
+const HAVE_METADATA = 1
 
 const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
@@ -168,8 +166,10 @@ const videoError = ref(false)
 const showLoader = ref(false)
 const errorCode = ref<number>()
 let loadTimeout: ReturnType<typeof setTimeout> | undefined
+let stallReportedUrl: string | undefined
 
 const videoWrapperEl = ref<HTMLDivElement>()
+const videoEl = ref<HTMLVideoElement>()
 
 // Computed values
 const currentVideoUrl = computed(() => props.imageUrls[currentIndex.value])
@@ -221,7 +221,7 @@ const handleVideoError = (event: Event) => {
       : undefined
 
   const failedUrl = currentVideoUrl.value
-  if (!failedUrl) return
+  if (!failedUrl || failedUrl === stallReportedUrl) return
   void describeImageLoadFailure(failedUrl).then((metadata) => {
     useTelemetry()?.trackImageLoadFailed({
       ...metadata,
@@ -232,23 +232,18 @@ const handleVideoError = (event: Event) => {
   })
 }
 
-const handleLoadStalled = () => {
+const handleLoadStalled = (stalledUrl: string, video?: HTMLVideoElement) => {
   loadTimeout = undefined
-
-  // Reveal the element instead of flipping to the error state. `preload="metadata"`
-  // means a load that has not reached `loadeddata` can still be viable, and the
-  // native controls let the user start it; claiming a failure here would be a
-  // guess. The Skeleton is what has to go — left up it is an indefinite blank
-  // panel where the output should be, which is indistinguishable from a node that
-  // rendered a blank video.
   showLoader.value = false
 
-  // Reported as a stall rather than a rejection: no `error` event arrives for
-  // this case, so before this it was invisible to both the user and telemetry.
-  // `timed_out: true` beside a probe `status` of 200 is the signal that separates
-  // a playback failure from a generation one.
-  const stalledUrl = currentVideoUrl.value
-  if (!stalledUrl) return
+  if (video && video.readyState >= HAVE_METADATA) {
+    if (video.videoWidth && video.videoHeight) {
+      actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
+    }
+    return
+  }
+
+  stallReportedUrl = stalledUrl
   void describeImageLoadFailure(stalledUrl).then((metadata) => {
     useTelemetry()?.trackImageLoadFailed({
       ...metadata,
@@ -259,18 +254,19 @@ const handleLoadStalled = () => {
   })
 }
 
-// Armed off `showLoader` rather than off the two places that raise it, so a new
-// entry point into the loading state cannot forget to bound it.
 watch(
-  showLoader,
-  (loading) => {
+  [showLoader, currentVideoUrl],
+  ([loading, url]) => {
     if (loadTimeout !== undefined) {
       clearTimeout(loadTimeout)
       loadTimeout = undefined
     }
-    if (loading) {
-      loadTimeout = setTimeout(handleLoadStalled, MEDIA_LOAD_TIMEOUT)
-    }
+    if (!loading || !url) return
+    stallReportedUrl = undefined
+    loadTimeout = setTimeout(
+      () => handleLoadStalled(url, videoEl.value),
+      MEDIA_LOAD_TIMEOUT
+    )
   },
   { immediate: true }
 )
