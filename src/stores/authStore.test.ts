@@ -242,9 +242,11 @@ describe('useAuthStore', () => {
         vi
           .mocked(firebaseAuth.onAuthStateChanged)
           .mock.calls.map(([auth]) => auth)
-      const registeredAtConstruction = observedAuths().length
+      await useWorkspaceAuthStore().mintAtLogin()
+
+      const registeredByFirstMint = observedAuths().length
       expect(
-        registeredAtConstruction,
+        registeredByFirstMint,
         'the store listener and the port both registered'
       ).toBe(2)
       expect(
@@ -256,8 +258,8 @@ describe('useAuthStore', () => {
 
       expect(
         observedAuths(),
-        'a mint reuses the port subscribed at construction'
-      ).toHaveLength(registeredAtConstruction)
+        'a later mint reuses the port the first one subscribed'
+      ).toHaveLength(registeredByFirstMint)
     })
   })
 

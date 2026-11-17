@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
+import type { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
+import type { CanvasPointerEvent, Reroute } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphCanvas,
@@ -18,13 +19,16 @@ import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
 } from '@/utils/__tests__/canvasTestUtils'
+import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 
 const { mockShowNodeOptions, mockGetCanvasContextMenuTarget } = vi.hoisted(
   () => ({
     mockShowNodeOptions: vi.fn(),
-    mockGetCanvasContextMenuTarget: vi.fn<
-      () => { reroute?: unknown; link?: unknown; group?: unknown }
-    >(() => ({}))
+    mockGetCanvasContextMenuTarget: vi.fn<typeof getCanvasContextMenuTarget>(
+      () => ({})
+    )
   })
 )
 
@@ -32,7 +36,7 @@ vi.mock(import('@/composables/graph/useMoreOptionsMenu'), () => ({
   showNodeOptions: mockShowNodeOptions
 }))
 
-vi.mock<unknown>(
+vi.mock(
   import('@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'),
   () => ({
     getCanvasContextMenuTarget: mockGetCanvasContextMenuTarget
@@ -241,7 +245,26 @@ describe('useGroupContextMenu', () => {
 
   it('falls through to the legacy menu when the cursor is on a reroute', () => {
     mockGetCanvasContextMenuTarget.mockReturnValue({
-      reroute: { id: 5 },
+      reroute: fromPartial<Reroute>({ id: toRerouteId(5) }),
+      group
+    })
+
+    invoke(undefined)
+
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).not.toHaveBeenCalled()
+    expect(stubCanvas.selectedItems.size).toBe(0)
+  })
+
+  it('falls through to the legacy menu when the cursor is on a stack of hidden links', () => {
+    mockGetCanvasContextMenuTarget.mockReturnValue({
+      stack: {
+        stackKey: 'output:1:0',
+        links: [
+          createMockLLink({ id: toLinkId(5) }),
+          createMockLLink({ id: toLinkId(6) })
+        ]
+      },
       group
     })
 
@@ -254,7 +277,7 @@ describe('useGroupContextMenu', () => {
 
   it('falls through to the legacy menu when the cursor is on a link', () => {
     mockGetCanvasContextMenuTarget.mockReturnValue({
-      link: { id: 5 },
+      link: createMockLLink({ id: toLinkId(5) }),
       group
     })
 

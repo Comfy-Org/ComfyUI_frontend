@@ -1,5 +1,4 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
@@ -128,7 +127,6 @@ function wireSessionCookieLogoutFallback(): () => void {
   const { onUserLogout } = useCurrentUser()
   return onUserLogout(() => {
     clearOAuthRequestId()
-    void useSessionCookie().deleteSession()
   })
 }
 

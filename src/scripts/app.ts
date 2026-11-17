@@ -3,7 +3,7 @@ import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
+import { partnerRunGateBlocksAutoQueue } from '@/platform/auth/partnerNode/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
@@ -229,7 +229,7 @@ import {
   pasteVideoNodes
 } from '@/composables/usePaste'
 
-export { ANIM_PREVIEW_WIDGET } from '@/composables/node/useNodeAnimatedImage'
+export { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 
 function servedRefusalPrecondition(error: unknown) {
   if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
