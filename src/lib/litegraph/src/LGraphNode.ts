@@ -1347,7 +1347,7 @@ export class LGraphNode
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
-    if (this.graph)
+    if (this.graph?.getNodeById(this.id) === this)
       useWidgetHeightStore().adoptNodeHeights(graphId, this.id, this.properties)
     try {
       useWidgetValueStore().setNodeWidgetRestoration(

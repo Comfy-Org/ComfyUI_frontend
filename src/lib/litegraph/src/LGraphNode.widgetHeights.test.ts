@@ -58,6 +58,22 @@ describe('LGraphNode widget heights', () => {
     expect(node.serialize().properties?.widgetHeights).toEqual({ text: 120 })
   })
 
+  it('keeps the heights of a node configured against its graph before it is added under a reminted id', () => {
+    const graph = new LGraph()
+    const original = new LGraphNode('Prompt')
+    graph.add(original)
+    original.configure(savedNode({ text: 120 }))
+    const pasted = new LGraphNode('Prompt')
+    pasted.graph = graph
+    pasted.configure({ ...savedNode({ text: 240 }), id: original.id })
+    graph.add(pasted)
+    const store = useWidgetHeightStore()
+
+    expect(pasted.id).not.toBe(original.id)
+    expect(store.getHeight(widgetId(graph.id, original.id, 'text'))).toBe(120)
+    expect(store.getHeight(widgetId(graph.id, pasted.id, 'text'))).toBe(240)
+  })
+
   it('drops a reset height and forgets the rest when the node is removed', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Prompt')
