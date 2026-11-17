@@ -10,13 +10,13 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
+import { clipspace } from '@/scripts/clipspace'
 import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
 import { isImageNode } from '@/utils/litegraphUtil'
 
 import type { MenuOption } from './menuOption'
 
-type ImageMenuAvailability = Record<CoreMediaMenuActionKind, boolean>
+type ImageMenuAvailability = { input: boolean; preview: boolean }
 
 const DEFAULT_IMAGE_MENU_AVAILABILITY: ImageMenuAvailability = {
   input: true,
@@ -158,16 +158,22 @@ export function useImageMenuOptions() {
     availability: ImageMenuAvailability = DEFAULT_IMAGE_MENU_AVAILABILITY
   ): MenuOption[] => {
     const hasImages = !!node.imgs?.length
+    const canEdit =
+      availability.preview &&
+      (hasImages || (isImageNode(node) && !clipspace.returnNode))
     const canPaste = canPasteImage(node)
     const canExportOutputs = availability.preview && hasMultipleOutputs(node)
-    if (
-      (!hasImages || !availability.preview) &&
-      (!canPaste || !availability.input) &&
-      !canExportOutputs
-    )
-      return []
 
     const options: MenuOption[] = []
+
+    if (canEdit && !hasImages) {
+      options.push({
+        id: 'maskEditor',
+        label: t('contextMenu.Open in Mask Editor'),
+        icon: 'icon-[comfy--mask]',
+        action: () => openMaskEditor()
+      })
+    }
 
     if (hasImages && availability.preview) {
       options.push(

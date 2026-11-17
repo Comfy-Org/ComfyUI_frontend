@@ -9,6 +9,7 @@ import { default as DOMPurify } from 'dompurify'
 import { cloneDeep, toString } from 'es-toolkit/compat'
 import { toValue } from 'vue'
 import { provideCanvasClass } from './canvas/canvasClassAccess'
+import { getNodeMenuSource } from './canvas/nodeMenuSource'
 
 import { isMiddleButtonEvent } from '@/base/pointerUtils'
 import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
@@ -92,7 +93,6 @@ import type { AnimationOptions } from './DragAndScale'
 import { LGraphGroup } from './LGraphGroup'
 
 import { LGraphNode } from './LGraphNode'
-import { markNodeMenuCallback } from './types/nodeMenu'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId } from '@comfyorg/graph-model/nodeId'
@@ -8724,6 +8724,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   getNodeMenuOptions(node: LGraphNode) {
+    const source = getNodeMenuSource(this)
     let options: (
       | IContextMenuValue<string>
       | IContextMenuValue<string | null>
@@ -8734,14 +8735,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     )[]
     if (node.getMenuOptions) {
       options = node.getMenuOptions(this)
+    } else if (source) {
+      options = source()
     } else {
       options = [
         {
           content: 'Convert to Subgraph',
-          callback: markNodeMenuCallback(
-            () => this._graph.convertToSubgraph(this.selectedItems),
-            'convertSubgraph'
-          )
+          callback: () => this._graph.convertToSubgraph(this.selectedItems)
         },
         {
           content: 'Properties',
@@ -8750,7 +8750,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         },
         {
           content: 'Properties Panel',
-          callback: markNodeMenuCallback(function (
+          callback: function (
             _item: Positionable,
             _options: IContextMenuOptions | undefined,
             _e: MouseEvent | undefined,
@@ -8758,7 +8758,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             node: LGraphNode
           ) {
             LGraphCanvas.active_canvas.showShowNodePanel(node)
-          }, null)
+          }
         },
         null,
         {
@@ -8792,10 +8792,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options.push(
         {
           content: node.pinned ? 'Unpin' : 'Pin',
-          callback: markNodeMenuCallback(() => {
+          callback: () => {
             for (const node of selectedCanvasNodes(this)) node.pin()
             this.setDirty(true, true)
-          }, null)
+          }
         },
         {
           content: 'Colors',
@@ -8816,6 +8816,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       extra.push(null)
       options = extra.concat(options)
     }
+
+    if (source) return options
 
     if (node.clonable !== false) {
       options.push({

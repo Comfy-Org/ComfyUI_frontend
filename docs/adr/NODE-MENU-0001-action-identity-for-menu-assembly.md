@@ -4,7 +4,9 @@ Date: 2026-11-15
 
 ## Status
 
-Accepted
+Superseded
+
+Superseded by ADR-NODE-MENU-0002.
 
 ## Context
 

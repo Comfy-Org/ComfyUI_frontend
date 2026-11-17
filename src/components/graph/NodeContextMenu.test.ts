@@ -14,6 +14,7 @@ import en from '@/locales/en/main.json'
 import fr from '@/locales/fr/main.json'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createTestCanvasElement } from '@/utils/__tests__/canvasTestUtils'
+import { closureOnly } from '@/scripts/nodeMenu'
 
 import NodeContextMenu from './NodeContextMenu.vue'
 
@@ -38,9 +39,9 @@ describe('NodeContextMenu', () => {
     node.getExtraMenuOptions = () => [
       {
         content: 'Copier',
-        callback: () => {
+        callback: closureOnly(() => {
           node.title = 'Extension executed'
-        }
+        })
       }
     ]
     graph.add(node)
@@ -66,6 +67,7 @@ describe('NodeContextMenu', () => {
         .getAllByRole('menuitem')
         .map((item) => item.getAttribute('aria-label'))
     ).toEqual([
+      'Copier',
       'Renommer',
       'Copier',
       'Dupliquer',
@@ -75,8 +77,6 @@ describe('NodeContextMenu', () => {
       'Réduire le nœud',
       'Forme',
       'Couleur',
-      'Extensions',
-      'Copier',
       'Supprimer'
     ])
     expect(screen.getByRole('menuitem', { name: 'Supprimer' })).toHaveAttribute(
@@ -84,7 +84,7 @@ describe('NodeContextMenu', () => {
       'true'
     )
     await userEvent.click(
-      screen.getAllByRole('menuitem', { name: 'Copier' })[1]
+      screen.getAllByRole('menuitem', { name: 'Copier' })[0]
     )
     expect(node.title).toBe('Extension executed')
   })

@@ -53,7 +53,6 @@ export function translateContextMenuItems(
  * Add translation for litegraph context menu.
  */
 export const useContextMenuTranslation = () => {
-  // Install compatibility layer BEFORE any extensions load
   legacyMenuCompat.install(LGraphCanvas.prototype, 'getCanvasMenuOptions')
 
   const { getCanvasMenuOptions } = LGraphCanvas.prototype
@@ -66,13 +65,11 @@ export const useContextMenuTranslation = () => {
       args
     )
 
-    // Add items from new extension API
     const newApiItems = useApp().collectCanvasMenuItems(this)
     for (const item of newApiItems) {
       res.push(item)
     }
 
-    // Add legacy monkey-patched items
     const legacyItems = legacyMenuCompat.extractLegacyItems(
       'getCanvasMenuOptions',
       this,
@@ -82,7 +79,6 @@ export const useContextMenuTranslation = () => {
       res.push(item)
     }
 
-    // Translate all items
     for (const item of res) {
       if (item?.content) {
         item.content = st(`contextMenu.${item.content}`, item.content)
@@ -100,31 +96,15 @@ export const useContextMenuTranslation = () => {
     LGraphCanvas.prototype
   )
 
-  // Install compatibility layer for getNodeMenuOptions
-  legacyMenuCompat.install(LGraphCanvas.prototype, 'getNodeMenuOptions')
-
-  // Wrap getNodeMenuOptions to add new API items
   const nodeMenuFn = LGraphCanvas.prototype.getNodeMenuOptions
   const getNodeMenuOptionsWithExtensions = function (
     this: LGraphCanvas,
     ...args: Parameters<typeof nodeMenuFn>
   ) {
-    const res = nodeMenuFn.apply(this, args) as (IContextMenuValue | null)[]
-
-    // Add items from new extension API
+    const res = nodeMenuFn.apply(this, args)
     const node = args[0]
     const newApiItems = useApp().collectNodeMenuItems(node)
     for (const item of newApiItems) {
-      res.push(item)
-    }
-
-    // Add legacy monkey-patched items
-    const legacyItems = legacyMenuCompat.extractLegacyItems(
-      'getNodeMenuOptions',
-      this,
-      ...args
-    )
-    for (const item of legacyItems) {
       res.push(item)
     }
 
@@ -132,13 +112,6 @@ export const useContextMenuTranslation = () => {
   }
 
   LGraphCanvas.prototype.getNodeMenuOptions = getNodeMenuOptionsWithExtensions
-
-  legacyMenuCompat.registerWrapper(
-    'getNodeMenuOptions',
-    getNodeMenuOptionsWithExtensions,
-    nodeMenuFn,
-    LGraphCanvas.prototype
-  )
 
   const OriginalContextMenu = LiteGraph.ContextMenu
   function ContextMenu(

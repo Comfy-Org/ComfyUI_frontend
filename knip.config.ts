@@ -9,10 +9,10 @@ const config: KnipConfig = {
         '{build,scripts}/**/*.{js,ts}',
         'vitest.matrix.config.mts',
         'src/assets/css/style.css',
-        'src/devtools/menuPrototypePage.ts',
         'src/scripts/ui/menu/index.ts',
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',
+        'tools/devtools/*.ts',
         'tools/oxlint-plugins/comfyIngestTypes.ts',
         'tools/oxlint-plugins/serverFacts.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'
