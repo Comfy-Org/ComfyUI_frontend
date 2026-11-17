@@ -2,7 +2,15 @@ import type { WorkspacePlanSummary } from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -254,12 +262,16 @@ describe('ProfileMenuWorkspace', () => {
   })
 
   it('keeps the credits flyout closed while the workspace switcher is open', async () => {
-    const user = userEvent.setup()
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderMenu()
     await user.click(screen.getByTestId('workspace-switcher-trigger'))
 
     await user.hover(screen.getByTestId('credits-menu-item'))
-    await new Promise((resolve) => setTimeout(resolve, 300))
+    await vi.advanceTimersByTimeAsync(1000)
 
     expect(screen.getByTestId('workspace-switcher-panel')).toBeInTheDocument()
     expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
