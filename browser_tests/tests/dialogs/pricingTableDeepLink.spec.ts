@@ -391,12 +391,18 @@ const RETRIED_SUBSCRIPTION_OPERATION = {
   started_at: '2026-07-30T00:00:00Z'
 } satisfies BillingOpStatusResponse
 
-const UNEXPECTED_OPERATION_RESPONSE = {
+const AWAITING_PAYMENT_METHOD_OPERATION = {
   id: PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id,
-  status: 'failed',
-  error_message: 'Payment page was not opened',
+  status: 'pending',
+  phase: 'awaiting_payment_method',
+  started_at: '2026-07-20T00:00:00Z'
+} satisfies BillingOpStatusResponse
+
+const PAID_OPERATION = {
+  id: PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id,
+  status: 'succeeded',
   started_at: '2026-07-20T00:00:00Z',
-  completed_at: '2026-07-20T00:00:01Z'
+  completed_at: '2026-07-20T00:00:30Z'
 } satisfies BillingOpStatusResponse
 
 const RECOVERED_3DS_OPERATION_ID = 'recovered-3ds-subscription'
@@ -558,8 +564,8 @@ async function mockPopupBlockedCreatorDowngrade(page: Page) {
   const subscribeRequests: Request[] = []
   const statusRefreshRequests: Request[] = []
   const balanceRefreshRequests: Request[] = []
-  const operationPollRequests: Request[] = []
   let subscribeCompleted = false
+  let paymentCompleted = false
 
   await page.route('**/api/billing/status', (route) => {
     if (subscribeCompleted) statusRefreshRequests.push(route.request())
@@ -582,17 +588,21 @@ async function mockPopupBlockedCreatorDowngrade(page: Page) {
   })
   await page.route(
     `**/api/billing/ops/${PAYMENT_METHOD_REQUIRED_RESPONSE.billing_op_id}`,
-    (route) => {
-      operationPollRequests.push(route.request())
-      return route.fulfill(jsonRoute(UNEXPECTED_OPERATION_RESPONSE))
-    }
+    (route) =>
+      route.fulfill(
+        jsonRoute(
+          paymentCompleted ? PAID_OPERATION : AWAITING_PAYMENT_METHOD_OPERATION
+        )
+      )
   )
 
   return {
     subscribeRequests,
     statusRefreshRequests,
     balanceRefreshRequests,
-    operationPollRequests
+    completePayment: () => {
+      paymentCompleted = true
+    }
   }
 }
 
@@ -624,6 +634,21 @@ async function mockRecovered3dsSubscription(page: Page) {
   })
 
   return { statusRequests, operationPollRequests, subscribeRequests }
+}
+
+/** The customer lets this site open popups, so a click can open a tab. */
+async function allowPopups(page: Page) {
+  await page.evaluate(() => {
+    window.open = (url) => {
+      document.documentElement.dataset.openedUrl = String(url)
+      return window
+    }
+  })
+}
+
+/** A customer coming back to this tab from the payment page. */
+async function returnToTab(page: Page) {
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
 const pricingHeading = (page: Page) =>
@@ -1167,7 +1192,7 @@ test.describe(
       let subscribeRequests: Request[]
       let statusRefreshRequests: Request[]
       let balanceRefreshRequests: Request[]
-      let operationPollRequests: Request[]
+      let completePayment: () => void
 
       test.beforeEach(async ({ page }) => {
         await page.addInitScript(() => {
@@ -1180,10 +1205,10 @@ test.describe(
         subscribeRequests = downgradeMock.subscribeRequests
         statusRefreshRequests = downgradeMock.statusRefreshRequests
         balanceRefreshRequests = downgradeMock.balanceRefreshRequests
-        operationPollRequests = downgradeMock.operationPollRequests
+        completePayment = downgradeMock.completePayment
       })
 
-      test('reconciles status and balance without polling', async ({
+      test('opens the payment page from Try again and reconciles status and balance once paid', async ({
         page,
         toast
       }) => {
@@ -1201,19 +1226,31 @@ test.describe(
         expect((await subscribeResponse).status()).toBe(200)
         expect(subscribeRequests).toHaveLength(1)
 
-        const blockedPopupToast = toast.toastErrors.filter({
-          hasText: 'Failed to change plan'
+        const blockedPopupToast = toast.toastWarnings.filter({
+          hasText:
+            "Couldn't open the payment page — please allow popups and try again."
         })
-        await expect(blockedPopupToast).toContainText(
-          "Couldn't open the payment page — please try again"
-        )
+        await expect(blockedPopupToast).toBeVisible()
+
+        await allowPopups(page)
+        await blockedPopupToast
+          .getByRole('button', { name: 'Try again' })
+          .click()
+
         await expect
-          .poll(() => ({
-            status: statusRefreshRequests.length,
-            balance: balanceRefreshRequests.length,
-            operationPolls: operationPollRequests.length
-          }))
-          .toEqual({ status: 1, balance: 1, operationPolls: 0 })
+          .poll(() => page.locator('html').getAttribute('data-opened-url'))
+          .toBe(PAYMENT_METHOD_REQUIRED_RESPONSE.payment_method_url)
+
+        completePayment()
+        await returnToTab(page)
+
+        await expect(
+          page.getByRole('heading', { name: "You're all set" })
+        ).toBeVisible()
+        await expect.poll(() => statusRefreshRequests.length).toBeGreaterThan(0)
+        await expect
+          .poll(() => balanceRefreshRequests.length)
+          .toBeGreaterThan(0)
       })
     })
   }

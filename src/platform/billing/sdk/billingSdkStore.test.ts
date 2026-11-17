@@ -712,6 +712,46 @@ describe('useBillingSdkStore subscription commands', () => {
   })
 
   it.for([
+    {
+      name: 'opens the payment page the subscribe still owes',
+      later: [],
+      opened: [['https://pay.example/op-1', '_blank']],
+      reported: [['op-1', 'new_tab']]
+    },
+    {
+      name: 'opens nothing once the subscribe has settled',
+      later: [settledOperation('succeeded', 'subscription')],
+      opened: [],
+      reported: []
+    }
+  ])(
+    'retrying a blocked payment page from its warning $name',
+    ({ later, opened, reported }) => {
+      const openPage = vi.spyOn(window, 'open').mockReturnValueOnce(null)
+      useBillingSdkStore()
+      harness.publish(
+        pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
+      )
+      for (const state of later) harness.publish(state)
+      const warning = useToast().toasts.find(
+        (shown) =>
+          shown.kind === 'warning' &&
+          shown.description ===
+            "Couldn't open the payment page — please allow popups and try again."
+      )
+      expect(warning?.actions.map(({ label }) => label)).toEqual(['Try again'])
+      openPage.mockClear()
+
+      warning?.actions[0].onClick()
+
+      expect(openPage.mock.calls).toEqual(opened)
+      expect(
+        vi.mocked(harness.sdk.lifecycle.reportHostedStepOpened).mock.calls
+      ).toEqual(reported)
+    }
+  )
+
+  it.for([
     { page: 'opened', opened: window, reported: [['op-1', 'new_tab']] },
     { page: 'had blocked', opened: null, reported: [] }
   ])(
