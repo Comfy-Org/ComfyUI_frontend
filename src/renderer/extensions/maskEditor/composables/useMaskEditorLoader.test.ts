@@ -62,7 +62,12 @@ function createLoadImageNode(
   return fromAny<LGraphNode, unknown>({
     id: nodeId,
     type: 'LoadImage',
-    imgs: [{ src: 'http://localhost:8188/api/view?filename=whatever.png' }],
+    imgs: [
+      {
+        src: 'http://localhost:8188/api/view?filename=whatever.png',
+        dataset: {}
+      }
+    ],
     images,
     graph: { rootGraph: { id: GRAPH_ID } }
   })
@@ -203,6 +208,24 @@ describe('useMaskEditorLoader', () => {
     expect(mockDataStore.inputData).toMatchObject({
       sourceRef: { filename: 'whatever.png' }
     })
+  })
+
+  it('loads the full-resolution file behind a downscaled preview', async () => {
+    const node = createLoadImageNode('$35-0', [{ type: 'output' }])
+    const image = document.createElement('img')
+    image.src = 'blob:http://localhost:8188/display-copy'
+    image.dataset.fullSrc =
+      'http://localhost:8188/api/view?filename=original.png'
+    node.imgs = [image]
+
+    await useMaskEditorLoader().loadFromNode(node)
+
+    expect(mockDataStore.inputData).toMatchObject({
+      sourceRef: { filename: 'original.png' },
+      baseLayer: { url: expect.stringContaining('filename=original.png') },
+      maskLayer: { url: expect.stringContaining('filename=original.png') }
+    })
+    expect(requestedUrls.some((url) => url.startsWith('blob:'))).toBe(false)
   })
 
   it('still fails when the node image itself cannot be loaded', async () => {

@@ -42,7 +42,8 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: true }))
 const mockBillingBanner = vi.hoisted(() => ({
-  kind: null as BillingStatusBannerKind | null
+  kind: null as BillingStatusBannerKind | null,
+  legacyKind: null as BillingStatusBannerKind | null
 }))
 
 vi.mock<unknown>(
@@ -52,6 +53,20 @@ vi.mock<unknown>(
     return {
       useBillingBanner: () => ({
         kind: computed(() => mockBillingBanner.kind),
+        audience: computed(() => null),
+        dismiss: vi.fn()
+      })
+    }
+  }
+)
+
+vi.mock<unknown>(
+  import('@/platform/billing/legacy160/platform/billing/composables/useBillingBanner'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingBanner: () => ({
+        kind: computed(() => mockBillingBanner.legacyKind),
         audience: computed(() => null),
         dismiss: vi.fn()
       })
@@ -362,6 +377,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     )
     mockDistributionState.isCloud = true
     mockBillingBanner.kind = null
+    mockBillingBanner.legacyKind = null
     mockSubscriptionStatus.value = 'active'
     mockBillingStatus.value = 'paid'
     mockBillingType.value = 'workspace'
@@ -1214,8 +1230,27 @@ describe('SubscriptionPanelContentWorkspace', () => {
   ] as const)(
     'lets the ending banner replace the canceled card (banner: $kind)',
     ({ kind, showsCard }) => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
       mockSubscriptionStatus.value = 'canceled'
       mockBillingBanner.kind = kind
+      renderComponent()
+
+      expect(screen.queryByTestId('subscription-state-card') !== null).toBe(
+        showsCard
+      )
+    }
+  )
+
+  it.for([
+    { enabled: false, showsCard: true },
+    { enabled: true, showsCard: false }
+  ])(
+    'reads the banner from the 1.60 rules until billing_new_ux_enabled is on (enabled: $enabled)',
+    ({ enabled, showsCard }) => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
+      mockSubscriptionStatus.value = 'canceled'
+      mockBillingBanner.kind = 'ending'
+      mockBillingBanner.legacyKind = null
       renderComponent()
 
       expect(screen.queryByTestId('subscription-state-card') !== null).toBe(

@@ -68,7 +68,7 @@
         data-testid="billing-load-error"
       >
         <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.billingTab.loadError') }}
+          {{ $t(loadErrorKey) }}
         </p>
         <Button variant="secondary" size="md" class="shrink-0" @click="retry">
           {{ $t('workspacePanel.billingTab.tryAgain') }}
@@ -77,7 +77,7 @@
       <BillingPlanRow
         v-else
         :state="planRow"
-        :action
+        :action="action"
         :copy="planRowCopy"
         :locale
         :sales-variant="salesVariant"
@@ -89,14 +89,11 @@
         </template>
         <template #action="{ action: shown, label, variant }">
           <Button
-            as="a"
-            :href="planActionHref(shown)"
-            target="_blank"
-            rel="noopener"
+            v-bind="planActionButton(shown)"
             :variant
             size="md"
             class="shrink-0 no-underline"
-            @click="trackPlanAction(shown)"
+            @click="followPlanAction(shown)"
           >
             {{ label }}
             <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
@@ -134,7 +131,7 @@
         :copy="autoTopUpCardCopy"
         :locale
         :action-href="autoTopUpHref"
-        @action="trackAutoTopUp"
+        @action="openAutoTopUp"
         @retry="retryAutoTopUp"
       />
       <BillingAutoTopUpMemberBlock
@@ -146,49 +143,7 @@
     </section>
 
     <div class="flex flex-col gap-6">
-      <section class="flex flex-col gap-3" data-testid="billing-handoff">
-        <h2 class="m-0 text-base font-medium text-foreground">
-          {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
-        </h2>
-        <div
-          class="flex items-center gap-4 rounded-xl border border-border px-5 py-4"
-          data-testid="billing-handoff-card"
-        >
-          <i18n-t
-            v-if="handoffAudience === 'owner'"
-            keypath="workspacePanel.billingTab.handoff.owner.line"
-            tag="p"
-            class="m-0 text-sm text-muted-foreground"
-          >
-            <template #platform>
-              <a
-                :href="handoffHref"
-                target="_blank"
-                rel="noopener"
-                class="text-muted-foreground underline hover:text-foreground"
-                @click="trackHandoff"
-              >
-                {{ $t('workspacePanel.billingTab.handoff.owner.platform') }}
-              </a>
-            </template>
-          </i18n-t>
-          <Button
-            as="a"
-            :href="handoffHref"
-            target="_blank"
-            rel="noopener"
-            variant="secondary"
-            size="md"
-            class="ml-auto shrink-0 no-underline"
-            @click="trackHandoff"
-          >
-            {{
-              $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`)
-            }}
-            <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
-          </Button>
-        </div>
-      </section>
+      <BillingPlatformHandoffCard :audience="handoffAudience" />
 
       <footer class="flex items-center gap-4" data-testid="billing-footer">
         <Button
@@ -260,21 +215,21 @@ import { useBillingCreditsCard } from '@/platform/billing/components/billingTab/
 import { useBillingPlanRow } from '@/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useRefreshBillingOnReturn } from '@/platform/billing/composables/useRefreshBillingOnReturn'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformPlansLink } from '@/platform/billing/composables/usePlatformHandoff'
+import BillingPlatformHandoffCard from '@/platform/billing/components/settings/BillingPlatformHandoffCard.vue'
 import { usePlanRowCopy } from '@/platform/billing/composables/usePlanRowCopy'
 import { useCreditsCardCopy } from '@/platform/billing/composables/useCreditsCardCopy'
 import { useAutoTopUpCardSection } from '@/platform/billing/composables/useAutoTopUpCardSection'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAutoTopUpMemberBlockCopy } from '@/platform/billing/composables/useAutoTopUpCopy'
 import { useBillingBannerCopy } from '@/platform/billing/composables/useBillingBannerCopy'
 import { useCreditBanner } from '@/platform/billing/composables/useCreditBanner'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { flags } = useFeatureFlags()
 const billing = useBillingContext()
 const workspaceStore = useTeamWorkspaceStore()
 const capabilities = useBillingCapabilities()
@@ -312,16 +267,14 @@ const planCreditNote = useTopUpPlanCreditCopy()
 const creditsCardCopy = useCreditsCardCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
+const loadErrorKey = isCloud
+  ? 'workspacePanel.billingTab.loadError'
+  : 'workspacePanel.billingTab.localLoadError'
 const { isLoadingSupport, handleMessageSupport } = useMessageSupport()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const partnerNodesPricingHref = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
 )
-
-const HANDOFF = {
-  owner: { path: '/profile/billing', target: 'open_billing' },
-  member: { path: '/profile/usage', target: 'usage' }
-} as const
 
 const handoffAudience = computed(() =>
   capabilities.canManageBilling.value ? 'owner' : 'member'
@@ -359,14 +312,14 @@ const {
   setup: autoTopUpSetup,
   copy: autoTopUpCardCopy,
   href: autoTopUpHref,
-  track: trackAutoTopUp,
+  open: openAutoTopUp,
   retry: retryAutoTopUp
 } = useAutoTopUpCardSection(
   () => load.value === 'ready' && autoTopUpSection.value.kind === 'card'
 )
 const autoTopUpMemberCopy = useAutoTopUpMemberBlockCopy()
-const autoTopUpMemberView = computed(() =>
-  flags.billingNewUxEnabled ? capabilities.autoTopUpMemberView.value : null
+const autoTopUpMemberView = computed(
+  () => capabilities.autoTopUpMemberView.value
 )
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
@@ -392,22 +345,21 @@ const salesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
-const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
-  () => HANDOFF[handoffAudience.value].path,
-  () => ({ target: HANDOFF[handoffAudience.value].target })
-)
+const { button: plansButton, open: openPlans } = usePlatformPlansLink()
 
-const { href: plansHref, track: trackPlans } = usePlatformHandoff(
-  '/profile/billing/plans',
-  { target: 'plans' }
-)
+const CONTACT_SALES_BUTTON = {
+  as: 'a',
+  href: CONTACT_SALES_URL,
+  target: '_blank',
+  rel: 'noopener'
+} as const
 
-function planActionHref(shown: PlanRowAction) {
-  return shown === 'contactSales' ? CONTACT_SALES_URL : plansHref.value
+function planActionButton(shown: PlanRowAction) {
+  return shown === 'contactSales' ? CONTACT_SALES_BUTTON : plansButton.value
 }
 
-function trackPlanAction(shown: PlanRowAction) {
-  if (shown !== 'contactSales') trackPlans()
+function followPlanAction(shown: PlanRowAction) {
+  if (shown !== 'contactSales') openPlans()
 }
 
 async function retryBalance() {
@@ -434,4 +386,6 @@ onMounted(() => {
   }
   void capabilities.initialize()
 })
+
+useRefreshBillingOnReturn()
 </script>

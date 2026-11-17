@@ -19,6 +19,22 @@ export type AcceptInviteResponse = {
 }
 
 /**
+ * The auto top-up settings a purchase was accepted with, echoed so checkout and its done state show exactly what turns on. Present only on a purchase sent with auto_top_up.
+ */
+export type AcceptedAutoTopUpSettings = {
+  /**
+   * The stored monthly limit; the ceiling when the owner set no limit.
+   */
+  monthly_budget_cents: number
+  /**
+   * True when the owner set no limit and the ceiling was stored.
+   */
+  monthly_budget_is_default: boolean
+  target_credits: number
+  threshold_credits: number
+}
+
+/**
  * Returned when a request to run the agent is declined before the turn starts, because of a billing or account condition on the workspace. The `error` object carries a `message` you can show the user, a `type` that matches the HTTP status, and a more specific `reason` you can branch on to offer the right next step.
  */
 export type AgentAdmissionError = {
@@ -1025,7 +1041,7 @@ export type AgentTurnRefusal = {
 }
 
 /**
- * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge.
+ * Usage of a completed turn, as carried on agent_message_done. Mirrors `$defs.agent_message_done.data.usage` in services/agent/api/agent_events.schema.json; TestMessageDoneFrameMatchesContract holds the two definitions to the same fields and constraints. charge_micro_usd appears only when the server durably captured priced billing for at least one round. It is the exact charge in millionths of a US dollar; clients convert that denomination to catalog credits for display and must not read its absence as a zero charge. On a local-agent turn it is the proxy-reported lower bound, and priced_rounds / unpriced_rounds count the rounds that did and did not report a price.
  */
 export type AgentTurnUsage = {
   cache_creation_input_tokens: number
@@ -1033,7 +1049,9 @@ export type AgentTurnUsage = {
   charge_micro_usd?: number
   input_tokens: number
   output_tokens: number
+  priced_rounds?: number
   total_tokens: number
+  unpriced_rounds?: number
 }
 
 export type AgentUsageStatusResponse = {
@@ -1436,6 +1454,26 @@ export type AutoReloadPreview = {
  */
 export type AutoReloadSettings = {
   /**
+   * Answers one UI question: should the UI warn that auto top-up can
+   * refill credits past a hard cap?
+   * True: auto top-up's `status` is `on` (enabled and currently able to
+   * charge) and the workspace has at least one live budget with
+   * `mode: hard`. Show the warning.
+   * False: show no warning, and read it as unknown, not as proof that
+   * there is no conflict. Either half is missing, or the half this
+   * response does not carry could not be read (the server then reports
+   * false and logs it). When billing-api omits this field, ingest serves
+   * false, so during a rollout false carries no information.
+   * On a save it reflects the settings just saved.
+   * Not a gate: it never blocks saving a budget or auto top-up, and it is
+   * not authorization. Render it as received; do not compare the budget
+   * list with the auto top-up settings to rebuild it. The same value is
+   * served on the budget list, the budget write results and the auto
+   * top-up settings.
+   *
+   */
+  auto_top_up_conflict: boolean
+  /**
    * True when the validated default card is already expired or its expiry-month boundary (00:00 UTC on the first day of the following month) is within the next 30 days. Absent or null means unknown, never a healthy-card claim. This includes non-card methods, malformed data, provider errors or a live Stripe default that differs from the recorded default payment method (for example, before a portal-change webhook syncs). Independent of status and charge eligibility; save responses omit the fact. Missing on an older server also means unknown.
    *
    */
@@ -1574,6 +1612,16 @@ export type AutoReloadSettingsRequest = {
   target_credits?: number
   threshold_credits: number
 }
+
+/**
+ * Did auto top-up turn on with a purchase sent with auto_top_up; absent otherwise, so absence is not "off". pending: payment or activation has not finished; keep polling. on: on with auto_top_up's settings. failed: payment and credits stand but auto top-up did not turn on; send the owner to set it up in Billing. not_attempted: the payment did not succeed (or the checkout expired). Not the current status; read GET /api/billing/auto-reload.
+ */
+export type AutoTopUpActivation = 'pending' | 'on' | 'failed' | 'not_attempted'
+
+/**
+ * Only when auto_top_up_activation is failed. An auto_top_up_setup reason (GET /api/billing/capabilities) or activation_error. For support and analytics, not copy.
+ */
+export type AutoTopUpActivationReason = string
 
 /**
  * Read-only auto top-up display for non-owner workspace members. Omitted when unavailable, hidden, or unsupported by an older server; keep the member discoverability notice as the fallback. Never grants management access and contains no limit amounts, spending or payment details.
@@ -2035,6 +2083,41 @@ export type BillingCapabilities = {
    */
   can_run_workflows: boolean
   /**
+   * - Answers: should the client offer creating and changing workspace
+   * budgets (the Budgets controls)?
+   * - True: the actor is a workspace owner (the creator alone while a
+   * personal workspace's billing identity is not provisioned, as for
+   * can_manage_billing), and the workspace has a
+   * subscription whose term is open (active or canceled, with any
+   * cancellation date still ahead) on a plan other than FREE.
+   * - False: denied_reasons.can_set_budgets names the first refusal.
+   * False with no reason means no recognised explanation.
+   * - Not: authorization; the budget write endpoints decide again with
+   * the same rule. A caller who is not a member is refused before
+   * this rule runs, with FORBIDDEN and no reason from this list. Not whether a hard cap may be set
+   * (can_set_hard_caps). Not whether budgets may be read: any member
+   * may read the budget on themselves. Payment state (past due,
+   * paused top-ups) does not affect it.
+   * - When billing-api omits this field, ingest serves false, with no reason.
+   *
+   */
+  can_set_budgets: boolean
+  /**
+   * - Answers: should the client unlock the hard-cap control on a
+   * budget, or show it locked with the path to sales?
+   * - True: can_set_budgets is true and the plan is Enterprise.
+   * - False: denied_reasons.can_set_hard_caps names the first refusal.
+   * False with no reason means no recognised explanation.
+   * `plan_not_enterprise` is the one case where budgets are available
+   * and only the hard cap is locked.
+   * - Not: authorization. Not whether soft budgets may be set
+   * (can_set_budgets). A budget that is already hard stays editable
+   * after a downgrade; this field is about setting a new hard cap.
+   * - When billing-api omits this field, ingest serves false, with no reason.
+   *
+   */
+  can_set_hard_caps: boolean
+  /**
    * - Answers: may this user start, recover or change a self-serve plan?
    * - True: the user is a workspace owner and no resolver branch closed it. When
    * the rollout mode is not `owner`, the user must also be the workspace's
@@ -2157,6 +2240,30 @@ export type BillingCapabilitiesResponse = {
    *
    */
   billing_notice_audience?: 'none' | 'team' | 'personal'
+  /**
+   * Which checkout UI billing-web renders for this user: the
+   * billing_web_checkout_ui rollout flag, evaluated by ingest the same
+   * way GET /api/features evaluates it. Any evaluation failure reads as
+   * embedded. It lets a caller that cannot read /api/features, such as
+   * a billing handoff's scoped session, render the same checkout.
+   *
+   */
+  billing_web_checkout_ui: 'embedded' | 'full_page'
+  /**
+   * Whether a cancel requested now ends the plan today instead of at the
+   * end of the billing period. True only when can_cancel is true, the
+   * workspace payment state is payment_failed or paused, and the provider
+   * confirms its bound live Stripe subscription is past_due or unpaid: the
+   * cancel then ends it immediately, stops payment retries, and bills no
+   * unpaid period. False when can_cancel is false or the cancel is
+   * scheduled for period end, including a provider-paused subscription.
+   * No denied_reasons key explains it. Absent when the live binding or
+   * provider state cannot be verified, on older servers, or when billing
+   * is disabled; absence means unknown. Not authorization: the cancel
+   * route rechecks the provider and its cancel_at is the result.
+   *
+   */
+  cancel_takes_effect_immediately?: boolean
   capabilities: BillingCapabilities
   denied_reason_params?: BillingCapabilityDenialParams
   denied_reasons?: BillingCapabilityDenials
@@ -2696,6 +2803,50 @@ export type BillingCapabilityDenials = {
     | 'user_cap_exceeded'
     | 'free_tier_exhausted'
   /**
+   * Why can_set_budgets is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below: the role refusals, then the plan refusals. The status branches never compete, since a subscription has one status.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor is a member whose role is not owner.
+   * - creator_only_provisioning: Only the creator can act on this personal workspace's billing until its billing identity is provisioned.
+   * - no_subscription: The workspace has no subscription, so it has no billing period to budget over.
+   * - free_plan: The plan is FREE, whose usage is not charged spend.
+   * - subscription_ended: The subscription has stopped for good, ended or canceled with no end date ahead.
+   * - subscription_not_started: The subscription is scheduled and has not started.
+   * - subscription_status_unrecognized: The subscription status is one the resolver has no guidance for.
+   *
+   */
+  can_set_budgets?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'creator_only_provisioning'
+    | 'no_subscription'
+    | 'free_plan'
+    | 'subscription_ended'
+    | 'subscription_not_started'
+    | 'subscription_status_unrecognized'
+  /**
+   * Why can_set_hard_caps is false. Present only when that capability is false; absent means no recognized explanation, never permission. This does not authorize the action or explain a sibling capability. First reached wins in the order below: every can_set_budgets refusal in its order, then the plan check.
+   * - not_a_member: The actor is not a workspace member.
+   * - not_workspace_owner: The actor is a member whose role is not owner.
+   * - creator_only_provisioning: Only the creator can act on this personal workspace's billing until its billing identity is provisioned.
+   * - no_subscription: The workspace has no subscription.
+   * - free_plan: The plan is FREE.
+   * - subscription_ended: The subscription has stopped for good.
+   * - subscription_not_started: The subscription is scheduled and has not started.
+   * - subscription_status_unrecognized: The subscription status is one the resolver has no guidance for.
+   * - plan_not_enterprise: Budgets are available, but hard caps are an Enterprise feature. Show the control locked and offer the path to sales.
+   *
+   */
+  can_set_hard_caps?:
+    | 'not_a_member'
+    | 'not_workspace_owner'
+    | 'creator_only_provisioning'
+    | 'no_subscription'
+    | 'free_plan'
+    | 'subscription_ended'
+    | 'subscription_not_started'
+    | 'subscription_status_unrecognized'
+    | 'plan_not_enterprise'
+  /**
    * Present only when can_subscribe_self_serve is false. The value names the
    * resolver branch that decided, not customer wording. Values are listed in the
    * order the resolver reaches them; the first one reached wins.
@@ -2950,7 +3101,7 @@ export type BillingEvent = {
    */
   member_user_id?: string
   /**
-   * Event-specific parameters
+   * Event-specific parameters. On a usage row, `credits_used` is what the row cost in credits. A `cloud_workflow_executed` (GPU run) row carries it when the usage ledger holds a charge for the run. Absent means the charge is unknown (a run from before the ledger began, an unpriced row, or the ledger could not be read); it must not be read as a free run.
    */
   params?: {
     [key: string]: unknown
@@ -2986,6 +3137,116 @@ export type BillingEventsResponse = {
    * Total number of pages
    */
   totalPages: number
+}
+
+/**
+ * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
+ */
+export type BillingHandoffCreateRequest = {
+  /**
+   * Credit amount the top-up checkout opens with, in cents. Whole dollars within the manual top-up limits (`min_topup_cents` to `max_topup_cents` on GET /api/billing/balance). Allowed only with intent top-up, else 400 INVALID_REQUEST; omitted, billing-web uses its default. Sent in the entry URL's query after intent. Not a credential; the checkout validates the amount again.
+   */
+  amount_cents?: number
+  /**
+   * Version of the issuing app, for logs.
+   */
+  client_version: string
+  /**
+   * Page the receiver opens after the exchange: top-up opens the credit checkout, subscription the plan checkout, none the receiver's billing home. Only billing_web accepts one; platform answers 400 INVALID_REQUEST. Sent in the entry URL's query, never its fragment. It is not a credential and grants nothing.
+   */
+  intent?: 'top-up' | 'subscription'
+  /**
+   * Billing app that will exchange the handoff; its origin is the only one the exchange accepts.
+   */
+  receiver: 'billing_web' | 'platform'
+  /**
+   * Client-asserted; stages the rollout, not a security boundary.
+   */
+  surface: 'local_web' | 'desktop'
+  /**
+   * Workspace the handoff and its session are bound to. An OAuth access token may name only its own workspace.
+   */
+  workspace_id: string
+}
+
+/**
+ * An issued handoff. The token is single use and expires within 60 seconds.
+ */
+export type BillingHandoffCreateResponse = {
+  /**
+   * The receiver's handoff page, with the intent and amount_cents (if any) in the query and the token in the fragment. Open it, never display it.
+   */
+  entry_url: string
+  /**
+   * When the handoff can no longer be exchanged.
+   */
+  expires_at: string
+  /**
+   * Id of the stored handoff, for support and logs.
+   */
+  request_id: string
+}
+
+/**
+ * The handoff token a receiver read from its URL fragment.
+ */
+export type BillingHandoffExchangeRequest = {
+  /**
+   * The raw handoff token from the entry URL fragment.
+   */
+  token: string
+}
+
+/**
+ * A scoped billing session for the handoff's user and workspace.
+ */
+export type BillingHandoffExchangeResponse = {
+  /**
+   * When the session ends; it is never extended. At most 30 minutes, and never after the source sign-in expires.
+   */
+  expires_at: string
+  /**
+   * The user's role in the workspace at exchange time.
+   */
+  role: 'owner' | 'member'
+  /**
+   * Bearer for billing routes of the bound workspace only.
+   */
+  session_token: string
+  user: BillingHandoffUser
+  workspace: BillingHandoffWorkspace
+}
+
+/**
+ * The user a scoped billing session acts as.
+ */
+export type BillingHandoffUser = {
+  /**
+   * The user's email address.
+   */
+  email: string
+  /**
+   * Comfy user id.
+   */
+  id: string
+}
+
+/**
+ * The workspace a scoped billing session is bound to.
+ */
+export type BillingHandoffWorkspace = {
+  /**
+   * Workspace id.
+   */
+  id: string
+  /**
+   * Workspace display name.
+   */
+  name: string
+  /**
+   * Workspace type, personal or team.
+   */
+  type: string
 }
 
 export type BillingOpCancelResponse = {
@@ -3049,6 +3310,21 @@ export type BillingOpChargeReason = {
    *
    */
   kind: 'promo_code' | 'subscription_discount' | 'account_balance'
+}
+
+/**
+ * How a billing operation ended, for a billing handoff tab whose scoped session has ended.
+ */
+export type BillingOpOutcomeResponse = {
+  /**
+   * The `status` that `GET /api/billing/ops/{id}` reports for the same
+   * operation. It answers whether the payment has finished and how:
+   * pending means keep polling, the other three are final for polling.
+   * It does not say why a payment failed or what the customer can do
+   * next.
+   *
+   */
+  status: 'pending' | 'succeeded' | 'failed' | 'reconciliation_needed'
 }
 
 /**
@@ -3137,8 +3413,10 @@ export type BillingOpStatusResponse = {
   authentication_deadline?: string
   /**
    * State derived from the PaymentIntent attached to this operation's
-   * exact stored Stripe invoice. Absent when the operation has no
-   * correlated PaymentIntent.
+   * exact stored Stripe invoice. One exception: a pending plan change
+   * saving a new card reports requires_action while that card's
+   * SetupIntent awaits 3-D Secure, before any invoice exists. Absent
+   * when the operation has neither.
    *
    */
   authentication_state?:
@@ -3147,6 +3425,9 @@ export type BillingOpStatusResponse = {
     | 'failed_retryable'
     | 'succeeded'
     | 'reconciliation_needed'
+  auto_top_up?: AcceptedAutoTopUpSettings
+  auto_top_up_activation?: AutoTopUpActivation
+  auto_top_up_activation_reason?: AutoTopUpActivationReason
   /**
    * true exactly when POST /api/billing/ops/{id}/cancel would deliver
    * the abandon for this caller: a pending plan change or initial
@@ -3216,9 +3497,11 @@ export type BillingOpStatusResponse = {
    */
   id: string
   /**
-   * Stripe PaymentIntent client secret for completing requires_action.
-   * This bearer capability is returned only to workspace billing managers
-   * and is absent otherwise.
+   * Stripe client secret for completing requires_action: the invoice's
+   * PaymentIntent, or for a plan change saving a new card, that card's
+   * SetupIntent (pass either to Stripe.js handleNextAction). This bearer
+   * capability is returned only to workspace billing managers and is
+   * absent otherwise.
    *
    */
   payment_intent_client_secret?: string
@@ -3228,7 +3511,11 @@ export type BillingOpStatusResponse = {
    * The two awaiting_ values are blocked on the customer and will not
    * advance on their own: awaiting_payment_method is parked on a hosted
    * checkout needing a card, awaiting_invoice_payment on an invoice
-   * needing payment or authentication. in_progress means the operation
+   * needing payment or authentication, or on a plan change's new card
+   * awaiting 3-D Secure before any invoice exists (then
+   * authentication_state is requires_action and
+   * payment_intent_client_secret is that card's SetupIntent secret).
+   * in_progress means the operation
    * is ours to finish, so polling is the right response. Deliberately
    * coarser than the internal phase — phases that differ only in what
    * the workflow is doing all report in_progress. Absent for a terminal
@@ -3311,7 +3598,7 @@ export type BillingStatusResponse = {
    */
   cancel_at?: string
   /**
-   * When the current billing period began. Together with renewal_date it is the range for "current billing period" views; render the pair as received rather than deriving one from the other. Present exactly when renewal_date is: omitted for a canceled plan, a never-subscribed workspace and a free plan with no subscription.
+   * When the current subscription term began. Together with renewal_date it is the term the plan renews over (a year on an annual plan); render the pair as received rather than deriving one from the other. It is not the window usage and budgets are counted over: use usage_period_start and usage_period_end for that. Present exactly when renewal_date is: omitted for a canceled plan, a never-subscribed workspace and a free plan with no subscription.
    */
   current_period_start?: string
   /**
@@ -3393,7 +3680,7 @@ export type BillingStatusResponse = {
    */
   previous_plan?: PreviousPlan
   /**
-   * When the current billing period ends and the next one begins: the end of the period current_period_start begins.
+   * When the current subscription term ends and the next one begins: the end of the term current_period_start begins.
    */
   renewal_date?: string
   renewal_invoice?: RenewalInvoice
@@ -3428,6 +3715,14 @@ export type BillingStatusResponse = {
    * The team credit stop the workspace is currently subscribed to, for per-credit Team plans (BE-1254). Lets clients tell apart team subscriptions, which all share subscription_tier=TEAM. Always present; null for personal plans (use subscription_tier to distinguish those) and for legacy team plans without a credit stop.
    */
   team_credit_stop: TeamCreditStopSummary | null
+  /**
+   * End (exclusive) of the period usage_period_start begins, and when a budget's spend next resets. Not the renewal date: on an annual plan it is the next monthly anniversary, and for a subscription set to cancel it is never later than the cancellation.
+   */
+  usage_period_end?: string
+  /**
+   * Start of the billing period that current-period usage views and workspace budgets are counted over. Together with usage_period_end it answers "which range is this period's usage?"; request usage for exactly this pair so the usage page and a budget's spend show the same number. On an annual plan it is the monthly anniversary, so it must not be read as the plan's renewal term (that is current_period_start and renewal_date). On a monthly plan the two pairs usually agree, but render each as received: they are resolved separately and can differ for a subscription whose stored period is missing or out of date. Present exactly when usage_period_end is: omitted when the workspace has no subscription, or its subscription is scheduled, ended, or canceled and past its end.
+   */
+  usage_period_start?: string
 }
 
 /**
@@ -3448,6 +3743,221 @@ export type BillingTaxId = {
 }
 
 /**
+ * A budget with its spend in the workspace's current billing period. Amounts come in credits and in micro-USD; a client shows credits as received and never converts.
+ *
+ */
+export type Budget = {
+  /**
+   * The percentages of the limit at which an alert is sent, ascending.
+   */
+  alert_percents: Array<number>
+  /**
+   * Alerts sent for the budget in the current period. Always `[]` until alerting ships.
+   */
+  alerts: Array<BudgetAlert>
+  /**
+   * User id that created the budget.
+   */
+  created_by: string
+  /**
+   * End of the last billing period the budget applies to; null when it repeats indefinitely.
+   */
+  ends_at: string | null
+  id: string
+  /**
+   * The limit in credits, rounded to the nearest credit.
+   */
+  limit_credits: number
+  /**
+   * The limit as stored, in micro-USD of list value.
+   */
+  limit_micro_usd: number
+  mode: BudgetMode
+  /**
+   * Whole percent of the limit spent, rounded down, so 100 means the limit is reached. It can exceed 100.
+   *
+   */
+  percent_used: number
+  repeat: BudgetRepeat
+  /**
+   * When spend next resets to 0: the end of the current billing period. Null when the workspace has no billing period.
+   *
+   */
+  resets_at: string | null
+  /**
+   * The workspace id, the member's user id, the API key's prefix or the deployment id.
+   */
+  scope_id: string
+  scope_kind: BudgetScopeKind
+  /**
+   * When the totals behind spent_micro_usd were last written. Shows how fresh the spend is: a deployment's usage arrives hourly. Null when the scope has spent nothing this period.
+   *
+   */
+  spend_updated_at: string | null
+  /**
+   * spent_micro_usd in credits, rounded to the nearest credit.
+   */
+  spent_credits: number
+  /**
+   * What the scope has spent since the current billing period began: the charged usage the usage page counts for the same range. A member budget counts session spend only; spend through the member's API keys counts toward the key. 0 when the workspace has no billing period.
+   *
+   */
+  spent_micro_usd: number
+  /**
+   * User id that last changed the budget.
+   */
+  updated_by: string
+}
+
+export type BudgetAlert = {
+  percent: number
+  sent_at: string
+  status: string
+}
+
+export type BudgetChange = {
+  action: 'created' | 'updated' | 'archived' | 'downgraded'
+  /**
+   * User id that made the change, or `system` for one the platform made.
+   */
+  actor_user_id: string
+  /**
+   * The budget's settings after the change; null for `archived`.
+   */
+  after: {
+    [key: string]: unknown
+  } | null
+  /**
+   * The budget's settings before the change; null for `created`.
+   */
+  before: {
+    [key: string]: unknown
+  } | null
+  changed_at: string
+}
+
+export type BudgetCreateRequest = {
+  /**
+   * Ascending, no repeats. Defaults to [50, 80, 100].
+   */
+  alert_percents?: Array<number>
+  /**
+   * Required with `repeat: until`, and must be in the future; refused with any other repeat.
+   */
+  ends_at?: string
+  /**
+   * The limit in credits. Send exactly one of limit_credits and limit_micro_usd.
+   */
+  limit_credits?: number
+  /**
+   * The limit in micro-USD. Send exactly one of limit_credits and limit_micro_usd.
+   */
+  limit_micro_usd?: number
+  mode: BudgetMode
+  /**
+   * Defaults to current_period.
+   */
+  repeat?: BudgetRepeat
+  /**
+   * The workspace id (for `workspace`, it must be this workspace), the member's user id, the API key's prefix or the deployment id.
+   *
+   */
+  scope_id: string
+  scope_kind: BudgetScopeKind
+}
+
+export type BudgetHistory = {
+  changes: Array<BudgetChange>
+}
+
+export type BudgetList = {
+  /**
+   * Answers one UI question: should the UI warn that auto top-up can
+   * refill credits past a hard cap?
+   * True: auto top-up's `status` is `on` (enabled and currently able to
+   * charge) and the workspace has at least one live budget with
+   * `mode: hard`. Show the warning.
+   * False: show no warning, and read it as unknown, not as proof that
+   * there is no conflict. Either half is missing, or the half this
+   * response does not carry could not be read (the server then reports
+   * false and logs it). When billing-api omits this field, ingest serves
+   * false, so during a rollout false carries no information.
+   * Always false for a member who is not an owner: it is an owner-facing warning.
+   * Not a gate: it never blocks saving a budget or auto top-up, and it is
+   * not authorization. Render it as received; do not compare the budget
+   * list with the auto top-up settings to rebuild it. The same value is
+   * served on the budget list, the budget write results and the auto
+   * top-up settings.
+   *
+   */
+  auto_top_up_conflict: boolean
+  budgets: Array<Budget>
+}
+
+/**
+ * `soft` alerts at its thresholds and never refuses spend. `hard` also refuses spend once the limit is reached; Enterprise plans only.
+ *
+ */
+export type BudgetMode = 'hard' | 'soft'
+
+/**
+ * How long a budget applies. `current_period`: until the current billing period ends. `until`: through the period holding `ends_at`. `indefinitely`: every period, with no end.
+ *
+ */
+export type BudgetRepeat = 'current_period' | 'until' | 'indefinitely'
+
+/**
+ * What a budget limits.
+ */
+export type BudgetScopeKind = 'workspace' | 'member' | 'api_key' | 'deployment'
+
+export type BudgetUpdateRequest = {
+  /**
+   * Ascending, no repeats.
+   */
+  alert_percents?: Array<number>
+  /**
+   * With `repeat: until`, or alone (which means the same): the new end, in the future. Refused with any other repeat.
+   *
+   */
+  ends_at?: string
+  /**
+   * The new limit in credits. Send at most one of limit_credits and limit_micro_usd.
+   */
+  limit_credits?: number
+  /**
+   * The new limit in micro-USD. Send at most one of limit_credits and limit_micro_usd.
+   */
+  limit_micro_usd?: number
+  mode?: BudgetMode
+  repeat?: BudgetRepeat
+}
+
+export type BudgetWriteResult = {
+  /**
+   * Answers one UI question: should the UI warn that auto top-up can
+   * refill credits past a hard cap?
+   * True: auto top-up's `status` is `on` (enabled and currently able to
+   * charge) and the workspace has at least one live budget with
+   * `mode: hard`. Show the warning.
+   * False: show no warning, and read it as unknown, not as proof that
+   * there is no conflict. Either half is missing, or the half this
+   * response does not carry could not be read (the server then reports
+   * false and logs it). When billing-api omits this field, ingest serves
+   * false, so during a rollout false carries no information.
+   * Reflects the workspace after this write, the written budget included.
+   * Not a gate: it never blocks saving a budget or auto top-up, and it is
+   * not authorization. Render it as received; do not compare the budget
+   * list with the auto top-up settings to rebuild it. The same value is
+   * served on the budget list, the budget write results and the auto
+   * top-up settings.
+   *
+   */
+  auto_top_up_conflict: boolean
+  budget: Budget
+}
+
+/**
  * Response after bulk-revoking API keys for a workspace member.
  */
 export type BulkRevokeApiKeysResponse = {
@@ -3457,10 +3967,119 @@ export type BulkRevokeApiKeysResponse = {
   revoked_count: number
 }
 
+export type CccActivityItem = {
+  /**
+   * Account ID of the person who saved, published, discarded or reverted
+   */
+  actor_uid: string
+  at: string
+  /**
+   * save only; status of the catalog revision that holds the save
+   */
+  catalog_status?: 'draft' | 'published' | 'reverted' | 'archived'
+  /**
+   * save only
+   */
+  changed_fields?: Array<string>
+  /**
+   * publish only
+   */
+  file_count?: number
+  /**
+   * save only; the save archives or removes the page
+   */
+  is_deleted?: boolean
+  /**
+   * save only
+   */
+  is_new?: boolean
+  kind: 'save' | 'publish' | 'discard' | 'revert'
+  page?: CccActivityPageRef
+  /**
+   * publish only
+   */
+  page_count?: number
+  /**
+   * publish only
+   */
+  pages?: Array<CccActivityPageRef>
+  /**
+   * save only; absent for a first save
+   */
+  previous_revision_uid?: string
+  /**
+   * publish only; the revision this publication restored, absent when not set
+   */
+  restored_from?: number
+  /**
+   * revert only; the publication Live moved back to
+   */
+  restored_revision?: number
+  /**
+   * publish only; Live later moved back before this publication
+   */
+  reverted?: boolean
+  /**
+   * revert only; the publication taken off Live
+   */
+  reverted_revision?: number
+  /**
+   * publish only
+   */
+  revision?: number
+  /**
+   * save only
+   */
+  revision_uid?: string
+}
+
+export type CccActivityPage = {
+  has_more: boolean
+  items: Array<CccActivityItem>
+  /**
+   * Newest publication, ignoring filters; null before any publication
+   */
+  last_publish: {
+    actor_uid: string
+    at: string
+    /**
+     * Live later moved back before this publication
+     */
+    reverted: boolean
+    revision: number
+  } | null
+  next_cursor?: string
+}
+
+export type CccActivityPageRef = {
+  /**
+   * Authored page address; empty when not set
+   */
+  slug: string
+  /**
+   * Authored title of the save; empty when not set
+   */
+  title: string
+  type: 'model' | 'workflow' | 'app'
+  uid: string
+}
+
 export type CccAuthoringContext = {
   actor_uid: string
+  /**
+   * Whether this session may enter website administration
+   */
+  can_access_catalog: boolean
   can_apply: boolean
   can_edit: boolean
+  /**
+   * Whether this verified interactive session has Catalog Admin status and may manage website users and permissions
+   */
+  can_manage_users: boolean
+  /**
+   * Whether this account may use raw Catalog transfer
+   */
+  can_transfer: boolean
   owner_uid: string
   state: CccCatalogState
 }
@@ -3511,6 +4130,32 @@ export type CccCreatorSummary = {
 
 export type CccCreatorsPage = {
   items: Array<CccCreatorSummary>
+  next_cursor?: string
+}
+
+/**
+ * One immutable save: the flat CCCJSON read plus the status of the catalog revision that holds it and its save time.
+ */
+export type CccHistoryItem = Cccjson & {
+  /**
+   * Status of the catalog revision that holds this save.
+   */
+  catalog_status: 'draft' | 'published' | 'reverted' | 'archived'
+  /**
+   * RFC3339 UTC save time of this exact edit.
+   */
+  saved_at: string
+}
+
+/**
+ * One page of save history, newest edit_sequence first. next_cursor is present only when has_more is true. There is no total.
+ */
+export type CccHistoryPage = {
+  has_more: boolean
+  items: Array<CccHistoryItem>
+  /**
+   * Opaque cursor bound to this UID; pass it back as cursor.
+   */
   next_cursor?: string
 }
 
@@ -3574,6 +4219,141 @@ export type CccLegacyTarget = {
   type: 'workflow' | 'app' | 'model'
 }
 
+export type CccMediaConstraint = {
+  max_bytes?: number
+  max_height?: number
+  max_width?: number
+  mime_type: string
+  min_bytes?: number
+}
+
+/**
+ * Matching pages per type. Every filter applies except types.
+ */
+export type CccPageCounts = {
+  app: number
+  model: number
+  workflow: number
+}
+
+/**
+ * Display data for the row.
+ */
+export type CccPagePresentation = {
+  preview?: CccPagePreview
+}
+
+/**
+ * Card picture. Absent when the page has none, which is what missing=cover selects.
+ */
+export type CccPagePreview = {
+  kind: 'image' | 'video'
+  /**
+   * Path under /api/v1/catalog for staff preview bytes.
+   */
+  src: string
+}
+
+/**
+ * One model, workflow or app page at its Draft head.
+ */
+export type CccPageRow = {
+  /**
+   * Credited account, not the saver.
+   */
+  author_uid: string
+  description: string
+  /**
+   * Show on the Hub in the Draft head; false when unset.
+   */
+  enabled: boolean
+  has_draft_edits: boolean
+  has_live: boolean
+  /**
+   * The Draft head start time is later than as_of, so the page is held until then whatever status says. False when no start time is set and for a removed page.
+   */
+  held_until_start: boolean
+  /**
+   * Deleted in Draft.
+   */
+  is_deleted: boolean
+  /**
+   * The Draft head lists desktop_starters in available_surfaces. status does not read it.
+   */
+  on_desktop: boolean
+  /**
+   * The Draft head lists hub in available_surfaces. The website serves only such pages.
+   */
+  on_hub: boolean
+  presentation: CccPagePresentation
+  /**
+   * The Draft head edit.
+   */
+  revision_uid: string
+  /**
+   * Save time of the Draft head.
+   */
+  saved_at: string
+  /**
+   * Account that saved the Draft head. An account ID, not a display name.
+   */
+  saved_by_uid: string
+  /**
+   * Empty when the page has no address yet.
+   */
+  slug: string
+  /**
+   * The first that applies, in this order. hidden also covers a page that is not on the hub surface.
+   */
+  status:
+    | 'removed'
+    | 'not_live'
+    | 'unpublished'
+    | 'hidden'
+    | 'scheduled'
+    | 'live'
+  title: string
+  type: 'model' | 'workflow' | 'app'
+  uid: string
+  /**
+   * Audience in the Draft head, for example public or staff. status ignores it.
+   */
+  visibility: string
+  /**
+   * Draft head start time as RFC3339, or an empty string when unset.
+   */
+  visible_from: string
+}
+
+/**
+ * One page of the staff page list.
+ */
+export type CccPagesPage = {
+  /**
+   * Time that decides scheduled; continuations keep the first page's value.
+   */
+  as_of: string
+  counts: CccPageCounts
+  has_more: boolean
+  items: Array<CccPageRow>
+  /**
+   * Opaque; send it back with the same filters, sort and limit.
+   */
+  next_cursor?: string
+  state: CccPagesState
+}
+
+/**
+ * Live and Draft revisions this page was read from.
+ */
+export type CccPagesState = {
+  draft_generation: number
+  draft_rev: number
+  live_rev: number
+  next_rev: number
+  previous_live_rev: number | null
+}
+
 export type CccPublicItemsPage = ContentCatalogProjection & {
   has_more: boolean
   /**
@@ -3581,6 +4361,212 @@ export type CccPublicItemsPage = ContentCatalogProjection & {
    */
   next_cursor?: string
   page_size: number
+}
+
+/**
+ * Holds when field equals equals (a bool or string). if_absent decides when field is absent or null; a value of another shape holds.
+ */
+export type CccPublicationCondition = {
+  /**
+   * A boolean or string.
+   */
+  equals: unknown
+  field: string
+  if_absent?: CccPublicationCondition
+}
+
+/**
+ * One publish-time field rule. Publish enforces required levels, media constraints and resolves_to references; recommended levels are advice only.
+ */
+export type CccPublicationRule = {
+  /**
+   * Document paths such as $.title or $.workflow_versions[0].api. A level is met when any one is filled; [*] matches every array index.
+   */
+  fields: Array<string>
+  /**
+   * Absent means the rule only constrains a value that is set.
+   */
+  level?: 'required' | 'recommended'
+  media?: CccMediaConstraint
+  /**
+   * Display text. Required and media faults return it.
+   */
+  message: string
+  /**
+   * Content type a referenced UID must resolve to as enabled public content; "content" means any type.
+   */
+  resolves_to?: string
+  /**
+   * Content types the rule applies to; absent means every type.
+   */
+  types?: Array<'model' | 'workflow' | 'app' | 'template_set'>
+  when?: CccPublicationCondition
+}
+
+/**
+ * Every tag on the eligible hub model and workflow pages, most used first
+ */
+export type CccSiteTagUsage = {
+  /**
+   * Draft generation, returned for both views
+   */
+  generation: number
+  /**
+   * Draft revision for DRAFT, Live revision for LIVE
+   */
+  revision_id: number
+  tags: Array<CccSiteTagUsageItem>
+}
+
+/**
+ * One tag and the number of eligible model and workflow pages that carry it
+ */
+export type CccSiteTagUsageItem = {
+  /**
+   * Number of eligible model and workflow pages that carry the tag
+   */
+  count: number
+  /**
+   * Tag text with surrounding whitespace trimmed; case is kept
+   */
+  tag: string
+}
+
+export type CccStaffPermissions = {
+  account_id: string
+  /**
+   * Optional HTTPS Catalog profile avatar on permission lists; render an initials icon when absent
+   */
+  avatar_url?: string
+  can_edit: boolean
+  can_manage_users: boolean
+  can_publish: boolean
+  can_transfer: boolean
+  /**
+   * Display-only name on permission lists; empty when no safe name is available; never grants authority
+   */
+  display_name?: string
+  updated_at: string
+  updated_by: string
+  version: number
+}
+
+export type CccStagingMediaUse = {
+  /**
+   * True when the pinned version is not the newest file version.
+   */
+  differs_from_head: boolean
+  /**
+   * Exact file version the page pins, when it pins one.
+   */
+  file_version_uid?: string
+  is_deleted: boolean
+  mime_type?: string
+  name?: string
+  /**
+   * True when the page is the upload's recorded origin (legacy imports only).
+   */
+  origin: boolean
+  slug?: string
+  title: string
+  type: 'model' | 'workflow' | 'app' | 'template_set'
+  uid: string
+}
+
+export type CccStagingPresentation = {
+  media_name?: string
+  preview?: {
+    kind: 'image' | 'video'
+    src: string
+  }
+  /**
+   * Draft pages that reference this media row.
+   */
+  uses?: Array<CccStagingMediaUse>
+  [key: string]: unknown
+}
+
+export type CccStagingResource = {
+  /**
+   * Credited author at this version; not the saver.
+   */
+  author_uid: string
+  /**
+   * Sparse display fields on page and selection rows (title, name, slug, provider, change_id, visible_from, visibility, enabled); the full document on detail rows.
+   */
+  document: {
+    change_id?: string
+    enabled?: boolean
+    name?: string
+    provider?: string
+    slug?: string
+    title?: string
+    /**
+     * Audience of the page as saved in this change.
+     */
+    visibility?: string
+    visible_from?: string
+    [key: string]: unknown
+  }
+  is_deleted: boolean
+  revision_uid: string
+  /**
+   * Account that saved this exact change. Absent on before rows.
+   */
+  saved_by_uid?: string
+  type: 'model' | 'workflow' | 'app' | 'media' | 'template_set'
+  uid: string
+  [key: string]: unknown
+}
+
+/**
+ * Staging read. Page and selection rows are sparse; detail and the legacy read return full content.
+ */
+export type CccStagingReview = {
+  items?: Array<CccStagingRow>
+  representation?: 'page' | 'selection' | 'detail'
+  selection_digest?: string
+  state?: CccCatalogState
+  unresolved_count?: number
+  [key: string]: unknown
+}
+
+export type CccStagingRow = {
+  before?: CccStagingResource
+  content: CccStagingResource
+  decision: 'NEW' | 'APPROVED' | 'DEFERRED' | 'DELETED'
+  presentation?: CccStagingPresentation
+  /**
+   * RFC3339 UTC save time of this exact change.
+   */
+  saved_at?: string
+  status: 'NEW' | 'APPROVED' | 'DEFERRED' | 'DELETED'
+  summary: string
+  [key: string]: unknown
+}
+
+export type CccTypeSchema = {
+  contract_version: string
+  environment: string
+  format: 'openapi-3.0-schema'
+  /**
+   * Content types only.
+   */
+  publication?: {
+    rules: Array<CccPublicationRule>
+  }
+  /**
+   * OpenAPI 3.0 schema the save validator applies.
+   */
+  schema: {
+    [key: string]: unknown
+  }
+  schema_version: number
+  /**
+   * Content types only. The readOnly CCCJSON properties; a save never applies them.
+   */
+  server_fields?: Array<string>
+  type: 'model' | 'workflow' | 'app' | 'template_set' | 'media'
 }
 
 export type CccWebsiteCardFacet = {
@@ -3930,6 +4916,7 @@ export type CreateTopupCheckoutRequest = {
    *
    */
   amount_cents: number
+  auto_top_up?: TopupAutoTopUpSettings
   /**
    * Optional client-provided key. Forwarded to Stripe so a double-submit
    * collapses onto one session instead of minting two payable links.
@@ -3974,7 +4961,7 @@ export type CreateTopupQuoteRequest = {
 }
 
 /**
- * Legacy on-file top-up. Explicit payment authority and save/default fields require the dedicated interactive route and are rejected here, including null or false values.
+ * Legacy on-file top-up. Explicit payment authority, save/default fields and auto_top_up require the dedicated interactive route and are rejected here, including null or false values.
  */
 export type CreateTopupRequest = {
   /**
@@ -4303,108 +5290,6 @@ export type DesktopLoginCodeCreateResponse = {
 }
 
 /**
- * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
- */
-export type BillingHandoffCreateRequest = {
-  /**
-   * Workspace the handoff and its session are bound to. An OAuth access token may name only its own workspace.
-   */
-  workspace_id: string
-  /**
-   * Billing app that will exchange the handoff; its origin is the only one the exchange accepts.
-   */
-  receiver: 'billing_web' | 'platform'
-  /**
-   * Client-asserted; stages the rollout, not a security boundary.
-   */
-  surface: 'local_web' | 'desktop'
-  /**
-   * Version of the issuing app, for logs.
-   */
-  client_version: string
-}
-
-/**
- * An issued handoff. The token is single use and expires within 60 seconds.
- */
-export type BillingHandoffCreateResponse = {
-  /**
-   * The receiver's handoff page with the token in the fragment. Open it, never display it.
-   */
-  entry_url: string
-  /**
-   * When the handoff can no longer be exchanged.
-   */
-  expires_at: string
-  /**
-   * Id of the stored handoff, for support and logs.
-   */
-  request_id: string
-}
-
-/**
- * The handoff token a receiver read from its URL fragment.
- */
-export type BillingHandoffExchangeRequest = {
-  /**
-   * The raw handoff token from the entry URL fragment.
-   */
-  token: string
-}
-
-/**
- * A scoped billing session for the handoff's user and workspace.
- */
-export type BillingHandoffExchangeResponse = {
-  /**
-   * Bearer for billing routes of the bound workspace only.
-   */
-  session_token: string
-  /**
-   * When the session ends; it is never extended. At most 30 minutes, and never after the source sign-in expires.
-   */
-  expires_at: string
-  user: BillingHandoffUser
-  workspace: BillingHandoffWorkspace
-  /**
-   * The user's role in the workspace at exchange time.
-   */
-  role: string
-}
-
-/**
- * The user a scoped billing session acts as.
- */
-export type BillingHandoffUser = {
-  /**
-   * Comfy user id.
-   */
-  id: string
-  /**
-   * The user's email address.
-   */
-  email: string
-}
-
-/**
- * The workspace a scoped billing session is bound to.
- */
-export type BillingHandoffWorkspace = {
-  /**
-   * Workspace id.
-   */
-  id: string
-  /**
-   * Workspace display name.
-   */
-  name: string
-  /**
-   * Workspace type, personal or team.
-   */
-  type: string
-}
-
-/**
  * Request to exchange a redeemed login code for a custom token.
  */
 export type DesktopLoginCodeExchangeRequest = {
@@ -4673,7 +5558,7 @@ export type ExecutionError = {
    */
   node_type: string
   /**
-   * Array of traceback lines (empty array if not available)
+   * Array of traceback lines (empty array if not available). In a job's detail (GET /api/jobs/{job_id}) for a failed run on a deployment, read by a member of the job's workspace, the last item may instead hold the end of what the run printed, opening with the line `What this run printed (up to the last 8 KB):`. The jobs list never carries that item.
    */
   traceback: Array<string>
 }
@@ -4993,6 +5878,9 @@ export type HostedTopupCheckout = {
    * Original credit purchase amount before promotions, not the settled payment amount.
    */
   amount_cents: number
+  auto_top_up?: AcceptedAutoTopUpSettings
+  auto_top_up_activation?: AutoTopUpActivation
+  auto_top_up_activation_reason?: AutoTopUpActivationReason
   /**
    * Actual USD Stripe total after promotions, including a confirmed fully discounted zero. Null when unavailable; use this for payment messages, not amount_cents.
    */
@@ -5407,6 +6295,7 @@ export type InteractiveTopupRequest = {
    * Nominal credit purchase in USD cents, excluding tax and discounts; at most `max_topup_cents` on GET /api/billing/balance. Actual payment and credit grant are asynchronous.
    */
   amount_cents: number
+  auto_top_up?: TopupAutoTopUpSettings
   /**
    * Client-minted identifier for one checkout attempt, generated when
    * the customer starts checkout and sent on every request and
@@ -5931,7 +6820,15 @@ export type ListAssetsResponse = {
    */
   next_cursor?: string
   /**
-   * Total number of assets matching the filters
+   * Number of assets matching the filters, counted up to 10,000 unless
+   * the request sends `capped_total=false`. A capped 10,000 means "at
+   * least 10,000" and must not be read as the exact count or used to
+   * work out the last page. With `include_total=false` no count runs
+   * and `total` is a lower bound: the assets through this page (on an
+   * offset page, the skipped `offset` rows included), plus one when
+   * `has_more` is true, and 0 for an empty page. To page, follow
+   * `has_more` and `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -6408,7 +7305,7 @@ export type OAuthConsentChallengeWorkspace = {
 /**
  * The platform this authorization code will be delivered to, when the
  * request's validated redirect_uri is one of a known platform's own OAuth
- * callbacks (ChatGPT, Claude). Derived server-side ONLY from the
+ * callbacks (ChatGPT, Claude, Cursor). Derived server-side ONLY from the
  * redirect_uri this request was byte-matched against at GET time —
  * never from the registrant-supplied client_name — against a
  * version-controlled registry of exact callbacks and anchored callback
@@ -6416,8 +7313,10 @@ export type OAuthConsentChallengeWorkspace = {
  * clients; omitted for first-party clients and for any redirect that is
  * not a registered platform callback. It verifies the destination
  * platform, NOT that the registrant is that platform's own app (any
- * connector on the platform can hold such a callback), so consumers
- * should label it by `display_name` and still show the redirect host.
+ * connector on the platform can hold such a callback, and any local
+ * process can listen on Cursor's loopback callback or claim its
+ * `cursor://` scheme), so consumers should label it by `display_name`
+ * and still show the redirect host.
  * `client_display_name` is unchanged and remains registrant-supplied.
  *
  */
@@ -6429,7 +7328,7 @@ export type OAuthConsentVerifiedClient = {
   /**
    * Stable identifier of the verified platform.
    */
-  platform: 'chatgpt' | 'claude'
+  platform: 'chatgpt' | 'claude' | 'cursor'
 }
 
 /**
@@ -6625,7 +7524,13 @@ export type PaginationInfo = {
    */
   offset: number
   /**
-   * Total number of items matching filters (may be 0 when using cursor pagination)
+   * Number of items matching the filters (may be 0 when using cursor
+   * pagination). `GET /api/jobs` counts it up to 10,000 unless the
+   * request sends `capped_total=false`, so 10,000 there means "at
+   * least 10,000" and must not be read as the exact count or used to
+   * work out the last page. To page, follow `has_more` and
+   * `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -6732,6 +7637,10 @@ export type Plan = {
   credits_cents: number
   denied_reason?: PlanActionDeniedReason
   denied_reason_params?: PlanActionDeniedReasonParams
+  /**
+   * Display-only whole percentage saved by this personal annual offer against list_price_cents, rounded down from 100 * (list_price_cents - price_cents) / list_price_cents. Present together with list_price_cents only when the rounded saving is at least 1%; clients render this value instead of deriving it.
+   */
+  discount_percent?: number
   duration: SubscriptionDuration
   /**
    * Optional ordered localization companion selected by the server. Only available items appear in the existing features strings; coming-soon items remain separate. Key is a stable semantic identifier, not a client locale path. Clients map known keys to translations and may use text as an English fallback according to their locale policy. Unknown keys never imply entitlements. Omitted for older string-only metadata. Team count uses the resolved max_seats.
@@ -6741,6 +7650,10 @@ export type Plan = {
    * Optional ordered English feature copy for this offer, for display only. Omitted when metadata is unavailable. Team member count uses max_seats. Does not grant entitlements or change plan actions or availability.
    */
   features?: Array<string>
+  /**
+   * Display-only yearly total of the matching personal monthly offer (its served price_cents multiplied by 12). Present together with discount_percent only for priced Standard, Creator and Pro annual offers with at least a 1% saving. Omitted for monthly offers, missing monthly counterparts, unpriced annual offers and smaller or no savings. Not an invoice quote.
+   */
+  list_price_cents?: number
   /**
    * Maximum number of seats allowed for this plan
    */
@@ -7190,6 +8103,74 @@ export type PromptInfo = {
      */
     queue_remaining?: number
   }
+}
+
+/**
+ * The `data` of a prompt_outputs_skipped WebSocket event. Sent when ComfyUI accepts a Cloud job's prompt but rejects some nodes: ComfyUI skips the outputs that depend on them and runs the rest, and the job keeps running. The inference server sends it to the user's channel (services/inference/server/services/joborchestrator/prompt_validation.go). Every string taken from ComfyUI has its lists of allowed values or file names replaced ("is not a valid value", "[list omitted]") and is capped at 512 characters.
+ */
+export type PromptOutputsSkippedData = {
+  /**
+   * The rejected nodes, keyed by node id, in the shape ComfyUI's /prompt returns. At most 50 nodes, the lowest ids kept, and 64 KiB as JSON.
+   */
+  node_errors: {
+    [key: string]: PromptOutputsSkippedNodeError
+  }
+  /**
+   * The Cloud job id.
+   */
+  prompt_id: string
+}
+
+/**
+ * Server-to-client prompt_outputs_skipped frame on /ws. ComfyUI skipped some of a Cloud job's outputs because nodes failed validation.
+ */
+export type PromptOutputsSkippedFrame = {
+  data: PromptOutputsSkippedData
+  type: 'prompt_outputs_skipped'
+}
+
+/**
+ * One rejected node in a prompt_outputs_skipped event.
+ */
+export type PromptOutputsSkippedNodeError = {
+  /**
+   * The node's type. Empty when ComfyUI sent none.
+   */
+  class_type: string
+  /**
+   * The ids of the output nodes ComfyUI skipped because of this node, at most 50. Only ids ComfyUI sent as strings are kept; any other entry is dropped.
+   */
+  dependent_outputs: Array<string>
+  /**
+   * Why ComfyUI rejected the node, at most 10. A custom node's validator may report a bare string, which is sent as that string. Can be empty when the size cap left no room for the node's errors.
+   */
+  errors: Array<string | PromptOutputsSkippedValidationError>
+}
+
+/**
+ * One validation error as ComfyUI reports it, with tracebacks and every other field removed. type, message and details are each present only when ComfyUI sent them as strings.
+ */
+export type PromptOutputsSkippedValidationError = {
+  details?: string
+  /**
+   * Only the keys the editor reads, each present when ComfyUI sent it. A list or object value becomes the string "[list omitted]".
+   */
+  extra_info?: {
+    /**
+     * The input the error belongs to.
+     */
+    input_name?: string | number | boolean
+    /**
+     * The type the node received.
+     */
+    received_type?: string | number | boolean
+    /**
+     * The value the node received.
+     */
+    received_value?: string | number | boolean
+  }
+  message?: string
+  type?: string
 }
 
 /**
@@ -7826,7 +8807,16 @@ export type SubscribeRequest = {
   /**
    * Stripe ConfirmationToken created from deferred Payment Element
    * details. For an initial subscription, the backend creates the exact
-   * invoice PaymentIntent and confirms it with this token.
+   * invoice PaymentIntent and confirms it with this token. For a change
+   * of an existing plan (upgrade, billing-cycle reset or scheduled
+   * downgrade), the backend saves the card with a SetupIntent first; if
+   * that needs 3-D Secure, the operation's payment_intent_client_secret
+   * on /billing/ops/{id} carries the SetupIntent's client secret for
+   * Stripe.js handleNextAction. An immediate upgrade then charges the
+   * prorated amount to this card. On success the card becomes the
+   * workspace default (Stripe customer default and the subscription's);
+   * a declined or unauthenticated card changes no default. Requires
+   * return_url. Mutually exclusive with saved_payment_method_id.
    *
    */
   confirmation_token?: string
@@ -7877,9 +8867,15 @@ export type SubscribeRequest = {
    */
   return_url?: string
   /**
-   * Optional saved payment method selected for this subscription. It
-   * must be attached to the current workspace's Stripe customer.
-   * Mutually exclusive with confirmation_token.
+   * Optional saved payment method selected at checkout, for a new
+   * subscription or a change of an existing plan (upgrade, billing-cycle
+   * reset or scheduled downgrade). It must be attached to the current
+   * workspace's Stripe customer. An immediate upgrade charges the
+   * prorated amount to this card; a scheduled downgrade charges nothing.
+   * On success the card becomes the workspace default (Stripe customer
+   * default and the subscription's); a declined charge changes no
+   * default. Omitted, the plan change charges the current default as
+   * before. Mutually exclusive with confirmation_token.
    *
    */
   saved_payment_method_id?: string
@@ -8355,6 +9351,28 @@ export type TopUpPurchaseAmount = {
 }
 
 /**
+ * Turns auto top-up on after this purchase's payment succeeds; the server does it, so never follow with PUT /api/billing/auto-reload. Absent leaves auto top-up unchanged. Owner who may manage auto top-up only. Hosted checkout shows a $0.00 "Auto top-up" line and consent covering future top-ups.
+ * PUT /api/billing/auto-reload's enabled-save rules apply before anything is charged (400 INVALID_AUTO_TOP_UP); 400 AUTO_TOP_UP_NOT_ELIGIBLE when setup is unavailable or frozen except for a missing default card; 400 AUTO_TOP_UP_NOT_AVAILABLE when first enrollment is outside the rollout.
+ * Auto top-up charges the default card. With none, the paid card is saved off-session and becomes the default; an existing default is kept and a new card is not saved. On the interactive route a new card's confirmation token must use setup_future_usage off_session exactly when there is no default card.
+ * A replay with other settings is refused. The outcome is auto_top_up_activation on the checkout read (hosted) or GET /api/billing/ops/{id} (interactive).
+ *
+ */
+export type TopupAutoTopUpSettings = {
+  /**
+   * Owner monthly limit in USD cents. Absent or null means no owner limit and is stored as max_monthly_budget_cents, with monthly_budget_is_default true.
+   */
+  monthly_budget_cents?: number | null
+  /**
+   * The balance each auto top-up buys back up to.
+   */
+  target_credits: number
+  /**
+   * Auto top-up runs when the balance drops below this many credits.
+   */
+  threshold_credits: number
+}
+
+/**
  * What a credit top-up of the requested amount would grant.
  */
 export type TopupQuoteResponse = {
@@ -8711,6 +9729,16 @@ export type ValidationResult = {
    * Non-blocking validation warnings (informational only)
    */
   warnings?: Array<ValidationError>
+}
+
+/**
+ * The signed link `GET /api/view?redirect=false` answers with: the same link the 302 sends in `Location`, so it expires like that one.
+ */
+export type ViewFileUrlResponse = {
+  /**
+   * Signed Google Cloud Storage link to the file. It needs no other credential, so treat it as a secret until it expires.
+   */
+  url: string
 }
 
 /**
@@ -9233,6 +10261,32 @@ export type AssetCreatedWritable = AssetWritable & {
 }
 
 /**
+ * One immutable save: the flat CCCJSON read plus the status of the catalog revision that holds it and its save time.
+ */
+export type CccHistoryItemWritable = {
+  /**
+   * Status of the catalog revision that holds this save.
+   */
+  catalog_status: 'draft' | 'published' | 'reverted' | 'archived'
+  /**
+   * RFC3339 UTC save time of this exact edit.
+   */
+  saved_at: string
+}
+
+/**
+ * One page of save history, newest edit_sequence first. next_cursor is present only when has_more is true. There is no total.
+ */
+export type CccHistoryPageWritable = {
+  has_more: boolean
+  items: Array<CccHistoryItemWritable>
+  /**
+   * Opaque cursor bound to this UID; pass it back as cursor.
+   */
+  next_cursor?: string
+}
+
+/**
  * Paginated list of assets belonging to the authenticated user.
  */
 export type ListAssetsResponseWritable = {
@@ -9251,7 +10305,15 @@ export type ListAssetsResponseWritable = {
    */
   next_cursor?: string
   /**
-   * Total number of assets matching the filters
+   * Number of assets matching the filters, counted up to 10,000 unless
+   * the request sends `capped_total=false`. A capped 10,000 means "at
+   * least 10,000" and must not be read as the exact count or used to
+   * work out the last page. With `include_total=false` no count runs
+   * and `total` is a lower bound: the assets through this page (on an
+   * offset page, the skipped `offset` rows included), plus one when
+   * `has_more` is true, and 0 for an empty page. To page, follow
+   * `has_more` and `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -10634,7 +11696,9 @@ export type ListAssetsData = {
      */
     limit?: number
     /**
-     * Number of assets to skip for pagination
+     * Number of assets to skip for pagination. A negative offset returns
+     * 400 `INVALID_OFFSET`.
+     *
      */
     offset?: number
     /**
@@ -10683,6 +11747,28 @@ export type ListAssetsData = {
      *
      */
     after?: string
+    /**
+     * When true or omitted, `total` counts at most 10,000 matching
+     * assets, so a total of 10,000 means "at least 10,000", not an exact
+     * count. A capped count stops after 10,000 matching assets instead
+     * of reading every one. Send false for the exact count, for example
+     * to work out the last page from the total: `has_more` and
+     * `next_cursor` do not depend on the total either way. Ignored when
+     * `include_total` is false.
+     *
+     */
+    capped_total?: boolean
+    /**
+     * Send false when the caller does not read `total`, for example a
+     * list that pages by `has_more` and `next_cursor`. No count runs,
+     * `capped_total` is ignored, and `total` is a lower bound instead of
+     * a count: the assets through this page (on an offset page, the
+     * skipped `offset` rows included), plus one when `has_more` is true,
+     * and 0 for an empty page. When true or omitted, `total` is counted
+     * as `capped_total` says.
+     *
+     */
+    include_total?: boolean
   }
   url: '/api/assets'
 }
@@ -11192,11 +12278,11 @@ export type CreateAssetDownloadErrors = {
    */
   403: ForbiddenError
   /**
-   * Validation errors
+   * Validation errors, or `CONTENT_BLOCKED` when content moderation has already blocked the file's bytes (no download task is created)
    */
   422: ErrorResponse
   /**
-   * Internal server error
+   * Internal server error, including when the content moderation status of the file's bytes could not be read (retriable; no download task is created)
    */
   500: ErrorResponse
   /**
@@ -11396,7 +12482,7 @@ export type CreateAssetFromHashErrors = {
    */
   422: ErrorResponse
   /**
-   * Internal server error
+   * Internal server error, including when the content moderation status of the file's bytes could not be read (retriable; no asset is created)
    */
   500: ErrorResponse
   /**
@@ -12032,88 +13118,6 @@ export type CreateDesktopLoginCodeResponses = {
 export type CreateDesktopLoginCodeResponse =
   CreateDesktopLoginCodeResponses[keyof CreateDesktopLoginCodeResponses]
 
-export type CreateBillingHandoffData = {
-  body: BillingHandoffCreateRequest
-  path?: never
-  query?: never
-  url: '/api/auth/handoffs'
-}
-
-export type CreateBillingHandoffErrors = {
-  /**
-   * `INVALID_REQUEST`
-   */
-  400: ErrorResponse
-  /**
-   * `INVALID_CREDENTIAL`: the sign-in has ended, predates the user's sign-out of all devices, or must be renewed
-   */
-  401: ErrorResponse
-  /**
-   * `CREDENTIAL_UNSUPPORTED`, `BILLING_FORBIDDEN` or `HANDOFF_DISABLED`
-   */
-  403: ErrorResponse
-  /**
-   * Too many handoffs for this user in the last hour
-   */
-  429: ErrorResponse
-  /**
-   * `SERVICE_UNAVAILABLE`: the Firebase revocation check could not be made
-   */
-  503: ErrorResponse
-}
-
-export type CreateBillingHandoffError =
-  CreateBillingHandoffErrors[keyof CreateBillingHandoffErrors]
-
-export type CreateBillingHandoffResponses = {
-  /**
-   * Handoff issued
-   */
-  201: BillingHandoffCreateResponse
-}
-
-export type CreateBillingHandoffResponse =
-  CreateBillingHandoffResponses[keyof CreateBillingHandoffResponses]
-
-export type ExchangeBillingHandoffData = {
-  body: BillingHandoffExchangeRequest
-  path?: never
-  query?: never
-  url: '/api/auth/handoffs/exchange'
-}
-
-export type ExchangeBillingHandoffErrors = {
-  /**
-   * `INVALID_REQUEST`
-   */
-  400: ErrorResponse
-  /**
-   * `BILLING_FORBIDDEN` or `HANDOFF_DISABLED`, or the request did not come from the handoff's receiver
-   */
-  403: ErrorResponse
-  /**
-   * `HANDOFF_UNAVAILABLE`: unknown, expired, revoked or already consumed
-   */
-  410: ErrorResponse
-  /**
-   * The user already holds the most live scoped sessions
-   */
-  429: ErrorResponse
-}
-
-export type ExchangeBillingHandoffError =
-  ExchangeBillingHandoffErrors[keyof ExchangeBillingHandoffErrors]
-
-export type ExchangeBillingHandoffResponses = {
-  /**
-   * Scoped session created
-   */
-  200: BillingHandoffExchangeResponse
-}
-
-export type ExchangeBillingHandoffResponse =
-  ExchangeBillingHandoffResponses[keyof ExchangeBillingHandoffResponses]
-
 export type ExchangeDesktopLoginCodeData = {
   body: DesktopLoginCodeExchangeRequest
   path?: never
@@ -12195,6 +13199,88 @@ export type RedeemDesktopLoginCodeResponses = {
 
 export type RedeemDesktopLoginCodeResponse =
   RedeemDesktopLoginCodeResponses[keyof RedeemDesktopLoginCodeResponses]
+
+export type CreateBillingHandoffData = {
+  body: BillingHandoffCreateRequest
+  path?: never
+  query?: never
+  url: '/api/auth/handoffs'
+}
+
+export type CreateBillingHandoffErrors = {
+  /**
+   * `INVALID_REQUEST`, or `workspace_id_invalid`: X-Comfy-Workspace-ID or ?workspace_id= names another workspace than the body
+   */
+  400: ErrorResponse
+  /**
+   * `INVALID_CREDENTIAL`: the sign-in has ended, predates the user's sign-out of all devices, or must be renewed
+   */
+  401: ErrorResponse
+  /**
+   * `CREDENTIAL_UNSUPPORTED`, `BILLING_FORBIDDEN` or `HANDOFF_DISABLED`
+   */
+  403: ErrorResponse
+  /**
+   * Too many handoffs for this user in the last hour
+   */
+  429: ErrorResponse
+  /**
+   * `SERVICE_UNAVAILABLE`: the Firebase revocation check could not be made
+   */
+  503: ErrorResponse
+}
+
+export type CreateBillingHandoffError =
+  CreateBillingHandoffErrors[keyof CreateBillingHandoffErrors]
+
+export type CreateBillingHandoffResponses = {
+  /**
+   * Handoff issued
+   */
+  201: BillingHandoffCreateResponse
+}
+
+export type CreateBillingHandoffResponse =
+  CreateBillingHandoffResponses[keyof CreateBillingHandoffResponses]
+
+export type ExchangeBillingHandoffData = {
+  body: BillingHandoffExchangeRequest
+  path?: never
+  query?: never
+  url: '/api/auth/handoffs/exchange'
+}
+
+export type ExchangeBillingHandoffErrors = {
+  /**
+   * `INVALID_REQUEST`
+   */
+  400: ErrorResponse
+  /**
+   * `BILLING_FORBIDDEN` or `HANDOFF_DISABLED`, or the request did not come from the handoff's receiver
+   */
+  403: ErrorResponse
+  /**
+   * `HANDOFF_UNAVAILABLE`: unknown, expired, revoked or already consumed
+   */
+  410: ErrorResponse
+  /**
+   * The user already holds the most live scoped sessions
+   */
+  429: ErrorResponse
+}
+
+export type ExchangeBillingHandoffError =
+  ExchangeBillingHandoffErrors[keyof ExchangeBillingHandoffErrors]
+
+export type ExchangeBillingHandoffResponses = {
+  /**
+   * Scoped session created
+   */
+  200: BillingHandoffExchangeResponse
+}
+
+export type ExchangeBillingHandoffResponse =
+  ExchangeBillingHandoffResponses[keyof ExchangeBillingHandoffResponses]
 
 export type DeleteSessionData = {
   body?: never
@@ -12448,7 +13534,7 @@ export type ExchangeTokenErrors = {
    */
   400: ErrorResponse
   /**
-   * Invalid or expired Firebase JWT, no live web session, or a revoked, expired, deleted or unknown API key. Refused credentials get `code` `UNAUTHORIZED` and a `message`. A session that ends within seconds gets `code` `session_expired`: a token minted from it would expire on arrival.
+   * Invalid or expired Firebase JWT, no live web session, or a revoked, expired, deleted or unknown API key. Refused credentials get `code` `UNAUTHORIZED` and a `message`. A session that ends within seconds gets `code` `session_expired`: a token minted from it would expire on arrival. `oauth_grant_ended`: an OAuth access token holding `comfy-cloud:workspace-token:mint` whose grant was signed out, revoked or expired, even though the token itself is still valid; sign in again.
    */
   401: ErrorResponse
   /**
@@ -12456,11 +13542,11 @@ export type ExchangeTokenErrors = {
    */
   403: ErrorResponse
   /**
-   * Workspace not found or user not a member, or an API key's request names another workspace than the key's own.
+   * Workspace not found or user not a member, or an API key's or OAuth access token's request names another workspace than its own. Only an OAuth grant from a client in `WORKSPACE_MINT_OAUTH_CLIENTS` that holds `comfy-cloud:workspace-token:mint` may name another workspace.
    */
   404: ErrorResponse
   /**
-   * The user minted 240 tokens from the session this hour. `code` is `rate_limited`, in lower case like the session codes.
+   * The user minted 240 tokens from the session this hour, or 30 tokens from OAuth grants carrying `comfy-cloud:workspace-token:mint` in the last 600 seconds. `code` is `rate_limited`.
    */
   429: ErrorResponse
   /**
@@ -12468,7 +13554,7 @@ export type ExchangeTokenErrors = {
    */
   500: ErrorResponse
   /**
-   * The comfy-api registry could not verify an API key. `code` is `SERVICE_UNAVAILABLE`; retry, since the key may be good. `partner_node_token_disabled`: a partner-node mint while ops have switched those off (`PartnerNodeTokenMintDisabled`); mint without `resource` instead.
+   * The comfy-api registry could not verify an API key. `code` is `SERVICE_UNAVAILABLE`; retry, since the key may be good. `partner_node_token_disabled`: a partner-node mint while ops have switched those off (`PartnerNodeTokenMintDisabled`); mint without `resource` instead. `oauth_workspace_mint_disabled`: an OAuth grant naming a workspace other than its own while ops have switched that off (`OAuthCrossWorkspaceMintDisabled`); authorize again for that workspace.
    */
   503: ErrorResponse
 }
@@ -12719,6 +13805,301 @@ export type GetBillingBalanceResponses = {
 export type GetBillingBalanceResponse =
   GetBillingBalanceResponses[keyof GetBillingBalanceResponses]
 
+export type ListBillingBudgetsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/billing/budgets'
+}
+
+export type ListBillingBudgetsErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `budgets_unavailable`: budgets are not available in this environment.
+   */
+  503: ErrorResponse
+}
+
+export type ListBillingBudgetsError =
+  ListBillingBudgetsErrors[keyof ListBillingBudgetsErrors]
+
+export type ListBillingBudgetsResponses = {
+  /**
+   * Success
+   */
+  200: BudgetList
+}
+
+export type ListBillingBudgetsResponse =
+  ListBillingBudgetsResponses[keyof ListBillingBudgetsResponses]
+
+export type CreateBillingBudgetData = {
+  body: BudgetCreateRequest
+  path?: never
+  query?: never
+  url: '/api/billing/budgets'
+}
+
+export type CreateBillingBudgetErrors = {
+  /**
+   * `INVALID_REQUEST` (the body is not a JSON object), `invalid_budget`
+   * (unknown `scope_kind` or `mode`, no `scope_id`, a limit that is not
+   * positive, both or neither limit fields, bad `alert_percents`,
+   * `until` without a future `ends_at`, or `ends_at` with another
+   * `repeat`), or `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   *
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * `not_workspace_owner` (the caller is a member, not an owner),
+   * `plan_not_enterprise` (`mode: hard` on a plan without hard caps),
+   * a plan refusal whose code is the `can_set_budgets` denial reason
+   * (`creator_only_provisioning`, `no_subscription`, `free_plan`, `subscription_ended`,
+   * `subscription_not_started`, `subscription_status_unrecognized`),
+   * `WORKSPACE_BLOCKED`, `api_key_not_allowed` (the request was made
+   * with an API key; budgets are changed from a signed-in session
+   * only), `INSUFFICIENT_SCOPE` (an OAuth session without the billing
+   * write scope; sent with a `WWW-Authenticate` insufficient_scope
+   * challenge), `FORBIDDEN` (the caller is no longer
+   * a member of the workspace, or a deployment budget was asked for
+   * with a credential that cannot be used to check the deployment;
+   * sign in again), or a session refusal (see SessionWriteForbidden).
+   *
+   */
+  403: ForbiddenError
+  /**
+   * `scope_not_found`: the member, API key or deployment is not in
+   * this workspace. A deployment id must be the canonical lower-case
+   * `dep-<uuid>` form.
+   *
+   */
+  404: ErrorResponse
+  /**
+   * `budget_exists` (the scope already has a live budget) or
+   * `no_billing_period` (`repeat: current_period` on a workspace with
+   * no open paid subscription term).
+   *
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `budgets_unavailable` (budgets are not available in this
+   * environment) or `deployment_check_unavailable` (the deployment
+   * service could not be asked about a deployment scope; retry).
+   *
+   */
+  503: ErrorResponse
+}
+
+export type CreateBillingBudgetError =
+  CreateBillingBudgetErrors[keyof CreateBillingBudgetErrors]
+
+export type CreateBillingBudgetResponses = {
+  /**
+   * The new budget
+   */
+  201: BudgetWriteResult
+}
+
+export type CreateBillingBudgetResponse =
+  CreateBillingBudgetResponses[keyof CreateBillingBudgetResponses]
+
+export type DeleteBillingBudgetData = {
+  body?: never
+  path: {
+    /**
+     * Budget id (`bud_…`).
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/billing/budgets/{id}'
+}
+
+export type DeleteBillingBudgetErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * `not_workspace_owner`, `api_key_not_allowed` (the request was made with an API key), `INSUFFICIENT_SCOPE`, `FORBIDDEN` (the caller is no longer a member of the workspace), or a session refusal (see SessionWriteForbidden).
+   */
+  403: ForbiddenError
+  /**
+   * `budget_not_found`: unknown or already archived budget id.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `budgets_unavailable`: budgets are not available in this environment.
+   */
+  503: ErrorResponse
+}
+
+export type DeleteBillingBudgetError =
+  DeleteBillingBudgetErrors[keyof DeleteBillingBudgetErrors]
+
+export type DeleteBillingBudgetResponses = {
+  /**
+   * Archived
+   */
+  204: void
+}
+
+export type DeleteBillingBudgetResponse =
+  DeleteBillingBudgetResponses[keyof DeleteBillingBudgetResponses]
+
+export type UpdateBillingBudgetData = {
+  body: BudgetUpdateRequest
+  path: {
+    /**
+     * Budget id (`bud_…`).
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/billing/budgets/{id}'
+}
+
+export type UpdateBillingBudgetErrors = {
+  /**
+   * `INVALID_REQUEST` (the body is not a JSON object), `invalid_budget`
+   * (as on create), or `workspace_id_invalid` (see
+   * SessionWorkspaceIDInvalid).
+   *
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * `not_workspace_owner`, `plan_not_enterprise` (changing a soft
+   * budget to hard on a plan without hard caps), a plan refusal whose
+   * code is the `can_set_budgets` denial reason
+   * (`creator_only_provisioning`, `no_subscription`,
+   * `free_plan`, `subscription_ended`, `subscription_not_started`,
+   * `subscription_status_unrecognized`), `WORKSPACE_BLOCKED`,
+   * `api_key_not_allowed` (the request was made with an API key),
+   * `INSUFFICIENT_SCOPE` (sent with a `WWW-Authenticate`
+   * insufficient_scope challenge), `FORBIDDEN` (the caller is no
+   * longer a member of the workspace), or a session refusal (see
+   * SessionWriteForbidden).
+   *
+   */
+  403: ForbiddenError
+  /**
+   * `budget_not_found`: unknown or archived budget id.
+   */
+  404: ErrorResponse
+  /**
+   * `no_billing_period`: `repeat: current_period` on a workspace with no open paid subscription term.
+   */
+  409: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `budgets_unavailable`: budgets are not available in this environment.
+   */
+  503: ErrorResponse
+}
+
+export type UpdateBillingBudgetError =
+  UpdateBillingBudgetErrors[keyof UpdateBillingBudgetErrors]
+
+export type UpdateBillingBudgetResponses = {
+  /**
+   * The budget after the change
+   */
+  200: BudgetWriteResult
+}
+
+export type UpdateBillingBudgetResponse =
+  UpdateBillingBudgetResponses[keyof UpdateBillingBudgetResponses]
+
+export type GetBillingBudgetHistoryData = {
+  body?: never
+  path: {
+    /**
+     * Budget id (`bud_…`).
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/billing/budgets/{id}/history'
+}
+
+export type GetBillingBudgetHistoryErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * `not_workspace_owner`, `FORBIDDEN` (the caller is no longer a member of the workspace), or a session refusal (see SessionForbidden).
+   */
+  403: ForbiddenError
+  /**
+   * `budget_not_found`: unknown or archived budget id.
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `budgets_unavailable`: budgets are not available in this environment.
+   */
+  503: ErrorResponse
+}
+
+export type GetBillingBudgetHistoryError =
+  GetBillingBudgetHistoryErrors[keyof GetBillingBudgetHistoryErrors]
+
+export type GetBillingBudgetHistoryResponses = {
+  /**
+   * Success
+   */
+  200: BudgetHistory
+}
+
+export type GetBillingBudgetHistoryResponse =
+  GetBillingBudgetHistoryResponses[keyof GetBillingBudgetHistoryResponses]
+
 export type GetBillingCapabilitiesData = {
   body?: never
   path?: never
@@ -12900,7 +14281,7 @@ export type GetBillingEventsData = {
      */
     limit?: number
     /**
-     * Event scope. The user scope requires user_id.
+     * Event scope. Defaults to workspace for workspace owners and self for everyone else. The user scope requires user_id.
      */
     scope?: 'self' | 'workspace' | 'user'
     /**
@@ -13062,6 +14443,54 @@ export type CancelBillingOpResponses = {
 
 export type CancelBillingOpResponse =
   CancelBillingOpResponses[keyof CancelBillingOpResponses]
+
+export type GetBillingOpOutcomeData = {
+  body?: never
+  path: {
+    /**
+     * The billing operation ID
+     */
+    id: string
+  }
+  query?: never
+  url: '/api/billing/ops/{id}/outcome'
+}
+
+export type GetBillingOpOutcomeErrors = {
+  /**
+   * `INVALID_CREDENTIAL`: no scoped-session bearer, or the session is unknown, revoked or expired 30 minutes ago or more
+   */
+  401: ErrorResponse
+  /**
+   * `HANDOFF_DISABLED`, `BILLING_FORBIDDEN` or another billing policy refusal
+   */
+  403: ErrorResponse
+  /**
+   * Billing operation not found in the session's workspace
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+  /**
+   * `SERVICE_UNAVAILABLE`: the session or billing policy check could not be made
+   */
+  503: ErrorResponse
+}
+
+export type GetBillingOpOutcomeError =
+  GetBillingOpOutcomeErrors[keyof GetBillingOpOutcomeErrors]
+
+export type GetBillingOpOutcomeResponses = {
+  /**
+   * Billing operation outcome
+   */
+  200: BillingOpOutcomeResponse
+}
+
+export type GetBillingOpOutcomeResponse =
+  GetBillingOpOutcomeResponses[keyof GetBillingOpOutcomeResponses]
 
 export type ListSavedPaymentMethodsData = {
   body?: never
@@ -15846,6 +17275,20 @@ export type ListJobsData = {
      * Maximum items per page (1-1000)
      */
     limit?: number
+    /**
+     * When true or omitted, `pagination.total` counts at most 10,000
+     * matching jobs, so a total of 10,000 means "at least 10,000", not an
+     * exact count. A capped count stops after 10,000 matching jobs
+     * instead of reading every one. Send false for the exact count, for
+     * example to work out the last page from the total: `has_more` and
+     * `next_cursor` do not depend on the total either way. Under the
+     * default `sort_by=create_time` a request with `after` reports no
+     * total, so this changes nothing there; under
+     * `sort_by=execution_time` `after` is ignored and the total is
+     * counted, capped unless this is false.
+     *
+     */
+    capped_total?: boolean
   }
   url: '/api/jobs'
 }
@@ -17911,6 +19354,53 @@ export type GetUsersInfoResponses = {
 export type GetUsersInfoResponse =
   GetUsersInfoResponses[keyof GetUsersInfoResponses]
 
+export type GetCccActivityData = {
+  body?: never
+  path?: never
+  query?: {
+    kind?: Array<'save' | 'publish' | 'discard' | 'revert'>
+    actor_uid?: string
+    type?: Array<'model' | 'workflow' | 'app'>
+    since?: string
+    until?: string
+    limit?: number
+    cursor?: string
+  }
+  url: '/api/v1/catalog/activity'
+}
+
+export type GetCccActivityErrors = {
+  /**
+   * Invalid kind, type, actor_uid, time range, limit, cursor or unsupported query parameter; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type GetCccActivityError =
+  GetCccActivityErrors[keyof GetCccActivityErrors]
+
+export type GetCccActivityResponses = {
+  /**
+   * One page of activity, has_more, optional next_cursor and the newest publication
+   */
+  200: CccActivityPage
+}
+
+export type GetCccActivityResponse =
+  GetCccActivityResponses[keyof GetCccActivityResponses]
+
 export type GetCatalogAgentInstructionsData = {
   body?: never
   path?: never
@@ -17920,14 +19410,29 @@ export type GetCatalogAgentInstructionsData = {
 
 export type GetCatalogAgentInstructionsErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
    * Catalog disabled or unavailable
    */
   503: unknown
 }
 
+export type GetCatalogAgentInstructionsError =
+  GetCatalogAgentInstructionsErrors[keyof GetCatalogAgentInstructionsErrors]
+
 export type GetCatalogAgentInstructionsResponses = {
   /**
-   * Editing instructions from this deployed catalog API build
+   * Editing instructions from this deployed catalog API build; private no-store
    */
   200: string
 }
@@ -17987,7 +19492,7 @@ export type ListCccWebsiteCardsData = {
     kind: 'MODEL' | 'WORKFLOW' | 'APP'
     limit?: number
     cursor?: string
-    locale?: 'en' | 'zh-CN'
+    locale?: 'en' | 'zh-CN' | 'ja'
     q?: string
     sort?: 'popular' | 'name' | 'priceAsc' | 'priceDesc'
     category?: Array<string>
@@ -18097,30 +19602,6 @@ export type GetCccCreatorResponses = {
 
 export type GetCccCreatorResponse =
   GetCccCreatorResponses[keyof GetCccCreatorResponses]
-
-export type GetCatalogDocsData = {
-  body?: never
-  path?: never
-  query?: never
-  url: '/api/v1/catalog/docs'
-}
-
-export type GetCatalogDocsErrors = {
-  /**
-   * Catalog disabled or unavailable
-   */
-  503: unknown
-}
-
-export type GetCatalogDocsResponses = {
-  /**
-   * Build-coupled catalog instructions, permissions and endpoint contracts
-   */
-  200: string
-}
-
-export type GetCatalogDocsResponse =
-  GetCatalogDocsResponses[keyof GetCatalogDocsResponses]
 
 export type BatchCccItemsData = {
   body: {
@@ -18917,6 +20398,10 @@ export type GetCccStagingData = {
     uid?: string
     search?: string
     author_uid?: string
+    /**
+     * Account that saved the pending change (saved_by_uid), not the credited author.
+     */
+    saved_by?: string
     change_id?: string
     tags?: Array<string>
     types?: Array<'model' | 'workflow' | 'app' | 'media' | 'template_set'>
@@ -18954,7 +20439,7 @@ export type GetCccStagingResponses = {
   /**
    * Private review with exact Draft generation and optional sparse page metadata
    */
-  200: Cccjson
+  200: CccStagingReview
 }
 
 export type GetCccStagingResponse =
@@ -19153,7 +20638,7 @@ export type GetCccItemHistoryResponses = {
   /**
    * Flat immutable items with catalog_status and saved_at, has_more and optional opaque next_cursor; no total
    */
-  200: Cccjson
+  200: CccHistoryPage
 }
 
 export type GetCccItemHistoryResponse =
@@ -19265,7 +20750,7 @@ export type ListCccWebsiteModelDirectoryData = {
   }
   path?: never
   query?: {
-    locale?: 'en' | 'zh-CN'
+    locale?: 'en' | 'zh-CN' | 'ja'
   }
   url: '/api/v1/catalog/model-directory'
 }
@@ -19304,20 +20789,303 @@ export type GetCatalogOpenApiData = {
 
 export type GetCatalogOpenApiErrors = {
   /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
    * Catalog disabled or unavailable
    */
   503: unknown
 }
 
+export type GetCatalogOpenApiError =
+  GetCatalogOpenApiErrors[keyof GetCatalogOpenApiErrors]
+
 export type GetCatalogOpenApiResponses = {
   /**
-   * Catalog OpenAPI with contract fingerprint and environment
+   * Catalog OpenAPI with contract fingerprint and environment; private no-store
    */
   200: Cccjson
 }
 
 export type GetCatalogOpenApiResponse =
   GetCatalogOpenApiResponses[keyof GetCatalogOpenApiResponses]
+
+export type ListCccAdminItemsData = {
+  body?: never
+  path?: never
+  query?: {
+    types?: Array<'model' | 'workflow' | 'app'>
+    q?: string
+    status?: Array<
+      'not_live' | 'unpublished' | 'live' | 'scheduled' | 'hidden' | 'removed'
+    >
+    saved_by?: string
+    /**
+     * false keeps pages whose Draft head has enabled not true (Show on the Hub off), whatever their status; true keeps the others.
+     */
+    enabled?: boolean
+    /**
+     * Exact page UIDs; repeat to read several pages, for example one page in the editor.
+     */
+    uid?: Array<string>
+    missing?: Array<'cover'>
+    sort?: 'saved_desc' | 'title_asc'
+    limit?: number
+    cursor?: string
+  }
+  url: '/api/v1/catalog/pages'
+}
+
+export type ListCccAdminItemsErrors = {
+  /**
+   * Unknown, repeated scalar or invalid filter, or a cursor from other filters; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * The cursor belongs to a stale Draft snapshot
+   */
+  409: unknown
+  /**
+   * Dedicated catalog unavailable
+   */
+  503: unknown
+}
+
+export type ListCccAdminItemsError =
+  ListCccAdminItemsErrors[keyof ListCccAdminItemsErrors]
+
+export type ListCccAdminItemsResponses = {
+  /**
+   * One page of staff page rows, the per-type counts and the optional opaque next_cursor
+   */
+  200: CccPagesPage
+}
+
+export type ListCccAdminItemsResponse =
+  ListCccAdminItemsResponses[keyof ListCccAdminItemsResponses]
+
+export type ListCccStaffPermissionsData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/permissions'
+}
+
+export type ListCccStaffPermissionsErrors = {
+  /**
+   * Unsupported query, or code workspace_id_invalid from session validation (see SessionWorkspaceIDInvalid)
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Catalog permissions unavailable
+   */
+  503: unknown
+}
+
+export type ListCccStaffPermissionsError =
+  ListCccStaffPermissionsErrors[keyof ListCccStaffPermissionsErrors]
+
+export type ListCccStaffPermissionsResponses = {
+  /**
+   * Current website permission records
+   */
+  200: {
+    items: Array<CccStaffPermissions>
+  }
+}
+
+export type ListCccStaffPermissionsResponse =
+  ListCccStaffPermissionsResponses[keyof ListCccStaffPermissionsResponses]
+
+export type DeleteCccStaffPermissionsData = {
+  body?: never
+  path: {
+    account_id: string
+  }
+  query: {
+    expected_version: number
+  }
+  url: '/api/v1/catalog/permissions/{account_id}'
+}
+
+export type DeleteCccStaffPermissionsErrors = {
+  /**
+   * Invalid version or query, or code workspace_id_invalid from session validation (see SessionWorkspaceIDInvalid)
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Permission record does not exist
+   */
+  404: unknown
+  /**
+   * Stale version or removal would leave no permission manager
+   */
+  409: unknown
+  /**
+   * Catalog permissions unavailable
+   */
+  503: unknown
+}
+
+export type DeleteCccStaffPermissionsError =
+  DeleteCccStaffPermissionsErrors[keyof DeleteCccStaffPermissionsErrors]
+
+export type DeleteCccStaffPermissionsResponses = {
+  /**
+   * Website access removed
+   */
+  204: void
+}
+
+export type DeleteCccStaffPermissionsResponse =
+  DeleteCccStaffPermissionsResponses[keyof DeleteCccStaffPermissionsResponses]
+
+export type PutCccStaffPermissionsData = {
+  body: {
+    can_edit: boolean
+    can_manage_users: boolean
+    /**
+     * Publication also grants content editing
+     */
+    can_publish: boolean
+    can_transfer: boolean
+    expected_version: number
+  }
+  path: {
+    account_id: string
+  }
+  query?: never
+  url: '/api/v1/catalog/permissions/{account_id}'
+}
+
+export type PutCccStaffPermissionsErrors = {
+  /**
+   * Invalid permission record, or code workspace_id_invalid from session validation (see SessionWorkspaceIDInvalid)
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * Active Cloud account does not exist
+   */
+  404: unknown
+  /**
+   * Stale version or change would leave no permission manager
+   */
+  409: unknown
+  /**
+   * Body exceeds 4 KiB
+   */
+  413: unknown
+  /**
+   * Catalog permissions or identity lookup unavailable
+   */
+  503: unknown
+}
+
+export type PutCccStaffPermissionsError =
+  PutCccStaffPermissionsErrors[keyof PutCccStaffPermissionsErrors]
+
+export type PutCccStaffPermissionsResponses = {
+  /**
+   * Saved website permissions and the new version token
+   */
+  200: CccStaffPermissions
+}
+
+export type PutCccStaffPermissionsResponse =
+  PutCccStaffPermissionsResponses[keyof PutCccStaffPermissionsResponses]
+
+export type ResolveCccStaffAccountData = {
+  body: {
+    email: string
+  }
+  path?: never
+  query?: never
+  url: '/api/v1/catalog/permissions/resolve'
+}
+
+export type ResolveCccStaffAccountErrors = {
+  /**
+   * `code` is `workspace_id_invalid`: the `X-Comfy-Workspace-ID` header or `workspace_id` query value is malformed, or conflicts with another value or with the workspace the credential resolves to. Answered only while `web_session_enabled` is on for the user. See the `WebSessionAuth` scheme.
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request that changes data. For a web session, `code` is `csrf_invalid` (no `X-CSRF-Token`, or not the session's), `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email, or, on `POST /api/workspaces`, an account an SSO organization holds (its organization manages its workspaces; signing in again does not change it). On the plan-lifecycle writes (`POST /api/billing/subscribe`, `POST /api/billing/subscription/cancel`, `POST /api/billing/subscription/resubscribe`, `POST /api/billing/subscription/revert-scheduled-change`, `POST /api/billing/ops/{id}/cancel` and the `/api/billing/retention*` routes), `NOT_ORIGINAL_OWNER` means the caller is an owner but not the workspace's creator, and only the creator may change the plan; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever the flag.
+   */
+  403: ForbiddenError
+  /**
+   * No unique active account matches that email
+   */
+  404: unknown
+  /**
+   * Email verification body exceeds 2 KiB
+   */
+  413: unknown
+  /**
+   * Account lookup unavailable
+   */
+  503: unknown
+}
+
+export type ResolveCccStaffAccountError =
+  ResolveCccStaffAccountErrors[keyof ResolveCccStaffAccountErrors]
+
+export type ResolveCccStaffAccountResponses = {
+  /**
+   * Verified active account, without granting access
+   */
+  200: {
+    account_id: string
+    display_name?: string
+  }
+}
+
+export type ResolveCccStaffAccountResponse =
+  ResolveCccStaffAccountResponses[keyof ResolveCccStaffAccountResponses]
 
 export type GetCccPreviewMediaBytesData = {
   body?: never
@@ -19500,7 +21268,7 @@ export type GetCccWebsiteRootPresentationData = {
   path?: never
   query: {
     path: '/hub/models/' | '/hub/workflows/' | '/hub/apps/'
-    locale?: 'en' | 'zh-CN'
+    locale?: 'en' | 'zh-CN' | 'ja'
     /**
      * Live revision selected once at page entry. Redis requires both this revision and the selected authority pin. On an origin miss the revision must match current Live.
      */
@@ -19559,7 +21327,7 @@ export type GetCccTypeSchemaResponses = {
   /**
    * Build-coupled OpenAPI 3.0 schema object, type, version and API environment
    */
-  200: Cccjson
+  200: CccTypeSchema
 }
 
 export type GetCccTypeSchemaResponse =
@@ -19602,6 +21370,48 @@ export type GetCccStateResponses = {
 
 export type GetCccStateResponse =
   GetCccStateResponses[keyof GetCccStateResponses]
+
+export type GetCccSiteTagsData = {
+  body?: never
+  path?: never
+  query?: {
+    view?: 'LIVE' | 'DRAFT'
+    now?: string
+  }
+  url: '/api/v1/catalog/tags'
+}
+
+export type GetCccSiteTagsErrors = {
+  /**
+   * Invalid, repeated or unsupported query parameter; or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid)
+   */
+  400: ErrorResponse
+  /**
+   * No valid credential, or an `Authorization` header, `X-API-Key` header or `?token=` next to the session cookie that could not be read, which is refused rather than answered with the session. `code` is `UNAUTHORIZED`.
+   */
+  401: ErrorResponse
+  /**
+   * A refused request. For a web session, `code` is `workspace_access_denied` (the selected workspace is unknown, deleted, or the user is not a member; the three look the same), `no_workspace_access` (the account has no personal workspace and is a member of no live workspace), `origin_not_allowed` or `cross_site_request`; see the `WebSessionAuth` scheme. For any credential, `sso_required` means an SSO organization holds the account (its email is on the organization's verified domains) and the credential is not an SSO sign-in, or the workspace is an SSO organization's and the account is not on its domains or the credential is not an SSO sign-in; `organization_id`, when present, names the organization to sign in with. `account_outside_organization` means the workspace is an SSO organization's and the account is on none of its domains, so no sign-in admits it; `organization_id` names the workspace's organization. `personal_workspace_disabled` means the workspace is the account's personal one and an SSO organization holds the account, so it cannot use it; `organization_id` names that organization. `FORBIDDEN` is the route's own authorization check failing, such as an unverified email. On `GET /api/billing/churnkey/auth`, `NOT_ORIGINAL_OWNER` means the caller is not the workspace's creator; it is returned only when the rollout mode is `creator`. A credential this route does not take gets AuthTypeNotAllowedError instead, and so does the session while `web_session_enabled` is off for the user, unless the operation says it takes the session whatever `web_session_enabled` says.
+   */
+  403: ForbiddenError
+  /**
+   * Catalog unavailable or tag budget exceeded
+   */
+  503: unknown
+}
+
+export type GetCccSiteTagsError =
+  GetCccSiteTagsErrors[keyof GetCccSiteTagsErrors]
+
+export type GetCccSiteTagsResponses = {
+  /**
+   * Complete tag usage with Draft generation
+   */
+  200: CccSiteTagUsage
+}
+
+export type GetCccSiteTagsResponse =
+  GetCccSiteTagsResponses[keyof GetCccSiteTagsResponses]
 
 export type GetLegacyUserdataV2Data = {
   body?: never
@@ -19906,6 +21716,18 @@ export type ViewFileData = {
      */
     res?: number
     /**
+     * `false` answers `200` with the signed link as JSON
+     * (`ViewFileURLResponse`) instead of the `302` to it, after the same
+     * sign-in, workspace and visibility checks. For a page on another
+     * site that reads the file with `fetch`: a page cannot read a 302's
+     * `Location`, and the browser sends `Origin: null` to storage after
+     * following the redirect across sites, which storage refuses. Any
+     * other value, or none, answers the `302`. `channel`, and `res` on
+     * a raster image, answer with the image bytes either way.
+     *
+     */
+    redirect?: string
+    /**
      * The workspace a media request reads from, where a media tag cannot send `X-Comfy-Workspace-ID`; see the `MediaWorkspaceID` parameter.
      */
     workspace_id?: string
@@ -19940,9 +21762,9 @@ export type ViewFileError = ViewFileErrors[keyof ViewFileErrors]
 
 export type ViewFileResponses = {
   /**
-   * Resized JPEG thumbnail (returned when res parameter is used)
+   * Success - File content returned (used when channel or res parameter is present), or, with `redirect=false`, the signed link as JSON with `Cache-Control: no-store`.
    */
-  200: Blob | File
+  200: ViewFileUrlResponse
 }
 
 export type ViewFileResponse = ViewFileResponses[keyof ViewFileResponses]
@@ -22259,6 +24081,10 @@ export type GetOAuthAuthorizeErrors = {
    */
   400: ErrorResponse
   /**
+   * `code` `login_required`: a resume request (`oauth_request_id` present) that is not a browser top-level navigation (Accept does not prefer text/html, as with the consent page's fetch) and has no signed-in session, or one whose email is unverified while email verification is on. The request stays open, so the client sends the user to sign in and resumes it. A browser navigation in the same state gets the 302 to login instead.
+   */
+  401: ErrorResponse
+  /**
    * OAuth disabled
    */
   404: ErrorResponse
@@ -22292,7 +24118,7 @@ export type PostOAuthAuthorizeData = {
 
 export type PostOAuthAuthorizeErrors = {
   /**
-   * Bad request (CSRF mismatch, expired/consumed request, inaccessible workspace, no signed-in user), or `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid).
+   * Bad request (CSRF mismatch, expired/consumed request, inaccessible workspace, no signed-in user), `code` `workspace_id_invalid` (see SessionWorkspaceIDInvalid), or `code` `login_required`: the user signed out of all devices after the sign-in behind this request (the web session's or the Firebase token's `auth_time`), or the request uses a credential with no sign-in time (API key, Cloud JWT, OAuth token) after such a sign-out. Nothing is recorded and the request stays open, so the user can sign in again and approve it.
    */
   400: ErrorResponse
   /**
@@ -22353,6 +24179,39 @@ export type PostOAuthRegisterResponses = {
 
 export type PostOAuthRegisterResponse =
   PostOAuthRegisterResponses[keyof PostOAuthRegisterResponses]
+
+export type PostOAuthRevokeData = {
+  body: {
+    client_id: string
+    client_secret?: string
+    token: string
+    token_type_hint?: string
+  }
+  path?: never
+  query?: never
+  url: '/oauth/revoke'
+}
+
+export type PostOAuthRevokeErrors = {
+  /**
+   * RFC 6749 §5.2 error
+   */
+  400: OAuthTokenError
+  /**
+   * Revocation failed; retry
+   */
+  500: ErrorResponse
+}
+
+export type PostOAuthRevokeError =
+  PostOAuthRevokeErrors[keyof PostOAuthRevokeErrors]
+
+export type PostOAuthRevokeResponses = {
+  /**
+   * Revoked, or nothing to revoke
+   */
+  200: unknown
+}
 
 export type PostOAuthTokenData = {
   body: {

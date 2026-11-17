@@ -181,6 +181,8 @@ const CAPABILITIES = {
     can_manage_subscription: false,
     can_open_plans: false,
     can_run_workflows: false,
+    can_set_budgets: false,
+    can_set_hard_caps: false,
     can_upgrade: false
   } satisfies BillingCapabilities,
   rollout_defaults_applied: {
@@ -605,9 +607,7 @@ describe.for([
   { name: 'false', features: { unified_web_session: false } }
 ])('billing SDK rails with unified_web_session $name', ({ features }) => {
   const BILLING_SDK_RAILS = {
-    unified_cloud_auth: true,
-    billing_sdk_topup_enabled: true,
-    billing_sdk_subscription_enabled: true
+    unified_cloud_auth: true
   }
 
   const billingStatusRead = (token: string): RecordedRequest => ({

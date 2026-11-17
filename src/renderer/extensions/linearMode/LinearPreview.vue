@@ -27,7 +27,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()
 const { isBuilderMode, isArrangeMode } = useAppMode()
-const { allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
+const { outputs, allOutputs, isWorkflowActive, cancelActiveWorkflowJobs } =
   useOutputHistory()
 const { runButtonClick, mobile } = defineProps<{
   runButtonClick?: (e: Event) => void
@@ -60,8 +60,10 @@ const selectedItemMenuEntries = computed<MenuItem[]>(() => {
       : []),
     {
       icon: 'icon-[lucide--trash-2]',
-      label: t('linearMode.deleteAllAssets'),
-      command: () => mediaActions.deleteAssets(item)
+      label: t('g.delete'),
+      command: async () => {
+        if (await mediaActions.deleteAssets(item)) await outputs.invalidate()
+      }
     }
   ]
 })
