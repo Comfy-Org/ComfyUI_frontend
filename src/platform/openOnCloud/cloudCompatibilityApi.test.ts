@@ -240,7 +240,7 @@ describe(checkCloudCompatibility, () => {
     expect(requestBody().node_types).toEqual(['ImpactWildcard', 'KSampler'])
   })
 
-  it('returns no verdict when a loader that is not installed locally picked a model', async () => {
+  it('identifies a missing local loader that prevents the Cloud check', async () => {
     const missing = new LGraphNode('ImpactCheckpointLoader')
     missing.last_serialization = fromPartial({
       type: 'ImpactCheckpointLoader',
@@ -248,7 +248,10 @@ describe(checkCloudCompatibility, () => {
     })
     workflowHas(missing)
 
-    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'unreadableModelLoader',
+      nodeType: 'ImpactCheckpointLoader'
+    })
     expect(fetch).not.toHaveBeenCalled()
   })
 

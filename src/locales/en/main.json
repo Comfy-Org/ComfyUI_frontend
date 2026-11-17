@@ -131,6 +131,9 @@
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
     "resizeFromTopLeft": "Resize from top-left corner",
+    "resizePreviewHeight": "Resize preview height",
+    "resizeNumberedPreviewHeight": "Resize preview {index} height",
+    "resizeWidgetHeight": "Resize {name} height",
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
@@ -3053,6 +3056,7 @@
       "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
       "openPaymentPage": "Open payment page",
       "planRequiredFreeRuns": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used.",
+      "planRequiredContactSales": "Buying credits doesn't restart your plan. Contact sales to renew it.",
       "planRequiredResubscribe": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
       "planRequiredSubscribe": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
@@ -4358,7 +4362,8 @@
       "title": "Missing {count} model | Missing {count} models",
       "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
     },
-    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again."
+    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
   "selectionToolbox": {
     "executeButton": {
@@ -4387,6 +4392,8 @@
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "precisionLimit": "Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)",
+    "selectFolder": "Folder: {name}",
+    "backFromFolder": "Back: {name}",
     "uploadSelect": {
       "placeholder": "Select...",
       "placeholderImage": "Select image...",
@@ -6583,6 +6590,7 @@
     "planLine": {
       "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "ended_sales_managed": "Buying credits doesn't restart your plan. Contact sales to renew it.",
       "free_runs": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
     },
     "credits": "{credits} credits",

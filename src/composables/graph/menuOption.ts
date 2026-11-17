@@ -1,4 +1,7 @@
+import type { NodeMenuItemId } from '@/lib/litegraph/src/types/nodeMenu'
+
 export interface MenuOption {
+  id?: NodeMenuItemId
   label?: string
   icon?: string
   shortcut?: string
@@ -8,7 +11,6 @@ export interface MenuOption {
   submenu?: SubMenuOption[]
   badge?: BadgeVariant
   disabled?: boolean
-  source?: 'litegraph' | 'vue'
   isColorPicker?: boolean
   isShapePicker?: boolean
 }

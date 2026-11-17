@@ -6,7 +6,8 @@ import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEna
 
 import {
   usePlatformBillingLink,
-  usePlatformHandoff
+  usePlatformHandoff,
+  usePlatformPlansLink
 } from './usePlatformHandoff'
 
 const distribution = vi.hoisted(() => ({ isCloud: false, isDesktop: false }))
@@ -130,5 +131,46 @@ describe('usePlatformBillingLink', () => {
     setLocalBillingWebEnabled(true)
 
     expect(link.href.value).toBeUndefined()
+  })
+})
+
+describe('usePlatformPlansLink', () => {
+  afterEach(() => {
+    Object.assign(distribution, { isCloud: false, isDesktop: false })
+    setLocalBillingWebEnabled(false)
+  })
+
+  it.for([
+    { where: 'Cloud', cloud: true, flag: true },
+    { where: 'local web, flag off', cloud: false, flag: false }
+  ])('is a plain link to the Plans page on $where', ({ cloud, flag }) => {
+    distribution.isCloud = cloud
+    setLocalBillingWebEnabled(flag)
+    const link = usePlatformPlansLink()
+
+    link.open()
+
+    expect(new URL(link.href.value ?? '').pathname).toBe(
+      '/profile/billing/plans'
+    )
+    expect(link.button.value).toMatchObject({ as: 'a', target: '_blank' })
+    expect(openPlatformBillingHandoff).not.toHaveBeenCalled()
+  })
+
+  it('has no URL and opens the Plans page through a handoff on local web with the flag on', () => {
+    setLocalBillingWebEnabled(true)
+    const link = usePlatformPlansLink()
+
+    link.open()
+
+    expect(link.href.value).toBeUndefined()
+    expect(link.button.value).toEqual({ as: 'button' })
+    expect(openPlatformBillingHandoff).toHaveBeenCalledExactlyOnceWith('plans')
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        operation: 'platform_handoff',
+        target: 'plans'
+      })
+    )
   })
 })

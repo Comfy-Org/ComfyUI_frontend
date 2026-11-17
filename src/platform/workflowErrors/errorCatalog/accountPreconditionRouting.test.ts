@@ -4,6 +4,7 @@ import {
   isAccountPreconditionCatalogId,
   preconditionForCatalogId,
   promptErrorHasLockedCredits,
+  promptRefusalPrecondition,
   resolveAccountPrecondition
 } from './accountPreconditionRouting'
 import {
@@ -187,5 +188,33 @@ describe('promptErrorHasLockedCredits', () => {
     )
     expect(promptErrorHasLockedCredits('a plain string error')).toBe(false)
     expect(promptErrorHasLockedCredits(null)).toBe(false)
+  })
+})
+
+describe('promptRefusalPrecondition', () => {
+  it.for([
+    ['subscription_inactive', 'subscription'],
+    ['no_funds', 'credits']
+  ] as const)(
+    'routes the served reason %s to the %s precondition',
+    ([reason, precondition]) => {
+      expect(
+        promptRefusalPrecondition({
+          type: 'PAYMENT_REQUIRED',
+          message: 'Subscription or credits required to queue workflows',
+          reason
+        })
+      ).toBe(precondition)
+    }
+  )
+
+  it.for([
+    [{ type: 'PAYMENT_REQUIRED', reason: 'manual_block' }],
+    [{ type: 'PAYMENT_REQUIRED', reason: 7 }],
+    [{ type: 'PAYMENT_REQUIRED' }],
+    ['a plain string error'],
+    [null]
+  ])('names no precondition for %o', ([error]) => {
+    expect(promptRefusalPrecondition(error)).toBeUndefined()
   })
 })

@@ -133,12 +133,8 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
   // funnel it through normalizeHostedBillingDestination before trusting it.
   hosted_billing_destination?: string
-  unified_cloud_auth?: boolean
-  unified_web_session?: boolean
   web_session_lapse_recovery_enabled?: boolean
   local_web_sso?: boolean
-  billing_sdk_topup_enabled?: boolean
-  billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
   member_credit_limits_enabled?: boolean
   billing_new_ux_enabled?: boolean

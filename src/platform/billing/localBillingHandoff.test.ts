@@ -311,6 +311,43 @@ describe('issueLocalBillingHandoff', () => {
       expect(useToast().error).not.toHaveBeenCalled()
     })
 
+    it('opens the Platform page a view names, with the token still in the fragment', async () => {
+      const { tab } = reservedTab()
+      respondToFetch(HANDOFFS, issued)
+
+      await openPlatformBillingHandoff('plans')
+
+      const opened = new URL(tab.location.href)
+      expect(opened.searchParams.get('view')).toBe('plans')
+      expect(opened.hash).toBe('#token=abc')
+      const [request] = fetchRequests(HANDOFFS)
+      const body = JSON.parse(String(request.body))
+      expect(body.receiver).toBe('platform')
+      expect(body).not.toHaveProperty('intent')
+    })
+
+    it('closes the tab and shows the generic message when the issued URL cannot carry the view', async () => {
+      const { tab } = reservedTab()
+      respondToFetch(HANDOFFS, () =>
+        Response.json(
+          {
+            entry_url: 'https://',
+            expires_at: '2026-11-11T00:01:00Z',
+            request_id: 'req-1'
+          },
+          { status: 201 }
+        )
+      )
+
+      await openPlatformBillingHandoff('plans')
+
+      expect(tab.close).toHaveBeenCalledOnce()
+      expect(tab.location.href).toBe('')
+      expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
+        'subscription.billingPortalUnavailable'
+      )
+    })
+
     it.for([
       {
         name: 'the server message when Cloud explained the refusal',
@@ -453,6 +490,24 @@ describe('issueLocalBillingHandoff', () => {
       )
       expect(open).toHaveBeenCalledExactlyOnceWith(ENTRY_URL, '_blank')
       expect(fetchRequests(HANDOFFS)).toHaveLength(0)
+    })
+
+    it('opens the Platform page a view names in the system browser, through the same Platform handoff', async () => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
+
+      await openPlatformBillingHandoff('plans')
+
+      expect(issue).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        'platform',
+        undefined,
+        undefined
+      )
+      const [[url]] = open.mock.calls
+      const opened = new URL(String(url))
+      expect(opened.searchParams.get('view')).toBe('plans')
+      expect(opened.hash).toBe('#token=abc')
     })
 
     it.for([

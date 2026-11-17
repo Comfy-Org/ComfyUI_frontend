@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -53,6 +52,7 @@ describe('auth token priority chain', () => {
         return vi.fn()
       }
     )
+    vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
     store = useAuthStore()
     useWorkspaceAuthStore().destroy()
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
@@ -69,7 +69,6 @@ describe('auth token priority chain', () => {
     vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken).mockResolvedValue(
       null
     )
-    vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
     vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext).mockImplementation(
       () => {}
     )
@@ -86,20 +85,6 @@ describe('auth token priority chain', () => {
   })
 
   describe('getAuthHeader priority', () => {
-    it('returns workspace auth header when workspace is active', async () => {
-      vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
-        {
-          Authorization: 'Bearer workspace-token'
-        }
-      )
-
-      const header = await store.getAuthHeader()
-
-      expect(header).toEqual({
-        Authorization: 'Bearer workspace-token'
-      })
-    })
-
     it('returns Firebase token when workspace is not active but user is authenticated', async () => {
       vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
         null
@@ -146,7 +131,8 @@ describe('auth token priority chain', () => {
       expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
     })
 
-    it('returns API key when neither workspace nor Firebase are available', async () => {
+    it('returns API key outside Cloud when Firebase is unavailable', async () => {
+      mockDistributionTypes.isCloud = false
       authStateCallback(null)
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'test-key'
@@ -167,20 +153,8 @@ describe('auth token priority chain', () => {
   })
 
   describe('getAuthToken priority', () => {
-    it('returns workspace token when workspace is active', async () => {
-      vi.mocked(useWorkspaceAuthStore().getWorkspaceToken).mockReturnValue(
-        'workspace-raw-token'
-      )
-
-      const token = await store.getAuthToken()
-
-      expect(token).toBe('workspace-raw-token')
-    })
-
-    it('returns Firebase token when workspace token is not available', async () => {
-      vi.mocked(useWorkspaceAuthStore().getWorkspaceToken).mockReturnValue(
-        undefined
-      )
+    it('returns Firebase token outside Cloud', async () => {
+      mockDistributionTypes.isCloud = false
 
       const token = await store.getAuthToken()
 
@@ -365,23 +339,15 @@ describe('auth token priority chain', () => {
     })
   })
 
-  describe('unified login mint wiring', () => {
-    it('mints the unified Cloud JWT when a cloud user signs in', () => {
-      // beforeEach signs in mockUser via the onAuthStateChanged callback.
-      expect(useWorkspaceAuthStore().mintAtLogin).toHaveBeenCalled()
-    })
-
-    it('does not mint on sign-out', () => {
-      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockClear()
+  describe('account-scoped state on identity changes', () => {
+    it('clears the workspace context on sign-out', () => {
       authStateCallback(null)
-      expect(useWorkspaceAuthStore().mintAtLogin).not.toHaveBeenCalled()
       expect(useWorkspaceAuthStore().clearWorkspaceContext).toHaveBeenCalled()
     })
 
-    it('clears account-scoped state before minting for a different user', () => {
+    it('clears account-scoped state for a different user', () => {
       vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext).mockClear()
       vi.mocked(useTeamWorkspaceStore().resetForIdentityChange).mockClear()
-      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockClear()
       const nextUser = {
         ...mockUser,
         uid: 'different-user-id',
@@ -396,14 +362,6 @@ describe('auth token priority chain', () => {
       expect(
         useTeamWorkspaceStore().resetForIdentityChange
       ).toHaveBeenCalledOnce()
-      expect(useWorkspaceAuthStore().mintAtLogin).toHaveBeenCalledOnce()
-      expect(
-        vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext).mock
-          .invocationCallOrder[0]
-      ).toBeLessThan(
-        vi.mocked(useWorkspaceAuthStore().mintAtLogin).mock
-          .invocationCallOrder[0]
-      )
     })
 
     it('keeps account-scoped state for a repeated callback with the same uid', () => {
@@ -421,14 +379,9 @@ describe('auth token priority chain', () => {
     })
   })
 
-  describe('unified cloud auth (flag ON)', () => {
-    beforeEach(() => {
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-    })
-
+  describe('unified cloud auth on Cloud', () => {
     it('getAuthHeader returns only the unified Cloud JWT, never Firebase or API key', async () => {
       useWorkspaceAuthStore().unifiedToken = 'unified-jwt'
-      // Even with the legacy sources available, the unified branch wins.
       vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
         {
           Authorization: 'Bearer workspace-token'
@@ -561,6 +514,40 @@ describe('auth token priority chain', () => {
       })
 
       await expect(store.getAuthHeader()).resolves.toBeNull()
+    })
+
+    const holdEarlierStoredKey = () => {
+      const apiKeyStore = useApiKeyAuthStore()
+      let storedKeyHeader: ApiKeyAuthHeader | null = {
+        'X-API-KEY': 'earlier-key'
+      }
+      vi.mocked(apiKeyStore.getApiKey).mockReturnValue('earlier-key')
+      vi.mocked(apiKeyStore.getAuthHeader).mockImplementation(
+        () => storedKeyHeader
+      )
+      vi.mocked(apiKeyStore.clearStoredApiKey).mockImplementation(async () => {
+        storedKeyHeader = null
+      })
+      useWorkspaceAuthStore().unifiedToken = null
+      return apiKeyStore
+    }
+
+    it('answers later requests with no credential after Firebase ends the sign-in on its own', async () => {
+      holdEarlierStoredKey()
+
+      authStateCallback(null)
+
+      await expect(store.getAuthHeader()).resolves.toBeNull()
+      await expect(store.getWorkspaceAuthHeader()).resolves.toBeNull()
+    })
+
+    it('keeps the stored API key off Cloud when Firebase ends the sign-in', () => {
+      mockDistributionTypes.isCloud = false
+      const apiKeyStore = holdEarlierStoredKey()
+
+      authStateCallback(null)
+
+      expect(apiKeyStore.clearStoredApiKey).not.toHaveBeenCalled()
     })
 
     it('getAuthHeader falls back to the Firebase token when the unified mint fails', async () => {
@@ -710,7 +697,6 @@ describe('auth token priority chain', () => {
       )
       authStateCallback({ ...mockUser, uid: 'concurrent-user' })
       useWorkspaceAuthStore().unifiedToken = null
-      expect(useWorkspaceAuthStore().mintAtLogin).toHaveBeenCalledTimes(1)
 
       const header1Promise = store.getAuthHeader()
       const header2Promise = store.getAuthHeader()
@@ -799,7 +785,6 @@ describe('auth token priority chain', () => {
       authStateCallback({ ...mockUser, uid: 'user-a' })
       useWorkspaceAuthStore().unifiedToken = null
 
-      // Started while A is current and A's mint is still in flight.
       const headerPromise = store.getAuthHeader()
 
       let resolveB: (minted: boolean) => void = () => {}
@@ -814,12 +799,10 @@ describe('auth token priority chain', () => {
         email: 'b@example.com'
       })
 
-      // B's mint commits while A's original call is still waiting.
       useWorkspaceAuthStore().unifiedToken = 'b-token'
       resolveB(true)
       await Promise.resolve()
 
-      // A's stale mint only resolves (failed) after the switch.
       resolveA(false)
       const header = await headerPromise
 
@@ -837,7 +820,6 @@ describe('auth token priority chain', () => {
       authStateCallback({ ...mockUser, uid: 'user-a' })
       useWorkspaceAuthStore().unifiedToken = null
 
-      // Started while A is current and A's mint is still in flight.
       const tokenPromise = store.getAuthToken()
 
       let resolveB: (minted: boolean) => void = () => {}
@@ -852,12 +834,10 @@ describe('auth token priority chain', () => {
         email: 'b@example.com'
       })
 
-      // B's mint commits while A's original call is still waiting.
       useWorkspaceAuthStore().unifiedToken = 'b-token'
       resolveB(true)
       await Promise.resolve()
 
-      // A's stale mint only resolves (failed) after the switch.
       resolveA(false)
       const token = await tokenPromise
 
