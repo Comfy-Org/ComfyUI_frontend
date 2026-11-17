@@ -1250,6 +1250,7 @@ describe('BillingTab', () => {
       ] as const)(
         'tells an ended $planKind workspace how its plan comes back under the credit balance',
         ({ planKind, note }) => {
+          vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
           arrangeOnCloud({ ...ended, subscriptionState: 'ended', planKind })
 
           expect(

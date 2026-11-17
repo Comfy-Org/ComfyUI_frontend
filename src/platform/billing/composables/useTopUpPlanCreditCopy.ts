@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { AddCreditsPlanLine } from '@comfyorg/account-core/billing'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { planCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 import type { PlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -28,6 +29,7 @@ export function usePlanCreditLine() {
   const { isInitialized, subscriptionState } = useBillingContext()
   const { canTopUp, planKind } = useBillingCapabilities()
   const { available: freeRunsRemaining } = useFreeTierQuota()
+  const { flags } = useFeatureFlags()
 
   return computed(() =>
     planCreditLine({
@@ -35,7 +37,7 @@ export function usePlanCreditLine() {
       isBillingInitialized: isInitialized.value,
       canTopUp: canTopUp.value,
       subscriptionState: subscriptionState.value,
-      planKind: planKind.value,
+      planKind: flags.billingNewUxEnabled ? planKind.value : null,
       freeRunsRemaining: freeRunsRemaining.value
     })
   )
