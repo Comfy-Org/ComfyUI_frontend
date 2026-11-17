@@ -134,6 +134,10 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.teamCreditStops)
   )
 
+  const subscriptionPaymentRecovery = computed(() =>
+    toValue(activeContext.value.subscriptionPaymentRecovery)
+  )
+
   const currentTeamCreditStop = computed(() =>
     toValue(activeContext.value.currentTeamCreditStop)
   )
@@ -206,6 +210,9 @@ function useBillingContextInternal(): BillingContext {
   )
   const periodCreditGrant = computed(() =>
     toValue(activeContext.value.periodCreditGrant)
+  )
+  const nextCreditRefillAt = computed(() =>
+    toValue(activeContext.value.nextCreditRefillAt)
   )
 
   function getMaxSeats(tierKey: TierKey): number {
@@ -462,6 +469,7 @@ function useBillingContextInternal(): BillingContext {
     plans,
     currentPlanSlug,
     teamCreditStops,
+    subscriptionPaymentRecovery,
     currentTeamCreditStop,
     maxSeats,
     occupiedSeats,
@@ -480,6 +488,7 @@ function useBillingContextInternal(): BillingContext {
     renewalDate,
     renewalInvoice,
     periodCreditGrant,
+    nextCreditRefillAt,
     getMaxSeats,
 
     initialize,

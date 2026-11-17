@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, provide, ref, toRef, toValue } from 'vue'
+import { computed, provide, ref, toRef, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@comfyorg/viewport3d/load3d/constants'
@@ -11,9 +11,10 @@ import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/compo
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
-import { useAssetsStore } from '@/stores/assetsStore'
+import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { AssetKind } from '@/types/widgetTypes'
+import { pagedItems } from '@/utils/pagedList'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
@@ -31,6 +32,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const inputId = useId()
 
 provide(
   AssetKindKey,
@@ -55,7 +57,6 @@ const stringModelValue = computed({
 })
 
 const { t } = useI18n()
-const outputAssets = useAssetsStore().outputAssets
 
 const combinedProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
@@ -70,31 +71,29 @@ const getAssetData = () => {
   return null
 }
 const assetData = getAssetData()
+const filterSelected = ref('all')
+const ownershipSelected = ref<OwnershipOption>('all')
+const baseModelSelected = ref<Set<string>>(new Set())
 
 const {
-  dropdownItems,
-  displayItems,
-  filterSelected,
+  dropdownItems: items,
   filterOptions,
-  ownershipSelected,
-  showOwnershipFilter,
   ownershipOptions,
-  baseModelSelected,
-  showBaseModelFilter,
   baseModelOptions,
-  selectedSet
+  selectedSet: selected
 } = useWidgetSelectItems({
-  values: () => props.widget.options?.values as unknown[] | undefined,
   getOptionLabel: () => props.widget.options?.getOptionLabel,
   modelValue: stringModelValue,
   assetKind: () => props.assetKind,
-  outputMediaAssets: outputAssets,
   assetData,
-  isAssetMode: () => props.isAssetMode
+  isAssetMode: () => props.isAssetMode ?? false,
+  filterSelected,
+  ownershipSelected,
+  baseModelSelected
 })
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
-  dropdownItems,
+  dropdownItems: () => pagedItems(items.value),
   locatorId: props.widget.nodeLocatorId,
   modelValue: stringModelValue,
   uploadFolder: () => props.uploadFolder,
@@ -102,7 +101,7 @@ const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
   widget: () => props.widget
 })
 
-const mediaPlaceholder = computed(() => {
+const placeholder = computed(() => {
   const options = props.widget.options
 
   if (options?.placeholder) {
@@ -132,9 +131,7 @@ const uploadable = computed(() => {
   return props.allowUpload === true
 })
 
-const acceptTypes = computed(() => {
-  // Be permissive with accept types because backend uses libraries
-  // that can handle a wide range of formats
+const accept = computed(() => {
   switch (props.assetKind) {
     case 'image':
       return 'image/*,.exr'
@@ -160,29 +157,26 @@ async function updateFiles(files: File[]) {
 </script>
 
 <template>
-  <WidgetLayoutField :widget>
+  <WidgetLayoutField :widget :input-id root-class="h-auto">
     <FormDropdown
       v-model:filter-selected="filterSelected"
       v-model:layout-mode="layoutMode"
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
-      :selected="selectedSet"
-      :items="dropdownItems"
-      :display-items="displayItems"
-      :placeholder="mediaPlaceholder"
+      :input-id
+      :selected
+      :items
+      :placeholder
       :multiple="false"
       :uploadable
-      :accept="acceptTypes"
+      :accept
       :filter-options
-      :show-ownership-filter
+      :show-ownership-filter="props.isAssetMode"
       :ownership-options
-      :show-base-model-filter
+      :show-base-model-filter="props.isAssetMode"
       :base-model-options
       :is-uploading
       v-bind="combinedProps"
-      :loading-more="toValue(outputAssets.isLoading)"
-      :on-load-more="() => outputAssets.loadMore()"
-      :can-load-more="toValue(outputAssets.hasMore)"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"

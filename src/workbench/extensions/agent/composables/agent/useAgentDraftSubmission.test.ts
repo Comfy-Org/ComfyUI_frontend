@@ -151,6 +151,23 @@ describe('Agent draft submission', () => {
     expect(composer.prompt).toEqual(prompt)
   })
 
+  it('restores an attached error reference and its origin after a failed send', async () => {
+    const { composer, submit, pending } = setup()
+    composer.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+    const prompt = composer.prompt
+    const sending = submit()
+    pending.resolve(false)
+    await sending
+    expect(composer.prompt).toEqual(prompt)
+    expect(composer.promptOrigin).toBe('error_context')
+  })
+
   it('clears the complete draft before sending its snapshot and preserves subsequent typing on success', async () => {
     const { composer, selection, original, submit, send, pending } = setup()
     send.mockImplementation(() => {

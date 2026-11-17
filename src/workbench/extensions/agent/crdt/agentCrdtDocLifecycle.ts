@@ -331,6 +331,12 @@ export class AgentCrdtDocLifecycle {
     this.resetNotifiedGiveUp()
   }
 
+  /** Re-reads the bound document, deferring to a retry or give-up in progress. */
+  refresh(): void {
+    if (this.shouldDeferSubscribe()) return
+    this.resubscribeOrScheduleRetry()
+  }
+
   retry(): boolean {
     const reason = this.recoverableGiveUpReason
     if (reason === null) return false

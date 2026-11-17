@@ -14,6 +14,7 @@ import { computed, createApp, defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -24,6 +25,7 @@ import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
+import type { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 
 const apiEvents: EventTarget = api
 
@@ -59,6 +61,23 @@ vi.mock(
       loadTemplateFromUrl: vi.fn()
     })
   })
+)
+
+const workflowLinkUrlLoader = vi.hoisted(() => ({
+  openWorkflowLinkFromUrl: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['openWorkflowLinkFromUrl']
+  >(async () => 'absent'),
+  isLinkSettled: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
+  >(() => false),
+  hasLinkInFlight: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['hasLinkInFlight']
+  >(() => false)
+}))
+
+vi.mock(
+  import('@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'),
+  () => ({ useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader })
 )
 
 const folderWorkflowsUrlLoader = vi.hoisted(() => ({
@@ -114,7 +133,11 @@ vi.mock<unknown>(import('@/platform/navigation/preservedQueryManager'), () => ({
 vi.mock<unknown>(
   import('@/platform/navigation/preservedQueryNamespaces'),
   () => ({
-    PRESERVED_QUERY_NAMESPACES: { TEMPLATE: 'template', SHARE: 'share' }
+    PRESERVED_QUERY_NAMESPACES: {
+      TEMPLATE: 'template',
+      SHARE: 'share',
+      LOCAL_HANDOFF: 'local_handoff'
+    }
   })
 )
 
@@ -149,11 +172,13 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
 beforeEach(() => {
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
+  openWorkflowMock.mockResolvedValue(true)
 })
 
 describe('useWorkflowPersistenceV2', () => {
@@ -355,6 +380,26 @@ describe('useWorkflowPersistenceV2', () => {
       })
       // Should NOT fall through to loadGraphData (fallbackToLatestDraft)
       expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+    })
+
+    it('falls back to the latest draft when the session workflow does not open', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const savedWorkflow = workflowStore.createTemporary('Unreadable.json')
+      writeActivePath(savedWorkflow.path)
+      openWorkflowMock.mockResolvedValue(false)
+      const draftStore = useWorkflowDraftStoreV2()
+      const fallback = vi
+        .spyOn(draftStore, 'loadPersistedWorkflow')
+        .mockResolvedValue(false)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      const outcome = await initializeWorkflow()
+
+      expect(fallback).toHaveBeenLastCalledWith(
+        expect.objectContaining({ fallbackToLatestDraft: true })
+      )
+      expect(outcome).not.toBe('restored')
     })
 
     it('prefers draft over saved workflow when draft exists', async () => {
@@ -816,6 +861,77 @@ describe('useWorkflowPersistenceV2', () => {
         expect(loadBlankWorkflowMock).toHaveBeenCalled()
       }
     )
+
+    it.for(
+      [
+        {
+          name: 'local handoff param in URL',
+          applyIntent: () => (routeMocks.query = { from_local: 'nonce' })
+        },
+        {
+          name: 'local handoff preserved across the sign-in redirect',
+          applyIntent: () =>
+            (preservedQueryMocks.payloads.local_handoff = {
+              from_local: 'nonce'
+            })
+        }
+      ].flatMap((intent) => [
+        { ...intent, openOnCloudEnabled: true, outcome: 'url-intent' },
+        { ...intent, openOnCloudEnabled: false, outcome: 'fresh' }
+      ])
+    )(
+      'reports $outcome with $name while Open on Cloud is $openOnCloudEnabled',
+      async ({ applyIntent, openOnCloudEnabled, outcome }) => {
+        Object.assign(useFeatureFlags().flags, { openOnCloudEnabled })
+        applyIntent()
+
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await expect(initializeWorkflow()).resolves.toBe(outcome)
+      }
+    )
+  })
+
+  describe('a workflow-id link', () => {
+    it('defers Getting Started while a workflow-id link waits for navigation', async () => {
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('pending')
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+
+      await expect(
+        mountWorkflowPersistence().initializeWorkflow()
+      ).resolves.toBe('url-intent')
+    })
+
+    it.for(['opened', 'failed', 'pending'] as const)(
+      'does not fall back to a folder when the workflow-id link result is %s',
+      async (status) => {
+        workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue(status)
+        vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await initializeWorkflow()
+
+        expect(
+          folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    it('keeps restored tabs behind the linked workflow without replacing the active tab', async () => {
+      const store = useWorkflowStore()
+      vi.spyOn(store, 'loadWorkflows').mockResolvedValue()
+      const previous = store.createTemporary('Previous.json')
+      writeTabState([previous.path], 0)
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
+      const { initializeWorkflow, restoreWorkflowTabsState } =
+        mountWorkflowPersistence()
+
+      await initializeWorkflow()
+      await restoreWorkflowTabsState()
+
+      expect(store.openWorkflows).toEqual([previous])
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('a link that names a workflows folder', () => {

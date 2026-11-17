@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { getGridThumbnailUrl, parseImageWidgetValue } from './imageUtil'
+import {
+  extractWidgetStringValue,
+  getGridThumbnailUrl,
+  parseImageWidgetValue
+} from './imageUtil'
 
 describe('getGridThumbnailUrl', () => {
   it('adds a compact preview format to a full-resolution view URL', () => {
@@ -144,4 +148,33 @@ describe('parseImageWidgetValue', () => {
       expect(parseImageWidgetValue(raw)).toEqual(expected)
     }
   )
+})
+
+describe('extractWidgetStringValue', () => {
+  it.for([
+    {
+      name: 'a string value',
+      value: 'sky.png [output]',
+      expected: 'sky.png [output]'
+    },
+    {
+      name: 'an object with a string filename',
+      value: { filename: 'sky.png', subfolder: 'scenes' },
+      expected: 'sky.png'
+    },
+    {
+      name: 'an object with a non-string filename',
+      value: { filename: 7 },
+      expected: undefined
+    },
+    {
+      name: 'an object without a filename',
+      value: { subfolder: 'scenes' },
+      expected: undefined
+    },
+    { name: 'null', value: null, expected: undefined },
+    { name: 'a number', value: 7, expected: undefined }
+  ])('reads $name', ({ value, expected }) => {
+    expect(extractWidgetStringValue(value)).toBe(expected)
+  })
 })

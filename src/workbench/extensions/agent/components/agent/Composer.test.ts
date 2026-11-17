@@ -4,6 +4,8 @@ import type {
   WorkflowReferenceOption
 } from '@/workbench/extensions/agent/types/workflowReference'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import {
   isInaccessible,
   render,
@@ -134,6 +136,135 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
   })
+
+  it('attaches the error context as an inline reference and serializes it into the sent message', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [
+        {
+          category: 'execution_failure',
+          message: 'RuntimeError: boom',
+          nodeId: '5',
+          nodeType: 'KSampler'
+        }
+      ]
+    })
+    const view = mount()
+
+    expect(await screen.findByTestId('error-reference-chip')).toBeVisible()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Can you fix this?')
+    await userEvent.keyboard('{Enter}')
+
+    const sent = view.emitted().send as [string, ...unknown[]][]
+    expect(sent).toHaveLength(1)
+    const [text] = sent[0]
+    expect(text).toContain('Can you fix this?')
+    expect(text).toContain('[Execution failure]')
+    expect(text).toContain('RuntimeError: boom')
+  })
+
+  it('removes the inline error reference on request', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 2,
+      label: 'Missing Inputs',
+      severity: 'warning',
+      problems: [
+        { category: 'missing_media', message: 'image missing' },
+        { category: 'missing_media', message: 'video missing' }
+      ]
+    })
+    mount()
+
+    expect(
+      await screen.findByTestId('error-reference-count')
+    ).toHaveTextContent('2')
+    await userEvent.click(screen.getByTestId('error-reference-remove'))
+
+    expect(screen.queryByTestId('error-reference-chip')).toBeNull()
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('deletes the inline error reference with Backspace', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+    mount()
+
+    await screen.findByTestId('error-reference-chip')
+    const editor = screen.getByRole('textbox')
+    await userEvent.click(editor)
+    await userEvent.keyboard('{Backspace}{Backspace}')
+
+    expect(screen.queryByTestId('error-reference-chip')).toBeNull()
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  function renderComposerWhenPanelOpens() {
+    const selectWorkflowReference = vi.fn(
+      async (workflow: WorkflowReferenceOption) => ({
+        id: workflow.id ?? 'saved-scratch',
+        name: workflow.name
+      })
+    )
+    const Harness = defineComponent({
+      setup() {
+        const panel = useAgentPanelStore()
+        return () =>
+          h('div', [
+            h('button', { type: 'button' }, 'Elsewhere'),
+            panel.isOpen
+              ? h(Composer, {
+                  hasWorkflowTarget: true,
+                  selectWorkflowReference
+                })
+              : null
+          ])
+      }
+    })
+    render(Harness, { global: { plugins: [i18n] } })
+  }
+
+  it.for(['closed', 'open'] as const)(
+    'an error attachment focuses the %s composer after the chip',
+    async (panelState) => {
+      const panel = useAgentPanelStore()
+      if (panelState === 'open') panel.open('topbar_button')
+      const issue: AgentErrorContext = {
+        scope: 'single',
+        label: 'SaveImage failed',
+        count: 1,
+        severity: 'error',
+        problems: [{ category: 'execution_failure', message: 'boom' }]
+      }
+      renderComposerWhenPanelOpens()
+      await nextTick()
+      await userEvent.click(screen.getByRole('button', { name: 'Elsewhere' }))
+
+      useAgentComposerStore().setErrorContext(issue)
+      if (panelState === 'closed') panel.open('error_context')
+      await nextTick()
+
+      const textbox = screen.getByRole('textbox')
+      expect(textbox).toHaveFocus()
+      await userEvent.keyboard('now')
+      const prompt = useAgentComposerStore().prompt
+      expect(prompt.text).toBe(' now')
+      expect(prompt.references[0]).toMatchObject({
+        kind: 'error',
+        textOffset: 0
+      })
+      expect(useAgentComposerStore().pendingCaret).toBeNull()
+    }
+  )
 
   it('blocks all node entry points and explains why while workflow references remain available', async () => {
     const reason = 'Please select a workflow first'
@@ -584,6 +715,52 @@ describe('Composer', () => {
     )
     expect(notCanceled).toBe(true)
     expect(emitted().stop).toBeUndefined()
+  })
+
+  function dispatchComposerEnter(init: KeyboardEventInit) {
+    const pageKeydown = vi.fn()
+    window.addEventListener('keydown', pageKeydown)
+    onTestFinished(() => window.removeEventListener('keydown', pageKeydown))
+    const box = screen.getByRole('textbox')
+    box.focus()
+    const notCanceled = box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+        ...init
+      })
+    )
+    return { pageKeydown, notCanceled }
+  }
+
+  it.for([
+    { chord: 'Ctrl+Enter', init: { ctrlKey: true }, props: {} },
+    { chord: 'Meta+Enter', init: { metaKey: true }, props: {} },
+    {
+      chord: 'Ctrl+Shift+Enter',
+      init: { ctrlKey: true, shiftKey: true },
+      props: {}
+    },
+    {
+      chord: 'Ctrl+Enter while a chat is opening',
+      init: { ctrlKey: true },
+      props: { openingChat: true }
+    }
+  ])('keeps $chord away from page keybindings', ({ init, props }) => {
+    mount(props)
+    const { pageKeydown } = dispatchComposerEnter(init)
+    expect(pageKeydown).not.toHaveBeenCalled()
+  })
+
+  it('keeps Ctrl+Enter during IME composition away from page keybindings without canceling it', () => {
+    mount()
+    const { pageKeydown, notCanceled } = dispatchComposerEnter({
+      ctrlKey: true,
+      isComposing: true
+    })
+    expect(pageKeydown).not.toHaveBeenCalled()
+    expect(notCanceled).toBe(true)
   })
 
   it('lets Escape close the mention list before it stops a run', async () => {

@@ -64,7 +64,7 @@
         :aria-label="$t('credits.topUp.youGet')"
         input-class="text-lg font-medium"
         :min="0"
-        :max="usdToCredits(maxAmount)"
+        :max="maxCredits"
         :step="usdToCredits(getStepAmount(creditsToUsd(credits)))"
         :format-options="{ maximumFractionDigits: 0 }"
         @update:model-value="emit('credits', $event)"
@@ -85,14 +85,21 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import FormNumberField from '@/components/common/FormNumberField.vue'
 
-const { payAmount, credits, selectedPreset, maxAmount, planCreditCopy } =
-  defineProps<{
-    payAmount: number
-    credits: number
-    selectedPreset: number | null
-    maxAmount: number
-    planCreditCopy: string | null
-  }>()
+const {
+  payAmount,
+  credits,
+  selectedPreset,
+  maxAmount,
+  maxCredits,
+  planCreditCopy
+} = defineProps<{
+  payAmount: number
+  credits: number
+  selectedPreset: number | null
+  maxAmount: number
+  maxCredits: number
+  planCreditCopy: string | null
+}>()
 
 const emit = defineEmits<{
   preset: [amount: number]

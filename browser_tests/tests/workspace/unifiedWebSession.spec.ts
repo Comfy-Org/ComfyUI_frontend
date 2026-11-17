@@ -229,12 +229,13 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
     await expect(page).toHaveURL(/\/cloud\/login/)
   })
 
-  test('[E2E-03] switching workspace mints nothing until the next Run, which uses the new workspace', async ({
+  test('[E2E-03] switching workspace goes over the session, and every later mint and the next Run use the new workspace', async ({
     comfyPage,
     tokenMints
   }) => {
     const page = comfyPage.page
     await mockPromptAccepted(page)
+    let mintsBeforeTeamRead = 0
 
     await test.step('switch to the team workspace', async () => {
       await comfyPage.toast.closeToasts()
@@ -249,11 +250,13 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       )
       await switcherPanel.getByText(TEAM_WORKSPACE_NAME).click()
       await teamRead
+      mintsBeforeTeamRead = tokenMints.length
       await comfyPage.waitForAppReady()
 
-      expect(tokenMints, 'workspace switch minted a token before Run').toEqual(
-        []
-      )
+      expect(
+        tokenMints.filter(({ authorization }) => authorization !== undefined),
+        'the switch exchanged a Firebase token instead of using the session'
+      ).toEqual([])
     })
 
     await test.step('Run in the team workspace', async () => {
@@ -264,9 +267,14 @@ test.describe('Unified web session', { tag: '@cloud' }, () => {
       const headers = await (await promptRequest).allHeaders()
 
       expect(headers[WORKSPACE_HEADER]).toBe(TEAM_WORKSPACE_ID)
-      expect(tokenMints.map(({ workspace }) => workspace)).toEqual([
-        TEAM_WORKSPACE_ID
-      ])
+      expect(
+        new Set(
+          tokenMints
+            .slice(mintsBeforeTeamRead)
+            .map(({ workspace }) => workspace)
+        ),
+        'a token was minted for another workspace after the switch'
+      ).toEqual(new Set([TEAM_WORKSPACE_ID]))
     })
   })
 

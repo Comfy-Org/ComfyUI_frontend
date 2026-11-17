@@ -27,6 +27,7 @@ import { useBillingContext as useSharedBillingContext } from './useBillingContex
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
@@ -280,6 +281,18 @@ describe('useBillingContext', () => {
 
     expect(context.periodCreditGrant.value).toStrictEqual(grant)
   })
+
+  it.for([{ served: '2026-12-01T00:00:00Z' }, { served: undefined }] as const)(
+    'forwards the next credit refill as served ($served)',
+    async ({ served }) => {
+      mockBillingStatus.value.next_credit_refill_at = served
+
+      const context = useBillingContext()
+      await context.initialize()
+
+      expect(context.nextCreditRefillAt.value).toBe(served ?? null)
+    }
+  )
 
   it('exposes initialize action', async () => {
     const { initialize } = useBillingContext()

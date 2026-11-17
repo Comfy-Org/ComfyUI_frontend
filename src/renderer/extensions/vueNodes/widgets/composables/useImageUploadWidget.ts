@@ -1,3 +1,4 @@
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
@@ -57,6 +58,9 @@ export const useImageUploadWidget = () => {
     const isVideo = !!inputOptions.video_upload
     const accept = isVideo ? ACCEPTED_VIDEO_TYPES : ACCEPTED_IMAGE_TYPES
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
+    function showCanvasPreview() {
+      if (isVideo || !LiteGraph.vueNodesMode) showPreview({ block: false })
+    }
 
     const fileFilter = isVideo ? isUploadableVideo : isImageFile
     function alertExtensionlessVideo(files: File[]) {
@@ -136,7 +140,7 @@ export const useImageUploadWidget = () => {
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
-      showPreview({ block: false })
+      showCanvasPreview()
       node.graph?.setDirtyCanvas(true)
     }
 
@@ -154,7 +158,7 @@ export const useImageUploadWidget = () => {
           isAnimated
         })
       }
-      showPreview({ block: false })
+      showCanvasPreview()
     })
 
     return { widget: uploadWidget }

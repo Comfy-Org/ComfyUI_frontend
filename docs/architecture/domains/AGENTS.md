@@ -19,8 +19,8 @@ When `pnpm architecture:check` fails, act on the message:
 When `fallow audit` reports a `boundary-violation`, import a public entry
 point, or move the code so the import is not needed. A domain needs no
 declaration to import another domain's public entry point; the violation means
-a deep import into an enforced domain or an import against role direction. Do not add a
-`fallow-ignore` comment to pass the gate.
+a deep import into an enforced domain. Do not add a `fallow-ignore` comment to
+pass the gate.
 
 Leave unclassified files unclassified. Add a public entry point only together
 with a characterization test that covers it.

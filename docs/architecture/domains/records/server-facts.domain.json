@@ -4,12 +4,10 @@
   "description": "ServerFact carries server-provided gates, receiveServerFact constructs them, and narrowServerFact lets local state withhold a gate without granting it. pendingServerFact marks a client expression that stands in for a server fact until the referenced backend ticket ships it. The shared gate fixture checks that unrelated inputs cannot change a server fact.",
   "modules": [
     {
-      "path": "src/platform/serverFacts/**",
-      "role": "domain"
+      "path": "src/platform/serverFacts/**"
     },
     {
-      "path": "src/utils/__tests__/serverFactGate.ts",
-      "role": "domain"
+      "path": "src/utils/__tests__/serverFactGate.ts"
     }
   ],
   "publicEntryPoints": [

@@ -301,6 +301,8 @@ describe('attachDocOpMinter', () => {
   let refusals: Array<[string, string]>
   let seededPromotedDocs: Set<ReturnType<typeof mint>>
   let dynamicComboDocs: Set<ReturnType<typeof mint>>
+  let unboundLocalIntents: number
+  let unboundVisibleIntents: number
 
   function registeredDynamicComboScenario() {
     const scenario = dynamicComboScenario(graph)
@@ -324,9 +326,13 @@ describe('attachDocOpMinter', () => {
     refusals = []
     seededPromotedDocs = new Set()
     dynamicComboDocs = new Set()
+    unboundLocalIntents = 0
+    unboundVisibleIntents = 0
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      onUnboundLocalIntent: () => unboundLocalIntents++,
+      onUnboundVisibleIntent: () => unboundVisibleIntents++,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => (graphAvailable ? graph : null),
       boundRootGraphId: () => (unbound ? null : rootGraphId),
@@ -569,6 +575,33 @@ describe('attachDocOpMinter', () => {
 
     expect(source.widgets![0].value).toBe(6)
     expect(minted).toEqual([])
+    expect(unboundLocalIntents).toBe(1)
+  })
+
+  it('marks only edits to the bound workflow while its document is unconfirmed', async () => {
+    const { source } = seedGraph(graph)
+    bound = false
+    source.widgets![0].value = 5
+    unbound = true
+    source.widgets![0].value = 6
+    await afterFlush()
+
+    expect(unboundLocalIntents).toBe(1)
+    expect(minted).toEqual([])
+  })
+
+  it('marks an unbound edit to the visible workflow while another one is bound', async () => {
+    const { source } = seedGraph(graph)
+    bound = false
+    rootGraphId = toRootGraphId('other-root-graph')
+    source.widgets![0].value = 5
+    unbound = true
+    source.widgets![0].value = 6
+    await afterFlush()
+
+    expect(unboundLocalIntents).toBe(0)
+    expect(unboundVisibleIntents).toBe(2)
+    expect(minted).toEqual([])
   })
 
   it('snapshots a pasted node after its same-tick configure, folding the widget and field writes into add_node', async () => {
@@ -694,10 +727,7 @@ describe('attachDocOpMinter', () => {
     ).not.toHaveProperty('ghost')
   })
 
-  // Note, PrimitiveNode, Get/Set nodes and blueprint hosts have no catalog
-  // entry: the applier rejects a name-keyed record for them and stores a
-  // positional array opaquely.
-  it('keeps add_node widgets_values positional for a frontend-only node, and the applier takes it', async () => {
+  it('declares a frontend-only node own widget form, so the applier takes a later widget write', async () => {
     const note = new TestNote()
     graph.add(note)
     await afterFlush()
@@ -706,7 +736,10 @@ describe('attachDocOpMinter', () => {
       expect.objectContaining({
         op: 'add_node',
         class_type: 'TestNote',
-        node: expect.objectContaining({ widgets_values: ['a note'] })
+        node: expect.objectContaining({
+          widgets_values: { text: 'a note' },
+          widgets_values_form: { order: ['text'] }
+        })
       })
     ])
     const doc = mint({ nodes: [], links: [] }, CATALOG)
@@ -716,6 +749,22 @@ describe('attachDocOpMinter', () => {
       CATALOG
     )
     expect(outcomes).toEqual([expect.objectContaining({ outcome: 'applied' })])
+
+    expect(
+      applyOutcomes(
+        doc,
+        [
+          {
+            op: 'set_widget',
+            node_id: note.id,
+            widget: 'text',
+            value: 'edited'
+          }
+        ],
+        CATALOG,
+        2
+      )
+    ).toEqual([expect.objectContaining({ outcome: 'applied' })])
     doc.destroy()
   })
 

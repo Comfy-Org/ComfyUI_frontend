@@ -4,76 +4,58 @@
   "description": "Host coordinators and mixed account views compose authentication, billing, and workspace membership. This record contains only previously cataloged modules moved into platform/account by ADR-BILLING-0049; new account helpers remain unclassified.",
   "modules": [
     {
-      "path": "src/platform/account/auth/WorkspaceAuthGate.vue",
-      "role": "presentation"
+      "path": "src/platform/account/auth/WorkspaceAuthGate.vue"
     },
     {
-      "path": "src/platform/account/components/CurrentUserPopoverWorkspace.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/CurrentUserPopoverWorkspace.vue"
     },
     {
-      "path": "src/platform/account/components/SubscriptionPanelContentWorkspace.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/SubscriptionPanelContentWorkspace.vue"
     },
     {
-      "path": "src/platform/account/components/WorkspaceSwitcherPopover.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/WorkspaceSwitcherPopover.vue"
     },
     {
-      "path": "src/platform/account/components/dialogs/InviteMemberDialogContent.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/dialogs/InviteMemberDialogContent.vue"
     },
     {
-      "path": "src/platform/account/components/dialogs/TeamWorkspacesDialogContent.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/dialogs/TeamWorkspacesDialogContent.vue"
     },
     {
-      "path": "src/platform/account/components/dialogs/settings/MembersPanelContent.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/dialogs/settings/MembersPanelContent.vue"
     },
     {
-      "path": "src/platform/account/components/dialogs/settings/PlanCreditsPanelContent.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/dialogs/settings/PlanCreditsPanelContent.vue"
     },
     {
-      "path": "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/dialogs/settings/WorkspaceHeaderMenu.vue"
     },
     {
-      "path": "src/platform/account/components/dialogs/settings/WorkspaceMembersPanelContent.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/dialogs/settings/WorkspaceMembersPanelContent.vue"
     },
     {
-      "path": "src/platform/account/components/dialogs/settings/WorkspaceMenuButton.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/dialogs/settings/WorkspaceMenuButton.vue"
     },
     {
-      "path": "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
-      "role": "presentation"
+      "path": "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue"
     },
     {
-      "path": "src/platform/account/composables/__mocks__/useWorkspaceDialogs.ts",
-      "role": "presentation"
+      "path": "src/platform/account/composables/__mocks__/useWorkspaceDialogs.ts"
     },
     {
-      "path": "src/platform/account/composables/useCreateWorkspaceUrlLoader.ts",
-      "role": "integration"
+      "path": "src/platform/account/composables/useCreateWorkspaceUrlLoader.ts"
     },
     {
-      "path": "src/platform/account/composables/useInviteUrlLoader.ts",
-      "role": "integration"
+      "path": "src/platform/account/composables/useInviteUrlLoader.ts"
     },
     {
-      "path": "src/platform/account/composables/useMembersPanel.ts",
-      "role": "presentation"
+      "path": "src/platform/account/composables/useMembersPanel.ts"
     },
     {
-      "path": "src/platform/account/composables/useWorkspaceDialogs.ts",
-      "role": "presentation"
+      "path": "src/platform/account/composables/useWorkspaceDialogs.ts"
     },
     {
-      "path": "src/platform/account/composables/useWorkspaceMenuItems.ts",
-      "role": "presentation"
+      "path": "src/platform/account/composables/useWorkspaceMenuItems.ts"
     }
   ],
   "publicEntryPoints": [
@@ -84,7 +66,8 @@
     "src/platform/account/components/dialogs/settings/WorkspaceSettingsPanelContent.vue",
     "src/platform/account/composables/useCreateWorkspaceUrlLoader.ts",
     "src/platform/account/composables/useInviteUrlLoader.ts",
-    "src/platform/account/composables/useWorkspaceDialogs.ts"
+    "src/platform/account/composables/useWorkspaceDialogs.ts",
+    "src/platform/account/composables/__mocks__/useWorkspaceDialogs.ts"
   ],
   "characterizationScenarios": [
     {

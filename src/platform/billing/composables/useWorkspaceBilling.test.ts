@@ -434,8 +434,7 @@ describe('useWorkspaceBilling', () => {
           ...real,
           flags: new Proxy(real.flags, {
             get: (target, key) =>
-              key === 'billingSdkSubscriptionRailEnabled' ||
-              Reflect.get(target, key)
+              key === 'billingSdkRailEnabled' || Reflect.get(target, key)
           })
         })
         const sdk = useBillingSdkStore()
@@ -779,6 +778,27 @@ describe('useWorkspaceBilling', () => {
         await billing.fetchBalance()
 
         expect(billing.balance.value?.lowBalance).toBe(expected)
+      }
+    )
+
+    it.for([
+      { case: 'served', served: 844.5 },
+      { case: 'omitted', served: undefined }
+    ])(
+      'passes the display plan balance through as received when $case',
+      async ({ served }) => {
+        mockWorkspaceApi.getBillingBalance.mockResolvedValue({
+          ...positiveBalance,
+          cloud_credit_display_balance_cents: served
+        })
+
+        const billing = setupBilling()
+        await billing.fetchBalance()
+
+        expect(billing.balance.value).toMatchObject({
+          cloudCreditBalanceMicros: 2_000_000,
+          cloudCreditDisplayBalanceCents: served
+        })
       }
     )
 

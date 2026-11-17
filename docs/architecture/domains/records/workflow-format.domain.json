@@ -4,32 +4,22 @@
   "description": "The workflow document contract: zod schemas for workflow JSON and API-format prompts, load-time validation with link repair, the supported workflow-bearing file formats, subgraph flattening, and model-requirement extraction from workflow documents. Open workflows, the workflow store, and graph entity implementation remain external.",
   "modules": [
     {
-      "path": "src/platform/workflow/**",
-      "role": "domain"
+      "path": "src/platform/workflow/**"
     },
     {
-      "path": "src/platform/workflow/validation/composables/**",
-      "role": "application"
+      "path": "src/utils/executionUtil.ts"
     },
     {
-      "path": "src/utils/executionUtil.ts",
-      "role": "application"
+      "path": "src/utils/fileUtil.ts"
     },
     {
-      "path": "src/utils/fileUtil.ts",
-      "role": "infrastructure"
+      "path": "src/utils/jsonUtil.ts"
     },
     {
-      "path": "src/utils/jsonUtil.ts",
-      "role": "domain"
+      "path": "src/utils/linkFixer.ts"
     },
     {
-      "path": "src/utils/linkFixer.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/utils/migration/**",
-      "role": "domain"
+      "path": "src/utils/migration/**"
     }
   ],
   "publicEntryPoints": [],
@@ -74,7 +64,7 @@
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "Serialized workflow JSON accepted by the existing schemas stays accepted so saved workflows, templates, and shared links keep loading.",
-    "workflowSchema typing against litegraph serialisation, LGraph, and widget types, and useWorkflowValidation calling the toast store and linkFixer, remain visible as coupling debt; classification does not grant dependency exceptions."
+    "workflowSchema typing against litegraph serialisation, LGraph, and widget types, and useWorkflowValidation calling the toast store and linkFixer, remain untracked coupling debt; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

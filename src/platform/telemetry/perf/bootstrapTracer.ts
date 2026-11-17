@@ -86,7 +86,13 @@ const BOOTSTRAP_PHASES = {
     'router',
     'sentry-init'
   ],
-  'auth-gate': ['initialized', 'user-store', 'needs-login'],
+  'auth-gate': [
+    'initialized',
+    'identity',
+    'sign-in',
+    'user-store',
+    'needs-login'
+  ],
   bootstrap: [
     'settings',
     'workflows',

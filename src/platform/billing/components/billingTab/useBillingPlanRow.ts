@@ -6,7 +6,7 @@ import { useFreeTierQuota } from '@/platform/billing/subscription/composables/us
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import type { SubscriptionTier } from '@comfyorg/billing-core'
 import { resolveSubscriptionTierKey } from '@/platform/billing/components/subscriptionPanelWorkspace.logic'
-import { derivePlanRow } from '@/platform/billing/components/billingTab/planRow'
+import { derivePlanRow } from '@comfyorg/account-core/billing'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
 

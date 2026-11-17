@@ -61,9 +61,11 @@ import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
 import { createRejectedOpNotifier } from './rejectedOpNotice'
+import type { LostEdits } from './rejectedOpNotice'
 import {
   forgetUnsyncedAtLoad,
-  recordUnsyncedHumanOps
+  recordUnsyncedHumanOps,
+  releaseUnsyncedHumanOpsRecorder
 } from './unsyncedHumanOps'
 
 export { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
@@ -375,6 +377,8 @@ export function useAgentCrdtFollower(
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       follower.value?.enqueueHumanOperations(operations),
+    noteUnboundLocalIntent: (target?: string) =>
+      follower.value?.noteUnboundLocalIntent(target),
     retrySubscription: () => follower.value?.retrySubscription(),
     docInputNames: (nodeId: NodeId) =>
       follower.value?.docInputNames(nodeId) ?? null,
@@ -525,30 +529,61 @@ function startAgentCrdtFollower(
   }
 
   const revertRejectedOps = (
-    outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
+    workflowId: string,
+    rejected: readonly Op[],
+    seq: number | undefined
   ) => {
-    const workflowId = outcome.result.workflowId ?? bridge.subscribedWorkflowId
-    if (workflowId === null) return
-
-    const applied = new Set(outcome.result.applied)
-    const rejected = outcome.ops.filter((op) => !applied.has(op.op_id))
-    if (!isTargetActive.value) {
-      pendingRejected.set(workflowId, [
-        ...(pendingRejected.get(workflowId) ?? []),
-        ...rejected
-      ])
+    if (isTargetActive.value && applyRejectedOps(workflowId, rejected, seq))
       return
-    }
-    if (!applyRejectedOps(workflowId, rejected, outcome.result.seq))
-      pendingRejected.set(workflowId, [
-        ...(pendingRejected.get(workflowId) ?? []),
-        ...rejected
-      ])
+    pendingRejected.set(workflowId, [
+      ...(pendingRejected.get(workflowId) ?? []),
+      ...rejected
+    ])
   }
 
-  const workflowsWithLostOps = new Set<string>()
+  const classifyLostEdits = ({
+    ops,
+    result,
+    resent
+  }: Extract<BatchOutcome, { state: 'acknowledged' }>): LostEdits => {
+    const dropped = new Set(result.lwwDropped)
+    const skipped = new Set(resent ? result.skipped : [])
+    return {
+      overwritten: ops.filter((op) => dropped.has(op.op_id)),
+      unconfirmed: ops.filter(
+        (op) => skipped.has(op.op_id) && !dropped.has(op.op_id)
+      )
+    }
+  }
+
+  const refreshCanonicalDocument = (workflowId: string): void => {
+    if (!isTargetActive.value || workflowId !== subscribedWorkflowId.value)
+      return
+    heldForWorkflowId = workflowId
+    sender.suspend()
+    lifecycle.refresh()
+  }
+
+  const compensateAcknowledgedOps = (
+    outcome: Extract<BatchOutcome, { state: 'acknowledged' }>
+  ) => {
+    const { result } = outcome
+    const lost = classifyLostEdits(outcome)
+    const anyLost = lost.overwritten.length + lost.unconfirmed.length > 0
+    if (anyLost) rejectedOpNotifier.notifyLostEdits(result, lost)
+    const applied = new Set(result.applied)
+    const reverted = result.ok
+      ? [...lost.overwritten, ...lost.unconfirmed]
+      : outcome.ops.filter((op) => !applied.has(op.op_id))
+    const workflowId = result.workflowId ?? bridge.subscribedWorkflowId
+    if (workflowId === null || (result.ok && !anyLost)) return
+    revertRejectedOps(workflowId, reverted, result.seq)
+    if (anyLost) refreshCanonicalDocument(workflowId)
+  }
+
+  const workflowsWithUnsyncedOps = new Set<string>()
   const recordUnsynced = (): void => {
-    const unsynced = new Set(workflowsWithLostOps)
+    const unsynced = new Set(workflowsWithUnsyncedOps)
     for (const { workflowId } of sender.pendingOps()) unsynced.add(workflowId)
     recordUnsyncedHumanOps(tabId, unsynced)
   }
@@ -557,7 +592,7 @@ function startAgentCrdtFollower(
     workflowId: string | null
   ): void => {
     if (workflowId !== null && outcome.state !== 'acknowledged')
-      workflowsWithLostOps.add(workflowId)
+      workflowsWithUnsyncedOps.add(workflowId)
     recordUnsynced()
   }
 
@@ -567,8 +602,7 @@ function startAgentCrdtFollower(
       recordDevEvent('human_ops_settled', outcome)
     }
     projection.settleLocalWrites(outcome.ops)
-    if (outcome.state === 'acknowledged' && !outcome.result.ok)
-      revertRejectedOps(outcome)
+    if (outcome.state === 'acknowledged') compensateAcknowledgedOps(outcome)
     noteSettledHumanOps(outcome, workflowId)
   }
 
@@ -799,8 +833,8 @@ function startAgentCrdtFollower(
       lifecycle.refusalIsFinal()
     )
       terminal.value = 'refused'
+    sender.abortIfUnbound('subscribe_refused')
     releaseHeldOps()
-    sender.abortIfUnbound()
     if (refusal.shouldNotify)
       events.onSyncError?.(refusal.message, refusal.code)
   }
@@ -946,7 +980,7 @@ function startAgentCrdtFollower(
     projection.replaceOnNextFrame(detail.workflowId)
     reportPendingFrames(detail.workflowId, 'discarded', NOTHING_APPLIED)
     sender.abortAll()
-    workflowsWithLostOps.delete(detail.workflowId)
+    workflowsWithUnsyncedOps.delete(detail.workflowId)
     recordUnsynced()
     events.onReset?.(detail.workflowId)
     connected.value = false
@@ -1143,8 +1177,8 @@ function startAgentCrdtFollower(
       resumeHeldOpsIfSubscribed()
       return
     }
+    sender.abortIfUnbound('retarget')
     releaseHeldOps()
-    sender.abortIfUnbound()
   }
 
   // A tab switch keeps the projection bound: whatever the doc collects while
@@ -1253,6 +1287,7 @@ function startAgentCrdtFollower(
       () => bridge.destroy(),
       () => client.destroy()
     ])
+    releaseUnsyncedHumanOpsRecorder(tabId)
   })
 
   const status = computed<AgentCrdtStatus>(() => ({
@@ -1288,6 +1323,11 @@ function startAgentCrdtFollower(
         if (operation.op === 'add_node') sentAdds.add(String(operation.node_id))
       projection.noteLocalWrites(operations)
       coalescer.enqueue(operations)
+    },
+    noteUnboundLocalIntent: (target = workflowId.value) => {
+      if (target === null) return
+      workflowsWithUnsyncedOps.add(target)
+      recordUnsynced()
     },
     docInputNames: (nodeId: NodeId) =>
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs'),
