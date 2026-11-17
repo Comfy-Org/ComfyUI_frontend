@@ -1,6 +1,6 @@
 # Release workflow for ComfyUI frontend: version bump → PyPI publish → ComfyUI PR.
 # Runs weekly (every Monday) for minor releases, or manually for patch/hotfix releases.
-name: 'Release: ComfyUI'
+name: "Release: ComfyUI"
 
 on:
   # Weekly release freeze: every Monday at 20:00 UTC (noon PST / 13:00 PDT).
@@ -17,26 +17,26 @@ on:
   # already dispatches this workflow off-cadence when a consumed release line
   # has unshipped commits, so the Monday cron is a baseline, not the only path.
   schedule:
-    - cron: '0 20 * * 1'
+    - cron: "0 20 * * 1"
 
   # Manual trigger for both on-demand minor and patch/hotfix releases
   workflow_dispatch:
     inputs:
       release_type:
-        description: 'minor = next minor version (weekly cadence), patch = hotfix for current production version'
+        description: "minor = next minor version (weekly cadence), patch = hotfix for current production version"
         required: true
-        default: 'minor'
+        default: "minor"
         type: choice
         options:
           - minor
           - patch
       comfyui_fork:
-        description: 'ComfyUI fork to use for PR (e.g., Comfy-Org/ComfyUI)'
+        description: "ComfyUI fork to use for PR (e.g., Comfy-Org/ComfyUI)"
         required: false
-        default: 'Comfy-Org/ComfyUI'
+        default: "Comfy-Org/ComfyUI"
         type: string
       target_branch:
-        description: 'Optional: force a specific release branch, e.g. core/1.47 or core/2.0. Overrides the pin-derived target — use to skip a dead minor or do an out-of-cadence / major release.'
+        description: "Optional: force a specific release branch, e.g. core/1.47 or core/2.0. Overrides the pin-derived target — use to skip a dead minor or do an out-of-cadence / major release."
         required: false
         type: string
 
@@ -113,7 +113,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version-file: 'frontend/.nvmrc'
+          node-version-file: "frontend/.nvmrc"
 
       - name: Install dependencies
         working-directory: frontend
@@ -245,7 +245,7 @@ jobs:
           TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
           TARGET_BRANCH: ${{ needs.resolve-version.outputs.target_branch }}
           RUN_ID: ${{ github.run_id }}
-        run: '$RUNNER_TEMP/cicd/wait-for-release-tag.sh'
+        run: "$RUNNER_TEMP/cicd/wait-for-release-tag.sh"
 
       - name: Checkout code at target version
         uses: actions/checkout@v7
@@ -260,8 +260,8 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version-file: 'release/.nvmrc'
-          cache: 'pnpm'
+          node-version-file: "release/.nvmrc"
+          cache: "pnpm"
           cache-dependency-path: release/pnpm-lock.yaml
 
       - name: Build project
@@ -270,8 +270,8 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
-          ENABLE_MINIFY: 'true'
-          USE_PROD_CONFIG: 'true'
+          ENABLE_MINIFY: "true"
+          USE_PROD_CONFIG: "true"
         run: |
           pnpm install --frozen-lockfile
           pnpm build
@@ -279,7 +279,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.x'
+          python-version: "3.x"
 
       - name: Install build dependencies
         run: python -m pip install build
@@ -308,7 +308,7 @@ jobs:
         env:
           PACKAGE: comfyui-frontend-package
           TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
-        run: '$RUNNER_TEMP/cicd/wait-for-pypi-version.sh'
+        run: "$RUNNER_TEMP/cicd/wait-for-pypi-version.sh"
 
       - name: Summary
         run: |
@@ -324,7 +324,7 @@ jobs:
         check-release-week,
         resolve-version,
         trigger-release-if-needed,
-        publish-pypi
+        publish-pypi,
       ]
     if: always() && needs.resolve-version.result == 'success' && needs.publish-pypi.result == 'success' && (needs.check-release-week.outputs.is_release_week == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
@@ -343,6 +343,7 @@ jobs:
         with:
           sparse-checkout: |
             scripts/cicd/comfyui-bump-guard.sh
+            scripts/cicd/gh-retry.sh
           sparse-checkout-cone-mode: false
           path: frontend-scripts
 
@@ -447,7 +448,7 @@ jobs:
           git show HEAD:requirements.txt > ../master-requirements.txt
           PINNED_FILES=(../master-requirements.txt)
           OPEN_PR=""
-          OPEN_HEAD=$(gh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
+          OPEN_HEAD=$(../frontend-scripts/scripts/cicd/gh-retry.sh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
             --jq '[.[] | select(.head.repo == null or .head.repo.full_name == env.COMFYUI_FORK)][0]
               | select(. != null) | "\(.number) \(.head.repo.full_name) \(.head.sha)"')
           if [ -n "$OPEN_HEAD" ]; then
@@ -456,7 +457,7 @@ jobs:
               echo "::error title=ComfyUI bump PR is orphaned::Open PR #${OPEN_PR} has no head repository (its fork was deleted). Close it, then rerun."
               exit 1
             fi
-            gh api "repos/${OPEN_REPO}/contents/requirements.txt?ref=${OPEN_SHA}" --jq '.content' \
+            ../frontend-scripts/scripts/cicd/gh-retry.sh api "repos/${OPEN_REPO}/contents/requirements.txt?ref=${OPEN_SHA}" --jq '.content' \
               | base64 -d > ../pending-requirements.txt
             PINNED_FILES+=(../pending-requirements.txt)
           fi
@@ -480,9 +481,9 @@ jobs:
             if [ -n "$OPEN_PR" ]; then
               # Its pin is not newer (the guard checked), so merging it would downgrade or do nothing.
               MSG="Closed ComfyUI PR #${OPEN_PR}: master already pins ${TARGET_VERSION}."
-              gh api --silent --method POST "repos/Comfy-Org/ComfyUI/issues/${OPEN_PR}/comments" \
+              ../frontend-scripts/scripts/cicd/gh-retry.sh api --silent --method POST "repos/Comfy-Org/ComfyUI/issues/${OPEN_PR}/comments" \
                 -f body="Closing: master already pins comfyui-frontend-package==${TARGET_VERSION}, so this older bump is no longer needed."
-              gh api --silent --method PATCH "repos/Comfy-Org/ComfyUI/pulls/${OPEN_PR}" -f state=closed
+              ../frontend-scripts/scripts/cicd/gh-retry.sh api --silent --method PATCH "repos/Comfy-Org/ComfyUI/pulls/${OPEN_PR}" -f state=closed
               echo "::notice title=Stale ComfyUI bump closed::${MSG}"
               echo "$MSG" >> "$GITHUB_STEP_SUMMARY"
             fi
@@ -502,7 +503,7 @@ jobs:
           PR_BODY=$(cat ../pr-body.txt)
 
           # Try to create PR, ignore error if it already exists
-          if ! gh pr create \
+          if ! ../frontend-scripts/scripts/cicd/gh-retry.sh pr create \
             --repo Comfy-Org/ComfyUI \
             --head "$HEAD_BRANCH" \
             --base master \
@@ -512,7 +513,7 @@ jobs:
 
             # Check if PR already exists
             set +e
-            EXISTING_PR=$(gh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --json number --jq '.[0].number' 2>&1)
+            EXISTING_PR=$(../frontend-scripts/scripts/cicd/gh-retry.sh pr list --repo Comfy-Org/ComfyUI --head "$HEAD_BRANCH" --json number --jq '.[0].number' 2>&1)
             PR_LIST_EXIT=$?
             set -e
 
@@ -523,7 +524,7 @@ jobs:
 
             if [ -n "$EXISTING_PR" ] && [ "$EXISTING_PR" != "null" ]; then
               echo "PR already exists (#${EXISTING_PR}), refreshing title/body"
-              gh api --silent --method PATCH \
+              ../frontend-scripts/scripts/cicd/gh-retry.sh api --silent --method PATCH \
                 "repos/Comfy-Org/ComfyUI/pulls/${EXISTING_PR}" \
                 -f title="Bump comfyui-frontend-package to ${{ needs.resolve-version.outputs.target_version }}" \
                 -F body=@../pr-body.txt
