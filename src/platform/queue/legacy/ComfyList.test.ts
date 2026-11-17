@@ -81,6 +81,23 @@ describe('legacy queue and history lists', () => {
     expect(api.getJobDetail).toHaveBeenCalledExactlyOnceWith('job-1')
   })
 
+  it('does not restore outputs when loading the workflow is refused', async () => {
+    vi.mocked(api.getHistory).mockResolvedValue([job])
+    vi.mocked(api.getJobDetail).mockResolvedValue({
+      ...job,
+      outputs: { '1': { images: [{ filename: 'image.png' }] } }
+    })
+    vi.mocked(app.loadGraphData).mockResolvedValueOnce(false)
+    const { list, host } = createList('history')
+    await list.show()
+
+    await userEvent.click(
+      within(list.element).getByRole('button', { name: 'Load' })
+    )
+
+    expect(host.restoreOutputs).not.toHaveBeenCalled()
+  })
+
   it('retains the legacy load call when job details have no embedded workflow', async () => {
     vi.mocked(api.getHistory).mockResolvedValue([job])
     vi.mocked(api.getJobDetail).mockResolvedValue(job)
