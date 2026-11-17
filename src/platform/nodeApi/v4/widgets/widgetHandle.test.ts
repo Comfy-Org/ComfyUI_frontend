@@ -201,7 +201,7 @@ describe('widget handles', () => {
         const { widget, handle, callback } = nodeWithWidget()
 
         expect(() => Reflect.apply(handle.setValue, handle, [value])).toThrow(
-          'setValue needs a string, a finite number, a boolean, null'
+          /^setValue needs value(\.nested|\[1\])? as a string, a finite number, a boolean, null/
         )
         expect(widget.value).toBe(1)
         expect(callback).not.toHaveBeenCalled()
@@ -209,12 +209,58 @@ describe('widget handles', () => {
       }
     )
 
-    it('refuses a value that contains itself', () => {
+    it.for([
+      [{ nested: Number.NaN }, 'value.nested', 'NaN'],
+      [[1, undefined], 'value[1]', 'undefined'],
+      [
+        { list: [{ when: new Date(0) }] },
+        'value.list[0].when',
+        'a value of type object'
+      ]
+    ] as const)(
+      'names the part of a value it cannot save, and what it found there: %o',
+      ([value, part, found]) => {
+        const { handle } = nodeWithWidget()
+
+        expect(() => handle.setValue(value)).toThrow(
+          `setValue needs ${part} as a string, a finite number, a boolean, null, or a plain object or array of those, not ${found}.`
+        )
+      }
+    )
+
+    it('refuses a value that contains itself, naming where', () => {
       const { handle } = nodeWithWidget('custom', {})
       const circular: Record<string, unknown> = {}
       circular.itself = circular
 
-      expect(() => handle.setValue(circular)).toThrow(TypeError)
+      expect(() => handle.setValue(circular)).toThrow(
+        /^setValue needs value\.itself as a string/
+      )
+    })
+
+    it('refuses a value with a getter without calling it, and changes nothing', () => {
+      const { widget, handle } = nodeWithWidget()
+      const read = vi.fn(() => 'savable')
+      const value = {}
+      Object.defineProperty(value, 'field', { get: read, enumerable: true })
+
+      expect(() => handle.setValue(value)).toThrow(
+        /^setValue needs value\.field as a string.*, not a value of type function\.$/
+      )
+      expect(read).not.toHaveBeenCalled()
+      expect(widget.value).toBe(1)
+    })
+
+    it('accepts a value with a getter it does not save, as a copy without it', () => {
+      const { widget, handle } = nodeWithWidget('custom', {})
+      const read = vi.fn(() => 'hidden')
+      const value = { kept: 'a' }
+      Object.defineProperty(value, 'hidden', { get: read, enumerable: false })
+
+      handle.setValue(value)
+
+      expect(widget.value).toEqual({ kept: 'a' })
+      expect(read).not.toHaveBeenCalled()
     })
 
     it('accepts null and a list as values', () => {
@@ -284,7 +330,9 @@ describe('widget handles', () => {
 
       expect(() =>
         Reflect.apply(handle.setOption, handle, ['max', () => 1])
-      ).toThrow(TypeError)
+      ).toThrow(
+        /^setOption needs options\.max as a string.*, not a value of type function\.$/
+      )
       expect(widget.options.max).toBeUndefined()
     })
 

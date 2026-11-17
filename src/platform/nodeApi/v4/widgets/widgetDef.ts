@@ -45,6 +45,6 @@ function checkedOptions(member: string, options: unknown): WidgetOptions {
   if (!isPlainObject(options)) {
     throw invalidArgument(member, 'options as a plain object', options)
   }
-  assertSavable(member, options)
+  assertSavable(member, options, 'options')
   return structuredClone(options)
 }

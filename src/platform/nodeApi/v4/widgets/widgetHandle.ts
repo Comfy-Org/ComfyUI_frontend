@@ -142,7 +142,7 @@ function valueMembers(
       ),
     setOption(key: unknown, value: unknown) {
       const checkedKey = optionKey(key)
-      const checked = savableValue('setOption', value)
+      const checked = savableValue('setOption', value, `options.${checkedKey}`)
       change(({ node, widget }) =>
         edits.setOption(node, widget, checkedKey, checked)
       )

@@ -89,7 +89,11 @@ This ADR records how the API reaches widgets through those owners.
     clamps the index to the list.
 11. Every argument is checked before anything is read or changed, and refused
     with the `TypeError` of ADR-EXTENSIONS-NODE-API-0070 decision 13. The checks run on a deleted
-    widget too.
+    widget too. A refusal of a value the workflow cannot save names the part
+    it cannot save and what it found there, as `options.format` or
+    `value.list[0]`, not the whole argument. A property with a getter is
+    refused without calling it: the check and the copy would each call it,
+    and could get different values.
 
 ### Listening to a widget
 
@@ -292,8 +296,9 @@ its extension hook do not reach a pack.
 
 ## What this feature replaces or duplicates, and why
 
-- **The savable-value check.** `savableValue.ts` walks a value to refuse what
-  the workflow cannot save. `JSON.stringify` silently drops a function or
+- **The savable-value check.** `savableValue.ts` walks a value's own
+  enumerable properties, as `structuredClone` copies them, to refuse what the
+  workflow cannot save. `JSON.stringify` silently drops a function or
   turns `NaN` into `null`, which would hide the mistake; `isPlainObject` from
   `es-toolkit` is used for the object test.
 - **Chaining a callback.** `useChainCallback` from the host is used for the
