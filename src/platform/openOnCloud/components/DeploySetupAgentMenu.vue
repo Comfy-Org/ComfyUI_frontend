@@ -25,7 +25,12 @@
       </Button>
     </template>
     <MenuItem
-      v-if="localAgentEnabled"
+      v-if="
+        pendingServerFact(
+          'BE-26598',
+          flags.openOnCloudUseLocalAgentEnabled && localAgentEnabled
+        )
+      "
       :disabled="isOpeningAgent"
       @select="useLocalAgent"
     >
@@ -53,14 +58,17 @@ import { onScopeDispose } from 'vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useLocalAgentPanelPort } from '@/platform/openOnCloud/localAgentPanelPort'
 import DesktopAgentMarks from '@/platform/openOnCloud/components/DesktopAgentMarks.vue'
 import AgentMark from '@/platform/workflow/deploy/components/AgentMark.vue'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useRunOnCloudHandoff } from '@/platform/openOnCloud/useRunOnCloudHandoff'
 import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 
 const emit = defineEmits<{ done: [] }>()
+const { flags } = useFeatureFlags()
 const {
   enabled: localAgentEnabled,
   isOpening: isOpeningAgent,

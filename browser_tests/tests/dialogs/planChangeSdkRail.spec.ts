@@ -35,8 +35,7 @@ import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 const BOOT_FEATURES = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const STANDARD_ANNUAL_PLAN = createPlan({
