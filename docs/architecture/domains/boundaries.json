@@ -1899,6 +1899,7 @@
           "src/platform/workspace/components/InviteMembersForm.vue",
           "src/platform/workspace/components/InviteMembersForm.test.ts",
           "src/platform/workspace/components/WorkspaceProfilePic.vue",
+          "src/platform/workspace/components/WorkspaceProfilePic.test.ts",
           "src/platform/workspace/components/dialogs/**",
           "src/platform/workspace/composables/__mocks__/**",
           "src/platform/workspace/composables/useWorkspaceSwitch.ts",
