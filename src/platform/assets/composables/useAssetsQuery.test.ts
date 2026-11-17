@@ -429,3 +429,24 @@ describe('useAssetsQuery loadMore pagination', () => {
     expect(fetchApiMock).toHaveBeenCalledTimes(3)
   })
 })
+
+describe('useAssetsQuery request params', () => {
+  it('asks Cloud to skip the total count on every page', async () => {
+    const list = await createList('params', ['newest'], {
+      hasMore: true,
+      nextCursor: 'page-2'
+    })
+    fetchApiMock.mockResolvedValueOnce(response(['older'], { hasMore: false }))
+
+    await list.loadMore()
+
+    const requests = fetchApiMock.mock.calls.map(
+      ([url]) => new URL(url, 'http://localhost').searchParams
+    )
+    expect(requests).toHaveLength(2)
+    for (const params of requests) {
+      expect(params.get('include_total')).toBe('false')
+      expect(params.get('include_public')).toBe('false')
+    }
+  })
+})
