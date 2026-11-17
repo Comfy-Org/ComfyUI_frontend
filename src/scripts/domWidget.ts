@@ -147,22 +147,6 @@ export class DOMWidgetImpl<T extends HTMLElement, V extends object | string>
     this.element = obj.element
   }
 
-  override createCopyForNode(node: LGraphNode): this {
-    const Widget = this.constructor as new (init: DOMWidgetInit<T, V>) => this
-    const cloned = new Widget({
-      node,
-      name: this.name,
-      type: this.type,
-      element: this.element,
-      options: this.options
-    })
-    cloned.value = this.value
-    // Preserve the Y position from the original widget to maintain proper positioning
-    // when widgets are promoted through subgraph nesting
-    cloned.y = this.y
-    return cloned
-  }
-
   /** Extract DOM widget size info */
   override computeLayoutSize() {
     if (this.type === 'hidden') {
@@ -219,26 +203,6 @@ export class ComponentWidgetImpl<
     this.component = obj.component
     this.inputSpec = obj.inputSpec
     this.props = obj.props
-  }
-
-  override createCopyForNode(node: LGraphNode): this {
-    const Widget = this.constructor as new (
-      init: ComponentWidgetInit<V, P>
-    ) => this
-    const cloned = new Widget({
-      node,
-      name: this.name,
-      type: this.type,
-      component: this.component,
-      inputSpec: this.inputSpec,
-      props: this.props,
-      options: this.options
-    })
-    cloned.value = this.value
-    // Preserve the Y position from the original widget to maintain proper positioning
-    // when widgets are promoted through subgraph nesting
-    cloned.y = this.y
-    return cloned
   }
 
   override computeLayoutSize() {

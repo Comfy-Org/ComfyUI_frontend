@@ -82,7 +82,7 @@ describe('useSubscriptionPaymentRecovery', () => {
 
     await useSubscriptionPaymentRecovery().finishPayment()
     const [refresh] = vi.mocked(registerRefreshOnReturn).mock.calls[0]
-    await refresh()
+    await refresh(new Event('focus'))
 
     expect(context.fetchPlans).toHaveBeenCalledOnce()
     expect(context.fetchStatus).toHaveBeenCalledOnce()
@@ -118,7 +118,7 @@ describe('useSubscriptionPaymentRecovery', () => {
     await scope.run(() => useSubscriptionPaymentRecovery())?.finishPayment()
     scope.stop()
     const [refresh] = vi.mocked(registerRefreshOnReturn).mock.calls[0]
-    await refresh()
+    await refresh(new Event('focus'))
 
     expect(stopRefresh).not.toHaveBeenCalled()
     expect(context.fetchPlans).toHaveBeenCalledOnce()

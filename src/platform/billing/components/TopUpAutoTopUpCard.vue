@@ -7,14 +7,11 @@
       {{ $t('credits.topUp.autoTopUp.prompt') }}
     </p>
     <Button
-      as="a"
-      :href
-      target="_blank"
-      rel="noopener"
+      v-bind="button"
       variant="secondary"
       size="md"
       class="shrink-0 no-underline"
-      @click="track"
+      @click="open"
     >
       {{ $t('credits.topUp.autoTopUp.setUp') }}
       <i class="icon-[lucide--external-link]" aria-hidden="true" />
@@ -29,7 +26,7 @@ import { computed, watch } from 'vue'
 
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
 import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 
 const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
@@ -52,14 +49,17 @@ watch(
   { immediate: true }
 )
 
+const { button, open } = usePlatformBillingLink(
+  platformAutoTopUpPath('turn_on'),
+  {
+    target: 'auto_top_up',
+    action: 'turn_on'
+  }
+)
+
 const visible = computed(() => {
   if (!canSetUp.value) return false
   const read = state.value
   return read.kind === 'loaded' && read.settings.status === 'off'
-})
-
-const { href, track } = usePlatformHandoff(platformAutoTopUpPath('turn_on'), {
-  target: 'auto_top_up',
-  action: 'turn_on'
 })
 </script>

@@ -162,7 +162,8 @@ const zFlags = z
     pinned: z.boolean().optional(),
     allow_interaction: z.boolean().optional(),
     horizontal: z.boolean().optional(),
-    skip_repeated_outputs: z.boolean().optional()
+    skip_repeated_outputs: z.boolean().optional(),
+    fullResolutionPreview: z.boolean().optional()
   })
   .passthrough()
 

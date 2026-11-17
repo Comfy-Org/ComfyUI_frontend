@@ -77,6 +77,8 @@ const CORE_MENU_ITEMS = new Set([
   'Copy Image',
   'Paste Image',
   'Save Image',
+  'Show Full Resolution',
+  'Show Downscaled Preview',
   'Open in Mask Editor',
   'Edit Subgraph Widgets',
   'Unpack Subgraph',
@@ -233,6 +235,8 @@ const MENU_ORDER: string[] = [
   'Copy Image',
   'Paste Image',
   'Save Image',
+  'Show Full Resolution',
+  'Show Downscaled Preview',
   // Section 1: Basic operations
   'Rename',
   'Copy',
@@ -272,56 +276,36 @@ function getMenuItemOrder(label: string): number {
  * Ensures Delete always appears at the bottom
  */
 export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
-  // First, remove duplicates (giving precedence to Vue hardcoded options)
   const deduplicated = removeDuplicateMenuOptions(options)
   const coreItemsMap = new Map<string, MenuOption>()
   const extensionItems: MenuOption[] = []
   let deleteItem: MenuOption | undefined
 
-  // Separate items into core and extension categories
   for (const option of deduplicated) {
-    // Skip dividers for now - we'll add them between sections later
-    if (option.type === 'divider') {
-      continue
-    }
+    if (option.type === 'divider' || option.type === 'category') continue
 
-    // Skip category labels (they'll be added separately)
-    if (option.type === 'category') {
-      continue
-    }
-
-    // Check if this is the Delete/Remove item - save it for the end
     const isDeleteItem = option.label === 'Delete' || option.label === 'Remove'
     if (isDeleteItem && !option.hasSubmenu) {
       deleteItem = option
       continue
     }
 
-    // Categorize based on label
     if (option.label && isCoreMenuItem(option.label)) {
       coreItemsMap.set(option.label, option)
     } else {
       extensionItems.push(option)
     }
   }
-  // Build ordered core items based on MENU_ORDER
   const orderedCoreItems: MenuOption[] = []
   const coreLabels = Array.from(coreItemsMap.keys())
   coreLabels.sort((a, b) => getMenuItemOrder(a) - getMenuItemOrder(b))
 
-  // Section boundaries based on MENU_ORDER indices
-  // Section 0: 0-4 (Open Image, Open in Mask Editor, Copy Image, Paste Image, Save Image)
-  // Section 1: 5-7 (Rename, Copy, Duplicate)
-  // Section 2: 8-13 (Run Branch, Pin, Unpin, Bypass, Remove Bypass, Mute)
-  // Section 3: 14-19 (Convert to Subgraph, Frame selection, Frame Nodes, Minimize Node, Expand Node, Clone)
-  // Section 4: 20-21 (Node Info, Color)
-  // Section 5: 22+ (Clipspace and fallback items)
   const getSectionNumber = (index: number): number => {
-    if (index <= 4) return 0
-    if (index <= 7) return 1
-    if (index <= 13) return 2
-    if (index <= 19) return 3
-    if (index <= 21) return 4
+    if (index <= 6) return 0
+    if (index <= 9) return 1
+    if (index <= 15) return 2
+    if (index <= 21) return 3
+    if (index <= 23) return 4
     return 5
   }
 
@@ -331,7 +315,6 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
     const itemIndex = getMenuItemOrder(label)
     const currentSection = getSectionNumber(itemIndex)
 
-    // Add divider when moving to a new section
     if (lastSection !== -1 && currentSection !== lastSection) {
       orderedCoreItems.push({ type: 'divider' })
     }
@@ -340,29 +323,18 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
     lastSection = currentSection
   }
 
-  // Build the final menu structure
-  const result: MenuOption[] = []
+  const result: MenuOption[] = [...orderedCoreItems]
 
-  // Add ordered core items with their dividers
-  result.push(...orderedCoreItems)
-
-  // Add extensions section if there are extension items
   if (extensionItems.length > 0) {
-    // Add divider before Extensions section
     result.push({ type: 'divider' })
-
-    // Add non-clickable Extensions label
     result.push({
       label: 'Extensions',
       type: 'category',
       disabled: true
     })
-
-    // Add extension items
     result.push(...extensionItems)
   }
 
-  // Add Delete at the bottom if it exists
   if (deleteItem) {
     result.push({ type: 'divider' })
     result.push(deleteItem)

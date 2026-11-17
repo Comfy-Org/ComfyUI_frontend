@@ -273,7 +273,7 @@ describe('link badge frame layout', () => {
       ctx,
       [1, 2].map((id) => ({
         link: createLink(id),
-        presentation: { hidden: true, label: 'MODEL' },
+        presentation: { hidden: true, label: id === 1 ? 'First' : 'MODEL' },
         startPos: [400, 100],
         endPos: [100, 100],
         color: BADGE_COLOR
@@ -533,6 +533,108 @@ describe('hidden link badge stacks', () => {
       toLinkId(3)
     ])
     expect(queryLinkBadgeAtPoint(host, 120, 125)).toBe(toLinkId(2))
+  })
+
+  it.for([
+    {
+      name: 'links sharing a name into one stack',
+      labels: ['render_size', 'render_size', 'render_size'],
+      rows: [{ y: 100, links: [1, 2, 3], stackKey: 'output:4:0="render_size"' }]
+    },
+    {
+      name: 'each name into its own stack, ordered by its first link',
+      labels: ['B', 'A', 'B', 'A'],
+      rows: [
+        { y: 100, links: [1, 3], stackKey: 'output:4:0="B"' },
+        { y: 125, links: [2, 4], stackKey: 'output:4:0="A"' }
+      ]
+    },
+    {
+      name: 'the unlabelled stack above named stacks and single names',
+      labels: ['A', undefined, 'A', undefined, 'B'],
+      rows: [
+        { y: 100, links: [2, 4], stackKey: 'output:4:0' },
+        { y: 125, links: [1, 3], stackKey: 'output:4:0="A"' },
+        { y: 150, links: [5], stackKey: undefined }
+      ]
+    },
+    {
+      name: 'a name equal to the type apart from the unlabelled stack',
+      labels: ['MODEL', 'MODEL', undefined, undefined],
+      rows: [
+        { y: 100, links: [3, 4], stackKey: 'output:4:0' },
+        { y: 125, links: [1, 2], stackKey: 'output:4:0="MODEL"' }
+      ]
+    },
+    {
+      name: 'names that match after trimming, without folding case',
+      labels: ['size', ' size ', 'Size'],
+      rows: [
+        { y: 100, links: [1, 2], stackKey: 'output:4:0="size"' },
+        { y: 125, links: [3], stackKey: undefined }
+      ]
+    },
+    {
+      name: 'a single named link as its own badge',
+      labels: ['Named'],
+      rows: [{ y: 100, links: [1], stackKey: undefined }]
+    }
+  ])('groups $name', ({ labels, rows }) => {
+    const host = {}
+    layoutHiddenLinkBadges(host, createContext(), fanOut(labels).reverse())
+
+    const hitRows = rows.map(({ y }) => {
+      const hit = queryLinkBadgeHitAtPoint(host, 120, y)
+      return { y, links: hit?.linkIds, stackKey: hit?.stackKey }
+    })
+    expect(hitRows).toEqual(rows)
+    const lastRowY = rows[rows.length - 1].y
+    expect(queryLinkBadgeHitAtPoint(host, 120, lastRowY + 25)).toBeUndefined()
+  })
+
+  it('draws a named stack as the name with a count over offset layers', () => {
+    const host = {}
+    const { ctx } = layoutFanOut(host, ['render_size', 'render_size', 'Other'])
+
+    expect(ctx.fillText).toHaveBeenCalledWith('render_size ×2', 120, 104)
+    expect(ctx.fillText).not.toHaveBeenCalledWith('render_size', 120, 104)
+  })
+
+  it('moves a renamed link to the stack for its new name, and back when cleared', () => {
+    const host = {}
+    const linksAt = (y: number) =>
+      queryLinkBadgeHitAtPoint(host, 120, y)?.linkIds
+
+    layoutFanOut(host, [undefined, undefined, undefined, 'A'])
+    expect(linksAt(100)).toEqual([1, 2, 3])
+    expect(linksAt(128)).toEqual([4])
+
+    layoutFanOut(host, ['A', undefined, undefined, 'A'])
+    expect(linksAt(100)).toEqual([2, 3])
+    expect(linksAt(125)).toEqual([1, 4])
+
+    layoutFanOut(host, [undefined, undefined, undefined, 'A'])
+    expect(linksAt(100)).toEqual([1, 2, 3])
+    expect(linksAt(128)).toEqual([4])
+  })
+
+  it('expands one named stack and leaves the other on its socket collapsed', () => {
+    const host = {}
+    toggleLinkBadgeStack(host, 'output:4:0="A"')
+    const { ctx } = layoutFanOut(host, ['A', 'A', 'B', 'B'])
+
+    expect(queryLinkBadgeHitAtPoint(host, 120, 100)).toMatchObject({
+      linkIds: [toLinkId(1), toLinkId(2)],
+      stackKey: 'output:4:0="A"'
+    })
+    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 120, 144)).toBe(toLinkId(2))
+    expect(queryLinkBadgeHitAtPoint(host, 120, 166)).toMatchObject({
+      linkIds: [toLinkId(3), toLinkId(4)],
+      stackKey: 'output:4:0="B"'
+    })
+    expect(ctx.fillText).toHaveBeenCalledWith('A ×2', 120, 104)
+    expect(ctx.fillText).toHaveBeenCalledWith('A', 120, 126)
   })
 
   it('expands to a head followed by one badge per link, and collapses back', () => {

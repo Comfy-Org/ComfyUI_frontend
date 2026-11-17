@@ -8548,6 +8548,9 @@
       "model": {
         "name": "model"
       },
+      "model_auto_duration": {
+        "name": "otomatik_süre"
+      },
       "model_duration": {
         "name": "süre"
       },
@@ -8568,7 +8571,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "HeyGen Video 1.0 kullanarak bir metin isteminden senkronize diyalog ve ses içeren bir video oluşturun. İsteğe bağlı olarak en fazla 12 referans görüntü, video ve ses klibi bağlayabilir ve istemde bunlardan {'@'}Image1, {'@'}Video1, {'@'}Audio1 olarak bahsedebilirsiniz.",
+    "description": "HeyGen Video 1.0 kullanarak bir metin isteminden senkronize diyalog ve ses içeren bir video oluşturun. İsteğe bağlı olarak en fazla 15 referans görüntüsü, video ve ses klibi bağlayabilir ve istemde bunlardan {'@'}Image1, {'@'}Video1, {'@'}Audio1 olarak bahsedebilirsiniz.",
     "display_name": "HeyGen Video 1.0 Referanstan Videoya",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8582,9 @@
       },
       "model_aspect_ratio": {
         "name": "en_boy_oranı"
+      },
+      "model_auto_duration": {
+        "name": "otomatik_süre"
       },
       "model_duration": {
         "name": "süre"
@@ -13723,34 +13729,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "Luma Metinden Videoya ve Luma Görüntüden Videoya düğümleriyle kullanılmak üzere bir veya daha fazla Kamera Kavramı tutar.",
-    "display_name": "Luma Kavramları",
-    "inputs": {
-      "concept1": {
-        "name": "kavram1"
-      },
-      "concept2": {
-        "name": "kavram2"
-      },
-      "concept3": {
-        "name": "kavram3"
-      },
-      "concept4": {
-        "name": "kavram4"
-      },
-      "luma_concepts": {
-        "name": "luma_kavramları",
-        "tooltip": "Burada seçilenlere eklemek için isteğe bağlı Kamera Kavramları."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_kavramları",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "Luma UNI-1 modeliyle bir metin istemi kullanarak mevcut bir görseli düzenleyin.",
     "display_name": "Luma UNI-1 Image Edit",
@@ -13787,82 +13765,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "İstem ve en boy oranına göre görüntüleri eşzamanlı olarak değiştirir.",
-    "display_name": "Luma Görüntüden Görüntüye",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "image": {
-        "name": "görüntü"
-      },
-      "image_weight": {
-        "name": "görüntü_ağırlığı",
-        "tooltip": "Görüntünün ağırlığı; 1.0'a ne kadar yakınsa, görüntü o kadar az değiştirilir."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Görüntü oluşturma istemi"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Düğümün yeniden çalışıp çalışmayacağını belirlemek için tohum; gerçek sonuçlar tohumdan bağımsız olarak belirleyici değildir."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "İstem ve en boy oranına göre görüntüleri eşzamanlı olarak oluşturur.",
-    "display_name": "Luma Metinden Görüntüye",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "en_boy_oranı"
-      },
-      "character_image": {
-        "name": "karakter_görüntüsü",
-        "tooltip": "Karakter referans görüntüleri; birden fazla toplu olabilir, en fazla 4 görüntü dikkate alınabilir."
-      },
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "image_luma_ref": {
-        "name": "görüntü_luma_referansı",
-        "tooltip": "Giriş görüntüleriyle üretimi etkilemek için Luma Referans düğümü bağlantısı; en fazla 4 görüntü dikkate alınabilir."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Görüntü oluşturma istemi"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Düğümün yeniden çalışıp çalışmayacağını belirlemek için tohum; gerçek sonuçlar tohumdan bağımsız olarak belirleyici değildir."
-      },
-      "style_image": {
-        "name": "stil_görüntüsü",
-        "tooltip": "Stil referans görüntüsü; yalnızca 1 görüntü kullanılacaktır."
-      },
-      "style_image_weight": {
-        "name": "stil_görüntüsü_ağırlığı",
-        "tooltip": "Stil görüntüsünün ağırlığı. Stil_görüntüsü sağlanmazsa yoksayılır."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "Luma UNI-1 modeliyle metinden görseller oluşturun.",
     "display_name": "Luma UNI-1 Image",
@@ -13890,52 +13792,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed, nodun tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "İstem, giriş görüntüleri ve çıktı_boyutuna göre videoları eşzamanlı olarak oluşturur.",
-    "display_name": "Luma Görüntüden Videoya",
-    "inputs": {
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "duration": {
-        "name": "süre"
-      },
-      "first_image": {
-        "name": "ilk_görüntü",
-        "tooltip": "Oluşturulan videonun ilk karesi."
-      },
-      "last_image": {
-        "name": "son_görüntü",
-        "tooltip": "Oluşturulan videonun son karesi."
-      },
-      "loop": {
-        "name": "döngü"
-      },
-      "luma_concepts": {
-        "name": "luma_kavramları",
-        "tooltip": "Luma Kavramları düğümü aracılığıyla kamera hareketini dikte etmek için isteğe bağlı Kamera Kavramları."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Video oluşturma istemi"
-      },
-      "resolution": {
-        "name": "çözünürlük"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Düğümün yeniden çalışıp çalışmayacağını belirlemek için tohum; gerçek sonuçlar tohumdan bağımsız olarak belirleyici değildir."
       }
     },
     "outputs": {
@@ -14165,7 +14021,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "Mevcut bir videonun en-boy oranını değiştirin, yeni açığa çıkan tuval alanlarını doldurmak için Luma Ray 3.2 kullanılır. Kaynak video en fazla 30 saniye. Çıktı süresi başına ücretlendirilir.",
+    "description": "Luma Ray 3.2 kullanarak yeni açığa çıkan tuval alanlarını doldurup mevcut bir videonun en-boy oranını değiştirin. Kaynak video en fazla 10 saniye olabilir. Çıktının saniyesi başına ücretlendirilir.",
     "display_name": "Luma Ray 3.2 Video Yeniden Çerçeveleme",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14043,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "Yeniden çerçevelenecek kaynak video. En fazla 30 saniye."
+        "tooltip": "Yeniden çerçevelenecek kaynak video. En fazla 10 saniye."
       }
     },
     "outputs": {
@@ -14196,70 +14052,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "Luma Görüntü Oluştur düğümüyle kullanılmak üzere bir görüntü ve ağırlık tutar.",
-    "display_name": "Luma Referansı",
-    "inputs": {
-      "image": {
-        "name": "görüntü",
-        "tooltip": "Referans olarak kullanılacak görüntü."
-      },
-      "luma_ref": {
-        "name": "luma_referansı"
-      },
-      "weight": {
-        "name": "ağırlık",
-        "tooltip": "Görüntü referansının ağırlığı."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_referansı",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "İstem ve çıktı_boyutuna göre videoları eşzamanlı olarak oluşturur.",
-    "display_name": "Luma Metinden Videoya",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "en_boy_oranı"
-      },
-      "control_after_generate": {
-        "name": "oluşturduktan sonra kontrol et"
-      },
-      "duration": {
-        "name": "süre"
-      },
-      "loop": {
-        "name": "döngü"
-      },
-      "luma_concepts": {
-        "name": "luma_kavramları",
-        "tooltip": "Luma Kavramları düğümü aracılığıyla kamera hareketini dikte etmek için isteğe bağlı Kamera Kavramları."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "istem",
-        "tooltip": "Video oluşturma istemi"
-      },
-      "resolution": {
-        "name": "çözünürlük"
-      },
-      "seed": {
-        "name": "tohum",
-        "tooltip": "Düğümün yeniden çalışıp çalışmayacağını belirlemek için tohum; gerçek sonuçlar tohumdan bağımsız olarak belirleyici değildir."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -24987,6 +24779,9 @@
       "format_bit_depth": {
         "name": "bit_derinliği"
       },
+      "format_channels": {
+        "name": "kanallar"
+      },
       "format_input_color_space": {
         "name": "giriş_renk_uzayı"
       },
@@ -25977,6 +25772,33 @@
       },
       "1": {
         "name": "sağ",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "Bir görüntüyü kırmızı, yeşil ve mavi görüntülere ve bir alfa maskesine ayırır.",
+    "display_name": "Görüntü Kanallarını Ayır",
+    "inputs": {
+      "image": {
+        "name": "görüntü"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "kırmızı",
+        "tooltip": null
+      },
+      "1": {
+        "name": "yeşil",
+        "tooltip": null
+      },
+      "2": {
+        "name": "mavi",
+        "tooltip": null
+      },
+      "3": {
+        "name": "alfa",
         "tooltip": null
       }
     }

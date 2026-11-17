@@ -135,7 +135,8 @@ const STATES: {
     case: 'no plan',
     state: { kind: 'noPlan', freeRuns: null },
     title: 'This workspace has no active plan',
-    ownerLine: 'Subscribe to run workflows on Cloud.',
+    ownerLine:
+      'Subscribe for monthly credits. You can also add credits any time.',
     memberLine: MANAGED_BY_OWNER
   },
   {

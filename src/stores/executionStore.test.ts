@@ -16,12 +16,14 @@ import '@/scripts/changeTracker'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
 
 const apiEvents: EventTarget = api
@@ -980,6 +982,22 @@ describe('useExecutionStore - background workflow error routing', () => {
     )
   }
 
+  function fireOutputsSkipped(jobId: string, nodeId: string) {
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: jobId,
+          node_errors: {
+            [nodeId]: nodeError(
+              [validationError('required_input_missing', 'images')],
+              'SaveImage'
+            )
+          }
+        }
+      })
+    )
+  }
+
   const cloudValidationMessage = JSON.stringify({
     error: { type: 'prompt_outputs_failed_validation', message: 'invalid' },
     node_errors: {
@@ -1040,6 +1058,22 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastNodeErrors).toBeNull()
 
     errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
+  })
+
+  it("keeps validation node errors that arrive before their job's empty submission response", () => {
+    store.registerJobWorkflowIdMapping('job-a', graphAId)
+    fireExecutionError('job-a', {
+      exception_message: cloudValidationMessage,
+      exception_type: 'ValidationError'
+    })
+
+    errorStore.recordSubmissionNodeErrors(
+      {},
+      errorStore.runErrorKey(graphAId, workflowA.path),
+      'job-a'
+    )
+
     expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
   })
 
@@ -1149,6 +1183,100 @@ describe('useExecutionStore - background workflow error routing', () => {
     errorStore.setActiveGraph(graphBId, workflowB.path)
 
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-ambiguous')
+  })
+
+  it('marks the skipped outputs of the visible run as node errors', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('files the skipped outputs of a background run under its workflow', () => {
+    callStoreJob('job-b', workflowB)
+    fireOutputsSkipped('job-b', '9')
+
+    expect(errorStore.lastNodeErrors).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('applies skipped outputs that arrive before the job is stored', () => {
+    fireOutputsSkipped('job-a', '9')
+    expect(errorStore.lastNodeErrors).toBeNull()
+
+    callStoreJob('job-a', workflowA)
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('keeps skipped outputs of an unknown job off the visible run', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    fireOutputsSkipped('job-unknown', '5')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('keeps skipped-output errors through execution_start', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    fireExecutionStart('job-a')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('shows skipped outputs whose errors include a bare string', () => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    const inputError = validationError('required_input_missing', 'images')
+    callStoreJob('job-a', workflowA)
+
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: 'job-a',
+          node_errors: {
+            '9': {
+              class_type: 'SaveImage',
+              dependent_outputs: ['9'],
+              errors: [inputError, 'Image is not valid', 42]
+            }
+          }
+        }
+      })
+    )
+
+    expect(errorStore.lastNodeErrors?.['9']?.errors).toEqual([
+      inputError,
+      { type: 'error', message: 'Image is not valid', details: '' }
+    ])
+    expect(errorStore.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('ignores a skipped-outputs message with no error to show', () => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    errorStore.dismissErrorOverlay()
+
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: 'job-a',
+          node_errors: {
+            '5': {
+              class_type: 'SaveImage',
+              dependent_outputs: ['5'],
+              errors: [42]
+            }
+          }
+        }
+      })
+    )
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+    expect(errorStore.isErrorOverlayOpen).toBe(false)
   })
 
   it('does not route an unattributable failure to the visible workflow', () => {
@@ -2595,7 +2723,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         'executing',
         'progress',
         'progress_state',
-        'execution_error'
+        'execution_error',
+        'prompt_outputs_skipped'
       ]
 
       store.unbindExecutionEvents()

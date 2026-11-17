@@ -25,7 +25,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { opensLocalBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'

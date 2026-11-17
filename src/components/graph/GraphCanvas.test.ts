@@ -146,6 +146,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
       get isGraphReady(): boolean {
         return !!mocks.rootGraph
       },
+      nodeOutputs: {},
+      nodePreviewImages: {},
       ui: { settings: { dispatchChange: vi.fn() } },
       setup: vi.fn(),
       loadGraphData: vi.fn()

@@ -2,6 +2,7 @@ import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useErrorsTabRequestStore } from '@/platform/workflowErrors/panel/errorsTabRequestStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 
 vi.mock(import('@/scripts/api'))
@@ -61,6 +62,22 @@ describe('usePropertiesPanelStore', () => {
     store.clearFocusedSection()
 
     expect(store.focusedSection).toBeNull()
+  })
+
+  it('drops pending errors tab requests when the panel leaves the errors tab', async () => {
+    useMenu('Top')
+    const store = usePropertiesPanelStore()
+    const requests = useErrorsTabRequestStore()
+    store.openPanel('errors')
+    requests.focusNode('7')
+    requests.requestDetails(['execution:7'])
+    await nextTick()
+
+    store.openPanel('parameters')
+    await nextTick()
+
+    expect(requests.focusedNodeId).toBeNull()
+    expect(requests.detailsRequest).toBeNull()
   })
 
   it('toggles open and closed', () => {
