@@ -4597,7 +4597,7 @@ export type CccWebsiteCardsPage = {
   page_size: number
   previous_cursor?: string
   revision_id: number
-  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
+  sort_orders: Array<'popular' | 'name' | 'newest' | 'priceAsc' | 'priceDesc'>
   /**
    * Staff-only filtered count; omitted for anonymous callers
    */
@@ -4650,7 +4650,7 @@ export type CccWebsiteRootPresentation = {
 export type CccWebsiteRootTab = {
   facets: CccWebsiteCardFacets
   page: CccWebsiteRootPageInfo
-  sort_orders: Array<'popular' | 'name' | 'priceAsc' | 'priceDesc'>
+  sort_orders: Array<'popular' | 'name' | 'newest' | 'priceAsc' | 'priceDesc'>
 }
 
 export type CccWebsiteRootTabs = {
@@ -19494,7 +19494,10 @@ export type ListCccWebsiteCardsData = {
     cursor?: string
     locale?: 'en' | 'zh-CN' | 'ja'
     q?: string
-    sort?: 'popular' | 'name' | 'priceAsc' | 'priceDesc'
+    /**
+     * newest orders by the time each page first went live on the Hub, newest first, then title and uid; pages with no recorded time come last.
+     */
+    sort?: 'popular' | 'name' | 'newest' | 'priceAsc' | 'priceDesc'
     category?: Array<string>
     model?: Array<string>
     use?: Array<string>
