@@ -24,7 +24,7 @@
         @click="openImageInGallery(index)"
       >
         <div
-          v-if="url && !failedHdrThumbnails[index]"
+          v-if="url && !failedHdrThumbnails.has(url)"
           class="pointer-events-none relative size-full"
         >
           <img
@@ -35,7 +35,7 @@
             class="size-full object-contain"
             @load="updateAspectRatio($event, index)"
             @error="
-              failedHdrThumbnails[index] = !mediaSources[index].canEditPixels
+              !mediaSources[index].canEditPixels && failedHdrThumbnails.add(url)
             "
           />
         </div>
@@ -343,7 +343,7 @@ const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
 const imageAspectRatio = ref(1)
-const failedHdrThumbnails = ref<boolean[]>([])
+const failedHdrThumbnails = ref(new Set<string>())
 const failedHdrPreviews = ref<boolean[]>([])
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
@@ -457,7 +457,7 @@ watch(
     actualDimensions.value = null
     viewMode.value = defaultViewMode(newUrls)
     imageError.value = false
-    failedHdrThumbnails.value = []
+    failedHdrThumbnails.value = new Set()
     failedHdrPreviews.value = []
     if (newUrls.length > 0) startDelayedLoader()
   },
