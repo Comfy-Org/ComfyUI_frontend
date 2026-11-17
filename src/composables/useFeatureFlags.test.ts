@@ -18,9 +18,11 @@ import {
   setLocalBillingNewUxEnabled,
   setLocalBillingWebEnabled
 } from '@/platform/billing/localBillingWebEnabled'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
+  remoteConfigRevision,
   remoteConfigState,
   sessionAgentGrant,
   sessionAgentGrantValidUntil,
@@ -543,9 +545,21 @@ describe('useFeatureFlags', () => {
       { served: 'true', expected: false }
     ])(
       'uses only a boolean true from remote config: $served',
-      ({ served, expected }) => {
-        remoteConfig.value = { open_on_cloud_use_local_agent_enabled: served }
+      async ({ served, expected }) => {
+        const previousConfig = window.__CONFIG__
+        const previousRevision = remoteConfigRevision.value
+        onTestFinished(() => {
+          window.__CONFIG__ = previousConfig
+          remoteConfigRevision.value = previousRevision
+        })
+        vi.mocked(api.apiURL).mockReturnValue('/api/features')
+        vi.mocked(fetch).mockResolvedValue(
+          Response.json({ open_on_cloud_use_local_agent_enabled: served })
+        )
 
+        await refreshRemoteConfig({ useAuth: false })
+
+        expect(remoteConfigState.value).toBe('anonymous')
         expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
           expected
         )
