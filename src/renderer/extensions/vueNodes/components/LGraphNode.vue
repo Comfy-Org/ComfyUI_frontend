@@ -198,7 +198,10 @@
                 />
                 <NodeContent v-else :node-data :media="region.media" />
               </div>
-              <GrowableRegionHandle :name="region.name" />
+              <GrowableRegionHandle
+                :name="region.name"
+                :label="t('g.resizePreviewHeight')"
+              />
             </div>
             <LivePreview
               v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
