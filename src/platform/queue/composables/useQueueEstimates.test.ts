@@ -115,7 +115,7 @@ describe('useQueueEstimates', () => {
     expect(runningJob.showParallelQueuedStats.value).toBe(false)
   })
 
-  it('uses the last 20 valid durations to estimate queued batches', () => {
+  it('uses the newest 20 valid durations to estimate queued batches', () => {
     const durations = Array.from({ length: 25 }, (_, idx) => idx + 1)
     const queueStore = createQueueStore({
       historyTasks: [
@@ -132,7 +132,7 @@ describe('useQueueEstimates', () => {
       jobsAhead: 5
     })
 
-    expect(estimateRangeSeconds.value).toEqual([47, 63])
+    expect(estimateRangeSeconds.value).toEqual([32, 48])
   })
 
   it('returns null for estimateRangeSeconds when no history or jobsAhead is unknown', () => {

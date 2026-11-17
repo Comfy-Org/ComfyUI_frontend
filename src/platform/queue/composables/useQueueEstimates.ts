@@ -57,7 +57,7 @@ export const useQueueEstimates = ({
   )
 
   const durationRange = computed<EstimateRange | null>(() => {
-    const durations = pickRecentDurations(queueStore).slice(-20)
+    const durations = pickRecentDurations(queueStore).slice(0, 20)
     if (!durations.length) return null
     const sorted = durations.slice().sort((a, b) => a - b)
     const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
