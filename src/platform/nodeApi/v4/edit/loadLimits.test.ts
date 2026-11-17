@@ -8,8 +8,9 @@ import {
   vi
 } from 'vitest'
 
+import { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
-import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
+import { toNodeId, UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 
 import {
   LGraph,
@@ -244,6 +245,38 @@ describe('edits and what a load keeps of them', () => {
       graph.configure(JSON.parse(JSON.stringify(graph.serialize())))
 
       expect(defined.inputs.names()).toEqual(['b', 'b'])
+    })
+  })
+
+  describe('on a node of a type a pack defines with shaped outputs', () => {
+    it('draws each output in the shape the definition declares, and a load keeps it', () => {
+      const type = 'EditTest/Shaped'
+      comfy.defs.define({
+        type,
+        outputs: [
+          { name: 'REPEATER', type: '_NODE_REPEATER_', shape: 'directional' },
+          { name: 'many', type: 'INT', shape: 'list' },
+          { name: 'own', type: 'INT', shape: 'default' },
+          { name: 'plain', type: 'INT' }
+        ]
+      })
+      const defined = comfy.graph.add(type)
+      assert(defined)
+      const node = graph.getNodeById(toNodeId(defined.id))
+      const shapes = () =>
+        defined.outputs.all()?.map((slot) => slot.snapshot()?.shape)
+
+      expect(node?.outputs.map(({ shape }) => shape)).toEqual([
+        RenderShape.ARROW,
+        RenderShape.GRID,
+        undefined,
+        undefined
+      ])
+      expect(shapes()).toEqual(['directional', 'list', 'default', 'default'])
+
+      graph.configure(JSON.parse(JSON.stringify(graph.serialize())))
+
+      expect(shapes()).toEqual(['directional', 'list', 'default', 'default'])
     })
   })
 

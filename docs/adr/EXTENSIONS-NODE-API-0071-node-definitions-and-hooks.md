@@ -123,13 +123,21 @@ registered, so `extend` cannot depend on the order.
     type passes `'frontend'` (20 sites) and none passes `'backend'`, and a
     defined type with no server class could not run, so `'frontend'` is the
     default. The type joins the index, and every extension that picks it
-    applies.
+    applies. An output's `shape` is given to `addOutput` as the host's
+    `RenderShape`, through the name table `updateSlot` uses
+    (`edit/slotVocabulary.ts`), so the host draws and saves it and a load
+    keeps it; `'default'` leaves the host's own choice. `get` does not report
+    it, as a server definition has none. rgthree declares its relay's output
+    `shape: 'directional'` through two helpers, which the census did not
+    follow (acceptance finding B7); inputs take no shape, as in V2.
 11. A definition is checked whole before anything is registered: a plain
     object of the documented fields only, a type name that is non-empty, is
     not a property of `Object.prototype`, and is not registered yet, text for
     the title, category and description, slots of exactly a text `name` and a
-    text `type`, and `'backend'` or `'frontend'`. An empty slot name is
-    allowed because a stored pack declares one.
+    text `type`, and for an output an optional `shape` of `'default'`,
+    `'optional'`, `'list'` or `'directional'`, and `'backend'` or
+    `'frontend'`. An empty slot name is allowed because a stored pack
+    declares one.
 12. The disposer unregisters the type and removes it from the index, only if
     the type is still the one this call registered. A type the host has
     registered under the same name since is left alone.
@@ -349,7 +357,7 @@ registered, so `extend` cannot depend on the order.
     `NodeDefBuilder.setTitle`, `setCategory`, `setExecution`, `onDragOver` and
     `onDrop`; `NodeDef.source`; `PropertyChangeEvent.previous`;
     `BeforeConnectEvent.peerNodeId`, `peerIndex` and `peerType`;
-    `NodeDefinition.outputs.shape`, `supply`, `onExecuted`, `onDragOver`,
+    `NodeDefinition.supply`, `onExecuted`, `onDragOver`,
     `onDrop` and `onPromptSerialize` (0 packs each). With `setTitle` gone, a
     late extension cannot rename a type, so review finding A-08 cannot arise;
     with `setExecution` gone, only `define` decides whether a type runs in the

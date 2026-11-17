@@ -530,6 +530,17 @@ describe('node definitions', () => {
         definition: { type: 'T', inputs: ['i'] }
       },
       {
+        name: 'an output shape the host has no name for',
+        definition: {
+          type: 'T',
+          outputs: [{ name: 'o', type: '*', shape: 'star' }]
+        }
+      },
+      {
+        name: 'an output shape given as the host’s number',
+        definition: { type: 'T', outputs: [{ name: 'o', type: '*', shape: 7 }] }
+      },
+      {
         name: 'an unknown execution',
         definition: { type: 'T', execution: 'worker' }
       }
@@ -541,6 +552,16 @@ describe('node definitions', () => {
       )
       expect(Object.keys(LiteGraph.registered_node_types)).toEqual(before)
       expect(defs.all()).toEqual([])
+    })
+
+    it('names the shapes an output may take when it refuses one', () => {
+      expect(() =>
+        Reflect.apply(defs.define, defs, [
+          { type: 'T', outputs: [{ name: 'o', type: '*', shape: 'star' }] }
+        ])
+      ).toThrow(
+        /^define needs shape of default, optional, list, directional, not 'star'/
+      )
     })
 
     it('refuses a type that is registered already, and leaves it as it was', () => {

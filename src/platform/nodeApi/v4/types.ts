@@ -685,7 +685,7 @@ export interface NodeDefinition {
   readonly category?: string
   readonly description?: string
   readonly inputs?: readonly NodeDefinitionSlot[]
-  readonly outputs?: readonly NodeDefinitionSlot[]
+  readonly outputs?: readonly NodeDefinitionOutput[]
   /** `'frontend'`, the default, leaves the node out of the prompt; `'backend'` sends it as its type. */
   readonly execution?: 'backend' | 'frontend'
   onCreated?(node: NodeHandle, event: NodeCreatedEvent): void
@@ -699,4 +699,9 @@ export interface NodeDefinition {
 export interface NodeDefinitionSlot {
   readonly name: string
   readonly type: string
+}
+
+export interface NodeDefinitionOutput extends NodeDefinitionSlot {
+  /** How the host draws the output's dot; `'default'` is its own choice. A load keeps it. */
+  readonly shape?: SlotShape
 }
