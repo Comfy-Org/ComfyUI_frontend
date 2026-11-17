@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -11,6 +11,7 @@ import {
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
@@ -23,8 +24,6 @@ import type DraggableList from '@/components/common/DraggableList.vue'
 type DraggableListProps = ComponentProps<typeof DraggableList>
 type PromotedRow =
   DraggableListProps['modelValue'] extends Array<infer T> ? T : never
-
-vi.mock(import('@/services/litegraphService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -342,6 +341,44 @@ describe('SubgraphEditor', () => {
     await nextTick()
 
     expect(Array.from(host.size)).toEqual([640, 480])
+  })
+
+  it('exposes the preview of an interior node that has outputs but has never been drawn', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const animator = new LGraphNode('SaveAnimatedWEBP', 'SaveAnimatedWEBP')
+    subgraph.add(animator)
+    useNodeOutputStore().setNodeOutputs(animator, 'loop.webp', {
+      folder: 'output'
+    })
+    setCanvasSelection([host])
+
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: { plugins: [i18n] }
+    })
+
+    const hidden = screen.getByTestId('subgraph-editor-hidden-section')
+    expect(
+      within(hidden)
+        .getAllByTestId('subgraph-widget-label')
+        .map((el) => el.textContent.trim())
+    ).toEqual(['$$canvas-image-preview'])
+    await userEvent.click(within(hidden).getByTestId('subgraph-widget-toggle'))
+
+    expect(
+      usePreviewExposureStore()
+        .getExposures(subgraph.rootGraph.id, String(host.id))
+        .map(({ sourceNodeId, sourcePreviewName }) => ({
+          sourceNodeId,
+          sourcePreviewName
+        }))
+    ).toEqual([
+      {
+        sourceNodeId: String(animator.id),
+        sourcePreviewName: '$$canvas-image-preview'
+      }
+    ])
   })
 
   it('removes the exposure when a preview row without a real source widget is demoted', async () => {

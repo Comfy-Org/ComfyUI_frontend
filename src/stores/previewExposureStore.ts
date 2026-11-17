@@ -7,7 +7,6 @@ import type {
   ResolvedPreviewChain
 } from '@/core/graph/subgraph/preview/previewExposureChain'
 import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previewExposureChain'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
@@ -137,16 +136,6 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     exposures.value.delete(rootGraphId)
   }
 
-  function getExposuresAsPromotionShape(
-    rootGraphId: UUID,
-    hostNodeLocator: string
-  ): PromotedWidgetSource[] {
-    return getExposures(rootGraphId, hostNodeLocator).map((exposure) => ({
-      sourceNodeId: exposure.sourceNodeId,
-      sourceWidgetName: exposure.sourcePreviewName
-    }))
-  }
-
   /**
    * @param resolveNestedHost If provided, recurses through nested SubgraphNode
    * boundaries; otherwise the chain is a single-step walk on the starting host.
@@ -166,7 +155,6 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
 
   return {
     getExposures,
-    getExposuresAsPromotionShape,
     setExposures,
     addExposure,
     removeExposure,
