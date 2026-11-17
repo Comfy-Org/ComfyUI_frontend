@@ -60,7 +60,13 @@ Workflows saved from Vue nodes carry a `widgetHeights` property on nodes the
 user resized. Older frontends keep it as an opaque property.
 
 Removing a node or graph must clear its store entries; node-owned store
-cleanup and graph clearing do this.
+cleanup and graph clearing do this. Demoting a promoted preview clears its
+height, because the next preview exposed on that host can reuse the name.
+Heights of widgets that are absent when the workflow is saved are kept: a
+preview appears only after its node runs, and dynamic widgets are rebuilt
+after configure, so absence does not mean the widget is gone. A height
+follows its widget's name, so a dynamic widget that is renamed takes the
+height saved under its new name.
 
 Canvas and Vue renderings of the same workflow can differ in row heights
 when the user has sized a widget in Vue.
@@ -69,10 +75,12 @@ when the user has sized a widget in Vue.
 
 - A node that has a saved height gets `properties.widgetHeights` when it is
   serialized: an object mapping a widget name, or a promoted preview's host
-  exposure name, to a height in pixels. On configure and on attach, the
-  frontend reads the property and then deletes it from the live node, so
-  extensions see it only in serialized output. Do not write this property; a
-  value that is not a positive number is ignored.
+  exposure name, to a height in pixels. The frontend reads the property once
+  the node is in its graph and then deletes it from the live node. During
+  `configure`, `onPropertyChanged('widgetHeights', …)` and `onConfigure`
+  still see it, because they run first; after that it appears only in
+  serialized output. Do not write this property; a value that is not a
+  positive number is ignored.
 - Every image, animation, and video preview has the source name
   `$$canvas-image-preview`, whichever widget draws it. At load, saved
   `previewExposures` and legacy `proxyWidgets` entries whose source names
