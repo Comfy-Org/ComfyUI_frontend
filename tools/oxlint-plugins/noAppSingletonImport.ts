@@ -1,6 +1,7 @@
 import type { Rule } from './astTypes'
 
-const APP_MODULE = /^(?:@\/scripts\/app|(?:\.{1,2}\/)+(?:scripts\/)?app)$/
+const APP_MODULE =
+  /^(?:@\/scripts\/app|(?:\.{1,2}\/)+(?:scripts\/)?app)(?:\.[jt]s)?$/
 
 export const noAppSingletonImport: Rule = {
   meta: {
