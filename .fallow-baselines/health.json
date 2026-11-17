@@ -1316,13 +1316,13 @@
     },
     "src/lib/litegraph/src/LGraphNode.ts": {
       "complexity_critical": {
-        "count": 10
+        "count": 7
       },
       "complexity_high": {
         "count": 2
       },
       "crap_critical": {
-        "count": 10
+        "count": 7
       },
       "crap_high": {
         "count": 6
@@ -1403,6 +1403,20 @@
     },
     "src/lib/litegraph/src/contextMenuCompat.ts": {
       "crap_high": {
+        "count": 1
+      }
+    },
+    "src/lib/litegraph/src/connectivitySystem.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "complexity_high": {
+        "count": 1
+      },
+      "complexity_moderate": {
+        "count": 1
+      },
+      "crap_critical": {
         "count": 1
       }
     },
