@@ -82,8 +82,6 @@ vi.mock(import('firebase/auth'))
 
 vi.mock(import('@comfyorg/telemetry'))
 
-let mockResetSocket: Mock
-
 // Mock useDialogService
 vi.mock(import('@/services/dialogService'))
 vi.mock<unknown>(
@@ -92,7 +90,9 @@ vi.mock<unknown>(
 )
 vi.mock(import('@/composables/useFeatureFlags'))
 
-// Mock apiKeyAuthStore
+beforeEach(() => {
+  vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
+})
 
 describe('useAuthStore', () => {
   let store: ReturnType<typeof useAuthStore>
@@ -107,10 +107,8 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(async () => {
-    mockResetSocket = vi.spyOn(api, 'resetSocket').mockResolvedValue(undefined)
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
-    // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
       showErrorDialog: vi.fn()
     })
@@ -134,10 +132,8 @@ describe('useAuthStore', () => {
     store = useAuthStore()
     await vi.waitFor(() => expect(store.isInitialized).toBe(true))
 
-    // Reset and set up getIdToken mock
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
 
-    // Default: no API key auth
     vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
     vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue(null)
     Object.assign(useTeamWorkspaceStore(), {
@@ -1477,18 +1473,15 @@ describe('useAuthStore', () => {
     }
 
     it('does not reset the socket on the initial sign-in', () => {
-      // The store is created in beforeEach, which drives the initial
-      // authStateCallback(mockUser); the first identity must not reconnect
-      // because api.init() already owns the initial connect.
-      expect(mockResetSocket).not.toHaveBeenCalled()
+      expect(api.resetSocket).not.toHaveBeenCalled()
     })
 
     it('reconnects the socket on a direct A -> B account switch', () => {
-      mockResetSocket.mockClear()
+      vi.mocked(api.resetSocket).mockClear()
 
       authStateCallback(accountB)
 
-      expect(mockResetSocket).toHaveBeenCalledTimes(1)
+      expect(api.resetSocket).toHaveBeenCalledTimes(1)
     })
 
     it('clears an onboarding replay on a direct account switch', () => {
@@ -1538,32 +1531,28 @@ describe('useAuthStore', () => {
     })
 
     it('does not reconnect on a same-account token refresh', () => {
-      mockResetSocket.mockClear()
+      vi.mocked(api.resetSocket).mockClear()
 
-      // Same UID observed again (e.g. onAuthStateChanged re-emitting the same
-      // user) must not tear down the connection.
       authStateCallback(mockUser)
 
-      expect(mockResetSocket).not.toHaveBeenCalled()
+      expect(api.resetSocket).not.toHaveBeenCalled()
     })
 
     it('reconnects the socket on sign-out', () => {
-      mockResetSocket.mockClear()
+      vi.mocked(api.resetSocket).mockClear()
 
       authStateCallback(null)
 
-      expect(mockResetSocket).toHaveBeenCalledTimes(1)
+      expect(api.resetSocket).toHaveBeenCalledTimes(1)
     })
 
     it('does not reconnect when transitioning from signed-out to signed-in', () => {
       authStateCallback(null)
-      mockResetSocket.mockClear()
+      vi.mocked(api.resetSocket).mockClear()
 
-      // Re-signing in from a signed-out state records the identity again; the
-      // socket was already torn down on sign-out, so there is no extra reset.
       authStateCallback(accountB)
 
-      expect(mockResetSocket).not.toHaveBeenCalled()
+      expect(api.resetSocket).not.toHaveBeenCalled()
     })
   })
 })
@@ -1605,7 +1594,7 @@ describe('useAuthStore in local/desktop distribution', () => {
     store = useAuthStore()
     await vi.waitFor(() => expect(store.isInitialized).toBe(true))
     mockUser.getIdToken.mockResolvedValue('mock-id-token')
-    mockResetSocket.mockClear()
+    vi.mocked(api.resetSocket).mockClear()
   })
 
   afterEach(() => {
@@ -1650,7 +1639,7 @@ describe('useAuthStore in local/desktop distribution', () => {
     authStateCallback(accountB)
 
     expect(
-      mockResetSocket,
+      api.resetSocket,
       'socket re-handshake is a cloud-only side effect (isCloud && identityChanged); local/desktop has no realtime socket to reset'
     ).not.toHaveBeenCalled()
   })
