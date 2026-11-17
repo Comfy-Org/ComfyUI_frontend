@@ -10,6 +10,7 @@ import {
 } from '@/lib/litegraph/src/utils/widgetLayout'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -45,6 +46,7 @@ function findLegacyWidget():
 }
 
 function bindWidget() {
+  pointer?.reset()
   if (widgetInstance) widgetInstance.triggerDraw = () => {}
 
   const resolved = findLegacyWidget()
@@ -93,21 +95,46 @@ function getWidgetHeight(
   return Math.max(0, sizing ? minRowHeight(sizing) : 20)
 }
 
+function withLocalLayout<T>(
+  widget: IBaseWidget,
+  width: number,
+  fn: () => T
+): T {
+  const { y, last_y, width: previousWidth } = widget
+  widget.y = 0
+  widget.last_y = 0
+  widget.width = width
+  try {
+    return fn()
+  } finally {
+    if (!LiteGraph.vueNodesMode) {
+      widget.y = y
+      widget.last_y = last_y
+      widget.width = previousWidth
+    }
+  }
+}
+
+function getLayoutWidth(): number {
+  return canvasEl.value.parentElement.clientWidth
+}
+
 function draw() {
   if (!widgetInstance || !node) return
-  const width = canvasEl.value.parentElement.clientWidth
-  const height = getWidgetHeight(widgetInstance, node, width)
+  const widget = widgetInstance
+  const hostNode = node
+  const width = getLayoutWidth()
+  const height = getWidgetHeight(widget, hostNode, width)
   containerHeight.value = height
-  node.canvasHeight = height
-  widgetInstance.y = 0
-  widgetInstance.last_y = 0
-  widgetInstance.width = width
+  hostNode.canvasHeight = height
   canvasEl.value.height = height === 0 ? 0 : (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
-  const ctx = canvasEl.value.getContext('2d')
-  if (!ctx) return
-  ctx.scale(scaleFactor, scaleFactor)
-  widgetInstance.draw?.(ctx, node, width, 1, height)
+  withLocalLayout(widget, width, () => {
+    const ctx = canvasEl.value.getContext('2d')
+    if (!ctx) return
+    ctx.scale(scaleFactor, scaleFactor)
+    widget.draw?.(ctx, hostNode, width, 1, height)
+  })
 }
 function augmentToWidgetPointerEvent(
   e: PointerEvent,
@@ -121,25 +148,32 @@ function augmentToWidgetPointerEvent(
 }
 function handleDown(e: PointerEvent) {
   if (!node || !widgetInstance || !pointer || e.button !== 0) return
-  augmentToWidgetPointerEvent(e, node)
-  pointer.down(e)
-  if (widgetInstance.mouse)
-    pointer.onDrag = (e) =>
-      widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
-  canvas.processWidgetClick(e, node, widgetInstance, pointer)
+  const widget = widgetInstance
+  const hostNode = node
+  const activePointer = pointer
+  augmentToWidgetPointerEvent(e, hostNode)
+  withLocalLayout(widget, getLayoutWidth(), () => {
+    activePointer.down(e)
+    if (widget.mouse)
+      activePointer.onDrag = (e) =>
+        widget.mouse?.(e, [e.offsetX, e.offsetY], hostNode)
+    canvas.processWidgetClick(e, hostNode, widget, activePointer)
+  })
   canvas.setDirty(true)
 }
 function handleUp(e: PointerEvent) {
-  if (!pointer || !node) return
+  if (!pointer || !node || !widgetInstance) return
+  const activePointer = pointer
   augmentToWidgetPointerEvent(e, node)
-  e.click_time = e.timeStamp - (pointer.eDown?.timeStamp ?? 0)
-  pointer.up(e)
+  e.click_time = e.timeStamp - (activePointer.eDown?.timeStamp ?? 0)
+  withLocalLayout(widgetInstance, getLayoutWidth(), () => activePointer.up(e))
   canvas.setDirty(true)
 }
 function handleMove(e: PointerEvent) {
-  if (!pointer || !node) return
+  if (!pointer || !node || !widgetInstance) return
+  const activePointer = pointer
   augmentToWidgetPointerEvent(e, node)
-  pointer.move(e)
+  withLocalLayout(widgetInstance, getLayoutWidth(), () => activePointer.move(e))
   if (e.buttons) canvas.setDirty(true)
 }
 </script>
