@@ -260,7 +260,7 @@ describe('AddCreditsDialog amount step', () => {
     renderDialog({ planLine: 'ended_sales_managed' })
 
     expect(screen.getByTestId('add-credits-plan-line')).toHaveTextContent(
-      "Buying credits doesn't restart your plan. Contact sales to renew it."
+      "Buying credits doesn't restart your Cloud plan. Contact sales to renew it."
     )
   })
 
