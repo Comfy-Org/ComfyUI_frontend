@@ -4,7 +4,7 @@ import type {
   AgentPaywallCta,
   AgentPaywallReason
 } from '@comfyorg/telemetry/types'
-import type { TopUpPlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
+import type { PlanCreditLine } from '@/platform/billing/topUpPlanCreditLine'
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
 export type AgentPaywallAction = 'addCredits' | 'subscribe' | 'upgrade'
@@ -13,7 +13,7 @@ export type AgentPaywallPresentation =
   | {
       kind: 'subscribed'
       showUpgrade: boolean
-      planCreditLine?: TopUpPlanCreditLine
+      planCreditLine?: PlanCreditLine
     }
   | { kind: 'subscriptionRequired' }
   | { kind: 'member' }
@@ -27,7 +27,7 @@ interface AgentPaywallPresentationInput {
   tier: SubscriptionTier | null
   canTopUp: boolean
   canSubscribeSelfServe: boolean
-  planCreditLine?: TopUpPlanCreditLine | null
+  planCreditLine?: PlanCreditLine | null
 }
 
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
