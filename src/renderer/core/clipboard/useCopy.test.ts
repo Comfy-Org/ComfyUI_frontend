@@ -306,6 +306,13 @@ describe('useCopy', () => {
           copyToCanvasClipboard(canvas)
         },
         slotAfter: keyboardNode
+      },
+      {
+        name: 'a later unstamped copy from another tab',
+        laterCopy: () => {
+          localStorage.setItem(CANVAS_CLIPBOARD_KEY, contextMenuNode)
+        },
+        slotAfter: contextMenuNode
       }
     ])(
       'keeps ownership of $name when stamp writes fail',
@@ -332,6 +339,27 @@ describe('useCopy', () => {
         expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(slotAfter)
       }
     )
+
+    it('preserves another tab copy written before the keyboard writer returns', () => {
+      const setItem = localStorage.setItem.bind(localStorage)
+      vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+        setItem(key, value)
+        if (key === CANVAS_CLIPBOARD_ID_KEY) {
+          setItem(CANVAS_CLIPBOARD_KEY, contextMenuNode)
+          setItem(CANVAS_CLIPBOARD_ID_KEY, 'other-tab-copy')
+        }
+      })
+      copyNodeWithKeyboard()
+      const input = document.createElement('textarea')
+      input.value = 'selected text'
+      document.body.append(input)
+      onTestFinished(() => input.remove())
+      input.setSelectionRange(0, 'selected'.length)
+
+      dispatchCopy(input)
+
+      expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(contextMenuNode)
+    })
 
     it.for([
       { name: 'textarea', make: () => document.createElement('textarea') },

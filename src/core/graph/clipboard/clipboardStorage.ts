@@ -47,19 +47,23 @@ function reportStorageError(error: unknown): void {
   })
 }
 
-export function writeClipboardStorage(serializedData: string): boolean {
+export function writeClipboardStorage(
+  serializedData: string
+): { stored: false; id: null } | { stored: true; id: string | null } {
   try {
     localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
   } catch (error) {
     discardClipboardStorage()
     reportStorageError(error)
-    return false
+    return { stored: false, id: null }
   }
   try {
-    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
+    const id = createUuidv4()
+    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, id)
+    return { stored: true, id }
   } catch (error) {
     discardClipboardId()
     reportStorageError(error)
+    return { stored: true, id: null }
   }
-  return true
 }

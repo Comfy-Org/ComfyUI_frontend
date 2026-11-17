@@ -55,11 +55,11 @@ export function copyToCanvasClipboard(
   items?: Iterable<Positionable>
 ): { serialized: string; stored: boolean } {
   const serialized = JSON.stringify(serializeItems(canvas, items))
-  const stored = writeClipboardStorage(serialized)
+  const { stored, id } = writeClipboardStorage(serialized)
   currentCopy = {
     serialized,
     stored,
-    id: stored ? readClipboardId() : null,
+    id,
     cachedSerialized: stored ? serialized : (readCachedSerialized() ?? null)
   }
   return currentCopy
@@ -72,7 +72,9 @@ export function discardCanvasCopy(
     currentCopy &&
     currentCopy === copy &&
     currentCopy.stored &&
-    readClipboardId() === currentCopy.id
+    readClipboardId() === currentCopy.id &&
+    (currentCopy.id !== null ||
+      readCachedSerialized() === currentCopy.serialized)
   ) {
     discardClipboardStorage()
   }
