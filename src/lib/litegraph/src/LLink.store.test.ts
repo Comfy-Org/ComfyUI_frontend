@@ -616,4 +616,65 @@ describe('LLink ↔ linkStore integration', () => {
     expect(graph.links.has(link.id)).toBe(false)
     expect(graph.floatingLinks.get(link.id)).toBe(link)
   })
+
+  describe('array-valued link types (COMBO option lists)', () => {
+    // Older saved workflows can carry a COMBO option list as a link type
+    // (`link[5]`), see https://github.com/Comfy-Org/ComfyUI_frontend/issues/20190.
+    // Once a link is registered, its type is read through the store's
+    // reactive state, so serialising must hand out a plain array or
+    // `structuredClone` of the workflow throws DataCloneError.
+    const comboType = ['normal', 'karras']
+
+    function loadWorkflowWithArrayLinkType() {
+      const source = new LGraph()
+      const a = new LGraphNode('A')
+      const b = new LGraphNode('B')
+      a.addOutput('out', 'COMBO')
+      b.addInput('in', 'COMBO')
+      source.add(a)
+      source.add(b)
+      a.connect(0, b, 0)
+      const saved = JSON.parse(JSON.stringify(source.serialize()))
+      saved.links[0][5] = [...comboType]
+
+      const graph = new LGraph()
+      graph.configure(saved)
+      return graph
+    }
+
+    it('serialises a registered link with an array type as a plain array', () => {
+      const graph = new LGraph()
+      const link = new LLink(
+        toLinkId(1),
+        [...comboType],
+        toNodeId(1),
+        0,
+        toNodeId(2),
+        0
+      )
+      graph._addLink(link)
+
+      expect(link._graphScope).toBeDefined()
+      expect(structuredClone(link.serialize())[5]).toEqual(comboType)
+      expect(structuredClone(link.asSerialisable()).type).toEqual(comboType)
+    })
+
+    it('loads a workflow with an array link type into a cloneable graph', () => {
+      const graph = loadWorkflowWithArrayLinkType()
+
+      const serialised = structuredClone(graph.serialize())
+      expect(serialised.links[0][5]).toEqual(comboType)
+      expect(() => structuredClone(graph.asSerialisable())).not.toThrow()
+    })
+
+    it('does not share the stored array with the serialised output', () => {
+      const graph = loadWorkflowWithArrayLinkType()
+      const [link] = graph.links.values()
+
+      const serialisedType = link.serialize()[5] as string[]
+      serialisedType.push('mutated')
+
+      expect(link.type).toEqual(comboType)
+    })
+  })
 })
