@@ -852,11 +852,9 @@ describe('useMinimap', () => {
     }
 
     function expectNumbers(transform: string, expected: number[]) {
-      const actual = transformNumbers(transform)
-      expect(actual).toHaveLength(expected.length)
-      for (const [index, value] of expected.entries()) {
-        expect(actual[index]).toBeCloseTo(value, 6)
-      }
+      expect(transformNumbers(transform)).toEqual(
+        expected.map((value) => expect.closeTo(value, 6))
+      )
     }
 
     it('places and scales the viewport box from the camera', async () => {
@@ -882,16 +880,15 @@ describe('useMinimap', () => {
     })
 
     it('rescales the viewport box when the canvas is resized', async () => {
+      const target = new EventTarget()
+      window.addEventListener = target.addEventListener.bind(target)
+      window.removeEventListener = target.removeEventListener.bind(target)
       const minimap = await createAndInitializeMinimap()
 
       moduleMockCanvas.canvas.clientWidth = 1200
       moduleMockCanvas.canvas.clientHeight = 900
 
-      for (const [type, listener] of vi.mocked(window.addEventListener).mock
-        .calls) {
-        if (type === 'resize' && typeof listener === 'function')
-          listener(new Event('resize'))
-      }
+      target.dispatchEvent(new Event('resize'))
       await triggerRAF()
 
       expectNumbers(

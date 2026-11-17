@@ -28,6 +28,7 @@ import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import { setSelectedIn } from '@/core/selection/selectionStore'
@@ -91,20 +92,18 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 vi.mock(import('@/composables/useErrorHandling'))
 
-const nodePosition = shallowRef({ x: 100, y: 50 })
-
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/layout/useNodeLayout'),
   () => ({
-    useNodeLayout: () => ({
-      position: nodePosition,
+    useNodeLayout: vi.fn(() => ({
+      position: shallowRef({ x: 100, y: 50 }),
       size: computed(() => ({ width: 200, height: 100 })),
       zIndex: 0,
       startDrag: vi.fn(),
       handleDrag: vi.fn(),
       endDrag: vi.fn(),
       moveTo: vi.fn()
-    })
+    }))
   })
 )
 
@@ -258,7 +257,6 @@ describe('LGraphNode', () => {
     mockData.mockLgraphNode = null
     mockData.resizeCallback = null
     app.dragOverNode = null
-    nodePosition.value = { x: 100, y: 50 }
     layoutStore.isDraggingVueNodes.value = false
 
     const canvasStore = useCanvasStore()
@@ -289,6 +287,8 @@ describe('LGraphNode', () => {
   })
 
   it('follows a position change after a drag has ended', async () => {
+    const layout = useNodeLayout(mockNodeData.id)
+    vi.mocked(useNodeLayout).mockReturnValue(layout)
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
     const heldTransforms = () =>
@@ -301,7 +301,7 @@ describe('LGraphNode', () => {
         )
 
     layoutStore.isDraggingVueNodes.value = true
-    nodePosition.value = { x: 300, y: 200 }
+    layout.position.value = { x: 300, y: 200 }
     await nextTick()
     expect(heldTransforms()).toEqual([
       'translate(300px, 170px)',
@@ -310,7 +310,7 @@ describe('LGraphNode', () => {
 
     layoutStore.isDraggingVueNodes.value = false
     await nextTick()
-    nodePosition.value = { x: 10, y: 20 }
+    layout.position.value = { x: 10, y: 20 }
     await nextTick()
 
     expect(root.style.transform).toBe('translate(10px, -10px)')

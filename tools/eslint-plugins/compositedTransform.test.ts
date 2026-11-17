@@ -38,7 +38,8 @@ describe('composited transform bindings', () => {
     "{ 'transform': position }",
     '{ translate: position }',
     '{ scale: zoom }',
-    "{ 'rotate': angle }"
+    "{ 'rotate': angle }",
+    "{ ['rotate']: angle }"
   ])('rejects the bound style %s', async (style) => {
     expect(
       await restrictedSyntaxMessages(
@@ -52,6 +53,10 @@ describe('composited transform bindings', () => {
     [
       'src/components/graph/lint-fixture/LintFixture.vue',
       '<template><div :style="{ width: `${x}px` }" /></template>'
+    ],
+    [
+      'src/components/graph/lint-fixture/LintFixture.vue',
+      '<template><div :style="{ [scale]: width }" /></template>'
     ],
     ['src/components/sidebar/lint-fixture/LintFixture.vue', boundTransform],
     [
