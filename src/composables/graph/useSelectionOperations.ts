@@ -66,11 +66,7 @@ export function useSelectionOperations() {
       return
     }
 
-    if (!copySelectionToStorage()) return
-
-    canvas.deselectAll()
-
-    canvas.pasteFromClipboard({ connectInputs: false })
+    canvas._deserializeItems(canvas._serializeItems(), { connectInputs: false })
 
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }

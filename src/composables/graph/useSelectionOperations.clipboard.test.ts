@@ -3,7 +3,10 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
-import { CANVAS_CLIPBOARD_ID_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
+import {
+  CANVAS_CLIPBOARD_ID_KEY,
+  CANVAS_CLIPBOARD_KEY
+} from '@/lib/litegraph/src/canvas/clipboardStorage'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { app } from '@/scripts/app'
 import {
@@ -38,19 +41,16 @@ function blockStorage() {
 }
 
 describe('selection clipboard commands', () => {
-  it.for(['copySelection', 'duplicateSelection'] as const)(
-    '%s reports blocked storage without changing the graph or selection',
-    (command) => {
-      const { graph, node, canvas } = createSelection()
-      blockStorage()
+  it('reports blocked storage on copy without changing the graph or selection', () => {
+    const { graph, node, canvas } = createSelection()
+    blockStorage()
 
-      useSelectionOperations()[command]()
+    useSelectionOperations().copySelection()
 
-      expect(graph.nodes).toEqual([node])
-      expect([...canvas.selectedItems]).toEqual([node])
-      expect(useToast().toasts).toMatchObject([{ kind: 'error' }])
-    }
-  )
+    expect(graph.nodes).toEqual([node])
+    expect([...canvas.selectedItems]).toEqual([node])
+    expect(useToast().toasts).toMatchObject([{ kind: 'error' }])
+  })
 
   it('confirms a stored copy', () => {
     createSelection()
@@ -60,21 +60,33 @@ describe('selection clipboard commands', () => {
     expect(useToast().toasts).toMatchObject([{ kind: 'success' }])
   })
 
-  it('duplicates the current selection when only the stamp write fails', () => {
-    const { graph, canvas } = createSelection()
-    const setItem = vi
-      .spyOn(window.localStorage, 'setItem')
-      .mockImplementation((key, value) => {
-        if (key === CANVAS_CLIPBOARD_ID_KEY)
-          throw new DOMException('Quota exceeded', 'QuotaExceededError')
-        Storage.prototype.setItem.call(localStorage, key, value)
-      })
-    onTestFinished(() => setItem.mockRestore())
+  it('duplicates at the pointer with storage blocked and selects only the duplicate', () => {
+    const { graph, node, canvas } = createSelection()
+    node.pos = [40, 80]
+    canvas.graph_mouse[0] = 235
+    canvas.graph_mouse[1] = 410
+    blockStorage()
 
     useSelectionOperations().duplicateSelection()
 
-    expect(graph.nodes).toHaveLength(2)
-    expect([...canvas.selectedItems].map((item) => item.id)).toEqual(['2'])
+    expect(
+      graph.nodes.map((item) => ({ id: item.id, pos: [...item.pos] }))
+    ).toEqual([
+      { id: '1', pos: [40, 80] },
+      { id: '2', pos: [235, 410] }
+    ])
+    expect([...canvas.selectedItems]).toEqual([graph.nodes[1]])
     expect(useToast().toasts).toEqual([])
+  })
+
+  it('leaves the previous clipboard copy intact when duplicating', () => {
+    createSelection()
+    localStorage.setItem(CANVAS_CLIPBOARD_KEY, '{"nodes":[]}')
+    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, 'previous-copy')
+
+    useSelectionOperations().duplicateSelection()
+
+    expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe('{"nodes":[]}')
+    expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBe('previous-copy')
   })
 })
