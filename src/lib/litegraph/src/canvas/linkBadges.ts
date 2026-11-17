@@ -107,8 +107,17 @@ export function toggleLinkBadgeStack(host: object, stackKey: string): void {
   expandedStacksByHost.set(host, expanded)
 }
 
-export function collapseLinkBadgeStack(host: object, stackKey: string): void {
-  expandedStacksByHost.get(host)?.delete(stackKey)
+export function collapseRenamedLinkBadgeStack(
+  host: object,
+  stackKey: string,
+  label: string
+): void {
+  const expanded = expandedStacksByHost.get(host)
+  expanded?.delete(stackKey)
+  const head = endpointsByHost
+    .get(host)
+    ?.find(({ hitArea }) => hitArea.stackKey === stackKey)
+  if (head) expanded?.delete(labelledStackKey(head.socketKey, label.trim()))
 }
 
 /** Collapses every expanded stack on the host; returns whether one was on screen. */

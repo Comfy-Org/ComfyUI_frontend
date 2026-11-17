@@ -952,22 +952,46 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
     })
 
-    it('merges a renamed stack into the stack that already has that name', () => {
-      const { canvas, links, prompt, submitPrompt } = createStackFixture([
-        undefined,
-        undefined,
-        'batch',
-        'batch'
-      ])
+    it.for([
+      { source: undefined, destination: 'batch', submitted: ' batch ' },
+      { source: 'batch', destination: undefined, submitted: '' }
+    ])(
+      'collapses a merge from $source into an expanded $destination stack',
+      ({ source, destination, submitted }) => {
+        const { canvas, links, relayout, prompt, submitPrompt } =
+          createStackFixture([
+            source,
+            source,
+            destination,
+            destination,
+            'other',
+            'other'
+          ])
+        const other = relayout().get(links[4].id)
+        assert.exists(other)
+        clickAt(canvas, ...other.output.tip)
+        const target = relayout().get(links[2].id)
+        assert.exists(target)
+        clickAt(canvas, ...target.output.tip)
+        const original = relayout().get(links[0].id)
+        assert.exists(original)
 
-      doubleClickAt(canvas, 420, 300)
-      expect(prompt.mock.calls[0][1]).toBe('')
-      submitPrompt('batch')
+        doubleClickAt(canvas, ...original.output.tip)
+        expect(prompt.mock.calls[0][1]).toBe(source ?? '')
+        submitPrompt(submitted)
 
-      expect(stackedLinkIdsAt(canvas, 420, 300)).toEqual(
-        links.map(({ id }) => id)
-      )
-    })
+        const merged = relayout().get(links[0].id)
+        const unrelated = relayout().get(links[4].id)
+        assert.exists(merged)
+        assert.exists(unrelated)
+        expect(stackedLinkIdsAt(canvas, ...merged.output.tip)).toEqual(
+          links.slice(0, 4).map(({ id }) => id)
+        )
+        expect(queryLinkBadgeAtPoint(canvas, ...unrelated.output.tip)).toBe(
+          links[4].id
+        )
+      }
+    )
 
     it('returns every link to the unlabelled stack when a stack name is cleared', () => {
       const { canvas, links, prompt, submitPrompt, labelOf } =
