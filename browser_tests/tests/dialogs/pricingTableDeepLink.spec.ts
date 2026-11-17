@@ -28,6 +28,8 @@ import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
+import { allowPopups } from '@e2e/fixtures/utils/recordOpenedUrl'
+import { returnToTab } from '@e2e/fixtures/utils/returnToTab'
 import {
   member,
   mockWorkspace,
@@ -634,21 +636,6 @@ async function mockRecovered3dsSubscription(page: Page) {
   })
 
   return { statusRequests, operationPollRequests, subscribeRequests }
-}
-
-/** The customer lets this site open popups, so a click can open a tab. */
-async function allowPopups(page: Page) {
-  await page.evaluate(() => {
-    window.open = (url) => {
-      document.documentElement.dataset.openedUrl = String(url)
-      return window
-    }
-  })
-}
-
-/** A customer coming back to this tab from the payment page. */
-async function returnToTab(page: Page) {
-  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
 const pricingHeading = (page: Page) =>
