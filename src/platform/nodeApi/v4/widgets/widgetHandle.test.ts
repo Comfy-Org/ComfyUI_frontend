@@ -406,7 +406,7 @@ describe('widget handles', () => {
       }
     )
 
-    it('changes no saved state, so it records no change, and redraws', () => {
+    it('changes no saved state, so it records no change, and redraws both canvas layers', () => {
       const { node, handle } = nodeWithWidget()
       const setDirtyCanvas = vi.spyOn(node, 'setDirtyCanvas')
 
@@ -417,7 +417,7 @@ describe('widget handles', () => {
       handle.setHeight(40)
 
       expect(changes).toEqual([])
-      expect(setDirtyCanvas).toHaveBeenCalledTimes(5)
+      expect(setDirtyCanvas.mock.calls).toEqual(Array(5).fill([true, true]))
     })
   })
 

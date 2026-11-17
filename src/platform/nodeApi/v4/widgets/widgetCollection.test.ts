@@ -284,6 +284,15 @@ describe('a node’s widgets', () => {
       )
     })
 
+    it('refuses a name any of several widgets of the node has', () => {
+      const { node, widgets } = nodeWith('seed', 'steps', 'cfg')
+
+      expect(() => widgets.add({ type: 'number', name: 'steps' })).toThrow(
+        "add needs a name no widget of the node has, not 'steps'."
+      )
+      expect(node.widgets).toHaveLength(3)
+    })
+
     it('refuses a name the node already has, and adds nothing', () => {
       const { node, widgets } = nodeWith('seed')
 
