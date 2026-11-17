@@ -138,6 +138,24 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     expect(store.getNodePreviewImagesByExecutionId(secondRun)).toBeUndefined()
   })
 
+  it('keeps the newer frame of another instance when an instance starts', () => {
+    vi.useFakeTimers()
+    const { locator, firstRun, secondRun } = arrangeTwoInstances()
+    const store = useNodeOutputStore()
+    store.setNodePreviewsByExecutionId(firstRun, ['blob:hostA'])
+    store.setNodePreviewsByExecutionId(secondRun, ['blob:hostB'])
+
+    store.revokePreviewsByExecutionId(firstRun)
+    vi.runAllTimers()
+
+    expect(store.nodePreviewImages[locator]).toEqual(['blob:hostB'])
+    expect(app.nodePreviewImages[locator]).toEqual(['blob:hostB'])
+    expect(store.getNodePreviewImagesByExecutionId(secondRun)).toEqual([
+      'blob:hostB'
+    ])
+    expect(store.getNodePreviewImagesByExecutionId(firstRun)).toBeUndefined()
+  })
+
   it('keeps instances apart across a snapshot and restore', () => {
     const { firstRun, secondRun } = arrangeTwoInstances()
     const store = useNodeOutputStore()
