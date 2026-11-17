@@ -28,8 +28,6 @@ export enum ServerFeatureFlag {
   MODEL_UPLOAD_FOLDERS = 'model_upload_folders',
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
-  UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
-  UNIFIED_WEB_SESSION = 'unified_web_session',
   SSO_ENABLED = 'sso_enabled',
   WEB_SESSION_LAPSE_RECOVERY_ENABLED = 'web_session_lapse_recovery_enabled',
   LOCAL_WEB_SSO = 'local_web_sso',
@@ -44,5 +42,6 @@ export enum ServerFeatureFlag {
   SIGNUP_TURNSTILE = 'signup_turnstile',
   SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags',
   AGENT_IN_APP_EXPERIENCE = 'agent-in-app-experience',
+  AGENT_CRDT_DEBUG = 'Comfy.Agent.CrdtDebug',
   AGENT = 'agent'
 }

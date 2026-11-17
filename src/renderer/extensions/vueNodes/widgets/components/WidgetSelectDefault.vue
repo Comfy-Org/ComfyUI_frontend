@@ -148,7 +148,7 @@
             </Button>
           </div>
           <div
-            v-if="isFilterable"
+            v-if="isFilterable || retainSearchInput"
             ref="searchInputContainerRef"
             class="m-1 flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors focus-within:border-ring"
           >
@@ -269,7 +269,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetFolderLockStore } from '@/stores/widgetFolderLockStore'
 import {
   resolveComboValues,
   useComboOptions
@@ -309,14 +309,13 @@ const modelValue = defineModel<WidgetValue>({
 })
 
 const localFolderLock = ref<string[]>()
-const widgetValueStore = useWidgetValueStore()
+const folderLocks = useWidgetFolderLockStore()
 const lockedDirectory = computed(() =>
-  widgetId
-    ? widgetValueStore.getWidgetFolderLock(widgetId)?.directory
-    : localFolderLock.value
+  widgetId ? folderLocks.get(widgetId)?.directory : localFolderLock.value
 )
 const combobox = useTemplateRef('combobox')
 const isOpen = ref(false)
+const retainSearchInput = ref(false)
 const searchInputContainerRef = ref<HTMLElement>()
 const { handleFocusOutside, handleViewportPointerDown } =
   useRestoreFocusOnViewportPointer(focusSearchInput)
@@ -389,12 +388,10 @@ const lockLabel = computed(() =>
 )
 
 async function toggleFolderLock() {
+  retainSearchInput.value = true
   const path = lockedDirectory.value ? undefined : [...directory.value]
   if (widgetId) {
-    widgetValueStore.setWidgetFolderLock(
-      widgetId,
-      path ? { directory: path } : undefined
-    )
+    folderLocks.set(widgetId, path ? { directory: path } : undefined)
     useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   } else {
     localFolderLock.value = path
@@ -434,8 +431,7 @@ function selectOption(option: ComboItem | null) {
 
   modelValue.value = option.rawValue
   useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
-  searchQuery.value = ''
-  isOpen.value = false
+  handleOpenChange(false)
 }
 
 function focusSearchInput() {
@@ -455,6 +451,7 @@ function handleOpenChange(open: boolean) {
     directory.value = openingDirectory.value
   } else {
     searchQuery.value = ''
+    retainSearchInput.value = false
   }
 }
 </script>

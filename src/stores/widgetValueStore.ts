@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
-import { z } from 'zod'
+
+import { useWidgetComponents } from './widgetComponents'
 
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import type { UUID } from '@/utils/uuid'
@@ -51,15 +52,6 @@ interface WidgetEntity {
   render: WidgetRenderState
   visibility: WidgetVisibilityComponent
 }
-
-interface WidgetFolderLock {
-  directory: string[]
-}
-
-const folderLocksSchema = z.record(
-  z.string(),
-  z.array(z.string().min(1)).min(1)
-)
 
 function setNodeScoped<T>(
   graphMap: Map<UUID, Map<NodeId, T>>,
@@ -115,8 +107,8 @@ export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
+  const components = useWidgetComponents()
   const graphWidgets = ref(new Map<UUID, Map<WidgetId, WidgetEntity>>())
-  const widgetFolderLocks = ref(new Map<WidgetId, WidgetFolderLock>())
   const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
   const convertedRestoredValues = new Map<string, ConvertedRestoredValue>()
   const graphWidgetRestorations = new Map<
@@ -323,7 +315,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       return existing.state
     }
 
-    if (existing) widgetFolderLocks.value.delete(widgetId)
+    if (existing) components.remove(widgetId)
     const state: WidgetState = {
       ...init,
       nodeId,
@@ -367,48 +359,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
     const { graphId } = parseWidgetId(widgetId)
     return graphWidgets.value.get(graphId)?.get(widgetId)?.visibility
-  }
-
-  function getWidgetFolderLock(
-    widgetId: WidgetId
-  ): WidgetFolderLock | undefined {
-    return widgetFolderLocks.value.get(widgetId)
-  }
-
-  function setWidgetFolderLock(
-    widgetId: WidgetId,
-    lock: WidgetFolderLock | undefined
-  ): void {
-    if (lock)
-      widgetFolderLocks.value.set(widgetId, { directory: [...lock.directory] })
-    else widgetFolderLocks.value.delete(widgetId)
-  }
-
-  function serializeNodeFolderLocks(graphId: UUID, nodeId: NodeId) {
-    const entries = [...widgetFolderLocks.value].flatMap(([id, lock]) => {
-      const owner = parseWidgetId(id)
-      return owner.graphId === graphId && owner.nodeId === nodeId
-        ? [[owner.name, [...lock.directory]] as const]
-        : []
-    })
-    return entries.length ? Object.fromEntries(entries) : undefined
-  }
-
-  function restoreNodeFolderLocks(
-    graphId: UUID,
-    nodeId: NodeId,
-    saved: unknown
-  ): void {
-    for (const id of widgetFolderLocks.value.keys()) {
-      const owner = parseWidgetId(id)
-      if (owner.graphId === graphId && owner.nodeId === nodeId)
-        widgetFolderLocks.value.delete(id)
-    }
-    const parsed = folderLocksSchema.safeParse(saved)
-    if (!parsed.success) return
-    for (const [name, directory] of Object.entries(parsed.data)) {
-      setWidgetFolderLock(createWidgetId(graphId, nodeId, name), { directory })
-    }
   }
 
   function setValue(widgetId: WidgetId, value: WidgetState['value']): boolean {
@@ -498,13 +448,19 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return true
   }
 
-  function deleteWidget(widgetId: WidgetId): boolean {
+  function releaseWidget(widgetId: WidgetId): boolean {
     if (!isWidgetId(widgetId)) return false
 
     const { graphId } = parseWidgetId(widgetId)
     removeNodeWidgetOrder(widgetId)
-    widgetFolderLocks.value.delete(widgetId)
     return graphWidgets.value.get(graphId)?.delete(widgetId) ?? false
+  }
+
+  function deleteWidget(widgetId: WidgetId): boolean {
+    if (!isWidgetId(widgetId)) return false
+
+    components.remove(widgetId)
+    return releaseWidget(widgetId)
   }
 
   function renameWidget(
@@ -533,11 +489,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgets.delete(oldId)
     entity.state.name = name
     widgets.set(newId, entity)
+    components.move(oldId, newId)
     if (index === -1) order.push(newId)
     else order.splice(index, 1, newId)
-
-    setWidgetFolderLock(newId, getWidgetFolderLock(oldId))
-    widgetFolderLocks.value.delete(oldId)
 
     return entity.state
   }
@@ -608,18 +562,12 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     }
   }
 
-  /**
-   * Releases the widget ids tracked for a node, from the store's own record
-   * rather than the node's live widget list — the two diverge once a node drops
-   * widgets without unregistering them. `discardValues` also drops the widget
-   * states; retaining them lets a node that comes back keep what the user set.
-   */
   function releaseNodeWidgets(
     graphId: UUID,
     localNodeId: NodeId,
     { discardValues }: { discardValues: boolean }
   ): void {
-    if (discardValues) restoreNodeFolderLocks(graphId, localNodeId, undefined)
+    if (discardValues) components.clearNode(graphId, localNodeId)
     const graphOrders = graphNodeWidgetOrders.value.get(graphId)
     if (!graphOrders) return
 
@@ -635,7 +583,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearNode(graphId: UUID, nodeId: NodeId): void {
-    restoreNodeFolderLocks(graphId, nodeId, undefined)
+    components.clearNode(graphId, nodeId)
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgets = graphWidgets.value.get(graphId)
     if (widgets) {
@@ -652,10 +600,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearGraph(graphId: UUID): void {
-    for (const id of widgetFolderLocks.value.keys()) {
-      if (parseWidgetId(id).graphId === graphId)
-        widgetFolderLocks.value.delete(id)
-    }
+    components.clearGraph(graphId)
     graphWidgets.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
@@ -669,16 +614,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     getWidgetRenderState,
     getWidgetVisibility,
-    getWidgetFolderLock,
-    setWidgetFolderLock,
-    serializeNodeFolderLocks,
-    restoreNodeFolderLocks,
     setValue,
     restoreValue,
     announceValue,
     setLabel,
     setOptions,
     updateOptions,
+    releaseWidget,
     deleteWidget,
     renameWidget,
     getNodeWidgets,

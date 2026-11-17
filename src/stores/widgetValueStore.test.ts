@@ -12,6 +12,7 @@ import type { WidgetValue } from '@comfyorg/graph-model/widgetValue'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
 import { stripGraphPrefix, useWidgetValueStore } from './widgetValueStore'
+import { useWidgetFolderLockStore } from './widgetFolderLockStore'
 
 function state<T>(
   type: string,
@@ -43,24 +44,24 @@ describe('useWidgetValueStore', () => {
       const interior = widgetId(graphA, toNodeId('subgraph:node-1'), 'seed')
       const renamed = widgetId(graphA, toNodeId('node-1'), 'model')
       store.registerWidget(seedA, state('combo', 'MOSS/image/a.safetensors'))
-      store.setWidgetFolderLock(seedA, { directory: ['MOSS', 'image'] })
-      store.setWidgetFolderLock(interior, { directory: ['SDXL'] })
-      store.setWidgetFolderLock(seedB, { directory: ['Flux'] })
+      useWidgetFolderLockStore().set(seedA, { directory: ['MOSS', 'image'] })
+      useWidgetFolderLockStore().set(interior, { directory: ['SDXL'] })
+      useWidgetFolderLockStore().set(seedB, { directory: ['Flux'] })
 
       store.renameWidget(seedA, renamed)
-      expect(store.getWidgetFolderLock(seedA)).toBeUndefined()
-      expect(store.getWidgetFolderLock(renamed)).toEqual({
+      expect(useWidgetFolderLockStore().get(seedA)).toBeUndefined()
+      expect(useWidgetFolderLockStore().get(renamed)).toEqual({
         directory: ['MOSS', 'image']
       })
-      store.setWidgetFolderLock(renamed, undefined)
+      useWidgetFolderLockStore().set(renamed, undefined)
 
-      expect(
-        store.serializeNodeFolderLocks(graphA, toNodeId('node-1'))
-      ).toBeUndefined()
-      expect(store.getWidgetFolderLock(interior)).toEqual({
+      expect(useWidgetFolderLockStore().get(renamed)).toBeUndefined()
+      expect(useWidgetFolderLockStore().get(interior)).toEqual({
         directory: ['SDXL']
       })
-      expect(store.getWidgetFolderLock(seedB)).toEqual({ directory: ['Flux'] })
+      expect(useWidgetFolderLockStore().get(seedB)).toEqual({
+        directory: ['Flux']
+      })
       expect(store.getWidget(renamed)?.value).toBe('MOSS/image/a.safetensors')
     })
 
@@ -97,13 +98,13 @@ describe('useWidgetValueStore', () => {
       ({ remove }) => {
         const store = useWidgetValueStore()
         store.registerWidget(seedA, state('combo', 'MOSS/a.safetensors'))
-        store.setWidgetFolderLock(seedA, { directory: ['MOSS'] })
-        store.setWidgetFolderLock(seedB, { directory: ['Flux'] })
+        useWidgetFolderLockStore().set(seedA, { directory: ['MOSS'] })
+        useWidgetFolderLockStore().set(seedB, { directory: ['Flux'] })
 
         remove(store, seedA)
 
-        expect(store.getWidgetFolderLock(seedA)).toBeUndefined()
-        expect(store.getWidgetFolderLock(seedB)).toEqual({
+        expect(useWidgetFolderLockStore().get(seedA)).toBeUndefined()
+        expect(useWidgetFolderLockStore().get(seedB)).toEqual({
           directory: ['Flux']
         })
       }
@@ -112,14 +113,16 @@ describe('useWidgetValueStore', () => {
     it('preserves scope while a deleted node is retained for undo', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('combo', 'MOSS/a.safetensors'))
-      store.setWidgetFolderLock(seedA, { directory: ['MOSS'] })
+      useWidgetFolderLockStore().set(seedA, { directory: ['MOSS'] })
 
       store.releaseNodeWidgets(graphA, toNodeId('node-1'), {
         discardValues: false
       })
       store.registerWidget(seedA, state('combo', 'ignored'))
 
-      expect(store.getWidgetFolderLock(seedA)).toEqual({ directory: ['MOSS'] })
+      expect(useWidgetFolderLockStore().get(seedA)).toEqual({
+        directory: ['MOSS']
+      })
     })
   })
 
@@ -272,7 +275,6 @@ describe('useWidgetValueStore', () => {
     it('clears omitted render state when a widget id is recycled', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 5), {
-        hasLayoutSize: true,
         tooltip: 'old'
       })
 
@@ -823,7 +825,9 @@ describe('useWidgetValueStore', () => {
     it('clearNode removes only the target node values, render state, and order', () => {
       const store = useWidgetValueStore()
       const sibling = widgetId(graphA, toNodeId('node-2'), 'seed')
-      store.registerWidget(seedA, state('number', 1), { hasLayoutSize: true })
+      store.registerWidget(seedA, state('number', 1), {
+        tooltip: 'seed'
+      })
       store.registerWidget(sibling, state('number', 2))
 
       store.clearNode(graphA, toNodeId('node-1'))

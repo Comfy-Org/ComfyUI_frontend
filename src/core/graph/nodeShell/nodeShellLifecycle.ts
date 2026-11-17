@@ -11,6 +11,7 @@ import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetComponents } from '@/stores/widgetComponents'
 import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 
 import { registerNodeState, unregisterNodeState } from './nodeShellState'
@@ -102,21 +103,14 @@ export function attachNodeToStores(
     )
   }
 
+  useWidgetComponents().adoptNode(graph.rootGraph.id, node.id, node.properties)
   refuseAmbiguousNodeWidgets(node, (report) =>
     reportWidgetRefusal(node, report)
   )
-  for (const widget of node.widgets ?? []) {
+  if (!node.widgets) return
+  for (const widget of node.widgets) {
     if (isNodeBindable(widget)) widget.setNodeId(node.id)
   }
-  if (Object.hasOwn(node.properties, 'widget_folder_locks')) {
-    useWidgetValueStore().restoreNodeFolderLocks(
-      graph.rootGraph.id,
-      node.id,
-      node.properties.widget_folder_locks
-    )
-    delete node.properties.widget_folder_locks
-  }
-  if (!node.widgets) return
   useWidgetValueStore().setNodeWidgetOrder(
     graph.rootGraph.id,
     node.id,
@@ -153,11 +147,7 @@ export function detachNodeFromStores(
   mode: WidgetDetachMode = 'keep-values'
 ): void {
   const rootGraphId = graph.rootGraph.id
-  const folderLocks = useWidgetValueStore().serializeNodeFolderLocks(
-    rootGraphId,
-    node.id
-  )
-  if (folderLocks) node.properties.widget_folder_locks = folderLocks
+  useWidgetComponents().detachNode(rootGraphId, node.id, node.properties)
   unregisterNodeState(node)
   useWidgetValueStore().releaseNodeWidgets(rootGraphId, node.id, {
     discardValues: mode === 'discard-values'

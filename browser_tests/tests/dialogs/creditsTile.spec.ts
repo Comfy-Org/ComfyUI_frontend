@@ -9,7 +9,9 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import {
+  mockWorkspaceList,
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
@@ -108,8 +110,6 @@ async function mockCloudBoot(
   billingControlEnabled = true,
   billingStatus = mockBillingStatus
 ) {
-  // Frontend-origin boot endpoints (proxied to the backend in production).
-  // `/api/features` is the remote-config source for the billing UX rollout.
   await page.route('**/api/features', (r) =>
     r.fulfill(
       jsonRoute({
@@ -120,8 +120,6 @@ async function mockCloudBoot(
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )
-  // Include the mock user so the multi-user select screen auto-selects it
-  // (paired with the `Comfy.userId` localStorage seed below).
   await page.route('**/api/users', (r) =>
     r.fulfill(
       jsonRoute({
@@ -131,9 +129,6 @@ async function mockCloudBoot(
       })
     )
   )
-  // Non-empty settings with a completed tutorial keep the cloud app from
-  // booting as a new user, whose Workflow Templates dialog would otherwise
-  // auto-open and intercept the Settings click behind its modal backdrop.
   await page.route('**/api/settings', (r) =>
     r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
@@ -142,30 +137,12 @@ async function mockCloudBoot(
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
+  await mockWebSessionServer(page)
   await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 
-  // Single personal workspace.
-  await page.route('**/api/workspaces', (r) =>
-    r.fulfill(
-      jsonRoute({
-        workspaces: [
-          {
-            id: 'ws-personal',
-            name: 'Personal Workspace',
-            type: 'personal',
-            role: 'owner'
-          }
-        ]
-      })
-    )
-  )
+  await mockWorkspaceList(page, [workspace('personal', 'owner')])
 
-  // Workspace billing (flag-on path) — a personal workspace now routes through
-  // `/api/billing/*`.
   await page.route('**/api/billing/status', (r) =>
     r.fulfill(jsonRoute(billingStatus))
   )

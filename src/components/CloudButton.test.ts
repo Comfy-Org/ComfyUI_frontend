@@ -1,4 +1,6 @@
 import userEvent from '@testing-library/user-event'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
@@ -8,7 +10,10 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
-import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type {
+  CloudWorkflowCheckResult,
+  CloudWorkflowVerdict
+} from '@/platform/openOnCloud/cloudWorkflowCheck'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/components/CloudButton.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -36,6 +41,7 @@ vi.mock(
   })
 )
 
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
@@ -115,6 +121,7 @@ describe('Cloud button compatibility checks', () => {
 
     await user.hover(button)
     await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'))
+    expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
     await user.click(button)
 
     await waitFor(() =>
@@ -123,6 +130,12 @@ describe('Cloud button compatibility checks', () => {
       )
     )
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'run_bar_cloud_clicked',
+      element_group: 'top_menu'
+    })
   })
 
   it('names the dialog after its title', async () => {
@@ -249,19 +262,55 @@ describe('Cloud button compatibility checks', () => {
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
-  it('names the missing model loader and explains how to continue', async () => {
-    vi.mocked(checkCloudCompatibility).mockResolvedValue({
-      kind: 'unreadableModelLoader',
-      nodeType: 'ImpactCheckpointLoader'
-    })
+  it.for<{
+    name: string
+    result: CloudWorkflowCheckResult
+    message: string
+    properties: RunOnCloudTelemetryEvent['properties']
+  }>([
+    {
+      name: 'asks for nodes when the workflow has none to run',
+      result: { kind: 'emptyWorkflow' },
+      message:
+        'This workflow has no nodes to run. Add nodes and save it, then try again.',
+      properties: { reason: 'empty_workflow' }
+    },
+    {
+      name: 'names the missing model loader and explains how to continue',
+      result: {
+        kind: 'unreadableModelLoader',
+        nodeType: 'ImpactCheckpointLoader'
+      },
+      message:
+        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.',
+      properties: {
+        reason: 'unreadable_model_loader',
+        node_type: 'ImpactCheckpointLoader'
+      }
+    },
+    {
+      name: 'asks to try again when Comfy Cloud gives no answer',
+      result: null,
+      message: 'Could not check this workflow on Comfy Cloud. Try again.',
+      properties: { reason: 'no_verdict' }
+    }
+  ])('$name', async ({ result, message, properties }) => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue(result)
     render(CloudButton, { global: { plugins: [testI18n] } })
 
     await userEvent.setup().click(screen.getByTestId('cloud-button'))
 
     await waitFor(() =>
-      expect(useToast().toasts.map((toast) => toast.title)).toContain(
-        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
-      )
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(message)
+    )
+    expect(
+      useTelemetry()?.trackRunOnCloudEvent
+    ).toHaveBeenCalledExactlyOnceWith({
+      name: 'app:run_on_cloud_check_failed',
+      properties
+    })
+    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+      false
     )
   })
 
@@ -281,6 +330,23 @@ describe('Cloud button compatibility checks', () => {
       )
     )
     expect(useToast().toasts).toEqual([])
+  })
+
+  it('closes the open dialog when the Cloud button unmounts', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    const { unmount } = render(CloudButton, {
+      global: { plugins: [testI18n] }
+    })
+    const dialogs = useDialogStore()
+
+    await userEvent.setup().click(screen.getByTestId('cloud-button'))
+    await waitFor(() =>
+      expect(dialogs.isDialogOpen('global-run-on-comfy-cloud')).toBe(true)
+    )
+
+    unmount()
+
+    expect(dialogs.isDialogOpen('global-run-on-comfy-cloud')).toBe(false)
   })
 
   it('opens nothing when the button unmounts while the dialog loads', async () => {

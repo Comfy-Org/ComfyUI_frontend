@@ -37,13 +37,10 @@ const UNTOUCHED_NODE_ID = '6'
 const ADD_THEN_SET_CASE = 'agent-rec-add-set-delete'
 const ADDED_NODE_ID = '2785690574723683'
 
-// Real product opt-in for the CRDT debug instrument (crdtDebugGate.ts), not
-// test-only furniture — the same keys `agentDebugPanel.spec.ts` sets. Turning
-// it on surfaces `useAgentCrdtFollower`'s own `status.outcomes` counters in
-// the DOM, which is the browser-side apply signal below.
+test.use({ crdtDebugEnabled: true })
+
 async function enableCrdtDebugPanel(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
     localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
   })
 }

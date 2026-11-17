@@ -22,14 +22,14 @@ import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscri
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const RAIL_FEATURES = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const OPERATION_ID = 'op-e2e-outcome'
@@ -247,11 +247,6 @@ function idempotencyKey(request: Request): string | undefined {
   return request.headers()['idempotency-key']
 }
 
-/** Which transport issued the request, and so which rail served it. */
-function transport(request: Request): string {
-  return request.resourceType()
-}
-
 /** Settings ▸ Workspace ▸ Plan & Credits. */
 async function openPlanAndCredits(page: Page) {
   await page
@@ -309,15 +304,14 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     await cloudAppExpect(successHeading(page)).toBeVisible()
     expect(routes.subscribeRequests).toHaveLength(1)
     const [issued] = routes.subscribeRequests
-    expect(transport(issued)).toBe('fetch')
+    expect(billingClient(issued)).toBe('sdk')
     expect(idempotencyKey(issued)).toBeTruthy()
     expect(issued.postDataJSON()).toMatchObject({
       plan_slug: 'creator-annual',
       idempotency_key: idempotencyKey(issued)
     })
     expect(routes.previewRequests.length).toBeGreaterThan(0)
-    expect(routes.previewRequests.map(transport)).not.toContain('xhr')
-    // The owner is the only member, so nothing is removed before billing.
+    expect(routes.previewRequests.map(billingClient)).not.toContain('legacy')
     expect(routes.memberRemovals).toHaveLength(0)
   })
 
@@ -350,12 +344,11 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
 
     await expect.poll(() => routes.openedUrls()).toEqual([HOSTED_PAYMENT_URL])
     expect(routes.subscribeRequests).toHaveLength(1)
-    expect(transport(routes.subscribeRequests[0])).toBe('fetch')
+    expect(billingClient(routes.subscribeRequests[0])).toBe('sdk')
     await expect(
       toast.withText('Verify your payment to finish setting up your workspace')
     ).toBeVisible()
 
-    // A poll that still reports the same parked step must not offer it again.
     const pollsBefore = routes.opsRequests.length
     await returnToTab(page)
     await expect
@@ -370,7 +363,7 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     await expect(successHeading(page)).toBeVisible()
     expect(await routes.openedUrls()).toEqual([HOSTED_PAYMENT_URL])
     expect(routes.subscribeRequests).toHaveLength(1)
-    expect(routes.opsRequests.map(transport)).not.toContain('xhr')
+    expect(routes.opsRequests.map(billingClient)).not.toContain('legacy')
   })
 
   test('shows the progress toast while a subscribe processes, and clears it when it settles', async ({
@@ -435,7 +428,7 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     const cancelDialog = new CancelSubscriptionDialog(page)
     await cancelDialog.open('2099-03-15T10:00:00Z')
     await cancelDialog.confirmCancel()
-    expect(transport(routes.cancelRequests[0])).toBe('fetch')
+    expect(billingClient(routes.cancelRequests[0])).toBe('sdk')
 
     const statusReadsBeforeReload = routes.statusRequests.length
     await page.reload()
@@ -448,6 +441,6 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
       statusReadsBeforeReload
     )
     expect(readsAfterReload.length).toBeGreaterThan(0)
-    expect(readsAfterReload.map(transport)).not.toContain('xhr')
+    expect(readsAfterReload.map(billingClient)).not.toContain('legacy')
   })
 })

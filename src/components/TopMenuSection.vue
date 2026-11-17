@@ -74,7 +74,13 @@
                 "
                 class="shrink-0"
               />
-              <LoginButton v-else-if="!isLoggedIn && !isIntegratedTabBar" />
+              <LoginButton
+                v-else-if="
+                  !isLoggedIn &&
+                  !isIntegratedTabBar &&
+                  !flags.billingNewUxEnabled
+                "
+              />
               <Button
                 v-if="managerState.shouldShowExtensionsButton.value"
                 :tooltip="t('menu.manageExtensions')"
@@ -216,7 +222,7 @@ import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/
 import { waitForDeploymentListing } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
@@ -380,8 +386,8 @@ useMutationObserver(
 onMounted(() => {
   const container = legacyCommandsContainerRef.value
   if (!container) return
-  app.menu.element.style.width = 'fit-content'
-  container.appendChild(app.menu.element)
+  useApp().menu.element.style.width = 'fit-content'
+  container.appendChild(useApp().menu.element)
   checkLegacyContent()
 })
 

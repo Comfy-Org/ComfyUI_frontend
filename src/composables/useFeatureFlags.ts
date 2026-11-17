@@ -8,6 +8,7 @@ import {
   showsCloudBillingNewUxOnLocal
 } from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
+import { localOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -54,7 +55,7 @@ function resolveFlag<T>(
  */
 function resolveStrictBooleanFlag(
   flagKey: string,
-  remoteConfigValue: boolean | undefined
+  remoteConfigValue: unknown
 ): boolean {
   try {
     return resolveFlag<unknown>(flagKey, remoteConfigValue, false) === true
@@ -219,19 +220,22 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get openOnCloudEnabled() {
-      return resolveFlag(
+      const served = isCloud
+        ? remoteConfig.value.open_on_cloud_enabled
+        : (localOpenOnCloudRollout.value?.open_on_cloud_enabled ?? false)
+      return resolveStrictBooleanFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
-        remoteConfig.value.open_on_cloud_enabled,
-        import.meta.env.DEV
+        served
       )
     },
     get openOnCloudUseLocalAgentEnabled() {
-      return (
-        resolveFlag<unknown>(
-          ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
-          remoteConfig.value.open_on_cloud_use_local_agent_enabled,
-          false
-        ) === true
+      const served = isCloud
+        ? remoteConfig.value.open_on_cloud_use_local_agent_enabled
+        : (localOpenOnCloudRollout.value
+            ?.open_on_cloud_use_local_agent_enabled ?? false)
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
+        served
       )
     },
     get deployToCloud() {
@@ -299,27 +303,6 @@ export function useFeatureFlags() {
         undefined
       )
     },
-    get unifiedCloudAuthEnabled() {
-      if (!isCloud) return false
-
-      return resolveFlag(
-        ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
-        remoteConfig.value.unified_cloud_auth,
-        false
-      )
-    },
-    get unifiedWebSessionEnabled() {
-      if (!isCloud) return false
-
-      const key = ServerFeatureFlag.UNIFIED_WEB_SESSION
-      // Overrides skip the server's web_session_enabled pairing; whoever overrides
-      // this key must also be in the web_session_enabled set.
-      const value =
-        getSessionOverride<unknown>(key) ??
-        getDevOverride<unknown>(key) ??
-        remoteConfig.value.unified_web_session
-      return value === true
-    },
     get webSessionLapseRecoveryEnabled() {
       return resolveFlag(
         ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED,
@@ -371,9 +354,9 @@ export function useFeatureFlags() {
         remoteConfig.value.billing_auto_top_up_at_checkout_enabled
       )
     },
-    /** Top-up, subscription and billing reads run on the billing SDK, which needs the unified session. */
+    /** Top-up, subscription and billing reads run on the billing SDK on Cloud. */
     get billingSdkRailEnabled() {
-      return this.unifiedCloudAuthEnabled
+      return isCloud
     },
     get unifiedBillingSettingsEnabled() {
       if (!isCloud) return opensLocalBillingHandoff()
@@ -418,6 +401,12 @@ export function useFeatureFlags() {
     },
     get assetsEnabled() {
       return isCloud || resolveFlag('assets', undefined, false)
+    },
+    get agentCrdtDebugEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.AGENT_CRDT_DEBUG,
+        remoteConfig.value['Comfy.Agent.CrdtDebug']
+      )
     },
     get agentInAppExperienceEnabled() {
       return resolveWhitelistFlag(
@@ -470,8 +459,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
-      [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
-      [ServerFeatureFlag.UNIFIED_WEB_SESSION]: flags.unifiedWebSessionEnabled,
       [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
       [ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED]:
         flags.webSessionLapseRecoveryEnabled,
@@ -491,6 +478,7 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.AGENT_IN_APP_EXPERIENCE]:
         flags.agentInAppExperienceEnabled,
+      [ServerFeatureFlag.AGENT_CRDT_DEBUG]: flags.agentCrdtDebugEnabled,
       assets: flags.assetsEnabled
     }
 

@@ -17,6 +17,8 @@ import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetFolderLockStore } from '@/stores/widgetFolderLockStore'
+import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 import {
   graphScopeOf,
   toOwningGraphId,
@@ -163,6 +165,7 @@ function createPlaceholderNode(
     mode: 0,
     flags: {},
     has_errors: true,
+    properties: {},
     last_serialization: {
       id,
       type,
@@ -207,6 +210,7 @@ function createNewNode(
     mode: 0,
     flags: {},
     has_errors: false,
+    properties: {},
     inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
     outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
     widgets: widgets.map((w) => ({ ...w, type: 'combo', options: {} })),
@@ -358,6 +362,49 @@ describe('useNodeReplacement', () => {
       })
     })
 
+    it('preserves live components instead of stale cached overrides during replacement', () => {
+      const graph = createReplacementGraph()
+      const placeholder = addSlottedNode(graph, 'MissingNode')
+      placeholder.configure({
+        ...placeholder.serialize(),
+        properties: {
+          widget_folder_locks: { model: ['old'] },
+          widgetHeights: { notes: 101, keep: 137 }
+        }
+      })
+      markPlaceholder(placeholder)
+      const modelId = widgetId(graph.id, placeholder.id, 'model')
+      const notesId = widgetId(graph.id, placeholder.id, 'notes')
+      useWidgetFolderLockStore().set(modelId, { directory: ['live'] })
+      useWidgetHeightStore().set(notesId, undefined)
+      const newNode = createSlottedNode('Replacement')
+      newNode.addWidget('combo', 'model', 'live/a.safetensors', () => {}, {
+        values: ['live/a.safetensors']
+      })
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const result = useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('MissingNode', {
+          old_node_id: 'MissingNode',
+          new_node_id: 'Replacement',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(result).toEqual(['MissingNode'])
+      expect(graph.nodes).toContain(newNode)
+      expect(useWidgetFolderLockStore().get(modelId)).toEqual({
+        directory: ['live']
+      })
+      expect(useWidgetHeightStore().get(notesId)).toBeUndefined()
+      expect(newNode.serialize().properties).toEqual({
+        widget_folder_locks: { model: ['live'] },
+        widgetHeights: { keep: 137 }
+      })
+    })
+
     it('clears stale node-owned records before binding the replacement', () => {
       const placeholder = createPlaceholderNode(1, 'MissingNode')
       const graph = createMockGraph([placeholder])
@@ -430,10 +477,10 @@ describe('useNodeReplacement', () => {
         graph,
         'ResizeImagesByLongerEdge',
         [],
-        ['IMAGE']
+        ['unmapped', 'IMAGE']
       )
       const target = addSlottedNode(graph, 'Target', ['image'])
-      const link = createTestLink(graph, placeholder, 0, target, 0)
+      const link = createTestLink(graph, placeholder, 1, target, 0)
       markPlaceholder(placeholder)
       const newNode = createSlottedNode(
         'ImageScaleToMaxDimension',
@@ -453,7 +500,7 @@ describe('useNodeReplacement', () => {
             { new_id: 'largest_size', old_id: 'longer_edge' },
             { new_id: 'upscale_method', set_value: 'lanczos' }
           ],
-          output_mapping: [{ new_idx: 0, old_idx: 0 }]
+          output_mapping: [{ new_idx: 0, old_idx: 1 }]
         })
       ])
 
@@ -612,7 +659,30 @@ describe('useNodeReplacement', () => {
         link,
         placeholder.outputs[0]
       )
-      expect(incrementVersion).toHaveBeenCalledOnce()
+      expect(incrementVersion).toHaveBeenCalledTimes(2)
+    })
+
+    it('changes the graph version so cached render order drops the placeholder', () => {
+      const graph = createReplacementGraph()
+      const placeholder = addSlottedNode(graph, 'OldNode', [], [])
+      markPlaceholder(placeholder)
+      const versionBefore = graph._version
+      vi.mocked(LiteGraph.createNode).mockReturnValue(
+        createSlottedNode('NewNode')
+      )
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(graph._nodes.map((node) => node.type)).toEqual(['NewNode'])
+      expect(graph._version).toBeGreaterThan(versionBefore)
     })
 
     it('bails out before lifecycle when endpoint validation rejects', () => {
@@ -781,6 +851,39 @@ describe('useNodeReplacement', () => {
       expect(
         graph.getNodeById(toNodeId(1))!.widgets!.map((widget) => widget.value)
       ).toEqual(['multiplier', 1.5])
+    })
+
+    it('carries a widget value from an installed deprecated node, which has no last_serialization', () => {
+      const installedNode = createPlaceholderNode(1, 'OldScaler')
+      installedNode.last_serialization = fromAny<
+        LGraphNode['last_serialization'],
+        unknown
+      >(undefined)
+      vi.mocked(installedNode.serialize).mockReturnValue({
+        ...installedNode.serialize(),
+        widgets_values: [1.5]
+      })
+      const graph = createMockGraph([installedNode])
+      installedNode.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([installedNode])
+
+      const newNode = createNewNode([], [], [{ name: 'scale', value: 1 }])
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldScaler', {
+          new_node_id: 'NewScaler',
+          old_node_id: 'OldScaler',
+          old_widget_ids: ['scale_by'],
+          input_mapping: [{ new_id: 'scale', old_id: 'scale_by' }],
+          output_mapping: null
+        })
+      ])
+
+      expect(graph._nodes[0].widgets?.map((widget) => widget.value)).toEqual([
+        1.5
+      ])
     })
 
     it('lets the later mapping win when two mappings target one widget', () => {
@@ -1389,6 +1492,31 @@ describe('useNodeReplacement', () => {
 
       const predicate = capturedPredicate()
       expect(predicate(freshNode)).toBe(false)
+    })
+
+    it('detects an installed node without last_serialization when its definition is deprecated', () => {
+      const installedNode = createPlaceholderNode(1, 'OldNode')
+      installedNode.last_serialization = fromAny<
+        LGraphNode['last_serialization'],
+        unknown
+      >(undefined)
+      installedNode.constructor = Object.assign({}, installedNode.constructor, {
+        nodeData: { deprecated: true }
+      })
+      Object.assign(app, { rootGraph: createMockGraph([installedNode]) })
+      vi.mocked(collectAllNodes).mockReturnValue([])
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldNode', {
+          new_node_id: 'NewNode',
+          old_node_id: 'OldNode',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(capturedPredicate()(installedNode)).toBe(true)
     })
 
     it('should fall back to node.type when last_serialization.type is undefined', () => {

@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { measureCadence } from '@e2e/fixtures/helpers/MinimapCadenceHelper'
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
@@ -11,7 +12,10 @@ import {
 
 const PAN_STEPS = 60
 const ZOOM_STEPS = 40
+const DRAG_STEPS = 60
+const SETTLE_FRAMES = 10
 const IDLE_MS = 1500
+const LOAD_TIMEOUT_MS = 120_000
 const VIEW_SCALE = 0.6
 
 const FIELDS = [
@@ -66,11 +70,30 @@ export async function centerOnGraph(comfyPage: ComfyPage) {
 
 export async function waitForMeasuredVueNodes(
   comfyPage: ComfyPage,
-  nodeCount: number
+  nodeCount: number,
+  timeout?: number
 ) {
   await expect(
     comfyPage.page.locator('[data-node-id][data-measured]')
-  ).toHaveCount(nodeCount)
+  ).toHaveCount(nodeCount, { timeout })
+}
+
+export async function measureLoad(
+  comfyPage: ComfyPage,
+  name: string,
+  workflow: ComfyWorkflowJSON,
+  renderer: 'vue' | 'litegraph'
+) {
+  await comfyPage.perf.startMeasuring()
+  await comfyPage.workflow.loadGraphData(workflow)
+  if (renderer === 'vue') {
+    await waitForMeasuredVueNodes(
+      comfyPage,
+      workflow.nodes.length,
+      LOAD_TIMEOUT_MS
+    )
+  }
+  return comfyPage.perf.stopMeasuring(name)
 }
 
 export async function measureIdle(comfyPage: ComfyPage, name: string) {
@@ -101,6 +124,69 @@ export async function measureZoom(comfyPage: ComfyPage, name: string) {
     await comfyPage.page.mouse.wheel(0, 60)
     await nextFrame(comfyPage.page)
   }
+  return comfyPage.perf.stopMeasuring(name)
+}
+
+async function settle(comfyPage: ComfyPage) {
+  for (let i = 0; i < SETTLE_FRAMES; i++) await nextFrame(comfyPage.page)
+}
+
+export async function measureNodeDrag(comfyPage: ComfyPage, name: string) {
+  const grip = await comfyPage.page.evaluate(() => {
+    const canvas = window.app!.canvas
+    const rect = canvas.canvas.getBoundingClientRect()
+    const centerX = rect.left + rect.width / 2
+    const centerY = rect.top + rect.height / 2
+    const titleHeight = window.LiteGraph!.NODE_TITLE_HEIGHT
+    const grips = window.app!.graph.nodes.map((node) => {
+      const [x, y] = canvas.ds.convertOffsetToCanvas([
+        node.pos[0] + node.size[0] / 2,
+        node.pos[1] - titleHeight / 2
+      ])
+      return { id: node.id, x: rect.left + x, y: rect.top + y }
+    })
+    const distance = (grip: { x: number; y: number }) =>
+      Math.hypot(grip.x - centerX, grip.y - centerY)
+    return grips.reduce((a, b) => (distance(a) <= distance(b) ? a : b))
+  })
+  const position = () =>
+    comfyPage.page.evaluate((id) => {
+      const node = window.app!.graph.getNodeById(id)
+      if (!node) throw new Error(`Node ${id} not found`)
+      return [node.pos[0], node.pos[1]]
+    }, grip.id)
+  const start = await position()
+
+  const { mouse } = comfyPage.page
+  await mouse.move(grip.x, grip.y)
+  await comfyPage.perf.startMeasuring()
+  await mouse.down()
+  for (let i = 1; i <= DRAG_STEPS; i++) {
+    await mouse.move(grip.x + i * 4, grip.y + i * 2)
+    await nextFrame(comfyPage.page)
+  }
+  const farthest = await position()
+  for (let i = DRAG_STEPS; i >= 0; i--) {
+    await mouse.move(grip.x + i * 4, grip.y + i * 2)
+    await nextFrame(comfyPage.page)
+  }
+  await mouse.up()
+  await settle(comfyPage)
+  const measurement = await comfyPage.perf.stopMeasuring(name)
+  expect(farthest).not.toEqual(start)
+  return measurement
+}
+
+export async function measureSelectAll(comfyPage: ComfyPage, name: string) {
+  const nodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+  await comfyPage.perf.startMeasuring()
+  await comfyPage.canvas.press('Control+a')
+  await expect
+    .poll(() =>
+      comfyPage.page.evaluate(() => window.app!.canvas.selectedItems.size)
+    )
+    .toBe(nodeCount)
+  await settle(comfyPage)
   return comfyPage.perf.stopMeasuring(name)
 }
 

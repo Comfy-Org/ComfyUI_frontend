@@ -317,6 +317,7 @@ export const zAgentPendingPaused = zAgentPendingAskBase.and(
 export const zAgentPostMessageRequest = z.object({
   ask_kinds: z.array(zAgentAskKind).optional(),
   attachments: z.array(z.string().max(256)).max(25).optional(),
+  canvas_selection: z.record(z.string(), z.unknown()).optional(),
   client_id: z.string().optional(),
   client_message_id: z.string().max(128).optional(),
   client_version: z.string().optional(),
@@ -597,6 +598,12 @@ export const zAgentThreadSummary = z.object({
 export const zAgentToolCallData = z.object({
   doc_lineage_seq: z.int().gte(1).optional(),
   doc_seq: z.int().gte(1).optional(),
+  download: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(/^[^\x00\n\r\t]+$/)
+    .optional(),
   duration_ms: z.int().optional(),
   error_code: z.string().optional(),
   job_id: z
@@ -1603,19 +1610,20 @@ export const zBillingEventsResponse = z.object({
 })
 
 /**
- * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
+ * The plan a Platform billing tab continues to checkout with. Selections only; checkout prices them.
  */
-export const zBillingHandoffCreateRequest = z.object({
-  amount_cents: z.coerce
-    .bigint()
-    .gte(BigInt(500))
-    .lte(BigInt(250000))
-    .optional(),
-  client_version: z.string().max(64),
-  intent: z.enum(['top-up', 'subscription']).optional(),
-  receiver: z.enum(['billing_web', 'platform']),
-  surface: z.enum(['local_web', 'desktop']),
-  workspace_id: z.string().min(1)
+export const zBillingHandoffCheckoutRequest = z.object({
+  plan_slug: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9_-]+$/),
+  team_credit_stop_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9_-]+$/)
+    .optional()
 })
 
 /**
@@ -1720,10 +1728,20 @@ export const zBillingCompanyDetailsUpdateRequest = z.object({
   tax_id: zBillingTaxId.optional()
 })
 
+/**
+ * What happened to a threshold alert's email. `sent`: the email provider accepted it for at least one recipient, which is not proof it was delivered or read. `failed`: no one was sent it and at least one send failed. `skipped`: there was nothing to send, for example no recipient has an email address. Show `failed` and `skipped` as "not sent"; neither means the threshold was not crossed.
+ *
+ */
+export const zBudgetAlertStatus = z.enum(['sent', 'failed', 'skipped'])
+
+/**
+ * The email outcome of one threshold alert in the current billing period. It records the email, not the crossing.
+ *
+ */
 export const zBudgetAlert = z.object({
   percent: z.int(),
-  sent_at: z.iso.datetime(),
-  status: z.string()
+  sent_at: z.iso.datetime().nullable(),
+  status: zBudgetAlertStatus
 })
 
 export const zBudgetChange = z.object({
@@ -1768,6 +1786,7 @@ export const zBudget = z.object({
   alert_percents: z.array(z.int()),
   alerts: z.array(zBudgetAlert),
   created_by: z.string(),
+  crossed_alert_percent: z.int().nullable(),
   ends_at: z.iso.datetime().nullable(),
   id: z.string(),
   limit_credits: z.coerce
@@ -5625,6 +5644,23 @@ export const zTopupAutoTopUpSettings = z.object({
 })
 
 /**
+ * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
+ */
+export const zBillingHandoffCreateRequest = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .gte(BigInt(500))
+    .lte(BigInt(250000))
+    .optional(),
+  auto_top_up: zTopupAutoTopUpSettings.optional(),
+  client_version: z.string().max(64),
+  intent: z.enum(['top-up', 'subscription']).optional(),
+  receiver: z.enum(['billing_web', 'platform']),
+  surface: z.enum(['local_web', 'desktop']),
+  workspace_id: z.string().min(1)
+})
+
+/**
  * Request body for creating a hosted credit top-up checkout session.
  */
 export const zCreateTopupCheckoutRequest = z.object({
@@ -5646,7 +5682,30 @@ export const zInteractiveTopupRequest = z.object({
   make_default: z.boolean().optional().default(false),
   return_url: z.string().min(1).max(2048).optional(),
   save_payment_method: z.boolean().optional().default(false),
-  saved_payment_method_id: z.string().min(1).max(255).optional()
+  saved_payment_method_id: z.string().min(1).max(255).optional(),
+  purchase_id: z.string().min(1).max(64).optional()
+})
+
+export const zCreateTopupPurchaseRequest = z.object({
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(99999999)),
+  auto_top_up: zTopupAutoTopUpSettings.optional()
+})
+
+export const zTopupPurchase = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  auto_top_up: zTopupAutoTopUpSettings.optional(),
+  billing_op_id: z.string().optional(),
+  billing_op_status: z.string().optional(),
+  expires_at: z.iso.datetime(),
+  purchase_id: z.string(),
+  status: z.enum(['open', 'processing', 'paid', 'superseded', 'expired'])
 })
 
 /**
@@ -6927,6 +6986,14 @@ export const zCreateBillingHandoffBody = zBillingHandoffCreateRequest
  */
 export const zCreateBillingHandoffResponse = zBillingHandoffCreateResponse
 
+export const zCreateBillingHandoffCheckoutBody = zBillingHandoffCheckoutRequest
+
+/**
+ * Handoff issued. `entry_url` is billing-web's handoff page with `intent=checkout`, `plan` and `team_credit_stop_id` (if any) in the query and the token in the fragment.
+ */
+export const zCreateBillingHandoffCheckoutResponse =
+  zBillingHandoffCreateResponse
+
 export const zExchangeBillingHandoffBody = zBillingHandoffExchangeRequest
 
 /**
@@ -7395,6 +7462,7 @@ export const zGetFeaturesResponse = z.object({
   model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
   open_on_cloud_enabled: z.boolean().optional(),
+  open_on_cloud_use_local_agent_enabled: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
@@ -8094,7 +8162,22 @@ export const zListCccWebsiteCardsQuery = z.object({
   kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
   limit: z.int().gte(1).lte(24).optional().default(24),
   cursor: z.string().max(4096).optional(),
-  locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en'),
+  locale: z
+    .enum([
+      'en',
+      'zh-CN',
+      'ja',
+      'zh-TW',
+      'ko',
+      'es',
+      'pt-BR',
+      'ru',
+      'fr',
+      'tr',
+      'ar'
+    ])
+    .optional()
+    .default('en'),
   q: z.string().max(300).optional(),
   sort: z
     .enum(['popular', 'name', 'priceAsc', 'priceDesc'])
@@ -8486,7 +8569,22 @@ export const zListCccWebsiteModelDirectoryHeaders = z.object({
 })
 
 export const zListCccWebsiteModelDirectoryQuery = z.object({
-  locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en')
+  locale: z
+    .enum([
+      'en',
+      'zh-CN',
+      'ja',
+      'zh-TW',
+      'ko',
+      'es',
+      'pt-BR',
+      'ru',
+      'fr',
+      'tr',
+      'ar'
+    ])
+    .optional()
+    .default('en')
 })
 
 /**
@@ -8645,7 +8743,22 @@ export const zGetCccWebsiteRootPresentationHeaders = z.object({
 
 export const zGetCccWebsiteRootPresentationQuery = z.object({
   path: z.enum(['/hub/models/', '/hub/workflows/', '/hub/apps/']),
-  locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en'),
+  locale: z
+    .enum([
+      'en',
+      'zh-CN',
+      'ja',
+      'zh-TW',
+      'ko',
+      'es',
+      'pt-BR',
+      'ru',
+      'fr',
+      'tr',
+      'ar'
+    ])
+    .optional()
+    .default('en'),
   revision_id: z.coerce
     .bigint()
     .gte(BigInt(1))
