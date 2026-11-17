@@ -1,4 +1,5 @@
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -17,6 +18,11 @@ export type InputValueSource =
     }
   | { readonly kind: 'linked'; readonly node: NodeState }
   | { readonly kind: 'unavailable' }
+
+export type EditableInputValueSource = Extract<
+  InputValueSource,
+  { kind: 'editable' }
+>
 
 const passThroughTypes = new Set([
   'Reroute',
@@ -88,4 +94,22 @@ export function resolveInputValueSource(
       : { kind: 'unavailable' }
   }
   return { kind: 'unavailable' }
+}
+
+/** Each widget input of {@link host}, keyed by input name, with the source its value is edited through. */
+export function resolveInputValueSources(
+  rootGraphId: string,
+  host: NodeState
+): Map<string, InputValueSource> {
+  const scope = graphScopeOf({
+    id: host.graphId,
+    rootGraph: { id: rootGraphId }
+  })
+  return new Map(
+    host.inputs.flatMap(({ name, widgetId }, index) =>
+      widgetId
+        ? [[name, resolveInputValueSource(scope, host, index, widgetId)]]
+        : []
+    )
+  )
 }

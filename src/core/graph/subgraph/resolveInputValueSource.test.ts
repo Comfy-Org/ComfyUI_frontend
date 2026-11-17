@@ -11,7 +11,10 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-import { resolveInputValueSource } from './resolveInputValueSource'
+import {
+  resolveInputValueSource,
+  resolveInputValueSources
+} from './resolveInputValueSource'
 
 const rootId = '00000000-0000-4000-8000-000000000001'
 const scope = graphScopeOf({ id: rootId, rootGraph: { id: rootId } })
@@ -154,5 +157,20 @@ describe('subgraph input value source', () => {
     expect(resolveInputValueSource(scope, host, 0, hostValue)).toEqual({
       kind: 'unavailable'
     })
+  })
+
+  it('resolves only the host inputs that carry a widget, keyed by input name', () => {
+    const host = node(29, 'subgraph')
+    host.inputs = [
+      { ...host.inputs[0], name: 'image', widgetId: undefined },
+      { ...host.inputs[0], name: 'steps', widgetId: hostValue }
+    ]
+
+    expect([...resolveInputValueSources(rootId, host)]).toEqual([
+      [
+        'steps',
+        { kind: 'editable', node: host, widgetId: hostValue, shared: false }
+      ]
+    ])
   })
 })

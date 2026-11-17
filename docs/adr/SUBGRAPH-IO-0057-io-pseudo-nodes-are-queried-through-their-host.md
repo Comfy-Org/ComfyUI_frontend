@@ -39,8 +39,9 @@ Pseudo-nodes register no `NodeState` and stay out of every graph's node list.
 
 ### Values are a query by host
 
-`subgraphInputValuesStore` resolves the selected host, and its `sourcesFor`
-query takes a host and returns each input's value source. The panels read
+The subgraph navigation store resolves the current host, and
+`resolveInputValueSources` takes a host and returns each input's value source.
+The panels read
 pseudo-node values only through that query, so two hosts of one definition
 yield two results without per-host state. Without a resolved host, the panels show slots without values. The
 classic canvas draws no values and reads slots from the pseudo-node.

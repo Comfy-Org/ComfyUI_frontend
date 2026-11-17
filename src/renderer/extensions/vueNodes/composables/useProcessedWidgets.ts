@@ -33,7 +33,8 @@ function getHostNode(nodeData: NodeState): LGraphNode | null {
 
 export function useProcessedWidgets(
   nodeDataGetter: () => NodeState | undefined,
-  widgetIdsGetter: () => readonly WidgetId[] | undefined = () => undefined
+  widgetIdsGetter: () => readonly WidgetId[] | undefined = () => undefined,
+  { contextMenu = true }: { contextMenu?: boolean } = {}
 ) {
   const canvasStore = useCanvasStore()
   const settingStore = useSettingStore()
@@ -45,7 +46,7 @@ export function useProcessedWidgets(
 
   const ui: WidgetUiCallbacks = {
     getTooltipText: getWidgetTooltip,
-    handleNodeRightClick
+    handleNodeRightClick: contextMenu ? handleNodeRightClick : undefined
   }
 
   const showAdvanced = computed(
