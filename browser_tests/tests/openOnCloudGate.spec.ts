@@ -5,6 +5,40 @@ import {
   DESKTOP_RELAY_NONCE,
   recordOpenOnCloudTraffic
 } from '@e2e/fixtures/helpers/openOnCloudTraffic'
+import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+
+const signedInTest = test.extend({
+  page: async ({ page }, use) => {
+    await mockWorkspace(page, workspace('personal', 'owner'), [])
+    await mockBilling(page)
+    await page.route(
+      'https://{cloud,stagingcloud,testcloud}.comfy.org/api/features',
+      async (route) => {
+        const request = route.request()
+        const authorization = await request.headerValue('authorization')
+        if (request.method() !== 'GET' || !authorization?.startsWith('Bearer '))
+          return route.fallback()
+
+        return route.fulfill({
+          headers: { 'access-control-allow-origin': '*' },
+          json: { open_on_cloud_enabled: true }
+        })
+      }
+    )
+    await page.route(
+      'https://{cloud,stagingcloud,testcloud}.comfy.org/api/auth/token/revoke',
+      (route) =>
+        route.request().method() === 'POST'
+          ? route.fulfill({
+              headers: { 'access-control-allow-origin': '*' },
+              status: 204
+            })
+          : route.fallback()
+    )
+    await use(page)
+  }
+})
 
 test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
   test('boots, loads and hovers the top menu without a Cloud button or handoff traffic when Cloud disables it', async ({
@@ -65,15 +99,19 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
       )
   })
 
-  test('shows the Cloud button while the gate is on, proving the gate-off check looks at the right control', async ({
-    comfyPage
-  }) => {
-    await comfyPage.featureFlags.seedServerFlags({
-      open_on_cloud_enabled: true
-    })
+  signedInTest(
+    'shows the Cloud button on signed-in startup and hides it on sign-out',
+    { tag: '@auth' },
+    async ({ comfyPage }) => {
+      const { page } = comfyPage
+      const cloudButton = page.getByTestId('cloud-button')
 
-    await comfyPage.workflow.reloadAndWaitForApp()
-
-    await expect(comfyPage.page.getByTestId('cloud-button')).toBeVisible()
-  })
+      await expect(cloudButton).toBeVisible()
+      await comfyPage.toast.closeToasts()
+      await page.getByTestId('current-user-button').click()
+      await page.getByTestId('logout-menu-item').click()
+      await expect(page.getByTestId('login-button')).toBeVisible()
+      await expect(cloudButton).toBeHidden()
+    }
+  )
 })
