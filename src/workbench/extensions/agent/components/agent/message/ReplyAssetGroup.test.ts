@@ -194,6 +194,9 @@ describe('ReplyAssetGroup', () => {
     await fireEvent.error(screen.getByTestId('reply-video-preview'))
 
     expect(screen.queryByTestId('lightbox')).toBeNull()
+    await waitFor(() =>
+      expect(screen.getByTestId('reply-asset-group')).toHaveFocus()
+    )
   })
 
   it('PM-2224 keeps a failed tile unavailable after collapsing and expanding', async () => {
