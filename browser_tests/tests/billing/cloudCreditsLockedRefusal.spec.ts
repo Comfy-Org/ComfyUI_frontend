@@ -311,6 +311,64 @@ test.describe(
   }
 )
 
+test.describe(
+  'Run refused for a blocked workspace with the Issues tab on',
+  { tag: '@cloud' },
+  () => {
+    for (const { billingNewUx, title, body } of [
+      {
+        billingNewUx: true,
+        title: "Your workflow didn't run",
+        body: 'This workspace has been blocked. Contact support.'
+      },
+      {
+        billingNewUx: false,
+        title: PROMPT_GATE_REFUSAL.message,
+        body: PROMPT_GATE_REFUSAL.message
+      }
+    ]) {
+      test.describe(`billing_new_ux_enabled: ${billingNewUx}`, () => {
+        test.use({ billingNewUx })
+
+        test('explains the refusal on the error card', async ({
+          comfyPage
+        }) => {
+          const { page } = comfyPage
+          await arrangeRunnableWorkspaceWithoutPlan(page)
+          await page.route('**/api/settings', (route) =>
+            route.fulfill(
+              jsonRoute({
+                'Comfy.TutorialCompleted': true,
+                'Comfy.RightSidePanel.ShowErrorsTab': true
+              })
+            )
+          )
+          await page.route('**/api/prompt', (route) =>
+            route.request().method() === 'POST'
+              ? route.fulfill({
+                  ...jsonRoute({
+                    node_errors: {},
+                    error: { ...PROMPT_GATE_REFUSAL, reason: 'manual_block' }
+                  }),
+                  status: 402
+                })
+              : route.fallback()
+          )
+          await page.goto(APP_URL)
+          await waitForCloudApp(page)
+          await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+
+          await page.getByTestId(TestIds.topbar.queueButton).click()
+
+          const card = page.getByTestId('error-overlay')
+          await expect(card.getByRole('paragraph')).toHaveText(body)
+          await expect(card).toContainText(title)
+        })
+      })
+    }
+  }
+)
+
 test.describe('Run refused without a plan', { tag: '@cloud' }, () => {
   const ROWS = [
     {

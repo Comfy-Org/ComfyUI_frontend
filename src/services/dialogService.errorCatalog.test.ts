@@ -22,6 +22,16 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import { useDialogService } from './dialogService'
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'localhost' as const,
+  isDesktop: false,
+  isNightly: false,
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
+
 vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
@@ -477,10 +487,15 @@ describe('legacy error dialog for a run Cloud refused with a served reason', () 
     }
   ]
 
-  function openRefusal(reason: string, billingNewUxEnabled: boolean) {
+  function openRefusal(
+    reason: string,
+    { billingNewUxEnabled, isCloud }: Record<string, boolean>
+  ) {
     remoteConfig.value = { billing_new_ux_enabled: billingNewUxEnabled }
+    distribution.isCloud = isCloud
     onTestFinished(() => {
       remoteConfig.value = {}
+      distribution.isCloud = false
     })
     useDialogService().showErrorDialog(
       new PromptExecutionError({
@@ -495,7 +510,7 @@ describe('legacy error dialog for a run Cloud refused with a served reason', () 
   it.for(REFUSALS)(
     'explains $reason with the new billing UX on',
     ({ reason, body }) => {
-      openRefusal(reason, true)
+      openRefusal(reason, { billingNewUxEnabled: true, isCloud: true })
 
       expect(
         screen.getByRole('heading', { name: "Your workflow didn't run" })
@@ -507,7 +522,7 @@ describe('legacy error dialog for a run Cloud refused with a served reason', () 
   it.for(REFUSALS)(
     'keeps the message Cloud sent for $reason with the new billing UX off',
     ({ reason }) => {
-      openRefusal(reason, false)
+      openRefusal(reason, { billingNewUxEnabled: false, isCloud: true })
 
       expect(
         screen.getByRole('heading', { name: 'Prompt Execution Error' })
@@ -515,4 +530,13 @@ describe('legacy error dialog for a run Cloud refused with a served reason', () 
       expect(screen.getByText(CLOUD_MESSAGE)).toBeVisible()
     }
   )
+
+  it('keeps the message the backend sent off Cloud', () => {
+    openRefusal('manual_block', { billingNewUxEnabled: true, isCloud: false })
+
+    expect(
+      screen.getByRole('heading', { name: 'Prompt Execution Error' })
+    ).toBeVisible()
+    expect(screen.getByText(CLOUD_MESSAGE)).toBeVisible()
+  })
 })

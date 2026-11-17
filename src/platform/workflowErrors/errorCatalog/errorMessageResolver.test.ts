@@ -716,6 +716,16 @@ describe('errorMessageResolver', () => {
         resolveRunErrorMessage({ kind: 'prompt', isCloud: true, error })
       ).toEqual({})
     })
+
+    it('adds no copy off Cloud', () => {
+      expect(
+        resolveRunErrorMessage({
+          kind: 'prompt',
+          isCloud: false,
+          error: withRefusalReason(refusal, { reason: 'manual_block' })
+        })
+      ).toEqual({})
+    })
   })
 
   it('resolves agent API failures with catalog copy', () => {
