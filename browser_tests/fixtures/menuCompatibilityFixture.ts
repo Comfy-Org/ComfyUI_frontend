@@ -6,7 +6,7 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 const menuCompatibilityFixture = base.extend<{
-  menuScenario: 'portable' | 'native' | 'replacement'
+  menuScenario: 'portable' | 'native'
   menuExtension: void
 }>({
   menuScenario: ['portable', { option: true }],
@@ -30,13 +30,13 @@ const menuCompatibilityFixture = base.extend<{
       await page.route(
         '**/extensions/menu-compatibility/main.js*',
         async (route) => {
-          if (process.env.PLAYWRIGHT_LOCAL === '1') {
-            const response = await route.fetch({
-              url: new URL(
-                '/tools/devtools/menuCompatibility.ts',
-                route.request().url()
-              ).href
-            })
+          const response = await route.fetch({
+            url: new URL(
+              '/tools/devtools/menuCompatibility.ts',
+              route.request().url()
+            ).href
+          })
+          if (response.headers()['content-type']?.includes('javascript')) {
             await route.fulfill({ response })
           } else {
             const source = await readFile(

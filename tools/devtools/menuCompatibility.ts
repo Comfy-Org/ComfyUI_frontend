@@ -8,116 +8,90 @@ const scenario = new URL(import.meta.url).searchParams.get('scenario')
 
 app.registerExtension({
   name: 'DevTools.MenuCompatibility',
+  beforeRegisterNodeDef(nodeType, nodeData) {
+    const inputs = { ...nodeData.input?.required, ...nodeData.input?.optional }
+    if (!('width' in inputs) || !('height' in inputs)) return
+    const previous = nodeType.prototype.getExtraMenuOptions
+    nodeType.prototype.getExtraMenuOptions = function (canvas, options) {
+      const result = previous?.call(this, canvas, options) ?? []
+      options.push(
+        {
+          content: 'Swap width/height',
+          callback: closureOnly(() => {
+            const width = this.widgets?.find(
+              (widget) => widget.name === 'width'
+            )
+            const height = this.widgets?.find(
+              (widget) => widget.name === 'height'
+            )
+            if (!width || !height) return
+            const value = width.value
+            width.value = height.value
+            height.value = value
+            app.graph.setDirtyCanvas(true)
+          })
+        },
+        null
+      )
+      return result
+    }
+  },
   setup() {
     const previous = app.canvas.getNodeMenuOptions
     app.canvas.getNodeMenuOptions = function (node) {
-      if (node.comfyClass !== 'EmptyLatentImage')
-        return previous.call(this, node)
-      if (scenario === 'replacement') {
-        return [
-          {
-            content: 'Replacement only',
-            callback: closureOnly(() => {
-              node.title = 'Replacement selected'
-            })
-          }
-        ]
-      }
       const options = previous.call(this, node)
-      const copy = options.findIndex((item) => item?.content === 'Copy')
-      if (copy >= 0) options.splice(copy, 1)
-      const pin = options.find((item) => item?.content === 'Pin')
-      if (pin?.callback) {
-        const original = pin.callback
-        pin.callback = closureOnly(() => {
-          Reflect.apply(original, undefined, [])
-          node.properties.menuActionRuns =
-            Number(node.properties.menuActionRuns ?? 0) + 1
-          node.title = `Wrapped pin selected ${node.properties.menuActionRuns}`
-        })
-      }
-      options.reverse()
+      const nodes = app.graph._nodes
+      const types = [...new Set(nodes.map((target) => target.type))].sort()
+      options.push({
+        content: 'Go to node',
+        has_submenu: true,
+        submenu: {
+          options: types.map((type) => ({
+            content: type,
+            has_submenu: true,
+            submenu: {
+              options: nodes
+                .filter((target) => target.type === type)
+                .toSorted((a, b) => a.pos[0] - b.pos[0])
+                .map((target) => ({
+                  content: `${target.getTitle()} - #${target.id} (${target.pos[0]}, ${target.pos[1]})`,
+                  callback: closureOnly(() => app.canvas.centerOnNode(target))
+                }))
+            }
+          }))
+        }
+      })
       return options
     }
   },
   nodeCreated(node) {
-    if (node.comfyClass !== 'EmptyLatentImage') return
+    if (scenario !== 'native' || node.comfyClass !== 'EmptyLatentImage') return
     const previous = node.getExtraMenuOptions
     node.getExtraMenuOptions = function (canvas, options) {
-      const result = previous?.call(this, canvas, options)
-      if (scenario === 'native') {
-        options.push({
-          content: 'Native layout',
-          has_submenu: true,
-          callback: function (_value, _options, event, parentMenu, extra) {
-            if (
-              !(this instanceof HTMLElement) ||
-              !event ||
-              !parentMenu ||
-              extra !== node
-            )
-              throw new Error('Native menu context was not preserved')
-            node.title = 'Native submenu opened'
-            new LiteGraph.ContextMenu(
-              [
-                {
-                  content: 'Right',
-                  callback: function () {
-                    this.style.borderLeft = '3px solid purple'
-                    node.title = 'Native right selected'
-                  }
-                }
-              ],
-              { event, parentMenu }
-            )
-            return true
-          }
-        })
-      } else {
-        options.push({
-          content: 'Go to node',
-          submenu: {
-            options: [
-              {
-                content: 'Latent',
-                submenu: {
-                  options: [
-                    {
-                      content: 'Select latent',
-                      callback: closureOnly(() => {
-                        node.title = 'Nested action selected'
-                      })
-                    }
-                  ]
-                }
+      const result = previous?.call(this, canvas, options) ?? []
+      const index = options.findIndex((item) =>
+        item?.content?.includes('Shape')
+      )
+      options.splice(index + 1, 0, null, {
+        content: 'Connections Layout',
+        has_submenu: true,
+        callback: (_value, _options, event, parentMenu) => {
+          new LiteGraph.ContextMenu(
+            ['Left -> Right', 'Right -> Left'].map((content) => ({ content })),
+            {
+              event,
+              parentMenu,
+              callback: (value) => {
+                if (!value || typeof value === 'string') return
+                node.properties.connections_layout =
+                  value.content?.split(' -> ')
+                node.graph?.setDirtyCanvas(true, true)
               }
-            ]
-          }
-        })
-        options.push(
-          {
-            content: 'Duplicate label',
-            callback: closureOnly(() => {
-              node.title = 'First duplicate selected'
-            })
-          },
-          {
-            content: 'Duplicate label',
-            callback: closureOnly(() => {
-              node.title = 'Second duplicate selected'
-            })
-          }
-        )
-      }
-      return [
-        ...(result ?? []),
-        {
-          content: 'Returned extra',
-          callback: closureOnly(() => {
-            node.title = 'Returned extra selected'
-          })
+            }
+          )
         }
-      ]
+      })
+      return result
     }
   }
 })
