@@ -69,7 +69,8 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { showPricingTable } = useSubscriptionDialog()
 const { flags } = useFeatureFlags()
 const { permissions } = useBillingUI()
-const { initialize: initializeCapabilities } = useBillingCapabilities()
+const { canOpenPlans, initialize: initializeCapabilities } =
+  useBillingCapabilities()
 
 const {
   canAccessSubscriptionFeatures,
@@ -142,9 +143,12 @@ async function leftWithoutPlans(): Promise<boolean> {
     return true
   }
   await initializeCapabilities()
-  if (permissions.value.canManageSubscription) return false
+  if (canOpenPlans.value) return false
   await router.replace('/')
-  return canAccessSubscriptionFeatures.value
+  return (
+    canAccessSubscriptionFeatures.value ||
+    permissions.value.canManageSubscription
+  )
 }
 
 const runRedirect = wrapWithErrorHandlingAsync(async () => {
