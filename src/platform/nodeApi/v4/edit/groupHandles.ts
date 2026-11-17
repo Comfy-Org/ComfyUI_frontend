@@ -74,8 +74,9 @@ function locator(
 ): () => LiveGroup | undefined {
   return () => {
     const graph = resolveGraph()
-    const group = graph && groupIn(graph, id)
-    return graph && group ? { graph, group } : undefined
+    if (!graph) return undefined
+    const group = groupIn(graph, id)
+    return group && { graph, group }
   }
 }
 
