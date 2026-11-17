@@ -121,10 +121,16 @@ test.describe('Node preview display', { tag: ['@vue-nodes', '@node'] }, () => {
     execution.executed('video-run', '1', {
       images: [{ filename: video, subfolder: '', type: 'output' }]
     })
-    await expect(
-      zone.getByRole('region', { name: /Video preview/ })
-    ).toBeVisible()
-    await comfyPage.nextFrame()
+    await expect
+      .poll(() =>
+        zone
+          .getByTestId('main-video')
+          .evaluate(
+            (element: HTMLVideoElement) =>
+              element.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA
+          )
+      )
+      .toBe(true)
     expect(await heightOf(zone)).toBeCloseTo(shortHeight, 0)
   })
 
