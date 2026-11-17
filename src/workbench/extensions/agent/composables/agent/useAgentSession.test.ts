@@ -6738,6 +6738,29 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   )
 
+  it('caps a large plain canvas selection and reports the total', async () => {
+    const rest = fakeRest()
+    const ids = Array.from({ length: 25 }, (_, index) => String(index + 1))
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        canvasSelection: () => ids
+      }
+    })
+    session.start()
+
+    await session.sendMessage('what are these')
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.canvasSelection).toEqual({
+      node_ids: ids.slice(0, 20),
+      total_selected: 25
+    })
+  })
+
   it('sends a skill invocation unchanged as ordinary message content', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })

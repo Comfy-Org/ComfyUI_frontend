@@ -169,6 +169,8 @@ export interface AgentSessionDeps {
 }
 
 const PREPARE_TIMEOUT_MS = 3000
+/** Most plain-canvas node ids sent with one turn; the rest are counted. */
+const MAX_CANVAS_SELECTION_IDS = 20
 const RECONCILE_TIMEOUT_MS = 5000
 
 interface HydrationBuffer {
@@ -1318,7 +1320,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const nodeIds = (canvasNodeIds ?? []).filter((id) => !tagged.has(id))
     if (nodeIds.length === 0) return undefined
     return {
-      node_ids: nodeIds,
+      // A select-all on a large graph must not flood every turn's context.
+      node_ids: nodeIds.slice(0, MAX_CANVAS_SELECTION_IDS),
+      ...(nodeIds.length > MAX_CANVAS_SELECTION_IDS
+        ? { total_selected: nodeIds.length }
+        : {}),
       ...(selectedWorkflowId !== undefined
         ? { workflow_id: selectedWorkflowId }
         : {})
