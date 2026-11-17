@@ -107,6 +107,7 @@ export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
+  const components = useWidgetComponents()
   const graphWidgets = ref(new Map<UUID, Map<WidgetId, WidgetEntity>>())
   const graphNodeWidgetOrders = ref(new Map<UUID, Map<NodeId, WidgetId[]>>())
   const convertedRestoredValues = new Map<string, ConvertedRestoredValue>()
@@ -314,7 +315,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
       return existing.state
     }
 
-    if (existing) useWidgetComponents().remove(widgetId)
+    if (existing) components.remove(widgetId)
     const state: WidgetState = {
       ...init,
       nodeId,
@@ -458,7 +459,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   function deleteWidget(widgetId: WidgetId): boolean {
     if (!isWidgetId(widgetId)) return false
 
-    useWidgetComponents().remove(widgetId)
+    components.remove(widgetId)
     return releaseWidget(widgetId)
   }
 
@@ -488,7 +489,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     widgets.delete(oldId)
     entity.state.name = name
     widgets.set(newId, entity)
-    useWidgetComponents().move(oldId, newId)
+    components.move(oldId, newId)
     if (index === -1) order.push(newId)
     else order.splice(index, 1, newId)
 
@@ -566,7 +567,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     localNodeId: NodeId,
     { discardValues }: { discardValues: boolean }
   ): void {
-    if (discardValues) useWidgetComponents().clearNode(graphId, localNodeId)
+    if (discardValues) components.clearNode(graphId, localNodeId)
     const graphOrders = graphNodeWidgetOrders.value.get(graphId)
     if (!graphOrders) return
 
@@ -582,7 +583,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearNode(graphId: UUID, nodeId: NodeId): void {
-    useWidgetComponents().clearNode(graphId, nodeId)
+    components.clearNode(graphId, nodeId)
     graphWidgetRestorations.get(graphId)?.delete(nodeId)
     const widgets = graphWidgets.value.get(graphId)
     if (widgets) {
@@ -599,18 +600,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   }
 
   function clearGraph(graphId: UUID): void {
-    useWidgetComponents().clearGraph(graphId)
+    components.clearGraph(graphId)
     graphWidgets.value.delete(graphId)
     graphNodeWidgetOrders.value.delete(graphId)
     graphWidgetRestorations.delete(graphId)
   }
 
-  const components = useWidgetComponents()
-
   return {
-    prepareNodeComponents: components.prepareNode,
-    adoptNodeComponents: components.adoptNode,
-    writeNodeComponents: components.writeNode,
     registerWidget,
     setNodeWidgetRestoration,
     clearNodeWidgetRestoration,
