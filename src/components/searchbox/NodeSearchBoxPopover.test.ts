@@ -339,5 +339,29 @@ describe('NodeSearchBoxPopover', () => {
         expect.objectContaining({ ghost: true, dragEvent })
       )
     })
+
+    it('should position keyboard-selected ghosts at the current pointer', async () => {
+      const user = userEvent.setup()
+      const { emitAddNodeV2 } = renderComponent({
+        'Comfy.NodeSearchBoxImpl': 'default',
+        'Comfy.NodeSearchBoxImpl.FollowCursor': true
+      })
+      await user.pointer({
+        target: screen.getByTestId('search-content-v2'),
+        coords: { x: 731, y: 284 }
+      })
+
+      emitAddNodeV2(nodeDef)
+      await nextTick()
+
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
+        nodeDef,
+        expect.anything(),
+        expect.objectContaining({
+          ghost: true,
+          dragEvent: expect.objectContaining({ clientX: 731, clientY: 284 })
+        })
+      )
+    })
   })
 })
