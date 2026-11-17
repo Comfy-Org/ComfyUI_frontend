@@ -50,6 +50,32 @@ test.describe(
       await expect.poll(getHeight).toBeCloseTo(initialHeight + 80, 0)
     })
 
+    test('undoing a widget edge drag returns the widget and the node to their earlier heights, and redo applies it again', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle(
+        'CLIP Text Encode (SDXL)'
+      )
+      const textG = node.widgetRow('text_g')
+      const getTextGHeight = () => heightOf(textG)
+      const getHeight = () => heightOf(node.root)
+      const initialTextG = await getTextGHeight()
+      const initialHeight = await getHeight()
+
+      await node.dragHandle(node.growableRegionHandle(textG), 0, 80)
+      await expect.poll(getTextGHeight).toBeCloseTo(initialTextG + 80, 0)
+
+      await comfyPage.keyboard.undo()
+
+      await expect.poll(getTextGHeight).toBeCloseTo(initialTextG, 0)
+      await expect.poll(getHeight).toBeCloseTo(initialHeight, 0)
+
+      await comfyPage.keyboard.redo()
+
+      await expect.poll(getTextGHeight).toBeCloseTo(initialTextG + 80, 0)
+      await expect.poll(getHeight).toBeCloseTo(initialHeight + 80, 0)
+    })
+
     test('a widget and preview height the user dragged survive saving and reopening the workflow', async ({
       comfyPage
     }) => {
