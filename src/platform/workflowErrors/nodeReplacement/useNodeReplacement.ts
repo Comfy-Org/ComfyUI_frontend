@@ -30,6 +30,7 @@ import {
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app, sanitizeNodeName } from '@/scripts/app'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
+import { useWidgetComponents } from '@/stores/widgetComponents'
 import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -397,12 +398,15 @@ function replaceWithMapping(
   } catch (error) {
     console.error(`Failed to remove replaced node ${node.id}`, error)
   }
+  const components = useWidgetComponents()
+  components.writeNode(scope.rootGraphId, node.id, newNode.properties)
   clearNodeOwnedStoreState(node)
 
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   node.graph = null
   nodeGraph._nodes_by_id[newNode.id] = newNode
+  components.adoptNode(scope.rootGraphId, newNode.id, newNode.properties)
 
   for (const { name, value } of assignedWidgets) {
     const widget = newNode.widgets?.find((w) => w.name === name)

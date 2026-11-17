@@ -16,6 +16,7 @@ import {
 } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -29,14 +30,13 @@ import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
  * `POST /billing/subscribe`, so the recorded requests are what separate them:
  * only the SDK transport sends an `Idempotency-Key`, and only on the write —
  * the quote is a read the backend happens to shape as a POST, so it carries
- * none on either rail. What separates the two quotes is the transport that
- * issued them: the SDK runs on `fetch`, the workspace client on axios' XHR.
+ * none on either rail. What separates the two quotes is the client that
+ * issued them, which `billingClient` reads.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
 const BOOT_FEATURES = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const STANDARD_ANNUAL_PLAN = createPlan({
@@ -208,16 +208,6 @@ function idempotencyKey(request: Request): string | undefined {
   return request.headers()['idempotency-key']
 }
 
-/**
- * Which transport issued a request, and so which rail served it: the SDK's
- * runs on `fetch`, the legacy workspace client on axios' XHR adapter. The
- * quote carries no idempotency key on either rail, so this is what tells the
- * two quotes apart.
- */
-function transport(request: Request): string {
-  return request.resourceType()
-}
-
 async function openCreatorUpgrade(page: Page) {
   await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
   await cloudAppExpect(
@@ -252,11 +242,9 @@ test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
       plan_slug: 'creator-annual',
       idempotency_key: idempotencyKey(issued)
     })
-    expect(transport(issued)).toBe('fetch')
-    // The quote is a read the SDK sends no key for, so the transport is what
-    // shows the rail served it.
+    expect(billingClient(issued)).toBe('sdk')
     const quote = routes.previewRequests.at(-1)!
-    expect(transport(quote)).toBe('fetch')
+    expect(billingClient(quote)).toBe('sdk')
     expect(idempotencyKey(quote)).toBeUndefined()
   })
 
@@ -275,7 +263,7 @@ test.describe('Plan change rail (FE-2216)', { tag: '@cloud' }, () => {
     const [sdkAttempt, legacyAttempt] = routes.subscribeRequests
     expect(idempotencyKey(sdkAttempt)).toBeTruthy()
     expect(idempotencyKey(legacyAttempt)).toBeUndefined()
-    expect(transport(sdkAttempt)).toBe('fetch')
-    expect(transport(legacyAttempt)).toBe('xhr')
+    expect(billingClient(sdkAttempt)).toBe('sdk')
+    expect(billingClient(legacyAttempt)).toBe('legacy')
   })
 })

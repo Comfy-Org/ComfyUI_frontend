@@ -5,11 +5,11 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import type { ImageLoadFailureMetadata } from '@comfyorg/telemetry/types'
+import { VIDEO_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { fitDimensionsToNodeWidth } from '@/utils/imageUtil'
 import type { MediaSources } from '@/utils/mediaResource'
 
-const VIDEO_WIDGET_NAME = 'video-preview'
 const VIDEO_DEFAULT_OPTIONS = {
   playsInline: true,
   controls: true,
@@ -185,7 +185,7 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     useCanvasInteractions()
 
   const findVideoWidget = () =>
-    node.widgets?.find((w) => w.name === VIDEO_WIDGET_NAME)
+    node.widgets?.find((w) => w.name === VIDEO_PREVIEW_WIDGET)
 
   const setMinDimensions = (video: HTMLVideoElement) => {
     const shownWidth = findVideoWidget()?.computeLayoutSize?.(node).minWidth
@@ -217,12 +217,17 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
     })
 
   const addVideoDomWidget = (container: HTMLElement) => {
-    const hasWidget = node.widgets?.some((w) => w.name === VIDEO_WIDGET_NAME)
+    const hasWidget = node.widgets?.some((w) => w.name === VIDEO_PREVIEW_WIDGET)
     if (!hasWidget) {
-      const widget = node.addDOMWidget(VIDEO_WIDGET_NAME, 'video', container, {
-        surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' },
-        hideOnZoom: false
-      })
+      const widget = node.addDOMWidget(
+        VIDEO_PREVIEW_WIDGET,
+        'video',
+        container,
+        {
+          surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' },
+          hideOnZoom: false
+        }
+      )
       widget.serialize = false
       widget.computeLayoutSize = () => ({ minHeight, minWidth })
 

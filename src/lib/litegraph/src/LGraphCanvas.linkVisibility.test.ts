@@ -10,7 +10,8 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   drawHiddenLinkBadges,
   layoutHiddenLinkBadges,
-  queryLinkBadgeAtPoint
+  queryLinkBadgeAtPoint,
+  queryLinkBadgeHitAtPoint
 } from '@/lib/litegraph/src/canvas/linkBadges'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkMarkerShape } from '@comfyorg/graph-model/globalEnums'
@@ -502,25 +503,33 @@ describe('LGraphCanvas link visibility interactions', () => {
   })
 
   describe('stacked hidden link badges', () => {
-    function createStackFixture() {
+    function createStackFixture(
+      labels: readonly (string | undefined)[] = [undefined, undefined]
+    ) {
       const { graph, canvas, link } = createFixture()
       const source = graph.getNodeById(link.origin_id)
       assert.exists(source)
-      const target = new LGraphNode('Second target')
-      target.addInput('in', 'MODEL')
-      graph.add(target)
-      const links = [link, createTestLink(graph, source, 0, target, 0)]
+      const links = labels.map((_, index) => {
+        if (index === 0) return link
+        const target = new LGraphNode(`Target ${index}`)
+        target.addInput('in', 'MODEL')
+        graph.add(target)
+        return createTestLink(graph, source, 0, target, 0)
+      })
       const scope = graphScopeOf(graph)
-      for (const hidden of links) {
-        useLinkPresentationStore().patch(scope, hidden.id, { hidden: true })
-      }
+      const store = useLinkPresentationStore()
+      links.forEach((hidden, index) =>
+        store.patch(scope, hidden.id, { hidden: true, label: labels[index] })
+      )
+      const labelOf = (hidden: LLink) =>
+        store.getPresentation(scope, hidden.id)?.label
       const relayout = () =>
         layoutHiddenLinkBadges(
           canvas,
           canvas.ctx,
           links.map((hidden, index) => ({
             link: hidden,
-            presentation: { hidden: true },
+            presentation: { hidden: true, label: labelOf(hidden) },
             startPos: [400, 300],
             endPos: [700, 300 + index * 100],
             color: '#89A'
@@ -529,7 +538,14 @@ describe('LGraphCanvas link visibility interactions', () => {
       relayout()
       drawHiddenLinkBadges(canvas.ctx, canvas, [0, 0, 800, 600])
       onTestFinished(() => canvas.pointer.reset())
-      return { graph, canvas, links, relayout }
+      const prompt = vi
+        .spyOn(canvas, 'prompt')
+        .mockReturnValue(document.createElement('div'))
+      const submitPrompt = (value: string) => {
+        prompt.mock.calls[0][2](value)
+        relayout()
+      }
+      return { graph, canvas, links, relayout, prompt, submitPrompt, labelOf }
     }
 
     function clickAt(canvas: LGraphCanvas, clientX: number, clientY: number) {
@@ -636,14 +652,388 @@ describe('LGraphCanvas link visibility interactions', () => {
       canvas.processMouseUp(up)
     }
 
-    it('expands a stack exactly once on a double click', () => {
-      const { canvas, links, relayout } = createStackFixture()
+    function doubleClickAt(
+      canvas: LGraphCanvas,
+      clientX: number,
+      clientY: number
+    ) {
+      pressAt(canvas, clientX, clientY, 100)
+      pressAt(canvas, clientX, clientY, 200)
+    }
+
+    const stackedLinkIdsAt = (canvas: LGraphCanvas, x: number, y: number) => {
+      const hit = queryLinkBadgeHitAtPoint(canvas, x, y)
+      return hit?.stackKey ? hit.linkIds : undefined
+    }
+
+    it('renames every link in a collapsed stack on a double click and keeps it collapsed', () => {
+      const { canvas, links, prompt, submitPrompt, labelOf } =
+        createStackFixture([undefined, undefined, 'untouched'])
+
+      doubleClickAt(canvas, 420, 300)
+
+      expect(prompt).toHaveBeenCalledWith(
+        'Rename',
+        '',
+        expect.any(Function),
+        expect.anything()
+      )
+      submitPrompt('render_size')
+
+      expect(links.map(labelOf)).toEqual([
+        'render_size',
+        'render_size',
+        'untouched'
+      ])
+      expect(stackedLinkIdsAt(canvas, 420, 300)).toEqual(
+        links.slice(0, 2).map(({ id }) => id)
+      )
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[2].id)
+    })
+
+    it('renames the whole stack when the double click lands on its layer edge', () => {
+      const { canvas, links, relayout, submitPrompt, labelOf } =
+        createStackFixture([undefined, undefined, undefined])
+
+      pressAt(canvas, 420, 313, 100)
+      relayout()
+      pressAt(canvas, 420, 313, 200)
+      submitPrompt('edge')
+
+      expect(links.map(labelOf)).toEqual(['edge', 'edge', 'edge'])
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
+    })
+
+    it('keeps an expanded stack expanded when the second click of its rename lands beside the pill', () => {
+      const { canvas, links, relayout, prompt } = createStackFixture([
+        undefined,
+        undefined,
+        undefined
+      ])
+      pressAt(canvas, 420, 300, 100)
+      relayout()
+
+      pressAt(canvas, 420, 300, 500)
+      relayout()
+      pressAt(canvas, 420, 284, 600)
+      relayout()
+
+      expect(prompt).toHaveBeenCalledOnce()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+    })
+
+    it('opens no rename prompt when the canvas turns read-only between the two clicks', () => {
+      const { canvas, relayout, prompt } = createStackFixture()
 
       pressAt(canvas, 420, 300, 100)
+      relayout()
+      canvas.read_only = true
+      pressAt(canvas, 420, 300, 200)
+
+      expect(prompt).not.toHaveBeenCalled()
+    })
+
+    function holdPressAt(
+      canvas: LGraphCanvas,
+      clientX: number,
+      clientY: number,
+      timeStamp: number
+    ) {
+      const init = { isPrimary: true, pointerId: 1, clientX, clientY }
+      const down = new PointerEvent('pointerdown', {
+        ...init,
+        button: 0,
+        buttons: 1
+      })
+      const up = new PointerEvent('pointerup', {
+        ...init,
+        button: 0,
+        buttons: 0
+      })
+      vi.spyOn(down, 'timeStamp', 'get').mockReturnValue(timeStamp)
+      vi.spyOn(up, 'timeStamp', 'get').mockReturnValue(timeStamp + 20)
+      canvas.processMouseDown(down)
+      return () => canvas.processMouseUp(up)
+    }
+
+    it('opens no rename prompt when the canvas turns read-only during the second press', () => {
+      const { canvas, relayout, prompt } = createStackFixture()
+
+      pressAt(canvas, 420, 300, 100)
+      relayout()
+      const release = holdPressAt(canvas, 420, 300, 200)
+      canvas.read_only = true
+      release()
+
+      expect(prompt).not.toHaveBeenCalled()
+    })
+
+    it('opens no rename prompt when the canvas turns read-only during a double click whose first click missed', () => {
+      const { canvas, prompt } = createStackFixture()
+
+      pressAt(canvas, 420, 280, 100)
+      const release = holdPressAt(canvas, 420, 295, 200)
+      canvas.read_only = true
+      release()
+
+      expect(prompt).not.toHaveBeenCalled()
+    })
+
+    it('cancels the rename and keeps the collapse when Escape is pressed during the second press', () => {
+      const { canvas, relayout, prompt } = createStackFixture()
+
+      pressAt(canvas, 420, 300, 100)
+      relayout()
+      const release = holdPressAt(canvas, 420, 300, 200)
+      canvas.processKey(new KeyboardEvent('keydown', { key: 'Escape' }))
+      release()
+      relayout()
+
+      expect(prompt).not.toHaveBeenCalled()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
+    })
+
+    it('renames no single link when Escape is pressed during a second press on the layer edge', () => {
+      const { canvas, relayout, prompt } = createStackFixture([
+        undefined,
+        undefined,
+        undefined
+      ])
+
+      pressAt(canvas, 420, 313, 100)
+      relayout()
+      const release = holdPressAt(canvas, 420, 313, 200)
+      canvas.processKey(new KeyboardEvent('keydown', { key: 'Escape' }))
+      release()
+
+      expect(prompt).not.toHaveBeenCalled()
+    })
+
+    function dragFromBesideStackAfterClickingIt(gap: number) {
+      const previousBehavior = LiteGraph.leftMouseClickBehavior
+      LiteGraph.leftMouseClickBehavior = 'select'
+      onTestFinished(() => {
+        LiteGraph.leftMouseClickBehavior = previousBehavior
+      })
+      const { canvas, relayout } = createStackFixture()
+      pressAt(canvas, 420, 300, 100)
+      relayout()
+
+      const init = { isPrimary: true, pointerId: 1, button: 0 }
+      const down = new PointerEvent('pointerdown', {
+        ...init,
+        buttons: 1,
+        clientX: 420,
+        clientY: 284
+      })
+      vi.spyOn(down, 'timeStamp', 'get').mockReturnValue(100 + gap)
+      canvas.processMouseDown(down)
+      canvas.processMouseMove(
+        new PointerEvent('pointermove', {
+          ...init,
+          buttons: 1,
+          clientX: 460,
+          clientY: 244
+        })
+      )
+      expect(canvas.dragging_rectangle).not.toBeNull()
+      const draggingCanvas = canvas.dragging_canvas
+      canvas.processMouseUp(
+        new PointerEvent('pointerup', {
+          ...init,
+          buttons: 0,
+          clientX: 460,
+          clientY: 244
+        })
+      )
+      return { draggingCanvas, offset: [...canvas.ds.offset] }
+    }
+
+    it('selects, not pans, when dragging from beside a just-clicked stack', () => {
+      const outsideDoubleClickWindow = dragFromBesideStackAfterClickingIt(1000)
+
+      expect(outsideDoubleClickWindow.draggingCanvas).toBe(false)
+      expect(dragFromBesideStackAfterClickingIt(100)).toEqual(
+        outsideDoubleClickWindow
+      )
+    })
+
+    it('keeps a stack expanded when a member click sits between two head clicks', () => {
+      const { canvas, links, relayout, prompt } = createStackFixture()
+
+      pressAt(canvas, 420, 300, 100)
+      relayout()
+      pressAt(canvas, 420, 322, 220)
+      pressAt(canvas, 420, 309, 340)
+      relayout()
+
+      expect(prompt).toHaveBeenCalledOnce()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+    })
+
+    it('keeps an expanded stack expanded through a double click and its rename', () => {
+      const { canvas, links, relayout, prompt, submitPrompt } =
+        createStackFixture()
+      clickAt(canvas, 420, 300)
+      relayout()
+
+      doubleClickAt(canvas, 420, 300)
+      relayout()
+
+      expect(prompt).toHaveBeenCalledOnce()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+
+      submitPrompt('render_size')
+
+      expect(stackedLinkIdsAt(canvas, 420, 300)).toEqual(
+        links.map(({ id }) => id)
+      )
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+    })
+
+    it('keeps an expanded stack expanded when its menu Rename clears the name', () => {
+      const { canvas, links, relayout, submitPrompt } = createStackFixture([
+        'batch',
+        'batch'
+      ])
+      const menu = vi
+        .spyOn(LiteGraph, 'ContextMenu')
+        .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
+      clickAt(canvas, 420, 300)
+      relayout()
+
+      canvas.processContextMenu(
+        undefined,
+        fromPartial<CanvasPointerEvent>({ canvasX: 420, canvasY: 300 })
+      )
+      void menu.mock.calls[0][1]?.callback?.({
+        content: 'Rename',
+        value: 'Rename'
+      })
+      submitPrompt('')
+
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+    })
+
+    it('leaves a stack collapsed when the first click of a double click missed it', () => {
+      const { canvas, relayout, prompt } = createStackFixture()
+
+      pressAt(canvas, 420, 280, 100)
+      pressAt(canvas, 420, 295, 200)
+      relayout()
+
+      expect(prompt).toHaveBeenCalledOnce()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
+    })
+
+    it('leaves a stack collapsed when Escape collapsed it between two fast clicks', () => {
+      const { canvas, relayout, prompt } = createStackFixture()
+
+      pressAt(canvas, 420, 300, 100)
+      canvas.processKey(new KeyboardEvent('keydown', { key: 'Escape' }))
       pressAt(canvas, 420, 300, 200)
       relayout()
 
-      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+      expect(prompt).toHaveBeenCalledOnce()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
+    })
+
+    it('merges a renamed stack into the stack that already has that name', () => {
+      const { canvas, links, prompt, submitPrompt } = createStackFixture([
+        undefined,
+        undefined,
+        'batch',
+        'batch'
+      ])
+
+      doubleClickAt(canvas, 420, 300)
+      expect(prompt.mock.calls[0][1]).toBe('')
+      submitPrompt('batch')
+
+      expect(stackedLinkIdsAt(canvas, 420, 300)).toEqual(
+        links.map(({ id }) => id)
+      )
+    })
+
+    it('returns every link to the unlabelled stack when a stack name is cleared', () => {
+      const { canvas, links, prompt, submitPrompt, labelOf } =
+        createStackFixture(['batch', 'batch', undefined])
+
+      doubleClickAt(canvas, 420, 322)
+      expect(prompt.mock.calls[0][1]).toBe('batch')
+      submitPrompt('')
+
+      expect(links.map(labelOf)).toEqual([undefined, undefined, undefined])
+      expect(stackedLinkIdsAt(canvas, 420, 300)).toEqual(
+        links.map(({ id }) => id)
+      )
+    })
+
+    it('renames only one link when its expanded label is double clicked', () => {
+      const { canvas, links, relayout, submitPrompt, labelOf } =
+        createStackFixture()
+      clickAt(canvas, 420, 300)
+      relayout()
+
+      doubleClickAt(canvas, 420, 322)
+      submitPrompt('solo')
+
+      expect(links.map(labelOf)).toEqual(['solo', undefined])
+    })
+
+    it('renames the whole stack from the Rename item of its context menu', () => {
+      const { canvas, links, prompt, submitPrompt, labelOf } =
+        createStackFixture()
+      const menu = vi
+        .spyOn(LiteGraph, 'ContextMenu')
+        .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
+      const rightClick = fromPartial<CanvasPointerEvent>({
+        canvasX: 420,
+        canvasY: 300
+      })
+
+      canvas.processContextMenu(undefined, rightClick)
+
+      const [items, options] = menu.mock.calls[0]
+      expect(items).toEqual([
+        { content: 'Rename', value: 'Rename' },
+        { content: 'Show Links', value: 'Show Links' }
+      ])
+      void options?.callback?.({ content: 'Rename', value: 'Rename' })
+      expect(prompt).toHaveBeenCalledWith(
+        'Rename',
+        '',
+        expect.any(Function),
+        rightClick
+      )
+      submitPrompt('render_size')
+
+      expect(links.map(labelOf)).toEqual(['render_size', 'render_size'])
+    })
+
+    it('shows every link in a stack from the Show Links item of its context menu', () => {
+      const { graph, canvas, links } = createStackFixture()
+      const menu = vi
+        .spyOn(LiteGraph, 'ContextMenu')
+        .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
+      const hiddenLinks = () =>
+        links.filter(
+          ({ id }) =>
+            useLinkPresentationStore().getPresentation(graphScopeOf(graph), id)
+              ?.hidden
+        )
+
+      canvas.processContextMenu(
+        undefined,
+        fromPartial<CanvasPointerEvent>({ canvasX: 420, canvasY: 300 })
+      )
+      const callback = menu.mock.calls[0][1]?.callback
+
+      void callback?.(undefined)
+      expect(hiddenLinks()).toEqual(links)
+
+      void callback?.({ content: 'Show Links', value: 'Show Links' })
+      expect(hiddenLinks()).toEqual([])
     })
 
     it('collapses an expanded stack when empty canvas is clicked', () => {

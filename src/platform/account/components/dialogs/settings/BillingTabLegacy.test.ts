@@ -13,6 +13,7 @@ import type {
 
 import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
+import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
@@ -2155,5 +2156,22 @@ describe('BillingTab refresh on return', () => {
     window.dispatchEvent(new Event('focus'))
 
     expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('reads nothing when it opens on Cloud or the user returns to it', () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    const readAccount = vi.fn()
+    onTestFinished(onBillingRefresh(readAccount))
+    const { refresh, fetchStatus } = arrange()
+
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+
+    expect(readAccount).not.toHaveBeenCalled()
+    expect(fetchStatus).not.toHaveBeenCalled()
+    expect(refresh).not.toHaveBeenCalled()
   })
 })

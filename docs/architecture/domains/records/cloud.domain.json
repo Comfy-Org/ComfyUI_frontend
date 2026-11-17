@@ -73,7 +73,6 @@
       "name": "Cloud session and API auth adapters keep credential lifecycle behavior",
       "checks": [
         "src/platform/auth/webSessionFlagOn.test.ts",
-        "src/platform/auth/webSessionFlagOff.test.ts",
         "src/platform/auth/nonWebClientsStayOnTokens.test.ts",
         "src/stores/bootstrapStore.test.ts"
       ]
