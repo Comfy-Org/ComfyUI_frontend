@@ -20,7 +20,9 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     getWebSocket
   }) => {
     const ws = await getWebSocket()
-    await comfyPage.workflow.loadWorkflow('vueNodes/agent-inserted-save-image')
+    await comfyPage.workflow.loadWorkflow('nodes/single_save_image_node', {
+      nodes: { 9: { id: INSERTED_NODE_ID } }
+    })
 
     const exec = new ExecutionHelper(comfyPage, ws)
     const jobId = await exec.run()
@@ -46,7 +48,9 @@ test.describe('Agent-inserted node outputs', { tag: '@vue-nodes' }, () => {
     page
   }) => {
     const ws = await getWebSocket()
-    await comfyPage.workflow.loadWorkflow('vueNodes/agent-inserted-save-image')
+    await comfyPage.workflow.loadWorkflow('nodes/single_save_image_node', {
+      nodes: { 9: { id: INSERTED_NODE_ID } }
+    })
 
     const unresolvedReports: string[] = []
     page.on('console', (message) => {

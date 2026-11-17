@@ -74,6 +74,8 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
+vi.mock(import('@/composables/useFeatureFlags'))
+
 vi.mock(import('@/i18n'))
 
 vi.mock(import('@/config/comfyApi'), () => ({

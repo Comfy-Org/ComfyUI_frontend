@@ -345,6 +345,43 @@ describe('awaitUnifiedBillingSettings', () => {
   )
 })
 
+describe('awaitPlanChangeCardChoice', () => {
+  it.for<{ name: string; reply: () => Promise<Response>; on: boolean }>([
+    {
+      name: 'true',
+      reply: async () => answer({ billing_web_plan_change_card_choice: true }),
+      on: true
+    },
+    {
+      name: 'false',
+      reply: async () => answer({ billing_web_plan_change_card_choice: false }),
+      on: false
+    },
+    {
+      name: 'a non-boolean value',
+      reply: async () =>
+        answer({ billing_web_plan_change_card_choice: 'true' }),
+      on: false
+    },
+    {
+      name: 'an absent key',
+      reply: async () => answer({ firebase_config: {} }),
+      on: false
+    },
+    {
+      name: 'a server error',
+      reply: async () =>
+        answer({ billing_web_plan_change_card_choice: true }, 500),
+      on: false
+    }
+  ])('answers $on for $name', async ({ reply, on }) => {
+    respondToFetch(FEATURES_URL, reply)
+    const { awaitPlanChangeCardChoice } = await freshCheckoutUi()
+
+    expect(await awaitPlanChangeCardChoice()).toBe(on)
+  })
+})
+
 describe('settleCheckoutUi', () => {
   it.for<{ variant: 'embedded' | 'full_page' }>([
     { variant: 'embedded' },
@@ -427,5 +464,16 @@ describe('in a billing handoff tab', () => {
     )
 
     await expect(awaitCheckoutUiVariant()).resolves.toBe('embedded')
+  })
+
+  it('reads unified billing settings as off without asking Cloud', async () => {
+    localStorage.setItem('ff:unified_billing_settings', JSON.stringify(true))
+    const { awaitUnifiedBillingSettings } = await handoffCheckoutUi(() =>
+      Promise.resolve('full_page')
+    )
+
+    await expect(awaitUnifiedBillingSettings()).resolves.toBe(false)
+    expect(h.ensureFresh).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 })

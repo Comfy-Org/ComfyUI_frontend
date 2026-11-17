@@ -59,6 +59,8 @@ const CAPABILITIES = {
   can_manage_subscription: false,
   can_open_plans: false,
   can_run_workflows: false,
+  can_set_budgets: false,
+  can_set_hard_caps: false,
   can_upgrade: false,
   can_subscribe_self_serve: false,
   can_top_up: true
@@ -183,6 +185,39 @@ describe('createCapabilitiesReader', () => {
       expect(result.status).toBe('ok')
       if (result.status !== 'ok') return
       expect(result.value.planKind).toBe(expected)
+    }
+  )
+
+  it.for([
+    {
+      served: {
+        billing_notice_audience: 'team',
+        ending_notice_starts_at: '2026-11-12T00:00:00Z'
+      },
+      expected: {
+        billingNoticeAudience: 'team',
+        endingNoticeStartsAt: '2026-11-12T00:00:00Z'
+      }
+    },
+    {
+      served: {},
+      expected: {
+        billingNoticeAudience: undefined,
+        endingNoticeStartsAt: undefined
+      }
+    }
+  ] as const)(
+    'keeps the served billing notice facts $served instead of dropping them',
+    async ({ served, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([httpOk(capabilitiesBody(served))])
+      const reader = createCapabilitiesReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value).toMatchObject(expected)
     }
   )
 

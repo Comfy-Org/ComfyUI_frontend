@@ -430,6 +430,49 @@ describe('createHandoffBillingClient', () => {
     }
   )
 
+  it.for([
+    'HANDOFF_DISABLED',
+    'sso_required',
+    'account_outside_organization',
+    'personal_workspace_disabled',
+    'workspace_access_denied'
+  ])(
+    'ends the handoff when Cloud refuses the whole session with 403 %s',
+    async (code) => {
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify({ code }), { status: 403 })
+      )
+      const onSessionRefused = vi.fn()
+      const client = createHandoffBillingClient(
+        handoffSession(),
+        onSessionRefused
+      )
+
+      await client.credits.read()
+
+      expect(onSessionRefused).toHaveBeenCalled()
+      disposeBillingClient(client)
+    }
+  )
+
+  it('keeps the handoff on 403 BILLING_FORBIDDEN, which Cloud also answers for one request', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      new Response(JSON.stringify({ code: 'BILLING_FORBIDDEN' }), {
+        status: 403
+      })
+    )
+    const onSessionRefused = vi.fn()
+    const client = createHandoffBillingClient(
+      handoffSession(),
+      onSessionRefused
+    )
+
+    await client.credits.read()
+
+    expect(onSessionRefused).not.toHaveBeenCalled()
+    disposeBillingClient(client)
+  })
+
   it('keeps the handoff on a 401 from a route that does not take scoped sessions', async () => {
     vi.mocked(fetch).mockResolvedValue(
       new Response(JSON.stringify({ code: 'UNAUTHORIZED' }), { status: 401 })
@@ -478,6 +521,8 @@ describe('createHandoffBillingClient', () => {
       can_reactivate: false,
       can_revert_scheduled_change: false,
       can_run_workflows: true,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_subscribe_self_serve: true,
       can_top_up: true,
       can_upgrade: true,
@@ -871,7 +916,10 @@ describe('createHandoffBillingClient', () => {
   const CHECKING_OP_1: HandoffState = {
     kind: 'ended',
     ending: 'payment_pending',
-    reference: 'op_1'
+    reference: 'op_1',
+    workspace: 'Personal',
+    token: 'comfy-scoped-session-1',
+    since: expect.any(Number)
   }
 
   it.for<{

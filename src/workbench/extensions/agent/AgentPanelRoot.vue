@@ -2312,6 +2312,18 @@ watch(threadId, composerStore.trackDraftThread, {
   flush: 'sync'
 })
 
+watch(
+  () => agentPanelStore.pendingCloudHandoff,
+  (prompt) => {
+    if (!prompt) return
+    composerStore.setText(
+      [composerStore.draft, prompt].filter(Boolean).join('\n\n')
+    )
+    agentPanelStore.pendingCloudHandoff = null
+  },
+  { immediate: true }
+)
+
 watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
   flush: 'sync'
 })

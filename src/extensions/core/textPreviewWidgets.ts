@@ -1,7 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import WidgetTextPreview from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue'
-import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 import type { CustomInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
@@ -67,19 +66,9 @@ export function addTextPreviewWidgets(node: LGraphNode) {
   modeWidget.serialize = false
 }
 
-function toPreviewText(text: unknown): string {
+export function toPreviewText(text: unknown): string {
   if (text == null) return ''
   if (Array.isArray(text))
     return text.filter((part) => part != null).join('\n\n')
   return String(text)
-}
-
-export function updateTextPreviewWidgets(
-  node: LGraphNode,
-  message: NodeExecutionOutput | null | undefined
-) {
-  const preview = node.widgets?.find((w) => w.name === PREVIEW_WIDGET_NAME)
-  if (!preview) return
-
-  preview.value = toPreviewText(message?.text)
 }

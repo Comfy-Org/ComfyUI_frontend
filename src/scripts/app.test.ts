@@ -100,6 +100,7 @@ import { TelemetryRegistry } from '@comfyorg/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { api } from '@/scripts/api'
@@ -152,6 +153,7 @@ const {
 }))
 
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(
   import('@/platform/workflow/validation/composables/useWorkflowValidation'),
@@ -289,6 +291,13 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
+  const initialSingletonGraph = singletonApp.rootGraphOrUndefined
+  const initialSingletonCanvas = singletonApp.canvas
+
+  afterEach(() => {
+    Reflect.set(singletonApp, 'rootGraphInternal', initialSingletonGraph)
+    singletonApp.canvas = initialSingletonCanvas
+  })
 
   it('applies extension paste overrides when the clipspace editor saves', () => {
     const node = new LGraphNode('original')
@@ -2600,6 +2609,35 @@ describe('ComfyApp', () => {
         type: 'CLOUD_SUBSCRIPTION_REQUIRED'
       })
     })
+
+    it.for([
+      { enabled: true, dialogCount: 1 },
+      { enabled: false, dialogCount: 0 }
+    ])(
+      'routes a served subscription refusal with new billing UX enabled=$enabled',
+      async ({ enabled, dialogCount }) => {
+        prepareEmptyPromptQueue()
+        vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
+        const refusal = {
+          type: 'PAYMENT_REQUIRED',
+          message: 'Run refused',
+          details: '',
+          reason: 'subscription_inactive'
+        }
+        vi.spyOn(api, 'queuePrompt').mockRejectedValue(
+          new PromptExecutionError({ error: refusal, node_errors: {} })
+        )
+        vi.mocked(
+          useBillingDialogs().showSubscriptionRequiredDialog
+        ).mockResolvedValueOnce(true)
+
+        await app.queuePrompt(0)
+
+        expect(
+          useBillingDialogs().showSubscriptionRequiredDialog
+        ).toHaveBeenCalledTimes(dialogCount)
+      }
+    )
 
     it('reports no refusal type when the server sent none', async () => {
       prepareEmptyPromptQueue()

@@ -70,6 +70,33 @@ export function reportTimings(report: unknown, project: string) {
   )
 }
 
+function downloadReports(runId: number, repository: string, directory: string) {
+  try {
+    execFileSync(
+      'gh',
+      [
+        'run',
+        'download',
+        String(runId),
+        '--repo',
+        repository,
+        ...projects.flatMap((project) => [
+          '--name',
+          `playwright-report-${project}`
+        ]),
+        '--dir',
+        directory
+      ],
+      { timeout: 240_000, stdio: ['ignore', 'ignore', 'pipe'] }
+    )
+  } catch (error) {
+    console.warn(
+      'Prior E2E report download failed; checking downloaded reports',
+      error instanceof Error ? error.message : String(error)
+    )
+  }
+}
+
 function main() {
   const output = z
     .string()
@@ -107,23 +134,7 @@ function main() {
       .parse(response)
     const run = runs.workflow_runs.at(0)
     if (run) {
-      execFileSync(
-        'gh',
-        [
-          'run',
-          'download',
-          String(run.id),
-          '--repo',
-          repository,
-          ...projects.flatMap((project) => [
-            '--name',
-            `playwright-report-${project}`
-          ]),
-          '--dir',
-          directory
-        ],
-        { timeout: 240_000, stdio: ['ignore', 'ignore', 'pipe'] }
-      )
+      downloadReports(run.id, repository, directory)
       for (const project of projects) {
         try {
           const report: unknown = JSON.parse(

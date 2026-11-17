@@ -11,6 +11,7 @@ import type {
   WorkflowQueueIntent
 } from '@comfyorg/telemetry/types'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidgetControl'
 import { t } from '@/i18n'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -25,6 +26,7 @@ import { toWorkflowExecutionContext } from '@/platform/telemetry/utils/workflowE
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import {
   promptErrorHasLockedCredits,
+  promptRefusalPrecondition,
   resolveAccountPrecondition
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
@@ -40,6 +42,13 @@ import type { ComfyApp, QueuePromptOptions } from '@/types/comfy'
 import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
+
+function servedRefusalPrecondition(error: unknown) {
+  if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
+  return error instanceof PromptExecutionError
+    ? promptRefusalPrecondition(error.response.error)
+    : undefined
+}
 
 export class QueueSubmission {
   private queueItems: {
@@ -305,10 +314,10 @@ export class QueueSubmission {
                 ? normalizePromptError(error.response.error)
                 : null
             const promptPrecondition = promptError
-              ? resolveAccountPrecondition({
+              ? (resolveAccountPrecondition({
                   exceptionType: promptError.type,
                   exceptionMessage: promptError.message
-                })
+                }) ?? servedRefusalPrecondition(error))
               : undefined
             if (promptPrecondition) {
               const opened = await useAccountPreconditionDialog().open(

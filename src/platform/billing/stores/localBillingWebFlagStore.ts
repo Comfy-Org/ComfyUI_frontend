@@ -11,21 +11,31 @@ import {
 import {
   localBillingWebEnabled,
   localSurface,
+  setLocalBillingNewUxEnabled,
   setLocalBillingWebEnabled
 } from '@/platform/billing/localBillingWebEnabled'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useAuthStore } from '@/stores/authStore'
+import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 const REREAD_INTERVAL_MS = 10 * 60_000
 const READ_TIMEOUT_MS = 10_000
 
-const zAllowlistedCloudFlags = z.object({ local_billing_web: z.boolean() })
+const zLocalBillingWeb = z.object({ local_billing_web: z.literal(true) })
+const zBillingNewUx = z.object({ billing_new_ux_enabled: z.literal(true) })
 
-async function readLocalBillingWeb(): Promise<boolean> {
+interface LocalCloudFlags {
+  readonly localBillingWeb: boolean
+  readonly billingNewUx: boolean
+}
+
+const ALL_OFF: LocalCloudFlags = { localBillingWeb: false, billingNewUx: false }
+
+async function readServedFlags(): Promise<LocalCloudFlags> {
   try {
     const token = await useAuthStore().getIdToken()
-    if (!token) return false
+    if (!token) return ALL_OFF
     const response = await fetch(
       new URL('/api/features', getComfyCloudBaseUrl()),
       {
@@ -37,12 +47,22 @@ async function readLocalBillingWeb(): Promise<boolean> {
         signal: AbortSignal.timeout(READ_TIMEOUT_MS)
       }
     )
-    if (!response.ok) return false
-    const flags = zAllowlistedCloudFlags.safeParse(await response.json())
-    return flags.success && flags.data.local_billing_web
+    if (!response.ok) return ALL_OFF
+    const served: unknown = await response.json()
+    return {
+      localBillingWeb: zLocalBillingWeb.safeParse(served).success,
+      billingNewUx: zBillingNewUx.safeParse(served).success
+    }
   } catch {
-    return false
+    return ALL_OFF
   }
+}
+
+async function readLocalCloudFlags(): Promise<LocalCloudFlags> {
+  const override = getDevOverride<boolean>('local_billing_web')
+  if (typeof override === 'boolean')
+    return { localBillingWeb: override, billingNewUx: false }
+  return readServedFlags()
 }
 
 let generation = 0
@@ -50,15 +70,20 @@ let generation = 0
 export const useLocalBillingWebFlagStore = defineStore(
   'localBillingWebFlag',
   () => {
+    function apply(flags: LocalCloudFlags): void {
+      setLocalBillingWebEnabled(flags.localBillingWeb)
+      setLocalBillingNewUxEnabled(flags.billingNewUx)
+    }
+
     function clear(): void {
       generation++
-      setLocalBillingWebEnabled(false)
+      apply(ALL_OFF)
     }
 
     async function reread(): Promise<void> {
       const current = ++generation
-      const value = await readLocalBillingWeb()
-      if (current === generation) setLocalBillingWebEnabled(value)
+      const flags = await readLocalCloudFlags()
+      if (current === generation) apply(flags)
     }
 
     if (!isCloud) {
