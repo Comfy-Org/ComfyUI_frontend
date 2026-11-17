@@ -114,23 +114,23 @@ function isInteriorLocator(nodeLocatorId: NodeLocatorId): boolean {
   return !!parseNodeLocatorId(nodeLocatorId)?.subgraphUuid
 }
 
-function mergeOutput(
+function preserveInputPreviewImages(
   existingOutput: ExecutedWsMessage['output'] | undefined,
-  outputs: ExecutedWsMessage['output'] | ResultItem,
-  { merge }: SetOutputOptions
+  outputs: ExecutedWsMessage['output'] | ResultItem
 ): ExecutedWsMessage['output'] {
   const incomingImages = 'images' in outputs ? outputs.images : undefined
-  const hasIncomingImages =
-    Array.isArray(incomingImages) && incomingImages.length > 0
-  const preserved =
-    !hasIncomingImages && isInputPreviewOutput(existingOutput)
-      ? { ...outputs, images: existingOutput.images }
-      : outputs
+  if (Array.isArray(incomingImages) && incomingImages.length > 0) return outputs
+  return isInputPreviewOutput(existingOutput)
+    ? { ...outputs, images: existingOutput.images }
+    : outputs
+}
 
-  if (!merge || !existingOutput) return preserved
-
+function concatOutputArrays(
+  existingOutput: ExecutedWsMessage['output'],
+  outputs: ExecutedWsMessage['output']
+): ExecutedWsMessage['output'] {
   const mergedOutput = { ...existingOutput }
-  for (const [key, newValue] of Object.entries(preserved)) {
+  for (const [key, newValue] of Object.entries(outputs)) {
     const existingValue = existingOutput[key]
     mergedOutput[key] =
       Array.isArray(existingValue) && Array.isArray(newValue)
@@ -138,6 +138,30 @@ function mergeOutput(
         : newValue
   }
   return mergedOutput
+}
+
+function mergeOutput(
+  existingOutput: ExecutedWsMessage['output'] | undefined,
+  outputs: ExecutedWsMessage['output'] | ResultItem,
+  { merge }: SetOutputOptions
+): ExecutedWsMessage['output'] {
+  const preserved = preserveInputPreviewImages(existingOutput, outputs)
+  return merge && existingOutput
+    ? concatOutputArrays(existingOutput, preserved)
+    : preserved
+}
+
+function forEachDetachedInstance<T>(
+  rootGraph: LGraph | undefined,
+  instances: InstanceMap<T>,
+  visit: (group: Partial<Record<string, T>>, executionId: string) => void
+) {
+  for (const [nodeLocatorId, group = {}] of Object.entries(instances)) {
+    for (const executionId of Object.keys(group)) {
+      if (executionIdToNodeLocatorId(rootGraph, executionId) !== nodeLocatorId)
+        visit(group, executionId)
+    }
+  }
 }
 
 export const useNodeOutputStore = defineStore('nodeOutput', () => {
@@ -433,21 +457,33 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const emptyTextOutput =
       outputs == null &&
       (node?.comfyClass === 'PreviewAny' || node?.comfyClass === 'SaveText')
-    const executed = emptyTextOutput ? {} : outputs
-    if (executed == null) return
-    const writeOptions = emptyTextOutput ? {} : options
+    writeExecutedOutputs(
+      nodeLocatorId,
+      executionId,
+      emptyTextOutput ? {} : outputs,
+      emptyTextOutput ? {} : options
+    )
+  }
+
+  function writeExecutedOutputs(
+    nodeLocatorId: NodeLocatorId,
+    executionId: NodeExecutionId,
+    outputs: ExecutedWsMessage['output'] | ResultItem | null | undefined,
+    options: SetOutputOptions
+  ) {
+    if (outputs == null) return
 
     writeSharedOutputs(
       nodeLocatorId,
-      mergeOutput(nodeOutputs.value[nodeLocatorId], executed, writeOptions)
+      mergeOutput(nodeOutputs.value[nodeLocatorId], outputs, options)
     )
     if (!isInteriorLocator(nodeLocatorId)) return
 
     const instances = (instanceOutputs.value[nodeLocatorId] ??= {})
     instances[executionId] = mergeOutput(
       instances[executionId],
-      executed,
-      writeOptions
+      outputs,
+      options
     )
   }
 
@@ -692,26 +728,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   /** Drops per-instance entries whose execution path no longer reaches their node. */
   function pruneDetachedInstances() {
     const rootGraph = useApp().rootGraphOrUndefined
-    const isDetached = (nodeLocatorId: string, executionId: string) =>
-      executionIdToNodeLocatorId(rootGraph, executionId) !== nodeLocatorId
-
-    for (const [nodeLocatorId, group] of Object.entries(
-      instanceOutputs.value
-    )) {
-      for (const executionId of Object.keys(group ?? {})) {
-        if (isDetached(nodeLocatorId, executionId)) delete group?.[executionId]
+    forEachDetachedInstance(
+      rootGraph,
+      instanceOutputs.value,
+      (group, executionId) => {
+        delete group[executionId]
       }
-    }
-    for (const [nodeLocatorId, group] of Object.entries(
-      instancePreviewImages.value
-    )) {
-      for (const executionId of Object.keys(group ?? {})) {
-        if (!isDetached(nodeLocatorId, executionId)) continue
+    )
+    forEachDetachedInstance(
+      rootGraph,
+      instancePreviewImages.value,
+      (group, executionId) => {
         cancelRevoke(executionId)
-        releaseUrls(group?.[executionId])
-        delete group?.[executionId]
+        releaseUrls(group[executionId])
+        delete group[executionId]
       }
-    }
+    )
   }
 
   onScopeDispose(
