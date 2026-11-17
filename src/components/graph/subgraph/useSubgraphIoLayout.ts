@@ -13,6 +13,7 @@ import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInp
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 
@@ -35,6 +36,7 @@ export function useSubgraphIoLayout(
 ) {
   const canvasStore = useCanvasStore()
   const { camera, syncWithCanvas } = useTransformState()
+  const { setTransform } = useCompositedTransform(element)
   const style = computed(() => {
     const [width, height] = ioNode().size
     return {
@@ -96,11 +98,12 @@ export function useSubgraphIoLayout(
       if (!canvas) return
       onCleanup(
         onCanvasFrame(canvas, 'present', () => {
-          const current = element.value
-          if (!current) return
+          if (!element.value) return
           syncWithCanvas(canvas)
           const [x, y] = ioNode().boundingRect
-          current.style.transform = `translate(${(x + camera.x) * camera.z}px, ${(y + camera.y) * camera.z}px) scale(${camera.z})`
+          setTransform(
+            `translate(${(x + camera.x) * camera.z}px, ${(y + camera.y) * camera.z}px) scale(${camera.z})`
+          )
         })
       )
     },

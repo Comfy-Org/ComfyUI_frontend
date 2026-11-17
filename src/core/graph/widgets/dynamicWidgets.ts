@@ -33,6 +33,7 @@ import {
 import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { useWidgetComponents } from '@/stores/widgetComponents'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
@@ -215,7 +216,11 @@ function dynamicComboWidget(
     const removedInputs = remove(node.inputs, isInGroup)
     for (const child of node.widgets.filter(isInGroup)) {
       optionValues.set(child.name, { type: child.type, value: child.value })
+      const restoreComponents = child.widgetId
+        ? useWidgetComponents().keep(child.widgetId)
+        : undefined
       node.removeWidget(child)
+      restoreComponents?.()
     }
     forgetDynamicChildren(node, inputName)
 

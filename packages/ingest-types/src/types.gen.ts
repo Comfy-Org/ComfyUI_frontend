@@ -3140,6 +3140,20 @@ export type BillingEventsResponse = {
 }
 
 /**
+ * The plan a Platform billing tab continues to checkout with. Selections only; checkout prices them.
+ */
+export type BillingHandoffCheckoutRequest = {
+  /**
+   * Plan the checkout opens with, as GET /api/billing/plans names it. Sent in the entry URL's query as `plan`.
+   */
+  plan_slug: string
+  /**
+   * Team credit stop the checkout opens with, for a per-credit Team plan. Sent in the entry URL's query as `team_credit_stop_id`.
+   */
+  team_credit_stop_id?: string
+}
+
+/**
  * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
  */
 export type BillingHandoffCreateRequest = {
@@ -13243,6 +13257,49 @@ export type CreateBillingHandoffResponses = {
 export type CreateBillingHandoffResponse =
   CreateBillingHandoffResponses[keyof CreateBillingHandoffResponses]
 
+export type CreateBillingHandoffCheckoutData = {
+  body: BillingHandoffCheckoutRequest
+  path?: never
+  query?: never
+  url: '/api/auth/handoffs/checkout'
+}
+
+export type CreateBillingHandoffCheckoutErrors = {
+  /**
+   * `INVALID_REQUEST`: plan_slug is missing, or plan_slug or team_credit_stop_id is not 1 to 128 letters, digits, `_` or `-`
+   */
+  400: ErrorResponse
+  /**
+   * `INVALID_CREDENTIAL`: no scoped-session bearer, or the session or its source sign-in has ended
+   */
+  401: ErrorResponse
+  /**
+   * `CREDENTIAL_UNSUPPORTED`: the session is not a Platform billing tab's; `BILLING_FORBIDDEN`: the request did not come from the Platform origin, or the user no longer owns the workspace; `HANDOFF_DISABLED`, or another billing policy refusal
+   */
+  403: ErrorResponse
+  /**
+   * Too many handoffs for this sign-in, client address or user in the last hour
+   */
+  429: ErrorResponse
+  /**
+   * `SERVICE_UNAVAILABLE`: the billing policy could not be checked
+   */
+  503: ErrorResponse
+}
+
+export type CreateBillingHandoffCheckoutError =
+  CreateBillingHandoffCheckoutErrors[keyof CreateBillingHandoffCheckoutErrors]
+
+export type CreateBillingHandoffCheckoutResponses = {
+  /**
+   * Handoff issued. `entry_url` is billing-web's handoff page with `intent=checkout`, `plan` and `team_credit_stop_id` (if any) in the query and the token in the fragment.
+   */
+  201: BillingHandoffCreateResponse
+}
+
+export type CreateBillingHandoffCheckoutResponse =
+  CreateBillingHandoffCheckoutResponses[keyof CreateBillingHandoffCheckoutResponses]
+
 export type ExchangeBillingHandoffData = {
   body: BillingHandoffExchangeRequest
   path?: never
@@ -15925,9 +15982,13 @@ export type GetFeaturesResponses = {
      */
     new_free_tier_subscriptions?: boolean
     /**
-     * Whether the frontend should enable Open on Cloud. True enables the feature and false disables it, overriding the client build default. Optional so older servers or an unconfigured rollout leave the client build default in effect (enabled in development, disabled in production). This is a UI rollout switch, not authorization to access workflows or execute jobs on Cloud.
+     * Whether the frontend should offer Open on Cloud. Requires a signed-in session with a verified email and a matching PostHog rollout. Defaults to false when evaluation is unavailable. Workflow access and execution still require their existing permissions.
      */
     open_on_cloud_enabled?: boolean
+    /**
+     * Whether the frontend should offer the local agent option in Open on Cloud. Requires a verified comfy.org session and a matching PostHog rollout. Defaults to false.
+     */
+    open_on_cloud_use_local_agent_enabled?: boolean
     /**
      * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
      */
@@ -17747,7 +17808,7 @@ export type ExecutePromptErrors = {
    */
   401: ErrorResponse
   /**
-   * The account's plan does not allow this submission; nothing was queued and retrying without changing the plan never succeeds. Disambiguated by the body's `error.type`, NOT by parsing `error.message`: `PAYMENT_REQUIRED` (no active subscription, no funds, blocked tier), `CLOUD_SUBSCRIPTION_REQUIRED`, `FREE_TIER_EXHAUSTED`, `PARTNER_NODE_PAYMENT_REQUIRED`, or `MODEL_PAYMENT_REQUIRED`.
+   * The account's plan does not allow this submission; nothing was queued and retrying without changing the plan never succeeds. Disambiguated by the body's `error.type`, NOT by parsing `error.message`: `PAYMENT_REQUIRED` (no active subscription, no funds, blocked tier), `CLOUD_SUBSCRIPTION_REQUIRED`, `FREE_TIER_EXHAUSTED`, `PARTNER_NODE_PAYMENT_REQUIRED`, or `MODEL_PAYMENT_REQUIRED`. A `PAYMENT_REQUIRED` body may also carry `error.reason`, the billing policy's reason for the refusal, e.g. `subscription_inactive`, `no_funds` or `manual_block`; treat an absent or unknown reason as the generic refusal.
    */
   402: PromptErrorResponse
   /**

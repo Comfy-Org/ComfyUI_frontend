@@ -165,6 +165,7 @@ import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingH
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
 import { useNodeEmphasis } from '@/systems/nodeEmphasisSystem'
+import { useTextPreviewSystem } from '@/systems/textPreviewSystem'
 import { useCanvasDrop } from '@/composables/useCanvasDrop'
 import { useContextMenuTranslation } from '@/composables/useContextMenuTranslation'
 import { useCopy } from '@/composables/useCopy'
@@ -196,7 +197,7 @@ import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStar
 import MiniMap from '@/renderer/extensions/minimap/MiniMap.vue'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
-import { app as comfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
@@ -238,6 +239,7 @@ const vueNodeDropTarget = computed(() => {
 const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
+const comfyApp = useApp()
 const settingStore = useSettingStore()
 // Extensions still listen for `<id>.change` events on the legacy dialog.
 settingStore.onSettingChanged(({ id, value, oldValue }) =>
@@ -509,6 +511,7 @@ useCanvasDrop(vueNodeDropTarget)
 useLitegraphSettings()
 useNodeBadge()
 useNodeEmphasis()
+useTextPreviewSystem()
 
 useGlobalLitegraph()
 useContextMenuTranslation()

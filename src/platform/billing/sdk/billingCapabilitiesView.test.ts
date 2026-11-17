@@ -90,6 +90,19 @@ describe('projectBillingCapabilities', () => {
     ).toStrictEqual(served)
   })
 
+  it('passes the served billing notice facts through to the capabilities read', () => {
+    expect(
+      projectBillingCapabilities({
+        ...SNAPSHOT,
+        billingNoticeAudience: 'none',
+        endingNoticeStartsAt: '2026-11-12T00:00:00Z'
+      })
+    ).toMatchObject({
+      billing_notice_audience: 'none',
+      ending_notice_starts_at: '2026-11-12T00:00:00Z'
+    })
+  })
+
   it('reads the snapshot back as the response the composable holds', () => {
     expect(projectBillingCapabilities(SNAPSHOT)).toStrictEqual({
       capabilities: SNAPSHOT.capabilities,

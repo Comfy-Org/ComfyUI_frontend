@@ -292,8 +292,7 @@ beforeEach(() => {
     status: 'ok',
     session: CREDENTIAL
   })
-  vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled = true
-  vi.mocked(useFeatureFlags().flags).billingSdkTopupRailEnabled = true
+  vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = true
   vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
   Object.assign(useTeamWorkspaceStore(), {
     activeWorkspace: PERSONAL_WORKSPACE,
