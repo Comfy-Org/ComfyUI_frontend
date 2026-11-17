@@ -55,7 +55,7 @@ export function checkedMountDef(member: string, def: unknown): MountSpec {
   const defaultValue =
     fields.defaultValue === undefined
       ? undefined
-      : mountedData(member, fields.defaultValue)
+      : mountedData(member, fields.defaultValue, 'defaultValue')
   const serialize =
     optionalFlag(member, fields.serialize) ?? defaultValue !== undefined
   return {
@@ -76,12 +76,16 @@ export function checkedMountDef(member: string, def: unknown): MountSpec {
 }
 
 /** A copy of a mounted widget's value, or a `TypeError` naming `member`. */
-export function mountedData(member: string, value: unknown): MountedData {
+export function mountedData(
+  member: string,
+  value: unknown,
+  field: string
+): MountedData {
   if (typeof value === 'string') return value
   if (!Array.isArray(value) && !isPlainObject(value)) {
     throw invalidArgument(member, 'a string, or a plain object or array', value)
   }
-  assertSavable(member, value)
+  assertSavable(member, value, field)
   return structuredClone(value)
 }
 
@@ -141,7 +145,7 @@ export function renderMounted(
   const value: MountedValue = Object.freeze({
     get: () => copyOfSaved('get', mounted.widget.value),
     set(next: unknown) {
-      const checked = mountedData('set', next)
+      const checked = mountedData('set', next, 'value')
       mounted.settingOwnValue(() => commit(checked))
     },
     onChange(listener: unknown) {

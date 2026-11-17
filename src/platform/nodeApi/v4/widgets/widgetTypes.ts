@@ -87,7 +87,7 @@ function checkedWidgetType(def: unknown): CheckedWidgetType {
     defaultValue:
       fields.defaultValue === undefined
         ? undefined
-        : mountedData('defineWidgetType', fields.defaultValue),
+        : mountedData('defineWidgetType', fields.defaultValue, 'defaultValue'),
     height: optionalSize('defineWidgetType', fields.height),
     minHeight: optionalSize('defineWidgetType', fields.minHeight),
     serialize: optionalFlag('defineWidgetType', fields.serialize) ?? true

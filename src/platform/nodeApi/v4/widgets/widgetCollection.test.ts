@@ -322,6 +322,31 @@ describe('a node’s widgets', () => {
       )
       expect(node.widgets?.map(({ name }) => name)).toEqual(['seed'])
     })
+
+    it.for([
+      [{ value: [1, Number.NaN] }, 'value[1]', 'NaN'],
+      [
+        { options: { format: () => '' } },
+        'options.format',
+        'a value of type function'
+      ],
+      [
+        { options: { steps: [1, { at: Infinity }] } },
+        'options.steps[1].at',
+        'Infinity'
+      ]
+    ] as const)(
+      'names the field of a definition it cannot save, and what it found there: %o',
+      ([fields, part, found]) => {
+        const { widgets } = nodeWith()
+
+        expect(() =>
+          widgets.add({ type: 'number', name: 'x', ...fields })
+        ).toThrow(
+          `add needs ${part} as a string, a finite number, a boolean, null, or a plain object or array of those, not ${found}.`
+        )
+      }
+    )
   })
 
   it('applies an edit when the host records no changes', () => {
