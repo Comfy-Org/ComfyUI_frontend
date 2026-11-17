@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "Rimuovi lo sfondo da un'immagine utilizzando Bria RMBG 2.0.",
+    "description": "Rimuove lo sfondo da un'immagine usando Bria RMBG 2.0 o RMBG 3.0.",
     "display_name": "Bria Rimuovi Sfondo Immagine",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "immagine"
       },
+      "model": {
+        "name": "modello"
+      },
       "moderation": {
         "name": "moderazione",
         "tooltip": "Impostazioni di moderazione"
       },
       "seed": {
         "name": "seed",
-        "tooltip": "Il seed controlla se il nodo deve essere rieseguito; i risultati sono non deterministici indipendentemente dal seed."
+        "tooltip": "Il seed controlla se il nodo deve essere rieseguito; la stessa immagine dà sempre lo stesso risultato indipendentemente dal seed."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output 4k e mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id esegue il rendering del finale in 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output 4k e mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p, il cui draft_task_id esegue il rendering del risultato finale a 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash per video a 480p e 720p fino a 30 secondi; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_duration": {
         "name": "durata"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output 4k e mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id esegue il rendering del finale in 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output 4k e mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p, il cui draft_task_id esegue il rendering del risultato finale a 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash per video a 480p e 720p fino a 30 secondi; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_auto_downscale": {
         "name": "ridimensionamento automatico in basso"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output 4k e mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id esegue il rendering del finale in 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output 4k e mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p, il cui draft_task_id esegue il rendering del risultato finale a 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash per video a 480p e 720p fino a 30 secondi; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "modello",
-        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output 4k e mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p il cui draft_task_id esegue il rendering del finale in 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida ed economica."
+        "tooltip": "Seedance 2.5 per il modello più recente, video fino a 30 secondi e output 4k e mp4/mov; Seedance 2.5 Draft per una rapida anteprima a 480p, il cui draft_task_id esegue il rendering del risultato finale a 1080p o 4k nel nodo Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash per video a 480p e 720p fino a 30 secondi; Seedance 2.0 per la massima qualità e 4k; Fast per l'ottimizzazione della velocità; Mini per la generazione più rapida e meno costosa."
       },
       "model_duration": {
         "name": "durata"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Crea un camera_info. La modalità 'orbit' punta usando imbardata/inclinazione/distanza attorno al bersaglio; 'look_at' posiziona la fotocamera nella posizione del mondo. Le coordinate sono nello spazio del mondo del visualizzatore (destrorso, asse Y verso l'alto).",
+    "description": "Crea un camera_info. La modalità 'orbit' punta con imbardata/inclinazione/distanza attorno al bersaglio; 'look_at' posiziona la telecamera alla posizione nel mondo. Le coordinate sono nello spazio mondo del visualizzatore (destrorso,Y verso l'alto) oppure, con una mesh connessa, nel sistema di riferimento di quella mesh, così le stesse impostazioni inquadrano qualsiasi mesh.",
     "display_name": "Crea Info Camera",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "Campo visivo verticale in gradi."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "Inquadra questa mesh: posizioni, bersaglio e distanza sono calcolati dal centro del suo riquadro di delimitazione in unità del diametro della sua sfera di delimitazione, così le stesse impostazioni inquadrano qualsiasi mesh."
       },
       "mode": {
         "name": "modalità",
@@ -19341,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "Genera risposte testuali tramite OpenRouter. Instrada verso una selezione curata di modelli popolari di Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) e Perplexity Sonar.",
+    "description": "Genera risposte testuali tramite OpenRouter. Instrada verso una selezione curata di modelli popolari di Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) e Perplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30312,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Coerenza temporale secondo Bonneel et al. 2015, con un termine di fedeltà contro la deriva: ogni fotogramma mantiene i propri dettagli seguendo quelli vicini lungo il flusso ottico del video guida.",
+    "display_name": "Deflicker video",
+    "inputs": {
+      "direction": {
+        "name": "direzione",
+        "tooltip": "bidirezionale calcola la media di un passaggio in avanti e uno all'indietro, evitando di rimanere indietro rispetto al movimento al costo del doppio del tempo."
+      },
+      "guide": {
+        "name": "guida",
+        "tooltip": "Fotogrammi sorgente stabili di cui seguire il movimento, a qualsiasi risoluzione. Per impostazione predefinita usa le immagini, rimuovendo meno sfarfallio."
+      },
+      "images": {
+        "name": "immagini",
+        "tooltip": "Fotogrammi con sfarfallio, ad esempio un video ingrandito o elaborato fotogramma per fotogramma."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "intensità",
+        "tooltip": "Quanto intensamente ogni fotogramma segue quelli vicini. Valori più alti rimuovono più sfarfallio e attenuano maggiormente i dettagli fini."
+      },
+      "threshold": {
+        "name": "soglia",
+        "tooltip": "Le variazioni maggiori di questa tra un fotogramma e quello vicino compensato per il movimento sono considerate reali e vengono attenuate meno. 0 attenua tutte le variazioni allo stesso modo."
       }
     },
     "outputs": {
