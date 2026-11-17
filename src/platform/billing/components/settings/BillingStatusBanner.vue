@@ -92,9 +92,9 @@ import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPr
 import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
 import type {
   BillingStatusBannerAudience,
-  BillingStatusBannerKind
+  BillingStatusBannerKind,
+  CapabilityDenialReason
 } from '@comfyorg/account-core/billing'
-import type { BillingCapabilityDenials } from '@comfyorg/ingest-types'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
@@ -225,9 +225,7 @@ const isHiddenOnSection = computed(() => {
   )
 })
 
-const PLANS_CREATOR_ONLY = 'not_original_owner' satisfies NonNullable<
-  BillingCapabilityDenials['can_open_plans']
->
+const PLANS_CREATOR_ONLY = 'not_original_owner' satisfies CapabilityDenialReason
 
 function planEndedCopy(): {
   title: string
