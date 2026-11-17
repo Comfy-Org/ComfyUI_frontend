@@ -11,7 +11,12 @@
       v-else
       :src="imageUrl"
       :alt="$t('g.liveSamplingPreview')"
-      class="pointer-events-none min-h-55 w-full flex-1 object-contain contain-size"
+      :class="
+        cn(
+          'pointer-events-none w-full flex-1 object-contain contain-size',
+          fitsContainer ? 'min-h-0' : 'min-h-55'
+        )
+      "
       @load="handleImageLoad"
       @error="handleImageError"
     />
@@ -28,20 +33,19 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-interface LivePreviewProps {
-  imageUrl: string
-}
+import { cn } from '@comfyorg/tailwind-utils'
 
-const props = defineProps<LivePreviewProps>()
+const { imageUrl, fitsContainer = false } = defineProps<{
+  imageUrl: string
+  fitsContainer?: boolean
+}>()
 
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 
 watch(
-  () => props.imageUrl,
+  () => imageUrl,
   () => {
-    // Reset error state when URL changes, but keep previous dimensions
-    // to avoid flickering "Calculating dimensions" text during live preview
     imageError.value = false
   }
 )

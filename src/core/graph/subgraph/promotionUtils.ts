@@ -15,7 +15,7 @@ import {
   isMediaPreviewWidgetName,
   previewSourceName
 } from '@/core/graph/subgraph/preview/mediaPreviewName'
-import { supportsVirtualCanvasImagePreview } from '@/composables/node/canvasImagePreviewTypes'
+import { canHavePreview } from '@/systems/nodePreviewSystem'
 import {
   providePromoteRecommendedWidgets,
   useCanvasStore
@@ -29,7 +29,6 @@ import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
@@ -591,14 +590,6 @@ export function isRecommendedWidget([node, widget]: WidgetItem) {
   )
 }
 
-function hasMediaPreview(node: LGraphNode): boolean {
-  return (
-    supportsVirtualCanvasImagePreview(node) ||
-    !!node.widgets?.some((widget) => isMediaPreviewWidgetName(widget.name)) ||
-    !!useNodeOutputStore().getNodeOutputs(node)?.images?.length
-  )
-}
-
 function mediaPreviewWidget(node: LGraphNode): IBaseWidget {
   return (
     node.widgets?.find(
@@ -619,9 +610,7 @@ export function getPromotableWidgets(node: LGraphNode): IBaseWidget[] {
   const widgets = (node.widgets ?? []).filter(
     (widget) => !isMediaPreviewWidgetName(widget.name)
   )
-  return hasMediaPreview(node)
-    ? [...widgets, mediaPreviewWidget(node)]
-    : widgets
+  return canHavePreview(node) ? [...widgets, mediaPreviewWidget(node)] : widgets
 }
 
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
@@ -634,7 +623,7 @@ export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
     node.updateComputedDisabled()
     const preview =
       node.widgets?.find(isPreviewPseudoWidget)?.name ??
-      (hasMediaPreview(node) ? CANVAS_IMAGE_PREVIEW_WIDGET : undefined)
+      (canHavePreview(node) ? CANVAS_IMAGE_PREVIEW_WIDGET : undefined)
     if (preview) promotePreviewViaExposure(subgraphNode, node, preview)
   }
 }

@@ -7,10 +7,8 @@ import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
-import {
-  addWidgetPromotionOptions,
-  isPreviewPseudoWidget
-} from '@/core/graph/subgraph/promotionUtils'
+import { drawSubgraphActivityPreview } from '@/composables/node/subgraphActivityPreview'
+import { addWidgetPromotionOptions } from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
 import {
@@ -46,8 +44,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
-import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
-import type { SubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
 import { transformInputSpecV2ToV1 } from '@comfyorg/object-info-parser/migration'
 import type {
   ComfyNodeDef as ComfyNodeDefV2,
@@ -73,10 +69,6 @@ import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
-import {
-  getPreviewExposureHostLocator,
-  usePreviewExposureStore
-} from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
@@ -194,31 +186,6 @@ export const useLitegraphService = () => {
   const widgetStore = useWidgetStore()
   const canvasStore = useCanvasStore()
   const { toggleSelectedNodesMode } = useSelectedLiteGraphItems()
-  const subgraphPseudoWidgetCache = new WeakMap<
-    SubgraphNode,
-    SubgraphPseudoWidgetCache<LGraphNode, IBaseWidget>
-  >()
-
-  function invalidateSubgraphPseudoWidgetCache(node: SubgraphNode) {
-    subgraphPseudoWidgetCache.delete(node)
-  }
-
-  function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
-    const hostLocator = getPreviewExposureHostLocator(node)
-    if (!hostLocator) return []
-    const promotions = usePreviewExposureStore().getExposuresAsPromotionShape(
-      node.rootGraph.id,
-      hostLocator
-    )
-    const resolved = resolveSubgraphPseudoWidgetCache({
-      cache: subgraphPseudoWidgetCache.get(node) ?? null,
-      promotions,
-      getNodeById: (nodeId) => node.subgraph.getNodeById(nodeId) ?? undefined,
-      isPreviewPseudoWidget
-    })
-    subgraphPseudoWidgetCache.set(node, resolved.cache)
-    return resolved.nodes
-  }
 
   /**
    * @internal The node definition name used to resolve the node's i18n text.
@@ -437,14 +404,6 @@ export const useLitegraphService = () => {
 
       constructor() {
         super(useApp().rootGraph, subgraph, instanceData)
-
-        subgraph.events.addEventListener('widget-promoted', () => {
-          invalidateSubgraphPseudoWidgetCache(this)
-        })
-
-        subgraph.events.addEventListener('widget-demoted', () => {
-          invalidateSubgraphPseudoWidgetCache(this)
-        })
 
         setupStrokeStyles(this)
         addInputs(this, ComfyNode.nodeData.inputs)
@@ -845,17 +804,9 @@ export const useLitegraphService = () => {
         'node.setSizeForImage is deprecated. Now it has no effect. Please remove the call to it.'
       )
     }
-    node.prototype.onDrawBackground = function () {
+    node.prototype.onDrawBackground = function (ctx) {
       updatePreviews(this)
-
-      if (this instanceof SubgraphNode) {
-        const parentGraph = this.graph
-        for (const interiorNode of getPseudoWidgetPreviewTargets(this)) {
-          updatePreviews(interiorNode, () => {
-            parentGraph?.setDirtyCanvas(true)
-          })
-        }
-      }
+      if (this.isSubgraphNode()) drawSubgraphActivityPreview(this, ctx)
     }
   }
 

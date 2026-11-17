@@ -1586,8 +1586,6 @@
           "src/composables/node/usePromotedPreviews.test.ts",
           "src/core/schemas/**",
           "src/lib/litegraph/src/subgraph/promotedWidgetStoreProjection.ts",
-          "src/services/subgraphPseudoWidgetCache.ts",
-          "src/services/subgraphPseudoWidgetCache.test.ts",
           "src/stores/previewExposureStore.ts",
           "src/stores/previewExposureStore.test.ts",
           "src/components/breadcrumb/**",

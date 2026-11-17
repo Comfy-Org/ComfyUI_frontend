@@ -25,7 +25,10 @@
         :node-id="nodeId"
         :full-resolution="nodeData?.flags.fullResolutionPreview"
         class="flex-auto"
-        :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"
+        :style="{
+          marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px`,
+          ...(fitsContainer && { minHeight: 0 })
+        }"
       />
     </slot>
   </div>
@@ -48,6 +51,7 @@ import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 interface NodeContentProps {
   nodeData?: NodeState
   media?: { type: 'video' | 'image' | 'audio'; items: AugmentedResultItem[] }
+  fitsContainer?: boolean
 }
 
 const props = defineProps<NodeContentProps>()
