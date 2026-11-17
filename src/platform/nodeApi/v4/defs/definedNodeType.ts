@@ -216,11 +216,7 @@ function checkedSlots(
       slot.shape === undefined
         ? undefined
         : SLOT_SHAPES[checkedChoice('define', 'shape', slot.shape, SLOT_SHAPES)]
-    return Object.freeze({
-      name: slot.name,
-      type: slot.type,
-      ...(shape === undefined ? {} : { shape })
-    })
+    return Object.freeze({ name: slot.name, type: slot.type, shape })
   })
 }
 
