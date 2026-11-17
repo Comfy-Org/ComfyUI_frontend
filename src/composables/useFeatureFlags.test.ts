@@ -26,6 +26,7 @@ import {
   sessionAgentGrantValidUntil,
   useRemoteConfigCache
 } from '@/platform/remoteConfig/remoteConfig'
+import { setLocalOpenOnCloudFlags } from '@/platform/openOnCloud/localOpenOnCloudFlags'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
@@ -516,6 +517,42 @@ describe('useFeatureFlags', () => {
         expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(expected)
       }
     )
+
+    describe('with a value Cloud served the signed-in local account', () => {
+      afterEach(() => {
+        setLocalOpenOnCloudFlags({
+          enabled: undefined,
+          useLocalAgentEnabled: undefined
+        })
+        remoteConfig.value = {}
+      })
+
+      it.for([
+        { dev: true, served: false, expected: false },
+        { dev: false, served: true, expected: true }
+      ])(
+        'follows Cloud $served over the dev=$dev default',
+        ({ dev, served, expected }) => {
+          vi.stubEnv('DEV', dev)
+          setLocalOpenOnCloudFlags({
+            enabled: served,
+            useLocalAgentEnabled: undefined
+          })
+
+          expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(expected)
+        }
+      )
+
+      it('lets the local server value win over Cloud', () => {
+        setLocalOpenOnCloudFlags({
+          enabled: true,
+          useLocalAgentEnabled: undefined
+        })
+        remoteConfig.value = { open_on_cloud_enabled: false }
+
+        expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
+      })
+    })
   })
 
   describe('openOnCloudUseLocalAgentEnabled', () => {
@@ -545,6 +582,31 @@ describe('useFeatureFlags', () => {
       'uses only a boolean true from remote config: $served',
       ({ served, expected }) => {
         remoteConfig.value = { open_on_cloud_use_local_agent_enabled: served }
+
+        expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
+          expected
+        )
+      }
+    )
+
+    it.for([
+      { local: undefined, cloud: true, expected: true },
+      { local: undefined, cloud: false, expected: false },
+      { local: false, cloud: true, expected: false }
+    ])(
+      'reads local $local before Cloud $cloud',
+      ({ local, cloud, expected }) => {
+        setLocalOpenOnCloudFlags({
+          enabled: undefined,
+          useLocalAgentEnabled: cloud
+        })
+        onTestFinished(() =>
+          setLocalOpenOnCloudFlags({
+            enabled: undefined,
+            useLocalAgentEnabled: undefined
+          })
+        )
+        remoteConfig.value = { open_on_cloud_use_local_agent_enabled: local }
 
         expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
           expected

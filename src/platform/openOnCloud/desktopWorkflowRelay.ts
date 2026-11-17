@@ -88,12 +88,17 @@ async function takeRelayDestination(
   return record.data.destination
 }
 
-async function isOpenOnCloudEnabled(): Promise<boolean> {
+/**
+ * The relay runs before sign-in, so it cannot read the account's rollout.
+ * A staged transfer already proves the editor showed the gated button; only
+ * an explicit `false` from the local server stops the relay.
+ */
+async function isOpenOnCloudDisabledLocally(): Promise<boolean> {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
-  const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
-  return useFeatureFlags().flags.openOnCloudEnabled
+  const { remoteConfig } = await import('@/platform/remoteConfig/remoteConfig')
+  return remoteConfig.value.open_on_cloud_enabled === false
 }
 
 async function relayWorkflow(url: URL): Promise<boolean> {
@@ -109,7 +114,7 @@ async function relayWorkflow(url: URL): Promise<boolean> {
 async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const url = new URL(window.location.href)
   if (!url.searchParams.has(DESKTOP_RELAY_PARAM)) return false
-  if (!(await isOpenOnCloudEnabled().catch(() => false))) return false
+  if (await isOpenOnCloudDisabledLocally().catch(() => true)) return false
   const relayed = await relayWorkflow(url).catch(() => false)
   if (!relayed) {
     const splash = document.getElementById('splash-loader')

@@ -21,6 +21,10 @@ import {
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { showsCloudBillingNewUxOnLocal } from '@/platform/billing/localBillingWebEnabled'
 import { useLocalBillingWebFlagStore as defineFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
+import {
+  localOpenOnCloudEnabled,
+  localOpenOnCloudUseLocalAgentEnabled
+} from '@/platform/openOnCloud/localOpenOnCloudFlags'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -85,6 +89,18 @@ function pendingResponse() {
 
 const settle = () => vi.advanceTimersByTimeAsync(0)
 
+function openOnCloudFlags() {
+  return {
+    enabled: localOpenOnCloudEnabled.value,
+    useLocalAgentEnabled: localOpenOnCloudUseLocalAgentEnabled.value
+  }
+}
+
+const OPEN_ON_CLOUD_UNREAD = {
+  enabled: undefined,
+  useLocalAgentEnabled: undefined
+}
+
 const createdStores: ReturnType<typeof defineFlagStore>[] = []
 
 function useLocalBillingWebFlagStore() {
@@ -136,9 +152,104 @@ describe('useLocalBillingWebFlagStore', () => {
       const { store } = await signInAndRead()
 
       expect(store.enabled).toBe(expected)
-      expect(fetchRequests(FEATURES)).toHaveLength(0)
     }
   )
+
+  it('reads the Open on Cloud flags under a development override of the handoff flag', async () => {
+    localStorage.setItem('ff:local_billing_web', 'false')
+    onTestFinished(() => localStorage.removeItem('ff:local_billing_web'))
+    serveFlags({ local_billing_web: true, open_on_cloud_enabled: true })
+
+    const { store } = await signInAndRead()
+
+    expect(store.enabled).toBe(false)
+    expect(localOpenOnCloudEnabled.value).toBe(true)
+  })
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false }
+  ])(
+    'reads both Open on Cloud flags as $served from the signed-in request',
+    async ({ served, expected }) => {
+      serveFlags({
+        open_on_cloud_enabled: served,
+        open_on_cloud_use_local_agent_enabled: served
+      })
+
+      await signInAndRead()
+
+      expect(openOnCloudFlags()).toEqual({
+        enabled: expected,
+        useLocalAgentEnabled: expected
+      })
+      expect(fetchRequests(FEATURES)).toHaveLength(1)
+      expect(fetchRequests(FEATURES)[0].headers.get('Authorization')).toBe(
+        'Bearer token-ws-1'
+      )
+    }
+  )
+
+  it.for([
+    { served: 'absent', document: { local_billing_web: true } },
+    {
+      served: 'a string',
+      document: {
+        open_on_cloud_enabled: 'true',
+        open_on_cloud_use_local_agent_enabled: 'true'
+      }
+    }
+  ])(
+    'leaves the Open on Cloud flags unread when they are served $served',
+    async ({ document }) => {
+      serveFlags(document)
+
+      await signInAndRead()
+
+      expect(openOnCloudFlags()).toEqual(OPEN_ON_CLOUD_UNREAD)
+    }
+  )
+
+  it('keeps one malformed Open on Cloud flag from hiding the other', async () => {
+    serveFlags({
+      open_on_cloud_enabled: true,
+      open_on_cloud_use_local_agent_enabled: 'true'
+    })
+
+    await signInAndRead()
+
+    expect(openOnCloudFlags()).toEqual({
+      enabled: true,
+      useLocalAgentEnabled: undefined
+    })
+  })
+
+  it.for([
+    { change: 'sign-out', next: { status: 'signed_out' } as const },
+    { change: 'an account change', next: signedIn('user-2', 'ws-1') }
+  ])('clears the Open on Cloud flags on $change', async ({ next }) => {
+    serveFlags({
+      open_on_cloud_enabled: true,
+      open_on_cloud_use_local_agent_enabled: true
+    })
+    const { push } = await signInAndRead()
+    respondToFetch(FEATURES, () => new Promise<Response>(() => {}))
+
+    push(next)
+    await settle()
+
+    expect(openOnCloudFlags()).toEqual(OPEN_ON_CLOUD_UNREAD)
+  })
+
+  it('leaves the Open on Cloud flags unread after a failed re-read', async () => {
+    serveFlags({ open_on_cloud_enabled: true })
+    await signInAndRead()
+    respondToFetch(FEATURES, () => Promise.reject(new TypeError('offline')))
+
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+    expect(openOnCloudFlags()).toEqual(OPEN_ON_CLOUD_UNREAD)
+  })
 
   it('exposes only its two flags from a Cloud document with other keys', async () => {
     const localConfig = { ...remoteConfig.value }
@@ -273,6 +384,7 @@ describe('useLocalBillingWebFlagStore', () => {
     await settle()
 
     expect(store.enabled).toBe(false)
+    expect(openOnCloudFlags()).toEqual(OPEN_ON_CLOUD_UNREAD)
     expect(fetchRequests(FEATURES)).toEqual([])
   })
 

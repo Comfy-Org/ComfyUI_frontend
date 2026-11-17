@@ -128,6 +128,17 @@ describe(handleDesktopWorkflowHandoff, () => {
     expect(splash.textContent).toBe('Loading')
   })
 
+  it('forwards a staged transfer when the local server serves no Open on Cloud value', async () => {
+    const { relay, record } = await stagedRelay()
+    openAt(relay)
+    vi.mocked(fetch).mockResolvedValue(Response.json({}))
+    const replace = relayed()
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+
+    expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
+  })
+
   it('consumes the staged transfer once and forwards to Comfy Cloud', async () => {
     const { relay, record } = await stagedRelay()
     openAt(relay)

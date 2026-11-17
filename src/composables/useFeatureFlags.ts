@@ -9,6 +9,10 @@ import {
 } from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  localOpenOnCloudEnabled,
+  localOpenOnCloudUseLocalAgentEnabled
+} from '@/platform/openOnCloud/localOpenOnCloudFlags'
+import {
   isAuthenticatedConfigLoaded,
   remoteConfig,
   sessionAgentGrant,
@@ -219,19 +223,23 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get openOnCloudEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
-        remoteConfig.value.open_on_cloud_enabled,
+      return (
+        resolveFlag<boolean | undefined>(
+          ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
+          remoteConfig.value.open_on_cloud_enabled,
+          undefined
+        ) ??
+        localOpenOnCloudEnabled.value ??
         import.meta.env.DEV
       )
     },
     get openOnCloudUseLocalAgentEnabled() {
       return (
-        resolveFlag<unknown>(
+        (resolveFlag<unknown>(
           ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
           remoteConfig.value.open_on_cloud_use_local_agent_enabled,
-          false
-        ) === true
+          undefined
+        ) ?? localOpenOnCloudUseLocalAgentEnabled.value) === true
       )
     },
     get deployToCloud() {
