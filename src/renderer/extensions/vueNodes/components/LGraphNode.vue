@@ -337,7 +337,7 @@ import {
   applyLightThemeColor,
   shapeVariantClass
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isVideoResult } from '@/utils/resultItem'
 import {
@@ -704,7 +704,7 @@ const handleEnterSubgraph = () => {
     button_id: 'graph_node_open_subgraph_clicked',
     element_group: 'graph_node'
   })
-  const graph = app.rootGraph
+  const graph = useApp().rootGraph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')
     return
@@ -720,7 +720,7 @@ const handleEnterSubgraph = () => {
     return
   }
 
-  const canvas = app.canvas
+  const canvas = useApp().canvas
   if (!canvas || typeof canvas.openSubgraph !== 'function') {
     console.warn('LGraphNode: Canvas or openSubgraph method not available')
     return
@@ -735,7 +735,7 @@ function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
   if (!locatorId) return null
 
-  return getNodeByLocatorId(app.rootGraph, locatorId)
+  return getNodeByLocatorId(useApp().rootGraph, locatorId)
 }
 
 const lgraphNode = computed(resolveLGraphNode)
@@ -889,6 +889,6 @@ function handleDragLeave() {
 
 function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
-  app.dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
+  useApp().dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
 </script>

@@ -22,7 +22,7 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 /** Whether a deployment, or Comfy Cloud, can run the open workflow. */
 export type DeploymentCompatibilityMark =
@@ -83,7 +83,9 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
 
   function readNodeTypes() {
     const next =
-      canAsk.value && app.isGraphReady ? workflowNodeTypes(app.rootGraph) : []
+      canAsk.value && useApp().isGraphReady
+        ? workflowNodeTypes(useApp().rootGraph)
+        : []
     // graphChanged also fires on moves and resizes; keep the same array then
     // so the request key is not rebuilt.
     if (isEqual(next, nodeTypes.value)) return

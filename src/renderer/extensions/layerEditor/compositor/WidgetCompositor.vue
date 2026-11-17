@@ -73,7 +73,7 @@ import {
 } from '@/renderer/extensions/layerEditor/compositor/useCompositorLayers'
 import { useCompositorPsdDownload } from '@/renderer/extensions/layerEditor/compositor/useCompositorPsdDownload'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -90,7 +90,7 @@ const naturalSize = ref<CompactSize | null>(null)
 const outputUrl = ref<string | null>(null)
 
 const litegraphNode = useLiveGraphNode(() =>
-  nodeId ? app.canvas.graph?.getNodeById(nodeId) : null
+  nodeId ? useApp().canvas.graph?.getNodeById(nodeId) : null
 )
 
 function updateOutputUrl(): void {
